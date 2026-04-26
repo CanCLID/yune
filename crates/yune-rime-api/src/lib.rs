@@ -470,6 +470,8 @@ struct RuntimePaths {
     user_data_sync_dir: CString,
     distribution_code_name: CString,
     distribution_version: CString,
+    app_name: CString,
+    log_dir: CString,
     backup_config_files: bool,
 }
 
@@ -481,6 +483,8 @@ struct RuntimePathArgs<'a> {
     sync_dir: &'a str,
     user_id: &'a str,
     distribution: (&'a str, &'a str),
+    app_name: &'a str,
+    log_dir: &'a str,
     backup_config_files: bool,
 }
 
@@ -513,6 +517,8 @@ impl Default for RuntimePaths {
             sync_dir: "sync",
             user_id: "unknown",
             distribution: ("", ""),
+            app_name: "",
+            log_dir: "",
             backup_config_files: true,
         })
     }
@@ -531,6 +537,8 @@ impl RuntimePaths {
             user_data_sync_dir: cstring_from_lossless_str(&user_data_sync_dir),
             distribution_code_name: cstring_from_lossless_str(args.distribution.0),
             distribution_version: cstring_from_lossless_str(args.distribution.1),
+            app_name: cstring_from_lossless_str(args.app_name),
+            log_dir: cstring_from_lossless_str(args.log_dir),
             backup_config_files: args.backup_config_files,
         }
     }
@@ -555,6 +563,8 @@ impl RuntimePaths {
             optional_c_string(traits.distribution_code_name).unwrap_or_default();
         let distribution_version =
             optional_c_string(traits.distribution_version).unwrap_or_default();
+        let app_name = optional_c_string(traits.app_name).unwrap_or_default();
+        let log_dir = optional_c_string(traits.log_dir).unwrap_or_default();
         let installation = read_installation_settings(&user_data_dir);
         let sync_dir = if let Some(sync_dir) = installation.sync_dir {
             sync_dir
@@ -576,6 +586,8 @@ impl RuntimePaths {
             sync_dir: &sync_dir,
             user_id: &user_id,
             distribution: (&distribution_code_name, &distribution_version),
+            app_name: &app_name,
+            log_dir: &log_dir,
             backup_config_files,
         }))
     }
@@ -1607,7 +1619,15 @@ pub unsafe extern "C" fn RimeLeversSchemaListDestroy(list: *mut RimeSchemaList) 
 }
 
 #[no_mangle]
-pub extern "C" fn RimeSetupLogging(_app_name: *const c_char) {}
+pub extern "C" fn RimeSetupLogging(app_name: *const c_char) {
+    let Some(app_name) = optional_c_string(app_name) else {
+        return;
+    };
+    runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned")
+        .app_name = cstring_from_lossless_str(&app_name);
+}
 
 /// Initializes the runtime using the same trait handling as `RimeSetup`.
 ///
@@ -1628,6 +1648,9 @@ pub extern "C" fn RimeFinalize() {
 
 #[no_mangle]
 pub extern "C" fn RimeStartMaintenance(_full_check: Bool) -> Bool {
+    if !clean_old_log_files() {
+        return FALSE;
+    }
     TRUE
 }
 
@@ -1723,6 +1746,9 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
     }
     if task_name == "installation_update" {
         return bool_from(run_installation_update());
+    }
+    if task_name == "clean_old_log_files" {
+        return bool_from(clean_old_log_files());
     }
     if task_name == "cleanup_trash" {
         return bool_from(cleanup_trash());
@@ -4101,6 +4127,73 @@ fn cleanup_trash() -> bool {
     success
 }
 
+fn clean_old_log_files() -> bool {
+    let (app_name, log_dir) = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        (
+            paths.app_name.to_string_lossy().into_owned(),
+            PathBuf::from(paths.log_dir.to_string_lossy().into_owned()),
+        )
+    };
+    if app_name.is_empty() || log_dir.as_os_str().is_empty() {
+        return true;
+    }
+
+    let Ok(entries) = fs::read_dir(&log_dir) else {
+        return true;
+    };
+    let today = current_log_date_marker();
+    let mut success = true;
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        let Ok(metadata) = fs::symlink_metadata(&path) else {
+            success = false;
+            continue;
+        };
+        if !metadata.file_type().is_file() || metadata.file_type().is_symlink() {
+            continue;
+        }
+        let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
+            continue;
+        };
+        if !file_name.starts_with(&app_name) || !file_name.ends_with(".log") {
+            continue;
+        }
+        if file_name.contains(&today) {
+            continue;
+        }
+        if fs::remove_file(&path).is_err() {
+            success = false;
+        }
+    }
+    success
+}
+
+fn current_log_date_marker() -> String {
+    let days_since_epoch = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_secs() / 86_400);
+    let (year, month, day) = civil_from_days(days_since_epoch as i64);
+    format!(".{year:04}{month:02}{day:02}")
+}
+
+fn civil_from_days(days_since_epoch: i64) -> (i64, i64, i64) {
+    let days = days_since_epoch + 719_468;
+    let era = if days >= 0 { days } else { days - 146_096 } / 146_097;
+    let day_of_era = days - era * 146_097;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let mut year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_prime = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+    let month = month_prime + if month_prime < 10 { 3 } else { -9 };
+    year += i64::from(month <= 2);
+    (year, month, day)
+}
+
 fn workspace_update() -> bool {
     if !deploy_config_file("default.yaml", "config_version") {
         return false;
@@ -5117,23 +5210,24 @@ mod tests {
     use yune_core::StaticTableTranslator;
 
     use super::{
-        bool_from, find_config_value, rime_get_api, RimeApi, RimeCandidateListBegin,
-        RimeCandidateListEnd, RimeCandidateListFromIndex, RimeCandidateListIterator,
-        RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions, RimeCleanupStaleSessions,
-        RimeClearComposition, RimeCommit, RimeCommitComposition, RimeConfig, RimeConfigBeginList,
-        RimeConfigBeginMap, RimeConfigClear, RimeConfigClose, RimeConfigCreateList,
-        RimeConfigCreateMap, RimeConfigEnd, RimeConfigGetBool, RimeConfigGetCString,
-        RimeConfigGetDouble, RimeConfigGetInt, RimeConfigGetItem, RimeConfigGetString,
-        RimeConfigInit, RimeConfigIterator, RimeConfigListSize, RimeConfigLoadString,
-        RimeConfigNext, RimeConfigOpen, RimeConfigSetBool, RimeConfigSetDouble, RimeConfigSetInt,
-        RimeConfigSetItem, RimeConfigSetString, RimeConfigUpdateSignature, RimeContext,
-        RimeCreateSession, RimeCustomApi, RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage,
-        RimeDeployConfigFile, RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize,
-        RimeDestroySession, RimeFinalize, RimeFindModule, RimeFindSession, RimeFreeCommit,
-        RimeFreeContext, RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext,
-        RimeGetCurrentSchema, RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir,
-        RimeGetPrebuiltDataDirSecure, RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir,
-        RimeGetSharedDataDirSecure, RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStateLabel,
+        bool_from, current_log_date_marker, find_config_value, rime_get_api, RimeApi,
+        RimeCandidateListBegin, RimeCandidateListEnd, RimeCandidateListFromIndex,
+        RimeCandidateListIterator, RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions,
+        RimeCleanupStaleSessions, RimeClearComposition, RimeCommit, RimeCommitComposition,
+        RimeConfig, RimeConfigBeginList, RimeConfigBeginMap, RimeConfigClear, RimeConfigClose,
+        RimeConfigCreateList, RimeConfigCreateMap, RimeConfigEnd, RimeConfigGetBool,
+        RimeConfigGetCString, RimeConfigGetDouble, RimeConfigGetInt, RimeConfigGetItem,
+        RimeConfigGetString, RimeConfigInit, RimeConfigIterator, RimeConfigListSize,
+        RimeConfigLoadString, RimeConfigNext, RimeConfigOpen, RimeConfigSetBool,
+        RimeConfigSetDouble, RimeConfigSetInt, RimeConfigSetItem, RimeConfigSetString,
+        RimeConfigUpdateSignature, RimeContext, RimeCreateSession, RimeCustomApi,
+        RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage, RimeDeployConfigFile,
+        RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession,
+        RimeFinalize, RimeFindModule, RimeFindSession, RimeFreeCommit, RimeFreeContext,
+        RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
+        RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure,
+        RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure,
+        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStateLabel,
         RimeGetStateLabelAbbreviated, RimeGetStatus, RimeGetSyncDir, RimeGetSyncDirSecure,
         RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir, RimeGetUserId,
         RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
@@ -6695,6 +6789,58 @@ schema:
         fs::write(user.join("stale.bin"), "stale").expect("deploy fixture should be written");
         assert_eq!(RimeDeployWorkspace(), TRUE);
         assert!(user.join("trash").join("stale.bin").is_file());
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn clean_old_log_files_removes_stale_app_logs() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("clean-old-log-files");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let logs = root.join("logs");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::create_dir_all(&logs).expect("log dir should be created");
+        let today_log = format!("rime_test{}.log", current_log_date_marker());
+        for file_name in [
+            "rime_test.20000101.log",
+            "other_app.20000101.log",
+            "rime_test.20000101.txt",
+            &today_log,
+        ] {
+            fs::write(logs.join(file_name), file_name).expect("log fixture should be written");
+        }
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let logs_c = CString::new(logs.to_string_lossy().as_ref()).expect("path should be valid");
+        let app_name = CString::new("rime_test").expect("app name should be valid");
+        let cleanup_task = CString::new("clean_old_log_files").expect("task should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+        traits.app_name = app_name.as_ptr();
+        traits.log_dir = logs_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeSetup(&traits) };
+        assert_eq!(RimeRunTask(cleanup_task.as_ptr()), TRUE);
+
+        assert!(!logs.join("rime_test.20000101.log").exists());
+        assert!(logs.join("other_app.20000101.log").is_file());
+        assert!(logs.join("rime_test.20000101.txt").is_file());
+        assert!(logs.join(today_log).is_file());
+
+        fs::write(logs.join("rime_test.19991231.log"), "stale")
+            .expect("maintenance log fixture should be written");
+        assert_eq!(RimeStartMaintenance(TRUE), TRUE);
+        assert!(!logs.join("rime_test.19991231.log").exists());
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

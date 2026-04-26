@@ -125,6 +125,29 @@ pub struct RimeSchemaList {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
+pub struct RimeStringSlice {
+    pub str: *const c_char,
+    pub length: usize,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeConfig {
+    pub ptr: *mut c_void,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeConfigIterator {
+    pub list: *mut c_void,
+    pub map: *mut c_void,
+    pub index: c_int,
+    pub key: *const c_char,
+    pub path: *const c_char,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub struct RimeCustomApi {
     pub data_size: c_int,
 }
@@ -137,6 +160,142 @@ pub struct RimeModule {
     pub initialize: Option<extern "C" fn()>,
     pub finalize: Option<extern "C" fn()>,
     pub get_api: Option<extern "C" fn() -> *mut RimeCustomApi>,
+}
+
+type SetupFn = unsafe extern "C" fn(*const RimeTraits);
+type SetNotificationHandlerFn = extern "C" fn(Option<RimeNotificationHandler>, *mut c_void);
+type NoArgBoolFn = extern "C" fn() -> Bool;
+type ConfigOpenFn = unsafe extern "C" fn(*const c_char, *mut RimeConfig) -> Bool;
+type ConfigCloseFn = unsafe extern "C" fn(*mut RimeConfig) -> Bool;
+type ConfigGetBoolFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, *mut Bool) -> Bool;
+type ConfigGetIntFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, *mut c_int) -> Bool;
+type ConfigGetDoubleFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, *mut f64) -> Bool;
+type ConfigGetStringFn =
+    unsafe extern "C" fn(*mut RimeConfig, *const c_char, *mut c_char, usize) -> Bool;
+type ConfigGetCStringFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> *const c_char;
+type ConfigIteratorBeginFn =
+    unsafe extern "C" fn(*mut RimeConfigIterator, *mut RimeConfig, *const c_char) -> Bool;
+type ConfigIteratorNextFn = unsafe extern "C" fn(*mut RimeConfigIterator) -> Bool;
+type ConfigIteratorEndFn = unsafe extern "C" fn(*mut RimeConfigIterator);
+type ConfigSetBoolFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, Bool) -> Bool;
+type ConfigSetIntFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, c_int) -> Bool;
+type ConfigSetDoubleFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, f64) -> Bool;
+type ConfigSetStringFn =
+    unsafe extern "C" fn(*mut RimeConfig, *const c_char, *const c_char) -> Bool;
+type ConfigItemFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, *mut RimeConfig) -> Bool;
+type ConfigKeyFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> Bool;
+type ConfigListSizeFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> usize;
+type ProtoFn = extern "C" fn(RimeSessionId, *mut c_void);
+type GetStateLabelFn = extern "C" fn(RimeSessionId, *const c_char, Bool) -> *const c_char;
+type GetStateLabelAbbreviatedFn =
+    extern "C" fn(RimeSessionId, *const c_char, Bool, Bool) -> RimeStringSlice;
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct RimeApi {
+    pub data_size: c_int,
+    pub setup: Option<SetupFn>,
+    pub set_notification_handler: Option<SetNotificationHandlerFn>,
+    pub initialize: Option<SetupFn>,
+    pub finalize: Option<extern "C" fn()>,
+    pub start_maintenance: Option<extern "C" fn(Bool) -> Bool>,
+    pub is_maintenance_mode: Option<NoArgBoolFn>,
+    pub join_maintenance_thread: Option<extern "C" fn()>,
+    pub deployer_initialize: Option<SetupFn>,
+    pub prebuild: Option<NoArgBoolFn>,
+    pub deploy: Option<NoArgBoolFn>,
+    pub deploy_schema: Option<extern "C" fn(*const c_char) -> Bool>,
+    pub deploy_config_file: Option<extern "C" fn(*const c_char, *const c_char) -> Bool>,
+    pub sync_user_data: Option<NoArgBoolFn>,
+    pub create_session: Option<extern "C" fn() -> RimeSessionId>,
+    pub find_session: Option<extern "C" fn(RimeSessionId) -> Bool>,
+    pub destroy_session: Option<extern "C" fn(RimeSessionId) -> Bool>,
+    pub cleanup_stale_sessions: Option<extern "C" fn()>,
+    pub cleanup_all_sessions: Option<extern "C" fn()>,
+    pub process_key: Option<extern "C" fn(RimeSessionId, c_int, c_int) -> Bool>,
+    pub commit_composition: Option<extern "C" fn(RimeSessionId) -> Bool>,
+    pub clear_composition: Option<extern "C" fn(RimeSessionId)>,
+    pub get_commit: Option<unsafe extern "C" fn(RimeSessionId, *mut RimeCommit) -> Bool>,
+    pub free_commit: Option<unsafe extern "C" fn(*mut RimeCommit) -> Bool>,
+    pub get_context: Option<unsafe extern "C" fn(RimeSessionId, *mut RimeContext) -> Bool>,
+    pub free_context: Option<unsafe extern "C" fn(*mut RimeContext) -> Bool>,
+    pub get_status: Option<unsafe extern "C" fn(RimeSessionId, *mut RimeStatus) -> Bool>,
+    pub free_status: Option<unsafe extern "C" fn(*mut RimeStatus) -> Bool>,
+    pub set_option: Option<unsafe extern "C" fn(RimeSessionId, *const c_char, Bool)>,
+    pub get_option: Option<unsafe extern "C" fn(RimeSessionId, *const c_char) -> Bool>,
+    pub set_property: Option<unsafe extern "C" fn(RimeSessionId, *const c_char, *const c_char)>,
+    pub get_property:
+        Option<unsafe extern "C" fn(RimeSessionId, *const c_char, *mut c_char, usize) -> Bool>,
+    pub get_schema_list: Option<unsafe extern "C" fn(*mut RimeSchemaList) -> Bool>,
+    pub free_schema_list: Option<unsafe extern "C" fn(*mut RimeSchemaList)>,
+    pub get_current_schema: Option<unsafe extern "C" fn(RimeSessionId, *mut c_char, usize) -> Bool>,
+    pub select_schema: Option<unsafe extern "C" fn(RimeSessionId, *const c_char) -> Bool>,
+    pub schema_open: Option<ConfigOpenFn>,
+    pub config_open: Option<ConfigOpenFn>,
+    pub config_close: Option<ConfigCloseFn>,
+    pub config_get_bool: Option<ConfigGetBoolFn>,
+    pub config_get_int: Option<ConfigGetIntFn>,
+    pub config_get_double: Option<ConfigGetDoubleFn>,
+    pub config_get_string: Option<ConfigGetStringFn>,
+    pub config_get_cstring: Option<ConfigGetCStringFn>,
+    pub config_update_signature:
+        Option<unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> Bool>,
+    pub config_begin_map: Option<ConfigIteratorBeginFn>,
+    pub config_next: Option<ConfigIteratorNextFn>,
+    pub config_end: Option<ConfigIteratorEndFn>,
+    pub simulate_key_sequence: Option<unsafe extern "C" fn(RimeSessionId, *const c_char) -> Bool>,
+    pub register_module: Option<unsafe extern "C" fn(*mut RimeModule) -> Bool>,
+    pub find_module: Option<unsafe extern "C" fn(*const c_char) -> *mut RimeModule>,
+    pub run_task: Option<extern "C" fn(*const c_char) -> Bool>,
+    pub get_shared_data_dir: Option<extern "C" fn() -> *const c_char>,
+    pub get_user_data_dir: Option<extern "C" fn() -> *const c_char>,
+    pub get_sync_dir: Option<extern "C" fn() -> *const c_char>,
+    pub get_user_id: Option<extern "C" fn() -> *const c_char>,
+    pub get_user_data_sync_dir: Option<unsafe extern "C" fn(*mut c_char, usize)>,
+    pub config_init: Option<unsafe extern "C" fn(*mut RimeConfig) -> Bool>,
+    pub config_load_string: Option<unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> Bool>,
+    pub config_set_bool: Option<ConfigSetBoolFn>,
+    pub config_set_int: Option<ConfigSetIntFn>,
+    pub config_set_double: Option<ConfigSetDoubleFn>,
+    pub config_set_string: Option<ConfigSetStringFn>,
+    pub config_get_item: Option<ConfigItemFn>,
+    pub config_set_item: Option<ConfigItemFn>,
+    pub config_clear: Option<ConfigKeyFn>,
+    pub config_create_list: Option<ConfigKeyFn>,
+    pub config_create_map: Option<ConfigKeyFn>,
+    pub config_list_size: Option<ConfigListSizeFn>,
+    pub config_begin_list: Option<ConfigIteratorBeginFn>,
+    pub get_input: Option<extern "C" fn(RimeSessionId) -> *const c_char>,
+    pub get_caret_pos: Option<extern "C" fn(RimeSessionId) -> usize>,
+    pub select_candidate: Option<extern "C" fn(RimeSessionId, usize) -> Bool>,
+    pub get_version: Option<extern "C" fn() -> *const c_char>,
+    pub set_caret_pos: Option<extern "C" fn(RimeSessionId, usize)>,
+    pub select_candidate_on_current_page: Option<extern "C" fn(RimeSessionId, usize) -> Bool>,
+    pub candidate_list_begin:
+        Option<unsafe extern "C" fn(RimeSessionId, *mut RimeCandidateListIterator) -> Bool>,
+    pub candidate_list_next: Option<unsafe extern "C" fn(*mut RimeCandidateListIterator) -> Bool>,
+    pub candidate_list_end: Option<unsafe extern "C" fn(*mut RimeCandidateListIterator)>,
+    pub user_config_open: Option<ConfigOpenFn>,
+    pub candidate_list_from_index:
+        Option<unsafe extern "C" fn(RimeSessionId, *mut RimeCandidateListIterator, c_int) -> Bool>,
+    pub get_prebuilt_data_dir: Option<extern "C" fn() -> *const c_char>,
+    pub get_staging_dir: Option<extern "C" fn() -> *const c_char>,
+    pub commit_proto: Option<ProtoFn>,
+    pub context_proto: Option<ProtoFn>,
+    pub status_proto: Option<ProtoFn>,
+    pub get_state_label: Option<GetStateLabelFn>,
+    pub delete_candidate: Option<extern "C" fn(RimeSessionId, usize) -> Bool>,
+    pub delete_candidate_on_current_page: Option<extern "C" fn(RimeSessionId, usize) -> Bool>,
+    pub get_state_label_abbreviated: Option<GetStateLabelAbbreviatedFn>,
+    pub set_input: Option<unsafe extern "C" fn(RimeSessionId, *const c_char) -> Bool>,
+    pub get_shared_data_dir_s: Option<unsafe extern "C" fn(*mut c_char, usize)>,
+    pub get_user_data_dir_s: Option<unsafe extern "C" fn(*mut c_char, usize)>,
+    pub get_prebuilt_data_dir_s: Option<unsafe extern "C" fn(*mut c_char, usize)>,
+    pub get_staging_dir_s: Option<unsafe extern "C" fn(*mut c_char, usize)>,
+    pub get_sync_dir_s: Option<unsafe extern "C" fn(*mut c_char, usize)>,
+    pub highlight_candidate: Option<extern "C" fn(RimeSessionId, usize) -> Bool>,
+    pub highlight_candidate_on_current_page: Option<extern "C" fn(RimeSessionId, usize) -> Bool>,
+    pub change_page: Option<extern "C" fn(RimeSessionId, Bool) -> Bool>,
 }
 
 const XK_BACKSPACE: c_int = 0xff08;
@@ -269,6 +428,115 @@ fn module_registry() -> &'static Mutex<ModuleRegistry> {
     MODULE_REGISTRY.get_or_init(|| Mutex::new(ModuleRegistry::default()))
 }
 
+fn api_entry() -> *mut RimeApi {
+    static API: OnceLock<usize> = OnceLock::new();
+    *API.get_or_init(|| Box::into_raw(Box::new(build_rime_api())) as usize) as *mut RimeApi
+}
+
+fn build_rime_api() -> RimeApi {
+    RimeApi {
+        data_size: (std::mem::size_of::<RimeApi>() - std::mem::size_of::<c_int>()) as c_int,
+        setup: Some(RimeSetup),
+        set_notification_handler: Some(RimeSetNotificationHandler),
+        initialize: Some(RimeInitialize),
+        finalize: Some(RimeFinalize),
+        start_maintenance: Some(RimeStartMaintenance),
+        is_maintenance_mode: Some(RimeIsMaintenancing),
+        join_maintenance_thread: Some(RimeJoinMaintenanceThread),
+        deployer_initialize: Some(RimeDeployerInitialize),
+        prebuild: Some(RimePrebuildAllSchemas),
+        deploy: Some(RimeDeployWorkspace),
+        deploy_schema: Some(RimeDeploySchema),
+        deploy_config_file: Some(RimeDeployConfigFile),
+        sync_user_data: Some(RimeSyncUserData),
+        create_session: Some(RimeCreateSession),
+        find_session: Some(RimeFindSession),
+        destroy_session: Some(RimeDestroySession),
+        cleanup_stale_sessions: Some(RimeCleanupStaleSessions),
+        cleanup_all_sessions: Some(RimeCleanupAllSessions),
+        process_key: Some(RimeProcessKey),
+        commit_composition: Some(RimeCommitComposition),
+        clear_composition: Some(RimeClearComposition),
+        get_commit: Some(RimeGetCommit),
+        free_commit: Some(RimeFreeCommit),
+        get_context: Some(RimeGetContext),
+        free_context: Some(RimeFreeContext),
+        get_status: Some(RimeGetStatus),
+        free_status: Some(RimeFreeStatus),
+        set_option: Some(RimeSetOption),
+        get_option: Some(RimeGetOption),
+        set_property: Some(RimeSetProperty),
+        get_property: Some(RimeGetProperty),
+        get_schema_list: Some(RimeGetSchemaList),
+        free_schema_list: Some(RimeFreeSchemaList),
+        get_current_schema: Some(RimeGetCurrentSchema),
+        select_schema: Some(RimeSelectSchema),
+        schema_open: None,
+        config_open: None,
+        config_close: None,
+        config_get_bool: None,
+        config_get_int: None,
+        config_get_double: None,
+        config_get_string: None,
+        config_get_cstring: None,
+        config_update_signature: None,
+        config_begin_map: None,
+        config_next: None,
+        config_end: None,
+        simulate_key_sequence: Some(RimeSimulateKeySequence),
+        register_module: Some(RimeRegisterModule),
+        find_module: Some(RimeFindModule),
+        run_task: Some(RimeRunTask),
+        get_shared_data_dir: Some(RimeGetSharedDataDir),
+        get_user_data_dir: Some(RimeGetUserDataDir),
+        get_sync_dir: Some(RimeGetSyncDir),
+        get_user_id: Some(RimeGetUserId),
+        get_user_data_sync_dir: Some(RimeGetUserDataSyncDir),
+        config_init: None,
+        config_load_string: None,
+        config_set_bool: None,
+        config_set_int: None,
+        config_set_double: None,
+        config_set_string: None,
+        config_get_item: None,
+        config_set_item: None,
+        config_clear: None,
+        config_create_list: None,
+        config_create_map: None,
+        config_list_size: None,
+        config_begin_list: None,
+        get_input: Some(RimeGetInput),
+        get_caret_pos: Some(RimeGetCaretPos),
+        select_candidate: Some(RimeSelectCandidate),
+        get_version: Some(RimeGetVersion),
+        set_caret_pos: Some(RimeSetCaretPos),
+        select_candidate_on_current_page: Some(RimeSelectCandidateOnCurrentPage),
+        candidate_list_begin: Some(RimeCandidateListBegin),
+        candidate_list_next: Some(RimeCandidateListNext),
+        candidate_list_end: Some(RimeCandidateListEnd),
+        user_config_open: None,
+        candidate_list_from_index: Some(RimeCandidateListFromIndex),
+        get_prebuilt_data_dir: Some(RimeGetPrebuiltDataDir),
+        get_staging_dir: Some(RimeGetStagingDir),
+        commit_proto: None,
+        context_proto: None,
+        status_proto: None,
+        get_state_label: None,
+        delete_candidate: Some(RimeDeleteCandidate),
+        delete_candidate_on_current_page: Some(RimeDeleteCandidateOnCurrentPage),
+        get_state_label_abbreviated: None,
+        set_input: Some(RimeSetInput),
+        get_shared_data_dir_s: Some(RimeGetSharedDataDirSecure),
+        get_user_data_dir_s: Some(RimeGetUserDataDirSecure),
+        get_prebuilt_data_dir_s: Some(RimeGetPrebuiltDataDirSecure),
+        get_staging_dir_s: Some(RimeGetStagingDirSecure),
+        get_sync_dir_s: Some(RimeGetSyncDirSecure),
+        highlight_candidate: Some(RimeHighlightCandidate),
+        highlight_candidate_on_current_page: Some(RimeHighlightCandidateOnCurrentPage),
+        change_page: Some(RimeChangePage),
+    }
+}
+
 #[must_use]
 pub const fn bool_from(value: bool) -> Bool {
     if value {
@@ -276,6 +544,11 @@ pub const fn bool_from(value: bool) -> Bool {
     } else {
         FALSE
     }
+}
+
+#[no_mangle]
+pub extern "C" fn rime_get_api() -> *mut RimeApi {
+    api_entry()
 }
 
 /// Stores process-wide runtime traits for later path queries.
@@ -1747,19 +2020,19 @@ mod tests {
     use yune_core::StaticTableTranslator;
 
     use super::{
-        bool_from, RimeCandidateListBegin, RimeCandidateListEnd, RimeCandidateListFromIndex,
-        RimeCandidateListIterator, RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions,
-        RimeCleanupStaleSessions, RimeClearComposition, RimeCommit, RimeCommitComposition,
-        RimeContext, RimeCreateSession, RimeCustomApi, RimeDeleteCandidate,
-        RimeDeleteCandidateOnCurrentPage, RimeDeployConfigFile, RimeDeploySchema,
-        RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession, RimeFinalize,
-        RimeFindModule, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus,
-        RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema, RimeGetInput,
-        RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure, RimeGetProperty,
-        RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure, RimeGetStagingDir,
-        RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir, RimeGetSyncDirSecure,
-        RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir, RimeGetUserId,
-        RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
+        bool_from, rime_get_api, RimeApi, RimeCandidateListBegin, RimeCandidateListEnd,
+        RimeCandidateListFromIndex, RimeCandidateListIterator, RimeCandidateListNext,
+        RimeChangePage, RimeCleanupAllSessions, RimeCleanupStaleSessions, RimeClearComposition,
+        RimeCommit, RimeCommitComposition, RimeContext, RimeCreateSession, RimeCustomApi,
+        RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage, RimeDeployConfigFile,
+        RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession,
+        RimeFinalize, RimeFindModule, RimeFindSession, RimeFreeCommit, RimeFreeContext,
+        RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
+        RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure,
+        RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure,
+        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir,
+        RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir,
+        RimeGetUserId, RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
         RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeModule,
         RimePrebuildAllSchemas, RimeProcessKey, RimeRegisterModule, RimeRunTask,
         RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos,
@@ -1903,6 +2176,56 @@ mod tests {
     fn maps_bool_to_rime_bool() {
         assert_eq!(bool_from(true), TRUE);
         assert_eq!(bool_from(false), FALSE);
+    }
+
+    #[test]
+    fn rime_get_api_exposes_current_function_table() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+
+        let api = rime_get_api();
+        assert!(!api.is_null());
+        // SAFETY: `rime_get_api` returns a process-lifetime pointer to an
+        // initialized function table.
+        let api = unsafe { &*api };
+        assert_eq!(
+            api.data_size,
+            (std::mem::size_of::<RimeApi>() - std::mem::size_of::<i32>()) as i32
+        );
+
+        let create_session = api.create_session.expect("session API should be present");
+        let find_session = api.find_session.expect("session API should be present");
+        let process_key = api.process_key.expect("input API should be present");
+        let get_commit = api.get_commit.expect("commit API should be present");
+        let free_commit = api.free_commit.expect("commit API should be present");
+        let cleanup_all_sessions = api
+            .cleanup_all_sessions
+            .expect("cleanup API should be present");
+
+        assert!(api.config_open.is_none());
+        assert!(api.commit_proto.is_none());
+        assert!(api.get_state_label.is_none());
+
+        let session_id = create_session();
+        assert_eq!(find_session(session_id), TRUE);
+        assert_eq!(process_key(session_id, 'n' as i32, 0), TRUE);
+        assert_eq!(process_key(session_id, 'i' as i32, 0), TRUE);
+        assert_eq!(process_key(session_id, ' ' as i32, 0), TRUE);
+
+        let mut commit = RimeCommit {
+            data_size: std::mem::size_of::<RimeCommit>() as i32,
+            text: std::ptr::null_mut(),
+        };
+        // SAFETY: commit points to valid writable storage.
+        assert_eq!(unsafe { get_commit(session_id, &mut commit) }, TRUE);
+        // SAFETY: `get_commit` returned true and populated a valid C string.
+        let text = unsafe { CStr::from_ptr(commit.text) };
+        assert_eq!(text.to_str(), Ok("ni"));
+        // SAFETY: commit.text was allocated by the shim above.
+        assert_eq!(unsafe { free_commit(&mut commit) }, TRUE);
+
+        cleanup_all_sessions();
+        assert_eq!(find_session(session_id), FALSE);
     }
 
     #[test]

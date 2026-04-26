@@ -1675,7 +1675,10 @@ pub extern "C" fn RimeDeployWorkspace() -> Bool {
 
 #[no_mangle]
 pub extern "C" fn RimeDeploySchema(schema_file: *const c_char) -> Bool {
-    bool_from(!schema_file.is_null())
+    let Some(schema_file) = optional_c_string(schema_file) else {
+        return FALSE;
+    };
+    bool_from(deploy_schema_file(&schema_file))
 }
 
 #[no_mangle]
@@ -4113,6 +4116,39 @@ fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
     fs::copy(source, destination).is_ok()
 }
 
+fn deploy_schema_file(schema_file: &str) -> bool {
+    if schema_file.is_empty() {
+        return false;
+    }
+
+    let shared_data_dir = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned())
+    };
+    let source = shared_data_dir.join(schema_file);
+    if !source.is_file() {
+        return false;
+    }
+
+    let schema_config = match fs::read_to_string(source)
+        .ok()
+        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
+    {
+        Some(schema_config) => schema_config,
+        None => return false,
+    };
+    let Some(schema_id) = find_config_value(&schema_config, "schema/schema_id")
+        .and_then(Value::as_str)
+        .filter(|schema_id| !schema_id.is_empty())
+    else {
+        return false;
+    };
+
+    deploy_config_file(&format!("{schema_id}.schema.yaml"), "schema/version")
+}
+
 fn should_cleanup_trash_file(path: &Path) -> bool {
     let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
         return false;
@@ -6054,6 +6090,11 @@ backup_config_files: false
         fs::create_dir_all(&shared_path).expect("shared dir should be created");
         fs::write(shared_path.join("default.yaml"), "config_version: test\n")
             .expect("shared config should be written");
+        fs::write(
+            shared_path.join("default.schema.yaml"),
+            "schema:\n  schema_id: default\n  name: Default\n  version: test\n",
+        )
+        .expect("shared schema should be written");
         let shared =
             CString::new(shared_path.to_string_lossy().as_ref()).expect("path should be valid");
         let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
@@ -6162,6 +6203,84 @@ backup_config_files: false
             RimeDeployConfigFile(missing.as_ptr(), version_key.as_ptr()),
             FALSE
         );
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn deploy_schema_validates_and_copies_shared_schema_to_staging() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("deploy-schema");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        fs::create_dir_all(shared.join("build")).expect("prebuilt dir should be created");
+        fs::write(
+            shared.join("luna.schema.yaml"),
+            "\
+schema:
+  schema_id: luna
+  name: Luna
+  version: '2.0'
+",
+        )
+        .expect("shared schema should be written");
+        fs::write(
+            shared.join("build").join("luna.schema.yaml"),
+            "\
+schema:
+  schema_id: luna
+  name: Old Luna
+  version: '1.0'
+",
+        )
+        .expect("prebuilt schema should be written");
+        fs::write(
+            shared.join("invalid.schema.yaml"),
+            "schema:\n  name: Missing Id\n",
+        )
+        .expect("invalid schema should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let schema_file = CString::new("luna.schema.yaml").expect("schema file should be valid");
+        let invalid_schema =
+            CString::new("invalid.schema.yaml").expect("schema file should be valid");
+        let missing_schema =
+            CString::new("missing.schema.yaml").expect("schema file should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(RimeDeploySchema(schema_file.as_ptr()), TRUE);
+        assert!(user.join("build").join("luna.schema.yaml").is_file());
+
+        let schema_id = CString::new("luna").expect("schema id should be valid");
+        let mut config = empty_config();
+        // SAFETY: schema id and config pointer are valid for the call.
+        assert_eq!(
+            unsafe { RimeSchemaOpen(schema_id.as_ptr(), &mut config) },
+            TRUE
+        );
+        assert_eq!(
+            config_string(&mut config, "schema/name").as_deref(),
+            Some("Luna")
+        );
+        assert_eq!(
+            config_string(&mut config, "schema/version").as_deref(),
+            Some("2.0")
+        );
+        // SAFETY: config was opened by the config API.
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+        assert_eq!(RimeDeploySchema(invalid_schema.as_ptr()), FALSE);
+        assert_eq!(RimeDeploySchema(missing_schema.as_ptr()), FALSE);
+        assert_eq!(RimeDeploySchema(std::ptr::null()), FALSE);
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

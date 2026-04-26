@@ -562,6 +562,12 @@ fn module_registry() -> &'static Mutex<ModuleRegistry> {
     MODULE_REGISTRY.get_or_init(|| Mutex::new(ModuleRegistry::default()))
 }
 
+fn switcher_selection_registry() -> &'static Mutex<HashMap<usize, Option<Vec<String>>>> {
+    static SWITCHER_SELECTION_REGISTRY: OnceLock<Mutex<HashMap<usize, Option<Vec<String>>>>> =
+        OnceLock::new();
+    SWITCHER_SELECTION_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 fn levers_module() -> *mut RimeModule {
     static LEVERS_MODULE: OnceLock<usize> = OnceLock::new();
     *LEVERS_MODULE.get_or_init(|| {
@@ -605,7 +611,7 @@ fn build_levers_api() -> RimeLeversApi {
         get_schema_author: Some(RimeLeversGetSchemaAuthor),
         get_schema_description: Some(RimeLeversGetSchemaDescription),
         get_schema_file_path: Some(RimeLeversGetSchemaFilePath),
-        select_schemas: None,
+        select_schemas: Some(RimeLeversSelectSchemas),
         get_hotkeys: Some(RimeLeversGetHotkeys),
         set_hotkeys: Some(RimeLeversSetHotkeys),
         user_dict_iterator_init: None,
@@ -863,7 +869,12 @@ pub unsafe extern "C" fn RimeFindModule(module_name: *const c_char) -> *mut Rime
 
 #[no_mangle]
 pub extern "C" fn RimeSwitcherSettingsInit() -> *mut RimeSwitcherSettings {
-    Box::into_raw(Box::new(RimeSwitcherSettings { placeholder: 0 }))
+    let settings = Box::into_raw(Box::new(RimeSwitcherSettings { placeholder: 0 }));
+    switcher_selection_registry()
+        .lock()
+        .expect("switcher selection registry should not be poisoned")
+        .insert(settings as usize, None);
+    settings
 }
 
 /// Initializes levers custom settings for a deployed config id.
@@ -1158,7 +1169,14 @@ pub unsafe extern "C" fn RimeLeversGetSelectedSchemaList(
     }
 
     clear_schema_list(list);
-    populate_schema_id_list(list, deployed_selected_schema_ids())
+    let selected_schema_ids = switcher_selection_registry()
+        .lock()
+        .expect("switcher selection registry should not be poisoned")
+        .get(&(settings as usize))
+        .cloned()
+        .flatten()
+        .unwrap_or_else(deployed_selected_schema_ids);
+    populate_schema_id_list(list, selected_schema_ids)
 }
 
 /// Returns the schema id from a levers schema-info pointer.
@@ -1238,6 +1256,41 @@ pub unsafe extern "C" fn RimeLeversGetSchemaFilePath(info: *mut RimeSchemaInfo) 
             info.file_path.as_ref().map(|value| value.as_ptr())
         })
     }
+}
+
+/// Selects schema IDs on the opaque switcher settings object.
+///
+/// # Safety
+///
+/// `settings` must either be a pointer returned by `RimeSwitcherSettingsInit`
+/// or null. `schema_id_list` must point to `count` valid NUL-terminated
+/// strings when `count` is positive.
+#[no_mangle]
+pub unsafe extern "C" fn RimeLeversSelectSchemas(
+    settings: *mut RimeSwitcherSettings,
+    schema_id_list: *const *const c_char,
+    count: c_int,
+) -> Bool {
+    if settings.is_null() || count < 0 || (count > 0 && schema_id_list.is_null()) {
+        return FALSE;
+    }
+
+    let mut selected_schema_ids = Vec::with_capacity(count as usize);
+    for index in 0..count as usize {
+        // SAFETY: callers promise `schema_id_list` has `count` readable entries
+        // when count is positive.
+        let schema_id = unsafe { *schema_id_list.add(index) };
+        let Some(schema_id) = (unsafe { c_string_key(schema_id) }) else {
+            return FALSE;
+        };
+        selected_schema_ids.push(schema_id);
+    }
+
+    switcher_selection_registry()
+        .lock()
+        .expect("switcher selection registry should not be poisoned")
+        .insert(settings as usize, Some(selected_schema_ids));
+    TRUE
 }
 
 /// Returns switcher hotkeys from the deployed default config.
@@ -5346,6 +5399,7 @@ schema:
         assert!(api.get_schema_author.is_some());
         assert!(api.get_schema_description.is_some());
         assert!(api.get_schema_file_path.is_some());
+        assert!(api.select_schemas.is_some());
 
         let settings = (api
             .switcher_settings_init
@@ -5450,14 +5504,61 @@ schema:
         let destroy = api
             .schema_list_destroy
             .expect("schema-list destroy should be available");
-        // SAFETY: schema_list was populated by the levers API above.
-        unsafe { destroy(&mut schema_list) };
-        assert_eq!(schema_list.size, 0);
-        assert!(schema_list.list.is_null());
         // SAFETY: selected_list was populated by the levers API above.
         unsafe { destroy(&mut selected_list) };
         assert_eq!(selected_list.size, 0);
         assert!(selected_list.list.is_null());
+
+        let select_schemas = api
+            .select_schemas
+            .expect("select_schemas should be available");
+        let selected_luna = CString::new("luna_pinyin").expect("schema id should be valid");
+        let selected_terra = CString::new("terra_pinyin").expect("schema id should be valid");
+        let schema_ids = [selected_terra.as_ptr(), selected_luna.as_ptr()];
+        // SAFETY: settings, schema_ids, and each C string are valid for the call.
+        assert_eq!(
+            unsafe { select_schemas(settings, schema_ids.as_ptr(), schema_ids.len() as i32) },
+            TRUE
+        );
+        let mut overridden_selected_list = empty_schema_list();
+        // SAFETY: settings and selected list output are valid.
+        assert_eq!(
+            unsafe { get_selected(settings, &mut overridden_selected_list) },
+            TRUE
+        );
+        assert_eq!(overridden_selected_list.size, 2);
+        // SAFETY: the levers API populated two selected schema-list items.
+        let overridden_first = unsafe { *overridden_selected_list.list };
+        // SAFETY: the second item is in bounds because size is 2.
+        let overridden_second = unsafe { *overridden_selected_list.list.add(1) };
+        // SAFETY: selected schema-list ids are valid NUL-terminated strings.
+        let overridden_first_id = unsafe { CStr::from_ptr(overridden_first.schema_id) };
+        // SAFETY: selected schema-list ids are valid NUL-terminated strings.
+        let overridden_second_id = unsafe { CStr::from_ptr(overridden_second.schema_id) };
+        assert_eq!(overridden_first_id.to_str(), Ok("terra_pinyin"));
+        assert_eq!(overridden_second_id.to_str(), Ok("luna_pinyin"));
+        assert!(overridden_first.name.is_null());
+        assert!(overridden_first.reserved.is_null());
+        assert!(overridden_second.name.is_null());
+        assert!(overridden_second.reserved.is_null());
+        // SAFETY: null settings and null schema arrays are rejected.
+        assert_eq!(
+            unsafe { select_schemas(std::ptr::null_mut(), schema_ids.as_ptr(), 1) },
+            FALSE
+        );
+        assert_eq!(
+            unsafe { select_schemas(settings, std::ptr::null(), 1) },
+            FALSE
+        );
+        // SAFETY: overridden_selected_list was populated by the levers API above.
+        unsafe { destroy(&mut overridden_selected_list) };
+        assert_eq!(overridden_selected_list.size, 0);
+        assert!(overridden_selected_list.list.is_null());
+
+        // SAFETY: schema_list was populated by the levers API above.
+        unsafe { destroy(&mut schema_list) };
+        assert_eq!(schema_list.size, 0);
+        assert!(schema_list.list.is_null());
         // SAFETY: settings was allocated by this shim's switcher init function.
         unsafe { drop(Box::from_raw(settings)) };
 

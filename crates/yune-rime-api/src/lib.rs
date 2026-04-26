@@ -943,6 +943,21 @@ pub extern "C" fn RimeSelectCandidateOnCurrentPage(
 }
 
 #[no_mangle]
+pub extern "C" fn RimeDeleteCandidate(session_id: RimeSessionId, index: usize) -> Bool {
+    with_session(session_id, |session| session.engine.delete_candidate(index))
+}
+
+#[no_mangle]
+pub extern "C" fn RimeDeleteCandidateOnCurrentPage(
+    session_id: RimeSessionId,
+    index: usize,
+) -> Bool {
+    with_session(session_id, |session| {
+        session.engine.delete_candidate_on_current_page(index)
+    })
+}
+
+#[no_mangle]
 pub extern "C" fn RimeHighlightCandidate(session_id: RimeSessionId, index: usize) -> Bool {
     with_session(session_id, |session| {
         session.engine.highlight_candidate(index)
@@ -1654,15 +1669,15 @@ mod tests {
         bool_from, RimeCandidateListBegin, RimeCandidateListEnd, RimeCandidateListFromIndex,
         RimeCandidateListIterator, RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions,
         RimeCleanupStaleSessions, RimeClearComposition, RimeCommit, RimeCommitComposition,
-        RimeContext, RimeCreateSession, RimeDeployConfigFile, RimeDeploySchema,
-        RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession, RimeFinalize,
-        RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus, RimeGetCaretPos,
-        RimeGetCommit, RimeGetContext, RimeGetCurrentSchema, RimeGetInput, RimeGetOption,
-        RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure, RimeGetProperty, RimeGetSchemaList,
-        RimeGetSharedDataDir, RimeGetSharedDataDirSecure, RimeGetStagingDir,
-        RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir, RimeGetSyncDirSecure,
-        RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir, RimeGetUserId,
-        RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
+        RimeContext, RimeCreateSession, RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage,
+        RimeDeployConfigFile, RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize,
+        RimeDestroySession, RimeFinalize, RimeFindSession, RimeFreeCommit, RimeFreeContext,
+        RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
+        RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure,
+        RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure,
+        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir,
+        RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir,
+        RimeGetUserId, RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
         RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimePrebuildAllSchemas,
         RimeProcessKey, RimeRunTask, RimeSelectCandidate, RimeSelectCandidateOnCurrentPage,
         RimeSelectSchema, RimeSetCaretPos, RimeSetInput, RimeSetNotificationHandler, RimeSetOption,
@@ -2221,6 +2236,70 @@ mod tests {
         // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
         assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
 
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn delete_candidate_apis_remove_menu_items_without_commit() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        {
+            let mut registry = super::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get_mut(&session_id)
+                .expect("session should exist");
+            session.engine.add_translator(StaticTableTranslator::new([
+                ("ba", "八"),
+                ("ba", "吧"),
+                ("ba", "爸"),
+                ("ba", "巴"),
+                ("ba", "把"),
+                ("ba", "拔"),
+            ]));
+        }
+        let mut commit = RimeCommit {
+            data_size: 0,
+            text: std::ptr::null_mut(),
+        };
+        let mut context = empty_context();
+
+        assert_eq!(RimeDeleteCandidate(session_id, 0), FALSE);
+        assert_eq!(RimeProcessKey(session_id, 'b' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'a' as i32, 0), TRUE);
+        assert_eq!(RimeDeleteCandidate(session_id, 1), TRUE);
+        assert_eq!(RimeDeleteCandidate(session_id, 99), FALSE);
+
+        // SAFETY: `commit` points to valid writable storage for this test.
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+        // SAFETY: `context` points to writable storage initialized with a
+        // positive `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        assert_eq!(context.menu.num_candidates, 5);
+        // SAFETY: `context.menu.candidates` points to initialized candidates.
+        let second_candidate = unsafe { *context.menu.candidates.add(1) };
+        // SAFETY: candidate text is a valid NUL-terminated string owned by the
+        // context object.
+        let second_text = unsafe { CStr::from_ptr(second_candidate.text) };
+        assert_eq!(second_text.to_str(), Ok("爸"));
+        // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+        assert_eq!(RimeChangePage(session_id, FALSE), TRUE);
+        assert_eq!(RimeDeleteCandidateOnCurrentPage(session_id, 0), TRUE);
+        assert_eq!(RimeDeleteCandidateOnCurrentPage(session_id, 5), FALSE);
+        // SAFETY: `context` points to writable storage initialized with a
+        // positive `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        assert_eq!(context.menu.page_no, 0);
+        assert_eq!(context.menu.num_candidates, 5);
+        // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+        assert_eq!(RimeDeleteCandidate(0, 0), FALSE);
         assert_eq!(RimeDestroySession(session_id), TRUE);
     }
 

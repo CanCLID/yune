@@ -785,6 +785,29 @@ impl Engine {
         self.highlight_candidate(page_start + index)
     }
 
+    pub fn delete_candidate(&mut self, index: usize) -> bool {
+        if index >= self.context.candidates.len() {
+            return false;
+        }
+        self.context.candidates.remove(index);
+        if self.context.candidates.is_empty() {
+            self.context.highlighted = 0;
+        } else if index < self.context.highlighted {
+            self.context.highlighted -= 1;
+        } else if self.context.highlighted >= self.context.candidates.len() {
+            self.context.highlighted = self.context.candidates.len() - 1;
+        }
+        true
+    }
+
+    pub fn delete_candidate_on_current_page(&mut self, index: usize) -> bool {
+        if index >= DEFAULT_PAGE_SIZE {
+            return false;
+        }
+        let page_start = (self.context.highlighted / DEFAULT_PAGE_SIZE) * DEFAULT_PAGE_SIZE;
+        self.delete_candidate(page_start + index)
+    }
+
     pub fn change_page(&mut self, backward: bool) -> bool {
         if self.context.candidates.is_empty() {
             return false;
@@ -1009,6 +1032,39 @@ mod tests {
         assert_eq!(engine.context().highlighted, 0);
 
         assert_eq!(engine.commit_composition().as_deref(), Some("八"));
+    }
+
+    #[test]
+    fn direct_candidate_deletion_removes_menu_items_without_committing() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([
+            ("ba", "八"),
+            ("ba", "吧"),
+            ("ba", "爸"),
+            ("ba", "巴"),
+            ("ba", "把"),
+            ("ba", "拔"),
+        ]));
+
+        engine
+            .process_key_sequence("ba")
+            .expect("key sequence should parse");
+        assert!(engine.delete_candidate(1));
+        assert_eq!(engine.context().candidates[1].text, "爸");
+        assert_eq!(engine.context().last_commit, None);
+        assert!(!engine.delete_candidate(99));
+
+        assert!(engine.change_page(false));
+        assert!(engine.delete_candidate_on_current_page(0));
+        assert_eq!(
+            engine
+                .context()
+                .candidates
+                .last()
+                .map(|candidate| candidate.text.as_str()),
+            Some("拔")
+        );
+        assert!(!engine.delete_candidate_on_current_page(5));
     }
 
     #[test]

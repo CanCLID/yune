@@ -715,6 +715,16 @@ impl Engine {
             .collect())
     }
 
+    pub fn commit_composition(&mut self) -> Option<String> {
+        self.commit_highlighted()
+    }
+
+    pub fn clear_composition(&mut self) {
+        self.context.composition = Composition::default();
+        self.context.candidates.clear();
+        self.context.highlighted = 0;
+    }
+
     #[must_use]
     pub fn context(&self) -> &Context {
         &self.context
@@ -762,9 +772,7 @@ impl Engine {
             .get(candidate_index)
             .map(|candidate| candidate.text.clone())?;
         self.context.last_commit = Some(text.clone());
-        self.context.composition = Composition::default();
-        self.context.candidates.clear();
-        self.context.highlighted = 0;
+        self.clear_composition();
         Some(text)
     }
 
@@ -945,6 +953,28 @@ sort: by_weight
 
         assert_eq!(commits, ["你好"]);
         assert_eq!(engine.context().last_commit.as_deref(), Some("你好"));
+    }
+
+    #[test]
+    fn explicit_composition_control_commits_or_clears_active_input() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        engine
+            .process_key_sequence("ni")
+            .expect("key sequence should parse");
+        assert_eq!(engine.commit_composition().as_deref(), Some("你"));
+        assert!(!engine.status().is_composing);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("你"));
+
+        engine
+            .process_key_sequence("hao")
+            .expect("key sequence should parse");
+        engine.clear_composition();
+        assert!(!engine.status().is_composing);
+        assert!(engine.context().candidates.is_empty());
+        assert_eq!(engine.context().last_commit.as_deref(), Some("你"));
+        assert_eq!(engine.commit_composition(), None);
     }
 
     #[test]

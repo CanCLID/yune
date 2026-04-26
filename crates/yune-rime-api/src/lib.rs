@@ -194,6 +194,40 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     bool_from(matches!(key_event.code, KeyCode::Character(ch) if ch != ' ') || was_composing)
 }
 
+#[no_mangle]
+pub extern "C" fn RimeCommitComposition(session_id: RimeSessionId) -> Bool {
+    if session_id == 0 {
+        return FALSE;
+    }
+
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let Some(session) = registry.sessions.get_mut(&session_id) else {
+        return FALSE;
+    };
+    let Some(commit) = session.engine.commit_composition() else {
+        return FALSE;
+    };
+
+    session.unread_commit = Some(commit);
+    TRUE
+}
+
+#[no_mangle]
+pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
+    if session_id == 0 {
+        return;
+    }
+
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    if let Some(session) = registry.sessions.get_mut(&session_id) {
+        session.engine.clear_composition();
+    }
+}
+
 /// Copies the unread commit text for a session into a caller-provided commit.
 ///
 /// # Safety
@@ -580,9 +614,10 @@ mod tests {
     use yune_core::StaticTableTranslator;
 
     use super::{
-        bool_from, RimeCleanupAllSessions, RimeCommit, RimeContext, RimeCreateSession,
-        RimeDestroySession, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus,
-        RimeGetCommit, RimeGetContext, RimeGetStatus, RimeProcessKey, RimeStatus, FALSE, TRUE,
+        bool_from, RimeCleanupAllSessions, RimeClearComposition, RimeCommit, RimeCommitComposition,
+        RimeContext, RimeCreateSession, RimeDestroySession, RimeFindSession, RimeFreeCommit,
+        RimeFreeContext, RimeFreeStatus, RimeGetCommit, RimeGetContext, RimeGetStatus,
+        RimeProcessKey, RimeStatus, FALSE, TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -714,6 +749,75 @@ mod tests {
         assert_eq!(text.to_str(), Ok("吧"));
         // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
         assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn commits_composition_explicitly_and_returns_unread_commit() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        {
+            let mut registry = super::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get_mut(&session_id)
+                .expect("session should exist");
+            session
+                .engine
+                .add_translator(StaticTableTranslator::new([("ni", "你")]));
+        }
+        let mut commit = RimeCommit {
+            data_size: 0,
+            text: std::ptr::null_mut(),
+        };
+        let mut context = empty_context();
+
+        assert_eq!(RimeCommitComposition(session_id), FALSE);
+        assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+        assert_eq!(RimeCommitComposition(session_id), TRUE);
+        // SAFETY: `commit` points to valid writable storage for this test.
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+        // SAFETY: `RimeGetCommit` returned true and populated `text`.
+        let text = unsafe { CStr::from_ptr(commit.text) };
+        assert_eq!(text.to_str(), Ok("你"));
+        // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+        assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+
+        // SAFETY: `context` points to writable storage initialized with a
+        // positive `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        assert_eq!(context.composition.length, 0);
+        assert_eq!(context.menu.num_candidates, 0);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn clears_composition_without_creating_commit() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        let mut commit = RimeCommit {
+            data_size: 0,
+            text: std::ptr::null_mut(),
+        };
+        let mut context = empty_context();
+
+        assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+        RimeClearComposition(session_id);
+        // SAFETY: `commit` points to valid writable storage for this test.
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+        // SAFETY: `context` points to writable storage initialized with a
+        // positive `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        assert_eq!(context.composition.length, 0);
+        assert_eq!(context.menu.num_candidates, 0);
 
         assert_eq!(RimeDestroySession(session_id), TRUE);
     }

@@ -4718,15 +4718,19 @@ fn apply_node_patch_directive(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
 ) -> Option<bool> {
-    let patch = {
+    let (patch, directive_only_node) = {
         let Value::Mapping(mapping) = root else {
             return Some(false);
         };
-        mapping.remove(Value::String("__patch".to_owned()))
+        let patch = mapping.remove(Value::String("__patch".to_owned()));
+        (patch, mapping.is_empty())
     };
     let Some(patch) = patch else {
         return Some(false);
     };
+    if directive_only_node {
+        *root = Value::Null;
+    }
     apply_patch_directive(root, &patch, shared_data_dir, patch_dependencies)?;
     Some(true)
 }
@@ -4893,12 +4897,6 @@ fn append_config_value(target: &mut Value, value: Value) -> bool {
 
 fn merge_config_value(target: &mut Value, value: Value) -> bool {
     let Value::Mapping(patch) = value else {
-        return false;
-    };
-    if target.is_null() {
-        *target = Value::Mapping(Mapping::new());
-    }
-    let Value::Mapping(_) = target else {
         return false;
     };
     for (key, value) in patch {
@@ -7979,6 +7977,97 @@ settings:
                 .and_then(Value::as_i64)
                 .is_some_and(|timestamp| timestamp > 0)
         );
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn deploy_config_file_merges_include_directives_into_list_nodes() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("deploy-config-include-list-merge");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let staging = user.join("build");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "\
+config_version: '2.0'
+combined_units:
+  __include: units.yaml:/base_units
+  __append:
+    - medic
+    - goliath
+all_units:
+  __patch:
+    - __append:
+        - scv
+        - marine
+    - __append:
+        - firebat
+",
+        )
+        .expect("shared config should be written");
+        fs::write(
+            shared.join("units.yaml"),
+            "\
+base_units:
+  - scv
+  - marine
+",
+        )
+        .expect("included config should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let config_file = CString::new("default.yaml").expect("file should be valid");
+        let version_key = CString::new("config_version").expect("key should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        let staged: Value = serde_yaml::from_str(
+            &fs::read_to_string(staging.join("default.yaml"))
+                .expect("staged config should be readable"),
+        )
+        .expect("staged config should parse");
+        assert_eq!(
+            find_config_value(&staged, "combined_units/@0").and_then(Value::as_str),
+            Some("scv")
+        );
+        assert_eq!(
+            find_config_value(&staged, "combined_units/@3").and_then(Value::as_str),
+            Some("goliath")
+        );
+        assert_eq!(
+            find_config_value(&staged, "all_units/@0").and_then(Value::as_str),
+            Some("scv")
+        );
+        assert_eq!(
+            find_config_value(&staged, "all_units/@2").and_then(Value::as_str),
+            Some("firebat")
+        );
+        assert!(find_config_value(&staged, "__build_info/timestamps/units")
+            .and_then(Value::as_i64)
+            .is_some_and(|timestamp| timestamp > 0));
+        assert_eq!(
+            find_config_value(&staged, "combined_units/@1").and_then(Value::as_str),
+            Some("marine")
+        );
+        assert!(find_config_value(&staged, "combined_units/__include").is_none());
+        assert!(find_config_value(&staged, "combined_units/__append").is_none());
+        assert!(find_config_value(&staged, "all_units/__patch").is_none());
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

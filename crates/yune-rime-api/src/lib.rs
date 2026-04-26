@@ -6,7 +6,7 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
-use yune_core::{Engine, KeyCode, KeyEvent, KeyModifiers};
+use yune_core::{parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers};
 
 pub type RimeSessionId = usize;
 pub type Bool = c_int;
@@ -361,6 +361,45 @@ pub unsafe extern "C" fn RimeGetOption(session_id: RimeSessionId, option: *const
     with_session(session_id, |session| {
         session.engine.get_option(&option.to_string_lossy())
     })
+}
+
+/// Processes a librime-style key sequence against a session.
+///
+/// # Safety
+///
+/// `key_sequence` must be either null or point to a valid, nul-terminated C
+/// string. Null or unparsable sequences are rejected without mutating the
+/// session.
+#[no_mangle]
+pub unsafe extern "C" fn RimeSimulateKeySequence(
+    session_id: RimeSessionId,
+    key_sequence: *const c_char,
+) -> Bool {
+    if session_id == 0 || key_sequence.is_null() {
+        return FALSE;
+    }
+    // SAFETY: callers promise that `key_sequence` is a valid nul-terminated
+    // string.
+    let Ok(key_sequence) = unsafe { CStr::from_ptr(key_sequence) }.to_str() else {
+        return FALSE;
+    };
+    let Ok(key_events) = parse_key_sequence(key_sequence) else {
+        return FALSE;
+    };
+
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let Some(session) = registry.sessions.get_mut(&session_id) else {
+        return FALSE;
+    };
+
+    for key_event in key_events {
+        if let Some(commit) = session.engine.process_key_event(key_event) {
+            session.unread_commit = Some(commit);
+        }
+    }
+    TRUE
 }
 
 #[no_mangle]
@@ -984,7 +1023,7 @@ mod tests {
         RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetInput, RimeGetOption, RimeGetStatus,
         RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage, RimeProcessKey,
         RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSetCaretPos, RimeSetInput,
-        RimeSetOption, RimeStatus, FALSE, TRUE,
+        RimeSetOption, RimeSimulateKeySequence, RimeStatus, FALSE, TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -1602,6 +1641,70 @@ mod tests {
         assert_eq!(unsafe { RimeGetOption(0, ascii_mode.as_ptr()) }, FALSE);
         assert_eq!(
             unsafe { RimeGetOption(session_id, std::ptr::null()) },
+            FALSE
+        );
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn simulates_librime_style_key_sequences() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        {
+            let mut registry = super::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get_mut(&session_id)
+                .expect("session should exist");
+            session
+                .engine
+                .add_translator(StaticTableTranslator::new([("ni", "你")]));
+        }
+        let sequence = CString::new("ni{space}").expect("key sequence should be valid");
+        let invalid_sequence =
+            CString::new("x{Unknown}").expect("key sequence should be valid C string");
+        let mut commit = RimeCommit {
+            data_size: 0,
+            text: std::ptr::null_mut(),
+        };
+        let mut context = empty_context();
+
+        // SAFETY: sequence is a valid nul-terminated C string.
+        assert_eq!(
+            unsafe { RimeSimulateKeySequence(session_id, sequence.as_ptr()) },
+            TRUE
+        );
+        // SAFETY: `commit` points to valid writable storage for this test.
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+        // SAFETY: `RimeGetCommit` returned true and populated `text`.
+        let text = unsafe { CStr::from_ptr(commit.text) };
+        assert_eq!(text.to_str(), Ok("你"));
+        // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+        assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+
+        // SAFETY: invalid sequence is a valid C string but should fail parsing.
+        assert_eq!(
+            unsafe { RimeSimulateKeySequence(session_id, invalid_sequence.as_ptr()) },
+            FALSE
+        );
+        // SAFETY: parse failures should not partially apply the leading `x`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        assert_eq!(context.composition.length, 0);
+        assert_eq!(context.menu.num_candidates, 0);
+        // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+        // SAFETY: null and invalid sessions are explicitly rejected.
+        assert_eq!(
+            unsafe { RimeSimulateKeySequence(session_id, std::ptr::null()) },
+            FALSE
+        );
+        assert_eq!(
+            unsafe { RimeSimulateKeySequence(session_id + 1, sequence.as_ptr()) },
             FALSE
         );
 

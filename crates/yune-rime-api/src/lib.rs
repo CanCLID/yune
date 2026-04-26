@@ -621,10 +621,10 @@ fn build_levers_api() -> RimeLeversApi {
         user_dict_iterator_init: Some(RimeLeversUserDictIteratorInit),
         user_dict_iterator_destroy: Some(RimeLeversUserDictIteratorDestroy),
         next_user_dict: Some(RimeLeversNextUserDict),
-        backup_user_dict: None,
-        restore_user_dict: None,
-        export_user_dict: None,
-        import_user_dict: None,
+        backup_user_dict: Some(RimeLeversBackupUserDict),
+        restore_user_dict: Some(RimeLeversRestoreUserDict),
+        export_user_dict: Some(RimeLeversExportUserDict),
+        import_user_dict: Some(RimeLeversImportUserDict),
         customize_item: Some(RimeLeversCustomizeItem),
     }
 }
@@ -1414,6 +1414,139 @@ pub unsafe extern "C" fn RimeLeversNextUserDict(
         (*iterator).i = (*iterator).i.saturating_add(1);
     }
     name.as_ptr()
+}
+
+/// Backs up a plain file-backed user dictionary into the user sync directory.
+///
+/// # Safety
+///
+/// `dict_name` must be null or point to a valid NUL-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn RimeLeversBackupUserDict(dict_name: *const c_char) -> Bool {
+    let Some(dict_name) = optional_c_string(dict_name) else {
+        return FALSE;
+    };
+    if dict_name.is_empty() {
+        return FALSE;
+    }
+
+    let source = user_dict_path(&dict_name);
+    if !source.is_file() {
+        return FALSE;
+    }
+    let snapshot = user_dict_snapshot_path(&dict_name);
+    if let Some(parent) = snapshot.parent() {
+        if fs::create_dir_all(parent).is_err() {
+            return FALSE;
+        }
+    }
+    bool_from(fs::copy(source, snapshot).is_ok())
+}
+
+/// Restores a plain user dictionary snapshot into the user data directory.
+///
+/// # Safety
+///
+/// `snapshot_file` must be null or point to a valid NUL-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn RimeLeversRestoreUserDict(snapshot_file: *const c_char) -> Bool {
+    let Some(snapshot_file) = optional_c_string(snapshot_file) else {
+        return FALSE;
+    };
+    let snapshot = PathBuf::from(snapshot_file);
+    if !snapshot.is_file() {
+        return FALSE;
+    }
+    let Some(dict_name) = snapshot_dict_name(&snapshot) else {
+        return FALSE;
+    };
+    let destination = user_dict_path(&dict_name);
+    if let Some(parent) = destination.parent() {
+        if fs::create_dir_all(parent).is_err() {
+            return FALSE;
+        }
+    }
+    bool_from(fs::copy(snapshot, destination).is_ok())
+}
+
+/// Exports a plain file-backed user dictionary to a text file.
+///
+/// # Safety
+///
+/// `dict_name` and `text_file` must be null or point to valid NUL-terminated C
+/// strings.
+#[no_mangle]
+pub unsafe extern "C" fn RimeLeversExportUserDict(
+    dict_name: *const c_char,
+    text_file: *const c_char,
+) -> c_int {
+    let Some(dict_name) = optional_c_string(dict_name) else {
+        return -1;
+    };
+    let Some(text_file) = optional_c_string(text_file) else {
+        return -1;
+    };
+    if dict_name.is_empty() || text_file.is_empty() {
+        return -1;
+    }
+
+    let source = user_dict_path(&dict_name);
+    if !source.is_file() {
+        return -1;
+    }
+    let Ok(entry_count) = count_text_user_dict_entries(&source) else {
+        return -1;
+    };
+    let destination = PathBuf::from(text_file);
+    if let Some(parent) = destination.parent() {
+        if fs::create_dir_all(parent).is_err() {
+            return -1;
+        }
+    }
+    if fs::copy(source, destination).is_err() {
+        return -1;
+    }
+    entry_count
+}
+
+/// Imports a text file as a plain file-backed user dictionary.
+///
+/// # Safety
+///
+/// `dict_name` and `text_file` must be null or point to valid NUL-terminated C
+/// strings.
+#[no_mangle]
+pub unsafe extern "C" fn RimeLeversImportUserDict(
+    dict_name: *const c_char,
+    text_file: *const c_char,
+) -> c_int {
+    let Some(dict_name) = optional_c_string(dict_name) else {
+        return -1;
+    };
+    let Some(text_file) = optional_c_string(text_file) else {
+        return -1;
+    };
+    if dict_name.is_empty() || text_file.is_empty() {
+        return -1;
+    }
+
+    let source = PathBuf::from(text_file);
+    if !source.is_file() {
+        return -1;
+    }
+    let Ok(entry_count) = count_text_user_dict_entries(&source) else {
+        return -1;
+    };
+    let destination = user_dict_path(&dict_name);
+    if let Some(parent) = destination.parent() {
+        if fs::create_dir_all(parent).is_err() {
+            return -1;
+        }
+    }
+    if fs::copy(source, destination).is_err() {
+        return -1;
+    }
+    entry_count
 }
 
 /// Frees schema-list storage returned by levers schema-list APIs.
@@ -3614,12 +3747,7 @@ fn deployed_switcher_hotkeys() -> Option<String> {
 }
 
 fn deployed_user_dict_names() -> Vec<String> {
-    let user_data_dir = {
-        let paths = runtime_paths()
-            .lock()
-            .expect("runtime paths should not be poisoned");
-        paths.user_data_dir.to_string_lossy().into_owned()
-    };
+    let user_data_dir = runtime_user_data_dir();
     let Ok(entries) = fs::read_dir(user_data_dir) else {
         return Vec::new();
     };
@@ -3637,6 +3765,50 @@ fn deployed_user_dict_names() -> Vec<String> {
         .collect::<Vec<_>>();
     names.sort();
     names
+}
+
+fn runtime_user_data_dir() -> PathBuf {
+    let paths = runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned");
+    PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned())
+}
+
+fn runtime_user_data_sync_dir() -> PathBuf {
+    let paths = runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned");
+    PathBuf::from(paths.user_data_sync_dir.to_string_lossy().into_owned())
+}
+
+fn user_dict_path(dict_name: &str) -> PathBuf {
+    runtime_user_data_dir().join(format!("{dict_name}.userdb"))
+}
+
+fn user_dict_snapshot_path(dict_name: &str) -> PathBuf {
+    runtime_user_data_sync_dir().join(format!("{dict_name}.userdb.txt"))
+}
+
+fn snapshot_dict_name(snapshot_file: &Path) -> Option<String> {
+    snapshot_file
+        .file_name()
+        .and_then(|file_name| file_name.to_str())
+        .and_then(|file_name| file_name.strip_suffix(".userdb.txt"))
+        .filter(|dict_name| !dict_name.is_empty())
+        .map(ToOwned::to_owned)
+}
+
+fn count_text_user_dict_entries(path: &Path) -> Result<c_int, std::io::Error> {
+    let contents = fs::read_to_string(path)?;
+    Ok(contents
+        .lines()
+        .filter(|line| {
+            let line = line.trim();
+            !line.is_empty() && !line.starts_with('#')
+        })
+        .count()
+        .try_into()
+        .unwrap_or(c_int::MAX))
 }
 
 fn deployed_schema_list_entry(default_config: &Value, entry: &Value) -> Option<String> {
@@ -4316,6 +4488,7 @@ mod tests {
     use std::ffi::{c_void, CStr, CString};
     use std::fs;
     use std::os::raw::c_char;
+    use std::path::PathBuf;
     use std::sync::{Mutex, MutexGuard, OnceLock};
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -5529,6 +5702,10 @@ schema:
         assert!(api.user_dict_iterator_init.is_some());
         assert!(api.user_dict_iterator_destroy.is_some());
         assert!(api.next_user_dict.is_some());
+        assert!(api.backup_user_dict.is_some());
+        assert!(api.restore_user_dict.is_some());
+        assert!(api.export_user_dict.is_some());
+        assert!(api.import_user_dict.is_some());
 
         let settings = (api
             .switcher_settings_init
@@ -5785,6 +5962,123 @@ schema:
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.
         unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn levers_user_dict_file_operations_handle_plain_userdb_files() {
+        let _guard = test_guard();
+        let root = unique_temp_dir("levers-user-dict-files");
+        let user = root.join("user");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        struct CurrentDirGuard(PathBuf);
+        impl Drop for CurrentDirGuard {
+            fn drop(&mut self) {
+                let _ = env::set_current_dir(&self.0);
+            }
+        }
+        let current_dir_guard =
+            CurrentDirGuard(env::current_dir().expect("current dir should be available"));
+        env::set_current_dir(&root).expect("test cwd should move under temp root");
+        fs::write(
+            user.join("luna_pinyin.userdb"),
+            "# comment\nni hao\t你好\t1\n\nzhong guo\t中国\t2\n",
+        )
+        .expect("plain user dict should be written");
+
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+        let mut traits = empty_traits();
+        traits.user_data_dir = user_c.as_ptr();
+        // SAFETY: traits points to valid storage and strings live for the call.
+        unsafe { RimeSetup(&traits) };
+
+        let levers_name = CString::new("levers").expect("module name should be valid");
+        // SAFETY: lookup name is a valid NUL-terminated string.
+        let module = unsafe { RimeFindModule(levers_name.as_ptr()) };
+        assert!(!module.is_null());
+        // SAFETY: built-in module storage is process-lifetime.
+        let module = unsafe { &*module };
+        let api = module.get_api.expect("levers get_api should be set")().cast::<RimeLeversApi>();
+        assert!(!api.is_null());
+        // SAFETY: levers get_api returns a process-lifetime RimeLeversApi object.
+        let api = unsafe { &*api };
+        let backup_user_dict = api
+            .backup_user_dict
+            .expect("backup user dict should be available");
+        let restore_user_dict = api
+            .restore_user_dict
+            .expect("restore user dict should be available");
+        let export_user_dict = api
+            .export_user_dict
+            .expect("export user dict should be available");
+        let import_user_dict = api
+            .import_user_dict
+            .expect("import user dict should be available");
+
+        let dict_name = CString::new("luna_pinyin").expect("dict name is valid");
+        // SAFETY: dict name is a valid NUL-terminated string.
+        assert_eq!(unsafe { backup_user_dict(dict_name.as_ptr()) }, TRUE);
+        let snapshot = root
+            .join("sync")
+            .join("unknown")
+            .join("luna_pinyin.userdb.txt");
+        assert_eq!(
+            fs::read_to_string(&snapshot).expect("snapshot should be readable"),
+            fs::read_to_string(user.join("luna_pinyin.userdb"))
+                .expect("user dict should be readable")
+        );
+
+        let export_path = root.join("luna_export.tsv");
+        let export_path_c =
+            CString::new(export_path.to_string_lossy().as_ref()).expect("path is valid");
+        // SAFETY: pointers are valid NUL-terminated strings.
+        assert_eq!(
+            unsafe { export_user_dict(dict_name.as_ptr(), export_path_c.as_ptr()) },
+            2
+        );
+        assert_eq!(
+            fs::read_to_string(&export_path).expect("export should be readable"),
+            fs::read_to_string(user.join("luna_pinyin.userdb"))
+                .expect("user dict should be readable")
+        );
+
+        fs::write(&export_path, "xin\t新\t3\nci\t词\t4\n").expect("import file should be updated");
+        let imported_name = CString::new("imported").expect("dict name is valid");
+        // SAFETY: pointers are valid NUL-terminated strings.
+        assert_eq!(
+            unsafe { import_user_dict(imported_name.as_ptr(), export_path_c.as_ptr()) },
+            2
+        );
+        assert_eq!(
+            fs::read_to_string(user.join("imported.userdb")).expect("import should be readable"),
+            "xin\t新\t3\nci\t词\t4\n"
+        );
+
+        let snapshot_c = CString::new(snapshot.to_string_lossy().as_ref()).expect("path is valid");
+        fs::remove_file(user.join("luna_pinyin.userdb"))
+            .expect("user dict should be removable before restore");
+        // SAFETY: snapshot path is a valid NUL-terminated string.
+        assert_eq!(unsafe { restore_user_dict(snapshot_c.as_ptr()) }, TRUE);
+        assert!(user.join("luna_pinyin.userdb").is_file());
+
+        let missing = CString::new("missing").expect("dict name is valid");
+        // SAFETY: null and missing inputs are explicitly rejected.
+        assert_eq!(unsafe { backup_user_dict(std::ptr::null()) }, FALSE);
+        assert_eq!(unsafe { backup_user_dict(missing.as_ptr()) }, FALSE);
+        assert_eq!(unsafe { restore_user_dict(std::ptr::null()) }, FALSE);
+        assert_eq!(
+            unsafe { export_user_dict(std::ptr::null(), export_path_c.as_ptr()) },
+            -1
+        );
+        assert_eq!(
+            unsafe { import_user_dict(imported_name.as_ptr(), std::ptr::null()) },
+            -1
+        );
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        drop(current_dir_guard);
         fs::remove_dir_all(root).expect("temp dirs should be removed");
     }
 

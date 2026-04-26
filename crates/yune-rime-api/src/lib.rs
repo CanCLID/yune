@@ -1623,7 +1623,9 @@ pub extern "C" fn RimeDeployConfigFile(
 #[no_mangle]
 pub extern "C" fn RimeSyncUserData() -> Bool {
     RimeCleanupAllSessions();
-    bool_from(sync_all_user_dicts())
+    let configs_synced = backup_config_files();
+    let user_dicts_synced = sync_all_user_dicts();
+    bool_from(configs_synced && user_dicts_synced)
 }
 
 #[no_mangle]
@@ -1633,6 +1635,9 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
     };
     if task_name == "user_dict_sync" {
         return bool_from(sync_all_user_dicts());
+    }
+    if task_name == "backup_config_files" {
+        return bool_from(backup_config_files());
     }
     TRUE
 }
@@ -3807,6 +3812,58 @@ fn sync_all_user_dicts() -> bool {
         }
     }
     success
+}
+
+fn backup_config_files() -> bool {
+    let user_data_dir = runtime_user_data_dir();
+    let Ok(entries) = fs::read_dir(&user_data_dir) else {
+        return false;
+    };
+
+    let backup_dir = runtime_user_data_sync_dir();
+    let mut success = true;
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        if !path.is_file() || !should_backup_config_file(&path) {
+            continue;
+        }
+        if fs::create_dir_all(&backup_dir).is_err() {
+            return false;
+        }
+        let destination = backup_dir.join(entry.file_name());
+        if fs::copy(&path, destination).is_err() {
+            success = false;
+        }
+    }
+    success
+}
+
+fn should_backup_config_file(path: &Path) -> bool {
+    let extension = path.extension().and_then(|extension| extension.to_str());
+    match extension {
+        Some("txt") => true,
+        Some("yaml") => !is_generated_customized_copy(path),
+        _ => false,
+    }
+}
+
+fn is_generated_customized_copy(path: &Path) -> bool {
+    let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
+        return false;
+    };
+    if file_name.ends_with(".custom.yaml") {
+        return false;
+    }
+    let Ok(text) = fs::read_to_string(path) else {
+        return false;
+    };
+    let Ok(Value::Mapping(root)) = serde_yaml::from_str::<Value>(&text) else {
+        return false;
+    };
+    matches!(
+        root.get(Value::String("customization".to_owned())),
+        Some(Value::String(_))
+    )
 }
 
 fn sync_plain_user_dict(dict_name: &str) -> bool {
@@ -6181,6 +6238,14 @@ schema:
 
         fs::write(user.join("luna_pinyin.userdb"), "ni hao\t你好\t1\n")
             .expect("local user dict should be written");
+        fs::write(user.join("default.yaml"), "config_version: '1.0'\n")
+            .expect("user config should be written");
+        fs::write(user.join("notes.txt"), "local notes\n").expect("text file should be written");
+        fs::write(
+            user.join("generated.yaml"),
+            "customization: abc123\nschema:\n  name: Generated\n",
+        )
+        .expect("generated customized copy should be written");
         fs::write(
             peer_sync.join("luna_pinyin.userdb.txt"),
             "ni hao\t你好\t1\nzhong guo\t中国\t2\n",
@@ -6210,8 +6275,31 @@ schema:
         .expect("current user snapshot should be written");
         assert_eq!(backup, merged);
 
+        let sync_user_dir = root.join("sync").join("unknown");
+        assert_eq!(
+            fs::read_to_string(sync_user_dir.join("default.yaml"))
+                .expect("user config backup should be readable"),
+            "config_version: '1.0'\n"
+        );
+        assert_eq!(
+            fs::read_to_string(sync_user_dir.join("notes.txt"))
+                .expect("text backup should be readable"),
+            "local notes\n"
+        );
+        assert!(!sync_user_dir.join("generated.yaml").exists());
+
         let task_name = CString::new("user_dict_sync").expect("task name should be valid");
         assert_eq!(RimeRunTask(task_name.as_ptr()), TRUE);
+        fs::remove_file(sync_user_dir.join("default.yaml"))
+            .expect("config backup should be removable");
+        let backup_config_task =
+            CString::new("backup_config_files").expect("task name should be valid");
+        assert_eq!(RimeRunTask(backup_config_task.as_ptr()), TRUE);
+        assert_eq!(
+            fs::read_to_string(sync_user_dir.join("default.yaml"))
+                .expect("task should recreate config backup"),
+            "config_version: '1.0'\n"
+        );
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

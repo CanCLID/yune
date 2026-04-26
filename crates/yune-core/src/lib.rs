@@ -629,6 +629,8 @@ pub struct Engine {
     rankers: Vec<Box<dyn CandidateRanker>>,
 }
 
+const DEFAULT_PAGE_SIZE: usize = 5;
+
 impl Default for Engine {
     fn default() -> Self {
         Self {
@@ -670,6 +672,9 @@ impl Engine {
         match ch {
             '\u{8}' | '\u{7f}' => self.backspace(),
             ' ' => self.commit_highlighted(),
+            '0'..='9' if !self.context.candidates.is_empty() => {
+                self.commit_candidate_at_page_index(select_index_from_digit(ch))
+            }
             _ if !ch.is_control() => {
                 self.context.composition.input.push(ch);
                 self.context.composition.caret = self.context.composition.input.len();
@@ -739,10 +744,22 @@ impl Engine {
     }
 
     fn commit_highlighted(&mut self) -> Option<String> {
+        self.commit_candidate(self.context.highlighted)
+    }
+
+    fn commit_candidate_at_page_index(&mut self, page_index: usize) -> Option<String> {
+        if page_index >= DEFAULT_PAGE_SIZE {
+            return None;
+        }
+        let page_start = (self.context.highlighted / DEFAULT_PAGE_SIZE) * DEFAULT_PAGE_SIZE;
+        self.commit_candidate(page_start + page_index)
+    }
+
+    fn commit_candidate(&mut self, candidate_index: usize) -> Option<String> {
         let text = self
             .context
             .candidates
-            .get(self.context.highlighted)
+            .get(candidate_index)
             .map(|candidate| candidate.text.clone())?;
         self.context.last_commit = Some(text.clone());
         self.context.composition = Composition::default();
@@ -765,6 +782,14 @@ impl Engine {
         }
         self.context.candidates = candidates;
         self.context.highlighted = 0;
+    }
+}
+
+const fn select_index_from_digit(ch: char) -> usize {
+    match ch {
+        '1'..='9' => ch as usize - '1' as usize,
+        '0' => 9,
+        _ => 0,
     }
 }
 
@@ -813,6 +838,34 @@ mod tests {
 
         let commit = engine.process_char(' ');
         assert_eq!(commit.as_deref(), Some("你"));
+    }
+
+    #[test]
+    fn numeric_selection_commits_candidate_on_current_page() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+
+        let commits = engine
+            .process_key_sequence("ba2")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, ["吧"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("吧"));
+        assert!(!engine.status().is_composing);
+    }
+
+    #[test]
+    fn numeric_selection_consumes_out_of_page_digit_without_extending_input() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+
+        let commits = engine
+            .process_key_sequence("ba0")
+            .expect("key sequence should parse");
+
+        assert!(commits.is_empty());
+        assert_eq!(engine.context().composition.input, "ba");
+        assert_eq!(engine.context().candidates.len(), 3);
     }
 
     #[test]

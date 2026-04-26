@@ -577,6 +577,8 @@ mod tests {
     use std::ffi::CStr;
     use std::sync::{Mutex, MutexGuard, OnceLock};
 
+    use yune_core::StaticTableTranslator;
+
     use super::{
         bool_from, RimeCleanupAllSessions, RimeCommit, RimeContext, RimeCreateSession,
         RimeDestroySession, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus,
@@ -675,6 +677,43 @@ mod tests {
         assert!(commit.text.is_null());
         // SAFETY: `commit` points to valid writable storage for this test.
         assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn process_key_commits_numeric_candidate_selection() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        {
+            let mut registry = super::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get_mut(&session_id)
+                .expect("session should exist");
+            session
+                .engine
+                .add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+        }
+        let mut commit = RimeCommit {
+            data_size: 0,
+            text: std::ptr::null_mut(),
+        };
+
+        assert_eq!(RimeProcessKey(session_id, 'b' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'a' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, '2' as i32, 0), TRUE);
+        // SAFETY: `commit` points to valid writable storage for this test.
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+        // SAFETY: `RimeGetCommit` returned true and populated `text` with a
+        // valid NUL-terminated C string owned by the commit object.
+        let text = unsafe { CStr::from_ptr(commit.text) };
+        assert_eq!(text.to_str(), Ok("吧"));
+        // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+        assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
 
         assert_eq!(RimeDestroySession(session_id), TRUE);
     }

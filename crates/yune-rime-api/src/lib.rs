@@ -7,6 +7,7 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
+use serde_yaml::{Mapping, Number, Value};
 use yune_core::{parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers};
 
 pub type RimeSessionId = usize;
@@ -332,6 +333,20 @@ struct CandidateListState {
     candidates: Vec<yune_core::Candidate>,
 }
 
+struct ConfigState {
+    root: Value,
+    cstring_cache: Option<CString>,
+}
+
+impl Default for ConfigState {
+    fn default() -> Self {
+        Self {
+            root: Value::Mapping(Mapping::new()),
+            cstring_cache: None,
+        }
+    }
+}
+
 struct RuntimePaths {
     shared_data_dir: CString,
     user_data_dir: CString,
@@ -473,12 +488,12 @@ fn build_rime_api() -> RimeApi {
         select_schema: Some(RimeSelectSchema),
         schema_open: None,
         config_open: None,
-        config_close: None,
-        config_get_bool: None,
-        config_get_int: None,
-        config_get_double: None,
-        config_get_string: None,
-        config_get_cstring: None,
+        config_close: Some(RimeConfigClose),
+        config_get_bool: Some(RimeConfigGetBool),
+        config_get_int: Some(RimeConfigGetInt),
+        config_get_double: Some(RimeConfigGetDouble),
+        config_get_string: Some(RimeConfigGetString),
+        config_get_cstring: Some(RimeConfigGetCString),
         config_update_signature: None,
         config_begin_map: None,
         config_next: None,
@@ -492,18 +507,18 @@ fn build_rime_api() -> RimeApi {
         get_sync_dir: Some(RimeGetSyncDir),
         get_user_id: Some(RimeGetUserId),
         get_user_data_sync_dir: Some(RimeGetUserDataSyncDir),
-        config_init: None,
-        config_load_string: None,
-        config_set_bool: None,
-        config_set_int: None,
-        config_set_double: None,
-        config_set_string: None,
+        config_init: Some(RimeConfigInit),
+        config_load_string: Some(RimeConfigLoadString),
+        config_set_bool: Some(RimeConfigSetBool),
+        config_set_int: Some(RimeConfigSetInt),
+        config_set_double: Some(RimeConfigSetDouble),
+        config_set_string: Some(RimeConfigSetString),
         config_get_item: None,
         config_set_item: None,
-        config_clear: None,
-        config_create_list: None,
-        config_create_map: None,
-        config_list_size: None,
+        config_clear: Some(RimeConfigClear),
+        config_create_list: Some(RimeConfigCreateList),
+        config_create_map: Some(RimeConfigCreateMap),
+        config_list_size: Some(RimeConfigListSize),
         config_begin_list: None,
         get_input: Some(RimeGetInput),
         get_caret_pos: Some(RimeGetCaretPos),
@@ -1240,6 +1255,343 @@ pub unsafe extern "C" fn RimeFreeSchemaList(schema_list: *mut RimeSchemaList) {
 
     free_schema_list_fields(schema_list);
     clear_schema_list(schema_list);
+}
+
+/// Initializes an empty in-memory config object.
+///
+/// # Safety
+///
+/// `config` must be either null or point to writable `RimeConfig` storage. The
+/// caller owns the returned config and must release it with `RimeConfigClose`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigInit(config: *mut RimeConfig) -> Bool {
+    if config.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `config` is non-null and points to caller-owned storage.
+    if unsafe { !(*config).ptr.is_null() } {
+        return FALSE;
+    }
+
+    let state = Box::new(ConfigState::default());
+    // SAFETY: `config` is non-null and writable.
+    unsafe {
+        (*config).ptr = Box::into_raw(state).cast::<c_void>();
+    }
+    TRUE
+}
+
+/// Loads YAML text into an in-memory config object.
+///
+/// # Safety
+///
+/// `config` must point to writable `RimeConfig` storage and `yaml` must be a
+/// valid NUL-terminated C string. If `config` is uninitialized, it is
+/// initialized before loading.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigLoadString(
+    config: *mut RimeConfig,
+    yaml: *const c_char,
+) -> Bool {
+    if config.is_null() || yaml.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `yaml` is non-null and caller promises a valid C string.
+    let Ok(yaml) = unsafe { CStr::from_ptr(yaml) }.to_str() else {
+        return FALSE;
+    };
+    // SAFETY: `config` is non-null and writable.
+    if unsafe { (*config).ptr.is_null() && RimeConfigInit(config) == FALSE } {
+        return FALSE;
+    }
+    let Ok(root) = serde_yaml::from_str::<Value>(yaml) else {
+        return FALSE;
+    };
+    // SAFETY: `config` now owns a valid config state.
+    let Some(state) = (unsafe { config_state_mut(config) }) else {
+        return FALSE;
+    };
+    state.root = root;
+    state.cstring_cache = None;
+    TRUE
+}
+
+/// Releases an in-memory config object.
+///
+/// # Safety
+///
+/// `config`, when non-null, must point to a `RimeConfig` previously initialized
+/// by this API and not already closed.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigClose(config: *mut RimeConfig) -> Bool {
+    if config.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `config` is non-null and points to caller-owned storage.
+    let ptr = unsafe { (*config).ptr };
+    if ptr.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `ptr` was returned by `Box::into_raw` in `RimeConfigInit`.
+    unsafe {
+        drop(Box::from_raw(ptr.cast::<ConfigState>()));
+        (*config).ptr = ptr::null_mut();
+    }
+    TRUE
+}
+
+/// Reads a boolean config value.
+///
+/// # Safety
+///
+/// `config`, `key`, and `value` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigGetBool(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: *mut Bool,
+) -> Bool {
+    if value.is_null() {
+        return FALSE;
+    }
+    let Some(found) = (unsafe { config_lookup(config, key) }) else {
+        return FALSE;
+    };
+    let Value::Bool(found) = found else {
+        return FALSE;
+    };
+    // SAFETY: `value` is non-null and caller promises writable storage.
+    unsafe {
+        *value = bool_from(found);
+    }
+    TRUE
+}
+
+/// Reads an integer config value.
+///
+/// # Safety
+///
+/// `config`, `key`, and `value` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigGetInt(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: *mut c_int,
+) -> Bool {
+    if value.is_null() {
+        return FALSE;
+    }
+    let Some(found) = (unsafe { config_lookup(config, key) }) else {
+        return FALSE;
+    };
+    let Some(found) = found
+        .as_i64()
+        .and_then(|number| c_int::try_from(number).ok())
+    else {
+        return FALSE;
+    };
+    // SAFETY: `value` is non-null and caller promises writable storage.
+    unsafe {
+        *value = found;
+    }
+    TRUE
+}
+
+/// Reads a floating-point config value.
+///
+/// # Safety
+///
+/// `config`, `key`, and `value` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigGetDouble(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: *mut f64,
+) -> Bool {
+    if value.is_null() {
+        return FALSE;
+    }
+    let Some(found) = (unsafe { config_lookup(config, key) }) else {
+        return FALSE;
+    };
+    let Some(found) = found.as_f64() else {
+        return FALSE;
+    };
+    // SAFETY: `value` is non-null and caller promises writable storage.
+    unsafe {
+        *value = found;
+    }
+    TRUE
+}
+
+/// Copies a string config value into caller-provided storage.
+///
+/// # Safety
+///
+/// `config`, `key`, and `value` must be valid pointers, and `value` must point
+/// to writable storage of `buffer_size` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigGetString(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: *mut c_char,
+    buffer_size: usize,
+) -> Bool {
+    if value.is_null() || buffer_size == 0 {
+        return FALSE;
+    }
+    let Some(found) = (unsafe { config_string_value(config, key) }) else {
+        return FALSE;
+    };
+    copy_c_string_to_buffer(&found, value, buffer_size);
+    TRUE
+}
+
+/// Returns a borrowed string pointer cached on the config object.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers. The returned pointer remains
+/// valid until the next mutable config operation or `RimeConfigClose`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigGetCString(
+    config: *mut RimeConfig,
+    key: *const c_char,
+) -> *const c_char {
+    let Some(value) = (unsafe { config_string_value(config, key) }) else {
+        return ptr::null();
+    };
+    let Ok(value) = CString::new(value) else {
+        return ptr::null();
+    };
+    // SAFETY: `config` points to a valid config state.
+    let Some(state) = (unsafe { config_state_mut(config) }) else {
+        return ptr::null();
+    };
+    state.cstring_cache = Some(value);
+    state
+        .cstring_cache
+        .as_ref()
+        .map_or(ptr::null(), |value| value.as_ptr())
+}
+
+/// Writes a boolean config value.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigSetBool(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: Bool,
+) -> Bool {
+    unsafe { config_set(config, key, Value::Bool(value != FALSE)) }
+}
+
+/// Writes an integer config value.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigSetInt(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: c_int,
+) -> Bool {
+    unsafe { config_set(config, key, Value::Number(Number::from(value))) }
+}
+
+/// Writes a floating-point config value.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigSetDouble(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: f64,
+) -> Bool {
+    let Ok(value) = serde_yaml::to_value(value) else {
+        return FALSE;
+    };
+    unsafe { config_set(config, key, value) }
+}
+
+/// Writes a string config value.
+///
+/// # Safety
+///
+/// `config`, `key`, and `value` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigSetString(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: *const c_char,
+) -> Bool {
+    if value.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `value` is non-null and caller promises a valid C string.
+    let value = unsafe { CStr::from_ptr(value) }
+        .to_string_lossy()
+        .into_owned();
+    unsafe { config_set(config, key, Value::String(value)) }
+}
+
+/// Clears a config value by path.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigClear(config: *mut RimeConfig, key: *const c_char) -> Bool {
+    let Some(key) = (unsafe { c_string_key(key) }) else {
+        return FALSE;
+    };
+    let Some(state) = (unsafe { config_state_mut(config) }) else {
+        return FALSE;
+    };
+    state.cstring_cache = None;
+    bool_from(remove_config_value(&mut state.root, &key))
+}
+
+/// Creates an empty list at a config path.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigCreateList(config: *mut RimeConfig, key: *const c_char) -> Bool {
+    unsafe { config_set(config, key, Value::Sequence(Vec::new())) }
+}
+
+/// Creates an empty map at a config path.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigCreateMap(config: *mut RimeConfig, key: *const c_char) -> Bool {
+    unsafe { config_set(config, key, Value::Mapping(Mapping::new())) }
+}
+
+/// Returns the size of a list at a config path.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigListSize(config: *mut RimeConfig, key: *const c_char) -> usize {
+    let Some(found) = (unsafe { config_lookup(config, key) }) else {
+        return 0;
+    };
+    match found {
+        Value::Sequence(sequence) => sequence.len(),
+        _ => 0,
+    }
 }
 
 /// Processes a librime-style key sequence against a session.
@@ -2011,6 +2363,178 @@ fn copy_c_string_to_buffer(value: &str, output: *mut c_char, buffer_size: usize)
     }
 }
 
+unsafe fn config_state_mut(config: *mut RimeConfig) -> Option<&'static mut ConfigState> {
+    if config.is_null() {
+        return None;
+    }
+    // SAFETY: callers promise `config` points to valid RimeConfig storage.
+    let ptr = unsafe { (*config).ptr };
+    if ptr.is_null() {
+        return None;
+    }
+    // SAFETY: non-null config pointers are created by `RimeConfigInit`.
+    Some(unsafe { &mut *ptr.cast::<ConfigState>() })
+}
+
+unsafe fn config_lookup(config: *mut RimeConfig, key: *const c_char) -> Option<Value> {
+    let key = unsafe { c_string_key(key) }?;
+    let state = unsafe { config_state_mut(config) }?;
+    find_config_value(&state.root, &key).cloned()
+}
+
+unsafe fn config_string_value(config: *mut RimeConfig, key: *const c_char) -> Option<String> {
+    match unsafe { config_lookup(config, key) }? {
+        Value::String(value) => Some(value),
+        _ => None,
+    }
+}
+
+unsafe fn config_set(config: *mut RimeConfig, key: *const c_char, value: Value) -> Bool {
+    let Some(key) = (unsafe { c_string_key(key) }) else {
+        return FALSE;
+    };
+    let Some(state) = (unsafe { config_state_mut(config) }) else {
+        return FALSE;
+    };
+    state.cstring_cache = None;
+    bool_from(set_config_value(&mut state.root, &key, value))
+}
+
+unsafe fn c_string_key(key: *const c_char) -> Option<String> {
+    if key.is_null() {
+        return None;
+    }
+    // SAFETY: callers promise `key` is a valid NUL-terminated C string.
+    Some(
+        unsafe { CStr::from_ptr(key) }
+            .to_string_lossy()
+            .into_owned(),
+    )
+}
+
+fn find_config_value<'a>(root: &'a Value, key: &str) -> Option<&'a Value> {
+    if key.is_empty() {
+        return Some(root);
+    }
+
+    let mut current = root;
+    for segment in key.split('/').filter(|segment| !segment.is_empty()) {
+        if let Some(index) = list_index(segment) {
+            let Value::Sequence(sequence) = current else {
+                return None;
+            };
+            current = sequence.get(index)?;
+        } else {
+            let Value::Mapping(mapping) = current else {
+                return None;
+            };
+            current = mapping.get(Value::String(segment.to_owned()))?;
+        }
+    }
+    Some(current)
+}
+
+fn set_config_value(root: &mut Value, key: &str, value: Value) -> bool {
+    if key.is_empty() {
+        *root = value;
+        return true;
+    }
+
+    let segments = key
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .collect::<Vec<_>>();
+    let Some((last, parents)) = segments.split_last() else {
+        *root = value;
+        return true;
+    };
+
+    let mut current = root;
+    for segment in parents {
+        let Value::Mapping(mapping) = ensure_mapping(current) else {
+            return false;
+        };
+        current = mapping
+            .entry(Value::String((*segment).to_owned()))
+            .or_insert_with(|| Value::Mapping(Mapping::new()));
+    }
+
+    if let Some(index) = list_index(last) {
+        let Value::Sequence(sequence) = current else {
+            return false;
+        };
+        if index == sequence.len() {
+            sequence.push(value);
+            true
+        } else if let Some(slot) = sequence.get_mut(index) {
+            *slot = value;
+            true
+        } else {
+            false
+        }
+    } else {
+        let Value::Mapping(mapping) = ensure_mapping(current) else {
+            return false;
+        };
+        mapping.insert(Value::String((*last).to_owned()), value);
+        true
+    }
+}
+
+fn remove_config_value(root: &mut Value, key: &str) -> bool {
+    if key.is_empty() {
+        *root = Value::Null;
+        return true;
+    }
+
+    let segments = key
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .collect::<Vec<_>>();
+    let Some((last, parents)) = segments.split_last() else {
+        return false;
+    };
+
+    let mut current = root;
+    for segment in parents {
+        let Value::Mapping(mapping) = current else {
+            return false;
+        };
+        let Some(next) = mapping.get_mut(Value::String((*segment).to_owned())) else {
+            return false;
+        };
+        current = next;
+    }
+
+    if let Some(index) = list_index(last) {
+        let Value::Sequence(sequence) = current else {
+            return false;
+        };
+        if index < sequence.len() {
+            sequence.remove(index);
+            true
+        } else {
+            false
+        }
+    } else {
+        let Value::Mapping(mapping) = current else {
+            return false;
+        };
+        mapping.remove(Value::String((*last).to_owned())).is_some()
+    }
+}
+
+fn ensure_mapping(value: &mut Value) -> &mut Value {
+    if !matches!(value, Value::Mapping(_)) {
+        *value = Value::Mapping(Mapping::new());
+    }
+    value
+}
+
+fn list_index(segment: &str) -> Option<usize> {
+    segment.strip_prefix('@')?.parse().ok()
+}
+
 #[cfg(test)]
 mod tests {
     use std::ffi::{c_void, CStr, CString};
@@ -2023,7 +2547,11 @@ mod tests {
         bool_from, rime_get_api, RimeApi, RimeCandidateListBegin, RimeCandidateListEnd,
         RimeCandidateListFromIndex, RimeCandidateListIterator, RimeCandidateListNext,
         RimeChangePage, RimeCleanupAllSessions, RimeCleanupStaleSessions, RimeClearComposition,
-        RimeCommit, RimeCommitComposition, RimeContext, RimeCreateSession, RimeCustomApi,
+        RimeCommit, RimeCommitComposition, RimeConfig, RimeConfigClear, RimeConfigClose,
+        RimeConfigCreateList, RimeConfigCreateMap, RimeConfigGetBool, RimeConfigGetCString,
+        RimeConfigGetDouble, RimeConfigGetInt, RimeConfigGetString, RimeConfigInit,
+        RimeConfigListSize, RimeConfigLoadString, RimeConfigSetBool, RimeConfigSetDouble,
+        RimeConfigSetInt, RimeConfigSetString, RimeContext, RimeCreateSession, RimeCustomApi,
         RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage, RimeDeployConfigFile,
         RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession,
         RimeFinalize, RimeFindModule, RimeFindSession, RimeFreeCommit, RimeFreeContext,
@@ -2155,6 +2683,12 @@ mod tests {
         }
     }
 
+    fn empty_config() -> RimeConfig {
+        RimeConfig {
+            ptr: std::ptr::null_mut(),
+        }
+    }
+
     fn empty_traits() -> RimeTraits {
         RimeTraits {
             data_size: std::mem::size_of::<RimeTraits>() as i32,
@@ -2203,6 +2737,9 @@ mod tests {
             .expect("cleanup API should be present");
 
         assert!(api.config_open.is_none());
+        assert!(api.config_init.is_some());
+        assert!(api.config_load_string.is_some());
+        assert!(api.config_get_string.is_some());
         assert!(api.commit_proto.is_none());
         assert!(api.get_state_label.is_none());
 
@@ -2226,6 +2763,215 @@ mod tests {
 
         cleanup_all_sessions();
         assert_eq!(find_session(session_id), FALSE);
+    }
+
+    #[test]
+    fn config_load_string_and_scalar_accessors_work() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let yaml = CString::new(
+            "\
+schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: ascii_mode\nmenu:\n  page_size: 9\nspeller:\n  algebra:\n    - xform/^([nl])ue$/$1ve/\nweights:\n  bias: 0.75\nenabled: true\n",
+        )
+        .expect("yaml should be valid");
+        let mut enabled = FALSE;
+        let mut page_size = 0;
+        let mut bias = 0.0;
+        let mut name_buffer = vec![0 as c_char; 16];
+
+        // SAFETY: config points to writable storage and yaml is a valid C string.
+        assert_eq!(
+            unsafe { RimeConfigLoadString(&mut config, yaml.as_ptr()) },
+            TRUE
+        );
+        // SAFETY: keys and output pointers are valid for each call.
+        assert_eq!(
+            unsafe {
+                RimeConfigGetBool(
+                    &mut config,
+                    CString::new("enabled").unwrap().as_ptr(),
+                    &mut enabled,
+                )
+            },
+            TRUE
+        );
+        assert_eq!(enabled, TRUE);
+        // SAFETY: keys and output pointers are valid for each call.
+        assert_eq!(
+            unsafe {
+                RimeConfigGetInt(
+                    &mut config,
+                    CString::new("menu/page_size").unwrap().as_ptr(),
+                    &mut page_size,
+                )
+            },
+            TRUE
+        );
+        assert_eq!(page_size, 9);
+        // SAFETY: keys and output pointers are valid for each call.
+        assert_eq!(
+            unsafe {
+                RimeConfigGetDouble(
+                    &mut config,
+                    CString::new("weights/bias").unwrap().as_ptr(),
+                    &mut bias,
+                )
+            },
+            TRUE
+        );
+        assert_eq!(bias, 0.75);
+        // SAFETY: keys and output pointers are valid for each call.
+        assert_eq!(
+            unsafe {
+                RimeConfigGetString(
+                    &mut config,
+                    CString::new("schema/name").unwrap().as_ptr(),
+                    name_buffer.as_mut_ptr(),
+                    name_buffer.len(),
+                )
+            },
+            TRUE
+        );
+        // SAFETY: the config API NUL-terminates successful string copies.
+        assert_eq!(
+            unsafe { CStr::from_ptr(name_buffer.as_ptr()) }.to_str(),
+            Ok("Luna Pinyin")
+        );
+        // SAFETY: key is valid and the returned pointer is borrowed from config.
+        let schema_id = unsafe {
+            RimeConfigGetCString(
+                &mut config,
+                CString::new("schema/schema_id").unwrap().as_ptr(),
+            )
+        };
+        assert!(!schema_id.is_null());
+        // SAFETY: non-null pointer returned by the config API is a valid C string.
+        assert_eq!(
+            unsafe { CStr::from_ptr(schema_id) }.to_str(),
+            Ok("luna_pinyin")
+        );
+        // SAFETY: key and config are valid.
+        assert_eq!(
+            unsafe { RimeConfigListSize(&mut config, CString::new("switches").unwrap().as_ptr()) },
+            1
+        );
+        // SAFETY: config was initialized by the API and is still open.
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+        assert!(config.ptr.is_null());
+    }
+
+    #[test]
+    fn config_set_create_clear_and_close_work() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let schema_name = CString::new("schema/name").expect("key should be valid");
+        let name = CString::new("Default").expect("value should be valid");
+        let schema_id = CString::new("schema/schema_id").expect("key should be valid");
+        let page_size = CString::new("menu/page_size").expect("key should be valid");
+        let bias = CString::new("weights/bias").expect("key should be valid");
+        let enabled = CString::new("enabled").expect("key should be valid");
+        let switches = CString::new("switches").expect("key should be valid");
+        let menu = CString::new("menu").expect("key should be valid");
+        let mut output = vec![0 as c_char; 32];
+        let mut int_output = 0;
+        let mut double_output = 0.0;
+        let mut bool_output = FALSE;
+
+        // SAFETY: config points to writable storage.
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        // SAFETY: all keys and values are valid C strings.
+        assert_eq!(
+            unsafe { RimeConfigSetString(&mut config, schema_name.as_ptr(), name.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, page_size.as_ptr(), 7) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetDouble(&mut config, bias.as_ptr(), 1.25) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetBool(&mut config, enabled.as_ptr(), TRUE) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigCreateList(&mut config, switches.as_ptr()) },
+            TRUE
+        );
+
+        // SAFETY: all keys and output pointers are valid.
+        assert_eq!(
+            unsafe {
+                RimeConfigGetString(
+                    &mut config,
+                    schema_name.as_ptr(),
+                    output.as_mut_ptr(),
+                    output.len(),
+                )
+            },
+            TRUE
+        );
+        // SAFETY: successful string copies are NUL-terminated.
+        assert_eq!(
+            unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+            Ok("Default")
+        );
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, page_size.as_ptr(), &mut int_output) },
+            TRUE
+        );
+        assert_eq!(int_output, 7);
+        assert_eq!(
+            unsafe { RimeConfigGetDouble(&mut config, bias.as_ptr(), &mut double_output) },
+            TRUE
+        );
+        assert_eq!(double_output, 1.25);
+        assert_eq!(
+            unsafe { RimeConfigGetBool(&mut config, enabled.as_ptr(), &mut bool_output) },
+            TRUE
+        );
+        assert_eq!(bool_output, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigListSize(&mut config, switches.as_ptr()) },
+            0
+        );
+
+        assert_eq!(
+            unsafe { RimeConfigClear(&mut config, schema_name.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe {
+                RimeConfigGetString(
+                    &mut config,
+                    schema_name.as_ptr(),
+                    output.as_mut_ptr(),
+                    output.len(),
+                )
+            },
+            FALSE
+        );
+        assert_eq!(
+            unsafe { RimeConfigCreateMap(&mut config, menu.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, page_size.as_ptr(), &mut int_output) },
+            FALSE
+        );
+        assert_eq!(
+            unsafe {
+                RimeConfigSetString(
+                    &mut config,
+                    schema_id.as_ptr(),
+                    CString::new("default").unwrap().as_ptr(),
+                )
+            },
+            TRUE
+        );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }
 
     #[test]

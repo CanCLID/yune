@@ -135,6 +135,7 @@ version = "0.1.0"
 name = "yune-rime-api"
 version = "0.1.0"
 dependencies = [
+ "serde_yaml",
  "yune-core",
 ]
 

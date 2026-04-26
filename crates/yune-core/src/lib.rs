@@ -719,6 +719,14 @@ impl Engine {
         self.commit_highlighted()
     }
 
+    pub fn select_candidate(&mut self, index: usize) -> Option<String> {
+        self.commit_candidate(index)
+    }
+
+    pub fn select_candidate_on_current_page(&mut self, index: usize) -> Option<String> {
+        self.commit_candidate_at_page_index(index)
+    }
+
     pub fn clear_composition(&mut self) {
         self.context.composition = Composition::default();
         self.context.candidates.clear();
@@ -860,6 +868,28 @@ mod tests {
         assert_eq!(commits, ["吧"]);
         assert_eq!(engine.context().last_commit.as_deref(), Some("吧"));
         assert!(!engine.status().is_composing);
+    }
+
+    #[test]
+    fn direct_candidate_selection_commits_by_global_or_page_index() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+
+        engine
+            .process_key_sequence("ba")
+            .expect("key sequence should parse");
+        assert_eq!(engine.select_candidate(1).as_deref(), Some("吧"));
+        assert_eq!(engine.context().last_commit.as_deref(), Some("吧"));
+        assert!(!engine.status().is_composing);
+
+        engine
+            .process_key_sequence("ba")
+            .expect("key sequence should parse");
+        assert_eq!(
+            engine.select_candidate_on_current_page(0).as_deref(),
+            Some("八")
+        );
+        assert_eq!(engine.context().last_commit.as_deref(), Some("八"));
     }
 
     #[test]

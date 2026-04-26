@@ -240,6 +240,21 @@ pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn RimeSelectCandidate(session_id: RimeSessionId, index: usize) -> Bool {
+    commit_selected_candidate(session_id, |session| session.engine.select_candidate(index))
+}
+
+#[no_mangle]
+pub extern "C" fn RimeSelectCandidateOnCurrentPage(
+    session_id: RimeSessionId,
+    index: usize,
+) -> Bool {
+    commit_selected_candidate(session_id, |session| {
+        session.engine.select_candidate_on_current_page(index)
+    })
+}
+
 /// Copies the unread commit text for a session into a caller-provided commit.
 ///
 /// # Safety
@@ -650,6 +665,28 @@ fn key_event_from_rime_keycode(keycode: c_int) -> Option<KeyEvent> {
     })
 }
 
+fn commit_selected_candidate(
+    session_id: RimeSessionId,
+    select: impl FnOnce(&mut SessionState) -> Option<String>,
+) -> Bool {
+    if session_id == 0 {
+        return FALSE;
+    }
+
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let Some(session) = registry.sessions.get_mut(&session_id) else {
+        return FALSE;
+    };
+    let Some(commit) = select(session) else {
+        return FALSE;
+    };
+
+    session.unread_commit = Some(commit);
+    TRUE
+}
+
 fn clear_commit(commit: *mut RimeCommit) {
     // SAFETY: callers only pass non-null pointers to this helper; fields are
     // plain integers/pointers and assigning null mirrors librime's clear macro.
@@ -782,7 +819,8 @@ mod tests {
         RimeCandidateListIterator, RimeCandidateListNext, RimeCleanupAllSessions,
         RimeClearComposition, RimeCommit, RimeCommitComposition, RimeContext, RimeCreateSession,
         RimeDestroySession, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus,
-        RimeGetCommit, RimeGetContext, RimeGetStatus, RimeProcessKey, RimeStatus, FALSE, TRUE,
+        RimeGetCommit, RimeGetContext, RimeGetStatus, RimeProcessKey, RimeSelectCandidate,
+        RimeSelectCandidateOnCurrentPage, RimeStatus, FALSE, TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -924,6 +962,54 @@ mod tests {
         // valid NUL-terminated C string owned by the commit object.
         let text = unsafe { CStr::from_ptr(commit.text) };
         assert_eq!(text.to_str(), Ok("吧"));
+        // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+        assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn select_candidate_apis_commit_current_candidates() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        {
+            let mut registry = super::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get_mut(&session_id)
+                .expect("session should exist");
+            session
+                .engine
+                .add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+        }
+        let mut commit = RimeCommit {
+            data_size: 0,
+            text: std::ptr::null_mut(),
+        };
+
+        assert_eq!(RimeSelectCandidate(session_id, 0), FALSE);
+        assert_eq!(RimeProcessKey(session_id, 'b' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'a' as i32, 0), TRUE);
+        assert_eq!(RimeSelectCandidate(session_id, 1), TRUE);
+        // SAFETY: `commit` points to valid writable storage for this test.
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+        // SAFETY: `RimeGetCommit` returned true and populated `text`.
+        let text = unsafe { CStr::from_ptr(commit.text) };
+        assert_eq!(text.to_str(), Ok("吧"));
+        // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+        assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+
+        assert_eq!(RimeProcessKey(session_id, 'b' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'a' as i32, 0), TRUE);
+        assert_eq!(RimeSelectCandidateOnCurrentPage(session_id, 0), TRUE);
+        // SAFETY: `commit` points to valid writable storage for this test.
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+        // SAFETY: `RimeGetCommit` returned true and populated `text`.
+        let text = unsafe { CStr::from_ptr(commit.text) };
+        assert_eq!(text.to_str(), Ok("八"));
         // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
         assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
 

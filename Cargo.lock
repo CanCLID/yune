@@ -134,6 +134,9 @@ version = "0.1.0"
 [[package]]
 name = "yune-rime-api"
 version = "0.1.0"
+dependencies = [
+ "yune-core",
+]
 
 [[package]]
 name = "yune-schema"

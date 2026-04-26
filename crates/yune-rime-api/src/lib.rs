@@ -11,6 +11,12 @@ use yune_core::{parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers};
 
 pub type RimeSessionId = usize;
 pub type Bool = c_int;
+pub type RimeNotificationHandler = extern "C" fn(
+    context_object: *mut c_void,
+    session_id: RimeSessionId,
+    message_type: *const c_char,
+    message_value: *const c_char,
+);
 
 pub const FALSE: Bool = 0;
 pub const TRUE: Bool = 1;
@@ -161,6 +167,12 @@ struct RuntimePaths {
     user_data_sync_dir: CString,
 }
 
+#[derive(Default)]
+struct NotificationState {
+    handler: Option<RimeNotificationHandler>,
+    context_object: usize,
+}
+
 impl Default for RuntimePaths {
     fn default() -> Self {
         Self::new(".", ".", "build", "build", "sync", "unknown")
@@ -226,6 +238,11 @@ fn runtime_paths() -> &'static Mutex<RuntimePaths> {
     RUNTIME_PATHS.get_or_init(|| Mutex::new(RuntimePaths::default()))
 }
 
+fn notification_state() -> &'static Mutex<NotificationState> {
+    static NOTIFICATION_STATE: OnceLock<Mutex<NotificationState>> = OnceLock::new();
+    NOTIFICATION_STATE.get_or_init(|| Mutex::new(NotificationState::default()))
+}
+
 #[must_use]
 pub const fn bool_from(value: bool) -> Bool {
     if value {
@@ -252,6 +269,18 @@ pub unsafe extern "C" fn RimeSetup(traits: *const RimeTraits) {
 }
 
 #[no_mangle]
+pub extern "C" fn RimeSetNotificationHandler(
+    handler: Option<RimeNotificationHandler>,
+    context_object: *mut c_void,
+) {
+    let mut state = notification_state()
+        .lock()
+        .expect("notification state should not be poisoned");
+    state.handler = handler;
+    state.context_object = context_object as usize;
+}
+
+#[no_mangle]
 pub extern "C" fn RimeSetupLogging(_app_name: *const c_char) {}
 
 /// Initializes the runtime using the same trait handling as `RimeSetup`.
@@ -268,6 +297,7 @@ pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
 #[no_mangle]
 pub extern "C" fn RimeFinalize() {
     RimeCleanupAllSessions();
+    RimeSetNotificationHandler(None, ptr::null_mut());
 }
 
 #[no_mangle]
@@ -306,6 +336,8 @@ pub extern "C" fn RimePrebuildAllSchemas() -> Bool {
 
 #[no_mangle]
 pub extern "C" fn RimeDeployWorkspace() -> Bool {
+    notify(0, "deploy", "start");
+    notify(0, "deploy", "success");
     TRUE
 }
 
@@ -637,10 +669,18 @@ pub unsafe extern "C" fn RimeSetOption(
     let option = unsafe { CStr::from_ptr(option) }
         .to_string_lossy()
         .into_owned();
-    let _ = with_session(session_id, |session| {
-        session.engine.set_option(option, value != FALSE);
+    if with_session(session_id, |session| {
+        session.engine.set_option(option.clone(), value != FALSE);
         true
-    });
+    }) == TRUE
+    {
+        let message_value = if value != FALSE {
+            option
+        } else {
+            format!("!{option}")
+        };
+        notify(session_id, "option", &message_value);
+    }
 }
 
 /// Returns the current value of a session-scoped runtime option.
@@ -683,10 +723,13 @@ pub unsafe extern "C" fn RimeSetProperty(
     let value = unsafe { CStr::from_ptr(value) }
         .to_string_lossy()
         .into_owned();
-    let _ = with_session(session_id, |session| {
-        session.engine.set_property(property, value);
+    if with_session(session_id, |session| {
+        session.engine.set_property(property.clone(), value.clone());
         true
-    });
+    }) == TRUE
+    {
+        notify(session_id, "property", &format!("{property}={value}"));
+    }
 }
 
 /// Copies a session-scoped string property into caller-provided storage.
@@ -764,13 +807,29 @@ pub unsafe extern "C" fn RimeSelectSchema(
         .to_string_lossy()
         .into_owned();
 
-    with_session(session_id, |session| {
+    let selected = with_session(session_id, |session| {
         session.engine.set_schema(schema_id.clone(), schema_id);
         session.engine.clear_composition();
         session.input_buffer = None;
         session.unread_commit = None;
         true
-    })
+    });
+    if selected == TRUE {
+        let status = sessions()
+            .lock()
+            .expect("session registry should not be poisoned")
+            .sessions
+            .get(&session_id)
+            .map(|session| session.engine.status());
+        if let Some(status) = status {
+            notify(
+                session_id,
+                "schema",
+                &format!("{}/{}", status.schema_id, status.schema_name),
+            );
+        }
+    }
+    selected
 }
 
 /// Returns the currently available schema list.
@@ -1383,6 +1442,30 @@ fn runtime_path_ptr(select: impl FnOnce(&RuntimePaths) -> &CString) -> *const c_
     select(&paths).as_ptr()
 }
 
+fn notify(session_id: RimeSessionId, message_type: &str, message_value: &str) {
+    let (handler, context_object) = {
+        let state = notification_state()
+            .lock()
+            .expect("notification state should not be poisoned");
+        let Some(handler) = state.handler else {
+            return;
+        };
+        (handler, state.context_object)
+    };
+    let Ok(message_type) = CString::new(message_type) else {
+        return;
+    };
+    let Ok(message_value) = CString::new(message_value) else {
+        return;
+    };
+    handler(
+        context_object as *mut c_void,
+        session_id,
+        message_type.as_ptr(),
+        message_value.as_ptr(),
+    );
+}
+
 fn copy_runtime_path_to_buffer(
     select: impl FnOnce(&RuntimePaths) -> &CString,
     output: *mut c_char,
@@ -1561,7 +1644,7 @@ fn copy_c_string_to_buffer(value: &str, output: *mut c_char, buffer_size: usize)
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::{CStr, CString};
+    use std::ffi::{c_void, CStr, CString};
     use std::os::raw::c_char;
     use std::sync::{Mutex, MutexGuard, OnceLock};
 
@@ -1582,11 +1665,19 @@ mod tests {
         RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
         RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimePrebuildAllSchemas,
         RimeProcessKey, RimeRunTask, RimeSelectCandidate, RimeSelectCandidateOnCurrentPage,
-        RimeSelectSchema, RimeSetCaretPos, RimeSetInput, RimeSetOption, RimeSetProperty, RimeSetup,
-        RimeSetupLogging, RimeSimulateKeySequence, RimeStartMaintenance,
-        RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits, FALSE,
-        TRUE,
+        RimeSelectSchema, RimeSetCaretPos, RimeSetInput, RimeSetNotificationHandler, RimeSetOption,
+        RimeSetProperty, RimeSetup, RimeSetupLogging, RimeSimulateKeySequence,
+        RimeStartMaintenance, RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData,
+        RimeTraits, FALSE, TRUE,
     };
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct NotificationEvent {
+        context_object: usize,
+        session_id: super::RimeSessionId,
+        message_type: String,
+        message_value: String,
+    }
 
     fn test_guard() -> MutexGuard<'static, ()> {
         static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -1594,6 +1685,37 @@ mod tests {
             .get_or_init(|| Mutex::new(()))
             .lock()
             .expect("test lock should not be poisoned")
+    }
+
+    fn notification_events() -> &'static Mutex<Vec<NotificationEvent>> {
+        static NOTIFICATION_EVENTS: OnceLock<Mutex<Vec<NotificationEvent>>> = OnceLock::new();
+        NOTIFICATION_EVENTS.get_or_init(|| Mutex::new(Vec::new()))
+    }
+
+    extern "C" fn record_notification(
+        context_object: *mut c_void,
+        session_id: super::RimeSessionId,
+        message_type: *const c_char,
+        message_value: *const c_char,
+    ) {
+        // SAFETY: the shim invokes handlers with valid NUL-terminated message
+        // strings for the duration of the callback.
+        let message_type = unsafe { CStr::from_ptr(message_type) }
+            .to_string_lossy()
+            .into_owned();
+        // SAFETY: same as above.
+        let message_value = unsafe { CStr::from_ptr(message_value) }
+            .to_string_lossy()
+            .into_owned();
+        notification_events()
+            .lock()
+            .expect("notification events should not be poisoned")
+            .push(NotificationEvent {
+                context_object: context_object as usize,
+                session_id,
+                message_type,
+                message_value,
+            });
     }
 
     fn empty_context() -> RimeContext {
@@ -1811,6 +1933,93 @@ mod tests {
         assert_eq!(RimeFindSession(session_id), TRUE);
         assert_eq!(RimeSyncUserData(), TRUE);
         assert_eq!(RimeFindSession(session_id), FALSE);
+    }
+
+    #[test]
+    fn notification_handler_receives_runtime_events_and_can_be_cleared() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        notification_events()
+            .lock()
+            .expect("notification events should not be poisoned")
+            .clear();
+        let session_id = RimeCreateSession();
+        let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
+        let property = CString::new("client_app").expect("property name should be valid");
+        let property_value =
+            CString::new("sample_console").expect("property value should be valid");
+        let schema_id = CString::new("sample_schema").expect("schema id should be valid");
+        let context_object = 0x5a_usize as *mut c_void;
+
+        RimeSetNotificationHandler(Some(record_notification), context_object);
+        // SAFETY: option, property, value, and schema strings are valid
+        // NUL-terminated C strings.
+        unsafe {
+            RimeSetOption(session_id, ascii_mode.as_ptr(), TRUE);
+            RimeSetOption(session_id, ascii_mode.as_ptr(), FALSE);
+            RimeSetProperty(session_id, property.as_ptr(), property_value.as_ptr());
+            assert_eq!(RimeSelectSchema(session_id, schema_id.as_ptr()), TRUE);
+        }
+        assert_eq!(RimeDeployWorkspace(), TRUE);
+
+        let events = notification_events()
+            .lock()
+            .expect("notification events should not be poisoned");
+        assert_eq!(
+            *events,
+            vec![
+                NotificationEvent {
+                    context_object: 0x5a,
+                    session_id,
+                    message_type: "option".to_owned(),
+                    message_value: "ascii_mode".to_owned(),
+                },
+                NotificationEvent {
+                    context_object: 0x5a,
+                    session_id,
+                    message_type: "option".to_owned(),
+                    message_value: "!ascii_mode".to_owned(),
+                },
+                NotificationEvent {
+                    context_object: 0x5a,
+                    session_id,
+                    message_type: "property".to_owned(),
+                    message_value: "client_app=sample_console".to_owned(),
+                },
+                NotificationEvent {
+                    context_object: 0x5a,
+                    session_id,
+                    message_type: "schema".to_owned(),
+                    message_value: "sample_schema/sample_schema".to_owned(),
+                },
+                NotificationEvent {
+                    context_object: 0x5a,
+                    session_id: 0,
+                    message_type: "deploy".to_owned(),
+                    message_value: "start".to_owned(),
+                },
+                NotificationEvent {
+                    context_object: 0x5a,
+                    session_id: 0,
+                    message_type: "deploy".to_owned(),
+                    message_value: "success".to_owned(),
+                },
+            ]
+        );
+        drop(events);
+
+        RimeSetNotificationHandler(None, std::ptr::null_mut());
+        // SAFETY: option name is a valid NUL-terminated C string.
+        unsafe { RimeSetOption(session_id, ascii_mode.as_ptr(), TRUE) };
+        assert_eq!(
+            notification_events()
+                .lock()
+                .expect("notification events should not be poisoned")
+                .len(),
+            6
+        );
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
     }
 
     #[test]

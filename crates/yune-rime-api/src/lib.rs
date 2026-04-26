@@ -1665,6 +1665,9 @@ pub extern "C" fn RimeDeployWorkspace() -> Bool {
     if !run_installation_update() {
         return FALSE;
     }
+    if !cleanup_trash() {
+        return FALSE;
+    }
     notify(0, "deploy", "start");
     notify(0, "deploy", "success");
     TRUE
@@ -1705,6 +1708,9 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
     }
     if task_name == "installation_update" {
         return bool_from(run_installation_update());
+    }
+    if task_name == "cleanup_trash" {
+        return bool_from(cleanup_trash());
     }
     TRUE
 }
@@ -4039,6 +4045,49 @@ fn backup_config_files() -> bool {
     success
 }
 
+fn cleanup_trash() -> bool {
+    let user_data_dir = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned())
+    };
+    let Ok(entries) = fs::read_dir(&user_data_dir) else {
+        return false;
+    };
+
+    let trash_dir = user_data_dir.join("trash");
+    let mut success = true;
+    let mut trash_created = false;
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        if !path.is_file() || !should_cleanup_trash_file(&path) {
+            continue;
+        }
+        if !trash_created {
+            if fs::create_dir_all(&trash_dir).is_err() {
+                return false;
+            }
+            trash_created = true;
+        }
+        if fs::rename(&path, trash_dir.join(entry.file_name())).is_err() {
+            success = false;
+        }
+    }
+    success
+}
+
+fn should_cleanup_trash_file(path: &Path) -> bool {
+    let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
+        return false;
+    };
+    file_name == "rime.log"
+        || file_name.ends_with(".bin")
+        || file_name.ends_with(".reverse.kct")
+        || file_name.ends_with(".userdb.kct.old")
+        || file_name.ends_with(".userdb.kct.snapshot")
+}
+
 fn should_backup_config_file(path: &Path) -> bool {
     let extension = path.extension().and_then(|extension| extension.to_str());
     match extension {
@@ -6008,6 +6057,56 @@ backup_config_files: false
         assert_eq!(RimeFindSession(session_id), TRUE);
         assert_eq!(RimeSyncUserData(), TRUE);
         assert_eq!(RimeFindSession(session_id), FALSE);
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn cleanup_trash_moves_librime_deployer_artifacts() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("cleanup-trash");
+        let user = root.join("user");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let cleanup_task = CString::new("cleanup_trash").expect("task name should be valid");
+        let mut traits = empty_traits();
+        traits.user_data_dir = user_c.as_ptr();
+
+        for file_name in [
+            "rime.log",
+            "build.bin",
+            "luna_pinyin.reverse.kct",
+            "luna_pinyin.userdb.kct.old",
+            "luna_pinyin.userdb.kct.snapshot",
+        ] {
+            fs::write(user.join(file_name), file_name).expect("cleanup fixture should be written");
+        }
+        fs::write(user.join("default.yaml"), "schema_list: []\n")
+            .expect("kept config should be written");
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(RimeRunTask(cleanup_task.as_ptr()), TRUE);
+
+        for file_name in [
+            "rime.log",
+            "build.bin",
+            "luna_pinyin.reverse.kct",
+            "luna_pinyin.userdb.kct.old",
+            "luna_pinyin.userdb.kct.snapshot",
+        ] {
+            assert!(!user.join(file_name).exists());
+            assert!(user.join("trash").join(file_name).is_file());
+        }
+        assert!(user.join("default.yaml").is_file());
+
+        fs::write(user.join("stale.bin"), "stale").expect("deploy fixture should be written");
+        assert_eq!(RimeDeployWorkspace(), TRUE);
+        assert!(user.join("trash").join("stale.bin").is_file());
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

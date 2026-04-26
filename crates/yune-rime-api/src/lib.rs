@@ -4144,10 +4144,33 @@ fn clean_old_log_files() -> bool {
     let Ok(entries) = fs::read_dir(&log_dir) else {
         return true;
     };
+    let entries: Vec<PathBuf> = entries
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .collect();
+    let mut files_in_use = HashSet::new();
+    for path in &entries {
+        let Ok(metadata) = fs::symlink_metadata(path) else {
+            continue;
+        };
+        if !metadata.file_type().is_symlink() {
+            continue;
+        }
+        let Ok(target) = fs::read_link(path) else {
+            continue;
+        };
+        let Some(target_file_name) = target.file_name().and_then(|file_name| file_name.to_str())
+        else {
+            continue;
+        };
+        if target_file_name.starts_with(&app_name) && target_file_name.ends_with(".log") {
+            files_in_use.insert(target_file_name.to_owned());
+        }
+    }
+
     let today = current_log_date_marker();
     let mut success = true;
-    for entry in entries.filter_map(Result::ok) {
-        let path = entry.path();
+    for path in entries {
         let Ok(metadata) = fs::symlink_metadata(&path) else {
             success = false;
             continue;
@@ -4162,6 +4185,9 @@ fn clean_old_log_files() -> bool {
             continue;
         }
         if file_name.contains(&today) {
+            continue;
+        }
+        if files_in_use.contains(file_name) {
             continue;
         }
         if fs::remove_file(&path).is_err() {
@@ -6810,12 +6836,16 @@ schema:
         let today_log = format!("rime_test{}.log", current_log_date_marker());
         for file_name in [
             "rime_test.20000101.log",
+            "rime_test.20000102.log",
             "other_app.20000101.log",
             "rime_test.20000101.txt",
             &today_log,
         ] {
             fs::write(logs.join(file_name), file_name).expect("log fixture should be written");
         }
+        #[cfg(unix)]
+        std::os::unix::fs::symlink("rime_test.20000102.log", logs.join("rime_test.INFO"))
+            .expect("active log symlink should be created");
         let shared_c =
             CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
         let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
@@ -6833,6 +6863,7 @@ schema:
         assert_eq!(RimeRunTask(cleanup_task.as_ptr()), TRUE);
 
         assert!(!logs.join("rime_test.20000101.log").exists());
+        assert!(logs.join("rime_test.20000102.log").is_file());
         assert!(logs.join("other_app.20000101.log").is_file());
         assert!(logs.join("rime_test.20000101.txt").is_file());
         assert!(logs.join(today_log).is_file());

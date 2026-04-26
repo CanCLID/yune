@@ -5563,7 +5563,13 @@ fn set_config_value(root: &mut Value, key: &str, value: Value) -> bool {
         }
     }
 
-    if let Some(index) = list_index(last) {
+    if *last == "@next" {
+        let Value::Sequence(sequence) = current else {
+            return false;
+        };
+        sequence.push(value);
+        true
+    } else if let Some(index) = list_index(last) {
         let Value::Sequence(sequence) = current else {
             return false;
         };
@@ -7045,6 +7051,7 @@ menu:
 switches:
   - name: ascii_mode
     reset: false
+schema_list: []
 ",
         )
         .expect("shared config should be written");
@@ -7054,6 +7061,7 @@ switches:
 patch:
   menu/page_size: 9
   switches/@0/reset: true
+  schema_list/@next: {schema: luna_pinyin}
   new/value: patched
 ",
         )
@@ -7085,6 +7093,10 @@ patch:
         assert_eq!(
             find_config_value(&staged, "switches/@0/reset").and_then(Value::as_bool),
             Some(true)
+        );
+        assert_eq!(
+            find_config_value(&staged, "schema_list/@0/schema").and_then(Value::as_str),
+            Some("luna_pinyin")
         );
         assert_eq!(
             find_config_value(&staged, "new/value").and_then(Value::as_str),

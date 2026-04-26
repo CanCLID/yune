@@ -1665,6 +1665,12 @@ pub extern "C" fn RimeDeployWorkspace() -> Bool {
     if !run_installation_update() {
         return FALSE;
     }
+    if !workspace_update() {
+        return FALSE;
+    }
+    if !user_dict_upgrade() {
+        return FALSE;
+    }
     if !cleanup_trash() {
         return FALSE;
     }
@@ -1720,6 +1726,12 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
     }
     if task_name == "cleanup_trash" {
         return bool_from(cleanup_trash());
+    }
+    if task_name == "workspace_update" {
+        return bool_from(workspace_update());
+    }
+    if task_name == "user_dict_upgrade" {
+        return bool_from(user_dict_upgrade());
     }
     if task_name == "prebuild_all_schemas" {
         return bool_from(prebuild_all_schemas());
@@ -4089,6 +4101,123 @@ fn cleanup_trash() -> bool {
     success
 }
 
+fn workspace_update() -> bool {
+    if !deploy_config_file("default.yaml", "config_version") {
+        return false;
+    }
+
+    let default_config = load_runtime_config_root("default", ConfigOpenKind::Deployed);
+    let Some(schema_ids) = workspace_schema_ids(&default_config) else {
+        return false;
+    };
+
+    let mut built = HashSet::new();
+    let mut success = true;
+    for schema_id in schema_ids {
+        if !workspace_update_schema(&schema_id, false, &mut built) {
+            success = false;
+        }
+    }
+
+    write_last_build_time() && success
+}
+
+fn workspace_schema_ids(default_config: &Value) -> Option<Vec<String>> {
+    let Value::Sequence(schema_list) = find_config_value(default_config, "schema_list")? else {
+        return None;
+    };
+    Some(
+        schema_list
+            .iter()
+            .filter_map(|entry| {
+                let Value::Mapping(entry) = entry else {
+                    return None;
+                };
+                entry
+                    .get(Value::String("schema".to_owned()))
+                    .and_then(Value::as_str)
+                    .filter(|schema_id| !schema_id.is_empty())
+                    .map(ToOwned::to_owned)
+            })
+            .collect(),
+    )
+}
+
+fn workspace_update_schema(
+    schema_id: &str,
+    as_dependency: bool,
+    built: &mut HashSet<String>,
+) -> bool {
+    if !built.insert(schema_id.to_owned()) {
+        return true;
+    }
+
+    let schema_file = format!("{schema_id}.schema.yaml");
+    if !deploy_schema_file(&schema_file) {
+        return as_dependency;
+    }
+
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    for dependency_id in schema_dependencies(&schema_config) {
+        if !workspace_update_schema(&dependency_id, true, built) {
+            return false;
+        }
+    }
+    true
+}
+
+fn schema_dependencies(schema_config: &Value) -> Vec<String> {
+    let Some(Value::Sequence(dependencies)) =
+        find_config_value(schema_config, "schema/dependencies")
+    else {
+        return Vec::new();
+    };
+    dependencies
+        .iter()
+        .filter_map(Value::as_str)
+        .filter(|dependency| !dependency.is_empty())
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+fn write_last_build_time() -> bool {
+    let user_data_dir = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned())
+    };
+    if fs::create_dir_all(&user_data_dir).is_err() {
+        return false;
+    }
+
+    let user_config_path = user_data_dir.join("user.yaml");
+    let mut user_config = fs::read_to_string(&user_config_path)
+        .ok()
+        .and_then(|text| serde_yaml::from_str::<Value>(&text).ok())
+        .unwrap_or_else(|| Value::Mapping(Mapping::new()));
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_secs());
+    let timestamp = c_int::try_from(timestamp).unwrap_or(c_int::MAX);
+    if !set_config_value(
+        &mut user_config,
+        "var/last_build_time",
+        Value::Number(Number::from(timestamp)),
+    ) {
+        return false;
+    }
+    let Ok(yaml) = serde_yaml::to_string(&user_config) else {
+        return false;
+    };
+    fs::write(user_config_path, yaml).is_ok()
+}
+
+fn user_dict_upgrade() -> bool {
+    true
+}
+
 fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
     if file_name.is_empty() || version_key.is_empty() {
         return false;
@@ -6122,8 +6251,11 @@ backup_config_files: false
         let shared_path = root.join("shared");
         let user = root.join("user");
         fs::create_dir_all(&shared_path).expect("shared dir should be created");
-        fs::write(shared_path.join("default.yaml"), "config_version: test\n")
-            .expect("shared config should be written");
+        fs::write(
+            shared_path.join("default.yaml"),
+            "config_version: test\nschema_list:\n  - schema: default\n",
+        )
+        .expect("shared config should be written");
         fs::write(
             shared_path.join("default.schema.yaml"),
             "schema:\n  schema_id: default\n  name: Default\n  version: test\n",
@@ -6400,15 +6532,136 @@ schema:
     }
 
     #[test]
+    fn workspace_update_deploys_default_schemas_and_dependencies() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("workspace-update");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "\
+config_version: '1.0'
+schema_list:
+  - schema: luna
+  - schema: terra
+    case:
+      - disabled_flag
+",
+        )
+        .expect("default config should be written");
+        fs::write(
+            shared.join("luna.schema.yaml"),
+            "\
+schema:
+  schema_id: luna
+  name: Luna
+  dependencies:
+    - luna_ext
+",
+        )
+        .expect("luna schema should be written");
+        fs::write(
+            shared.join("luna_ext.schema.yaml"),
+            "\
+schema:
+  schema_id: luna_ext
+  name: Luna Extension
+",
+        )
+        .expect("dependency schema should be written");
+        fs::write(
+            shared.join("terra.schema.yaml"),
+            "\
+schema:
+  schema_id: terra
+  name: Terra
+",
+        )
+        .expect("terra schema should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let workspace_task = CString::new("workspace_update").expect("task should be valid");
+        let user_dict_task = CString::new("user_dict_upgrade").expect("task should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+        assert_eq!(RimeRunTask(user_dict_task.as_ptr()), TRUE);
+        for file_name in [
+            "default.yaml",
+            "luna.schema.yaml",
+            "luna_ext.schema.yaml",
+            "terra.schema.yaml",
+        ] {
+            assert!(user.join("build").join(file_name).is_file());
+        }
+
+        let luna_ext_id = CString::new("luna_ext").expect("schema id should be valid");
+        let mut luna_ext = empty_config();
+        // SAFETY: schema id and config pointer are valid for the call.
+        assert_eq!(
+            unsafe { RimeSchemaOpen(luna_ext_id.as_ptr(), &mut luna_ext) },
+            TRUE
+        );
+        assert_eq!(
+            config_string(&mut luna_ext, "schema/name").as_deref(),
+            Some("Luna Extension")
+        );
+        // SAFETY: config was opened by the config API.
+        assert_eq!(unsafe { RimeConfigClose(&mut luna_ext) }, TRUE);
+
+        let user_yaml = fs::read_to_string(user.join("user.yaml"))
+            .expect("workspace update should write user config");
+        let user_config: Value =
+            serde_yaml::from_str(&user_yaml).expect("user config should be valid yaml");
+        assert!(
+            find_config_value(&user_config, "var/last_build_time")
+                .and_then(Value::as_i64)
+                .unwrap_or_default()
+                > 0
+        );
+
+        fs::write(user.join("stale.bin"), "stale").expect("trash fixture should be written");
+        assert_eq!(RimeDeployWorkspace(), TRUE);
+        assert!(user.join("trash").join("stale.bin").is_file());
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
     fn cleanup_trash_moves_librime_deployer_artifacts() {
         let _guard = test_guard();
         RimeCleanupAllSessions();
         let root = unique_temp_dir("cleanup-trash");
+        let shared = root.join("shared");
         let user = root.join("user");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
         fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "config_version: test\nschema_list:\n  - schema: default\n",
+        )
+        .expect("shared config should be written");
+        fs::write(
+            shared.join("default.schema.yaml"),
+            "schema:\n  schema_id: default\n  name: Default\n",
+        )
+        .expect("shared schema should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
         let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
         let cleanup_task = CString::new("cleanup_trash").expect("task name should be valid");
         let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
         traits.user_data_dir = user_c.as_ptr();
 
         for file_name in [
@@ -7355,9 +7608,24 @@ switcher:
         let _guard = test_guard();
         RimeCleanupAllSessions();
         let root = unique_temp_dir("notification-events");
+        let shared = root.join("shared");
         let user = root.join("user");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "config_version: test\nschema_list:\n  - schema: sample_schema\n",
+        )
+        .expect("shared config should be written");
+        fs::write(
+            shared.join("sample_schema.schema.yaml"),
+            "schema:\n  schema_id: sample_schema\n  name: Sample\n",
+        )
+        .expect("shared schema should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
         let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
         let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
         traits.user_data_dir = user_c.as_ptr();
         // SAFETY: traits points to valid storage and strings live for the call.
         unsafe { RimeSetup(&traits) };

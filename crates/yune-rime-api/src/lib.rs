@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    ffi::{c_void, CString},
+    ffi::{c_void, CStr, CString},
     os::raw::{c_char, c_int},
     ptr,
     sync::{Mutex, OnceLock},
@@ -119,6 +119,7 @@ impl SessionRegistry {
 struct SessionState {
     engine: Engine,
     unread_commit: Option<String>,
+    input_buffer: Option<CString>,
 }
 
 struct CandidateListState {
@@ -237,6 +238,86 @@ pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
         .expect("session registry should not be poisoned");
     if let Some(session) = registry.sessions.get_mut(&session_id) {
         session.engine.clear_composition();
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetInput(session_id: RimeSessionId) -> *const c_char {
+    if session_id == 0 {
+        return ptr::null();
+    }
+
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let Some(session) = registry.sessions.get_mut(&session_id) else {
+        return ptr::null();
+    };
+    let Ok(input) = CString::new(session.engine.context().composition.input.as_str()) else {
+        return ptr::null();
+    };
+    session.input_buffer = Some(input);
+    session
+        .input_buffer
+        .as_ref()
+        .map_or(ptr::null(), |input| input.as_ptr())
+}
+
+/// Sets the current raw composition input for a session.
+///
+/// # Safety
+///
+/// `input` must be either null or a valid NUL-terminated C string. Null input
+/// is rejected.
+#[no_mangle]
+pub unsafe extern "C" fn RimeSetInput(session_id: RimeSessionId, input: *const c_char) -> Bool {
+    if session_id == 0 || input.is_null() {
+        return FALSE;
+    }
+
+    // SAFETY: `input` is non-null and caller promises a valid NUL-terminated C
+    // string.
+    let Ok(input) = unsafe { CStr::from_ptr(input) }.to_str() else {
+        return FALSE;
+    };
+
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let Some(session) = registry.sessions.get_mut(&session_id) else {
+        return FALSE;
+    };
+    session.engine.set_input(input);
+    session.input_buffer = None;
+    TRUE
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetCaretPos(session_id: RimeSessionId) -> usize {
+    if session_id == 0 {
+        return 0;
+    }
+
+    let registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    registry
+        .sessions
+        .get(&session_id)
+        .map_or(0, |session| session.engine.context().composition.caret)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeSetCaretPos(session_id: RimeSessionId, caret_pos: usize) {
+    if session_id == 0 {
+        return;
+    }
+
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    if let Some(session) = registry.sessions.get_mut(&session_id) {
+        session.engine.set_caret_pos(caret_pos);
     }
 }
 
@@ -809,7 +890,7 @@ fn free_candidate_fields(candidate: &mut RimeCandidate) {
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::CStr;
+    use std::ffi::{CStr, CString};
     use std::sync::{Mutex, MutexGuard, OnceLock};
 
     use yune_core::StaticTableTranslator;
@@ -819,8 +900,9 @@ mod tests {
         RimeCandidateListIterator, RimeCandidateListNext, RimeCleanupAllSessions,
         RimeClearComposition, RimeCommit, RimeCommitComposition, RimeContext, RimeCreateSession,
         RimeDestroySession, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus,
-        RimeGetCommit, RimeGetContext, RimeGetStatus, RimeProcessKey, RimeSelectCandidate,
-        RimeSelectCandidateOnCurrentPage, RimeStatus, FALSE, TRUE,
+        RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetInput, RimeGetStatus,
+        RimeProcessKey, RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSetCaretPos,
+        RimeSetInput, RimeStatus, FALSE, TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -1081,6 +1163,73 @@ mod tests {
         assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
         assert_eq!(context.composition.length, 0);
         assert_eq!(context.menu.num_candidates, 0);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn gets_and_sets_input_and_caret_position() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        {
+            let mut registry = super::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get_mut(&session_id)
+                .expect("session should exist");
+            session
+                .engine
+                .add_translator(StaticTableTranslator::new([("ni", "你")]));
+        }
+        let mut context = empty_context();
+
+        assert_eq!(RimeGetInput(0), std::ptr::null());
+        assert_eq!(RimeGetCaretPos(0), 0);
+        assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+        assert_eq!(RimeGetCaretPos(session_id), 2);
+
+        let input = RimeGetInput(session_id);
+        assert!(!input.is_null());
+        // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+        let input = unsafe { CStr::from_ptr(input) };
+        assert_eq!(input.to_str(), Ok("ni"));
+
+        RimeSetCaretPos(session_id, 1);
+        assert_eq!(RimeGetCaretPos(session_id), 1);
+        RimeSetCaretPos(session_id, 10);
+        assert_eq!(RimeGetCaretPos(session_id), 2);
+
+        let new_input = CString::new("ni").expect("literal should not contain NUL");
+        // SAFETY: `new_input` is a valid NUL-terminated C string.
+        assert_eq!(
+            unsafe { RimeSetInput(session_id, new_input.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(RimeGetCaretPos(session_id), 2);
+        // SAFETY: `context` points to writable storage initialized with a
+        // positive `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        assert_eq!(context.menu.num_candidates, 2);
+        // SAFETY: `context.menu.candidates` points to initialized candidates.
+        let first_candidate = unsafe { *context.menu.candidates };
+        // SAFETY: candidate text is a valid NUL-terminated string owned by the
+        // context object.
+        let first_candidate_text = unsafe { CStr::from_ptr(first_candidate.text) };
+        assert_eq!(first_candidate_text.to_str(), Ok("你"));
+        // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+        // SAFETY: null pointers are explicitly rejected.
+        assert_eq!(unsafe { RimeSetInput(session_id, std::ptr::null()) }, FALSE);
+        // SAFETY: `new_input` is a valid NUL-terminated C string.
+        assert_eq!(
+            unsafe { RimeSetInput(session_id + 1, new_input.as_ptr()) },
+            FALSE
+        );
 
         assert_eq!(RimeDestroySession(session_id), TRUE);
     }

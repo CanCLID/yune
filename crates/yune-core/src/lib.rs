@@ -733,6 +733,18 @@ impl Engine {
         self.context.highlighted = 0;
     }
 
+    pub fn set_input(&mut self, input: impl Into<String>) {
+        let input = input.into();
+        self.context.composition.input = input.clone();
+        self.context.composition.caret = input.len();
+        self.context.composition.preedit = input;
+        self.refresh_candidates();
+    }
+
+    pub fn set_caret_pos(&mut self, caret_pos: usize) {
+        self.context.composition.caret = caret_pos.min(self.context.composition.input.len());
+    }
+
     #[must_use]
     pub fn context(&self) -> &Context {
         &self.context
@@ -1005,6 +1017,24 @@ sort: by_weight
         assert!(engine.context().candidates.is_empty());
         assert_eq!(engine.context().last_commit.as_deref(), Some("你"));
         assert_eq!(engine.commit_composition(), None);
+    }
+
+    #[test]
+    fn direct_input_control_rebuilds_candidates_and_clamps_caret() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        engine.set_input("ni");
+
+        assert_eq!(engine.context().composition.input, "ni");
+        assert_eq!(engine.context().composition.preedit, "ni");
+        assert_eq!(engine.context().composition.caret, 2);
+        assert_eq!(engine.context().candidates[0].text, "你");
+
+        engine.set_caret_pos(1);
+        assert_eq!(engine.context().composition.caret, 1);
+        engine.set_caret_pos(10);
+        assert_eq!(engine.context().composition.caret, 2);
     }
 
     #[test]

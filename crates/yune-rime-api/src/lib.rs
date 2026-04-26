@@ -5,6 +5,7 @@ use std::{
     path::Path,
     ptr, slice,
     sync::{Mutex, OnceLock},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde_yaml::{Mapping, Number, Value};
@@ -361,6 +362,8 @@ struct RuntimePaths {
     sync_dir: CString,
     user_id: CString,
     user_data_sync_dir: CString,
+    distribution_code_name: CString,
+    distribution_version: CString,
 }
 
 #[derive(Default)]
@@ -376,7 +379,7 @@ struct ModuleRegistry {
 
 impl Default for RuntimePaths {
     fn default() -> Self {
-        Self::new(".", ".", "build", "build", "sync", "unknown")
+        Self::new(".", ".", "build", "build", "sync", "unknown", ("", ""))
     }
 }
 
@@ -388,6 +391,7 @@ impl RuntimePaths {
         staging_dir: &str,
         sync_dir: &str,
         user_id: &str,
+        distribution: (&str, &str),
     ) -> Self {
         let user_data_sync_dir = path_join(sync_dir, user_id);
         Self {
@@ -398,6 +402,8 @@ impl RuntimePaths {
             sync_dir: cstring_from_lossless_str(sync_dir),
             user_id: cstring_from_lossless_str(user_id),
             user_data_sync_dir: cstring_from_lossless_str(&user_data_sync_dir),
+            distribution_code_name: cstring_from_lossless_str(distribution.0),
+            distribution_version: cstring_from_lossless_str(distribution.1),
         }
     }
 
@@ -417,6 +423,10 @@ impl RuntimePaths {
             .unwrap_or_else(|| path_join(&shared_data_dir, "build"));
         let staging_dir = optional_c_string(traits.staging_dir)
             .unwrap_or_else(|| path_join(&user_data_dir, "build"));
+        let distribution_code_name =
+            optional_c_string(traits.distribution_code_name).unwrap_or_default();
+        let distribution_version =
+            optional_c_string(traits.distribution_version).unwrap_or_default();
 
         Some(Self::new(
             &shared_data_dir,
@@ -425,6 +435,7 @@ impl RuntimePaths {
             &staging_dir,
             "sync",
             "unknown",
+            (&distribution_code_name, &distribution_version),
         ))
     }
 }
@@ -500,7 +511,7 @@ fn build_rime_api() -> RimeApi {
         config_get_double: Some(RimeConfigGetDouble),
         config_get_string: Some(RimeConfigGetString),
         config_get_cstring: Some(RimeConfigGetCString),
-        config_update_signature: None,
+        config_update_signature: Some(RimeConfigUpdateSignature),
         config_begin_map: Some(RimeConfigBeginMap),
         config_next: Some(RimeConfigNext),
         config_end: Some(RimeConfigEnd),
@@ -1479,6 +1490,60 @@ pub unsafe extern "C" fn RimeConfigGetCString(
         .cstring_cache
         .as_ref()
         .map_or(ptr::null(), |value| value.as_ptr())
+}
+
+/// Updates a config signature block with librime-style deployment metadata.
+///
+/// # Safety
+///
+/// `config` must point to an initialized `RimeConfig`, and `signer` must be a
+/// valid NUL-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigUpdateSignature(
+    config: *mut RimeConfig,
+    signer: *const c_char,
+) -> Bool {
+    if signer.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `signer` is non-null and caller promises a valid C string.
+    let signer = unsafe { CStr::from_ptr(signer) }
+        .to_string_lossy()
+        .into_owned();
+    let Some(state) = (unsafe { config_state_mut(config) }) else {
+        return FALSE;
+    };
+
+    let modified_time = SystemTime::now().duration_since(UNIX_EPOCH).map_or_else(
+        |_| "0".to_owned(),
+        |duration| duration.as_secs().to_string(),
+    );
+    let rime_version =
+        String::from_utf8_lossy(&RIME_VERSION_BYTES[..RIME_VERSION_BYTES.len() - 1]).into_owned();
+    let (distribution_code_name, distribution_version) = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        (
+            paths.distribution_code_name.to_string_lossy().into_owned(),
+            paths.distribution_version.to_string_lossy().into_owned(),
+        )
+    };
+
+    let updates = [
+        ("signature/generator", signer),
+        ("signature/modified_time", modified_time),
+        ("signature/distribution_code_name", distribution_code_name),
+        ("signature/distribution_version", distribution_version),
+        ("signature/rime_version", rime_version),
+    ];
+    for (key, value) in updates {
+        if !set_config_value(&mut state.root, key, Value::String(value)) {
+            return FALSE;
+        }
+    }
+    state.cstring_cache = None;
+    TRUE
 }
 
 /// Writes a boolean config value.
@@ -2822,23 +2887,24 @@ mod tests {
         RimeConfigGetBool, RimeConfigGetCString, RimeConfigGetDouble, RimeConfigGetInt,
         RimeConfigGetItem, RimeConfigGetString, RimeConfigInit, RimeConfigIterator,
         RimeConfigListSize, RimeConfigLoadString, RimeConfigNext, RimeConfigSetBool,
-        RimeConfigSetDouble, RimeConfigSetInt, RimeConfigSetItem, RimeConfigSetString, RimeContext,
-        RimeCreateSession, RimeCustomApi, RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage,
-        RimeDeployConfigFile, RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize,
-        RimeDestroySession, RimeFinalize, RimeFindModule, RimeFindSession, RimeFreeCommit,
-        RimeFreeContext, RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext,
-        RimeGetCurrentSchema, RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir,
-        RimeGetPrebuiltDataDirSecure, RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir,
-        RimeGetSharedDataDirSecure, RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStatus,
-        RimeGetSyncDir, RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure,
-        RimeGetUserDataSyncDir, RimeGetUserId, RimeGetVersion, RimeHighlightCandidate,
-        RimeHighlightCandidateOnCurrentPage, RimeInitialize, RimeIsMaintenancing,
-        RimeJoinMaintenanceThread, RimeModule, RimePrebuildAllSchemas, RimeProcessKey,
-        RimeRegisterModule, RimeRunTask, RimeSelectCandidate, RimeSelectCandidateOnCurrentPage,
-        RimeSelectSchema, RimeSetCaretPos, RimeSetInput, RimeSetNotificationHandler, RimeSetOption,
-        RimeSetProperty, RimeSetup, RimeSetupLogging, RimeSimulateKeySequence,
-        RimeStartMaintenance, RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData,
-        RimeTraits, FALSE, TRUE,
+        RimeConfigSetDouble, RimeConfigSetInt, RimeConfigSetItem, RimeConfigSetString,
+        RimeConfigUpdateSignature, RimeContext, RimeCreateSession, RimeCustomApi,
+        RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage, RimeDeployConfigFile,
+        RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession,
+        RimeFinalize, RimeFindModule, RimeFindSession, RimeFreeCommit, RimeFreeContext,
+        RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
+        RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure,
+        RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure,
+        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir,
+        RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir,
+        RimeGetUserId, RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
+        RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeModule,
+        RimePrebuildAllSchemas, RimeProcessKey, RimeRegisterModule, RimeRunTask,
+        RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos,
+        RimeSetInput, RimeSetNotificationHandler, RimeSetOption, RimeSetProperty, RimeSetup,
+        RimeSetupLogging, RimeSimulateKeySequence, RimeStartMaintenance,
+        RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits, FALSE,
+        TRUE,
     };
 
     #[derive(Debug, PartialEq, Eq)]
@@ -2987,6 +3053,23 @@ mod tests {
         }
     }
 
+    fn config_string(config: &mut RimeConfig, key: &str) -> Option<String> {
+        let key = CString::new(key).expect("key should be valid");
+        let mut buffer = [0 as c_char; 128];
+        // SAFETY: config, key, and output buffer are valid for the call.
+        let ok =
+            unsafe { RimeConfigGetString(config, key.as_ptr(), buffer.as_mut_ptr(), buffer.len()) };
+        if ok == FALSE {
+            return None;
+        }
+        // SAFETY: successful config string copies are NUL-terminated.
+        Some(
+            unsafe { CStr::from_ptr(buffer.as_ptr()) }
+                .to_string_lossy()
+                .into_owned(),
+        )
+    }
+
     #[test]
     fn maps_bool_to_rime_bool() {
         assert_eq!(bool_from(true), TRUE);
@@ -3023,6 +3106,7 @@ mod tests {
         assert!(api.config_get_string.is_some());
         assert!(api.config_get_item.is_some());
         assert!(api.config_set_item.is_some());
+        assert!(api.config_update_signature.is_some());
         assert!(api.config_begin_map.is_some());
         assert!(api.config_begin_list.is_some());
         assert!(api.config_next.is_some());
@@ -3145,6 +3229,56 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: asc
         // SAFETY: config was initialized by the API and is still open.
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
         assert!(config.ptr.is_null());
+    }
+
+    #[test]
+    fn config_update_signature_writes_runtime_metadata() {
+        let _guard = test_guard();
+        let distribution_code_name =
+            CString::new("yune-test").expect("distribution code name should be valid");
+        let distribution_version =
+            CString::new("2026.04").expect("distribution version should be valid");
+        let mut traits = empty_traits();
+        traits.distribution_code_name = distribution_code_name.as_ptr();
+        traits.distribution_version = distribution_version.as_ptr();
+        // SAFETY: traits points to valid storage and strings live for the call.
+        unsafe { RimeSetup(&traits) };
+
+        let mut config = empty_config();
+        let signer = CString::new("unit-test").expect("signer should be valid");
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigUpdateSignature(&mut config, signer.as_ptr()) },
+            TRUE
+        );
+
+        assert_eq!(
+            config_string(&mut config, "signature/generator").as_deref(),
+            Some("unit-test")
+        );
+        assert_eq!(
+            config_string(&mut config, "signature/distribution_code_name").as_deref(),
+            Some("yune-test")
+        );
+        assert_eq!(
+            config_string(&mut config, "signature/distribution_version").as_deref(),
+            Some("2026.04")
+        );
+        assert!(config_string(&mut config, "signature/rime_version")
+            .as_deref()
+            .is_some_and(|value| value.starts_with("yune-rime-api ")));
+        assert!(config_string(&mut config, "signature/modified_time")
+            .and_then(|value| value.parse::<u64>().ok())
+            .is_some());
+        assert_eq!(
+            unsafe { RimeConfigUpdateSignature(&mut config, std::ptr::null()) },
+            FALSE
+        );
+
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
     }
 
     #[test]

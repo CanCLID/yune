@@ -4519,7 +4519,8 @@ fn deployed_config_needs_update(
         return true;
     }
     let custom_resource_id = custom_patch_resource_id(&resource_id);
-    if !timestamps.contains_key(Value::String(custom_resource_id.clone()))
+    if source_uses_auto_custom_patch(&shared_data_dir.join(file_name))
+        && !timestamps.contains_key(Value::String(custom_resource_id.clone()))
         && config_resource_path(shared_data_dir, user_data_dir, &custom_resource_id).exists()
     {
         return true;
@@ -4558,22 +4559,25 @@ fn deployed_config_yaml_with_build_info(
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())?;
     let resource_id = normalize_config_resource_id(file_name);
     let timestamp = source_modified_secs(source).unwrap_or(0);
+    let apply_auto_custom_patch = apply_root_patch_directive(&mut root)?;
     set_build_info(&mut root, &resource_id, timestamp)?;
 
-    let custom_resource_id = custom_patch_resource_id(&resource_id);
-    let custom_path = user_data_dir.join(format!("{custom_resource_id}.yaml"));
-    if let Some(custom_root) = fs::read_to_string(&custom_path)
-        .ok()
-        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
-    {
-        apply_custom_patch(&mut root, &custom_root)?;
-        set_build_info(
-            &mut root,
-            &custom_resource_id,
-            source_modified_secs(&custom_path).unwrap_or(0),
-        )?;
-    } else {
-        set_build_info(&mut root, &custom_resource_id, 0)?;
+    if apply_auto_custom_patch {
+        let custom_resource_id = custom_patch_resource_id(&resource_id);
+        let custom_path = user_data_dir.join(format!("{custom_resource_id}.yaml"));
+        if let Some(custom_root) = fs::read_to_string(&custom_path)
+            .ok()
+            .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
+        {
+            apply_custom_patch(&mut root, &custom_root)?;
+            set_build_info(
+                &mut root,
+                &custom_resource_id,
+                source_modified_secs(&custom_path).unwrap_or(0),
+            )?;
+        } else {
+            set_build_info(&mut root, &custom_resource_id, 0)?;
+        }
     }
     serde_yaml::to_string(&root).ok()
 }
@@ -4596,10 +4600,48 @@ fn config_resource_path(
     root.join(format!("{resource_id}.yaml"))
 }
 
+fn source_uses_auto_custom_patch(source: &Path) -> bool {
+    fs::read_to_string(source)
+        .ok()
+        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
+        .map_or(true, |root| find_config_value(&root, "__patch").is_none())
+}
+
+fn apply_root_patch_directive(root: &mut Value) -> Option<bool> {
+    let patch = {
+        let Value::Mapping(mapping) = root else {
+            return Some(true);
+        };
+        mapping.remove(Value::String("__patch".to_owned()))
+    };
+    let Some(patch) = patch else {
+        return Some(true);
+    };
+    apply_patch_directive(root, &patch)?;
+    Some(false)
+}
+
+fn apply_patch_directive(root: &mut Value, patch: &Value) -> Option<()> {
+    match patch {
+        Value::Mapping(patch) => apply_patch_map(root, patch),
+        Value::Sequence(patches) => {
+            for patch in patches {
+                apply_patch_directive(root, patch)?;
+            }
+            Some(())
+        }
+        _ => None,
+    }
+}
+
 fn apply_custom_patch(root: &mut Value, custom_root: &Value) -> Option<()> {
     let Some(Value::Mapping(patch)) = find_config_value(custom_root, "patch") else {
         return Some(());
     };
+    apply_patch_map(root, patch)
+}
+
+fn apply_patch_map(root: &mut Value, patch: &Mapping) -> Option<()> {
     for (key, value) in patch {
         let key = key.as_str()?;
         if !set_config_value(root, key, value.clone()) {
@@ -7084,6 +7126,99 @@ patch:
             Some(7)
         );
         assert!(find_config_value(&rebuilt, "new/value").is_none());
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn deploy_config_file_applies_explicit_root_patch_without_auto_custom_patch() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("deploy-config-explicit-patch");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let staging = user.join("build");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "\
+config_version: '2.0'
+menu:
+  page_size: 5
+__patch:
+  - menu/page_size: 8
+  - explicit/value: patched
+",
+        )
+        .expect("shared config should be written");
+        fs::write(
+            user.join("default.custom.yaml"),
+            "\
+patch:
+  menu/page_size: 9
+  custom_only/value: ignored
+",
+        )
+        .expect("custom patch should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let config_file = CString::new("default.yaml").expect("file should be valid");
+        let version_key = CString::new("config_version").expect("key should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        let destination = staging.join("default.yaml");
+        let mut staged: Value = serde_yaml::from_str(
+            &fs::read_to_string(&destination).expect("staged config should be readable"),
+        )
+        .expect("staged config should parse");
+        assert_eq!(
+            find_config_value(&staged, "menu/page_size").and_then(Value::as_i64),
+            Some(8)
+        );
+        assert_eq!(
+            find_config_value(&staged, "explicit/value").and_then(Value::as_str),
+            Some("patched")
+        );
+        assert!(find_config_value(&staged, "custom_only/value").is_none());
+        assert!(find_config_value(&staged, "__patch").is_none());
+        assert!(find_config_value(&staged, "__build_info/timestamps/default.custom").is_none());
+
+        super::set_config_value(
+            &mut staged,
+            "local_marker",
+            Value::String("fresh".to_owned()),
+        );
+        fs::write(
+            &destination,
+            serde_yaml::to_string(&staged).expect("fresh staged config should serialize"),
+        )
+        .expect("fresh staged config should be written");
+
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        let unchanged: Value = serde_yaml::from_str(
+            &fs::read_to_string(&destination).expect("unchanged config should be readable"),
+        )
+        .expect("unchanged config should parse");
+        assert_eq!(
+            find_config_value(&unchanged, "local_marker").and_then(Value::as_str),
+            Some("fresh")
+        );
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     ffi::{c_void, CStr, CString},
     os::raw::{c_char, c_int},
+    path::Path,
     ptr, slice,
     sync::{Mutex, OnceLock},
 };
@@ -24,6 +25,11 @@ pub struct RimeTraits {
     pub distribution_code_name: *const c_char,
     pub distribution_version: *const c_char,
     pub app_name: *const c_char,
+    pub modules: *const *const c_char,
+    pub min_log_level: c_int,
+    pub log_dir: *const c_char,
+    pub prebuilt_data_dir: *const c_char,
+    pub staging_dir: *const c_char,
 }
 
 #[repr(C)]
@@ -116,6 +122,8 @@ const XK_RETURN: c_int = 0xff0d;
 const DEFAULT_PAGE_SIZE: usize = 5;
 const DEFAULT_SCHEMA_ID: &str = "default";
 const DEFAULT_SCHEMA_NAME: &str = "Default";
+const RIME_VERSION_BYTES: &[u8] =
+    concat!("yune-rime-api ", env!("CARGO_PKG_VERSION"), "\0").as_bytes();
 
 #[derive(Default)]
 struct SessionRegistry {
@@ -143,9 +151,79 @@ struct CandidateListState {
     candidates: Vec<yune_core::Candidate>,
 }
 
+struct RuntimePaths {
+    shared_data_dir: CString,
+    user_data_dir: CString,
+    prebuilt_data_dir: CString,
+    staging_dir: CString,
+    sync_dir: CString,
+    user_id: CString,
+    user_data_sync_dir: CString,
+}
+
+impl Default for RuntimePaths {
+    fn default() -> Self {
+        Self::new(".", ".", "build", "build", "sync", "unknown")
+    }
+}
+
+impl RuntimePaths {
+    fn new(
+        shared_data_dir: &str,
+        user_data_dir: &str,
+        prebuilt_data_dir: &str,
+        staging_dir: &str,
+        sync_dir: &str,
+        user_id: &str,
+    ) -> Self {
+        let user_data_sync_dir = path_join(sync_dir, user_id);
+        Self {
+            shared_data_dir: cstring_from_lossless_str(shared_data_dir),
+            user_data_dir: cstring_from_lossless_str(user_data_dir),
+            prebuilt_data_dir: cstring_from_lossless_str(prebuilt_data_dir),
+            staging_dir: cstring_from_lossless_str(staging_dir),
+            sync_dir: cstring_from_lossless_str(sync_dir),
+            user_id: cstring_from_lossless_str(user_id),
+            user_data_sync_dir: cstring_from_lossless_str(&user_data_sync_dir),
+        }
+    }
+
+    unsafe fn from_traits(traits: *const RimeTraits) -> Option<Self> {
+        if traits.is_null() {
+            return None;
+        }
+
+        // SAFETY: callers promise that `traits`, when non-null, points to a
+        // valid `RimeTraits` object whose optional C strings are NUL-terminated.
+        let traits = unsafe { &*traits };
+        let shared_data_dir =
+            optional_c_string(traits.shared_data_dir).unwrap_or_else(|| ".".to_owned());
+        let user_data_dir =
+            optional_c_string(traits.user_data_dir).unwrap_or_else(|| ".".to_owned());
+        let prebuilt_data_dir = optional_c_string(traits.prebuilt_data_dir)
+            .unwrap_or_else(|| path_join(&shared_data_dir, "build"));
+        let staging_dir = optional_c_string(traits.staging_dir)
+            .unwrap_or_else(|| path_join(&user_data_dir, "build"));
+
+        Some(Self::new(
+            &shared_data_dir,
+            &user_data_dir,
+            &prebuilt_data_dir,
+            &staging_dir,
+            "sync",
+            "unknown",
+        ))
+    }
+}
+
 fn sessions() -> &'static Mutex<SessionRegistry> {
     static SESSIONS: OnceLock<Mutex<SessionRegistry>> = OnceLock::new();
     SESSIONS.get_or_init(|| Mutex::new(SessionRegistry::default()))
+}
+
+fn runtime_paths() -> &'static Mutex<RuntimePaths> {
+    static RUNTIME_PATHS: OnceLock<Mutex<RuntimePaths>> = OnceLock::new();
+    RUNTIME_PATHS.get_or_init(|| Mutex::new(RuntimePaths::default()))
 }
 
 #[must_use]
@@ -155,6 +233,139 @@ pub const fn bool_from(value: bool) -> Bool {
     } else {
         FALSE
     }
+}
+
+/// Stores process-wide runtime traits for later path queries.
+///
+/// # Safety
+///
+/// `traits` must be either null or a valid pointer to a `RimeTraits` object.
+/// Any non-null string pointers in the traits object must be valid
+/// NUL-terminated C strings.
+#[no_mangle]
+pub unsafe extern "C" fn RimeSetup(traits: *const RimeTraits) {
+    if let Some(paths) = unsafe { RuntimePaths::from_traits(traits) } {
+        *runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned") = paths;
+    }
+}
+
+/// Initializes the runtime using the same trait handling as `RimeSetup`.
+///
+/// # Safety
+///
+/// `traits` follows the same preconditions as `RimeSetup`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
+    // SAFETY: forwarded preconditions are identical to `RimeSetup`.
+    unsafe { RimeSetup(traits) };
+}
+
+#[no_mangle]
+pub extern "C" fn RimeFinalize() {
+    RimeCleanupAllSessions();
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetVersion() -> *const c_char {
+    RIME_VERSION_BYTES.as_ptr().cast::<c_char>()
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetSharedDataDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.shared_data_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetUserDataDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.user_data_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetPrebuiltDataDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.prebuilt_data_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetStagingDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.staging_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetSyncDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.sync_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetUserId() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.user_id)
+}
+
+/// Copies the shared data directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetSharedDataDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.shared_data_dir, dir, buffer_size);
+}
+
+/// Copies the user data directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetUserDataDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.user_data_dir, dir, buffer_size);
+}
+
+/// Copies the prebuilt data directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetPrebuiltDataDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.prebuilt_data_dir, dir, buffer_size);
+}
+
+/// Copies the staging directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetStagingDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.staging_dir, dir, buffer_size);
+}
+
+/// Copies the sync directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetSyncDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.sync_dir, dir, buffer_size);
+}
+
+/// Copies the user-specific sync directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetUserDataSyncDir(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.user_data_sync_dir, dir, buffer_size);
 }
 
 #[no_mangle]
@@ -1074,6 +1285,51 @@ fn with_session(session_id: RimeSessionId, action: impl FnOnce(&mut SessionState
     bool_from(action(session))
 }
 
+fn optional_c_string(value: *const c_char) -> Option<String> {
+    if value.is_null() {
+        return None;
+    }
+
+    // SAFETY: callers validate that non-null optional runtime trait strings are
+    // valid NUL-terminated C strings before reaching this helper.
+    Some(
+        unsafe { CStr::from_ptr(value) }
+            .to_string_lossy()
+            .into_owned(),
+    )
+}
+
+fn cstring_from_lossless_str(value: &str) -> CString {
+    CString::new(value).expect("values derived from C strings or literals cannot contain NUL bytes")
+}
+
+fn path_join(base: &str, child: &str) -> String {
+    Path::new(base).join(child).to_string_lossy().into_owned()
+}
+
+fn runtime_path_ptr(select: impl FnOnce(&RuntimePaths) -> &CString) -> *const c_char {
+    let paths = runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned");
+    select(&paths).as_ptr()
+}
+
+fn copy_runtime_path_to_buffer(
+    select: impl FnOnce(&RuntimePaths) -> &CString,
+    output: *mut c_char,
+    buffer_size: usize,
+) {
+    if output.is_null() || buffer_size == 0 {
+        return;
+    }
+
+    let paths = runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned");
+    let value = select(&paths).to_string_lossy();
+    copy_c_string_to_buffer(&value, output, buffer_size);
+}
+
 fn clear_commit(commit: *mut RimeCommit) {
     // SAFETY: callers only pass non-null pointers to this helper; fields are
     // plain integers/pointers and assigning null mirrors librime's clear macro.
@@ -1246,12 +1502,16 @@ mod tests {
         bool_from, RimeCandidateListBegin, RimeCandidateListEnd, RimeCandidateListFromIndex,
         RimeCandidateListIterator, RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions,
         RimeClearComposition, RimeCommit, RimeCommitComposition, RimeContext, RimeCreateSession,
-        RimeDestroySession, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus,
-        RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema, RimeGetInput,
-        RimeGetOption, RimeGetProperty, RimeGetSchemaList, RimeGetStatus, RimeHighlightCandidate,
-        RimeHighlightCandidateOnCurrentPage, RimeProcessKey, RimeSelectCandidate,
-        RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos, RimeSetInput,
-        RimeSetOption, RimeSetProperty, RimeSimulateKeySequence, RimeStatus, FALSE, TRUE,
+        RimeDestroySession, RimeFinalize, RimeFindSession, RimeFreeCommit, RimeFreeContext,
+        RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
+        RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure,
+        RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure,
+        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir,
+        RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir,
+        RimeGetUserId, RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
+        RimeInitialize, RimeProcessKey, RimeSelectCandidate, RimeSelectCandidateOnCurrentPage,
+        RimeSelectSchema, RimeSetCaretPos, RimeSetInput, RimeSetOption, RimeSetProperty, RimeSetup,
+        RimeSimulateKeySequence, RimeStatus, RimeTraits, FALSE, TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -1320,10 +1580,116 @@ mod tests {
         }
     }
 
+    fn empty_traits() -> RimeTraits {
+        RimeTraits {
+            data_size: std::mem::size_of::<RimeTraits>() as i32,
+            shared_data_dir: std::ptr::null(),
+            user_data_dir: std::ptr::null(),
+            distribution_name: std::ptr::null(),
+            distribution_code_name: std::ptr::null(),
+            distribution_version: std::ptr::null(),
+            app_name: std::ptr::null(),
+            modules: std::ptr::null(),
+            min_log_level: 0,
+            log_dir: std::ptr::null(),
+            prebuilt_data_dir: std::ptr::null(),
+            staging_dir: std::ptr::null(),
+        }
+    }
+
     #[test]
     fn maps_bool_to_rime_bool() {
         assert_eq!(bool_from(true), TRUE);
         assert_eq!(bool_from(false), FALSE);
+    }
+
+    #[test]
+    fn setup_and_initialize_expose_runtime_metadata_paths() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let shared = CString::new("/tmp/yune-shared").expect("path should be valid");
+        let user = CString::new("/tmp/yune-user").expect("path should be valid");
+        let staging = CString::new("/tmp/yune-stage").expect("path should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared.as_ptr();
+        traits.user_data_dir = user.as_ptr();
+        traits.staging_dir = staging.as_ptr();
+        let mut buffer = vec![0 as c_char; 64];
+        let mut short_buffer = vec![0 as c_char; 10];
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeSetup(&traits) };
+
+        let version = RimeGetVersion();
+        assert!(!version.is_null());
+        // SAFETY: version is a static NUL-terminated C string.
+        let version = unsafe { CStr::from_ptr(version) };
+        assert_eq!(version.to_str(), Ok("yune-rime-api 0.1.0"));
+
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let shared_dir = unsafe { CStr::from_ptr(RimeGetSharedDataDir()) };
+        assert_eq!(shared_dir.to_str(), Ok("/tmp/yune-shared"));
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let user_dir = unsafe { CStr::from_ptr(RimeGetUserDataDir()) };
+        assert_eq!(user_dir.to_str(), Ok("/tmp/yune-user"));
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let prebuilt_dir = unsafe { CStr::from_ptr(RimeGetPrebuiltDataDir()) };
+        assert_eq!(prebuilt_dir.to_str(), Ok("/tmp/yune-shared/build"));
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let staging_dir = unsafe { CStr::from_ptr(RimeGetStagingDir()) };
+        assert_eq!(staging_dir.to_str(), Ok("/tmp/yune-stage"));
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let sync_dir = unsafe { CStr::from_ptr(RimeGetSyncDir()) };
+        assert_eq!(sync_dir.to_str(), Ok("sync"));
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let user_id = unsafe { CStr::from_ptr(RimeGetUserId()) };
+        assert_eq!(user_id.to_str(), Ok("unknown"));
+
+        // SAFETY: buffers point to writable storage.
+        unsafe { RimeGetPrebuiltDataDirSecure(buffer.as_mut_ptr(), buffer.len()) };
+        // SAFETY: secure getter wrote a trailing NUL into the buffer.
+        let copied_prebuilt = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        assert_eq!(copied_prebuilt.to_str(), Ok("/tmp/yune-shared/build"));
+
+        // SAFETY: buffers point to writable storage.
+        unsafe { RimeGetSharedDataDirSecure(short_buffer.as_mut_ptr(), short_buffer.len()) };
+        // SAFETY: secure getter wrote a trailing NUL into the short buffer.
+        let truncated_shared = unsafe { CStr::from_ptr(short_buffer.as_ptr()) };
+        assert_eq!(truncated_shared.to_str(), Ok("/tmp/yune"));
+
+        // SAFETY: buffers point to writable storage.
+        unsafe { RimeGetUserDataDirSecure(buffer.as_mut_ptr(), buffer.len()) };
+        // SAFETY: secure getter wrote a trailing NUL into the buffer.
+        let copied_user = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        assert_eq!(copied_user.to_str(), Ok("/tmp/yune-user"));
+
+        // SAFETY: buffers point to writable storage.
+        unsafe { RimeGetStagingDirSecure(buffer.as_mut_ptr(), buffer.len()) };
+        // SAFETY: secure getter wrote a trailing NUL into the buffer.
+        let copied_staging = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        assert_eq!(copied_staging.to_str(), Ok("/tmp/yune-stage"));
+
+        // SAFETY: buffers point to writable storage.
+        unsafe { RimeGetSyncDirSecure(buffer.as_mut_ptr(), buffer.len()) };
+        // SAFETY: secure getter wrote a trailing NUL into the buffer.
+        let copied_sync = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        assert_eq!(copied_sync.to_str(), Ok("sync"));
+
+        // SAFETY: buffers point to writable storage.
+        unsafe { RimeGetUserDataSyncDir(buffer.as_mut_ptr(), buffer.len()) };
+        // SAFETY: secure getter wrote a trailing NUL into the buffer.
+        let copied_user_sync = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        assert_eq!(copied_user_sync.to_str(), Ok("sync/unknown"));
+
+        let prebuilt = CString::new("/tmp/yune-prebuilt").expect("path should be valid");
+        traits.prebuilt_data_dir = prebuilt.as_ptr();
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeInitialize(&traits) };
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let prebuilt_dir = unsafe { CStr::from_ptr(RimeGetPrebuiltDataDir()) };
+        assert_eq!(prebuilt_dir.to_str(), Ok("/tmp/yune-prebuilt"));
+
+        RimeFinalize();
     }
 
     #[test]

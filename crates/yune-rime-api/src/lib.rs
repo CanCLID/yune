@@ -4462,12 +4462,13 @@ fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
         return false;
     }
 
-    let (shared_data_dir, staging_dir) = {
+    let (shared_data_dir, user_data_dir, staging_dir) = {
         let paths = runtime_paths()
             .lock()
             .expect("runtime paths should not be poisoned");
         (
             PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned()),
+            PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned()),
             PathBuf::from(paths.staging_dir.to_string_lossy().into_owned()),
         )
     };
@@ -4479,12 +4480,99 @@ fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
     if source == destination {
         return true;
     }
+    let user_copy = user_data_dir.join(file_name);
+    let trash_dir = user_data_dir.join("trash");
+    let _ = trash_deprecated_user_copy(&source, &user_copy, version_key, &trash_dir);
     if let Some(parent) = destination.parent() {
         if fs::create_dir_all(parent).is_err() {
             return false;
         }
     }
     fs::copy(source, destination).is_ok()
+}
+
+fn trash_deprecated_user_copy(
+    shared_copy: &Path,
+    user_copy: &Path,
+    version_key: &str,
+    trash_dir: &Path,
+) -> bool {
+    if !shared_copy.exists()
+        || !user_copy.exists()
+        || paths_equivalent(shared_copy, user_copy).unwrap_or(false)
+    {
+        return false;
+    }
+
+    let mut shared_version = config_string_from_file(shared_copy, version_key).unwrap_or_default();
+    let _ = remove_version_suffix(&mut shared_version, ".minimal");
+    let mut user_version = config_string_from_file(user_copy, version_key).unwrap_or_default();
+    let is_customized_user_copy = remove_version_suffix(&mut user_version, ".custom.");
+    if compare_version_strings(&shared_version, &user_version).is_gt()
+        || (shared_version == user_version && is_customized_user_copy)
+    {
+        if fs::create_dir_all(trash_dir).is_err() {
+            return false;
+        }
+        return fs::rename(
+            user_copy,
+            trash_dir.join(user_copy.file_name().unwrap_or_default()),
+        )
+        .is_ok();
+    }
+    false
+}
+
+fn paths_equivalent(left: &Path, right: &Path) -> Option<bool> {
+    Some(left.canonicalize().ok()? == right.canonicalize().ok()?)
+}
+
+fn config_string_from_file(path: &Path, key: &str) -> Option<String> {
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|text| serde_yaml::from_str::<Value>(&text).ok())
+        .and_then(|root| {
+            find_config_value(&root, key)
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned)
+        })
+}
+
+fn remove_version_suffix(version: &mut String, suffix: &str) -> bool {
+    let Some(index) = version.find(suffix) else {
+        return false;
+    };
+    version.truncate(index);
+    true
+}
+
+fn compare_version_strings(left: &str, right: &str) -> std::cmp::Ordering {
+    let mut left_parts = left.split('.');
+    let mut right_parts = right.split('.');
+    loop {
+        match (left_parts.next(), right_parts.next()) {
+            (None, None) => return std::cmp::Ordering::Equal,
+            (Some(part), None) => {
+                return compare_version_part(part, "0").then(std::cmp::Ordering::Greater);
+            }
+            (None, Some(part)) => {
+                return compare_version_part("0", part).then(std::cmp::Ordering::Less);
+            }
+            (Some(left), Some(right)) => {
+                let ordering = compare_version_part(left, right);
+                if !ordering.is_eq() {
+                    return ordering;
+                }
+            }
+        }
+    }
+}
+
+fn compare_version_part(left: &str, right: &str) -> std::cmp::Ordering {
+    match (left.parse::<u64>(), right.parse::<u64>()) {
+        (Ok(left), Ok(right)) => left.cmp(&right),
+        _ => left.cmp(right),
+    }
 }
 
 fn deploy_schema_file(schema_file: &str) -> bool {
@@ -6613,6 +6701,80 @@ backup_config_files: false
             RimeDeployConfigFile(missing.as_ptr(), version_key.as_ptr()),
             FALSE
         );
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn deploy_config_file_trashes_deprecated_user_copy() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("deploy-config-trash");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "config_version: '2.0'\nsource: shared\n",
+        )
+        .expect("shared config should be written");
+        fs::write(
+            user.join("default.yaml"),
+            "config_version: '1.0'\nsource: deprecated\n",
+        )
+        .expect("deprecated user config should be written");
+        fs::write(
+            shared.join("symbols.yaml"),
+            "config_version: '2.0.minimal'\nsource: shared\n",
+        )
+        .expect("minimal shared config should be written");
+        fs::write(
+            user.join("symbols.yaml"),
+            "config_version: '2.0.custom.123'\nsource: customized\n",
+        )
+        .expect("customized user config should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let default_file = CString::new("default.yaml").expect("file should be valid");
+        let symbols_file = CString::new("symbols.yaml").expect("file should be valid");
+        let version_key = CString::new("config_version").expect("key should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(
+            RimeDeployConfigFile(default_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        assert_eq!(
+            RimeDeployConfigFile(symbols_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+
+        assert!(!user.join("default.yaml").exists());
+        let trashed_default = fs::read_to_string(user.join("trash").join("default.yaml"))
+            .expect("deprecated user copy should be trashed");
+        assert_eq!(
+            trashed_default,
+            "config_version: '1.0'\nsource: deprecated\n"
+        );
+        assert!(!user.join("symbols.yaml").exists());
+        let trashed_symbols = fs::read_to_string(user.join("trash").join("symbols.yaml"))
+            .expect("customized user copy should be trashed");
+        assert_eq!(
+            trashed_symbols,
+            "config_version: '2.0.custom.123'\nsource: customized\n"
+        );
+        let staged_default = fs::read_to_string(user.join("build").join("default.yaml"))
+            .expect("shared config should be staged");
+        assert_eq!(staged_default, "config_version: '2.0'\nsource: shared\n");
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

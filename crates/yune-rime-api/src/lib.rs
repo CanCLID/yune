@@ -1657,7 +1657,7 @@ pub unsafe extern "C" fn RimeDeployerInitialize(traits: *const RimeTraits) {
 
 #[no_mangle]
 pub extern "C" fn RimePrebuildAllSchemas() -> Bool {
-    TRUE
+    bool_from(prebuild_all_schemas())
 }
 
 #[no_mangle]
@@ -1720,6 +1720,9 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
     }
     if task_name == "cleanup_trash" {
         return bool_from(cleanup_trash());
+    }
+    if task_name == "prebuild_all_schemas" {
+        return bool_from(prebuild_all_schemas());
     }
     TRUE
 }
@@ -4149,6 +4152,37 @@ fn deploy_schema_file(schema_file: &str) -> bool {
     deploy_config_file(&format!("{schema_id}.schema.yaml"), "schema/version")
 }
 
+fn prebuild_all_schemas() -> bool {
+    let shared_data_dir = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned())
+    };
+    let Ok(entries) = fs::read_dir(&shared_data_dir) else {
+        return false;
+    };
+
+    let mut success = true;
+    for entry in entries {
+        let Ok(entry) = entry else {
+            success = false;
+            continue;
+        };
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
+            continue;
+        };
+        if file_name.ends_with(".schema.yaml") && !deploy_schema_file(file_name) {
+            success = false;
+        }
+    }
+    success
+}
+
 fn should_cleanup_trash_file(path: &Path) -> bool {
     let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
         return false;
@@ -6281,6 +6315,83 @@ schema:
         assert_eq!(RimeDeploySchema(invalid_schema.as_ptr()), FALSE);
         assert_eq!(RimeDeploySchema(missing_schema.as_ptr()), FALSE);
         assert_eq!(RimeDeploySchema(std::ptr::null()), FALSE);
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn prebuild_all_schemas_deploys_shared_schema_files() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("prebuild-all-schemas");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        fs::create_dir_all(shared.join("build")).expect("prebuilt dir should be created");
+        fs::write(
+            shared.join("luna.schema.yaml"),
+            "\
+schema:
+  schema_id: luna
+  name: Luna
+  version: '2.0'
+",
+        )
+        .expect("luna schema should be written");
+        fs::write(
+            shared.join("terra.schema.yaml"),
+            "\
+schema:
+  schema_id: terra
+  name: Terra
+  version: '3.0'
+",
+        )
+        .expect("terra schema should be written");
+        fs::write(shared.join("notes.yaml"), "schema_id: ignored\n")
+            .expect("non-schema yaml should be written");
+        fs::write(
+            shared.join("build").join("luna.schema.yaml"),
+            "\
+schema:
+  schema_id: luna
+  name: Old Luna
+  version: '1.0'
+",
+        )
+        .expect("prebuilt luna schema should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let task_name = CString::new("prebuild_all_schemas").expect("task should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(RimePrebuildAllSchemas(), TRUE);
+        assert!(user.join("build").join("luna.schema.yaml").is_file());
+        assert!(user.join("build").join("terra.schema.yaml").is_file());
+        assert!(!user.join("build").join("notes.yaml").exists());
+
+        let luna_id = CString::new("luna").expect("schema id should be valid");
+        let mut luna = empty_config();
+        // SAFETY: schema id and config pointer are valid for the call.
+        assert_eq!(unsafe { RimeSchemaOpen(luna_id.as_ptr(), &mut luna) }, TRUE);
+        assert_eq!(
+            config_string(&mut luna, "schema/name").as_deref(),
+            Some("Luna")
+        );
+        // SAFETY: config was opened by the config API.
+        assert_eq!(unsafe { RimeConfigClose(&mut luna) }, TRUE);
+
+        fs::remove_file(user.join("build").join("terra.schema.yaml"))
+            .expect("staged terra schema should be removable");
+        assert_eq!(RimeRunTask(task_name.as_ptr()), TRUE);
+        assert!(user.join("build").join("terra.schema.yaml").is_file());
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

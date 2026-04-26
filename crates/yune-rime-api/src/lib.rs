@@ -4624,6 +4624,7 @@ fn apply_root_patch_directive(root: &mut Value) -> Option<bool> {
 fn apply_patch_directive(root: &mut Value, patch: &Value) -> Option<()> {
     match patch {
         Value::Mapping(patch) => apply_patch_map(root, patch),
+        Value::String(reference) => apply_local_patch_reference(root, reference),
         Value::Sequence(patches) => {
             for patch in patches {
                 apply_patch_directive(root, patch)?;
@@ -4631,6 +4632,25 @@ fn apply_patch_directive(root: &mut Value, patch: &Value) -> Option<()> {
             Some(())
         }
         _ => None,
+    }
+}
+
+fn apply_local_patch_reference(root: &mut Value, reference: &str) -> Option<()> {
+    let (reference, optional) = reference
+        .strip_suffix('?')
+        .map_or((reference, false), |reference| (reference, true));
+    let path = if let Some((resource, path)) = reference.split_once(':') {
+        if !resource.is_empty() {
+            return optional.then_some(());
+        }
+        path
+    } else {
+        reference
+    };
+    match find_config_value(root, path).cloned() {
+        Some(Value::Mapping(patch)) => apply_patch_map(root, &patch),
+        Some(_) => None,
+        None => optional.then_some(()),
     }
 }
 
@@ -7377,6 +7397,78 @@ patch:
             find_config_value(&unchanged, "local_marker").and_then(Value::as_str),
             Some("fresh")
         );
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn deploy_config_file_applies_local_root_patch_reference() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("deploy-config-local-patch-ref");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let staging = user.join("build");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "\
+config_version: '2.0'
+menu:
+  page_size: 5
+schema_list:
+  - schema: base
+__patch:
+  - local/patch
+  - :/local/extra_patch
+  - local/missing?
+local:
+  patch:
+    menu/page_size: 8
+    schema_list/@next: {schema: patched}
+  extra_patch:
+    local_marker: patched
+",
+        )
+        .expect("shared config should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let config_file = CString::new("default.yaml").expect("file should be valid");
+        let version_key = CString::new("config_version").expect("key should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        let staged: Value = serde_yaml::from_str(
+            &fs::read_to_string(staging.join("default.yaml"))
+                .expect("staged config should be readable"),
+        )
+        .expect("staged config should parse");
+        assert_eq!(
+            find_config_value(&staged, "menu/page_size").and_then(Value::as_i64),
+            Some(8)
+        );
+        assert_eq!(
+            find_config_value(&staged, "schema_list/@1/schema").and_then(Value::as_str),
+            Some("patched")
+        );
+        assert_eq!(
+            find_config_value(&staged, "local_marker").and_then(Value::as_str),
+            Some("patched")
+        );
+        assert!(find_config_value(&staged, "__patch").is_none());
+        assert!(find_config_value(&staged, "__build_info/timestamps/default.custom").is_none());
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

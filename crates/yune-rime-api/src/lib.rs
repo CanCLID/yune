@@ -1657,7 +1657,7 @@ pub extern "C" fn RimeStartMaintenance(full_check: Bool) -> Bool {
     if full_check == FALSE && !detect_modifications() {
         return FALSE;
     }
-    TRUE
+    bool_from(run_workspace_maintenance_tasks())
 }
 
 #[no_mangle]
@@ -1694,13 +1694,7 @@ pub extern "C" fn RimeDeployWorkspace() -> Bool {
     if !run_installation_update() {
         return FALSE;
     }
-    if !workspace_update() {
-        return FALSE;
-    }
-    if !user_dict_upgrade() {
-        return FALSE;
-    }
-    if !cleanup_trash() {
+    if !run_workspace_maintenance_tasks() {
         return FALSE;
     }
     notify(0, "deploy", "start");
@@ -4312,6 +4306,10 @@ fn workspace_update() -> bool {
     write_last_build_time() && success
 }
 
+fn run_workspace_maintenance_tasks() -> bool {
+    workspace_update() && user_dict_upgrade() && cleanup_trash()
+}
+
 fn workspace_schema_ids(default_config: &Value) -> Option<Vec<String>> {
     let Value::Sequence(schema_list) = find_config_value(default_config, "schema_list")? else {
         return None;
@@ -6467,7 +6465,9 @@ backup_config_files: false
         unsafe { RimeSetup(&traits) };
         RimeSetupLogging(task_name.as_ptr());
         assert_eq!(RimeStartMaintenance(TRUE), TRUE);
-        assert_eq!(RimeStartMaintenanceOnWorkspaceChange(), TRUE);
+        assert_eq!(RimeStartMaintenanceOnWorkspaceChange(), FALSE);
+        assert!(user.join("build").join("default.yaml").is_file());
+        assert!(user.join("build").join("default.schema.yaml").is_file());
         assert_eq!(RimeIsMaintenancing(), FALSE);
         RimeJoinMaintenanceThread();
 
@@ -6906,6 +6906,16 @@ schema:
         fs::create_dir_all(&shared).expect("shared dir should be created");
         fs::create_dir_all(&user).expect("user dir should be created");
         fs::create_dir_all(&logs).expect("log dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "config_version: test\nschema_list:\n  - schema: default\n",
+        )
+        .expect("default config should be written");
+        fs::write(
+            shared.join("default.schema.yaml"),
+            "schema:\n  schema_id: default\n  name: Default\n",
+        )
+        .expect("default schema should be written");
         let today_log = format!("rime_test{}.log", current_log_date_marker());
         for file_name in [
             "rime_test.20000101.log",
@@ -6967,6 +6977,11 @@ schema:
         )
         .expect("default config should be written");
         fs::write(
+            shared.join("default.schema.yaml"),
+            "schema:\n  schema_id: default\n  name: Default\n",
+        )
+        .expect("default schema should be written");
+        fs::write(
             user.join("user.yaml"),
             "var:\n  last_build_time: 2147483647\n",
         )
@@ -6985,6 +7000,8 @@ schema:
         fs::write(user.join("user.yaml"), "var:\n  last_build_time: 0\n")
             .expect("user config should be updated");
         assert_eq!(RimeStartMaintenanceOnWorkspaceChange(), TRUE);
+        assert!(user.join("build").join("default.yaml").is_file());
+        assert!(user.join("build").join("default.schema.yaml").is_file());
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

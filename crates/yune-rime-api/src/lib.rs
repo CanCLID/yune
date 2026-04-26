@@ -470,6 +470,18 @@ struct RuntimePaths {
     user_data_sync_dir: CString,
     distribution_code_name: CString,
     distribution_version: CString,
+    backup_config_files: bool,
+}
+
+struct RuntimePathArgs<'a> {
+    shared_data_dir: &'a str,
+    user_data_dir: &'a str,
+    prebuilt_data_dir: &'a str,
+    staging_dir: &'a str,
+    sync_dir: &'a str,
+    user_id: &'a str,
+    distribution: (&'a str, &'a str),
+    backup_config_files: bool,
 }
 
 #[derive(Default)]
@@ -483,33 +495,43 @@ struct ModuleRegistry {
     modules_by_name: HashMap<String, usize>,
 }
 
+#[derive(Default)]
+struct InstallationSettings {
+    loaded: bool,
+    installation_id: Option<String>,
+    sync_dir: Option<String>,
+    backup_config_files: Option<bool>,
+}
+
 impl Default for RuntimePaths {
     fn default() -> Self {
-        Self::new(".", ".", "build", "build", "sync", "unknown", ("", ""))
+        Self::new(RuntimePathArgs {
+            shared_data_dir: ".",
+            user_data_dir: ".",
+            prebuilt_data_dir: "build",
+            staging_dir: "build",
+            sync_dir: "sync",
+            user_id: "unknown",
+            distribution: ("", ""),
+            backup_config_files: true,
+        })
     }
 }
 
 impl RuntimePaths {
-    fn new(
-        shared_data_dir: &str,
-        user_data_dir: &str,
-        prebuilt_data_dir: &str,
-        staging_dir: &str,
-        sync_dir: &str,
-        user_id: &str,
-        distribution: (&str, &str),
-    ) -> Self {
-        let user_data_sync_dir = path_join(sync_dir, user_id);
+    fn new(args: RuntimePathArgs<'_>) -> Self {
+        let user_data_sync_dir = path_join(args.sync_dir, args.user_id);
         Self {
-            shared_data_dir: cstring_from_lossless_str(shared_data_dir),
-            user_data_dir: cstring_from_lossless_str(user_data_dir),
-            prebuilt_data_dir: cstring_from_lossless_str(prebuilt_data_dir),
-            staging_dir: cstring_from_lossless_str(staging_dir),
-            sync_dir: cstring_from_lossless_str(sync_dir),
-            user_id: cstring_from_lossless_str(user_id),
+            shared_data_dir: cstring_from_lossless_str(args.shared_data_dir),
+            user_data_dir: cstring_from_lossless_str(args.user_data_dir),
+            prebuilt_data_dir: cstring_from_lossless_str(args.prebuilt_data_dir),
+            staging_dir: cstring_from_lossless_str(args.staging_dir),
+            sync_dir: cstring_from_lossless_str(args.sync_dir),
+            user_id: cstring_from_lossless_str(args.user_id),
             user_data_sync_dir: cstring_from_lossless_str(&user_data_sync_dir),
-            distribution_code_name: cstring_from_lossless_str(distribution.0),
-            distribution_version: cstring_from_lossless_str(distribution.1),
+            distribution_code_name: cstring_from_lossless_str(args.distribution.0),
+            distribution_version: cstring_from_lossless_str(args.distribution.1),
+            backup_config_files: args.backup_config_files,
         }
     }
 
@@ -533,16 +555,54 @@ impl RuntimePaths {
             optional_c_string(traits.distribution_code_name).unwrap_or_default();
         let distribution_version =
             optional_c_string(traits.distribution_version).unwrap_or_default();
+        let installation = read_installation_settings(&user_data_dir);
+        let sync_dir = if let Some(sync_dir) = installation.sync_dir {
+            sync_dir
+        } else if installation.loaded {
+            path_join(&user_data_dir, "sync")
+        } else {
+            "sync".to_owned()
+        };
+        let user_id = installation
+            .installation_id
+            .unwrap_or_else(|| "unknown".to_owned());
+        let backup_config_files = installation.backup_config_files.unwrap_or(true);
 
-        Some(Self::new(
-            &shared_data_dir,
-            &user_data_dir,
-            &prebuilt_data_dir,
-            &staging_dir,
-            "sync",
-            "unknown",
-            (&distribution_code_name, &distribution_version),
-        ))
+        Some(Self::new(RuntimePathArgs {
+            shared_data_dir: &shared_data_dir,
+            user_data_dir: &user_data_dir,
+            prebuilt_data_dir: &prebuilt_data_dir,
+            staging_dir: &staging_dir,
+            sync_dir: &sync_dir,
+            user_id: &user_id,
+            distribution: (&distribution_code_name, &distribution_version),
+            backup_config_files,
+        }))
+    }
+}
+
+fn read_installation_settings(user_data_dir: &str) -> InstallationSettings {
+    let path = Path::new(user_data_dir).join("installation.yaml");
+    let Ok(text) = fs::read_to_string(path) else {
+        return InstallationSettings::default();
+    };
+    let Ok(Value::Mapping(root)) = serde_yaml::from_str::<Value>(&text) else {
+        return InstallationSettings::default();
+    };
+
+    InstallationSettings {
+        loaded: true,
+        installation_id: root
+            .get(Value::String("installation_id".to_owned()))
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        sync_dir: root
+            .get(Value::String("sync_dir".to_owned()))
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        backup_config_files: root
+            .get(Value::String("backup_config_files".to_owned()))
+            .and_then(Value::as_bool),
     }
 }
 
@@ -3815,7 +3875,19 @@ fn sync_all_user_dicts() -> bool {
 }
 
 fn backup_config_files() -> bool {
-    let user_data_dir = runtime_user_data_dir();
+    let (user_data_dir, backup_enabled) = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        (
+            PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned()),
+            paths.backup_config_files,
+        )
+    };
+    if !backup_enabled {
+        return true;
+    }
+
     let Ok(entries) = fs::read_dir(&user_data_dir) else {
         return false;
     };
@@ -5631,6 +5703,63 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: asc
         assert_eq!(prebuilt_dir.to_str(), Ok("/tmp/yune-prebuilt"));
 
         RimeFinalize();
+    }
+
+    #[test]
+    fn setup_reads_existing_installation_metadata() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("installation-metadata");
+        let user = root.join("user");
+        let sync = root.join("cloud-sync");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            user.join("installation.yaml"),
+            format!(
+                "\
+installation_id: device-123
+sync_dir: {}
+backup_config_files: false
+",
+                sync.to_string_lossy()
+            ),
+        )
+        .expect("installation metadata should be written");
+        fs::write(user.join("default.yaml"), "config_version: '1.0'\n")
+            .expect("user config should be written");
+
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let mut traits = empty_traits();
+        traits.user_data_dir = user_c.as_ptr();
+        // SAFETY: traits points to valid storage and strings live for the call.
+        unsafe { RimeSetup(&traits) };
+
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let user_id = unsafe { CStr::from_ptr(RimeGetUserId()) };
+        assert_eq!(user_id.to_str(), Ok("device-123"));
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let sync_dir = unsafe { CStr::from_ptr(RimeGetSyncDir()) };
+        assert_eq!(sync_dir.to_str(), Ok(sync.to_string_lossy().as_ref()));
+
+        let mut buffer = vec![0 as c_char; 256];
+        // SAFETY: buffer points to writable storage.
+        unsafe { RimeGetUserDataSyncDir(buffer.as_mut_ptr(), buffer.len()) };
+        // SAFETY: secure getter wrote a trailing NUL into the buffer.
+        let user_sync_dir = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        assert_eq!(
+            user_sync_dir.to_str(),
+            Ok(sync.join("device-123").to_string_lossy().as_ref())
+        );
+
+        let backup_config_task =
+            CString::new("backup_config_files").expect("task name should be valid");
+        assert_eq!(RimeRunTask(backup_config_task.as_ptr()), TRUE);
+        assert!(!sync.join("device-123").join("default.yaml").exists());
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
     }
 
     #[test]

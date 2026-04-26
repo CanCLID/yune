@@ -251,6 +251,9 @@ pub unsafe extern "C" fn RimeSetup(traits: *const RimeTraits) {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn RimeSetupLogging(_app_name: *const c_char) {}
+
 /// Initializes the runtime using the same trait handling as `RimeSetup`.
 ///
 /// # Safety
@@ -265,6 +268,69 @@ pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
 #[no_mangle]
 pub extern "C" fn RimeFinalize() {
     RimeCleanupAllSessions();
+}
+
+#[no_mangle]
+pub extern "C" fn RimeStartMaintenance(_full_check: Bool) -> Bool {
+    TRUE
+}
+
+#[no_mangle]
+pub extern "C" fn RimeStartMaintenanceOnWorkspaceChange() -> Bool {
+    RimeStartMaintenance(FALSE)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeIsMaintenancing() -> Bool {
+    FALSE
+}
+
+#[no_mangle]
+pub extern "C" fn RimeJoinMaintenanceThread() {}
+
+/// Initializes deployer state using the same trait handling as `RimeSetup`.
+///
+/// # Safety
+///
+/// `traits` follows the same preconditions as `RimeSetup`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeDeployerInitialize(traits: *const RimeTraits) {
+    // SAFETY: forwarded preconditions are identical to `RimeSetup`.
+    unsafe { RimeSetup(traits) };
+}
+
+#[no_mangle]
+pub extern "C" fn RimePrebuildAllSchemas() -> Bool {
+    TRUE
+}
+
+#[no_mangle]
+pub extern "C" fn RimeDeployWorkspace() -> Bool {
+    TRUE
+}
+
+#[no_mangle]
+pub extern "C" fn RimeDeploySchema(schema_file: *const c_char) -> Bool {
+    bool_from(!schema_file.is_null())
+}
+
+#[no_mangle]
+pub extern "C" fn RimeDeployConfigFile(
+    file_name: *const c_char,
+    version_key: *const c_char,
+) -> Bool {
+    bool_from(!file_name.is_null() && !version_key.is_null())
+}
+
+#[no_mangle]
+pub extern "C" fn RimeSyncUserData() -> Bool {
+    RimeCleanupAllSessions();
+    TRUE
+}
+
+#[no_mangle]
+pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
+    bool_from(!task_name.is_null())
 }
 
 #[no_mangle]
@@ -409,6 +475,9 @@ pub extern "C" fn RimeCleanupAllSessions() {
         .sessions
         .clear();
 }
+
+#[no_mangle]
+pub extern "C" fn RimeCleanupStaleSessions() {}
 
 #[no_mangle]
 pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask: c_int) -> Bool {
@@ -1501,17 +1570,22 @@ mod tests {
     use super::{
         bool_from, RimeCandidateListBegin, RimeCandidateListEnd, RimeCandidateListFromIndex,
         RimeCandidateListIterator, RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions,
-        RimeClearComposition, RimeCommit, RimeCommitComposition, RimeContext, RimeCreateSession,
-        RimeDestroySession, RimeFinalize, RimeFindSession, RimeFreeCommit, RimeFreeContext,
-        RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
-        RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure,
-        RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure,
-        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir,
-        RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir,
-        RimeGetUserId, RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
-        RimeInitialize, RimeProcessKey, RimeSelectCandidate, RimeSelectCandidateOnCurrentPage,
+        RimeCleanupStaleSessions, RimeClearComposition, RimeCommit, RimeCommitComposition,
+        RimeContext, RimeCreateSession, RimeDeployConfigFile, RimeDeploySchema,
+        RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession, RimeFinalize,
+        RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus, RimeGetCaretPos,
+        RimeGetCommit, RimeGetContext, RimeGetCurrentSchema, RimeGetInput, RimeGetOption,
+        RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure, RimeGetProperty, RimeGetSchemaList,
+        RimeGetSharedDataDir, RimeGetSharedDataDirSecure, RimeGetStagingDir,
+        RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir, RimeGetSyncDirSecure,
+        RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir, RimeGetUserId,
+        RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
+        RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimePrebuildAllSchemas,
+        RimeProcessKey, RimeRunTask, RimeSelectCandidate, RimeSelectCandidateOnCurrentPage,
         RimeSelectSchema, RimeSetCaretPos, RimeSetInput, RimeSetOption, RimeSetProperty, RimeSetup,
-        RimeSimulateKeySequence, RimeStatus, RimeTraits, FALSE, TRUE,
+        RimeSetupLogging, RimeSimulateKeySequence, RimeStartMaintenance,
+        RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits, FALSE,
+        TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -1690,6 +1764,53 @@ mod tests {
         assert_eq!(prebuilt_dir.to_str(), Ok("/tmp/yune-prebuilt"));
 
         RimeFinalize();
+    }
+
+    #[test]
+    fn maintenance_and_deployment_shims_are_deterministic() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let shared = CString::new("/tmp/yune-deployer-shared").expect("path should be valid");
+        let schema_file = CString::new("default.schema.yaml").expect("file should be valid");
+        let config_file = CString::new("default.yaml").expect("file should be valid");
+        let version_key = CString::new("config_version").expect("key should be valid");
+        let task_name = CString::new("workspace_update").expect("task should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared.as_ptr();
+
+        RimeSetupLogging(task_name.as_ptr());
+        assert_eq!(RimeStartMaintenance(TRUE), TRUE);
+        assert_eq!(RimeStartMaintenanceOnWorkspaceChange(), TRUE);
+        assert_eq!(RimeIsMaintenancing(), FALSE);
+        RimeJoinMaintenanceThread();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        // SAFETY: runtime path getters return stable process-owned C strings.
+        let shared_dir = unsafe { CStr::from_ptr(RimeGetSharedDataDir()) };
+        assert_eq!(shared_dir.to_str(), Ok("/tmp/yune-deployer-shared"));
+
+        assert_eq!(RimePrebuildAllSchemas(), TRUE);
+        assert_eq!(RimeDeployWorkspace(), TRUE);
+        assert_eq!(RimeDeploySchema(schema_file.as_ptr()), TRUE);
+        assert_eq!(RimeDeploySchema(std::ptr::null()), FALSE);
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), std::ptr::null()),
+            FALSE
+        );
+        assert_eq!(RimeRunTask(task_name.as_ptr()), TRUE);
+        assert_eq!(RimeRunTask(std::ptr::null()), FALSE);
+
+        let session_id = RimeCreateSession();
+        assert_eq!(RimeFindSession(session_id), TRUE);
+        RimeCleanupStaleSessions();
+        assert_eq!(RimeFindSession(session_id), TRUE);
+        assert_eq!(RimeSyncUserData(), TRUE);
+        assert_eq!(RimeFindSession(session_id), FALSE);
     }
 
     #[test]

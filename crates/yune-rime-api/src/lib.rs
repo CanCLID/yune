@@ -165,6 +165,81 @@ pub struct RimeModule {
     pub get_api: Option<extern "C" fn() -> *mut RimeCustomApi>,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeCustomSettings {
+    pub placeholder: c_char,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeSwitcherSettings {
+    pub placeholder: c_char,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeSchemaInfo {
+    pub placeholder: c_char,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeUserDictIterator {
+    pub ptr: *mut c_void,
+    pub i: usize,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct RimeLeversApi {
+    pub data_size: c_int,
+    pub custom_settings_init:
+        Option<unsafe extern "C" fn(*const c_char, *const c_char) -> *mut RimeCustomSettings>,
+    pub custom_settings_destroy: Option<unsafe extern "C" fn(*mut RimeCustomSettings)>,
+    pub load_settings: Option<unsafe extern "C" fn(*mut RimeCustomSettings) -> Bool>,
+    pub save_settings: Option<unsafe extern "C" fn(*mut RimeCustomSettings) -> Bool>,
+    pub customize_bool:
+        Option<unsafe extern "C" fn(*mut RimeCustomSettings, *const c_char, Bool) -> Bool>,
+    pub customize_int:
+        Option<unsafe extern "C" fn(*mut RimeCustomSettings, *const c_char, c_int) -> Bool>,
+    pub customize_double:
+        Option<unsafe extern "C" fn(*mut RimeCustomSettings, *const c_char, f64) -> Bool>,
+    pub customize_string:
+        Option<unsafe extern "C" fn(*mut RimeCustomSettings, *const c_char, *const c_char) -> Bool>,
+    pub is_first_run: Option<unsafe extern "C" fn(*mut RimeCustomSettings) -> Bool>,
+    pub settings_is_modified: Option<unsafe extern "C" fn(*mut RimeCustomSettings) -> Bool>,
+    pub settings_get_config:
+        Option<unsafe extern "C" fn(*mut RimeCustomSettings, *mut RimeConfig) -> Bool>,
+    pub switcher_settings_init: Option<extern "C" fn() -> *mut RimeSwitcherSettings>,
+    pub get_available_schema_list:
+        Option<unsafe extern "C" fn(*mut RimeSwitcherSettings, *mut RimeSchemaList) -> Bool>,
+    pub get_selected_schema_list:
+        Option<unsafe extern "C" fn(*mut RimeSwitcherSettings, *mut RimeSchemaList) -> Bool>,
+    pub schema_list_destroy: Option<unsafe extern "C" fn(*mut RimeSchemaList)>,
+    pub get_schema_id: Option<unsafe extern "C" fn(*mut RimeSchemaInfo) -> *const c_char>,
+    pub get_schema_name: Option<unsafe extern "C" fn(*mut RimeSchemaInfo) -> *const c_char>,
+    pub get_schema_version: Option<unsafe extern "C" fn(*mut RimeSchemaInfo) -> *const c_char>,
+    pub get_schema_author: Option<unsafe extern "C" fn(*mut RimeSchemaInfo) -> *const c_char>,
+    pub get_schema_description: Option<unsafe extern "C" fn(*mut RimeSchemaInfo) -> *const c_char>,
+    pub get_schema_file_path: Option<unsafe extern "C" fn(*mut RimeSchemaInfo) -> *const c_char>,
+    pub select_schemas: Option<
+        unsafe extern "C" fn(*mut RimeSwitcherSettings, *const *const c_char, c_int) -> Bool,
+    >,
+    pub get_hotkeys: Option<unsafe extern "C" fn(*mut RimeSwitcherSettings) -> *const c_char>,
+    pub set_hotkeys: Option<unsafe extern "C" fn(*mut RimeSwitcherSettings, *const c_char) -> Bool>,
+    pub user_dict_iterator_init: Option<unsafe extern "C" fn(*mut RimeUserDictIterator) -> Bool>,
+    pub user_dict_iterator_destroy: Option<unsafe extern "C" fn(*mut RimeUserDictIterator)>,
+    pub next_user_dict: Option<unsafe extern "C" fn(*mut RimeUserDictIterator) -> *const c_char>,
+    pub backup_user_dict: Option<unsafe extern "C" fn(*const c_char) -> Bool>,
+    pub restore_user_dict: Option<unsafe extern "C" fn(*const c_char) -> Bool>,
+    pub export_user_dict: Option<unsafe extern "C" fn(*const c_char, *const c_char) -> c_int>,
+    pub import_user_dict: Option<unsafe extern "C" fn(*const c_char, *const c_char) -> c_int>,
+    pub customize_item: Option<
+        unsafe extern "C" fn(*mut RimeCustomSettings, *const c_char, *mut RimeConfig) -> Bool,
+    >,
+}
+
 type SetupFn = unsafe extern "C" fn(*const RimeTraits);
 type SetNotificationHandlerFn = extern "C" fn(Option<RimeNotificationHandler>, *mut c_void);
 type NoArgBoolFn = extern "C" fn() -> Bool;
@@ -470,6 +545,63 @@ fn module_registry() -> &'static Mutex<ModuleRegistry> {
     MODULE_REGISTRY.get_or_init(|| Mutex::new(ModuleRegistry::default()))
 }
 
+fn levers_module() -> *mut RimeModule {
+    static LEVERS_MODULE: OnceLock<usize> = OnceLock::new();
+    *LEVERS_MODULE.get_or_init(|| {
+        Box::into_raw(Box::new(RimeModule {
+            data_size: (std::mem::size_of::<RimeModule>() - std::mem::size_of::<c_int>()) as c_int,
+            module_name: c"levers".as_ptr(),
+            initialize: None,
+            finalize: None,
+            get_api: Some(rime_levers_get_api),
+        })) as usize
+    }) as *mut RimeModule
+}
+
+fn levers_api_entry() -> *mut RimeLeversApi {
+    static LEVERS_API: OnceLock<usize> = OnceLock::new();
+    *LEVERS_API.get_or_init(|| Box::into_raw(Box::new(build_levers_api())) as usize)
+        as *mut RimeLeversApi
+}
+
+fn build_levers_api() -> RimeLeversApi {
+    RimeLeversApi {
+        data_size: (std::mem::size_of::<RimeLeversApi>() - std::mem::size_of::<c_int>()) as c_int,
+        custom_settings_init: None,
+        custom_settings_destroy: None,
+        load_settings: None,
+        save_settings: None,
+        customize_bool: None,
+        customize_int: None,
+        customize_double: None,
+        customize_string: None,
+        is_first_run: None,
+        settings_is_modified: None,
+        settings_get_config: None,
+        switcher_settings_init: Some(RimeSwitcherSettingsInit),
+        get_available_schema_list: Some(RimeLeversGetAvailableSchemaList),
+        get_selected_schema_list: None,
+        schema_list_destroy: Some(RimeLeversSchemaListDestroy),
+        get_schema_id: None,
+        get_schema_name: None,
+        get_schema_version: None,
+        get_schema_author: None,
+        get_schema_description: None,
+        get_schema_file_path: None,
+        select_schemas: None,
+        get_hotkeys: None,
+        set_hotkeys: None,
+        user_dict_iterator_init: None,
+        user_dict_iterator_destroy: None,
+        next_user_dict: None,
+        backup_user_dict: None,
+        restore_user_dict: None,
+        export_user_dict: None,
+        import_user_dict: None,
+        customize_item: None,
+    }
+}
+
 fn state_label_cache() -> &'static Mutex<Option<CString>> {
     static STATE_LABEL_CACHE: OnceLock<Mutex<Option<CString>>> = OnceLock::new();
     STATE_LABEL_CACHE.get_or_init(|| Mutex::new(None))
@@ -598,6 +730,11 @@ pub extern "C" fn rime_get_api() -> *mut RimeApi {
     api_entry()
 }
 
+#[no_mangle]
+pub extern "C" fn rime_levers_get_api() -> *mut RimeCustomApi {
+    levers_api_entry().cast::<RimeCustomApi>()
+}
+
 /// Stores process-wide runtime traits for later path queries.
 ///
 /// # Safety
@@ -672,13 +809,54 @@ pub unsafe extern "C" fn RimeFindModule(module_name: *const c_char) -> *mut Rime
 
     // SAFETY: callers promise `module_name` is a valid NUL-terminated C string.
     let module_name = unsafe { CStr::from_ptr(module_name) }.to_string_lossy();
-    module_registry()
+    let registered = module_registry()
         .lock()
         .expect("module registry should not be poisoned")
         .modules_by_name
         .get(module_name.as_ref())
-        .copied()
-        .map_or(ptr::null_mut(), |module| module as *mut RimeModule)
+        .copied();
+    if let Some(module) = registered {
+        return module as *mut RimeModule;
+    }
+    if module_name == "levers" {
+        return levers_module();
+    }
+    ptr::null_mut()
+}
+
+#[no_mangle]
+pub extern "C" fn RimeSwitcherSettingsInit() -> *mut RimeSwitcherSettings {
+    Box::into_raw(Box::new(RimeSwitcherSettings { placeholder: 0 }))
+}
+
+/// Returns the deployed schema list through the librime levers module API.
+///
+/// # Safety
+///
+/// `settings` must either be a pointer returned by `RimeSwitcherSettingsInit`
+/// or null. `list` must be null or point to writable schema-list storage.
+#[no_mangle]
+pub unsafe extern "C" fn RimeLeversGetAvailableSchemaList(
+    settings: *mut RimeSwitcherSettings,
+    list: *mut RimeSchemaList,
+) -> Bool {
+    if settings.is_null() || list.is_null() {
+        return FALSE;
+    }
+
+    clear_schema_list(list);
+    populate_schema_list(list, deployed_schema_list_entries())
+}
+
+/// Frees schema-list storage returned by levers schema-list APIs.
+///
+/// # Safety
+///
+/// `list` follows the same ownership rules as `RimeFreeSchemaList`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeLeversSchemaListDestroy(list: *mut RimeSchemaList) {
+    // SAFETY: ownership rules match `RimeFreeSchemaList`.
+    unsafe { RimeFreeSchemaList(list) };
 }
 
 #[no_mangle]
@@ -1247,8 +1425,10 @@ pub unsafe extern "C" fn RimeGetSchemaList(schema_list: *mut RimeSchemaList) -> 
     }
 
     clear_schema_list(schema_list);
+    populate_schema_list(schema_list, deployed_schema_list_entries())
+}
 
-    let entries = deployed_schema_list_entries();
+fn populate_schema_list(schema_list: *mut RimeSchemaList, entries: Vec<(String, String)>) -> Bool {
     if entries.is_empty() {
         return FALSE;
     }
@@ -3272,7 +3452,7 @@ mod tests {
         RimeGetStateLabelAbbreviated, RimeGetStatus, RimeGetSyncDir, RimeGetSyncDirSecure,
         RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir, RimeGetUserId,
         RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
-        RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeModule,
+        RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeLeversApi, RimeModule,
         RimePrebuildAllSchemas, RimeProcessKey, RimeRegisterModule, RimeRunTask, RimeSchemaOpen,
         RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos,
         RimeSetInput, RimeSetNotificationHandler, RimeSetOption, RimeSetProperty, RimeSetup,
@@ -4365,6 +4545,98 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: asc
             .expect("module registry should not be poisoned")
             .modules_by_name
             .clear();
+    }
+
+    #[test]
+    fn built_in_levers_module_exposes_available_schema_list() {
+        let _guard = test_guard();
+        super::module_registry()
+            .lock()
+            .expect("module registry should not be poisoned")
+            .modules_by_name
+            .clear();
+        let root = unique_temp_dir("levers-schema-list");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let staging = user.join("build");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&staging).expect("staging dir should be created");
+        fs::write(
+            staging.join("default.yaml"),
+            "\
+schema_list:
+  - schema: luna_pinyin
+",
+        )
+        .expect("default config should be written");
+        fs::write(
+            staging.join("luna_pinyin.schema.yaml"),
+            "schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\n",
+        )
+        .expect("schema config should be written");
+
+        let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+        // SAFETY: traits points to valid storage and strings live for the call.
+        unsafe { RimeSetup(&traits) };
+
+        let levers_name = CString::new("levers").expect("module name should be valid");
+        // SAFETY: lookup name is a valid NUL-terminated string.
+        let module = unsafe { RimeFindModule(levers_name.as_ptr()) };
+        assert!(!module.is_null());
+        // SAFETY: built-in module storage is process-lifetime.
+        let module = unsafe { &*module };
+        assert!(module.get_api.is_some());
+        let get_api = module.get_api.expect("levers get_api should be set");
+        let api = get_api().cast::<RimeLeversApi>();
+        assert!(!api.is_null());
+        // SAFETY: levers get_api returns a process-lifetime RimeLeversApi object.
+        let api = unsafe { &*api };
+        assert_eq!(
+            api.data_size,
+            (std::mem::size_of::<RimeLeversApi>() - std::mem::size_of::<i32>()) as i32
+        );
+        assert!(api.switcher_settings_init.is_some());
+        assert!(api.get_available_schema_list.is_some());
+        assert!(api.schema_list_destroy.is_some());
+
+        let settings = (api
+            .switcher_settings_init
+            .expect("switcher settings init should be available"))();
+        assert!(!settings.is_null());
+        let mut schema_list = empty_schema_list();
+        let get_available = api
+            .get_available_schema_list
+            .expect("available schema list should be available");
+        // SAFETY: settings and schema_list are valid for the call.
+        assert_eq!(unsafe { get_available(settings, &mut schema_list) }, TRUE);
+        assert_eq!(schema_list.size, 1);
+        // SAFETY: the levers API populated one schema-list item.
+        let item = unsafe { *schema_list.list };
+        // SAFETY: schema-list strings are valid NUL-terminated strings.
+        let schema_id = unsafe { CStr::from_ptr(item.schema_id) };
+        // SAFETY: schema-list strings are valid NUL-terminated strings.
+        let name = unsafe { CStr::from_ptr(item.name) };
+        assert_eq!(schema_id.to_str(), Ok("luna_pinyin"));
+        assert_eq!(name.to_str(), Ok("Luna Pinyin"));
+
+        let destroy = api
+            .schema_list_destroy
+            .expect("schema-list destroy should be available");
+        // SAFETY: schema_list was populated by the levers API above.
+        unsafe { destroy(&mut schema_list) };
+        assert_eq!(schema_list.size, 0);
+        assert!(schema_list.list.is_null());
+        // SAFETY: settings was allocated by this shim's switcher init function.
+        unsafe { drop(Box::from_raw(settings)) };
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
     }
 
     #[test]

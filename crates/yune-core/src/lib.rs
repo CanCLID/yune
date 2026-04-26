@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Candidate {
     pub text: String,
@@ -625,6 +627,7 @@ impl Translator for PunctuationTranslator {
 pub struct Engine {
     context: Context,
     status: Status,
+    options: HashMap<String, bool>,
     translators: Vec<Box<dyn Translator>>,
     rankers: Vec<Box<dyn CandidateRanker>>,
 }
@@ -636,6 +639,7 @@ impl Default for Engine {
         Self {
             context: Context::default(),
             status: Status::default(),
+            options: HashMap::new(),
             translators: vec![Box::new(EchoTranslator)],
             rankers: Vec::new(),
         }
@@ -666,6 +670,33 @@ impl Engine {
     pub fn set_schema(&mut self, id: impl Into<String>, name: impl Into<String>) {
         self.status.schema_id = id.into();
         self.status.schema_name = name.into();
+    }
+
+    pub fn set_option(&mut self, option: impl Into<String>, value: bool) {
+        let option = option.into();
+        match option.as_str() {
+            "disabled" => self.status.is_disabled = value,
+            "ascii_mode" => self.status.is_ascii_mode = value,
+            "full_shape" => self.status.is_full_shape = value,
+            "simplification" | "simplified" => self.status.is_simplified = value,
+            "traditionalization" | "traditional" => self.status.is_traditional = value,
+            "ascii_punct" => self.status.is_ascii_punct = value,
+            _ => {}
+        }
+        self.options.insert(option, value);
+    }
+
+    #[must_use]
+    pub fn get_option(&self, option: &str) -> bool {
+        match option {
+            "disabled" => self.status.is_disabled,
+            "ascii_mode" => self.status.is_ascii_mode,
+            "full_shape" => self.status.is_full_shape,
+            "simplification" | "simplified" => self.status.is_simplified,
+            "traditionalization" | "traditional" => self.status.is_traditional,
+            "ascii_punct" => self.status.is_ascii_punct,
+            _ => self.options.get(option).copied().unwrap_or(false),
+        }
     }
 
     pub fn process_char(&mut self, ch: char) -> Option<String> {
@@ -1100,6 +1131,25 @@ sort: by_weight
         assert_eq!(engine.context().composition.caret, 1);
         engine.set_caret_pos(10);
         assert_eq!(engine.context().composition.caret, 2);
+    }
+
+    #[test]
+    fn runtime_options_update_status_flags_and_preserve_custom_values() {
+        let mut engine = Engine::new();
+
+        assert!(!engine.get_option("ascii_mode"));
+        engine.set_option("ascii_mode", true);
+        engine.set_option("custom_toggle", true);
+
+        let status = engine.status();
+        assert!(status.is_ascii_mode);
+        assert!(engine.get_option("ascii_mode"));
+        assert!(engine.get_option("custom_toggle"));
+
+        engine.set_option("ascii_mode", false);
+        assert!(!engine.status().is_ascii_mode);
+        assert!(!engine.get_option("ascii_mode"));
+        assert!(!engine.get_option("unknown_toggle"));
     }
 
     #[test]

@@ -321,6 +321,48 @@ pub extern "C" fn RimeSetCaretPos(session_id: RimeSessionId, caret_pos: usize) {
     }
 }
 
+/// Sets a session-scoped runtime option.
+///
+/// # Safety
+///
+/// `option` must be either null or point to a valid, nul-terminated C string.
+/// Null option names are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeSetOption(
+    session_id: RimeSessionId,
+    option: *const c_char,
+    value: Bool,
+) {
+    if option.is_null() {
+        return;
+    }
+    // SAFETY: callers promise that `option` is a valid nul-terminated string.
+    let option = unsafe { CStr::from_ptr(option) }
+        .to_string_lossy()
+        .into_owned();
+    let _ = with_session(session_id, |session| {
+        session.engine.set_option(option, value != FALSE);
+        true
+    });
+}
+
+/// Returns the current value of a session-scoped runtime option.
+///
+/// # Safety
+///
+/// `option` must be either null or point to a valid, nul-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetOption(session_id: RimeSessionId, option: *const c_char) -> Bool {
+    if option.is_null() {
+        return FALSE;
+    }
+    // SAFETY: callers promise that `option` is a valid nul-terminated string.
+    let option = unsafe { CStr::from_ptr(option) };
+    with_session(session_id, |session| {
+        session.engine.get_option(&option.to_string_lossy())
+    })
+}
+
 #[no_mangle]
 pub extern "C" fn RimeSelectCandidate(session_id: RimeSessionId, index: usize) -> Bool {
     commit_selected_candidate(session_id, |session| session.engine.select_candidate(index))
@@ -939,10 +981,10 @@ mod tests {
         RimeCandidateListIterator, RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions,
         RimeClearComposition, RimeCommit, RimeCommitComposition, RimeContext, RimeCreateSession,
         RimeDestroySession, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeFreeStatus,
-        RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetInput, RimeGetStatus,
+        RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetInput, RimeGetOption, RimeGetStatus,
         RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage, RimeProcessKey,
         RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSetCaretPos, RimeSetInput,
-        RimeStatus, FALSE, TRUE,
+        RimeSetOption, RimeStatus, FALSE, TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -1514,6 +1556,54 @@ mod tests {
         assert_eq!(status.is_composing, TRUE);
         // SAFETY: nested pointers were allocated by `RimeGetStatus` above.
         assert_eq!(unsafe { RimeFreeStatus(&mut status) }, TRUE);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn sets_and_gets_runtime_options() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
+        let custom_toggle = CString::new("custom_toggle").expect("option name should be valid");
+        let mut status = empty_status();
+
+        assert_eq!(
+            unsafe { RimeGetOption(session_id, ascii_mode.as_ptr()) },
+            FALSE
+        );
+        // SAFETY: option names are valid nul-terminated C strings.
+        unsafe { RimeSetOption(session_id, ascii_mode.as_ptr(), TRUE) };
+        // SAFETY: option names are valid nul-terminated C strings.
+        unsafe { RimeSetOption(session_id, custom_toggle.as_ptr(), TRUE) };
+
+        assert_eq!(
+            unsafe { RimeGetOption(session_id, ascii_mode.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeGetOption(session_id, custom_toggle.as_ptr()) },
+            TRUE
+        );
+        // SAFETY: `status` points to valid writable storage initialized with a
+        // positive `data_size`.
+        assert_eq!(unsafe { RimeGetStatus(session_id, &mut status) }, TRUE);
+        assert_eq!(status.is_ascii_mode, TRUE);
+        // SAFETY: nested pointers were allocated by `RimeGetStatus` above.
+        assert_eq!(unsafe { RimeFreeStatus(&mut status) }, TRUE);
+
+        // SAFETY: option names are valid nul-terminated C strings.
+        unsafe { RimeSetOption(session_id, ascii_mode.as_ptr(), FALSE) };
+        assert_eq!(
+            unsafe { RimeGetOption(session_id, ascii_mode.as_ptr()) },
+            FALSE
+        );
+        assert_eq!(unsafe { RimeGetOption(0, ascii_mode.as_ptr()) }, FALSE);
+        assert_eq!(
+            unsafe { RimeGetOption(session_id, std::ptr::null()) },
+            FALSE
+        );
 
         assert_eq!(RimeDestroySession(session_id), TRUE);
     }

@@ -4562,7 +4562,7 @@ fn deployed_config_yaml_with_build_info(
     let resource_id = normalize_config_resource_id(file_name);
     let timestamp = source_modified_secs(source).unwrap_or(0);
     let mut patch_dependencies = Vec::new();
-    apply_root_include_directive(&mut root, shared_data_dir, &mut patch_dependencies)?;
+    apply_include_directives(&mut root, shared_data_dir, &mut patch_dependencies)?;
     let apply_auto_custom_patch =
         apply_root_patch_directive(&mut root, shared_data_dir, &mut patch_dependencies)?;
     set_build_info(&mut root, &resource_id, timestamp)?;
@@ -4615,7 +4615,35 @@ fn source_uses_auto_custom_patch(source: &Path) -> bool {
         .map_or(true, |root| find_config_value(&root, "__patch").is_none())
 }
 
-fn apply_root_include_directive(
+fn apply_include_directives(
+    root: &mut Value,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+) -> Option<()> {
+    match root {
+        Value::Sequence(sequence) => {
+            for value in sequence {
+                apply_include_directives(value, shared_data_dir, patch_dependencies)?;
+            }
+        }
+        Value::Mapping(mapping) => {
+            let keys = mapping.keys().cloned().collect::<Vec<_>>();
+            for key in keys {
+                if key.as_str() == Some("__include") {
+                    continue;
+                }
+                if let Some(value) = mapping.get_mut(&key) {
+                    apply_include_directives(value, shared_data_dir, patch_dependencies)?;
+                }
+            }
+            apply_node_include_directive(root, shared_data_dir, patch_dependencies)?;
+        }
+        _ => {}
+    }
+    Some(())
+}
+
+fn apply_node_include_directive(
     root: &mut Value,
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
@@ -4757,12 +4785,13 @@ fn load_external_config_reference(
         0
     };
     patch_dependencies.push((resource_id, timestamp));
-    let Some(resource_root) = fs::read_to_string(&resource_path)
+    let Some(mut resource_root) = fs::read_to_string(&resource_path)
         .ok()
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
     else {
         return optional.then_some(None);
     };
+    apply_include_directives(&mut resource_root, shared_data_dir, patch_dependencies)?;
     match find_config_value(&resource_root, path).cloned() {
         Some(value) => Some(Some(value)),
         None => optional.then_some(None),
@@ -7838,6 +7867,98 @@ schema_list:
         assert_eq!(
             find_config_value(&rebuilt, "schema_list/@1/schema").and_then(Value::as_str),
             Some("override")
+        );
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn deploy_config_file_applies_nested_external_include_references() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("deploy-config-nested-include-ref");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let staging = user.join("build");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "\
+config_version: '2.0'
+translator:
+  __include: base.yaml:/translator
+  enable_user_dict: true
+",
+        )
+        .expect("shared config should be written");
+        fs::write(
+            shared.join("base.yaml"),
+            "\
+translator:
+  dictionary: base
+  settings:
+    __include: settings.yaml:/settings
+    option: base
+",
+        )
+        .expect("base config should be written");
+        fs::write(
+            shared.join("settings.yaml"),
+            "\
+settings:
+  fuzzy: true
+",
+        )
+        .expect("settings config should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let config_file = CString::new("default.yaml").expect("file should be valid");
+        let version_key = CString::new("config_version").expect("key should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        let staged: Value = serde_yaml::from_str(
+            &fs::read_to_string(staging.join("default.yaml"))
+                .expect("staged config should be readable"),
+        )
+        .expect("staged config should parse");
+        assert_eq!(
+            find_config_value(&staged, "translator/dictionary").and_then(Value::as_str),
+            Some("base")
+        );
+        assert_eq!(
+            find_config_value(&staged, "translator/enable_user_dict").and_then(Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(
+            find_config_value(&staged, "translator/settings/option").and_then(Value::as_str),
+            Some("base")
+        );
+        assert_eq!(
+            find_config_value(&staged, "translator/settings/fuzzy").and_then(Value::as_bool),
+            Some(true)
+        );
+        assert!(find_config_value(&staged, "translator/__include").is_none());
+        assert!(find_config_value(&staged, "translator/settings/__include").is_none());
+        assert!(find_config_value(&staged, "__build_info/timestamps/base")
+            .and_then(Value::as_i64)
+            .is_some_and(|timestamp| timestamp > 0));
+        assert!(
+            find_config_value(&staged, "__build_info/timestamps/settings")
+                .and_then(Value::as_i64)
+                .is_some_and(|timestamp| timestamp > 0)
         );
 
         let reset_traits = empty_traits();

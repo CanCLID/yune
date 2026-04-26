@@ -189,9 +189,9 @@ type ConfigItemFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, *mut Ri
 type ConfigKeyFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> Bool;
 type ConfigListSizeFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> usize;
 type ProtoFn = extern "C" fn(RimeSessionId, *mut c_void);
-type GetStateLabelFn = extern "C" fn(RimeSessionId, *const c_char, Bool) -> *const c_char;
+type GetStateLabelFn = unsafe extern "C" fn(RimeSessionId, *const c_char, Bool) -> *const c_char;
 type GetStateLabelAbbreviatedFn =
-    extern "C" fn(RimeSessionId, *const c_char, Bool, Bool) -> RimeStringSlice;
+    unsafe extern "C" fn(RimeSessionId, *const c_char, Bool, Bool) -> RimeStringSlice;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -346,6 +346,12 @@ struct ConfigIteratorState {
     path_cache: Option<CString>,
 }
 
+struct StateLabel {
+    value: String,
+    length: usize,
+}
+
+#[derive(Clone, Copy)]
 enum ConfigOpenKind {
     Deployed,
     User,
@@ -466,6 +472,11 @@ fn module_registry() -> &'static Mutex<ModuleRegistry> {
     MODULE_REGISTRY.get_or_init(|| Mutex::new(ModuleRegistry::default()))
 }
 
+fn state_label_cache() -> &'static Mutex<Option<CString>> {
+    static STATE_LABEL_CACHE: OnceLock<Mutex<Option<CString>>> = OnceLock::new();
+    STATE_LABEL_CACHE.get_or_init(|| Mutex::new(None))
+}
+
 fn api_entry() -> *mut RimeApi {
     static API: OnceLock<usize> = OnceLock::new();
     *API.get_or_init(|| Box::into_raw(Box::new(build_rime_api())) as usize) as *mut RimeApi
@@ -559,10 +570,10 @@ fn build_rime_api() -> RimeApi {
         commit_proto: None,
         context_proto: None,
         status_proto: None,
-        get_state_label: None,
+        get_state_label: Some(RimeGetStateLabel),
         delete_candidate: Some(RimeDeleteCandidate),
         delete_candidate_on_current_page: Some(RimeDeleteCandidateOnCurrentPage),
-        get_state_label_abbreviated: None,
+        get_state_label_abbreviated: Some(RimeGetStateLabelAbbreviated),
         set_input: Some(RimeSetInput),
         get_shared_data_dir_s: Some(RimeGetSharedDataDirSecure),
         get_user_data_dir_s: Some(RimeGetUserDataDirSecure),
@@ -1942,6 +1953,65 @@ pub unsafe extern "C" fn RimeConfigEnd(iterator: *mut RimeConfigIterator) {
     }
 }
 
+/// Returns a switch state label from the selected schema config.
+///
+/// # Safety
+///
+/// `option_name` must be either null or a valid NUL-terminated C string. The
+/// returned pointer is process-owned and remains valid until the next
+/// state-label query.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetStateLabel(
+    session_id: RimeSessionId,
+    option_name: *const c_char,
+    state: Bool,
+) -> *const c_char {
+    // SAFETY: forwarded preconditions match `RimeGetStateLabelAbbreviated`.
+    unsafe { RimeGetStateLabelAbbreviated(session_id, option_name, state, FALSE).str }
+}
+
+/// Returns a switch state label slice from the selected schema config.
+///
+/// # Safety
+///
+/// `option_name` must be either null or a valid NUL-terminated C string. The
+/// returned pointer is process-owned and remains valid until the next
+/// state-label query.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetStateLabelAbbreviated(
+    session_id: RimeSessionId,
+    option_name: *const c_char,
+    state: Bool,
+    abbreviated: Bool,
+) -> RimeStringSlice {
+    let Some(option_name) = (unsafe { c_string_key(option_name) }) else {
+        return empty_string_slice();
+    };
+    let Some(label) = state_label_for_session(
+        session_id,
+        &option_name,
+        state != FALSE,
+        abbreviated != FALSE,
+    ) else {
+        return empty_string_slice();
+    };
+    let Ok(cached_label) = CString::new(label.value) else {
+        return empty_string_slice();
+    };
+
+    let mut cache = state_label_cache()
+        .lock()
+        .expect("state label cache should not be poisoned");
+    *cache = Some(cached_label);
+    let Some(cached_label) = cache.as_ref() else {
+        return empty_string_slice();
+    };
+    RimeStringSlice {
+        str: cached_label.as_ptr(),
+        length: label.length,
+    }
+}
+
 /// Processes a librime-style key sequence against a session.
 ///
 /// # Safety
@@ -2509,6 +2579,25 @@ fn open_runtime_config(config_id: &str, kind: ConfigOpenKind, config: *mut RimeC
         return FALSE;
     }
 
+    let root = load_runtime_config_root(config_id, kind);
+    let state = Box::new(ConfigState {
+        root,
+        cstring_cache: None,
+    });
+
+    // SAFETY: `config` is non-null and points to caller-owned writable storage.
+    // If it already owns config state from this shim, replace it to avoid
+    // leaking when callers reuse a `RimeConfig` slot.
+    unsafe {
+        if !(*config).ptr.is_null() {
+            drop(Box::from_raw((*config).ptr.cast::<ConfigState>()));
+        }
+        (*config).ptr = Box::into_raw(state).cast::<c_void>();
+    }
+    TRUE
+}
+
+fn load_runtime_config_root(config_id: &str, kind: ConfigOpenKind) -> Value {
     let roots = {
         let paths = runtime_paths()
             .lock()
@@ -2532,25 +2621,10 @@ fn open_runtime_config(config_id: &str, kind: ConfigOpenKind, config: *mut RimeC
                 .map(|root| config_file_path(root, &resource_id))
         });
 
-    let root = selected_path
+    selected_path
         .and_then(|path| fs::read_to_string(path).ok())
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
-        .unwrap_or(Value::Null);
-    let state = Box::new(ConfigState {
-        root,
-        cstring_cache: None,
-    });
-
-    // SAFETY: `config` is non-null and points to caller-owned writable storage.
-    // If it already owns config state from this shim, replace it to avoid
-    // leaking when callers reuse a `RimeConfig` slot.
-    unsafe {
-        if !(*config).ptr.is_null() {
-            drop(Box::from_raw((*config).ptr.cast::<ConfigState>()));
-        }
-        (*config).ptr = Box::into_raw(state).cast::<c_void>();
-    }
-    TRUE
+        .unwrap_or(Value::Null)
 }
 
 fn normalize_config_resource_id(config_id: &str) -> String {
@@ -2562,6 +2636,116 @@ fn normalize_config_resource_id(config_id: &str) -> String {
 
 fn config_file_path(root: &str, resource_id: &str) -> PathBuf {
     Path::new(root).join(format!("{resource_id}.yaml"))
+}
+
+fn state_label_for_session(
+    session_id: RimeSessionId,
+    option_name: &str,
+    state: bool,
+    abbreviated: bool,
+) -> Option<StateLabel> {
+    if session_id == 0 {
+        return None;
+    }
+    let schema_id = {
+        let registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        registry
+            .sessions
+            .get(&session_id)
+            .map(|session| session.engine.status().schema_id)?
+    };
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    switch_state_label(&schema_config, option_name, state, abbreviated)
+}
+
+fn switch_state_label(
+    schema_config: &Value,
+    option_name: &str,
+    state: bool,
+    abbreviated: bool,
+) -> Option<StateLabel> {
+    let switches = find_config_value(schema_config, "switches")?;
+    let Value::Sequence(switches) = switches else {
+        return None;
+    };
+
+    for the_switch in switches {
+        let Value::Mapping(switch_map) = the_switch else {
+            continue;
+        };
+        if switch_string_field(switch_map, "name").is_some_and(|name| name == option_name) {
+            return label_from_switch(switch_map, usize::from(state), abbreviated);
+        }
+
+        let Some(options) = switch_map.get(Value::String("options".to_owned())) else {
+            continue;
+        };
+        let Value::Sequence(options) = options else {
+            continue;
+        };
+        for (option_index, option) in options.iter().enumerate() {
+            if matches!(option, Value::String(name) if name == option_name) {
+                return state
+                    .then(|| label_from_switch(switch_map, option_index, abbreviated))
+                    .flatten();
+            }
+        }
+    }
+    None
+}
+
+fn switch_string_field<'a>(switch_map: &'a Mapping, key: &str) -> Option<&'a str> {
+    switch_map
+        .get(Value::String(key.to_owned()))
+        .and_then(Value::as_str)
+}
+
+fn label_from_switch(
+    switch_map: &Mapping,
+    state_index: usize,
+    abbreviated: bool,
+) -> Option<StateLabel> {
+    if abbreviated {
+        if let Some(label) = label_list_value(switch_map, "abbrev", state_index) {
+            let length = label.len();
+            return Some(StateLabel {
+                value: label,
+                length,
+            });
+        }
+    }
+
+    let label = label_list_value(switch_map, "states", state_index)?;
+    let length = if abbreviated {
+        first_unicode_byte_length(&label)
+    } else {
+        label.len()
+    };
+    Some(StateLabel {
+        value: label,
+        length,
+    })
+}
+
+fn label_list_value(switch_map: &Mapping, key: &str, state_index: usize) -> Option<String> {
+    let Value::Sequence(values) = switch_map.get(Value::String(key.to_owned()))? else {
+        return None;
+    };
+    values.get(state_index)?.as_str().map(ToOwned::to_owned)
+}
+
+fn first_unicode_byte_length(value: &str) -> usize {
+    value.chars().next().map_or(0, |first| first.len_utf8())
+}
+
+fn empty_string_slice() -> RimeStringSlice {
+    RimeStringSlice {
+        str: ptr::null(),
+        length: 0,
+    }
 }
 
 fn runtime_path_ptr(select: impl FnOnce(&RuntimePaths) -> &CString) -> *const c_char {
@@ -3011,9 +3195,10 @@ mod tests {
         RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
         RimeGetInput, RimeGetOption, RimeGetPrebuiltDataDir, RimeGetPrebuiltDataDirSecure,
         RimeGetProperty, RimeGetSchemaList, RimeGetSharedDataDir, RimeGetSharedDataDirSecure,
-        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStatus, RimeGetSyncDir,
-        RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir,
-        RimeGetUserId, RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
+        RimeGetStagingDir, RimeGetStagingDirSecure, RimeGetStateLabel,
+        RimeGetStateLabelAbbreviated, RimeGetStatus, RimeGetSyncDir, RimeGetSyncDirSecure,
+        RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir, RimeGetUserId,
+        RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
         RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeModule,
         RimePrebuildAllSchemas, RimeProcessKey, RimeRegisterModule, RimeRunTask, RimeSchemaOpen,
         RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos,
@@ -3241,7 +3426,8 @@ mod tests {
         assert!(api.config_next.is_some());
         assert!(api.config_end.is_some());
         assert!(api.commit_proto.is_none());
-        assert!(api.get_state_label.is_none());
+        assert!(api.get_state_label.is_some());
+        assert!(api.get_state_label_abbreviated.is_some());
 
         let session_id = create_session();
         assert_eq!(find_session(session_id), TRUE);
@@ -3464,6 +3650,84 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: asc
         assert!(api.config_open.is_some());
         assert!(api.user_config_open.is_some());
 
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn state_label_apis_read_selected_schema_switches() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("state-label");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let staging = user.join("build");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&staging).expect("staging dir should be created");
+        fs::write(
+            staging.join("luna.schema.yaml"),
+            "\
+switches:\n  - name: ascii_mode\n    states: [Native, Ascii]\n    abbrev: [N, A]\n  - options: [simplification, traditional]\n    states: [简体, 繁體]\n",
+        )
+        .expect("schema config should be written");
+
+        let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+        // SAFETY: traits points to valid storage and strings live for the call.
+        unsafe { RimeSetup(&traits) };
+
+        let session_id = RimeCreateSession();
+        let schema_id = CString::new("luna").expect("schema id should be valid");
+        let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
+        let simplification = CString::new("simplification").expect("option name should be valid");
+        let missing = CString::new("missing").expect("option name should be valid");
+        // SAFETY: schema id is a valid NUL-terminated string.
+        assert_eq!(
+            unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+            TRUE
+        );
+
+        // SAFETY: option names are valid NUL-terminated strings.
+        let full_label = unsafe { RimeGetStateLabel(session_id, ascii_mode.as_ptr(), TRUE) };
+        assert!(!full_label.is_null());
+        // SAFETY: non-null state-label pointers are process-owned C strings.
+        assert_eq!(unsafe { CStr::from_ptr(full_label) }.to_str(), Ok("Ascii"));
+
+        // SAFETY: option names are valid NUL-terminated strings.
+        let abbreviated =
+            unsafe { RimeGetStateLabelAbbreviated(session_id, ascii_mode.as_ptr(), TRUE, TRUE) };
+        assert_eq!(abbreviated.length, 1);
+        assert!(!abbreviated.str.is_null());
+        // SAFETY: non-null state-label pointers are process-owned C strings.
+        assert_eq!(unsafe { CStr::from_ptr(abbreviated.str) }.to_str(), Ok("A"));
+
+        // SAFETY: option names are valid NUL-terminated strings.
+        let radio = unsafe {
+            RimeGetStateLabelAbbreviated(session_id, simplification.as_ptr(), TRUE, TRUE)
+        };
+        assert_eq!(radio.length, "简".len());
+        // SAFETY: `radio.str` points to a C string and `length` is within its
+        // first UTF-8 scalar value.
+        let radio_slice =
+            unsafe { std::slice::from_raw_parts(radio.str.cast::<u8>(), radio.length) };
+        assert_eq!(std::str::from_utf8(radio_slice), Ok("简"));
+
+        // SAFETY: option names are valid NUL-terminated strings.
+        let hidden_radio = unsafe {
+            RimeGetStateLabelAbbreviated(session_id, simplification.as_ptr(), FALSE, TRUE)
+        };
+        assert!(hidden_radio.str.is_null());
+        assert_eq!(hidden_radio.length, 0);
+        assert!(unsafe { RimeGetStateLabel(session_id, missing.as_ptr(), TRUE) }.is_null());
+        assert!(unsafe { RimeGetStateLabel(0, ascii_mode.as_ptr(), TRUE) }.is_null());
+        assert!(unsafe { RimeGetStateLabel(session_id, std::ptr::null(), TRUE) }.is_null());
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.
         unsafe { RimeSetup(&reset_traits) };

@@ -33,8 +33,49 @@ pub struct RimeCommit {
     pub text: *mut c_char,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeComposition {
+    pub length: c_int,
+    pub cursor_pos: c_int,
+    pub sel_start: c_int,
+    pub sel_end: c_int,
+    pub preedit: *mut c_char,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeCandidate {
+    pub text: *mut c_char,
+    pub comment: *mut c_char,
+    pub reserved: *mut std::ffi::c_void,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeMenu {
+    pub page_size: c_int,
+    pub page_no: c_int,
+    pub is_last_page: Bool,
+    pub highlighted_candidate_index: c_int,
+    pub num_candidates: c_int,
+    pub candidates: *mut RimeCandidate,
+    pub select_keys: *mut c_char,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RimeContext {
+    pub data_size: c_int,
+    pub composition: RimeComposition,
+    pub menu: RimeMenu,
+    pub commit_text_preview: *mut c_char,
+    pub select_labels: *mut *mut c_char,
+}
+
 const XK_BACKSPACE: c_int = 0xff08;
 const XK_RETURN: c_int = 0xff0d;
+const DEFAULT_PAGE_SIZE: usize = 5;
 
 #[derive(Default)]
 struct SessionRegistry {
@@ -174,6 +215,125 @@ pub unsafe extern "C" fn RimeGetCommit(session_id: RimeSessionId, commit: *mut R
     TRUE
 }
 
+/// Copies the current composition and first candidate page into caller storage.
+///
+/// # Safety
+///
+/// `context` must be either null or a valid, writable pointer to a
+/// `RimeContext` initialized with a positive `data_size`. When this function
+/// returns `TRUE`, the caller must release nested strings and candidate memory
+/// by passing the same context object to `RimeFreeContext`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetContext(
+    session_id: RimeSessionId,
+    context: *mut RimeContext,
+) -> Bool {
+    if context.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `context` is non-null and points to caller-owned storage.
+    if unsafe { (*context).data_size } <= 0 {
+        return FALSE;
+    }
+
+    clear_context(context);
+
+    let registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let Some(session) = registry.sessions.get(&session_id) else {
+        return FALSE;
+    };
+
+    let snapshot = session.engine.snapshot();
+    let composition = snapshot.context.composition;
+    if !composition.input.is_empty() {
+        let Ok(preedit) = CString::new(composition.preedit) else {
+            return FALSE;
+        };
+        // SAFETY: `context` is non-null and points to caller-owned writable
+        // storage; `preedit` is converted into owned C storage for the caller.
+        unsafe {
+            (*context).composition.length = composition.input.len() as c_int;
+            (*context).composition.cursor_pos = composition.caret as c_int;
+            (*context).composition.sel_start = 0;
+            (*context).composition.sel_end = composition.input.len() as c_int;
+            (*context).composition.preedit = preedit.into_raw();
+        }
+    }
+
+    let candidates = snapshot.context.candidates;
+    if !candidates.is_empty() {
+        let highlighted = snapshot.context.highlighted;
+        let page_no = highlighted / DEFAULT_PAGE_SIZE;
+        let page_start = page_no * DEFAULT_PAGE_SIZE;
+        let page_end = (page_start + DEFAULT_PAGE_SIZE).min(candidates.len());
+        let page_candidates = &candidates[page_start..page_end];
+
+        let mut rime_candidates = Vec::with_capacity(page_candidates.len());
+        for candidate in page_candidates {
+            let Ok(text) = CString::new(candidate.text.as_str()) else {
+                free_rime_candidates(&mut rime_candidates);
+                return FALSE;
+            };
+            let comment = if candidate.comment.is_empty() {
+                ptr::null_mut()
+            } else {
+                let Ok(comment) = CString::new(candidate.comment.as_str()) else {
+                    free_rime_candidates(&mut rime_candidates);
+                    return FALSE;
+                };
+                comment.into_raw()
+            };
+            rime_candidates.push(RimeCandidate {
+                text: text.into_raw(),
+                comment,
+                reserved: ptr::null_mut(),
+            });
+        }
+
+        let num_candidates = rime_candidates.len();
+        let candidates_ptr = rime_candidates.as_mut_ptr();
+        std::mem::forget(rime_candidates);
+
+        // SAFETY: `context` is non-null and points to caller-owned writable
+        // storage; `candidates_ptr` owns `num_candidates` initialized entries.
+        unsafe {
+            (*context).menu.page_size = DEFAULT_PAGE_SIZE as c_int;
+            (*context).menu.page_no = page_no as c_int;
+            (*context).menu.is_last_page = bool_from(page_end == candidates.len());
+            (*context).menu.highlighted_candidate_index =
+                (highlighted - page_start).min(num_candidates.saturating_sub(1)) as c_int;
+            (*context).menu.num_candidates = num_candidates as c_int;
+            (*context).menu.candidates = candidates_ptr;
+        }
+    }
+
+    TRUE
+}
+
+/// Frees nested allocations populated by `RimeGetContext`.
+///
+/// # Safety
+///
+/// `context` must be either null or a valid, writable pointer to a
+/// `RimeContext`. Nested pointers, when non-null, must have been returned by
+/// `RimeGetContext` and not already freed.
+#[no_mangle]
+pub unsafe extern "C" fn RimeFreeContext(context: *mut RimeContext) -> Bool {
+    if context.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `context` is non-null and points to caller-owned storage.
+    if unsafe { (*context).data_size } <= 0 {
+        return FALSE;
+    }
+
+    free_context_fields(context);
+    clear_context(context);
+    TRUE
+}
+
 /// Frees a commit object populated by `RimeGetCommit`.
 ///
 /// # Safety
@@ -221,14 +381,90 @@ fn clear_commit(commit: *mut RimeCommit) {
     }
 }
 
+fn clear_context(context: *mut RimeContext) {
+    // SAFETY: callers only pass non-null pointers to this helper; this mirrors
+    // librime's versioned struct clear by preserving `data_size`.
+    unsafe {
+        (*context).composition = RimeComposition {
+            length: 0,
+            cursor_pos: 0,
+            sel_start: 0,
+            sel_end: 0,
+            preedit: ptr::null_mut(),
+        };
+        (*context).menu = RimeMenu {
+            page_size: 0,
+            page_no: 0,
+            is_last_page: FALSE,
+            highlighted_candidate_index: 0,
+            num_candidates: 0,
+            candidates: ptr::null_mut(),
+            select_keys: ptr::null_mut(),
+        };
+        (*context).commit_text_preview = ptr::null_mut();
+        (*context).select_labels = ptr::null_mut();
+    }
+}
+
+fn free_context_fields(context: *mut RimeContext) {
+    // SAFETY: `context` is non-null and nested pointers are owned by this API
+    // when populated by `RimeGetContext`.
+    unsafe {
+        if !(*context).composition.preedit.is_null() {
+            drop(CString::from_raw((*context).composition.preedit));
+        }
+        if !(*context).menu.candidates.is_null() && (*context).menu.num_candidates > 0 {
+            let num_candidates = (*context).menu.num_candidates as usize;
+            let mut candidates =
+                Vec::from_raw_parts((*context).menu.candidates, num_candidates, num_candidates);
+            free_rime_candidates(&mut candidates);
+        }
+        if !(*context).menu.select_keys.is_null() {
+            drop(CString::from_raw((*context).menu.select_keys));
+        }
+        if !(*context).commit_text_preview.is_null() {
+            drop(CString::from_raw((*context).commit_text_preview));
+        }
+        if !(*context).select_labels.is_null() {
+            let page_size = (*context).menu.page_size.max(0) as usize;
+            let labels = Vec::from_raw_parts((*context).select_labels, page_size, page_size);
+            for label in labels {
+                if !label.is_null() {
+                    drop(CString::from_raw(label));
+                }
+            }
+        }
+    }
+}
+
+fn free_rime_candidates(candidates: &mut Vec<RimeCandidate>) {
+    for candidate in candidates.drain(..) {
+        if !candidate.text.is_null() {
+            // SAFETY: candidate text pointers were returned by CString::into_raw
+            // while populating a RimeContext.
+            unsafe {
+                drop(CString::from_raw(candidate.text));
+            }
+        }
+        if !candidate.comment.is_null() {
+            // SAFETY: candidate comment pointers were returned by
+            // CString::into_raw while populating a RimeContext.
+            unsafe {
+                drop(CString::from_raw(candidate.comment));
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::ffi::CStr;
     use std::sync::{Mutex, MutexGuard, OnceLock};
 
     use super::{
-        bool_from, RimeCleanupAllSessions, RimeCommit, RimeCreateSession, RimeDestroySession,
-        RimeFindSession, RimeFreeCommit, RimeGetCommit, RimeProcessKey, FALSE, TRUE,
+        bool_from, RimeCleanupAllSessions, RimeCommit, RimeContext, RimeCreateSession,
+        RimeDestroySession, RimeFindSession, RimeFreeCommit, RimeFreeContext, RimeGetCommit,
+        RimeGetContext, RimeProcessKey, FALSE, TRUE,
     };
 
     fn test_guard() -> MutexGuard<'static, ()> {
@@ -237,6 +473,30 @@ mod tests {
             .get_or_init(|| Mutex::new(()))
             .lock()
             .expect("test lock should not be poisoned")
+    }
+
+    fn empty_context() -> RimeContext {
+        RimeContext {
+            data_size: (std::mem::size_of::<RimeContext>() - std::mem::size_of::<i32>()) as i32,
+            composition: super::RimeComposition {
+                length: 0,
+                cursor_pos: 0,
+                sel_start: 0,
+                sel_end: 0,
+                preedit: std::ptr::null_mut(),
+            },
+            menu: super::RimeMenu {
+                page_size: 0,
+                page_no: 0,
+                is_last_page: FALSE,
+                highlighted_candidate_index: 0,
+                num_candidates: 0,
+                candidates: std::ptr::null_mut(),
+                select_keys: std::ptr::null_mut(),
+            },
+            commit_text_preview: std::ptr::null_mut(),
+            select_labels: std::ptr::null_mut(),
+        }
     }
 
     #[test]
@@ -284,6 +544,75 @@ mod tests {
         assert!(commit.text.is_null());
         // SAFETY: `commit` points to valid writable storage for this test.
         assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn returns_context_with_preedit_and_candidate_page() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        let mut context = empty_context();
+
+        assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+        assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+
+        // SAFETY: `context` points to valid writable storage initialized with a
+        // positive `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        assert_eq!(context.composition.length, 2);
+        assert_eq!(context.composition.cursor_pos, 2);
+        assert_eq!(context.composition.sel_start, 0);
+        assert_eq!(context.composition.sel_end, 2);
+        // SAFETY: `RimeGetContext` returned true and populated owned C strings.
+        let preedit = unsafe { CStr::from_ptr(context.composition.preedit) };
+        assert_eq!(preedit.to_str(), Ok("ni"));
+
+        assert_eq!(context.menu.page_size, 5);
+        assert_eq!(context.menu.page_no, 0);
+        assert_eq!(context.menu.is_last_page, TRUE);
+        assert_eq!(context.menu.highlighted_candidate_index, 0);
+        assert_eq!(context.menu.num_candidates, 1);
+        assert!(!context.menu.candidates.is_null());
+        // SAFETY: `context.menu.candidates` points to one initialized candidate.
+        let candidate = unsafe { *context.menu.candidates };
+        // SAFETY: candidate strings are valid NUL-terminated strings owned by
+        // the context object.
+        let candidate_text = unsafe { CStr::from_ptr(candidate.text) };
+        assert_eq!(candidate_text.to_str(), Ok("ni"));
+        // SAFETY: the echo candidate includes a non-null comment.
+        let candidate_comment = unsafe { CStr::from_ptr(candidate.comment) };
+        assert_eq!(candidate_comment.to_str(), Ok("echo"));
+
+        // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+        assert!(context.composition.preedit.is_null());
+        assert!(context.menu.candidates.is_null());
+        assert_eq!(context.menu.num_candidates, 0);
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+
+    #[test]
+    fn rejects_invalid_context_requests() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let session_id = RimeCreateSession();
+        let mut context = empty_context();
+        context.data_size = 0;
+
+        // SAFETY: `context` points to writable storage but has invalid
+        // librime-style data_size metadata.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, FALSE);
+        // SAFETY: null pointers are explicitly rejected.
+        assert_eq!(
+            unsafe { RimeGetContext(session_id, std::ptr::null_mut()) },
+            FALSE
+        );
+        // SAFETY: `context` points to writable storage but has invalid
+        // librime-style data_size metadata.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, FALSE);
 
         assert_eq!(RimeDestroySession(session_id), TRUE);
     }

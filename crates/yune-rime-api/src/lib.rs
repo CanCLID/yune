@@ -1,8 +1,9 @@
 use std::{
     collections::HashMap,
     ffi::{c_void, CStr, CString},
+    fs,
     os::raw::{c_char, c_int},
-    path::Path,
+    path::{Path, PathBuf},
     ptr, slice,
     sync::{Mutex, OnceLock},
     time::{SystemTime, UNIX_EPOCH},
@@ -345,6 +346,11 @@ struct ConfigIteratorState {
     path_cache: Option<CString>,
 }
 
+enum ConfigOpenKind {
+    Deployed,
+    User,
+}
+
 impl Default for ConfigState {
     fn default() -> Self {
         Self {
@@ -503,8 +509,8 @@ fn build_rime_api() -> RimeApi {
         free_schema_list: Some(RimeFreeSchemaList),
         get_current_schema: Some(RimeGetCurrentSchema),
         select_schema: Some(RimeSelectSchema),
-        schema_open: None,
-        config_open: None,
+        schema_open: Some(RimeSchemaOpen),
+        config_open: Some(RimeConfigOpen),
         config_close: Some(RimeConfigClose),
         config_get_bool: Some(RimeConfigGetBool),
         config_get_int: Some(RimeConfigGetInt),
@@ -546,7 +552,7 @@ fn build_rime_api() -> RimeApi {
         candidate_list_begin: Some(RimeCandidateListBegin),
         candidate_list_next: Some(RimeCandidateListNext),
         candidate_list_end: Some(RimeCandidateListEnd),
-        user_config_open: None,
+        user_config_open: Some(RimeUserConfigOpen),
         candidate_list_from_index: Some(RimeCandidateListFromIndex),
         get_prebuilt_data_dir: Some(RimeGetPrebuiltDataDir),
         get_staging_dir: Some(RimeGetStagingDir),
@@ -1255,6 +1261,53 @@ pub unsafe extern "C" fn RimeGetSchemaList(schema_list: *mut RimeSchemaList) -> 
         (*schema_list).list = list_ptr;
     }
     TRUE
+}
+
+/// Opens a deployed schema config from `<schema_id>.schema.yaml`.
+///
+/// # Safety
+///
+/// `schema_id` must be a valid NUL-terminated C string and `config` must point
+/// to writable `RimeConfig` storage.
+#[no_mangle]
+pub unsafe extern "C" fn RimeSchemaOpen(schema_id: *const c_char, config: *mut RimeConfig) -> Bool {
+    let Some(schema_id) = (unsafe { c_string_key(schema_id) }) else {
+        return FALSE;
+    };
+    let config_id = format!("{schema_id}.schema");
+    open_runtime_config(&config_id, ConfigOpenKind::Deployed, config)
+}
+
+/// Opens a deployed config from `<config_id>.yaml`, checking staging before
+/// prebuilt data.
+///
+/// # Safety
+///
+/// `config_id` must be a valid NUL-terminated C string and `config` must point
+/// to writable `RimeConfig` storage.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigOpen(config_id: *const c_char, config: *mut RimeConfig) -> Bool {
+    let Some(config_id) = (unsafe { c_string_key(config_id) }) else {
+        return FALSE;
+    };
+    open_runtime_config(&config_id, ConfigOpenKind::Deployed, config)
+}
+
+/// Opens a user-specific config from `<config_id>.yaml` in the user data dir.
+///
+/// # Safety
+///
+/// `config_id` must be a valid NUL-terminated C string and `config` must point
+/// to writable `RimeConfig` storage.
+#[no_mangle]
+pub unsafe extern "C" fn RimeUserConfigOpen(
+    config_id: *const c_char,
+    config: *mut RimeConfig,
+) -> Bool {
+    let Some(config_id) = (unsafe { c_string_key(config_id) }) else {
+        return FALSE;
+    };
+    open_runtime_config(&config_id, ConfigOpenKind::User, config)
 }
 
 /// Frees nested allocations populated by `RimeGetSchemaList`.
@@ -2451,6 +2504,66 @@ fn path_join(base: &str, child: &str) -> String {
     Path::new(base).join(child).to_string_lossy().into_owned()
 }
 
+fn open_runtime_config(config_id: &str, kind: ConfigOpenKind, config: *mut RimeConfig) -> Bool {
+    if config.is_null() {
+        return FALSE;
+    }
+
+    let roots = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        match kind {
+            ConfigOpenKind::Deployed => vec![
+                paths.staging_dir.to_string_lossy().into_owned(),
+                paths.prebuilt_data_dir.to_string_lossy().into_owned(),
+            ],
+            ConfigOpenKind::User => vec![paths.user_data_dir.to_string_lossy().into_owned()],
+        }
+    };
+    let resource_id = normalize_config_resource_id(config_id);
+    let selected_path = roots
+        .iter()
+        .map(|root| config_file_path(root, &resource_id))
+        .find(|path| path.exists())
+        .or_else(|| {
+            roots
+                .first()
+                .map(|root| config_file_path(root, &resource_id))
+        });
+
+    let root = selected_path
+        .and_then(|path| fs::read_to_string(path).ok())
+        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
+        .unwrap_or(Value::Null);
+    let state = Box::new(ConfigState {
+        root,
+        cstring_cache: None,
+    });
+
+    // SAFETY: `config` is non-null and points to caller-owned writable storage.
+    // If it already owns config state from this shim, replace it to avoid
+    // leaking when callers reuse a `RimeConfig` slot.
+    unsafe {
+        if !(*config).ptr.is_null() {
+            drop(Box::from_raw((*config).ptr.cast::<ConfigState>()));
+        }
+        (*config).ptr = Box::into_raw(state).cast::<c_void>();
+    }
+    TRUE
+}
+
+fn normalize_config_resource_id(config_id: &str) -> String {
+    config_id
+        .strip_suffix(".yaml")
+        .unwrap_or(config_id)
+        .to_owned()
+}
+
+fn config_file_path(root: &str, resource_id: &str) -> PathBuf {
+    Path::new(root).join(format!("{resource_id}.yaml"))
+}
+
 fn runtime_path_ptr(select: impl FnOnce(&RuntimePaths) -> &CString) -> *const c_char {
     let paths = runtime_paths()
         .lock()
@@ -2872,9 +2985,12 @@ fn list_index(segment: &str) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
+    use std::env;
     use std::ffi::{c_void, CStr, CString};
+    use std::fs;
     use std::os::raw::c_char;
     use std::sync::{Mutex, MutexGuard, OnceLock};
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     use yune_core::StaticTableTranslator;
 
@@ -2886,10 +3002,10 @@ mod tests {
         RimeConfigClear, RimeConfigClose, RimeConfigCreateList, RimeConfigCreateMap, RimeConfigEnd,
         RimeConfigGetBool, RimeConfigGetCString, RimeConfigGetDouble, RimeConfigGetInt,
         RimeConfigGetItem, RimeConfigGetString, RimeConfigInit, RimeConfigIterator,
-        RimeConfigListSize, RimeConfigLoadString, RimeConfigNext, RimeConfigSetBool,
-        RimeConfigSetDouble, RimeConfigSetInt, RimeConfigSetItem, RimeConfigSetString,
-        RimeConfigUpdateSignature, RimeContext, RimeCreateSession, RimeCustomApi,
-        RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage, RimeDeployConfigFile,
+        RimeConfigListSize, RimeConfigLoadString, RimeConfigNext, RimeConfigOpen,
+        RimeConfigSetBool, RimeConfigSetDouble, RimeConfigSetInt, RimeConfigSetItem,
+        RimeConfigSetString, RimeConfigUpdateSignature, RimeContext, RimeCreateSession,
+        RimeCustomApi, RimeDeleteCandidate, RimeDeleteCandidateOnCurrentPage, RimeDeployConfigFile,
         RimeDeploySchema, RimeDeployWorkspace, RimeDeployerInitialize, RimeDestroySession,
         RimeFinalize, RimeFindModule, RimeFindSession, RimeFreeCommit, RimeFreeContext,
         RimeFreeStatus, RimeGetCaretPos, RimeGetCommit, RimeGetContext, RimeGetCurrentSchema,
@@ -2899,12 +3015,12 @@ mod tests {
         RimeGetSyncDirSecure, RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir,
         RimeGetUserId, RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage,
         RimeInitialize, RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeModule,
-        RimePrebuildAllSchemas, RimeProcessKey, RimeRegisterModule, RimeRunTask,
+        RimePrebuildAllSchemas, RimeProcessKey, RimeRegisterModule, RimeRunTask, RimeSchemaOpen,
         RimeSelectCandidate, RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos,
         RimeSetInput, RimeSetNotificationHandler, RimeSetOption, RimeSetProperty, RimeSetup,
         RimeSetupLogging, RimeSimulateKeySequence, RimeStartMaintenance,
-        RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits, FALSE,
-        TRUE,
+        RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits,
+        RimeUserConfigOpen, FALSE, TRUE,
     };
 
     #[derive(Debug, PartialEq, Eq)]
@@ -3070,6 +3186,17 @@ mod tests {
         )
     }
 
+    fn unique_temp_dir(name: &str) -> std::path::PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock should be after epoch")
+            .as_nanos();
+        env::temp_dir().join(format!(
+            "yune-rime-api-{name}-{}-{nonce}",
+            std::process::id()
+        ))
+    }
+
     #[test]
     fn maps_bool_to_rime_bool() {
         assert_eq!(bool_from(true), TRUE);
@@ -3100,7 +3227,9 @@ mod tests {
             .cleanup_all_sessions
             .expect("cleanup API should be present");
 
-        assert!(api.config_open.is_none());
+        assert!(api.schema_open.is_some());
+        assert!(api.config_open.is_some());
+        assert!(api.user_config_open.is_some());
         assert!(api.config_init.is_some());
         assert!(api.config_load_string.is_some());
         assert!(api.config_get_string.is_some());
@@ -3229,6 +3358,116 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: asc
         // SAFETY: config was initialized by the API and is still open.
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
         assert!(config.ptr.is_null());
+    }
+
+    #[test]
+    fn config_open_apis_load_runtime_yaml_files() {
+        let _guard = test_guard();
+        let root = unique_temp_dir("config-open");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let prebuilt = shared.join("build");
+        let staging = user.join("build");
+        fs::create_dir_all(&prebuilt).expect("prebuilt dir should be created");
+        fs::create_dir_all(&staging).expect("staging dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            prebuilt.join("default.yaml"),
+            "schema:\n  name: Prebuilt Default\nmenu:\n  page_size: 5\n",
+        )
+        .expect("prebuilt config should be written");
+        fs::write(
+            staging.join("default.yaml"),
+            "schema:\n  name: Staging Default\nmenu:\n  page_size: 7\n",
+        )
+        .expect("staging config should be written");
+        fs::write(
+            staging.join("luna.schema.yaml"),
+            "schema:\n  schema_id: luna\n  name: Luna\n",
+        )
+        .expect("schema config should be written");
+        fs::write(user.join("user.yaml"), "var:\n  option: custom\n")
+            .expect("user config should be written");
+
+        let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+        // SAFETY: traits points to valid storage and strings live for the call.
+        unsafe { RimeSetup(&traits) };
+
+        let mut config = empty_config();
+        let default_id = CString::new("default").expect("config id should be valid");
+        let default_file_id = CString::new("default.yaml").expect("config id should be valid");
+        let schema_id = CString::new("luna").expect("schema id should be valid");
+        let user_id = CString::new("user").expect("config id should be valid");
+        let missing_id = CString::new("missing").expect("config id should be valid");
+
+        // SAFETY: config ids and output config pointers are valid.
+        assert_eq!(
+            unsafe { RimeConfigOpen(default_id.as_ptr(), &mut config) },
+            TRUE
+        );
+        assert_eq!(
+            config_string(&mut config, "schema/name").as_deref(),
+            Some("Staging Default")
+        );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+        // SAFETY: config ids and output config pointers are valid.
+        assert_eq!(
+            unsafe { RimeConfigOpen(default_file_id.as_ptr(), &mut config) },
+            TRUE
+        );
+        assert_eq!(
+            config_string(&mut config, "schema/name").as_deref(),
+            Some("Staging Default")
+        );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+        // SAFETY: schema id and output config pointer are valid.
+        assert_eq!(
+            unsafe { RimeSchemaOpen(schema_id.as_ptr(), &mut config) },
+            TRUE
+        );
+        assert_eq!(
+            config_string(&mut config, "schema/name").as_deref(),
+            Some("Luna")
+        );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+        // SAFETY: config id and output config pointer are valid.
+        assert_eq!(
+            unsafe { RimeUserConfigOpen(user_id.as_ptr(), &mut config) },
+            TRUE
+        );
+        assert_eq!(
+            config_string(&mut config, "var/option").as_deref(),
+            Some("custom")
+        );
+
+        // SAFETY: missing files still create a null config object, mirroring
+        // librime's component-backed open behavior.
+        assert_eq!(
+            unsafe { RimeConfigOpen(missing_id.as_ptr(), &mut config) },
+            TRUE
+        );
+        assert_eq!(config_string(&mut config, "schema/name"), None);
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+        let api = rime_get_api();
+        assert!(!api.is_null());
+        // SAFETY: function table pointer has process lifetime.
+        let api = unsafe { &*api };
+        assert!(api.schema_open.is_some());
+        assert!(api.config_open.is_some());
+        assert!(api.user_config_open.is_some());
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
     }
 
     #[test]

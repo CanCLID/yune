@@ -1065,10 +1065,6 @@ pub unsafe extern "C" fn RimeLeversUserDictIteratorInit(
         return FALSE;
     }
 
-    // SAFETY: `iterator` is non-null and owned by the caller; if it already
-    // holds state from this shim, release it before replacing it.
-    unsafe { clear_user_dict_iterator(iterator) };
-
     let names = deployed_user_dict_names()
         .into_iter()
         .map(|name| cstring_from_lossless_str(&name))
@@ -1076,6 +1072,11 @@ pub unsafe extern "C" fn RimeLeversUserDictIteratorInit(
     if names.is_empty() {
         return FALSE;
     }
+
+    // SAFETY: `iterator` is non-null and owned by the caller; if it already
+    // holds state from this shim, release it before replacing it. librime does
+    // not touch an existing iterator when a new scan finds no dictionaries.
+    unsafe { clear_user_dict_iterator(iterator) };
 
     let state = Box::into_raw(Box::new(UserDictListState { names })).cast::<c_void>();
     // SAFETY: `iterator` is non-null and points to writable storage.

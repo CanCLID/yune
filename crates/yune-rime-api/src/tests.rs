@@ -5378,7 +5378,30 @@ fn levers_user_dict_iterator_lists_userdb_entries() {
     // SAFETY: iterator points to writable storage; no .userdb entries remain.
     assert_eq!(unsafe { iterator_init(&mut empty_iterator) }, FALSE);
     assert!(empty_iterator.ptr.is_null());
-    assert_eq!(empty_iterator.i, 0);
+    assert_eq!(empty_iterator.i, 7);
+
+    fs::write(user.join("cached.userdb"), "").expect("cached user dict should be written");
+    let mut cached_iterator = super::RimeUserDictIterator {
+        ptr: std::ptr::null_mut(),
+        i: 0,
+    };
+    // SAFETY: iterator points to writable storage.
+    assert_eq!(unsafe { iterator_init(&mut cached_iterator) }, TRUE);
+    assert!(!cached_iterator.ptr.is_null());
+    assert_eq!(cached_iterator.i, 0);
+    fs::remove_file(user.join("cached.userdb")).expect("cached user dict should be removed");
+    // SAFETY: librime leaves an existing iterator untouched when a re-scan
+    // finds no user dictionaries.
+    assert_eq!(unsafe { iterator_init(&mut cached_iterator) }, FALSE);
+    assert!(!cached_iterator.ptr.is_null());
+    assert_eq!(cached_iterator.i, 0);
+    // SAFETY: cached_iterator still owns the previous snapshot.
+    let cached = unsafe { next_user_dict(&mut cached_iterator) };
+    assert!(!cached.is_null());
+    // SAFETY: returned pointer is owned by the iterator and valid until destroy.
+    assert_eq!(unsafe { CStr::from_ptr(cached) }.to_str(), Ok("cached"));
+    // SAFETY: cached_iterator was initialized by this shim.
+    unsafe { iterator_destroy(&mut cached_iterator) };
 
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.

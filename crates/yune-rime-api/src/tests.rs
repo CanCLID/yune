@@ -11715,6 +11715,17 @@ fn simulates_librime_style_key_sequences() {
         "{Release+Pointer_Drag5}",
     ))
     .expect("key sequence should be valid");
+    let noop_input_method_key_sequence = CString::new(concat!(
+        "{Multi_key}{Kanji}{Muhenkan}{Henkan}{Henkan_Mode}{Romaji}",
+        "{Hiragana}{Katakana}{Hiragana_Katakana}{Zenkaku}{Hankaku}",
+        "{Zenkaku_Hankaku}{Touroku}{Massyo}{Kana_Lock}{Kana_Shift}",
+        "{Eisu_Shift}{Eisu_toggle}{Hangul}{Hangul_Start}{Hangul_End}",
+        "{Hangul_Hanja}{Hangul_Jamo}{Hangul_Romaja}{Codeinput}",
+        "{Hangul_Jeonja}{Hangul_Banja}{Hangul_PreHanja}{Hangul_PostHanja}",
+        "{SingleCandidate}{MultipleCandidate}{PreviousCandidate}",
+        "{Release+Hangul_Special}",
+    ))
+    .expect("key sequence should be valid");
     let invalid_sequence =
         CString::new("x{Unknown}").expect("key sequence should be valid C string");
     let mut commit = RimeCommit {
@@ -11838,6 +11849,19 @@ fn simulates_librime_style_key_sequences() {
         TRUE
     );
     // SAFETY: ignored XKB key names should leave the context empty.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: noop_input_method_key_sequence is a valid C string; librime
+    // parses input-method key names through its key table even when ignored.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, noop_input_method_key_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: ignored input-method key names should leave the context empty.
     assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
     assert_eq!(context.composition.length, 0);
     assert_eq!(context.menu.num_candidates, 0);

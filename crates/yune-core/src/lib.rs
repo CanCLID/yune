@@ -228,7 +228,12 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         | "F33" | "F34" | "F35" | "Shift_L" | "Shift_R" | "Control_L" | "Control_R"
         | "Caps_Lock" | "Shift_Lock" | "Meta_L" | "Meta_R" | "Alt_L" | "Alt_R" | "Super_L"
         | "Super_R" | "Hyper_L" | "Hyper_R" => KeyCode::Ignored,
-        _ if is_librime_iso_key_name(name) || is_librime_xkb_key_name(name) => KeyCode::Ignored,
+        _ if is_librime_iso_key_name(name)
+            || is_librime_xkb_key_name(name)
+            || is_librime_input_method_key_name(name) =>
+        {
+            KeyCode::Ignored
+        }
         "BackSpace" => KeyCode::Backspace,
         "Delete" => KeyCode::Delete,
         "Escape" => KeyCode::Escape,
@@ -380,6 +385,45 @@ fn is_librime_xkb_key_name(name: &str) -> bool {
             | "Pointer_DfltBtnNext"
             | "Pointer_DfltBtnPrev"
             | "Pointer_Drag5"
+    )
+}
+
+fn is_librime_input_method_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "Multi_key"
+            | "Kanji"
+            | "Muhenkan"
+            | "Henkan"
+            | "Henkan_Mode"
+            | "Romaji"
+            | "Hiragana"
+            | "Katakana"
+            | "Hiragana_Katakana"
+            | "Zenkaku"
+            | "Hankaku"
+            | "Zenkaku_Hankaku"
+            | "Touroku"
+            | "Massyo"
+            | "Kana_Lock"
+            | "Kana_Shift"
+            | "Eisu_Shift"
+            | "Eisu_toggle"
+            | "Hangul"
+            | "Hangul_Start"
+            | "Hangul_End"
+            | "Hangul_Hanja"
+            | "Hangul_Jamo"
+            | "Hangul_Romaja"
+            | "Codeinput"
+            | "Hangul_Jeonja"
+            | "Hangul_Banja"
+            | "Hangul_PreHanja"
+            | "Hangul_PostHanja"
+            | "SingleCandidate"
+            | "MultipleCandidate"
+            | "PreviousCandidate"
+            | "Hangul_Special"
     )
 }
 
@@ -1661,6 +1705,57 @@ mod tests {
             "Pointer_DfltBtnPrev",
             "Pointer_Drag5",
             "Release+Pointer_Drag5",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_input_method_noop_key_names() {
+        let names = [
+            "Multi_key",
+            "Kanji",
+            "Muhenkan",
+            "Henkan",
+            "Henkan_Mode",
+            "Romaji",
+            "Hiragana",
+            "Katakana",
+            "Hiragana_Katakana",
+            "Zenkaku",
+            "Hankaku",
+            "Zenkaku_Hankaku",
+            "Touroku",
+            "Massyo",
+            "Kana_Lock",
+            "Kana_Shift",
+            "Eisu_Shift",
+            "Eisu_toggle",
+            "Hangul",
+            "Hangul_Start",
+            "Hangul_End",
+            "Hangul_Hanja",
+            "Hangul_Jamo",
+            "Hangul_Romaja",
+            "Codeinput",
+            "Hangul_Jeonja",
+            "Hangul_Banja",
+            "Hangul_PreHanja",
+            "Hangul_PostHanja",
+            "SingleCandidate",
+            "MultipleCandidate",
+            "PreviousCandidate",
+            "Release+Hangul_Special",
         ];
         let sequence = names
             .iter()

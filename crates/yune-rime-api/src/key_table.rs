@@ -550,6 +550,58 @@ const KANA_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"semivoicedsound\0", 0x4df),
 ];
 
+const ARABIC_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"Arabic_comma\0", 0x5ac),
+    (b"Arabic_semicolon\0", 0x5bb),
+    (b"Arabic_question_mark\0", 0x5bf),
+    (b"Arabic_hamza\0", 0x5c1),
+    (b"Arabic_maddaonalef\0", 0x5c2),
+    (b"Arabic_hamzaonalef\0", 0x5c3),
+    (b"Arabic_hamzaonwaw\0", 0x5c4),
+    (b"Arabic_hamzaunderalef\0", 0x5c5),
+    (b"Arabic_hamzaonyeh\0", 0x5c6),
+    (b"Arabic_alef\0", 0x5c7),
+    (b"Arabic_beh\0", 0x5c8),
+    (b"Arabic_tehmarbuta\0", 0x5c9),
+    (b"Arabic_teh\0", 0x5ca),
+    (b"Arabic_theh\0", 0x5cb),
+    (b"Arabic_jeem\0", 0x5cc),
+    (b"Arabic_hah\0", 0x5cd),
+    (b"Arabic_khah\0", 0x5ce),
+    (b"Arabic_dal\0", 0x5cf),
+    (b"Arabic_thal\0", 0x5d0),
+    (b"Arabic_ra\0", 0x5d1),
+    (b"Arabic_zain\0", 0x5d2),
+    (b"Arabic_seen\0", 0x5d3),
+    (b"Arabic_sheen\0", 0x5d4),
+    (b"Arabic_sad\0", 0x5d5),
+    (b"Arabic_dad\0", 0x5d6),
+    (b"Arabic_tah\0", 0x5d7),
+    (b"Arabic_zah\0", 0x5d8),
+    (b"Arabic_ain\0", 0x5d9),
+    (b"Arabic_ghain\0", 0x5da),
+    (b"Arabic_tatweel\0", 0x5e0),
+    (b"Arabic_feh\0", 0x5e1),
+    (b"Arabic_qaf\0", 0x5e2),
+    (b"Arabic_kaf\0", 0x5e3),
+    (b"Arabic_lam\0", 0x5e4),
+    (b"Arabic_meem\0", 0x5e5),
+    (b"Arabic_noon\0", 0x5e6),
+    (b"Arabic_ha\0", 0x5e7),
+    (b"Arabic_heh\0", 0x5e7),
+    (b"Arabic_waw\0", 0x5e8),
+    (b"Arabic_alefmaksura\0", 0x5e9),
+    (b"Arabic_yeh\0", 0x5ea),
+    (b"Arabic_fathatan\0", 0x5eb),
+    (b"Arabic_dammatan\0", 0x5ec),
+    (b"Arabic_kasratan\0", 0x5ed),
+    (b"Arabic_fatha\0", 0x5ee),
+    (b"Arabic_damma\0", 0x5ef),
+    (b"Arabic_kasra\0", 0x5f0),
+    (b"Arabic_shadda\0", 0x5f1),
+    (b"Arabic_sukun\0", 0x5f2),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -607,6 +659,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(LATIN3_KEY_NAMES)
         .chain(LATIN4_KEY_NAMES)
         .chain(KANA_KEY_NAMES)
+        .chain(ARABIC_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -619,6 +672,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(LATIN3_KEY_NAMES)
         .chain(LATIN4_KEY_NAMES)
         .chain(KANA_KEY_NAMES)
+        .chain(ARABIC_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

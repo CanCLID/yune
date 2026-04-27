@@ -292,6 +292,11 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let kana_ti = CString::new("kana_TI").expect("key name should be valid");
     let kana_hu = CString::new("kana_HU").expect("key name should be valid");
     let semivoicedsound = CString::new("semivoicedsound").expect("key name should be valid");
+    let arabic_comma = CString::new("Arabic_comma").expect("key name should be valid");
+    let arabic_hamza = CString::new("Arabic_hamza").expect("key name should be valid");
+    let arabic_ha = CString::new("Arabic_ha").expect("key name should be valid");
+    let arabic_heh = CString::new("Arabic_heh").expect("key name should be valid");
+    let arabic_sukun = CString::new("Arabic_sukun").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -343,6 +348,20 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         unsafe { RimeGetKeycodeByName(semivoicedsound.as_ptr()) },
         0x4df
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(arabic_comma.as_ptr()) },
+        0x5ac
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(arabic_hamza.as_ptr()) },
+        0x5c1
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(arabic_ha.as_ptr()) }, 0x5e7);
+    assert_eq!(unsafe { RimeGetKeycodeByName(arabic_heh.as_ptr()) }, 0x5e7);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(arabic_sukun.as_ptr()) },
+        0x5f2
     );
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
@@ -488,6 +507,22 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0x4df)).as_deref(),
         Some("semivoicedsound")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x5ac)).as_deref(),
+        Some("Arabic_comma")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x5c1)).as_deref(),
+        Some("Arabic_hamza")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x5e7)).as_deref(),
+        Some("Arabic_ha")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x5f2)).as_deref(),
+        Some("Arabic_sukun")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

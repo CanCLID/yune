@@ -1614,6 +1614,10 @@ impl RimeTableMetadata {
         }
 
         if let Some(list) = self.reading_list {
+            if trimmed == "-" {
+                self.push_header_list_item(list, "");
+                return;
+            }
             if let Some(column) = trimmed.strip_prefix("- ") {
                 self.push_header_list_item(list, column);
                 return;
@@ -1728,16 +1732,17 @@ impl RimeTableMetadata {
             self.clear_header_list(list);
             self.pending_list_clear = None;
         }
-        if list == RimeTableHeaderList::ImportTables && parse_yaml_scalar_node(value).is_none() {
-            return;
-        }
-        let value = parse_yaml_scalar(value);
-        if value.is_empty() {
-            return;
-        }
         match list {
-            RimeTableHeaderList::Columns => self.columns.push(value),
-            RimeTableHeaderList::ImportTables => self.import_tables.push(value),
+            RimeTableHeaderList::Columns => self.columns.push(parse_yaml_scalar(value)),
+            RimeTableHeaderList::ImportTables => {
+                if parse_yaml_scalar_node(value).is_none() {
+                    return;
+                }
+                let value = parse_yaml_scalar(value);
+                if !value.is_empty() {
+                    self.import_tables.push(value);
+                }
+            }
         }
     }
 }
@@ -4903,6 +4908,34 @@ sort: original
             assert_eq!(entries[0].code, "ba");
             assert_eq!(entries[0].weight, 10.0);
         }
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_null_column_items_as_placeholders() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: null_column_item_sample
+version: "0.1"
+sort: original
+columns:
+  -
+  - text
+  - code
+  - ''
+  - weight
+...
+
+ignored	八	ba	ignored	10
+"#,
+        )
+        .expect("YAML-null column items should still occupy a column position");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[0].code, "ba");
+        assert_eq!(entries[0].weight, 10.0);
     }
 
     #[test]

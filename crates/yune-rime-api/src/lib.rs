@@ -111,6 +111,7 @@ struct SessionState {
     input_buffer: Option<CString>,
     key_binder: Option<KeyBinderProcessor>,
     ascii_composer_enabled: bool,
+    ascii_segmentor_enabled: bool,
     punctuation_processor: Option<PunctuationProcessor>,
     recognizer_processor: Option<RecognizerProcessor>,
     base_segment_tags: Vec<String>,
@@ -128,6 +129,7 @@ impl SessionState {
             input_buffer: None,
             key_binder: None,
             ascii_composer_enabled: false,
+            ascii_segmentor_enabled: false,
             punctuation_processor: None,
             recognizer_processor: None,
             base_segment_tags: vec!["abc".to_owned()],
@@ -2028,6 +2030,7 @@ pub unsafe extern "C" fn RimeSetOption(
         .into_owned();
     if with_session(session_id, |session| {
         session.engine.set_option(option.clone(), value != FALSE);
+        update_session_segment_tags(session);
         true
     }) == TRUE
     {
@@ -2193,6 +2196,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.engine.reset_filters();
     session.key_binder = None;
     session.ascii_composer_enabled = false;
+    session.ascii_segmentor_enabled = false;
     session.punctuation_processor = None;
     session.recognizer_processor = None;
     session.paging = false;
@@ -4116,10 +4120,16 @@ fn install_schema_segment_tags(session: &mut SessionState, schema_id: &str) {
     let mut tags = vec!["abc".to_owned()];
     session.affix_segmentors.clear();
     session.matcher_segmentor = None;
+    session.ascii_segmentor_enabled = false;
 
     if let Some(Value::Sequence(segmentors)) =
         find_config_value(&schema_config, "engine/segmentors")
     {
+        session.ascii_segmentor_enabled = segmentors
+            .iter()
+            .filter_map(Value::as_str)
+            .map(schema_component_prescription)
+            .any(|(component_name, _)| component_name == "ascii_segmentor");
         if segmentors
             .iter()
             .filter_map(Value::as_str)
@@ -4277,6 +4287,14 @@ fn load_schema_recognizer_patterns(schema_config: &Value, name_space: &str) -> V
 
 fn update_session_segment_tags(session: &mut SessionState) {
     let input = session.engine.context().composition.input.as_str();
+    if session.ascii_segmentor_enabled && session.engine.status().is_ascii_mode && !input.is_empty()
+    {
+        let raw_tags = vec!["raw".to_owned()];
+        if session.engine.context().segment_tags != raw_tags {
+            session.engine.set_segment_tags(raw_tags);
+        }
+        return;
+    }
     let mut tags = session.base_segment_tags.clone();
     for affix_segmentor in &session.affix_segmentors {
         if affix_segmentor.matches(input) {

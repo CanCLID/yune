@@ -1012,6 +1012,93 @@ const HEBREW_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"hebrew_taw\0", 0x0cfa),
 ];
 
+const THAI_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"Thai_kokai\0", 0x0da1),
+    (b"Thai_khokhai\0", 0x0da2),
+    (b"Thai_khokhuat\0", 0x0da3),
+    (b"Thai_khokhwai\0", 0x0da4),
+    (b"Thai_khokhon\0", 0x0da5),
+    (b"Thai_khorakhang\0", 0x0da6),
+    (b"Thai_ngongu\0", 0x0da7),
+    (b"Thai_chochan\0", 0x0da8),
+    (b"Thai_choching\0", 0x0da9),
+    (b"Thai_chochang\0", 0x0daa),
+    (b"Thai_soso\0", 0x0dab),
+    (b"Thai_chochoe\0", 0x0dac),
+    (b"Thai_yoying\0", 0x0dad),
+    (b"Thai_dochada\0", 0x0dae),
+    (b"Thai_topatak\0", 0x0daf),
+    (b"Thai_thothan\0", 0x0db0),
+    (b"Thai_thonangmontho\0", 0x0db1),
+    (b"Thai_thophuthao\0", 0x0db2),
+    (b"Thai_nonen\0", 0x0db3),
+    (b"Thai_dodek\0", 0x0db4),
+    (b"Thai_totao\0", 0x0db5),
+    (b"Thai_thothung\0", 0x0db6),
+    (b"Thai_thothahan\0", 0x0db7),
+    (b"Thai_thothong\0", 0x0db8),
+    (b"Thai_nonu\0", 0x0db9),
+    (b"Thai_bobaimai\0", 0x0dba),
+    (b"Thai_popla\0", 0x0dbb),
+    (b"Thai_phophung\0", 0x0dbc),
+    (b"Thai_fofa\0", 0x0dbd),
+    (b"Thai_phophan\0", 0x0dbe),
+    (b"Thai_fofan\0", 0x0dbf),
+    (b"Thai_phosamphao\0", 0x0dc0),
+    (b"Thai_moma\0", 0x0dc1),
+    (b"Thai_yoyak\0", 0x0dc2),
+    (b"Thai_rorua\0", 0x0dc3),
+    (b"Thai_ru\0", 0x0dc4),
+    (b"Thai_loling\0", 0x0dc5),
+    (b"Thai_lu\0", 0x0dc6),
+    (b"Thai_wowaen\0", 0x0dc7),
+    (b"Thai_sosala\0", 0x0dc8),
+    (b"Thai_sorusi\0", 0x0dc9),
+    (b"Thai_sosua\0", 0x0dca),
+    (b"Thai_hohip\0", 0x0dcb),
+    (b"Thai_lochula\0", 0x0dcc),
+    (b"Thai_oang\0", 0x0dcd),
+    (b"Thai_honokhuk\0", 0x0dce),
+    (b"Thai_paiyannoi\0", 0x0dcf),
+    (b"Thai_saraa\0", 0x0dd0),
+    (b"Thai_maihanakat\0", 0x0dd1),
+    (b"Thai_saraaa\0", 0x0dd2),
+    (b"Thai_saraam\0", 0x0dd3),
+    (b"Thai_sarai\0", 0x0dd4),
+    (b"Thai_saraii\0", 0x0dd5),
+    (b"Thai_saraue\0", 0x0dd6),
+    (b"Thai_sarauee\0", 0x0dd7),
+    (b"Thai_sarau\0", 0x0dd8),
+    (b"Thai_sarauu\0", 0x0dd9),
+    (b"Thai_phinthu\0", 0x0dda),
+    (b"Thai_maihanakat_maitho\0", 0x0dde),
+    (b"Thai_baht\0", 0x0ddf),
+    (b"Thai_sarae\0", 0x0de0),
+    (b"Thai_saraae\0", 0x0de1),
+    (b"Thai_sarao\0", 0x0de2),
+    (b"Thai_saraaimaimuan\0", 0x0de3),
+    (b"Thai_saraaimaimalai\0", 0x0de4),
+    (b"Thai_lakkhangyao\0", 0x0de5),
+    (b"Thai_maiyamok\0", 0x0de6),
+    (b"Thai_maitaikhu\0", 0x0de7),
+    (b"Thai_maiek\0", 0x0de8),
+    (b"Thai_maitho\0", 0x0de9),
+    (b"Thai_maitri\0", 0x0dea),
+    (b"Thai_maichattawa\0", 0x0deb),
+    (b"Thai_thanthakhat\0", 0x0dec),
+    (b"Thai_nikhahit\0", 0x0ded),
+    (b"Thai_leksun\0", 0x0df0),
+    (b"Thai_leknung\0", 0x0df1),
+    (b"Thai_leksong\0", 0x0df2),
+    (b"Thai_leksam\0", 0x0df3),
+    (b"Thai_leksi\0", 0x0df4),
+    (b"Thai_lekha\0", 0x0df5),
+    (b"Thai_lekhok\0", 0x0df6),
+    (b"Thai_lekchet\0", 0x0df7),
+    (b"Thai_lekpaet\0", 0x0df8),
+    (b"Thai_lekkao\0", 0x0df9),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -1075,6 +1162,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(TECHNICAL_KEY_NAMES)
         .chain(PUBLISHING_KEY_NAMES)
         .chain(HEBREW_KEY_NAMES)
+        .chain(THAI_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -1093,6 +1181,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(TECHNICAL_KEY_NAMES)
         .chain(PUBLISHING_KEY_NAMES)
         .chain(HEBREW_KEY_NAMES)
+        .chain(THAI_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

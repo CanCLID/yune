@@ -352,6 +352,14 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let hebrew_finalzadi = CString::new("hebrew_finalzadi").expect("key name should be valid");
     let hebrew_qoph = CString::new("hebrew_qoph").expect("key name should be valid");
     let hebrew_taw = CString::new("hebrew_taw").expect("key name should be valid");
+    let thai_kokai = CString::new("Thai_kokai").expect("key name should be valid");
+    let thai_dodek = CString::new("Thai_dodek").expect("key name should be valid");
+    let thai_sarauu = CString::new("Thai_sarauu").expect("key name should be valid");
+    let thai_maihanakat_maitho =
+        CString::new("Thai_maihanakat_maitho").expect("key name should be valid");
+    let thai_baht = CString::new("Thai_baht").expect("key name should be valid");
+    let thai_leksun = CString::new("Thai_leksun").expect("key name should be valid");
+    let thai_lekkao = CString::new("Thai_lekkao").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -532,6 +540,16 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     );
     assert_eq!(unsafe { RimeGetKeycodeByName(hebrew_qoph.as_ptr()) }, 0xcf7);
     assert_eq!(unsafe { RimeGetKeycodeByName(hebrew_taw.as_ptr()) }, 0xcfa);
+    assert_eq!(unsafe { RimeGetKeycodeByName(thai_kokai.as_ptr()) }, 0xda1);
+    assert_eq!(unsafe { RimeGetKeycodeByName(thai_dodek.as_ptr()) }, 0xdb4);
+    assert_eq!(unsafe { RimeGetKeycodeByName(thai_sarauu.as_ptr()) }, 0xdd9);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(thai_maihanakat_maitho.as_ptr()) },
+        0xdde
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(thai_baht.as_ptr()) }, 0xddf);
+    assert_eq!(unsafe { RimeGetKeycodeByName(thai_leksun.as_ptr()) }, 0xdf0);
+    assert_eq!(unsafe { RimeGetKeycodeByName(thai_lekkao.as_ptr()) }, 0xdf9);
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -856,6 +874,34 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0xcfa)).as_deref(),
         Some("hebrew_taf")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xda1)).as_deref(),
+        Some("Thai_kokai")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xdb4)).as_deref(),
+        Some("Thai_dodek")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xdd9)).as_deref(),
+        Some("Thai_sarauu")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xdde)).as_deref(),
+        Some("Thai_maihanakat_maitho")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xddf)).as_deref(),
+        Some("Thai_baht")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xdf0)).as_deref(),
+        Some("Thai_leksun")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xdf9)).as_deref(),
+        Some("Thai_lekkao")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

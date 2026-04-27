@@ -1764,9 +1764,16 @@ fn parse_inline_yaml_list(input: &str) -> Option<Vec<String>> {
 }
 
 fn rime_header_value<'a>(line: &'a str, key: &str) -> Option<&'a str> {
-    let rest = line.strip_prefix(key)?;
-    let rest = rest.trim_start();
-    rest.strip_prefix(':')
+    for prefix in [key.to_owned(), format!("'{key}'"), format!("\"{key}\"")] {
+        let Some(rest) = line.strip_prefix(&prefix) else {
+            continue;
+        };
+        let rest = rest.trim_start();
+        if let Some(value) = rest.strip_prefix(':') {
+            return Some(value);
+        }
+    }
+    None
 }
 
 fn split_inline_yaml_list_items(items: &str) -> Vec<String> {
@@ -4969,6 +4976,46 @@ ba	吧	2
             },
         )
         .expect("yaml-cpp accepts whitespace before mapping-key colons");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[0].code, "ba");
+        assert_eq!(entries[1].text, "吧");
+        assert_eq!(entries[1].code, "ba");
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_quoted_header_keys() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports(
+            r#"
+---
+"name": quoted_key_primary
+'version': "0.1"
+"sort": original
+'columns': [code, text, weight]
+"import_tables": [secondary]
+...
+
+ba	八	1
+"#,
+            |name| {
+                (name == "secondary").then(|| {
+                    r#"
+---
+'name': secondary
+"version": "0.1"
+"sort": original
+'columns': [code, text, weight]
+...
+
+ba	吧	2
+"#
+                    .to_owned()
+                })
+            },
+        )
+        .expect("yaml-cpp accepts quoted dictionary header mapping keys");
 
         let entries = dictionary.entries();
         assert_eq!(entries.len(), 2);

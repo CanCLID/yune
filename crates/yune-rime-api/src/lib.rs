@@ -15,7 +15,7 @@ use std::{
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
     parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers, PunctuationTranslator,
-    StaticTableTranslator,
+    ReverseLookupTranslator, StaticTableTranslator, TableDictionary,
 };
 
 mod abi;
@@ -2146,6 +2146,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     install_schema_punctuation_processor(session, schema_id);
     install_schema_punctuation_translator(session, schema_id);
     install_schema_dictionary_translator(session, schema_id);
+    install_schema_reverse_lookup_translator(session, schema_id);
     session.engine.clear_composition();
     session.input_buffer = None;
     session.unread_commit = None;
@@ -3692,35 +3693,68 @@ fn session_menu_page_size(session: &SessionState) -> usize {
 fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    let Some(dictionary_name) = find_config_value(&schema_config, "translator/dictionary")
-        .and_then(Value::as_str)
-        .filter(|dictionary_name| !dictionary_name.is_empty())
-    else {
+    let Some(dictionary) = load_schema_table_dictionary(&schema_config, "translator") else {
         return;
     };
-    let Some(dictionary_path) = selected_runtime_data_path(&format!("{dictionary_name}.dict.yaml"))
-    else {
+    session
+        .engine
+        .add_translator(StaticTableTranslator::from_dictionary(dictionary));
+}
+
+fn install_schema_reverse_lookup_translator(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    if !schema_engine_translators_include(&schema_config, "reverse_lookup_translator") {
+        return;
+    }
+    let Some(dictionary) = load_schema_table_dictionary(&schema_config, "reverse_lookup") else {
         return;
     };
-    let Ok(dictionary_yaml) = fs::read_to_string(dictionary_path) else {
-        return;
-    };
-    let packs = schema_dictionary_packs(&schema_config);
-    let Ok(translator) = StaticTableTranslator::parse_rime_dict_yaml_with_imports_and_packs(
+    let target_namespace = find_config_value(&schema_config, "reverse_lookup/target")
+        .and_then(config_scalar_string)
+        .filter(|target| !target.is_empty())
+        .unwrap_or_else(|| "translator".to_owned());
+    let reverse_dictionary = load_schema_table_dictionary(&schema_config, &target_namespace);
+    let prefix = find_config_value(&schema_config, "reverse_lookup/prefix")
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let suffix = find_config_value(&schema_config, "reverse_lookup/suffix")
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+
+    session.engine.add_translator(ReverseLookupTranslator::new(
+        dictionary,
+        reverse_dictionary,
+        prefix,
+        suffix,
+    ));
+}
+
+fn load_schema_table_dictionary(
+    schema_config: &Value,
+    name_space: &str,
+) -> Option<TableDictionary> {
+    let dictionary_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
+        .and_then(config_scalar_string)
+        .filter(|dictionary_name| !dictionary_name.is_empty())?;
+    let dictionary_path = selected_runtime_data_path(&format!("{dictionary_name}.dict.yaml"))?;
+    let dictionary_yaml = fs::read_to_string(dictionary_path).ok()?;
+    let packs = schema_dictionary_packs(schema_config, name_space);
+    TableDictionary::parse_rime_dict_yaml_with_imports_and_packs(
         &dictionary_yaml,
         packs,
         |import_table| {
             selected_runtime_data_path(&format!("{import_table}.dict.yaml"))
                 .and_then(|path| fs::read_to_string(path).ok())
         },
-    ) else {
-        return;
-    };
-    session.engine.add_translator(translator);
+    )
+    .ok()
 }
 
-fn schema_dictionary_packs(schema_config: &Value) -> Vec<String> {
-    let Some(Value::Sequence(packs)) = find_config_value(schema_config, "translator/packs") else {
+fn schema_dictionary_packs(schema_config: &Value, name_space: &str) -> Vec<String> {
+    let Some(Value::Sequence(packs)) =
+        find_config_value(schema_config, &format!("{name_space}/packs"))
+    else {
         return Vec::new();
     };
     packs.iter().filter_map(config_scalar_string).collect()

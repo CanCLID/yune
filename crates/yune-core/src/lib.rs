@@ -13,6 +13,7 @@ pub enum CandidateSource {
     Echo,
     Punctuation,
     Table,
+    ReverseLookup,
     Ai,
 }
 
@@ -23,6 +24,7 @@ impl CandidateSource {
             Self::Echo => "echo",
             Self::Punctuation => "punct",
             Self::Table => "table",
+            Self::ReverseLookup => "reverse_lookup",
             Self::Ai => "ai",
         }
     }
@@ -2122,6 +2124,83 @@ impl Translator for StaticTableTranslator {
     }
 }
 
+pub struct ReverseLookupTranslator {
+    entries: Vec<TableEntry>,
+    reverse_comments: HashMap<String, Vec<String>>,
+    prefix: String,
+    suffix: String,
+}
+
+impl ReverseLookupTranslator {
+    #[must_use]
+    pub fn new(
+        dictionary: TableDictionary,
+        reverse_dictionary: Option<TableDictionary>,
+        prefix: impl Into<String>,
+        suffix: impl Into<String>,
+    ) -> Self {
+        let mut reverse_comments: HashMap<String, Vec<String>> = HashMap::new();
+        if let Some(reverse_dictionary) = reverse_dictionary {
+            for entry in reverse_dictionary.entries {
+                reverse_comments
+                    .entry(entry.text)
+                    .or_default()
+                    .push(entry.code);
+            }
+        }
+
+        Self {
+            entries: dictionary.entries,
+            reverse_comments,
+            prefix: prefix.into(),
+            suffix: suffix.into(),
+        }
+    }
+}
+
+impl Translator for ReverseLookupTranslator {
+    fn name(&self) -> &'static str {
+        "reverse_lookup_translator"
+    }
+
+    fn translate(&self, input: &str) -> Vec<Candidate> {
+        if input.is_empty() {
+            return Vec::new();
+        }
+        if !self.prefix.is_empty() && !input.starts_with(&self.prefix) {
+            return Vec::new();
+        }
+
+        let mut code = &input[self.prefix.len()..];
+        if !self.suffix.is_empty() && code.ends_with(&self.suffix) {
+            code = &code[..code.len() - self.suffix.len()];
+        }
+        let code = normalize_table_code(code);
+        if code.is_empty() {
+            return Vec::new();
+        }
+
+        self.entries
+            .iter()
+            .filter(|entry| entry.code == code)
+            .map(|entry| {
+                let comment = self
+                    .reverse_comments
+                    .get(&entry.text)
+                    .filter(|comments| !comments.is_empty())
+                    .map(|comments| comments.join(" "))
+                    .unwrap_or_else(|| entry.code.clone());
+                Candidate {
+                    text: entry.text.clone(),
+                    comment,
+                    source: CandidateSource::ReverseLookup,
+                    quality: entry.weight,
+                }
+            })
+            .collect()
+    }
+}
+
 pub struct PunctuationTranslator {
     half_shape_entries: Vec<(String, Candidate)>,
     full_shape_entries: Vec<(String, Candidate)>,
@@ -3016,8 +3095,8 @@ const fn select_index_from_digit(ch: char) -> usize {
 mod tests {
     use super::{
         parse_key_sequence, Candidate, CandidateRanker, CandidateSource, Context, Engine, KeyCode,
-        MockAiRanker, PunctuationTranslator, RerankResult, StaticTableTranslator, TableDictionary,
-        Translator,
+        MockAiRanker, PunctuationTranslator, RerankResult, ReverseLookupTranslator,
+        StaticTableTranslator, TableDictionary, Translator,
     };
 
     struct CommentTranslator;
@@ -5718,6 +5797,46 @@ ba	吧	3
         assert_eq!(entries[2].text, "八");
         assert_eq!(entries[3].text, "爸");
         assert_eq!(entries[3].weight, 1.0);
+    }
+
+    #[test]
+    fn reverse_lookup_translator_uses_target_dictionary_comments() {
+        let lookup_dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: stroke
+version: "0.1"
+sort: original
+...
+
+火	huo
+水	shui
+"#,
+        )
+        .expect("lookup dictionary should parse");
+        let target_dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: luna
+version: "0.1"
+sort: original
+...
+
+火	ho
+火	huo
+"#,
+        )
+        .expect("target dictionary should parse");
+
+        let translator =
+            ReverseLookupTranslator::new(lookup_dictionary, Some(target_dictionary), "`", "");
+
+        assert!(translator.translate("huo").is_empty());
+        let candidates = translator.translate("`huo");
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].source, CandidateSource::ReverseLookup);
+        assert_eq!(candidates[0].text, "火");
+        assert_eq!(candidates[0].comment, "ho huo");
     }
 
     #[test]

@@ -46,6 +46,8 @@ const XK_KP_0: c_int = 0xffb0;
 const XK_KP_9: c_int = 0xffb9;
 const K_SHIFT_MASK: c_int = 1 << 0;
 const K_CONTROL_MASK: c_int = 1 << 2;
+#[cfg(test)]
+const K_ALT_MASK: c_int = 1 << 3;
 const DEFAULT_PAGE_SIZE: usize = 5;
 const RIME_VERSION_BYTES: &[u8] =
     concat!("yune-rime-api ", env!("CARGO_PKG_VERSION"), "\0").as_bytes();

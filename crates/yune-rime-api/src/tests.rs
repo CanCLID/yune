@@ -37,7 +37,7 @@ use super::{
     RimeSetInput, RimeSetNotificationHandler, RimeSetOption, RimeSetProperty, RimeSetup,
     RimeSetupLogging, RimeSimulateKeySequence, RimeStartMaintenance,
     RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits,
-    RimeUserConfigOpen, FALSE, K_CONTROL_MASK, K_SHIFT_MASK, TRUE,
+    RimeUserConfigOpen, FALSE, K_ALT_MASK, K_CONTROL_MASK, K_SHIFT_MASK, TRUE,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -6767,6 +6767,102 @@ schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\n  alternative_s
     // SAFETY: nested pointers were allocated by `RimeGetContext` above.
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
     assert_eq!(RimeDestroySession(controlled_sequence_session_id), TRUE);
+
+    let alt_session_id = RimeCreateSession();
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(alt_session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&alt_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+    }
+
+    assert_eq!(RimeProcessKey(alt_session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(alt_session_id, 'a' as i32, 0), TRUE);
+    assert_eq!(
+        RimeProcessKey(alt_session_id, 'B' as i32, K_ALT_MASK),
+        FALSE
+    );
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(alt_session_id, &mut commit) }, FALSE);
+    let mut context = empty_context();
+    // SAFETY: `context` points to writable storage initialized with data_size.
+    assert_eq!(
+        unsafe { RimeGetContext(alt_session_id, &mut context) },
+        TRUE
+    );
+    // SAFETY: `preedit` is populated by `RimeGetContext` for active composition.
+    assert_eq!(
+        unsafe { CStr::from_ptr(context.composition.preedit) }.to_str(),
+        Ok("ba")
+    );
+    assert_eq!(context.menu.num_candidates, 2);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    assert_eq!(RimeProcessKey(alt_session_id, 'B' as i32, 0), TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(alt_session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated `text`.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("吧"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(alt_session_id), TRUE);
+
+    let alt_sequence_session_id = RimeCreateSession();
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(alt_sequence_session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&alt_sequence_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+    }
+    let sequence = CString::new("ba{Alt+B}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(alt_sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(
+        unsafe { RimeGetCommit(alt_sequence_session_id, &mut commit) },
+        FALSE
+    );
+    let mut context = empty_context();
+    // SAFETY: `context` points to writable storage initialized with data_size.
+    assert_eq!(
+        unsafe { RimeGetContext(alt_sequence_session_id, &mut context) },
+        TRUE
+    );
+    // SAFETY: `preedit` is populated by `RimeGetContext` for active composition.
+    assert_eq!(
+        unsafe { CStr::from_ptr(context.composition.preedit) }.to_str(),
+        Ok("ba")
+    );
+    assert_eq!(context.menu.num_candidates, 2);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    assert_eq!(RimeDestroySession(alt_sequence_session_id), TRUE);
 
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.

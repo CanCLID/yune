@@ -197,6 +197,62 @@ fn frontend_style_api_table_can_simulate_key_sequences() {
 }
 
 #[test]
+fn frontend_style_api_table_can_edit_input_and_caret() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let get_version = api.get_version.expect("frontend requires get_version");
+    let version = get_version();
+    assert!(!version.is_null());
+    let version = unsafe { CStr::from_ptr(version) };
+    assert_eq!(version.to_str(), Ok("yune-rime-api 0.1.0"));
+
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    cleanup_all_sessions();
+
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let destroy_session = api
+        .destroy_session
+        .expect("frontend requires destroy_session");
+    let get_input = api.get_input.expect("frontend requires get_input");
+    let get_caret_pos = api.get_caret_pos.expect("frontend requires get_caret_pos");
+    let set_caret_pos = api.set_caret_pos.expect("frontend requires set_caret_pos");
+    let set_input = api.set_input.expect("frontend requires set_input");
+
+    assert!(get_input(0).is_null());
+    assert_eq!(get_caret_pos(0), 0);
+
+    let session_id = create_session();
+    assert_ne!(session_id, 0);
+
+    let input = CString::new("nihao").expect("literal should not contain NUL");
+    assert_eq!(unsafe { set_input(session_id, input.as_ptr()) }, TRUE);
+    assert_eq!(get_caret_pos(session_id), 5);
+
+    let current_input = get_input(session_id);
+    assert!(!current_input.is_null());
+    let current_input = unsafe { CStr::from_ptr(current_input) };
+    assert_eq!(current_input.to_str(), Ok("nihao"));
+
+    set_caret_pos(session_id, 2);
+    assert_eq!(get_caret_pos(session_id), 2);
+    set_caret_pos(session_id, 99);
+    assert_eq!(get_caret_pos(session_id), 5);
+
+    assert_eq!(unsafe { set_input(session_id, ptr::null()) }, FALSE);
+    assert_eq!(unsafe { set_input(session_id + 1, input.as_ptr()) }, FALSE);
+
+    assert_eq!(destroy_session(session_id), TRUE);
+    cleanup_all_sessions();
+}
+
+#[test]
 fn frontend_style_api_table_can_iterate_candidates() {
     let _guard = test_guard();
     let api = rime_get_api();

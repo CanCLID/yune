@@ -2243,6 +2243,37 @@ impl CandidateFilter for UniquifierFilter {
     }
 }
 
+pub struct SingleCharFilter;
+
+impl CandidateFilter for SingleCharFilter {
+    fn name(&self) -> &'static str {
+        "single_char_filter"
+    }
+
+    fn apply(&self, candidates: &mut Vec<Candidate>) {
+        let table_prefix_len = candidates
+            .iter()
+            .position(|candidate| candidate.source != CandidateSource::Table)
+            .unwrap_or(candidates.len());
+        if table_prefix_len <= 1 {
+            return;
+        }
+
+        let mut phrases = candidates.drain(..table_prefix_len).collect::<Vec<_>>();
+        let mut single_chars = Vec::new();
+        let mut multi_chars = Vec::new();
+        for candidate in phrases.drain(..) {
+            if candidate.text.chars().count() == 1 {
+                single_chars.push(candidate);
+            } else {
+                multi_chars.push(candidate);
+            }
+        }
+        single_chars.append(&mut multi_chars);
+        candidates.splice(..0, single_chars);
+    }
+}
+
 pub struct ReverseLookupFilter {
     reverse_comments: HashMap<String, Vec<String>>,
     overwrite_comment: bool,
@@ -3347,8 +3378,8 @@ mod tests {
     use super::{
         parse_key_sequence, Candidate, CandidateFilter, CandidateRanker, CandidateSource, Context,
         Engine, KeyCode, MockAiRanker, PunctuationTranslator, RerankResult, ReverseLookupFilter,
-        ReverseLookupTranslator, StaticTableTranslator, TableDictionary, Translator,
-        UniquifierFilter,
+        ReverseLookupTranslator, SingleCharFilter, StaticTableTranslator, TableDictionary,
+        Translator, UniquifierFilter,
     };
 
     struct CommentTranslator;
@@ -6192,6 +6223,43 @@ sort: original
             .map(|candidate| candidate.text.as_str())
             .collect::<Vec<_>>();
         assert_eq!(texts, ["你", "呢", "ni"]);
+    }
+
+    #[test]
+    fn single_char_filter_moves_table_single_characters_before_phrases() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([
+            ("ni", "你好"),
+            ("ni", "你"),
+            ("ni", "呢"),
+            ("ni", "你们"),
+        ]));
+        engine.add_filter(SingleCharFilter);
+
+        engine
+            .process_key_sequence("ni")
+            .expect("keys should parse");
+
+        let candidates = engine.context().candidates.iter().collect::<Vec<_>>();
+        let texts = candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let sources = candidates
+            .iter()
+            .map(|candidate| candidate.source.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["你", "呢", "你好", "你们", "ni"]);
+        assert_eq!(
+            sources,
+            [
+                CandidateSource::Table,
+                CandidateSource::Table,
+                CandidateSource::Table,
+                CandidateSource::Table,
+                CandidateSource::Echo,
+            ]
+        );
     }
 
     #[test]

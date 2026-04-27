@@ -3726,10 +3726,12 @@ fn install_schema_reverse_lookup_translator(session: &mut SessionState, schema_i
     let enable_completion = find_config_value(&schema_config, "reverse_lookup/enable_completion")
         .and_then(config_scalar_bool)
         .unwrap_or(false);
+    let comment_format = schema_comment_format(&schema_config, "reverse_lookup");
 
     session.engine.add_translator(
         ReverseLookupTranslator::new(dictionary, reverse_dictionary, prefix, suffix)
-            .with_completion(enable_completion),
+            .with_completion(enable_completion)
+            .with_comment_format(&comment_format),
     );
 }
 
@@ -3750,11 +3752,13 @@ fn install_schema_reverse_lookup_filter(session: &mut SessionState, schema_id: &
     let append_comment = find_config_value(&schema_config, "reverse_lookup/append_comment")
         .and_then(config_scalar_bool)
         .unwrap_or(false);
+    let comment_format = schema_comment_format(&schema_config, "reverse_lookup");
 
     session.engine.add_filter(
         ReverseLookupFilter::new(reverse_dictionary)
             .with_overwrite_comment(overwrite_comment)
-            .with_append_comment(append_comment),
+            .with_append_comment(append_comment)
+            .with_comment_format(&comment_format),
     );
 }
 
@@ -3786,6 +3790,15 @@ fn schema_dictionary_packs(schema_config: &Value, name_space: &str) -> Vec<Strin
         return Vec::new();
     };
     packs.iter().filter_map(config_scalar_string).collect()
+}
+
+fn schema_comment_format(schema_config: &Value, name_space: &str) -> Vec<String> {
+    let Some(Value::Sequence(formulas)) =
+        find_config_value(schema_config, &format!("{name_space}/comment_format"))
+    else {
+        return Vec::new();
+    };
+    formulas.iter().filter_map(config_scalar_string).collect()
 }
 
 fn install_schema_punctuation_translator(session: &mut SessionState, schema_id: &str) {

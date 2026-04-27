@@ -13356,6 +13356,10 @@ translator:
 reverse_lookup:
   dictionary: stroke
   prefix: \"`\"
+  comment_format:
+    - xlit/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/
+    - xform/^/〔/
+    - xform/$/〕/
 ",
     )
     .expect("schema config should be written");
@@ -13442,7 +13446,7 @@ sort: original
     assert_eq!(
         texts_and_comments,
         [
-            ("火".to_owned(), Some("ho huo".to_owned())),
+            ("火".to_owned(), Some("〔HO HUO〕".to_owned())),
             ("`huo".to_owned(), Some("echo".to_owned()))
         ]
     );
@@ -13605,6 +13609,10 @@ translator:
 reverse_lookup:
   dictionary: stroke
   overwrite_comment: true
+  comment_format:
+    - xlit/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/
+    - xform/^/〔/
+    - xform/$/〕/
 ",
     )
     .expect("schema config should be written");
@@ -13690,7 +13698,7 @@ sort: original
     assert_eq!(
         texts_and_comments,
         [
-            ("你".to_owned(), Some("wq".to_owned())),
+            ("你".to_owned(), Some("〔WQ〕".to_owned())),
             ("ni".to_owned(), Some("echo".to_owned()))
         ]
     );

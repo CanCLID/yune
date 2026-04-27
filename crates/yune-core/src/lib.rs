@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2136,6 +2137,7 @@ pub struct ReverseLookupTranslator {
     prefix: String,
     suffix: String,
     enable_completion: bool,
+    comment_format: CommentFormat,
 }
 
 impl ReverseLookupTranslator {
@@ -2162,12 +2164,19 @@ impl ReverseLookupTranslator {
             prefix: prefix.into(),
             suffix: suffix.into(),
             enable_completion: false,
+            comment_format: CommentFormat::default(),
         }
     }
 
     #[must_use]
     pub fn with_completion(mut self, enable_completion: bool) -> Self {
         self.enable_completion = enable_completion;
+        self
+    }
+
+    #[must_use]
+    pub fn with_comment_format(mut self, formulas: &[String]) -> Self {
+        self.comment_format = CommentFormat::parse(formulas);
         self
     }
 }
@@ -2208,7 +2217,7 @@ impl Translator for ReverseLookupTranslator {
                     .reverse_comments
                     .get(&entry.text)
                     .filter(|comments| !comments.is_empty())
-                    .map(|comments| comments.join(" "))
+                    .map(|comments| self.comment_format.apply(&comments.join(" ")))
                     .unwrap_or_else(|| entry.code.clone());
                 Candidate {
                     text: entry.text.clone(),
@@ -2225,6 +2234,7 @@ pub struct ReverseLookupFilter {
     reverse_comments: HashMap<String, Vec<String>>,
     overwrite_comment: bool,
     append_comment: bool,
+    comment_format: CommentFormat,
 }
 
 impl ReverseLookupFilter {
@@ -2242,6 +2252,7 @@ impl ReverseLookupFilter {
             reverse_comments,
             overwrite_comment: false,
             append_comment: false,
+            comment_format: CommentFormat::default(),
         }
     }
 
@@ -2254,6 +2265,12 @@ impl ReverseLookupFilter {
     #[must_use]
     pub fn with_append_comment(mut self, append_comment: bool) -> Self {
         self.append_comment = append_comment;
+        self
+    }
+
+    #[must_use]
+    pub fn with_comment_format(mut self, formulas: &[String]) -> Self {
+        self.comment_format = CommentFormat::parse(formulas);
         self
     }
 }
@@ -2279,11 +2296,129 @@ impl CandidateFilter for ReverseLookupFilter {
                 continue;
             }
 
-            let reverse_comment = comments.join(" ");
+            let reverse_comment = self.comment_format.apply(&comments.join(" "));
             if self.overwrite_comment || candidate.comment.is_empty() {
                 candidate.comment = reverse_comment;
             } else {
                 candidate.comment = format!("{} {reverse_comment}", candidate.comment);
+            }
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+struct CommentFormat {
+    formulas: Vec<CommentFormatFormula>,
+}
+
+impl CommentFormat {
+    fn parse(formulas: &[String]) -> Self {
+        let mut parsed = Vec::new();
+        for formula in formulas {
+            let Some(parsed_formula) = CommentFormatFormula::parse(formula) else {
+                return Self::default();
+            };
+            parsed.push(parsed_formula);
+        }
+        Self { formulas: parsed }
+    }
+
+    fn apply(&self, value: &str) -> String {
+        let mut formatted = value.to_owned();
+        for formula in &self.formulas {
+            formula.apply(&mut formatted);
+            if formatted.is_empty() {
+                break;
+            }
+        }
+        formatted
+    }
+}
+
+#[derive(Clone)]
+enum CommentFormatFormula {
+    Transliterate(Vec<(char, char)>),
+    Transform { pattern: Regex, replacement: String },
+    Erase(Regex),
+}
+
+impl CommentFormatFormula {
+    fn parse(definition: &str) -> Option<Self> {
+        let separator = definition.chars().find(|ch| !ch.is_ascii_lowercase())?;
+        let args = definition.split(separator).collect::<Vec<_>>();
+        match args.first().copied()? {
+            "xlit" => Self::parse_xlit(&args),
+            "xform" => Self::parse_xform(&args),
+            "erase" => Self::parse_erase(&args),
+            _ => None,
+        }
+    }
+
+    fn parse_xlit(args: &[&str]) -> Option<Self> {
+        if args.len() < 3 {
+            return None;
+        }
+        let left = args[1].chars().collect::<Vec<_>>();
+        let right = args[2].chars().collect::<Vec<_>>();
+        if left.len() != right.len() {
+            return None;
+        }
+        Some(Self::Transliterate(left.into_iter().zip(right).collect()))
+    }
+
+    fn parse_xform(args: &[&str]) -> Option<Self> {
+        if args.len() < 3 || args[1].is_empty() {
+            return None;
+        }
+        Some(Self::Transform {
+            pattern: Regex::new(args[1]).ok()?,
+            replacement: args[2].to_owned(),
+        })
+    }
+
+    fn parse_erase(args: &[&str]) -> Option<Self> {
+        if args.len() < 2 || args[1].is_empty() {
+            return None;
+        }
+        Some(Self::Erase(Regex::new(args[1]).ok()?))
+    }
+
+    fn apply(&self, value: &mut String) {
+        match self {
+            Self::Transliterate(char_map) => {
+                let mut modified = false;
+                let transformed = value
+                    .chars()
+                    .map(|ch| {
+                        if let Some((_, replacement)) =
+                            char_map.iter().find(|(source, _)| *source == ch)
+                        {
+                            modified = true;
+                            *replacement
+                        } else {
+                            ch
+                        }
+                    })
+                    .collect::<String>();
+                if modified {
+                    *value = transformed;
+                }
+            }
+            Self::Transform {
+                pattern,
+                replacement,
+            } => {
+                let transformed = pattern
+                    .replace_all(value, replacement.as_str())
+                    .into_owned();
+                if transformed != *value {
+                    *value = transformed;
+                }
+            }
+            Self::Erase(pattern) => {
+                if pattern.is_match(value) {
+                    value.clear();
+                }
             }
         }
     }
@@ -6023,6 +6158,67 @@ sort: original
             .process_key_sequence("ni")
             .expect("keys should parse");
         assert_eq!(append_engine.context().candidates[0].comment, "ni wq");
+    }
+
+    #[test]
+    fn reverse_lookup_comment_format_applies_projection_formulas() {
+        let lookup_dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: stroke
+version: "0.1"
+sort: original
+...
+
+你	wq
+"#,
+        )
+        .expect("lookup dictionary should parse");
+        let target_dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: luna
+version: "0.1"
+sort: original
+...
+
+你	ni
+"#,
+        )
+        .expect("target dictionary should parse");
+        let formulas = vec![
+            "xlit/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/".to_owned(),
+            "xform/^/〔/".to_owned(),
+            "xform/$/〕/".to_owned(),
+        ];
+
+        let translator =
+            ReverseLookupTranslator::new(lookup_dictionary, Some(target_dictionary), "", "")
+                .with_comment_format(&formulas);
+        let candidates = translator.translate("wq");
+        assert_eq!(candidates[0].comment, "〔NI〕");
+
+        let reverse_dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: stroke
+version: "0.1"
+sort: original
+...
+
+你	wq
+"#,
+        )
+        .expect("reverse lookup dictionary should parse");
+        let filter = ReverseLookupFilter::new(reverse_dictionary).with_comment_format(&formulas);
+        let mut candidates = vec![Candidate {
+            text: "你".to_owned(),
+            comment: String::new(),
+            source: CandidateSource::Table,
+            quality: 1.0,
+        }];
+        filter.apply(&mut candidates);
+        assert_eq!(candidates[0].comment, "〔WQ〕");
     }
 
     #[test]

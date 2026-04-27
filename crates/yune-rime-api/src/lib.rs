@@ -2586,7 +2586,7 @@ pub unsafe extern "C" fn RimeConfigGetString(
     value: *mut c_char,
     buffer_size: usize,
 ) -> Bool {
-    if value.is_null() || buffer_size == 0 {
+    if value.is_null() {
         return FALSE;
     }
     let Some(found) = (unsafe { config_string_value(config, key) }) else {
@@ -5615,6 +5615,9 @@ fn free_candidate_fields(candidate: &mut RimeCandidate) {
 }
 
 fn copy_c_string_to_buffer(value: &str, output: *mut c_char, buffer_size: usize) {
+    if buffer_size == 0 {
+        return;
+    }
     let bytes = value.as_bytes();
     let copy_len = bytes.len().min(buffer_size.saturating_sub(1));
     // SAFETY: callers pass writable storage of `buffer_size` bytes, and
@@ -6964,6 +6967,36 @@ switches:\n  - name: ascii_mode\n  - name: full_shape\nmenu:\n  page_size: 9\n  
                 )
             },
             TRUE
+        );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+    }
+
+    #[test]
+    fn config_get_string_allows_zero_length_buffers() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let key = CString::new("schema/name").expect("key should be valid");
+        let value = CString::new("Default").expect("value should be valid");
+        let missing = CString::new("schema/missing").expect("key should be valid");
+        let mut output = 42 as c_char;
+
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigSetString(&mut config, key.as_ptr(), value.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigGetString(&mut config, key.as_ptr(), &mut output, 0) },
+            TRUE
+        );
+        assert_eq!(output, 42 as c_char);
+        assert_eq!(
+            unsafe { RimeConfigGetString(&mut config, missing.as_ptr(), &mut output, 0) },
+            FALSE
+        );
+        assert_eq!(
+            unsafe { RimeConfigGetString(&mut config, key.as_ptr(), std::ptr::null_mut(), 0) },
+            FALSE
         );
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }

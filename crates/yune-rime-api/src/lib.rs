@@ -11,7 +11,8 @@ use std::{
 
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
-    parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers, StaticTableTranslator,
+    parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers, PunctuationTranslator,
+    StaticTableTranslator,
 };
 
 mod abi;
@@ -2013,6 +2014,7 @@ pub unsafe extern "C" fn RimeSelectSchema(
             .engine
             .set_schema(schema_id.clone(), schema_name.clone());
         session.engine.reset_translators();
+        install_schema_punctuation_translator(session, &schema_id);
         install_schema_dictionary_translator(session, &schema_id);
         session.engine.clear_composition();
         session.input_buffer = None;
@@ -3589,6 +3591,92 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
         return;
     };
     session.engine.add_translator(translator);
+}
+
+fn install_schema_punctuation_translator(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    if !schema_engine_translators_include(&schema_config, "punct_translator") {
+        return;
+    }
+
+    let entries = punctuation_entries_from_config(&schema_config, "half_shape");
+    if entries.is_empty() {
+        return;
+    }
+    session
+        .engine
+        .add_translator(PunctuationTranslator::new(entries));
+}
+
+fn schema_engine_translators_include(schema_config: &Value, translator_name: &str) -> bool {
+    let Some(Value::Sequence(translators)) = find_config_value(schema_config, "engine/translators")
+    else {
+        return false;
+    };
+    translators
+        .iter()
+        .filter_map(Value::as_str)
+        .any(|translator| translator == translator_name)
+}
+
+fn punctuation_entries_from_config(schema_config: &Value, shape: &str) -> Vec<(String, String)> {
+    let Some(Value::Mapping(mapping)) =
+        find_config_value(schema_config, &format!("punctuator/{shape}"))
+    else {
+        return Vec::new();
+    };
+
+    let mut entries = Vec::new();
+    for (key, definition) in mapping {
+        let Some(key) = config_scalar_string(key) else {
+            continue;
+        };
+        append_punctuation_definition(&mut entries, &key, definition);
+    }
+    entries
+}
+
+fn append_punctuation_definition(
+    entries: &mut Vec<(String, String)>,
+    key: &str,
+    definition: &Value,
+) {
+    if let Some(text) = config_scalar_string(definition) {
+        entries.push((key.to_owned(), text));
+        return;
+    }
+
+    match definition {
+        Value::Sequence(values) => {
+            for value in values {
+                if let Some(text) = config_scalar_string(value) {
+                    entries.push((key.to_owned(), text));
+                }
+            }
+        }
+        Value::Mapping(mapping) => {
+            let commit_key = Value::String("commit".to_owned());
+            if let Some(text) = mapping.get(&commit_key).and_then(config_scalar_string) {
+                entries.push((key.to_owned(), text));
+                return;
+            }
+
+            let pair_key = Value::String("pair".to_owned());
+            let Some(Value::Sequence(pair)) = mapping.get(&pair_key) else {
+                return;
+            };
+            if pair.len() != 2 {
+                return;
+            }
+            for value in pair {
+                if let Some(text) = config_scalar_string(value) {
+                    entries.push((key.to_owned(), text));
+                }
+            }
+        }
+        _ => {}
+    }
 }
 
 fn process_session_key_event(session: &mut SessionState, key_event: KeyEvent) -> Option<String> {

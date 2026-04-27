@@ -295,6 +295,226 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: asc
 }
 
 #[test]
+fn frontend_style_api_table_can_mutate_in_memory_configs() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let config_init = api.config_init.expect("frontend requires config_init");
+    let config_load_string = api
+        .config_load_string
+        .expect("frontend requires config_load_string");
+    let config_set_bool = api
+        .config_set_bool
+        .expect("frontend requires config_set_bool");
+    let config_set_int = api
+        .config_set_int
+        .expect("frontend requires config_set_int");
+    let config_set_double = api
+        .config_set_double
+        .expect("frontend requires config_set_double");
+    let config_set_string = api
+        .config_set_string
+        .expect("frontend requires config_set_string");
+    let config_get_bool = api
+        .config_get_bool
+        .expect("frontend requires config_get_bool");
+    let config_get_int = api
+        .config_get_int
+        .expect("frontend requires config_get_int");
+    let config_get_double = api
+        .config_get_double
+        .expect("frontend requires config_get_double");
+    let config_get_string = api
+        .config_get_string
+        .expect("frontend requires config_get_string");
+    let config_create_list = api
+        .config_create_list
+        .expect("frontend requires config_create_list");
+    let config_create_map = api
+        .config_create_map
+        .expect("frontend requires config_create_map");
+    let config_list_size = api
+        .config_list_size
+        .expect("frontend requires config_list_size");
+    let config_get_item = api
+        .config_get_item
+        .expect("frontend requires config_get_item");
+    let config_set_item = api
+        .config_set_item
+        .expect("frontend requires config_set_item");
+    let config_clear = api.config_clear.expect("frontend requires config_clear");
+    let config_close = api.config_close.expect("frontend requires config_close");
+
+    let mut source = empty_config();
+    let mut item = empty_config();
+    let mut destination = empty_config();
+    let schema_key = CString::new("schema").expect("literal should not contain NUL");
+    let schema_name_key = CString::new("schema/name").expect("literal should not contain NUL");
+    let copied_schema_key = CString::new("copied/schema").expect("literal should not contain NUL");
+    let copied_name_key =
+        CString::new("copied/schema/name").expect("literal should not contain NUL");
+    let page_size_key = CString::new("menu/page_size").expect("literal should not contain NUL");
+    let bias_key = CString::new("weights/bias").expect("literal should not contain NUL");
+    let enabled_key = CString::new("enabled").expect("literal should not contain NUL");
+    let switches_key = CString::new("switches").expect("literal should not contain NUL");
+    let menu_key = CString::new("menu").expect("literal should not contain NUL");
+    let name_value = CString::new("Default").expect("literal should not contain NUL");
+    let replacement_value = CString::new("Modified").expect("literal should not contain NUL");
+    let yaml = CString::new(
+        "\
+schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\n",
+    )
+    .expect("yaml should not contain NUL");
+
+    assert_eq!(unsafe { config_init(&mut destination) }, TRUE);
+    assert_eq!(
+        unsafe {
+            config_set_string(
+                &mut destination,
+                schema_name_key.as_ptr(),
+                name_value.as_ptr(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { config_set_int(&mut destination, page_size_key.as_ptr(), 7) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { config_set_double(&mut destination, bias_key.as_ptr(), 1.25) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { config_set_bool(&mut destination, enabled_key.as_ptr(), TRUE) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { config_create_list(&mut destination, switches_key.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { config_create_map(&mut destination, menu_key.as_ptr()) },
+        TRUE
+    );
+
+    let mut output = vec![0 as c_char; 32];
+    let mut int_output: c_int = 0;
+    let mut double_output = 0.0;
+    let mut bool_output = FALSE;
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut destination,
+                schema_name_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("Default")
+    );
+    assert_eq!(
+        unsafe { config_get_int(&mut destination, page_size_key.as_ptr(), &mut int_output) },
+        FALSE
+    );
+    assert_eq!(
+        unsafe { config_get_double(&mut destination, bias_key.as_ptr(), &mut double_output) },
+        TRUE
+    );
+    assert_eq!(double_output, 1.25);
+    assert_eq!(
+        unsafe { config_get_bool(&mut destination, enabled_key.as_ptr(), &mut bool_output) },
+        TRUE
+    );
+    assert_eq!(bool_output, TRUE);
+    assert_eq!(
+        unsafe { config_list_size(&mut destination, switches_key.as_ptr()) },
+        0
+    );
+
+    assert_eq!(
+        unsafe { config_load_string(&mut source, yaml.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { config_get_item(&mut source, schema_key.as_ptr(), &mut item) },
+        TRUE
+    );
+    assert!(!item.ptr.is_null());
+    assert_eq!(
+        unsafe { config_set_item(&mut destination, copied_schema_key.as_ptr(), &mut item) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut destination,
+                copied_name_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("Luna Pinyin")
+    );
+
+    assert_eq!(
+        unsafe {
+            config_set_string(
+                &mut item,
+                schema_name_key.as_ptr(),
+                replacement_value.as_ptr(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut destination,
+                copied_name_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("Luna Pinyin")
+    );
+
+    assert_eq!(
+        unsafe { config_clear(&mut destination, copied_name_key.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut destination,
+                copied_name_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        FALSE
+    );
+
+    assert_eq!(unsafe { config_close(&mut source) }, TRUE);
+    assert_eq!(unsafe { config_close(&mut item) }, TRUE);
+    assert_eq!(unsafe { config_close(&mut destination) }, TRUE);
+}
+
+#[test]
 fn frontend_style_api_table_can_drive_basic_composition_flow() {
     let _guard = test_guard();
     let api = rime_get_api();

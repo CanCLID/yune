@@ -5793,7 +5793,7 @@ fn find_config_value<'a>(root: &'a Value, key: &str) -> Option<&'a Value> {
 
     let mut current = root;
     for segment in key.split('/').filter(|segment| !segment.is_empty()) {
-        if let Some(index) = list_index(segment) {
+        if let Some(index) = list_index_for_read(segment, current) {
             let Value::Sequence(sequence) = current else {
                 return None;
             };
@@ -5815,7 +5815,7 @@ fn find_config_value_mut<'a>(root: &'a mut Value, key: &str) -> Option<&'a mut V
 
     let mut current = root;
     for segment in key.split('/').filter(|segment| !segment.is_empty()) {
-        if let Some(index) = list_index(segment) {
+        if let Some(index) = list_index_for_read(segment, current) {
             let Value::Sequence(sequence) = current else {
                 return None;
             };
@@ -5846,8 +5846,11 @@ fn set_config_value(root: &mut Value, key: &str, value: Value) -> bool {
     };
 
     let mut current = root;
-    for segment in parents {
-        if let Some(index) = list_index(segment) {
+    for (index, segment) in parents.iter().enumerate() {
+        if is_list_item_reference(segment) && current.is_null() {
+            *current = Value::Sequence(Vec::new());
+        }
+        if let Some(index) = list_index_for_read(segment, current) {
             let Value::Sequence(sequence) = current else {
                 return false;
             };
@@ -5855,35 +5858,45 @@ fn set_config_value(root: &mut Value, key: &str, value: Value) -> bool {
                 return false;
             };
             current = next;
+        } else if is_list_item_reference(segment) {
+            return false;
         } else {
             let Value::Mapping(mapping) = ensure_mapping(current) else {
                 return false;
             };
+            let next_segment = if index + 1 == parents.len() {
+                *last
+            } else {
+                parents[index + 1]
+            };
             current = mapping
                 .entry(Value::String((*segment).to_owned()))
-                .or_insert_with(|| Value::Mapping(Mapping::new()));
+                .or_insert_with(|| empty_config_container_for_next(next_segment));
         }
     }
 
-    if *last == "@next" {
+    if is_list_item_reference(last) && current.is_null() {
+        *current = Value::Sequence(Vec::new());
+    }
+    if let Some((index, insert)) = list_index_for_write(last, current) {
         let Value::Sequence(sequence) = current else {
             return false;
         };
-        sequence.push(value);
-        true
-    } else if let Some(index) = list_index(last) {
-        let Value::Sequence(sequence) = current else {
-            return false;
-        };
-        if index == sequence.len() {
-            sequence.push(value);
-            true
-        } else if let Some(slot) = sequence.get_mut(index) {
-            *slot = value;
+        if insert {
+            if index > sequence.len() {
+                sequence.resize(index, Value::Null);
+            }
+            sequence.insert(index, value);
             true
         } else {
-            false
+            if index >= sequence.len() {
+                sequence.resize(index + 1, Value::Null);
+            }
+            sequence[index] = value;
+            true
         }
+    } else if is_list_item_reference(last) {
+        false
     } else {
         let Value::Mapping(mapping) = ensure_mapping(current) else {
             return false;
@@ -5918,7 +5931,7 @@ fn remove_config_value(root: &mut Value, key: &str) -> bool {
         current = next;
     }
 
-    if let Some(index) = list_index(last) {
+    if let Some(index) = list_index_for_read(last, current) {
         let Value::Sequence(sequence) = current else {
             return false;
         };
@@ -5943,8 +5956,80 @@ fn ensure_mapping(value: &mut Value) -> &mut Value {
     value
 }
 
-fn list_index(segment: &str) -> Option<usize> {
-    segment.strip_prefix('@')?.parse().ok()
+fn empty_config_container_for_next(next_segment: &str) -> Value {
+    if is_list_item_reference(next_segment) {
+        Value::Sequence(Vec::new())
+    } else {
+        Value::Mapping(Mapping::new())
+    }
+}
+
+fn list_index_for_read(segment: &str, current: &Value) -> Option<usize> {
+    let Value::Sequence(sequence) = current else {
+        return None;
+    };
+    list_index(segment, sequence.len()).map(|(index, _)| index)
+}
+
+fn list_index_for_write(segment: &str, current: &Value) -> Option<(usize, bool)> {
+    let Value::Sequence(sequence) = current else {
+        return None;
+    };
+    list_index(segment, sequence.len())
+}
+
+fn list_index(segment: &str, len: usize) -> Option<(usize, bool)> {
+    let mut rest = segment.strip_prefix('@')?;
+    let mut index = 0usize;
+    let mut insert = false;
+
+    if let Some(after_next) = rest.strip_prefix("next") {
+        rest = after_next;
+        index = len;
+    } else if let Some(after_before) = rest.strip_prefix("before") {
+        rest = after_before;
+        insert = true;
+    } else if let Some(after_after) = rest.strip_prefix("after") {
+        rest = after_after;
+        index = 1;
+        insert = true;
+    }
+
+    if let Some(after_space) = rest.strip_prefix(' ') {
+        rest = after_space;
+    }
+
+    if let Some(after_last) = rest.strip_prefix("last") {
+        rest = after_last;
+        index = index.checked_add(len)?;
+        index = index.saturating_sub(1);
+    } else if rest.is_empty() {
+        if !segment.starts_with("@next")
+            && !segment.starts_with("@before")
+            && !segment.starts_with("@after")
+        {
+            return None;
+        }
+    } else {
+        let digits_len = rest
+            .bytes()
+            .take_while(|byte| byte.is_ascii_digit())
+            .count();
+        if digits_len == 0 {
+            return None;
+        }
+        index = index.checked_add(rest[..digits_len].parse::<usize>().ok()?)?;
+        rest = &rest[digits_len..];
+    }
+
+    rest.is_empty().then_some((index, insert))
+}
+
+fn is_list_item_reference(segment: &str) -> bool {
+    segment
+        .strip_prefix('@')
+        .and_then(|rest| rest.as_bytes().first().copied())
+        .is_some_and(|byte| byte.is_ascii_alphanumeric())
 }
 
 #[cfg(test)]
@@ -7486,6 +7571,71 @@ patch:
             Some(7)
         );
         assert!(find_config_value(&rebuilt, "new/value").is_none());
+
+        let reset_traits = empty_traits();
+        // SAFETY: reset traits points to valid storage.
+        unsafe { RimeSetup(&reset_traits) };
+        fs::remove_dir_all(root).expect("temp dirs should be removed");
+    }
+
+    #[test]
+    fn deploy_config_file_supports_librime_list_position_references() {
+        let _guard = test_guard();
+        RimeCleanupAllSessions();
+        let root = unique_temp_dir("deploy-config-list-positions");
+        let shared = root.join("shared");
+        let user = root.join("user");
+        let staging = user.join("build");
+        fs::create_dir_all(&shared).expect("shared dir should be created");
+        fs::create_dir_all(&user).expect("user dir should be created");
+        fs::write(
+            shared.join("default.yaml"),
+            "\
+config_version: '2.0'
+units:
+  - marine
+  - zealot
+__patch:
+  - units/@before 0: probe
+  - units/@after 1: medic
+  - units/@last: carrier
+  - units/@after last: arbiter
+  - sparse/@3: observer
+",
+        )
+        .expect("shared config should be written");
+        let shared_c =
+            CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+        let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+        let config_file = CString::new("default.yaml").expect("file should be valid");
+        let version_key = CString::new("config_version").expect("key should be valid");
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_c.as_ptr();
+        traits.user_data_dir = user_c.as_ptr();
+
+        // SAFETY: traits points to a valid RimeTraits object with valid strings.
+        unsafe { RimeDeployerInitialize(&traits) };
+        assert_eq!(
+            RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+            TRUE
+        );
+        let staged: Value = serde_yaml::from_str(
+            &fs::read_to_string(staging.join("default.yaml"))
+                .expect("staged config should be readable"),
+        )
+        .expect("staged config should parse");
+        let units = ["probe", "marine", "medic", "carrier", "arbiter"];
+        for (index, unit) in units.iter().enumerate() {
+            assert_eq!(
+                find_config_value(&staged, &format!("units/@{index}")).and_then(Value::as_str),
+                Some(*unit)
+            );
+        }
+        assert!(find_config_value(&staged, "sparse/@0").is_some_and(Value::is_null));
+        assert_eq!(
+            find_config_value(&staged, "sparse/@3").and_then(Value::as_str),
+            Some("observer")
+        );
 
         let reset_traits = empty_traits();
         // SAFETY: reset traits points to valid storage.

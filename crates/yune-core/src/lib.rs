@@ -1556,9 +1556,15 @@ impl RimeTableMetadata {
             self.reading_columns = false;
         }
 
-        if trimmed == "columns:" {
+        if let Some(columns) = trimmed.strip_prefix("columns:") {
             self.columns.clear();
-            self.reading_columns = true;
+            let columns = columns.trim();
+            if columns.is_empty() {
+                self.reading_columns = true;
+            } else {
+                self.columns.extend(parse_inline_yaml_list(columns));
+                self.reading_columns = false;
+            }
             return;
         }
 
@@ -1588,6 +1594,21 @@ impl RimeTableMetadata {
     fn column_index(&self, label: &str) -> Option<usize> {
         self.columns.iter().position(|column| column == label)
     }
+}
+
+fn parse_inline_yaml_list(input: &str) -> Vec<String> {
+    input
+        .trim()
+        .strip_prefix('[')
+        .and_then(|items| items.strip_suffix(']'))
+        .map(|items| {
+            items
+                .split(',')
+                .map(|item| item.trim().trim_matches(['"', '\'']).to_owned())
+                .filter(|item| !item.is_empty())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn normalize_table_code(code: &str) -> String {
@@ -4501,6 +4522,32 @@ columns:
         assert_eq!(entries[0].code, "ab");
         assert_eq!(entries[1].text, "晭");
         assert_eq!(entries[1].code, "abgr");
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_inline_custom_columns() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: inline_columns_sample
+version: "0.1"
+sort: original
+columns: [code, text, weight]
+...
+
+ba	八	10
+ba	吧	9
+"#,
+        )
+        .expect("dictionary should parse");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].code, "ba");
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[0].weight, 10.0);
+        assert_eq!(entries[1].code, "ba");
+        assert_eq!(entries[1].text, "吧");
     }
 
     #[test]

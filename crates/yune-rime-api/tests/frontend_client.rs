@@ -1932,7 +1932,7 @@ schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\ntranslator:\n  
     fs::write(
         shared.join("frontend.dict.yaml"),
         "\
----\nname: frontend\nversion: '1'\nsort: original\ncolumns:\n  - text\n  - code\n  - weight\n...\n八\tba\t10\n吧\tba\t9\n爸\tba\t8\n巴\tba\t7\n把\tba\t6\n拔\tba\t5\n",
+---\nname: frontend\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nba\t八\t10\nba\t吧\t9\nba\t爸\t8\nba\t巴\t7\nba\t把\t6\nba\t拔\t5\n",
     )
     .expect("dictionary should be written");
 

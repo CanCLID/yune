@@ -14,6 +14,7 @@ pub enum CandidateSource {
     Echo,
     Punctuation,
     Table,
+    Completion,
     ReverseLookup,
     Ai,
 }
@@ -25,6 +26,7 @@ impl CandidateSource {
             Self::Echo => "echo",
             Self::Punctuation => "punct",
             Self::Table => "table",
+            Self::Completion => "completion",
             Self::ReverseLookup => "reverse_lookup",
             Self::Ai => "ai",
         }
@@ -2070,6 +2072,7 @@ fn normalize_table_code(code: &str) -> String {
 
 pub struct StaticTableTranslator {
     entries: Vec<(String, Candidate)>,
+    enable_completion: bool,
     enable_charset_filter: bool,
     delimiters: String,
 }
@@ -2095,6 +2098,7 @@ impl StaticTableTranslator {
             .collect();
         Self {
             entries,
+            enable_completion: false,
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
         }
@@ -2117,9 +2121,16 @@ impl StaticTableTranslator {
             .collect();
         Self {
             entries,
+            enable_completion: false,
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
         }
+    }
+
+    #[must_use]
+    pub fn with_completion(mut self, enable_completion: bool) -> Self {
+        self.enable_completion = enable_completion;
+        self
     }
 
     #[must_use]
@@ -2139,6 +2150,27 @@ impl StaticTableTranslator {
 
     fn lookup_code<'a>(&self, input: &'a str) -> &'a str {
         input.trim_end_matches(|ch| self.delimiters.contains(ch))
+    }
+
+    fn matches_lookup_code(&self, entry_code: &str, lookup_code: &str) -> bool {
+        entry_code == lookup_code
+            || (self.enable_completion
+                && !lookup_code.is_empty()
+                && entry_code.starts_with(lookup_code))
+    }
+
+    fn candidate_for_lookup(
+        &self,
+        entry_code: &str,
+        candidate: &Candidate,
+        lookup_code: &str,
+    ) -> Candidate {
+        let mut candidate = candidate.clone();
+        if entry_code != lookup_code {
+            candidate.source = CandidateSource::Completion;
+            candidate.quality -= 1.0;
+        }
+        candidate
     }
 
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
@@ -2172,8 +2204,10 @@ impl Translator for StaticTableTranslator {
         let lookup_code = self.lookup_code(input);
         self.entries
             .iter()
-            .filter(|(entry_code, _)| entry_code == lookup_code)
-            .map(|(_, candidate)| candidate.clone())
+            .filter(|(entry_code, _)| self.matches_lookup_code(entry_code, lookup_code))
+            .map(|(entry_code, candidate)| {
+                self.candidate_for_lookup(entry_code, candidate, lookup_code)
+            })
             .collect()
     }
 
@@ -2189,10 +2223,12 @@ impl Translator for StaticTableTranslator {
         self.entries
             .iter()
             .filter(|(entry_code, candidate)| {
-                entry_code == lookup_code
+                self.matches_lookup_code(entry_code, lookup_code)
                     && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
             })
-            .map(|(_, candidate)| candidate.clone())
+            .map(|(entry_code, candidate)| {
+                self.candidate_for_lookup(entry_code, candidate, lookup_code)
+            })
             .collect()
     }
 }
@@ -6790,6 +6826,39 @@ sort: original
             .collect::<Vec<_>>();
         assert_eq!(texts, ["爸", "ba'"]);
         assert_eq!(engine.context().composition.preedit, "ba'");
+    }
+
+    #[test]
+    fn static_table_translator_completion_matches_librime_option() {
+        let mut exact_engine = Engine::new();
+        exact_engine.add_translator(StaticTableTranslator::new([("ba", "爸"), ("ban", "班")]));
+        exact_engine.process_char('b');
+
+        let exact_texts = exact_engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(exact_texts, ["b"]);
+
+        let mut completion_engine = Engine::new();
+        completion_engine.add_translator(
+            StaticTableTranslator::new([("ba", "爸"), ("ban", "班")]).with_completion(true),
+        );
+        completion_engine.process_char('b');
+
+        let candidates = &completion_engine.context().candidates;
+        let texts = candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let sources = candidates
+            .iter()
+            .map(|candidate| candidate.source.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["爸", "班", "b"]);
+        assert_eq!(sources, ["completion", "completion", "echo"]);
     }
 
     #[test]

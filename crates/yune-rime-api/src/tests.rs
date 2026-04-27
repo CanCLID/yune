@@ -1,7 +1,7 @@
 use std::env;
 use std::ffi::{c_void, CStr, CString};
 use std::fs;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int};
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -153,6 +153,250 @@ fn context_data_size_before_commit_text_preview() -> i32 {
     let base = &context as *const RimeContext as usize;
     let member = std::ptr::addr_of!(context.commit_text_preview) as usize;
     (member - base - std::mem::size_of::<i32>()) as i32
+}
+
+fn align_up(offset: usize, alignment: usize) -> usize {
+    if alignment == 0 {
+        return offset;
+    }
+    let remainder = offset % alignment;
+    if remainder == 0 {
+        offset
+    } else {
+        offset + alignment - remainder
+    }
+}
+
+fn field_offset<T, U>(base: &T, member: *const U) -> usize {
+    member as usize - base as *const T as usize
+}
+
+#[test]
+fn rime_frontend_struct_layout_matches_librime_header() {
+    let int_size = std::mem::size_of::<c_int>();
+    let ptr_size = std::mem::size_of::<*const c_char>();
+    let ptr_align = std::mem::align_of::<*const c_char>();
+
+    let traits = empty_traits();
+    let traits_shared_data_dir = align_up(int_size, ptr_align);
+    let traits_min_log_level = traits_shared_data_dir + ptr_size * 7;
+    let traits_log_dir = align_up(traits_min_log_level + int_size, ptr_align);
+    assert_eq!(
+        field_offset(&traits, std::ptr::addr_of!(traits.data_size)),
+        0
+    );
+    assert_eq!(
+        field_offset(&traits, std::ptr::addr_of!(traits.shared_data_dir)),
+        traits_shared_data_dir
+    );
+    assert_eq!(
+        field_offset(&traits, std::ptr::addr_of!(traits.modules)),
+        traits_shared_data_dir + ptr_size * 6
+    );
+    assert_eq!(
+        field_offset(&traits, std::ptr::addr_of!(traits.min_log_level)),
+        traits_min_log_level
+    );
+    assert_eq!(
+        field_offset(&traits, std::ptr::addr_of!(traits.log_dir)),
+        traits_log_dir
+    );
+    assert_eq!(
+        field_offset(&traits, std::ptr::addr_of!(traits.prebuilt_data_dir)),
+        traits_log_dir + ptr_size
+    );
+    assert_eq!(
+        field_offset(&traits, std::ptr::addr_of!(traits.staging_dir)),
+        traits_log_dir + ptr_size * 2
+    );
+    assert_eq!(
+        std::mem::size_of::<RimeTraits>(),
+        align_up(traits_log_dir + ptr_size * 3, ptr_align)
+    );
+
+    let composition = super::RimeComposition {
+        length: 0,
+        cursor_pos: 0,
+        sel_start: 0,
+        sel_end: 0,
+        preedit: std::ptr::null_mut(),
+    };
+    let composition_preedit = align_up(int_size * 4, ptr_align);
+    assert_eq!(
+        field_offset(&composition, std::ptr::addr_of!(composition.length)),
+        0
+    );
+    assert_eq!(
+        field_offset(&composition, std::ptr::addr_of!(composition.cursor_pos)),
+        int_size
+    );
+    assert_eq!(
+        field_offset(&composition, std::ptr::addr_of!(composition.sel_start)),
+        int_size * 2
+    );
+    assert_eq!(
+        field_offset(&composition, std::ptr::addr_of!(composition.sel_end)),
+        int_size * 3
+    );
+    assert_eq!(
+        field_offset(&composition, std::ptr::addr_of!(composition.preedit)),
+        composition_preedit
+    );
+    assert_eq!(
+        std::mem::size_of::<super::RimeComposition>(),
+        align_up(composition_preedit + ptr_size, ptr_align)
+    );
+
+    let candidate = super::RimeCandidate {
+        text: std::ptr::null_mut(),
+        comment: std::ptr::null_mut(),
+        reserved: std::ptr::null_mut(),
+    };
+    assert_eq!(
+        field_offset(&candidate, std::ptr::addr_of!(candidate.text)),
+        0
+    );
+    assert_eq!(
+        field_offset(&candidate, std::ptr::addr_of!(candidate.comment)),
+        ptr_size
+    );
+    assert_eq!(
+        field_offset(&candidate, std::ptr::addr_of!(candidate.reserved)),
+        ptr_size * 2
+    );
+    assert_eq!(std::mem::size_of::<super::RimeCandidate>(), ptr_size * 3);
+
+    let menu = super::RimeMenu {
+        page_size: 0,
+        page_no: 0,
+        is_last_page: FALSE,
+        highlighted_candidate_index: 0,
+        num_candidates: 0,
+        candidates: std::ptr::null_mut(),
+        select_keys: std::ptr::null_mut(),
+    };
+    let menu_candidates = align_up(int_size * 5, ptr_align);
+    assert_eq!(field_offset(&menu, std::ptr::addr_of!(menu.page_size)), 0);
+    assert_eq!(
+        field_offset(&menu, std::ptr::addr_of!(menu.highlighted_candidate_index)),
+        int_size * 3
+    );
+    assert_eq!(
+        field_offset(&menu, std::ptr::addr_of!(menu.candidates)),
+        menu_candidates
+    );
+    assert_eq!(
+        field_offset(&menu, std::ptr::addr_of!(menu.select_keys)),
+        menu_candidates + ptr_size
+    );
+    assert_eq!(
+        std::mem::size_of::<super::RimeMenu>(),
+        align_up(menu_candidates + ptr_size * 2, ptr_align)
+    );
+
+    let commit = RimeCommit {
+        data_size: 0,
+        text: std::ptr::null_mut(),
+    };
+    let commit_text = align_up(int_size, ptr_align);
+    assert_eq!(
+        field_offset(&commit, std::ptr::addr_of!(commit.data_size)),
+        0
+    );
+    assert_eq!(
+        field_offset(&commit, std::ptr::addr_of!(commit.text)),
+        commit_text
+    );
+    assert_eq!(
+        std::mem::size_of::<RimeCommit>(),
+        align_up(commit_text + ptr_size, ptr_align)
+    );
+
+    let context = empty_context();
+    let context_composition = align_up(int_size, std::mem::align_of::<super::RimeComposition>());
+    let context_menu = align_up(
+        context_composition + std::mem::size_of::<super::RimeComposition>(),
+        std::mem::align_of::<super::RimeMenu>(),
+    );
+    let context_commit_preview = align_up(
+        context_menu + std::mem::size_of::<super::RimeMenu>(),
+        ptr_align,
+    );
+    assert_eq!(
+        field_offset(&context, std::ptr::addr_of!(context.data_size)),
+        0
+    );
+    assert_eq!(
+        field_offset(&context, std::ptr::addr_of!(context.composition)),
+        context_composition
+    );
+    assert_eq!(
+        field_offset(&context, std::ptr::addr_of!(context.menu)),
+        context_menu
+    );
+    assert_eq!(
+        field_offset(&context, std::ptr::addr_of!(context.commit_text_preview)),
+        context_commit_preview
+    );
+    assert_eq!(
+        field_offset(&context, std::ptr::addr_of!(context.select_labels)),
+        context_commit_preview + ptr_size
+    );
+    assert_eq!(
+        std::mem::size_of::<RimeContext>(),
+        align_up(context_commit_preview + ptr_size * 2, ptr_align)
+    );
+
+    let status = empty_status();
+    let status_schema_id = align_up(int_size, ptr_align);
+    let status_disabled = status_schema_id + ptr_size * 2;
+    assert_eq!(
+        field_offset(&status, std::ptr::addr_of!(status.data_size)),
+        0
+    );
+    assert_eq!(
+        field_offset(&status, std::ptr::addr_of!(status.schema_id)),
+        status_schema_id
+    );
+    assert_eq!(
+        field_offset(&status, std::ptr::addr_of!(status.schema_name)),
+        status_schema_id + ptr_size
+    );
+    assert_eq!(
+        field_offset(&status, std::ptr::addr_of!(status.is_disabled)),
+        status_disabled
+    );
+    assert_eq!(
+        field_offset(&status, std::ptr::addr_of!(status.is_ascii_punct)),
+        status_disabled + int_size * 6
+    );
+    assert_eq!(
+        std::mem::size_of::<RimeStatus>(),
+        align_up(status_disabled + int_size * 7, ptr_align)
+    );
+
+    let iterator = empty_candidate_list_iterator();
+    let iterator_index = align_up(ptr_size, std::mem::align_of::<c_int>());
+    let iterator_candidate = align_up(
+        iterator_index + int_size,
+        std::mem::align_of::<super::RimeCandidate>(),
+    );
+    assert_eq!(field_offset(&iterator, std::ptr::addr_of!(iterator.ptr)), 0);
+    assert_eq!(
+        field_offset(&iterator, std::ptr::addr_of!(iterator.index)),
+        iterator_index
+    );
+    assert_eq!(
+        field_offset(&iterator, std::ptr::addr_of!(iterator.candidate)),
+        iterator_candidate
+    );
+    assert_eq!(
+        std::mem::size_of::<RimeCandidateListIterator>(),
+        align_up(
+            iterator_candidate + std::mem::size_of::<super::RimeCandidate>(),
+            std::mem::align_of::<RimeCandidateListIterator>(),
+        )
+    );
 }
 
 fn empty_status() -> RimeStatus {

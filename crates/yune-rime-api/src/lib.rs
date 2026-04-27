@@ -150,6 +150,13 @@ enum KeyBindingCondition {
 enum KeyBindingAction {
     Send(Vec<KeyEvent>),
     Toggle(String),
+    SetOption { option: String, value: bool },
+}
+
+struct KeyBindingSwitchOption {
+    options: Vec<String>,
+    option_index: usize,
+    reset_index: usize,
 }
 
 struct PunctuationProcessor {
@@ -3764,6 +3771,22 @@ fn install_schema_key_binder_processor(session: &mut SessionState, schema_id: &s
             .and_then(config_scalar_string)
         {
             KeyBindingAction::Toggle(toggle)
+        } else if let Some(option) = binding
+            .get(Value::String("set_option".to_owned()))
+            .and_then(config_scalar_string)
+        {
+            KeyBindingAction::SetOption {
+                option,
+                value: true,
+            }
+        } else if let Some(option) = binding
+            .get(Value::String("unset_option".to_owned()))
+            .and_then(config_scalar_string)
+        {
+            KeyBindingAction::SetOption {
+                option,
+                value: false,
+            }
         } else {
             continue;
         };
@@ -4140,6 +4163,10 @@ fn process_key_binder_processor(
             toggle_key_binding_option(session, &option);
             Some(Vec::new())
         }
+        KeyBindingAction::SetOption { option, value } => {
+            set_key_binding_option(session, &option, value);
+            Some(Vec::new())
+        }
     }
 }
 
@@ -4171,9 +4198,87 @@ fn key_binding_condition_matches(session: &SessionState, condition: KeyBindingCo
 }
 
 fn toggle_key_binding_option(session: &mut SessionState, option: &str) {
+    if let Some(the_option) = key_binding_switch_option(session, option) {
+        let selected_index = the_option
+            .options
+            .iter()
+            .position(|option| session.engine.get_option(option));
+        let next_index = selected_index
+            .map(|index| (index + 1) % the_option.options.len())
+            .unwrap_or(the_option.option_index);
+        select_key_binding_radio_option(session, &the_option.options, next_index);
+        return;
+    }
+
     session
         .engine
         .set_option(option, !session.engine.get_option(option));
+}
+
+fn set_key_binding_option(session: &mut SessionState, option: &str, value: bool) {
+    if let Some(the_option) = key_binding_switch_option(session, option) {
+        if value {
+            select_key_binding_radio_option(session, &the_option.options, the_option.option_index);
+        } else if session.engine.get_option(option) {
+            select_key_binding_radio_option(session, &the_option.options, the_option.reset_index);
+        }
+        return;
+    }
+
+    session.engine.set_option(option, value);
+}
+
+fn select_key_binding_radio_option(
+    session: &mut SessionState,
+    options: &[String],
+    selected_index: usize,
+) {
+    if selected_index >= options.len() {
+        return;
+    }
+    for (option_index, option) in options.iter().enumerate() {
+        session
+            .engine
+            .set_option(option.clone(), option_index == selected_index);
+    }
+}
+
+fn key_binding_switch_option(
+    session: &SessionState,
+    option_name: &str,
+) -> Option<KeyBindingSwitchOption> {
+    let schema_id = &session.engine.status().schema_id;
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    let Value::Sequence(switches) = find_config_value(&schema_config, "switches")? else {
+        return None;
+    };
+
+    for the_switch in switches {
+        let Value::Mapping(switch_map) = the_switch else {
+            continue;
+        };
+        let Some(Value::Sequence(options)) = switch_map.get(Value::String("options".to_owned()))
+        else {
+            continue;
+        };
+        let options = options
+            .iter()
+            .filter_map(config_scalar_string)
+            .collect::<Vec<_>>();
+        let Some(option_index) = options.iter().position(|option| option == option_name) else {
+            continue;
+        };
+        let reset_index = switch_reset_value(switch_map)
+            .and_then(|reset| usize::try_from(reset).ok())
+            .unwrap_or(0);
+        return Some(KeyBindingSwitchOption {
+            options,
+            option_index,
+            reset_index,
+        });
+    }
+    None
 }
 
 fn process_punctuation_processor(

@@ -794,6 +794,9 @@ impl Engine {
                 KeyCode::Return => {
                     return self.commit_script_text();
                 }
+                KeyCode::Backspace => {
+                    return self.backspace();
+                }
                 KeyCode::Delete => {
                     self.delete_candidate(self.context.highlighted);
                     return None;
@@ -1492,6 +1495,22 @@ mod tests {
         engine.set_caret_pos(2);
         let commits = engine
             .process_key_sequence("{Control+BackSpace}{space}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["你"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("你"));
+        assert!(!engine.status().is_composing);
+    }
+
+    #[test]
+    fn shift_backspace_uses_librime_editor_shift_as_control_fallback() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        engine.set_input("nxi");
+        engine.set_caret_pos(2);
+        let commits = engine
+            .process_key_sequence("{Shift+BackSpace}{space}")
             .expect("key sequence should parse");
 
         assert_eq!(commits, vec!["你"]);

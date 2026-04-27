@@ -1440,71 +1440,102 @@ impl TableDictionary {
     }
 
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
-        let mut metadata = RimeTableMetadata::default();
-        let mut in_header = false;
-        let mut body_start = None;
+        let (metadata, mut entries) = parse_rime_dict_yaml_parts(input)?;
+        sort_rime_table_entries(&metadata, &mut entries);
+        Ok(Self { entries })
+    }
 
-        for (line_index, line) in input.lines().enumerate() {
-            let trimmed = line.trim();
-            if !in_header {
-                if trimmed == "---" {
-                    in_header = true;
-                }
+    pub fn parse_rime_dict_yaml_with_imports(
+        input: &str,
+        mut import_loader: impl FnMut(&str) -> Option<String>,
+    ) -> Result<Self, TableDictionaryParseError> {
+        let (metadata, mut entries) = parse_rime_dict_yaml_parts(input)?;
+        for import_table in &metadata.import_tables {
+            if Some(import_table.as_str()) == metadata.name.as_deref() {
                 continue;
             }
-
-            if trimmed == "..." {
-                body_start = Some(line_index + 1);
-                break;
-            }
-            metadata.read_header_line(line);
+            let import_yaml = import_loader(import_table).ok_or_else(|| {
+                TableDictionaryParseError::new(format!(
+                    "RIME dictionary import table '{import_table}' is missing"
+                ))
+            })?;
+            let (_, mut imported_entries) = parse_rime_dict_yaml_parts(&import_yaml)?;
+            entries.append(&mut imported_entries);
         }
-
-        let body_start = body_start.ok_or_else(|| {
-            TableDictionaryParseError::new("RIME dictionary header is missing terminating '...'")
-        })?;
-        if !metadata.is_complete() {
-            return Err(TableDictionaryParseError::new(
-                "RIME dictionary header is missing required name or version",
-            ));
-        }
-        let mut entries = Vec::new();
-        let mut comments_enabled = true;
-
-        for line in input.lines().skip(body_start) {
-            let line = line.trim_end();
-            if line.is_empty() {
-                continue;
-            }
-            if comments_enabled && line.starts_with('#') {
-                if line == "# no comment" {
-                    comments_enabled = false;
-                }
-                continue;
-            }
-
-            if let Some(entry) = metadata.parse_entry(line) {
-                entries.push(entry);
-            }
-        }
-
-        if metadata.sort_by_weight {
-            entries.sort_by(|left, right| {
-                left.code.cmp(&right.code).then_with(|| {
-                    right
-                        .weight
-                        .partial_cmp(&left.weight)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-            });
-        }
-
+        sort_rime_table_entries(&metadata, &mut entries);
         Ok(Self { entries })
     }
 
     #[must_use]
     pub fn entries(&self) -> &[TableEntry] {
         &self.entries
+    }
+}
+
+fn parse_rime_dict_yaml_parts(
+    input: &str,
+) -> Result<(RimeTableMetadata, Vec<TableEntry>), TableDictionaryParseError> {
+    let mut metadata = RimeTableMetadata::default();
+    let mut in_header = false;
+    let mut body_start = None;
+
+    for (line_index, line) in input.lines().enumerate() {
+        let trimmed = line.trim();
+        if !in_header {
+            if trimmed == "---" {
+                in_header = true;
+            }
+            continue;
+        }
+
+        if trimmed == "..." {
+            body_start = Some(line_index + 1);
+            break;
+        }
+        metadata.read_header_line(line);
+    }
+
+    let body_start = body_start.ok_or_else(|| {
+        TableDictionaryParseError::new("RIME dictionary header is missing terminating '...'")
+    })?;
+    if !metadata.is_complete() {
+        return Err(TableDictionaryParseError::new(
+            "RIME dictionary header is missing required name or version",
+        ));
+    }
+    let mut entries = Vec::new();
+    let mut comments_enabled = true;
+
+    for line in input.lines().skip(body_start) {
+        let line = line.trim_end();
+        if line.is_empty() {
+            continue;
+        }
+        if comments_enabled && line.starts_with('#') {
+            if line == "# no comment" {
+                comments_enabled = false;
+            }
+            continue;
+        }
+
+        if let Some(entry) = metadata.parse_entry(line) {
+            entries.push(entry);
+        }
+    }
+
+    Ok((metadata, entries))
+}
+
+fn sort_rime_table_entries(metadata: &RimeTableMetadata, entries: &mut [TableEntry]) {
+    if metadata.sort_by_weight {
+        entries.sort_by(|left, right| {
+            left.code.cmp(&right.code).then_with(|| {
+                right
+                    .weight
+                    .partial_cmp(&left.weight)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+        });
     }
 }
 
@@ -1532,8 +1563,10 @@ impl std::error::Error for TableDictionaryParseError {}
 #[derive(Clone, Debug)]
 struct RimeTableMetadata {
     columns: Vec<String>,
-    reading_columns: bool,
+    import_tables: Vec<String>,
+    reading_list: Option<RimeTableHeaderList>,
     sort_by_weight: bool,
+    name: Option<String>,
     has_name: bool,
     has_version: bool,
 }
@@ -1542,12 +1575,20 @@ impl Default for RimeTableMetadata {
     fn default() -> Self {
         Self {
             columns: vec!["text".to_owned(), "code".to_owned(), "weight".to_owned()],
-            reading_columns: false,
+            import_tables: Vec::new(),
+            reading_list: None,
             sort_by_weight: true,
+            name: None,
             has_name: false,
             has_version: false,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum RimeTableHeaderList {
+    Columns,
+    ImportTables,
 }
 
 impl RimeTableMetadata {
@@ -1557,23 +1598,23 @@ impl RimeTableMetadata {
             return;
         }
 
-        if self.reading_columns {
+        if let Some(list) = self.reading_list {
             if let Some(column) = trimmed.strip_prefix("- ") {
-                self.columns.push(parse_yaml_scalar(column));
+                self.push_header_list_item(list, column);
                 return;
             }
-            self.reading_columns = false;
+            self.reading_list = None;
         }
 
         if let Some(columns) = trimmed.strip_prefix("columns:") {
             self.columns.clear();
-            let columns = columns.trim();
-            if columns.is_empty() {
-                self.reading_columns = true;
-            } else {
-                self.columns.extend(parse_inline_yaml_list(columns));
-                self.reading_columns = false;
-            }
+            self.read_header_list(RimeTableHeaderList::Columns, columns);
+            return;
+        }
+
+        if let Some(import_tables) = trimmed.strip_prefix("import_tables:") {
+            self.import_tables.clear();
+            self.read_header_list(RimeTableHeaderList::ImportTables, import_tables);
             return;
         }
 
@@ -1583,7 +1624,9 @@ impl RimeTableMetadata {
         }
 
         if let Some(name) = trimmed.strip_prefix("name:") {
-            self.has_name = !name.trim().is_empty();
+            let name = parse_yaml_scalar(name);
+            self.has_name = !name.is_empty();
+            self.name = Some(name);
             return;
         }
 
@@ -1616,6 +1659,29 @@ impl RimeTableMetadata {
 
     fn column_index(&self, label: &str) -> Option<usize> {
         self.columns.iter().position(|column| column == label)
+    }
+
+    fn read_header_list(&mut self, list: RimeTableHeaderList, value: &str) {
+        let value = value.trim();
+        if value.is_empty() {
+            self.reading_list = Some(list);
+            return;
+        }
+        for item in parse_inline_yaml_list(value) {
+            self.push_header_list_item(list, &item);
+        }
+        self.reading_list = None;
+    }
+
+    fn push_header_list_item(&mut self, list: RimeTableHeaderList, value: &str) {
+        let value = parse_yaml_scalar(value);
+        if value.is_empty() {
+            return;
+        }
+        match list {
+            RimeTableHeaderList::Columns => self.columns.push(value),
+            RimeTableHeaderList::ImportTables => self.import_tables.push(value),
+        }
     }
 }
 
@@ -1717,6 +1783,14 @@ impl StaticTableTranslator {
 
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
         TableDictionary::parse_rime_dict_yaml(input).map(Self::from_dictionary)
+    }
+
+    pub fn parse_rime_dict_yaml_with_imports(
+        input: &str,
+        import_loader: impl FnMut(&str) -> Option<String>,
+    ) -> Result<Self, TableDictionaryParseError> {
+        TableDictionary::parse_rime_dict_yaml_with_imports(input, import_loader)
+            .map(Self::from_dictionary)
     }
 }
 
@@ -4685,6 +4759,47 @@ ba	吧	9
         assert_eq!(entries[0].text, "八");
         assert_eq!(entries[0].weight, 10.0);
         assert_eq!(entries[1].text, "吧");
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_import_tables_with_primary_sorting() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports(
+            r#"
+---
+name: primary
+version: "0.1"
+sort: by_weight
+import_tables:
+  - primary
+  - secondary
+...
+
+八	ba	1
+"#,
+            |name| {
+                (name == "secondary").then(|| {
+                    r#"
+---
+name: secondary
+version: "0.1"
+sort: original
+columns: [code, text, weight]
+...
+
+ba	爸	9
+ba	吧	3
+"#
+                    .to_owned()
+                })
+            },
+        )
+        .expect("dictionary imports should parse");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].text, "爸");
+        assert_eq!(entries[1].text, "吧");
+        assert_eq!(entries[2].text, "八");
     }
 
     #[test]

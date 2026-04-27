@@ -2007,6 +2007,97 @@ schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\ntranslator:\n  
 }
 
 #[test]
+fn frontend_style_schema_dictionary_loads_import_tables() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    cleanup_all_sessions();
+
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let destroy_session = api
+        .destroy_session
+        .expect("frontend requires destroy_session");
+    let process_key = api.process_key.expect("frontend requires process_key");
+    let select_schema = api.select_schema.expect("frontend requires select_schema");
+    let get_context = api.get_context.expect("frontend requires get_context");
+    let free_context = api.free_context.expect("frontend requires free_context");
+
+    let root = unique_temp_dir("schema-dictionary-imports");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("importing.schema.yaml"),
+        "\
+schema:\n  schema_id: importing\n  name: Importing\ntranslator:\n  dictionary: primary\n",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("primary.dict.yaml"),
+        "\
+---\nname: primary\nversion: '1'\nsort: by_weight\nimport_tables: [secondary]\n...\n八\tba\t1\n",
+    )
+    .expect("primary dictionary should be written");
+    fs::write(
+        shared.join("secondary.dict.yaml"),
+        "\
+---\nname: secondary\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nba\t爸\t9\n",
+    )
+    .expect("imported dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { setup(&traits) };
+
+    let session_id = create_session();
+    assert_ne!(session_id, 0);
+    let schema_id = CString::new("importing").expect("schema id should be valid");
+    assert_eq!(
+        unsafe { select_schema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(process_key(session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(process_key(session_id, 'a' as i32, 0), TRUE);
+
+    let mut context = empty_context();
+    assert_eq!(unsafe { get_context(session_id, &mut context) }, TRUE);
+    assert_eq!(context.menu.num_candidates, 3);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[0].text) }.to_str(),
+        Ok("爸")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[1].text) }.to_str(),
+        Ok("八")
+    );
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+
+    assert_eq!(destroy_session(session_id), TRUE);
+    cleanup_all_sessions();
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+}
+
+#[test]
 fn frontend_style_api_table_can_simulate_key_sequences() {
     let _guard = test_guard();
     let api = rime_get_api();

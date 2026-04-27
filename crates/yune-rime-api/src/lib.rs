@@ -3522,7 +3522,13 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
     let Ok(dictionary_yaml) = fs::read_to_string(dictionary_path) else {
         return;
     };
-    let Ok(translator) = StaticTableTranslator::parse_rime_dict_yaml(&dictionary_yaml) else {
+    let Ok(translator) = StaticTableTranslator::parse_rime_dict_yaml_with_imports(
+        &dictionary_yaml,
+        |import_table| {
+            selected_runtime_data_path(&format!("{import_table}.dict.yaml"))
+                .and_then(|path| fs::read_to_string(path).ok())
+        },
+    ) else {
         return;
     };
     session.engine.add_translator(translator);

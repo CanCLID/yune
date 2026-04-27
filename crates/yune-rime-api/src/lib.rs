@@ -1606,7 +1606,10 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     if session_id == 0
         || (mask != 0
             && !((mask == K_CONTROL_MASK
-                && matches!(keycode, XK_BACKSPACE | XK_DELETE | XK_RETURN))
+                && matches!(
+                    keycode,
+                    XK_BACKSPACE | XK_DELETE | XK_LEFT | XK_RIGHT | XK_RETURN
+                ))
                 || (mask == K_SHIFT_MASK && keycode == XK_RETURN)
                 || (mask == (K_CONTROL_MASK | K_SHIFT_MASK) && keycode == XK_RETURN)))
     {

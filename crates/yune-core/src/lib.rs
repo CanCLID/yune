@@ -784,6 +784,14 @@ impl Engine {
                 KeyCode::Return => {
                     return self.commit_raw_input();
                 }
+                KeyCode::MoveCaretLeft => {
+                    self.move_caret_left_by_syllable();
+                    return None;
+                }
+                KeyCode::MoveCaretRight => {
+                    self.move_caret_right_by_syllable();
+                    return None;
+                }
                 _ => {}
             }
         }
@@ -1017,6 +1025,22 @@ impl Engine {
             return false;
         }
         self.context.composition.caret = 0;
+        true
+    }
+
+    pub fn move_caret_left_by_syllable(&mut self) -> bool {
+        if self.context.composition.input.is_empty() || self.context.composition.caret == 0 {
+            return false;
+        }
+        self.context.composition.caret = 0;
+        true
+    }
+
+    pub fn move_caret_right_by_syllable(&mut self) -> bool {
+        if self.context.composition.caret >= self.context.composition.input.len() {
+            return false;
+        }
+        self.context.composition.caret = self.context.composition.input.len();
         true
     }
 
@@ -1465,6 +1489,35 @@ mod tests {
 
         assert_eq!(commits, vec!["你"]);
         assert_eq!(engine.context().last_commit.as_deref(), Some("你"));
+    }
+
+    #[test]
+    fn control_left_right_jump_across_simplified_syllable_span_like_librime_navigator() {
+        let mut engine = Engine::new();
+
+        engine.set_input("nix");
+        engine.set_caret_pos(2);
+        let commits = engine
+            .process_key_sequence("{Control+Left}")
+            .expect("key sequence should parse");
+
+        assert!(commits.is_empty());
+        assert_eq!(engine.context().composition.caret, 0);
+
+        let commits = engine
+            .process_key_sequence("{Control+Right}{BackSpace}{space}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["ni"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("ni"));
+
+        engine.set_input("nix");
+        let commits = engine
+            .process_key_sequence("{Control+Left}{Delete}{space}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["ix"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("ix"));
     }
 
     #[test]

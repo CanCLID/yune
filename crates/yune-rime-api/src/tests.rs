@@ -7521,6 +7521,65 @@ fn left_right_keys_move_caret_like_librime_navigator_keys() {
 }
 
 #[test]
+fn control_left_right_keys_jump_syllable_span_like_librime_navigator_keys() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let left = CString::new("Left").expect("key name should be valid");
+    // SAFETY: key name is a valid NUL-terminated string.
+    let left_keycode = unsafe { RimeGetKeycodeByName(left.as_ptr()) };
+    assert_eq!(left_keycode, 0xff51);
+    let right = CString::new("Right").expect("key name should be valid");
+    // SAFETY: key name is a valid NUL-terminated string.
+    let right_keycode = unsafe { RimeGetKeycodeByName(right.as_ptr()) };
+    assert_eq!(right_keycode, 0xff53);
+
+    let session_id = RimeCreateSession();
+    assert_eq!(
+        RimeProcessKey(session_id, left_keycode, K_CONTROL_MASK),
+        FALSE
+    );
+    let input = CString::new("nix").expect("input should be valid");
+    // SAFETY: input is a valid NUL-terminated C string.
+    assert_eq!(unsafe { RimeSetInput(session_id, input.as_ptr()) }, TRUE);
+
+    RimeSetCaretPos(session_id, 2);
+    assert_eq!(
+        RimeProcessKey(session_id, left_keycode, K_CONTROL_MASK),
+        TRUE
+    );
+    assert_eq!(RimeGetCaretPos(session_id), 0);
+    assert_eq!(
+        RimeProcessKey(session_id, right_keycode, K_CONTROL_MASK),
+        TRUE
+    );
+    assert_eq!(RimeGetCaretPos(session_id), 3);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let sequence_session_id = RimeCreateSession();
+    let sequence =
+        CString::new("nix{Control+Left}{Delete}{space}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    let mut commit = RimeCommit {
+        data_size: std::mem::size_of::<RimeCommit>() as i32,
+        text: std::ptr::null_mut(),
+    };
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeGetCommit(sequence_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: successful commit text is a valid NUL-terminated string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("ix"));
+    // SAFETY: commit text was allocated by RimeGetCommit.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+}
+
+#[test]
 fn keypad_left_right_keys_move_caret_by_char_with_librime_navigator_looping() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

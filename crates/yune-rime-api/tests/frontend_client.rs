@@ -1943,7 +1943,7 @@ fn frontend_style_api_table_can_page_schema_dictionary_candidates() {
     fs::write(
         staging.join("luna.schema.yaml"),
         "\
-schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\ntranslator:\n  dictionary: frontend\n",
+schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\n  alternative_select_keys: AB\n  alternative_select_labels: [Alpha, Beta]\ntranslator:\n  dictionary: frontend\n",
     )
     .expect("schema config should be written");
     fs::write(
@@ -1981,6 +1981,22 @@ schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\ntranslator:\n  
     assert_eq!(context.menu.page_no, 1);
     assert_eq!(context.menu.highlighted_candidate_index, 1);
     assert_eq!(context.menu.num_candidates, 2);
+    assert_eq!(
+        unsafe { CStr::from_ptr(context.menu.select_keys) }.to_str(),
+        Ok("AB")
+    );
+    assert!(!context.select_labels.is_null());
+    let select_labels = unsafe {
+        std::slice::from_raw_parts(context.select_labels, context.menu.page_size as usize)
+    };
+    assert_eq!(
+        unsafe { CStr::from_ptr(select_labels[0]) }.to_str(),
+        Ok("Alpha")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(select_labels[1]) }.to_str(),
+        Ok("Beta")
+    );
     let candidates = unsafe {
         std::slice::from_raw_parts(
             context.menu.candidates,

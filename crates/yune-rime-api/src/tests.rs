@@ -7433,6 +7433,75 @@ schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\n  alternative_s
     assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
     assert_eq!(RimeDestroySession(controlled_sequence_session_id), TRUE);
 
+    let controlled_shift_session_id = RimeCreateSession();
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(controlled_shift_session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    add_ba_translator(controlled_shift_session_id);
+    assert_eq!(
+        RimeProcessKey(
+            controlled_shift_session_id,
+            kp_2_keycode,
+            K_CONTROL_MASK | K_SHIFT_MASK
+        ),
+        FALSE
+    );
+    assert_eq!(
+        RimeProcessKey(controlled_shift_session_id, 'b' as i32, 0),
+        TRUE
+    );
+    assert_eq!(
+        RimeProcessKey(controlled_shift_session_id, 'a' as i32, 0),
+        TRUE
+    );
+    assert_eq!(
+        RimeProcessKey(
+            controlled_shift_session_id,
+            kp_2_keycode,
+            K_CONTROL_MASK | K_SHIFT_MASK
+        ),
+        TRUE
+    );
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(
+        unsafe { RimeGetCommit(controlled_shift_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: `RimeGetCommit` returned true and populated `text`.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("吧"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(controlled_shift_session_id), TRUE);
+
+    let controlled_shift_sequence_session_id = RimeCreateSession();
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(controlled_shift_sequence_session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    add_ba_translator(controlled_shift_sequence_session_id);
+    let sequence = CString::new("ba{Control+Shift+KP_2}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(controlled_shift_sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(
+        unsafe { RimeGetCommit(controlled_shift_sequence_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: `RimeGetCommit` returned true and populated `text`.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("吧"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(
+        RimeDestroySession(controlled_shift_sequence_session_id),
+        TRUE
+    );
+
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.
     unsafe { RimeSetup(&reset_traits) };

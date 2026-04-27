@@ -1572,6 +1572,7 @@ struct RimeTableMetadata {
     columns: Vec<String>,
     import_tables: Vec<String>,
     reading_list: Option<RimeTableHeaderList>,
+    pending_list_clear: Option<RimeTableHeaderList>,
     sort_by_weight: bool,
     name: Option<String>,
     has_name: bool,
@@ -1584,6 +1585,7 @@ impl Default for RimeTableMetadata {
             columns: vec!["text".to_owned(), "code".to_owned(), "weight".to_owned()],
             import_tables: Vec::new(),
             reading_list: None,
+            pending_list_clear: None,
             sort_by_weight: true,
             name: None,
             has_name: false,
@@ -1592,7 +1594,7 @@ impl Default for RimeTableMetadata {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum RimeTableHeaderList {
     Columns,
     ImportTables,
@@ -1611,16 +1613,15 @@ impl RimeTableMetadata {
                 return;
             }
             self.reading_list = None;
+            self.pending_list_clear = None;
         }
 
         if let Some(columns) = trimmed.strip_prefix("columns:") {
-            self.columns.clear();
             self.read_header_list(RimeTableHeaderList::Columns, columns);
             return;
         }
 
         if let Some(import_tables) = trimmed.strip_prefix("import_tables:") {
-            self.import_tables.clear();
             self.read_header_list(RimeTableHeaderList::ImportTables, import_tables);
             return;
         }
@@ -1677,16 +1678,50 @@ impl RimeTableMetadata {
     fn read_header_list(&mut self, list: RimeTableHeaderList, value: &str) {
         let value = value.trim();
         if value.is_empty() {
+            self.reset_header_list_to_null(list);
             self.reading_list = Some(list);
+            self.pending_list_clear = Some(list);
             return;
         }
-        for item in parse_inline_yaml_list(value) {
-            self.push_header_list_item(list, &item);
+
+        if parse_yaml_scalar_node(value).is_none() {
+            self.reset_header_list_to_null(list);
+            self.reading_list = None;
+            self.pending_list_clear = None;
+            return;
+        }
+
+        if let Some(items) = parse_inline_yaml_list(value) {
+            self.clear_header_list(list);
+            for item in items {
+                self.push_header_list_item(list, &item);
+            }
         }
         self.reading_list = None;
+        self.pending_list_clear = None;
+    }
+
+    fn clear_header_list(&mut self, list: RimeTableHeaderList) {
+        match list {
+            RimeTableHeaderList::Columns => self.columns.clear(),
+            RimeTableHeaderList::ImportTables => self.import_tables.clear(),
+        }
+    }
+
+    fn reset_header_list_to_null(&mut self, list: RimeTableHeaderList) {
+        match list {
+            RimeTableHeaderList::Columns => {
+                self.columns = vec!["text".to_owned(), "code".to_owned(), "weight".to_owned()];
+            }
+            RimeTableHeaderList::ImportTables => self.import_tables.clear(),
+        }
     }
 
     fn push_header_list_item(&mut self, list: RimeTableHeaderList, value: &str) {
+        if self.pending_list_clear == Some(list) {
+            self.clear_header_list(list);
+            self.pending_list_clear = None;
+        }
         let value = parse_yaml_scalar(value);
         if value.is_empty() {
             return;
@@ -1698,7 +1733,7 @@ impl RimeTableMetadata {
     }
 }
 
-fn parse_inline_yaml_list(input: &str) -> Vec<String> {
+fn parse_inline_yaml_list(input: &str) -> Option<Vec<String>> {
     let input = strip_yaml_comment(input).trim();
     input
         .strip_prefix('[')
@@ -1710,7 +1745,6 @@ fn parse_inline_yaml_list(input: &str) -> Vec<String> {
                 .filter(|item| !item.is_empty())
                 .collect()
         })
-        .unwrap_or_default()
 }
 
 fn parse_yaml_scalar(input: &str) -> String {
@@ -4834,6 +4868,31 @@ columns: [text, weight]
         assert_eq!(entries[1].text, "你");
         assert_eq!(entries[1].code, "");
         assert_eq!(entries[1].weight, 1.0);
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_null_columns_as_default_columns() {
+        for columns_header in ["columns:", "columns: null", "columns: ~"] {
+            let dictionary = TableDictionary::parse_rime_dict_yaml(&format!(
+                r#"
+---
+name: null_columns_sample
+version: "0.1"
+sort: original
+{columns_header}
+...
+
+八	ba	10
+"#
+            ))
+            .expect("null columns should use the default RIME column order");
+
+            let entries = dictionary.entries();
+            assert_eq!(entries.len(), 1);
+            assert_eq!(entries[0].text, "八");
+            assert_eq!(entries[0].code, "ba");
+            assert_eq!(entries[0].weight, 10.0);
+        }
     }
 
     #[test]

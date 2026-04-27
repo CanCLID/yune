@@ -4336,7 +4336,8 @@ fn schema_engine_processors_include(schema_config: &Value, processor_name: &str)
     processors
         .iter()
         .filter_map(Value::as_str)
-        .any(|processor| processor == processor_name)
+        .map(schema_component_prescription)
+        .any(|(component_name, _)| component_name == processor_name)
 }
 
 fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {

@@ -7013,6 +7013,58 @@ fn gets_and_selects_current_schema() {
 }
 
 #[test]
+fn select_schema_uses_deployed_schema_name_like_librime() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("select-schema-name");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna.schema.yaml"),
+        "schema:\n  schema_id: luna\n  name: Luna\n",
+    )
+    .expect("schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("luna").expect("schema id should be valid");
+    let mut status = empty_status();
+
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: status points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetStatus(session_id, &mut status) }, TRUE);
+    // SAFETY: `RimeGetStatus` populated owned C strings.
+    let status_schema_id = unsafe { CStr::from_ptr(status.schema_id) };
+    // SAFETY: `RimeGetStatus` populated owned C strings.
+    let status_schema_name = unsafe { CStr::from_ptr(status.schema_name) };
+    assert_eq!(status_schema_id.to_str(), Ok("luna"));
+    assert_eq!(status_schema_name.to_str(), Ok("Luna"));
+    // SAFETY: nested pointers were allocated by `RimeGetStatus` above.
+    assert_eq!(unsafe { RimeFreeStatus(&mut status) }, TRUE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn gets_and_frees_available_schema_list() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

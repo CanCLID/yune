@@ -1838,8 +1838,11 @@ pub unsafe extern "C" fn RimeSelectSchema(
         .to_string_lossy()
         .into_owned();
 
+    let schema_name = deployed_schema_name(&schema_id);
     let selected = with_session(session_id, |session| {
-        session.engine.set_schema(schema_id.clone(), schema_id);
+        session
+            .engine
+            .set_schema(schema_id.clone(), schema_name.clone());
         session.engine.clear_composition();
         session.input_buffer = None;
         session.unread_commit = None;
@@ -3502,6 +3505,15 @@ fn deployed_schema_list_entries() -> Vec<(String, String)> {
             (schema_id, name)
         })
         .collect()
+}
+
+fn deployed_schema_name(schema_id: &str) -> String {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    find_config_value(&schema_config, "schema/name")
+        .and_then(Value::as_str)
+        .unwrap_or(schema_id)
+        .to_owned()
 }
 
 fn deployed_levers_schema_infos() -> Vec<LeverSchemaInfo> {

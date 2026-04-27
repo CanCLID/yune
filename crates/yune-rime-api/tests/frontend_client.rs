@@ -515,6 +515,134 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\n",
 }
 
 #[test]
+fn frontend_style_api_table_can_update_config_signatures() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let config_init = api.config_init.expect("frontend requires config_init");
+    let config_update_signature = api
+        .config_update_signature
+        .expect("frontend requires config_update_signature");
+    let config_get_string = api
+        .config_get_string
+        .expect("frontend requires config_get_string");
+    let config_close = api.config_close.expect("frontend requires config_close");
+
+    let distribution_code_name =
+        CString::new("frontend-test").expect("distribution code name should be valid");
+    let distribution_version =
+        CString::new("2026.04").expect("distribution version should be valid");
+    let mut traits = empty_traits();
+    traits.distribution_code_name = distribution_code_name.as_ptr();
+    traits.distribution_version = distribution_version.as_ptr();
+    unsafe { setup(&traits) };
+
+    let mut config = empty_config();
+    let signer = CString::new("frontend-client").expect("signer should be valid");
+    let generator_key =
+        CString::new("signature/generator").expect("literal should not contain NUL");
+    let distribution_code_name_key =
+        CString::new("signature/distribution_code_name").expect("literal should not contain NUL");
+    let distribution_version_key =
+        CString::new("signature/distribution_version").expect("literal should not contain NUL");
+    let rime_version_key =
+        CString::new("signature/rime_version").expect("literal should not contain NUL");
+    let modified_time_key =
+        CString::new("signature/modified_time").expect("literal should not contain NUL");
+    let mut output = vec![0 as c_char; 64];
+
+    assert_eq!(unsafe { config_init(&mut config) }, TRUE);
+    assert_eq!(
+        unsafe { config_update_signature(&mut config, signer.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                generator_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("frontend-client")
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                distribution_code_name_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("frontend-test")
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                distribution_version_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("2026.04")
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                rime_version_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert!(unsafe { CStr::from_ptr(output.as_ptr()) }
+        .to_str()
+        .is_ok_and(|value| value.starts_with("yune-rime-api ")));
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                modified_time_key.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    assert!(unsafe { CStr::from_ptr(output.as_ptr()) }
+        .to_str()
+        .is_ok_and(|value| value.len() >= 20 && value.contains(':') && !value.ends_with('\n')));
+    assert_eq!(
+        unsafe { config_update_signature(&mut config, ptr::null()) },
+        FALSE
+    );
+
+    assert_eq!(unsafe { config_close(&mut config) }, TRUE);
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+}
+
+#[test]
 fn frontend_style_api_table_can_drive_basic_composition_flow() {
     let _guard = test_guard();
     let api = rime_get_api();

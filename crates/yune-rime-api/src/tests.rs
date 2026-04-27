@@ -414,6 +414,16 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let pointer_dflt_btn_prev =
         CString::new("Pointer_DfltBtnPrev").expect("key name should be valid");
     let pointer_drag5 = CString::new("Pointer_Drag5").expect("key name should be valid");
+    let multi_key = CString::new("Multi_key").expect("key name should be valid");
+    let henkan = CString::new("Henkan").expect("key name should be valid");
+    let henkan_mode = CString::new("Henkan_Mode").expect("key name should be valid");
+    let hiragana_katakana = CString::new("Hiragana_Katakana").expect("key name should be valid");
+    let eisu_toggle = CString::new("Eisu_toggle").expect("key name should be valid");
+    let hangul = CString::new("Hangul").expect("key name should be valid");
+    let hangul_romaja = CString::new("Hangul_Romaja").expect("key name should be valid");
+    let codeinput = CString::new("Codeinput").expect("key name should be valid");
+    let multiple_candidate = CString::new("MultipleCandidate").expect("key name should be valid");
+    let hangul_special = CString::new("Hangul_Special").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -731,6 +741,34 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         unsafe { RimeGetKeycodeByName(pointer_drag5.as_ptr()) },
         0xfefd
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(multi_key.as_ptr()) }, 0xff20);
+    assert_eq!(unsafe { RimeGetKeycodeByName(henkan.as_ptr()) }, 0xff23);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(henkan_mode.as_ptr()) },
+        0xff23
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hiragana_katakana.as_ptr()) },
+        0xff27
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(eisu_toggle.as_ptr()) },
+        0xff30
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(hangul.as_ptr()) }, 0xff31);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hangul_romaja.as_ptr()) },
+        0xff36
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(codeinput.as_ptr()) }, 0xff37);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(multiple_candidate.as_ptr()) },
+        0xff3d
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hangul_special.as_ptr()) },
+        0xff3f
     );
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
@@ -1266,6 +1304,42 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0xfefd)).as_deref(),
         Some("Pointer_Drag5")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff20)).as_deref(),
+        Some("Multi_key")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff23)).as_deref(),
+        Some("Henkan")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff27)).as_deref(),
+        Some("Hiragana_Katakana")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff30)).as_deref(),
+        Some("Eisu_toggle")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff31)).as_deref(),
+        Some("Hangul")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff36)).as_deref(),
+        Some("Hangul_Romaja")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff37)).as_deref(),
+        Some("Codeinput")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff3d)).as_deref(),
+        Some("MultipleCandidate")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff3f)).as_deref(),
+        Some("Hangul_Special")
     );
     assert_eq!(
         static_c_string(RimeGetKeyName(0x00ff_ffff)).as_deref(),

@@ -1427,6 +1427,42 @@ const XKB_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"Pointer_Drag5\0", 0xfefd),
 ];
 
+const INPUT_METHOD_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"Multi_key\0", 0xff20),
+    (b"Kanji\0", 0xff21),
+    (b"Muhenkan\0", 0xff22),
+    (b"Henkan\0", 0xff23),
+    (b"Henkan_Mode\0", 0xff23),
+    (b"Romaji\0", 0xff24),
+    (b"Hiragana\0", 0xff25),
+    (b"Katakana\0", 0xff26),
+    (b"Hiragana_Katakana\0", 0xff27),
+    (b"Zenkaku\0", 0xff28),
+    (b"Hankaku\0", 0xff29),
+    (b"Zenkaku_Hankaku\0", 0xff2a),
+    (b"Touroku\0", 0xff2b),
+    (b"Massyo\0", 0xff2c),
+    (b"Kana_Lock\0", 0xff2d),
+    (b"Kana_Shift\0", 0xff2e),
+    (b"Eisu_Shift\0", 0xff2f),
+    (b"Eisu_toggle\0", 0xff30),
+    (b"Hangul\0", 0xff31),
+    (b"Hangul_Start\0", 0xff32),
+    (b"Hangul_End\0", 0xff33),
+    (b"Hangul_Hanja\0", 0xff34),
+    (b"Hangul_Jamo\0", 0xff35),
+    (b"Hangul_Romaja\0", 0xff36),
+    (b"Codeinput\0", 0xff37),
+    (b"Hangul_Jeonja\0", 0xff38),
+    (b"Hangul_Banja\0", 0xff39),
+    (b"Hangul_PreHanja\0", 0xff3a),
+    (b"Hangul_PostHanja\0", 0xff3b),
+    (b"SingleCandidate\0", 0xff3c),
+    (b"MultipleCandidate\0", 0xff3d),
+    (b"PreviousCandidate\0", 0xff3e),
+    (b"Hangul_Special\0", 0xff3f),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -1496,6 +1532,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(IBM_3270_KEY_NAMES)
         .chain(ISO_KEY_NAMES)
         .chain(XKB_KEY_NAMES)
+        .chain(INPUT_METHOD_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -1520,6 +1557,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(IBM_3270_KEY_NAMES)
         .chain(ISO_KEY_NAMES)
         .chain(XKB_KEY_NAMES)
+        .chain(INPUT_METHOD_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

@@ -65,6 +65,7 @@ struct LeverCustomSettings {
     modified: bool,
 }
 
+#[derive(Clone)]
 struct LeverSchemaInfo {
     schema_id: CString,
     name: CString,
@@ -84,6 +85,8 @@ struct ContextMenuSettings {
     select_keys: Option<String>,
     select_labels: Vec<String>,
 }
+
+type SwitcherAvailableSchemaRegistry = HashMap<usize, Option<Vec<LeverSchemaInfo>>>;
 
 #[derive(Clone, Copy)]
 enum ConfigOpenKind {
@@ -279,6 +282,12 @@ fn switcher_hotkeys_registry() -> &'static Mutex<HashMap<usize, Option<CString>>
     static SWITCHER_HOTKEYS_REGISTRY: OnceLock<Mutex<HashMap<usize, Option<CString>>>> =
         OnceLock::new();
     SWITCHER_HOTKEYS_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn switcher_available_schema_registry() -> &'static Mutex<SwitcherAvailableSchemaRegistry> {
+    static SWITCHER_AVAILABLE_SCHEMA_REGISTRY: OnceLock<Mutex<SwitcherAvailableSchemaRegistry>> =
+        OnceLock::new();
+    SWITCHER_AVAILABLE_SCHEMA_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 fn levers_module() -> *mut RimeModule {
@@ -586,6 +595,10 @@ pub unsafe extern "C" fn RimeFindModule(module_name: *const c_char) -> *mut Rime
 #[no_mangle]
 pub extern "C" fn RimeSwitcherSettingsInit() -> *mut RimeSwitcherSettings {
     let settings = Box::into_raw(Box::new(RimeSwitcherSettings { placeholder: 0 }));
+    switcher_available_schema_registry()
+        .lock()
+        .expect("switcher available schema registry should not be poisoned")
+        .insert(settings as usize, Some(deployed_levers_schema_infos()));
     switcher_selection_registry()
         .lock()
         .expect("switcher selection registry should not be poisoned")
@@ -873,7 +886,14 @@ pub unsafe extern "C" fn RimeLeversGetAvailableSchemaList(
     }
 
     clear_schema_list(list);
-    populate_levers_schema_list(list, deployed_levers_schema_infos())
+    let available_schema_infos = switcher_available_schema_registry()
+        .lock()
+        .expect("switcher available schema registry should not be poisoned")
+        .get(&(settings as usize))
+        .cloned()
+        .flatten()
+        .unwrap_or_else(deployed_levers_schema_infos);
+    populate_levers_schema_list(list, available_schema_infos)
 }
 
 /// Returns the deployed switcher selection through the librime levers module API.

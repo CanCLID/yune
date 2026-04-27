@@ -5256,10 +5256,45 @@ schema_list:
     );
     // SAFETY: stale_selected_list was populated by the levers API above.
     unsafe { destroy(&mut stale_selected_list) };
+    fs::write(
+        shared.join("new_schema.schema.yaml"),
+        "\
+schema:
+  schema_id: new_schema
+  name: New Schema
+",
+    )
+    .expect("new schema config should be written");
+    let mut stale_available_list = empty_schema_list();
+    // SAFETY: existing settings keep their initialized available-schema state.
+    assert_eq!(
+        unsafe { get_available(settings, &mut stale_available_list) },
+        TRUE
+    );
+    assert_eq!(stale_available_list.size, 2);
+    // SAFETY: stale_available_list was populated by the levers API above.
+    unsafe { destroy(&mut stale_available_list) };
     let new_settings = (api
         .switcher_settings_init
         .expect("switcher settings init should be available"))();
     assert!(!new_settings.is_null());
+    let mut refreshed_available_list = empty_schema_list();
+    // SAFETY: a new settings object sees the updated schema directory snapshot.
+    assert_eq!(
+        unsafe { get_available(new_settings, &mut refreshed_available_list) },
+        TRUE
+    );
+    assert_eq!(refreshed_available_list.size, 3);
+    // SAFETY: the second item is in bounds because size is 3 and shared-dir
+    // schemas sort before user-dir schemas.
+    let refreshed_available_second = unsafe { *refreshed_available_list.list.add(1) };
+    // SAFETY: schema-list ids are valid NUL-terminated strings.
+    assert_eq!(
+        unsafe { CStr::from_ptr(refreshed_available_second.schema_id) }.to_str(),
+        Ok("new_schema")
+    );
+    // SAFETY: refreshed_available_list was populated by the levers API above.
+    unsafe { destroy(&mut refreshed_available_list) };
     let mut refreshed_selected_list = empty_schema_list();
     // SAFETY: a new settings object sees the updated deployed default config.
     assert_eq!(

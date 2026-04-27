@@ -7029,6 +7029,66 @@ fn left_right_keys_move_caret_like_librime_navigator_keys() {
 }
 
 #[test]
+fn keypad_left_right_keys_move_caret_by_char_with_librime_navigator_looping() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let kp_left = CString::new("KP_Left").expect("key name should be valid");
+    // SAFETY: key name is a valid NUL-terminated string.
+    let kp_left_keycode = unsafe { RimeGetKeycodeByName(kp_left.as_ptr()) };
+    assert_eq!(kp_left_keycode, 0xff96);
+    let kp_right = CString::new("KP_Right").expect("key name should be valid");
+    // SAFETY: key name is a valid NUL-terminated string.
+    let kp_right_keycode = unsafe { RimeGetKeycodeByName(kp_right.as_ptr()) };
+    assert_eq!(kp_right_keycode, 0xff98);
+
+    let session_id = RimeCreateSession();
+    let input = CString::new("nix").expect("input should be valid");
+    // SAFETY: input is a valid NUL-terminated C string.
+    assert_eq!(unsafe { RimeSetInput(session_id, input.as_ptr()) }, TRUE);
+
+    RimeSetCaretPos(session_id, 0);
+    assert_eq!(RimeProcessKey(session_id, kp_left_keycode, 0), TRUE);
+    assert_eq!(RimeGetCaretPos(session_id), 3);
+    assert_eq!(RimeProcessKey(session_id, kp_right_keycode, 0), TRUE);
+    assert_eq!(RimeGetCaretPos(session_id), 0);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let sequence_session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&sequence_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    let sequence = CString::new("nix{KP_Left}{Delete}{space}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    let mut commit = RimeCommit {
+        data_size: std::mem::size_of::<RimeCommit>() as i32,
+        text: std::ptr::null_mut(),
+    };
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeGetCommit(sequence_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: successful commit text is a valid NUL-terminated string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("你"));
+    // SAFETY: commit text was allocated by RimeGetCommit.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+}
+
+#[test]
 fn page_keys_move_candidate_page_like_librime_selector_keys() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

@@ -59,6 +59,7 @@ pub enum KeyCode {
     Character(char),
     KeypadDigit(char),
     Backspace,
+    Escape,
     Return,
 }
 
@@ -183,6 +184,7 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
     let code = match name {
         "space" => KeyCode::Character(' '),
         "BackSpace" => KeyCode::Backspace,
+        "Escape" => KeyCode::Escape,
         "Return" => KeyCode::Return,
         "KP_Enter" => KeyCode::Return,
         "KP_0" => KeyCode::KeypadDigit('0'),
@@ -752,6 +754,10 @@ impl Engine {
             }
             KeyCode::KeypadDigit(_) => None,
             KeyCode::Backspace => self.backspace(),
+            KeyCode::Escape => {
+                self.clear_composition();
+                None
+            }
             KeyCode::Return => self.commit_highlighted(),
         }
     }
@@ -941,11 +947,12 @@ mod tests {
 
     #[test]
     fn parses_librime_style_key_sequence_names() {
-        let keys =
-            parse_key_sequence("zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}")
-                .expect("key sequence should parse");
+        let keys = parse_key_sequence(
+            "zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}{Escape}",
+        )
+        .expect("key sequence should parse");
 
-        assert_eq!(keys.len(), 14);
+        assert_eq!(keys.len(), 15);
         assert_eq!(keys[3].code, KeyCode::Character(' '));
         assert!(!keys[3].modifiers.shift);
         assert_eq!(keys[7].code, KeyCode::Character(' '));
@@ -955,6 +962,7 @@ mod tests {
         assert!(keys[11].modifiers.alt);
         assert_eq!(keys[12].code, KeyCode::Return);
         assert_eq!(keys[13].code, KeyCode::KeypadDigit('2'));
+        assert_eq!(keys[14].code, KeyCode::Escape);
     }
 
     #[test]
@@ -1007,6 +1015,22 @@ mod tests {
 
         assert_eq!(commits, ["吧"]);
         assert_eq!(engine.context().last_commit.as_deref(), Some("吧"));
+        assert!(!engine.status().is_composing);
+    }
+
+    #[test]
+    fn escape_clears_composition_like_librime_editor_cancel() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        let commits = engine
+            .process_key_sequence("ni{Escape}")
+            .expect("key sequence should parse");
+
+        assert!(commits.is_empty());
+        assert!(engine.context().composition.input.is_empty());
+        assert!(engine.context().candidates.is_empty());
+        assert_eq!(engine.context().last_commit, None);
         assert!(!engine.status().is_composing);
     }
 

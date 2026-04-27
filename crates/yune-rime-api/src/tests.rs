@@ -6802,6 +6802,85 @@ fn keypad_digits_select_candidates_like_librime_selector_keys() {
 }
 
 #[test]
+fn escape_clears_composition_like_librime_editor_cancel_key() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let escape = CString::new("Escape").expect("key name should be valid");
+    let escape_keycode = unsafe { RimeGetKeycodeByName(escape.as_ptr()) };
+    assert_eq!(escape_keycode, 0xff1b);
+
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    assert_eq!(RimeProcessKey(session_id, escape_keycode, 0), FALSE);
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, escape_keycode, 0), TRUE);
+
+    let input = RimeGetInput(session_id);
+    assert!(!input.is_null());
+    // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok(""));
+    let mut context = empty_context();
+    // SAFETY: `context` points to valid writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert!(context.composition.preedit.is_null());
+    assert_eq!(context.menu.num_candidates, 0);
+    assert!(context.menu.candidates.is_null());
+    // SAFETY: nested pointers are null after the empty context response.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    let mut commit = RimeCommit {
+        data_size: std::mem::size_of::<RimeCommit>() as i32,
+        text: std::ptr::null_mut(),
+    };
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let sequence_session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&sequence_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    let sequence = CString::new("ni{Escape}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    let sequence_input = RimeGetInput(sequence_session_id);
+    assert!(!sequence_input.is_null());
+    // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+    assert_eq!(unsafe { CStr::from_ptr(sequence_input) }.to_str(), Ok(""));
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeGetCommit(sequence_session_id, &mut commit) },
+        FALSE
+    );
+    assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+}
+
+#[test]
 fn returns_context_with_preedit_and_candidate_page() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

@@ -22,6 +22,7 @@ use config_compiler::*;
 pub use key_table::*;
 
 const XK_BACKSPACE: c_int = 0xff08;
+const XK_ESCAPE: c_int = 0xff1b;
 const XK_RETURN: c_int = 0xff0d;
 const XK_KP_ENTER: c_int = 0xff8d;
 const XK_KP_0: c_int = 0xffb0;
@@ -3360,6 +3361,7 @@ pub unsafe extern "C" fn RimeFreeCommit(commit: *mut RimeCommit) -> Bool {
 fn key_event_from_rime_keycode(keycode: c_int) -> Option<KeyEvent> {
     let code = match keycode {
         XK_BACKSPACE => KeyCode::Backspace,
+        XK_ESCAPE => KeyCode::Escape,
         XK_RETURN | XK_KP_ENTER => KeyCode::Return,
         XK_KP_0..=XK_KP_9 => {
             KeyCode::KeypadDigit(char::from_u32(('0' as u32) + (keycode - XK_KP_0) as u32)?)

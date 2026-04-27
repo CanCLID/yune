@@ -2322,11 +2322,13 @@ impl Translator for ReverseLookupTranslator {
         if input.is_empty() {
             return Vec::new();
         }
-        if !self.prefix.is_empty() && !input.starts_with(&self.prefix) {
-            return Vec::new();
-        }
 
-        let mut code = &input[self.prefix.len()..];
+        let start = if !self.prefix.is_empty() && input.starts_with(&self.prefix) {
+            self.prefix.len()
+        } else {
+            0
+        };
+        let mut code = &input[start..];
         if !self.suffix.is_empty() && code.ends_with(&self.suffix) {
             code = &code[..code.len() - self.suffix.len()];
         }
@@ -6626,7 +6628,15 @@ sort: original
         let translator =
             ReverseLookupTranslator::new(lookup_dictionary, Some(target_dictionary), "`", "");
 
-        assert!(translator.translate("huo").is_empty());
+        let unprefixed_candidates = translator.translate("huo");
+        assert_eq!(unprefixed_candidates.len(), 1);
+        assert_eq!(
+            unprefixed_candidates[0].source,
+            CandidateSource::ReverseLookup
+        );
+        assert_eq!(unprefixed_candidates[0].text, "火");
+        assert_eq!(unprefixed_candidates[0].comment, "ho huo");
+
         let candidates = translator.translate("`huo");
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].source, CandidateSource::ReverseLookup);

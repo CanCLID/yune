@@ -14702,6 +14702,53 @@ sort: original
         ]
     );
 
+    RimeClearComposition(session_id);
+    for ch in "huo".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+
+    let mut context = empty_context();
+    // SAFETY: context points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    let texts_and_comments = candidates
+        .iter()
+        .map(|candidate| {
+            let text = unsafe { CStr::from_ptr(candidate.text) }
+                .to_str()
+                .expect("candidate text should be valid UTF-8")
+                .to_owned();
+            let comment = if candidate.comment.is_null() {
+                None
+            } else {
+                Some(
+                    unsafe { CStr::from_ptr(candidate.comment) }
+                        .to_str()
+                        .expect("candidate comment should be valid UTF-8")
+                        .to_owned(),
+                )
+            };
+            (text, comment)
+        })
+        .collect::<Vec<_>>();
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    assert_eq!(
+        texts_and_comments,
+        [
+            ("火".to_owned(), Some("huo".to_owned())),
+            ("火".to_owned(), Some("〔HO HUO〕".to_owned())),
+            ("huo".to_owned(), Some("echo".to_owned()))
+        ]
+    );
+
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.

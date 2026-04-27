@@ -1486,8 +1486,14 @@ fn parse_rime_dict_yaml_parts(
         if !in_header {
             if trimmed == "---" {
                 in_header = true;
+                continue;
             }
-            continue;
+
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            in_header = true;
         }
 
         if trimmed == "..." {
@@ -4893,6 +4899,27 @@ sort: original
             assert_eq!(entries[0].code, "ba");
             assert_eq!(entries[0].weight, 10.0);
         }
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_header_without_document_start() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+name: no_document_start_sample
+version: "0.1"
+sort: original
+...
+
+八	ba	10
+"#,
+        )
+        .expect("librime loads dictionary headers as YAML streams without requiring '---'");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[0].code, "ba");
+        assert_eq!(entries[0].weight, 10.0);
     }
 
     #[test]

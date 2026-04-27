@@ -3706,60 +3706,67 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
 fn install_schema_reverse_lookup_translator(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    if !schema_engine_translators_include(&schema_config, "reverse_lookup_translator") {
-        return;
-    }
-    let Some(dictionary) = load_schema_table_dictionary(&schema_config, "reverse_lookup") else {
-        return;
-    };
-    let target_namespace = find_config_value(&schema_config, "reverse_lookup/target")
-        .and_then(config_scalar_string)
-        .filter(|target| !target.is_empty())
-        .unwrap_or_else(|| "translator".to_owned());
-    let reverse_dictionary = load_schema_table_dictionary(&schema_config, &target_namespace);
-    let prefix = find_config_value(&schema_config, "reverse_lookup/prefix")
-        .and_then(config_scalar_string)
-        .unwrap_or_default();
-    let suffix = find_config_value(&schema_config, "reverse_lookup/suffix")
-        .and_then(config_scalar_string)
-        .unwrap_or_default();
-    let enable_completion = find_config_value(&schema_config, "reverse_lookup/enable_completion")
-        .and_then(config_scalar_bool)
-        .unwrap_or(false);
-    let comment_format = schema_comment_format(&schema_config, "reverse_lookup");
+    for name_space in schema_engine_translator_namespaces(
+        &schema_config,
+        "reverse_lookup_translator",
+        "reverse_lookup",
+    ) {
+        let Some(dictionary) = load_schema_table_dictionary(&schema_config, &name_space) else {
+            continue;
+        };
+        let target_namespace = find_config_value(&schema_config, &format!("{name_space}/target"))
+            .and_then(config_scalar_string)
+            .filter(|target| !target.is_empty())
+            .unwrap_or_else(|| "translator".to_owned());
+        let reverse_dictionary = load_schema_table_dictionary(&schema_config, &target_namespace);
+        let prefix = find_config_value(&schema_config, &format!("{name_space}/prefix"))
+            .and_then(config_scalar_string)
+            .unwrap_or_default();
+        let suffix = find_config_value(&schema_config, &format!("{name_space}/suffix"))
+            .and_then(config_scalar_string)
+            .unwrap_or_default();
+        let enable_completion =
+            find_config_value(&schema_config, &format!("{name_space}/enable_completion"))
+                .and_then(config_scalar_bool)
+                .unwrap_or(false);
+        let comment_format = schema_comment_format(&schema_config, &name_space);
 
-    session.engine.add_translator(
-        ReverseLookupTranslator::new(dictionary, reverse_dictionary, prefix, suffix)
-            .with_completion(enable_completion)
-            .with_comment_format(&comment_format),
-    );
+        session.engine.add_translator(
+            ReverseLookupTranslator::new(dictionary, reverse_dictionary, prefix, suffix)
+                .with_completion(enable_completion)
+                .with_comment_format(&comment_format),
+        );
+    }
 }
 
 fn install_schema_reverse_lookup_filter(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    if !schema_engine_filters_include(&schema_config, "reverse_lookup_filter") {
-        return;
+    for name_space in
+        schema_engine_filter_namespaces(&schema_config, "reverse_lookup_filter", "reverse_lookup")
+    {
+        let Some(reverse_dictionary) = load_schema_table_dictionary(&schema_config, &name_space)
+        else {
+            continue;
+        };
+
+        let overwrite_comment =
+            find_config_value(&schema_config, &format!("{name_space}/overwrite_comment"))
+                .and_then(config_scalar_bool)
+                .unwrap_or(false);
+        let append_comment =
+            find_config_value(&schema_config, &format!("{name_space}/append_comment"))
+                .and_then(config_scalar_bool)
+                .unwrap_or(false);
+        let comment_format = schema_comment_format(&schema_config, &name_space);
+
+        session.engine.add_filter(
+            ReverseLookupFilter::new(reverse_dictionary)
+                .with_overwrite_comment(overwrite_comment)
+                .with_append_comment(append_comment)
+                .with_comment_format(&comment_format),
+        );
     }
-    let Some(reverse_dictionary) = load_schema_table_dictionary(&schema_config, "reverse_lookup")
-    else {
-        return;
-    };
-
-    let overwrite_comment = find_config_value(&schema_config, "reverse_lookup/overwrite_comment")
-        .and_then(config_scalar_bool)
-        .unwrap_or(false);
-    let append_comment = find_config_value(&schema_config, "reverse_lookup/append_comment")
-        .and_then(config_scalar_bool)
-        .unwrap_or(false);
-    let comment_format = schema_comment_format(&schema_config, "reverse_lookup");
-
-    session.engine.add_filter(
-        ReverseLookupFilter::new(reverse_dictionary)
-            .with_overwrite_comment(overwrite_comment)
-            .with_append_comment(append_comment)
-            .with_comment_format(&comment_format),
-    );
 }
 
 fn load_schema_table_dictionary(
@@ -4018,14 +4025,41 @@ fn install_schema_punctuation_processor(session: &mut SessionState, schema_id: &
 }
 
 fn schema_engine_translators_include(schema_config: &Value, translator_name: &str) -> bool {
+    !schema_engine_translator_namespaces(schema_config, translator_name, translator_name).is_empty()
+}
+
+fn schema_engine_translator_namespaces(
+    schema_config: &Value,
+    translator_name: &str,
+    default_name_space: &str,
+) -> Vec<String> {
     let Some(Value::Sequence(translators)) = find_config_value(schema_config, "engine/translators")
     else {
-        return false;
+        return Vec::new();
     };
-    translators
+    schema_engine_component_namespaces(translators, translator_name, default_name_space)
+}
+
+fn schema_engine_component_namespaces(
+    components: &[Value],
+    component_name: &str,
+    default_name_space: &str,
+) -> Vec<String> {
+    let component_prefix = format!("{component_name}@");
+    components
         .iter()
         .filter_map(Value::as_str)
-        .any(|translator| translator == translator_name)
+        .filter_map(|component| {
+            if component == component_name {
+                Some(default_name_space.to_owned())
+            } else {
+                component
+                    .strip_prefix(&component_prefix)
+                    .filter(|name_space| !name_space.is_empty())
+                    .map(ToOwned::to_owned)
+            }
+        })
+        .collect()
 }
 
 fn schema_engine_processors_include(schema_config: &Value, processor_name: &str) -> bool {
@@ -4039,14 +4073,15 @@ fn schema_engine_processors_include(schema_config: &Value, processor_name: &str)
         .any(|processor| processor == processor_name)
 }
 
-fn schema_engine_filters_include(schema_config: &Value, filter_name: &str) -> bool {
+fn schema_engine_filter_namespaces(
+    schema_config: &Value,
+    filter_name: &str,
+    default_name_space: &str,
+) -> Vec<String> {
     let Some(Value::Sequence(filters)) = find_config_value(schema_config, "engine/filters") else {
-        return false;
+        return Vec::new();
     };
-    filters
-        .iter()
-        .filter_map(Value::as_str)
-        .any(|filter| filter == filter_name)
+    schema_engine_component_namespaces(filters, filter_name, default_name_space)
 }
 
 fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {

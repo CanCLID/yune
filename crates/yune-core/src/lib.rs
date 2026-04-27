@@ -235,7 +235,8 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
             || is_librime_keypad_noop_key_name(name)
             || is_librime_latin1_key_name(name)
             || is_librime_latin2_key_name(name)
-            || is_librime_latin3_key_name(name) =>
+            || is_librime_latin3_key_name(name)
+            || is_librime_latin4_key_name(name) =>
         {
             KeyCode::Ignored
         }
@@ -677,6 +678,48 @@ fn is_librime_latin3_key_name(name: &str) -> bool {
             | "gcircumflex"
             | "ubreve"
             | "scircumflex"
+    )
+}
+
+fn is_librime_latin4_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "kappa"
+            | "kra"
+            | "Rcedilla"
+            | "Itilde"
+            | "Lcedilla"
+            | "Emacron"
+            | "Gcedilla"
+            | "Tslash"
+            | "rcedilla"
+            | "itilde"
+            | "lcedilla"
+            | "emacron"
+            | "gcedilla"
+            | "tslash"
+            | "ENG"
+            | "eng"
+            | "Amacron"
+            | "Iogonek"
+            | "Eabovedot"
+            | "Imacron"
+            | "Ncedilla"
+            | "Omacron"
+            | "Kcedilla"
+            | "Uogonek"
+            | "Utilde"
+            | "Umacron"
+            | "amacron"
+            | "iogonek"
+            | "eabovedot"
+            | "imacron"
+            | "ncedilla"
+            | "omacron"
+            | "kcedilla"
+            | "uogonek"
+            | "utilde"
+            | "umacron"
     )
 }
 
@@ -2325,6 +2368,60 @@ mod tests {
             "gcircumflex",
             "ubreve",
             "Release+scircumflex",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_latin4_noop_key_names() {
+        let names = [
+            "kappa",
+            "kra",
+            "Rcedilla",
+            "Itilde",
+            "Lcedilla",
+            "Emacron",
+            "Gcedilla",
+            "Tslash",
+            "rcedilla",
+            "itilde",
+            "lcedilla",
+            "emacron",
+            "gcedilla",
+            "tslash",
+            "ENG",
+            "eng",
+            "Amacron",
+            "Iogonek",
+            "Eabovedot",
+            "Imacron",
+            "Ncedilla",
+            "Omacron",
+            "Kcedilla",
+            "Uogonek",
+            "Utilde",
+            "Umacron",
+            "amacron",
+            "iogonek",
+            "eabovedot",
+            "imacron",
+            "ncedilla",
+            "omacron",
+            "kcedilla",
+            "uogonek",
+            "utilde",
+            "Release+umacron",
         ];
         let sequence = names
             .iter()

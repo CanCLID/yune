@@ -377,6 +377,10 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let ecu_sign = CString::new("EcuSign").expect("key name should be valid");
     let rupee_sign = CString::new("RupeeSign").expect("key name should be valid");
     let euro_sign = CString::new("EuroSign").expect("key name should be valid");
+    let ibm_3270_duplicate = CString::new("3270_Duplicate").expect("key name should be valid");
+    let ibm_3270_erase_input = CString::new("3270_EraseInput").expect("key name should be valid");
+    let ibm_3270_cursor_blink = CString::new("3270_CursorBlink").expect("key name should be valid");
+    let ibm_3270_enter = CString::new("3270_Enter").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -603,6 +607,22 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(unsafe { RimeGetKeycodeByName(ecu_sign.as_ptr()) }, 0x20a0);
     assert_eq!(unsafe { RimeGetKeycodeByName(rupee_sign.as_ptr()) }, 0x20a8);
     assert_eq!(unsafe { RimeGetKeycodeByName(euro_sign.as_ptr()) }, 0x20ac);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(ibm_3270_duplicate.as_ptr()) },
+        0xfd01
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(ibm_3270_erase_input.as_ptr()) },
+        0xfd07
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(ibm_3270_cursor_blink.as_ptr()) },
+        0xfd0f
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(ibm_3270_enter.as_ptr()) },
+        0xfd1e
+    );
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -1015,6 +1035,22 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0x20ac)).as_deref(),
         Some("EuroSign")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfd01)).as_deref(),
+        Some("3270_Duplicate")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfd07)).as_deref(),
+        Some("3270_EraseInput")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfd0f)).as_deref(),
+        Some("3270_CursorBlink")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfd1e)).as_deref(),
+        Some("3270_Enter")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

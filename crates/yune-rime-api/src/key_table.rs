@@ -1212,6 +1212,39 @@ const LATIN9_CURRENCY_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"EuroSign\0", 0x20ac),
 ];
 
+const IBM_3270_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"3270_Duplicate\0", 0xfd01),
+    (b"3270_FieldMark\0", 0xfd02),
+    (b"3270_Right2\0", 0xfd03),
+    (b"3270_Left2\0", 0xfd04),
+    (b"3270_BackTab\0", 0xfd05),
+    (b"3270_EraseEOF\0", 0xfd06),
+    (b"3270_EraseInput\0", 0xfd07),
+    (b"3270_Reset\0", 0xfd08),
+    (b"3270_Quit\0", 0xfd09),
+    (b"3270_PA1\0", 0xfd0a),
+    (b"3270_PA2\0", 0xfd0b),
+    (b"3270_PA3\0", 0xfd0c),
+    (b"3270_Test\0", 0xfd0d),
+    (b"3270_Attn\0", 0xfd0e),
+    (b"3270_CursorBlink\0", 0xfd0f),
+    (b"3270_AltCursor\0", 0xfd10),
+    (b"3270_KeyClick\0", 0xfd11),
+    (b"3270_Jump\0", 0xfd12),
+    (b"3270_Ident\0", 0xfd13),
+    (b"3270_Rule\0", 0xfd14),
+    (b"3270_Copy\0", 0xfd15),
+    (b"3270_Play\0", 0xfd16),
+    (b"3270_Setup\0", 0xfd17),
+    (b"3270_Record\0", 0xfd18),
+    (b"3270_ChangeScreen\0", 0xfd19),
+    (b"3270_DeleteWord\0", 0xfd1a),
+    (b"3270_ExSelect\0", 0xfd1b),
+    (b"3270_CursorSelect\0", 0xfd1c),
+    (b"3270_PrintScreen\0", 0xfd1d),
+    (b"3270_Enter\0", 0xfd1e),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -1278,6 +1311,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(THAI_KEY_NAMES)
         .chain(HANGUL_KEY_NAMES)
         .chain(LATIN9_CURRENCY_KEY_NAMES)
+        .chain(IBM_3270_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -1299,6 +1333,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(THAI_KEY_NAMES)
         .chain(HANGUL_KEY_NAMES)
         .chain(LATIN9_CURRENCY_KEY_NAMES)
+        .chain(IBM_3270_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

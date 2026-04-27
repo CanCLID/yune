@@ -2280,10 +2280,7 @@ pub unsafe extern "C" fn RimeConfigUpdateSignature(
         return FALSE;
     };
 
-    let modified_time = SystemTime::now().duration_since(UNIX_EPOCH).map_or_else(
-        |_| "0".to_owned(),
-        |duration| duration.as_secs().to_string(),
-    );
+    let modified_time = librime_signature_modified_time();
     let rime_version =
         String::from_utf8_lossy(&RIME_VERSION_BYTES[..RIME_VERSION_BYTES.len() - 1]).into_owned();
     let (distribution_code_name, distribution_version) = {
@@ -5180,10 +5177,7 @@ fn custom_config_path(config_id: &str) -> PathBuf {
 }
 
 fn write_config_signature(root: &mut Value, key: &str, generator: &str) {
-    let modified_time = SystemTime::now().duration_since(UNIX_EPOCH).map_or_else(
-        |_| "0".to_owned(),
-        |duration| duration.as_secs().to_string(),
-    );
+    let modified_time = librime_signature_modified_time();
     let rime_version =
         String::from_utf8_lossy(&RIME_VERSION_BYTES[..RIME_VERSION_BYTES.len() - 1]).into_owned();
     let (distribution_code_name, distribution_version) = {
@@ -5208,6 +5202,29 @@ fn write_config_signature(root: &mut Value, key: &str, generator: &str) {
     ] {
         let _ = set_config_value(root, &path, Value::String(value));
     }
+}
+
+#[cfg(unix)]
+fn librime_signature_modified_time() -> String {
+    // librime's Signature::Sign stores a trimmed ctime(3) string.
+    let now = unsafe { libc::time(ptr::null_mut()) };
+    let mut buffer = [0 as c_char; 64];
+    let written = unsafe { libc::ctime_r(&now, buffer.as_mut_ptr()) };
+    if written.is_null() {
+        return "0".to_owned();
+    }
+    unsafe { CStr::from_ptr(buffer.as_ptr()) }
+        .to_string_lossy()
+        .trim()
+        .to_owned()
+}
+
+#[cfg(not(unix))]
+fn librime_signature_modified_time() -> String {
+    SystemTime::now().duration_since(UNIX_EPOCH).map_or_else(
+        |_| "0".to_owned(),
+        |duration| duration.as_secs().to_string(),
+    )
 }
 
 #[cfg(test)]

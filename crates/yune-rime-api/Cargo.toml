@@ -7,5 +7,6 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+libc = "0.2"
 serde_yaml = "0.9"
 yune-core = { path = "../yune-core" }

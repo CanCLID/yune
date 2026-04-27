@@ -221,6 +221,23 @@ fn config_string(config: &mut RimeConfig, key: &str) -> Option<String> {
     )
 }
 
+fn assert_librime_ctime_shape(value: &str) {
+    let parts = value.split_whitespace().collect::<Vec<_>>();
+    assert_eq!(parts.len(), 5);
+    assert!(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].contains(&parts[0]));
+    assert!(
+        ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",]
+            .contains(&parts[1])
+    );
+    assert!(parts[2]
+        .parse::<u8>()
+        .is_ok_and(|day| (1..=31).contains(&day)));
+    assert_eq!(parts[3].len(), 8);
+    assert_eq!(parts[3].as_bytes()[2], b':');
+    assert_eq!(parts[3].as_bytes()[5], b':');
+    assert!(parts[4].parse::<u16>().is_ok());
+}
+
 fn unique_temp_dir(name: &str) -> std::path::PathBuf {
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -1811,9 +1828,9 @@ fn config_update_signature_writes_runtime_metadata() {
     assert!(config_string(&mut config, "signature/rime_version")
         .as_deref()
         .is_some_and(|value| value.starts_with("yune-rime-api ")));
-    assert!(config_string(&mut config, "signature/modified_time")
-        .and_then(|value| value.parse::<u64>().ok())
-        .is_some());
+    let modified_time =
+        config_string(&mut config, "signature/modified_time").expect("signature time exists");
+    assert_librime_ctime_shape(&modified_time);
     assert_eq!(
         unsafe { RimeConfigUpdateSignature(&mut config, std::ptr::null()) },
         FALSE
@@ -5723,6 +5740,10 @@ menu:
             .and_then(Value::as_str),
         Some("test_dist")
     );
+    let customization_modified_time = find_config_value(&saved_root, "customization/modified_time")
+        .and_then(Value::as_str)
+        .expect("customization signature should include modified time");
+    assert_librime_ctime_shape(customization_modified_time);
 
     // SAFETY: configs and settings were initialized by this API.
     unsafe {

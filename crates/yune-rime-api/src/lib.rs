@@ -2146,10 +2146,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     apply_schema_switch_resets(session, schema_id);
     install_schema_key_binder_processor(session, schema_id);
     install_schema_punctuation_processor(session, schema_id);
-    install_schema_punctuation_translator(session, schema_id);
-    install_schema_dictionary_translator(session, schema_id);
-    install_schema_reverse_lookup_translator(session, schema_id);
-    install_schema_history_translator(session, schema_id);
+    install_schema_translator_chain(session, schema_id);
     install_schema_reverse_lookup_filter(session, schema_id);
     install_schema_simplifier_filter(session, schema_id);
     install_schema_uniquifier_filter(session, schema_id);
@@ -3698,120 +3695,153 @@ fn session_menu_page_size(session: &SessionState) -> usize {
     context_menu_settings(&session.engine.status().schema_id).page_size
 }
 
-fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &str) {
+fn install_schema_translator_chain(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    let mut name_spaces =
-        schema_engine_translator_namespaces(&schema_config, "table_translator", "translator");
-    name_spaces.extend(schema_engine_translator_namespaces(
-        &schema_config,
-        "script_translator",
-        "translator",
-    ));
-    name_spaces.extend(schema_engine_translator_namespaces(
-        &schema_config,
-        "r10n_translator",
-        "translator",
-    ));
+    let Some(Value::Sequence(translators)) =
+        find_config_value(&schema_config, "engine/translators")
+    else {
+        return;
+    };
+    let mut punctuation_translator_installed = false;
 
-    for name_space in name_spaces {
-        let Some(dictionary) = load_schema_table_dictionary(&schema_config, &name_space) else {
-            continue;
-        };
-        let enable_charset_filter = find_config_value(
-            &schema_config,
-            &format!("{name_space}/enable_charset_filter"),
-        )
-        .and_then(config_scalar_bool)
-        .unwrap_or(false);
-        let enable_completion =
-            find_config_value(&schema_config, &format!("{name_space}/enable_completion"))
-                .and_then(config_scalar_bool)
-                .unwrap_or(true);
-        let delimiters = find_config_value(&schema_config, &format!("{name_space}/delimiter"))
-            .or_else(|| find_config_value(&schema_config, "speller/delimiter"))
-            .and_then(config_scalar_string)
-            .unwrap_or_else(|| " ".to_owned());
-        let initial_quality =
-            find_config_value(&schema_config, &format!("{name_space}/initial_quality"))
-                .and_then(config_scalar_f32)
-                .unwrap_or(0.0);
-        let comment_format = schema_comment_format(&schema_config, &name_space);
-        let dictionary_exclude =
-            schema_string_list(&schema_config, &format!("{name_space}/dictionary_exclude"));
-        session.engine.add_translator(
-            StaticTableTranslator::from_dictionary(dictionary)
-                .with_completion(enable_completion)
-                .with_charset_filter(enable_charset_filter)
-                .with_delimiters(delimiters)
-                .with_initial_quality(initial_quality)
-                .with_comment_format(&comment_format)
-                .with_dictionary_exclude(dictionary_exclude),
-        );
+    for translator in translators.iter().filter_map(Value::as_str) {
+        let (component_name, name_space) = schema_component_prescription(translator);
+        match component_name {
+            "punct_translator" => {
+                if !punctuation_translator_installed {
+                    install_schema_punctuation_translator_from_config(session, &schema_config);
+                    punctuation_translator_installed = true;
+                }
+            }
+            "table_translator" | "script_translator" | "r10n_translator" => {
+                install_schema_dictionary_translator_from_config(
+                    session,
+                    &schema_config,
+                    name_space.unwrap_or("translator"),
+                );
+            }
+            "reverse_lookup_translator" => install_schema_reverse_lookup_translator_from_config(
+                session,
+                &schema_config,
+                name_space.unwrap_or("reverse_lookup"),
+            ),
+            "history_translator" => install_schema_history_translator_from_config(
+                session,
+                &schema_config,
+                name_space.unwrap_or("history"),
+            ),
+            _ => {}
+        }
     }
 }
 
-fn install_schema_reverse_lookup_translator(session: &mut SessionState, schema_id: &str) {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    for name_space in schema_engine_translator_namespaces(
-        &schema_config,
-        "reverse_lookup_translator",
-        "reverse_lookup",
-    ) {
-        let Some(dictionary) = load_schema_table_dictionary(&schema_config, &name_space) else {
-            continue;
-        };
-        let target_namespace = find_config_value(&schema_config, &format!("{name_space}/target"))
-            .and_then(config_scalar_string)
-            .filter(|target| !target.is_empty())
-            .unwrap_or_else(|| "translator".to_owned());
-        let reverse_dictionary = load_schema_table_dictionary(&schema_config, &target_namespace);
-        let prefix = find_config_value(&schema_config, &format!("{name_space}/prefix"))
-            .and_then(config_scalar_string)
-            .unwrap_or_default();
-        let suffix = find_config_value(&schema_config, &format!("{name_space}/suffix"))
-            .and_then(config_scalar_string)
-            .unwrap_or_default();
-        let enable_completion =
-            find_config_value(&schema_config, &format!("{name_space}/enable_completion"))
-                .and_then(config_scalar_bool)
-                .unwrap_or(false);
-        let comment_format = schema_comment_format(&schema_config, &name_space);
-
-        session.engine.add_translator(
-            ReverseLookupTranslator::new(dictionary, reverse_dictionary, prefix, suffix)
-                .with_completion(enable_completion)
-                .with_comment_format(&comment_format),
-        );
+fn schema_component_prescription(component: &str) -> (&str, Option<&str>) {
+    let Some((component_name, name_space)) = component.split_once('@') else {
+        return (component, None);
+    };
+    if component_name.is_empty() || name_space.is_empty() {
+        (component, None)
+    } else {
+        (component_name, Some(name_space))
     }
 }
 
-fn install_schema_history_translator(session: &mut SessionState, schema_id: &str) {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    for name_space in
-        schema_engine_translator_namespaces(&schema_config, "history_translator", "history")
-    {
-        let input = find_config_value(&schema_config, &format!("{name_space}/input"))
-            .and_then(config_scalar_string)
-            .unwrap_or_default();
-        let size = find_config_value(&schema_config, &format!("{name_space}/size"))
-            .and_then(Value::as_i64)
-            .and_then(|size| usize::try_from(size).ok())
-            .unwrap_or(1);
-        let initial_quality =
-            find_config_value(&schema_config, &format!("{name_space}/initial_quality"))
-                .and_then(Value::as_f64)
-                .map(|quality| quality as f32)
-                .unwrap_or(1000.0);
+fn install_schema_dictionary_translator_from_config(
+    session: &mut SessionState,
+    schema_config: &Value,
+    name_space: &str,
+) {
+    let Some(dictionary) = load_schema_table_dictionary(schema_config, name_space) else {
+        return;
+    };
+    let enable_charset_filter = find_config_value(
+        schema_config,
+        &format!("{name_space}/enable_charset_filter"),
+    )
+    .and_then(config_scalar_bool)
+    .unwrap_or(false);
+    let enable_completion =
+        find_config_value(schema_config, &format!("{name_space}/enable_completion"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(true);
+    let delimiters = find_config_value(schema_config, &format!("{name_space}/delimiter"))
+        .or_else(|| find_config_value(schema_config, "speller/delimiter"))
+        .and_then(config_scalar_string)
+        .unwrap_or_else(|| " ".to_owned());
+    let initial_quality =
+        find_config_value(schema_config, &format!("{name_space}/initial_quality"))
+            .and_then(config_scalar_f32)
+            .unwrap_or(0.0);
+    let comment_format = schema_comment_format(schema_config, name_space);
+    let dictionary_exclude =
+        schema_string_list(schema_config, &format!("{name_space}/dictionary_exclude"));
+    session.engine.add_translator(
+        StaticTableTranslator::from_dictionary(dictionary)
+            .with_completion(enable_completion)
+            .with_charset_filter(enable_charset_filter)
+            .with_delimiters(delimiters)
+            .with_initial_quality(initial_quality)
+            .with_comment_format(&comment_format)
+            .with_dictionary_exclude(dictionary_exclude),
+    );
+}
 
-        session.engine.add_translator(
-            HistoryTranslator::new(input)
-                .with_size(size)
-                .with_initial_quality(initial_quality),
-        );
-    }
+fn install_schema_reverse_lookup_translator_from_config(
+    session: &mut SessionState,
+    schema_config: &Value,
+    name_space: &str,
+) {
+    let Some(dictionary) = load_schema_table_dictionary(schema_config, name_space) else {
+        return;
+    };
+    let target_namespace = find_config_value(schema_config, &format!("{name_space}/target"))
+        .and_then(config_scalar_string)
+        .filter(|target| !target.is_empty())
+        .unwrap_or_else(|| "translator".to_owned());
+    let reverse_dictionary = load_schema_table_dictionary(schema_config, &target_namespace);
+    let prefix = find_config_value(schema_config, &format!("{name_space}/prefix"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let suffix = find_config_value(schema_config, &format!("{name_space}/suffix"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let enable_completion =
+        find_config_value(schema_config, &format!("{name_space}/enable_completion"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(false);
+    let comment_format = schema_comment_format(schema_config, name_space);
+
+    session.engine.add_translator(
+        ReverseLookupTranslator::new(dictionary, reverse_dictionary, prefix, suffix)
+            .with_completion(enable_completion)
+            .with_comment_format(&comment_format),
+    );
+}
+
+fn install_schema_history_translator_from_config(
+    session: &mut SessionState,
+    schema_config: &Value,
+    name_space: &str,
+) {
+    let input = find_config_value(schema_config, &format!("{name_space}/input"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let size = find_config_value(schema_config, &format!("{name_space}/size"))
+        .and_then(Value::as_i64)
+        .and_then(|size| usize::try_from(size).ok())
+        .unwrap_or(1);
+    let initial_quality =
+        find_config_value(schema_config, &format!("{name_space}/initial_quality"))
+            .and_then(Value::as_f64)
+            .map(|quality| quality as f32)
+            .unwrap_or(1000.0);
+
+    session.engine.add_translator(
+        HistoryTranslator::new(input)
+            .with_size(size)
+            .with_initial_quality(initial_quality),
+    );
 }
 
 fn install_schema_reverse_lookup_filter(session: &mut SessionState, schema_id: &str) {
@@ -3960,16 +3990,13 @@ fn config_scalar_f32(value: &Value) -> Option<f32> {
     }
 }
 
-fn install_schema_punctuation_translator(session: &mut SessionState, schema_id: &str) {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    if !schema_engine_translators_include(&schema_config, "punct_translator") {
-        return;
-    }
-
-    let half_shape_entries = punctuation_entries_from_config(&schema_config, "half_shape");
-    let full_shape_entries = punctuation_entries_from_config(&schema_config, "full_shape");
-    let symbol_entries = punctuation_entries_from_config(&schema_config, "symbols");
+fn install_schema_punctuation_translator_from_config(
+    session: &mut SessionState,
+    schema_config: &Value,
+) {
+    let half_shape_entries = punctuation_entries_from_config(schema_config, "half_shape");
+    let full_shape_entries = punctuation_entries_from_config(schema_config, "full_shape");
+    let symbol_entries = punctuation_entries_from_config(schema_config, "symbols");
     if half_shape_entries.is_empty() && full_shape_entries.is_empty() && symbol_entries.is_empty() {
         return;
     }

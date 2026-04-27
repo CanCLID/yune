@@ -11574,7 +11574,7 @@ fn select_schema_uses_deployed_schema_name_like_librime() {
 }
 
 #[test]
-fn select_schema_loads_librime_punctuator_half_shape_definitions() {
+fn select_schema_loads_librime_punctuator_shape_and_symbol_definitions() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     let root = unique_temp_dir("schema-punctuator");
@@ -11602,6 +11602,9 @@ punctuator:
     \"/\": \"／\"
     \"!\": { commit: \"！\" }
     \"(\": { pair: [\"〔\", \"〕\"] }
+  symbols:
+    \"/\": [\"symbol-slash\"]
+    \"/fh\": [\"©\", \"®\"]
 ",
     )
     .expect("schema config should be written");
@@ -11622,8 +11625,10 @@ punctuator:
         TRUE
     );
 
-    let candidate_texts = |ch: char| {
-        assert_eq!(RimeProcessKey(session_id, ch as i32, 0), TRUE);
+    let candidate_texts = |input: &str| {
+        for ch in input.chars() {
+            assert_eq!(RimeProcessKey(session_id, ch as i32, 0), TRUE);
+        }
         let mut context = empty_context();
         // SAFETY: context points to writable storage initialized with positive
         // `data_size`.
@@ -11651,17 +11656,19 @@ punctuator:
         texts
     };
 
-    assert_eq!(candidate_texts('/'), ["、", "/", "/"]);
-    assert_eq!(candidate_texts('!'), ["！", "!"]);
-    assert_eq!(candidate_texts('('), ["（", "）", "("]);
+    assert_eq!(candidate_texts("/"), ["、", "/", "/"]);
+    assert_eq!(candidate_texts("!"), ["！", "!"]);
+    assert_eq!(candidate_texts("("), ["（", "）", "("]);
+    assert_eq!(candidate_texts("/fh"), ["©", "®", "/fh"]);
 
     let full_shape = CString::new("full_shape").expect("option name should be valid");
     // SAFETY: option name is a valid NUL-terminated string.
     unsafe { RimeSetOption(session_id, full_shape.as_ptr(), TRUE) };
 
-    assert_eq!(candidate_texts('/'), ["／", "/"]);
-    assert_eq!(candidate_texts('!'), ["！", "!"]);
-    assert_eq!(candidate_texts('('), ["〔", "〕", "("]);
+    assert_eq!(candidate_texts("/"), ["／", "/"]);
+    assert_eq!(candidate_texts("!"), ["！", "!"]);
+    assert_eq!(candidate_texts("("), ["〔", "〕", "("]);
+    assert_eq!(candidate_texts("/fh"), ["©", "®", "/fh"]);
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();

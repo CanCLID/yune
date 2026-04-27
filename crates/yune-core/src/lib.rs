@@ -2072,6 +2072,7 @@ impl Translator for StaticTableTranslator {
 pub struct PunctuationTranslator {
     half_shape_entries: Vec<(String, Candidate)>,
     full_shape_entries: Vec<(String, Candidate)>,
+    symbol_entries: Vec<(String, Candidate)>,
 }
 
 impl PunctuationTranslator {
@@ -2085,9 +2086,23 @@ impl PunctuationTranslator {
         half_shape_entries: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
         full_shape_entries: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
     ) -> Self {
+        Self::with_shape_and_symbol_entries(
+            half_shape_entries,
+            full_shape_entries,
+            std::iter::empty::<(String, String)>(),
+        )
+    }
+
+    #[must_use]
+    pub fn with_shape_and_symbol_entries(
+        half_shape_entries: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+        full_shape_entries: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+        symbol_entries: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+    ) -> Self {
         Self {
             half_shape_entries: punctuation_candidates(half_shape_entries),
             full_shape_entries: punctuation_candidates(full_shape_entries),
+            symbol_entries: punctuation_candidates(symbol_entries),
         }
     }
 
@@ -2110,11 +2125,7 @@ impl Translator for PunctuationTranslator {
     }
 
     fn translate(&self, input: &str) -> Vec<Candidate> {
-        self.half_shape_entries
-            .iter()
-            .filter(|(key, _)| key == input)
-            .map(|(_, candidate)| candidate.clone())
-            .collect()
+        self.translate_with_entries(input, &self.half_shape_entries)
     }
 
     fn translate_with_status(&self, input: &str, status: &Status) -> Vec<Candidate> {
@@ -2123,7 +2134,25 @@ impl Translator for PunctuationTranslator {
         } else {
             &self.half_shape_entries
         };
-        entries
+        self.translate_with_entries(input, entries)
+    }
+}
+
+impl PunctuationTranslator {
+    fn translate_with_entries(
+        &self,
+        input: &str,
+        shape_entries: &[(String, Candidate)],
+    ) -> Vec<Candidate> {
+        let shape_candidates = shape_entries
+            .iter()
+            .filter(|(key, _)| key == input)
+            .map(|(_, candidate)| candidate.clone())
+            .collect::<Vec<_>>();
+        if !shape_candidates.is_empty() {
+            return shape_candidates;
+        }
+        self.symbol_entries
             .iter()
             .filter(|(key, _)| key == input)
             .map(|(_, candidate)| candidate.clone())
@@ -6078,6 +6107,31 @@ sort: by_weight
 
         engine.set_option("full_shape", false);
         assert_eq!(engine.context().candidates[0].text, "、");
+    }
+
+    #[test]
+    fn punctuation_translator_uses_symbols_as_shape_fallback() {
+        let mut engine = Engine::new();
+        engine.add_translator(PunctuationTranslator::with_shape_and_symbol_entries(
+            [("/", "、")],
+            [("/", "／")],
+            [("/", "symbol-slash"), ("/fh", "©")],
+        ));
+
+        engine
+            .process_key_sequence("/fh")
+            .expect("keys should parse");
+        assert_eq!(engine.context().candidates[0].text, "©");
+        assert_eq!(engine.context().candidates[1].text, "/fh");
+
+        engine.clear_composition();
+        engine.process_char('/');
+        assert_eq!(engine.context().candidates[0].text, "、");
+        assert_eq!(engine.context().candidates[1].text, "/");
+
+        engine.set_option("full_shape", true);
+        assert_eq!(engine.context().candidates[0].text, "／");
+        assert_eq!(engine.context().candidates[1].text, "/");
     }
 
     #[test]

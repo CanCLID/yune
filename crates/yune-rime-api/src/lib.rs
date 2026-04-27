@@ -3602,14 +3602,16 @@ fn install_schema_punctuation_translator(session: &mut SessionState, schema_id: 
 
     let half_shape_entries = punctuation_entries_from_config(&schema_config, "half_shape");
     let full_shape_entries = punctuation_entries_from_config(&schema_config, "full_shape");
-    if half_shape_entries.is_empty() && full_shape_entries.is_empty() {
+    let symbol_entries = punctuation_entries_from_config(&schema_config, "symbols");
+    if half_shape_entries.is_empty() && full_shape_entries.is_empty() && symbol_entries.is_empty() {
         return;
     }
     session
         .engine
-        .add_translator(PunctuationTranslator::with_shape_entries(
+        .add_translator(PunctuationTranslator::with_shape_and_symbol_entries(
             half_shape_entries,
             full_shape_entries,
+            symbol_entries,
         ));
 }
 

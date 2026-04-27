@@ -5720,18 +5720,48 @@ fn parse_config_int(value: &str) -> Option<c_int> {
         let parsed = u32::from_str_radix(hex, 16).ok()?;
         return c_int::try_from(parsed).ok();
     }
-    value
-        .parse::<i64>()
-        .ok()
-        .and_then(|number| c_int::try_from(number).ok())
+    parse_config_i64_prefix(value).and_then(|number| c_int::try_from(number).ok())
+}
+
+fn parse_config_i64_prefix(value: &str) -> Option<i64> {
+    let trimmed = value.trim_start();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let bytes = trimmed.as_bytes();
+    let mut end = 0usize;
+    if matches!(bytes.first(), Some(b'+') | Some(b'-')) {
+        end = 1;
+    }
+    let digit_start = end;
+    while bytes.get(end).is_some_and(u8::is_ascii_digit) {
+        end += 1;
+    }
+    if end == digit_start {
+        return None;
+    }
+    trimmed[..end].parse::<i64>().ok()
 }
 
 fn config_scalar_double(value: &Value) -> Option<f64> {
     match value {
         Value::Number(value) => value.as_f64(),
-        Value::String(value) if !value.is_empty() => value.parse::<f64>().ok(),
+        Value::String(value) if !value.is_empty() => parse_config_f64_prefix(value),
         _ => None,
     }
+}
+
+fn parse_config_f64_prefix(value: &str) -> Option<f64> {
+    let trimmed = value.trim_start();
+    for end in (1..=trimmed.len()).rev() {
+        if !trimmed.is_char_boundary(end) {
+            continue;
+        }
+        if let Ok(number) = trimmed[..end].parse::<f64>() {
+            return Some(number);
+        }
+    }
+    None
 }
 
 fn config_number_string(value: &Number) -> String {
@@ -7230,6 +7260,66 @@ hex: '0x10'\nflag: 'FALSE'\ndecimal: '42'\nfloating: '1.5'\nnative_bool: true\nn
             TRUE
         );
         assert_eq!(int_output, 8);
+
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+    }
+
+    #[test]
+    fn config_numeric_getters_accept_librime_stoi_stod_prefixes() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let decimal_suffix = CString::new("decimal_suffix").expect("key should be valid");
+        let signed_spaced = CString::new("signed_spaced").expect("key should be valid");
+        let invalid_int = CString::new("invalid_int").expect("key should be valid");
+        let double_suffix = CString::new("double_suffix").expect("key should be valid");
+        let exponent_suffix = CString::new("exponent_suffix").expect("key should be valid");
+        let invalid_double = CString::new("invalid_double").expect("key should be valid");
+        let mut int_output = 0;
+        let mut double_output = 0.0;
+
+        let yaml = CString::new(
+            "\
+decimal_suffix: '42abc'\nsigned_spaced: '  -7ms'\ninvalid_int: abc42\ndouble_suffix: '  2.5ms'\nexponent_suffix: '1e2hz'\ninvalid_double: hz1.5\n",
+        )
+        .expect("yaml should be valid");
+        assert_eq!(
+            unsafe { RimeConfigLoadString(&mut config, yaml.as_ptr()) },
+            TRUE
+        );
+
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, decimal_suffix.as_ptr(), &mut int_output) },
+            TRUE
+        );
+        assert_eq!(int_output, 42);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, signed_spaced.as_ptr(), &mut int_output) },
+            TRUE
+        );
+        assert_eq!(int_output, -7);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, invalid_int.as_ptr(), &mut int_output) },
+            FALSE
+        );
+
+        assert_eq!(
+            unsafe { RimeConfigGetDouble(&mut config, double_suffix.as_ptr(), &mut double_output) },
+            TRUE
+        );
+        assert_eq!(double_output, 2.5);
+        assert_eq!(
+            unsafe {
+                RimeConfigGetDouble(&mut config, exponent_suffix.as_ptr(), &mut double_output)
+            },
+            TRUE
+        );
+        assert_eq!(double_output, 100.0);
+        assert_eq!(
+            unsafe {
+                RimeConfigGetDouble(&mut config, invalid_double.as_ptr(), &mut double_output)
+            },
+            FALSE
+        );
 
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }

@@ -3215,7 +3215,10 @@ impl CandidateFilter for ReverseLookupFilter {
 
     fn apply(&self, candidates: &mut Vec<Candidate>) {
         for candidate in candidates {
-            if candidate.source != CandidateSource::Table {
+            if !matches!(
+                candidate.source,
+                CandidateSource::Table | CandidateSource::Completion | CandidateSource::Sentence
+            ) {
                 continue;
             }
             if !candidate.comment.is_empty() && !(self.overwrite_comment || self.append_comment) {
@@ -7222,10 +7225,48 @@ sort: original
                 source: CandidateSource::Table,
                 quality: 1.0,
             },
+            Candidate {
+                text: "你".to_owned(),
+                comment: String::new(),
+                source: CandidateSource::Completion,
+                quality: 0.5,
+            },
+            Candidate {
+                text: "你好".to_owned(),
+                comment: " ☯ ".to_owned(),
+                source: CandidateSource::Sentence,
+                quality: 2.0,
+            },
         ];
         default_filter.apply(&mut candidates);
         assert_eq!(candidates[0].comment, "ni");
         assert_eq!(candidates[1].comment, "vb");
+        assert_eq!(candidates[2].comment, "wq");
+        assert_eq!(candidates[3].comment, " ☯ ");
+
+        let mut sentence_candidates = vec![Candidate {
+            text: "你好".to_owned(),
+            comment: " ☯ ".to_owned(),
+            source: CandidateSource::Sentence,
+            quality: 2.0,
+        }];
+        ReverseLookupFilter::new(
+            TableDictionary::parse_rime_dict_yaml(
+                r#"
+---
+name: sentence_codes
+version: "0.1"
+sort: original
+...
+
+你好	wh
+"#,
+            )
+            .expect("sentence reverse lookup dictionary should parse"),
+        )
+        .with_overwrite_comment(true)
+        .apply(&mut sentence_candidates);
+        assert_eq!(sentence_candidates[0].comment, "wh");
 
         let mut overwrite_engine = Engine::new();
         overwrite_engine.add_translator(StaticTableTranslator::new([("ni", "你")]));

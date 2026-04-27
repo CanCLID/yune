@@ -107,6 +107,7 @@ struct SessionState {
     engine: Engine,
     unread_commit: Option<String>,
     input_buffer: Option<CString>,
+    key_binder: Option<KeyBinderProcessor>,
     punctuation_processor: Option<PunctuationProcessor>,
     last_active_time: u64,
 }
@@ -117,6 +118,7 @@ impl SessionState {
             engine: Engine::default(),
             unread_commit: None,
             input_buffer: None,
+            key_binder: None,
             punctuation_processor: None,
             last_active_time: session_activity_now(),
         }
@@ -125,6 +127,27 @@ impl SessionState {
     fn activate(&mut self) {
         self.last_active_time = session_activity_now();
     }
+}
+
+struct KeyBinderProcessor {
+    bindings: HashMap<KeyEvent, Vec<KeyBinding>>,
+}
+
+struct KeyBinding {
+    condition: KeyBindingCondition,
+    action: KeyBindingAction,
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum KeyBindingCondition {
+    Always,
+    Composing,
+    HasMenu,
+}
+
+#[derive(Clone)]
+enum KeyBindingAction {
+    Toggle(String),
 }
 
 struct PunctuationProcessor {
@@ -1757,6 +1780,10 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
         return FALSE;
     };
 
+    if process_key_binder_processor(session, key_event) {
+        return TRUE;
+    }
+
     let was_composing = !session.engine.context().composition.input.is_empty();
     if !was_composing
         && (mask == K_CONTROL_MASK || mask == (K_CONTROL_MASK | K_SHIFT_MASK))
@@ -2063,8 +2090,10 @@ pub unsafe extern "C" fn RimeSelectSchema(
             .engine
             .set_schema(schema_id.clone(), schema_name.clone());
         session.engine.reset_translators();
+        session.key_binder = None;
         session.punctuation_processor = None;
         apply_schema_switch_resets(session, &schema_id);
+        install_schema_key_binder_processor(session, &schema_id);
         install_schema_punctuation_processor(session, &schema_id);
         install_schema_punctuation_translator(session, &schema_id);
         install_schema_dictionary_translator(session, &schema_id);
@@ -3674,6 +3703,92 @@ fn install_schema_punctuation_translator(session: &mut SessionState, schema_id: 
         ));
 }
 
+fn install_schema_key_binder_processor(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    if !schema_engine_processors_include(&schema_config, "key_binder") {
+        return;
+    }
+    let Some(Value::Sequence(bindings)) = find_config_value(&schema_config, "key_binder/bindings")
+    else {
+        return;
+    };
+
+    let mut processor = KeyBinderProcessor {
+        bindings: HashMap::new(),
+    };
+    for binding in bindings {
+        let Value::Mapping(binding) = binding else {
+            continue;
+        };
+        let Some(condition) = binding
+            .get(Value::String("when".to_owned()))
+            .and_then(config_scalar_string)
+            .and_then(|condition| key_binding_condition(&condition))
+        else {
+            continue;
+        };
+        let Some(accept) = binding
+            .get(Value::String("accept".to_owned()))
+            .and_then(config_scalar_string)
+        else {
+            continue;
+        };
+        let Some(key_event) = parse_single_key_binding_event(&accept) else {
+            continue;
+        };
+        let Some(toggle) = binding
+            .get(Value::String("toggle".to_owned()))
+            .and_then(config_scalar_string)
+        else {
+            continue;
+        };
+        processor
+            .bindings
+            .entry(key_event)
+            .or_default()
+            .push(KeyBinding {
+                condition,
+                action: KeyBindingAction::Toggle(toggle),
+            });
+    }
+
+    for bindings in processor.bindings.values_mut() {
+        bindings.sort_by_key(|binding| key_binding_condition_rank(binding.condition));
+    }
+
+    if !processor.bindings.is_empty() {
+        session.key_binder = Some(processor);
+    }
+}
+
+fn key_binding_condition(condition: &str) -> Option<KeyBindingCondition> {
+    match condition {
+        "always" => Some(KeyBindingCondition::Always),
+        "composing" => Some(KeyBindingCondition::Composing),
+        "has_menu" => Some(KeyBindingCondition::HasMenu),
+        _ => None,
+    }
+}
+
+fn key_binding_condition_rank(condition: KeyBindingCondition) -> usize {
+    match condition {
+        KeyBindingCondition::HasMenu => 2,
+        KeyBindingCondition::Composing => 3,
+        KeyBindingCondition::Always => 4,
+    }
+}
+
+fn parse_single_key_binding_event(pattern: &str) -> Option<KeyEvent> {
+    let sequence = if pattern.chars().count() == 1 {
+        pattern.to_owned()
+    } else {
+        format!("{{{pattern}}}")
+    };
+    let mut events = parse_key_sequence(&sequence).ok()?;
+    (events.len() == 1).then(|| events.remove(0))
+}
+
 fn install_schema_punctuation_processor(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
@@ -3959,6 +4074,9 @@ fn append_punctuation_definition(
 }
 
 fn process_session_key_event(session: &mut SessionState, key_event: KeyEvent) -> Option<String> {
+    if process_key_binder_processor(session, key_event) {
+        return None;
+    }
     if let Some(result) = process_punctuation_processor(session, key_event) {
         return match result {
             PunctuationProcessResult::Accepted => None,
@@ -3969,6 +4087,44 @@ fn process_session_key_event(session: &mut SessionState, key_event: KeyEvent) ->
         return commit;
     }
     session.engine.process_key_event(key_event)
+}
+
+fn process_key_binder_processor(session: &mut SessionState, key_event: KeyEvent) -> bool {
+    let Some(processor) = session.key_binder.as_ref() else {
+        return false;
+    };
+    let Some(bindings) = processor.bindings.get(&key_event) else {
+        return false;
+    };
+    let Some(binding_index) = bindings
+        .iter()
+        .position(|binding| key_binding_condition_matches(session, binding.condition))
+    else {
+        return false;
+    };
+
+    let action = bindings[binding_index].action.clone();
+    match action {
+        KeyBindingAction::Toggle(option) => toggle_key_binding_option(session, &option),
+    }
+    true
+}
+
+fn key_binding_condition_matches(session: &SessionState, condition: KeyBindingCondition) -> bool {
+    match condition {
+        KeyBindingCondition::Always => true,
+        KeyBindingCondition::Composing => !session.engine.context().composition.input.is_empty(),
+        KeyBindingCondition::HasMenu => {
+            !session.engine.status().is_ascii_mode
+                && !session.engine.context().candidates.is_empty()
+        }
+    }
+}
+
+fn toggle_key_binding_option(session: &mut SessionState, option: &str) {
+    session
+        .engine
+        .set_option(option, !session.engine.get_option(option));
 }
 
 fn process_punctuation_processor(

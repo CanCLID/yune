@@ -28,7 +28,7 @@ impl CandidateSource {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct KeyModifiers {
     pub shift: bool,
     pub lock: bool,
@@ -54,7 +54,7 @@ impl KeyModifiers {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum KeyCode {
     Character(char),
     KeypadDigit(char),
@@ -80,7 +80,7 @@ pub enum KeyCode {
     KeypadEnter,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct KeyEvent {
     pub code: KeyCode,
     pub modifiers: KeyModifiers,

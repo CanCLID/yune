@@ -4244,22 +4244,24 @@ fn load_schema_recognizer_patterns(schema_config: &Value, name_space: &str) -> V
 fn update_session_segment_tags(session: &mut SessionState) {
     let input = session.engine.context().composition.input.as_str();
     let mut tags = session.base_segment_tags.clone();
+    for affix_segmentor in &session.affix_segmentors {
+        if affix_segmentor.matches(input) {
+            let mut affix_tags = vec![affix_segmentor.tag.clone()];
+            for extra_tag in &affix_segmentor.extra_tags {
+                if !affix_tags.iter().any(|existing| existing == extra_tag) {
+                    affix_tags.push(extra_tag.clone());
+                }
+            }
+            if session.engine.context().segment_tags != affix_tags {
+                session.engine.set_segment_tags(affix_tags);
+            }
+            return;
+        }
+    }
     if let Some(matcher) = &session.matcher_segmentor {
         if let Some(tag) = matcher.match_tag(input) {
             if !tags.iter().any(|existing| existing == tag) {
                 tags.push(tag.to_owned());
-            }
-        }
-    }
-    for affix_segmentor in &session.affix_segmentors {
-        if affix_segmentor.matches(input) {
-            if !tags.iter().any(|existing| existing == &affix_segmentor.tag) {
-                tags.push(affix_segmentor.tag.clone());
-            }
-            for extra_tag in &affix_segmentor.extra_tags {
-                if !tags.iter().any(|existing| existing == extra_tag) {
-                    tags.push(extra_tag.clone());
-                }
             }
         }
     }

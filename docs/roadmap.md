@@ -52,11 +52,59 @@
   failing.
 - Validated the compatibility surface with focused Rust tests.
 
+### M6: Frontend-Style ABI And Dictionary Compatibility
+
+- Added a dedicated frontend-style compatibility client that drives
+  `yune-rime-api` through the exported `RimeApi` function table instead of
+  direct Rust internals.
+- Expanded function-table coverage for candidate iteration, version/runtime
+  metadata, raw input and caret editing, runtime state, schema labels, config
+  load/read/write/update, config cleanup, deployed/schema/user config opening,
+  deployment helpers, schema lists, module registration/lookup, notification
+  callbacks, levers custom settings, schema selection, switcher hotkeys, and
+  user dictionary iteration.
+- Added schema-driven table dictionary loading for RIME sessions and validated
+  real dictionary candidates through frontend-facing context paging and
+  highlight behavior.
+- Expanded deployment and maintenance shims for prebuild, deploy, schema/config
+  deploy, task dispatch, workspace update, sync, staging freshness, stale user
+  copy cleanup, and notification events.
+- Expanded config compiler behavior for librime-style `__include`, `__patch`,
+  nested references, optional references, list append/merge, explicit root
+  patches, custom patches, dependency timestamps, and build-info freshness.
+- Expanded levers compatibility for custom settings, switcher schema lists,
+  schema metadata, hotkeys, patching list/map config items, and plain text
+  user dictionary backup, restore, import, export, iteration, and sync.
+- Aligned RIME dictionary parsing with librime/yaml-cpp behavior for required
+  header metadata, optional document starts, BOM-prefixed headers, comments,
+  quoted mapping keys, mapping-key colons with leading spaces, inline and block
+  `columns`, YAML null and quoted-empty values, text-only rows, duplicate rows,
+  literal hash-prefixed entries, raw text-column whitespace, and
+  numeric-prefix row weights.
+- Implemented librime-style `import_tables` handling for schema-loaded
+  dictionaries, including YAML null entries, quoted literal names, collection
+  entries, quoted collection-shaped names, and double-quoted escape decoding.
+- Aligned RIME config hex integer parsing with librime behavior for unsigned
+  values that wrap through C `int` conversion.
+
 ## Next
 
-- Compare current ABI behavior against real frontend clients or a dedicated
-  compatibility test client.
-- Broaden schema and dictionary coverage beyond the current fixtures.
-- Expand data compatibility toward more RIME dictionary and userdb formats.
+- Run the current ABI against real frontend clients such as Squirrel, Weasel,
+  ibus-rime, fcitx-rime, or fcitx5-rime, and record any struct-layout,
+  lifetime, notification, deployment, and session-behavior gaps.
+- Continue broadening schema coverage beyond current fixtures, especially
+  processor/segmentor/translator/filter chains, switches, punctuator behavior,
+  reverse lookup, OpenCC conversion, and schema dependencies used by real
+  distributions.
+- Expand dictionary compatibility beyond source `.dict.yaml` parsing toward
+  librime's compiled `.table.bin`, `.prism.bin`, `.reverse.bin`, pack
+  dictionaries, spelling algebra, preset vocabulary, stem columns, encoders,
+  correction data, checksums, and rebuild heuristics.
+- Expand user dictionary compatibility beyond the current plain text userdb
+  shims toward librime's LevelDB/userdb storage, snapshot merging, recovery,
+  learning, and frequency update semantics.
+- Keep plugin compatibility explicit: support Yune-native extension points
+  first; defer librime C++ plugin ABI compatibility unless there is a concrete
+  frontend or distribution requirement.
 - Keep AI ranking and completion optional, local-first, and behind classic input
   behavior.

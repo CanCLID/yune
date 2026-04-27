@@ -255,6 +255,90 @@ fn frontend_style_api_table_can_edit_input_and_caret() {
 }
 
 #[test]
+fn frontend_style_api_table_can_commit_clear_and_delete_composition() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    cleanup_all_sessions();
+
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let destroy_session = api
+        .destroy_session
+        .expect("frontend requires destroy_session");
+    let process_key = api.process_key.expect("frontend requires process_key");
+    let commit_composition = api
+        .commit_composition
+        .expect("frontend requires commit_composition");
+    let clear_composition = api
+        .clear_composition
+        .expect("frontend requires clear_composition");
+    let delete_candidate = api
+        .delete_candidate
+        .expect("frontend requires delete_candidate");
+    let delete_candidate_on_current_page = api
+        .delete_candidate_on_current_page
+        .expect("frontend requires delete_candidate_on_current_page");
+    let get_context = api.get_context.expect("frontend requires get_context");
+    let free_context = api.free_context.expect("frontend requires free_context");
+    let get_commit = api.get_commit.expect("frontend requires get_commit");
+    let free_commit = api.free_commit.expect("frontend requires free_commit");
+
+    assert_eq!(commit_composition(0), FALSE);
+    assert_eq!(delete_candidate(0, 0), FALSE);
+
+    let session_id = create_session();
+    assert_ne!(session_id, 0);
+    assert_eq!(commit_composition(session_id), FALSE);
+    assert_eq!(delete_candidate(session_id, 0), FALSE);
+
+    assert_eq!(process_key(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(process_key(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(commit_composition(session_id), TRUE);
+
+    let mut commit = empty_commit();
+    assert_eq!(unsafe { get_commit(session_id, &mut commit) }, TRUE);
+    let committed_text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(committed_text.to_str(), Ok("ni"));
+    assert_eq!(unsafe { free_commit(&mut commit) }, TRUE);
+    assert_eq!(unsafe { get_commit(session_id, &mut commit) }, FALSE);
+
+    let mut context = empty_context();
+    assert_eq!(unsafe { get_context(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+
+    assert_eq!(process_key(session_id, 'h' as i32, 0), TRUE);
+    assert_eq!(process_key(session_id, 'a' as i32, 0), TRUE);
+    clear_composition(session_id);
+    assert_eq!(unsafe { get_commit(session_id, &mut commit) }, FALSE);
+    assert_eq!(unsafe { get_context(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+
+    assert_eq!(process_key(session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(process_key(session_id, 'a' as i32, 0), TRUE);
+    assert_eq!(delete_candidate(session_id, 1), FALSE);
+    assert_eq!(delete_candidate_on_current_page(session_id, 0), TRUE);
+    assert_eq!(unsafe { get_commit(session_id, &mut commit) }, FALSE);
+    assert_eq!(unsafe { get_context(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 2);
+    assert_eq!(context.menu.num_candidates, 0);
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+
+    assert_eq!(destroy_session(session_id), TRUE);
+    cleanup_all_sessions();
+}
+
+#[test]
 fn frontend_style_api_table_can_manage_runtime_state() {
     let _guard = test_guard();
     let api = rime_get_api();

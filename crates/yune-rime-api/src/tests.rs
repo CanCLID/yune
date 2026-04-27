@@ -2513,6 +2513,7 @@ fn config_numeric_getters_accept_librime_stoi_stod_prefixes() {
     let malformed_hex_suffix = CString::new("malformed_hex_suffix").expect("key should be valid");
     let malformed_hex_empty = CString::new("malformed_hex_empty").expect("key should be valid");
     let spaced_hex = CString::new("spaced_hex").expect("key should be valid");
+    let wrapped_hex = CString::new("wrapped_hex").expect("key should be valid");
     let invalid_int = CString::new("invalid_int").expect("key should be valid");
     let double_suffix = CString::new("double_suffix").expect("key should be valid");
     let exponent_suffix = CString::new("exponent_suffix").expect("key should be valid");
@@ -2522,7 +2523,7 @@ fn config_numeric_getters_accept_librime_stoi_stod_prefixes() {
 
     let yaml = CString::new(
             "\
-decimal_suffix: '42abc'\nsigned_spaced: '  -7ms'\nmalformed_hex_suffix: '0x10tail'\nmalformed_hex_empty: '0x'\nspaced_hex: ' 0x10'\ninvalid_int: abc42\ndouble_suffix: '  2.5ms'\nexponent_suffix: '1e2hz'\ninvalid_double: hz1.5\n",
+decimal_suffix: '42abc'\nsigned_spaced: '  -7ms'\nmalformed_hex_suffix: '0x10tail'\nmalformed_hex_empty: '0x'\nspaced_hex: ' 0x10'\nwrapped_hex: '0xffffffff'\ninvalid_int: abc42\ndouble_suffix: '  2.5ms'\nexponent_suffix: '1e2hz'\ninvalid_double: hz1.5\n",
         )
         .expect("yaml should be valid");
     assert_eq!(
@@ -2555,6 +2556,11 @@ decimal_suffix: '42abc'\nsigned_spaced: '  -7ms'\nmalformed_hex_suffix: '0x10tai
         TRUE
     );
     assert_eq!(int_output, 0);
+    assert_eq!(
+        unsafe { RimeConfigGetInt(&mut config, wrapped_hex.as_ptr(), &mut int_output) },
+        TRUE
+    );
+    assert_eq!(int_output, -1);
     assert_eq!(
         unsafe { RimeConfigGetInt(&mut config, invalid_int.as_ptr(), &mut int_output) },
         FALSE

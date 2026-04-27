@@ -102,7 +102,7 @@ pub(crate) fn parse_config_int(value: &str) -> Option<c_int> {
     }
     if let Some(hex) = value.strip_prefix("0x") {
         if let Ok(parsed) = u32::from_str_radix(hex, 16) {
-            return c_int::try_from(parsed).ok();
+            return Some(parsed as c_int);
         }
     }
     parse_config_i64_prefix(value).and_then(|number| c_int::try_from(number).ok())

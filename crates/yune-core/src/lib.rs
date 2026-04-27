@@ -1653,13 +1653,15 @@ impl RimeTableMetadata {
     fn parse_entry(&self, line: &str) -> Option<TableEntry> {
         let fields = line.split('\t').collect::<Vec<_>>();
         let text_column = self.column_index("text")?;
-        let code_column = self.column_index("code")?;
         let text = fields.get(text_column)?.trim();
-        let code = fields.get(code_column)?.trim();
-        if text.is_empty() || code.is_empty() {
+        if text.is_empty() {
             return None;
         }
 
+        let code = self
+            .column_index("code")
+            .and_then(|column| fields.get(column))
+            .map_or("", |code| code.trim());
         let weight = self
             .column_index("weight")
             .and_then(|column| fields.get(column))
@@ -4805,6 +4807,33 @@ sort: original
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].text, "八");
         assert_eq!(entries[0].code, "ba");
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_text_only_entries_for_later_encoding() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: text_only_sample
+version: "0.1"
+sort: original
+columns: [text, weight]
+...
+
+你好	10
+你	1
+"#,
+        )
+        .expect("dictionary with text-only entries should parse");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].text, "你好");
+        assert_eq!(entries[0].code, "");
+        assert_eq!(entries[0].weight, 10.0);
+        assert_eq!(entries[1].text, "你");
+        assert_eq!(entries[1].code, "");
+        assert_eq!(entries[1].weight, 1.0);
     }
 
     #[test]

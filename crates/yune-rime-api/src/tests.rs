@@ -256,7 +256,19 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
 
     let space = CString::new("space").expect("key name should be valid");
     let backspace = CString::new("BackSpace").expect("key name should be valid");
+    let linefeed = CString::new("Linefeed").expect("key name should be valid");
+    let clear = CString::new("Clear").expect("key name should be valid");
+    let pause = CString::new("Pause").expect("key name should be valid");
+    let sys_req = CString::new("Sys_Req").expect("key name should be valid");
     let left = CString::new("Left").expect("key name should be valid");
+    let prior = CString::new("Prior").expect("key name should be valid");
+    let next = CString::new("Next").expect("key name should be valid");
+    let begin = CString::new("Begin").expect("key name should be valid");
+    let cancel = CString::new("Cancel").expect("key name should be valid");
+    let break_key = CString::new("Break").expect("key name should be valid");
+    let hebrew_switch = CString::new("Hebrew_switch").expect("key name should be valid");
+    let mode_switch = CString::new("Mode_switch").expect("key name should be valid");
+    let num_lock = CString::new("Num_Lock").expect("key name should be valid");
     let kp_enter = CString::new("KP_Enter").expect("key name should be valid");
     let kp_page_up = CString::new("KP_Page_Up").expect("key name should be valid");
     let kp_prior = CString::new("KP_Prior").expect("key name should be valid");
@@ -428,7 +440,25 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
     assert_eq!(unsafe { RimeGetKeycodeByName(backspace.as_ptr()) }, 0xff08);
+    assert_eq!(unsafe { RimeGetKeycodeByName(linefeed.as_ptr()) }, 0xff0a);
+    assert_eq!(unsafe { RimeGetKeycodeByName(clear.as_ptr()) }, 0xff0b);
+    assert_eq!(unsafe { RimeGetKeycodeByName(pause.as_ptr()) }, 0xff13);
+    assert_eq!(unsafe { RimeGetKeycodeByName(sys_req.as_ptr()) }, 0xff15);
     assert_eq!(unsafe { RimeGetKeycodeByName(left.as_ptr()) }, 0xff51);
+    assert_eq!(unsafe { RimeGetKeycodeByName(prior.as_ptr()) }, 0xff55);
+    assert_eq!(unsafe { RimeGetKeycodeByName(next.as_ptr()) }, 0xff56);
+    assert_eq!(unsafe { RimeGetKeycodeByName(begin.as_ptr()) }, 0xff58);
+    assert_eq!(unsafe { RimeGetKeycodeByName(cancel.as_ptr()) }, 0xff69);
+    assert_eq!(unsafe { RimeGetKeycodeByName(break_key.as_ptr()) }, 0xff6b);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hebrew_switch.as_ptr()) },
+        0xff7e
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(mode_switch.as_ptr()) },
+        0xff7e
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(num_lock.as_ptr()) }, 0xff7f);
     assert_eq!(unsafe { RimeGetKeycodeByName(kp_enter.as_ptr()) }, 0xff8d);
     assert_eq!(unsafe { RimeGetKeycodeByName(kp_page_up.as_ptr()) }, 0xff9a);
     assert_eq!(unsafe { RimeGetKeycodeByName(kp_prior.as_ptr()) }, 0xff9a);
@@ -788,8 +818,56 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
         Some("BackSpace")
     );
     assert_eq!(
+        static_c_string(RimeGetKeyName(0xff0a)).as_deref(),
+        Some("Linefeed")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff0b)).as_deref(),
+        Some("Clear")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff13)).as_deref(),
+        Some("Pause")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff15)).as_deref(),
+        Some("Sys_Req")
+    );
+    assert_eq!(
         static_c_string(RimeGetKeyName(0xff51)).as_deref(),
         Some("Left")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff55)).as_deref(),
+        Some("Page_Up")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff56)).as_deref(),
+        Some("Next")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff58)).as_deref(),
+        Some("Begin")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff60)).as_deref(),
+        Some("Select")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff69)).as_deref(),
+        Some("Cancel")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff6b)).as_deref(),
+        Some("Break")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff7e)).as_deref(),
+        Some("Arabic_switch")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff7f)).as_deref(),
+        Some("Num_Lock")
     );
     assert_eq!(
         static_c_string(RimeGetKeyName(0xff8d)).as_deref(),

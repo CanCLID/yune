@@ -7,7 +7,12 @@ use std::{
 const XK_VOID_SYMBOL: c_int = 0x00ff_ffff;
 const XK_BACKSPACE: c_int = 0xff08;
 const XK_TAB: c_int = 0xff09;
+const XK_LINEFEED: c_int = 0xff0a;
+const XK_CLEAR: c_int = 0xff0b;
 const XK_RETURN: c_int = 0xff0d;
+const XK_PAUSE: c_int = 0xff13;
+const XK_SCROLL_LOCK: c_int = 0xff14;
+const XK_SYS_REQ: c_int = 0xff15;
 const XK_ESCAPE: c_int = 0xff1b;
 const XK_DELETE: c_int = 0xffff;
 const XK_LEFT: c_int = 0xff51;
@@ -18,7 +23,20 @@ const XK_HOME: c_int = 0xff50;
 const XK_END: c_int = 0xff57;
 const XK_PAGE_UP: c_int = 0xff55;
 const XK_PAGE_DOWN: c_int = 0xff56;
+const XK_BEGIN: c_int = 0xff58;
+const XK_SELECT: c_int = 0xff60;
+const XK_PRINT: c_int = 0xff61;
+const XK_EXECUTE: c_int = 0xff62;
 const XK_INSERT: c_int = 0xff63;
+const XK_UNDO: c_int = 0xff65;
+const XK_REDO: c_int = 0xff66;
+const XK_MENU: c_int = 0xff67;
+const XK_FIND: c_int = 0xff68;
+const XK_CANCEL: c_int = 0xff69;
+const XK_HELP: c_int = 0xff6a;
+const XK_BREAK: c_int = 0xff6b;
+const XK_MODE_SWITCH: c_int = 0xff7e;
+const XK_NUM_LOCK: c_int = 0xff7f;
 const XK_KP_SPACE: c_int = 0xff80;
 const XK_KP_TAB: c_int = 0xff89;
 const XK_KP_ENTER: c_int = 0xff8d;
@@ -127,7 +145,12 @@ const MODIFIERS: &[(usize, &[u8])] = &[
 const NAMED_KEYS: &[(&[u8], c_int)] = &[
     (b"BackSpace\0", XK_BACKSPACE),
     (b"Tab\0", XK_TAB),
+    (b"Linefeed\0", XK_LINEFEED),
+    (b"Clear\0", XK_CLEAR),
     (b"Return\0", XK_RETURN),
+    (b"Pause\0", XK_PAUSE),
+    (b"Scroll_Lock\0", XK_SCROLL_LOCK),
+    (b"Sys_Req\0", XK_SYS_REQ),
     (b"Escape\0", XK_ESCAPE),
     (b"Delete\0", XK_DELETE),
     (b"Left\0", XK_LEFT),
@@ -137,8 +160,30 @@ const NAMED_KEYS: &[(&[u8], c_int)] = &[
     (b"Home\0", XK_HOME),
     (b"End\0", XK_END),
     (b"Page_Up\0", XK_PAGE_UP),
+    (b"Prior\0", XK_PAGE_UP),
+    (b"Next\0", XK_PAGE_DOWN),
     (b"Page_Down\0", XK_PAGE_DOWN),
+    (b"Begin\0", XK_BEGIN),
+    (b"Select\0", XK_SELECT),
+    (b"Print\0", XK_PRINT),
+    (b"Execute\0", XK_EXECUTE),
     (b"Insert\0", XK_INSERT),
+    (b"Undo\0", XK_UNDO),
+    (b"Redo\0", XK_REDO),
+    (b"Menu\0", XK_MENU),
+    (b"Find\0", XK_FIND),
+    (b"Cancel\0", XK_CANCEL),
+    (b"Help\0", XK_HELP),
+    (b"Break\0", XK_BREAK),
+    (b"Arabic_switch\0", XK_MODE_SWITCH),
+    (b"Greek_switch\0", XK_MODE_SWITCH),
+    (b"Hangul_switch\0", XK_MODE_SWITCH),
+    (b"Hebrew_switch\0", XK_MODE_SWITCH),
+    (b"ISO_Group_Shift\0", XK_MODE_SWITCH),
+    (b"Mode_switch\0", XK_MODE_SWITCH),
+    (b"kana_switch\0", XK_MODE_SWITCH),
+    (b"script_switch\0", XK_MODE_SWITCH),
+    (b"Num_Lock\0", XK_NUM_LOCK),
     (b"KP_Space\0", XK_KP_SPACE),
     (b"KP_Tab\0", XK_KP_TAB),
     (b"KP_Enter\0", XK_KP_ENTER),

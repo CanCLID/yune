@@ -6278,6 +6278,51 @@ fn returns_context_with_preedit_and_candidate_page() {
 }
 
 #[test]
+fn rime_context_hides_candidate_entries_when_librime_hide_candidate_option_is_set() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    let hide_candidate =
+        CString::new("_hide_candidate").expect("option name should be a valid C string");
+    let mut context = empty_context();
+
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    // SAFETY: option name is a valid NUL-terminated C string.
+    unsafe { RimeSetOption(session_id, hide_candidate.as_ptr(), TRUE) };
+
+    // SAFETY: `context` points to valid writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 2);
+    assert!(!context.composition.preedit.is_null());
+    assert!(!context.commit_text_preview.is_null());
+    assert_eq!(context.menu.page_size, 5);
+    assert_eq!(context.menu.page_no, 0);
+    assert_eq!(context.menu.is_last_page, TRUE);
+    assert_eq!(context.menu.highlighted_candidate_index, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    assert!(context.menu.candidates.is_null());
+    assert!(context.menu.select_keys.is_null());
+    assert!(context.select_labels.is_null());
+
+    // SAFETY: `RimeGetContext` returned true and populated owned C strings.
+    let preedit = unsafe { CStr::from_ptr(context.composition.preedit) };
+    assert_eq!(preedit.to_str(), Ok("ni"));
+    // SAFETY: `RimeGetContext` returned true and populated owned C strings.
+    let preview = unsafe { CStr::from_ptr(context.commit_text_preview) };
+    assert_eq!(preview.to_str(), Ok("ni"));
+
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    assert!(context.composition.preedit.is_null());
+    assert!(context.commit_text_preview.is_null());
+    assert_eq!(context.menu.num_candidates, 0);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
 fn rime_context_reads_librime_menu_settings_from_selected_schema() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

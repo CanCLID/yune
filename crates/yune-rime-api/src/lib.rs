@@ -2872,14 +2872,17 @@ pub unsafe extern "C" fn RimeGetContext(
 
     clear_context(context);
 
-    let snapshot = {
+    let (snapshot, hide_candidate) = {
         let registry = sessions()
             .lock()
             .expect("session registry should not be poisoned");
         let Some(session) = registry.sessions.get(&session_id) else {
             return FALSE;
         };
-        session.engine.snapshot()
+        (
+            session.engine.snapshot(),
+            session.engine.get_option("_hide_candidate"),
+        )
     };
     let menu_settings = context_menu_settings(&snapshot.status.schema_id);
     let select_keys = match menu_settings.select_keys.as_deref() {
@@ -2931,6 +2934,22 @@ pub unsafe extern "C" fn RimeGetContext(
         let page_start = page_no * page_size;
         let page_end = (page_start + page_size).min(candidates.len());
         let page_candidates = &candidates[page_start..page_end];
+
+        if hide_candidate {
+            // SAFETY: `context` is non-null and points to caller-owned writable
+            // storage. librime still exposes menu metadata while hiding entries.
+            unsafe {
+                (*context).menu.page_size =
+                    c_int::try_from(page_size).expect("menu page size should fit in c_int");
+                (*context).menu.page_no = page_no as c_int;
+                (*context).menu.is_last_page = bool_from(page_end == candidates.len());
+                (*context).menu.highlighted_candidate_index = (highlighted - page_start)
+                    .min(page_candidates.len().saturating_sub(1))
+                    as c_int;
+                (*context).menu.num_candidates = 0;
+            }
+            return TRUE;
+        }
 
         let mut rime_candidates = Vec::with_capacity(page_candidates.len());
         for candidate in page_candidates {

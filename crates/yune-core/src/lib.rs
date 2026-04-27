@@ -2369,6 +2369,7 @@ pub struct SimplifierFilter {
     show_in_comment: bool,
     inherit_comment: bool,
     comment_format: CommentFormat,
+    excluded_types: HashSet<String>,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -2393,6 +2394,7 @@ impl SimplifierFilter {
             show_in_comment: false,
             inherit_comment: true,
             comment_format: CommentFormat::default(),
+            excluded_types: HashSet::new(),
         }
     }
 
@@ -2432,6 +2434,15 @@ impl SimplifierFilter {
         self.comment_format = CommentFormat::parse(formulas);
         self
     }
+
+    #[must_use]
+    pub fn with_excluded_types(mut self, excluded_types: impl IntoIterator<Item = String>) -> Self {
+        self.excluded_types = excluded_types
+            .into_iter()
+            .filter(|candidate_type| !candidate_type.is_empty())
+            .collect();
+        self
+    }
 }
 
 impl CandidateFilter for SimplifierFilter {
@@ -2447,6 +2458,10 @@ impl CandidateFilter for SimplifierFilter {
         }
 
         for candidate in candidates {
+            if self.excluded_types.contains(candidate.source.as_str()) {
+                continue;
+            }
+
             let original = candidate.text.clone();
             let simplified = simplify_traditional_text(&original);
             if simplified == original {
@@ -6702,6 +6717,33 @@ sort: original
 
         assert_eq!(engine.context().candidates[0].text, "臺灣");
         assert_eq!(engine.context().candidates[0].comment, "台湾");
+    }
+
+    #[test]
+    fn simplifier_filter_honors_librime_excluded_types() {
+        let filter = SimplifierFilter::new().with_excluded_types(["table".to_owned()]);
+        let mut options = std::collections::HashMap::new();
+        options.insert("simplification".to_owned(), true);
+        let mut candidates = vec![
+            Candidate {
+                text: "臺灣".to_owned(),
+                comment: "tw".to_owned(),
+                source: CandidateSource::Table,
+                quality: 1.0,
+            },
+            Candidate {
+                text: "龍".to_owned(),
+                comment: String::new(),
+                source: CandidateSource::Punctuation,
+                quality: 1.0,
+            },
+        ];
+
+        filter.apply_with_options(&mut candidates, &options);
+
+        assert_eq!(candidates[0].text, "臺灣");
+        assert_eq!(candidates[0].comment, "tw");
+        assert_eq!(candidates[1].text, "龙");
     }
 
     #[test]

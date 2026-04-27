@@ -3800,6 +3800,8 @@ fn install_schema_simplifier_filter(session: &mut SessionState, schema_id: &str)
                 .and_then(config_scalar_bool)
                 .unwrap_or(true);
         let comment_format = schema_comment_format(&schema_config, &name_space);
+        let excluded_types =
+            schema_string_list(&schema_config, &format!("{name_space}/excluded_types"));
 
         session.engine.add_filter(
             SimplifierFilter::new()
@@ -3807,7 +3809,8 @@ fn install_schema_simplifier_filter(session: &mut SessionState, schema_id: &str)
                 .with_tips(tips)
                 .with_show_in_comment(show_in_comment)
                 .with_inherit_comment(inherit_comment)
-                .with_comment_format(&comment_format),
+                .with_comment_format(&comment_format)
+                .with_excluded_types(excluded_types),
         );
     }
 }
@@ -3869,9 +3872,11 @@ fn schema_dictionary_packs(schema_config: &Value, name_space: &str) -> Vec<Strin
 }
 
 fn schema_comment_format(schema_config: &Value, name_space: &str) -> Vec<String> {
-    let Some(Value::Sequence(formulas)) =
-        find_config_value(schema_config, &format!("{name_space}/comment_format"))
-    else {
+    schema_string_list(schema_config, &format!("{name_space}/comment_format"))
+}
+
+fn schema_string_list(schema_config: &Value, key: &str) -> Vec<String> {
+    let Some(Value::Sequence(formulas)) = find_config_value(schema_config, key) else {
         return Vec::new();
     };
     formulas.iter().filter_map(config_scalar_string).collect()

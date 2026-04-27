@@ -3759,6 +3759,16 @@ fn install_schema_dictionary_translator_from_config(
     )
     .and_then(config_scalar_bool)
     .unwrap_or(false);
+    let enable_sentence =
+        find_config_value(schema_config, &format!("{name_space}/enable_sentence"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(true);
+    let sentence_over_completion = find_config_value(
+        schema_config,
+        &format!("{name_space}/sentence_over_completion"),
+    )
+    .and_then(config_scalar_bool)
+    .unwrap_or(false);
     let mut enable_completion =
         find_config_value(schema_config, &format!("{name_space}/enable_completion"))
             .and_then(config_scalar_bool)
@@ -3788,6 +3798,8 @@ fn install_schema_dictionary_translator_from_config(
         StaticTableTranslator::from_dictionary(dictionary)
             .with_completion(enable_completion)
             .with_charset_filter(enable_charset_filter)
+            .with_sentence(enable_sentence)
+            .with_sentence_over_completion(sentence_over_completion)
             .with_delimiters(delimiters)
             .with_initial_quality(initial_quality)
             .with_comment_format(&comment_format)

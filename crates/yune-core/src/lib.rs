@@ -16,6 +16,7 @@ pub enum CandidateSource {
     Punctuation,
     Table,
     Completion,
+    Sentence,
     ReverseLookup,
     History,
     Ai,
@@ -29,6 +30,7 @@ impl CandidateSource {
             Self::Punctuation => "punct",
             Self::Table => "table",
             Self::Completion => "completion",
+            Self::Sentence => "sentence",
             Self::ReverseLookup => "reverse_lookup",
             Self::History => "history",
             Self::Ai => "ai",
@@ -2094,6 +2096,8 @@ pub struct StaticTableTranslator {
     entries: Vec<(String, Candidate)>,
     enable_completion: bool,
     enable_charset_filter: bool,
+    enable_sentence: bool,
+    sentence_over_completion: bool,
     delimiters: String,
     initial_quality: f32,
     comment_format: CommentFormat,
@@ -2123,6 +2127,8 @@ impl StaticTableTranslator {
             entries,
             enable_completion: false,
             enable_charset_filter: false,
+            enable_sentence: false,
+            sentence_over_completion: false,
             delimiters: " ".to_owned(),
             initial_quality: 0.0,
             comment_format: CommentFormat::default(),
@@ -2149,6 +2155,8 @@ impl StaticTableTranslator {
             entries,
             enable_completion: false,
             enable_charset_filter: false,
+            enable_sentence: false,
+            sentence_over_completion: false,
             delimiters: " ".to_owned(),
             initial_quality: 0.0,
             comment_format: CommentFormat::default(),
@@ -2165,6 +2173,18 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_charset_filter(mut self, enable_charset_filter: bool) -> Self {
         self.enable_charset_filter = enable_charset_filter;
+        self
+    }
+
+    #[must_use]
+    pub fn with_sentence(mut self, enable_sentence: bool) -> Self {
+        self.enable_sentence = enable_sentence;
+        self
+    }
+
+    #[must_use]
+    pub fn with_sentence_over_completion(mut self, sentence_over_completion: bool) -> Self {
+        self.sentence_over_completion = sentence_over_completion;
         self
     }
 
@@ -2229,6 +2249,119 @@ impl StaticTableTranslator {
         candidate
     }
 
+    fn translated_candidates(&self, input: &str, filter_by_charset: bool) -> Vec<Candidate> {
+        let lookup_code = self.lookup_code(input);
+        let mut candidates = self
+            .entries
+            .iter()
+            .filter(|(entry_code, candidate)| {
+                self.matches_lookup_code(entry_code, lookup_code)
+                    && self.is_dictionary_word_allowed(candidate)
+                    && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+            })
+            .map(|(entry_code, candidate)| {
+                self.candidate_for_lookup(entry_code, candidate, lookup_code)
+            })
+            .collect::<Vec<_>>();
+
+        if candidates.is_empty() && self.enable_sentence {
+            if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
+                candidates.push(sentence);
+            }
+        } else if self.sentence_over_completion
+            && candidates
+                .first()
+                .is_some_and(|candidate| candidate.source == CandidateSource::Completion)
+        {
+            let priority_floor = candidates
+                .iter()
+                .map(|candidate| candidate.quality)
+                .max_by(|left, right| left.partial_cmp(right).unwrap_or(Ordering::Equal));
+            if let Some(sentence) =
+                self.sentence_candidate(input, filter_by_charset, priority_floor)
+            {
+                candidates.push(sentence);
+            }
+        }
+
+        candidates
+    }
+
+    fn sentence_candidate(
+        &self,
+        input: &str,
+        filter_by_charset: bool,
+        priority_floor: Option<f32>,
+    ) -> Option<Candidate> {
+        if input.is_empty() {
+            return None;
+        }
+
+        #[derive(Clone)]
+        struct SentencePath {
+            quality: f32,
+            pieces: Vec<String>,
+        }
+
+        let mut paths: Vec<Option<SentencePath>> = vec![None; input.len() + 1];
+        paths[0] = Some(SentencePath {
+            quality: 0.0,
+            pieces: Vec::new(),
+        });
+        for pos in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+        {
+            let Some(path) = paths.get(pos).and_then(Clone::clone) else {
+                continue;
+            };
+            let active_input = &input[pos..];
+            for (entry_code, candidate) in &self.entries {
+                if entry_code.is_empty()
+                    || !active_input.starts_with(entry_code)
+                    || !self.is_dictionary_word_allowed(candidate)
+                    || (filter_by_charset && contains_extended_cjk(&candidate.text))
+                {
+                    continue;
+                }
+                let mut end_pos = pos + entry_code.len();
+                while end_pos < input.len() {
+                    let Some(ch) = input[end_pos..].chars().next() else {
+                        break;
+                    };
+                    if !self.delimiters.contains(ch) {
+                        break;
+                    }
+                    end_pos += ch.len_utf8();
+                }
+                let mut next_path = path.clone();
+                next_path.quality += candidate.quality.exp();
+                next_path.pieces.push(candidate.text.clone());
+                let replace = paths[end_pos]
+                    .as_ref()
+                    .is_none_or(|existing| next_path.quality > existing.quality);
+                if replace {
+                    paths[end_pos] = Some(next_path);
+                }
+            }
+        }
+
+        let path = paths[input.len()].take()?;
+        if path.pieces.len() <= 1 {
+            return None;
+        }
+        let quality = priority_floor
+            .map(|floor| floor + 1.0)
+            .unwrap_or(path.quality + self.initial_quality);
+        Some(Candidate {
+            text: path.pieces.join(""),
+            comment: " ☯ ".to_owned(),
+            source: CandidateSource::Sentence,
+            quality,
+        })
+    }
+
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
         TableDictionary::parse_rime_dict_yaml(input).map(Self::from_dictionary)
     }
@@ -2257,17 +2390,7 @@ impl Translator for StaticTableTranslator {
     }
 
     fn translate(&self, input: &str) -> Vec<Candidate> {
-        let lookup_code = self.lookup_code(input);
-        self.entries
-            .iter()
-            .filter(|(entry_code, candidate)| {
-                self.matches_lookup_code(entry_code, lookup_code)
-                    && self.is_dictionary_word_allowed(candidate)
-            })
-            .map(|(entry_code, candidate)| {
-                self.candidate_for_lookup(entry_code, candidate, lookup_code)
-            })
-            .collect()
+        self.translated_candidates(input, false)
     }
 
     fn translate_with_state(
@@ -2278,18 +2401,7 @@ impl Translator for StaticTableTranslator {
     ) -> Vec<Candidate> {
         let filter_by_charset = self.enable_charset_filter
             && !options.get("extended_charset").copied().unwrap_or(false);
-        let lookup_code = self.lookup_code(input);
-        self.entries
-            .iter()
-            .filter(|(entry_code, candidate)| {
-                self.matches_lookup_code(entry_code, lookup_code)
-                    && self.is_dictionary_word_allowed(candidate)
-                    && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
-            })
-            .map(|(entry_code, candidate)| {
-                self.candidate_for_lookup(entry_code, candidate, lookup_code)
-            })
-            .collect()
+        self.translated_candidates(input, filter_by_charset)
     }
 }
 
@@ -7040,6 +7152,77 @@ sort: original
             .collect::<Vec<_>>();
         assert_eq!(texts, ["爸", "班", "b"]);
         assert_eq!(sources, ["completion", "completion", "echo"]);
+    }
+
+    #[test]
+    fn static_table_translator_sentence_fallback_matches_librime_option() {
+        let mut disabled_engine = Engine::new();
+        disabled_engine.add_translator(
+            StaticTableTranslator::new([("ba", "爸"), ("bao", "包")]).with_sentence(false),
+        );
+        disabled_engine
+            .process_key_sequence("babao")
+            .expect("key sequence should parse");
+
+        let texts = disabled_engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["babao"]);
+
+        let mut enabled_engine = Engine::new();
+        enabled_engine.add_translator(
+            StaticTableTranslator::new([("ba", "爸"), ("bao", "包")])
+                .with_sentence(true)
+                .with_delimiters("'"),
+        );
+        enabled_engine
+            .process_key_sequence("ba'bao")
+            .expect("key sequence should parse");
+
+        let candidates = &enabled_engine.context().candidates;
+        let texts = candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let sources = candidates
+            .iter()
+            .map(|candidate| candidate.source.as_str())
+            .collect::<Vec<_>>();
+        let comments = candidates
+            .iter()
+            .map(|candidate| candidate.comment.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["爸包", "ba'bao"]);
+        assert_eq!(sources, ["sentence", "echo"]);
+        assert_eq!(comments[0], " ☯ ");
+    }
+
+    #[test]
+    fn static_table_translator_sentence_over_completion_prioritizes_sentence() {
+        let mut engine = Engine::new();
+        engine.add_translator(
+            StaticTableTranslator::new([("ba", "爸"), ("baban", "巴班")])
+                .with_completion(true)
+                .with_sentence_over_completion(true),
+        );
+        engine
+            .process_key_sequence("baba")
+            .expect("key sequence should parse");
+
+        let candidates = &engine.context().candidates;
+        let texts = candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let sources = candidates
+            .iter()
+            .map(|candidate| candidate.source.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["爸爸", "巴班", "baba"]);
+        assert_eq!(sources, ["sentence", "completion", "echo"]);
     }
 
     #[test]

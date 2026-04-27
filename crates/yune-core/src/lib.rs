@@ -2075,6 +2075,7 @@ pub struct StaticTableTranslator {
     enable_completion: bool,
     enable_charset_filter: bool,
     delimiters: String,
+    comment_format: CommentFormat,
 }
 
 impl StaticTableTranslator {
@@ -2101,6 +2102,7 @@ impl StaticTableTranslator {
             enable_completion: false,
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
+            comment_format: CommentFormat::default(),
         }
     }
 
@@ -2124,6 +2126,7 @@ impl StaticTableTranslator {
             enable_completion: false,
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
+            comment_format: CommentFormat::default(),
         }
     }
 
@@ -2148,6 +2151,12 @@ impl StaticTableTranslator {
         self
     }
 
+    #[must_use]
+    pub fn with_comment_format(mut self, formulas: &[String]) -> Self {
+        self.comment_format = CommentFormat::parse(formulas);
+        self
+    }
+
     fn lookup_code<'a>(&self, input: &'a str) -> &'a str {
         input.trim_end_matches(|ch| self.delimiters.contains(ch))
     }
@@ -2166,6 +2175,7 @@ impl StaticTableTranslator {
         lookup_code: &str,
     ) -> Candidate {
         let mut candidate = candidate.clone();
+        candidate.comment = self.comment_format.apply(&candidate.comment);
         if entry_code != lookup_code {
             candidate.source = CandidateSource::Completion;
             candidate.quality -= 1.0;
@@ -6859,6 +6869,31 @@ sort: original
             .collect::<Vec<_>>();
         assert_eq!(texts, ["爸", "班", "b"]);
         assert_eq!(sources, ["completion", "completion", "echo"]);
+    }
+
+    #[test]
+    fn static_table_translator_applies_librime_comment_format() {
+        let formulas = vec![
+            "xlit/ab/AB/".to_owned(),
+            "xform/^/[/".to_owned(),
+            "xform/$/]/".to_owned(),
+        ];
+        let mut engine = Engine::new();
+        engine.add_translator(
+            StaticTableTranslator::new([("ba", "爸"), ("ban", "班")])
+                .with_completion(true)
+                .with_comment_format(&formulas),
+        );
+
+        engine.process_char('b');
+
+        let comments = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.comment.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(comments, ["[BA]", "[BAn]", "echo"]);
     }
 
     #[test]

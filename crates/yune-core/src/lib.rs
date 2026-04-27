@@ -1358,6 +1358,14 @@ pub trait CandidateFilter: Send + Sync {
     fn name(&self) -> &'static str;
 
     fn apply(&self, candidates: &mut Vec<Candidate>);
+
+    fn apply_with_options(
+        &self,
+        candidates: &mut Vec<Candidate>,
+        _options: &HashMap<String, bool>,
+    ) {
+        self.apply(candidates);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2272,6 +2280,48 @@ impl CandidateFilter for SingleCharFilter {
         single_chars.append(&mut multi_chars);
         candidates.splice(..0, single_chars);
     }
+}
+
+pub struct CharsetFilter;
+
+impl CandidateFilter for CharsetFilter {
+    fn name(&self) -> &'static str {
+        "charset_filter"
+    }
+
+    fn apply(&self, candidates: &mut Vec<Candidate>) {
+        candidates.retain(|candidate| !contains_extended_cjk(&candidate.text));
+    }
+
+    fn apply_with_options(&self, candidates: &mut Vec<Candidate>, options: &HashMap<String, bool>) {
+        if !options.get("extended_charset").copied().unwrap_or(false) {
+            self.apply(candidates);
+        }
+    }
+}
+
+fn contains_extended_cjk(text: &str) -> bool {
+    text.chars().any(is_extended_cjk)
+}
+
+fn is_extended_cjk(ch: char) -> bool {
+    matches!(
+        ch as u32,
+        0x3400..=0x4dbf
+            | 0x20000..=0x2a6df
+            | 0x2a700..=0x2b73f
+            | 0x2b740..=0x2b81f
+            | 0x2b820..=0x2ceaf
+            | 0x2ceb0..=0x2ebef
+            | 0x30000..=0x3134f
+            | 0x31350..=0x323af
+            | 0x2ebf0..=0x2ee5f
+            | 0x323b0..=0x3347f
+            | 0x3300..=0x33ff
+            | 0xfe30..=0xfe4f
+            | 0xf900..=0xfaff
+            | 0x2f800..=0x2fa1f
+    )
 }
 
 pub struct ReverseLookupFilter {
@@ -3316,7 +3366,7 @@ impl Engine {
             .flat_map(|translator| translator.translate_with_status(input, &self.status))
             .collect::<Vec<_>>();
         for filter in &self.filters {
-            filter.apply(&mut candidates);
+            filter.apply_with_options(&mut candidates, &self.options);
         }
         for ranker in &self.rankers {
             if let RerankResult::Ready(ranked) = ranker.try_rerank(&self.context, &candidates) {
@@ -3376,10 +3426,10 @@ const fn select_index_from_digit(ch: char) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_key_sequence, Candidate, CandidateFilter, CandidateRanker, CandidateSource, Context,
-        Engine, KeyCode, MockAiRanker, PunctuationTranslator, RerankResult, ReverseLookupFilter,
-        ReverseLookupTranslator, SingleCharFilter, StaticTableTranslator, TableDictionary,
-        Translator, UniquifierFilter,
+        parse_key_sequence, Candidate, CandidateFilter, CandidateRanker, CandidateSource,
+        CharsetFilter, Context, Engine, KeyCode, MockAiRanker, PunctuationTranslator, RerankResult,
+        ReverseLookupFilter, ReverseLookupTranslator, SingleCharFilter, StaticTableTranslator,
+        TableDictionary, Translator, UniquifierFilter,
     };
 
     struct CommentTranslator;
@@ -6260,6 +6310,39 @@ sort: original
                 CandidateSource::Echo,
             ]
         );
+    }
+
+    #[test]
+    fn charset_filter_removes_extended_cjk_until_option_enabled() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([
+            ("ni", "你"),
+            ("ni", "㐀"),
+            ("ni", "𠀀"),
+            ("ni", "㍿"),
+        ]));
+        engine.add_filter(CharsetFilter);
+
+        engine
+            .process_key_sequence("ni")
+            .expect("keys should parse");
+
+        let texts = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["你", "ni"]);
+
+        engine.set_option("extended_charset", true);
+        let texts = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["你", "㐀", "𠀀", "㍿", "ni"]);
     }
 
     #[test]

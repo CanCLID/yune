@@ -14,9 +14,9 @@ use std::{
 
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
-    parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers, PunctuationTranslator,
-    ReverseLookupFilter, ReverseLookupTranslator, SingleCharFilter, StaticTableTranslator,
-    TableDictionary, UniquifierFilter,
+    parse_key_sequence, CharsetFilter, Engine, KeyCode, KeyEvent, KeyModifiers,
+    PunctuationTranslator, ReverseLookupFilter, ReverseLookupTranslator, SingleCharFilter,
+    StaticTableTranslator, TableDictionary, UniquifierFilter,
 };
 
 mod abi;
@@ -2152,6 +2152,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     install_schema_reverse_lookup_filter(session, schema_id);
     install_schema_uniquifier_filter(session, schema_id);
     install_schema_single_char_filter(session, schema_id);
+    install_schema_charset_filter(session, schema_id);
     session.engine.clear_composition();
     session.input_buffer = None;
     session.unread_commit = None;
@@ -3785,6 +3786,16 @@ fn install_schema_single_char_filter(session: &mut SessionState, schema_id: &str
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
     if schema_engine_filters_include(&schema_config, "single_char_filter") {
         session.engine.add_filter(SingleCharFilter);
+    }
+}
+
+fn install_schema_charset_filter(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    if schema_engine_filters_include(&schema_config, "charset_filter")
+        || schema_engine_filters_include(&schema_config, "cjk_minifier")
+    {
+        session.engine.add_filter(CharsetFilter);
     }
 }
 

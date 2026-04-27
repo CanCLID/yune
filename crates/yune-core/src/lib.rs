@@ -826,6 +826,14 @@ impl Engine {
                     self.move_caret_right_by_char();
                     return None;
                 }
+                KeyCode::PreviousCandidate => {
+                    self.move_caret_left_by_char();
+                    return None;
+                }
+                KeyCode::NextCandidate => {
+                    self.move_caret_right_by_char();
+                    return None;
+                }
                 KeyCode::Home => {
                     self.move_caret_home();
                     return None;
@@ -1819,6 +1827,34 @@ mod tests {
         engine.set_caret_pos(3);
         let commits = engine
             .process_key_sequence("{Shift+KP_Right}{Delete}{space}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["ix"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("ix"));
+    }
+
+    #[test]
+    fn shift_keypad_up_down_ignore_shift_like_librime_navigator() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        engine.set_input("nix");
+        engine.set_caret_pos(0);
+        let commits = engine
+            .process_key_sequence("{Shift+KP_Up}")
+            .expect("key sequence should parse");
+
+        assert!(commits.is_empty());
+        assert_eq!(engine.context().composition.caret, 3);
+        let commits = engine
+            .process_key_sequence("{Shift+KP_Up}{Delete}{space}")
+            .expect("key sequence should parse");
+        assert_eq!(commits, vec!["你"]);
+
+        engine.set_input("nix");
+        engine.set_caret_pos(3);
+        let commits = engine
+            .process_key_sequence("{Shift+KP_Down}{Delete}{space}")
             .expect("key sequence should parse");
 
         assert_eq!(commits, vec!["ix"]);

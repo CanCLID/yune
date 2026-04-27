@@ -3721,13 +3721,14 @@ fn install_schema_reverse_lookup_translator(session: &mut SessionState, schema_i
     let suffix = find_config_value(&schema_config, "reverse_lookup/suffix")
         .and_then(config_scalar_string)
         .unwrap_or_default();
+    let enable_completion = find_config_value(&schema_config, "reverse_lookup/enable_completion")
+        .and_then(config_scalar_bool)
+        .unwrap_or(false);
 
-    session.engine.add_translator(ReverseLookupTranslator::new(
-        dictionary,
-        reverse_dictionary,
-        prefix,
-        suffix,
-    ));
+    session.engine.add_translator(
+        ReverseLookupTranslator::new(dictionary, reverse_dictionary, prefix, suffix)
+            .with_completion(enable_completion),
+    );
 }
 
 fn load_schema_table_dictionary(

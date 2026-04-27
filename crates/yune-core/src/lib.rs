@@ -2129,6 +2129,7 @@ pub struct ReverseLookupTranslator {
     reverse_comments: HashMap<String, Vec<String>>,
     prefix: String,
     suffix: String,
+    enable_completion: bool,
 }
 
 impl ReverseLookupTranslator {
@@ -2154,7 +2155,14 @@ impl ReverseLookupTranslator {
             reverse_comments,
             prefix: prefix.into(),
             suffix: suffix.into(),
+            enable_completion: false,
         }
+    }
+
+    #[must_use]
+    pub fn with_completion(mut self, enable_completion: bool) -> Self {
+        self.enable_completion = enable_completion;
+        self
     }
 }
 
@@ -2182,7 +2190,13 @@ impl Translator for ReverseLookupTranslator {
 
         self.entries
             .iter()
-            .filter(|entry| entry.code == code)
+            .filter(|entry| {
+                if self.enable_completion {
+                    entry.code.starts_with(&code)
+                } else {
+                    entry.code == code
+                }
+            })
             .map(|entry| {
                 let comment = self
                     .reverse_comments
@@ -5837,6 +5851,34 @@ sort: original
         assert_eq!(candidates[0].source, CandidateSource::ReverseLookup);
         assert_eq!(candidates[0].text, "火");
         assert_eq!(candidates[0].comment, "ho huo");
+    }
+
+    #[test]
+    fn reverse_lookup_translator_completion_is_opt_in() {
+        let lookup_dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: stroke
+version: "0.1"
+sort: original
+...
+
+火	huo
+水	shui
+"#,
+        )
+        .expect("lookup dictionary should parse");
+
+        let exact_translator =
+            ReverseLookupTranslator::new(lookup_dictionary.clone(), None, "`", "");
+        assert!(exact_translator.translate("`hu").is_empty());
+
+        let completion_translator =
+            ReverseLookupTranslator::new(lookup_dictionary, None, "`", "").with_completion(true);
+        let candidates = completion_translator.translate("`hu");
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].text, "火");
+        assert_eq!(candidates[0].comment, "huo");
     }
 
     #[test]

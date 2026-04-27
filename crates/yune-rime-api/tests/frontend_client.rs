@@ -1238,6 +1238,9 @@ fn frontend_style_api_table_can_run_deployment_and_maintenance() {
     let cleanup_all_sessions = api
         .cleanup_all_sessions
         .expect("frontend requires cleanup_all_sessions");
+    let cleanup_stale_sessions = api
+        .cleanup_stale_sessions
+        .expect("frontend requires cleanup_stale_sessions");
     let create_session = api
         .create_session
         .expect("frontend requires create_session");
@@ -1292,6 +1295,8 @@ fn frontend_style_api_table_can_run_deployment_and_maintenance() {
     assert_eq!(run_task(ptr::null()), FALSE);
 
     let session_id = create_session();
+    assert_eq!(find_session(session_id), TRUE);
+    cleanup_stale_sessions();
     assert_eq!(find_session(session_id), TRUE);
     assert_eq!(sync_user_data(), TRUE);
     assert_eq!(find_session(session_id), FALSE);

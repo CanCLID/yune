@@ -24,9 +24,13 @@ pub use key_table::*;
 const XK_BACKSPACE: c_int = 0xff08;
 const XK_ESCAPE: c_int = 0xff1b;
 const XK_RETURN: c_int = 0xff0d;
+const XK_UP: c_int = 0xff52;
+const XK_DOWN: c_int = 0xff54;
 const XK_PAGE_UP: c_int = 0xff55;
 const XK_PAGE_DOWN: c_int = 0xff56;
 const XK_KP_ENTER: c_int = 0xff8d;
+const XK_KP_UP: c_int = 0xff97;
+const XK_KP_DOWN: c_int = 0xff99;
 const XK_KP_PAGE_UP: c_int = 0xff9a;
 const XK_KP_PAGE_DOWN: c_int = 0xff9b;
 const XK_KP_0: c_int = 0xffb0;
@@ -3378,6 +3382,8 @@ fn key_event_from_rime_keycode(keycode: c_int) -> Option<KeyEvent> {
     let code = match keycode {
         XK_BACKSPACE => KeyCode::Backspace,
         XK_ESCAPE => KeyCode::Escape,
+        XK_UP | XK_KP_UP => KeyCode::PreviousCandidate,
+        XK_DOWN | XK_KP_DOWN => KeyCode::NextCandidate,
         XK_PAGE_UP | XK_KP_PAGE_UP => KeyCode::PreviousPage,
         XK_PAGE_DOWN | XK_KP_PAGE_DOWN => KeyCode::NextPage,
         XK_RETURN | XK_KP_ENTER => KeyCode::Return,

@@ -1706,6 +1706,8 @@ impl RimeTableMetadata {
             for item in items {
                 self.push_header_list_item(list, &item);
             }
+        } else {
+            self.clear_header_list(list);
         }
         self.reading_list = None;
         self.pending_list_clear = None;
@@ -4929,6 +4931,25 @@ sort: original
             assert_eq!(entries[0].code, "ba");
             assert_eq!(entries[0].weight, 10.0);
         }
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_scalar_columns_as_explicit_empty_list() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: scalar_columns_sample
+version: "0.1"
+sort: original
+columns: text
+...
+
+八	ba	10
+"#,
+        )
+        .expect("scalar columns are non-null but not a ConfigList in librime");
+
+        assert!(dictionary.entries().is_empty());
     }
 
     #[test]

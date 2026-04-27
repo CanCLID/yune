@@ -124,6 +124,168 @@ fn unique_temp_dir(label: &str) -> PathBuf {
 }
 
 #[test]
+fn frontend_style_api_table_can_open_runtime_configs() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let config_open = api.config_open.expect("frontend requires config_open");
+    let schema_open = api.schema_open.expect("frontend requires schema_open");
+    let user_config_open = api
+        .user_config_open
+        .expect("frontend requires user_config_open");
+    let config_get_string = api
+        .config_get_string
+        .expect("frontend requires config_get_string");
+    let config_get_int = api
+        .config_get_int
+        .expect("frontend requires config_get_int");
+    let config_close = api.config_close.expect("frontend requires config_close");
+
+    let root = unique_temp_dir("config-open");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let prebuilt = shared.join("build");
+    let staging = user.join("build");
+    fs::create_dir_all(&prebuilt).expect("prebuilt dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        prebuilt.join("default.yaml"),
+        "schema:\n  name: Prebuilt Default\nmenu:\n  page_size: 5\n",
+    )
+    .expect("prebuilt config should be written");
+    fs::write(
+        staging.join("default.yaml"),
+        "schema:\n  name: Staging Default\nmenu:\n  page_size: 7\n",
+    )
+    .expect("staging config should be written");
+    fs::write(
+        staging.join("luna.schema.yaml"),
+        "schema:\n  schema_id: luna\n  name: Luna\n",
+    )
+    .expect("schema config should be written");
+    fs::write(user.join("user.yaml"), "var:\n  option: custom\n")
+        .expect("user config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { setup(&traits) };
+
+    let mut config = empty_config();
+    let default_id = CString::new("default").expect("literal should not contain NUL");
+    let default_file_id = CString::new("default.yaml").expect("literal should not contain NUL");
+    let schema_id = CString::new("luna").expect("literal should not contain NUL");
+    let user_id = CString::new("user").expect("literal should not contain NUL");
+    let missing_id = CString::new("missing").expect("literal should not contain NUL");
+    let schema_name_key = CString::new("schema/name").expect("literal should not contain NUL");
+    let page_size_key = CString::new("menu/page_size").expect("literal should not contain NUL");
+    let option_key = CString::new("var/option").expect("literal should not contain NUL");
+    let mut buffer = vec![0 as c_char; 32];
+
+    assert_eq!(
+        unsafe { config_open(default_id.as_ptr(), &mut config) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                schema_name_key.as_ptr(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
+        },
+        TRUE
+    );
+    let schema_name = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+    assert_eq!(schema_name.to_str(), Ok("Staging Default"));
+    let mut page_size = 0;
+    assert_eq!(
+        unsafe { config_get_int(&mut config, page_size_key.as_ptr(), &mut page_size) },
+        TRUE
+    );
+    assert_eq!(page_size, 7);
+    assert_eq!(unsafe { config_close(&mut config) }, TRUE);
+
+    assert_eq!(
+        unsafe { config_open(default_file_id.as_ptr(), &mut config) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { config_get_int(&mut config, page_size_key.as_ptr(), &mut page_size) },
+        TRUE
+    );
+    assert_eq!(page_size, 7);
+    assert_eq!(unsafe { config_close(&mut config) }, TRUE);
+
+    assert_eq!(
+        unsafe { schema_open(schema_id.as_ptr(), &mut config) },
+        TRUE
+    );
+    buffer.fill(0);
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                schema_name_key.as_ptr(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
+        },
+        TRUE
+    );
+    let schema_name = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+    assert_eq!(schema_name.to_str(), Ok("Luna"));
+    assert_eq!(unsafe { config_close(&mut config) }, TRUE);
+
+    assert_eq!(
+        unsafe { user_config_open(user_id.as_ptr(), &mut config) },
+        TRUE
+    );
+    buffer.fill(0);
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                option_key.as_ptr(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
+        },
+        TRUE
+    );
+    let user_option = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+    assert_eq!(user_option.to_str(), Ok("custom"));
+    assert_eq!(unsafe { config_close(&mut config) }, TRUE);
+
+    assert_eq!(
+        unsafe { config_open(missing_id.as_ptr(), &mut config) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut config,
+                schema_name_key.as_ptr(),
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )
+        },
+        FALSE
+    );
+    assert_eq!(unsafe { config_close(&mut config) }, TRUE);
+
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn frontend_style_api_table_can_read_in_memory_configs() {
     let _guard = test_guard();
     let api = rime_get_api();

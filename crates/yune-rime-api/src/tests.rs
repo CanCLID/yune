@@ -276,6 +276,9 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let racute = CString::new("Racute").expect("key name should be valid");
     let tcedilla = CString::new("tcedilla").expect("key name should be valid");
     let abovedot = CString::new("abovedot").expect("key name should be valid");
+    let hstroke = CString::new("Hstroke").expect("key name should be valid");
+    let gbreve = CString::new("gbreve").expect("key name should be valid");
+    let scircumflex = CString::new("scircumflex").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -303,6 +306,9 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(unsafe { RimeGetKeycodeByName(racute.as_ptr()) }, 0x1c0);
     assert_eq!(unsafe { RimeGetKeycodeByName(tcedilla.as_ptr()) }, 0x1fe);
     assert_eq!(unsafe { RimeGetKeycodeByName(abovedot.as_ptr()) }, 0x1ff);
+    assert_eq!(unsafe { RimeGetKeycodeByName(hstroke.as_ptr()) }, 0x2a1);
+    assert_eq!(unsafe { RimeGetKeycodeByName(gbreve.as_ptr()) }, 0x2bb);
+    assert_eq!(unsafe { RimeGetKeycodeByName(scircumflex.as_ptr()) }, 0x2fe);
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -391,6 +397,18 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0x1ff)).as_deref(),
         Some("abovedot")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x2a1)).as_deref(),
+        Some("Hstroke")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x2bb)).as_deref(),
+        Some("gbreve")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x2fe)).as_deref(),
+        Some("scircumflex")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

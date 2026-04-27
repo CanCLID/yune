@@ -414,6 +414,31 @@ const LATIN2_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"abovedot\0", 0x1ff),
 ];
 
+const LATIN3_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"Hstroke\0", 0x2a1),
+    (b"Hcircumflex\0", 0x2a6),
+    (b"Iabovedot\0", 0x2a9),
+    (b"Gbreve\0", 0x2ab),
+    (b"Jcircumflex\0", 0x2ac),
+    (b"hstroke\0", 0x2b1),
+    (b"hcircumflex\0", 0x2b6),
+    (b"idotless\0", 0x2b9),
+    (b"gbreve\0", 0x2bb),
+    (b"jcircumflex\0", 0x2bc),
+    (b"Cabovedot\0", 0x2c5),
+    (b"Ccircumflex\0", 0x2c6),
+    (b"Gabovedot\0", 0x2d5),
+    (b"Gcircumflex\0", 0x2d8),
+    (b"Ubreve\0", 0x2dd),
+    (b"Scircumflex\0", 0x2de),
+    (b"cabovedot\0", 0x2e5),
+    (b"ccircumflex\0", 0x2e6),
+    (b"gabovedot\0", 0x2f5),
+    (b"gcircumflex\0", 0x2f8),
+    (b"ubreve\0", 0x2fd),
+    (b"scircumflex\0", 0x2fe),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -468,6 +493,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(ASCII_KEY_NAMES)
         .chain(LATIN1_KEY_NAMES)
         .chain(LATIN2_KEY_NAMES)
+        .chain(LATIN3_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -477,6 +503,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(ASCII_KEY_NAMES)
         .chain(LATIN1_KEY_NAMES)
         .chain(LATIN2_KEY_NAMES)
+        .chain(LATIN3_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

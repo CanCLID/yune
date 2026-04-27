@@ -111,6 +111,7 @@ struct SessionState {
     input_buffer: Option<CString>,
     key_binder: Option<KeyBinderProcessor>,
     punctuation_processor: Option<PunctuationProcessor>,
+    recognizer_processor: Option<RecognizerProcessor>,
     base_segment_tags: Vec<String>,
     matcher_segmentor: Option<MatcherSegmentor>,
     paging: bool,
@@ -125,6 +126,7 @@ impl SessionState {
             input_buffer: None,
             key_binder: None,
             punctuation_processor: None,
+            recognizer_processor: None,
             base_segment_tags: vec!["abc".to_owned()],
             matcher_segmentor: None,
             paging: false,
@@ -176,6 +178,11 @@ enum KeyBindingSwitchTarget {
 }
 
 struct MatcherSegmentor {
+    patterns: Vec<MatcherPattern>,
+}
+
+struct RecognizerProcessor {
+    use_space: bool,
     patterns: Vec<MatcherPattern>,
 }
 
@@ -2159,9 +2166,11 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.engine.reset_filters();
     session.key_binder = None;
     session.punctuation_processor = None;
+    session.recognizer_processor = None;
     session.paging = false;
     apply_schema_switch_resets(session, schema_id);
     install_schema_segment_tags(session, schema_id);
+    install_schema_recognizer_processor(session, schema_id);
     install_schema_key_binder_processor(session, schema_id);
     install_schema_punctuation_processor(session, schema_id);
     install_schema_translator_chain(session, schema_id);
@@ -4098,6 +4107,45 @@ fn install_schema_segment_tags(session: &mut SessionState, schema_id: &str) {
     update_session_segment_tags(session);
 }
 
+fn install_schema_recognizer_processor(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    let Some(Value::Sequence(processors)) = find_config_value(&schema_config, "engine/processors")
+    else {
+        return;
+    };
+    let Some(name_space) = processors
+        .iter()
+        .filter_map(Value::as_str)
+        .map(schema_component_prescription)
+        .find_map(|(component_name, name_space)| {
+            (component_name == "recognizer")
+                .then(|| {
+                    let name_space = name_space.unwrap_or("recognizer");
+                    if name_space == "processor" {
+                        "recognizer"
+                    } else {
+                        name_space
+                    }
+                })
+                .filter(|name_space| !name_space.is_empty())
+        })
+    else {
+        return;
+    };
+    let patterns = load_schema_recognizer_patterns(&schema_config, name_space);
+    if patterns.is_empty() {
+        return;
+    }
+    let use_space = find_config_value(&schema_config, &format!("{name_space}/use_space"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    session.recognizer_processor = Some(RecognizerProcessor {
+        use_space,
+        patterns,
+    });
+}
+
 fn load_schema_matcher_segmentor(
     schema_config: &Value,
     segmentors: &[Value],
@@ -4118,12 +4166,17 @@ fn load_schema_matcher_segmentor(
                 })
                 .filter(|name_space| !name_space.is_empty())
         })?;
-    let Value::Mapping(patterns) =
-        find_config_value(schema_config, &format!("{name_space}/patterns"))?
+    let patterns = load_schema_recognizer_patterns(schema_config, name_space);
+    (!patterns.is_empty()).then_some(MatcherSegmentor { patterns })
+}
+
+fn load_schema_recognizer_patterns(schema_config: &Value, name_space: &str) -> Vec<MatcherPattern> {
+    let Some(Value::Mapping(patterns)) =
+        find_config_value(schema_config, &format!("{name_space}/patterns"))
     else {
-        return None;
+        return Vec::new();
     };
-    let patterns = patterns
+    patterns
         .iter()
         .filter_map(|(tag, pattern)| {
             let tag = config_scalar_string(tag)?;
@@ -4132,8 +4185,7 @@ fn load_schema_matcher_segmentor(
                 .ok()
                 .map(|pattern| MatcherPattern { tag, pattern })
         })
-        .collect::<Vec<_>>();
-    (!patterns.is_empty()).then_some(MatcherSegmentor { patterns })
+        .collect()
 }
 
 fn update_session_segment_tags(session: &mut SessionState) {
@@ -4158,14 +4210,22 @@ impl MatcherSegmentor {
         }
         self.patterns
             .iter()
-            .find(|pattern| {
-                pattern
-                    .pattern
-                    .find(input)
-                    .is_some_and(|matched| matched.start() == 0 && matched.end() == input.len())
-            })
+            .find(|pattern| recognizer_pattern_matches(pattern, input))
             .map(|pattern| pattern.tag.as_str())
     }
+}
+
+fn recognizer_patterns_match(patterns: &[MatcherPattern], input: &str) -> bool {
+    patterns
+        .iter()
+        .any(|pattern| recognizer_pattern_matches(pattern, input))
+}
+
+fn recognizer_pattern_matches(pattern: &MatcherPattern, input: &str) -> bool {
+    pattern
+        .pattern
+        .find(input)
+        .is_some_and(|matched| matched.start() == 0 && matched.end() == input.len())
 }
 
 fn install_schema_punctuation_translator_from_config(
@@ -4638,6 +4698,10 @@ fn process_session_key_event(
         update_session_segment_tags(session);
         return (!commits.is_empty()).then(|| commits.concat());
     }
+    if process_recognizer_processor(session, key_event) {
+        update_session_segment_tags(session);
+        return None;
+    }
     if let Some(result) = process_punctuation_processor(session, key_event) {
         let commit = match result {
             PunctuationProcessResult::Accepted => None,
@@ -4656,6 +4720,39 @@ fn process_session_key_event(
     update_key_binding_paging_state(session, key_event, &before_input, before_highlighted);
     update_session_segment_tags(session);
     commit
+}
+
+fn process_recognizer_processor(session: &mut SessionState, key_event: KeyEvent) -> bool {
+    if key_event.modifiers.control
+        || key_event.modifiers.alt
+        || key_event.modifiers.super_key
+        || key_event.modifiers.release
+    {
+        return false;
+    }
+    let KeyCode::Character(ch) = key_event.code else {
+        return false;
+    };
+    if !((ch == ' '
+        && session
+            .recognizer_processor
+            .as_ref()
+            .is_some_and(|processor| processor.use_space))
+        || (ch > '\u{20}' && ch < '\u{80}'))
+    {
+        return false;
+    }
+    let Some(processor) = &session.recognizer_processor else {
+        return false;
+    };
+
+    let mut input = session.engine.context().composition.input.clone();
+    input.push(ch);
+    if !recognizer_patterns_match(&processor.patterns, &input) {
+        return false;
+    }
+    session.engine.set_input(input);
+    true
 }
 
 fn process_key_binder_processor(

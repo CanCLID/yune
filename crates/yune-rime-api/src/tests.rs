@@ -5834,6 +5834,38 @@ fn processes_ascii_keys_and_returns_unread_commit_once() {
 }
 
 #[test]
+fn rime_commit_clear_preserves_librime_struct_data_size() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    let expected_data_size =
+        (std::mem::size_of::<RimeCommit>() - std::mem::size_of::<i32>()) as i32;
+    let mut commit = RimeCommit {
+        data_size: expected_data_size,
+        text: std::ptr::null_mut(),
+    };
+
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+    assert_eq!(commit.data_size, expected_data_size);
+    assert!(commit.text.is_null());
+
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, ' ' as i32, 0), TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    assert_eq!(commit.data_size, expected_data_size);
+
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(commit.data_size, expected_data_size);
+    assert!(commit.text.is_null());
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
 fn process_key_commits_numeric_candidate_selection() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

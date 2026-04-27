@@ -2838,7 +2838,6 @@ pub unsafe extern "C" fn RimeGetCommit(session_id: RimeSessionId, commit: *mut R
 
     // SAFETY: `commit` is non-null and points to caller-owned writable storage.
     unsafe {
-        (*commit).data_size = std::mem::size_of::<RimeCommit>() as c_int;
         (*commit).text = text.into_raw();
     }
     TRUE
@@ -4702,9 +4701,9 @@ fn copy_runtime_path_to_buffer(
 
 fn clear_commit(commit: *mut RimeCommit) {
     // SAFETY: callers only pass non-null pointers to this helper; fields are
-    // plain integers/pointers and assigning null mirrors librime's clear macro.
+    // plain pointers and assigning null mirrors librime's clear macro while
+    // preserving the self-versioned struct's `data_size` field.
     unsafe {
-        (*commit).data_size = 0;
         (*commit).text = ptr::null_mut();
     }
 }

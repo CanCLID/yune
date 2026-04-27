@@ -230,7 +230,8 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         | "Super_R" | "Hyper_L" | "Hyper_R" => KeyCode::Ignored,
         _ if is_librime_iso_key_name(name)
             || is_librime_xkb_key_name(name)
-            || is_librime_input_method_key_name(name) =>
+            || is_librime_input_method_key_name(name)
+            || is_librime_keypad_noop_key_name(name) =>
         {
             KeyCode::Ignored
         }
@@ -424,6 +425,28 @@ fn is_librime_input_method_key_name(name: &str) -> bool {
             | "MultipleCandidate"
             | "PreviousCandidate"
             | "Hangul_Special"
+    )
+}
+
+fn is_librime_keypad_noop_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "KP_Space"
+            | "KP_Tab"
+            | "KP_F1"
+            | "KP_F2"
+            | "KP_F3"
+            | "KP_F4"
+            | "KP_Begin"
+            | "KP_Insert"
+            | "KP_Delete"
+            | "KP_Multiply"
+            | "KP_Add"
+            | "KP_Separator"
+            | "KP_Subtract"
+            | "KP_Decimal"
+            | "KP_Divide"
+            | "KP_Equal"
     )
 }
 
@@ -1756,6 +1779,40 @@ mod tests {
             "MultipleCandidate",
             "PreviousCandidate",
             "Release+Hangul_Special",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_keypad_noop_key_names() {
+        let names = [
+            "KP_Space",
+            "KP_Tab",
+            "KP_F1",
+            "KP_F2",
+            "KP_F3",
+            "KP_F4",
+            "KP_Begin",
+            "KP_Insert",
+            "KP_Delete",
+            "KP_Multiply",
+            "KP_Add",
+            "KP_Separator",
+            "KP_Subtract",
+            "KP_Decimal",
+            "KP_Divide",
+            "Release+KP_Equal",
         ];
         let sequence = names
             .iter()

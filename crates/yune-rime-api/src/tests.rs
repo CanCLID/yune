@@ -11726,6 +11726,12 @@ fn simulates_librime_style_key_sequences() {
         "{Release+Hangul_Special}",
     ))
     .expect("key sequence should be valid");
+    let noop_keypad_sequence = CString::new(concat!(
+        "{KP_Space}{KP_Tab}{KP_F1}{KP_F2}{KP_F3}{KP_F4}{KP_Begin}",
+        "{KP_Insert}{KP_Delete}{KP_Multiply}{KP_Add}{KP_Separator}",
+        "{KP_Subtract}{KP_Decimal}{KP_Divide}{Release+KP_Equal}",
+    ))
+    .expect("key sequence should be valid");
     let invalid_sequence =
         CString::new("x{Unknown}").expect("key sequence should be valid C string");
     let mut commit = RimeCommit {
@@ -11862,6 +11868,19 @@ fn simulates_librime_style_key_sequences() {
         TRUE
     );
     // SAFETY: ignored input-method key names should leave the context empty.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: noop_keypad_sequence is a valid C string; librime parses keypad
+    // key-table names through its key table even when ignored by the engine.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, noop_keypad_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: ignored keypad key names should leave the context empty.
     assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
     assert_eq!(context.composition.length, 0);
     assert_eq!(context.menu.num_candidates, 0);

@@ -2632,6 +2632,31 @@ impl Engine {
         self.refresh_candidates();
     }
 
+    pub fn set_punctuation_composition(
+        &mut self,
+        input: impl Into<String>,
+        text: impl Into<String>,
+    ) {
+        let input = input.into();
+        self.context.composition.input = input.clone();
+        self.context.composition.caret = input.len();
+        self.context.composition.preedit = input;
+        self.context.candidates = vec![Candidate {
+            text: text.into(),
+            comment: "punct".to_owned(),
+            source: CandidateSource::Punctuation,
+            quality: 1.0,
+        }];
+        self.context.highlighted = 0;
+    }
+
+    pub fn record_commit(&mut self, text: impl Into<String>) -> String {
+        let text = text.into();
+        self.context.last_commit = Some(text.clone());
+        self.clear_composition();
+        text
+    }
+
     pub fn set_caret_pos(&mut self, caret_pos: usize) {
         self.context.composition.caret = caret_pos.min(self.context.composition.input.len());
     }

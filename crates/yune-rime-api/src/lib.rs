@@ -134,6 +134,7 @@ struct PunctuationProcessor {
     full_shape_pairs: HashMap<String, [String; 2]>,
     symbol_pairs: HashMap<String, [String; 2]>,
     pair_oddness: HashMap<String, usize>,
+    pending_digit_separator: Option<String>,
 }
 
 enum PunctuationProcessResult {
@@ -3688,6 +3689,7 @@ fn install_schema_punctuation_processor(session: &mut SessionState, schema_id: &
         full_shape_pairs: punctuation_pairs_from_config(&schema_config, "full_shape"),
         symbol_pairs: punctuation_pairs_from_config(&schema_config, "symbols"),
         pair_oddness: HashMap::new(),
+        pending_digit_separator: None,
     };
     if processor.half_shape_unique_commits.is_empty()
         && processor.full_shape_unique_commits.is_empty()
@@ -3928,7 +3930,7 @@ fn process_session_key_event(session: &mut SessionState, key_event: KeyEvent) ->
     if let Some(result) = process_punctuation_processor(session, key_event) {
         return match result {
             PunctuationProcessResult::Accepted => None,
-            PunctuationProcessResult::Commit(commit) => Some(commit),
+            PunctuationProcessResult::Commit(commit) => Some(session.engine.record_commit(commit)),
         };
     }
     if let Some(commit) = process_alternative_select_key(session, key_event) {
@@ -3955,6 +3957,10 @@ fn process_punctuation_processor(
     };
     if !ch.is_ascii() || ch.is_ascii_control() {
         return None;
+    }
+
+    if let Some(result) = process_pending_digit_separator(session, ch, &ch.to_string()) {
+        return Some(result);
     }
 
     let use_space = session.punctuation_processor.as_ref()?.use_space;
@@ -3993,13 +3999,15 @@ fn process_punctuation_processor(
 }
 
 fn process_digit_separator(
-    session: &SessionState,
+    session: &mut SessionState,
     ch: char,
     key: &str,
 ) -> Option<PunctuationProcessResult> {
-    let processor = session.punctuation_processor.as_ref()?;
-    if !processor.digit_separator_commit
-        || !processor.digit_separators.contains(ch)
+    let is_digit_separator = session
+        .punctuation_processor
+        .as_ref()
+        .is_some_and(|processor| processor.digit_separators.contains(ch));
+    if !is_digit_separator
         || !session.engine.context().composition.input.is_empty()
         || !session
             .engine
@@ -4012,9 +4020,61 @@ fn process_digit_separator(
         return None;
     }
 
-    Some(PunctuationProcessResult::Commit(
-        shape_formatted_ascii_punct(ch, session.engine.status().is_full_shape),
-    ))
+    let full_shape = session.engine.status().is_full_shape;
+    let digit_separator_commit = session
+        .punctuation_processor
+        .as_ref()
+        .is_some_and(|processor| processor.digit_separator_commit);
+    let punct = shape_formatted_ascii_text(key, full_shape);
+    if digit_separator_commit {
+        return Some(PunctuationProcessResult::Commit(punct));
+    }
+
+    if let Some(processor) = session.punctuation_processor.as_mut() {
+        processor.pending_digit_separator = Some(key.to_owned());
+    }
+    session
+        .engine
+        .set_punctuation_composition(key.to_owned(), punct);
+    Some(PunctuationProcessResult::Accepted)
+}
+
+fn process_pending_digit_separator(
+    session: &mut SessionState,
+    ch: char,
+    key: &str,
+) -> Option<PunctuationProcessResult> {
+    let pending = session
+        .punctuation_processor
+        .as_ref()
+        .and_then(|processor| processor.pending_digit_separator.as_deref())?;
+    if session.engine.context().composition.input != pending {
+        if let Some(processor) = session.punctuation_processor.as_mut() {
+            processor.pending_digit_separator = None;
+        }
+        return None;
+    }
+
+    if ch.is_ascii_digit() || ch == ' ' {
+        let commit = shape_formatted_ascii_text(
+            &format!("{pending}{ch}"),
+            session.engine.status().is_full_shape,
+        );
+        if let Some(processor) = session.punctuation_processor.as_mut() {
+            processor.pending_digit_separator = None;
+        }
+        return Some(PunctuationProcessResult::Commit(commit));
+    }
+
+    if key == pending {
+        if let Some(processor) = session.punctuation_processor.as_mut() {
+            processor.pending_digit_separator = None;
+        }
+        session.engine.set_input(key.to_owned());
+        return Some(PunctuationProcessResult::Accepted);
+    }
+
+    None
 }
 
 fn active_punctuation_definition_exists(session: &SessionState, key: &str) -> bool {
@@ -4050,17 +4110,18 @@ fn ends_with_ascii_digit(text: &str) -> bool {
         .is_some_and(|byte| byte.is_ascii_digit())
 }
 
-fn shape_formatted_ascii_punct(ch: char, full_shape: bool) -> String {
+fn shape_formatted_ascii_text(text: &str, full_shape: bool) -> String {
     if !full_shape {
-        return ch.to_string();
+        return text.to_owned();
     }
-    match ch {
-        ' ' => "\u{3000}".to_owned(),
-        '!'..='~' => char::from_u32(ch as u32 + 0xfee0)
-            .expect("printable ASCII has a full-shape compatibility form")
-            .to_string(),
-        _ => ch.to_string(),
-    }
+    text.chars()
+        .map(|ch| match ch {
+            ' ' => '\u{3000}',
+            '!'..='~' => char::from_u32(ch as u32 + 0xfee0)
+                .expect("printable ASCII has a full-shape compatibility form"),
+            _ => ch,
+        })
+        .collect()
 }
 
 fn active_pair_commit(session: &mut SessionState, key: &str) -> Option<String> {

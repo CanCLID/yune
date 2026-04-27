@@ -3707,6 +3707,11 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
         "script_translator",
         "translator",
     ));
+    name_spaces.extend(schema_engine_translator_namespaces(
+        &schema_config,
+        "r10n_translator",
+        "translator",
+    ));
 
     for name_space in name_spaces {
         let Some(dictionary) = load_schema_table_dictionary(&schema_config, &name_space) else {

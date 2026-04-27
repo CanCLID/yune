@@ -1608,6 +1608,37 @@ schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nswitches:\n  - name: asc
 }
 
 #[test]
+fn config_load_string_initializes_before_librime_parse_failure() {
+    let _guard = test_guard();
+    let mut config = empty_config();
+    let invalid_yaml = CString::new("schema: [unterminated").expect("yaml should be valid");
+    let key = CString::new("schema/name").expect("key should be valid");
+    let value = CString::new("Fallback").expect("value should be valid");
+    let mut output = vec![0 as c_char; 16];
+
+    assert_eq!(
+        unsafe { RimeConfigLoadString(&mut config, invalid_yaml.as_ptr()) },
+        FALSE
+    );
+    assert!(!config.ptr.is_null());
+    assert_eq!(
+        unsafe { RimeConfigSetString(&mut config, key.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            RimeConfigGetString(&mut config, key.as_ptr(), output.as_mut_ptr(), output.len())
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("Fallback")
+    );
+    assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+}
+
+#[test]
 fn config_open_apis_load_runtime_yaml_files() {
     let _guard = test_guard();
     let root = unique_temp_dir("config-open");

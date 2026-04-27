@@ -2096,14 +2096,14 @@ pub unsafe extern "C" fn RimeConfigLoadString(
     if config.is_null() || yaml.is_null() {
         return FALSE;
     }
-    // SAFETY: `yaml` is non-null and caller promises a valid C string.
-    let Ok(yaml) = unsafe { CStr::from_ptr(yaml) }.to_str() else {
-        return FALSE;
-    };
     // SAFETY: `config` is non-null and writable.
     if unsafe { (*config).ptr.is_null() && RimeConfigInit(config) == FALSE } {
         return FALSE;
     }
+    // SAFETY: `yaml` is non-null and caller promises a valid C string.
+    let Ok(yaml) = unsafe { CStr::from_ptr(yaml) }.to_str() else {
+        return FALSE;
+    };
     let Ok(root) = serde_yaml::from_str::<Value>(yaml) else {
         return FALSE;
     };

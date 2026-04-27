@@ -236,7 +236,8 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
             || is_librime_latin1_key_name(name)
             || is_librime_latin2_key_name(name)
             || is_librime_latin3_key_name(name)
-            || is_librime_latin4_key_name(name) =>
+            || is_librime_latin4_key_name(name)
+            || is_librime_kana_key_name(name) =>
         {
             KeyCode::Ignored
         }
@@ -720,6 +721,81 @@ fn is_librime_latin4_key_name(name: &str) -> bool {
             | "uogonek"
             | "utilde"
             | "umacron"
+    )
+}
+
+fn is_librime_kana_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "overline"
+            | "kana_fullstop"
+            | "kana_openingbracket"
+            | "kana_closingbracket"
+            | "kana_comma"
+            | "kana_conjunctive"
+            | "kana_middledot"
+            | "kana_WO"
+            | "kana_a"
+            | "kana_i"
+            | "kana_u"
+            | "kana_e"
+            | "kana_o"
+            | "kana_ya"
+            | "kana_yu"
+            | "kana_yo"
+            | "kana_tsu"
+            | "kana_tu"
+            | "prolongedsound"
+            | "kana_A"
+            | "kana_I"
+            | "kana_U"
+            | "kana_E"
+            | "kana_O"
+            | "kana_KA"
+            | "kana_KI"
+            | "kana_KU"
+            | "kana_KE"
+            | "kana_KO"
+            | "kana_SA"
+            | "kana_SHI"
+            | "kana_SU"
+            | "kana_SE"
+            | "kana_SO"
+            | "kana_TA"
+            | "kana_CHI"
+            | "kana_TI"
+            | "kana_TSU"
+            | "kana_TU"
+            | "kana_TE"
+            | "kana_TO"
+            | "kana_NA"
+            | "kana_NI"
+            | "kana_NU"
+            | "kana_NE"
+            | "kana_NO"
+            | "kana_HA"
+            | "kana_HI"
+            | "kana_FU"
+            | "kana_HU"
+            | "kana_HE"
+            | "kana_HO"
+            | "kana_MA"
+            | "kana_MI"
+            | "kana_MU"
+            | "kana_ME"
+            | "kana_MO"
+            | "kana_YA"
+            | "kana_YU"
+            | "kana_YO"
+            | "kana_RA"
+            | "kana_RI"
+            | "kana_RU"
+            | "kana_RE"
+            | "kana_RO"
+            | "kana_WA"
+            | "kana_N"
+            | "voicedsound"
+            | "semivoicedsound"
     )
 }
 
@@ -2422,6 +2498,93 @@ mod tests {
             "uogonek",
             "utilde",
             "Release+umacron",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_kana_noop_key_names() {
+        let names = [
+            "overline",
+            "kana_fullstop",
+            "kana_openingbracket",
+            "kana_closingbracket",
+            "kana_comma",
+            "kana_conjunctive",
+            "kana_middledot",
+            "kana_WO",
+            "kana_a",
+            "kana_i",
+            "kana_u",
+            "kana_e",
+            "kana_o",
+            "kana_ya",
+            "kana_yu",
+            "kana_yo",
+            "kana_tsu",
+            "kana_tu",
+            "prolongedsound",
+            "kana_A",
+            "kana_I",
+            "kana_U",
+            "kana_E",
+            "kana_O",
+            "kana_KA",
+            "kana_KI",
+            "kana_KU",
+            "kana_KE",
+            "kana_KO",
+            "kana_SA",
+            "kana_SHI",
+            "kana_SU",
+            "kana_SE",
+            "kana_SO",
+            "kana_TA",
+            "kana_CHI",
+            "kana_TI",
+            "kana_TSU",
+            "kana_TU",
+            "kana_TE",
+            "kana_TO",
+            "kana_NA",
+            "kana_NI",
+            "kana_NU",
+            "kana_NE",
+            "kana_NO",
+            "kana_HA",
+            "kana_HI",
+            "kana_FU",
+            "kana_HU",
+            "kana_HE",
+            "kana_HO",
+            "kana_MA",
+            "kana_MI",
+            "kana_MU",
+            "kana_ME",
+            "kana_MO",
+            "kana_YA",
+            "kana_YU",
+            "kana_YO",
+            "kana_RA",
+            "kana_RI",
+            "kana_RU",
+            "kana_RE",
+            "kana_RO",
+            "kana_WA",
+            "kana_N",
+            "voicedsound",
+            "Release+semivoicedsound",
         ];
         let sequence = names
             .iter()

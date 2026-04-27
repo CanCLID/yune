@@ -11746,6 +11746,10 @@ fn simulates_librime_style_key_sequences() {
         "{kappa}{kra}{Rcedilla}{Itilde}{Lcedilla}{ENG}{Amacron}{Umacron}{Release+umacron}",
     )
     .expect("key sequence should be valid");
+    let noop_kana_key_sequence = CString::new(
+        "{overline}{kana_fullstop}{kana_conjunctive}{kana_middledot}{kana_tu}{kana_TI}{kana_HU}{voicedsound}{Release+semivoicedsound}",
+    )
+    .expect("key sequence should be valid");
     let named_ascii_sequence =
         CString::new("{exclam}{space}").expect("key sequence should be valid");
     let invalid_sequence =
@@ -11953,6 +11957,20 @@ fn simulates_librime_style_key_sequences() {
         TRUE
     );
     // SAFETY: ignored Latin-4 key names should leave the context empty.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: noop_kana_key_sequence is a valid C string; librime parses
+    // kana key-table names even though the default editor/speller ignore
+    // non-ASCII keycodes.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, noop_kana_key_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: ignored kana key names should leave the context empty.
     assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
     assert_eq!(context.composition.length, 0);
     assert_eq!(context.menu.num_candidates, 0);

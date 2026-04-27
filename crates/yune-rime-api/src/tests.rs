@@ -7187,6 +7187,74 @@ fn shift_ascii_digits_select_candidates_like_librime_selector_keys() {
 }
 
 #[test]
+fn control_ascii_digits_select_candidates_like_librime_selector_keys() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+    }
+    assert_eq!(
+        RimeProcessKey(session_id, '2' as i32, K_CONTROL_MASK),
+        FALSE
+    );
+    assert_eq!(RimeProcessKey(session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'a' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, '2' as i32, K_CONTROL_MASK), TRUE);
+    let mut commit = RimeCommit {
+        data_size: std::mem::size_of::<RimeCommit>() as i32,
+        text: std::ptr::null_mut(),
+    };
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("吧"));
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let sequence_session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&sequence_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+    }
+    let sequence = CString::new("ba{Control+2}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: commit points to valid writable storage and was cleared above.
+    assert_eq!(
+        unsafe { RimeGetCommit(sequence_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("吧"));
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+}
+
+#[test]
 fn escape_clears_composition_like_librime_editor_cancel_key() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

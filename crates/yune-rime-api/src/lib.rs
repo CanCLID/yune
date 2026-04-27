@@ -1606,10 +1606,10 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     if session_id == 0
         || (mask != 0
             && !((mask == K_CONTROL_MASK
-                && matches!(
+                && (matches!(
                     keycode,
                     XK_BACKSPACE | XK_DELETE | XK_LEFT | XK_RIGHT | XK_UP | XK_DOWN | XK_RETURN
-                ))
+                ) || (('0' as c_int)..=('9' as c_int)).contains(&keycode)))
                 || (mask == K_SHIFT_MASK && keycode == XK_RETURN)
                 || (mask == K_SHIFT_MASK && keycode == XK_BACKSPACE)
                 || (mask == K_SHIFT_MASK && keycode == XK_DELETE)
@@ -1638,6 +1638,12 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     };
 
     let was_composing = !session.engine.context().composition.input.is_empty();
+    if !was_composing
+        && mask == K_CONTROL_MASK
+        && matches!(key_event.code, KeyCode::Character('0'..='9'))
+    {
+        return FALSE;
+    }
     match key_event.code {
         KeyCode::PreviousPage => {
             let page_size = session_menu_page_size(session);

@@ -885,6 +885,11 @@ impl Engine {
                     self.move_caret_right_by_syllable();
                     return None;
                 }
+                KeyCode::Character(ch)
+                    if ch.is_ascii_digit() && !self.context.candidates.is_empty() =>
+                {
+                    return self.commit_candidate_at_page_index(select_index_from_digit(ch));
+                }
                 _ => {}
             }
         }
@@ -1488,6 +1493,20 @@ mod tests {
 
         let commits = engine
             .process_key_sequence("ba{Shift+2}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, ["吧"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("吧"));
+        assert!(!engine.status().is_composing);
+    }
+
+    #[test]
+    fn control_ascii_numeric_selection_matches_librime_selector() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+
+        let commits = engine
+            .process_key_sequence("{Control+2}ba{Control+2}")
             .expect("key sequence should parse");
 
         assert_eq!(commits, ["吧"]);

@@ -3530,9 +3530,12 @@ fn process_alternative_select_key(
 
     let menu_settings = context_menu_settings(&session.engine.status().schema_id);
     let select_keys = menu_settings.select_keys.as_deref()?;
-    let index = select_keys
+    let Some(index) = select_keys
         .bytes()
-        .position(|select_key| select_key == ch as u8)?;
+        .position(|select_key| select_key == ch as u8)
+    else {
+        return ch.is_ascii_digit().then_some(None);
+    };
     if index >= menu_settings.page_size {
         return Some(None);
     }

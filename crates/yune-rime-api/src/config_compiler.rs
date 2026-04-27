@@ -237,6 +237,62 @@ pub(crate) fn apply_custom_patch(
     apply_patch_map(root, patch, shared_data_dir, patch_dependencies)
 }
 
+pub(crate) fn apply_legacy_preset_config_plugins(
+    root: &mut Value,
+    resource_id: &str,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+) -> Option<()> {
+    if !resource_id.ends_with(".schema") {
+        return Some(());
+    }
+
+    apply_legacy_import_preset(root, "punctuator", shared_data_dir, patch_dependencies)
+}
+
+fn apply_legacy_import_preset(
+    root: &mut Value,
+    section: &str,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+) -> Option<()> {
+    let preset = match find_config_value(root, &format!("{section}/import_preset")).cloned() {
+        Some(Value::String(preset)) => preset,
+        Some(_) => return None,
+        None => return Some(()),
+    };
+    let target = find_config_value_mut(root, section)?;
+    let included = load_external_config_reference(
+        &preset,
+        section,
+        false,
+        shared_data_dir,
+        patch_dependencies,
+    )??;
+    let Value::Mapping(overrides) = std::mem::replace(target, included) else {
+        return Some(());
+    };
+    merge_literal_config_value(target, Value::Mapping(overrides));
+    Some(())
+}
+
+fn merge_literal_config_value(target: &mut Value, value: Value) {
+    match (target, value) {
+        (Value::Mapping(target), Value::Mapping(value)) => {
+            for (key, value) in value {
+                if let Some(target_value) = target.get_mut(&key) {
+                    merge_literal_config_value(target_value, value);
+                } else {
+                    target.insert(key, value);
+                }
+            }
+        }
+        (target, value) => {
+            *target = value;
+        }
+    }
+}
+
 pub(crate) fn apply_patch_map(
     root: &mut Value,
     patch: &Mapping,

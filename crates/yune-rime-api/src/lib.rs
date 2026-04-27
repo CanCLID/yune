@@ -4762,6 +4762,12 @@ fn deployed_config_yaml_with_build_info(
     let mut patch_dependencies = Vec::new();
     let apply_auto_custom_patch =
         apply_config_directives(&mut root, shared_data_dir, &mut patch_dependencies)?;
+    apply_legacy_preset_config_plugins(
+        &mut root,
+        &resource_id,
+        shared_data_dir,
+        &mut patch_dependencies,
+    )?;
     set_build_info(&mut root, &resource_id, timestamp)?;
 
     if apply_auto_custom_patch {

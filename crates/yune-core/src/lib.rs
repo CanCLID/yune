@@ -1357,7 +1357,7 @@ pub trait CandidateRanker: Send + Sync {
 pub trait CandidateFilter: Send + Sync {
     fn name(&self) -> &'static str;
 
-    fn apply(&self, candidates: &mut [Candidate]);
+    fn apply(&self, candidates: &mut Vec<Candidate>);
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2230,6 +2230,19 @@ impl Translator for ReverseLookupTranslator {
     }
 }
 
+pub struct UniquifierFilter;
+
+impl CandidateFilter for UniquifierFilter {
+    fn name(&self) -> &'static str {
+        "uniquifier"
+    }
+
+    fn apply(&self, candidates: &mut Vec<Candidate>) {
+        let mut seen = HashSet::new();
+        candidates.retain(|candidate| seen.insert(candidate.text.clone()));
+    }
+}
+
 pub struct ReverseLookupFilter {
     reverse_comments: HashMap<String, Vec<String>>,
     overwrite_comment: bool,
@@ -2280,7 +2293,7 @@ impl CandidateFilter for ReverseLookupFilter {
         "reverse_lookup_filter"
     }
 
-    fn apply(&self, candidates: &mut [Candidate]) {
+    fn apply(&self, candidates: &mut Vec<Candidate>) {
         for candidate in candidates {
             if candidate.source != CandidateSource::Table {
                 continue;
@@ -3335,6 +3348,7 @@ mod tests {
         parse_key_sequence, Candidate, CandidateFilter, CandidateRanker, CandidateSource, Context,
         Engine, KeyCode, MockAiRanker, PunctuationTranslator, RerankResult, ReverseLookupFilter,
         ReverseLookupTranslator, StaticTableTranslator, TableDictionary, Translator,
+        UniquifierFilter,
     };
 
     struct CommentTranslator;
@@ -6158,6 +6172,26 @@ sort: original
             .process_key_sequence("ni")
             .expect("keys should parse");
         assert_eq!(append_engine.context().candidates[0].comment, "ni wq");
+    }
+
+    #[test]
+    fn uniquifier_filter_removes_later_duplicate_candidate_texts() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你"), ("ni", "呢")]));
+        engine.add_translator(StaticTableTranslator::new([("ni", "你"), ("ni", "ni")]));
+        engine.add_filter(UniquifierFilter);
+
+        engine
+            .process_key_sequence("ni")
+            .expect("keys should parse");
+
+        let texts = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["你", "呢", "ni"]);
     }
 
     #[test]

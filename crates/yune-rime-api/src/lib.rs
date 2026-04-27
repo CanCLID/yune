@@ -16,6 +16,7 @@ use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
     parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers, PunctuationTranslator,
     ReverseLookupFilter, ReverseLookupTranslator, StaticTableTranslator, TableDictionary,
+    UniquifierFilter,
 };
 
 mod abi;
@@ -2149,6 +2150,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     install_schema_dictionary_translator(session, schema_id);
     install_schema_reverse_lookup_translator(session, schema_id);
     install_schema_reverse_lookup_filter(session, schema_id);
+    install_schema_uniquifier_filter(session, schema_id);
     session.engine.clear_composition();
     session.input_buffer = None;
     session.unread_commit = None;
@@ -3769,6 +3771,14 @@ fn install_schema_reverse_lookup_filter(session: &mut SessionState, schema_id: &
     }
 }
 
+fn install_schema_uniquifier_filter(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    if schema_engine_filters_include(&schema_config, "uniquifier") {
+        session.engine.add_filter(UniquifierFilter);
+    }
+}
+
 fn load_schema_table_dictionary(
     schema_config: &Value,
     name_space: &str,
@@ -4082,6 +4092,16 @@ fn schema_engine_filter_namespaces(
         return Vec::new();
     };
     schema_engine_component_namespaces(filters, filter_name, default_name_space)
+}
+
+fn schema_engine_filters_include(schema_config: &Value, filter_name: &str) -> bool {
+    let Some(Value::Sequence(filters)) = find_config_value(schema_config, "engine/filters") else {
+        return false;
+    };
+    filters
+        .iter()
+        .filter_map(Value::as_str)
+        .any(|filter| filter == filter_name)
 }
 
 fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {

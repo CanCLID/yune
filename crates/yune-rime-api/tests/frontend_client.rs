@@ -136,10 +136,17 @@ fn empty_config_iterator() -> RimeConfigIterator {
 
 fn test_guard() -> MutexGuard<'static, ()> {
     static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    TEST_LOCK
+    let guard = TEST_LOCK
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .expect("test lock should not be poisoned")
+        .expect("test lock should not be poisoned");
+    let api = unsafe { &mut *rime_get_api() };
+    let initialize = api
+        .initialize
+        .expect("frontend requires initialize for test setup");
+    let traits = empty_traits();
+    unsafe { initialize(&traits) };
+    guard
 }
 
 fn notification_events() -> &'static Mutex<Vec<NotificationEvent>> {

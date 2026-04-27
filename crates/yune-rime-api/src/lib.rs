@@ -5,7 +5,10 @@ use std::{
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     ptr,
-    sync::{Mutex, OnceLock},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Mutex, OnceLock,
+    },
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -68,6 +71,10 @@ struct SessionRegistry {
 
 impl SessionRegistry {
     fn create_session(&mut self) -> RimeSessionId {
+        if !service_started().load(Ordering::SeqCst) {
+            return 0;
+        }
+
         self.next_id = self.next_id.saturating_add(1).max(1);
         let session_id = self.next_id;
         self.sessions.insert(session_id, SessionState::new());
@@ -75,7 +82,7 @@ impl SessionRegistry {
     }
 
     fn get_session_mut(&mut self, session_id: RimeSessionId) -> Option<&mut SessionState> {
-        if session_id == 0 {
+        if session_id == 0 || !service_started().load(Ordering::SeqCst) {
             return None;
         }
 
@@ -378,6 +385,11 @@ fn read_installation_settings(user_data_dir: &str) -> InstallationSettings {
 fn sessions() -> &'static Mutex<SessionRegistry> {
     static SESSIONS: OnceLock<Mutex<SessionRegistry>> = OnceLock::new();
     SESSIONS.get_or_init(|| Mutex::new(SessionRegistry::default()))
+}
+
+fn service_started() -> &'static AtomicBool {
+    static SERVICE_STARTED: AtomicBool = AtomicBool::new(false);
+    &SERVICE_STARTED
 }
 
 fn runtime_paths() -> &'static Mutex<RuntimePaths> {
@@ -1428,11 +1440,13 @@ pub extern "C" fn RimeSetupLogging(app_name: *const c_char) {
 pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
     // SAFETY: forwarded preconditions are identical to `RimeSetup`.
     unsafe { RimeSetup(traits) };
+    service_started().store(true, Ordering::SeqCst);
 }
 
 #[no_mangle]
 pub extern "C" fn RimeFinalize() {
     RimeCleanupAllSessions();
+    service_started().store(false, Ordering::SeqCst);
 }
 
 #[no_mangle]

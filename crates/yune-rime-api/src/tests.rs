@@ -79,10 +79,14 @@ impl Translator for CommentTranslator {
 
 fn test_guard() -> MutexGuard<'static, ()> {
     static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    TEST_LOCK
+    let guard = TEST_LOCK
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .expect("test lock should not be poisoned")
+        .expect("test lock should not be poisoned");
+    let traits = empty_traits();
+    // SAFETY: empty traits points to valid storage for the duration of the call.
+    unsafe { RimeInitialize(&traits) };
+    guard
 }
 
 fn notification_events() -> &'static Mutex<Vec<NotificationEvent>> {
@@ -3661,6 +3665,8 @@ fn setup_and_initialize_expose_runtime_metadata_paths() {
     assert_eq!(prebuilt_dir.to_str(), Ok("/tmp/yune-prebuilt"));
 
     RimeFinalize();
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeInitialize(&traits) };
 }
 
 #[test]
@@ -6923,6 +6929,7 @@ fn finalize_clears_sessions_but_preserves_notification_handler() {
     assert_ne!(old_session_id, 0);
     RimeFinalize();
     assert_eq!(RimeFindSession(old_session_id), FALSE);
+    assert_eq!(RimeCreateSession(), 0);
 
     let traits = empty_traits();
     // SAFETY: traits points to valid storage.

@@ -333,6 +333,17 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let blank = CString::new("blank").expect("key name should be valid");
     let lowrightcorner = CString::new("lowrightcorner").expect("key name should be valid");
     let vertbar = CString::new("vertbar").expect("key name should be valid");
+    let emspace = CString::new("emspace").expect("key name should be valid");
+    let ellipsis = CString::new("ellipsis").expect("key name should be valid");
+    let trademark = CString::new("trademark").expect("key name should be valid");
+    let leftsinglequotemark =
+        CString::new("leftsinglequotemark").expect("key name should be valid");
+    let dagger = CString::new("dagger").expect("key name should be valid");
+    let cursor = CString::new("cursor").expect("key name should be valid");
+    let leftcaret = CString::new("leftcaret").expect("key name should be valid");
+    let overbar = CString::new("overbar").expect("key name should be valid");
+    let circle = CString::new("circle").expect("key name should be valid");
+    let righttack = CString::new("righttack").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -481,6 +492,19 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
         0x9ea
     );
     assert_eq!(unsafe { RimeGetKeycodeByName(vertbar.as_ptr()) }, 0x9f8);
+    assert_eq!(unsafe { RimeGetKeycodeByName(emspace.as_ptr()) }, 0xaa1);
+    assert_eq!(unsafe { RimeGetKeycodeByName(ellipsis.as_ptr()) }, 0xaae);
+    assert_eq!(unsafe { RimeGetKeycodeByName(trademark.as_ptr()) }, 0xac9);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(leftsinglequotemark.as_ptr()) },
+        0xad0
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(dagger.as_ptr()) }, 0xaf1);
+    assert_eq!(unsafe { RimeGetKeycodeByName(cursor.as_ptr()) }, 0xaff);
+    assert_eq!(unsafe { RimeGetKeycodeByName(leftcaret.as_ptr()) }, 0xba3);
+    assert_eq!(unsafe { RimeGetKeycodeByName(overbar.as_ptr()) }, 0xbc0);
+    assert_eq!(unsafe { RimeGetKeycodeByName(circle.as_ptr()) }, 0xbcf);
+    assert_eq!(unsafe { RimeGetKeycodeByName(righttack.as_ptr()) }, 0xbfc);
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -737,6 +761,46 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0x9f8)).as_deref(),
         Some("vertbar")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xaa1)).as_deref(),
+        Some("emspace")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xaae)).as_deref(),
+        Some("ellipsis")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xac9)).as_deref(),
+        Some("trademark")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xad0)).as_deref(),
+        Some("leftsinglequotemark")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xaf1)).as_deref(),
+        Some("dagger")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xaff)).as_deref(),
+        Some("cursor")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xba3)).as_deref(),
+        Some("leftcaret")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xbc0)).as_deref(),
+        Some("overbar")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xbcf)).as_deref(),
+        Some("circle")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xbfc)).as_deref(),
+        Some("righttack")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

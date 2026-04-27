@@ -865,6 +865,111 @@ const TECHNICAL_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"vertbar\0", 0x9f8),
 ];
 
+const PUBLISHING_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"emspace\0", 0x0aa1),
+    (b"enspace\0", 0x0aa2),
+    (b"em3space\0", 0x0aa3),
+    (b"em4space\0", 0x0aa4),
+    (b"digitspace\0", 0x0aa5),
+    (b"punctspace\0", 0x0aa6),
+    (b"thinspace\0", 0x0aa7),
+    (b"hairspace\0", 0x0aa8),
+    (b"emdash\0", 0x0aa9),
+    (b"endash\0", 0x0aaa),
+    (b"signifblank\0", 0x0aac),
+    (b"ellipsis\0", 0x0aae),
+    (b"doubbaselinedot\0", 0x0aaf),
+    (b"onethird\0", 0x0ab0),
+    (b"twothirds\0", 0x0ab1),
+    (b"onefifth\0", 0x0ab2),
+    (b"twofifths\0", 0x0ab3),
+    (b"threefifths\0", 0x0ab4),
+    (b"fourfifths\0", 0x0ab5),
+    (b"onesixth\0", 0x0ab6),
+    (b"fivesixths\0", 0x0ab7),
+    (b"careof\0", 0x0ab8),
+    (b"figdash\0", 0x0abb),
+    (b"leftanglebracket\0", 0x0abc),
+    (b"decimalpoint\0", 0x0abd),
+    (b"rightanglebracket\0", 0x0abe),
+    (b"marker\0", 0x0abf),
+    (b"oneeighth\0", 0x0ac3),
+    (b"threeeighths\0", 0x0ac4),
+    (b"fiveeighths\0", 0x0ac5),
+    (b"seveneighths\0", 0x0ac6),
+    (b"trademark\0", 0x0ac9),
+    (b"signaturemark\0", 0x0aca),
+    (b"trademarkincircle\0", 0x0acb),
+    (b"leftopentriangle\0", 0x0acc),
+    (b"rightopentriangle\0", 0x0acd),
+    (b"emopencircle\0", 0x0ace),
+    (b"emopenrectangle\0", 0x0acf),
+    (b"leftsinglequotemark\0", 0x0ad0),
+    (b"rightsinglequotemark\0", 0x0ad1),
+    (b"leftdoublequotemark\0", 0x0ad2),
+    (b"rightdoublequotemark\0", 0x0ad3),
+    (b"prescription\0", 0x0ad4),
+    (b"minutes\0", 0x0ad6),
+    (b"seconds\0", 0x0ad7),
+    (b"latincross\0", 0x0ad9),
+    (b"hexagram\0", 0x0ada),
+    (b"filledrectbullet\0", 0x0adb),
+    (b"filledlefttribullet\0", 0x0adc),
+    (b"filledrighttribullet\0", 0x0add),
+    (b"emfilledcircle\0", 0x0ade),
+    (b"emfilledrect\0", 0x0adf),
+    (b"enopencircbullet\0", 0x0ae0),
+    (b"enopensquarebullet\0", 0x0ae1),
+    (b"openrectbullet\0", 0x0ae2),
+    (b"opentribulletup\0", 0x0ae3),
+    (b"opentribulletdown\0", 0x0ae4),
+    (b"openstar\0", 0x0ae5),
+    (b"enfilledcircbullet\0", 0x0ae6),
+    (b"enfilledsqbullet\0", 0x0ae7),
+    (b"filledtribulletup\0", 0x0ae8),
+    (b"filledtribulletdown\0", 0x0ae9),
+    (b"leftpointer\0", 0x0aea),
+    (b"rightpointer\0", 0x0aeb),
+    (b"club\0", 0x0aec),
+    (b"diamond\0", 0x0aed),
+    (b"heart\0", 0x0aee),
+    (b"maltesecross\0", 0x0af0),
+    (b"dagger\0", 0x0af1),
+    (b"doubledagger\0", 0x0af2),
+    (b"checkmark\0", 0x0af3),
+    (b"ballotcross\0", 0x0af4),
+    (b"musicalsharp\0", 0x0af5),
+    (b"musicalflat\0", 0x0af6),
+    (b"malesymbol\0", 0x0af7),
+    (b"femalesymbol\0", 0x0af8),
+    (b"telephone\0", 0x0af9),
+    (b"telephonerecorder\0", 0x0afa),
+    (b"phonographcopyright\0", 0x0afb),
+    (b"caret\0", 0x0afc),
+    (b"singlelowquotemark\0", 0x0afd),
+    (b"doublelowquotemark\0", 0x0afe),
+    (b"cursor\0", 0x0aff),
+    (b"leftcaret\0", 0x0ba3),
+    (b"rightcaret\0", 0x0ba6),
+    (b"downcaret\0", 0x0ba8),
+    (b"upcaret\0", 0x0ba9),
+    (b"overbar\0", 0x0bc0),
+    (b"downtack\0", 0x0bc2),
+    (b"upshoe\0", 0x0bc3),
+    (b"downstile\0", 0x0bc4),
+    (b"underbar\0", 0x0bc6),
+    (b"jot\0", 0x0bca),
+    (b"quad\0", 0x0bcc),
+    (b"uptack\0", 0x0bce),
+    (b"circle\0", 0x0bcf),
+    (b"upstile\0", 0x0bd3),
+    (b"downshoe\0", 0x0bd6),
+    (b"rightshoe\0", 0x0bd8),
+    (b"leftshoe\0", 0x0bda),
+    (b"lefttack\0", 0x0bdc),
+    (b"righttack\0", 0x0bfc),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -926,6 +1031,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(CYRILLIC_KEY_NAMES)
         .chain(GREEK_KEY_NAMES)
         .chain(TECHNICAL_KEY_NAMES)
+        .chain(PUBLISHING_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -942,6 +1048,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(CYRILLIC_KEY_NAMES)
         .chain(GREEK_KEY_NAMES)
         .chain(TECHNICAL_KEY_NAMES)
+        .chain(PUBLISHING_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

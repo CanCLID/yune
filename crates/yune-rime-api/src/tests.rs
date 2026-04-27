@@ -6155,9 +6155,20 @@ schema:
 schema:
   schema_id: luna_ext
   name: Luna Extension
+  dependencies:
+    - luna_ext_extra
 ",
     )
     .expect("dependency schema should be written");
+    fs::write(
+        shared.join("luna_ext_extra.schema.yaml"),
+        "\
+schema:
+  schema_id: luna_ext_extra
+  name: Luna Extension Extra
+",
+    )
+    .expect("transitive dependency schema should be written");
     fs::write(
         shared.join("terra.schema.yaml"),
         "\
@@ -6187,6 +6198,10 @@ schema:
     ] {
         assert!(user.join("build").join(file_name).is_file());
     }
+    assert!(!user
+        .join("build")
+        .join("luna_ext_extra.schema.yaml")
+        .is_file());
 
     let luna_ext_id = CString::new("luna_ext").expect("schema id should be valid");
     let mut luna_ext = empty_config();

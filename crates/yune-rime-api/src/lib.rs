@@ -5889,9 +5889,11 @@ fn workspace_update_schema(
 
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    for dependency_id in schema_dependencies(&schema_config) {
-        if !workspace_update_schema(&dependency_id, true, built) {
-            return false;
+    if !as_dependency {
+        for dependency_id in schema_dependencies(&schema_config) {
+            if !workspace_update_schema(&dependency_id, true, built) {
+                return false;
+            }
         }
     }
     true

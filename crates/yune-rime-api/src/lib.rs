@@ -12,6 +12,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use regex::Regex;
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
     parse_key_sequence, CharsetFilter, Engine, HistoryTranslator, KeyCode, KeyEvent, KeyModifiers,
@@ -110,6 +111,8 @@ struct SessionState {
     input_buffer: Option<CString>,
     key_binder: Option<KeyBinderProcessor>,
     punctuation_processor: Option<PunctuationProcessor>,
+    base_segment_tags: Vec<String>,
+    matcher_segmentor: Option<MatcherSegmentor>,
     paging: bool,
     last_active_time: u64,
 }
@@ -122,6 +125,8 @@ impl SessionState {
             input_buffer: None,
             key_binder: None,
             punctuation_processor: None,
+            base_segment_tags: vec!["abc".to_owned()],
+            matcher_segmentor: None,
             paging: false,
             last_active_time: session_activity_now(),
         }
@@ -168,6 +173,15 @@ struct KeyBindingSwitchOption {
 enum KeyBindingSwitchTarget {
     Toggle(String),
     Radio(KeyBindingSwitchOption),
+}
+
+struct MatcherSegmentor {
+    patterns: Vec<MatcherPattern>,
+}
+
+struct MatcherPattern {
+    tag: String,
+    pattern: Regex,
 }
 
 struct PunctuationProcessor {
@@ -1858,6 +1872,7 @@ pub extern "C" fn RimeCommitComposition(session_id: RimeSessionId) -> Bool {
     };
 
     session.paging = false;
+    update_session_segment_tags(session);
     append_unread_commit(session, commit);
     TRUE
 }
@@ -1874,6 +1889,7 @@ pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
     if let Some(session) = registry.get_session_mut(session_id) {
         session.engine.clear_composition();
         session.paging = false;
+        update_session_segment_tags(session);
     }
 }
 
@@ -1925,6 +1941,7 @@ pub unsafe extern "C" fn RimeSetInput(session_id: RimeSessionId, input: *const c
     };
     session.engine.set_input(input);
     session.input_buffer = None;
+    update_session_segment_tags(session);
     TRUE
 }
 
@@ -3677,6 +3694,7 @@ fn commit_selected_candidate(
     };
 
     session.paging = false;
+    update_session_segment_tags(session);
     append_unread_commit(session, commit);
     TRUE
 }
@@ -4058,23 +4076,89 @@ fn install_schema_segment_tags(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
     let mut tags = vec!["abc".to_owned()];
-    let Some(Value::Sequence(segmentors)) = find_config_value(&schema_config, "engine/segmentors")
-    else {
-        session.engine.set_segment_tags(tags);
-        return;
-    };
-    if segmentors
+    session.matcher_segmentor = None;
+
+    if let Some(Value::Sequence(segmentors)) =
+        find_config_value(&schema_config, "engine/segmentors")
+    {
+        if segmentors
+            .iter()
+            .filter_map(Value::as_str)
+            .map(schema_component_prescription)
+            .any(|(component_name, _)| component_name == "abc_segmentor")
+        {
+            tags.extend(schema_string_list(
+                &schema_config,
+                "abc_segmentor/extra_tags",
+            ));
+        }
+        session.matcher_segmentor = load_schema_matcher_segmentor(&schema_config, segmentors);
+    }
+    session.base_segment_tags = tags;
+    update_session_segment_tags(session);
+}
+
+fn load_schema_matcher_segmentor(
+    schema_config: &Value,
+    segmentors: &[Value],
+) -> Option<MatcherSegmentor> {
+    let name_space = segmentors
         .iter()
         .filter_map(Value::as_str)
         .map(schema_component_prescription)
-        .any(|(component_name, _)| component_name == "abc_segmentor")
-    {
-        tags.extend(schema_string_list(
-            &schema_config,
-            "abc_segmentor/extra_tags",
-        ));
+        .find_map(|(component_name, name_space)| {
+            (component_name == "matcher")
+                .then(|| name_space.unwrap_or("recognizer"))
+                .filter(|name_space| !name_space.is_empty())
+        })?;
+    let Value::Mapping(patterns) =
+        find_config_value(schema_config, &format!("{name_space}/patterns"))?
+    else {
+        return None;
+    };
+    let patterns = patterns
+        .iter()
+        .filter_map(|(tag, pattern)| {
+            let tag = config_scalar_string(tag)?;
+            let pattern = config_scalar_string(pattern)?;
+            Regex::new(&pattern)
+                .ok()
+                .map(|pattern| MatcherPattern { tag, pattern })
+        })
+        .collect::<Vec<_>>();
+    (!patterns.is_empty()).then_some(MatcherSegmentor { patterns })
+}
+
+fn update_session_segment_tags(session: &mut SessionState) {
+    let input = session.engine.context().composition.input.as_str();
+    let mut tags = session.base_segment_tags.clone();
+    if let Some(matcher) = &session.matcher_segmentor {
+        if let Some(tag) = matcher.match_tag(input) {
+            if !tags.iter().any(|existing| existing == tag) {
+                tags.push(tag.to_owned());
+            }
+        }
     }
-    session.engine.set_segment_tags(tags);
+    if session.engine.context().segment_tags != tags {
+        session.engine.set_segment_tags(tags);
+    }
+}
+
+impl MatcherSegmentor {
+    fn match_tag(&self, input: &str) -> Option<&str> {
+        if input.is_empty() {
+            return None;
+        }
+        self.patterns
+            .iter()
+            .find(|pattern| {
+                pattern
+                    .pattern
+                    .find(input)
+                    .is_some_and(|matched| matched.start() == 0 && matched.end() == input.len())
+            })
+            .map(|pattern| pattern.tag.as_str())
+    }
 }
 
 fn install_schema_punctuation_translator_from_config(
@@ -4544,24 +4628,26 @@ fn process_session_key_event(
     key_event: KeyEvent,
 ) -> Option<String> {
     if let Some(commits) = process_key_binder_processor(session_id, session, key_event) {
-        if commits.is_empty() {
-            return None;
-        }
-        return Some(commits.concat());
+        update_session_segment_tags(session);
+        return (!commits.is_empty()).then(|| commits.concat());
     }
     if let Some(result) = process_punctuation_processor(session, key_event) {
-        return match result {
+        let commit = match result {
             PunctuationProcessResult::Accepted => None,
             PunctuationProcessResult::Commit(commit) => Some(session.engine.record_commit(commit)),
         };
+        update_session_segment_tags(session);
+        return commit;
     }
     if let Some(commit) = process_alternative_select_key(session, key_event) {
+        update_session_segment_tags(session);
         return commit;
     }
     let before_input = session.engine.context().composition.input.clone();
     let before_highlighted = session.engine.context().highlighted;
     let commit = session.engine.process_key_event(key_event);
     update_key_binding_paging_state(session, key_event, &before_input, before_highlighted);
+    update_session_segment_tags(session);
     commit
 }
 

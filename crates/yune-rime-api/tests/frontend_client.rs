@@ -5,7 +5,8 @@ use std::{
 };
 
 use yune_rime_api::{
-    rime_get_api, RimeCommit, RimeComposition, RimeContext, RimeMenu, RimeStatus, FALSE, TRUE,
+    rime_get_api, RimeCandidate, RimeCandidateListIterator, RimeCommit, RimeComposition,
+    RimeContext, RimeMenu, RimeStatus, FALSE, TRUE,
 };
 
 fn empty_context() -> RimeContext {
@@ -51,6 +52,18 @@ fn empty_commit() -> RimeCommit {
     RimeCommit {
         data_size: (mem::size_of::<RimeCommit>() - mem::size_of::<i32>()) as i32,
         text: ptr::null_mut(),
+    }
+}
+
+fn empty_candidate_list_iterator() -> RimeCandidateListIterator {
+    RimeCandidateListIterator {
+        ptr: ptr::null_mut(),
+        index: 0,
+        candidate: RimeCandidate {
+            text: ptr::null_mut(),
+            comment: ptr::null_mut(),
+            reserved: ptr::null_mut(),
+        },
     }
 }
 
@@ -178,6 +191,66 @@ fn frontend_style_api_table_can_simulate_key_sequences() {
     let commit_text = unsafe { CStr::from_ptr(commit.text) };
     assert_eq!(commit_text.to_str(), Ok("ni"));
     assert_eq!(unsafe { free_commit(&mut commit) }, TRUE);
+
+    assert_eq!(destroy_session(session_id), TRUE);
+    cleanup_all_sessions();
+}
+
+#[test]
+fn frontend_style_api_table_can_iterate_candidates() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    cleanup_all_sessions();
+
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let destroy_session = api
+        .destroy_session
+        .expect("frontend requires destroy_session");
+    let process_key = api.process_key.expect("frontend requires process_key");
+    let candidate_list_begin = api
+        .candidate_list_begin
+        .expect("frontend requires candidate_list_begin");
+    let candidate_list_next = api
+        .candidate_list_next
+        .expect("frontend requires candidate_list_next");
+    let candidate_list_end = api
+        .candidate_list_end
+        .expect("frontend requires candidate_list_end");
+
+    let session_id = create_session();
+    assert_ne!(session_id, 0);
+    assert_eq!(process_key(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(process_key(session_id, 'i' as i32, 0), TRUE);
+
+    let mut iterator = empty_candidate_list_iterator();
+    assert_eq!(
+        unsafe { candidate_list_begin(session_id, &mut iterator) },
+        TRUE
+    );
+    assert_eq!(unsafe { candidate_list_next(&mut iterator) }, TRUE);
+
+    let text = unsafe { CStr::from_ptr(iterator.candidate.text) };
+    assert_eq!(text.to_str(), Ok("ni"));
+    let comment = unsafe { CStr::from_ptr(iterator.candidate.comment) };
+    assert_eq!(comment.to_str(), Ok("echo"));
+
+    assert_eq!(unsafe { candidate_list_next(&mut iterator) }, FALSE);
+    assert_eq!(iterator.index, 1);
+    let preserved_text = unsafe { CStr::from_ptr(iterator.candidate.text) };
+    assert_eq!(preserved_text.to_str(), Ok("ni"));
+
+    unsafe { candidate_list_end(&mut iterator) };
+    assert!(iterator.ptr.is_null());
+    assert!(iterator.candidate.text.is_null());
+    assert!(iterator.candidate.comment.is_null());
 
     assert_eq!(destroy_session(session_id), TRUE);
     cleanup_all_sessions();

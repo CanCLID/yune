@@ -343,6 +343,11 @@ fn frontend_style_api_table_can_use_builtin_levers_module() {
 schema_list:
   - schema: luna_pinyin
   - schema: cangjie5
+switcher:
+  hotkeys:
+    - Control+grave
+    - F4
+    - ''
 ",
     )
     .expect("default config should be written");
@@ -398,6 +403,15 @@ schema:
     let get_schema_author = levers_api
         .get_schema_author
         .expect("levers API should expose schema author getter");
+    let select_schemas = levers_api
+        .select_schemas
+        .expect("levers API should expose schema selection");
+    let get_hotkeys = levers_api
+        .get_hotkeys
+        .expect("levers API should expose hotkey lookup");
+    let set_hotkeys = levers_api
+        .set_hotkeys
+        .expect("levers API should expose hotkey mutation");
     let destroy = levers_api
         .schema_list_destroy
         .expect("levers API should expose schema list destroy");
@@ -443,6 +457,51 @@ schema:
     assert!(first_selected.name.is_null());
     assert!(first_selected.reserved.is_null());
 
+    let hotkeys = unsafe { get_hotkeys(settings) };
+    assert!(!hotkeys.is_null());
+    assert_eq!(
+        unsafe { CStr::from_ptr(hotkeys) }.to_str(),
+        Ok("Control+grave, F4")
+    );
+
+    let selected_cangjie = CString::new("cangjie5").expect("schema id should be valid");
+    let selected_luna = CString::new("luna_pinyin").expect("schema id should be valid");
+    let schema_ids = [selected_cangjie.as_ptr(), selected_luna.as_ptr()];
+    assert_eq!(
+        unsafe { select_schemas(settings, schema_ids.as_ptr(), schema_ids.len() as c_int) },
+        TRUE
+    );
+    let mut overridden_selected = empty_schema_list();
+    assert_eq!(
+        unsafe { get_selected(settings, &mut overridden_selected) },
+        TRUE
+    );
+    assert_eq!(overridden_selected.size, 2);
+    let overridden_first = unsafe { *overridden_selected.list };
+    let overridden_second = unsafe { *overridden_selected.list.add(1) };
+    assert_eq!(
+        unsafe { CStr::from_ptr(overridden_first.schema_id) }.to_str(),
+        Ok("cangjie5")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(overridden_second.schema_id) }.to_str(),
+        Ok("luna_pinyin")
+    );
+    assert!(overridden_first.name.is_null());
+    assert!(overridden_first.reserved.is_null());
+    assert!(overridden_second.name.is_null());
+    assert!(overridden_second.reserved.is_null());
+    let new_hotkeys = CString::new("Alt+space").expect("hotkeys should be valid");
+    assert_eq!(
+        unsafe { set_hotkeys(settings, new_hotkeys.as_ptr()) },
+        FALSE
+    );
+    assert!(unsafe { get_hotkeys(ptr::null_mut()) }.is_null());
+    assert_eq!(unsafe { select_schemas(settings, ptr::null(), 1) }, FALSE);
+
+    unsafe { destroy(&mut overridden_selected) };
+    assert_eq!(overridden_selected.size, 0);
+    assert!(overridden_selected.list.is_null());
     unsafe { destroy(&mut selected) };
     assert_eq!(selected.size, 0);
     assert!(selected.list.is_null());

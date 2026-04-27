@@ -2171,14 +2171,75 @@ fn punctuation_candidates(
             (
                 key.clone(),
                 Candidate {
+                    comment: punctuation_candidate_comment(&text).to_owned(),
                     text,
-                    comment: "punct".to_owned(),
                     source: CandidateSource::Punctuation,
                     quality: 1.0,
                 },
             )
         })
         .collect()
+}
+
+fn punctuation_candidate_comment(punct: &str) -> &'static str {
+    let mut characters = punct.chars();
+    let Some(ch) = characters.next() else {
+        return "";
+    };
+    if characters.next().is_some() {
+        return "";
+    }
+
+    if is_librime_half_shape_punct(ch) {
+        "\u{3014}\u{534a}\u{89d2}\u{3015}"
+    } else if is_librime_full_shape_punct(ch) {
+        "\u{3014}\u{5168}\u{89d2}\u{3015}"
+    } else {
+        ""
+    }
+}
+
+fn is_librime_half_shape_punct(ch: char) -> bool {
+    let code = ch as u32;
+    matches!(
+        code,
+        0x20..=0x7e
+            | 0xff61..=0xff9f
+            | 0xffa0..=0xffdc
+            | 0x00a2
+            | 0x00a3
+            | 0x00a5
+            | 0x00a6
+            | 0x00ac
+            | 0x00af
+            | 0x2985
+            | 0x2986
+            | 0xffe8..=0xffee
+    )
+}
+
+fn is_librime_full_shape_punct(ch: char) -> bool {
+    let code = ch as u32;
+    matches!(
+        code,
+        0x3000
+            | 0xff01..=0xff5e
+            | 0x30a1..=0x30fc
+            | 0x3001
+            | 0x3002
+            | 0x300c
+            | 0x300d
+            | 0x309b
+            | 0x309c
+            | 0x3131..=0x3164
+            | 0xff5f
+            | 0xff60
+            | 0xffe0..=0xffe6
+            | 0x2190..=0x2193
+            | 0x2502
+            | 0x25a0
+            | 0x25cb
+    )
 }
 
 pub struct Engine {
@@ -2638,12 +2699,13 @@ impl Engine {
         text: impl Into<String>,
     ) {
         let input = input.into();
+        let text = text.into();
         self.context.composition.input = input.clone();
         self.context.composition.caret = input.len();
         self.context.composition.preedit = input;
         self.context.candidates = vec![Candidate {
-            text: text.into(),
-            comment: "punct".to_owned(),
+            comment: punctuation_candidate_comment(&text).to_owned(),
+            text,
             source: CandidateSource::Punctuation,
             quality: 1.0,
         }];
@@ -6157,6 +6219,34 @@ sort: by_weight
         engine.set_option("full_shape", true);
         assert_eq!(engine.context().candidates[0].text, "／");
         assert_eq!(engine.context().candidates[1].text, "/");
+    }
+
+    #[test]
+    fn punctuation_translator_uses_librime_shape_comments() {
+        let mut engine = Engine::new();
+        engine.add_translator(PunctuationTranslator::with_shape_and_symbol_entries(
+            [("/", "/"), (",", "、")],
+            [("/", "／")],
+            [("/copyright", "©")],
+        ));
+
+        engine.process_char('/');
+        assert_eq!(engine.context().candidates[0].comment, "〔半角〕");
+
+        engine.clear_composition();
+        engine.process_char(',');
+        assert_eq!(engine.context().candidates[0].comment, "〔全角〕");
+
+        engine.set_option("full_shape", true);
+        engine.clear_composition();
+        engine.process_char('/');
+        assert_eq!(engine.context().candidates[0].comment, "〔全角〕");
+
+        engine.clear_composition();
+        engine
+            .process_key_sequence("/copyright")
+            .expect("keys should parse");
+        assert_eq!(engine.context().candidates[0].comment, "");
     }
 
     #[test]

@@ -3426,7 +3426,8 @@ fn key_event_from_rime_keycode(keycode: c_int, mask: c_int) -> Option<KeyEvent> 
         XK_END | XK_KP_END => KeyCode::End,
         XK_PAGE_UP | XK_KP_PAGE_UP => KeyCode::PreviousPage,
         XK_PAGE_DOWN | XK_KP_PAGE_DOWN => KeyCode::NextPage,
-        XK_RETURN | XK_KP_ENTER => KeyCode::Return,
+        XK_RETURN => KeyCode::Return,
+        XK_KP_ENTER => KeyCode::KeypadEnter,
         XK_KP_0..=XK_KP_9 => {
             KeyCode::KeypadDigit(char::from_u32(('0' as u32) + (keycode - XK_KP_0) as u32)?)
         }

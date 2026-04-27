@@ -75,6 +75,7 @@ pub enum KeyCode {
     PreviousPage,
     NextPage,
     Return,
+    KeypadEnter,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -228,7 +229,7 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         "Page_Up" | "Prior" | "KP_Page_Up" | "KP_Prior" => KeyCode::PreviousPage,
         "Page_Down" | "Next" | "KP_Page_Down" | "KP_Next" => KeyCode::NextPage,
         "Return" => KeyCode::Return,
-        "KP_Enter" => KeyCode::Return,
+        "KP_Enter" => KeyCode::KeypadEnter,
         "KP_0" => KeyCode::KeypadDigit('0'),
         "KP_1" => KeyCode::KeypadDigit('1'),
         "KP_2" => KeyCode::KeypadDigit('2'),
@@ -955,7 +956,7 @@ impl Engine {
                 self.change_page(false);
                 None
             }
-            KeyCode::Return => self.commit_highlighted(),
+            KeyCode::Return | KeyCode::KeypadEnter => self.commit_highlighted(),
         }
     }
 
@@ -1386,7 +1387,7 @@ mod tests {
         assert_eq!(keys[11].code, KeyCode::Return);
         assert!(keys[11].modifiers.control);
         assert!(keys[11].modifiers.alt);
-        assert_eq!(keys[12].code, KeyCode::Return);
+        assert_eq!(keys[12].code, KeyCode::KeypadEnter);
         assert_eq!(keys[13].code, KeyCode::KeypadDigit('2'));
         assert_eq!(keys[14].code, KeyCode::Delete);
         assert_eq!(keys[15].code, KeyCode::Escape);
@@ -1614,6 +1615,21 @@ mod tests {
             .expect("key sequence should parse");
         assert!(commits.is_empty());
         assert_eq!(engine.context().last_commit.as_deref(), Some("Ab"));
+    }
+
+    #[test]
+    fn modified_keypad_enter_does_not_trigger_librime_return_only_editor_bindings() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        let commits = engine
+            .process_key_sequence(
+                "ni{Control+KP_Enter}{Shift+KP_Enter}{Control+Shift+KP_Enter}{KP_Enter}",
+            )
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["你"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("你"));
     }
 
     #[test]

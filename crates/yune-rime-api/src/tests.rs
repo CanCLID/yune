@@ -6863,8 +6863,11 @@ fn keypad_enter_commits_composition_like_librime_return_key() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     let kp_enter = CString::new("KP_Enter").expect("key name should be valid");
+    let shift = CString::new("Shift").expect("modifier name should be valid");
     let kp_enter_keycode = unsafe { RimeGetKeycodeByName(kp_enter.as_ptr()) };
+    let shift_mask = unsafe { RimeGetModifierByName(shift.as_ptr()) };
     assert_eq!(kp_enter_keycode, 0xff8d);
+    assert_eq!(shift_mask, 1);
 
     let session_id = RimeCreateSession();
     {
@@ -6923,6 +6926,60 @@ fn keypad_enter_commits_composition_like_librime_return_key() {
     // SAFETY: commit.text was allocated by the shim above.
     assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
     assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+
+    let modified_session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&modified_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    assert_eq!(RimeProcessKey(modified_session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(modified_session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(
+        RimeProcessKey(modified_session_id, kp_enter_keycode, shift_mask),
+        FALSE
+    );
+    let modified_sequence =
+        CString::new("{Control+KP_Enter}{Shift+KP_Enter}{Control+Shift+KP_Enter}")
+            .expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(modified_session_id, modified_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: commit points to valid writable storage and no unread commit is expected.
+    assert_eq!(
+        unsafe { RimeGetCommit(modified_session_id, &mut commit) },
+        FALSE
+    );
+    assert_eq!(RimeGetCaretPos(modified_session_id), 2);
+    let input = RimeGetInput(modified_session_id);
+    assert!(!input.is_null());
+    // SAFETY: RimeGetInput returned a non-null session-owned C string.
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("ni"));
+    let unmodified_sequence = CString::new("{KP_Enter}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(modified_session_id, unmodified_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeGetCommit(modified_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("你"));
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(modified_session_id), TRUE);
 }
 
 #[test]

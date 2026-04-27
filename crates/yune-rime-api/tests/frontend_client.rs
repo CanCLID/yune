@@ -855,14 +855,31 @@ fn frontend_style_api_table_can_manage_levers_user_dicts() {
     assert_eq!(unsafe { iterator_init(ptr::null_mut()) }, FALSE);
     assert!(unsafe { next_user_dict(ptr::null_mut()) }.is_null());
     unsafe { iterator_destroy(ptr::null_mut()) };
+    let missing_name = CString::new("missing").expect("dict name is valid");
+    let missing_snapshot = root.join("missing.userdb.txt");
+    let missing_snapshot_c =
+        CString::new(missing_snapshot.to_string_lossy().as_ref()).expect("path is valid");
     assert_eq!(unsafe { backup_user_dict(ptr::null()) }, FALSE);
+    assert_eq!(unsafe { backup_user_dict(missing_name.as_ptr()) }, FALSE);
     assert_eq!(unsafe { restore_user_dict(ptr::null()) }, FALSE);
+    assert_eq!(
+        unsafe { restore_user_dict(missing_snapshot_c.as_ptr()) },
+        FALSE
+    );
     assert_eq!(
         unsafe { export_user_dict(ptr::null(), export_path_c.as_ptr()) },
         -1
     );
     assert_eq!(
+        unsafe { export_user_dict(missing_name.as_ptr(), export_path_c.as_ptr()) },
+        -1
+    );
+    assert_eq!(
         unsafe { import_user_dict(imported_name.as_ptr(), ptr::null()) },
+        -1
+    );
+    assert_eq!(
+        unsafe { import_user_dict(imported_name.as_ptr(), missing_snapshot_c.as_ptr()) },
         -1
     );
 

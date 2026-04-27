@@ -5846,28 +5846,41 @@ fn set_config_value(root: &mut Value, key: &str, value: Value) -> bool {
     };
 
     let mut current = root;
-    for (index, segment) in parents.iter().enumerate() {
+    for (parent_index, segment) in parents.iter().enumerate() {
         if is_list_item_reference(segment) && current.is_null() {
             *current = Value::Sequence(Vec::new());
         }
-        if let Some(index) = list_index_for_read(segment, current) {
+        if let Some((index, insert)) = list_index_for_write(segment, current) {
             let Value::Sequence(sequence) = current else {
                 return false;
             };
-            let Some(next) = sequence.get_mut(index) else {
-                return false;
+            let next_segment = if parent_index + 1 == parents.len() {
+                *last
+            } else {
+                parents[parent_index + 1]
             };
-            current = next;
+            if insert {
+                if index > sequence.len() {
+                    sequence.resize(index, Value::Null);
+                }
+                sequence.insert(index, empty_config_container_for_next(next_segment));
+            } else if index >= sequence.len() {
+                sequence.resize(index + 1, Value::Null);
+            }
+            current = &mut sequence[index];
+            if current.is_null() {
+                *current = empty_config_container_for_next(next_segment);
+            }
         } else if is_list_item_reference(segment) {
             return false;
         } else {
             let Value::Mapping(mapping) = ensure_mapping(current) else {
                 return false;
             };
-            let next_segment = if index + 1 == parents.len() {
+            let next_segment = if parent_index + 1 == parents.len() {
                 *last
             } else {
-                parents[index + 1]
+                parents[parent_index + 1]
             };
             current = mapping
                 .entry(Value::String((*segment).to_owned()))
@@ -6852,6 +6865,117 @@ switches:\n  - name: ascii_mode\n  - name: full_shape\nmenu:\n  page_size: 9\n  
             },
             TRUE
         );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+    }
+
+    #[test]
+    fn config_set_supports_librime_list_key_paths() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let list = CString::new("list").expect("key should be valid");
+        let next_id = CString::new("list/@next/id").expect("key should be valid");
+        let last_value = CString::new("list/@last/value").expect("key should be valid");
+        let before_first_id = CString::new("list/@before 0/id").expect("key should be valid");
+        let first_value = CString::new("list/@0/value").expect("key should be valid");
+        let after_last_id = CString::new("list/@after last/id").expect("key should be valid");
+        let before_last_id = CString::new("list/@before last/id").expect("key should be valid");
+        let value_at_0 = CString::new("list/@0/value").expect("key should be valid");
+        let value_at_1 = CString::new("list/@1/value").expect("key should be valid");
+        let value_at_2 = CString::new("list/@2/value").expect("key should be valid");
+        let value_at_3 = CString::new("list/@3/value").expect("key should be valid");
+        let last_id = CString::new("list/@last/id").expect("key should be valid");
+        let mut output = 0;
+
+        // SAFETY: config points to writable storage.
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, next_id.as_ptr(), 1) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, last_value.as_ptr(), 100) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, next_id.as_ptr(), 2) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, last_value.as_ptr(), 200) },
+            TRUE
+        );
+        assert_eq!(unsafe { RimeConfigListSize(&mut config, list.as_ptr()) }, 2);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, value_at_0.as_ptr(), &mut output) },
+            TRUE
+        );
+        assert_eq!(output, 100);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, value_at_1.as_ptr(), &mut output) },
+            TRUE
+        );
+        assert_eq!(output, 200);
+
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, before_first_id.as_ptr(), 3) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, first_value.as_ptr(), 50) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, after_last_id.as_ptr(), 4) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, last_value.as_ptr(), 400) },
+            TRUE
+        );
+        assert_eq!(unsafe { RimeConfigListSize(&mut config, list.as_ptr()) }, 4);
+        for (path, expected) in [
+            (&value_at_0, 50),
+            (&value_at_1, 100),
+            (&value_at_2, 200),
+            (&value_at_3, 400),
+        ] {
+            assert_eq!(
+                unsafe { RimeConfigGetInt(&mut config, path.as_ptr(), &mut output) },
+                TRUE
+            );
+            assert_eq!(output, expected);
+        }
+
+        assert_eq!(
+            unsafe { RimeConfigCreateList(&mut config, list.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, after_last_id.as_ptr(), 5) },
+            TRUE
+        );
+        assert_eq!(unsafe { RimeConfigListSize(&mut config, list.as_ptr()) }, 1);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, last_id.as_ptr(), &mut output) },
+            TRUE
+        );
+        assert_eq!(output, 5);
+
+        assert_eq!(
+            unsafe { RimeConfigCreateList(&mut config, list.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, before_last_id.as_ptr(), 6) },
+            TRUE
+        );
+        assert_eq!(unsafe { RimeConfigListSize(&mut config, list.as_ptr()) }, 1);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, last_id.as_ptr(), &mut output) },
+            TRUE
+        );
+        assert_eq!(output, 6);
+
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }
 

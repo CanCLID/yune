@@ -58,6 +58,7 @@ impl KeyModifiers {
 pub enum KeyCode {
     Character(char),
     KeypadDigit(char),
+    Tab,
     Backspace,
     Delete,
     Escape,
@@ -215,6 +216,7 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
 
     let code = match name {
         "space" => KeyCode::Character(' '),
+        "Tab" => KeyCode::Tab,
         "BackSpace" => KeyCode::Backspace,
         "Delete" => KeyCode::Delete,
         "Escape" => KeyCode::Escape,
@@ -920,6 +922,7 @@ impl Engine {
                 self.commit_candidate_at_page_index(select_index_from_digit(ch))
             }
             KeyCode::KeypadDigit(_) => None,
+            KeyCode::Tab => None,
             KeyCode::Backspace => self.backspace(),
             KeyCode::Delete => self.delete_at_caret(),
             KeyCode::Escape => {
@@ -1403,11 +1406,11 @@ mod tests {
     #[test]
     fn parses_librime_style_key_sequence_names() {
         let keys = parse_key_sequence(
-            "zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}{Delete}{Escape}{Left}{Right}{KP_Left}{KP_Right}{Home}{KP_End}{Page_Down}{KP_Page_Up}{Down}{KP_Up}{Control+Up}{Control+Down}",
+            "zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}{Tab}{Delete}{Escape}{Left}{Right}{KP_Left}{KP_Right}{Home}{KP_End}{Page_Down}{KP_Page_Up}{Down}{KP_Up}{Control+Up}{Control+Down}",
         )
         .expect("key sequence should parse");
 
-        assert_eq!(keys.len(), 28);
+        assert_eq!(keys.len(), 29);
         assert_eq!(keys[3].code, KeyCode::Character(' '));
         assert!(!keys[3].modifiers.shift);
         assert_eq!(keys[7].code, KeyCode::Character(' '));
@@ -1417,22 +1420,23 @@ mod tests {
         assert!(keys[11].modifiers.alt);
         assert_eq!(keys[12].code, KeyCode::KeypadEnter);
         assert_eq!(keys[13].code, KeyCode::KeypadDigit('2'));
-        assert_eq!(keys[14].code, KeyCode::Delete);
-        assert_eq!(keys[15].code, KeyCode::Escape);
-        assert_eq!(keys[16].code, KeyCode::MoveCaretLeft);
-        assert_eq!(keys[17].code, KeyCode::MoveCaretRight);
-        assert_eq!(keys[18].code, KeyCode::MoveCaretLeftByChar);
-        assert_eq!(keys[19].code, KeyCode::MoveCaretRightByChar);
-        assert_eq!(keys[20].code, KeyCode::Home);
-        assert_eq!(keys[21].code, KeyCode::End);
-        assert_eq!(keys[22].code, KeyCode::NextPage);
-        assert_eq!(keys[23].code, KeyCode::PreviousPage);
-        assert_eq!(keys[24].code, KeyCode::NextCandidate);
-        assert_eq!(keys[25].code, KeyCode::PreviousCandidate);
-        assert_eq!(keys[26].code, KeyCode::MoveCaretLeftBySyllable);
-        assert!(keys[26].modifiers.control);
-        assert_eq!(keys[27].code, KeyCode::MoveCaretRightBySyllable);
+        assert_eq!(keys[14].code, KeyCode::Tab);
+        assert_eq!(keys[15].code, KeyCode::Delete);
+        assert_eq!(keys[16].code, KeyCode::Escape);
+        assert_eq!(keys[17].code, KeyCode::MoveCaretLeft);
+        assert_eq!(keys[18].code, KeyCode::MoveCaretRight);
+        assert_eq!(keys[19].code, KeyCode::MoveCaretLeftByChar);
+        assert_eq!(keys[20].code, KeyCode::MoveCaretRightByChar);
+        assert_eq!(keys[21].code, KeyCode::Home);
+        assert_eq!(keys[22].code, KeyCode::End);
+        assert_eq!(keys[23].code, KeyCode::NextPage);
+        assert_eq!(keys[24].code, KeyCode::PreviousPage);
+        assert_eq!(keys[25].code, KeyCode::NextCandidate);
+        assert_eq!(keys[26].code, KeyCode::PreviousCandidate);
+        assert_eq!(keys[27].code, KeyCode::MoveCaretLeftBySyllable);
         assert!(keys[27].modifiers.control);
+        assert_eq!(keys[28].code, KeyCode::MoveCaretRightBySyllable);
+        assert!(keys[28].modifiers.control);
     }
 
     #[test]

@@ -3732,6 +3732,10 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
             .or_else(|| find_config_value(&schema_config, "speller/delimiter"))
             .and_then(config_scalar_string)
             .unwrap_or_else(|| " ".to_owned());
+        let initial_quality =
+            find_config_value(&schema_config, &format!("{name_space}/initial_quality"))
+                .and_then(config_scalar_f32)
+                .unwrap_or(0.0);
         let comment_format = schema_comment_format(&schema_config, &name_space);
         let dictionary_exclude =
             schema_string_list(&schema_config, &format!("{name_space}/dictionary_exclude"));
@@ -3740,6 +3744,7 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
                 .with_completion(enable_completion)
                 .with_charset_filter(enable_charset_filter)
                 .with_delimiters(delimiters)
+                .with_initial_quality(initial_quality)
                 .with_comment_format(&comment_format)
                 .with_dictionary_exclude(dictionary_exclude),
         );
@@ -3945,6 +3950,14 @@ fn schema_string_list(schema_config: &Value, key: &str) -> Vec<String> {
         return Vec::new();
     };
     formulas.iter().filter_map(config_scalar_string).collect()
+}
+
+fn config_scalar_f32(value: &Value) -> Option<f32> {
+    match value {
+        Value::Number(number) => number.as_f64().map(|number| number as f32),
+        Value::String(value) => value.parse::<f32>().ok(),
+        _ => None,
+    }
 }
 
 fn install_schema_punctuation_translator(session: &mut SessionState, schema_id: &str) {

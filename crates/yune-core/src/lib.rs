@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2094,6 +2095,7 @@ pub struct StaticTableTranslator {
     enable_completion: bool,
     enable_charset_filter: bool,
     delimiters: String,
+    initial_quality: f32,
     comment_format: CommentFormat,
     dictionary_exclude: HashSet<String>,
 }
@@ -2112,7 +2114,7 @@ impl StaticTableTranslator {
                         text,
                         comment: code,
                         source: CandidateSource::Table,
-                        quality: 1.0,
+                        quality: 0.0,
                     },
                 )
             })
@@ -2122,6 +2124,7 @@ impl StaticTableTranslator {
             enable_completion: false,
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
+            initial_quality: 0.0,
             comment_format: CommentFormat::default(),
             dictionary_exclude: HashSet::new(),
         }
@@ -2147,6 +2150,7 @@ impl StaticTableTranslator {
             enable_completion: false,
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
+            initial_quality: 0.0,
             comment_format: CommentFormat::default(),
             dictionary_exclude: HashSet::new(),
         }
@@ -2170,6 +2174,12 @@ impl StaticTableTranslator {
         if self.delimiters.is_empty() {
             self.delimiters = " ".to_owned();
         }
+        self
+    }
+
+    #[must_use]
+    pub fn with_initial_quality(mut self, initial_quality: f32) -> Self {
+        self.initial_quality = initial_quality;
         self
     }
 
@@ -2211,6 +2221,7 @@ impl StaticTableTranslator {
     ) -> Candidate {
         let mut candidate = candidate.clone();
         candidate.comment = self.comment_format.apply(&candidate.comment);
+        candidate.quality = candidate.quality.exp() + self.initial_quality;
         if entry_code != lookup_code {
             candidate.source = CandidateSource::Completion;
             candidate.quality -= 1.0;
@@ -3921,6 +3932,12 @@ impl Engine {
                 translator.translate_with_context(input, &self.status, &self.options, &self.context)
             })
             .collect::<Vec<_>>();
+        candidates.sort_by(|left, right| {
+            right
+                .quality
+                .partial_cmp(&left.quality)
+                .unwrap_or(Ordering::Equal)
+        });
         for filter in &self.filters {
             filter.apply_with_options(&mut candidates, &self.options);
         }
@@ -7023,6 +7040,27 @@ sort: original
             .collect::<Vec<_>>();
         assert_eq!(texts, ["爸", "班", "b"]);
         assert_eq!(sources, ["completion", "completion", "echo"]);
+    }
+
+    #[test]
+    fn static_table_translator_initial_quality_participates_in_candidate_order() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ba", "低")]));
+        engine
+            .add_translator(StaticTableTranslator::new([("ba", "高")]).with_initial_quality(10.0));
+
+        engine
+            .process_key_sequence("ba")
+            .expect("key sequence should parse");
+
+        let candidates = &engine.context().candidates;
+        let texts = candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["高", "低", "ba"]);
+        assert_eq!(candidates[0].quality, 11.0);
+        assert_eq!(candidates[1].quality, 1.0);
     }
 
     #[test]

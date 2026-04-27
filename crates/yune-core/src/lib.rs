@@ -2530,6 +2530,7 @@ pub struct HistoryTranslator {
     input: String,
     size: usize,
     initial_quality: f32,
+    tag: String,
 }
 
 impl HistoryTranslator {
@@ -2539,6 +2540,7 @@ impl HistoryTranslator {
             input: input.into(),
             size: 1,
             initial_quality: 1000.0,
+            tag: "abc".to_owned(),
         }
     }
 
@@ -2552,6 +2554,19 @@ impl HistoryTranslator {
     pub const fn with_initial_quality(mut self, initial_quality: f32) -> Self {
         self.initial_quality = initial_quality;
         self
+    }
+
+    #[must_use]
+    pub fn with_tag(mut self, tag: impl Into<String>) -> Self {
+        self.tag = tag.into();
+        if self.tag.is_empty() {
+            self.tag = "abc".to_owned();
+        }
+        self
+    }
+
+    fn accepts_current_segment(&self) -> bool {
+        self.tag == "abc"
     }
 }
 
@@ -2571,7 +2586,7 @@ impl Translator for HistoryTranslator {
         _options: &HashMap<String, bool>,
         context: &Context,
     ) -> Vec<Candidate> {
-        if self.input.is_empty() || self.input != input {
+        if !self.accepts_current_segment() || self.input.is_empty() || self.input != input {
             return Vec::new();
         }
 
@@ -6943,6 +6958,18 @@ sort: original
                 ("你", &CandidateSource::History)
             ]
         );
+
+        let mut tagged_engine = Engine::new();
+        tagged_engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+        tagged_engine.add_translator(HistoryTranslator::new("his").with_tag("custom"));
+        tagged_engine.set_input("ni");
+        assert_eq!(tagged_engine.commit_highlighted(), Some("你".to_owned()));
+        tagged_engine.set_input("his");
+        assert!(tagged_engine
+            .context()
+            .candidates
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::History));
     }
 
     #[test]

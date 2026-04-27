@@ -3858,11 +3858,15 @@ fn install_schema_history_translator_from_config(
             .and_then(config_scalar_double)
             .map(|quality| quality as f32)
             .unwrap_or(1000.0);
+    let tag = find_config_value(schema_config, &format!("{name_space}/tag"))
+        .and_then(config_scalar_string)
+        .unwrap_or_else(|| "abc".to_owned());
 
     session.engine.add_translator(
         HistoryTranslator::new(input)
             .with_size(size)
-            .with_initial_quality(initial_quality),
+            .with_initial_quality(initial_quality)
+            .with_tag(tag),
     );
 }
 

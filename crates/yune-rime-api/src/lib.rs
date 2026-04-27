@@ -109,6 +109,7 @@ struct SessionState {
     input_buffer: Option<CString>,
     key_binder: Option<KeyBinderProcessor>,
     punctuation_processor: Option<PunctuationProcessor>,
+    paging: bool,
     last_active_time: u64,
 }
 
@@ -120,6 +121,7 @@ impl SessionState {
             input_buffer: None,
             key_binder: None,
             punctuation_processor: None,
+            paging: false,
             last_active_time: session_activity_now(),
         }
     }
@@ -144,6 +146,7 @@ enum KeyBindingCondition {
     Always,
     Composing,
     HasMenu,
+    Paging,
 }
 
 #[derive(Clone)]
@@ -1810,11 +1813,15 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     match key_event.code {
         KeyCode::PreviousPage => {
             let page_size = session_menu_page_size(session);
-            session.engine.change_page_by(page_size, true);
+            if session.engine.change_page_by(page_size, true) {
+                session.paging = true;
+            }
         }
         KeyCode::NextPage => {
             let page_size = session_menu_page_size(session);
-            session.engine.change_page_by(page_size, false);
+            if session.engine.change_page_by(page_size, false) {
+                session.paging = true;
+            }
         }
         _ => {
             if let Some(commit) = process_session_key_event(session_id, session, key_event) {
@@ -1843,6 +1850,7 @@ pub extern "C" fn RimeCommitComposition(session_id: RimeSessionId) -> Bool {
         return FALSE;
     };
 
+    session.paging = false;
     append_unread_commit(session, commit);
     TRUE
 }
@@ -1858,6 +1866,7 @@ pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
         .expect("session registry should not be poisoned");
     if let Some(session) = registry.get_session_mut(session_id) {
         session.engine.clear_composition();
+        session.paging = false;
     }
 }
 
@@ -2125,6 +2134,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.engine.reset_translators();
     session.key_binder = None;
     session.punctuation_processor = None;
+    session.paging = false;
     apply_schema_switch_resets(session, schema_id);
     install_schema_key_binder_processor(session, schema_id);
     install_schema_punctuation_processor(session, schema_id);
@@ -3106,7 +3116,11 @@ pub extern "C" fn RimeChangePage(session_id: RimeSessionId, backward: Bool) -> B
         } else {
             current_index + page_size
         };
-        highlight_candidate_clamped_like_librime(session, next_index)
+        let changed = highlight_candidate_clamped_like_librime(session, next_index);
+        if changed {
+            session.paging = true;
+        }
+        changed
     })
 }
 
@@ -3653,6 +3667,7 @@ fn commit_selected_candidate(
         return FALSE;
     };
 
+    session.paging = false;
     append_unread_commit(session, commit);
     TRUE
 }
@@ -3819,12 +3834,14 @@ fn key_binding_condition(condition: &str) -> Option<KeyBindingCondition> {
         "always" => Some(KeyBindingCondition::Always),
         "composing" => Some(KeyBindingCondition::Composing),
         "has_menu" => Some(KeyBindingCondition::HasMenu),
+        "paging" => Some(KeyBindingCondition::Paging),
         _ => None,
     }
 }
 
 fn key_binding_condition_rank(condition: KeyBindingCondition) -> usize {
     match condition {
+        KeyBindingCondition::Paging => 1,
         KeyBindingCondition::HasMenu => 2,
         KeyBindingCondition::Composing => 3,
         KeyBindingCondition::Always => 4,
@@ -4145,7 +4162,11 @@ fn process_session_key_event(
     if let Some(commit) = process_alternative_select_key(session, key_event) {
         return commit;
     }
-    session.engine.process_key_event(key_event)
+    let before_input = session.engine.context().composition.input.clone();
+    let before_highlighted = session.engine.context().highlighted;
+    let commit = session.engine.process_key_event(key_event);
+    update_key_binding_paging_state(session, key_event, &before_input, before_highlighted);
+    commit
 }
 
 fn process_key_binder_processor(
@@ -4217,6 +4238,35 @@ fn key_binding_condition_matches(session: &SessionState, condition: KeyBindingCo
             !session.engine.status().is_ascii_mode
                 && !session.engine.context().candidates.is_empty()
         }
+        KeyBindingCondition::Paging => {
+            session.paging && !session.engine.context().composition.input.is_empty()
+        }
+    }
+}
+
+fn update_key_binding_paging_state(
+    session: &mut SessionState,
+    key_event: KeyEvent,
+    before_input: &str,
+    before_highlighted: usize,
+) {
+    let context = session.engine.context();
+    if context.composition.input.is_empty() {
+        session.paging = false;
+        return;
+    }
+    if context.composition.input != before_input {
+        session.paging = false;
+    }
+    if matches!(
+        key_event.code,
+        KeyCode::PreviousPage
+            | KeyCode::NextPage
+            | KeyCode::PreviousCandidate
+            | KeyCode::NextCandidate
+    ) && context.highlighted != before_highlighted
+    {
+        session.paging = true;
     }
 }
 

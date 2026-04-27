@@ -431,7 +431,9 @@ fn help_text() -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{json_string, sequence_from_fixture};
+    use std::path::Path;
+
+    use super::{check_fixture, json_string, sequence_from_fixture};
 
     #[test]
     fn escapes_json_strings() {
@@ -443,5 +445,29 @@ mod tests {
         let fixture = "{ \"schema_id\": \"sample\", \"sequence\": \"nihao \" }";
 
         assert_eq!(sequence_from_fixture(fixture).as_deref(), Ok("nihao "));
+    }
+
+    #[test]
+    fn checked_in_fixtures_match_cli_output() {
+        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let fixtures_dir = manifest_dir
+            .parent()
+            .and_then(Path::parent)
+            .expect("CLI crate should live under workspace crates")
+            .join("fixtures");
+        let mut fixtures = std::fs::read_dir(&fixtures_dir)
+            .expect("fixtures directory should be readable")
+            .map(|entry| entry.expect("fixture entry should be readable").path())
+            .filter(|path| {
+                path.extension()
+                    .is_some_and(|extension| extension == "json")
+            })
+            .collect::<Vec<_>>();
+        fixtures.sort();
+
+        assert!(!fixtures.is_empty());
+        for fixture in fixtures {
+            check_fixture(&fixture).unwrap_or_else(|error| panic!("{error}"));
+        }
     }
 }

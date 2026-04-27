@@ -1,0 +1,37 @@
+{
+  "schema_id": "sample",
+  "sequence": "ni",
+  "commits": [],
+  "context": {
+    "input": "ni",
+    "caret": 2,
+    "preedit": "ni",
+    "highlighted": 0,
+    "last_commit": null,
+    "candidates": [
+      {
+        "text": "你",
+        "comment": "ni",
+        "source": "table",
+        "quality": 10
+      },
+      {
+        "text": "ni",
+        "comment": "echo",
+        "source": "echo",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "sample",
+    "schema_name": "Sample",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}

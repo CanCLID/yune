@@ -11,7 +11,8 @@ use std::{
 use yune_rime_api::{
     rime_get_api, RimeCandidate, RimeCandidateListIterator, RimeCommit, RimeComposition,
     RimeConfig, RimeConfigIterator, RimeContext, RimeCustomApi, RimeLeversApi, RimeMenu,
-    RimeModule, RimeSchemaList, RimeSessionId, RimeStatus, RimeTraits, FALSE, TRUE,
+    RimeModule, RimeSchemaList, RimeSessionId, RimeStatus, RimeTraits, RimeUserDictIterator, FALSE,
+    TRUE,
 };
 
 use serde_yaml::Value;
@@ -109,6 +110,13 @@ fn empty_schema_list() -> RimeSchemaList {
 fn empty_config() -> RimeConfig {
     RimeConfig {
         ptr: ptr::null_mut(),
+    }
+}
+
+fn empty_user_dict_iterator() -> RimeUserDictIterator {
+    RimeUserDictIterator {
+        ptr: ptr::null_mut(),
+        i: 0,
     }
 }
 
@@ -717,6 +725,147 @@ menu:
     assert_eq!(unsafe { config_close(&mut loaded_config) }, TRUE);
     assert_eq!(unsafe { config_close(&mut hotkey_config) }, TRUE);
     unsafe { custom_settings_destroy(settings) };
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn frontend_style_api_table_can_manage_levers_user_dicts() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let find_module = api.find_module.expect("frontend requires find_module");
+
+    let root = unique_temp_dir("levers-user-dicts");
+    let user = root.join("user");
+    let sync = root.join("sync");
+    fs::create_dir_all(user.join("luna_pinyin.userdb"))
+        .expect("leveldb-style user dict dir should be created");
+    fs::write(
+        user.join("essay.userdb"),
+        "# comment\nni hao\t你好\t1\n\nzhong guo\t中国\t2\n",
+    )
+    .expect("plain user dict should be written");
+    fs::write(user.join("legacy.userdb.txt"), "")
+        .expect("legacy text snapshot should not be listed");
+    fs::write(
+        user.join("installation.yaml"),
+        format!(
+            "installation_id: frontend-device\nsync_dir: '{}'\n",
+            sync.to_string_lossy()
+        ),
+    )
+    .expect("installation metadata should be written");
+
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { setup(&traits) };
+
+    let levers_name = CString::new("levers").expect("module name should be valid");
+    let module = unsafe { find_module(levers_name.as_ptr()) };
+    assert!(!module.is_null());
+    let module = unsafe { &*module };
+    let get_api = module.get_api.expect("levers module should expose get_api");
+    let levers_api = get_api().cast::<RimeLeversApi>();
+    assert!(!levers_api.is_null());
+    let levers_api = unsafe { &*levers_api };
+
+    let iterator_init = levers_api
+        .user_dict_iterator_init
+        .expect("levers API should expose user dict iterator init");
+    let iterator_destroy = levers_api
+        .user_dict_iterator_destroy
+        .expect("levers API should expose user dict iterator destroy");
+    let next_user_dict = levers_api
+        .next_user_dict
+        .expect("levers API should expose next user dict");
+    let backup_user_dict = levers_api
+        .backup_user_dict
+        .expect("levers API should expose user dict backup");
+    let restore_user_dict = levers_api
+        .restore_user_dict
+        .expect("levers API should expose user dict restore");
+    let export_user_dict = levers_api
+        .export_user_dict
+        .expect("levers API should expose user dict export");
+    let import_user_dict = levers_api
+        .import_user_dict
+        .expect("levers API should expose user dict import");
+
+    let mut iterator = empty_user_dict_iterator();
+    assert_eq!(unsafe { iterator_init(&mut iterator) }, TRUE);
+    assert!(!iterator.ptr.is_null());
+    assert_eq!(iterator.i, 0);
+    let first = unsafe { next_user_dict(&mut iterator) };
+    assert!(!first.is_null());
+    assert_eq!(unsafe { CStr::from_ptr(first) }.to_str(), Ok("essay"));
+    let second = unsafe { next_user_dict(&mut iterator) };
+    assert!(!second.is_null());
+    assert_eq!(
+        unsafe { CStr::from_ptr(second) }.to_str(),
+        Ok("luna_pinyin")
+    );
+    assert!(unsafe { next_user_dict(&mut iterator) }.is_null());
+    unsafe { iterator_destroy(&mut iterator) };
+    assert!(iterator.ptr.is_null());
+    assert_eq!(iterator.i, 0);
+
+    let dict_name = CString::new("essay").expect("dict name is valid");
+    assert_eq!(unsafe { backup_user_dict(dict_name.as_ptr()) }, TRUE);
+    let snapshot = sync.join("frontend-device").join("essay.userdb.txt");
+    assert_eq!(
+        fs::read_to_string(&snapshot).expect("snapshot should be readable"),
+        fs::read_to_string(user.join("essay.userdb")).expect("user dict should be readable")
+    );
+
+    let export_path = root.join("essay_export.tsv");
+    let export_path_c =
+        CString::new(export_path.to_string_lossy().as_ref()).expect("path is valid");
+    assert_eq!(
+        unsafe { export_user_dict(dict_name.as_ptr(), export_path_c.as_ptr()) },
+        2
+    );
+    assert_eq!(
+        fs::read_to_string(&export_path).expect("export should be readable"),
+        fs::read_to_string(user.join("essay.userdb")).expect("user dict should be readable")
+    );
+
+    fs::write(&export_path, "xin\t新\t3\nci\t词\t4\n").expect("import source should be updated");
+    let imported_name = CString::new("frontend_imported").expect("dict name is valid");
+    assert_eq!(
+        unsafe { import_user_dict(imported_name.as_ptr(), export_path_c.as_ptr()) },
+        2
+    );
+    assert_eq!(
+        fs::read_to_string(user.join("frontend_imported.userdb"))
+            .expect("imported dict should be readable"),
+        "xin\t新\t3\nci\t词\t4\n"
+    );
+
+    let snapshot_c = CString::new(snapshot.to_string_lossy().as_ref()).expect("path is valid");
+    fs::remove_file(user.join("essay.userdb")).expect("user dict should be removable");
+    assert_eq!(unsafe { restore_user_dict(snapshot_c.as_ptr()) }, TRUE);
+    assert!(user.join("essay.userdb").is_file());
+
+    assert_eq!(unsafe { iterator_init(ptr::null_mut()) }, FALSE);
+    assert!(unsafe { next_user_dict(ptr::null_mut()) }.is_null());
+    unsafe { iterator_destroy(ptr::null_mut()) };
+    assert_eq!(unsafe { backup_user_dict(ptr::null()) }, FALSE);
+    assert_eq!(unsafe { restore_user_dict(ptr::null()) }, FALSE);
+    assert_eq!(
+        unsafe { export_user_dict(ptr::null(), export_path_c.as_ptr()) },
+        -1
+    );
+    assert_eq!(
+        unsafe { import_user_dict(imported_name.as_ptr(), ptr::null()) },
+        -1
+    );
+
     let reset_traits = empty_traits();
     unsafe { setup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");

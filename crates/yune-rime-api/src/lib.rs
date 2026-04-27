@@ -2606,6 +2606,12 @@ pub unsafe extern "C" fn RimeConfigNext(iterator: *mut RimeConfigIterator) -> Bo
         return FALSE;
     }
     let Some((key, path)) = state.entries.get(next_index as usize) else {
+        // librime increments the public iterator index before checking for
+        // exhaustion, so failed end-of-container calls expose the advanced
+        // value.
+        unsafe {
+            (*iterator).index = next_index;
+        }
         return FALSE;
     };
     let Ok(key_cache) = CString::new(key.as_str()) else {

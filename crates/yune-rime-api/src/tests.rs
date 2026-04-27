@@ -1872,6 +1872,7 @@ switches:\n  - name: ascii_mode\n  - name: full_shape\nmenu:\n  page_size: 9\n  
         Ok("switches/@1")
     );
     assert_eq!(unsafe { RimeConfigNext(&mut iterator) }, FALSE);
+    assert_eq!(iterator.index, 2);
     // SAFETY: iterator was initialized by this API and can be ended once.
     unsafe { RimeConfigEnd(&mut iterator) };
     assert!(iterator.list.is_null());
@@ -1902,6 +1903,7 @@ switches:\n  - name: ascii_mode\n  - name: full_shape\nmenu:\n  page_size: 9\n  
         Ok("menu/alternative_select_keys")
     );
     assert_eq!(unsafe { RimeConfigNext(&mut iterator) }, FALSE);
+    assert_eq!(iterator.index, 2);
     unsafe { RimeConfigEnd(&mut iterator) };
 
     // SAFETY: missing/non-container paths should fail without initializing.

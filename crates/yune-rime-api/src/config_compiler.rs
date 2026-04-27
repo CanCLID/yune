@@ -247,7 +247,38 @@ pub(crate) fn apply_legacy_preset_config_plugins(
         return Some(());
     }
 
+    apply_legacy_key_binder_import_preset(root, shared_data_dir, patch_dependencies)?;
     apply_legacy_import_preset(root, "punctuator", shared_data_dir, patch_dependencies)
+}
+
+fn apply_legacy_key_binder_import_preset(
+    root: &mut Value,
+    shared_data_dir: &Path,
+    patch_dependencies: &mut Vec<(String, c_int)>,
+) -> Option<()> {
+    let preset = match find_config_value(root, "key_binder/import_preset").cloned() {
+        Some(Value::String(preset)) => preset,
+        Some(_) => return None,
+        None => return Some(()),
+    };
+    let mut overrides = match find_config_value(root, "key_binder").cloned()? {
+        Value::Mapping(overrides) => overrides,
+        _ => return None,
+    };
+    if let Some(bindings) = overrides.remove(Value::String("bindings".to_owned())) {
+        overrides.insert(Value::String("bindings/+".to_owned()), bindings);
+    }
+
+    let included = load_external_config_reference(
+        &preset,
+        "key_binder",
+        false,
+        shared_data_dir,
+        patch_dependencies,
+    )??;
+    let target = find_config_value_mut(root, "key_binder")?;
+    *target = included;
+    merge_config_value(target, Value::Mapping(overrides)).then_some(())
 }
 
 fn apply_legacy_import_preset(

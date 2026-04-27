@@ -13724,6 +13724,120 @@ punctuator:
 }
 
 #[test]
+fn deploy_schema_expands_librime_key_binder_import_preset() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-key-binder-import-preset");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    fs::write(
+        shared.join("key_bindings.yaml"),
+        "\
+key_binder:
+  bindings:
+    - { when: always, accept: Control+Shift+1, toggle: ascii_mode }
+",
+    )
+    .expect("preset config should be written");
+    fs::write(
+        shared.join("luna.schema.yaml"),
+        "\
+schema:
+  schema_id: luna
+  name: Luna
+engine:
+  processors:
+    - key_binder
+  translators:
+    - echo_translator
+key_binder:
+  import_preset: key_bindings
+  bindings:
+    - { when: always, accept: Control+Shift+2, toggle: full_shape }
+",
+    )
+    .expect("schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+
+    let config_file = CString::new("luna.schema.yaml").expect("file name should be valid");
+    let version_key = CString::new("schema/version").expect("version key should be valid");
+    assert_eq!(
+        RimeDeployConfigFile(config_file.as_ptr(), version_key.as_ptr()),
+        TRUE
+    );
+    let staged: Value = serde_yaml::from_str(
+        &fs::read_to_string(staging.join("luna.schema.yaml"))
+            .expect("staged schema should be readable"),
+    )
+    .expect("staged schema should parse");
+    let bindings = find_config_value(&staged, "key_binder/bindings")
+        .and_then(Value::as_sequence)
+        .expect("key bindings should be staged");
+    assert_eq!(
+        bindings
+            .first()
+            .and_then(|binding| find_config_value(binding, "toggle"))
+            .and_then(Value::as_str),
+        Some("ascii_mode")
+    );
+    assert_eq!(
+        bindings
+            .get(1)
+            .and_then(|binding| find_config_value(binding, "toggle"))
+            .and_then(Value::as_str),
+        Some("full_shape")
+    );
+    assert!(
+        find_config_value(&staged, "__build_info/timestamps/key_bindings")
+            .and_then(Value::as_i64)
+            .is_some_and(|timestamp| timestamp > 0)
+    );
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("luna").expect("schema id should be valid");
+    let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
+    let full_shape = CString::new("full_shape").expect("option name should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        RimeProcessKey(session_id, '1' as c_int, K_CONTROL_MASK | K_SHIFT_MASK),
+        TRUE
+    );
+    assert_eq!(
+        RimeProcessKey(session_id, '2' as c_int, K_CONTROL_MASK | K_SHIFT_MASK),
+        TRUE
+    );
+    // SAFETY: option names are valid NUL-terminated strings.
+    assert_eq!(
+        unsafe { RimeGetOption(session_id, ascii_mode.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { RimeGetOption(session_id, full_shape.as_ptr()) },
+        TRUE
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn gets_and_frees_available_schema_list() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

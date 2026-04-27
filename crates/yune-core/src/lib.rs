@@ -1440,9 +1440,8 @@ impl TableDictionary {
     }
 
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
-        let (metadata, mut entries) = parse_rime_dict_yaml_parts(input)?;
-        dedupe_rime_table_entries(&mut entries);
-        sort_rime_table_entries(&metadata, &mut entries);
+        let (metadata, entries) = parse_rime_dict_yaml_parts(input)?;
+        let entries = finalize_rime_table_entries(&metadata, entries);
         Ok(Self { entries })
     }
 
@@ -1463,8 +1462,7 @@ impl TableDictionary {
             let (_, mut imported_entries) = parse_rime_dict_yaml_parts(&import_yaml)?;
             entries.append(&mut imported_entries);
         }
-        dedupe_rime_table_entries(&mut entries);
-        sort_rime_table_entries(&metadata, &mut entries);
+        let entries = finalize_rime_table_entries(&metadata, entries);
         Ok(Self { entries })
     }
 
@@ -1476,7 +1474,7 @@ impl TableDictionary {
 
 fn parse_rime_dict_yaml_parts(
     input: &str,
-) -> Result<(RimeTableMetadata, Vec<TableEntry>), TableDictionaryParseError> {
+) -> Result<(RimeTableMetadata, Vec<RimeParsedTableEntry>), TableDictionaryParseError> {
     let mut metadata = RimeTableMetadata::default();
     let mut in_header = false;
     let mut body_start = None;
@@ -1535,6 +1533,19 @@ fn parse_rime_dict_yaml_parts(
     Ok((metadata, entries))
 }
 
+fn finalize_rime_table_entries(
+    metadata: &RimeTableMetadata,
+    mut entries: Vec<RimeParsedTableEntry>,
+) -> Vec<TableEntry> {
+    dedupe_rime_table_entries(&mut entries);
+    let mut entries = entries
+        .into_iter()
+        .map(|entry| entry.entry)
+        .collect::<Vec<_>>();
+    sort_rime_table_entries(metadata, &mut entries);
+    entries
+}
+
 fn sort_rime_table_entries(metadata: &RimeTableMetadata, entries: &mut [TableEntry]) {
     if metadata.sort_by_weight {
         entries.sort_by(|left, right| {
@@ -1548,9 +1559,14 @@ fn sort_rime_table_entries(metadata: &RimeTableMetadata, entries: &mut [TableEnt
     }
 }
 
-fn dedupe_rime_table_entries(entries: &mut Vec<TableEntry>) {
+fn dedupe_rime_table_entries(entries: &mut Vec<RimeParsedTableEntry>) {
     let mut seen = HashSet::new();
-    entries.retain(|entry| seen.insert((entry.text.clone(), entry.code.clone())));
+    entries.retain(|entry| {
+        let Some(key) = entry.single_syllable_duplicate_key.as_ref() else {
+            return true;
+        };
+        seen.insert(key.clone())
+    });
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1584,6 +1600,12 @@ struct RimeTableMetadata {
     name: Option<String>,
     has_name: bool,
     has_version: bool,
+}
+
+#[derive(Clone, Debug)]
+struct RimeParsedTableEntry {
+    entry: TableEntry,
+    single_syllable_duplicate_key: Option<(String, String)>,
 }
 
 impl Default for RimeTableMetadata {
@@ -1662,7 +1684,7 @@ impl RimeTableMetadata {
         self.has_name && self.has_version
     }
 
-    fn parse_entry(&self, line: &str) -> Option<TableEntry> {
+    fn parse_entry(&self, line: &str) -> Option<RimeParsedTableEntry> {
         let fields = line.split('\t').collect::<Vec<_>>();
         let text_column = self.column_index("text")?;
         let text = fields.get(text_column).copied()?;
@@ -1680,7 +1702,12 @@ impl RimeTableMetadata {
             .and_then(|column| fields.get(column))
             .map(|value| parse_rime_entry_weight(value))
             .unwrap_or(0.0);
-        Some(TableEntry::new(code, text, weight))
+        let single_syllable_duplicate_key =
+            (rime_code_syllable_count(code) == 1).then(|| (text.to_owned(), code.to_owned()));
+        Some(RimeParsedTableEntry {
+            entry: TableEntry::new(code, text, weight),
+            single_syllable_duplicate_key,
+        })
     }
 
     fn column_index(&self, label: &str) -> Option<usize> {
@@ -1929,6 +1956,12 @@ fn parse_rime_entry_weight(input: &str) -> f32 {
         .rev()
         .find_map(|end| value[..end].parse::<f32>().ok())
         .unwrap_or(0.0)
+}
+
+fn rime_code_syllable_count(code: &str) -> usize {
+    code.split(' ')
+        .filter(|syllable| !syllable.is_empty())
+        .count()
 }
 
 fn strip_yaml_comment(input: &str) -> &str {
@@ -5675,6 +5708,37 @@ sort: original
         assert_eq!(entries[0].weight, 1.0);
         assert_eq!(entries[1].text, "吧");
         assert_eq!(entries[1].code, "ba");
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_preserves_duplicate_phrase_code_definitions() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: phrase_duplicate_sample
+version: "0.1"
+sort: original
+...
+
+你好	ni hao	1
+你好	ni hao	2
+你	ni	3
+你	ni	4
+"#,
+        )
+        .expect("dictionary with duplicate phrase code definitions should parse");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].text, "你好");
+        assert_eq!(entries[0].code, "nihao");
+        assert_eq!(entries[0].weight, 1.0);
+        assert_eq!(entries[1].text, "你好");
+        assert_eq!(entries[1].code, "nihao");
+        assert_eq!(entries[1].weight, 2.0);
+        assert_eq!(entries[2].text, "你");
+        assert_eq!(entries[2].code, "ni");
+        assert_eq!(entries[2].weight, 3.0);
     }
 
     #[test]

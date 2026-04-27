@@ -11770,6 +11770,10 @@ fn simulates_librime_style_key_sequences() {
         "{emspace}{enspace}{signifblank}{ellipsis}{trademark}{leftsinglequotemark}{telephone}{leftcaret}{overbar}{Release+righttack}",
     )
     .expect("key sequence should be valid");
+    let noop_hebrew_key_sequence = CString::new(
+        "{hebrew_doublelowline}{hebrew_aleph}{hebrew_bet}{hebrew_beth}{hebrew_samech}{hebrew_samekh}{hebrew_kuf}{hebrew_qoph}{Release+hebrew_taw}",
+    )
+    .expect("key sequence should be valid");
     let named_ascii_sequence =
         CString::new("{exclam}{space}").expect("key sequence should be valid");
     let invalid_sequence =
@@ -12061,6 +12065,20 @@ fn simulates_librime_style_key_sequences() {
         TRUE
     );
     // SAFETY: ignored publishing/APL key names should leave the context empty.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: noop_hebrew_key_sequence is a valid C string; librime parses
+    // Hebrew key-table names even though the default editor/speller ignore
+    // non-ASCII keycodes.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, noop_hebrew_key_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: ignored Hebrew key names should leave the context empty.
     assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
     assert_eq!(context.composition.length, 0);
     assert_eq!(context.menu.num_candidates, 0);

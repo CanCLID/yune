@@ -242,7 +242,8 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
             || is_librime_cyrillic_key_name(name)
             || is_librime_greek_key_name(name)
             || is_librime_technical_key_name(name)
-            || is_librime_publishing_key_name(name) =>
+            || is_librime_publishing_key_name(name)
+            || is_librime_hebrew_key_name(name) =>
         {
             KeyCode::Ignored
         }
@@ -1236,6 +1237,51 @@ fn is_librime_publishing_key_name(name: &str) -> bool {
             | "leftshoe"
             | "lefttack"
             | "righttack"
+    )
+}
+
+fn is_librime_hebrew_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "hebrew_doublelowline"
+            | "hebrew_aleph"
+            | "hebrew_bet"
+            | "hebrew_beth"
+            | "hebrew_gimel"
+            | "hebrew_gimmel"
+            | "hebrew_dalet"
+            | "hebrew_daleth"
+            | "hebrew_he"
+            | "hebrew_waw"
+            | "hebrew_zain"
+            | "hebrew_zayin"
+            | "hebrew_chet"
+            | "hebrew_het"
+            | "hebrew_tet"
+            | "hebrew_teth"
+            | "hebrew_yod"
+            | "hebrew_finalkaph"
+            | "hebrew_kaph"
+            | "hebrew_lamed"
+            | "hebrew_finalmem"
+            | "hebrew_mem"
+            | "hebrew_finalnun"
+            | "hebrew_nun"
+            | "hebrew_samech"
+            | "hebrew_samekh"
+            | "hebrew_ayin"
+            | "hebrew_finalpe"
+            | "hebrew_pe"
+            | "hebrew_finalzade"
+            | "hebrew_finalzadi"
+            | "hebrew_zade"
+            | "hebrew_zadi"
+            | "hebrew_kuf"
+            | "hebrew_qoph"
+            | "hebrew_resh"
+            | "hebrew_shin"
+            | "hebrew_taf"
+            | "hebrew_taw"
     )
 }
 
@@ -3520,6 +3566,63 @@ mod tests {
             "leftshoe",
             "lefttack",
             "Release+righttack",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_hebrew_noop_key_names() {
+        let names = [
+            "hebrew_doublelowline",
+            "hebrew_aleph",
+            "hebrew_bet",
+            "hebrew_beth",
+            "hebrew_gimel",
+            "hebrew_gimmel",
+            "hebrew_dalet",
+            "hebrew_daleth",
+            "hebrew_he",
+            "hebrew_waw",
+            "hebrew_zain",
+            "hebrew_zayin",
+            "hebrew_chet",
+            "hebrew_het",
+            "hebrew_tet",
+            "hebrew_teth",
+            "hebrew_yod",
+            "hebrew_finalkaph",
+            "hebrew_kaph",
+            "hebrew_lamed",
+            "hebrew_finalmem",
+            "hebrew_mem",
+            "hebrew_finalnun",
+            "hebrew_nun",
+            "hebrew_samech",
+            "hebrew_samekh",
+            "hebrew_ayin",
+            "hebrew_finalpe",
+            "hebrew_pe",
+            "hebrew_finalzade",
+            "hebrew_finalzadi",
+            "hebrew_zade",
+            "hebrew_zadi",
+            "hebrew_kuf",
+            "hebrew_qoph",
+            "hebrew_resh",
+            "hebrew_shin",
+            "hebrew_taf",
+            "Release+hebrew_taw",
         ];
         let sequence = names
             .iter()

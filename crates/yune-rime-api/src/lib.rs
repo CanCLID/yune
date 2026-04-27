@@ -2872,6 +2872,9 @@ pub unsafe extern "C" fn RimeConfigBeginList(
     let Some(key) = (unsafe { c_string_key(key) }) else {
         return FALSE;
     };
+    // librime clears caller-visible iterator state before attempting lookup, so
+    // stale fields are not left behind when the requested path is not a list.
+    unsafe { reset_config_iterator_for_begin(iterator) };
     let Some(found) = (unsafe { config_lookup_key(config, &key) }) else {
         return FALSE;
     };
@@ -2906,6 +2909,9 @@ pub unsafe extern "C" fn RimeConfigBeginMap(
     let Some(key) = (unsafe { c_string_key(key) }) else {
         return FALSE;
     };
+    // Match librime's begin behavior: a failed map lookup still resets the
+    // iterator object after the basic pointer checks pass.
+    unsafe { reset_config_iterator_for_begin(iterator) };
     let Some(found) = (unsafe { config_lookup_key(config, &key) }) else {
         return FALSE;
     };
@@ -5832,6 +5838,21 @@ unsafe fn config_iterator_begin(
     TRUE
 }
 
+unsafe fn reset_config_iterator_for_begin(iterator: *mut RimeConfigIterator) {
+    if iterator.is_null() {
+        return;
+    }
+    // SAFETY: `iterator` is non-null and points to caller-owned writable
+    // storage. This mirrors librime's pre-lookup field reset.
+    unsafe {
+        (*iterator).list = ptr::null_mut();
+        (*iterator).map = ptr::null_mut();
+        (*iterator).index = -1;
+        (*iterator).key = ptr::null();
+        (*iterator).path = ptr::null();
+    }
+}
+
 fn config_child_path(root_path: &str, child_key: &str) -> String {
     if root_path.is_empty() || root_path == "/" {
         child_key.to_owned()
@@ -6756,11 +6777,35 @@ switches:\n  - name: ascii_mode\n  - name: full_shape\nmenu:\n  page_size: 9\n  
         unsafe { RimeConfigEnd(&mut iterator) };
 
         // SAFETY: missing/non-container paths should fail without initializing.
+        iterator.list = std::ptr::NonNull::<c_void>::dangling().as_ptr();
+        iterator.map = std::ptr::NonNull::<c_void>::dangling().as_ptr();
+        iterator.index = 8;
+        iterator.key = switches.as_ptr();
+        iterator.path = switches.as_ptr();
         assert_eq!(
             unsafe { RimeConfigBeginList(&mut iterator, &mut config, missing.as_ptr()) },
             FALSE
         );
         assert!(iterator.list.is_null());
+        assert!(iterator.map.is_null());
+        assert_eq!(iterator.index, -1);
+        assert!(iterator.key.is_null());
+        assert!(iterator.path.is_null());
+
+        iterator.list = std::ptr::NonNull::<c_void>::dangling().as_ptr();
+        iterator.map = std::ptr::NonNull::<c_void>::dangling().as_ptr();
+        iterator.index = 4;
+        iterator.key = switches.as_ptr();
+        iterator.path = switches.as_ptr();
+        assert_eq!(
+            unsafe { RimeConfigBeginMap(&mut iterator, &mut config, missing.as_ptr()) },
+            FALSE
+        );
+        assert!(iterator.list.is_null());
+        assert!(iterator.map.is_null());
+        assert_eq!(iterator.index, -1);
+        assert!(iterator.key.is_null());
+        assert!(iterator.path.is_null());
 
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }

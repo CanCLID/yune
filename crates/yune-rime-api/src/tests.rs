@@ -390,6 +390,21 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let iso_fast_cursor_down =
         CString::new("ISO_Fast_Cursor_Down").expect("key name should be valid");
     let iso_enter = CString::new("ISO_Enter").expect("key name should be valid");
+    let dead_grave = CString::new("dead_grave").expect("key name should be valid");
+    let dead_horn = CString::new("dead_horn").expect("key name should be valid");
+    let dead_stroke = CString::new("dead_stroke").expect("key name should be valid");
+    let accessx_enable = CString::new("AccessX_Enable").expect("key name should be valid");
+    let audible_bell_enable = CString::new("AudibleBell_Enable").expect("key name should be valid");
+    let first_virtual_screen =
+        CString::new("First_Virtual_Screen").expect("key name should be valid");
+    let pointer_left = CString::new("Pointer_Left").expect("key name should be valid");
+    let pointer_button_dflt =
+        CString::new("Pointer_Button_Dflt").expect("key name should be valid");
+    let pointer_dblclick5 = CString::new("Pointer_DblClick5").expect("key name should be valid");
+    let pointer_enable_keys = CString::new("Pointer_EnableKeys").expect("key name should be valid");
+    let pointer_dflt_btn_prev =
+        CString::new("Pointer_DfltBtnPrev").expect("key name should be valid");
+    let pointer_drag5 = CString::new("Pointer_Drag5").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -654,6 +669,48 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
         0xfe2f
     );
     assert_eq!(unsafe { RimeGetKeycodeByName(iso_enter.as_ptr()) }, 0xfe34);
+    assert_eq!(unsafe { RimeGetKeycodeByName(dead_grave.as_ptr()) }, 0xfe50);
+    assert_eq!(unsafe { RimeGetKeycodeByName(dead_horn.as_ptr()) }, 0xfe62);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(dead_stroke.as_ptr()) },
+        0x00ff_ffff
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(accessx_enable.as_ptr()) },
+        0xfe70
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(audible_bell_enable.as_ptr()) },
+        0xfe7a
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(first_virtual_screen.as_ptr()) },
+        0xfed0
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(pointer_left.as_ptr()) },
+        0xfee0
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(pointer_button_dflt.as_ptr()) },
+        0xfee8
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(pointer_dblclick5.as_ptr()) },
+        0xfef3
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(pointer_enable_keys.as_ptr()) },
+        0xfef9
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(pointer_dflt_btn_prev.as_ptr()) },
+        0xfefc
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(pointer_drag5.as_ptr()) },
+        0xfefd
+    );
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -1107,6 +1164,55 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0xfe34)).as_deref(),
         Some("ISO_Enter")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe50)).as_deref(),
+        Some("dead_grave")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe62)).as_deref(),
+        Some("dead_horn")
+    );
+    assert_eq!(static_c_string(RimeGetKeyName(0xfe63)), None);
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe70)).as_deref(),
+        Some("AccessX_Enable")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe7a)).as_deref(),
+        Some("AudibleBell_Enable")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfed0)).as_deref(),
+        Some("First_Virtual_Screen")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfed5)).as_deref(),
+        Some("Terminate_Server")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfee0)).as_deref(),
+        Some("Pointer_Left")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfee8)).as_deref(),
+        Some("Pointer_Button_Dflt")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfef3)).as_deref(),
+        Some("Pointer_DblClick5")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfef9)).as_deref(),
+        Some("Pointer_EnableKeys")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfefc)).as_deref(),
+        Some("Pointer_DfltBtnPrev")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfefd)).as_deref(),
+        Some("Pointer_Drag5")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

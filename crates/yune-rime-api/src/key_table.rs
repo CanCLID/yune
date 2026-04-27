@@ -1284,6 +1284,74 @@ const ISO_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"ISO_Enter\0", 0xfe34),
 ];
 
+const XKB_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"dead_grave\0", 0xfe50),
+    (b"dead_acute\0", 0xfe51),
+    (b"dead_circumflex\0", 0xfe52),
+    (b"dead_tilde\0", 0xfe53),
+    (b"dead_macron\0", 0xfe54),
+    (b"dead_breve\0", 0xfe55),
+    (b"dead_abovedot\0", 0xfe56),
+    (b"dead_diaeresis\0", 0xfe57),
+    (b"dead_abovering\0", 0xfe58),
+    (b"dead_doubleacute\0", 0xfe59),
+    (b"dead_caron\0", 0xfe5a),
+    (b"dead_cedilla\0", 0xfe5b),
+    (b"dead_ogonek\0", 0xfe5c),
+    (b"dead_iota\0", 0xfe5d),
+    (b"dead_voiced_sound\0", 0xfe5e),
+    (b"dead_semivoiced_sound\0", 0xfe5f),
+    (b"dead_belowdot\0", 0xfe60),
+    (b"dead_hook\0", 0xfe61),
+    (b"dead_horn\0", 0xfe62),
+    (b"AccessX_Enable\0", 0xfe70),
+    (b"AccessX_Feedback_Enable\0", 0xfe71),
+    (b"RepeatKeys_Enable\0", 0xfe72),
+    (b"SlowKeys_Enable\0", 0xfe73),
+    (b"BounceKeys_Enable\0", 0xfe74),
+    (b"StickyKeys_Enable\0", 0xfe75),
+    (b"MouseKeys_Enable\0", 0xfe76),
+    (b"MouseKeys_Accel_Enable\0", 0xfe77),
+    (b"Overlay1_Enable\0", 0xfe78),
+    (b"Overlay2_Enable\0", 0xfe79),
+    (b"AudibleBell_Enable\0", 0xfe7a),
+    (b"First_Virtual_Screen\0", 0xfed0),
+    (b"Prev_Virtual_Screen\0", 0xfed1),
+    (b"Next_Virtual_Screen\0", 0xfed2),
+    (b"Last_Virtual_Screen\0", 0xfed4),
+    (b"Terminate_Server\0", 0xfed5),
+    (b"Pointer_Left\0", 0xfee0),
+    (b"Pointer_Right\0", 0xfee1),
+    (b"Pointer_Up\0", 0xfee2),
+    (b"Pointer_Down\0", 0xfee3),
+    (b"Pointer_UpLeft\0", 0xfee4),
+    (b"Pointer_UpRight\0", 0xfee5),
+    (b"Pointer_DownLeft\0", 0xfee6),
+    (b"Pointer_DownRight\0", 0xfee7),
+    (b"Pointer_Button_Dflt\0", 0xfee8),
+    (b"Pointer_Button1\0", 0xfee9),
+    (b"Pointer_Button2\0", 0xfeea),
+    (b"Pointer_Button3\0", 0xfeeb),
+    (b"Pointer_Button4\0", 0xfeec),
+    (b"Pointer_Button5\0", 0xfeed),
+    (b"Pointer_DblClick_Dflt\0", 0xfeee),
+    (b"Pointer_DblClick1\0", 0xfeef),
+    (b"Pointer_DblClick2\0", 0xfef0),
+    (b"Pointer_DblClick3\0", 0xfef1),
+    (b"Pointer_DblClick4\0", 0xfef2),
+    (b"Pointer_DblClick5\0", 0xfef3),
+    (b"Pointer_Drag_Dflt\0", 0xfef4),
+    (b"Pointer_Drag1\0", 0xfef5),
+    (b"Pointer_Drag2\0", 0xfef6),
+    (b"Pointer_Drag3\0", 0xfef7),
+    (b"Pointer_Drag4\0", 0xfef8),
+    (b"Pointer_EnableKeys\0", 0xfef9),
+    (b"Pointer_Accelerate\0", 0xfefa),
+    (b"Pointer_DfltBtnNext\0", 0xfefb),
+    (b"Pointer_DfltBtnPrev\0", 0xfefc),
+    (b"Pointer_Drag5\0", 0xfefd),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -1352,6 +1420,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(LATIN9_CURRENCY_KEY_NAMES)
         .chain(IBM_3270_KEY_NAMES)
         .chain(ISO_KEY_NAMES)
+        .chain(XKB_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -1375,6 +1444,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(LATIN9_CURRENCY_KEY_NAMES)
         .chain(IBM_3270_KEY_NAMES)
         .chain(ISO_KEY_NAMES)
+        .chain(XKB_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

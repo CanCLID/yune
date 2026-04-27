@@ -217,6 +217,7 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
 
     let code = match name {
         "space" => KeyCode::Character(' '),
+        _ if let Some(ch) = ascii_named_key_char(name) => KeyCode::Character(ch),
         "Tab" => KeyCode::Tab,
         "Linefeed" | "Clear" | "Pause" | "Scroll_Lock" | "Sys_Req" | "Begin" | "Select"
         | "Print" | "Execute" | "Insert" | "Undo" | "Redo" | "Menu" | "Find" | "Cancel"
@@ -260,13 +261,6 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         "KP_7" => KeyCode::KeypadDigit('7'),
         "KP_8" => KeyCode::KeypadDigit('8'),
         "KP_9" => KeyCode::KeypadDigit('9'),
-        "braceleft" => KeyCode::Character('{'),
-        "braceright" => KeyCode::Character('}'),
-        "plus" => KeyCode::Character('+'),
-        "comma" => KeyCode::Character(','),
-        "period" => KeyCode::Character('.'),
-        "minus" => KeyCode::Character('-'),
-        "underscore" => KeyCode::Character('_'),
         _ => {
             return Err(KeySequenceParseError::new(format!(
                 "unrecognized key name: {name}"
@@ -274,6 +268,44 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         }
     };
     Ok(code)
+}
+
+fn ascii_named_key_char(name: &str) -> Option<char> {
+    Some(match name {
+        "exclam" => '!',
+        "quotedbl" => '"',
+        "numbersign" => '#',
+        "dollar" => '$',
+        "percent" => '%',
+        "ampersand" => '&',
+        "apostrophe" | "quoteright" => '\'',
+        "parenleft" => '(',
+        "parenright" => ')',
+        "asterisk" => '*',
+        "plus" => '+',
+        "comma" => ',',
+        "minus" => '-',
+        "period" => '.',
+        "slash" => '/',
+        "colon" => ':',
+        "semicolon" => ';',
+        "less" => '<',
+        "equal" => '=',
+        "greater" => '>',
+        "question" => '?',
+        "at" => '@',
+        "bracketleft" => '[',
+        "backslash" => '\\',
+        "bracketright" => ']',
+        "asciicircum" => '^',
+        "underscore" => '_',
+        "grave" | "quoteleft" => '`',
+        "braceleft" => '{',
+        "bar" => '|',
+        "braceright" => '}',
+        "asciitilde" => '~',
+        _ => return None,
+    })
 }
 
 fn is_librime_iso_key_name(name: &str) -> bool {
@@ -1639,6 +1671,57 @@ mod tests {
 
         assert_eq!(keys[0].code, KeyCode::Character('{'));
         assert_eq!(keys[1].code, KeyCode::Character('}'));
+    }
+
+    #[test]
+    fn parses_librime_ascii_symbol_key_names_as_printable_characters() {
+        let cases = [
+            ("exclam", '!'),
+            ("quotedbl", '"'),
+            ("numbersign", '#'),
+            ("dollar", '$'),
+            ("percent", '%'),
+            ("ampersand", '&'),
+            ("apostrophe", '\''),
+            ("quoteright", '\''),
+            ("parenleft", '('),
+            ("parenright", ')'),
+            ("asterisk", '*'),
+            ("plus", '+'),
+            ("comma", ','),
+            ("minus", '-'),
+            ("period", '.'),
+            ("slash", '/'),
+            ("colon", ':'),
+            ("semicolon", ';'),
+            ("less", '<'),
+            ("equal", '='),
+            ("greater", '>'),
+            ("question", '?'),
+            ("at", '@'),
+            ("bracketleft", '['),
+            ("backslash", '\\'),
+            ("bracketright", ']'),
+            ("asciicircum", '^'),
+            ("underscore", '_'),
+            ("grave", '`'),
+            ("quoteleft", '`'),
+            ("braceleft", '{'),
+            ("bar", '|'),
+            ("braceright", '}'),
+            ("asciitilde", '~'),
+        ];
+        let sequence = cases
+            .iter()
+            .map(|(name, _)| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), cases.len());
+        for (key, (_, expected)) in keys.iter().zip(cases) {
+            assert_eq!(key.code, KeyCode::Character(expected));
+            assert!(key.modifiers.is_empty());
+        }
     }
 
     #[test]

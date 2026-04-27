@@ -11732,6 +11732,8 @@ fn simulates_librime_style_key_sequences() {
         "{KP_Subtract}{KP_Decimal}{KP_Divide}{Release+KP_Equal}",
     ))
     .expect("key sequence should be valid");
+    let named_ascii_sequence =
+        CString::new("{exclam}{space}").expect("key sequence should be valid");
     let invalid_sequence =
         CString::new("x{Unknown}").expect("key sequence should be valid C string");
     let mut commit = RimeCommit {
@@ -11886,6 +11888,20 @@ fn simulates_librime_style_key_sequences() {
     assert_eq!(context.menu.num_candidates, 0);
     // SAFETY: nested pointers were allocated by `RimeGetContext` above.
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: named_ascii_sequence is a valid C string; librime parses ASCII
+    // symbolic key names through its key table as printable key events.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, named_ascii_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated `text`.
+    let text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(text.to_str(), Ok("!"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
 
     // SAFETY: invalid sequence is a valid C string but should fail parsing.
     assert_eq!(

@@ -6442,6 +6442,39 @@ fn returns_status_with_schema_and_composing_flags() {
 }
 
 #[test]
+fn rime_status_clear_preserves_librime_struct_data_size() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    let expected_data_size =
+        (std::mem::size_of::<RimeStatus>() - std::mem::size_of::<i32>()) as i32;
+    let mut status = empty_status();
+    status.data_size = expected_data_size;
+
+    // SAFETY: `status` points to valid writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetStatus(session_id + 1, &mut status) }, FALSE);
+    assert_eq!(status.data_size, expected_data_size);
+    assert!(status.schema_id.is_null());
+    assert!(status.schema_name.is_null());
+
+    // SAFETY: `status` points to valid writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetStatus(session_id, &mut status) }, TRUE);
+    assert_eq!(status.data_size, expected_data_size);
+    assert!(!status.schema_id.is_null());
+    assert!(!status.schema_name.is_null());
+
+    // SAFETY: nested pointers were allocated by `RimeGetStatus` above.
+    assert_eq!(unsafe { RimeFreeStatus(&mut status) }, TRUE);
+    assert_eq!(status.data_size, expected_data_size);
+    assert!(status.schema_id.is_null());
+    assert!(status.schema_name.is_null());
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
 fn sets_and_gets_runtime_options() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

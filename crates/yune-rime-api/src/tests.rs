@@ -3768,11 +3768,13 @@ fn installation_update_creates_metadata_and_refreshes_runtime_paths() {
     let root = unique_temp_dir("installation-update");
     let user = root.join("user");
     let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let distribution_name = CString::new("Yune Test").expect("distribution name should be valid");
     let distribution_code = CString::new("yune-test").expect("distribution code should be valid");
     let distribution_version =
         CString::new("2026.04").expect("distribution version should be valid");
     let mut traits = empty_traits();
     traits.user_data_dir = user_c.as_ptr();
+    traits.distribution_name = distribution_name.as_ptr();
     traits.distribution_code_name = distribution_code.as_ptr();
     traits.distribution_version = distribution_version.as_ptr();
     // SAFETY: traits points to valid storage and strings live for the call.
@@ -3789,6 +3791,10 @@ fn installation_update_creates_metadata_and_refreshes_runtime_paths() {
         .and_then(Value::as_str)
         .expect("installation id should be recorded");
     assert!(installation_id.starts_with("yune-"));
+    assert_eq!(
+        find_config_value(&metadata, "distribution_name").and_then(Value::as_str),
+        Some("Yune Test")
+    );
     assert_eq!(
         find_config_value(&metadata, "distribution_code_name").and_then(Value::as_str),
         Some("yune-test")

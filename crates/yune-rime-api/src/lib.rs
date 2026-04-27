@@ -201,6 +201,7 @@ struct RuntimePaths {
     sync_dir: CString,
     user_id: CString,
     user_data_sync_dir: CString,
+    distribution_name: CString,
     distribution_code_name: CString,
     distribution_version: CString,
     app_name: CString,
@@ -215,7 +216,7 @@ struct RuntimePathArgs<'a> {
     staging_dir: &'a str,
     sync_dir: &'a str,
     user_id: &'a str,
-    distribution: (&'a str, &'a str),
+    distribution: (&'a str, &'a str, &'a str),
     app_name: &'a str,
     log_dir: &'a str,
     backup_config_files: bool,
@@ -249,7 +250,7 @@ impl Default for RuntimePaths {
             staging_dir: "build",
             sync_dir: "sync",
             user_id: "unknown",
-            distribution: ("", ""),
+            distribution: ("", "", ""),
             app_name: "",
             log_dir: "",
             backup_config_files: true,
@@ -268,8 +269,9 @@ impl RuntimePaths {
             sync_dir: cstring_from_lossless_str(args.sync_dir),
             user_id: cstring_from_lossless_str(args.user_id),
             user_data_sync_dir: cstring_from_lossless_str(&user_data_sync_dir),
-            distribution_code_name: cstring_from_lossless_str(args.distribution.0),
-            distribution_version: cstring_from_lossless_str(args.distribution.1),
+            distribution_name: cstring_from_lossless_str(args.distribution.0),
+            distribution_code_name: cstring_from_lossless_str(args.distribution.1),
+            distribution_version: cstring_from_lossless_str(args.distribution.2),
             app_name: cstring_from_lossless_str(args.app_name),
             log_dir: cstring_from_lossless_str(args.log_dir),
             backup_config_files: args.backup_config_files,
@@ -303,6 +305,9 @@ impl RuntimePaths {
                 .unwrap_or_else(|| path_join(&shared_data_dir, "build"));
         let staging_dir = provided_string(unsafe { ptr::addr_of!((*traits).staging_dir) })
             .unwrap_or_else(|| path_join(&user_data_dir, "build"));
+        let distribution_name =
+            provided_string(unsafe { ptr::addr_of!((*traits).distribution_name) })
+                .unwrap_or_default();
         let distribution_code_name =
             provided_string(unsafe { ptr::addr_of!((*traits).distribution_code_name) })
                 .unwrap_or_default();
@@ -333,7 +338,11 @@ impl RuntimePaths {
             staging_dir: &staging_dir,
             sync_dir: &sync_dir,
             user_id: &user_id,
-            distribution: (&distribution_code_name, &distribution_version),
+            distribution: (
+                &distribution_name,
+                &distribution_code_name,
+                &distribution_version,
+            ),
             app_name: &app_name,
             log_dir: &log_dir,
             backup_config_files,
@@ -4625,13 +4634,20 @@ fn sync_all_user_dicts() -> bool {
 }
 
 fn run_installation_update() -> bool {
-    let (user_data_dir, current_sync_dir, distribution_code_name, distribution_version) = {
+    let (
+        user_data_dir,
+        current_sync_dir,
+        distribution_name,
+        distribution_code_name,
+        distribution_version,
+    ) = {
         let paths = runtime_paths()
             .lock()
             .expect("runtime paths should not be poisoned");
         (
             PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned()),
             paths.sync_dir.to_string_lossy().into_owned(),
+            paths.distribution_name.to_string_lossy().into_owned(),
             paths.distribution_code_name.to_string_lossy().into_owned(),
             paths.distribution_version.to_string_lossy().into_owned(),
         )
@@ -4691,6 +4707,12 @@ fn run_installation_update() -> bool {
         root.insert(
             Value::String("update_time".to_owned()),
             Value::String(current_unix_time_string()),
+        );
+    }
+    if !distribution_name.is_empty() {
+        root.insert(
+            Value::String("distribution_name".to_owned()),
+            Value::String(distribution_name.clone()),
         );
     }
     if !distribution_code_name.is_empty() {

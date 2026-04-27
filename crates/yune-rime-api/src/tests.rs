@@ -11679,6 +11679,10 @@ fn simulates_librime_style_key_sequences() {
         "{Begin}{Select}{Print}{Execute}{Insert}{Undo}{Redo}{Menu}{Find}{Cancel}{Help}{Break}",
     )
     .expect("key sequence should be valid");
+    let noop_switch_sequence = CString::new(
+        "{Arabic_switch}{Greek_switch}{Hangul_switch}{Hebrew_switch}{ISO_Group_Shift}{Mode_switch}{kana_switch}{script_switch}{Num_Lock}",
+    )
+    .expect("key sequence should be valid");
     let invalid_sequence =
         CString::new("x{Unknown}").expect("key sequence should be valid C string");
     let mut commit = RimeCommit {
@@ -11732,6 +11736,19 @@ fn simulates_librime_style_key_sequences() {
     // them in the active session.
     assert_eq!(
         unsafe { RimeSimulateKeySequence(session_id, noop_misc_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: ignored named keys should leave the context empty.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: noop_switch_sequence is a valid C string; librime accepts
+    // mode-switch aliases and Num_Lock as known key-table names.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, noop_switch_sequence.as_ptr()) },
         TRUE
     );
     // SAFETY: ignored named keys should leave the context empty.

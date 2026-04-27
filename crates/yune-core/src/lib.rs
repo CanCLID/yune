@@ -220,7 +220,9 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         "Tab" => KeyCode::Tab,
         "Linefeed" | "Clear" | "Pause" | "Scroll_Lock" | "Sys_Req" | "Begin" | "Select"
         | "Print" | "Execute" | "Insert" | "Undo" | "Redo" | "Menu" | "Find" | "Cancel"
-        | "Help" | "Break" => KeyCode::Ignored,
+        | "Help" | "Break" | "Arabic_switch" | "Greek_switch" | "Hangul_switch"
+        | "Hebrew_switch" | "ISO_Group_Shift" | "Mode_switch" | "kana_switch" | "script_switch"
+        | "Num_Lock" => KeyCode::Ignored,
         "BackSpace" => KeyCode::Backspace,
         "Delete" => KeyCode::Delete,
         "Escape" => KeyCode::Escape,
@@ -1456,11 +1458,11 @@ mod tests {
     #[test]
     fn parses_librime_known_noop_key_names() {
         let keys = parse_key_sequence(
-            "{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}{Begin}{Select}{Print}{Execute}{Insert}{Undo}{Redo}{Menu}{Find}{Cancel}{Help}{Break}",
+            "{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}{Begin}{Select}{Print}{Execute}{Insert}{Undo}{Redo}{Menu}{Find}{Cancel}{Help}{Break}{Arabic_switch}{Greek_switch}{Hangul_switch}{Hebrew_switch}{ISO_Group_Shift}{Mode_switch}{kana_switch}{script_switch}{Num_Lock}",
         )
         .expect("key sequence should parse");
 
-        assert_eq!(keys.len(), 17);
+        assert_eq!(keys.len(), 26);
         assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
         assert!(keys.iter().all(|key| key.modifiers.is_empty()));
     }

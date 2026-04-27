@@ -5949,7 +5949,10 @@ fn set_config_value(root: &mut Value, key: &str, value: Value) -> bool {
         } else if is_list_item_reference(segment) {
             return false;
         } else {
-            let Value::Mapping(mapping) = ensure_mapping(current) else {
+            if current.is_null() {
+                *current = Value::Mapping(Mapping::new());
+            }
+            let Value::Mapping(mapping) = current else {
                 return false;
             };
             let next_segment = if parent_index + 1 == parents.len() {
@@ -5986,7 +5989,10 @@ fn set_config_value(root: &mut Value, key: &str, value: Value) -> bool {
     } else if is_list_item_reference(last) {
         false
     } else {
-        let Value::Mapping(mapping) = ensure_mapping(current) else {
+        if current.is_null() {
+            *current = Value::Mapping(Mapping::new());
+        }
+        let Value::Mapping(mapping) = current else {
             return false;
         };
         mapping.insert(Value::String((*last).to_owned()), value);
@@ -6921,6 +6927,68 @@ switches:\n  - name: ascii_mode\n  - name: full_shape\nmenu:\n  page_size: 9\n  
             },
             TRUE
         );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+    }
+
+    #[test]
+    fn config_set_rejects_child_paths_under_existing_scalar_nodes() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let scalar = CString::new("zergs/going").expect("key should be valid");
+        let child = CString::new("zergs/going/home").expect("key should be valid");
+        let root = CString::new("").expect("key should be valid");
+        let root_scalar = CString::new("root").expect("value should be valid");
+        let root_child = CString::new("child").expect("key should be valid");
+        let value = CString::new("home").expect("value should be valid");
+        let mut output = vec![0 as c_char; 16];
+
+        // SAFETY: config points to writable storage.
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigSetBool(&mut config, scalar.as_ptr(), TRUE) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetString(&mut config, child.as_ptr(), value.as_ptr()) },
+            FALSE
+        );
+        assert_eq!(
+            unsafe {
+                RimeConfigGetString(
+                    &mut config,
+                    scalar.as_ptr(),
+                    output.as_mut_ptr(),
+                    output.len(),
+                )
+            },
+            TRUE
+        );
+        // SAFETY: successful string copies are NUL-terminated.
+        assert_eq!(
+            unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+            Ok("true")
+        );
+
+        assert_eq!(
+            unsafe { RimeConfigClear(&mut config, scalar.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetString(&mut config, child.as_ptr(), value.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigSetString(&mut config, root.as_ptr(), root_scalar.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetString(&mut config, root_child.as_ptr(), value.as_ptr()) },
+            FALSE
+        );
+        assert_eq!(config_string(&mut config, "").as_deref(), Some("root"));
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }
 

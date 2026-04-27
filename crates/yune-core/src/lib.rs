@@ -1454,19 +1454,43 @@ impl TableDictionary {
         mut import_loader: impl FnMut(&str) -> Option<String>,
     ) -> Result<Self, TableDictionaryParseError> {
         let (metadata, mut entries) = parse_rime_dict_yaml_parts(input)?;
-        for import_table in &metadata.import_tables {
-            if Some(import_table.as_str()) == metadata.name.as_deref() {
+        append_rime_import_table_entries(&metadata, &mut entries, &mut import_loader)?;
+        let entries = finalize_rime_table_entries(&metadata, entries);
+        Ok(Self { entries })
+    }
+
+    pub fn parse_rime_dict_yaml_with_imports_and_packs(
+        input: &str,
+        packs: impl IntoIterator<Item = impl AsRef<str>>,
+        mut import_loader: impl FnMut(&str) -> Option<String>,
+    ) -> Result<Self, TableDictionaryParseError> {
+        let (metadata, mut entries) = parse_rime_dict_yaml_parts(input)?;
+        append_rime_import_table_entries(&metadata, &mut entries, &mut import_loader)?;
+        let mut entries = finalize_rime_table_entries(&metadata, entries);
+
+        for pack in packs {
+            let pack = pack.as_ref();
+            let Some(pack_yaml) = import_loader(pack) else {
+                continue;
+            };
+            let Ok((pack_metadata, mut pack_entries)) = parse_rime_dict_yaml_parts(&pack_yaml)
+            else {
+                continue;
+            };
+            if append_rime_import_table_entries(
+                &pack_metadata,
+                &mut pack_entries,
+                &mut import_loader,
+            )
+            .is_err()
+            {
                 continue;
             }
-            let import_yaml = import_loader(import_table).ok_or_else(|| {
-                TableDictionaryParseError::new(format!(
-                    "RIME dictionary import table '{import_table}' is missing"
-                ))
-            })?;
-            let (_, mut imported_entries) = parse_rime_dict_yaml_parts(&import_yaml)?;
-            entries.append(&mut imported_entries);
+            let mut pack_entries = finalize_rime_table_entries(&pack_metadata, pack_entries);
+            entries.append(&mut pack_entries);
         }
-        let entries = finalize_rime_table_entries(&metadata, entries);
+
+        sort_rime_table_entries(&metadata, &mut entries);
         Ok(Self { entries })
     }
 
@@ -1535,6 +1559,26 @@ fn parse_rime_dict_yaml_parts(
     }
 
     Ok((metadata, entries))
+}
+
+fn append_rime_import_table_entries(
+    metadata: &RimeTableMetadata,
+    entries: &mut Vec<RimeParsedTableEntry>,
+    import_loader: &mut impl FnMut(&str) -> Option<String>,
+) -> Result<(), TableDictionaryParseError> {
+    for import_table in &metadata.import_tables {
+        if Some(import_table.as_str()) == metadata.name.as_deref() {
+            continue;
+        }
+        let import_yaml = import_loader(import_table).ok_or_else(|| {
+            TableDictionaryParseError::new(format!(
+                "RIME dictionary import table '{import_table}' is missing"
+            ))
+        })?;
+        let (_, mut imported_entries) = parse_rime_dict_yaml_parts(&import_yaml)?;
+        entries.append(&mut imported_entries);
+    }
+    Ok(())
 }
 
 fn finalize_rime_table_entries(
@@ -2051,6 +2095,15 @@ impl StaticTableTranslator {
         import_loader: impl FnMut(&str) -> Option<String>,
     ) -> Result<Self, TableDictionaryParseError> {
         TableDictionary::parse_rime_dict_yaml_with_imports(input, import_loader)
+            .map(Self::from_dictionary)
+    }
+
+    pub fn parse_rime_dict_yaml_with_imports_and_packs(
+        input: &str,
+        packs: impl IntoIterator<Item = impl AsRef<str>>,
+        import_loader: impl FnMut(&str) -> Option<String>,
+    ) -> Result<Self, TableDictionaryParseError> {
+        TableDictionary::parse_rime_dict_yaml_with_imports_and_packs(input, packs, import_loader)
             .map(Self::from_dictionary)
     }
 }
@@ -5621,6 +5674,50 @@ ba	吧	3
         assert_eq!(entries[0].text, "爸");
         assert_eq!(entries[1].text, "吧");
         assert_eq!(entries[2].text, "八");
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_schema_packs_as_optional_tables() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports_and_packs(
+            r#"
+---
+name: primary
+version: "0.1"
+sort: by_weight
+...
+
+爸	ba	1
+八	ba	2
+"#,
+            ["pack", "missing_pack", "broken_pack"],
+            |name| match name {
+                "pack" => Some(
+                    r#"
+---
+name: pack
+version: "0.1"
+sort: original
+columns: [code, text, weight]
+...
+
+ba	爸	9
+ba	吧	3
+"#
+                    .to_owned(),
+                ),
+                "broken_pack" => Some("name: broken\n".to_owned()),
+                _ => None,
+            },
+        )
+        .expect("dictionary packs should parse");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 4);
+        assert_eq!(entries[0].text, "爸");
+        assert_eq!(entries[1].text, "吧");
+        assert_eq!(entries[2].text, "八");
+        assert_eq!(entries[3].text, "爸");
+        assert_eq!(entries[3].weight, 1.0);
     }
 
     #[test]

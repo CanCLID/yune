@@ -3705,8 +3705,10 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
     let Ok(dictionary_yaml) = fs::read_to_string(dictionary_path) else {
         return;
     };
-    let Ok(translator) = StaticTableTranslator::parse_rime_dict_yaml_with_imports(
+    let packs = schema_dictionary_packs(&schema_config);
+    let Ok(translator) = StaticTableTranslator::parse_rime_dict_yaml_with_imports_and_packs(
         &dictionary_yaml,
+        packs,
         |import_table| {
             selected_runtime_data_path(&format!("{import_table}.dict.yaml"))
                 .and_then(|path| fs::read_to_string(path).ok())
@@ -3715,6 +3717,13 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
         return;
     };
     session.engine.add_translator(translator);
+}
+
+fn schema_dictionary_packs(schema_config: &Value) -> Vec<String> {
+    let Some(Value::Sequence(packs)) = find_config_value(schema_config, "translator/packs") else {
+        return Vec::new();
+    };
+    packs.iter().filter_map(config_scalar_string).collect()
 }
 
 fn install_schema_punctuation_translator(session: &mut SessionState, schema_id: &str) {

@@ -979,6 +979,10 @@ impl Engine {
         } else {
             current_index + page_size
         };
+        let next_index = next_index.min(self.context.candidates.len() - 1);
+        if current_index == next_index {
+            return false;
+        }
         self.highlight_candidate(next_index)
     }
 
@@ -1767,13 +1771,15 @@ mod tests {
 
         assert!(engine.change_page(false));
         assert_eq!(engine.context().highlighted, 6);
+        assert!(!engine.change_page(false));
+        assert_eq!(engine.context().highlighted, 6);
         assert!(engine.highlight_candidate_on_current_page(0));
         assert_eq!(engine.context().highlighted, 5);
         assert!(!engine.highlight_candidate_on_current_page(5));
         assert_eq!(engine.context().highlighted, 5);
         assert!(engine.change_page(true));
         assert_eq!(engine.context().highlighted, 0);
-        assert!(engine.change_page(true));
+        assert!(!engine.change_page(true));
         assert_eq!(engine.context().highlighted, 0);
 
         assert_eq!(engine.commit_composition().as_deref(), Some("八"));

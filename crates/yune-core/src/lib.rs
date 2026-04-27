@@ -65,6 +65,8 @@ pub enum KeyCode {
     MoveCaretRight,
     MoveCaretLeftByChar,
     MoveCaretRightByChar,
+    MoveCaretLeftBySyllable,
+    MoveCaretRightBySyllable,
     PreviousCandidate,
     NextCandidate,
     FirstCandidate,
@@ -162,7 +164,15 @@ fn parse_key_event_repr(repr: &str) -> Result<KeyEvent, KeySequenceParseError> {
     let mut modifiers = KeyModifiers::default();
     while let Some(token) = tokens.next() {
         if tokens.peek().is_none() {
-            let code = key_code_from_name(token)?;
+            let code = if is_exact_control_modifier(modifiers) {
+                match token {
+                    "Up" => KeyCode::MoveCaretLeftBySyllable,
+                    "Down" => KeyCode::MoveCaretRightBySyllable,
+                    _ => key_code_from_name(token)?,
+                }
+            } else {
+                key_code_from_name(token)?
+            };
             return Ok(KeyEvent { code, modifiers });
         }
         apply_modifier(&mut modifiers, token)?;
@@ -792,6 +802,14 @@ impl Engine {
                     self.move_caret_right_by_syllable();
                     return None;
                 }
+                KeyCode::MoveCaretLeftBySyllable => {
+                    self.move_caret_left_by_syllable();
+                    return None;
+                }
+                KeyCode::MoveCaretRightBySyllable => {
+                    self.move_caret_right_by_syllable();
+                    return None;
+                }
                 _ => {}
             }
         }
@@ -826,6 +844,14 @@ impl Engine {
             }
             KeyCode::MoveCaretRightByChar => {
                 self.move_caret_right_by_char();
+                None
+            }
+            KeyCode::MoveCaretLeftBySyllable => {
+                self.move_caret_left_by_syllable();
+                None
+            }
+            KeyCode::MoveCaretRightBySyllable => {
+                self.move_caret_right_by_syllable();
                 None
             }
             KeyCode::PreviousCandidate => {
@@ -1243,11 +1269,11 @@ mod tests {
     #[test]
     fn parses_librime_style_key_sequence_names() {
         let keys = parse_key_sequence(
-            "zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}{Delete}{Escape}{Left}{Right}{KP_Left}{KP_Right}{Home}{KP_End}{Page_Down}{KP_Page_Up}{Down}{KP_Up}",
+            "zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}{Delete}{Escape}{Left}{Right}{KP_Left}{KP_Right}{Home}{KP_End}{Page_Down}{KP_Page_Up}{Down}{KP_Up}{Control+Up}{Control+Down}",
         )
         .expect("key sequence should parse");
 
-        assert_eq!(keys.len(), 26);
+        assert_eq!(keys.len(), 28);
         assert_eq!(keys[3].code, KeyCode::Character(' '));
         assert!(!keys[3].modifiers.shift);
         assert_eq!(keys[7].code, KeyCode::Character(' '));
@@ -1269,6 +1295,10 @@ mod tests {
         assert_eq!(keys[23].code, KeyCode::PreviousPage);
         assert_eq!(keys[24].code, KeyCode::NextCandidate);
         assert_eq!(keys[25].code, KeyCode::PreviousCandidate);
+        assert_eq!(keys[26].code, KeyCode::MoveCaretLeftBySyllable);
+        assert!(keys[26].modifiers.control);
+        assert_eq!(keys[27].code, KeyCode::MoveCaretRightBySyllable);
+        assert!(keys[27].modifiers.control);
     }
 
     #[test]
@@ -1514,6 +1544,35 @@ mod tests {
         engine.set_input("nix");
         let commits = engine
             .process_key_sequence("{Control+Left}{Delete}{space}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["ix"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("ix"));
+    }
+
+    #[test]
+    fn control_up_down_jump_across_simplified_syllable_span_like_librime_vertical_navigator() {
+        let mut engine = Engine::new();
+
+        engine.set_input("nix");
+        engine.set_caret_pos(2);
+        let commits = engine
+            .process_key_sequence("{Control+Up}")
+            .expect("key sequence should parse");
+
+        assert!(commits.is_empty());
+        assert_eq!(engine.context().composition.caret, 0);
+
+        let commits = engine
+            .process_key_sequence("{Control+Down}{BackSpace}{space}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["ni"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("ni"));
+
+        engine.set_input("nix");
+        let commits = engine
+            .process_key_sequence("{Control+Up}{Delete}{space}")
             .expect("key sequence should parse");
 
         assert_eq!(commits, vec!["ix"]);

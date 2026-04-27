@@ -11574,6 +11574,92 @@ fn select_schema_uses_deployed_schema_name_like_librime() {
 }
 
 #[test]
+fn select_schema_applies_librime_switch_reset_options() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("select-schema-switch-reset");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna.schema.yaml"),
+        "\
+schema:
+  schema_id: luna
+  name: Luna
+switches:
+  - name: ascii_mode
+    reset: 1
+  - name: full_shape
+    reset: 0
+  - options: [simplification, traditional]
+    reset: 1
+",
+    )
+    .expect("schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("luna").expect("schema id should be valid");
+    let full_shape = CString::new("full_shape").expect("option name should be valid");
+    let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
+    let simplification = CString::new("simplification").expect("option name should be valid");
+    let traditional = CString::new("traditional").expect("option name should be valid");
+    let mut status = empty_status();
+
+    // SAFETY: option name is a valid NUL-terminated string.
+    unsafe { RimeSetOption(session_id, full_shape.as_ptr(), TRUE) };
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+
+    // SAFETY: option names are valid NUL-terminated strings.
+    assert_eq!(
+        unsafe { RimeGetOption(session_id, ascii_mode.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { RimeGetOption(session_id, full_shape.as_ptr()) },
+        FALSE
+    );
+    assert_eq!(
+        unsafe { RimeGetOption(session_id, simplification.as_ptr()) },
+        FALSE
+    );
+    assert_eq!(
+        unsafe { RimeGetOption(session_id, traditional.as_ptr()) },
+        TRUE
+    );
+
+    // SAFETY: status points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetStatus(session_id, &mut status) }, TRUE);
+    assert_eq!(status.is_ascii_mode, TRUE);
+    assert_eq!(status.is_full_shape, FALSE);
+    assert_eq!(status.is_simplified, FALSE);
+    assert_eq!(status.is_traditional, TRUE);
+    // SAFETY: nested pointers were allocated by `RimeGetStatus` above.
+    assert_eq!(unsafe { RimeFreeStatus(&mut status) }, TRUE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_loads_librime_punctuator_shape_and_symbol_definitions() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

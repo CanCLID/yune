@@ -2014,6 +2014,7 @@ pub unsafe extern "C" fn RimeSelectSchema(
             .engine
             .set_schema(schema_id.clone(), schema_name.clone());
         session.engine.reset_translators();
+        apply_schema_switch_resets(session, &schema_id);
         install_schema_punctuation_translator(session, &schema_id);
         install_schema_dictionary_translator(session, &schema_id);
         session.engine.clear_composition();
@@ -3624,6 +3625,55 @@ fn schema_engine_translators_include(schema_config: &Value, translator_name: &st
         .iter()
         .filter_map(Value::as_str)
         .any(|translator| translator == translator_name)
+}
+
+fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    let Some(Value::Sequence(switches)) = find_config_value(&schema_config, "switches") else {
+        return;
+    };
+
+    for the_switch in switches {
+        let Value::Mapping(switch_map) = the_switch else {
+            continue;
+        };
+        let Some(reset_value) = switch_reset_value(switch_map) else {
+            continue;
+        };
+
+        if let Some(option_name) = switch_scalar_field(switch_map, "name") {
+            session.engine.set_option(option_name, reset_value != 0);
+            continue;
+        }
+
+        let Some(Value::Sequence(options)) = switch_map.get(Value::String("options".to_owned()))
+        else {
+            continue;
+        };
+        for (option_index, option) in options.iter().enumerate() {
+            let Some(option_name) = config_scalar_string(option) else {
+                continue;
+            };
+            session
+                .engine
+                .set_option(option_name, option_index as c_int == reset_value);
+        }
+    }
+}
+
+fn switch_reset_value(switch_map: &Mapping) -> Option<c_int> {
+    let reset = switch_map.get(Value::String("reset".to_owned()))?;
+    match reset {
+        Value::Null | Value::Sequence(_) | Value::Mapping(_) => None,
+        scalar => Some(config_scalar_int(scalar).unwrap_or(0)),
+    }
+}
+
+fn switch_scalar_field(switch_map: &Mapping, key: &str) -> Option<String> {
+    switch_map
+        .get(Value::String(key.to_owned()))
+        .and_then(config_scalar_string)
 }
 
 fn punctuation_entries_from_config(schema_config: &Value, shape: &str) -> Vec<(String, String)> {

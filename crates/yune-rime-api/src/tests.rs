@@ -11683,6 +11683,8 @@ fn simulates_librime_style_key_sequences() {
         "{Arabic_switch}{Greek_switch}{Hangul_switch}{Hebrew_switch}{ISO_Group_Shift}{Mode_switch}{kana_switch}{script_switch}{Num_Lock}",
     )
     .expect("key sequence should be valid");
+    let noop_function_sequence =
+        CString::new("{F1}{Alt+F4}{F12}{F13}{F35}").expect("key sequence should be valid");
     let invalid_sequence =
         CString::new("x{Unknown}").expect("key sequence should be valid C string");
     let mut commit = RimeCommit {
@@ -11752,6 +11754,19 @@ fn simulates_librime_style_key_sequences() {
         TRUE
     );
     // SAFETY: ignored named keys should leave the context empty.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: noop_function_sequence is a valid C string; librime accepts F1
+    // through F35 via its key table even when the active engine ignores them.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, noop_function_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: ignored function keys should leave the context empty.
     assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
     assert_eq!(context.composition.length, 0);
     assert_eq!(context.menu.num_candidates, 0);

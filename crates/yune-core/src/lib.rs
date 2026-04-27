@@ -222,7 +222,10 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         | "Print" | "Execute" | "Insert" | "Undo" | "Redo" | "Menu" | "Find" | "Cancel"
         | "Help" | "Break" | "Arabic_switch" | "Greek_switch" | "Hangul_switch"
         | "Hebrew_switch" | "ISO_Group_Shift" | "Mode_switch" | "kana_switch" | "script_switch"
-        | "Num_Lock" => KeyCode::Ignored,
+        | "Num_Lock" | "F1" | "F2" | "F3" | "F4" | "F5" | "F6" | "F7" | "F8" | "F9" | "F10"
+        | "F11" | "F12" | "F13" | "F14" | "F15" | "F16" | "F17" | "F18" | "F19" | "F20" | "F21"
+        | "F22" | "F23" | "F24" | "F25" | "F26" | "F27" | "F28" | "F29" | "F30" | "F31" | "F32"
+        | "F33" | "F34" | "F35" => KeyCode::Ignored,
         "BackSpace" => KeyCode::Backspace,
         "Delete" => KeyCode::Delete,
         "Escape" => KeyCode::Escape,
@@ -1458,13 +1461,17 @@ mod tests {
     #[test]
     fn parses_librime_known_noop_key_names() {
         let keys = parse_key_sequence(
-            "{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}{Begin}{Select}{Print}{Execute}{Insert}{Undo}{Redo}{Menu}{Find}{Cancel}{Help}{Break}{Arabic_switch}{Greek_switch}{Hangul_switch}{Hebrew_switch}{ISO_Group_Shift}{Mode_switch}{kana_switch}{script_switch}{Num_Lock}",
+            "{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}{Begin}{Select}{Print}{Execute}{Insert}{Undo}{Redo}{Menu}{Find}{Cancel}{Help}{Break}{Arabic_switch}{Greek_switch}{Hangul_switch}{Hebrew_switch}{ISO_Group_Shift}{Mode_switch}{kana_switch}{script_switch}{Num_Lock}{F1}{Alt+F4}{F12}{F13}{F35}",
         )
         .expect("key sequence should parse");
 
-        assert_eq!(keys.len(), 26);
+        assert_eq!(keys.len(), 31);
         assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
-        assert!(keys.iter().all(|key| key.modifiers.is_empty()));
+        assert!(keys
+            .iter()
+            .enumerate()
+            .all(|(index, key)| index == 27 || key.modifiers.is_empty()));
+        assert!(keys[27].modifiers.alt);
     }
 
     #[test]

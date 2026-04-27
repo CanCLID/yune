@@ -24,6 +24,7 @@ pub use key_table::*;
 const XK_BACKSPACE: c_int = 0xff08;
 const XK_ESCAPE: c_int = 0xff1b;
 const XK_RETURN: c_int = 0xff0d;
+const XK_DELETE: c_int = 0xffff;
 const XK_HOME: c_int = 0xff50;
 const XK_UP: c_int = 0xff52;
 const XK_DOWN: c_int = 0xff54;
@@ -3385,6 +3386,7 @@ pub unsafe extern "C" fn RimeFreeCommit(commit: *mut RimeCommit) -> Bool {
 fn key_event_from_rime_keycode(keycode: c_int) -> Option<KeyEvent> {
     let code = match keycode {
         XK_BACKSPACE => KeyCode::Backspace,
+        XK_DELETE => KeyCode::Delete,
         XK_ESCAPE => KeyCode::Escape,
         XK_UP | XK_KP_UP => KeyCode::PreviousCandidate,
         XK_DOWN | XK_KP_DOWN => KeyCode::NextCandidate,

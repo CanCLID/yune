@@ -6881,6 +6881,81 @@ fn escape_clears_composition_like_librime_editor_cancel_key() {
 }
 
 #[test]
+fn delete_key_removes_input_at_caret_like_librime_editor_delete_key() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let delete = CString::new("Delete").expect("key name should be valid");
+    let delete_keycode = unsafe { RimeGetKeycodeByName(delete.as_ptr()) };
+    assert_eq!(delete_keycode, 0xffff);
+
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    let input = CString::new("nix").expect("input should be valid");
+    // SAFETY: input is a valid NUL-terminated C string.
+    assert_eq!(unsafe { RimeSetInput(session_id, input.as_ptr()) }, TRUE);
+    RimeSetCaretPos(session_id, 2);
+    assert_eq!(RimeProcessKey(session_id, delete_keycode, 0), TRUE);
+    let input = RimeGetInput(session_id);
+    assert!(!input.is_null());
+    // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("ni"));
+    assert_eq!(RimeGetCaretPos(session_id), 2);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let sequence_session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&sequence_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    let input = CString::new("nix").expect("input should be valid");
+    // SAFETY: input is a valid NUL-terminated C string.
+    assert_eq!(
+        unsafe { RimeSetInput(sequence_session_id, input.as_ptr()) },
+        TRUE
+    );
+    RimeSetCaretPos(sequence_session_id, 2);
+    let sequence = CString::new("{Delete}{space}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    let mut commit = RimeCommit {
+        data_size: std::mem::size_of::<RimeCommit>() as i32,
+        text: std::ptr::null_mut(),
+    };
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeGetCommit(sequence_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("你"));
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+}
+
+#[test]
 fn page_keys_move_candidate_page_like_librime_selector_keys() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

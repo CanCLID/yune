@@ -59,6 +59,7 @@ pub enum KeyCode {
     Character(char),
     KeypadDigit(char),
     Backspace,
+    Delete,
     Escape,
     PreviousCandidate,
     NextCandidate,
@@ -189,6 +190,7 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
     let code = match name {
         "space" => KeyCode::Character(' '),
         "BackSpace" => KeyCode::Backspace,
+        "Delete" => KeyCode::Delete,
         "Escape" => KeyCode::Escape,
         "Up" | "KP_Up" => KeyCode::PreviousCandidate,
         "Down" | "KP_Down" => KeyCode::NextCandidate,
@@ -764,6 +766,7 @@ impl Engine {
             }
             KeyCode::KeypadDigit(_) => None,
             KeyCode::Backspace => self.backspace(),
+            KeyCode::Delete => self.delete_at_caret(),
             KeyCode::Escape => {
                 self.clear_composition();
                 None
@@ -956,6 +959,18 @@ impl Engine {
         None
     }
 
+    fn delete_at_caret(&mut self) -> Option<String> {
+        if self.context.composition.caret < self.context.composition.input.len() {
+            self.context
+                .composition
+                .input
+                .remove(self.context.composition.caret);
+            self.context.composition.preedit = self.context.composition.input.clone();
+            self.refresh_candidates();
+        }
+        None
+    }
+
     fn commit_highlighted(&mut self) -> Option<String> {
         self.commit_candidate(self.context.highlighted)
     }
@@ -1014,11 +1029,11 @@ mod tests {
     #[test]
     fn parses_librime_style_key_sequence_names() {
         let keys = parse_key_sequence(
-            "zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}{Escape}{Home}{KP_End}{Page_Down}{KP_Page_Up}{Down}{KP_Up}",
+            "zyx 123{Shift+space}ABC{Control+Alt+Return}{KP_Enter}{KP_2}{Delete}{Escape}{Home}{KP_End}{Page_Down}{KP_Page_Up}{Down}{KP_Up}",
         )
         .expect("key sequence should parse");
 
-        assert_eq!(keys.len(), 21);
+        assert_eq!(keys.len(), 22);
         assert_eq!(keys[3].code, KeyCode::Character(' '));
         assert!(!keys[3].modifiers.shift);
         assert_eq!(keys[7].code, KeyCode::Character(' '));
@@ -1028,13 +1043,14 @@ mod tests {
         assert!(keys[11].modifiers.alt);
         assert_eq!(keys[12].code, KeyCode::Return);
         assert_eq!(keys[13].code, KeyCode::KeypadDigit('2'));
-        assert_eq!(keys[14].code, KeyCode::Escape);
-        assert_eq!(keys[15].code, KeyCode::FirstCandidate);
+        assert_eq!(keys[14].code, KeyCode::Delete);
+        assert_eq!(keys[15].code, KeyCode::Escape);
         assert_eq!(keys[16].code, KeyCode::FirstCandidate);
-        assert_eq!(keys[17].code, KeyCode::NextPage);
-        assert_eq!(keys[18].code, KeyCode::PreviousPage);
-        assert_eq!(keys[19].code, KeyCode::NextCandidate);
-        assert_eq!(keys[20].code, KeyCode::PreviousCandidate);
+        assert_eq!(keys[17].code, KeyCode::FirstCandidate);
+        assert_eq!(keys[18].code, KeyCode::NextPage);
+        assert_eq!(keys[19].code, KeyCode::PreviousPage);
+        assert_eq!(keys[20].code, KeyCode::NextCandidate);
+        assert_eq!(keys[21].code, KeyCode::PreviousCandidate);
     }
 
     #[test]
@@ -1104,6 +1120,32 @@ mod tests {
         assert!(engine.context().candidates.is_empty());
         assert_eq!(engine.context().last_commit, None);
         assert!(!engine.status().is_composing);
+    }
+
+    #[test]
+    fn delete_key_removes_input_at_caret_like_librime_editor_delete() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        engine.set_input("nix");
+        engine.set_caret_pos(2);
+        let commits = engine
+            .process_key_sequence("{Delete}{space}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["你"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("你"));
+        assert!(!engine.status().is_composing);
+
+        engine.set_input("ni");
+        engine.set_caret_pos(2);
+        let commits = engine
+            .process_key_sequence("{Delete}")
+            .expect("key sequence should parse");
+
+        assert!(commits.is_empty());
+        assert_eq!(engine.context().composition.input, "ni");
+        assert_eq!(engine.context().composition.caret, 2);
     }
 
     #[test]

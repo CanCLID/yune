@@ -1463,6 +1463,11 @@ impl TableDictionary {
         let body_start = body_start.ok_or_else(|| {
             TableDictionaryParseError::new("RIME dictionary header is missing terminating '...'")
         })?;
+        if !metadata.is_complete() {
+            return Err(TableDictionaryParseError::new(
+                "RIME dictionary header is missing required name or version",
+            ));
+        }
         let mut entries = Vec::new();
         let mut comments_enabled = true;
 
@@ -1529,6 +1534,8 @@ struct RimeTableMetadata {
     columns: Vec<String>,
     reading_columns: bool,
     sort_by_weight: bool,
+    has_name: bool,
+    has_version: bool,
 }
 
 impl Default for RimeTableMetadata {
@@ -1537,6 +1544,8 @@ impl Default for RimeTableMetadata {
             columns: vec!["text".to_owned(), "code".to_owned(), "weight".to_owned()],
             reading_columns: false,
             sort_by_weight: true,
+            has_name: false,
+            has_version: false,
         }
     }
 }
@@ -1570,7 +1579,21 @@ impl RimeTableMetadata {
 
         if let Some(sort_order) = trimmed.strip_prefix("sort:") {
             self.sort_by_weight = parse_yaml_scalar(sort_order) != "original";
+            return;
         }
+
+        if let Some(name) = trimmed.strip_prefix("name:") {
+            self.has_name = !name.trim().is_empty();
+            return;
+        }
+
+        if let Some(version) = trimmed.strip_prefix("version:") {
+            self.has_version = !version.trim().is_empty();
+        }
+    }
+
+    fn is_complete(&self) -> bool {
+        self.has_name && self.has_version
     }
 
     fn parse_entry(&self, line: &str) -> Option<TableEntry> {
@@ -4580,6 +4603,41 @@ ba	吧	9
         assert_eq!(entries[0].weight, 1.0);
         assert_eq!(entries[1].text, "吧");
         assert_eq!(entries[1].weight, 9.0);
+    }
+
+    #[test]
+    fn rejects_rime_dict_yaml_with_incomplete_header() {
+        let missing_name = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+version: "0.1"
+sort: by_weight
+...
+
+八	ba	1
+"#,
+        )
+        .expect_err("dictionary without a name should be rejected");
+        assert_eq!(
+            missing_name.to_string(),
+            "RIME dictionary header is missing required name or version"
+        );
+
+        let missing_version = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: incomplete_sample
+sort: by_weight
+...
+
+八	ba	1
+"#,
+        )
+        .expect_err("dictionary without a version should be rejected");
+        assert_eq!(
+            missing_version.to_string(),
+            "RIME dictionary header is missing required name or version"
+        );
     }
 
     #[test]

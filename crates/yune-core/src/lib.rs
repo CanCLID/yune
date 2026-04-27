@@ -228,6 +228,7 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         | "F33" | "F34" | "F35" | "Shift_L" | "Shift_R" | "Control_L" | "Control_R"
         | "Caps_Lock" | "Shift_Lock" | "Meta_L" | "Meta_R" | "Alt_L" | "Alt_R" | "Super_L"
         | "Super_R" | "Hyper_L" | "Hyper_R" => KeyCode::Ignored,
+        _ if is_librime_iso_key_name(name) => KeyCode::Ignored,
         "BackSpace" => KeyCode::Backspace,
         "Delete" => KeyCode::Delete,
         "Escape" => KeyCode::Escape,
@@ -267,6 +268,48 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
         }
     };
     Ok(code)
+}
+
+fn is_librime_iso_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "ISO_Lock"
+            | "ISO_Level2_Latch"
+            | "ISO_Level3_Shift"
+            | "ISO_Level3_Latch"
+            | "ISO_Level3_Lock"
+            | "ISO_Group_Latch"
+            | "ISO_Group_Lock"
+            | "ISO_Next_Group"
+            | "ISO_Next_Group_Lock"
+            | "ISO_Prev_Group"
+            | "ISO_Prev_Group_Lock"
+            | "ISO_First_Group"
+            | "ISO_First_Group_Lock"
+            | "ISO_Last_Group"
+            | "ISO_Last_Group_Lock"
+            | "ISO_Left_Tab"
+            | "ISO_Move_Line_Up"
+            | "ISO_Move_Line_Down"
+            | "ISO_Partial_Line_Up"
+            | "ISO_Partial_Line_Down"
+            | "ISO_Partial_Space_Left"
+            | "ISO_Partial_Space_Right"
+            | "ISO_Set_Margin_Left"
+            | "ISO_Set_Margin_Right"
+            | "ISO_Release_Margin_Left"
+            | "ISO_Release_Margin_Right"
+            | "ISO_Release_Both_Margins"
+            | "ISO_Fast_Cursor_Left"
+            | "ISO_Fast_Cursor_Right"
+            | "ISO_Fast_Cursor_Up"
+            | "ISO_Fast_Cursor_Down"
+            | "ISO_Continuous_Underline"
+            | "ISO_Discontinuous_Underline"
+            | "ISO_Emphasize"
+            | "ISO_Center_Object"
+            | "ISO_Enter"
+    )
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -1463,18 +1506,19 @@ mod tests {
     #[test]
     fn parses_librime_known_noop_key_names() {
         let keys = parse_key_sequence(
-            "{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}{Begin}{Select}{Print}{Execute}{Insert}{Undo}{Redo}{Menu}{Find}{Cancel}{Help}{Break}{Arabic_switch}{Greek_switch}{Hangul_switch}{Hebrew_switch}{ISO_Group_Shift}{Mode_switch}{kana_switch}{script_switch}{Num_Lock}{F1}{Alt+F4}{F12}{F13}{F35}{Shift_L}{Shift_R}{Control_L}{Control_R}{Caps_Lock}{Shift_Lock}{Meta_L}{Meta_R}{Alt_L}{Alt_R}{Super_L}{Super_R}{Hyper_L}{Release+Hyper_R}",
+            "{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}{Begin}{Select}{Print}{Execute}{Insert}{Undo}{Redo}{Menu}{Find}{Cancel}{Help}{Break}{Arabic_switch}{Greek_switch}{Hangul_switch}{Hebrew_switch}{ISO_Group_Shift}{Mode_switch}{kana_switch}{script_switch}{Num_Lock}{F1}{Alt+F4}{F12}{F13}{F35}{Shift_L}{Shift_R}{Control_L}{Control_R}{Caps_Lock}{Shift_Lock}{Meta_L}{Meta_R}{Alt_L}{Alt_R}{Super_L}{Super_R}{Hyper_L}{Release+Hyper_R}{ISO_Lock}{ISO_Level2_Latch}{ISO_Level3_Shift}{ISO_Level3_Latch}{ISO_Level3_Lock}{ISO_Group_Latch}{ISO_Group_Lock}{ISO_Next_Group}{ISO_Next_Group_Lock}{ISO_Prev_Group}{ISO_Prev_Group_Lock}{ISO_First_Group}{ISO_First_Group_Lock}{ISO_Last_Group}{ISO_Last_Group_Lock}{ISO_Left_Tab}{ISO_Move_Line_Up}{ISO_Move_Line_Down}{ISO_Partial_Line_Up}{ISO_Partial_Line_Down}{ISO_Partial_Space_Left}{ISO_Partial_Space_Right}{ISO_Set_Margin_Left}{ISO_Set_Margin_Right}{ISO_Release_Margin_Left}{ISO_Release_Margin_Right}{ISO_Release_Both_Margins}{ISO_Fast_Cursor_Left}{ISO_Fast_Cursor_Right}{ISO_Fast_Cursor_Up}{ISO_Fast_Cursor_Down}{ISO_Continuous_Underline}{ISO_Discontinuous_Underline}{ISO_Emphasize}{ISO_Center_Object}{Release+ISO_Enter}",
         )
         .expect("key sequence should parse");
 
-        assert_eq!(keys.len(), 45);
+        assert_eq!(keys.len(), 81);
         assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
-        assert!(keys
-            .iter()
-            .enumerate()
-            .all(|(index, key)| index == 27 || index == 44 || key.modifiers.is_empty()));
+        assert!(keys.iter().enumerate().all(|(index, key)| index == 27
+            || index == 44
+            || index == 80
+            || key.modifiers.is_empty()));
         assert!(keys[27].modifiers.alt);
         assert!(keys[44].modifiers.release);
+        assert!(keys[80].modifiers.release);
     }
 
     #[test]

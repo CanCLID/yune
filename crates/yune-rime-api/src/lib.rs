@@ -2509,7 +2509,7 @@ pub unsafe extern "C" fn RimeConfigGetBool(
     let Some(found) = (unsafe { config_lookup(config, key) }) else {
         return FALSE;
     };
-    let Value::Bool(found) = found else {
+    let Some(found) = config_scalar_bool(&found) else {
         return FALSE;
     };
     // SAFETY: `value` is non-null and caller promises writable storage.
@@ -2536,10 +2536,7 @@ pub unsafe extern "C" fn RimeConfigGetInt(
     let Some(found) = (unsafe { config_lookup(config, key) }) else {
         return FALSE;
     };
-    let Some(found) = found
-        .as_i64()
-        .and_then(|number| c_int::try_from(number).ok())
-    else {
+    let Some(found) = config_scalar_int(&found) else {
         return FALSE;
     };
     // SAFETY: `value` is non-null and caller promises writable storage.
@@ -2566,7 +2563,7 @@ pub unsafe extern "C" fn RimeConfigGetDouble(
     let Some(found) = (unsafe { config_lookup(config, key) }) else {
         return FALSE;
     };
-    let Some(found) = found.as_f64() else {
+    let Some(found) = config_scalar_double(&found) else {
         return FALSE;
     };
     // SAFETY: `value` is non-null and caller promises writable storage.
@@ -2692,7 +2689,8 @@ pub unsafe extern "C" fn RimeConfigSetBool(
     key: *const c_char,
     value: Bool,
 ) -> Bool {
-    unsafe { config_set(config, key, Value::Bool(value != FALSE)) }
+    let value = if value != FALSE { "true" } else { "false" };
+    unsafe { config_set(config, key, Value::String(value.to_owned())) }
 }
 
 /// Writes an integer config value.
@@ -2706,7 +2704,7 @@ pub unsafe extern "C" fn RimeConfigSetInt(
     key: *const c_char,
     value: c_int,
 ) -> Bool {
-    unsafe { config_set(config, key, Value::Number(Number::from(value))) }
+    unsafe { config_set(config, key, Value::String(value.to_string())) }
 }
 
 /// Writes a floating-point config value.
@@ -2720,10 +2718,7 @@ pub unsafe extern "C" fn RimeConfigSetDouble(
     key: *const c_char,
     value: f64,
 ) -> Bool {
-    let Ok(value) = serde_yaml::to_value(value) else {
-        return FALSE;
-    };
-    unsafe { config_set(config, key, value) }
+    unsafe { config_set(config, key, Value::String(format!("{value:.6}"))) }
 }
 
 /// Writes a string config value.
@@ -5642,10 +5637,7 @@ unsafe fn config_lookup_key(config: *mut RimeConfig, key: &str) -> Option<Value>
 }
 
 unsafe fn config_string_value(config: *mut RimeConfig, key: *const c_char) -> Option<String> {
-    match unsafe { config_lookup(config, key) }? {
-        Value::String(value) => Some(value),
-        _ => None,
-    }
+    config_scalar_string(&unsafe { config_lookup(config, key) }?)
 }
 
 unsafe fn config_set(config: *mut RimeConfig, key: *const c_char, value: Value) -> Bool {
@@ -5657,6 +5649,68 @@ unsafe fn config_set(config: *mut RimeConfig, key: *const c_char, value: Value) 
     };
     state.cstring_cache = None;
     bool_from(set_config_value(&mut state.root, &key, value))
+}
+
+fn config_scalar_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(value) => Some(value.clone()),
+        Value::Bool(value) => Some(if *value { "true" } else { "false" }.to_owned()),
+        Value::Number(value) => Some(config_number_string(value)),
+        _ => None,
+    }
+}
+
+fn config_scalar_bool(value: &Value) -> Option<bool> {
+    match value {
+        Value::Bool(value) => Some(*value),
+        Value::String(value) if value.eq_ignore_ascii_case("true") => Some(true),
+        Value::String(value) if value.eq_ignore_ascii_case("false") => Some(false),
+        _ => None,
+    }
+}
+
+fn config_scalar_int(value: &Value) -> Option<c_int> {
+    match value {
+        Value::Number(value) => value
+            .as_i64()
+            .and_then(|number| c_int::try_from(number).ok()),
+        Value::String(value) => parse_config_int(value),
+        _ => None,
+    }
+}
+
+fn parse_config_int(value: &str) -> Option<c_int> {
+    if value.is_empty() {
+        return None;
+    }
+    if let Some(hex) = value.strip_prefix("0x") {
+        let parsed = u32::from_str_radix(hex, 16).ok()?;
+        return c_int::try_from(parsed).ok();
+    }
+    value
+        .parse::<i64>()
+        .ok()
+        .and_then(|number| c_int::try_from(number).ok())
+}
+
+fn config_scalar_double(value: &Value) -> Option<f64> {
+    match value {
+        Value::Number(value) => value.as_f64(),
+        Value::String(value) if !value.is_empty() => value.parse::<f64>().ok(),
+        _ => None,
+    }
+}
+
+fn config_number_string(value: &Number) -> String {
+    if let Some(number) = value.as_i64() {
+        number.to_string()
+    } else if let Some(number) = value.as_u64() {
+        number.to_string()
+    } else if let Some(number) = value.as_f64() {
+        number.to_string()
+    } else {
+        String::new()
+    }
 }
 
 unsafe fn c_string_key(key: *const c_char) -> Option<String> {
@@ -6822,6 +6876,110 @@ switches:\n  - name: ascii_mode\n  - name: full_shape\nmenu:\n  page_size: 9\n  
             },
             TRUE
         );
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+    }
+
+    #[test]
+    fn config_scalar_access_matches_librime_string_backed_values() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let page_size = CString::new("menu/page_size").expect("key should be valid");
+        let enabled = CString::new("enabled").expect("key should be valid");
+        let bias = CString::new("weights/bias").expect("key should be valid");
+        let hex = CString::new("hex").expect("key should be valid");
+        let flag = CString::new("flag").expect("key should be valid");
+        let decimal = CString::new("decimal").expect("key should be valid");
+        let floating = CString::new("floating").expect("key should be valid");
+        let native_bool = CString::new("native_bool").expect("key should be valid");
+        let native_int = CString::new("native_int").expect("key should be valid");
+        let mut int_output = 0;
+        let mut double_output = 0.0;
+        let mut bool_output = TRUE;
+
+        // SAFETY: config points to writable storage.
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, page_size.as_ptr(), 7) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetBool(&mut config, enabled.as_ptr(), TRUE) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetDouble(&mut config, bias.as_ptr(), 1.25) },
+            TRUE
+        );
+        assert_eq!(
+            config_string(&mut config, "menu/page_size").as_deref(),
+            Some("7")
+        );
+        assert_eq!(
+            config_string(&mut config, "enabled").as_deref(),
+            Some("true")
+        );
+        assert_eq!(
+            config_string(&mut config, "weights/bias").as_deref(),
+            Some("1.250000")
+        );
+        // SAFETY: config and key pointers are valid.
+        let borrowed = unsafe { RimeConfigGetCString(&mut config, page_size.as_ptr()) };
+        assert!(!borrowed.is_null());
+        // SAFETY: a non-null config C string is owned by the config cache.
+        assert_eq!(unsafe { CStr::from_ptr(borrowed) }.to_str(), Ok("7"));
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+        let yaml = CString::new(
+            "\
+hex: '0x10'\nflag: 'FALSE'\ndecimal: '42'\nfloating: '1.5'\nnative_bool: true\nnative_int: 8\n",
+        )
+        .expect("yaml should be valid");
+        // SAFETY: config points to writable storage and yaml is a valid C string.
+        assert_eq!(
+            unsafe { RimeConfigLoadString(&mut config, yaml.as_ptr()) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, hex.as_ptr(), &mut int_output) },
+            TRUE
+        );
+        assert_eq!(int_output, 16);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, decimal.as_ptr(), &mut int_output) },
+            TRUE
+        );
+        assert_eq!(int_output, 42);
+        assert_eq!(
+            unsafe { RimeConfigGetBool(&mut config, flag.as_ptr(), &mut bool_output) },
+            TRUE
+        );
+        assert_eq!(bool_output, FALSE);
+        assert_eq!(
+            unsafe { RimeConfigGetDouble(&mut config, floating.as_ptr(), &mut double_output) },
+            TRUE
+        );
+        assert_eq!(double_output, 1.5);
+        assert_eq!(
+            config_string(&mut config, "native_bool").as_deref(),
+            Some("true")
+        );
+        assert_eq!(
+            config_string(&mut config, "native_int").as_deref(),
+            Some("8")
+        );
+
+        // SAFETY: native serde scalars remain readable through typed access.
+        assert_eq!(
+            unsafe { RimeConfigGetBool(&mut config, native_bool.as_ptr(), &mut bool_output) },
+            TRUE
+        );
+        assert_eq!(bool_output, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, native_int.as_ptr(), &mut int_output) },
+            TRUE
+        );
+        assert_eq!(int_output, 8);
+
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }
 

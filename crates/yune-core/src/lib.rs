@@ -1346,6 +1346,15 @@ pub trait Translator: Send + Sync {
     fn translate_with_status(&self, input: &str, _status: &Status) -> Vec<Candidate> {
         self.translate(input)
     }
+
+    fn translate_with_state(
+        &self,
+        input: &str,
+        status: &Status,
+        _options: &HashMap<String, bool>,
+    ) -> Vec<Candidate> {
+        self.translate_with_status(input, status)
+    }
 }
 
 pub trait CandidateRanker: Send + Sync {
@@ -2061,6 +2070,7 @@ fn normalize_table_code(code: &str) -> String {
 
 pub struct StaticTableTranslator {
     entries: Vec<(String, Candidate)>,
+    enable_charset_filter: bool,
 }
 
 impl StaticTableTranslator {
@@ -2082,7 +2092,10 @@ impl StaticTableTranslator {
                 )
             })
             .collect();
-        Self { entries }
+        Self {
+            entries,
+            enable_charset_filter: false,
+        }
     }
 
     #[must_use]
@@ -2100,7 +2113,16 @@ impl StaticTableTranslator {
                 (entry.code, candidate)
             })
             .collect();
-        Self { entries }
+        Self {
+            entries,
+            enable_charset_filter: false,
+        }
+    }
+
+    #[must_use]
+    pub fn with_charset_filter(mut self, enable_charset_filter: bool) -> Self {
+        self.enable_charset_filter = enable_charset_filter;
+        self
     }
 
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
@@ -2134,6 +2156,23 @@ impl Translator for StaticTableTranslator {
         self.entries
             .iter()
             .filter(|(code, _)| code == input)
+            .map(|(_, candidate)| candidate.clone())
+            .collect()
+    }
+
+    fn translate_with_state(
+        &self,
+        input: &str,
+        _status: &Status,
+        options: &HashMap<String, bool>,
+    ) -> Vec<Candidate> {
+        let filter_by_charset = self.enable_charset_filter
+            && !options.get("extended_charset").copied().unwrap_or(false);
+        self.entries
+            .iter()
+            .filter(|(code, candidate)| {
+                code == input && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+            })
             .map(|(_, candidate)| candidate.clone())
             .collect()
     }
@@ -3363,7 +3402,9 @@ impl Engine {
         let mut candidates = self
             .translators
             .iter()
-            .flat_map(|translator| translator.translate_with_status(input, &self.status))
+            .flat_map(|translator| {
+                translator.translate_with_state(input, &self.status, &self.options)
+            })
             .collect::<Vec<_>>();
         for filter in &self.filters {
             filter.apply_with_options(&mut candidates, &self.options);
@@ -6322,6 +6363,36 @@ sort: original
             ("ni", "㍿"),
         ]));
         engine.add_filter(CharsetFilter);
+
+        engine
+            .process_key_sequence("ni")
+            .expect("keys should parse");
+
+        let texts = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["你", "ni"]);
+
+        engine.set_option("extended_charset", true);
+        let texts = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["你", "㐀", "𠀀", "㍿", "ni"]);
+    }
+
+    #[test]
+    fn static_table_translator_charset_filter_matches_librime_option() {
+        let mut engine = Engine::new();
+        engine.add_translator(
+            StaticTableTranslator::new([("ni", "你"), ("ni", "㐀"), ("ni", "𠀀"), ("ni", "㍿")])
+                .with_charset_filter(true),
+        );
 
         engine
             .process_key_sequence("ni")

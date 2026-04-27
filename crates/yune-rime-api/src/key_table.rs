@@ -253,6 +253,107 @@ const ASCII_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"asciitilde\0", 0x7e),
 ];
 
+const LATIN1_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"nobreakspace\0", 0x0a0),
+    (b"exclamdown\0", 0x0a1),
+    (b"cent\0", 0x0a2),
+    (b"sterling\0", 0x0a3),
+    (b"currency\0", 0x0a4),
+    (b"yen\0", 0x0a5),
+    (b"brokenbar\0", 0x0a6),
+    (b"section\0", 0x0a7),
+    (b"diaeresis\0", 0x0a8),
+    (b"copyright\0", 0x0a9),
+    (b"ordfeminine\0", 0x0aa),
+    (b"guillemotleft\0", 0x0ab),
+    (b"notsign\0", 0x0ac),
+    (b"hyphen\0", 0x0ad),
+    (b"registered\0", 0x0ae),
+    (b"macron\0", 0x0af),
+    (b"degree\0", 0x0b0),
+    (b"plusminus\0", 0x0b1),
+    (b"twosuperior\0", 0x0b2),
+    (b"threesuperior\0", 0x0b3),
+    (b"acute\0", 0x0b4),
+    (b"mu\0", 0x0b5),
+    (b"paragraph\0", 0x0b6),
+    (b"periodcentered\0", 0x0b7),
+    (b"cedilla\0", 0x0b8),
+    (b"onesuperior\0", 0x0b9),
+    (b"masculine\0", 0x0ba),
+    (b"guillemotright\0", 0x0bb),
+    (b"onequarter\0", 0x0bc),
+    (b"onehalf\0", 0x0bd),
+    (b"threequarters\0", 0x0be),
+    (b"questiondown\0", 0x0bf),
+    (b"Agrave\0", 0x0c0),
+    (b"Aacute\0", 0x0c1),
+    (b"Acircumflex\0", 0x0c2),
+    (b"Atilde\0", 0x0c3),
+    (b"Adiaeresis\0", 0x0c4),
+    (b"Aring\0", 0x0c5),
+    (b"AE\0", 0x0c6),
+    (b"Ccedilla\0", 0x0c7),
+    (b"Egrave\0", 0x0c8),
+    (b"Eacute\0", 0x0c9),
+    (b"Ecircumflex\0", 0x0ca),
+    (b"Ediaeresis\0", 0x0cb),
+    (b"Igrave\0", 0x0cc),
+    (b"Iacute\0", 0x0cd),
+    (b"Icircumflex\0", 0x0ce),
+    (b"Idiaeresis\0", 0x0cf),
+    (b"ETH\0", 0x0d0),
+    (b"Eth\0", 0x0d0),
+    (b"Ntilde\0", 0x0d1),
+    (b"Ograve\0", 0x0d2),
+    (b"Oacute\0", 0x0d3),
+    (b"Ocircumflex\0", 0x0d4),
+    (b"Otilde\0", 0x0d5),
+    (b"Odiaeresis\0", 0x0d6),
+    (b"multiply\0", 0x0d7),
+    (b"Ooblique\0", 0x0d8),
+    (b"Ugrave\0", 0x0d9),
+    (b"Uacute\0", 0x0da),
+    (b"Ucircumflex\0", 0x0db),
+    (b"Udiaeresis\0", 0x0dc),
+    (b"Yacute\0", 0x0dd),
+    (b"THORN\0", 0x0de),
+    (b"Thorn\0", 0x0de),
+    (b"ssharp\0", 0x0df),
+    (b"agrave\0", 0x0e0),
+    (b"aacute\0", 0x0e1),
+    (b"acircumflex\0", 0x0e2),
+    (b"atilde\0", 0x0e3),
+    (b"adiaeresis\0", 0x0e4),
+    (b"aring\0", 0x0e5),
+    (b"ae\0", 0x0e6),
+    (b"ccedilla\0", 0x0e7),
+    (b"egrave\0", 0x0e8),
+    (b"eacute\0", 0x0e9),
+    (b"ecircumflex\0", 0x0ea),
+    (b"ediaeresis\0", 0x0eb),
+    (b"igrave\0", 0x0ec),
+    (b"iacute\0", 0x0ed),
+    (b"icircumflex\0", 0x0ee),
+    (b"idiaeresis\0", 0x0ef),
+    (b"eth\0", 0x0f0),
+    (b"ntilde\0", 0x0f1),
+    (b"ograve\0", 0x0f2),
+    (b"oacute\0", 0x0f3),
+    (b"ocircumflex\0", 0x0f4),
+    (b"otilde\0", 0x0f5),
+    (b"odiaeresis\0", 0x0f6),
+    (b"division\0", 0x0f7),
+    (b"oslash\0", 0x0f8),
+    (b"ugrave\0", 0x0f9),
+    (b"uacute\0", 0x0fa),
+    (b"ucircumflex\0", 0x0fb),
+    (b"udiaeresis\0", 0x0fc),
+    (b"yacute\0", 0x0fd),
+    (b"thorn\0", 0x0fe),
+    (b"ydiaeresis\0", 0x0ff),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -305,6 +406,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
     NAMED_KEYS
         .iter()
         .chain(ASCII_KEY_NAMES)
+        .chain(LATIN1_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -312,6 +414,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
     NAMED_KEYS
         .iter()
         .chain(ASCII_KEY_NAMES)
+        .chain(LATIN1_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

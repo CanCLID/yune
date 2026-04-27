@@ -240,7 +240,8 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
             || is_librime_kana_key_name(name)
             || is_librime_arabic_key_name(name)
             || is_librime_cyrillic_key_name(name)
-            || is_librime_greek_key_name(name) =>
+            || is_librime_greek_key_name(name)
+            || is_librime_technical_key_name(name) =>
         {
             KeyCode::Ignored
         }
@@ -1047,6 +1048,85 @@ fn is_librime_greek_key_name(name: &str) -> bool {
             | "Greek_chi"
             | "Greek_psi"
             | "Greek_omega"
+    )
+}
+
+fn is_librime_technical_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "leftradical"
+            | "topleftradical"
+            | "horizconnector"
+            | "topintegral"
+            | "botintegral"
+            | "vertconnector"
+            | "topleftsqbracket"
+            | "botleftsqbracket"
+            | "toprightsqbracket"
+            | "botrightsqbracket"
+            | "topleftparens"
+            | "botleftparens"
+            | "toprightparens"
+            | "botrightparens"
+            | "leftmiddlecurlybrace"
+            | "rightmiddlecurlybrace"
+            | "topleftsummation"
+            | "botleftsummation"
+            | "topvertsummationconnector"
+            | "botvertsummationconnector"
+            | "toprightsummation"
+            | "botrightsummation"
+            | "rightmiddlesummation"
+            | "lessthanequal"
+            | "notequal"
+            | "greaterthanequal"
+            | "integral"
+            | "therefore"
+            | "variation"
+            | "infinity"
+            | "nabla"
+            | "approximate"
+            | "similarequal"
+            | "ifonlyif"
+            | "implies"
+            | "identical"
+            | "radical"
+            | "includedin"
+            | "includes"
+            | "intersection"
+            | "union"
+            | "logicaland"
+            | "logicalor"
+            | "partialderivative"
+            | "function"
+            | "leftarrow"
+            | "uparrow"
+            | "rightarrow"
+            | "downarrow"
+            | "blank"
+            | "soliddiamond"
+            | "checkerboard"
+            | "ht"
+            | "ff"
+            | "cr"
+            | "lf"
+            | "nl"
+            | "vt"
+            | "lowrightcorner"
+            | "uprightcorner"
+            | "upleftcorner"
+            | "lowleftcorner"
+            | "crossinglines"
+            | "horizlinescan1"
+            | "horizlinescan3"
+            | "horizlinescan5"
+            | "horizlinescan7"
+            | "horizlinescan9"
+            | "leftt"
+            | "rightt"
+            | "bott"
+            | "topt"
+            | "vertbar"
     )
 }
 
@@ -3120,6 +3200,97 @@ mod tests {
             "Greek_chi",
             "Greek_psi",
             "Release+Greek_omega",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_technical_noop_key_names() {
+        let names = [
+            "leftradical",
+            "topleftradical",
+            "horizconnector",
+            "topintegral",
+            "botintegral",
+            "vertconnector",
+            "topleftsqbracket",
+            "botleftsqbracket",
+            "toprightsqbracket",
+            "botrightsqbracket",
+            "topleftparens",
+            "botleftparens",
+            "toprightparens",
+            "botrightparens",
+            "leftmiddlecurlybrace",
+            "rightmiddlecurlybrace",
+            "topleftsummation",
+            "botleftsummation",
+            "topvertsummationconnector",
+            "botvertsummationconnector",
+            "toprightsummation",
+            "botrightsummation",
+            "rightmiddlesummation",
+            "lessthanequal",
+            "notequal",
+            "greaterthanequal",
+            "integral",
+            "therefore",
+            "variation",
+            "infinity",
+            "nabla",
+            "approximate",
+            "similarequal",
+            "ifonlyif",
+            "implies",
+            "identical",
+            "radical",
+            "includedin",
+            "includes",
+            "intersection",
+            "union",
+            "logicaland",
+            "logicalor",
+            "partialderivative",
+            "function",
+            "leftarrow",
+            "uparrow",
+            "rightarrow",
+            "downarrow",
+            "blank",
+            "soliddiamond",
+            "checkerboard",
+            "ht",
+            "ff",
+            "cr",
+            "lf",
+            "nl",
+            "vt",
+            "lowrightcorner",
+            "uprightcorner",
+            "upleftcorner",
+            "lowleftcorner",
+            "crossinglines",
+            "horizlinescan1",
+            "horizlinescan3",
+            "horizlinescan5",
+            "horizlinescan7",
+            "horizlinescan9",
+            "leftt",
+            "rightt",
+            "bott",
+            "topt",
+            "Release+vertbar",
         ];
         let sequence = names
             .iter()

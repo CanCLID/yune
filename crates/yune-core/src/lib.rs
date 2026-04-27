@@ -2076,6 +2076,7 @@ pub struct StaticTableTranslator {
     enable_charset_filter: bool,
     delimiters: String,
     comment_format: CommentFormat,
+    dictionary_exclude: HashSet<String>,
 }
 
 impl StaticTableTranslator {
@@ -2103,6 +2104,7 @@ impl StaticTableTranslator {
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
             comment_format: CommentFormat::default(),
+            dictionary_exclude: HashSet::new(),
         }
     }
 
@@ -2127,6 +2129,7 @@ impl StaticTableTranslator {
             enable_charset_filter: false,
             delimiters: " ".to_owned(),
             comment_format: CommentFormat::default(),
+            dictionary_exclude: HashSet::new(),
         }
     }
 
@@ -2157,6 +2160,15 @@ impl StaticTableTranslator {
         self
     }
 
+    #[must_use]
+    pub fn with_dictionary_exclude(
+        mut self,
+        words: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
+        self.dictionary_exclude = words.into_iter().map(Into::into).collect();
+        self
+    }
+
     fn lookup_code<'a>(&self, input: &'a str) -> &'a str {
         input.trim_end_matches(|ch| self.delimiters.contains(ch))
     }
@@ -2166,6 +2178,10 @@ impl StaticTableTranslator {
             || (self.enable_completion
                 && !lookup_code.is_empty()
                 && entry_code.starts_with(lookup_code))
+    }
+
+    fn is_dictionary_word_allowed(&self, candidate: &Candidate) -> bool {
+        !self.dictionary_exclude.contains(&candidate.text)
     }
 
     fn candidate_for_lookup(
@@ -2214,7 +2230,10 @@ impl Translator for StaticTableTranslator {
         let lookup_code = self.lookup_code(input);
         self.entries
             .iter()
-            .filter(|(entry_code, _)| self.matches_lookup_code(entry_code, lookup_code))
+            .filter(|(entry_code, candidate)| {
+                self.matches_lookup_code(entry_code, lookup_code)
+                    && self.is_dictionary_word_allowed(candidate)
+            })
             .map(|(entry_code, candidate)| {
                 self.candidate_for_lookup(entry_code, candidate, lookup_code)
             })
@@ -2234,6 +2253,7 @@ impl Translator for StaticTableTranslator {
             .iter()
             .filter(|(entry_code, candidate)| {
                 self.matches_lookup_code(entry_code, lookup_code)
+                    && self.is_dictionary_word_allowed(candidate)
                     && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
             })
             .map(|(entry_code, candidate)| {
@@ -6894,6 +6914,33 @@ sort: original
             .map(|candidate| candidate.comment.as_str())
             .collect::<Vec<_>>();
         assert_eq!(comments, ["[BA]", "[BAn]", "echo"]);
+    }
+
+    #[test]
+    fn static_table_translator_applies_librime_dictionary_exclude() {
+        let mut engine = Engine::new();
+        engine.add_translator(
+            StaticTableTranslator::new([("ba", "爸"), ("ban", "班"), ("bao", "包")])
+                .with_completion(true)
+                .with_dictionary_exclude(["爸", "班"]),
+        );
+
+        engine.process_char('b');
+
+        let texts = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let sources = engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.source.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["包", "b"]);
+        assert_eq!(sources, ["completion", "echo"]);
     }
 
     #[test]

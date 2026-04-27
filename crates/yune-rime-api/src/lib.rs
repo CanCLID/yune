@@ -3727,12 +3727,15 @@ fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &
             .and_then(config_scalar_string)
             .unwrap_or_else(|| " ".to_owned());
         let comment_format = schema_comment_format(&schema_config, &name_space);
+        let dictionary_exclude =
+            schema_string_list(&schema_config, &format!("{name_space}/dictionary_exclude"));
         session.engine.add_translator(
             StaticTableTranslator::from_dictionary(dictionary)
                 .with_completion(enable_completion)
                 .with_charset_filter(enable_charset_filter)
                 .with_delimiters(delimiters)
-                .with_comment_format(&comment_format),
+                .with_comment_format(&comment_format)
+                .with_dictionary_exclude(dictionary_exclude),
         );
     }
 }

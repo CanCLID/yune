@@ -286,6 +286,101 @@ fn frontend_style_api_table_can_open_runtime_configs() {
 }
 
 #[test]
+fn frontend_style_api_table_can_run_deployment_and_maintenance() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let deployer_initialize = api
+        .deployer_initialize
+        .expect("frontend requires deployer_initialize");
+    let start_maintenance = api
+        .start_maintenance
+        .expect("frontend requires start_maintenance");
+    let is_maintenance_mode = api
+        .is_maintenance_mode
+        .expect("frontend requires is_maintenance_mode");
+    let join_maintenance_thread = api
+        .join_maintenance_thread
+        .expect("frontend requires join_maintenance_thread");
+    let prebuild = api.prebuild.expect("frontend requires prebuild");
+    let deploy = api.deploy.expect("frontend requires deploy");
+    let deploy_schema = api.deploy_schema.expect("frontend requires deploy_schema");
+    let deploy_config_file = api
+        .deploy_config_file
+        .expect("frontend requires deploy_config_file");
+    let run_task = api.run_task.expect("frontend requires run_task");
+    let sync_user_data = api
+        .sync_user_data
+        .expect("frontend requires sync_user_data");
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let find_session = api.find_session.expect("frontend requires find_session");
+
+    cleanup_all_sessions();
+    let root = unique_temp_dir("deployment");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::write(
+        shared.join("default.yaml"),
+        "config_version: test\nschema_list:\n  - schema: default\n",
+    )
+    .expect("shared config should be written");
+    fs::write(
+        shared.join("default.schema.yaml"),
+        "schema:\n  schema_id: default\n  name: Default\n  version: test\n",
+    )
+    .expect("shared schema should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let schema_file = CString::new("default.schema.yaml").expect("literal should be valid");
+    let config_file = CString::new("default.yaml").expect("literal should be valid");
+    let version_key = CString::new("config_version").expect("literal should be valid");
+    let task_name = CString::new("workspace_update").expect("literal should be valid");
+    let unknown_task = CString::new("no_such_task").expect("literal should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { deployer_initialize(&traits) };
+
+    assert_eq!(start_maintenance(TRUE), TRUE);
+    assert_eq!(start_maintenance(FALSE), FALSE);
+    assert_eq!(is_maintenance_mode(), FALSE);
+    join_maintenance_thread();
+    assert!(user.join("build").join("default.yaml").is_file());
+    assert!(user.join("build").join("default.schema.yaml").is_file());
+
+    assert_eq!(prebuild(), TRUE);
+    assert_eq!(deploy(), TRUE);
+    assert_eq!(deploy_schema(schema_file.as_ptr()), TRUE);
+    assert_eq!(deploy_schema(ptr::null()), FALSE);
+    assert_eq!(
+        deploy_config_file(config_file.as_ptr(), version_key.as_ptr()),
+        TRUE
+    );
+    assert_eq!(deploy_config_file(config_file.as_ptr(), ptr::null()), FALSE);
+    assert_eq!(run_task(task_name.as_ptr()), TRUE);
+    assert_eq!(run_task(unknown_task.as_ptr()), FALSE);
+    assert_eq!(run_task(ptr::null()), FALSE);
+
+    let session_id = create_session();
+    assert_eq!(find_session(session_id), TRUE);
+    assert_eq!(sync_user_data(), TRUE);
+    assert_eq!(find_session(session_id), FALSE);
+
+    let reset_traits = empty_traits();
+    unsafe { deployer_initialize(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn frontend_style_api_table_can_read_in_memory_configs() {
     let _guard = test_guard();
     let api = rime_get_api();

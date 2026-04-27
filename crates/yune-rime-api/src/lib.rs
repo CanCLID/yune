@@ -3700,17 +3700,29 @@ fn session_menu_page_size(session: &SessionState) -> usize {
 fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    let Some(dictionary) = load_schema_table_dictionary(&schema_config, "translator") else {
-        return;
-    };
-    let enable_charset_filter =
-        find_config_value(&schema_config, "translator/enable_charset_filter")
-            .and_then(config_scalar_bool)
-            .unwrap_or(false);
-    session.engine.add_translator(
-        StaticTableTranslator::from_dictionary(dictionary)
-            .with_charset_filter(enable_charset_filter),
-    );
+    let mut name_spaces =
+        schema_engine_translator_namespaces(&schema_config, "table_translator", "translator");
+    name_spaces.extend(schema_engine_translator_namespaces(
+        &schema_config,
+        "script_translator",
+        "translator",
+    ));
+
+    for name_space in name_spaces {
+        let Some(dictionary) = load_schema_table_dictionary(&schema_config, &name_space) else {
+            continue;
+        };
+        let enable_charset_filter = find_config_value(
+            &schema_config,
+            &format!("{name_space}/enable_charset_filter"),
+        )
+        .and_then(config_scalar_bool)
+        .unwrap_or(false);
+        session.engine.add_translator(
+            StaticTableTranslator::from_dictionary(dictionary)
+                .with_charset_filter(enable_charset_filter),
+        );
+    }
 }
 
 fn install_schema_reverse_lookup_translator(session: &mut SessionState, schema_id: &str) {

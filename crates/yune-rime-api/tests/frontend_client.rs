@@ -1959,7 +1959,7 @@ fn frontend_style_api_table_can_page_schema_dictionary_candidates() {
     fs::write(
         staging.join("luna.schema.yaml"),
         "\
-schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\n  alternative_select_keys: AB\n  alternative_select_labels: [Alpha, Beta]\ntranslator:\n  dictionary: frontend\n",
+schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\n  alternative_select_keys: AB\n  alternative_select_labels: [Alpha, Beta]\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: frontend\n",
     )
     .expect("schema config should be written");
     fs::write(
@@ -2071,7 +2071,7 @@ fn frontend_style_schema_dictionary_loads_import_tables() {
     fs::write(
         staging.join("importing.schema.yaml"),
         "\
-schema:\n  schema_id: importing\n  name: Importing\ntranslator:\n  dictionary: primary\n",
+schema:\n  schema_id: importing\n  name: Importing\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: primary\n",
     )
     .expect("schema config should be written");
     fs::write(

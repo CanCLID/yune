@@ -13332,6 +13332,110 @@ ba\t吧\t3
 }
 
 #[test]
+fn select_schema_loads_namespaced_librime_table_translator() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-namespaced-table-translator");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna.schema.yaml"),
+        "\
+schema:
+  schema_id: luna
+  name: Luna
+engine:
+  translators:
+    - table_translator@custom_table
+translator:
+  dictionary: base
+custom_table:
+  dictionary: custom
+",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("base.dict.yaml"),
+        "\
+---
+name: base
+version: '0.1'
+sort: by_weight
+...
+
+基\tji\t9
+",
+    )
+    .expect("default dictionary should be written");
+    fs::write(
+        shared.join("custom.dict.yaml"),
+        "\
+---
+name: custom
+version: '0.1'
+sort: by_weight
+...
+
+机\tji\t9
+",
+    )
+    .expect("custom dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("luna").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    for ch in "ji".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+
+    let mut context = empty_context();
+    // SAFETY: context points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    let texts = candidates
+        .iter()
+        .map(|candidate| {
+            // SAFETY: candidate text pointers are populated by `RimeGetContext`.
+            unsafe { CStr::from_ptr(candidate.text) }
+                .to_str()
+                .expect("candidate text should be valid UTF-8")
+                .to_owned()
+        })
+        .collect::<Vec<_>>();
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    assert_eq!(texts, ["机", "ji"]);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_loads_librime_uniquifier_filter() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

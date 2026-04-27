@@ -4884,7 +4884,7 @@ schema_list:
     )
     .expect("default config should be written");
     fs::write(
-        staging.join("luna_pinyin.schema.yaml"),
+        shared.join("luna_pinyin.schema.yaml"),
         "\
 schema:
   schema_id: luna_pinyin
@@ -4897,6 +4897,20 @@ schema:
 ",
     )
     .expect("schema config should be written");
+    fs::write(
+        user.join("ignored_missing_name.schema.yaml"),
+        "schema:\n  schema_id: ignored_missing_name\n",
+    )
+    .expect("invalid schema config should be written");
+    fs::write(
+        user.join("terra_pinyin.schema.yaml"),
+        "\
+schema:
+  schema_id: terra_pinyin
+  name: Terra Pinyin
+",
+    )
+    .expect("user schema config should be written");
 
     let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
     let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
@@ -4963,7 +4977,7 @@ schema:
         .expect("available schema list should be available");
     // SAFETY: settings and schema_list are valid for the call.
     assert_eq!(unsafe { get_available(settings, &mut schema_list) }, TRUE);
-    assert_eq!(schema_list.size, 1);
+    assert_eq!(schema_list.size, 2);
     // SAFETY: the levers API populated one schema-list item.
     let item = unsafe { *schema_list.list };
     // SAFETY: schema-list strings are valid NUL-terminated strings.
@@ -4973,6 +4987,15 @@ schema:
     assert_eq!(schema_id.to_str(), Ok("luna_pinyin"));
     assert_eq!(name.to_str(), Ok("Luna Pinyin"));
     assert!(!item.reserved.is_null());
+    // SAFETY: the second item is in bounds because size is 2.
+    let user_item = unsafe { *schema_list.list.add(1) };
+    // SAFETY: schema-list strings are valid NUL-terminated strings.
+    let user_schema_id = unsafe { CStr::from_ptr(user_item.schema_id) };
+    // SAFETY: schema-list strings are valid NUL-terminated strings.
+    let user_name = unsafe { CStr::from_ptr(user_item.name) };
+    assert_eq!(user_schema_id.to_str(), Ok("terra_pinyin"));
+    assert_eq!(user_name.to_str(), Ok("Terra Pinyin"));
+    assert!(!user_item.reserved.is_null());
 
     let get_schema_id = api.get_schema_id.expect("schema id getter should be set");
     let get_schema_name = api
@@ -5026,7 +5049,7 @@ schema:
     let file_path = unsafe { CStr::from_ptr(get_schema_file_path(schema_info)) };
     assert_eq!(
         file_path.to_string_lossy(),
-        staging.join("luna_pinyin.schema.yaml").to_string_lossy()
+        shared.join("luna_pinyin.schema.yaml").to_string_lossy()
     );
     // SAFETY: null schema info is explicitly rejected.
     assert!(unsafe { get_schema_id(std::ptr::null_mut()) }.is_null());

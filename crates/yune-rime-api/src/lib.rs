@@ -3465,13 +3465,6 @@ fn selected_runtime_config_path(resource_id: &str, kind: ConfigOpenKind) -> Opti
         })
 }
 
-fn existing_runtime_config_path(resource_id: &str, kind: ConfigOpenKind) -> Option<PathBuf> {
-    runtime_config_roots(kind)
-        .iter()
-        .map(|root| config_file_path(root, resource_id))
-        .find(|path| path.exists())
-}
-
 fn normalize_config_resource_id(config_id: &str) -> String {
     config_id
         .strip_suffix(".yaml")
@@ -3517,24 +3510,56 @@ fn deployed_schema_name(schema_id: &str) -> String {
 }
 
 fn deployed_levers_schema_infos() -> Vec<LeverSchemaInfo> {
-    let default_config = load_runtime_config_root("default", ConfigOpenKind::Deployed);
-    let Some(schema_list) = find_config_value(&default_config, "schema_list") else {
-        return Vec::new();
-    };
-    let Value::Sequence(schema_list) = schema_list else {
-        return Vec::new();
-    };
+    let paths = runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned");
+    let roots = [
+        paths.shared_data_dir.to_string_lossy().into_owned(),
+        paths.user_data_dir.to_string_lossy().into_owned(),
+    ];
+    drop(paths);
 
-    schema_list
-        .iter()
-        .filter_map(|entry| deployed_schema_list_entry(&default_config, entry))
-        .map(|schema_id| {
-            let resource_id = normalize_config_resource_id(&format!("{schema_id}.schema"));
-            let file_path = existing_runtime_config_path(&resource_id, ConfigOpenKind::Deployed);
-            let schema_config = load_runtime_config_root(&resource_id, ConfigOpenKind::Deployed);
-            levers_schema_info(schema_id, schema_config, file_path)
+    let mut seen = HashSet::new();
+    let mut infos = Vec::new();
+    for root in roots {
+        for path in schema_file_paths_in_dir(&root) {
+            let Some((schema_id, schema_config)) = levers_schema_config_from_file(&path) else {
+                continue;
+            };
+            if !seen.insert(schema_id.clone()) {
+                continue;
+            }
+            infos.push(levers_schema_info(schema_id, schema_config, Some(path)));
+        }
+    }
+    infos
+}
+
+fn schema_file_paths_in_dir(root: &str) -> Vec<PathBuf> {
+    let Ok(entries) = fs::read_dir(root) else {
+        return Vec::new();
+    };
+    let mut paths = entries
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .map(|name| name.to_string_lossy().ends_with(".schema.yaml"))
+                .unwrap_or(false)
         })
-        .collect()
+        .collect::<Vec<_>>();
+    paths.sort();
+    paths
+}
+
+fn levers_schema_config_from_file(path: &Path) -> Option<(String, Value)> {
+    let yaml = fs::read_to_string(path).ok()?;
+    let schema_config = serde_yaml::from_str::<Value>(&yaml).ok()?;
+    let schema_id = find_config_value(&schema_config, "schema/schema_id")?
+        .as_str()?
+        .to_owned();
+    find_config_value(&schema_config, "schema/name")?.as_str()?;
+    Some((schema_id, schema_config))
 }
 
 fn levers_schema_info(

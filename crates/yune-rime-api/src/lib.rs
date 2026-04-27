@@ -44,6 +44,7 @@ const XK_KP_PAGE_DOWN: c_int = 0xff9b;
 const XK_KP_END: c_int = 0xff9c;
 const XK_KP_0: c_int = 0xffb0;
 const XK_KP_9: c_int = 0xffb9;
+const K_SHIFT_MASK: c_int = 1 << 0;
 const K_CONTROL_MASK: c_int = 1 << 2;
 const DEFAULT_PAGE_SIZE: usize = 5;
 const RIME_VERSION_BYTES: &[u8] =
@@ -1604,7 +1605,9 @@ pub extern "C" fn RimeCleanupStaleSessions() {}
 pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask: c_int) -> Bool {
     if session_id == 0
         || (mask != 0
-            && !(mask == K_CONTROL_MASK && matches!(keycode, XK_BACKSPACE | XK_DELETE | XK_RETURN)))
+            && !((mask == K_CONTROL_MASK
+                && matches!(keycode, XK_BACKSPACE | XK_DELETE | XK_RETURN))
+                || (mask == K_SHIFT_MASK && keycode == XK_RETURN)))
     {
         return FALSE;
     }
@@ -3414,6 +3417,10 @@ fn key_event_from_rime_keycode(keycode: c_int, mask: c_int) -> Option<KeyEvent> 
     };
     let modifiers = match mask {
         0 => KeyModifiers::default(),
+        K_SHIFT_MASK => KeyModifiers {
+            shift: true,
+            ..KeyModifiers::default()
+        },
         K_CONTROL_MASK => KeyModifiers {
             control: true,
             ..KeyModifiers::default()

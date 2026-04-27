@@ -763,6 +763,10 @@ impl Engine {
     }
 
     pub fn process_key_event(&mut self, key_event: KeyEvent) -> Option<String> {
+        if is_exact_shift_modifier(key_event.modifiers) && key_event.code == KeyCode::Return {
+            return self.commit_script_text();
+        }
+
         if is_exact_control_modifier(key_event.modifiers) {
             match key_event.code {
                 KeyCode::Backspace => {
@@ -1071,6 +1075,16 @@ impl Engine {
         Some(text)
     }
 
+    fn commit_script_text(&mut self) -> Option<String> {
+        if self.context.composition.preedit.is_empty() {
+            return None;
+        }
+        let text = self.context.composition.preedit.clone();
+        self.context.last_commit = Some(text.clone());
+        self.clear_composition();
+        Some(text)
+    }
+
     fn commit_candidate_at_page_index(&mut self, page_index: usize) -> Option<String> {
         if page_index >= DEFAULT_PAGE_SIZE {
             return None;
@@ -1111,6 +1125,17 @@ const fn is_exact_control_modifier(modifiers: KeyModifiers) -> bool {
     modifiers.control
         && !modifiers.shift
         && !modifiers.lock
+        && !modifiers.alt
+        && !modifiers.super_key
+        && !modifiers.hyper
+        && !modifiers.meta
+        && !modifiers.release
+}
+
+const fn is_exact_shift_modifier(modifiers: KeyModifiers) -> bool {
+    modifiers.shift
+        && !modifiers.lock
+        && !modifiers.control
         && !modifiers.alt
         && !modifiers.super_key
         && !modifiers.hyper
@@ -1316,6 +1341,25 @@ mod tests {
 
         let commits = engine
             .process_key_sequence("{Control+Return}")
+            .expect("key sequence should parse");
+        assert!(commits.is_empty());
+    }
+
+    #[test]
+    fn shift_return_commits_script_text_like_librime_fluid_editor() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ni", "你")]));
+
+        let commits = engine
+            .process_key_sequence("ni{Shift+Return}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["ni"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("ni"));
+        assert!(!engine.status().is_composing);
+
+        let commits = engine
+            .process_key_sequence("{Shift+Return}")
             .expect("key sequence should parse");
         assert!(commits.is_empty());
     }

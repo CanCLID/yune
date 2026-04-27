@@ -37,7 +37,7 @@ use super::{
     RimeSetInput, RimeSetNotificationHandler, RimeSetOption, RimeSetProperty, RimeSetup,
     RimeSetupLogging, RimeSimulateKeySequence, RimeStartMaintenance,
     RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits,
-    RimeUserConfigOpen, FALSE, K_CONTROL_MASK, TRUE,
+    RimeUserConfigOpen, FALSE, K_CONTROL_MASK, K_SHIFT_MASK, TRUE,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -7160,6 +7160,85 @@ fn control_return_key_commits_raw_input_like_librime_fluid_editor() {
             .add_translator(StaticTableTranslator::new([("ni", "你")]));
     }
     let sequence = CString::new("ni{Control+Return}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeGetCommit(sequence_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("ni"));
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+}
+
+#[test]
+fn shift_return_key_commits_script_text_like_librime_fluid_editor() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let return_key = CString::new("Return").expect("key name should be valid");
+    // SAFETY: key name is a valid NUL-terminated string.
+    let return_keycode = unsafe { RimeGetKeycodeByName(return_key.as_ptr()) };
+    assert_eq!(return_keycode, 0xff0d);
+
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(
+        RimeProcessKey(session_id, return_keycode, K_SHIFT_MASK),
+        TRUE
+    );
+    let mut commit = RimeCommit {
+        data_size: std::mem::size_of::<RimeCommit>() as i32,
+        text: std::ptr::null_mut(),
+    };
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("ni"));
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    let input = RimeGetInput(session_id);
+    assert!(!input.is_null());
+    // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok(""));
+    assert_eq!(
+        RimeProcessKey(session_id, return_keycode, K_SHIFT_MASK),
+        FALSE
+    );
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let sequence_session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&sequence_session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    let sequence = CString::new("ni{Shift+Return}").expect("sequence should be valid");
     // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
     assert_eq!(
         unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },

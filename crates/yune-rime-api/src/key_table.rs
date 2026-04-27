@@ -19,6 +19,41 @@ const XK_END: c_int = 0xff57;
 const XK_PAGE_UP: c_int = 0xff55;
 const XK_PAGE_DOWN: c_int = 0xff56;
 const XK_INSERT: c_int = 0xff63;
+const XK_KP_SPACE: c_int = 0xff80;
+const XK_KP_TAB: c_int = 0xff89;
+const XK_KP_ENTER: c_int = 0xff8d;
+const XK_KP_F1: c_int = 0xff91;
+const XK_KP_F2: c_int = 0xff92;
+const XK_KP_F3: c_int = 0xff93;
+const XK_KP_F4: c_int = 0xff94;
+const XK_KP_HOME: c_int = 0xff95;
+const XK_KP_LEFT: c_int = 0xff96;
+const XK_KP_UP: c_int = 0xff97;
+const XK_KP_RIGHT: c_int = 0xff98;
+const XK_KP_DOWN: c_int = 0xff99;
+const XK_KP_PAGE_UP: c_int = 0xff9a;
+const XK_KP_PAGE_DOWN: c_int = 0xff9b;
+const XK_KP_END: c_int = 0xff9c;
+const XK_KP_BEGIN: c_int = 0xff9d;
+const XK_KP_INSERT: c_int = 0xff9e;
+const XK_KP_DELETE: c_int = 0xff9f;
+const XK_KP_MULTIPLY: c_int = 0xffaa;
+const XK_KP_ADD: c_int = 0xffab;
+const XK_KP_SEPARATOR: c_int = 0xffac;
+const XK_KP_SUBTRACT: c_int = 0xffad;
+const XK_KP_DECIMAL: c_int = 0xffae;
+const XK_KP_DIVIDE: c_int = 0xffaf;
+const XK_KP_0: c_int = 0xffb0;
+const XK_KP_1: c_int = 0xffb1;
+const XK_KP_2: c_int = 0xffb2;
+const XK_KP_3: c_int = 0xffb3;
+const XK_KP_4: c_int = 0xffb4;
+const XK_KP_5: c_int = 0xffb5;
+const XK_KP_6: c_int = 0xffb6;
+const XK_KP_7: c_int = 0xffb7;
+const XK_KP_8: c_int = 0xffb8;
+const XK_KP_9: c_int = 0xffb9;
+const XK_KP_EQUAL: c_int = 0xffbd;
 const XK_F1: c_int = 0xffbe;
 const XK_F2: c_int = 0xffbf;
 const XK_F3: c_int = 0xffc0;
@@ -67,6 +102,43 @@ const NAMED_KEYS: &[(&[u8], c_int)] = &[
     (b"Page_Up\0", XK_PAGE_UP),
     (b"Page_Down\0", XK_PAGE_DOWN),
     (b"Insert\0", XK_INSERT),
+    (b"KP_Space\0", XK_KP_SPACE),
+    (b"KP_Tab\0", XK_KP_TAB),
+    (b"KP_Enter\0", XK_KP_ENTER),
+    (b"KP_F1\0", XK_KP_F1),
+    (b"KP_F2\0", XK_KP_F2),
+    (b"KP_F3\0", XK_KP_F3),
+    (b"KP_F4\0", XK_KP_F4),
+    (b"KP_Home\0", XK_KP_HOME),
+    (b"KP_Left\0", XK_KP_LEFT),
+    (b"KP_Up\0", XK_KP_UP),
+    (b"KP_Right\0", XK_KP_RIGHT),
+    (b"KP_Down\0", XK_KP_DOWN),
+    (b"KP_Page_Up\0", XK_KP_PAGE_UP),
+    (b"KP_Prior\0", XK_KP_PAGE_UP),
+    (b"KP_Next\0", XK_KP_PAGE_DOWN),
+    (b"KP_Page_Down\0", XK_KP_PAGE_DOWN),
+    (b"KP_End\0", XK_KP_END),
+    (b"KP_Begin\0", XK_KP_BEGIN),
+    (b"KP_Insert\0", XK_KP_INSERT),
+    (b"KP_Delete\0", XK_KP_DELETE),
+    (b"KP_Multiply\0", XK_KP_MULTIPLY),
+    (b"KP_Add\0", XK_KP_ADD),
+    (b"KP_Separator\0", XK_KP_SEPARATOR),
+    (b"KP_Subtract\0", XK_KP_SUBTRACT),
+    (b"KP_Decimal\0", XK_KP_DECIMAL),
+    (b"KP_Divide\0", XK_KP_DIVIDE),
+    (b"KP_0\0", XK_KP_0),
+    (b"KP_1\0", XK_KP_1),
+    (b"KP_2\0", XK_KP_2),
+    (b"KP_3\0", XK_KP_3),
+    (b"KP_4\0", XK_KP_4),
+    (b"KP_5\0", XK_KP_5),
+    (b"KP_6\0", XK_KP_6),
+    (b"KP_7\0", XK_KP_7),
+    (b"KP_8\0", XK_KP_8),
+    (b"KP_9\0", XK_KP_9),
+    (b"KP_Equal\0", XK_KP_EQUAL),
     (b"F1\0", XK_F1),
     (b"F2\0", XK_F2),
     (b"F3\0", XK_F3),

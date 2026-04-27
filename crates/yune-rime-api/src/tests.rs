@@ -257,6 +257,13 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let space = CString::new("space").expect("key name should be valid");
     let backspace = CString::new("BackSpace").expect("key name should be valid");
     let left = CString::new("Left").expect("key name should be valid");
+    let kp_enter = CString::new("KP_Enter").expect("key name should be valid");
+    let kp_page_up = CString::new("KP_Page_Up").expect("key name should be valid");
+    let kp_prior = CString::new("KP_Prior").expect("key name should be valid");
+    let kp_page_down = CString::new("KP_Page_Down").expect("key name should be valid");
+    let kp_next = CString::new("KP_Next").expect("key name should be valid");
+    let kp_9 = CString::new("KP_9").expect("key name should be valid");
+    let kp_equal = CString::new("KP_Equal").expect("key name should be valid");
     let f1 = CString::new("F1").expect("key name should be valid");
     let f12 = CString::new("F12").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
@@ -264,6 +271,16 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
     assert_eq!(unsafe { RimeGetKeycodeByName(backspace.as_ptr()) }, 0xff08);
     assert_eq!(unsafe { RimeGetKeycodeByName(left.as_ptr()) }, 0xff51);
+    assert_eq!(unsafe { RimeGetKeycodeByName(kp_enter.as_ptr()) }, 0xff8d);
+    assert_eq!(unsafe { RimeGetKeycodeByName(kp_page_up.as_ptr()) }, 0xff9a);
+    assert_eq!(unsafe { RimeGetKeycodeByName(kp_prior.as_ptr()) }, 0xff9a);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(kp_page_down.as_ptr()) },
+        0xff9b
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(kp_next.as_ptr()) }, 0xff9b);
+    assert_eq!(unsafe { RimeGetKeycodeByName(kp_9.as_ptr()) }, 0xffb9);
+    assert_eq!(unsafe { RimeGetKeycodeByName(kp_equal.as_ptr()) }, 0xffbd);
     assert_eq!(unsafe { RimeGetKeycodeByName(f1.as_ptr()) }, 0xffbe);
     assert_eq!(unsafe { RimeGetKeycodeByName(f12.as_ptr()) }, 0xffc9);
     assert_eq!(
@@ -286,6 +303,26 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0xff51)).as_deref(),
         Some("Left")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff8d)).as_deref(),
+        Some("KP_Enter")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff9a)).as_deref(),
+        Some("KP_Page_Up")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xff9b)).as_deref(),
+        Some("KP_Next")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xffb9)).as_deref(),
+        Some("KP_9")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xffbd)).as_deref(),
+        Some("KP_Equal")
     );
     assert_eq!(
         static_c_string(RimeGetKeyName(0xffbe)).as_deref(),

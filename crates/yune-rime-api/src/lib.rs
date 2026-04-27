@@ -3714,6 +3714,7 @@ fn install_schema_translator_chain(session: &mut SessionState, schema_id: &str) 
                 install_schema_dictionary_translator_from_config(
                     session,
                     &schema_config,
+                    component_name,
                     name_space.unwrap_or("translator"),
                 );
             }
@@ -3746,6 +3747,7 @@ fn schema_component_prescription(component: &str) -> (&str, Option<&str>) {
 fn install_schema_dictionary_translator_from_config(
     session: &mut SessionState,
     schema_config: &Value,
+    component_name: &str,
     name_space: &str,
 ) {
     let Some(dictionary) = load_schema_table_dictionary(schema_config, name_space) else {
@@ -3757,10 +3759,20 @@ fn install_schema_dictionary_translator_from_config(
     )
     .and_then(config_scalar_bool)
     .unwrap_or(false);
-    let enable_completion =
+    let mut enable_completion =
         find_config_value(schema_config, &format!("{name_space}/enable_completion"))
             .and_then(config_scalar_bool)
             .unwrap_or(true);
+    if matches!(component_name, "script_translator" | "r10n_translator") {
+        if let Some(enable_word_completion) = find_config_value(
+            schema_config,
+            &format!("{name_space}/enable_word_completion"),
+        )
+        .and_then(config_scalar_bool)
+        {
+            enable_completion = enable_word_completion;
+        }
+    }
     let delimiters = find_config_value(schema_config, &format!("{name_space}/delimiter"))
         .or_else(|| find_config_value(schema_config, "speller/delimiter"))
         .and_then(config_scalar_string)

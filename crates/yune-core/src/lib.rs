@@ -2365,6 +2365,17 @@ fn is_extended_cjk(ch: char) -> bool {
 
 pub struct SimplifierFilter {
     option_name: String,
+    tips_level: SimplifierTipsLevel,
+    show_in_comment: bool,
+    inherit_comment: bool,
+    comment_format: CommentFormat,
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum SimplifierTipsLevel {
+    None,
+    Char,
+    All,
 }
 
 impl Default for SimplifierFilter {
@@ -2378,6 +2389,10 @@ impl SimplifierFilter {
     pub fn new() -> Self {
         Self {
             option_name: "simplification".to_owned(),
+            tips_level: SimplifierTipsLevel::None,
+            show_in_comment: false,
+            inherit_comment: true,
+            comment_format: CommentFormat::default(),
         }
     }
 
@@ -2387,6 +2402,34 @@ impl SimplifierFilter {
         if !option_name.is_empty() {
             self.option_name = option_name;
         }
+        self
+    }
+
+    #[must_use]
+    pub fn with_tips(mut self, tips: impl AsRef<str>) -> Self {
+        self.tips_level = match tips.as_ref() {
+            "char" => SimplifierTipsLevel::Char,
+            "all" => SimplifierTipsLevel::All,
+            _ => SimplifierTipsLevel::None,
+        };
+        self
+    }
+
+    #[must_use]
+    pub fn with_show_in_comment(mut self, show_in_comment: bool) -> Self {
+        self.show_in_comment = show_in_comment;
+        self
+    }
+
+    #[must_use]
+    pub fn with_inherit_comment(mut self, inherit_comment: bool) -> Self {
+        self.inherit_comment = inherit_comment;
+        self
+    }
+
+    #[must_use]
+    pub fn with_comment_format(mut self, formulas: &[String]) -> Self {
+        self.comment_format = CommentFormat::parse(formulas);
         self
     }
 }
@@ -2404,9 +2447,36 @@ impl CandidateFilter for SimplifierFilter {
         }
 
         for candidate in candidates {
-            let simplified = simplify_traditional_text(&candidate.text);
-            if simplified != candidate.text {
+            let original = candidate.text.clone();
+            let simplified = simplify_traditional_text(&original);
+            if simplified == original {
+                continue;
+            }
+
+            let show_tips = match self.tips_level {
+                SimplifierTipsLevel::None => false,
+                SimplifierTipsLevel::Char => original.chars().count() == 1,
+                SimplifierTipsLevel::All => true,
+            };
+
+            if self.show_in_comment {
+                if show_tips {
+                    candidate.comment = self.comment_format.apply(&simplified);
+                } else if !self.inherit_comment {
+                    candidate.comment.clear();
+                }
+            } else {
                 candidate.text = simplified;
+                if show_tips {
+                    let (comment, modified) = self.comment_format.apply_with_modified(&original);
+                    candidate.comment = if modified {
+                        comment
+                    } else {
+                        format!("〔{original}〕")
+                    };
+                } else if !self.inherit_comment {
+                    candidate.comment.clear();
+                }
             }
         }
     }
@@ -2565,6 +2635,10 @@ impl CommentFormat {
     }
 
     fn apply(&self, value: &str) -> String {
+        self.apply_with_modified(value).0
+    }
+
+    fn apply_with_modified(&self, value: &str) -> (String, bool) {
         let mut formatted = value.to_owned();
         for formula in &self.formulas {
             formula.apply(&mut formatted);
@@ -2572,7 +2646,8 @@ impl CommentFormat {
                 break;
             }
         }
-        formatted
+        let modified = formatted != value;
+        (formatted, modified)
     }
 }
 
@@ -6574,6 +6649,59 @@ sort: original
 
         engine.set_option("zh_simp", true);
         assert_eq!(engine.context().candidates[0].text, "台湾");
+    }
+
+    #[test]
+    fn simplifier_filter_shows_librime_tip_comments() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("tw", "臺"), ("tw", "臺灣")]));
+        engine.add_filter(SimplifierFilter::new().with_tips("char"));
+
+        engine
+            .process_key_sequence("tw")
+            .expect("keys should parse");
+        engine.set_option("simplification", true);
+
+        assert_eq!(engine.context().candidates[0].text, "台");
+        assert_eq!(engine.context().candidates[0].comment, "〔臺〕");
+        assert_eq!(engine.context().candidates[1].text, "台湾");
+        assert_eq!(engine.context().candidates[1].comment, "tw");
+
+        let mut all_tips_engine = Engine::new();
+        let formulas = vec!["xform/^/[/".to_owned(), "xform/$/]/".to_owned()];
+        all_tips_engine.add_translator(StaticTableTranslator::new([("tw", "臺灣")]));
+        all_tips_engine.add_filter(
+            SimplifierFilter::new()
+                .with_tips("all")
+                .with_comment_format(&formulas),
+        );
+
+        all_tips_engine
+            .process_key_sequence("tw")
+            .expect("keys should parse");
+        all_tips_engine.set_option("simplification", true);
+
+        assert_eq!(all_tips_engine.context().candidates[0].text, "台湾");
+        assert_eq!(all_tips_engine.context().candidates[0].comment, "[臺灣]");
+    }
+
+    #[test]
+    fn simplifier_filter_can_show_converted_text_in_comment() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("tw", "臺灣")]));
+        engine.add_filter(
+            SimplifierFilter::new()
+                .with_tips("all")
+                .with_show_in_comment(true),
+        );
+
+        engine
+            .process_key_sequence("tw")
+            .expect("keys should parse");
+        engine.set_option("simplification", true);
+
+        assert_eq!(engine.context().candidates[0].text, "臺灣");
+        assert_eq!(engine.context().candidates[0].comment, "台湾");
     }
 
     #[test]

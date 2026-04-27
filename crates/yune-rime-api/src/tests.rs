@@ -13753,6 +13753,10 @@ translator:
   dictionary: luna
 zh_simp:
   option_name: zh_simp
+  tips: all
+  comment_format:
+    - xform/^/〔/
+    - xform/$/〕/
 ",
     )
     .expect("schema config should be written");
@@ -13791,7 +13795,7 @@ tw\t龍馬\t8
         assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
     }
 
-    let candidate_texts = || {
+    let candidate_pairs = || {
         let mut context = empty_context();
         // SAFETY: context points to writable storage initialized with positive
         // `data_size`.
@@ -13806,10 +13810,20 @@ tw\t龍馬\t8
             .iter()
             .map(|candidate| {
                 // SAFETY: candidate text pointers are populated by `RimeGetContext`.
-                unsafe { CStr::from_ptr(candidate.text) }
+                let text = unsafe { CStr::from_ptr(candidate.text) }
                     .to_str()
                     .expect("candidate text should be valid UTF-8")
-                    .to_owned()
+                    .to_owned();
+                let comment = if candidate.comment.is_null() {
+                    String::new()
+                } else {
+                    // SAFETY: candidate comment pointers are populated by `RimeGetContext`.
+                    unsafe { CStr::from_ptr(candidate.comment) }
+                        .to_str()
+                        .expect("candidate comment should be valid UTF-8")
+                        .to_owned()
+                };
+                (text, comment)
             })
             .collect::<Vec<_>>();
         // SAFETY: nested pointers were allocated by `RimeGetContext` above.
@@ -13817,13 +13831,27 @@ tw\t龍馬\t8
         texts
     };
 
-    assert_eq!(candidate_texts(), ["臺灣", "龍馬", "tw"]);
+    assert_eq!(
+        candidate_pairs(),
+        [
+            ("臺灣".to_owned(), "tw".to_owned()),
+            ("龍馬".to_owned(), "tw".to_owned()),
+            ("tw".to_owned(), "echo".to_owned())
+        ]
+    );
 
     let option = CString::new("zh_simp").expect("option name should be valid");
     // SAFETY: option is a valid NUL-terminated string.
     unsafe { RimeSetOption(session_id, option.as_ptr(), TRUE) };
 
-    assert_eq!(candidate_texts(), ["台湾", "龙马", "tw"]);
+    assert_eq!(
+        candidate_pairs(),
+        [
+            ("台湾".to_owned(), "〔臺灣〕".to_owned()),
+            ("龙马".to_owned(), "〔龍馬〕".to_owned()),
+            ("tw".to_owned(), "echo".to_owned())
+        ]
+    );
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();

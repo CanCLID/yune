@@ -3787,9 +3787,28 @@ fn install_schema_simplifier_filter(session: &mut SessionState, schema_id: &str)
             .and_then(config_scalar_string)
             .filter(|option_name| !option_name.is_empty())
             .unwrap_or_else(|| "simplification".to_owned());
-        session
-            .engine
-            .add_filter(SimplifierFilter::new().with_option_name(option_name));
+        let tips = find_config_value(&schema_config, &format!("{name_space}/tips"))
+            .or_else(|| find_config_value(&schema_config, &format!("{name_space}/tip")))
+            .and_then(config_scalar_string)
+            .unwrap_or_default();
+        let show_in_comment =
+            find_config_value(&schema_config, &format!("{name_space}/show_in_comment"))
+                .and_then(config_scalar_bool)
+                .unwrap_or(false);
+        let inherit_comment =
+            find_config_value(&schema_config, &format!("{name_space}/inherit_comment"))
+                .and_then(config_scalar_bool)
+                .unwrap_or(true);
+        let comment_format = schema_comment_format(&schema_config, &name_space);
+
+        session.engine.add_filter(
+            SimplifierFilter::new()
+                .with_option_name(option_name)
+                .with_tips(tips)
+                .with_show_in_comment(show_in_comment)
+                .with_inherit_comment(inherit_comment)
+                .with_comment_format(&comment_format),
+        );
     }
 }
 

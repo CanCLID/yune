@@ -4176,7 +4176,7 @@ fn load_schema_recognizer_patterns(schema_config: &Value, name_space: &str) -> V
     else {
         return Vec::new();
     };
-    patterns
+    let mut patterns = patterns
         .iter()
         .filter_map(|(tag, pattern)| {
             let tag = config_scalar_string(tag)?;
@@ -4185,7 +4185,9 @@ fn load_schema_recognizer_patterns(schema_config: &Value, name_space: &str) -> V
                 .ok()
                 .map(|pattern| MatcherPattern { tag, pattern })
         })
-        .collect()
+        .collect::<Vec<_>>();
+    patterns.sort_by(|left, right| left.tag.cmp(&right.tag));
+    patterns
 }
 
 fn update_session_segment_tags(session: &mut SessionState) {

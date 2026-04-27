@@ -279,6 +279,11 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let hstroke = CString::new("Hstroke").expect("key name should be valid");
     let gbreve = CString::new("gbreve").expect("key name should be valid");
     let scircumflex = CString::new("scircumflex").expect("key name should be valid");
+    let kappa = CString::new("kappa").expect("key name should be valid");
+    let kra = CString::new("kra").expect("key name should be valid");
+    let rcedilla = CString::new("Rcedilla").expect("key name should be valid");
+    let eng = CString::new("ENG").expect("key name should be valid");
+    let umacron = CString::new("umacron").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -309,6 +314,11 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(unsafe { RimeGetKeycodeByName(hstroke.as_ptr()) }, 0x2a1);
     assert_eq!(unsafe { RimeGetKeycodeByName(gbreve.as_ptr()) }, 0x2bb);
     assert_eq!(unsafe { RimeGetKeycodeByName(scircumflex.as_ptr()) }, 0x2fe);
+    assert_eq!(unsafe { RimeGetKeycodeByName(kappa.as_ptr()) }, 0x3a2);
+    assert_eq!(unsafe { RimeGetKeycodeByName(kra.as_ptr()) }, 0x3a2);
+    assert_eq!(unsafe { RimeGetKeycodeByName(rcedilla.as_ptr()) }, 0x3a3);
+    assert_eq!(unsafe { RimeGetKeycodeByName(eng.as_ptr()) }, 0x3bd);
+    assert_eq!(unsafe { RimeGetKeycodeByName(umacron.as_ptr()) }, 0x3fe);
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -409,6 +419,22 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0x2fe)).as_deref(),
         Some("scircumflex")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x3a2)).as_deref(),
+        Some("kappa")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x3a3)).as_deref(),
+        Some("Rcedilla")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x3bd)).as_deref(),
+        Some("ENG")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x3fe)).as_deref(),
+        Some("umacron")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

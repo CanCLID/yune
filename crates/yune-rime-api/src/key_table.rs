@@ -439,6 +439,45 @@ const LATIN3_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"scircumflex\0", 0x2fe),
 ];
 
+const LATIN4_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"kappa\0", 0x3a2),
+    (b"kra\0", 0x3a2),
+    (b"Rcedilla\0", 0x3a3),
+    (b"Itilde\0", 0x3a5),
+    (b"Lcedilla\0", 0x3a6),
+    (b"Emacron\0", 0x3aa),
+    (b"Gcedilla\0", 0x3ab),
+    (b"Tslash\0", 0x3ac),
+    (b"rcedilla\0", 0x3b3),
+    (b"itilde\0", 0x3b5),
+    (b"lcedilla\0", 0x3b6),
+    (b"emacron\0", 0x3ba),
+    (b"gcedilla\0", 0x3bb),
+    (b"tslash\0", 0x3bc),
+    (b"ENG\0", 0x3bd),
+    (b"eng\0", 0x3bf),
+    (b"Amacron\0", 0x3c0),
+    (b"Iogonek\0", 0x3c7),
+    (b"Eabovedot\0", 0x3cc),
+    (b"Imacron\0", 0x3cf),
+    (b"Ncedilla\0", 0x3d1),
+    (b"Omacron\0", 0x3d2),
+    (b"Kcedilla\0", 0x3d3),
+    (b"Uogonek\0", 0x3d9),
+    (b"Utilde\0", 0x3dd),
+    (b"Umacron\0", 0x3de),
+    (b"amacron\0", 0x3e0),
+    (b"iogonek\0", 0x3e7),
+    (b"eabovedot\0", 0x3ec),
+    (b"imacron\0", 0x3ef),
+    (b"ncedilla\0", 0x3f1),
+    (b"omacron\0", 0x3f2),
+    (b"kcedilla\0", 0x3f3),
+    (b"uogonek\0", 0x3f9),
+    (b"utilde\0", 0x3fd),
+    (b"umacron\0", 0x3fe),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -494,6 +533,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(LATIN1_KEY_NAMES)
         .chain(LATIN2_KEY_NAMES)
         .chain(LATIN3_KEY_NAMES)
+        .chain(LATIN4_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -504,6 +544,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(LATIN1_KEY_NAMES)
         .chain(LATIN2_KEY_NAMES)
         .chain(LATIN3_KEY_NAMES)
+        .chain(LATIN4_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

@@ -6278,6 +6278,43 @@ fn returns_context_with_preedit_and_candidate_page() {
 }
 
 #[test]
+fn rime_context_includes_librime_commit_text_preview_for_current_selection() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你"), ("ni", "呢")]));
+    }
+    let mut context = empty_context();
+
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(RimeHighlightCandidate(session_id, 1), TRUE);
+
+    // SAFETY: `context` points to valid writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert!(!context.commit_text_preview.is_null());
+    // SAFETY: `RimeGetContext` returned true and populated a preview string.
+    let preview = unsafe { CStr::from_ptr(context.commit_text_preview) };
+    assert_eq!(preview.to_str(), Ok("呢"));
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    assert!(context.commit_text_preview.is_null());
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
 fn rime_context_clear_respects_librime_versioned_tail_members() {
     let _guard = test_guard();
     let mut context = empty_context();

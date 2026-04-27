@@ -2879,6 +2879,21 @@ pub unsafe extern "C" fn RimeGetContext(
         let Ok(preedit) = CString::new(composition.preedit) else {
             return FALSE;
         };
+        let commit_text_preview = if unsafe { context_has_commit_text_preview(context) } {
+            let preview = snapshot
+                .context
+                .candidates
+                .get(snapshot.context.highlighted)
+                .map_or(composition.input.as_str(), |candidate| {
+                    candidate.text.as_str()
+                });
+            match CString::new(preview) {
+                Ok(preview) => Some(preview),
+                Err(_) => return FALSE,
+            }
+        } else {
+            None
+        };
         // SAFETY: `context` is non-null and points to caller-owned writable
         // storage; `preedit` is converted into owned C storage for the caller.
         unsafe {
@@ -2887,6 +2902,9 @@ pub unsafe extern "C" fn RimeGetContext(
             (*context).composition.sel_start = 0;
             (*context).composition.sel_end = composition.input.len() as c_int;
             (*context).composition.preedit = preedit.into_raw();
+            if let Some(commit_text_preview) = commit_text_preview {
+                (*context).commit_text_preview = commit_text_preview.into_raw();
+            }
         }
     }
 

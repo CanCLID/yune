@@ -237,7 +237,8 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
             || is_librime_latin2_key_name(name)
             || is_librime_latin3_key_name(name)
             || is_librime_latin4_key_name(name)
-            || is_librime_kana_key_name(name) =>
+            || is_librime_kana_key_name(name)
+            || is_librime_arabic_key_name(name) =>
         {
             KeyCode::Ignored
         }
@@ -796,6 +797,61 @@ fn is_librime_kana_key_name(name: &str) -> bool {
             | "kana_N"
             | "voicedsound"
             | "semivoicedsound"
+    )
+}
+
+fn is_librime_arabic_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "Arabic_comma"
+            | "Arabic_semicolon"
+            | "Arabic_question_mark"
+            | "Arabic_hamza"
+            | "Arabic_maddaonalef"
+            | "Arabic_hamzaonalef"
+            | "Arabic_hamzaonwaw"
+            | "Arabic_hamzaunderalef"
+            | "Arabic_hamzaonyeh"
+            | "Arabic_alef"
+            | "Arabic_beh"
+            | "Arabic_tehmarbuta"
+            | "Arabic_teh"
+            | "Arabic_theh"
+            | "Arabic_jeem"
+            | "Arabic_hah"
+            | "Arabic_khah"
+            | "Arabic_dal"
+            | "Arabic_thal"
+            | "Arabic_ra"
+            | "Arabic_zain"
+            | "Arabic_seen"
+            | "Arabic_sheen"
+            | "Arabic_sad"
+            | "Arabic_dad"
+            | "Arabic_tah"
+            | "Arabic_zah"
+            | "Arabic_ain"
+            | "Arabic_ghain"
+            | "Arabic_tatweel"
+            | "Arabic_feh"
+            | "Arabic_qaf"
+            | "Arabic_kaf"
+            | "Arabic_lam"
+            | "Arabic_meem"
+            | "Arabic_noon"
+            | "Arabic_ha"
+            | "Arabic_heh"
+            | "Arabic_waw"
+            | "Arabic_alefmaksura"
+            | "Arabic_yeh"
+            | "Arabic_fathatan"
+            | "Arabic_dammatan"
+            | "Arabic_kasratan"
+            | "Arabic_fatha"
+            | "Arabic_damma"
+            | "Arabic_kasra"
+            | "Arabic_shadda"
+            | "Arabic_sukun"
     )
 }
 
@@ -2585,6 +2641,73 @@ mod tests {
             "kana_N",
             "voicedsound",
             "Release+semivoicedsound",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_arabic_noop_key_names() {
+        let names = [
+            "Arabic_comma",
+            "Arabic_semicolon",
+            "Arabic_question_mark",
+            "Arabic_hamza",
+            "Arabic_maddaonalef",
+            "Arabic_hamzaonalef",
+            "Arabic_hamzaonwaw",
+            "Arabic_hamzaunderalef",
+            "Arabic_hamzaonyeh",
+            "Arabic_alef",
+            "Arabic_beh",
+            "Arabic_tehmarbuta",
+            "Arabic_teh",
+            "Arabic_theh",
+            "Arabic_jeem",
+            "Arabic_hah",
+            "Arabic_khah",
+            "Arabic_dal",
+            "Arabic_thal",
+            "Arabic_ra",
+            "Arabic_zain",
+            "Arabic_seen",
+            "Arabic_sheen",
+            "Arabic_sad",
+            "Arabic_dad",
+            "Arabic_tah",
+            "Arabic_zah",
+            "Arabic_ain",
+            "Arabic_ghain",
+            "Arabic_tatweel",
+            "Arabic_feh",
+            "Arabic_qaf",
+            "Arabic_kaf",
+            "Arabic_lam",
+            "Arabic_meem",
+            "Arabic_noon",
+            "Arabic_ha",
+            "Arabic_heh",
+            "Arabic_waw",
+            "Arabic_alefmaksura",
+            "Arabic_yeh",
+            "Arabic_fathatan",
+            "Arabic_dammatan",
+            "Arabic_kasratan",
+            "Arabic_fatha",
+            "Arabic_damma",
+            "Arabic_kasra",
+            "Arabic_shadda",
+            "Release+Arabic_sukun",
         ];
         let sequence = names
             .iter()

@@ -1626,22 +1626,22 @@ impl RimeTableMetadata {
             self.pending_list_clear = None;
         }
 
-        if let Some(columns) = trimmed.strip_prefix("columns:") {
+        if let Some(columns) = rime_header_value(trimmed, "columns") {
             self.read_header_list(RimeTableHeaderList::Columns, columns);
             return;
         }
 
-        if let Some(import_tables) = trimmed.strip_prefix("import_tables:") {
+        if let Some(import_tables) = rime_header_value(trimmed, "import_tables") {
             self.read_header_list(RimeTableHeaderList::ImportTables, import_tables);
             return;
         }
 
-        if let Some(sort_order) = trimmed.strip_prefix("sort:") {
+        if let Some(sort_order) = rime_header_value(trimmed, "sort") {
             self.sort_by_weight = parse_yaml_scalar(sort_order) != "original";
             return;
         }
 
-        if let Some(name) = trimmed.strip_prefix("name:") {
+        if let Some(name) = rime_header_value(trimmed, "name") {
             if let Some(name) = parse_yaml_scalar_node(name) {
                 self.has_name = true;
                 self.name = Some(name);
@@ -1652,7 +1652,7 @@ impl RimeTableMetadata {
             return;
         }
 
-        if let Some(version) = trimmed.strip_prefix("version:") {
+        if let Some(version) = rime_header_value(trimmed, "version") {
             self.has_version = parse_yaml_scalar_node(version).is_some();
         }
     }
@@ -1761,6 +1761,12 @@ fn parse_inline_yaml_list(input: &str) -> Option<Vec<String>> {
             }
             split_inline_yaml_list_items(items)
         })
+}
+
+fn rime_header_value<'a>(line: &'a str, key: &str) -> Option<&'a str> {
+    let rest = line.strip_prefix(key)?;
+    let rest = rest.trim_start();
+    rest.strip_prefix(':')
 }
 
 fn split_inline_yaml_list_items(items: &str) -> Vec<String> {
@@ -4930,6 +4936,46 @@ ba	 八 	10
         assert_eq!(entries[0].text, " 八 ");
         assert_eq!(entries[0].code, "ba");
         assert_eq!(entries[0].weight, 10.0);
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_header_keys_with_space_before_colon() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports(
+            r#"
+---
+name : spaced_colon_primary
+version : "0.1"
+sort : original
+columns : [code, text, weight]
+import_tables : [secondary]
+...
+
+ba	八	1
+"#,
+            |name| {
+                (name == "secondary").then(|| {
+                    r#"
+---
+name : secondary
+version : "0.1"
+sort : original
+columns : [code, text, weight]
+...
+
+ba	吧	2
+"#
+                    .to_owned()
+                })
+            },
+        )
+        .expect("yaml-cpp accepts whitespace before mapping-key colons");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[0].code, "ba");
+        assert_eq!(entries[1].text, "吧");
+        assert_eq!(entries[1].code, "ba");
     }
 
     #[test]

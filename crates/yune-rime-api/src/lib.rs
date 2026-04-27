@@ -55,6 +55,7 @@ const K_SUPER_MASK: c_int = 1 << 26;
 #[cfg(test)]
 const K_RELEASE_MASK: c_int = 1 << 30;
 const DEFAULT_PAGE_SIZE: usize = 5;
+const SESSION_LIFESPAN_SECS: u64 = 5 * 60;
 const RIME_VERSION_BYTES: &[u8] =
     concat!("yune-rime-api ", env!("CARGO_PKG_VERSION"), "\0").as_bytes();
 
@@ -68,16 +69,58 @@ impl SessionRegistry {
     fn create_session(&mut self) -> RimeSessionId {
         self.next_id = self.next_id.saturating_add(1).max(1);
         let session_id = self.next_id;
-        self.sessions.insert(session_id, SessionState::default());
+        self.sessions.insert(session_id, SessionState::new());
         session_id
+    }
+
+    fn get_session_mut(&mut self, session_id: RimeSessionId) -> Option<&mut SessionState> {
+        if session_id == 0 {
+            return None;
+        }
+
+        let session = self.sessions.get_mut(&session_id)?;
+        session.activate();
+        Some(session)
+    }
+
+    fn find_session(&mut self, session_id: RimeSessionId) -> bool {
+        self.get_session_mut(session_id).is_some()
+    }
+
+    fn cleanup_stale_sessions(&mut self) {
+        let now = session_activity_now();
+        self.sessions.retain(|_, session| {
+            now.saturating_sub(session.last_active_time) <= SESSION_LIFESPAN_SECS
+        });
     }
 }
 
-#[derive(Default)]
 struct SessionState {
     engine: Engine,
     unread_commit: Option<String>,
     input_buffer: Option<CString>,
+    last_active_time: u64,
+}
+
+impl SessionState {
+    fn new() -> Self {
+        Self {
+            engine: Engine::default(),
+            unread_commit: None,
+            input_buffer: None,
+            last_active_time: session_activity_now(),
+        }
+    }
+
+    fn activate(&mut self) {
+        self.last_active_time = session_activity_now();
+    }
+}
+
+impl Default for SessionState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 struct CandidateListState {
@@ -1589,14 +1632,10 @@ pub extern "C" fn RimeCreateSession() -> RimeSessionId {
 
 #[no_mangle]
 pub extern "C" fn RimeFindSession(session_id: RimeSessionId) -> Bool {
-    bool_from(
-        session_id != 0
-            && sessions()
-                .lock()
-                .expect("session registry should not be poisoned")
-                .sessions
-                .contains_key(&session_id),
-    )
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    bool_from(registry.find_session(session_id))
 }
 
 #[no_mangle]
@@ -1622,7 +1661,12 @@ pub extern "C" fn RimeCleanupAllSessions() {
 }
 
 #[no_mangle]
-pub extern "C" fn RimeCleanupStaleSessions() {}
+pub extern "C" fn RimeCleanupStaleSessions() {
+    sessions()
+        .lock()
+        .expect("session registry should not be poisoned")
+        .cleanup_stale_sessions();
+}
 
 #[no_mangle]
 pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask: c_int) -> Bool {
@@ -1660,7 +1704,7 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
 
@@ -1703,7 +1747,7 @@ pub extern "C" fn RimeCommitComposition(session_id: RimeSessionId) -> Bool {
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
     let Some(commit) = session.engine.commit_composition() else {
@@ -1723,7 +1767,7 @@ pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    if let Some(session) = registry.sessions.get_mut(&session_id) {
+    if let Some(session) = registry.get_session_mut(session_id) {
         session.engine.clear_composition();
     }
 }
@@ -1737,7 +1781,7 @@ pub extern "C" fn RimeGetInput(session_id: RimeSessionId) -> *const c_char {
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return ptr::null();
     };
     let Ok(input) = CString::new(session.engine.context().composition.input.as_str()) else {
@@ -1771,7 +1815,7 @@ pub unsafe extern "C" fn RimeSetInput(session_id: RimeSessionId, input: *const c
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
     session.engine.set_input(input);
@@ -1785,12 +1829,11 @@ pub extern "C" fn RimeGetCaretPos(session_id: RimeSessionId) -> usize {
         return 0;
     }
 
-    let registry = sessions()
+    let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
     registry
-        .sessions
-        .get(&session_id)
+        .get_session_mut(session_id)
         .map_or(0, |session| session.engine.context().composition.caret)
 }
 
@@ -1803,7 +1846,7 @@ pub extern "C" fn RimeSetCaretPos(session_id: RimeSessionId, caret_pos: usize) {
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    if let Some(session) = registry.sessions.get_mut(&session_id) {
+    if let Some(session) = registry.get_session_mut(session_id) {
         session.engine.set_caret_pos(caret_pos);
     }
 }
@@ -2886,7 +2929,7 @@ pub unsafe extern "C" fn RimeSimulateKeySequence(
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
 
@@ -2988,7 +3031,7 @@ pub unsafe extern "C" fn RimeGetCommit(session_id: RimeSessionId, commit: *mut R
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
     let Some(text) = session.unread_commit.take() else {
@@ -3029,10 +3072,10 @@ pub unsafe extern "C" fn RimeGetContext(
     clear_context(context);
 
     let (snapshot, hide_candidate) = {
-        let registry = sessions()
+        let mut registry = sessions()
             .lock()
             .expect("session registry should not be poisoned");
-        let Some(session) = registry.sessions.get(&session_id) else {
+        let Some(session) = registry.get_session_mut(session_id) else {
             return FALSE;
         };
         (
@@ -3197,10 +3240,10 @@ pub unsafe extern "C" fn RimeGetStatus(session_id: RimeSessionId, status: *mut R
 
     clear_status(status);
 
-    let registry = sessions()
+    let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
     let snapshot = session.engine.status();
@@ -3261,10 +3304,10 @@ pub unsafe extern "C" fn RimeCandidateListFromIndex(
         return FALSE;
     }
 
-    let registry = sessions()
+    let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
     let candidates = session.engine.context().candidates.clone();
@@ -3506,7 +3549,7 @@ fn commit_selected_candidate(
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
     let Some(commit) = select(session) else {
@@ -3624,7 +3667,7 @@ fn with_session(session_id: RimeSessionId, action: impl FnOnce(&mut SessionState
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    let Some(session) = registry.sessions.get_mut(&session_id) else {
+    let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
 
@@ -3647,6 +3690,12 @@ fn optional_c_string(value: *const c_char) -> Option<String> {
 
 fn cstring_from_lossless_str(value: &str) -> CString {
     CString::new(value).expect("values derived from C strings or literals cannot contain NUL bytes")
+}
+
+fn session_activity_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_secs())
 }
 
 fn path_join(base: &str, child: &str) -> String {
@@ -4956,12 +5005,11 @@ fn state_label_for_session(
         return None;
     }
     let schema_id = {
-        let registry = sessions()
+        let mut registry = sessions()
             .lock()
             .expect("session registry should not be poisoned");
         registry
-            .sessions
-            .get(&session_id)
+            .get_session_mut(session_id)
             .map(|session| session.engine.status().schema_id)?
     };
     let schema_config =

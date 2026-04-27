@@ -12179,6 +12179,41 @@ fn simulates_librime_style_key_sequences() {
 }
 
 #[test]
+fn cleanup_stale_sessions_matches_librime_activity_lifespan() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let stale_session_id = RimeCreateSession();
+    let refreshed_session_id = RimeCreateSession();
+    let fresh_session_id = RimeCreateSession();
+    let stale_time = super::session_activity_now().saturating_sub(super::SESSION_LIFESPAN_SECS + 1);
+
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        registry
+            .sessions
+            .get_mut(&stale_session_id)
+            .expect("stale session should exist")
+            .last_active_time = stale_time;
+        registry
+            .sessions
+            .get_mut(&refreshed_session_id)
+            .expect("refreshed session should exist")
+            .last_active_time = stale_time;
+    }
+
+    assert_eq!(RimeFindSession(refreshed_session_id), TRUE);
+    RimeCleanupStaleSessions();
+
+    assert_eq!(RimeFindSession(stale_session_id), FALSE);
+    assert_eq!(RimeFindSession(refreshed_session_id), TRUE);
+    assert_eq!(RimeFindSession(fresh_session_id), TRUE);
+
+    RimeCleanupAllSessions();
+}
+
+#[test]
 fn rejects_invalid_context_requests() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

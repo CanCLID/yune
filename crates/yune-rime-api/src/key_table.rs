@@ -970,6 +970,48 @@ const PUBLISHING_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"righttack\0", 0x0bfc),
 ];
 
+const HEBREW_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"hebrew_doublelowline\0", 0x0cdf),
+    (b"hebrew_aleph\0", 0x0ce0),
+    (b"hebrew_bet\0", 0x0ce1),
+    (b"hebrew_beth\0", 0x0ce1),
+    (b"hebrew_gimel\0", 0x0ce2),
+    (b"hebrew_gimmel\0", 0x0ce2),
+    (b"hebrew_dalet\0", 0x0ce3),
+    (b"hebrew_daleth\0", 0x0ce3),
+    (b"hebrew_he\0", 0x0ce4),
+    (b"hebrew_waw\0", 0x0ce5),
+    (b"hebrew_zain\0", 0x0ce6),
+    (b"hebrew_zayin\0", 0x0ce6),
+    (b"hebrew_chet\0", 0x0ce7),
+    (b"hebrew_het\0", 0x0ce7),
+    (b"hebrew_tet\0", 0x0ce8),
+    (b"hebrew_teth\0", 0x0ce8),
+    (b"hebrew_yod\0", 0x0ce9),
+    (b"hebrew_finalkaph\0", 0x0cea),
+    (b"hebrew_kaph\0", 0x0ceb),
+    (b"hebrew_lamed\0", 0x0cec),
+    (b"hebrew_finalmem\0", 0x0ced),
+    (b"hebrew_mem\0", 0x0cee),
+    (b"hebrew_finalnun\0", 0x0cef),
+    (b"hebrew_nun\0", 0x0cf0),
+    (b"hebrew_samech\0", 0x0cf1),
+    (b"hebrew_samekh\0", 0x0cf1),
+    (b"hebrew_ayin\0", 0x0cf2),
+    (b"hebrew_finalpe\0", 0x0cf3),
+    (b"hebrew_pe\0", 0x0cf4),
+    (b"hebrew_finalzade\0", 0x0cf5),
+    (b"hebrew_finalzadi\0", 0x0cf5),
+    (b"hebrew_zade\0", 0x0cf6),
+    (b"hebrew_zadi\0", 0x0cf6),
+    (b"hebrew_kuf\0", 0x0cf7),
+    (b"hebrew_qoph\0", 0x0cf7),
+    (b"hebrew_resh\0", 0x0cf8),
+    (b"hebrew_shin\0", 0x0cf9),
+    (b"hebrew_taf\0", 0x0cfa),
+    (b"hebrew_taw\0", 0x0cfa),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -1032,6 +1074,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(GREEK_KEY_NAMES)
         .chain(TECHNICAL_KEY_NAMES)
         .chain(PUBLISHING_KEY_NAMES)
+        .chain(HEBREW_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -1049,6 +1092,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(GREEK_KEY_NAMES)
         .chain(TECHNICAL_KEY_NAMES)
         .chain(PUBLISHING_KEY_NAMES)
+        .chain(HEBREW_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

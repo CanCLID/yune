@@ -344,6 +344,14 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let overbar = CString::new("overbar").expect("key name should be valid");
     let circle = CString::new("circle").expect("key name should be valid");
     let righttack = CString::new("righttack").expect("key name should be valid");
+    let hebrew_doublelowline =
+        CString::new("hebrew_doublelowline").expect("key name should be valid");
+    let hebrew_aleph = CString::new("hebrew_aleph").expect("key name should be valid");
+    let hebrew_beth = CString::new("hebrew_beth").expect("key name should be valid");
+    let hebrew_samekh = CString::new("hebrew_samekh").expect("key name should be valid");
+    let hebrew_finalzadi = CString::new("hebrew_finalzadi").expect("key name should be valid");
+    let hebrew_qoph = CString::new("hebrew_qoph").expect("key name should be valid");
+    let hebrew_taw = CString::new("hebrew_taw").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -505,6 +513,25 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(unsafe { RimeGetKeycodeByName(overbar.as_ptr()) }, 0xbc0);
     assert_eq!(unsafe { RimeGetKeycodeByName(circle.as_ptr()) }, 0xbcf);
     assert_eq!(unsafe { RimeGetKeycodeByName(righttack.as_ptr()) }, 0xbfc);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hebrew_doublelowline.as_ptr()) },
+        0xcdf
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hebrew_aleph.as_ptr()) },
+        0xce0
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(hebrew_beth.as_ptr()) }, 0xce1);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hebrew_samekh.as_ptr()) },
+        0xcf1
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(hebrew_finalzadi.as_ptr()) },
+        0xcf5
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(hebrew_qoph.as_ptr()) }, 0xcf7);
+    assert_eq!(unsafe { RimeGetKeycodeByName(hebrew_taw.as_ptr()) }, 0xcfa);
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -801,6 +828,34 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0xbfc)).as_deref(),
         Some("righttack")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xcdf)).as_deref(),
+        Some("hebrew_doublelowline")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xce0)).as_deref(),
+        Some("hebrew_aleph")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xce1)).as_deref(),
+        Some("hebrew_bet")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xcf1)).as_deref(),
+        Some("hebrew_samech")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xcf5)).as_deref(),
+        Some("hebrew_finalzade")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xcf7)).as_deref(),
+        Some("hebrew_kuf")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xcfa)).as_deref(),
+        Some("hebrew_taf")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

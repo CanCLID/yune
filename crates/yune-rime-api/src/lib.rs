@@ -3892,7 +3892,10 @@ fn install_schema_filter_chain(session: &mut SessionState, schema_id: &str) {
             "simplifier" => install_schema_simplifier_filter_from_config(
                 session,
                 &schema_config,
-                name_space.unwrap_or("simplifier"),
+                match name_space {
+                    Some("filter") | None => "simplifier",
+                    Some(name_space) => name_space,
+                },
             ),
             "uniquifier" => session.engine.add_filter(UniquifierFilter),
             "single_char_filter" => session.engine.add_filter(SingleCharFilter),

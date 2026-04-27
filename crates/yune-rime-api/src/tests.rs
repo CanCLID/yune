@@ -2231,6 +2231,99 @@ fn config_set_rejects_child_paths_under_existing_scalar_nodes() {
 }
 
 #[test]
+fn config_paths_preserve_librime_empty_segments_after_leading_slashes() {
+    let _guard = test_guard();
+    let mut config = empty_config();
+    let yaml = CString::new(
+        r#"
+foo:
+  "":
+    bar: empty
+  bar: collapsed
+"#,
+    )
+    .expect("yaml should be valid");
+    let empty_segment = CString::new("foo//bar").expect("key should be valid");
+    let collapsed = CString::new("foo/bar").expect("key should be valid");
+    let leading_slash = CString::new("/foo//bar").expect("key should be valid");
+    let triple_slash = CString::new("foo///bar").expect("key should be valid");
+    let value = CString::new("written").expect("value should be valid");
+    let mut output = vec![0 as c_char; 16];
+
+    // SAFETY: config and YAML pointers are valid for the call.
+    assert_eq!(
+        unsafe { RimeConfigLoadString(&mut config, yaml.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe {
+            RimeConfigGetString(
+                &mut config,
+                empty_segment.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    // SAFETY: successful string copies are NUL-terminated.
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("empty")
+    );
+    assert_eq!(
+        unsafe {
+            RimeConfigGetString(
+                &mut config,
+                collapsed.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    // SAFETY: successful string copies are NUL-terminated.
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("collapsed")
+    );
+    assert_eq!(
+        unsafe {
+            RimeConfigGetString(
+                &mut config,
+                leading_slash.as_ptr(),
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        },
+        TRUE
+    );
+    // SAFETY: successful string copies are NUL-terminated.
+    assert_eq!(
+        unsafe { CStr::from_ptr(output.as_ptr()) }.to_str(),
+        Ok("empty")
+    );
+
+    assert_eq!(
+        unsafe { RimeConfigSetString(&mut config, triple_slash.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        config_string(&mut config, "foo///bar").as_deref(),
+        Some("written")
+    );
+    assert_eq!(
+        config_string(&mut config, "foo//bar").as_deref(),
+        Some("empty")
+    );
+    assert_eq!(
+        config_string(&mut config, "foo/bar").as_deref(),
+        Some("collapsed")
+    );
+    assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+}
+
+#[test]
 fn config_scalar_access_matches_librime_string_backed_values() {
     let _guard = test_guard();
     let mut config = empty_config();

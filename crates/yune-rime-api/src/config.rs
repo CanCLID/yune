@@ -229,7 +229,7 @@ pub(crate) fn find_config_value<'a>(root: &'a Value, key: &str) -> Option<&'a Va
     }
 
     let mut current = root;
-    for segment in key.split('/').filter(|segment| !segment.is_empty()) {
+    for segment in config_path_segments(key) {
         if let Some(index) = list_index_for_read(segment, current) {
             let Value::Sequence(sequence) = current else {
                 return None;
@@ -251,7 +251,7 @@ pub(crate) fn find_config_value_mut<'a>(root: &'a mut Value, key: &str) -> Optio
     }
 
     let mut current = root;
-    for segment in key.split('/').filter(|segment| !segment.is_empty()) {
+    for segment in config_path_segments(key) {
         if let Some(index) = list_index_for_read(segment, current) {
             let Value::Sequence(sequence) = current else {
                 return None;
@@ -273,10 +273,7 @@ pub(crate) fn set_config_value(root: &mut Value, key: &str, value: Value) -> boo
         return true;
     }
 
-    let segments = key
-        .split('/')
-        .filter(|segment| !segment.is_empty())
-        .collect::<Vec<_>>();
+    let segments = config_path_segments(key);
     let Some((last, parents)) = segments.split_last() else {
         *root = value;
         return true;
@@ -359,6 +356,15 @@ pub(crate) fn set_config_value(root: &mut Value, key: &str, value: Value) -> boo
         };
         mapping.insert(Value::String((*last).to_owned()), value);
         true
+    }
+}
+
+pub(crate) fn config_path_segments(key: &str) -> Vec<&str> {
+    let trimmed = key.trim_start_matches('/');
+    if trimmed.is_empty() {
+        Vec::new()
+    } else {
+        trimmed.split('/').collect()
     }
 }
 

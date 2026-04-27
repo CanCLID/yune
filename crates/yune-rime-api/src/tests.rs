@@ -324,6 +324,15 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let greek_finalsmallsigma =
         CString::new("Greek_finalsmallsigma").expect("key name should be valid");
     let greek_omega = CString::new("Greek_omega").expect("key name should be valid");
+    let leftradical = CString::new("leftradical").expect("key name should be valid");
+    let topvertsummationconnector =
+        CString::new("topvertsummationconnector").expect("key name should be valid");
+    let lessthanequal = CString::new("lessthanequal").expect("key name should be valid");
+    let infinity = CString::new("infinity").expect("key name should be valid");
+    let leftarrow = CString::new("leftarrow").expect("key name should be valid");
+    let blank = CString::new("blank").expect("key name should be valid");
+    let lowrightcorner = CString::new("lowrightcorner").expect("key name should be valid");
+    let vertbar = CString::new("vertbar").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -455,6 +464,23 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
         0x7f3
     );
     assert_eq!(unsafe { RimeGetKeycodeByName(greek_omega.as_ptr()) }, 0x7f9);
+    assert_eq!(unsafe { RimeGetKeycodeByName(leftradical.as_ptr()) }, 0x8a1);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(topvertsummationconnector.as_ptr()) },
+        0x8b3
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(lessthanequal.as_ptr()) },
+        0x8bc
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(infinity.as_ptr()) }, 0x8c2);
+    assert_eq!(unsafe { RimeGetKeycodeByName(leftarrow.as_ptr()) }, 0x8fb);
+    assert_eq!(unsafe { RimeGetKeycodeByName(blank.as_ptr()) }, 0x9df);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(lowrightcorner.as_ptr()) },
+        0x9ea
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(vertbar.as_ptr()) }, 0x9f8);
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -679,6 +705,38 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0x7f9)).as_deref(),
         Some("Greek_omega")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x8a1)).as_deref(),
+        Some("leftradical")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x8b3)).as_deref(),
+        Some("topvertsummationconnector")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x8bc)).as_deref(),
+        Some("lessthanequal")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x8c2)).as_deref(),
+        Some("infinity")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x8fb)).as_deref(),
+        Some("leftarrow")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x9df)).as_deref(),
+        Some("blank")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x9ea)).as_deref(),
+        Some("lowrightcorner")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x9f8)).as_deref(),
+        Some("vertbar")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

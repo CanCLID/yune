@@ -789,6 +789,82 @@ const GREEK_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"Greek_omega\0", 0x7f9),
 ];
 
+const TECHNICAL_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"leftradical\0", 0x8a1),
+    (b"topleftradical\0", 0x8a2),
+    (b"horizconnector\0", 0x8a3),
+    (b"topintegral\0", 0x8a4),
+    (b"botintegral\0", 0x8a5),
+    (b"vertconnector\0", 0x8a6),
+    (b"topleftsqbracket\0", 0x8a7),
+    (b"botleftsqbracket\0", 0x8a8),
+    (b"toprightsqbracket\0", 0x8a9),
+    (b"botrightsqbracket\0", 0x8aa),
+    (b"topleftparens\0", 0x8ab),
+    (b"botleftparens\0", 0x8ac),
+    (b"toprightparens\0", 0x8ad),
+    (b"botrightparens\0", 0x8ae),
+    (b"leftmiddlecurlybrace\0", 0x8af),
+    (b"rightmiddlecurlybrace\0", 0x8b0),
+    (b"topleftsummation\0", 0x8b1),
+    (b"botleftsummation\0", 0x8b2),
+    (b"topvertsummationconnector\0", 0x8b3),
+    (b"botvertsummationconnector\0", 0x8b4),
+    (b"toprightsummation\0", 0x8b5),
+    (b"botrightsummation\0", 0x8b6),
+    (b"rightmiddlesummation\0", 0x8b7),
+    (b"lessthanequal\0", 0x8bc),
+    (b"notequal\0", 0x8bd),
+    (b"greaterthanequal\0", 0x8be),
+    (b"integral\0", 0x8bf),
+    (b"therefore\0", 0x8c0),
+    (b"variation\0", 0x8c1),
+    (b"infinity\0", 0x8c2),
+    (b"nabla\0", 0x8c5),
+    (b"approximate\0", 0x8c8),
+    (b"similarequal\0", 0x8c9),
+    (b"ifonlyif\0", 0x8cd),
+    (b"implies\0", 0x8ce),
+    (b"identical\0", 0x8cf),
+    (b"radical\0", 0x8d6),
+    (b"includedin\0", 0x8da),
+    (b"includes\0", 0x8db),
+    (b"intersection\0", 0x8dc),
+    (b"union\0", 0x8dd),
+    (b"logicaland\0", 0x8de),
+    (b"logicalor\0", 0x8df),
+    (b"partialderivative\0", 0x8ef),
+    (b"function\0", 0x8f6),
+    (b"leftarrow\0", 0x8fb),
+    (b"uparrow\0", 0x8fc),
+    (b"rightarrow\0", 0x8fd),
+    (b"downarrow\0", 0x8fe),
+    (b"blank\0", 0x9df),
+    (b"soliddiamond\0", 0x9e0),
+    (b"checkerboard\0", 0x9e1),
+    (b"ht\0", 0x9e2),
+    (b"ff\0", 0x9e3),
+    (b"cr\0", 0x9e4),
+    (b"lf\0", 0x9e5),
+    (b"nl\0", 0x9e8),
+    (b"vt\0", 0x9e9),
+    (b"lowrightcorner\0", 0x9ea),
+    (b"uprightcorner\0", 0x9eb),
+    (b"upleftcorner\0", 0x9ec),
+    (b"lowleftcorner\0", 0x9ed),
+    (b"crossinglines\0", 0x9ee),
+    (b"horizlinescan1\0", 0x9ef),
+    (b"horizlinescan3\0", 0x9f0),
+    (b"horizlinescan5\0", 0x9f1),
+    (b"horizlinescan7\0", 0x9f2),
+    (b"horizlinescan9\0", 0x9f3),
+    (b"leftt\0", 0x9f4),
+    (b"rightt\0", 0x9f5),
+    (b"bott\0", 0x9f6),
+    (b"topt\0", 0x9f7),
+    (b"vertbar\0", 0x9f8),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -849,6 +925,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(ARABIC_KEY_NAMES)
         .chain(CYRILLIC_KEY_NAMES)
         .chain(GREEK_KEY_NAMES)
+        .chain(TECHNICAL_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -864,6 +941,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(ARABIC_KEY_NAMES)
         .chain(CYRILLIC_KEY_NAMES)
         .chain(GREEK_KEY_NAMES)
+        .chain(TECHNICAL_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

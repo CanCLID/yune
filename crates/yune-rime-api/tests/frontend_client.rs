@@ -10,8 +10,8 @@ use std::{
 
 use yune_rime_api::{
     rime_get_api, RimeCandidate, RimeCandidateListIterator, RimeCommit, RimeComposition,
-    RimeConfig, RimeConfigIterator, RimeContext, RimeCustomApi, RimeMenu, RimeModule,
-    RimeSchemaList, RimeSessionId, RimeStatus, RimeTraits, FALSE, TRUE,
+    RimeConfig, RimeConfigIterator, RimeContext, RimeCustomApi, RimeLeversApi, RimeMenu,
+    RimeModule, RimeSchemaList, RimeSessionId, RimeStatus, RimeTraits, FALSE, TRUE,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -309,6 +309,141 @@ conditions:
     assert!(unsafe { find_module(missing_module.as_ptr()) }.is_null());
     assert_eq!(unsafe { register_module(ptr::null_mut()) }, FALSE);
     assert!(unsafe { find_module(ptr::null()) }.is_null());
+
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn frontend_style_api_table_can_use_builtin_levers_module() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let find_module = api.find_module.expect("frontend requires find_module");
+
+    let root = unique_temp_dir("builtin-levers");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("default.yaml"),
+        "\
+schema_list:
+  - schema: luna_pinyin
+  - schema: cangjie5
+",
+    )
+    .expect("default config should be written");
+    fs::write(
+        shared.join("luna_pinyin.schema.yaml"),
+        "\
+schema:
+  schema_id: luna_pinyin
+  name: Luna Pinyin
+  version: '1.0'
+  author:
+    - Author One
+    - Author Two
+  description: Sample schema
+",
+    )
+    .expect("luna schema config should be written");
+    fs::write(
+        shared.join("cangjie5.schema.yaml"),
+        "schema:\n  schema_id: cangjie5\n  name: Cangjie 5\n",
+    )
+    .expect("cangjie schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { setup(&traits) };
+
+    let levers_name = CString::new("levers").expect("module name should be valid");
+    let module = unsafe { find_module(levers_name.as_ptr()) };
+    assert!(!module.is_null());
+    let module = unsafe { &*module };
+    let get_api = module.get_api.expect("levers module should expose get_api");
+    let levers_api = get_api().cast::<RimeLeversApi>();
+    assert!(!levers_api.is_null());
+    let levers_api = unsafe { &*levers_api };
+    assert_eq!(
+        levers_api.data_size,
+        (mem::size_of::<RimeLeversApi>() - mem::size_of::<i32>()) as i32
+    );
+
+    let switcher_settings_init = levers_api
+        .switcher_settings_init
+        .expect("levers API should expose switcher settings init");
+    let get_available = levers_api
+        .get_available_schema_list
+        .expect("levers API should expose available schema list");
+    let get_selected = levers_api
+        .get_selected_schema_list
+        .expect("levers API should expose selected schema list");
+    let get_schema_author = levers_api
+        .get_schema_author
+        .expect("levers API should expose schema author getter");
+    let destroy = levers_api
+        .schema_list_destroy
+        .expect("levers API should expose schema list destroy");
+
+    let settings = switcher_settings_init();
+    assert!(!settings.is_null());
+    let mut available = empty_schema_list();
+    assert_eq!(unsafe { get_available(settings, &mut available) }, TRUE);
+    assert_eq!(available.size, 2);
+    let first_available = unsafe { *available.list };
+    assert!(!first_available.reserved.is_null());
+    assert_eq!(
+        unsafe { CStr::from_ptr(first_available.schema_id) }.to_str(),
+        Ok("cangjie5")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(first_available.name) }.to_str(),
+        Ok("Cangjie 5")
+    );
+    let second_available = unsafe { *available.list.add(1) };
+    assert_eq!(
+        unsafe { CStr::from_ptr(second_available.schema_id) }.to_str(),
+        Ok("luna_pinyin")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(second_available.name) }.to_str(),
+        Ok("Luna Pinyin")
+    );
+    let author = unsafe { get_schema_author(second_available.reserved.cast()) };
+    assert_eq!(
+        unsafe { CStr::from_ptr(author) }.to_str(),
+        Ok("Author One\nAuthor Two")
+    );
+
+    let mut selected = empty_schema_list();
+    assert_eq!(unsafe { get_selected(settings, &mut selected) }, TRUE);
+    assert_eq!(selected.size, 2);
+    let first_selected = unsafe { *selected.list };
+    assert_eq!(
+        unsafe { CStr::from_ptr(first_selected.schema_id) }.to_str(),
+        Ok("luna_pinyin")
+    );
+    assert!(first_selected.name.is_null());
+    assert!(first_selected.reserved.is_null());
+
+    unsafe { destroy(&mut selected) };
+    assert_eq!(selected.size, 0);
+    assert!(selected.list.is_null());
+    unsafe { destroy(&mut available) };
+    assert_eq!(available.size, 0);
+    assert!(available.list.is_null());
+    unsafe { drop(Box::from_raw(settings)) };
 
     let reset_traits = empty_traits();
     unsafe { setup(&reset_traits) };

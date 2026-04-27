@@ -122,6 +122,8 @@ impl SessionState {
 
 struct PunctuationProcessor {
     use_space: bool,
+    digit_separators: String,
+    digit_separator_commit: bool,
     half_shape_alternating_counts: HashMap<String, usize>,
     full_shape_alternating_counts: HashMap<String, usize>,
     symbol_alternating_counts: HashMap<String, usize>,
@@ -3652,6 +3654,15 @@ fn install_schema_punctuation_processor(session: &mut SessionState, schema_id: &
         use_space: find_config_value(&schema_config, "punctuator/use_space")
             .and_then(config_scalar_bool)
             .unwrap_or(false),
+        digit_separators: find_config_value(&schema_config, "punctuator/digit_separators")
+            .and_then(config_scalar_string)
+            .unwrap_or_else(|| ".:".to_owned()),
+        digit_separator_commit: find_config_value(
+            &schema_config,
+            "punctuator/digit_separator_action",
+        )
+        .and_then(config_scalar_string)
+        .is_some_and(|action| action == "commit"),
         half_shape_alternating_counts: punctuation_alternating_counts_from_config(
             &schema_config,
             "half_shape",
@@ -3952,6 +3963,10 @@ fn process_punctuation_processor(
     }
 
     let key = ch.to_string();
+    if let Some(result) = process_digit_separator(session, ch, &key) {
+        return Some(result);
+    }
+
     if let Some(count) = active_alternating_punct_count(session, &key) {
         let highlighted = session.engine.context().highlighted;
         let next_index = (highlighted + 1) % count;
@@ -3975,6 +3990,77 @@ fn process_punctuation_processor(
         .or_else(|| processor.symbol_unique_commits.get(&key))
         .cloned()
         .map(PunctuationProcessResult::Commit)
+}
+
+fn process_digit_separator(
+    session: &SessionState,
+    ch: char,
+    key: &str,
+) -> Option<PunctuationProcessResult> {
+    let processor = session.punctuation_processor.as_ref()?;
+    if !processor.digit_separator_commit
+        || !processor.digit_separators.contains(ch)
+        || !session.engine.context().composition.input.is_empty()
+        || !session
+            .engine
+            .context()
+            .last_commit
+            .as_deref()
+            .is_some_and(ends_with_ascii_digit)
+        || !active_punctuation_definition_exists(session, key)
+    {
+        return None;
+    }
+
+    Some(PunctuationProcessResult::Commit(
+        shape_formatted_ascii_punct(ch, session.engine.status().is_full_shape),
+    ))
+}
+
+fn active_punctuation_definition_exists(session: &SessionState, key: &str) -> bool {
+    let Some(processor) = session.punctuation_processor.as_ref() else {
+        return false;
+    };
+    let (shape_unique_commits, shape_alternating_counts, shape_pairs) =
+        if session.engine.status().is_full_shape {
+            (
+                &processor.full_shape_unique_commits,
+                &processor.full_shape_alternating_counts,
+                &processor.full_shape_pairs,
+            )
+        } else {
+            (
+                &processor.half_shape_unique_commits,
+                &processor.half_shape_alternating_counts,
+                &processor.half_shape_pairs,
+            )
+        };
+
+    shape_unique_commits.contains_key(key)
+        || shape_alternating_counts.contains_key(key)
+        || shape_pairs.contains_key(key)
+        || processor.symbol_unique_commits.contains_key(key)
+        || processor.symbol_alternating_counts.contains_key(key)
+        || processor.symbol_pairs.contains_key(key)
+}
+
+fn ends_with_ascii_digit(text: &str) -> bool {
+    text.as_bytes()
+        .last()
+        .is_some_and(|byte| byte.is_ascii_digit())
+}
+
+fn shape_formatted_ascii_punct(ch: char, full_shape: bool) -> String {
+    if !full_shape {
+        return ch.to_string();
+    }
+    match ch {
+        ' ' => "\u{3000}".to_owned(),
+        '!'..='~' => char::from_u32(ch as u32 + 0xfee0)
+            .expect("printable ASCII has a full-shape compatibility form")
+            .to_string(),
+        _ => ch.to_string(),
+    }
 }
 
 fn active_pair_commit(session: &mut SessionState, key: &str) -> Option<String> {

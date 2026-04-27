@@ -1728,6 +1728,9 @@ impl RimeTableMetadata {
             self.clear_header_list(list);
             self.pending_list_clear = None;
         }
+        if list == RimeTableHeaderList::ImportTables && parse_yaml_scalar_node(value).is_none() {
+            return;
+        }
         let value = parse_yaml_scalar(value);
         if value.is_empty() {
             return;
@@ -1747,7 +1750,8 @@ fn parse_inline_yaml_list(input: &str) -> Option<Vec<String>> {
         .map(|items| {
             items
                 .split(',')
-                .map(parse_yaml_scalar)
+                .map(str::trim)
+                .map(str::to_owned)
                 .filter(|item| !item.is_empty())
                 .collect()
         })
@@ -4961,6 +4965,56 @@ ba	吧	3
         assert_eq!(entries[0].text, "爸");
         assert_eq!(entries[1].text, "吧");
         assert_eq!(entries[2].text, "八");
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_skips_null_import_tables() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports(
+            r#"
+---
+name: primary
+version: "0.1"
+sort: original
+import_tables: [null, ~, secondary, 'null']
+...
+
+八	ba	1
+"#,
+            |name| match name {
+                "secondary" => Some(
+                    r#"
+---
+name: secondary
+version: "0.1"
+sort: original
+...
+
+吧	ba	2
+"#
+                    .to_owned(),
+                ),
+                "null" => Some(
+                    r#"
+---
+name: 'null'
+version: "0.1"
+sort: original
+...
+
+爸	ba	3
+"#
+                    .to_owned(),
+                ),
+                _ => None,
+            },
+        )
+        .expect("YAML-null import tables should be skipped like librime config nodes");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[1].text, "吧");
+        assert_eq!(entries[2].text, "爸");
     }
 
     #[test]

@@ -1882,6 +1882,114 @@ fn frontend_style_api_table_can_drive_basic_composition_flow() {
 }
 
 #[test]
+fn frontend_style_api_table_can_page_schema_dictionary_candidates() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    cleanup_all_sessions();
+
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let destroy_session = api
+        .destroy_session
+        .expect("frontend requires destroy_session");
+    let process_key = api.process_key.expect("frontend requires process_key");
+    let select_schema = api.select_schema.expect("frontend requires select_schema");
+    let get_context = api.get_context.expect("frontend requires get_context");
+    let free_context = api.free_context.expect("frontend requires free_context");
+    let get_commit = api.get_commit.expect("frontend requires get_commit");
+    let free_commit = api.free_commit.expect("frontend requires free_commit");
+    let highlight_candidate = api
+        .highlight_candidate
+        .expect("frontend requires highlight_candidate");
+    let highlight_candidate_on_current_page = api
+        .highlight_candidate_on_current_page
+        .expect("frontend requires highlight_candidate_on_current_page");
+    let change_page = api.change_page.expect("frontend requires change_page");
+    let select_candidate_on_current_page = api
+        .select_candidate_on_current_page
+        .expect("frontend requires select_candidate_on_current_page");
+
+    let root = unique_temp_dir("schema-dictionary-paging");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna.schema.yaml"),
+        "\
+schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\ntranslator:\n  dictionary: frontend\n",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("frontend.dict.yaml"),
+        "\
+---\nname: frontend\nversion: '1'\nsort: original\ncolumns:\n  - text\n  - code\n  - weight\n...\n八\tba\t10\n吧\tba\t9\n爸\tba\t8\n巴\tba\t7\n把\tba\t6\n拔\tba\t5\n",
+    )
+    .expect("dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { setup(&traits) };
+
+    let session_id = create_session();
+    assert_ne!(session_id, 0);
+    let schema_id = CString::new("luna").expect("schema id should be valid");
+    assert_eq!(
+        unsafe { select_schema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(highlight_candidate(session_id, 0), FALSE);
+    assert_eq!(process_key(session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(process_key(session_id, 'a' as i32, 0), TRUE);
+    assert_eq!(highlight_candidate(session_id, 3), TRUE);
+
+    let mut commit = empty_commit();
+    assert_eq!(unsafe { get_commit(session_id, &mut commit) }, FALSE);
+
+    let mut context = empty_context();
+    assert_eq!(unsafe { get_context(session_id, &mut context) }, TRUE);
+    assert_eq!(context.menu.page_size, 2);
+    assert_eq!(context.menu.page_no, 1);
+    assert_eq!(context.menu.highlighted_candidate_index, 1);
+    assert_eq!(context.menu.num_candidates, 2);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[1].text) }.to_str(),
+        Ok("巴")
+    );
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+
+    assert_eq!(highlight_candidate_on_current_page(session_id, 0), TRUE);
+    assert_eq!(change_page(session_id, FALSE), TRUE);
+    assert_eq!(select_candidate_on_current_page(session_id, 1), TRUE);
+    assert_eq!(unsafe { get_commit(session_id, &mut commit) }, TRUE);
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("拔"));
+    assert_eq!(unsafe { free_commit(&mut commit) }, TRUE);
+
+    assert_eq!(destroy_session(session_id), TRUE);
+    cleanup_all_sessions();
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+}
+
+#[test]
 fn frontend_style_api_table_can_simulate_key_sequences() {
     let _guard = test_guard();
     let api = rime_get_api();

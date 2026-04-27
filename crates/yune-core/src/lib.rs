@@ -1750,6 +1750,11 @@ impl Engine {
         self.refresh_candidates();
     }
 
+    pub fn reset_translators(&mut self) {
+        self.translators = vec![Box::new(EchoTranslator)];
+        self.refresh_candidates();
+    }
+
     pub fn add_ranker(&mut self, ranker: impl CandidateRanker + 'static) {
         self.rankers.push(Box::new(ranker));
         self.refresh_candidates();

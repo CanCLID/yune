@@ -10,7 +10,9 @@ use std::{
 };
 
 use serde_yaml::{Mapping, Number, Value};
-use yune_core::{parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers};
+use yune_core::{
+    parse_key_sequence, Engine, KeyCode, KeyEvent, KeyModifiers, StaticTableTranslator,
+};
 
 mod abi;
 mod config;
@@ -1953,6 +1955,8 @@ pub unsafe extern "C" fn RimeSelectSchema(
         session
             .engine
             .set_schema(schema_id.clone(), schema_name.clone());
+        session.engine.reset_translators();
+        install_schema_dictionary_translator(session, &schema_id);
         session.engine.clear_composition();
         session.input_buffer = None;
         session.unread_commit = None;
@@ -3502,6 +3506,28 @@ fn session_menu_page_size(session: &SessionState) -> usize {
     context_menu_settings(&session.engine.status().schema_id).page_size
 }
 
+fn install_schema_dictionary_translator(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    let Some(dictionary_name) = find_config_value(&schema_config, "translator/dictionary")
+        .and_then(Value::as_str)
+        .filter(|dictionary_name| !dictionary_name.is_empty())
+    else {
+        return;
+    };
+    let Some(dictionary_path) = selected_runtime_data_path(&format!("{dictionary_name}.dict.yaml"))
+    else {
+        return;
+    };
+    let Ok(dictionary_yaml) = fs::read_to_string(dictionary_path) else {
+        return;
+    };
+    let Ok(translator) = StaticTableTranslator::parse_rime_dict_yaml(&dictionary_yaml) else {
+        return;
+    };
+    session.engine.add_translator(translator);
+}
+
 fn process_session_key_event(session: &mut SessionState, key_event: KeyEvent) -> Option<String> {
     if let Some(commit) = process_alternative_select_key(session, key_event) {
         return commit;
@@ -3670,6 +3696,20 @@ fn selected_runtime_config_path(resource_id: &str, kind: ConfigOpenKind) -> Opti
                 .first()
                 .map(|root| config_file_path(root, resource_id))
         })
+}
+
+fn selected_runtime_data_path(file_name: &str) -> Option<PathBuf> {
+    let paths = runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned");
+    [
+        paths.staging_dir.to_string_lossy().into_owned(),
+        paths.prebuilt_data_dir.to_string_lossy().into_owned(),
+        paths.shared_data_dir.to_string_lossy().into_owned(),
+    ]
+    .into_iter()
+    .map(|root| Path::new(&root).join(file_name))
+    .find(|path| path.is_file())
 }
 
 fn normalize_config_resource_id(config_id: &str) -> String {

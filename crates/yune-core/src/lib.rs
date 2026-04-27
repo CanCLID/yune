@@ -850,6 +850,9 @@ impl Engine {
                 KeyCode::Character(ch) if ch == ' ' || is_printable_ascii(ch) => {
                     return self.process_char(ch);
                 }
+                KeyCode::KeypadDigit(ch) if !self.context.candidates.is_empty() => {
+                    return self.commit_candidate_at_page_index(select_index_from_digit(ch));
+                }
                 _ => {}
             }
         }
@@ -1457,6 +1460,20 @@ mod tests {
 
         let commits = engine
             .process_key_sequence("{KP_1}ba{KP_2}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, ["吧"]);
+        assert_eq!(engine.context().last_commit.as_deref(), Some("吧"));
+        assert!(!engine.status().is_composing);
+    }
+
+    #[test]
+    fn shift_keypad_numeric_selection_matches_librime_selector() {
+        let mut engine = Engine::new();
+        engine.add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+
+        let commits = engine
+            .process_key_sequence("{Shift+KP_2}ba{Shift+KP_2}")
             .expect("key sequence should parse");
 
         assert_eq!(commits, ["吧"]);

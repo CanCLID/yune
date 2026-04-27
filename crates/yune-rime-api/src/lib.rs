@@ -1618,6 +1618,7 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
                     && matches!(keycode, XK_LEFT | XK_RIGHT | XK_UP | XK_DOWN))
                 || (mask == K_SHIFT_MASK
                     && matches!(keycode, XK_KP_LEFT | XK_KP_RIGHT | XK_KP_UP | XK_KP_DOWN))
+                || (mask == K_SHIFT_MASK && (XK_KP_0..=XK_KP_9).contains(&keycode))
                 || (mask == K_SHIFT_MASK
                     && matches!(keycode, XK_HOME | XK_END | XK_KP_HOME | XK_KP_END))
                 || (mask == K_SHIFT_MASK && (0x20..=0x7e).contains(&keycode))

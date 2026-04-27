@@ -269,6 +269,12 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let f13 = CString::new("F13").expect("key name should be valid");
     let f24 = CString::new("F24").expect("key name should be valid");
     let f35 = CString::new("F35").expect("key name should be valid");
+    let shift_l = CString::new("Shift_L").expect("key name should be valid");
+    let control_r = CString::new("Control_R").expect("key name should be valid");
+    let caps_lock = CString::new("Caps_Lock").expect("key name should be valid");
+    let alt_l = CString::new("Alt_L").expect("key name should be valid");
+    let hyper_r = CString::new("Hyper_R").expect("key name should be valid");
+    let void_symbol = CString::new("VoidSymbol").expect("key name should be valid");
     let nobreakspace = CString::new("nobreakspace").expect("key name should be valid");
     let yen = CString::new("yen").expect("key name should be valid");
     let eth = CString::new("Eth").expect("key name should be valid");
@@ -428,6 +434,15 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(unsafe { RimeGetKeycodeByName(f13.as_ptr()) }, 0xffca);
     assert_eq!(unsafe { RimeGetKeycodeByName(f24.as_ptr()) }, 0xffd5);
     assert_eq!(unsafe { RimeGetKeycodeByName(f35.as_ptr()) }, 0xffe0);
+    assert_eq!(unsafe { RimeGetKeycodeByName(shift_l.as_ptr()) }, 0xffe1);
+    assert_eq!(unsafe { RimeGetKeycodeByName(control_r.as_ptr()) }, 0xffe4);
+    assert_eq!(unsafe { RimeGetKeycodeByName(caps_lock.as_ptr()) }, 0xffe5);
+    assert_eq!(unsafe { RimeGetKeycodeByName(alt_l.as_ptr()) }, 0xffe9);
+    assert_eq!(unsafe { RimeGetKeycodeByName(hyper_r.as_ptr()) }, 0xffee);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(void_symbol.as_ptr()) },
+        0x00ff_ffff
+    );
     assert_eq!(unsafe { RimeGetKeycodeByName(nobreakspace.as_ptr()) }, 0xa0);
     assert_eq!(unsafe { RimeGetKeycodeByName(yen.as_ptr()) }, 0xa5);
     assert_eq!(unsafe { RimeGetKeycodeByName(eth.as_ptr()) }, 0xd0);
@@ -777,6 +792,26 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0xffe0)).as_deref(),
         Some("F35")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xffe1)).as_deref(),
+        Some("Shift_L")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xffe4)).as_deref(),
+        Some("Control_R")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xffe5)).as_deref(),
+        Some("Caps_Lock")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xffe9)).as_deref(),
+        Some("Alt_L")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xffee)).as_deref(),
+        Some("Hyper_R")
     );
     assert_eq!(
         static_c_string(RimeGetKeyName(0xa0)).as_deref(),
@@ -1232,7 +1267,10 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
         static_c_string(RimeGetKeyName(0xfefd)).as_deref(),
         Some("Pointer_Drag5")
     );
-    assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x00ff_ffff)).as_deref(),
+        Some("VoidSymbol")
+    );
 }
 
 #[test]

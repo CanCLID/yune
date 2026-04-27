@@ -89,6 +89,20 @@ const XK_F32: c_int = 0xffdd;
 const XK_F33: c_int = 0xffde;
 const XK_F34: c_int = 0xffdf;
 const XK_F35: c_int = 0xffe0;
+const XK_SHIFT_L: c_int = 0xffe1;
+const XK_SHIFT_R: c_int = 0xffe2;
+const XK_CONTROL_L: c_int = 0xffe3;
+const XK_CONTROL_R: c_int = 0xffe4;
+const XK_CAPS_LOCK: c_int = 0xffe5;
+const XK_SHIFT_LOCK: c_int = 0xffe6;
+const XK_META_L: c_int = 0xffe7;
+const XK_META_R: c_int = 0xffe8;
+const XK_ALT_L: c_int = 0xffe9;
+const XK_ALT_R: c_int = 0xffea;
+const XK_SUPER_L: c_int = 0xffeb;
+const XK_SUPER_R: c_int = 0xffec;
+const XK_HYPER_L: c_int = 0xffed;
+const XK_HYPER_R: c_int = 0xffee;
 
 const MODIFIERS: &[(usize, &[u8])] = &[
     (0, b"Shift\0"),
@@ -197,6 +211,21 @@ const NAMED_KEYS: &[(&[u8], c_int)] = &[
     (b"F33\0", XK_F33),
     (b"F34\0", XK_F34),
     (b"F35\0", XK_F35),
+    (b"Shift_L\0", XK_SHIFT_L),
+    (b"Shift_R\0", XK_SHIFT_R),
+    (b"Control_L\0", XK_CONTROL_L),
+    (b"Control_R\0", XK_CONTROL_R),
+    (b"Caps_Lock\0", XK_CAPS_LOCK),
+    (b"Shift_Lock\0", XK_SHIFT_LOCK),
+    (b"Meta_L\0", XK_META_L),
+    (b"Meta_R\0", XK_META_R),
+    (b"Alt_L\0", XK_ALT_L),
+    (b"Alt_R\0", XK_ALT_R),
+    (b"Super_L\0", XK_SUPER_L),
+    (b"Super_R\0", XK_SUPER_R),
+    (b"Hyper_L\0", XK_HYPER_L),
+    (b"Hyper_R\0", XK_HYPER_R),
+    (b"VoidSymbol\0", XK_VOID_SYMBOL),
 ];
 
 const ASCII_KEY_NAMES: &[(&[u8], c_int)] = &[

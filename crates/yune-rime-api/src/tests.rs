@@ -6548,6 +6548,18 @@ fn iterates_candidate_list_from_current_context() {
     // SAFETY: `RimeCandidateListNext` populated a valid C string.
     let second_text = unsafe { CStr::from_ptr(iterator.candidate.text) };
     assert_eq!(second_text.to_str(), Ok("吧"));
+    // SAFETY: `iterator` remains valid and owns the current candidate.
+    assert_eq!(unsafe { RimeCandidateListNext(&mut iterator) }, TRUE);
+    // SAFETY: `RimeCandidateListNext` populated a valid C string.
+    let third_text = unsafe { CStr::from_ptr(iterator.candidate.text) };
+    assert_eq!(third_text.to_str(), Ok("ba"));
+    // SAFETY: `iterator` remains valid; librime leaves the current candidate
+    // intact when advancing beyond the final item.
+    assert_eq!(unsafe { RimeCandidateListNext(&mut iterator) }, FALSE);
+    assert_eq!(iterator.index, 3);
+    // SAFETY: the failed advance preserves the previous candidate string.
+    let preserved_text = unsafe { CStr::from_ptr(iterator.candidate.text) };
+    assert_eq!(preserved_text.to_str(), Ok("ba"));
     // SAFETY: `iterator` was initialized by this API and can be ended once.
     unsafe { RimeCandidateListEnd(&mut iterator) };
     assert!(iterator.ptr.is_null());

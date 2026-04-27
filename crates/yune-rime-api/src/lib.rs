@@ -3148,19 +3148,23 @@ pub unsafe extern "C" fn RimeCandidateListNext(iterator: *mut RimeCandidateListI
         return FALSE;
     };
 
-    // SAFETY: `iterator` is non-null and any current candidate strings were
-    // allocated by this API during an earlier successful `Next`.
-    unsafe {
-        free_candidate_fields(&mut (*iterator).candidate);
-        (*iterator).index = (*iterator).index.saturating_add(1);
-        if (*iterator).index < 0 {
-            return FALSE;
+    // SAFETY: `iterator` is non-null and points to caller-owned storage.
+    let next_index = unsafe { (*iterator).index.saturating_add(1) };
+    if next_index < 0 {
+        // SAFETY: librime still advances the iterator index on failed lookup.
+        unsafe {
+            (*iterator).index = next_index;
         }
+        return FALSE;
     }
 
-    // SAFETY: index was checked non-negative above.
-    let candidate_index = unsafe { (*iterator).index as usize };
+    let candidate_index = next_index as usize;
     let Some(candidate) = state.candidates.get(candidate_index) else {
+        // SAFETY: librime leaves the current candidate intact when advancing
+        // past the end but still exposes the advanced iterator index.
+        unsafe {
+            (*iterator).index = next_index;
+        }
         return FALSE;
     };
     let Ok(text) = CString::new(candidate.text.as_str()) else {
@@ -3176,8 +3180,11 @@ pub unsafe extern "C" fn RimeCandidateListNext(iterator: *mut RimeCandidateListI
     };
 
     // SAFETY: `iterator` is non-null and points to caller-owned writable
-    // storage; strings are now owned by the iterator until next/end.
+    // storage; existing strings were allocated by this API during an earlier
+    // successful `Next`, and new strings are owned until next/end.
     unsafe {
+        free_candidate_fields(&mut (*iterator).candidate);
+        (*iterator).index = next_index;
         (*iterator).candidate = RimeCandidate {
             text: text.into_raw(),
             comment,

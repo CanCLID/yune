@@ -1607,7 +1607,8 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
         || (mask != 0
             && !((mask == K_CONTROL_MASK
                 && matches!(keycode, XK_BACKSPACE | XK_DELETE | XK_RETURN))
-                || (mask == K_SHIFT_MASK && keycode == XK_RETURN)))
+                || (mask == K_SHIFT_MASK && keycode == XK_RETURN)
+                || (mask == (K_CONTROL_MASK | K_SHIFT_MASK) && keycode == XK_RETURN)))
     {
         return FALSE;
     }
@@ -3423,6 +3424,11 @@ fn key_event_from_rime_keycode(keycode: c_int, mask: c_int) -> Option<KeyEvent> 
         },
         K_CONTROL_MASK => KeyModifiers {
             control: true,
+            ..KeyModifiers::default()
+        },
+        combined if combined == (K_CONTROL_MASK | K_SHIFT_MASK) => KeyModifiers {
+            control: true,
+            shift: true,
             ..KeyModifiers::default()
         },
         _ => return None,

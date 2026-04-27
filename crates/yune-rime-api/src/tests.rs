@@ -7,7 +7,7 @@ use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_yaml::Value;
-use yune_core::StaticTableTranslator;
+use yune_core::{Candidate, CandidateSource, StaticTableTranslator, Translator};
 
 use super::{
     bool_from, current_log_date_marker, find_config_value, rime_get_api, RimeApi,
@@ -46,6 +46,34 @@ struct NotificationEvent {
     session_id: super::RimeSessionId,
     message_type: String,
     message_value: String,
+}
+
+struct CommentTranslator;
+
+impl Translator for CommentTranslator {
+    fn name(&self) -> &'static str {
+        "comment_translator"
+    }
+
+    fn translate(&self, input: &str) -> Vec<Candidate> {
+        if input != "ni" {
+            return Vec::new();
+        }
+        vec![
+            Candidate {
+                text: "你".to_owned(),
+                comment: "first-comment".to_owned(),
+                source: CandidateSource::Table,
+                quality: 1.0,
+            },
+            Candidate {
+                text: "呢".to_owned(),
+                comment: "second-comment".to_owned(),
+                source: CandidateSource::Table,
+                quality: 1.0,
+            },
+        ]
+    }
 }
 
 fn test_guard() -> MutexGuard<'static, ()> {
@@ -7251,6 +7279,94 @@ fn shift_return_key_commits_script_text_like_librime_fluid_editor() {
     );
     // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
     assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("ni"));
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(RimeDestroySession(sequence_session_id), TRUE);
+}
+
+#[test]
+fn control_shift_return_key_commits_selected_comment_like_librime_fluid_editor() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let return_key = CString::new("Return").expect("key name should be valid");
+    // SAFETY: key name is a valid NUL-terminated string.
+    let return_keycode = unsafe { RimeGetKeycodeByName(return_key.as_ptr()) };
+    assert_eq!(return_keycode, 0xff0d);
+    let down = CString::new("Down").expect("key name should be valid");
+    // SAFETY: key name is a valid NUL-terminated string.
+    let down_keycode = unsafe { RimeGetKeycodeByName(down.as_ptr()) };
+    assert_eq!(down_keycode, 0xff54);
+    let modifier_mask = K_CONTROL_MASK | K_SHIFT_MASK;
+
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session.engine.add_translator(CommentTranslator);
+    }
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, down_keycode, 0), TRUE);
+    assert_eq!(
+        RimeProcessKey(session_id, return_keycode, modifier_mask),
+        TRUE
+    );
+    let mut commit = RimeCommit {
+        data_size: std::mem::size_of::<RimeCommit>() as i32,
+        text: std::ptr::null_mut(),
+    };
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(
+        unsafe { CStr::from_ptr(commit.text) }.to_str(),
+        Ok("second-comment")
+    );
+    // SAFETY: commit.text was allocated by the shim above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    let input = RimeGetInput(session_id);
+    assert!(!input.is_null());
+    // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok(""));
+    assert_eq!(
+        RimeProcessKey(session_id, return_keycode, modifier_mask),
+        FALSE
+    );
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let sequence_session_id = RimeCreateSession();
+    {
+        let mut registry = super::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&sequence_session_id)
+            .expect("session should exist");
+        session.engine.add_translator(CommentTranslator);
+    }
+    let sequence =
+        CString::new("ni{Down}{Control+Shift+Return}").expect("sequence should be valid");
+    // SAFETY: sequence is a valid NUL-terminated librime-style key sequence.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(sequence_session_id, sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: commit points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeGetCommit(sequence_session_id, &mut commit) },
+        TRUE
+    );
+    // SAFETY: `RimeGetCommit` returned true and populated a valid C string.
+    assert_eq!(
+        unsafe { CStr::from_ptr(commit.text) }.to_str(),
+        Ok("second-comment")
+    );
     // SAFETY: commit.text was allocated by the shim above.
     assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
     assert_eq!(RimeDestroySession(sequence_session_id), TRUE);

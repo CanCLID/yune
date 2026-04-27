@@ -763,6 +763,11 @@ impl Engine {
     }
 
     pub fn process_key_event(&mut self, key_event: KeyEvent) -> Option<String> {
+        if is_exact_control_shift_modifier(key_event.modifiers) && key_event.code == KeyCode::Return
+        {
+            return self.commit_comment();
+        }
+
         if is_exact_shift_modifier(key_event.modifiers) && key_event.code == KeyCode::Return {
             return self.commit_script_text();
         }
@@ -1085,6 +1090,19 @@ impl Engine {
         Some(text)
     }
 
+    fn commit_comment(&mut self) -> Option<String> {
+        let text = self
+            .context
+            .candidates
+            .get(self.context.highlighted)
+            .and_then(|candidate| {
+                (!candidate.comment.is_empty()).then(|| candidate.comment.clone())
+            })?;
+        self.context.last_commit = Some(text.clone());
+        self.clear_composition();
+        Some(text)
+    }
+
     fn commit_candidate_at_page_index(&mut self, page_index: usize) -> Option<String> {
         if page_index >= DEFAULT_PAGE_SIZE {
             return None;
@@ -1143,6 +1161,17 @@ const fn is_exact_shift_modifier(modifiers: KeyModifiers) -> bool {
         && !modifiers.release
 }
 
+const fn is_exact_control_shift_modifier(modifiers: KeyModifiers) -> bool {
+    modifiers.control
+        && modifiers.shift
+        && !modifiers.lock
+        && !modifiers.alt
+        && !modifiers.super_key
+        && !modifiers.hyper
+        && !modifiers.meta
+        && !modifiers.release
+}
+
 const fn select_index_from_digit(ch: char) -> usize {
     match ch {
         '1'..='9' => ch as usize - '1' as usize,
@@ -1154,9 +1183,38 @@ const fn select_index_from_digit(ch: char) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_key_sequence, CandidateRanker, CandidateSource, Context, Engine, KeyCode,
+        parse_key_sequence, Candidate, CandidateRanker, CandidateSource, Context, Engine, KeyCode,
         MockAiRanker, PunctuationTranslator, RerankResult, StaticTableTranslator, TableDictionary,
+        Translator,
     };
+
+    struct CommentTranslator;
+
+    impl Translator for CommentTranslator {
+        fn name(&self) -> &'static str {
+            "comment_translator"
+        }
+
+        fn translate(&self, input: &str) -> Vec<Candidate> {
+            if input != "ni" {
+                return Vec::new();
+            }
+            vec![
+                Candidate {
+                    text: "你".to_owned(),
+                    comment: "first-comment".to_owned(),
+                    source: CandidateSource::Table,
+                    quality: 1.0,
+                },
+                Candidate {
+                    text: "呢".to_owned(),
+                    comment: "second-comment".to_owned(),
+                    source: CandidateSource::Table,
+                    quality: 1.0,
+                },
+            ]
+        }
+    }
 
     #[test]
     fn parses_librime_style_key_sequence_names() {
@@ -1360,6 +1418,28 @@ mod tests {
 
         let commits = engine
             .process_key_sequence("{Shift+Return}")
+            .expect("key sequence should parse");
+        assert!(commits.is_empty());
+    }
+
+    #[test]
+    fn control_shift_return_commits_selected_comment_like_librime_fluid_editor() {
+        let mut engine = Engine::new();
+        engine.add_translator(CommentTranslator);
+
+        let commits = engine
+            .process_key_sequence("ni{Down}{Control+Shift+Return}")
+            .expect("key sequence should parse");
+
+        assert_eq!(commits, vec!["second-comment"]);
+        assert_eq!(
+            engine.context().last_commit.as_deref(),
+            Some("second-comment")
+        );
+        assert!(!engine.status().is_composing);
+
+        let commits = engine
+            .process_key_sequence("{Control+Shift+Return}")
             .expect("key sequence should parse");
         assert!(commits.is_empty());
     }

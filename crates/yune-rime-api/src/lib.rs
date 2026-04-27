@@ -987,19 +987,20 @@ pub unsafe extern "C" fn RimeLeversGetSchemaFilePath(info: *mut RimeSchemaInfo) 
 ///
 /// `settings` must either be a pointer returned by `RimeSwitcherSettingsInit`
 /// or null. `schema_id_list` must point to `count` valid NUL-terminated
-/// strings when `count` is positive.
+/// strings when `count` is positive; non-positive counts select an empty list.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversSelectSchemas(
     settings: *mut RimeSwitcherSettings,
     schema_id_list: *const *const c_char,
     count: c_int,
 ) -> Bool {
-    if settings.is_null() || count < 0 || (count > 0 && schema_id_list.is_null()) {
+    if settings.is_null() || (count > 0 && schema_id_list.is_null()) {
         return FALSE;
     }
 
-    let mut selected_schema_ids = Vec::with_capacity(count as usize);
-    for index in 0..count as usize {
+    let count = usize::try_from(count).unwrap_or(0);
+    let mut selected_schema_ids = Vec::with_capacity(count);
+    for index in 0..count {
         // SAFETY: callers promise `schema_id_list` has `count` readable entries
         // when count is positive.
         let schema_id = unsafe { *schema_id_list.add(index) };

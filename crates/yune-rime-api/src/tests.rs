@@ -5269,6 +5269,28 @@ schema:
     assert!(overridden_first.reserved.is_null());
     assert!(overridden_second.name.is_null());
     assert!(overridden_second.reserved.is_null());
+
+    // SAFETY: librime's levers API treats negative counts like an empty
+    // selection because its signed loop never executes.
+    assert_eq!(
+        unsafe { select_schemas(settings, std::ptr::null(), -1) },
+        TRUE
+    );
+    let mut negative_count_selected_list = empty_schema_list();
+    // SAFETY: settings and selected list output are valid.
+    assert_eq!(
+        unsafe { get_selected(settings, &mut negative_count_selected_list) },
+        FALSE
+    );
+    assert_eq!(negative_count_selected_list.size, 0);
+    assert!(negative_count_selected_list.list.is_null());
+
+    // Restore a non-empty override before the remaining null-input checks.
+    // SAFETY: settings, schema_ids, and each C string are valid for the call.
+    assert_eq!(
+        unsafe { select_schemas(settings, schema_ids.as_ptr(), schema_ids.len() as i32) },
+        TRUE
+    );
     // SAFETY: null settings and null schema arrays are rejected.
     assert_eq!(
         unsafe { select_schemas(std::ptr::null_mut(), schema_ids.as_ptr(), 1) },

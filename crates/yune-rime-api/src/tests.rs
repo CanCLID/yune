@@ -6847,6 +6847,33 @@ fn candidate_list_can_start_from_index_and_rejects_empty_menu() {
     // SAFETY: `iterator` was initialized by this API and can be ended once.
     unsafe { RimeCandidateListEnd(&mut iterator) };
 
+    let mut negative_iterator = empty_candidate_list_iterator();
+    // SAFETY: `negative_iterator` points to valid writable storage.
+    assert_eq!(
+        unsafe { RimeCandidateListFromIndex(session_id, &mut negative_iterator, -1) },
+        TRUE
+    );
+    assert_eq!(negative_iterator.index, -2);
+    // SAFETY: `negative_iterator` was initialized by this API. librime starts
+    // one position before the requested index, so the first advance from -1
+    // fails and leaves the public index at -1.
+    assert_eq!(
+        unsafe { RimeCandidateListNext(&mut negative_iterator) },
+        FALSE
+    );
+    assert_eq!(negative_iterator.index, -1);
+    assert!(negative_iterator.candidate.text.is_null());
+    // SAFETY: the iterator remains valid after the failed negative advance.
+    assert_eq!(
+        unsafe { RimeCandidateListNext(&mut negative_iterator) },
+        TRUE
+    );
+    // SAFETY: `RimeCandidateListNext` populated a valid C string.
+    let first_text = unsafe { CStr::from_ptr(negative_iterator.candidate.text) };
+    assert_eq!(first_text.to_str(), Ok("八"));
+    // SAFETY: `negative_iterator` was initialized by this API and can be ended once.
+    unsafe { RimeCandidateListEnd(&mut negative_iterator) };
+
     assert_eq!(RimeDestroySession(session_id), TRUE);
 }
 

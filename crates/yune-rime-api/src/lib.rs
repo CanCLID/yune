@@ -128,6 +128,10 @@ struct PunctuationProcessor {
     half_shape_unique_commits: HashMap<String, String>,
     full_shape_unique_commits: HashMap<String, String>,
     symbol_unique_commits: HashMap<String, String>,
+    half_shape_pairs: HashMap<String, [String; 2]>,
+    full_shape_pairs: HashMap<String, [String; 2]>,
+    symbol_pairs: HashMap<String, [String; 2]>,
+    pair_oddness: HashMap<String, usize>,
 }
 
 enum PunctuationProcessResult {
@@ -3669,6 +3673,10 @@ fn install_schema_punctuation_processor(session: &mut SessionState, schema_id: &
             "full_shape",
         ),
         symbol_unique_commits: punctuation_unique_commits_from_config(&schema_config, "symbols"),
+        half_shape_pairs: punctuation_pairs_from_config(&schema_config, "half_shape"),
+        full_shape_pairs: punctuation_pairs_from_config(&schema_config, "full_shape"),
+        symbol_pairs: punctuation_pairs_from_config(&schema_config, "symbols"),
+        pair_oddness: HashMap::new(),
     };
     if processor.half_shape_unique_commits.is_empty()
         && processor.full_shape_unique_commits.is_empty()
@@ -3676,6 +3684,9 @@ fn install_schema_punctuation_processor(session: &mut SessionState, schema_id: &
         && processor.half_shape_alternating_counts.is_empty()
         && processor.full_shape_alternating_counts.is_empty()
         && processor.symbol_alternating_counts.is_empty()
+        && processor.half_shape_pairs.is_empty()
+        && processor.full_shape_pairs.is_empty()
+        && processor.symbol_pairs.is_empty()
     {
         return;
     }
@@ -3813,6 +3824,26 @@ fn punctuation_alternating_counts_from_config(
         .collect()
 }
 
+fn punctuation_pairs_from_config(
+    schema_config: &Value,
+    shape: &str,
+) -> HashMap<String, [String; 2]> {
+    let Some(Value::Mapping(mapping)) =
+        find_config_value(schema_config, &format!("punctuator/{shape}"))
+    else {
+        return HashMap::new();
+    };
+
+    mapping
+        .iter()
+        .filter_map(|(key, definition)| {
+            let key = config_scalar_string(key)?;
+            let pair = punctuation_pair(definition)?;
+            Some((key, pair))
+        })
+        .collect()
+}
+
 fn punctuation_unique_commit(definition: &Value) -> Option<String> {
     if let Some(text) = config_scalar_string(definition) {
         return Some(text);
@@ -3823,6 +3854,21 @@ fn punctuation_unique_commit(definition: &Value) -> Option<String> {
     mapping
         .get(Value::String("commit".to_owned()))
         .and_then(config_scalar_string)
+}
+
+fn punctuation_pair(definition: &Value) -> Option<[String; 2]> {
+    let Value::Mapping(mapping) = definition else {
+        return None;
+    };
+    let Some(Value::Sequence(pair)) = mapping.get(Value::String("pair".to_owned())) else {
+        return None;
+    };
+    if pair.len() != 2 {
+        return None;
+    }
+    let first = config_scalar_string(&pair[0])?;
+    let second = config_scalar_string(&pair[1])?;
+    Some([first, second])
 }
 
 fn append_punctuation_definition(
@@ -3913,6 +3959,10 @@ fn process_punctuation_processor(
         return Some(PunctuationProcessResult::Accepted);
     }
 
+    if let Some(commit) = active_pair_commit(session, &key) {
+        return Some(PunctuationProcessResult::Commit(commit));
+    }
+
     let processor = session.punctuation_processor.as_ref()?;
     let shape_entries = if session.engine.status().is_full_shape {
         &processor.full_shape_unique_commits
@@ -3925,6 +3975,36 @@ fn process_punctuation_processor(
         .or_else(|| processor.symbol_unique_commits.get(&key))
         .cloned()
         .map(PunctuationProcessResult::Commit)
+}
+
+fn active_pair_commit(session: &mut SessionState, key: &str) -> Option<String> {
+    let processor = session.punctuation_processor.as_mut()?;
+    let is_full_shape = session.engine.status().is_full_shape;
+    let shape_name = if is_full_shape {
+        "full_shape"
+    } else {
+        "half_shape"
+    };
+    let shape_pairs = if is_full_shape {
+        &processor.full_shape_pairs
+    } else {
+        &processor.half_shape_pairs
+    };
+    let (pair_name, pair) = shape_pairs
+        .get(key)
+        .map(|pair| (shape_name, pair))
+        .or_else(|| {
+            processor
+                .symbol_pairs
+                .get(key)
+                .map(|pair| ("symbols", pair))
+        })?;
+
+    let oddness_key = format!("{pair_name}:{key}");
+    let oddness = processor.pair_oddness.entry(oddness_key).or_insert(0);
+    let commit = pair[*oddness % 2].clone();
+    *oddness = 1 - (*oddness % 2);
+    Some(commit)
 }
 
 fn active_alternating_punct_count(session: &SessionState, key: &str) -> Option<usize> {

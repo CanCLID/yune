@@ -1753,12 +1753,10 @@ fn parse_inline_yaml_list(input: &str) -> Option<Vec<String>> {
         .strip_prefix('[')
         .and_then(|items| items.strip_suffix(']'))
         .map(|items| {
-            items
-                .split(',')
-                .map(str::trim)
-                .map(str::to_owned)
-                .filter(|item| !item.is_empty())
-                .collect()
+            if items.trim().is_empty() {
+                return Vec::new();
+            }
+            items.split(',').map(str::trim).map(str::to_owned).collect()
         })
 }
 
@@ -4930,6 +4928,29 @@ ignored	八	ba	ignored	10
 "#,
         )
         .expect("YAML-null column items should still occupy a column position");
+
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[0].code, "ba");
+        assert_eq!(entries[0].weight, 10.0);
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_inline_null_column_items_as_placeholders() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: inline_null_column_item_sample
+version: "0.1"
+sort: original
+columns: [, text, code, '', weight]
+...
+
+ignored	八	ba	ignored	10
+"#,
+        )
+        .expect("inline YAML-null column items should still occupy column positions");
 
         let entries = dictionary.entries();
         assert_eq!(entries.len(), 1);

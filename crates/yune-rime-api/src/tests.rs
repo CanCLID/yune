@@ -233,6 +233,13 @@ fn empty_traits() -> RimeTraits {
     }
 }
 
+fn traits_data_size_before_prebuilt_data_dir() -> i32 {
+    let traits = empty_traits();
+    let base = &traits as *const RimeTraits as usize;
+    let member = std::ptr::addr_of!(traits.prebuilt_data_dir) as usize;
+    (member - base - std::mem::size_of::<i32>()) as i32
+}
+
 fn config_string(config: &mut RimeConfig, key: &str) -> Option<String> {
     let key = CString::new(key).expect("key should be valid");
     let mut buffer = [0 as c_char; 128];
@@ -3024,6 +3031,47 @@ fn setup_and_initialize_expose_runtime_metadata_paths() {
     assert_eq!(prebuilt_dir.to_str(), Ok("/tmp/yune-prebuilt"));
 
     RimeFinalize();
+}
+
+#[test]
+fn setup_respects_rime_traits_data_size_for_newer_path_fields() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let shared = CString::new("/tmp/yune-shared-old-traits").expect("path should be valid");
+    let user = CString::new("/tmp/yune-user-old-traits").expect("path should be valid");
+    let prebuilt = CString::new("/tmp/yune-prebuilt-ignored").expect("path should be valid");
+    let staging = CString::new("/tmp/yune-staging-ignored").expect("path should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared.as_ptr();
+    traits.user_data_dir = user.as_ptr();
+    traits.prebuilt_data_dir = prebuilt.as_ptr();
+    traits.staging_dir = staging.as_ptr();
+    traits.data_size = traits_data_size_before_prebuilt_data_dir();
+
+    // SAFETY: traits points to valid storage and all strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    // SAFETY: runtime path getters return stable process-owned C strings.
+    let shared_dir = unsafe { CStr::from_ptr(RimeGetSharedDataDir()) };
+    assert_eq!(shared_dir.to_str(), Ok("/tmp/yune-shared-old-traits"));
+    // SAFETY: runtime path getters return stable process-owned C strings.
+    let user_dir = unsafe { CStr::from_ptr(RimeGetUserDataDir()) };
+    assert_eq!(user_dir.to_str(), Ok("/tmp/yune-user-old-traits"));
+    // SAFETY: `prebuilt_data_dir` was outside `data_size`, so librime derives
+    // it from the provided shared data directory.
+    let prebuilt_dir = unsafe { CStr::from_ptr(RimeGetPrebuiltDataDir()) };
+    assert_eq!(
+        prebuilt_dir.to_str(),
+        Ok("/tmp/yune-shared-old-traits/build")
+    );
+    // SAFETY: `staging_dir` was outside `data_size`, so librime derives it
+    // from the provided user data directory.
+    let staging_dir = unsafe { CStr::from_ptr(RimeGetStagingDir()) };
+    assert_eq!(staging_dir.to_str(), Ok("/tmp/yune-user-old-traits/build"));
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
 }
 
 #[test]

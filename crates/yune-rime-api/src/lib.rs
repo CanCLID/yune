@@ -213,23 +213,38 @@ impl RuntimePaths {
             return None;
         }
 
-        // SAFETY: callers promise that `traits`, when non-null, points to a
-        // valid `RimeTraits` object whose optional C strings are NUL-terminated.
-        let traits = unsafe { &*traits };
-        let shared_data_dir =
-            optional_c_string(traits.shared_data_dir).unwrap_or_else(|| ".".to_owned());
-        let user_data_dir =
-            optional_c_string(traits.user_data_dir).unwrap_or_else(|| ".".to_owned());
-        let prebuilt_data_dir = optional_c_string(traits.prebuilt_data_dir)
-            .unwrap_or_else(|| path_join(&shared_data_dir, "build"));
-        let staging_dir = optional_c_string(traits.staging_dir)
+        // SAFETY: callers promise that `traits`, when non-null, points to at
+        // least the leading `data_size` field of a `RimeTraits` object.
+        let data_size = unsafe { (*traits).data_size };
+        let provided_string = |member: *const *const c_char| {
+            if rime_struct_has_member(traits, data_size, member) {
+                // SAFETY: the field is covered by `data_size`; callers promise
+                // that provided non-null strings are NUL-terminated.
+                unsafe { optional_c_string(*member) }
+            } else {
+                None
+            }
+        };
+
+        let shared_data_dir = provided_string(unsafe { ptr::addr_of!((*traits).shared_data_dir) })
+            .unwrap_or_else(|| ".".to_owned());
+        let user_data_dir = provided_string(unsafe { ptr::addr_of!((*traits).user_data_dir) })
+            .unwrap_or_else(|| ".".to_owned());
+        let prebuilt_data_dir =
+            provided_string(unsafe { ptr::addr_of!((*traits).prebuilt_data_dir) })
+                .unwrap_or_else(|| path_join(&shared_data_dir, "build"));
+        let staging_dir = provided_string(unsafe { ptr::addr_of!((*traits).staging_dir) })
             .unwrap_or_else(|| path_join(&user_data_dir, "build"));
         let distribution_code_name =
-            optional_c_string(traits.distribution_code_name).unwrap_or_default();
+            provided_string(unsafe { ptr::addr_of!((*traits).distribution_code_name) })
+                .unwrap_or_default();
         let distribution_version =
-            optional_c_string(traits.distribution_version).unwrap_or_default();
-        let app_name = optional_c_string(traits.app_name).unwrap_or_default();
-        let log_dir = optional_c_string(traits.log_dir).unwrap_or_default();
+            provided_string(unsafe { ptr::addr_of!((*traits).distribution_version) })
+                .unwrap_or_default();
+        let app_name =
+            provided_string(unsafe { ptr::addr_of!((*traits).app_name) }).unwrap_or_default();
+        let log_dir =
+            provided_string(unsafe { ptr::addr_of!((*traits).log_dir) }).unwrap_or_default();
         let installation = read_installation_settings(&user_data_dir);
         let sync_dir = if let Some(sync_dir) = installation.sync_dir {
             sync_dir

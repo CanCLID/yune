@@ -381,6 +381,15 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let ibm_3270_erase_input = CString::new("3270_EraseInput").expect("key name should be valid");
     let ibm_3270_cursor_blink = CString::new("3270_CursorBlink").expect("key name should be valid");
     let ibm_3270_enter = CString::new("3270_Enter").expect("key name should be valid");
+    let iso_lock = CString::new("ISO_Lock").expect("key name should be valid");
+    let iso_level3_shift = CString::new("ISO_Level3_Shift").expect("key name should be valid");
+    let iso_level5_shift = CString::new("ISO_Level5_Shift").expect("key name should be valid");
+    let iso_last_group_lock =
+        CString::new("ISO_Last_Group_Lock").expect("key name should be valid");
+    let iso_left_tab = CString::new("ISO_Left_Tab").expect("key name should be valid");
+    let iso_fast_cursor_down =
+        CString::new("ISO_Fast_Cursor_Down").expect("key name should be valid");
+    let iso_enter = CString::new("ISO_Enter").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -623,6 +632,28 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
         unsafe { RimeGetKeycodeByName(ibm_3270_enter.as_ptr()) },
         0xfd1e
     );
+    assert_eq!(unsafe { RimeGetKeycodeByName(iso_lock.as_ptr()) }, 0xfe01);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(iso_level3_shift.as_ptr()) },
+        0xfe03
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(iso_level5_shift.as_ptr()) },
+        0x00ff_ffff
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(iso_last_group_lock.as_ptr()) },
+        0xfe0f
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(iso_left_tab.as_ptr()) },
+        0xfe20
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(iso_fast_cursor_down.as_ptr()) },
+        0xfe2f
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(iso_enter.as_ptr()) }, 0xfe34);
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
         0x00ff_ffff
@@ -1051,6 +1082,31 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0xfd1e)).as_deref(),
         Some("3270_Enter")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe01)).as_deref(),
+        Some("ISO_Lock")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe03)).as_deref(),
+        Some("ISO_Level3_Shift")
+    );
+    assert_eq!(static_c_string(RimeGetKeyName(0xfe11)), None);
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe0f)).as_deref(),
+        Some("ISO_Last_Group_Lock")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe20)).as_deref(),
+        Some("ISO_Left_Tab")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe2f)).as_deref(),
+        Some("ISO_Fast_Cursor_Down")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0xfe34)).as_deref(),
+        Some("ISO_Enter")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

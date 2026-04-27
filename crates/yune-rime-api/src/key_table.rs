@@ -1245,6 +1245,45 @@ const IBM_3270_KEY_NAMES: &[(&[u8], c_int)] = &[
     (b"3270_Enter\0", 0xfd1e),
 ];
 
+const ISO_KEY_NAMES: &[(&[u8], c_int)] = &[
+    (b"ISO_Lock\0", 0xfe01),
+    (b"ISO_Level2_Latch\0", 0xfe02),
+    (b"ISO_Level3_Shift\0", 0xfe03),
+    (b"ISO_Level3_Latch\0", 0xfe04),
+    (b"ISO_Level3_Lock\0", 0xfe05),
+    (b"ISO_Group_Latch\0", 0xfe06),
+    (b"ISO_Group_Lock\0", 0xfe07),
+    (b"ISO_Next_Group\0", 0xfe08),
+    (b"ISO_Next_Group_Lock\0", 0xfe09),
+    (b"ISO_Prev_Group\0", 0xfe0a),
+    (b"ISO_Prev_Group_Lock\0", 0xfe0b),
+    (b"ISO_First_Group\0", 0xfe0c),
+    (b"ISO_First_Group_Lock\0", 0xfe0d),
+    (b"ISO_Last_Group\0", 0xfe0e),
+    (b"ISO_Last_Group_Lock\0", 0xfe0f),
+    (b"ISO_Left_Tab\0", 0xfe20),
+    (b"ISO_Move_Line_Up\0", 0xfe21),
+    (b"ISO_Move_Line_Down\0", 0xfe22),
+    (b"ISO_Partial_Line_Up\0", 0xfe23),
+    (b"ISO_Partial_Line_Down\0", 0xfe24),
+    (b"ISO_Partial_Space_Left\0", 0xfe25),
+    (b"ISO_Partial_Space_Right\0", 0xfe26),
+    (b"ISO_Set_Margin_Left\0", 0xfe27),
+    (b"ISO_Set_Margin_Right\0", 0xfe28),
+    (b"ISO_Release_Margin_Left\0", 0xfe29),
+    (b"ISO_Release_Margin_Right\0", 0xfe2a),
+    (b"ISO_Release_Both_Margins\0", 0xfe2b),
+    (b"ISO_Fast_Cursor_Left\0", 0xfe2c),
+    (b"ISO_Fast_Cursor_Right\0", 0xfe2d),
+    (b"ISO_Fast_Cursor_Up\0", 0xfe2e),
+    (b"ISO_Fast_Cursor_Down\0", 0xfe2f),
+    (b"ISO_Continuous_Underline\0", 0xfe30),
+    (b"ISO_Discontinuous_Underline\0", 0xfe31),
+    (b"ISO_Emphasize\0", 0xfe32),
+    (b"ISO_Center_Object\0", 0xfe33),
+    (b"ISO_Enter\0", 0xfe34),
+];
+
 /// Returns the librime modifier bit mask for a modifier name.
 ///
 /// # Safety
@@ -1312,6 +1351,7 @@ fn lookup_keycode(name: &[u8]) -> Option<c_int> {
         .chain(HANGUL_KEY_NAMES)
         .chain(LATIN9_CURRENCY_KEY_NAMES)
         .chain(IBM_3270_KEY_NAMES)
+        .chain(ISO_KEY_NAMES)
         .find_map(|(key_name, keycode)| (name == *key_name).then_some(*keycode))
 }
 
@@ -1334,6 +1374,7 @@ fn lookup_key_name(keycode: c_int) -> Option<&'static [u8]> {
         .chain(HANGUL_KEY_NAMES)
         .chain(LATIN9_CURRENCY_KEY_NAMES)
         .chain(IBM_3270_KEY_NAMES)
+        .chain(ISO_KEY_NAMES)
         .find_map(|(name, candidate_keycode)| (*candidate_keycode == keycode).then_some(*name))
 }
 

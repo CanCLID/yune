@@ -59,6 +59,7 @@ pub enum KeyCode {
     Character(char),
     KeypadDigit(char),
     Tab,
+    Ignored,
     Backspace,
     Delete,
     Escape,
@@ -217,6 +218,7 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
     let code = match name {
         "space" => KeyCode::Character(' '),
         "Tab" => KeyCode::Tab,
+        "Linefeed" | "Clear" | "Pause" | "Scroll_Lock" | "Sys_Req" => KeyCode::Ignored,
         "BackSpace" => KeyCode::Backspace,
         "Delete" => KeyCode::Delete,
         "Escape" => KeyCode::Escape,
@@ -923,6 +925,7 @@ impl Engine {
             }
             KeyCode::KeypadDigit(_) => None,
             KeyCode::Tab => None,
+            KeyCode::Ignored => None,
             KeyCode::Backspace => self.backspace(),
             KeyCode::Delete => self.delete_at_caret(),
             KeyCode::Escape => {
@@ -1446,6 +1449,16 @@ mod tests {
 
         assert_eq!(keys[0].code, KeyCode::Character('{'));
         assert_eq!(keys[1].code, KeyCode::Character('}'));
+    }
+
+    #[test]
+    fn parses_librime_known_noop_key_names() {
+        let keys = parse_key_sequence("{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}")
+            .expect("key sequence should parse");
+
+        assert_eq!(keys.len(), 5);
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys.iter().all(|key| key.modifiers.is_empty()));
     }
 
     #[test]

@@ -11673,6 +11673,8 @@ fn simulates_librime_style_key_sequences() {
     }
     let sequence = CString::new("ni{space}").expect("key sequence should be valid");
     let noop_named_sequence = CString::new("{Tab}").expect("key sequence should be valid");
+    let noop_control_sequence = CString::new("{Linefeed}{Clear}{Pause}{Scroll_Lock}{Sys_Req}")
+        .expect("key sequence should be valid");
     let invalid_sequence =
         CString::new("x{Unknown}").expect("key sequence should be valid C string");
     let mut commit = RimeCommit {
@@ -11702,6 +11704,19 @@ fn simulates_librime_style_key_sequences() {
     );
     // SAFETY: Tab is a parsed no-op and should leave the context empty after
     // the previous commit.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: noop_control_sequence is a valid C string; librime parses these
+    // adjacent key-table names even when the engine ignores their events.
+    assert_eq!(
+        unsafe { RimeSimulateKeySequence(session_id, noop_control_sequence.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: ignored named keys should leave the context empty.
     assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
     assert_eq!(context.composition.length, 0);
     assert_eq!(context.menu.num_candidates, 0);

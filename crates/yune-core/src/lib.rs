@@ -241,7 +241,8 @@ fn key_code_from_name(name: &str) -> Result<KeyCode, KeySequenceParseError> {
             || is_librime_arabic_key_name(name)
             || is_librime_cyrillic_key_name(name)
             || is_librime_greek_key_name(name)
-            || is_librime_technical_key_name(name) =>
+            || is_librime_technical_key_name(name)
+            || is_librime_publishing_key_name(name) =>
         {
             KeyCode::Ignored
         }
@@ -1127,6 +1128,114 @@ fn is_librime_technical_key_name(name: &str) -> bool {
             | "bott"
             | "topt"
             | "vertbar"
+    )
+}
+
+fn is_librime_publishing_key_name(name: &str) -> bool {
+    matches!(
+        name,
+        "emspace"
+            | "enspace"
+            | "em3space"
+            | "em4space"
+            | "digitspace"
+            | "punctspace"
+            | "thinspace"
+            | "hairspace"
+            | "emdash"
+            | "endash"
+            | "signifblank"
+            | "ellipsis"
+            | "doubbaselinedot"
+            | "onethird"
+            | "twothirds"
+            | "onefifth"
+            | "twofifths"
+            | "threefifths"
+            | "fourfifths"
+            | "onesixth"
+            | "fivesixths"
+            | "careof"
+            | "figdash"
+            | "leftanglebracket"
+            | "decimalpoint"
+            | "rightanglebracket"
+            | "marker"
+            | "oneeighth"
+            | "threeeighths"
+            | "fiveeighths"
+            | "seveneighths"
+            | "trademark"
+            | "signaturemark"
+            | "trademarkincircle"
+            | "leftopentriangle"
+            | "rightopentriangle"
+            | "emopencircle"
+            | "emopenrectangle"
+            | "leftsinglequotemark"
+            | "rightsinglequotemark"
+            | "leftdoublequotemark"
+            | "rightdoublequotemark"
+            | "prescription"
+            | "minutes"
+            | "seconds"
+            | "latincross"
+            | "hexagram"
+            | "filledrectbullet"
+            | "filledlefttribullet"
+            | "filledrighttribullet"
+            | "emfilledcircle"
+            | "emfilledrect"
+            | "enopencircbullet"
+            | "enopensquarebullet"
+            | "openrectbullet"
+            | "opentribulletup"
+            | "opentribulletdown"
+            | "openstar"
+            | "enfilledcircbullet"
+            | "enfilledsqbullet"
+            | "filledtribulletup"
+            | "filledtribulletdown"
+            | "leftpointer"
+            | "rightpointer"
+            | "club"
+            | "diamond"
+            | "heart"
+            | "maltesecross"
+            | "dagger"
+            | "doubledagger"
+            | "checkmark"
+            | "ballotcross"
+            | "musicalsharp"
+            | "musicalflat"
+            | "malesymbol"
+            | "femalesymbol"
+            | "telephone"
+            | "telephonerecorder"
+            | "phonographcopyright"
+            | "caret"
+            | "singlelowquotemark"
+            | "doublelowquotemark"
+            | "cursor"
+            | "leftcaret"
+            | "rightcaret"
+            | "downcaret"
+            | "upcaret"
+            | "overbar"
+            | "downtack"
+            | "upshoe"
+            | "downstile"
+            | "underbar"
+            | "jot"
+            | "quad"
+            | "uptack"
+            | "circle"
+            | "upstile"
+            | "downshoe"
+            | "rightshoe"
+            | "leftshoe"
+            | "lefttack"
+            | "righttack"
     )
 }
 
@@ -3291,6 +3400,126 @@ mod tests {
             "bott",
             "topt",
             "Release+vertbar",
+        ];
+        let sequence = names
+            .iter()
+            .map(|name| format!("{{{name}}}"))
+            .collect::<String>();
+        let keys = parse_key_sequence(&sequence).expect("key sequence should parse");
+
+        assert_eq!(keys.len(), names.len());
+        assert!(keys.iter().all(|key| key.code == KeyCode::Ignored));
+        assert!(keys[..names.len() - 1]
+            .iter()
+            .all(|key| key.modifiers.is_empty()));
+        assert!(keys[names.len() - 1].modifiers.release);
+    }
+
+    #[test]
+    fn parses_librime_publishing_noop_key_names() {
+        let names = [
+            "emspace",
+            "enspace",
+            "em3space",
+            "em4space",
+            "digitspace",
+            "punctspace",
+            "thinspace",
+            "hairspace",
+            "emdash",
+            "endash",
+            "signifblank",
+            "ellipsis",
+            "doubbaselinedot",
+            "onethird",
+            "twothirds",
+            "onefifth",
+            "twofifths",
+            "threefifths",
+            "fourfifths",
+            "onesixth",
+            "fivesixths",
+            "careof",
+            "figdash",
+            "leftanglebracket",
+            "decimalpoint",
+            "rightanglebracket",
+            "marker",
+            "oneeighth",
+            "threeeighths",
+            "fiveeighths",
+            "seveneighths",
+            "trademark",
+            "signaturemark",
+            "trademarkincircle",
+            "leftopentriangle",
+            "rightopentriangle",
+            "emopencircle",
+            "emopenrectangle",
+            "leftsinglequotemark",
+            "rightsinglequotemark",
+            "leftdoublequotemark",
+            "rightdoublequotemark",
+            "prescription",
+            "minutes",
+            "seconds",
+            "latincross",
+            "hexagram",
+            "filledrectbullet",
+            "filledlefttribullet",
+            "filledrighttribullet",
+            "emfilledcircle",
+            "emfilledrect",
+            "enopencircbullet",
+            "enopensquarebullet",
+            "openrectbullet",
+            "opentribulletup",
+            "opentribulletdown",
+            "openstar",
+            "enfilledcircbullet",
+            "enfilledsqbullet",
+            "filledtribulletup",
+            "filledtribulletdown",
+            "leftpointer",
+            "rightpointer",
+            "club",
+            "diamond",
+            "heart",
+            "maltesecross",
+            "dagger",
+            "doubledagger",
+            "checkmark",
+            "ballotcross",
+            "musicalsharp",
+            "musicalflat",
+            "malesymbol",
+            "femalesymbol",
+            "telephone",
+            "telephonerecorder",
+            "phonographcopyright",
+            "caret",
+            "singlelowquotemark",
+            "doublelowquotemark",
+            "cursor",
+            "leftcaret",
+            "rightcaret",
+            "downcaret",
+            "upcaret",
+            "overbar",
+            "downtack",
+            "upshoe",
+            "downstile",
+            "underbar",
+            "jot",
+            "quad",
+            "uptack",
+            "circle",
+            "upstile",
+            "downshoe",
+            "rightshoe",
+            "leftshoe",
+            "lefttack",
+            "Release+righttack",
         ];
         let sequence = names
             .iter()

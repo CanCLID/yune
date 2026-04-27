@@ -14,6 +14,8 @@ use yune_rime_api::{
     RimeModule, RimeSchemaList, RimeSessionId, RimeStatus, RimeTraits, FALSE, TRUE,
 };
 
+use serde_yaml::Value;
+
 #[derive(Debug, PartialEq, Eq)]
 struct NotificationEvent {
     context_object: usize,
@@ -108,6 +110,10 @@ fn empty_config() -> RimeConfig {
     RimeConfig {
         ptr: ptr::null_mut(),
     }
+}
+
+fn yaml_mapping_value<'a>(mapping: &'a serde_yaml::Mapping, key: &str) -> Option<&'a Value> {
+    mapping.get(Value::String(key.to_owned()))
 }
 
 fn empty_config_iterator() -> RimeConfigIterator {
@@ -445,6 +451,213 @@ schema:
     assert!(available.list.is_null());
     unsafe { drop(Box::from_raw(settings)) };
 
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn frontend_style_api_table_can_customize_levers_settings() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let find_module = api.find_module.expect("frontend requires find_module");
+    let config_get_int = api
+        .config_get_int
+        .expect("frontend requires config_get_int");
+    let config_get_string = api
+        .config_get_string
+        .expect("frontend requires config_get_string");
+    let config_load_string = api
+        .config_load_string
+        .expect("frontend requires config_load_string");
+    let config_close = api.config_close.expect("frontend requires config_close");
+
+    let root = unique_temp_dir("levers-custom-settings");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna_pinyin.schema.yaml"),
+        "\
+schema:
+  schema_id: luna_pinyin
+  name: Luna Pinyin
+menu:
+  page_size: 5
+",
+    )
+    .expect("schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    traits.distribution_code_name = c"frontend_dist".as_ptr();
+    traits.distribution_version = c"2026.04".as_ptr();
+    unsafe { setup(&traits) };
+
+    let levers_name = CString::new("levers").expect("module name should be valid");
+    let module = unsafe { find_module(levers_name.as_ptr()) };
+    assert!(!module.is_null());
+    let module = unsafe { &*module };
+    let get_api = module.get_api.expect("levers module should expose get_api");
+    let levers_api = get_api().cast::<RimeLeversApi>();
+    assert!(!levers_api.is_null());
+    let levers_api = unsafe { &*levers_api };
+
+    let custom_settings_init = levers_api
+        .custom_settings_init
+        .expect("levers API should expose custom settings init");
+    let custom_settings_destroy = levers_api
+        .custom_settings_destroy
+        .expect("levers API should expose custom settings destroy");
+    let load_settings = levers_api
+        .load_settings
+        .expect("levers API should expose load settings");
+    let save_settings = levers_api
+        .save_settings
+        .expect("levers API should expose save settings");
+    let customize_bool = levers_api
+        .customize_bool
+        .expect("levers API should expose bool customization");
+    let customize_int = levers_api
+        .customize_int
+        .expect("levers API should expose int customization");
+    let customize_string = levers_api
+        .customize_string
+        .expect("levers API should expose string customization");
+    let customize_item = levers_api
+        .customize_item
+        .expect("levers API should expose item customization");
+    let is_first_run = levers_api
+        .is_first_run
+        .expect("levers API should expose first-run state");
+    let settings_is_modified = levers_api
+        .settings_is_modified
+        .expect("levers API should expose modified state");
+    let settings_get_config = levers_api
+        .settings_get_config
+        .expect("levers API should expose deployed config access");
+
+    let config_id = CString::new("luna_pinyin.schema").expect("config id should be valid");
+    let generator = CString::new("frontend-client").expect("generator should be valid");
+    let settings = unsafe { custom_settings_init(config_id.as_ptr(), generator.as_ptr()) };
+    assert!(!settings.is_null());
+
+    assert_eq!(unsafe { load_settings(settings) }, FALSE);
+    assert_eq!(unsafe { is_first_run(settings) }, TRUE);
+    assert_eq!(unsafe { settings_is_modified(settings) }, FALSE);
+
+    let mut loaded_config = empty_config();
+    assert_eq!(
+        unsafe { settings_get_config(settings, &mut loaded_config) },
+        TRUE
+    );
+    let schema_name_key = CString::new("schema/name").expect("config key should be valid");
+    let page_size_key = CString::new("menu/page_size").expect("config key should be valid");
+    let mut string_output = [0 as c_char; 64];
+    assert_eq!(
+        unsafe {
+            config_get_string(
+                &mut loaded_config,
+                schema_name_key.as_ptr(),
+                string_output.as_mut_ptr(),
+                string_output.len(),
+            )
+        },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(string_output.as_ptr()) }.to_str(),
+        Ok("Luna Pinyin")
+    );
+    let mut int_output = 0;
+    assert_eq!(
+        unsafe { config_get_int(&mut loaded_config, page_size_key.as_ptr(), &mut int_output) },
+        TRUE
+    );
+    assert_eq!(int_output, 5);
+
+    let bool_key = CString::new("switches/@0/reset").expect("custom key should be valid");
+    let int_key = CString::new("menu/page_size").expect("custom key should be valid");
+    let string_key = CString::new("schema/name").expect("custom key should be valid");
+    let string_value = CString::new("Frontend Luna").expect("custom value should be valid");
+    assert_eq!(
+        unsafe { customize_bool(settings, bool_key.as_ptr(), TRUE) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { customize_int(settings, int_key.as_ptr(), 9) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { customize_string(settings, string_key.as_ptr(), string_value.as_ptr()) },
+        TRUE
+    );
+
+    let mut hotkey_config = empty_config();
+    let hotkey_yaml = CString::new("- Control+grave\n- F4\n").expect("yaml should be valid");
+    assert_eq!(
+        unsafe { config_load_string(&mut hotkey_config, hotkey_yaml.as_ptr()) },
+        TRUE
+    );
+    let hotkey_key = CString::new("switcher/hotkeys").expect("custom key should be valid");
+    assert_eq!(
+        unsafe { customize_item(settings, hotkey_key.as_ptr(), &mut hotkey_config) },
+        TRUE
+    );
+    assert_eq!(unsafe { settings_is_modified(settings) }, TRUE);
+    assert_eq!(unsafe { save_settings(settings) }, TRUE);
+    assert_eq!(unsafe { settings_is_modified(settings) }, FALSE);
+    assert_eq!(unsafe { save_settings(settings) }, FALSE);
+    assert_eq!(unsafe { is_first_run(settings) }, FALSE);
+
+    let saved = fs::read_to_string(user.join("luna_pinyin.custom.yaml"))
+        .expect("custom settings should be saved without .schema suffix");
+    let saved_root: Value = serde_yaml::from_str(&saved).expect("custom settings should parse");
+    let patch = saved_root
+        .get("patch")
+        .and_then(Value::as_mapping)
+        .expect("patch map should be present");
+    assert_eq!(
+        yaml_mapping_value(patch, "switches/@0/reset").and_then(Value::as_bool),
+        Some(true)
+    );
+    assert_eq!(
+        yaml_mapping_value(patch, "menu/page_size").and_then(Value::as_i64),
+        Some(9)
+    );
+    assert_eq!(
+        yaml_mapping_value(patch, "schema/name").and_then(Value::as_str),
+        Some("Frontend Luna")
+    );
+    assert!(matches!(
+        yaml_mapping_value(patch, "switcher/hotkeys"),
+        Some(Value::Sequence(values)) if values.len() == 2
+    ));
+    let customization = saved_root
+        .get("customization")
+        .and_then(Value::as_mapping)
+        .expect("customization signature should be present");
+    assert_eq!(
+        yaml_mapping_value(customization, "generator").and_then(Value::as_str),
+        Some("frontend-client")
+    );
+    assert_eq!(
+        yaml_mapping_value(customization, "distribution_code_name").and_then(Value::as_str),
+        Some("frontend_dist")
+    );
+
+    assert_eq!(unsafe { config_close(&mut loaded_config) }, TRUE);
+    assert_eq!(unsafe { config_close(&mut hotkey_config) }, TRUE);
+    unsafe { custom_settings_destroy(settings) };
     let reset_traits = empty_traits();
     unsafe { setup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");

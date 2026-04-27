@@ -6058,6 +6058,13 @@ fn list_index_for_write(segment: &str, current: &Value) -> Option<(usize, bool)>
 
 fn list_index(segment: &str, len: usize) -> Option<(usize, bool)> {
     let mut rest = segment.strip_prefix('@')?;
+    if !rest
+        .as_bytes()
+        .first()
+        .is_some_and(u8::is_ascii_alphanumeric)
+    {
+        return None;
+    }
     let mut index = 0usize;
     let mut insert = false;
 
@@ -6077,30 +6084,20 @@ fn list_index(segment: &str, len: usize) -> Option<(usize, bool)> {
         rest = after_space;
     }
 
-    if let Some(after_last) = rest.strip_prefix("last") {
-        rest = after_last;
+    if rest.strip_prefix("last").is_some() {
         index = index.checked_add(len)?;
         index = index.saturating_sub(1);
-    } else if rest.is_empty() {
-        if !segment.starts_with("@next")
-            && !segment.starts_with("@before")
-            && !segment.starts_with("@after")
-        {
-            return None;
-        }
     } else {
         let digits_len = rest
             .bytes()
             .take_while(|byte| byte.is_ascii_digit())
             .count();
-        if digits_len == 0 {
-            return None;
+        if digits_len > 0 {
+            index = index.checked_add(rest[..digits_len].parse::<usize>().ok()?)?;
         }
-        index = index.checked_add(rest[..digits_len].parse::<usize>().ok()?)?;
-        rest = &rest[digits_len..];
     }
 
-    rest.is_empty().then_some((index, insert))
+    Some((index, insert))
 }
 
 fn is_list_item_reference(segment: &str) -> bool {
@@ -7376,6 +7373,60 @@ hex: '0x10'\nflag: 'FALSE'\ndecimal: '42'\nfloating: '1.5'\nnative_bool: true\nn
             TRUE
         );
         assert_eq!(output, 6);
+
+        assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+    }
+
+    #[test]
+    fn config_list_references_follow_librime_strtoul_parsing() {
+        let _guard = test_guard();
+        let mut config = empty_config();
+        let first_id = CString::new("list/@0/id").expect("key should be valid");
+        let second_id = CString::new("list/@1/id").expect("key should be valid");
+        let malformed_first = CString::new("list/@bogus/id").expect("key should be valid");
+        let trailing_first = CString::new("list/@0bogus/id").expect("key should be valid");
+        let trailing_after = CString::new("list/@after bogus/id").expect("key should be valid");
+        let last_with_suffix = CString::new("list/@last bogus/id").expect("key should be valid");
+        let list_value = CString::new("list/@/id").expect("key should be valid");
+        let id = CString::new("id").expect("value should be valid");
+        let mut output = 0;
+
+        assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, first_id.as_ptr(), 10) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, second_id.as_ptr(), 20) },
+            TRUE
+        );
+
+        for path in [&malformed_first, &trailing_first] {
+            assert_eq!(
+                unsafe { RimeConfigGetInt(&mut config, path.as_ptr(), &mut output) },
+                TRUE
+            );
+            assert_eq!(output, 10);
+        }
+        assert_eq!(
+            unsafe { RimeConfigSetInt(&mut config, trailing_after.as_ptr(), 30) },
+            TRUE
+        );
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, second_id.as_ptr(), &mut output) },
+            TRUE
+        );
+        assert_eq!(output, 30);
+        assert_eq!(
+            unsafe { RimeConfigGetInt(&mut config, last_with_suffix.as_ptr(), &mut output) },
+            TRUE
+        );
+        assert_eq!(output, 20);
+
+        assert_eq!(
+            unsafe { RimeConfigSetString(&mut config, list_value.as_ptr(), id.as_ptr()) },
+            FALSE
+        );
 
         assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
     }

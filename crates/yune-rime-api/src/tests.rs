@@ -297,6 +297,21 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     let arabic_ha = CString::new("Arabic_ha").expect("key name should be valid");
     let arabic_heh = CString::new("Arabic_heh").expect("key name should be valid");
     let arabic_sukun = CString::new("Arabic_sukun").expect("key name should be valid");
+    let serbian_dje = CString::new("Serbian_dje").expect("key name should be valid");
+    let ukrainian_ie = CString::new("Ukrainian_ie").expect("key name should be valid");
+    let ukranian_je = CString::new("Ukranian_je").expect("key name should be valid");
+    let cyrillic_je = CString::new("Cyrillic_je").expect("key name should be valid");
+    let serbian_je = CString::new("Serbian_je").expect("key name should be valid");
+    let byelorussian_shortu =
+        CString::new("Byelorussian_shortu").expect("key name should be valid");
+    let cyrillic_dzhe = CString::new("Cyrillic_dzhe").expect("key name should be valid");
+    let serbian_dze = CString::new("Serbian_dze").expect("key name should be valid");
+    let cyrillic_yu = CString::new("Cyrillic_yu").expect("key name should be valid");
+    let cyrillic_ha = CString::new("Cyrillic_ha").expect("key name should be valid");
+    let cyrillic_hardsign = CString::new("Cyrillic_hardsign").expect("key name should be valid");
+    let cyrillic_yu_upper = CString::new("Cyrillic_YU").expect("key name should be valid");
+    let cyrillic_hardsign_upper =
+        CString::new("Cyrillic_HARDSIGN").expect("key name should be valid");
     let missing = CString::new("NoSuchKey").expect("key name should be valid");
 
     assert_eq!(unsafe { RimeGetKeycodeByName(space.as_ptr()) }, 0x20);
@@ -362,6 +377,37 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         unsafe { RimeGetKeycodeByName(arabic_sukun.as_ptr()) },
         0x5f2
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(serbian_dje.as_ptr()) }, 0x6a1);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(ukrainian_ie.as_ptr()) },
+        0x6a4
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(ukranian_je.as_ptr()) }, 0x6a4);
+    assert_eq!(unsafe { RimeGetKeycodeByName(cyrillic_je.as_ptr()) }, 0x6a8);
+    assert_eq!(unsafe { RimeGetKeycodeByName(serbian_je.as_ptr()) }, 0x6a8);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(byelorussian_shortu.as_ptr()) },
+        0x6ae
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(cyrillic_dzhe.as_ptr()) },
+        0x6af
+    );
+    assert_eq!(unsafe { RimeGetKeycodeByName(serbian_dze.as_ptr()) }, 0x6af);
+    assert_eq!(unsafe { RimeGetKeycodeByName(cyrillic_yu.as_ptr()) }, 0x6c0);
+    assert_eq!(unsafe { RimeGetKeycodeByName(cyrillic_ha.as_ptr()) }, 0x6c8);
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(cyrillic_hardsign.as_ptr()) },
+        0x6df
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(cyrillic_yu_upper.as_ptr()) },
+        0x6e0
+    );
+    assert_eq!(
+        unsafe { RimeGetKeycodeByName(cyrillic_hardsign_upper.as_ptr()) },
+        0x6ff
     );
     assert_eq!(
         unsafe { RimeGetKeycodeByName(missing.as_ptr()) },
@@ -523,6 +569,42 @@ fn key_table_exposes_librime_style_modifier_and_key_name_lookup() {
     assert_eq!(
         static_c_string(RimeGetKeyName(0x5f2)).as_deref(),
         Some("Arabic_sukun")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6a1)).as_deref(),
+        Some("Serbian_dje")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6a4)).as_deref(),
+        Some("Ukrainian_ie")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6a8)).as_deref(),
+        Some("Cyrillic_je")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6ae)).as_deref(),
+        Some("Byelorussian_shortu")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6af)).as_deref(),
+        Some("Cyrillic_dzhe")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6c0)).as_deref(),
+        Some("Cyrillic_yu")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6df)).as_deref(),
+        Some("Cyrillic_hardsign")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6e0)).as_deref(),
+        Some("Cyrillic_YU")
+    );
+    assert_eq!(
+        static_c_string(RimeGetKeyName(0x6ff)).as_deref(),
+        Some("Cyrillic_HARDSIGN")
     );
     assert_eq!(static_c_string(RimeGetKeyName(0x00ff_ffff)), None);
 }

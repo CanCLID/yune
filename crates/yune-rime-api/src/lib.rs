@@ -476,6 +476,14 @@ unsafe fn levers_schema_info_ptr(
     getter(info).unwrap_or(ptr::null())
 }
 
+fn non_empty_cstring_ptr(value: &CString) -> Option<*const c_char> {
+    if value.as_bytes().is_empty() {
+        None
+    } else {
+        Some(value.as_ptr())
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rime_get_api() -> *mut RimeApi {
     api_entry()
@@ -902,7 +910,7 @@ pub unsafe extern "C" fn RimeLeversGetSelectedSchemaList(
 /// schema-list item's `reserved` field while that list is still alive.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversGetSchemaId(info: *mut RimeSchemaInfo) -> *const c_char {
-    unsafe { levers_schema_info_ptr(info, |info| Some(info.schema_id.as_ptr())) }
+    unsafe { levers_schema_info_ptr(info, |info| non_empty_cstring_ptr(&info.schema_id)) }
 }
 
 /// Returns the schema name from a levers schema-info pointer.
@@ -912,7 +920,7 @@ pub unsafe extern "C" fn RimeLeversGetSchemaId(info: *mut RimeSchemaInfo) -> *co
 /// `info` follows the same lifetime rules as `RimeLeversGetSchemaId`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversGetSchemaName(info: *mut RimeSchemaInfo) -> *const c_char {
-    unsafe { levers_schema_info_ptr(info, |info| Some(info.name.as_ptr())) }
+    unsafe { levers_schema_info_ptr(info, |info| non_empty_cstring_ptr(&info.name)) }
 }
 
 /// Returns the schema version from a levers schema-info pointer.
@@ -924,7 +932,7 @@ pub unsafe extern "C" fn RimeLeversGetSchemaName(info: *mut RimeSchemaInfo) -> *
 pub unsafe extern "C" fn RimeLeversGetSchemaVersion(info: *mut RimeSchemaInfo) -> *const c_char {
     unsafe {
         levers_schema_info_ptr(info, |info| {
-            info.version.as_ref().map(|value| value.as_ptr())
+            info.version.as_ref().and_then(non_empty_cstring_ptr)
         })
     }
 }
@@ -938,7 +946,7 @@ pub unsafe extern "C" fn RimeLeversGetSchemaVersion(info: *mut RimeSchemaInfo) -
 pub unsafe extern "C" fn RimeLeversGetSchemaAuthor(info: *mut RimeSchemaInfo) -> *const c_char {
     unsafe {
         levers_schema_info_ptr(info, |info| {
-            info.author.as_ref().map(|value| value.as_ptr())
+            info.author.as_ref().and_then(non_empty_cstring_ptr)
         })
     }
 }
@@ -954,7 +962,7 @@ pub unsafe extern "C" fn RimeLeversGetSchemaDescription(
 ) -> *const c_char {
     unsafe {
         levers_schema_info_ptr(info, |info| {
-            info.description.as_ref().map(|value| value.as_ptr())
+            info.description.as_ref().and_then(non_empty_cstring_ptr)
         })
     }
 }
@@ -968,7 +976,7 @@ pub unsafe extern "C" fn RimeLeversGetSchemaDescription(
 pub unsafe extern "C" fn RimeLeversGetSchemaFilePath(info: *mut RimeSchemaInfo) -> *const c_char {
     unsafe {
         levers_schema_info_ptr(info, |info| {
-            info.file_path.as_ref().map(|value| value.as_ptr())
+            info.file_path.as_ref().and_then(non_empty_cstring_ptr)
         })
     }
 }

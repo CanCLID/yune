@@ -5022,6 +5022,8 @@ schema:
 schema:
   schema_id: terra_pinyin
   name: Terra Pinyin
+  version: ''
+  description: ''
 ",
     )
     .expect("user schema config should be written");
@@ -5165,6 +5167,12 @@ schema:
         file_path.to_string_lossy(),
         shared.join("luna_pinyin.schema.yaml").to_string_lossy()
     );
+    let user_schema_info = user_item.reserved.cast();
+    // SAFETY: empty optional schema metadata should be exposed as null, matching
+    // librime's schema-info getters.
+    assert!(unsafe { get_schema_version(user_schema_info) }.is_null());
+    // SAFETY: same as above.
+    assert!(unsafe { get_schema_description(user_schema_info) }.is_null());
     // SAFETY: null schema info is explicitly rejected.
     assert!(unsafe { get_schema_id(std::ptr::null_mut()) }.is_null());
 

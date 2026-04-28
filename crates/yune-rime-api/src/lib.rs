@@ -7504,7 +7504,7 @@ fn switch_state_label(
         let Value::Mapping(switch_map) = the_switch else {
             continue;
         };
-        if switch_string_field(switch_map, "name").is_some_and(|name| name == option_name) {
+        if switch_scalar_field(switch_map, "name").is_some_and(|name| name == option_name) {
             return label_from_switch(switch_map, usize::from(state), abbreviated);
         }
 
@@ -7515,7 +7515,7 @@ fn switch_state_label(
             continue;
         };
         for (option_index, option) in options.iter().enumerate() {
-            if matches!(option, Value::String(name) if name == option_name) {
+            if config_scalar_string(option).is_some_and(|name| name == option_name) {
                 return state
                     .then(|| label_from_switch(switch_map, option_index, abbreviated))
                     .flatten();
@@ -7523,12 +7523,6 @@ fn switch_state_label(
         }
     }
     None
-}
-
-fn switch_string_field<'a>(switch_map: &'a Mapping, key: &str) -> Option<&'a str> {
-    switch_map
-        .get(Value::String(key.to_owned()))
-        .and_then(Value::as_str)
 }
 
 fn label_from_switch(
@@ -7562,7 +7556,7 @@ fn label_list_value(switch_map: &Mapping, key: &str, state_index: usize) -> Opti
     let Value::Sequence(values) = switch_map.get(Value::String(key.to_owned()))? else {
         return None;
     };
-    values.get(state_index)?.as_str().map(ToOwned::to_owned)
+    values.get(state_index).and_then(config_scalar_string)
 }
 
 fn first_unicode_byte_length(value: &str) -> usize {

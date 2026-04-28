@@ -2436,11 +2436,22 @@ fn state_label_apis_read_selected_schema_switches() {
     fs::create_dir_all(&shared).expect("shared dir should be created");
     fs::create_dir_all(&staging).expect("staging dir should be created");
     fs::write(
-            staging.join("luna.schema.yaml"),
-            "\
-switches:\n  - name: ascii_mode\n    states: [Native, Ascii]\n    abbrev: [N, A]\n  - options: [simplification, traditional]\n    states: [简体, 繁體]\n",
-        )
-        .expect("schema config should be written");
+        staging.join("luna.schema.yaml"),
+        "\
+switches:
+  - name: ascii_mode
+    states: [Native, Ascii]
+    abbrev: [N, A]
+  - name: full_shape
+    states: [0, 1]
+    abbrev: [H, true]
+  - options: [simplification, traditional]
+    states: [简体, 繁體]
+  - options: [0, 1]
+    states: [Zero, One]
+",
+    )
+    .expect("schema config should be written");
 
     let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
     let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
@@ -2453,7 +2464,9 @@ switches:\n  - name: ascii_mode\n    states: [Native, Ascii]\n    abbrev: [N, A]
     let session_id = RimeCreateSession();
     let schema_id = CString::new("luna").expect("schema id should be valid");
     let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
+    let full_shape = CString::new("full_shape").expect("option name should be valid");
     let simplification = CString::new("simplification").expect("option name should be valid");
+    let numeric_option = CString::new("1").expect("option name should be valid");
     let missing = CString::new("missing").expect("option name should be valid");
     // SAFETY: schema id is a valid NUL-terminated string.
     assert_eq!(
@@ -2476,6 +2489,23 @@ switches:\n  - name: ascii_mode\n    states: [Native, Ascii]\n    abbrev: [N, A]
     assert_eq!(unsafe { CStr::from_ptr(abbreviated.str) }.to_str(), Ok("A"));
 
     // SAFETY: option names are valid NUL-terminated strings.
+    let scalar_state = unsafe { RimeGetStateLabel(session_id, full_shape.as_ptr(), TRUE) };
+    assert!(!scalar_state.is_null());
+    // SAFETY: non-null state-label pointers are process-owned C strings.
+    assert_eq!(unsafe { CStr::from_ptr(scalar_state) }.to_str(), Ok("1"));
+
+    // SAFETY: option names are valid NUL-terminated strings.
+    let scalar_abbrev =
+        unsafe { RimeGetStateLabelAbbreviated(session_id, full_shape.as_ptr(), TRUE, TRUE) };
+    assert_eq!(scalar_abbrev.length, "true".len());
+    assert!(!scalar_abbrev.str.is_null());
+    // SAFETY: non-null state-label pointers are process-owned C strings.
+    assert_eq!(
+        unsafe { CStr::from_ptr(scalar_abbrev.str) }.to_str(),
+        Ok("true")
+    );
+
+    // SAFETY: option names are valid NUL-terminated strings.
     let radio =
         unsafe { RimeGetStateLabelAbbreviated(session_id, simplification.as_ptr(), TRUE, TRUE) };
     assert_eq!(radio.length, "简".len());
@@ -2483,6 +2513,17 @@ switches:\n  - name: ascii_mode\n    states: [Native, Ascii]\n    abbrev: [N, A]
     // first UTF-8 scalar value.
     let radio_slice = unsafe { std::slice::from_raw_parts(radio.str.cast::<u8>(), radio.length) };
     assert_eq!(std::str::from_utf8(radio_slice), Ok("简"));
+
+    // SAFETY: option names are valid NUL-terminated strings.
+    let scalar_radio =
+        unsafe { RimeGetStateLabelAbbreviated(session_id, numeric_option.as_ptr(), TRUE, FALSE) };
+    assert_eq!(scalar_radio.length, "One".len());
+    assert!(!scalar_radio.str.is_null());
+    // SAFETY: non-null state-label pointers are process-owned C strings.
+    assert_eq!(
+        unsafe { CStr::from_ptr(scalar_radio.str) }.to_str(),
+        Ok("One")
+    );
 
     // SAFETY: option names are valid NUL-terminated strings.
     let hidden_radio =

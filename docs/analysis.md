@@ -94,8 +94,9 @@ The strongest compatibility progress is currently in two areas:
   `auto_select` exact-table unique-candidate commits and
   `auto_select_pattern` gating, and focused previous-match auto-commit reuse
   with `express_editor`, plus focused `speller/algebra` lookup expansion for
-  common `xform`/`derive` spelling rules and librime-style credibility
-  penalties for generated `fuzz`, `abbrev`, and correction spellings. The
+  `xlit`, `xform`, `erase`, and `derive` spelling rules and librime-style
+  credibility penalties for generated `fuzz`, `abbrev`, and correction
+  spellings. The
   current `schema_list_translator`
   coverage includes
   current-schema-first ordering, selection commands, access-time recency sorting,
@@ -182,7 +183,8 @@ not just missing tests:
 - Existing schema-loaded translator/filter support is intentionally partial.
   Areas such as full spelling algebra, full OpenCC data and conversion chains,
   distribution-scale schema chains, full spelling algebra beyond the current
-  focused lookup expansion and generated-spelling ranking penalties, and
+  focused lookup-side `xlit`/`xform`/`erase`/`derive` expansion and
+  generated-spelling ranking penalties, and
   compiled-data interactions still need direct
   comparison against librime behavior.
 - Dictionary compatibility currently focuses on source `.dict.yaml` loading.

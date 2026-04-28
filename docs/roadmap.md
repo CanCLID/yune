@@ -98,11 +98,12 @@
   max-code-length preselection before the next initial, focused `auto_select`
   exact-table unique-candidate commits, focused `auto_select_pattern` gating,
   focused previous-match auto-commit reuse with `express_editor`, focused
-  `speller/algebra` lookup expansion for common `xform`/`derive` spelling
-  rules plus generated-spelling credibility penalties for `fuzz`, `abbrev`, and
-  correction formulas, focused `selector` raw-segment exclusion for candidate
-  selection, focused layout-sensitive selector arrow/page bindings for linear and vertical
-  candidate lists, focused schema-configured selector binding overrides,
+  `speller/algebra` lookup expansion for `xlit`, `xform`, `erase`, and
+  `derive` spelling rules plus generated-spelling credibility penalties for
+  `fuzz`, `abbrev`, and correction formulas, focused `selector` raw-segment
+  exclusion for candidate selection, focused layout-sensitive selector
+  arrow/page bindings for linear and vertical candidate lists, focused
+  schema-configured selector binding overrides,
   focused schema-configured `navigator` binding overrides, focused
   `navigator/syllable_jump_position` delimiter stops, and delimiter-derived
   navigator syllable loop/no-loop boundary behavior, focused `express_editor`
@@ -174,9 +175,9 @@
   `punct_segmentor` behavior such as segment-order interactions and
   `punct_number` translation through larger chains beyond the focused
   digit-separator path, deeper multi-segment `fallback_segmentor` behavior, full
-  spelling algebra beyond the current focused lookup expansion and generated
-  spelling ranking penalties, full OpenCC
-  conversion data, and larger real-world
+  spelling algebra beyond the current focused lookup-side
+  `xlit`/`xform`/`erase`/`derive` expansion and generated spelling ranking
+  penalties, full OpenCC conversion data, and larger real-world
   processor/segmentor/translator/filter chains from distribution schemas.
 - Expand dictionary compatibility beyond source `.dict.yaml` parsing toward
   librime's compiled `.table.bin`, `.prism.bin`, `.reverse.bin`, pack

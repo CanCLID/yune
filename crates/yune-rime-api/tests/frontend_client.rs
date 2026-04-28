@@ -3108,13 +3108,13 @@ fn frontend_style_schema_speller_algebra_expands_table_lookup_spellings() {
     fs::write(
         staging.join("algebra.schema.yaml"),
         "\
-schema:\n  schema_id: algebra\n  name: Algebra\nengine:\n  processors:\n    - speller\n  translators:\n    - table_translator\nspeller:\n  alphabet: begilnpuv\n  algebra:\n    - xform/^lue$/lve/\n    - derive/^nv$/nu/\n    - fuzz/^bing$/pin/\ntranslator:\n  dictionary: algebra\n  enable_completion: false\n  enable_sentence: false\n",
+schema:\n  schema_id: algebra\n  name: Algebra\nengine:\n  processors:\n    - speller\n  translators:\n    - table_translator\nspeller:\n  alphabet: abcdegilnopuvxyz\n  algebra:\n    - xlit/zyx/abc/\n    - xform/^lue$/lve/\n    - derive/^nv$/nu/\n    - fuzz/^bing$/pin/\n    - erase/^gone$/\ntranslator:\n  dictionary: algebra\n  enable_completion: false\n  enable_sentence: false\n",
     )
     .expect("schema config should be written");
     fs::write(
         shared.join("algebra.dict.yaml"),
         "\
----\nname: algebra\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nlue\t略\t1\nnv\t女\t1\nbing\t病\t1\npin\t平\t1\n",
+---\nname: algebra\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nlue\t略\t1\nnv\t女\t1\nbing\t病\t1\npin\t平\t1\nzyx\t照\t1\ngone\t删\t1\n",
     )
     .expect("dictionary should be written");
 
@@ -3210,6 +3210,57 @@ schema:\n  schema_id: algebra\n  name: Algebra\nengine:\n  processors:\n    - sp
     );
     assert_eq!(unsafe { free_context(&mut context) }, TRUE);
     assert_eq!(destroy_session(pin_session_id), TRUE);
+
+    let abc_session_id = create_session();
+    assert_ne!(abc_session_id, 0);
+    assert_eq!(
+        unsafe { select_schema(abc_session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    for ch in "abc".chars() {
+        assert_eq!(process_key(abc_session_id, ch as i32, 0), TRUE);
+    }
+    let mut context = empty_context();
+    assert_eq!(unsafe { get_context(abc_session_id, &mut context) }, TRUE);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[0].text) }.to_str(),
+        Ok("照")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[0].comment) }.to_str(),
+        Ok("zyx")
+    );
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+    assert_eq!(destroy_session(abc_session_id), TRUE);
+
+    let gone_session_id = create_session();
+    assert_ne!(gone_session_id, 0);
+    assert_eq!(
+        unsafe { select_schema(gone_session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    for ch in "gone".chars() {
+        assert_eq!(process_key(gone_session_id, ch as i32, 0), TRUE);
+    }
+    let mut context = empty_context();
+    assert_eq!(unsafe { get_context(gone_session_id, &mut context) }, TRUE);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    assert!(candidates
+        .iter()
+        .all(|candidate| unsafe { CStr::from_ptr(candidate.text).to_str() != Ok("删") }));
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+    assert_eq!(destroy_session(gone_session_id), TRUE);
 
     cleanup_all_sessions();
     let reset_traits = empty_traits();

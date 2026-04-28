@@ -8487,15 +8487,19 @@ sort: original
 平	pin	0
 长	chang	0
 错	cuo	0
+照	zyx	0
+删	gone	0
 "#,
         )
         .expect("dictionary should parse");
         let formulas = vec![
+            "xlit/zyx/abc/".to_owned(),
             "xform/^lue$/lve/".to_owned(),
             "derive/^nv$/nu/".to_owned(),
             "fuzz/^bing$/pin/".to_owned(),
             "abbrev/^chang$/c/".to_owned(),
             "derive/^cuo$/cu/correction".to_owned(),
+            "erase/^gone$/".to_owned(),
         ];
         let translator =
             StaticTableTranslator::from_dictionary(dictionary).with_spelling_algebra(&formulas);
@@ -8534,6 +8538,12 @@ sort: original
         let correction = translator.translate("cu");
         assert_eq!(correction[0].text, "错");
         assert!((correction[0].quality - 0.01).abs() < 0.000_001);
+
+        let transliterated = translator.translate("abc");
+        assert_eq!(transliterated[0].text, "照");
+        assert_eq!(transliterated[0].comment, "zyx");
+        assert_eq!(translator.translate("zyx").len(), 0);
+        assert_eq!(translator.translate("gone").len(), 0);
     }
 
     #[test]

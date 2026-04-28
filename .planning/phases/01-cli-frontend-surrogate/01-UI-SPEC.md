@@ -135,9 +135,12 @@ Separation rules:
 Top-level JSON output for deterministic transcript comparison must include, in this order:
 1. `schema_id`
 2. `sequence` or transcript source identifier
-3. `commits`
-4. `context`
-5. `status`
+3. `events`
+4. `commits`
+5. `context`
+6. `status`
+
+`events` records per-key ABI-visible state for replay comparison. `commits`, `context`, and `status` summarize the final state after the event stream so scripts can compare both transition-level and final state data.
 
 `context` must include, in this order:
 1. `input`

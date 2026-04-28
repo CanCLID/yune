@@ -311,17 +311,15 @@ finalize();
 |---|-------|---------|---------------|
 | None | No assumed claims were needed. | N/A | N/A |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **What exact command surface should the ABI-backed surrogate expose?**
-   - What we know: the planner is allowed to choose exact subcommand names and flag spelling as long as the phase decisions remain true [VERIFIED: .planning/phases/01-cli-frontend-surrogate/01-CONTEXT.md].
-   - What’s unclear: whether deploy/select should be defaults inside a convenience command or explicit subcommands.
-   - Recommendation: decide this in planning only if it affects testability or transcript determinism; otherwise keep the surface minimal [VERIFIED: .planning/phases/01-cli-frontend-surrogate/01-CONTEXT.md].
+1. **RESOLVED: What exact command surface should the ABI-backed surrogate expose?**
+   - Resolution: use an explicit ABI-backed frontend command path while retaining existing core-backed `run`/`check` behavior. The planner may choose exact names, but the planned surface uses separate frontend execution and frontend fixture-check paths so deploy/select/runtime inputs stay deterministic [VERIFIED: .planning/phases/01-cli-frontend-surrogate/01-CONTEXT.md; .planning/phases/01-cli-frontend-surrogate/01-01-PLAN.md; .planning/phases/01-cli-frontend-surrogate/01-02-PLAN.md].
+   - Outcome: deploy/select may be part of the frontend lifecycle or an explicit subcommand, but every deterministic run must accept explicit runtime directories and must not rely on hidden process-global defaults.
 
-2. **Should replay mode print human output as well as JSON?**
-   - What we know: rendering and deterministic serialization must stay separate [VERIFIED: .planning/phases/01-cli-frontend-surrogate/01-CONTEXT.md].
-   - What’s unclear: whether a single run should emit both streams or one stream at a time.
-   - Recommendation: keep the comparison contract JSON-only and let human rendering be a separate command/path if needed [VERIFIED: .planning/phases/01-cli-frontend-surrogate/01-CONTEXT.md; crates/yune-cli/src/render.rs; crates/yune-cli/src/transcript.rs].
+2. **RESOLVED: Should replay mode print human output as well as JSON?**
+   - Resolution: deterministic replay comparison is JSON-only on stdout; human-readable rendering is a separate output mode/path that consumes the same owned frontend event data [VERIFIED: .planning/phases/01-cli-frontend-surrogate/01-CONTEXT.md; .planning/phases/01-cli-frontend-surrogate/01-UI-SPEC.md; .planning/phases/01-cli-frontend-surrogate/01-02-PLAN.md].
+   - Outcome: successful machine-readable commands emit only JSON to stdout, and successful human-readable commands emit only plain transcript text to stdout. No single successful deterministic fixture path mixes both streams.
 
 ## Environment Availability
 

@@ -15,9 +15,10 @@ use std::{
 use regex::Regex;
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
-    parse_key_sequence, CharsetFilter, Engine, HistoryTranslator, KeyCode, KeyEvent, KeyModifiers,
-    PunctuationTranslator, ReverseLookupFilter, ReverseLookupTranslator, SimplifierFilter,
-    SingleCharFilter, StaticTableTranslator, TableDictionary, TaggedFilter, UniquifierFilter,
+    parse_key_sequence, CandidateSource, CharsetFilter, Engine, HistoryTranslator, KeyCode,
+    KeyEvent, KeyModifiers, PunctuationTranslator, ReverseLookupFilter, ReverseLookupTranslator,
+    SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator,
+    SwitchTranslatorSwitch, TableDictionary, TaggedFilter, UniquifierFilter,
 };
 
 mod abi;
@@ -196,6 +197,15 @@ struct KeyBindingSwitchOption {
 enum KeyBindingSwitchTarget {
     Toggle(String),
     Radio(KeyBindingSwitchOption),
+}
+
+#[derive(Clone)]
+enum SwitchSelectionCommand {
+    Toggle(String),
+    Radio {
+        options: Vec<String>,
+        option_index: usize,
+    },
 }
 
 struct MatcherSegmentor {
@@ -3182,7 +3192,7 @@ pub unsafe extern "C" fn RimeSimulateKeySequence(
 
 #[no_mangle]
 pub extern "C" fn RimeSelectCandidate(session_id: RimeSessionId, index: usize) -> Bool {
-    commit_selected_candidate(session_id, |session| session.engine.select_candidate(index))
+    select_candidate_or_switch(session_id, |_session| Some(index))
 }
 
 #[no_mangle]
@@ -3190,9 +3200,8 @@ pub extern "C" fn RimeSelectCandidateOnCurrentPage(
     session_id: RimeSessionId,
     index: usize,
 ) -> Bool {
-    commit_selected_candidate(session_id, |session| {
-        let global_index = candidate_index_on_current_page(session, index)?;
-        session.engine.select_candidate(global_index)
+    select_candidate_or_switch(session_id, |session| {
+        candidate_index_on_current_page(session, index)
     })
 }
 
@@ -3781,9 +3790,9 @@ fn key_event_from_rime_keycode(keycode: c_int, mask: c_int) -> Option<KeyEvent> 
     Some(KeyEvent { code, modifiers })
 }
 
-fn commit_selected_candidate(
+fn select_candidate_or_switch(
     session_id: RimeSessionId,
-    select: impl FnOnce(&mut SessionState) -> Option<String>,
+    index: impl FnOnce(&SessionState) -> Option<usize>,
 ) -> Bool {
     if session_id == 0 {
         return FALSE;
@@ -3795,14 +3804,60 @@ fn commit_selected_candidate(
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
-    let Some(commit) = select(session) else {
+    let Some(index) = index(session) else {
         return FALSE;
     };
+    if apply_switch_candidate(session, index) {
+        session.paging = false;
+        update_session_segment_tags(session);
+        return TRUE;
+    }
 
+    let Some(commit) = session.engine.select_candidate(index) else {
+        return FALSE;
+    };
     session.paging = false;
     update_session_segment_tags(session);
     append_unread_commit(session, commit);
     TRUE
+}
+
+fn apply_switch_candidate(session: &mut SessionState, candidate_index: usize) -> bool {
+    let Some(candidate) = session.engine.context().candidates.get(candidate_index) else {
+        return false;
+    };
+    if candidate.source != CandidateSource::Switch {
+        return false;
+    }
+    let switch_index = session.engine.context().candidates[..=candidate_index]
+        .iter()
+        .filter(|candidate| candidate.source == CandidateSource::Switch)
+        .count()
+        - 1;
+    let schema_id = &session.engine.status().schema_id;
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    let Some(selection) = schema_switch_selection_commands(&schema_config)
+        .get(switch_index)
+        .cloned()
+    else {
+        return false;
+    };
+
+    match selection {
+        SwitchSelectionCommand::Toggle(option_name) => {
+            let target_state = !session.engine.get_option(&option_name);
+            session.engine.set_option(option_name, target_state);
+        }
+        SwitchSelectionCommand::Radio {
+            options,
+            option_index,
+        } => {
+            select_key_binding_radio_option(session, &options, option_index);
+        }
+    }
+    session.engine.clear_composition();
+    true
 }
 
 fn append_unread_commit(session: &mut SessionState, commit: String) {
@@ -3859,6 +3914,9 @@ fn install_schema_translator_chain(session: &mut SessionState, schema_id: &str) 
                     Some(name_space) => name_space,
                 },
             ),
+            "switch_translator" => {
+                install_schema_switch_translator_from_config(session, &schema_config);
+            }
             _ => {}
         }
     }
@@ -4003,6 +4061,16 @@ fn install_schema_history_translator_from_config(
             .with_initial_quality(initial_quality)
             .with_tag(tag),
     );
+}
+
+fn install_schema_switch_translator_from_config(session: &mut SessionState, schema_config: &Value) {
+    let switches = schema_switch_translator_switches(schema_config);
+    if switches.is_empty() {
+        return;
+    }
+    session
+        .engine
+        .add_translator(SwitchTranslator::new(switches));
 }
 
 fn install_schema_filter_chain(session: &mut SessionState, schema_id: &str) {
@@ -4785,6 +4853,97 @@ fn switch_scalar_field(switch_map: &Mapping, key: &str) -> Option<String> {
     switch_map
         .get(Value::String(key.to_owned()))
         .and_then(config_scalar_string)
+}
+
+fn schema_switch_translator_switches(schema_config: &Value) -> Vec<SwitchTranslatorSwitch> {
+    let Some(Value::Sequence(switches)) = find_config_value(schema_config, "switches") else {
+        return Vec::new();
+    };
+
+    switches
+        .iter()
+        .filter_map(|the_switch| {
+            let Value::Mapping(switch_map) = the_switch else {
+                return None;
+            };
+            if let Some(option_name) = switch_scalar_field(switch_map, "name") {
+                let state0 = switch_label_value(switch_map, "states", 0)?;
+                let state1 = switch_label_value(switch_map, "states", 1)?;
+                return Some(SwitchTranslatorSwitch::toggle(option_name, state0, state1));
+            }
+
+            let Value::Sequence(options) = switch_map.get(Value::String("options".to_owned()))?
+            else {
+                return None;
+            };
+            let options = options
+                .iter()
+                .filter_map(config_scalar_string)
+                .collect::<Vec<_>>();
+            let states = schema_switch_label_values(switch_map, "states");
+            if options.is_empty() || states.is_empty() {
+                None
+            } else {
+                Some(SwitchTranslatorSwitch::radio(options, states))
+            }
+        })
+        .collect()
+}
+
+fn schema_switch_selection_commands(schema_config: &Value) -> Vec<SwitchSelectionCommand> {
+    let Some(Value::Sequence(switches)) = find_config_value(schema_config, "switches") else {
+        return Vec::new();
+    };
+
+    let mut commands = Vec::new();
+    for the_switch in switches {
+        let Value::Mapping(switch_map) = the_switch else {
+            continue;
+        };
+        if let Some(option_name) = switch_scalar_field(switch_map, "name") {
+            if switch_label_value(switch_map, "states", 0).is_some()
+                && switch_label_value(switch_map, "states", 1).is_some()
+            {
+                commands.push(SwitchSelectionCommand::Toggle(option_name));
+            }
+            continue;
+        }
+
+        let Some(Value::Sequence(options)) = switch_map.get(Value::String("options".to_owned()))
+        else {
+            continue;
+        };
+        let options = options
+            .iter()
+            .filter_map(config_scalar_string)
+            .collect::<Vec<_>>();
+        if options.is_empty() || switch_label_value(switch_map, "states", 0).is_none() {
+            continue;
+        }
+        for option_index in 0..options.len() {
+            if switch_label_value(switch_map, "states", option_index).is_some() {
+                commands.push(SwitchSelectionCommand::Radio {
+                    options: options.clone(),
+                    option_index,
+                });
+            }
+        }
+    }
+    commands
+}
+
+fn schema_switch_label_values(switch_map: &Mapping, key: &str) -> Vec<String> {
+    let Some(Value::Sequence(values)) = switch_map.get(Value::String(key.to_owned())) else {
+        return Vec::new();
+    };
+    values.iter().filter_map(config_scalar_string).collect()
+}
+
+fn switch_label_value(switch_map: &Mapping, key: &str, state_index: usize) -> Option<String> {
+    let Value::Sequence(values) = switch_map.get(Value::String(key.to_owned()))? else {
+        return None;
+    };
+    values.get(state_index).and_then(config_scalar_string)
 }
 
 fn punctuation_entries_from_config(schema_config: &Value, shape: &str) -> Vec<(String, String)> {

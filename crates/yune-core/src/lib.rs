@@ -19,6 +19,7 @@ pub enum CandidateSource {
     Sentence,
     ReverseLookup,
     History,
+    Switch,
     Ai,
 }
 
@@ -33,6 +34,7 @@ impl CandidateSource {
             Self::Sentence => "sentence",
             Self::ReverseLookup => "reverse_lookup",
             Self::History => "history",
+            Self::Switch => "switch",
             Self::Ai => "ai",
         }
     }
@@ -2693,6 +2695,128 @@ impl Translator for HistoryTranslator {
             })
             .collect()
     }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum SwitchTranslatorSwitch {
+    Toggle {
+        option_name: String,
+        states: [String; 2],
+    },
+    Radio {
+        options: Vec<String>,
+        states: Vec<String>,
+    },
+}
+
+impl SwitchTranslatorSwitch {
+    #[must_use]
+    pub fn toggle(
+        option_name: impl Into<String>,
+        state0: impl Into<String>,
+        state1: impl Into<String>,
+    ) -> Self {
+        Self::Toggle {
+            option_name: option_name.into(),
+            states: [state0.into(), state1.into()],
+        }
+    }
+
+    #[must_use]
+    pub fn radio(
+        options: impl IntoIterator<Item = impl Into<String>>,
+        states: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
+        Self::Radio {
+            options: options.into_iter().map(Into::into).collect(),
+            states: states.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+pub struct SwitchTranslator {
+    switches: Vec<SwitchTranslatorSwitch>,
+}
+
+impl SwitchTranslator {
+    #[must_use]
+    pub fn new(switches: impl IntoIterator<Item = SwitchTranslatorSwitch>) -> Self {
+        Self {
+            switches: switches.into_iter().collect(),
+        }
+    }
+}
+
+impl Translator for SwitchTranslator {
+    fn name(&self) -> &'static str {
+        "switch_translator"
+    }
+
+    fn translate(&self, _input: &str) -> Vec<Candidate> {
+        Vec::new()
+    }
+
+    fn translate_with_state(
+        &self,
+        input: &str,
+        _status: &Status,
+        runtime_options: &HashMap<String, bool>,
+    ) -> Vec<Candidate> {
+        if input.is_empty() {
+            return Vec::new();
+        }
+
+        let mut candidates = Vec::new();
+        for the_switch in &self.switches {
+            match the_switch {
+                SwitchTranslatorSwitch::Toggle {
+                    option_name,
+                    states,
+                } => {
+                    if states.iter().any(String::is_empty) {
+                        continue;
+                    }
+                    let current_state = runtime_options.get(option_name).copied().unwrap_or(false);
+                    let current_index = usize::from(current_state);
+                    candidates.push(Candidate {
+                        text: states[current_index].clone(),
+                        comment: format!("→ {}", states[1 - current_index]),
+                        source: CandidateSource::Switch,
+                        quality: 0.5,
+                    });
+                }
+                SwitchTranslatorSwitch::Radio { options, states } => {
+                    if options.is_empty() || states.is_empty() {
+                        continue;
+                    }
+                    let selected_index = options
+                        .iter()
+                        .position(|option| options_get_bool(runtime_options, option))
+                        .unwrap_or(0);
+                    for (option_index, state) in states.iter().enumerate().take(options.len()) {
+                        if state.is_empty() {
+                            continue;
+                        }
+                        candidates.push(Candidate {
+                            text: state.clone(),
+                            comment: if option_index == selected_index {
+                                " ✓".to_owned()
+                            } else {
+                                String::new()
+                            },
+                            source: CandidateSource::Switch,
+                            quality: 0.5,
+                        });
+                    }
+                }
+            }
+        }
+        candidates
+    }
+}
+
+fn options_get_bool(options: &HashMap<String, bool>, option: &str) -> bool {
+    options.get(option).copied().unwrap_or(false)
 }
 
 pub struct UniquifierFilter;

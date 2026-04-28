@@ -25,10 +25,12 @@ use yune_core::{
 mod abi;
 mod config;
 mod config_compiler;
+mod ffi_memory;
 mod key_table;
 pub use abi::*;
 use config::*;
 use config_compiler::*;
+use ffi_memory::*;
 pub use key_table::*;
 
 const XK_BACKSPACE: c_int = 0xff08;
@@ -545,7 +547,7 @@ struct CandidateListState {
     candidates: Vec<yune_core::Candidate>,
 }
 
-struct UserDictListState {
+pub(crate) struct UserDictListState {
     names: Vec<CString>,
 }
 
@@ -558,7 +560,7 @@ struct LeverCustomSettings {
 }
 
 #[derive(Clone)]
-struct LeverSchemaInfo {
+pub(crate) struct LeverSchemaInfo {
     schema_id: CString,
     name: CString,
     version: Option<CString>,
@@ -1004,14 +1006,6 @@ unsafe fn levers_schema_info_ptr(
     // and remains valid until the schema list is destroyed.
     let info = unsafe { &*info.cast::<LeverSchemaInfo>() };
     getter(info).unwrap_or(ptr::null())
-}
-
-fn non_empty_cstring_ptr(value: &CString) -> Option<*const c_char> {
-    if value.as_bytes().is_empty() {
-        None
-    } else {
-        Some(value.as_ptr())
-    }
 }
 
 #[no_mangle]
@@ -8094,10 +8088,6 @@ fn optional_c_string(value: *const c_char) -> Option<String> {
     )
 }
 
-fn cstring_from_lossless_str(value: &str) -> CString {
-    CString::new(value).expect("values derived from C strings or literals cannot contain NUL bytes")
-}
-
 fn session_activity_now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -9589,13 +9579,6 @@ fn first_unicode_byte_length(value: &str) -> usize {
     value.chars().next().map_or(0, |first| first.len_utf8())
 }
 
-fn empty_string_slice() -> RimeStringSlice {
-    RimeStringSlice {
-        str: ptr::null(),
-        length: 0,
-    }
-}
-
 fn runtime_path_ptr(select: impl FnOnce(&RuntimePaths) -> &CString) -> *const c_char {
     let paths = runtime_paths()
         .lock()
@@ -9641,243 +9624,6 @@ fn copy_runtime_path_to_buffer(
         .expect("runtime paths should not be poisoned");
     let value = select(&paths).to_string_lossy();
     copy_c_string_with_strncpy_semantics(&value, output, buffer_size);
-}
-
-fn clear_commit(commit: *mut RimeCommit) {
-    // SAFETY: callers only pass non-null pointers to this helper; fields are
-    // plain pointers and assigning null mirrors librime's clear macro while
-    // preserving the self-versioned struct's `data_size` field.
-    unsafe {
-        (*commit).text = ptr::null_mut();
-    }
-}
-
-fn clear_context(context: *mut RimeContext) {
-    // SAFETY: callers only pass non-null pointers to this helper; this mirrors
-    // librime's versioned struct clear by preserving `data_size` and only
-    // clearing members covered by the caller-provided version.
-    unsafe {
-        (*context).composition = RimeComposition {
-            length: 0,
-            cursor_pos: 0,
-            sel_start: 0,
-            sel_end: 0,
-            preedit: ptr::null_mut(),
-        };
-        (*context).menu = RimeMenu {
-            page_size: 0,
-            page_no: 0,
-            is_last_page: FALSE,
-            highlighted_candidate_index: 0,
-            num_candidates: 0,
-            candidates: ptr::null_mut(),
-            select_keys: ptr::null_mut(),
-        };
-        if context_has_commit_text_preview(context) {
-            (*context).commit_text_preview = ptr::null_mut();
-        }
-        if context_has_select_labels(context) {
-            (*context).select_labels = ptr::null_mut();
-        }
-    }
-}
-
-unsafe fn context_has_commit_text_preview(context: *const RimeContext) -> bool {
-    // SAFETY: callers pass a valid `RimeContext` pointer; `addr_of!` computes a
-    // field address without creating an intermediate reference.
-    unsafe {
-        rime_struct_has_member(
-            context,
-            (*context).data_size,
-            ptr::addr_of!((*context).commit_text_preview),
-        )
-    }
-}
-
-unsafe fn context_has_select_labels(context: *const RimeContext) -> bool {
-    // SAFETY: callers pass a valid `RimeContext` pointer; `addr_of!` computes a
-    // field address without creating an intermediate reference.
-    unsafe {
-        rime_struct_has_member(
-            context,
-            (*context).data_size,
-            ptr::addr_of!((*context).select_labels),
-        )
-    }
-}
-
-fn rime_struct_has_member<T, U>(object: *const T, data_size: c_int, member: *const U) -> bool {
-    let Ok(data_size) = usize::try_from(data_size) else {
-        return false;
-    };
-    let bytes_after_data_size = std::mem::size_of::<c_int>().saturating_add(data_size);
-    let member_offset = (member as usize).saturating_sub(object as usize);
-    bytes_after_data_size > member_offset
-}
-
-fn clear_status(status: *mut RimeStatus) {
-    // SAFETY: callers only pass non-null pointers to this helper; this mirrors
-    // librime's versioned struct clear by preserving `data_size`.
-    unsafe {
-        (*status).schema_id = ptr::null_mut();
-        (*status).schema_name = ptr::null_mut();
-        (*status).is_disabled = FALSE;
-        (*status).is_composing = FALSE;
-        (*status).is_ascii_mode = FALSE;
-        (*status).is_full_shape = FALSE;
-        (*status).is_simplified = FALSE;
-        (*status).is_traditional = FALSE;
-        (*status).is_ascii_punct = FALSE;
-    }
-}
-
-fn clear_schema_list(schema_list: *mut RimeSchemaList) {
-    // SAFETY: callers only pass non-null pointers to this helper; fields are
-    // plain integers/pointers and assigning null mirrors librime cleanup.
-    unsafe {
-        (*schema_list).size = 0;
-        (*schema_list).list = ptr::null_mut();
-    }
-}
-
-unsafe fn clear_user_dict_iterator(iterator: *mut RimeUserDictIterator) {
-    if iterator.is_null() {
-        return;
-    }
-    // SAFETY: `iterator` is non-null and any non-null state pointer is owned by
-    // this shim after successful iterator initialization.
-    unsafe {
-        if !(*iterator).ptr.is_null() {
-            drop(Box::from_raw((*iterator).ptr.cast::<UserDictListState>()));
-        }
-        (*iterator).ptr = ptr::null_mut();
-        (*iterator).i = 0;
-    }
-}
-
-fn free_context_fields(context: *mut RimeContext) {
-    // SAFETY: `context` is non-null and nested pointers are owned by this API
-    // when populated by `RimeGetContext`.
-    unsafe {
-        if !(*context).composition.preedit.is_null() {
-            drop(CString::from_raw((*context).composition.preedit));
-        }
-        if !(*context).menu.candidates.is_null() && (*context).menu.num_candidates > 0 {
-            let num_candidates = (*context).menu.num_candidates as usize;
-            let mut candidates =
-                Vec::from_raw_parts((*context).menu.candidates, num_candidates, num_candidates);
-            free_rime_candidates(&mut candidates);
-        }
-        if !(*context).menu.select_keys.is_null() {
-            drop(CString::from_raw((*context).menu.select_keys));
-        }
-        if context_has_commit_text_preview(context) && !(*context).commit_text_preview.is_null() {
-            drop(CString::from_raw((*context).commit_text_preview));
-        }
-        if context_has_select_labels(context) && !(*context).select_labels.is_null() {
-            let page_size = (*context).menu.page_size.max(0) as usize;
-            let labels = Vec::from_raw_parts((*context).select_labels, page_size, page_size);
-            for label in labels {
-                if !label.is_null() {
-                    drop(CString::from_raw(label));
-                }
-            }
-        }
-    }
-}
-
-fn free_schema_list_fields(schema_list: *mut RimeSchemaList) {
-    // SAFETY: `schema_list` is non-null and nested pointers are owned by this
-    // API when populated by `RimeGetSchemaList`.
-    unsafe {
-        if (*schema_list).list.is_null() {
-            return;
-        }
-        let size = (*schema_list).size;
-        let mut list = Vec::from_raw_parts((*schema_list).list, size, size);
-        free_schema_list_items(&mut list);
-    }
-}
-
-fn free_schema_list_items(list: &mut [RimeSchemaListItem]) {
-    for item in list {
-        if !item.schema_id.is_null() {
-            // SAFETY: schema ids are allocated by `CString::into_raw` in
-            // `RimeGetSchemaList` and are released at most once here.
-            unsafe { drop(CString::from_raw(item.schema_id)) };
-            item.schema_id = ptr::null_mut();
-        }
-        if !item.name.is_null() {
-            // SAFETY: names are allocated by `CString::into_raw` in
-            // `RimeGetSchemaList` and are released at most once here.
-            unsafe { drop(CString::from_raw(item.name)) };
-            item.name = ptr::null_mut();
-        }
-        if !item.reserved.is_null() {
-            // SAFETY: levers available-schema lists store opaque
-            // `LeverSchemaInfo` boxes in `reserved`; other schema-list APIs
-            // keep this field null.
-            unsafe { drop(Box::from_raw(item.reserved.cast::<LeverSchemaInfo>())) };
-            item.reserved = ptr::null_mut();
-        }
-    }
-}
-
-fn free_status_fields(status: *mut RimeStatus) {
-    // SAFETY: `status` is non-null and nested pointers are owned by this API
-    // when populated by `RimeGetStatus`.
-    unsafe {
-        if !(*status).schema_id.is_null() {
-            drop(CString::from_raw((*status).schema_id));
-        }
-        if !(*status).schema_name.is_null() {
-            drop(CString::from_raw((*status).schema_name));
-        }
-    }
-}
-
-fn free_rime_candidates(candidates: &mut Vec<RimeCandidate>) {
-    for mut candidate in candidates.drain(..) {
-        free_candidate_fields(&mut candidate);
-    }
-}
-
-fn free_candidate_fields(candidate: &mut RimeCandidate) {
-    if !candidate.text.is_null() {
-        // SAFETY: candidate text pointers were returned by CString::into_raw
-        // while populating a RimeContext or candidate-list iterator.
-        unsafe {
-            drop(CString::from_raw(candidate.text));
-        }
-        candidate.text = ptr::null_mut();
-    }
-    if !candidate.comment.is_null() {
-        // SAFETY: candidate comment pointers were returned by CString::into_raw
-        // while populating a RimeContext or candidate-list iterator.
-        unsafe {
-            drop(CString::from_raw(candidate.comment));
-        }
-        candidate.comment = ptr::null_mut();
-    }
-    candidate.reserved = ptr::null_mut();
-}
-
-fn copy_c_string_with_strncpy_semantics(value: &str, output: *mut c_char, buffer_size: usize) {
-    if buffer_size == 0 {
-        return;
-    }
-
-    let bytes = value.as_bytes();
-    let copy_len = bytes.len().min(buffer_size);
-    // SAFETY: callers pass writable storage of `buffer_size` bytes; `copy_len`
-    // is bounded by `buffer_size`, and the zero-fill mirrors `strncpy` for
-    // source strings shorter than the destination buffer.
-    unsafe {
-        ptr::copy_nonoverlapping(bytes.as_ptr().cast::<c_char>(), output, copy_len);
-        if copy_len < buffer_size {
-            ptr::write_bytes(output.add(copy_len), 0, buffer_size - copy_len);
-        }
-    }
 }
 
 unsafe fn levers_custom_settings_mut(

@@ -42,7 +42,7 @@ use config::*;
 pub use config_api::*;
 use config_compiler::*;
 pub use deployment::*;
-use ffi_memory::*;
+pub use ffi_memory::*;
 pub use key_table::*;
 pub use levers::*;
 pub use modules::*;
@@ -1867,74 +1867,6 @@ pub unsafe extern "C" fn RimeCandidateListEnd(iterator: *mut RimeCandidateListIt
             reserved: ptr::null_mut(),
         };
     }
-}
-
-/// Frees nested allocations populated by `RimeGetContext`.
-///
-/// # Safety
-///
-/// `context` must be either null or a valid, writable pointer to a
-/// `RimeContext`. Nested pointers, when non-null, must have been returned by
-/// `RimeGetContext` and not already freed.
-#[no_mangle]
-pub unsafe extern "C" fn RimeFreeContext(context: *mut RimeContext) -> Bool {
-    if context.is_null() {
-        return FALSE;
-    }
-    // SAFETY: `context` is non-null and points to caller-owned storage.
-    if unsafe { (*context).data_size } <= 0 {
-        return FALSE;
-    }
-
-    free_context_fields(context);
-    clear_context(context);
-    TRUE
-}
-
-/// Frees nested allocations populated by `RimeGetStatus`.
-///
-/// # Safety
-///
-/// `status` must be either null or a valid, writable pointer to a
-/// `RimeStatus`. Nested pointers, when non-null, must have been returned by
-/// `RimeGetStatus` and not already freed.
-#[no_mangle]
-pub unsafe extern "C" fn RimeFreeStatus(status: *mut RimeStatus) -> Bool {
-    if status.is_null() {
-        return FALSE;
-    }
-    // SAFETY: `status` is non-null and points to caller-owned storage.
-    if unsafe { (*status).data_size } <= 0 {
-        return FALSE;
-    }
-
-    free_status_fields(status);
-    clear_status(status);
-    TRUE
-}
-
-/// Frees a commit object populated by `RimeGetCommit`.
-///
-/// # Safety
-///
-/// `commit` must be either null or a valid, writable pointer to a `RimeCommit`.
-/// If `commit.text` is non-null, it must be a pointer previously returned by
-/// `RimeGetCommit` and not already freed.
-#[no_mangle]
-pub unsafe extern "C" fn RimeFreeCommit(commit: *mut RimeCommit) -> Bool {
-    if commit.is_null() {
-        return FALSE;
-    }
-
-    // SAFETY: `commit` is non-null and any non-null `text` pointer is owned by
-    // this API because it was returned from `CString::into_raw` in `RimeGetCommit`.
-    unsafe {
-        if !(*commit).text.is_null() {
-            drop(CString::from_raw((*commit).text));
-        }
-    }
-    clear_commit(commit);
-    TRUE
 }
 
 fn key_event_from_rime_keycode(keycode: c_int, mask: c_int) -> Option<KeyEvent> {

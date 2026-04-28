@@ -5,9 +5,9 @@ use std::{
 };
 
 use crate::{
-    LeverSchemaInfo, RimeCandidate, RimeCommit, RimeComposition, RimeContext, RimeMenu,
+    Bool, LeverSchemaInfo, RimeCandidate, RimeCommit, RimeComposition, RimeContext, RimeMenu,
     RimeSchemaList, RimeSchemaListItem, RimeStatus, RimeStringSlice, RimeUserDictIterator,
-    UserDictListState, FALSE,
+    UserDictListState, FALSE, TRUE,
 };
 
 pub(crate) fn non_empty_cstring_ptr(value: &CString) -> Option<*const c_char> {
@@ -286,4 +286,68 @@ pub(crate) fn copy_c_string_with_strncpy_semantics(
             ptr::write_bytes(output.add(copy_len), 0, buffer_size - copy_len);
         }
     }
+}
+
+/// Releases nested allocations returned in a `RimeContext`.
+///
+/// # Safety
+///
+/// `context` must be null or a valid pointer previously populated by
+/// `RimeGetContext`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeFreeContext(context: *mut RimeContext) -> Bool {
+    if context.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `context` is non-null and points to caller-owned storage.
+    if unsafe { (*context).data_size } <= 0 {
+        return FALSE;
+    }
+
+    free_context_fields(context);
+    clear_context(context);
+    TRUE
+}
+
+/// Releases nested allocations returned in a `RimeStatus`.
+///
+/// # Safety
+///
+/// `status` must be null or a valid pointer previously populated by
+/// `RimeGetStatus`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeFreeStatus(status: *mut RimeStatus) -> Bool {
+    if status.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `status` is non-null and points to caller-owned storage.
+    if unsafe { (*status).data_size } <= 0 {
+        return FALSE;
+    }
+
+    free_status_fields(status);
+    clear_status(status);
+    TRUE
+}
+
+/// Releases nested allocations returned in a `RimeCommit`.
+///
+/// # Safety
+///
+/// `commit` must be null or a valid pointer previously populated by
+/// `RimeGetCommit`.
+#[no_mangle]
+pub unsafe extern "C" fn RimeFreeCommit(commit: *mut RimeCommit) -> Bool {
+    if commit.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `commit` is non-null and `text`, when non-null, was returned by
+    // `CString::into_raw` while populating the commit.
+    unsafe {
+        if !(*commit).text.is_null() {
+            drop(CString::from_raw((*commit).text));
+        }
+    }
+    clear_commit(commit);
+    TRUE
 }

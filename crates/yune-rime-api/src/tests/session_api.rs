@@ -1,0 +1,374 @@
+use super::*;
+
+#[test]
+fn finalize_clears_sessions_but_preserves_notification_handler() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    RimeSetNotificationHandler(None, std::ptr::null_mut());
+    notification_events()
+        .lock()
+        .expect("notification events should not be poisoned")
+        .clear();
+    let context_object = 0x7c_usize as *mut c_void;
+    let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
+
+    RimeSetNotificationHandler(Some(record_notification), context_object);
+    let old_session_id = RimeCreateSession();
+    assert_ne!(old_session_id, 0);
+    RimeFinalize();
+    assert_eq!(RimeFindSession(old_session_id), FALSE);
+    assert_eq!(RimeCreateSession(), 0);
+
+    let traits = empty_traits();
+    // SAFETY: traits points to valid storage.
+    unsafe { RimeInitialize(&traits) };
+    let new_session_id = RimeCreateSession();
+    assert_ne!(new_session_id, 0);
+    // SAFETY: option is a valid NUL-terminated C string.
+    unsafe { RimeSetOption(new_session_id, ascii_mode.as_ptr(), TRUE) };
+
+    let events = notification_events()
+        .lock()
+        .expect("notification events should not be poisoned");
+    assert_eq!(
+        *events,
+        vec![NotificationEvent {
+            context_object: 0x7c,
+            session_id: new_session_id,
+            message_type: "option".to_owned(),
+            message_value: "ascii_mode".to_owned(),
+        }]
+    );
+    drop(events);
+
+    RimeSetNotificationHandler(None, std::ptr::null_mut());
+    assert_eq!(RimeDestroySession(new_session_id), TRUE);
+}
+
+#[test]
+fn creates_finds_and_destroys_sessions() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+
+    let session_id = RimeCreateSession();
+
+    assert_ne!(session_id, 0);
+    assert_eq!(RimeFindSession(session_id), TRUE);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    assert_eq!(RimeFindSession(session_id), FALSE);
+}
+
+#[test]
+fn processes_ascii_keys_and_returns_unread_commit_once() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    let mut commit = RimeCommit {
+        data_size: 0,
+        text: std::ptr::null_mut(),
+    };
+
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+    assert_eq!(RimeProcessKey(session_id, ' ' as i32, 0), TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated `text` with a
+    // valid NUL-terminated C string owned by the commit object.
+    let text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(text.to_str(), Ok("ni"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert!(commit.text.is_null());
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn accumulates_unread_commit_text_like_librime_session() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    let mut commit = RimeCommit {
+        data_size: 0,
+        text: std::ptr::null_mut(),
+    };
+
+    for ch in "ni hao ".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as i32, 0), TRUE);
+    }
+
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated `text` with a
+    // valid NUL-terminated C string owned by the commit object.
+    let text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(text.to_str(), Ok("nihao"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn rime_commit_clear_preserves_librime_struct_data_size() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    let expected_data_size =
+        (std::mem::size_of::<RimeCommit>() - std::mem::size_of::<i32>()) as i32;
+    let mut commit = RimeCommit {
+        data_size: expected_data_size,
+        text: std::ptr::null_mut(),
+    };
+
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+    assert_eq!(commit.data_size, expected_data_size);
+    assert!(commit.text.is_null());
+
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, ' ' as i32, 0), TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    assert_eq!(commit.data_size, expected_data_size);
+
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    assert_eq!(commit.data_size, expected_data_size);
+    assert!(commit.text.is_null());
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn process_key_commits_numeric_candidate_selection() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ba", "八"), ("ba", "吧")]));
+    }
+    let mut commit = RimeCommit {
+        data_size: 0,
+        text: std::ptr::null_mut(),
+    };
+
+    assert_eq!(RimeProcessKey(session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'a' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, '2' as i32, 0), TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated `text` with a
+    // valid NUL-terminated C string owned by the commit object.
+    let text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(text.to_str(), Ok("吧"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn commits_composition_explicitly_and_returns_unread_commit() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    let mut commit = RimeCommit {
+        data_size: 0,
+        text: std::ptr::null_mut(),
+    };
+    let mut context = empty_context();
+
+    assert_eq!(RimeCommitComposition(session_id), FALSE);
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(RimeCommitComposition(session_id), TRUE);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
+    // SAFETY: `RimeGetCommit` returned true and populated `text`.
+    let text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(text.to_str(), Ok("你"));
+    // SAFETY: `commit.text` was returned by `RimeGetCommit` above.
+    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+
+    // SAFETY: `context` points to writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn clears_composition_without_creating_commit() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    let mut commit = RimeCommit {
+        data_size: 0,
+        text: std::ptr::null_mut(),
+    };
+    let mut context = empty_context();
+
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    RimeClearComposition(session_id);
+    // SAFETY: `commit` points to valid writable storage for this test.
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+    // SAFETY: `context` points to writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 0);
+    assert_eq!(context.menu.num_candidates, 0);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn gets_and_sets_input_and_caret_position() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "你")]));
+    }
+    let mut context = empty_context();
+
+    assert_eq!(RimeGetInput(0), std::ptr::null());
+    assert_eq!(RimeGetCaretPos(0), 0);
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    assert_eq!(RimeGetCaretPos(session_id), 2);
+
+    let input = RimeGetInput(session_id);
+    assert!(!input.is_null());
+    // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+    let input = unsafe { CStr::from_ptr(input) };
+    assert_eq!(input.to_str(), Ok("ni"));
+
+    RimeSetCaretPos(session_id, 1);
+    assert_eq!(RimeGetCaretPos(session_id), 1);
+    RimeSetCaretPos(session_id, 10);
+    assert_eq!(RimeGetCaretPos(session_id), 2);
+
+    let new_input = CString::new("ni").expect("literal should not contain NUL");
+    // SAFETY: `new_input` is a valid NUL-terminated C string.
+    assert_eq!(
+        unsafe { RimeSetInput(session_id, new_input.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(RimeGetCaretPos(session_id), 2);
+    // SAFETY: `context` points to writable storage initialized with a
+    // positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.menu.num_candidates, 2);
+    // SAFETY: `context.menu.candidates` points to initialized candidates.
+    let first_candidate = unsafe { *context.menu.candidates };
+    // SAFETY: candidate text is a valid NUL-terminated string owned by the
+    // context object.
+    let first_candidate_text = unsafe { CStr::from_ptr(first_candidate.text) };
+    assert_eq!(first_candidate_text.to_str(), Ok("你"));
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    // SAFETY: null pointers are explicitly rejected.
+    assert_eq!(unsafe { RimeSetInput(session_id, std::ptr::null()) }, FALSE);
+    // SAFETY: `new_input` is a valid NUL-terminated C string.
+    assert_eq!(
+        unsafe { RimeSetInput(session_id + 1, new_input.as_ptr()) },
+        FALSE
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn cleanup_stale_sessions_matches_librime_activity_lifespan() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let stale_session_id = RimeCreateSession();
+    let refreshed_session_id = RimeCreateSession();
+    let fresh_session_id = RimeCreateSession();
+    let stale_time = crate::session_activity_now().saturating_sub(crate::SESSION_LIFESPAN_SECS + 1);
+
+    {
+        let mut registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        registry
+            .sessions
+            .get_mut(&stale_session_id)
+            .expect("stale session should exist")
+            .last_active_time = stale_time;
+        registry
+            .sessions
+            .get_mut(&refreshed_session_id)
+            .expect("refreshed session should exist")
+            .last_active_time = stale_time;
+    }
+
+    assert_eq!(RimeFindSession(refreshed_session_id), TRUE);
+    RimeCleanupStaleSessions();
+
+    assert_eq!(RimeFindSession(stale_session_id), FALSE);
+    assert_eq!(RimeFindSession(refreshed_session_id), TRUE);
+    assert_eq!(RimeFindSession(fresh_session_id), TRUE);
+
+    RimeCleanupAllSessions();
+}
+
+#[test]
+fn rejects_unknown_sessions_and_modified_keys() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+
+    assert_eq!(RimeProcessKey(0, 'a' as i32, 0), FALSE);
+    assert_eq!(RimeProcessKey(session_id + 1, 'a' as i32, 0), FALSE);
+    assert_eq!(
+        RimeProcessKey(session_id, 'a' as i32, K_CONTROL_MASK),
+        FALSE
+    );
+    assert_eq!(RimeProcessKey(session_id, 'a' as i32, 1 << 3), FALSE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}

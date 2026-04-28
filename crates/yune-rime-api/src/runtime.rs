@@ -190,6 +190,129 @@ pub(crate) fn runtime_paths() -> &'static Mutex<RuntimePaths> {
     RUNTIME_PATHS.get_or_init(|| Mutex::new(RuntimePaths::default()))
 }
 
+/// Stores process-wide runtime traits for later path queries.
+///
+/// # Safety
+///
+/// `traits` must be either null or a valid pointer to a `RimeTraits` object.
+/// Any non-null string pointers in the traits object must be valid
+/// NUL-terminated C strings.
+#[no_mangle]
+pub unsafe extern "C" fn RimeSetup(traits: *const RimeTraits) {
+    if let Some(paths) = unsafe { RuntimePaths::from_traits(traits) } {
+        *runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned") = paths;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn RimeSetupLogging(app_name: *const c_char) {
+    let Some(app_name) = optional_c_string(app_name) else {
+        return;
+    };
+    runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned")
+        .app_name = cstring_from_lossless_str(&app_name);
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetSharedDataDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.shared_data_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetUserDataDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.user_data_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetPrebuiltDataDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.prebuilt_data_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetStagingDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.staging_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetSyncDir() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.sync_dir)
+}
+
+#[no_mangle]
+pub extern "C" fn RimeGetUserId() -> *const c_char {
+    runtime_path_ptr(|paths| &paths.user_id)
+}
+
+/// Copies the shared data directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetSharedDataDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.shared_data_dir, dir, buffer_size);
+}
+
+/// Copies the user data directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetUserDataDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.user_data_dir, dir, buffer_size);
+}
+
+/// Copies the prebuilt data directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetPrebuiltDataDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.prebuilt_data_dir, dir, buffer_size);
+}
+
+/// Copies the staging directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetStagingDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.staging_dir, dir, buffer_size);
+}
+
+/// Copies the sync directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetSyncDirSecure(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.sync_dir, dir, buffer_size);
+}
+
+/// Copies the user-specific sync directory into caller-provided storage.
+///
+/// # Safety
+///
+/// `dir` must point to writable storage of `buffer_size` bytes. Null or empty
+/// buffers are ignored.
+#[no_mangle]
+pub unsafe extern "C" fn RimeGetUserDataSyncDir(dir: *mut c_char, buffer_size: usize) {
+    copy_runtime_path_to_buffer(|paths| &paths.user_data_sync_dir, dir, buffer_size);
+}
+
 pub(crate) fn path_join(base: &str, child: &str) -> String {
     Path::new(base).join(child).to_string_lossy().into_owned()
 }

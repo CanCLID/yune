@@ -4166,6 +4166,10 @@ fn install_schema_switch_translator_from_config(session: &mut SessionState, sche
     if switches.is_empty() {
         return;
     }
+    let fold_options = find_config_value(schema_config, "switcher/fold_options")
+        .and_then(config_scalar_bool)
+        .unwrap_or(false);
+    session.engine.set_option("_fold_options", fold_options);
     session.engine.add_translator(
         SwitchTranslator::new(switches)
             .with_folded_options(schema_folded_switch_options(schema_config)),

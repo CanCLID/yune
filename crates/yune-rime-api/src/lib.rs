@@ -25,6 +25,7 @@ use yune_core::{
 mod abi;
 mod config;
 mod config_compiler;
+mod deployment;
 mod ffi_memory;
 mod key_table;
 mod modules;
@@ -33,6 +34,7 @@ mod userdb;
 pub use abi::*;
 use config::*;
 use config_compiler::*;
+use deployment::*;
 use ffi_memory::*;
 pub use key_table::*;
 use modules::*;
@@ -1354,145 +1356,6 @@ pub extern "C" fn RimeSetupLogging(app_name: *const c_char) {
         .lock()
         .expect("runtime paths should not be poisoned")
         .app_name = cstring_from_lossless_str(&app_name);
-}
-
-/// Initializes the runtime using the same trait handling as `RimeSetup`.
-///
-/// # Safety
-///
-/// `traits` follows the same preconditions as `RimeSetup`.
-#[no_mangle]
-pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
-    // SAFETY: forwarded preconditions are identical to `RimeSetup`.
-    unsafe { RimeSetup(traits) };
-    service_started().store(true, Ordering::SeqCst);
-}
-
-#[no_mangle]
-pub extern "C" fn RimeFinalize() {
-    RimeCleanupAllSessions();
-    service_started().store(false, Ordering::SeqCst);
-}
-
-#[no_mangle]
-pub extern "C" fn RimeStartMaintenance(full_check: Bool) -> Bool {
-    let _ = clean_old_log_files();
-    if !run_installation_update() {
-        return FALSE;
-    }
-    if full_check == FALSE && !detect_modifications() {
-        return FALSE;
-    }
-    notify(0, "deploy", "start");
-    let success = run_workspace_maintenance_tasks();
-    notify(0, "deploy", if success { "success" } else { "failure" });
-    bool_from(success)
-}
-
-#[no_mangle]
-pub extern "C" fn RimeStartMaintenanceOnWorkspaceChange() -> Bool {
-    RimeStartMaintenance(FALSE)
-}
-
-#[no_mangle]
-pub extern "C" fn RimeIsMaintenancing() -> Bool {
-    FALSE
-}
-
-#[no_mangle]
-pub extern "C" fn RimeJoinMaintenanceThread() {}
-
-/// Initializes deployer state using the same trait handling as `RimeSetup`.
-///
-/// # Safety
-///
-/// `traits` follows the same preconditions as `RimeSetup`.
-#[no_mangle]
-pub unsafe extern "C" fn RimeDeployerInitialize(traits: *const RimeTraits) {
-    // SAFETY: forwarded preconditions are identical to `RimeSetup`.
-    unsafe { RimeSetup(traits) };
-}
-
-#[no_mangle]
-pub extern "C" fn RimePrebuildAllSchemas() -> Bool {
-    bool_from(prebuild_all_schemas())
-}
-
-#[no_mangle]
-pub extern "C" fn RimeDeployWorkspace() -> Bool {
-    if !run_installation_update() {
-        return FALSE;
-    }
-    if !run_workspace_maintenance_tasks() {
-        return FALSE;
-    }
-    TRUE
-}
-
-#[no_mangle]
-pub extern "C" fn RimeDeploySchema(schema_file: *const c_char) -> Bool {
-    let Some(schema_file) = optional_c_string(schema_file) else {
-        return FALSE;
-    };
-    bool_from(deploy_schema_file(&schema_file))
-}
-
-#[no_mangle]
-pub extern "C" fn RimeDeployConfigFile(
-    file_name: *const c_char,
-    version_key: *const c_char,
-) -> Bool {
-    let Some(file_name) = optional_c_string(file_name) else {
-        return FALSE;
-    };
-    let Some(version_key) = optional_c_string(version_key) else {
-        return FALSE;
-    };
-    bool_from(deploy_config_file(&file_name, &version_key))
-}
-
-#[no_mangle]
-pub extern "C" fn RimeSyncUserData() -> Bool {
-    RimeCleanupAllSessions();
-    notify(0, "deploy", "start");
-    let installation_synced = run_installation_update();
-    let configs_synced = backup_config_files();
-    let user_dicts_synced = sync_all_user_dicts();
-    let success = installation_synced && configs_synced && user_dicts_synced;
-    notify(0, "deploy", if success { "success" } else { "failure" });
-    bool_from(success)
-}
-
-#[no_mangle]
-pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
-    let Some(task_name) = optional_c_string(task_name) else {
-        return FALSE;
-    };
-    if task_name == "user_dict_sync" {
-        return bool_from(sync_all_user_dicts());
-    }
-    if task_name == "backup_config_files" {
-        return bool_from(backup_config_files());
-    }
-    if task_name == "installation_update" {
-        return bool_from(run_installation_update());
-    }
-    if task_name == "clean_old_log_files" {
-        return bool_from(clean_old_log_files());
-    }
-    if task_name == "cleanup_trash" {
-        return bool_from(cleanup_trash());
-    }
-    if task_name == "workspace_update" {
-        return bool_from(workspace_update());
-    }
-    if task_name == "user_dict_upgrade" {
-        return bool_from(user_dict_upgrade());
-    }
-    if task_name == "prebuild_all_schemas" {
-        return bool_from(prebuild_all_schemas());
-    }
-    FALSE
 }
 
 #[no_mangle]
@@ -7936,7 +7799,7 @@ fn deployed_switcher_hotkeys() -> Option<String> {
     }
 }
 
-fn run_installation_update() -> bool {
+pub(crate) fn run_installation_update() -> bool {
     let (
         user_data_dir,
         current_sync_dir,
@@ -8071,7 +7934,7 @@ fn current_unix_time_string() -> String {
     )
 }
 
-fn backup_config_files() -> bool {
+pub(crate) fn backup_config_files() -> bool {
     let (user_data_dir, backup_enabled) = {
         let paths = runtime_paths()
             .lock()
@@ -8107,7 +7970,7 @@ fn backup_config_files() -> bool {
     success
 }
 
-fn cleanup_trash() -> bool {
+pub(crate) fn cleanup_trash() -> bool {
     let user_data_dir = {
         let paths = runtime_paths()
             .lock()
@@ -8139,7 +8002,7 @@ fn cleanup_trash() -> bool {
     success
 }
 
-fn clean_old_log_files() -> bool {
+pub(crate) fn clean_old_log_files() -> bool {
     let (app_name, log_dir) = {
         let paths = runtime_paths()
             .lock()
@@ -8209,7 +8072,7 @@ fn clean_old_log_files() -> bool {
     success
 }
 
-fn detect_modifications() -> bool {
+pub(crate) fn detect_modifications() -> bool {
     let (shared_data_dir, user_data_dir) = {
         let paths = runtime_paths()
             .lock()
@@ -8297,7 +8160,7 @@ fn civil_from_days(days_since_epoch: i64) -> (i64, i64, i64) {
     (year, month, day)
 }
 
-fn workspace_update() -> bool {
+pub(crate) fn workspace_update() -> bool {
     if !deploy_config_file("default.yaml", "config_version") {
         return false;
     }
@@ -8319,7 +8182,7 @@ fn workspace_update() -> bool {
     write_last_build_time() && success
 }
 
-fn run_workspace_maintenance_tasks() -> bool {
+pub(crate) fn run_workspace_maintenance_tasks() -> bool {
     workspace_update() && user_dict_upgrade() && cleanup_trash()
 }
 
@@ -8467,7 +8330,7 @@ fn symlink_prebuilt_dictionaries() -> bool {
     success
 }
 
-fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
+pub(crate) fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
     if file_name.is_empty() || version_key.is_empty() {
         return false;
     }
@@ -8712,7 +8575,7 @@ fn compare_version_part(left: &str, right: &str) -> std::cmp::Ordering {
     }
 }
 
-fn deploy_schema_file(schema_file: &str) -> bool {
+pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
     if schema_file.is_empty() {
         return false;
     }
@@ -8745,7 +8608,7 @@ fn deploy_schema_file(schema_file: &str) -> bool {
     deploy_config_file(&format!("{schema_id}.schema.yaml"), "schema/version")
 }
 
-fn prebuild_all_schemas() -> bool {
+pub(crate) fn prebuild_all_schemas() -> bool {
     let shared_data_dir = {
         let paths = runtime_paths()
             .lock()
@@ -8950,7 +8813,7 @@ fn first_unicode_byte_length(value: &str) -> usize {
     value.chars().next().map_or(0, |first| first.len_utf8())
 }
 
-fn notify(session_id: RimeSessionId, message_type: &str, message_value: &str) {
+pub(crate) fn notify(session_id: RimeSessionId, message_type: &str, message_value: &str) {
     let (handler, context_object) = {
         let state = notification_state()
             .lock()

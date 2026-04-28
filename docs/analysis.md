@@ -88,8 +88,9 @@ The strongest compatibility progress is currently in two areas:
   `reverse_lookup_filter` behavior through ABI-facing tests. The current
   `speller` coverage is the processor-level spelling gate for alphabet,
   delimiter, initials/finals, `use_space`, focused `auto_clear` modes, and
-  max-code-length preselection before the next initial, not full `auto_select`
-  unique-candidate, pattern, or previous-match automation.
+  max-code-length preselection before the next initial, plus focused
+  `auto_select` exact-table unique-candidate commits, not full
+  `auto_select_pattern` or previous-match automation.
 - Data compatibility: schema-loaded table dictionaries now feed real session
   candidates, and source dictionary parsing handles many librime/yaml-cpp edge
   cases around headers, YAML nulls, quoted scalars, `columns`, `import_tables`,
@@ -120,8 +121,8 @@ not just missing tests:
   `selector`,
   `chord_composer`, `shape_processor`, `schema_list_translator`,
   `punct_segmentor`, `fallback_segmentor`, and formatter behavior that are not
-  yet equivalently modeled. `speller` still needs deeper `auto_select`
-  unique-candidate, pattern, and previous-match behavior.
+  yet equivalently modeled. `speller` still needs deeper `auto_select_pattern`
+  and previous-match behavior.
 - Existing schema-loaded translator/filter support is intentionally partial.
   Areas such as full spelling algebra, full OpenCC data and conversion chains,
   distribution-scale schema chains, and compiled-data interactions still need

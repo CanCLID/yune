@@ -2430,6 +2430,137 @@ schema:\n  schema_id: auto_select_max\n  name: Auto Select Max\nengine:\n  proce
 }
 
 #[test]
+fn frontend_style_schema_speller_auto_selects_unique_table_candidate() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    cleanup_all_sessions();
+
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let destroy_session = api
+        .destroy_session
+        .expect("frontend requires destroy_session");
+    let process_key = api.process_key.expect("frontend requires process_key");
+    let select_schema = api.select_schema.expect("frontend requires select_schema");
+    let get_input = api.get_input.expect("frontend requires get_input");
+    let get_context = api.get_context.expect("frontend requires get_context");
+    let free_context = api.free_context.expect("frontend requires free_context");
+    let get_commit = api.get_commit.expect("frontend requires get_commit");
+    let free_commit = api.free_commit.expect("frontend requires free_commit");
+
+    let root = unique_temp_dir("schema-speller-auto-select-unique");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("auto_select_unique.schema.yaml"),
+        "\
+schema:\n  schema_id: auto_select_unique\n  name: Auto Select Unique\nengine:\n  processors:\n    - speller\n  translators:\n    - table_translator\nspeller:\n  alphabet: ab\n  auto_select: true\ntranslator:\n  dictionary: auto_select_unique\n  enable_completion: false\n  enable_sentence: false\n",
+    )
+    .expect("unique schema config should be written");
+    fs::write(
+        staging.join("auto_select_ambiguous.schema.yaml"),
+        "\
+schema:\n  schema_id: auto_select_ambiguous\n  name: Auto Select Ambiguous\nengine:\n  processors:\n    - speller\n  translators:\n    - table_translator\nspeller:\n  alphabet: ab\n  auto_select: true\ntranslator:\n  dictionary: auto_select_ambiguous\n  enable_completion: false\n  enable_sentence: false\n",
+    )
+    .expect("ambiguous schema config should be written");
+    fs::write(
+        shared.join("auto_select_unique.dict.yaml"),
+        "\
+---\nname: auto_select_unique\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nab\tAB\t1\n",
+    )
+    .expect("unique dictionary should be written");
+    fs::write(
+        shared.join("auto_select_ambiguous.dict.yaml"),
+        "\
+---\nname: auto_select_ambiguous\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nab\tAB\t1\nab\tAlt\t1\n",
+    )
+    .expect("ambiguous dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { setup(&traits) };
+
+    let unique_session_id = create_session();
+    assert_ne!(unique_session_id, 0);
+    let unique_schema_id =
+        CString::new("auto_select_unique").expect("unique schema id should be valid");
+    assert_eq!(
+        unsafe { select_schema(unique_session_id, unique_schema_id.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(process_key(unique_session_id, 'a' as i32, 0), TRUE);
+    let mut commit = empty_commit();
+    assert_eq!(unsafe { get_commit(unique_session_id, &mut commit) }, FALSE);
+    assert_eq!(process_key(unique_session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(unsafe { get_commit(unique_session_id, &mut commit) }, TRUE);
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("AB"));
+    assert_eq!(unsafe { free_commit(&mut commit) }, TRUE);
+    let input = get_input(unique_session_id);
+    assert!(!input.is_null());
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok(""));
+    assert_eq!(destroy_session(unique_session_id), TRUE);
+
+    let ambiguous_session_id = create_session();
+    assert_ne!(ambiguous_session_id, 0);
+    let ambiguous_schema_id =
+        CString::new("auto_select_ambiguous").expect("ambiguous schema id should be valid");
+    assert_eq!(
+        unsafe { select_schema(ambiguous_session_id, ambiguous_schema_id.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(process_key(ambiguous_session_id, 'a' as i32, 0), TRUE);
+    assert_eq!(process_key(ambiguous_session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(
+        unsafe { get_commit(ambiguous_session_id, &mut commit) },
+        FALSE
+    );
+    let input = get_input(ambiguous_session_id);
+    assert!(!input.is_null());
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("ab"));
+    let mut context = empty_context();
+    assert_eq!(
+        unsafe { get_context(ambiguous_session_id, &mut context) },
+        TRUE
+    );
+    assert_eq!(context.menu.num_candidates, 3);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[0].text) }.to_str(),
+        Ok("AB")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[1].text) }.to_str(),
+        Ok("Alt")
+    );
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+    assert_eq!(destroy_session(ambiguous_session_id), TRUE);
+
+    cleanup_all_sessions();
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn frontend_style_api_table_can_simulate_key_sequences() {
     let _guard = test_guard();
     let api = rime_get_api();

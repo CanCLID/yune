@@ -180,6 +180,7 @@ struct SpellerProcessor {
     initials: String,
     finals: String,
     max_code_length: usize,
+    auto_select: bool,
     auto_clear: SpellerAutoClear,
     use_space: bool,
 }
@@ -4508,6 +4509,9 @@ fn install_schema_speller_processor(session: &mut SessionState, schema_id: &str)
             .and_then(config_scalar_int)
             .and_then(|value| usize::try_from(value).ok())
             .unwrap_or(0),
+        auto_select: find_config_value(&schema_config, "speller/auto_select")
+            .and_then(config_scalar_bool)
+            .unwrap_or(false),
         auto_clear: find_config_value(&schema_config, "speller/auto_clear")
             .and_then(config_scalar_string)
             .and_then(|value| match value.as_str() {
@@ -5640,6 +5644,7 @@ fn process_speller_processor(
 
     let auto_clear = speller.auto_clear;
     let max_code_length = speller.max_code_length;
+    let auto_select = speller.auto_select;
     let is_initial = ch != ' ' && speller.initials.contains(ch);
     let delimiters = speller.delimiters.clone();
     let commit = if is_initial
@@ -5660,6 +5665,11 @@ fn process_speller_processor(
     let mut input = session.engine.context().composition.input.clone();
     input.push(ch);
     session.engine.set_input(input);
+    let commit = commit.or_else(|| {
+        auto_select
+            .then(|| speller_auto_select_unique_candidate(session, max_code_length, &delimiters))
+            .flatten()
+    });
     if auto_clear == SpellerAutoClear::Auto
         && speller_auto_clear_condition(session, auto_clear, max_code_length)
     {
@@ -5714,6 +5724,41 @@ fn speller_auto_select_at_max_code_length(
         .candidates
         .get(context.highlighted)
         .is_some_and(|candidate| candidate.source == CandidateSource::Table)
+}
+
+fn speller_auto_select_unique_candidate(
+    session: &mut SessionState,
+    max_code_length: usize,
+    delimiters: &str,
+) -> Option<String> {
+    let context = session.engine.context();
+    let input = &context.composition.input;
+    if input.is_empty()
+        || input.contains(|ch| delimiters.contains(ch))
+        || (max_code_length != 0 && input.len() < max_code_length)
+    {
+        return None;
+    }
+    let mut table_candidates = context
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.source == CandidateSource::Table);
+    let Some(_) = table_candidates.next() else {
+        return None;
+    };
+    if table_candidates.next().is_some() {
+        return None;
+    }
+    if context
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.source != CandidateSource::Echo)
+        .count()
+        != 1
+    {
+        return None;
+    }
+    session.engine.commit_composition()
 }
 
 fn speller_context_has_menu(context: &yune_core::Context) -> bool {

@@ -95,8 +95,8 @@
   bindings, switch option updates, punctuation cycling, paired punctuation,
   digit separators, recognizer `use_space`, speller alphabet/delimiter and
   initials/finals gating, speller `use_space`, focused `auto_clear` modes, and
-  max-code-length preselection before the next initial, and ASCII mode
-  switch-key handling.
+  max-code-length preselection before the next initial, focused `auto_select`
+  exact-table unique-candidate commits, and ASCII mode switch-key handling.
 - Expanded schema-loaded segmentor coverage for `ascii_segmentor`, `matcher`,
   and namespaced `affix_segmentor`, including recognizer-pattern tags,
   namespace fallback behavior, sorted pattern precedence, raw ASCII tags, and
@@ -132,8 +132,8 @@
   lifetime, notification, deployment, and session-behavior gaps.
 - Continue broadening schema coverage beyond the current focused subset toward
   the remaining librime gear components and deeper semantics: `speller`
-  auto-select unique-candidate, pattern, and previous-match behavior, `editor`
-  variants, `navigator`, `selector`, `chord_composer`,
+  auto-select pattern and previous-match behavior, `editor` variants,
+  `navigator`, `selector`, `chord_composer`,
   `shape_processor`/`shape_formatter`, `schema_list_translator`,
   `punct_segmentor`, `fallback_segmentor`, full spelling algebra, full OpenCC
   conversion data, and larger real-world processor/segmentor/translator/filter

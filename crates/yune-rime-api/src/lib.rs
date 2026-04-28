@@ -51,9 +51,10 @@ pub use notifications::RimeSetNotificationHandler;
 pub use runtime::*;
 pub use schema_api::*;
 pub(crate) use schema_install::{
-    install_schema_filter_chain, install_schema_segment_tags, install_schema_translator_chain,
-    load_schema_recognizer_patterns, recognizer_patterns_match, schema_component_prescription,
-    schema_string_list, update_session_segment_tags,
+    apply_schema_switch_resets, install_schema_filter_chain, install_schema_segment_tags,
+    install_schema_translator_chain, load_schema_recognizer_patterns, recognizer_patterns_match,
+    schema_component_prescription, schema_string_list, switch_reset_value,
+    update_session_segment_tags,
 };
 pub(crate) use schema_selection::apply_schema_to_session;
 pub use schema_selection::{RimeGetCurrentSchema, RimeSelectSchema};
@@ -2494,50 +2495,7 @@ fn schema_engine_processors_include(schema_config: &Value, processor_name: &str)
         .any(|(component_name, _)| component_name == processor_name)
 }
 
-pub(crate) fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    let Some(Value::Sequence(switches)) = find_config_value(&schema_config, "switches") else {
-        return;
-    };
-
-    for the_switch in switches {
-        let Value::Mapping(switch_map) = the_switch else {
-            continue;
-        };
-        let Some(reset_value) = switch_reset_value(switch_map) else {
-            continue;
-        };
-
-        if let Some(option_name) = switch_scalar_field(switch_map, "name") {
-            session.engine.set_option(option_name, reset_value != 0);
-            continue;
-        }
-
-        let Some(Value::Sequence(options)) = switch_map.get(Value::String("options".to_owned()))
-        else {
-            continue;
-        };
-        for (option_index, option) in options.iter().enumerate() {
-            let Some(option_name) = config_scalar_string(option) else {
-                continue;
-            };
-            session
-                .engine
-                .set_option(option_name, option_index as c_int == reset_value);
-        }
-    }
-}
-
-fn switch_reset_value(switch_map: &Mapping) -> Option<c_int> {
-    let reset = switch_map.get(Value::String("reset".to_owned()))?;
-    match reset {
-        Value::Null | Value::Sequence(_) | Value::Mapping(_) => None,
-        scalar => Some(config_scalar_int(scalar).unwrap_or(0)),
-    }
-}
-
-fn switch_scalar_field(switch_map: &Mapping, key: &str) -> Option<String> {
+pub(crate) fn switch_scalar_field(switch_map: &Mapping, key: &str) -> Option<String> {
     switch_map
         .get(Value::String(key.to_owned()))
         .and_then(config_scalar_string)

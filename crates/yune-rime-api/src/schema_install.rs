@@ -1,7 +1,7 @@
-use std::{collections::HashSet, fs};
+use std::{collections::HashSet, fs, os::raw::c_int};
 
 use regex::Regex;
-use serde_yaml::Value;
+use serde_yaml::{Mapping, Value};
 use yune_core::{
     CharsetFilter, HistoryTranslator, ReverseLookupFilter, ReverseLookupTranslator,
     SchemaListTranslator, SimplifierFilter, SingleCharFilter, StaticTableTranslator,
@@ -13,8 +13,8 @@ use crate::{
     ends_with_ascii_digit, find_config_value, install_schema_punctuation_translator_from_config,
     load_runtime_config_root, schema_folded_switch_options,
     schema_list_translator_entries_for_current, schema_switch_translator_switches,
-    selected_runtime_data_path, AffixSegmentor, ConfigOpenKind, MatcherPattern, MatcherSegmentor,
-    PunctSegmentor, SessionState,
+    selected_runtime_data_path, switch_scalar_field, AffixSegmentor, ConfigOpenKind,
+    MatcherPattern, MatcherSegmentor, PunctSegmentor, SessionState,
 };
 
 pub(crate) fn install_schema_translator_chain(session: &mut SessionState, schema_id: &str) {
@@ -268,6 +268,49 @@ pub(crate) fn install_schema_filter_chain(session: &mut SessionState, schema_id:
             }
             _ => {}
         }
+    }
+}
+
+pub(crate) fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    let Some(Value::Sequence(switches)) = find_config_value(&schema_config, "switches") else {
+        return;
+    };
+
+    for the_switch in switches {
+        let Value::Mapping(switch_map) = the_switch else {
+            continue;
+        };
+        let Some(reset_value) = switch_reset_value(switch_map) else {
+            continue;
+        };
+
+        if let Some(option_name) = switch_scalar_field(switch_map, "name") {
+            session.engine.set_option(option_name, reset_value != 0);
+            continue;
+        }
+
+        let Some(Value::Sequence(options)) = switch_map.get(Value::String("options".to_owned()))
+        else {
+            continue;
+        };
+        for (option_index, option) in options.iter().enumerate() {
+            let Some(option_name) = config_scalar_string(option) else {
+                continue;
+            };
+            session
+                .engine
+                .set_option(option_name, option_index as c_int == reset_value);
+        }
+    }
+}
+
+pub(crate) fn switch_reset_value(switch_map: &Mapping) -> Option<c_int> {
+    let reset = switch_map.get(Value::String("reset".to_owned()))?;
+    match reset {
+        Value::Null | Value::Sequence(_) | Value::Mapping(_) => None,
+        scalar => Some(config_scalar_int(scalar).unwrap_or(0)),
     }
 }
 

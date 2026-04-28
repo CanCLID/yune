@@ -1959,6 +1959,7 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
         }
     }
 
+    apply_visible_switch_radio_defaults(session);
     bool_from(matches!(key_event.code, KeyCode::Character(ch) if ch != ' ') || was_composing)
 }
 
@@ -3330,6 +3331,7 @@ pub unsafe extern "C" fn RimeGetContext(
         let Some(session) = registry.get_session_mut(session_id) else {
             return FALSE;
         };
+        apply_visible_switch_radio_defaults(session);
         (
             session.engine.snapshot(),
             session.engine.get_option("_hide_candidate"),
@@ -3862,6 +3864,34 @@ fn apply_switch_candidate(session: &mut SessionState, candidate_index: usize) ->
     }
     session.engine.clear_composition();
     true
+}
+
+fn apply_visible_switch_radio_defaults(session: &mut SessionState) {
+    if !session
+        .engine
+        .context()
+        .candidates
+        .iter()
+        .any(|candidate| candidate.source == CandidateSource::Switch)
+    {
+        return;
+    }
+
+    let schema_id = &session.engine.status().schema_id;
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    for options in schema_switch_radio_option_groups(&schema_config) {
+        let selected_index = options
+            .iter()
+            .position(|option| session.engine.get_option(option))
+            .unwrap_or(0);
+        for (option_index, option) in options.iter().enumerate() {
+            let selected = option_index == selected_index;
+            if session.engine.get_option(option) != selected {
+                session.engine.set_option(option.clone(), selected);
+            }
+        }
+    }
 }
 
 fn append_unread_commit(session: &mut SessionState, commit: String) {
@@ -4958,6 +4988,35 @@ fn schema_switch_selection_commands(schema_config: &Value) -> Vec<SwitchSelectio
         }
     }
     commands
+}
+
+fn schema_switch_radio_option_groups(schema_config: &Value) -> Vec<Vec<String>> {
+    let Some(Value::Sequence(switches)) = find_config_value(schema_config, "switches") else {
+        return Vec::new();
+    };
+
+    switches
+        .iter()
+        .filter_map(|the_switch| {
+            let Value::Mapping(switch_map) = the_switch else {
+                return None;
+            };
+            if switch_scalar_field(switch_map, "name").is_some()
+                || switch_label_value(switch_map, "states", 0).is_none()
+            {
+                return None;
+            }
+            let Value::Sequence(options) = switch_map.get(Value::String("options".to_owned()))?
+            else {
+                return None;
+            };
+            let options = options
+                .iter()
+                .filter_map(config_scalar_string)
+                .collect::<Vec<_>>();
+            (!options.is_empty()).then_some(options)
+        })
+        .collect()
 }
 
 fn schema_switch_label_values(switch_map: &Mapping, key: &str) -> Vec<String> {

@@ -3156,12 +3156,9 @@ pub unsafe extern "C" fn RimeGetStateLabelAbbreviated(
     let Some(option_name) = (unsafe { c_string_key(option_name) }) else {
         return empty_string_slice();
     };
-    let Some(label) = state_label_for_session(
-        session_id,
-        &option_name,
-        state != FALSE,
-        abbreviated != FALSE,
-    ) else {
+    let Some(label) =
+        state_label_for_session(session_id, &option_name, state, abbreviated != FALSE)
+    else {
         return empty_string_slice();
     };
     let Ok(cached_label) = CString::new(label.value) else {
@@ -7442,7 +7439,7 @@ fn deployed_schema_list_entry(entry: &Value) -> Option<String> {
 fn state_label_for_session(
     session_id: RimeSessionId,
     option_name: &str,
-    state: bool,
+    state: Bool,
     abbreviated: bool,
 ) -> Option<StateLabel> {
     if session_id == 0 {
@@ -7492,7 +7489,7 @@ fn context_menu_settings(schema_id: &str) -> ContextMenuSettings {
 fn switch_state_label(
     schema_config: &Value,
     option_name: &str,
-    state: bool,
+    state: Bool,
     abbreviated: bool,
 ) -> Option<StateLabel> {
     let switches = find_config_value(schema_config, "switches")?;
@@ -7505,7 +7502,8 @@ fn switch_state_label(
             continue;
         };
         if switch_scalar_field(switch_map, "name").is_some_and(|name| name == option_name) {
-            return label_from_switch(switch_map, usize::from(state), abbreviated);
+            let state_index = usize::try_from(state).ok()?;
+            return label_from_switch(switch_map, state_index, abbreviated);
         }
 
         let Some(options) = switch_map.get(Value::String("options".to_owned())) else {
@@ -7516,7 +7514,7 @@ fn switch_state_label(
         };
         for (option_index, option) in options.iter().enumerate() {
             if config_scalar_string(option).is_some_and(|name| name == option_name) {
-                return state
+                return (state != FALSE)
                     .then(|| label_from_switch(switch_map, option_index, abbreviated))
                     .flatten();
             }

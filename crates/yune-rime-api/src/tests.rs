@@ -2445,6 +2445,8 @@ switches:
   - name: full_shape
     states: [0, 1]
     abbrev: [H, true]
+  - name: tri_state
+    states: [Zero, One, Two]
   - options: [simplification, traditional]
     states: [简体, 繁體]
   - options: [0, 1]
@@ -2465,6 +2467,7 @@ switches:
     let schema_id = CString::new("luna").expect("schema id should be valid");
     let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
     let full_shape = CString::new("full_shape").expect("option name should be valid");
+    let tri_state = CString::new("tri_state").expect("option name should be valid");
     let simplification = CString::new("simplification").expect("option name should be valid");
     let numeric_option = CString::new("1").expect("option name should be valid");
     let missing = CString::new("missing").expect("option name should be valid");
@@ -2504,6 +2507,14 @@ switches:
         unsafe { CStr::from_ptr(scalar_abbrev.str) }.to_str(),
         Ok("true")
     );
+
+    // SAFETY: option names are valid NUL-terminated strings.
+    let third_state = unsafe { RimeGetStateLabel(session_id, tri_state.as_ptr(), 2) };
+    assert!(!third_state.is_null());
+    // SAFETY: non-null state-label pointers are process-owned C strings.
+    assert_eq!(unsafe { CStr::from_ptr(third_state) }.to_str(), Ok("Two"));
+    assert!(unsafe { RimeGetStateLabel(session_id, ascii_mode.as_ptr(), 2) }.is_null());
+    assert!(unsafe { RimeGetStateLabel(session_id, ascii_mode.as_ptr(), -1) }.is_null());
 
     // SAFETY: option names are valid NUL-terminated strings.
     let radio =

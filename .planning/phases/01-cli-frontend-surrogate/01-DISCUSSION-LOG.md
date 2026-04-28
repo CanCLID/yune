@@ -1,7 +1,7 @@
 # Phase 1: CLI Frontend Surrogate - Discussion Log
 
 > **Audit trail only.** Do not use as input to planning, research, or execution
-> agents. Decisions are captured in CONTEXT.md - this log preserves the
+> agents. Decisions are captured in CONTEXT.md — this log preserves the
 > alternatives considered.
 
 **Date:** 2026-04-29
@@ -111,7 +111,7 @@ the ABI path while keeping native frontend validation for Phase 2.
 
 ---
 
-## the agent's Discretion
+## Claude's Discretion
 
 - Exact command names and flag spelling.
 - Fixture file naming and transcript file organization.

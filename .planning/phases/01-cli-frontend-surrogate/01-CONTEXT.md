@@ -77,7 +77,7 @@ or expand compiled-data/userdb compatibility.
   ABI gaps measurable and scriptable, but Phase 2 remains responsible for native
   frontend-like loading paths and real frontend validation.
 
-### the agent's Discretion
+### Claude's Discretion
 - Exact subcommand names, flag spelling, fixture naming, wrapper struct names,
   and small formatting details are left to the planner/executor, provided the
   decisions above remain true.

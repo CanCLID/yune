@@ -5,11 +5,6 @@ use std::{
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     ptr,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Mutex, OnceLock,
-    },
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 use regex::Regex;
@@ -36,6 +31,7 @@ mod modules;
 mod notifications;
 mod runtime;
 mod schema_api;
+mod session;
 mod userdb;
 pub use abi::*;
 use api_table::state_label_cache;
@@ -53,6 +49,7 @@ use notifications::notify;
 pub use notifications::RimeSetNotificationHandler;
 pub use runtime::*;
 pub use schema_api::*;
+pub use session::*;
 pub use userdb::*;
 
 const XK_BACKSPACE: c_int = 0xff08;
@@ -95,119 +92,10 @@ const K_ALT_MASK: c_int = 1 << 3;
 const K_SUPER_MASK: c_int = 1 << 26;
 const K_RELEASE_MASK: c_int = 1 << 30;
 const DEFAULT_PAGE_SIZE: usize = 5;
-const SESSION_LIFESPAN_SECS: u64 = 5 * 60;
 pub(crate) const RIME_VERSION_BYTES: &[u8] =
     concat!("yune-rime-api ", env!("CARGO_PKG_VERSION"), "\0").as_bytes();
 
-#[derive(Default)]
-struct SessionRegistry {
-    next_id: RimeSessionId,
-    sessions: HashMap<RimeSessionId, SessionState>,
-}
-
-impl SessionRegistry {
-    fn create_session(&mut self) -> RimeSessionId {
-        if !service_started().load(Ordering::SeqCst) {
-            return 0;
-        }
-
-        self.next_id = self.next_id.saturating_add(1).max(1);
-        let session_id = self.next_id;
-        self.sessions.insert(session_id, SessionState::new());
-        session_id
-    }
-
-    fn get_session_mut(&mut self, session_id: RimeSessionId) -> Option<&mut SessionState> {
-        if session_id == 0 || !service_started().load(Ordering::SeqCst) {
-            return None;
-        }
-
-        let session = self.sessions.get_mut(&session_id)?;
-        session.activate();
-        Some(session)
-    }
-
-    fn find_session(&mut self, session_id: RimeSessionId) -> bool {
-        self.get_session_mut(session_id).is_some()
-    }
-
-    fn cleanup_stale_sessions(&mut self) {
-        let now = session_activity_now();
-        self.sessions.retain(|_, session| {
-            now.saturating_sub(session.last_active_time) <= SESSION_LIFESPAN_SECS
-        });
-    }
-}
-
-struct SessionState {
-    engine: Engine,
-    unread_commit: Option<String>,
-    input_buffer: Option<CString>,
-    key_binder: Option<KeyBinderProcessor>,
-    speller: Option<SpellerProcessor>,
-    editor_processor: Option<EditorProcessor>,
-    editor_bindings: HashMap<KeyEvent, EditorBindingAction>,
-    editor_char_handler: Option<EditorCharHandler>,
-    chord_composer: Option<ChordComposerProcessor>,
-    ascii_composer_enabled: bool,
-    ascii_composer_switch_bindings: HashMap<c_int, AsciiModeSwitchStyle>,
-    ascii_composer_pressed_switch_key: Option<c_int>,
-    ascii_composer_inline_ascii: bool,
-    ascii_segmentor_enabled: bool,
-    punctuation_processor: Option<PunctuationProcessor>,
-    recognizer_processor: Option<RecognizerProcessor>,
-    selector_bindings: SelectorBindings,
-    navigator_bindings: NavigatorBindings,
-    navigator_delimiters: String,
-    navigator_syllable_jump_position: NavigatorSyllableJumpPosition,
-    base_segment_tags: Vec<String>,
-    punct_segmentor: Option<PunctSegmentor>,
-    affix_segmentors: Vec<AffixSegmentor>,
-    matcher_segmentor: Option<MatcherSegmentor>,
-    fallback_segmentor_enabled: bool,
-    paging: bool,
-    last_active_time: u64,
-}
-
-impl SessionState {
-    fn new() -> Self {
-        Self {
-            engine: Engine::default(),
-            unread_commit: None,
-            input_buffer: None,
-            key_binder: None,
-            speller: None,
-            editor_processor: None,
-            editor_bindings: HashMap::new(),
-            editor_char_handler: None,
-            chord_composer: None,
-            ascii_composer_enabled: false,
-            ascii_composer_switch_bindings: HashMap::new(),
-            ascii_composer_pressed_switch_key: None,
-            ascii_composer_inline_ascii: false,
-            ascii_segmentor_enabled: false,
-            punctuation_processor: None,
-            recognizer_processor: None,
-            selector_bindings: SelectorBindings::default(),
-            navigator_bindings: NavigatorBindings::default(),
-            navigator_delimiters: " ".to_owned(),
-            navigator_syllable_jump_position: NavigatorSyllableJumpPosition::AfterDelimiter,
-            base_segment_tags: vec!["abc".to_owned()],
-            punct_segmentor: None,
-            affix_segmentors: Vec::new(),
-            matcher_segmentor: None,
-            fallback_segmentor_enabled: false,
-            paging: false,
-            last_active_time: session_activity_now(),
-        }
-    }
-
-    fn activate(&mut self) {
-        self.last_active_time = session_activity_now();
-    }
-}
-
-struct KeyBinderProcessor {
+pub(crate) struct KeyBinderProcessor {
     bindings: HashMap<KeyEvent, Vec<KeyBinding>>,
     redirecting: bool,
     last_key: Option<char>,
@@ -218,7 +106,7 @@ struct KeyBinding {
     action: KeyBindingAction,
 }
 
-struct SpellerProcessor {
+pub(crate) struct SpellerProcessor {
     alphabet: String,
     delimiters: String,
     initials: String,
@@ -231,7 +119,7 @@ struct SpellerProcessor {
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
-enum SpellerAutoClear {
+pub(crate) enum SpellerAutoClear {
     None,
     Auto,
     Manual,
@@ -255,7 +143,7 @@ enum KeyBindingAction {
 }
 
 #[derive(Clone, Copy)]
-enum EditorBindingAction {
+pub(crate) enum EditorBindingAction {
     Noop,
     Action(EditorAction),
 }
@@ -277,7 +165,7 @@ enum EditorAction {
 }
 
 #[derive(Default)]
-struct SelectorBindings {
+pub(crate) struct SelectorBindings {
     horizontal_stacked: HashMap<KeyEvent, SelectorBindingAction>,
     horizontal_linear: HashMap<KeyEvent, SelectorBindingAction>,
     vertical_stacked: HashMap<KeyEvent, SelectorBindingAction>,
@@ -291,7 +179,7 @@ enum SelectorBindingAction {
 }
 
 #[derive(Default)]
-struct NavigatorBindings {
+pub(crate) struct NavigatorBindings {
     horizontal: HashMap<KeyEvent, NavigatorBindingAction>,
     vertical: HashMap<KeyEvent, NavigatorBindingAction>,
 }
@@ -303,7 +191,7 @@ enum NavigatorBindingAction {
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
-enum NavigatorSyllableJumpPosition {
+pub(crate) enum NavigatorSyllableJumpPosition {
     AfterDelimiter,
     BeforeDelimiter,
 }
@@ -328,24 +216,24 @@ enum SwitchSelectionCommand {
     },
 }
 
-struct MatcherSegmentor {
+pub(crate) struct MatcherSegmentor {
     patterns: Vec<MatcherPattern>,
 }
 
-struct AffixSegmentor {
+pub(crate) struct AffixSegmentor {
     tag: String,
     prefix: String,
     suffix: String,
     extra_tags: Vec<String>,
 }
 
-struct PunctSegmentor {
+pub(crate) struct PunctSegmentor {
     half_shape_keys: HashSet<String>,
     full_shape_keys: HashSet<String>,
     digit_separators: String,
 }
 
-struct RecognizerProcessor {
+pub(crate) struct RecognizerProcessor {
     use_space: bool,
     patterns: Vec<MatcherPattern>,
 }
@@ -358,7 +246,7 @@ enum AsciiComposerProcessResult {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum AsciiModeSwitchStyle {
+pub(crate) enum AsciiModeSwitchStyle {
     InlineAscii,
     CommitText,
     CommitCode,
@@ -372,7 +260,7 @@ struct MatcherPattern {
     pattern: Regex,
 }
 
-struct PunctuationProcessor {
+pub(crate) struct PunctuationProcessor {
     use_space: bool,
     digit_separators: String,
     digit_separator_commit: bool,
@@ -389,7 +277,7 @@ struct PunctuationProcessor {
     pending_digit_separator: Option<String>,
 }
 
-struct ChordComposerProcessor {
+pub(crate) struct ChordComposerProcessor {
     alphabet: Vec<char>,
     algebra: ChordProjection,
     output_format: ChordProjection,
@@ -435,13 +323,13 @@ enum ChordProjectionFormula {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum EditorProcessor {
+pub(crate) enum EditorProcessor {
     Express,
     Fluid,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum EditorCharHandler {
+pub(crate) enum EditorCharHandler {
     DirectCommit,
     AddToInput,
 }
@@ -559,12 +447,6 @@ impl ChordProjectionFormula {
     }
 }
 
-impl Default for SessionState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 pub(crate) struct UserDictListState {
     names: Vec<CString>,
 }
@@ -586,16 +468,6 @@ pub(crate) enum ConfigOpenKind {
     User,
 }
 
-fn sessions() -> &'static Mutex<SessionRegistry> {
-    static SESSIONS: OnceLock<Mutex<SessionRegistry>> = OnceLock::new();
-    SESSIONS.get_or_init(|| Mutex::new(SessionRegistry::default()))
-}
-
-fn service_started() -> &'static AtomicBool {
-    static SERVICE_STARTED: AtomicBool = AtomicBool::new(false);
-    &SERVICE_STARTED
-}
-
 #[must_use]
 pub const fn bool_from(value: bool) -> Bool {
     if value {
@@ -608,52 +480,6 @@ pub const fn bool_from(value: bool) -> Bool {
 #[no_mangle]
 pub extern "C" fn RimeGetVersion() -> *const c_char {
     RIME_VERSION_BYTES.as_ptr().cast::<c_char>()
-}
-
-#[no_mangle]
-pub extern "C" fn RimeCreateSession() -> RimeSessionId {
-    sessions()
-        .lock()
-        .expect("session registry should not be poisoned")
-        .create_session()
-}
-
-#[no_mangle]
-pub extern "C" fn RimeFindSession(session_id: RimeSessionId) -> Bool {
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    bool_from(registry.find_session(session_id))
-}
-
-#[no_mangle]
-pub extern "C" fn RimeDestroySession(session_id: RimeSessionId) -> Bool {
-    bool_from(
-        session_id != 0
-            && sessions()
-                .lock()
-                .expect("session registry should not be poisoned")
-                .sessions
-                .remove(&session_id)
-                .is_some(),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn RimeCleanupAllSessions() {
-    sessions()
-        .lock()
-        .expect("session registry should not be poisoned")
-        .sessions
-        .clear();
-}
-
-#[no_mangle]
-pub extern "C" fn RimeCleanupStaleSessions() {
-    sessions()
-        .lock()
-        .expect("session registry should not be poisoned")
-        .cleanup_stale_sessions();
 }
 
 #[no_mangle]
@@ -5593,37 +5419,6 @@ fn highlight_candidate_clamped_like_librime(session: &mut SessionState, index: u
     session.engine.highlight_candidate(new_index)
 }
 
-fn with_session(session_id: RimeSessionId, action: impl FnOnce(&mut SessionState) -> bool) -> Bool {
-    if session_id == 0 {
-        return FALSE;
-    }
-
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let Some(session) = registry.get_session_mut(session_id) else {
-        return FALSE;
-    };
-
-    bool_from(action(session))
-}
-
-pub(crate) fn session_candidates_snapshot(
-    session_id: RimeSessionId,
-) -> Option<Vec<yune_core::Candidate>> {
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let session = registry.get_session_mut(session_id)?;
-    Some(session.engine.context().candidates.clone())
-}
-
-fn session_activity_now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |duration| duration.as_secs())
-}
-
 pub(crate) fn open_runtime_config(
     config_id: &str,
     kind: ConfigOpenKind,
@@ -5946,10 +5741,12 @@ pub(crate) fn librime_signature_modified_time() -> String {
 
 #[cfg(not(unix))]
 pub(crate) fn librime_signature_modified_time() -> String {
-    SystemTime::now().duration_since(UNIX_EPOCH).map_or_else(
-        |_| "0".to_owned(),
-        |duration| duration.as_secs().to_string(),
-    )
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or_else(
+            |_| "0".to_owned(),
+            |duration| duration.as_secs().to_string(),
+        )
 }
 
 #[cfg(test)]

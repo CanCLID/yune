@@ -891,6 +891,13 @@ fn config_string(config: &mut RimeConfig, key: &str) -> Option<String> {
     )
 }
 
+fn config_bool(config: &mut RimeConfig, key: &str) -> Option<c_int> {
+    let key = CString::new(key).expect("key should be valid");
+    let mut output = FALSE;
+    // SAFETY: config, key, and output pointer are valid for the call.
+    (unsafe { RimeConfigGetBool(config, key.as_ptr(), &mut output) } == TRUE).then_some(output)
+}
+
 fn assert_librime_ctime_shape(value: &str) {
     let parts = value.split_whitespace().collect::<Vec<_>>();
     assert_eq!(parts.len(), 5);
@@ -14044,6 +14051,102 @@ switches:
     };
     // SAFETY: commit points to writable storage.
     assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn select_schema_switch_translator_persists_librime_save_options() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-switch-translator-save-options");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna.schema.yaml"),
+        "\
+schema:
+  schema_id: luna
+  name: Luna
+engine:
+  translators:
+    - switch_translator
+    - echo_translator
+switcher:
+  save_options: [ascii_mode, simplification, traditional]
+switches:
+  - name: ascii_mode
+    states: [中文, 西文]
+    reset: 0
+  - options: [simplification, traditional]
+    states: [简体, 繁體]
+    reset: 0
+",
+    )
+    .expect("schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("luna").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(RimeProcessKey(session_id, 'x' as c_int, 0), TRUE);
+    assert_eq!(RimeSelectCandidate(session_id, 0), TRUE);
+
+    let mut user_config = empty_config();
+    let user_id = CString::new("user").expect("config id should be valid");
+    // SAFETY: config id and output config pointer are valid.
+    assert_eq!(
+        unsafe { RimeUserConfigOpen(user_id.as_ptr(), &mut user_config) },
+        TRUE
+    );
+    assert_eq!(
+        config_bool(&mut user_config, "var/option/ascii_mode"),
+        Some(TRUE)
+    );
+    // SAFETY: config owns state allocated by the shim.
+    assert_eq!(unsafe { RimeConfigClose(&mut user_config) }, TRUE);
+
+    assert_eq!(RimeProcessKey(session_id, 'y' as c_int, 0), TRUE);
+    assert_eq!(RimeSelectCandidate(session_id, 2), TRUE);
+
+    let mut user_config = empty_config();
+    // SAFETY: config id and output config pointer are valid.
+    assert_eq!(
+        unsafe { RimeUserConfigOpen(user_id.as_ptr(), &mut user_config) },
+        TRUE
+    );
+    assert_eq!(
+        config_bool(&mut user_config, "var/option/ascii_mode"),
+        Some(TRUE)
+    );
+    assert_eq!(
+        config_bool(&mut user_config, "var/option/simplification"),
+        Some(FALSE)
+    );
+    assert_eq!(
+        config_bool(&mut user_config, "var/option/traditional"),
+        Some(TRUE)
+    );
+    // SAFETY: config owns state allocated by the shim.
+    assert_eq!(unsafe { RimeConfigClose(&mut user_config) }, TRUE);
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();

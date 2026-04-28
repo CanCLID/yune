@@ -3853,17 +3853,53 @@ fn apply_switch_candidate(session: &mut SessionState, candidate_index: usize) ->
     match selection {
         SwitchSelectionCommand::Toggle(option_name) => {
             let target_state = !session.engine.get_option(&option_name);
-            session.engine.set_option(option_name, target_state);
+            session.engine.set_option(option_name.clone(), target_state);
+            persist_switcher_saved_option(&schema_config, &option_name, target_state);
         }
         SwitchSelectionCommand::Radio {
             options,
             option_index,
         } => {
             select_key_binding_radio_option(session, &options, option_index);
+            for (index, option) in options.iter().enumerate() {
+                persist_switcher_saved_option(&schema_config, option, index == option_index);
+            }
         }
     }
     session.engine.clear_composition();
     true
+}
+
+fn persist_switcher_saved_option(schema_config: &Value, option_name: &str, value: bool) {
+    if !schema_string_list(schema_config, "switcher/save_options")
+        .iter()
+        .any(|saved_option| saved_option == option_name)
+    {
+        return;
+    }
+    let Some(user_config_path) = selected_runtime_config_path("user", ConfigOpenKind::User) else {
+        return;
+    };
+    if let Some(user_config_dir) = user_config_path.parent() {
+        if fs::create_dir_all(user_config_dir).is_err() {
+            return;
+        }
+    }
+    let mut user_config = fs::read_to_string(&user_config_path)
+        .ok()
+        .and_then(|text| serde_yaml::from_str::<Value>(&text).ok())
+        .unwrap_or_else(|| Value::Mapping(Mapping::new()));
+    if !set_config_value(
+        &mut user_config,
+        &format!("var/option/{option_name}"),
+        Value::Bool(value),
+    ) {
+        return;
+    }
+    let Ok(yaml) = serde_yaml::to_string(&user_config) else {
+        return;
+    };
+    let _ = fs::write(user_config_path, yaml);
 }
 
 fn apply_visible_switch_radio_defaults(session: &mut SessionState) {

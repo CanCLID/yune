@@ -88,8 +88,9 @@ The strongest compatibility progress is currently in these areas:
   behavior.
 - Schema pipeline compatibility: focused librime-style subsets now cover
   schema-loaded `key_binder`, `punctuator`, `recognizer`, `ascii_composer`,
-  `speller`, `ascii_segmentor`, `matcher`, `affix_segmentor`, `table_translator`,
-  `script_translator`, `r10n_translator`, `reverse_lookup_translator`,
+  `speller`, `abc_segmentor`, `ascii_segmentor`, `matcher`, `affix_segmentor`,
+  `table_translator`, `script_translator`, `r10n_translator`,
+  `reverse_lookup_translator`,
   `history_translator`, `switch_translator`, `schema_list_translator`,
   `simplifier`, `uniquifier`, `single_char_filter`,
   `charset_filter`/`cjk_minifier`, and
@@ -113,12 +114,13 @@ The strongest compatibility progress is currently in these areas:
   for focused commit, deletion, and `noop` behavior through modified printable
   ABI keys, plus focused `editor/char_handler` defaults and overrides for
   printable-key `direct_commit`, `add_to_input`, and `noop`. Segmentor coverage
-  now also includes a
-  focused `punct_segmentor` path for shape-mapped single ASCII punctuation keys,
-  where the punctuation segment is exclusive and suppresses ordinary table
-  translation competition, plus a focused `fallback_segmentor` path where an
-  otherwise unclaimed segment is tagged `raw` and does not feed default `abc`
-  table translation. Focused `selector` coverage now also honors librime's raw
+  now also includes `abc_segmentor/extra_tags` propagation onto the current
+  default `abc` segment, a focused `punct_segmentor` path for shape-mapped single
+  ASCII punctuation keys, where the punctuation segment is exclusive and
+  suppresses ordinary table translation competition, plus a focused
+  `fallback_segmentor` path where an otherwise unclaimed segment is tagged `raw`
+  and does not feed default `abc` table translation. Focused `selector` coverage
+  now also honors librime's raw
   segment exclusion so fallback/raw compositions are not committed by numeric
   candidate selection keys, and covers layout-sensitive arrow/page bindings for
   horizontal linear, vertical stacked, and vertical linear candidate lists, plus
@@ -187,10 +189,13 @@ not just missing tests:
   dynamic frontend loading, GUI composition windows, focus changes, or native
   frontend callback timing.
 - The schema pipeline is still a subset. The current focused coverage now
-  reaches many high-value gears, but librime's source tree still has deeper
-  behavior around `speller` auto-selection and max-code-length interactions,
-  previous-match segmentation, editor variants, deeper `navigator` behavior
-  such as full candidate/segment span-aware syllable jumps beyond
+  reaches many high-value gears, but librime's source tree still has unmodeled
+  gear behavior around `memory`, `poet`/`grammar`, `contextual_translation`,
+  `unity_table_encoder`, and deeper `abc_segmentor` segmentation beyond current
+  extra-tag propagation. It also still has deeper behavior around `speller`
+  auto-selection and max-code-length interactions, previous-match segmentation,
+  editor variants, deeper `navigator` behavior such as full
+  candidate/segment span-aware syllable jumps beyond
   delimiter-derived stops,
   deeper `selector` navigator fallback interaction behavior beyond the current
   focused raw-tag, layout, and configured-binding coverage,
@@ -226,18 +231,30 @@ not just missing tests:
   milestone. Yune should keep its own Rust extension points separate from
   librime's C++ plugin ABI until a real integration requires it.
 
-## AI Integration Position
+## AI/LLM-Native Position
 
-AI should be an optional ranking/completion layer, not the foundation of basic
-input. Classic candidates must remain available with low latency and without
-network access.
+AI-native input is a product direction above the librime compatibility
+foundation, not a replacement for it. librime can be the oracle for classic
+schema, ABI, dictionary, and frontend behavior; it cannot be the oracle for LLM
+candidate generation, contextual completion, semantic ranking, or personalized
+memory. Those need explicit Yune-native contracts.
 
-Initial AI surfaces:
+Classic candidates must remain available with low latency and without network
+access. AI results should be optional, source-labeled, local-first, and safe to
+discard. The engine should treat AI as candidate providers, rankers, context
+providers, and memory stores with strict timeout/fallback policy, not as a
+blocking black box in the key-processing path.
 
-- Candidate reranking filter.
-- Contextual phrase completion translator.
-- Personalized user dictionary suggestions.
-- Privacy-preserving local model bridge.
+Initial AI-native surfaces:
+
+- Non-blocking candidate reranking with deterministic fallback.
+- AI candidate provider for phrase/sentence suggestions that never replaces
+  classic translators.
+- Context provider policy for app/field/preceding-text/cursor/schema data.
+- Inspectable, clearable memory store for user vocabulary, domain terms, and
+  style preferences.
+- Privacy controls that disable learning and remote calls in sensitive contexts.
+- CLI-visible mock/local providers before native frontends expose AI behavior.
 
 ## Non-Goals For The First Milestone
 

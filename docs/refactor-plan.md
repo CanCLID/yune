@@ -17,8 +17,8 @@ The repository is functionally healthy but structurally crowded.
 - Phase 2 is complete for the current `yune-rime-api` production shape.
   `lib.rs` keeps ABI-facing exports and glue, while session, context/status,
   schema selection/install, processor behavior, deployment, levers, config,
-  candidate, memory, runtime, module, notification, and userdb helpers live in
-  focused modules.
+  candidate, FFI memory, runtime, module, notification, ABI layout, and userdb
+  helpers live in focused modules.
 - Phase 3 is complete for `yune-rime-api` unit tests. The test parent module now
   keeps shared helpers, while compatibility cases live in named child modules.
 - Phase 4 is complete as a preparatory split. `yune-cli` still behaves as the
@@ -37,6 +37,29 @@ The repository is functionally healthy but structurally crowded.
 The immediate problem is not a broken design. The problem is that compatibility
 increments are accumulating inside large files, which makes future librime
 comparison, review, and focused development slower than necessary.
+
+## Lessons From This Refactor
+
+The main lesson is to treat structure as part of feature work, not as cleanup
+afterward. The compatibility push moved quickly because single-file edits were
+cheap at first, but the cost shifted into later review, search, focused testing,
+and mechanical extraction. Future work should avoid repeating that pattern.
+
+- Before implementing a new behavior slice, identify the owning module, the
+  librime source area being mirrored, and the focused test module that will lock
+  the behavior down.
+- Keep `lib.rs` and `main.rs` as public facades and orchestration glue. New
+  parsing, state, ABI, processor, translator, filter, dictionary, or rendering
+  behavior should start in a named module unless it is a short throwaway spike.
+- A temporary monolithic edit is acceptable only for discovery. If a second
+  related behavior lands in the same area, extract the ownership boundary before
+  adding more behavior.
+- Split tests along the same ownership boundaries as implementation. A focused
+  compatibility test should be easy to find from the module it protects.
+- Do not wait for file size alone to force structure. Module boundaries should
+  follow concepts from Yune's design and observable librime compatibility areas.
+- Keep mechanical extraction behavior-free. If a module split is needed before a
+  compatibility increment, do the split first, verify it, then land the behavior.
 
 ## Refactor Rules
 
@@ -146,8 +169,13 @@ focused modules.
 
 Completed layout:
 
+- `abi.rs` owns exported ABI type aliases, constants, and C struct layouts.
 - `config_api.rs` owns config open/load/read/write/update entrypoints plus
   state-label and simulated-key-sequence APIs.
+- `config.rs` owns config state, scalar coercion, path lookup/mutation, and
+  iterator storage helpers.
+- `config_compiler.rs` owns librime-style config include/patch/custom patch and
+  build-info freshness helpers.
 - `ffi_memory.rs` owns the current FFI free entrypoints and shared C allocation
   cleanup helpers.
 - `levers.rs` owns levers custom settings, switcher settings, schema-list
@@ -157,9 +185,11 @@ Completed layout:
 - `session.rs` owns the session registry, session lifecycle, and session
   activity helpers.
 - `context_api.rs` owns context/status/commit entrypoints.
-- `schema_selection.rs`, `schema_install.rs`, `schema_translator_filters.rs`,
-  `schema_segment_tags.rs`, and `schema_switch_resets.rs` own schema selection
-  and installation helpers.
+- `schema_selection.rs` owns selected-schema entrypoints and session schema
+  application.
+- `schema_install.rs` owns schema component prescription parsing, translator and
+  filter chain installation, segment tags, recognizer patterns, and schema-switch
+  resets.
 - `processors/` owns `ascii_composer`, `chord_composer`, `editor`,
   `key_binder`, `navigator`, `punctuation`, `recognizer`, `selector`, `shape`,
   and `speller` behavior.
@@ -199,7 +229,7 @@ coverage should look like.
 
 Goal: avoid turning `main.rs` into the next large mixed-responsibility file.
 
-Suggested module layout before implementing the interactive frontend:
+Completed preparatory layout before implementing the interactive frontend:
 
 - `args.rs`
   - command parsing

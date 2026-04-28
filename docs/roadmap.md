@@ -119,14 +119,15 @@
   cancellation on non-chording function keys, focused raw-sequence clearing
   after generated chord output direct-commits ASCII and after API-level context
   commits leave generated chord compositions, plus ASCII mode switch-key handling.
-- Expanded schema-loaded segmentor coverage for `ascii_segmentor`, `matcher`,
-  namespaced `affix_segmentor`, focused `punct_segmentor`, and focused
-  `fallback_segmentor` subsets,
-  including recognizer-pattern tags, namespace fallback behavior, sorted pattern
-  precedence, raw ASCII tags, exclusive affix-tag behavior for prefixed reverse
-  lookup, exclusive single-key shape punctuation tags, focused `punct_number`
-  digit-separator translation after numeric commits, and raw fallback tagging for
-  otherwise unclaimed input.
+- Expanded schema-loaded segmentor coverage for `abc_segmentor`,
+  `ascii_segmentor`, `matcher`, namespaced `affix_segmentor`, focused
+  `punct_segmentor`, and focused `fallback_segmentor` subsets,
+  including `abc_segmentor/extra_tags` propagation onto the current default
+  `abc` segment, recognizer-pattern tags, namespace fallback behavior, sorted
+  pattern precedence, raw ASCII tags, exclusive affix-tag behavior for prefixed
+  reverse lookup, exclusive single-key shape punctuation tags, focused
+  `punct_number` digit-separator translation after numeric commits, and raw
+  fallback tagging for otherwise unclaimed input.
 - Expanded schema-loaded translator coverage for `table_translator`,
   `script_translator`, `r10n_translator`, `reverse_lookup_translator`,
   `history_translator`, `switch_translator`, and `schema_list_translator`,
@@ -176,6 +177,10 @@
   for the current code shape. Keep future compatibility work within the new
   module boundaries, and only split further when a new behavior slice exposes a
   real ownership problem.
+- Apply the refactor lesson to all new work: choose the owning implementation
+  module, matching test module, and librime comparison target before writing a
+  compatibility slice. Keep `lib.rs`/`main.rs` as facades, and extract a
+  temporary spike before it becomes the home for multiple related behaviors.
 - Build `yune-cli` into a frontend-surrogate input method that drives
   `yune-rime-api` rather than `yune-core` directly: initialize with real shared
   and user data directories, deploy and select schemas, create sessions, process
@@ -189,7 +194,10 @@
   frontend as a useful intermediate validation layer, not as proof that native
   frontend integration is complete.
 - Continue broadening schema coverage beyond the current focused subset toward
-  the remaining librime gear components and deeper semantics: `speller`
+  the remaining librime gear components and deeper semantics: deeper
+  `abc_segmentor` segmentation beyond current extra-tag propagation, librime
+  `memory` memorization hooks, `poet`/`grammar` contextual weighting,
+  `contextual_translation`, `unity_table_encoder`/UniTE behavior, `speller`
   previous-match segment splitting and non-auto-commit composition behavior,
   deeper `editor` variant behavior such as full segment/selection semantics,
   deeper `navigator` candidate/segment span semantics, deeper
@@ -220,5 +228,8 @@
 - Keep plugin compatibility explicit: support Yune-native extension points
   first; defer librime C++ plugin ABI compatibility unless there is a concrete
   frontend or distribution requirement.
-- Keep AI ranking and completion optional, local-first, and behind classic input
-  behavior.
+- Keep AI/LLM-native work as a separate product layer above the compatibility
+  foundation: AI can provide candidates, rerank, use context, and maintain memory
+  only through source-labeled, local-first, non-blocking interfaces with strict
+  timeout/fallback and privacy policy. Do not let AI behavior replace or block
+  classic RIME input paths.

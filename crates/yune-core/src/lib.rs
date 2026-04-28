@@ -1513,20 +1513,32 @@ impl TableEntry {
 pub struct TableDictionary {
     entries: Vec<TableEntry>,
     stems: HashMap<String, Vec<String>>,
+    encoder: TableEncoder,
 }
 
 #[derive(Clone, Debug)]
 pub struct TableEncoder {
     rules: Vec<TableEncodingRule>,
+    exclude_pattern_sources: Vec<String>,
     exclude_patterns: Vec<Regex>,
     tail_anchor: String,
     max_phrase_length: usize,
+}
+
+impl PartialEq for TableEncoder {
+    fn eq(&self, other: &Self) -> bool {
+        self.rules == other.rules
+            && self.exclude_pattern_sources == other.exclude_pattern_sources
+            && self.tail_anchor == other.tail_anchor
+            && self.max_phrase_length == other.max_phrase_length
+    }
 }
 
 impl Default for TableEncoder {
     fn default() -> Self {
         Self {
             rules: Vec::new(),
+            exclude_pattern_sources: Vec::new(),
             exclude_patterns: Vec::new(),
             tail_anchor: String::new(),
             max_phrase_length: 0,
@@ -1595,11 +1607,25 @@ impl TableEncoder {
         &mut self,
         patterns: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<(), regex::Error> {
-        self.exclude_patterns.clear();
+        let mut sources = Vec::new();
+        let mut compiled = Vec::new();
         for pattern in patterns {
-            self.exclude_patterns.push(Regex::new(pattern.as_ref())?);
+            let pattern = pattern.as_ref().to_owned();
+            compiled.push(Regex::new(&pattern)?);
+            sources.push(pattern);
         }
+        self.exclude_pattern_sources = sources;
+        self.exclude_patterns = compiled;
         Ok(())
+    }
+
+    fn add_exclude_pattern_lossy(&mut self, pattern: impl Into<String>) {
+        let pattern = pattern.into();
+        let Ok(compiled) = Regex::new(&pattern) else {
+            return;
+        };
+        self.exclude_pattern_sources.push(pattern);
+        self.exclude_patterns.push(compiled);
     }
 
     pub fn set_tail_anchor(&mut self, tail_anchor: impl Into<String>) {
@@ -1791,6 +1817,7 @@ impl TableDictionary {
         Self {
             entries: entries.into_iter().collect(),
             stems: HashMap::new(),
+            encoder: TableEncoder::new(),
         }
     }
 
@@ -1873,6 +1900,11 @@ impl TableDictionary {
     pub fn stems(&self) -> &HashMap<String, Vec<String>> {
         &self.stems
     }
+
+    #[must_use]
+    pub fn encoder(&self) -> &TableEncoder {
+        &self.encoder
+    }
 }
 
 fn parse_rime_dict_yaml_parts(
@@ -1904,6 +1936,7 @@ fn parse_rime_dict_yaml_parts(
         }
         metadata.read_header_line(line);
     }
+    metadata.finish_header();
 
     let body_start = body_start.ok_or_else(|| {
         TableDictionaryParseError::new("RIME dictionary header is missing terminating '...'")
@@ -1967,7 +2000,11 @@ fn finalize_rime_table_entries(
         .map(|entry| entry.entry)
         .collect::<Vec<_>>();
     sort_rime_table_entries(metadata, &mut entries);
-    TableDictionary { entries, stems }
+    TableDictionary {
+        entries,
+        stems,
+        encoder: metadata.encoder.clone(),
+    }
 }
 
 fn collect_rime_table_stems(entries: &[RimeParsedTableEntry]) -> HashMap<String, Vec<String>> {
@@ -2083,6 +2120,10 @@ struct RimeTableMetadata {
     sort_by_weight: bool,
     use_preset_vocabulary: bool,
     vocabulary: Option<String>,
+    encoder: TableEncoder,
+    in_encoder: bool,
+    encoder_list: Option<RimeEncoderList>,
+    pending_encoder_rule: Option<RimeEncoderRuleDraft>,
     name: Option<String>,
     has_name: bool,
     has_version: bool,
@@ -2106,6 +2147,10 @@ impl Default for RimeTableMetadata {
             sort_by_weight: true,
             use_preset_vocabulary: false,
             vocabulary: None,
+            encoder: TableEncoder::new(),
+            in_encoder: false,
+            encoder_list: None,
+            pending_encoder_rule: None,
             name: None,
             has_name: false,
             has_version: false,
@@ -2119,11 +2164,35 @@ enum RimeTableHeaderList {
     ImportTables,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RimeEncoderList {
+    ExcludePatterns,
+    Rules,
+}
+
+#[derive(Clone, Debug, Default)]
+struct RimeEncoderRuleDraft {
+    length_equal: Option<usize>,
+    length_range: Option<(usize, usize)>,
+    formula: Option<String>,
+}
+
 impl RimeTableMetadata {
     fn read_header_line(&mut self, line: &str) {
+        let indent = line.len() - line.trim_start().len();
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with('#') {
             return;
+        }
+
+        if self.in_encoder && indent > 0 {
+            self.read_encoder_header_line(trimmed);
+            return;
+        }
+        if self.in_encoder {
+            self.finish_encoder_rule();
+            self.in_encoder = false;
+            self.encoder_list = None;
         }
 
         if let Some(list) = self.reading_list {
@@ -2137,6 +2206,13 @@ impl RimeTableMetadata {
             }
             self.reading_list = None;
             self.pending_list_clear = None;
+        }
+
+        if let Some(encoder) = rime_header_value(trimmed, "encoder") {
+            self.finish_encoder_rule();
+            self.in_encoder = parse_yaml_scalar_node(encoder).is_none();
+            self.encoder_list = None;
+            return;
         }
 
         if let Some(columns) = rime_header_value(trimmed, "columns") {
@@ -2178,6 +2254,12 @@ impl RimeTableMetadata {
         if let Some(version) = rime_header_value(trimmed, "version") {
             self.has_version = parse_yaml_scalar_node(version).is_some();
         }
+    }
+
+    fn finish_header(&mut self) {
+        self.finish_encoder_rule();
+        self.in_encoder = false;
+        self.encoder_list = None;
     }
 
     fn is_complete(&self) -> bool {
@@ -2299,6 +2381,108 @@ impl RimeTableMetadata {
             }
         }
     }
+
+    fn read_encoder_header_line(&mut self, trimmed: &str) {
+        if let Some(exclude_patterns) = rime_header_value(trimmed, "exclude_patterns") {
+            self.finish_encoder_rule();
+            self.encoder_list = Some(RimeEncoderList::ExcludePatterns);
+            if let Some(patterns) = parse_inline_yaml_list(exclude_patterns) {
+                for pattern in patterns {
+                    self.encoder
+                        .add_exclude_pattern_lossy(parse_yaml_scalar(&pattern));
+                }
+                self.encoder_list = None;
+            }
+            return;
+        }
+
+        if let Some(rules) = rime_header_value(trimmed, "rules") {
+            self.finish_encoder_rule();
+            self.encoder_list = Some(RimeEncoderList::Rules);
+            if !strip_yaml_comment(rules).trim().is_empty() {
+                self.encoder_list = None;
+            }
+            return;
+        }
+
+        if let Some(tail_anchor) = rime_header_value(trimmed, "tail_anchor") {
+            self.finish_encoder_rule();
+            if let Some(tail_anchor) = parse_yaml_scalar_node(tail_anchor) {
+                self.encoder.set_tail_anchor(tail_anchor);
+            }
+            self.encoder_list = None;
+            return;
+        }
+
+        match self.encoder_list {
+            Some(RimeEncoderList::ExcludePatterns) => {
+                if let Some(pattern) = trimmed.strip_prefix("- ") {
+                    self.encoder
+                        .add_exclude_pattern_lossy(parse_yaml_scalar(pattern));
+                }
+            }
+            Some(RimeEncoderList::Rules) => self.read_encoder_rule_line(trimmed),
+            None => {}
+        }
+    }
+
+    fn read_encoder_rule_line(&mut self, trimmed: &str) {
+        if let Some(rule_property) = trimmed.strip_prefix("- ") {
+            self.finish_encoder_rule();
+            self.pending_encoder_rule = Some(RimeEncoderRuleDraft::default());
+            self.read_encoder_rule_property(rule_property.trim());
+            return;
+        }
+
+        if self.pending_encoder_rule.is_some() {
+            self.read_encoder_rule_property(trimmed);
+        }
+    }
+
+    fn read_encoder_rule_property(&mut self, trimmed: &str) {
+        if trimmed.is_empty() {
+            return;
+        }
+        if let Some(length) = rime_header_value(trimmed, "length_equal") {
+            if let Some(length) = parse_yaml_usize(length) {
+                if let Some(rule) = &mut self.pending_encoder_rule {
+                    rule.length_equal = Some(length);
+                }
+            }
+            return;
+        }
+        if let Some(range) = rime_header_value(trimmed, "length_in_range") {
+            if let Some(length_range) = parse_yaml_usize_pair(range) {
+                if let Some(rule) = &mut self.pending_encoder_rule {
+                    rule.length_range = Some(length_range);
+                }
+            }
+            return;
+        }
+        if let Some(formula) = rime_header_value(trimmed, "formula") {
+            if let Some(formula) = parse_yaml_scalar_node(formula) {
+                if let Some(rule) = &mut self.pending_encoder_rule {
+                    rule.formula = Some(formula);
+                }
+            }
+        }
+    }
+
+    fn finish_encoder_rule(&mut self) {
+        let Some(rule) = self.pending_encoder_rule.take() else {
+            return;
+        };
+        let Some(formula) = rule.formula else {
+            return;
+        };
+        if let Some(length) = rule.length_equal {
+            let _ = self.encoder.add_length_equal_rule(length, &formula);
+        } else if let Some((min_length, max_length)) = rule.length_range {
+            let _ = self
+                .encoder
+                .add_length_in_range_rule(min_length, max_length, &formula);
+        }
+    }
 }
 
 fn parse_inline_yaml_list(input: &str) -> Option<Vec<String>> {
@@ -2383,6 +2567,18 @@ fn parse_yaml_bool(input: &str) -> Option<bool> {
         "false" | "no" | "off" | "0" => Some(false),
         _ => None,
     }
+}
+
+fn parse_yaml_usize(input: &str) -> Option<usize> {
+    parse_yaml_scalar_node(input)?.parse().ok()
+}
+
+fn parse_yaml_usize_pair(input: &str) -> Option<(usize, usize)> {
+    let items = parse_inline_yaml_list(input)?;
+    if items.len() != 2 {
+        return None;
+    }
+    Some((parse_yaml_usize(&items[0])?, parse_yaml_usize(&items[1])?))
 }
 
 fn parse_yaml_scalar_value(value: &str) -> String {
@@ -7506,6 +7702,47 @@ columns: [text, code, stem]
             Some(vec!["a'b".to_owned(), "a'c".to_owned()])
         );
         assert!(!dictionary.stems().contains_key("未编码"));
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_encoder_settings_like_librime_dict_settings() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: encoder_sample
+version: "0.1"
+sort: original
+encoder:
+  exclude_patterns:
+    - '^x.*$'
+  rules:
+    - length_equal: 2
+      formula: "AaAzBaBz"
+    - length_in_range: [3, 5]
+      formula: "AaBaCaZz"
+  tail_anchor: "'"
+...
+
+甲	abc
+乙	def
+"#,
+        )
+        .expect("dictionary should parse");
+
+        let encoder = dictionary.encoder();
+        assert!(encoder.loaded());
+        assert_eq!(encoder.max_phrase_length(), 5);
+        assert_eq!(encoder.rules().len(), 2);
+        assert_eq!(encoder.rules()[0].min_word_length, 2);
+        assert_eq!(encoder.rules()[0].max_word_length, 2);
+        assert_eq!(encoder.rules()[1].min_word_length, 3);
+        assert_eq!(encoder.rules()[1].max_word_length, 5);
+        assert!(encoder.is_code_excluded("xyz"));
+        assert!(!encoder.is_code_excluded("axyz"));
+        assert_eq!(
+            encoder.encode(&["zyx'wvu'tsr", "qpo'nmlk'jih", "gfedcba"]),
+            Some("zqga".to_owned())
+        );
     }
 
     #[test]

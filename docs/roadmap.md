@@ -151,7 +151,8 @@
   column metadata for coded entries, deduped per entry text, as groundwork for
   reverse data and encoder compatibility, and added a focused Rust table-encoder
   primitive for librime-compatible `encoder/rules` formulas, exclude-pattern
-  matching, tail-anchor indexing, and raw-code encoding.
+  matching, tail-anchor indexing, raw-code encoding, and source `.dict.yaml`
+  encoder-setting parsing.
 - Tightened librime ABI lifecycle behavior for `RimeTraits`, session activity
   cleanup, `RimeFinalize`, deployment notifications, `RimeSyncUserData`,
   unread commit buffering, struct-layout coverage, menu page-size parsing,
@@ -187,9 +188,9 @@
 - Expand dictionary compatibility beyond source `.dict.yaml` parsing toward
   librime's compiled `.table.bin`, `.prism.bin`, `.reverse.bin`, pack
   dictionaries at compiled-data level, preset-vocabulary phrase injection,
-  stem-column consumption in compiled reverse data and encoders, schema/header
-  parsing and phrase lookup around the focused table-encoder primitive,
-  correction data, checksums, and rebuild heuristics.
+  stem-column consumption in compiled reverse data and encoders, phrase lookup
+  around the focused table-encoder primitive, correction data, checksums, and
+  rebuild heuristics.
 - Expand user dictionary compatibility beyond the current plain text userdb
   shims toward librime's LevelDB/userdb storage, snapshot merging, recovery,
   learning, and frequency update semantics.

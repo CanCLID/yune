@@ -147,6 +147,9 @@
   ABI commits: committed ASCII table text is converted to full-width text under
   `full_shape`, and otherwise unhandled printable ASCII keys are post-processed
   into full-width commits.
+- Expanded source dictionary compatibility to retain librime-style `stem`
+  column metadata for coded entries, deduped per entry text, as groundwork for
+  reverse data and encoder compatibility.
 - Tightened librime ABI lifecycle behavior for `RimeTraits`, session activity
   cleanup, `RimeFinalize`, deployment notifications, `RimeSyncUserData`,
   unread commit buffering, struct-layout coverage, menu page-size parsing,
@@ -182,7 +185,8 @@
 - Expand dictionary compatibility beyond source `.dict.yaml` parsing toward
   librime's compiled `.table.bin`, `.prism.bin`, `.reverse.bin`, pack
   dictionaries at compiled-data level, preset-vocabulary phrase injection,
-  stem columns, encoders, correction data, checksums, and rebuild heuristics.
+  stem-column consumption in compiled reverse data and encoders, correction
+  data, checksums, and rebuild heuristics.
 - Expand user dictionary compatibility beyond the current plain text userdb
   shims toward librime's LevelDB/userdb storage, snapshot merging, recovery,
   learning, and frequency update semantics.

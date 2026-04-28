@@ -142,8 +142,8 @@ The strongest compatibility progress is currently in two areas:
   candidates, and source dictionary parsing handles many librime/yaml-cpp edge
   cases around headers, YAML nulls, quoted scalars, `columns`, `import_tables`,
   duplicate rows, literal hash-prefixed entries, raw text whitespace, row
-  weights, and focused preset-vocabulary weight lookup/scaling for coded
-  entries.
+  weights, focused `stem` column collection for future reverse/encoder use, and
+  focused preset-vocabulary weight lookup/scaling for coded entries.
 - ABI edge-case compatibility: recent coverage also locks down struct layouts,
   self-versioned cleanup, unread commit buffering, session lifetime after
   finalize, state-label indexing, selected-schema page-size parsing, deployment
@@ -190,8 +190,8 @@ not just missing tests:
 - Dictionary compatibility currently focuses on source `.dict.yaml` loading.
   Librime also builds and consumes `.table.bin`, `.prism.bin`, `.reverse.bin`,
   pack dictionaries at compiled-data level, preset-vocabulary phrase injection,
-  stem columns, encoder rules, correction data, checksums, and rebuild
-  heuristics.
+  stem-column consumption through compiled reverse data and encoders, encoder
+  rules, correction data, checksums, and rebuild heuristics.
 - User dictionary support is currently a plain text compatibility shim. Librime
   also has LevelDB-backed userdb storage, snapshots, recovery, learning, and
   frequency update behavior.

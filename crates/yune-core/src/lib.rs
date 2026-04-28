@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Candidate {
@@ -1512,6 +1512,7 @@ impl TableEntry {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct TableDictionary {
     entries: Vec<TableEntry>,
+    stems: HashMap<String, Vec<String>>,
 }
 
 impl TableDictionary {
@@ -1519,13 +1520,13 @@ impl TableDictionary {
     pub fn new(entries: impl IntoIterator<Item = TableEntry>) -> Self {
         Self {
             entries: entries.into_iter().collect(),
+            stems: HashMap::new(),
         }
     }
 
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
         let (metadata, entries) = parse_rime_dict_yaml_parts(input)?;
-        let entries = finalize_rime_table_entries(&metadata, entries);
-        Ok(Self { entries })
+        Ok(finalize_rime_table_entries(&metadata, entries))
     }
 
     pub fn parse_rime_dict_yaml_with_imports(
@@ -1534,8 +1535,7 @@ impl TableDictionary {
     ) -> Result<Self, TableDictionaryParseError> {
         let (metadata, mut entries) = parse_rime_dict_yaml_parts(input)?;
         append_rime_import_table_entries(&metadata, &mut entries, &mut import_loader)?;
-        let entries = finalize_rime_table_entries(&metadata, entries);
-        Ok(Self { entries })
+        Ok(finalize_rime_table_entries(&metadata, entries))
     }
 
     pub fn parse_rime_dict_yaml_with_imports_and_packs(
@@ -1560,7 +1560,7 @@ impl TableDictionary {
         let (metadata, mut entries) = parse_rime_dict_yaml_parts(input)?;
         append_rime_import_table_entries(&metadata, &mut entries, &mut import_loader)?;
         apply_rime_preset_vocabulary_weights(&metadata, &mut entries, &mut vocabulary_loader);
-        let mut entries = finalize_rime_table_entries(&metadata, entries);
+        let mut dictionary = finalize_rime_table_entries(&metadata, entries);
 
         for pack in packs {
             let pack = pack.as_ref();
@@ -1585,17 +1585,23 @@ impl TableDictionary {
                 &mut pack_entries,
                 &mut vocabulary_loader,
             );
-            let mut pack_entries = finalize_rime_table_entries(&pack_metadata, pack_entries);
-            entries.append(&mut pack_entries);
+            let mut pack_dictionary = finalize_rime_table_entries(&pack_metadata, pack_entries);
+            dictionary.entries.append(&mut pack_dictionary.entries);
+            merge_rime_table_stems(&mut dictionary.stems, pack_dictionary.stems);
         }
 
-        sort_rime_table_entries(&metadata, &mut entries);
-        Ok(Self { entries })
+        sort_rime_table_entries(&metadata, &mut dictionary.entries);
+        Ok(dictionary)
     }
 
     #[must_use]
     pub fn entries(&self) -> &[TableEntry] {
         &self.entries
+    }
+
+    #[must_use]
+    pub fn stems(&self) -> &HashMap<String, Vec<String>> {
+        &self.stems
     }
 }
 
@@ -1683,14 +1689,50 @@ fn append_rime_import_table_entries(
 fn finalize_rime_table_entries(
     metadata: &RimeTableMetadata,
     mut entries: Vec<RimeParsedTableEntry>,
-) -> Vec<TableEntry> {
+) -> TableDictionary {
+    let stems = collect_rime_table_stems(&entries);
     dedupe_rime_table_entries(&mut entries);
     let mut entries = entries
         .into_iter()
         .map(|entry| entry.entry)
         .collect::<Vec<_>>();
     sort_rime_table_entries(metadata, &mut entries);
-    entries
+    TableDictionary { entries, stems }
+}
+
+fn collect_rime_table_stems(entries: &[RimeParsedTableEntry]) -> HashMap<String, Vec<String>> {
+    let mut stems: HashMap<String, BTreeSet<String>> = HashMap::new();
+    for entry in entries {
+        let Some(stem) = entry.raw_stem.as_deref().filter(|stem| !stem.is_empty()) else {
+            continue;
+        };
+        if entry.entry.code.is_empty() {
+            continue;
+        }
+        stems
+            .entry(entry.entry.text.clone())
+            .or_default()
+            .insert(stem.to_owned());
+    }
+    stems
+        .into_iter()
+        .map(|(text, stems)| (text, stems.into_iter().collect()))
+        .collect()
+}
+
+fn merge_rime_table_stems(
+    target: &mut HashMap<String, Vec<String>>,
+    source: HashMap<String, Vec<String>>,
+) {
+    for (text, stems) in source {
+        let mut merged = target
+            .remove(&text)
+            .unwrap_or_default()
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+        merged.extend(stems);
+        target.insert(text, merged.into_iter().collect());
+    }
 }
 
 fn apply_rime_preset_vocabulary_weights(
@@ -1780,6 +1822,7 @@ struct RimeTableMetadata {
 struct RimeParsedTableEntry {
     entry: TableEntry,
     raw_weight: String,
+    raw_stem: Option<String>,
     single_syllable_duplicate_key: Option<(String, String)>,
 }
 
@@ -1906,11 +1949,16 @@ impl RimeTableMetadata {
             .copied()
             .unwrap_or("")
             .to_owned();
+        let raw_stem = self
+            .column_index("stem")
+            .and_then(|column| fields.get(column))
+            .map(|value| (*value).to_owned());
         let single_syllable_duplicate_key =
             (rime_code_syllable_count(code) == 1).then(|| (text.to_owned(), code.to_owned()));
         Some(RimeParsedTableEntry {
             entry: TableEntry::new(code, text, weight),
             raw_weight,
+            raw_stem,
             single_syllable_duplicate_key,
         })
     }
@@ -7158,6 +7206,36 @@ columns:
         assert_eq!(entries[0].code, "ab");
         assert_eq!(entries[1].text, "晭");
         assert_eq!(entries[1].code, "abgr");
+        assert_eq!(
+            dictionary.stems().get("晭").cloned(),
+            Some(vec!["ab'gr".to_owned()])
+        );
+    }
+
+    #[test]
+    fn parses_rime_dict_yaml_stem_columns_like_librime_entry_collector() {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(
+            r#"
+---
+name: stem_sample
+version: "0.1"
+sort: original
+columns: [text, code, stem]
+...
+
+明	ab	a'b
+明	ab	a'b
+明	ac	a'c
+未编码		ignored
+"#,
+        )
+        .expect("dictionary should parse");
+
+        assert_eq!(
+            dictionary.stems().get("明").cloned(),
+            Some(vec!["a'b".to_owned(), "a'c".to_owned()])
+        );
+        assert!(!dictionary.stems().contains_key("未编码"));
     }
 
     #[test]

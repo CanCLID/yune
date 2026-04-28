@@ -3826,6 +3826,10 @@ struct SpellingAlgebra {
     formulas: Vec<SpellingAlgebraFormula>,
 }
 
+const SPELLING_ALGEBRA_FUZZY_PENALTY: f32 = -0.693_147_2;
+const SPELLING_ALGEBRA_ABBREVIATION_PENALTY: f32 = -0.693_147_2;
+const SPELLING_ALGEBRA_CORRECTION_PENALTY: f32 = -4.605_170_2;
+
 impl SpellingAlgebra {
     fn parse(formulas: &[String]) -> Self {
         let mut parsed = Vec::new();
@@ -3853,6 +3857,8 @@ impl SpellingAlgebra {
                         next.push((code, candidate.clone()));
                     }
                     if formula.add_transformed() && !transformed.is_empty() {
+                        let mut candidate = candidate;
+                        candidate.quality += formula.quality_penalty();
                         next.push((transformed, candidate));
                     }
                 } else {
@@ -3873,6 +3879,7 @@ enum SpellingAlgebraFormula {
         replacement: String,
         keep_original: bool,
         add_transformed: bool,
+        quality_penalty: f32,
     },
     Erase(Regex),
 }
@@ -3883,8 +3890,12 @@ impl SpellingAlgebraFormula {
         let args = definition.split(separator).collect::<Vec<_>>();
         match args.first().copied()? {
             "xlit" => Self::parse_xlit(&args),
-            "xform" => Self::parse_transform(&args, false, true),
-            "derive" | "fuzz" | "abbrev" => Self::parse_transform(&args, true, true),
+            "xform" => Self::parse_transform(&args, false, true, 0.0),
+            "derive" => Self::parse_derivation(&args),
+            "fuzz" => Self::parse_transform(&args, true, true, SPELLING_ALGEBRA_FUZZY_PENALTY),
+            "abbrev" => {
+                Self::parse_transform(&args, true, true, SPELLING_ALGEBRA_ABBREVIATION_PENALTY)
+            }
             "erase" => Self::parse_erase(&args),
             _ => None,
         }
@@ -3902,7 +3913,12 @@ impl SpellingAlgebraFormula {
         Some(Self::Transliterate(left.into_iter().zip(right).collect()))
     }
 
-    fn parse_transform(args: &[&str], keep_original: bool, add_transformed: bool) -> Option<Self> {
+    fn parse_transform(
+        args: &[&str],
+        keep_original: bool,
+        add_transformed: bool,
+        quality_penalty: f32,
+    ) -> Option<Self> {
         if args.len() < 3 || args[1].is_empty() {
             return None;
         }
@@ -3911,7 +3927,18 @@ impl SpellingAlgebraFormula {
             replacement: args[2].to_owned(),
             keep_original,
             add_transformed,
+            quality_penalty,
         })
+    }
+
+    fn parse_derivation(args: &[&str]) -> Option<Self> {
+        let quality_penalty = match args.get(3).copied() {
+            Some("abbrev") => SPELLING_ALGEBRA_ABBREVIATION_PENALTY,
+            Some("fuzz") => SPELLING_ALGEBRA_FUZZY_PENALTY,
+            Some("correction") => SPELLING_ALGEBRA_CORRECTION_PENALTY,
+            _ => 0.0,
+        };
+        Self::parse_transform(args, true, true, quality_penalty)
     }
 
     fn parse_erase(args: &[&str]) -> Option<Self> {
@@ -3925,6 +3952,15 @@ impl SpellingAlgebraFormula {
         match self {
             Self::Transform { keep_original, .. } => *keep_original,
             _ => false,
+        }
+    }
+
+    fn quality_penalty(&self) -> f32 {
+        match self {
+            Self::Transform {
+                quality_penalty, ..
+            } => *quality_penalty,
+            _ => 0.0,
         }
     }
 
@@ -3983,14 +4019,21 @@ impl SpellingAlgebraFormula {
 }
 
 fn dedupe_spelling_algebra_entries(entries: Vec<(String, Candidate)>) -> Vec<(String, Candidate)> {
-    let mut seen = HashSet::new();
-    let mut deduped = Vec::new();
+    let mut deduped: Vec<(String, Candidate)> = Vec::new();
     for (code, candidate) in entries {
-        if seen.insert((
-            code.clone(),
-            candidate.text.clone(),
-            candidate.comment.clone(),
-        )) {
+        if let Some((_, existing_candidate)) =
+            deduped
+                .iter_mut()
+                .find(|(existing_code, existing_candidate)| {
+                    existing_code == &code
+                        && existing_candidate.text == candidate.text
+                        && existing_candidate.comment == candidate.comment
+                })
+        {
+            if candidate.quality > existing_candidate.quality {
+                *existing_candidate = candidate;
+            }
+        } else {
             deduped.push((code, candidate));
         }
     }
@@ -8440,10 +8483,20 @@ sort: original
 
 略	lue	0
 女	nv	0
+病	bing	0
+平	pin	0
+长	chang	0
+错	cuo	0
 "#,
         )
         .expect("dictionary should parse");
-        let formulas = vec!["xform/^lue$/lve/".to_owned(), "derive/^nv$/nu/".to_owned()];
+        let formulas = vec![
+            "xform/^lue$/lve/".to_owned(),
+            "derive/^nv$/nu/".to_owned(),
+            "fuzz/^bing$/pin/".to_owned(),
+            "abbrev/^chang$/c/".to_owned(),
+            "derive/^cuo$/cu/correction".to_owned(),
+        ];
         let translator =
             StaticTableTranslator::from_dictionary(dictionary).with_spelling_algebra(&formulas);
 
@@ -8460,6 +8513,27 @@ sort: original
         let nu = translator.translate("nu");
         assert_eq!(nu[0].text, "女");
         assert_eq!(nu[0].comment, "nv");
+
+        let pin = translator.translate("pin");
+        let exact = pin
+            .iter()
+            .find(|candidate| candidate.text == "平")
+            .expect("normal spelling candidate should be present");
+        let fuzzy = pin
+            .iter()
+            .find(|candidate| candidate.text == "病")
+            .expect("fuzzy spelling candidate should be present");
+        assert_eq!(exact.quality, 1.0);
+        assert!((fuzzy.quality - 0.5).abs() < f32::EPSILON);
+        assert!(exact.quality > fuzzy.quality);
+
+        let abbreviation = translator.translate("c");
+        assert_eq!(abbreviation[0].text, "长");
+        assert!((abbreviation[0].quality - 0.5).abs() < f32::EPSILON);
+
+        let correction = translator.translate("cu");
+        assert_eq!(correction[0].text, "错");
+        assert!((correction[0].quality - 0.01).abs() < 0.000_001);
     }
 
     #[test]

@@ -79,7 +79,7 @@ pub unsafe extern "C" fn RimeGetContext(
             session
                 .chord_composer
                 .as_ref()
-                .and_then(|composer| composer.prompt.clone()),
+                .and_then(|composer| composer.prompt().map(ToOwned::to_owned)),
         )
     };
     let menu_settings = context_menu_settings(&snapshot.status.schema_id);
@@ -264,7 +264,7 @@ pub unsafe extern "C" fn RimeGetStatus(session_id: RimeSessionId, status: *mut R
     if session
         .chord_composer
         .as_ref()
-        .and_then(|composer| composer.prompt.as_ref())
+        .and_then(|composer| composer.prompt())
         .is_some()
     {
         snapshot.is_composing = true;

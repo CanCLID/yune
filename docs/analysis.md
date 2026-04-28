@@ -143,7 +143,10 @@ The strongest compatibility progress is currently in two areas:
   cases around headers, YAML nulls, quoted scalars, `columns`, `import_tables`,
   duplicate rows, literal hash-prefixed entries, raw text whitespace, row
   weights, focused `stem` column collection for future reverse/encoder use, and
-  focused preset-vocabulary weight lookup/scaling for coded entries.
+  focused preset-vocabulary weight lookup/scaling for coded entries. A focused
+  table-encoder primitive now matches librime's raw-code formula behavior for
+  `encoder/rules`, exclude patterns, and tail-anchor indexing, but is not yet
+  wired into dictionary phrase injection or learning.
 - ABI edge-case compatibility: recent coverage also locks down struct layouts,
   self-versioned cleanup, unread commit buffering, session lifetime after
   finalize, state-label indexing, selected-schema page-size parsing, deployment
@@ -191,7 +194,8 @@ not just missing tests:
   Librime also builds and consumes `.table.bin`, `.prism.bin`, `.reverse.bin`,
   pack dictionaries at compiled-data level, preset-vocabulary phrase injection,
   stem-column consumption through compiled reverse data and encoders, encoder
-  rules, correction data, checksums, and rebuild heuristics.
+  rule parsing from dictionary settings, correction data, checksums, and rebuild
+  heuristics.
 - User dictionary support is currently a plain text compatibility shim. Librime
   also has LevelDB-backed userdb storage, snapshots, recovery, learning, and
   frequency update behavior.

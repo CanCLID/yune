@@ -1515,6 +1515,276 @@ pub struct TableDictionary {
     stems: HashMap<String, Vec<String>>,
 }
 
+#[derive(Clone, Debug)]
+pub struct TableEncoder {
+    rules: Vec<TableEncodingRule>,
+    exclude_patterns: Vec<Regex>,
+    tail_anchor: String,
+    max_phrase_length: usize,
+}
+
+impl Default for TableEncoder {
+    fn default() -> Self {
+        Self {
+            rules: Vec::new(),
+            exclude_patterns: Vec::new(),
+            tail_anchor: String::new(),
+            max_phrase_length: 0,
+        }
+    }
+}
+
+impl TableEncoder {
+    const MAX_PHRASE_LENGTH: usize = 32;
+
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[must_use]
+    pub fn loaded(&self) -> bool {
+        !self.rules.is_empty()
+    }
+
+    #[must_use]
+    pub fn rules(&self) -> &[TableEncodingRule] {
+        &self.rules
+    }
+
+    #[must_use]
+    pub fn max_phrase_length(&self) -> usize {
+        self.max_phrase_length
+    }
+
+    pub fn add_length_equal_rule(
+        &mut self,
+        length: usize,
+        formula: &str,
+    ) -> Result<(), TableEncoderFormulaError> {
+        let rule = TableEncodingRule::from_formula(length, length, formula)?;
+        self.max_phrase_length = self
+            .max_phrase_length
+            .max(length)
+            .min(Self::MAX_PHRASE_LENGTH);
+        self.rules.push(rule);
+        Ok(())
+    }
+
+    pub fn add_length_in_range_rule(
+        &mut self,
+        min_length: usize,
+        max_length: usize,
+        formula: &str,
+    ) -> Result<(), TableEncoderFormulaError> {
+        if min_length > max_length {
+            return Err(TableEncoderFormulaError::new(
+                "invalid encoder length range",
+            ));
+        }
+        let rule = TableEncodingRule::from_formula(min_length, max_length, formula)?;
+        self.max_phrase_length = self
+            .max_phrase_length
+            .max(max_length)
+            .min(Self::MAX_PHRASE_LENGTH);
+        self.rules.push(rule);
+        Ok(())
+    }
+
+    pub fn set_exclude_patterns(
+        &mut self,
+        patterns: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Result<(), regex::Error> {
+        self.exclude_patterns.clear();
+        for pattern in patterns {
+            self.exclude_patterns.push(Regex::new(pattern.as_ref())?);
+        }
+        Ok(())
+    }
+
+    pub fn set_tail_anchor(&mut self, tail_anchor: impl Into<String>) {
+        self.tail_anchor = tail_anchor.into();
+    }
+
+    #[must_use]
+    pub fn is_code_excluded(&self, code: &str) -> bool {
+        self.exclude_patterns.iter().any(|pattern| {
+            pattern
+                .find(code)
+                .is_some_and(|matched| matched.start() == 0 && matched.end() == code.len())
+        })
+    }
+
+    #[must_use]
+    pub fn encode(&self, raw_code: &[impl AsRef<str>]) -> Option<String> {
+        let num_syllables = raw_code.len();
+        for rule in &self.rules {
+            if num_syllables < rule.min_word_length || num_syllables > rule.max_word_length {
+                continue;
+            }
+
+            let mut encoded = String::new();
+            let mut previous = CodeCoords::default();
+            let mut current_encoded = CodeCoords::default();
+            for original in &rule.coords {
+                let mut coords = *original;
+                if coords.char_index < 0 {
+                    coords.char_index += num_syllables as isize;
+                }
+                if coords.char_index >= num_syllables as isize || coords.char_index < 0 {
+                    continue;
+                }
+                if original.char_index < 0 && coords.char_index < current_encoded.char_index {
+                    continue;
+                }
+
+                let start_index = if coords.char_index == current_encoded.char_index {
+                    current_encoded.code_index + 1
+                } else {
+                    0
+                };
+                let code = raw_code[coords.char_index as usize].as_ref();
+                coords.code_index = self.calculate_code_index(code, coords.code_index, start_index);
+                if coords.code_index >= code.len() as isize || coords.code_index < 0 {
+                    continue;
+                }
+                if (original.char_index < 0 || original.code_index < 0)
+                    && coords.char_index == current_encoded.char_index
+                    && coords.code_index <= current_encoded.code_index
+                    && (original.char_index != previous.char_index
+                        || original.code_index != previous.code_index)
+                {
+                    continue;
+                }
+
+                encoded.push(code.as_bytes()[coords.code_index as usize] as char);
+                previous = *original;
+                current_encoded = coords;
+            }
+            if !encoded.is_empty() {
+                return Some(encoded);
+            }
+        }
+        None
+    }
+
+    fn calculate_code_index(&self, code: &str, mut index: isize, start: isize) -> isize {
+        let bytes = code.as_bytes();
+        let tail_anchor = self.tail_anchor.as_bytes();
+        let mut byte_index = 0;
+        if index < 0 {
+            byte_index = bytes.len() as isize - 1;
+            if let Some(tail) = bytes
+                .iter()
+                .enumerate()
+                .skip((start + 1).max(0) as usize)
+                .find_map(|(tail_index, byte)| tail_anchor.contains(byte).then_some(tail_index))
+            {
+                byte_index = tail as isize - 1;
+            }
+            while {
+                index += 1;
+                index < 0
+            } {
+                loop {
+                    byte_index -= 1;
+                    if byte_index < 0 || !tail_anchor.contains(&bytes[byte_index as usize]) {
+                        break;
+                    }
+                }
+            }
+        } else {
+            while index > 0 {
+                index -= 1;
+                loop {
+                    byte_index += 1;
+                    if byte_index >= bytes.len() as isize
+                        || !tail_anchor.contains(&bytes[byte_index as usize])
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        byte_index
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TableEncodingRule {
+    pub min_word_length: usize,
+    pub max_word_length: usize,
+    pub coords: Vec<CodeCoords>,
+}
+
+impl TableEncodingRule {
+    fn from_formula(
+        min_word_length: usize,
+        max_word_length: usize,
+        formula: &str,
+    ) -> Result<Self, TableEncoderFormulaError> {
+        if formula.len() % 2 != 0 {
+            return Err(TableEncoderFormulaError::new(
+                "encoder formula length is odd",
+            ));
+        }
+        let mut coords = Vec::new();
+        for pair in formula.as_bytes().chunks_exact(2) {
+            let char_index = parse_encoder_formula_index(pair[0], b'A', b'Z')
+                .ok_or_else(|| TableEncoderFormulaError::new("invalid character index"))?;
+            let code_index = parse_encoder_formula_index(pair[1], b'a', b'z')
+                .ok_or_else(|| TableEncoderFormulaError::new("invalid code index"))?;
+            coords.push(CodeCoords {
+                char_index,
+                code_index,
+            });
+        }
+        Ok(Self {
+            min_word_length,
+            max_word_length,
+            coords,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct CodeCoords {
+    pub char_index: isize,
+    pub code_index: isize,
+}
+
+fn parse_encoder_formula_index(byte: u8, lower: u8, upper: u8) -> Option<isize> {
+    if !(lower..=upper).contains(&byte) {
+        return None;
+    }
+    Some(if byte >= lower + 20 {
+        byte as isize - upper as isize - 1
+    } else {
+        byte as isize - lower as isize
+    })
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TableEncoderFormulaError {
+    message: String,
+}
+
+impl TableEncoderFormulaError {
+    fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+        }
+    }
+}
+
+impl std::fmt::Display for TableEncoderFormulaError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for TableEncoderFormulaError {}
+
 impl TableDictionary {
     #[must_use]
     pub fn new(entries: impl IntoIterator<Item = TableEntry>) -> Self {
@@ -5095,10 +5365,10 @@ const fn select_index_from_digit(ch: char) -> usize {
 mod tests {
     use super::{
         parse_key_sequence, Candidate, CandidateFilter, CandidateRanker, CandidateSource,
-        CharsetFilter, Context, Engine, HistoryTranslator, KeyCode, MockAiRanker,
+        CharsetFilter, CodeCoords, Context, Engine, HistoryTranslator, KeyCode, MockAiRanker,
         PunctuationTranslator, RerankResult, ReverseLookupFilter, ReverseLookupTranslator,
-        SimplifierFilter, SingleCharFilter, StaticTableTranslator, TableDictionary, TaggedFilter,
-        Translator, UniquifierFilter,
+        SimplifierFilter, SingleCharFilter, StaticTableTranslator, TableDictionary, TableEncoder,
+        TaggedFilter, Translator, UniquifierFilter,
     };
 
     struct CommentTranslator;
@@ -7236,6 +7506,151 @@ columns: [text, code, stem]
             Some(vec!["a'b".to_owned(), "a'c".to_owned()])
         );
         assert!(!dictionary.stems().contains_key("未编码"));
+    }
+
+    #[test]
+    fn table_encoder_parses_librime_formula_settings() {
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_equal_rule(2, "AaAzBaBz")
+            .expect("librime encoder formula should parse");
+        encoder
+            .add_length_equal_rule(3, "AaBaCaBz")
+            .expect("librime encoder formula should parse");
+        encoder
+            .add_length_in_range_rule(4, 9, "AaBaCaZz")
+            .expect("librime encoder formula should parse");
+
+        assert!(encoder.loaded());
+        assert_eq!(encoder.max_phrase_length(), 9);
+        assert_eq!(encoder.rules().len(), 3);
+        assert_eq!(encoder.rules()[0].min_word_length, 2);
+        assert_eq!(encoder.rules()[0].max_word_length, 2);
+        assert_eq!(
+            encoder.rules()[0].coords,
+            [
+                CodeCoords {
+                    char_index: 0,
+                    code_index: 0
+                },
+                CodeCoords {
+                    char_index: 0,
+                    code_index: -1
+                },
+                CodeCoords {
+                    char_index: 1,
+                    code_index: 0
+                },
+                CodeCoords {
+                    char_index: 1,
+                    code_index: -1
+                },
+            ]
+        );
+        assert_eq!(
+            encoder.rules()[2].coords,
+            [
+                CodeCoords {
+                    char_index: 0,
+                    code_index: 0
+                },
+                CodeCoords {
+                    char_index: 1,
+                    code_index: 0
+                },
+                CodeCoords {
+                    char_index: 2,
+                    code_index: 0
+                },
+                CodeCoords {
+                    char_index: -1,
+                    code_index: -1
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn table_encoder_matches_librime_raw_code_encoding_cases() {
+        let code2 = ["abc", "def"];
+        let code3 = ["abc", "def", "ghi"];
+
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_equal_rule(2, "AaAbBaBb")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code2), Some("abde".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_in_range_rule(3, 5, "AaAzBaBzCaCz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code3), Some("acdfgi".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_equal_rule(2, "AaAzBaBzCaCz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code2), Some("acdf".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_equal_rule(2, "AaAbZyZz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code2), Some("abef".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_equal_rule(2, "AaAaBbBbZzZz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code2), Some("aaeeff".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_in_range_rule(3, 5, "AzAzByByZaZa")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code3), Some("cceegg".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder
+            .add_length_equal_rule(2, "AaBaYaZaZz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code2), Some("adf".to_owned()));
+    }
+
+    #[test]
+    fn table_encoder_honors_librime_exclude_patterns_and_tail_anchor() {
+        let mut encoder = TableEncoder::new();
+        encoder
+            .set_exclude_patterns(["^x.*$"])
+            .expect("exclude regex should compile");
+        assert!(encoder.is_code_excluded("x"));
+        assert!(encoder.is_code_excluded("xyz"));
+        assert!(!encoder.is_code_excluded("XYZ"));
+        assert!(!encoder.is_code_excluded("ax"));
+
+        let code = ["zyx'wvu'tsr", "qpo'nmlk'jih", "gfedcba"];
+
+        let mut encoder = TableEncoder::new();
+        encoder.set_tail_anchor("'");
+        encoder
+            .add_length_equal_rule(3, "AaAzBaBzCaCz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code), Some("zxqoga".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder.set_tail_anchor("'");
+        encoder
+            .add_length_equal_rule(3, "AaAbAcAzBwBxByBz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code), Some("zyxuqpo".to_owned()));
+
+        let mut encoder = TableEncoder::new();
+        encoder.set_tail_anchor("'");
+        encoder
+            .add_length_equal_rule(3, "AaAbAcAdAzBaBxByBz")
+            .expect("formula should parse");
+        assert_eq!(encoder.encode(&code), Some("zyxwuqpo".to_owned()));
     }
 
     #[test]

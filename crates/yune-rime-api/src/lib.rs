@@ -35,6 +35,7 @@ mod levers;
 mod modules;
 mod notifications;
 mod runtime;
+mod schema_api;
 mod userdb;
 pub use abi::*;
 use api_table::state_label_cache;
@@ -51,6 +52,7 @@ pub use modules::*;
 use notifications::notify;
 pub use notifications::RimeSetNotificationHandler;
 pub use runtime::*;
+pub use schema_api::*;
 pub use userdb::*;
 
 const XK_BACKSPACE: c_int = 0xff08;
@@ -1203,57 +1205,6 @@ fn restore_switcher_saved_options(session: &mut SessionState, schema_id: &str) {
         };
         session.engine.set_option(option_name, value);
     }
-}
-
-/// Returns the currently available schema list.
-///
-/// # Safety
-///
-/// `schema_list` must be either null or point to writable storage. When this
-/// function returns `TRUE`, the caller must release nested allocations with
-/// `RimeFreeSchemaList`.
-#[no_mangle]
-pub unsafe extern "C" fn RimeGetSchemaList(schema_list: *mut RimeSchemaList) -> Bool {
-    if schema_list.is_null() {
-        return FALSE;
-    }
-
-    clear_schema_list(schema_list);
-    populate_schema_list(schema_list, deployed_schema_list_entries())
-}
-
-fn populate_schema_list(schema_list: *mut RimeSchemaList, entries: Vec<(String, String)>) -> Bool {
-    if entries.is_empty() {
-        return FALSE;
-    }
-
-    let mut list = Vec::with_capacity(entries.len());
-    for (schema_id, name) in entries {
-        let Ok(schema_id) = CString::new(schema_id) else {
-            free_schema_list_items(&mut list);
-            return FALSE;
-        };
-        let Ok(name) = CString::new(name) else {
-            free_schema_list_items(&mut list);
-            return FALSE;
-        };
-        list.push(RimeSchemaListItem {
-            schema_id: schema_id.into_raw(),
-            name: name.into_raw(),
-            reserved: ptr::null_mut(),
-        });
-    }
-    let size = list.len();
-    let list_ptr = list.as_mut_ptr();
-    std::mem::forget(list);
-
-    // SAFETY: `schema_list` is non-null and points to caller-owned writable
-    // storage; `list_ptr` owns `size` initialized schema-list items.
-    unsafe {
-        (*schema_list).size = size;
-        (*schema_list).list = list_ptr;
-    }
-    TRUE
 }
 
 /// Returns a switch state label from the selected schema config.
@@ -5768,7 +5719,7 @@ fn config_file_path(root: &str, resource_id: &str) -> PathBuf {
     Path::new(root).join(format!("{resource_id}.yaml"))
 }
 
-fn deployed_schema_list_entries() -> Vec<(String, String)> {
+pub(crate) fn deployed_schema_list_entries() -> Vec<(String, String)> {
     let default_config = load_runtime_config_root("default", ConfigOpenKind::Deployed);
     let Some(schema_list) = find_config_value(&default_config, "schema_list") else {
         return Vec::new();

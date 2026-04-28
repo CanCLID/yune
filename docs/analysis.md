@@ -149,8 +149,11 @@ The strongest compatibility progress is currently in two areas:
   `.dict.yaml` encoder settings are parsed into dictionary metadata. The parsed
   rule-based table encoder is now wired into a focused source-build path for
   uncoded dictionary phrase rows and preset-vocabulary phrase injection when
-  every phrase character can be translated by coded word entries or stems, but
-  learning and compiled reverse-data consumption remain open.
+  every phrase character can be translated by coded word entries or stems. A
+  focused librime-compatible CRC32 checksum primitive now covers the
+  `ChecksumComputer` initial-remainder behavior and dictionary source/preset
+  vocabulary checksum ordering used by `DictCompiler`, but learning, compiled
+  reverse-data consumption, and full compiled rebuild decisions remain open.
 - ABI edge-case compatibility: recent coverage also locks down struct layouts,
   self-versioned cleanup, unread commit buffering, session lifetime after
   finalize, state-label indexing, selected-schema page-size parsing, deployment
@@ -198,7 +201,7 @@ not just missing tests:
   Librime also builds and consumes `.table.bin`, `.prism.bin`, `.reverse.bin`,
   pack dictionaries at compiled-data level, preset-vocabulary phrase injection,
   deeper stem-column consumption through compiled reverse data and encoders,
-  correction data, checksums, and rebuild heuristics.
+  correction data, full binary checksum metadata, and rebuild heuristics.
 - User dictionary support is currently a plain text compatibility shim. Librime
   also has LevelDB-backed userdb storage, snapshots, recovery, learning, and
   frequency update behavior.

@@ -1516,6 +1516,71 @@ pub struct TableDictionary {
     encoder: TableEncoder,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RimeChecksumComputer {
+    remainder: u32,
+}
+
+impl RimeChecksumComputer {
+    const POLYNOMIAL: u32 = 0xedb8_8320;
+
+    #[must_use]
+    pub const fn new(initial_remainder: u32) -> Self {
+        Self {
+            remainder: initial_remainder,
+        }
+    }
+
+    pub fn process_bytes(&mut self, bytes: impl AsRef<[u8]>) {
+        for byte in bytes.as_ref() {
+            self.remainder ^= u32::from(*byte);
+            for _ in 0..8 {
+                if self.remainder & 1 == 1 {
+                    self.remainder = (self.remainder >> 1) ^ Self::POLYNOMIAL;
+                } else {
+                    self.remainder >>= 1;
+                }
+            }
+        }
+    }
+
+    #[must_use]
+    pub const fn checksum(&self) -> u32 {
+        self.remainder ^ 0xffff_ffff
+    }
+}
+
+#[must_use]
+pub fn rime_checksum_bytes(bytes: impl AsRef<[u8]>) -> u32 {
+    let mut checksum = RimeChecksumComputer::new(0);
+    checksum.process_bytes(bytes);
+    checksum.checksum()
+}
+
+#[must_use]
+pub fn rime_dict_source_checksum<B>(
+    initial_checksum: u32,
+    dict_sources: impl IntoIterator<Item = B>,
+    preset_vocabulary: Option<B>,
+) -> u32
+where
+    B: AsRef<[u8]>,
+{
+    let mut dict_sources = dict_sources.into_iter().peekable();
+    if dict_sources.peek().is_none() {
+        return initial_checksum;
+    }
+
+    let mut checksum = RimeChecksumComputer::new(initial_checksum);
+    for source in dict_sources {
+        checksum.process_bytes(source);
+    }
+    if let Some(preset_vocabulary) = preset_vocabulary {
+        checksum.process_bytes(preset_vocabulary);
+    }
+    checksum.checksum()
+}
+
 #[derive(Clone, Debug)]
 pub struct TableEncoder {
     rules: Vec<TableEncodingRule>,
@@ -5750,11 +5815,12 @@ const fn select_index_from_digit(ch: char) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_key_sequence, Candidate, CandidateFilter, CandidateRanker, CandidateSource,
-        CharsetFilter, CodeCoords, Context, Engine, HistoryTranslator, KeyCode, MockAiRanker,
-        PunctuationTranslator, RerankResult, ReverseLookupFilter, ReverseLookupTranslator,
-        SimplifierFilter, SingleCharFilter, StaticTableTranslator, TableDictionary, TableEncoder,
-        TaggedFilter, Translator, UniquifierFilter,
+        parse_key_sequence, rime_checksum_bytes, rime_dict_source_checksum, Candidate,
+        CandidateFilter, CandidateRanker, CandidateSource, CharsetFilter, CodeCoords, Context,
+        Engine, HistoryTranslator, KeyCode, MockAiRanker, PunctuationTranslator, RerankResult,
+        ReverseLookupFilter, ReverseLookupTranslator, RimeChecksumComputer, SimplifierFilter,
+        SingleCharFilter, StaticTableTranslator, TableDictionary, TableEncoder, TaggedFilter,
+        Translator, UniquifierFilter,
     };
 
     struct CommentTranslator;
@@ -7809,6 +7875,43 @@ mod tests {
         assert!(commits.is_empty());
         assert_eq!(engine.context().composition.input, "ba");
         assert_eq!(engine.context().candidates.len(), 3);
+    }
+
+    #[test]
+    fn rime_checksum_computer_matches_librime_crc32_initial_remainder() {
+        assert_eq!(rime_checksum_bytes(b"abc"), 0x359a_672f);
+
+        let mut checksum = RimeChecksumComputer::new(0);
+        checksum.process_bytes(b"ab");
+        checksum.process_bytes(b"c");
+        assert_eq!(checksum.checksum(), 0x359a_672f);
+
+        let mut chained = RimeChecksumComputer::new(0x359a_672f);
+        chained.process_bytes(b"def");
+        assert_eq!(chained.checksum(), 0x050d_415e);
+    }
+
+    #[test]
+    fn rime_dict_source_checksum_matches_librime_dict_compiler_ordering() {
+        let checksum = rime_dict_source_checksum(
+            0,
+            [b"dict one\n".as_slice(), b"dict two\n".as_slice()],
+            Some(b"vocab\n".as_slice()),
+        );
+        assert_eq!(checksum, 0x0300_9e82);
+
+        let primary = rime_dict_source_checksum(0, [b"primary\n".as_slice()], None);
+        let pack = rime_dict_source_checksum(primary, [b"pack\n".as_slice()], None);
+        assert_eq!(pack, 0x9024_58b9);
+
+        assert_eq!(
+            rime_dict_source_checksum(
+                0x1234_5678,
+                std::iter::empty::<&[u8]>(),
+                Some(b"ignored vocabulary\n".as_slice()),
+            ),
+            0x1234_5678
+        );
     }
 
     #[test]

@@ -97,7 +97,9 @@ The strongest compatibility progress is currently in two areas:
   and `switcher/fix_schema_list_order`. Segmentor coverage now also includes a
   focused `punct_segmentor` path for shape-mapped single ASCII punctuation keys,
   where the punctuation segment is exclusive and suppresses ordinary table
-  translation competition.
+  translation competition, plus a focused `fallback_segmentor` path where an
+  otherwise unclaimed segment is tagged `raw` and does not feed default `abc`
+  table translation.
 - Data compatibility: schema-loaded table dictionaries now feed real session
   candidates, and source dictionary parsing handles many librime/yaml-cpp edge
   cases around headers, YAML nulls, quoted scalars, `columns`, `import_tables`,
@@ -128,9 +130,9 @@ not just missing tests:
   `selector`,
   `chord_composer`, `shape_processor`, deeper `punct_segmentor` behavior such
   as segment-order interactions and `punct_number` through larger chains,
-  `fallback_segmentor`, and formatter behavior that are not yet equivalently
-  modeled. `speller` still needs deeper previous-match segment splitting and
-  non-auto-commit composition behavior.
+  deeper multi-segment `fallback_segmentor`, and formatter behavior that are not
+  yet equivalently modeled. `speller` still needs deeper previous-match segment
+  splitting and non-auto-commit composition behavior.
 - Existing schema-loaded translator/filter support is intentionally partial.
   Areas such as full spelling algebra, full OpenCC data and conversion chains,
   distribution-scale schema chains, and compiled-data interactions still need

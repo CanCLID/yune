@@ -133,6 +133,7 @@ struct SessionState {
     punct_segmentor: Option<PunctSegmentor>,
     affix_segmentors: Vec<AffixSegmentor>,
     matcher_segmentor: Option<MatcherSegmentor>,
+    fallback_segmentor_enabled: bool,
     paging: bool,
     last_active_time: u64,
 }
@@ -156,6 +157,7 @@ impl SessionState {
             punct_segmentor: None,
             affix_segmentors: Vec::new(),
             matcher_segmentor: None,
+            fallback_segmentor_enabled: false,
             paging: false,
             last_active_time: session_activity_now(),
         }
@@ -2324,6 +2326,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.ascii_composer_inline_ascii = false;
     session.ascii_segmentor_enabled = false;
     session.punct_segmentor = None;
+    session.fallback_segmentor_enabled = false;
     session.punctuation_processor = None;
     session.recognizer_processor = None;
     session.paging = false;
@@ -4456,10 +4459,12 @@ fn install_schema_segment_tags(session: &mut SessionState, schema_id: &str) {
     session.matcher_segmentor = None;
     session.ascii_segmentor_enabled = false;
     session.punct_segmentor = None;
+    session.fallback_segmentor_enabled = false;
 
     if let Some(Value::Sequence(segmentors)) =
         find_config_value(&schema_config, "engine/segmentors")
     {
+        tags.clear();
         session.ascii_segmentor_enabled = segmentors
             .iter()
             .filter_map(Value::as_str)
@@ -4471,6 +4476,7 @@ fn install_schema_segment_tags(session: &mut SessionState, schema_id: &str) {
             .map(schema_component_prescription)
             .any(|(component_name, _)| component_name == "abc_segmentor")
         {
+            tags.push("abc".to_owned());
             tags.extend(schema_string_list(
                 &schema_config,
                 "abc_segmentor/extra_tags",
@@ -4486,6 +4492,11 @@ fn install_schema_segment_tags(session: &mut SessionState, schema_id: &str) {
         }
         session.affix_segmentors = load_schema_affix_segmentors(&schema_config, segmentors);
         session.matcher_segmentor = load_schema_matcher_segmentor(&schema_config, segmentors);
+        session.fallback_segmentor_enabled = segmentors
+            .iter()
+            .filter_map(Value::as_str)
+            .map(schema_component_prescription)
+            .any(|(component_name, _)| component_name == "fallback_segmentor");
     }
     session.base_segment_tags = tags;
     update_session_segment_tags(session);
@@ -4810,6 +4821,9 @@ fn update_session_segment_tags(session: &mut SessionState) {
                 tags.push(tag.to_owned());
             }
         }
+    }
+    if tags.is_empty() && session.fallback_segmentor_enabled && !input.is_empty() {
+        tags.push("raw".to_owned());
     }
     if session.engine.context().segment_tags != tags {
         session.engine.set_segment_tags(tags);

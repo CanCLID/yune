@@ -105,6 +105,8 @@ The strongest compatibility progress is currently in two areas:
   candidate selection keys, and covers layout-sensitive arrow/page bindings for
   horizontal linear, vertical stacked, and vertical linear candidate lists, plus
   schema-configured selector binding overrides including `noop` removal and
+  modified printable accept keys. Focused `navigator` coverage now includes
+  schema-configured horizontal/vertical binding overrides, `noop` removal, and
   modified printable accept keys. The current shape coverage formats committed
   ASCII text under `full_shape` and
   post-processes otherwise unhandled printable ASCII keys into full-width
@@ -135,7 +137,8 @@ not just missing tests:
 - The schema pipeline is still a subset. The current focused coverage now
   reaches many high-value gears, but librime's source tree also registers
   components and deeper behaviors such as `speller` auto-select and
-  max-code-length auto-selection handling, editor variants, `navigator`,
+  max-code-length auto-selection handling, editor variants, deeper `navigator`
+  behavior such as full span-aware syllable jumps and delimiter positioning,
   deeper `selector` navigator fallback interaction behavior beyond the current
   focused raw-tag, layout, and configured-binding coverage,
   `chord_composer`, deeper `shape_processor`/`shape_formatter` interactions,

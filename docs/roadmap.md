@@ -100,8 +100,9 @@
   focused previous-match auto-commit reuse with `express_editor`, focused
   `selector` raw-segment exclusion for candidate selection, focused
   layout-sensitive selector arrow/page bindings for linear and vertical
-  candidate lists, focused schema-configured selector binding overrides, and
-  ASCII mode switch-key handling.
+  candidate lists, focused schema-configured selector binding overrides,
+  focused schema-configured `navigator` binding overrides, and ASCII mode
+  switch-key handling.
 - Expanded schema-loaded segmentor coverage for `ascii_segmentor`, `matcher`,
   namespaced `affix_segmentor`, focused `punct_segmentor`, and focused
   `fallback_segmentor` subsets,
@@ -147,8 +148,8 @@
 - Continue broadening schema coverage beyond the current focused subset toward
   the remaining librime gear components and deeper semantics: `speller`
   previous-match segment splitting and non-auto-commit composition behavior,
-  `editor` variants, `navigator`, deeper `selector` navigator fallback
-  interactions beyond the current focused coverage,
+  `editor` variants, deeper `navigator` span/delimiter semantics, deeper
+  `selector` navigator fallback interactions beyond the current focused coverage,
   `chord_composer`,
   deeper `shape_processor`/`shape_formatter` interactions, deeper
   `punct_segmentor` behavior such as segment-order interactions and

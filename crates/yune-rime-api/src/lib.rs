@@ -130,6 +130,7 @@ struct SessionState {
     punctuation_processor: Option<PunctuationProcessor>,
     recognizer_processor: Option<RecognizerProcessor>,
     selector_bindings: SelectorBindings,
+    navigator_bindings: NavigatorBindings,
     base_segment_tags: Vec<String>,
     punct_segmentor: Option<PunctSegmentor>,
     affix_segmentors: Vec<AffixSegmentor>,
@@ -155,6 +156,7 @@ impl SessionState {
             punctuation_processor: None,
             recognizer_processor: None,
             selector_bindings: SelectorBindings::default(),
+            navigator_bindings: NavigatorBindings::default(),
             base_segment_tags: vec!["abc".to_owned()],
             punct_segmentor: None,
             affix_segmentors: Vec::new(),
@@ -229,6 +231,18 @@ struct SelectorBindings {
 enum SelectorBindingAction {
     Noop,
     Action(SelectorLayoutAction),
+}
+
+#[derive(Default)]
+struct NavigatorBindings {
+    horizontal: HashMap<KeyEvent, NavigatorBindingAction>,
+    vertical: HashMap<KeyEvent, NavigatorBindingAction>,
+}
+
+#[derive(Clone, Copy)]
+enum NavigatorBindingAction {
+    Noop,
+    Action(NavigatorAction),
 }
 
 struct KeyBindingSwitchOption {
@@ -2010,6 +2024,8 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     if let Some(selector_accepted) = process_selector_layout_key(session, key_event, keycode, mask)
     {
         accepted = selector_accepted;
+    } else if let Some(navigator_accepted) = process_navigator_configured_key(session, key_event) {
+        accepted = navigator_accepted;
     } else {
         match key_event.code {
             KeyCode::PreviousPage => {
@@ -2365,6 +2381,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.punctuation_processor = None;
     session.recognizer_processor = None;
     session.selector_bindings = SelectorBindings::default();
+    session.navigator_bindings = NavigatorBindings::default();
     session.paging = false;
     restore_switcher_saved_options(session, schema_id);
     apply_schema_switch_resets(session, schema_id);
@@ -2374,6 +2391,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     install_schema_speller_processor(session, schema_id);
     install_schema_recognizer_processor(session, schema_id);
     install_schema_selector_bindings(session, schema_id);
+    install_schema_navigator_bindings(session, schema_id);
     install_schema_key_binder_processor(session, schema_id);
     install_schema_punctuation_processor(session, schema_id);
     install_schema_translator_chain(session, schema_id);
@@ -4114,6 +4132,22 @@ enum SelectorLayoutAction {
     End,
 }
 
+#[derive(Clone, Copy)]
+enum NavigatorAction {
+    Rewind,
+    Forward,
+    LeftByChar,
+    RightByChar,
+    LeftBySyllable,
+    RightBySyllable,
+    LeftByCharNoLoop,
+    RightByCharNoLoop,
+    LeftBySyllableNoLoop,
+    RightBySyllableNoLoop,
+    Home,
+    End,
+}
+
 fn process_selector_layout_key(
     session: &mut SessionState,
     key_event: KeyEvent,
@@ -4180,6 +4214,73 @@ fn session_has_modified_printable_binding(session: &SessionState, key_event: Key
     let is_linear =
         session.engine.get_option("_linear") || session.engine.get_option("_horizontal");
     selector_configured_action(session, is_vertical, is_linear, key_event).is_some()
+        || navigator_configured_action(session, is_vertical, key_event).is_some()
+}
+
+fn process_navigator_configured_key(
+    session: &mut SessionState,
+    key_event: KeyEvent,
+) -> Option<bool> {
+    if session.engine.context().composition.input.is_empty() || key_event.modifiers.release {
+        return None;
+    }
+    let is_vertical = session.engine.get_option("_vertical");
+    let action = navigator_configured_action(session, is_vertical, key_event)?;
+    match action {
+        NavigatorBindingAction::Noop => Some(false),
+        NavigatorBindingAction::Action(action) => {
+            apply_navigator_action(session, action);
+            Some(true)
+        }
+    }
+}
+
+fn navigator_configured_action(
+    session: &SessionState,
+    is_vertical: bool,
+    key_event: KeyEvent,
+) -> Option<NavigatorBindingAction> {
+    let bindings = if is_vertical {
+        &session.navigator_bindings.vertical
+    } else {
+        &session.navigator_bindings.horizontal
+    };
+    bindings.get(&key_event).copied()
+}
+
+fn apply_navigator_action(session: &mut SessionState, action: NavigatorAction) {
+    match action {
+        NavigatorAction::Rewind => {
+            session.engine.move_caret_left();
+        }
+        NavigatorAction::Forward => {
+            session.engine.move_caret_right();
+        }
+        NavigatorAction::LeftByChar => {
+            session.engine.move_caret_left_by_char();
+        }
+        NavigatorAction::RightByChar => {
+            session.engine.move_caret_right_by_char();
+        }
+        NavigatorAction::LeftBySyllable | NavigatorAction::LeftBySyllableNoLoop => {
+            session.engine.move_caret_left_by_syllable();
+        }
+        NavigatorAction::RightBySyllable | NavigatorAction::RightBySyllableNoLoop => {
+            session.engine.move_caret_right_by_syllable();
+        }
+        NavigatorAction::LeftByCharNoLoop => {
+            session.engine.move_caret_left();
+        }
+        NavigatorAction::RightByCharNoLoop => {
+            session.engine.move_caret_right();
+        }
+        NavigatorAction::Home => {
+            session.engine.move_caret_home();
+        }
+        NavigatorAction::End => {
+            session.engine.move_caret_end();
+        }
+    }
 }
 
 fn selector_layout_action(
@@ -5324,6 +5425,72 @@ fn selector_binding_action_from_name(action: &str) -> Option<SelectorBindingActi
         "next_page" => SelectorBindingAction::Action(SelectorLayoutAction::NextPage),
         "home" => SelectorBindingAction::Action(SelectorLayoutAction::Home),
         "end" => SelectorBindingAction::Action(SelectorLayoutAction::End),
+        _ => return None,
+    };
+    Some(action)
+}
+
+fn install_schema_navigator_bindings(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    load_navigator_binding_section(
+        &schema_config,
+        "navigator",
+        &mut session.navigator_bindings.horizontal,
+    );
+    load_navigator_binding_section(
+        &schema_config,
+        "navigator/vertical",
+        &mut session.navigator_bindings.vertical,
+    );
+}
+
+fn load_navigator_binding_section(
+    schema_config: &Value,
+    section: &str,
+    bindings: &mut HashMap<KeyEvent, NavigatorBindingAction>,
+) {
+    let Some(Value::Mapping(config_bindings)) =
+        find_config_value(schema_config, &format!("{section}/bindings"))
+    else {
+        return;
+    };
+
+    for (key, action) in config_bindings {
+        let Some(key) = config_scalar_string(key) else {
+            continue;
+        };
+        let Some(key_event) = parse_single_key_binding_event(&key) else {
+            continue;
+        };
+        let Some(action) = action.as_str().and_then(navigator_binding_action_from_name) else {
+            continue;
+        };
+        bindings.insert(key_event, action);
+    }
+}
+
+fn navigator_binding_action_from_name(action: &str) -> Option<NavigatorBindingAction> {
+    let action = match action {
+        "noop" => NavigatorBindingAction::Noop,
+        "rewind" => NavigatorBindingAction::Action(NavigatorAction::Rewind),
+        "forward" => NavigatorBindingAction::Action(NavigatorAction::Forward),
+        "left_by_char" => NavigatorBindingAction::Action(NavigatorAction::LeftByChar),
+        "right_by_char" => NavigatorBindingAction::Action(NavigatorAction::RightByChar),
+        "left_by_syllable" => NavigatorBindingAction::Action(NavigatorAction::LeftBySyllable),
+        "right_by_syllable" => NavigatorBindingAction::Action(NavigatorAction::RightBySyllable),
+        "left_by_char_no_loop" => NavigatorBindingAction::Action(NavigatorAction::LeftByCharNoLoop),
+        "right_by_char_no_loop" => {
+            NavigatorBindingAction::Action(NavigatorAction::RightByCharNoLoop)
+        }
+        "left_by_syllable_no_loop" => {
+            NavigatorBindingAction::Action(NavigatorAction::LeftBySyllableNoLoop)
+        }
+        "right_by_syllable_no_loop" => {
+            NavigatorBindingAction::Action(NavigatorAction::RightBySyllableNoLoop)
+        }
+        "home" => NavigatorBindingAction::Action(NavigatorAction::Home),
+        "end" => NavigatorBindingAction::Action(NavigatorAction::End),
         _ => return None,
     };
     Some(action)

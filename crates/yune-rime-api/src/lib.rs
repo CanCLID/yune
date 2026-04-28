@@ -27,11 +27,13 @@ mod config;
 mod config_compiler;
 mod ffi_memory;
 mod key_table;
+mod runtime;
 pub use abi::*;
 use config::*;
 use config_compiler::*;
 use ffi_memory::*;
 pub use key_table::*;
+use runtime::*;
 
 const XK_BACKSPACE: c_int = 0xff08;
 const XK_ESCAPE: c_int = 0xff1b;
@@ -582,41 +584,6 @@ struct ContextMenuSettings {
 
 type SwitcherAvailableSchemaRegistry = HashMap<usize, Option<Vec<LeverSchemaInfo>>>;
 
-#[derive(Clone, Copy)]
-enum ConfigOpenKind {
-    Deployed,
-    User,
-}
-
-struct RuntimePaths {
-    shared_data_dir: CString,
-    user_data_dir: CString,
-    prebuilt_data_dir: CString,
-    staging_dir: CString,
-    sync_dir: CString,
-    user_id: CString,
-    user_data_sync_dir: CString,
-    distribution_name: CString,
-    distribution_code_name: CString,
-    distribution_version: CString,
-    app_name: CString,
-    log_dir: CString,
-    backup_config_files: bool,
-}
-
-struct RuntimePathArgs<'a> {
-    shared_data_dir: &'a str,
-    user_data_dir: &'a str,
-    prebuilt_data_dir: &'a str,
-    staging_dir: &'a str,
-    sync_dir: &'a str,
-    user_id: &'a str,
-    distribution: (&'a str, &'a str, &'a str),
-    app_name: &'a str,
-    log_dir: &'a str,
-    backup_config_files: bool,
-}
-
 #[derive(Default)]
 struct NotificationState {
     handler: Option<RimeNotificationHandler>,
@@ -628,146 +595,10 @@ struct ModuleRegistry {
     modules_by_name: HashMap<String, usize>,
 }
 
-#[derive(Default)]
-struct InstallationSettings {
-    loaded: bool,
-    installation_id: Option<String>,
-    sync_dir: Option<String>,
-    backup_config_files: Option<bool>,
-}
-
-impl Default for RuntimePaths {
-    fn default() -> Self {
-        Self::new(RuntimePathArgs {
-            shared_data_dir: ".",
-            user_data_dir: ".",
-            prebuilt_data_dir: "build",
-            staging_dir: "build",
-            sync_dir: "sync",
-            user_id: "unknown",
-            distribution: ("", "", ""),
-            app_name: "",
-            log_dir: "",
-            backup_config_files: true,
-        })
-    }
-}
-
-impl RuntimePaths {
-    fn new(args: RuntimePathArgs<'_>) -> Self {
-        let user_data_sync_dir = path_join(args.sync_dir, args.user_id);
-        Self {
-            shared_data_dir: cstring_from_lossless_str(args.shared_data_dir),
-            user_data_dir: cstring_from_lossless_str(args.user_data_dir),
-            prebuilt_data_dir: cstring_from_lossless_str(args.prebuilt_data_dir),
-            staging_dir: cstring_from_lossless_str(args.staging_dir),
-            sync_dir: cstring_from_lossless_str(args.sync_dir),
-            user_id: cstring_from_lossless_str(args.user_id),
-            user_data_sync_dir: cstring_from_lossless_str(&user_data_sync_dir),
-            distribution_name: cstring_from_lossless_str(args.distribution.0),
-            distribution_code_name: cstring_from_lossless_str(args.distribution.1),
-            distribution_version: cstring_from_lossless_str(args.distribution.2),
-            app_name: cstring_from_lossless_str(args.app_name),
-            log_dir: cstring_from_lossless_str(args.log_dir),
-            backup_config_files: args.backup_config_files,
-        }
-    }
-
-    unsafe fn from_traits(traits: *const RimeTraits) -> Option<Self> {
-        if traits.is_null() {
-            return None;
-        }
-
-        // SAFETY: callers promise that `traits`, when non-null, points to at
-        // least the leading `data_size` field of a `RimeTraits` object.
-        let data_size = unsafe { (*traits).data_size };
-        let provided_string = |member: *const *const c_char| {
-            if rime_struct_has_member(traits, data_size, member) {
-                // SAFETY: the field is covered by `data_size`; callers promise
-                // that provided non-null strings are NUL-terminated.
-                unsafe { optional_c_string(*member) }
-            } else {
-                None
-            }
-        };
-
-        let shared_data_dir = provided_string(unsafe { ptr::addr_of!((*traits).shared_data_dir) })
-            .unwrap_or_else(|| ".".to_owned());
-        let user_data_dir = provided_string(unsafe { ptr::addr_of!((*traits).user_data_dir) })
-            .unwrap_or_else(|| ".".to_owned());
-        let prebuilt_data_dir =
-            provided_string(unsafe { ptr::addr_of!((*traits).prebuilt_data_dir) })
-                .unwrap_or_else(|| path_join(&shared_data_dir, "build"));
-        let staging_dir = provided_string(unsafe { ptr::addr_of!((*traits).staging_dir) })
-            .unwrap_or_else(|| path_join(&user_data_dir, "build"));
-        let distribution_name =
-            provided_string(unsafe { ptr::addr_of!((*traits).distribution_name) })
-                .unwrap_or_default();
-        let distribution_code_name =
-            provided_string(unsafe { ptr::addr_of!((*traits).distribution_code_name) })
-                .unwrap_or_default();
-        let distribution_version =
-            provided_string(unsafe { ptr::addr_of!((*traits).distribution_version) })
-                .unwrap_or_default();
-        let app_name =
-            provided_string(unsafe { ptr::addr_of!((*traits).app_name) }).unwrap_or_default();
-        let log_dir =
-            provided_string(unsafe { ptr::addr_of!((*traits).log_dir) }).unwrap_or_default();
-        let installation = read_installation_settings(&user_data_dir);
-        let sync_dir = if let Some(sync_dir) = installation.sync_dir {
-            sync_dir
-        } else if installation.loaded {
-            path_join(&user_data_dir, "sync")
-        } else {
-            "sync".to_owned()
-        };
-        let user_id = installation
-            .installation_id
-            .unwrap_or_else(|| "unknown".to_owned());
-        let backup_config_files = installation.backup_config_files.unwrap_or(true);
-
-        Some(Self::new(RuntimePathArgs {
-            shared_data_dir: &shared_data_dir,
-            user_data_dir: &user_data_dir,
-            prebuilt_data_dir: &prebuilt_data_dir,
-            staging_dir: &staging_dir,
-            sync_dir: &sync_dir,
-            user_id: &user_id,
-            distribution: (
-                &distribution_name,
-                &distribution_code_name,
-                &distribution_version,
-            ),
-            app_name: &app_name,
-            log_dir: &log_dir,
-            backup_config_files,
-        }))
-    }
-}
-
-fn read_installation_settings(user_data_dir: &str) -> InstallationSettings {
-    let path = Path::new(user_data_dir).join("installation.yaml");
-    let Ok(text) = fs::read_to_string(path) else {
-        return InstallationSettings::default();
-    };
-    let Ok(Value::Mapping(root)) = serde_yaml::from_str::<Value>(&text) else {
-        return InstallationSettings::default();
-    };
-
-    InstallationSettings {
-        loaded: true,
-        installation_id: root
-            .get(Value::String("installation_id".to_owned()))
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        sync_dir: root
-            .get(Value::String("sync_dir".to_owned()))
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        backup_config_files: root
-            .get(Value::String("backup_config_files".to_owned()))
-            .and_then(Value::as_bool),
-    }
+#[derive(Clone, Copy)]
+enum ConfigOpenKind {
+    Deployed,
+    User,
 }
 
 fn sessions() -> &'static Mutex<SessionRegistry> {
@@ -778,11 +609,6 @@ fn sessions() -> &'static Mutex<SessionRegistry> {
 fn service_started() -> &'static AtomicBool {
     static SERVICE_STARTED: AtomicBool = AtomicBool::new(false);
     &SERVICE_STARTED
-}
-
-fn runtime_paths() -> &'static Mutex<RuntimePaths> {
-    static RUNTIME_PATHS: OnceLock<Mutex<RuntimePaths>> = OnceLock::new();
-    RUNTIME_PATHS.get_or_init(|| Mutex::new(RuntimePaths::default()))
 }
 
 fn notification_state() -> &'static Mutex<NotificationState> {
@@ -8074,28 +7900,10 @@ fn with_session(session_id: RimeSessionId, action: impl FnOnce(&mut SessionState
     bool_from(action(session))
 }
 
-fn optional_c_string(value: *const c_char) -> Option<String> {
-    if value.is_null() {
-        return None;
-    }
-
-    // SAFETY: callers validate that non-null optional runtime trait strings are
-    // valid NUL-terminated C strings before reaching this helper.
-    Some(
-        unsafe { CStr::from_ptr(value) }
-            .to_string_lossy()
-            .into_owned(),
-    )
-}
-
 fn session_activity_now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |duration| duration.as_secs())
-}
-
-fn path_join(base: &str, child: &str) -> String {
-    Path::new(base).join(child).to_string_lossy().into_owned()
 }
 
 fn open_runtime_config(config_id: &str, kind: ConfigOpenKind, config: *mut RimeConfig) -> Bool {
@@ -9579,13 +9387,6 @@ fn first_unicode_byte_length(value: &str) -> usize {
     value.chars().next().map_or(0, |first| first.len_utf8())
 }
 
-fn runtime_path_ptr(select: impl FnOnce(&RuntimePaths) -> &CString) -> *const c_char {
-    let paths = runtime_paths()
-        .lock()
-        .expect("runtime paths should not be poisoned");
-    select(&paths).as_ptr()
-}
-
 fn notify(session_id: RimeSessionId, message_type: &str, message_value: &str) {
     let (handler, context_object) = {
         let state = notification_state()
@@ -9608,22 +9409,6 @@ fn notify(session_id: RimeSessionId, message_type: &str, message_value: &str) {
         message_type.as_ptr(),
         message_value.as_ptr(),
     );
-}
-
-fn copy_runtime_path_to_buffer(
-    select: impl FnOnce(&RuntimePaths) -> &CString,
-    output: *mut c_char,
-    buffer_size: usize,
-) {
-    if output.is_null() || buffer_size == 0 {
-        return;
-    }
-
-    let paths = runtime_paths()
-        .lock()
-        .expect("runtime paths should not be poisoned");
-    let value = select(&paths).to_string_lossy();
-    copy_c_string_with_strncpy_semantics(&value, output, buffer_size);
 }
 
 unsafe fn levers_custom_settings_mut(

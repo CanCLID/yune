@@ -1,5 +1,5 @@
 use std::{
-    ffi::CString,
+    ffi::{CStr, CString},
     os::raw::{c_char, c_int},
     ptr,
 };
@@ -20,6 +20,20 @@ pub(crate) fn non_empty_cstring_ptr(value: &CString) -> Option<*const c_char> {
 
 pub(crate) fn cstring_from_lossless_str(value: &str) -> CString {
     CString::new(value).expect("values derived from C strings or literals cannot contain NUL bytes")
+}
+
+pub(crate) fn optional_c_string(value: *const c_char) -> Option<String> {
+    if value.is_null() {
+        return None;
+    }
+
+    // SAFETY: callers validate that non-null optional runtime trait strings are
+    // valid NUL-terminated C strings before reaching this helper.
+    Some(
+        unsafe { CStr::from_ptr(value) }
+            .to_string_lossy()
+            .into_owned(),
+    )
 }
 
 pub(crate) fn empty_string_slice() -> RimeStringSlice {

@@ -131,6 +131,8 @@ struct SessionState {
     recognizer_processor: Option<RecognizerProcessor>,
     selector_bindings: SelectorBindings,
     navigator_bindings: NavigatorBindings,
+    navigator_delimiters: String,
+    navigator_syllable_jump_position: NavigatorSyllableJumpPosition,
     base_segment_tags: Vec<String>,
     punct_segmentor: Option<PunctSegmentor>,
     affix_segmentors: Vec<AffixSegmentor>,
@@ -157,6 +159,8 @@ impl SessionState {
             recognizer_processor: None,
             selector_bindings: SelectorBindings::default(),
             navigator_bindings: NavigatorBindings::default(),
+            navigator_delimiters: " ".to_owned(),
+            navigator_syllable_jump_position: NavigatorSyllableJumpPosition::AfterDelimiter,
             base_segment_tags: vec!["abc".to_owned()],
             punct_segmentor: None,
             affix_segmentors: Vec::new(),
@@ -243,6 +247,12 @@ struct NavigatorBindings {
 enum NavigatorBindingAction {
     Noop,
     Action(NavigatorAction),
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum NavigatorSyllableJumpPosition {
+    AfterDelimiter,
+    BeforeDelimiter,
 }
 
 struct KeyBindingSwitchOption {
@@ -2026,6 +2036,8 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
         accepted = selector_accepted;
     } else if let Some(navigator_accepted) = process_navigator_configured_key(session, key_event) {
         accepted = navigator_accepted;
+    } else if let Some(navigator_accepted) = process_navigator_delimiter_key(session, key_event) {
+        accepted = navigator_accepted;
     } else {
         match key_event.code {
             KeyCode::PreviousPage => {
@@ -2382,6 +2394,8 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.recognizer_processor = None;
     session.selector_bindings = SelectorBindings::default();
     session.navigator_bindings = NavigatorBindings::default();
+    session.navigator_delimiters = " ".to_owned();
+    session.navigator_syllable_jump_position = NavigatorSyllableJumpPosition::AfterDelimiter;
     session.paging = false;
     restore_switcher_saved_options(session, schema_id);
     apply_schema_switch_resets(session, schema_id);
@@ -4235,6 +4249,48 @@ fn process_navigator_configured_key(
     }
 }
 
+fn process_navigator_delimiter_key(
+    session: &mut SessionState,
+    key_event: KeyEvent,
+) -> Option<bool> {
+    if session.engine.context().composition.input.is_empty() || key_event.modifiers.release {
+        return None;
+    }
+    let input = &session.engine.context().composition.input;
+    if !input
+        .chars()
+        .any(|ch| session.navigator_delimiters.contains(ch))
+    {
+        return None;
+    }
+    let action = default_navigator_syllable_action(key_event)?;
+    apply_navigator_action(session, action);
+    Some(true)
+}
+
+fn default_navigator_syllable_action(key_event: KeyEvent) -> Option<NavigatorAction> {
+    let exact_control_or_shift = (key_event.modifiers.control ^ key_event.modifiers.shift)
+        && !key_event.modifiers.lock
+        && !key_event.modifiers.alt
+        && !key_event.modifiers.super_key
+        && !key_event.modifiers.hyper
+        && !key_event.modifiers.meta
+        && !key_event.modifiers.release;
+    if !exact_control_or_shift {
+        return None;
+    }
+
+    match key_event.code {
+        KeyCode::MoveCaretLeft | KeyCode::MoveCaretLeftBySyllable => {
+            Some(NavigatorAction::LeftBySyllable)
+        }
+        KeyCode::MoveCaretRight | KeyCode::MoveCaretRightBySyllable => {
+            Some(NavigatorAction::RightBySyllable)
+        }
+        _ => None,
+    }
+}
+
 fn navigator_configured_action(
     session: &SessionState,
     is_vertical: bool,
@@ -4263,10 +4319,14 @@ fn apply_navigator_action(session: &mut SessionState, action: NavigatorAction) {
             session.engine.move_caret_right_by_char();
         }
         NavigatorAction::LeftBySyllable | NavigatorAction::LeftBySyllableNoLoop => {
-            session.engine.move_caret_left_by_syllable();
+            if !move_caret_left_by_delimited_syllable(session) {
+                session.engine.move_caret_left_by_syllable();
+            }
         }
         NavigatorAction::RightBySyllable | NavigatorAction::RightBySyllableNoLoop => {
-            session.engine.move_caret_right_by_syllable();
+            if !move_caret_right_by_delimited_syllable(session) {
+                session.engine.move_caret_right_by_syllable();
+            }
         }
         NavigatorAction::LeftByCharNoLoop => {
             session.engine.move_caret_left();
@@ -4281,6 +4341,77 @@ fn apply_navigator_action(session: &mut SessionState, action: NavigatorAction) {
             session.engine.move_caret_end();
         }
     }
+}
+
+fn move_caret_left_by_delimited_syllable(session: &mut SessionState) -> bool {
+    let context = session.engine.context();
+    let input = &context.composition.input;
+    let caret = context.composition.caret.min(input.len());
+    if input.is_empty() || caret == 0 || !input.is_ascii() {
+        return false;
+    }
+
+    let stops = navigator_syllable_stops(
+        input,
+        &session.navigator_delimiters,
+        session.navigator_syllable_jump_position,
+    );
+    let Some(next_caret) = stops.into_iter().rev().find(|stop| *stop < caret) else {
+        return false;
+    };
+    session.engine.set_caret_pos(next_caret);
+    true
+}
+
+fn move_caret_right_by_delimited_syllable(session: &mut SessionState) -> bool {
+    let context = session.engine.context();
+    let input = &context.composition.input;
+    let caret = context.composition.caret.min(input.len());
+    if input.is_empty() || caret >= input.len() || !input.is_ascii() {
+        return false;
+    }
+
+    let stops = navigator_syllable_stops(
+        input,
+        &session.navigator_delimiters,
+        session.navigator_syllable_jump_position,
+    );
+    let Some(next_caret) = stops.into_iter().find(|stop| *stop > caret) else {
+        return false;
+    };
+    session.engine.set_caret_pos(next_caret);
+    true
+}
+
+fn navigator_syllable_stops(
+    input: &str,
+    delimiters: &str,
+    jump_position: NavigatorSyllableJumpPosition,
+) -> Vec<usize> {
+    let mut stops = vec![0, input.len()];
+    let mut delimiter_run_start = None;
+    for (index, ch) in input.char_indices() {
+        if delimiters.contains(ch) {
+            delimiter_run_start.get_or_insert(index);
+            continue;
+        }
+
+        if let Some(start) = delimiter_run_start.take() {
+            stops.push(match jump_position {
+                NavigatorSyllableJumpPosition::AfterDelimiter => index,
+                NavigatorSyllableJumpPosition::BeforeDelimiter => start,
+            });
+        }
+    }
+    if let Some(start) = delimiter_run_start {
+        stops.push(match jump_position {
+            NavigatorSyllableJumpPosition::AfterDelimiter => input.len(),
+            NavigatorSyllableJumpPosition::BeforeDelimiter => start,
+        });
+    }
+    stops.sort_unstable();
+    stops.dedup();
+    stops
 }
 
 fn selector_layout_action(
@@ -5433,6 +5564,18 @@ fn selector_binding_action_from_name(action: &str) -> Option<SelectorBindingActi
 fn install_schema_navigator_bindings(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    session.navigator_delimiters = find_config_value(&schema_config, "speller/delimiter")
+        .and_then(config_scalar_string)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| " ".to_owned());
+    session.navigator_syllable_jump_position =
+        match find_config_value(&schema_config, "navigator/syllable_jump_position")
+            .and_then(config_scalar_string)
+            .as_deref()
+        {
+            Some("before_delimiter") => NavigatorSyllableJumpPosition::BeforeDelimiter,
+            _ => NavigatorSyllableJumpPosition::AfterDelimiter,
+        };
     load_navigator_binding_section(
         &schema_config,
         "navigator",

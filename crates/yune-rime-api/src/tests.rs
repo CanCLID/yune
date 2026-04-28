@@ -12156,6 +12156,87 @@ schema:\n  schema_id: luna\n  name: Luna\nnavigator:\n  bindings:\n    Control+h
 }
 
 #[test]
+fn schema_navigator_syllable_jump_position_honors_delimiters() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-navigator-delimiter-jump");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("after.schema.yaml"),
+        "\
+schema:\n  schema_id: after\n  name: After\nspeller:\n  delimiter: \"'\"\n",
+    )
+    .expect("after schema config should be written");
+    fs::write(
+        staging.join("before.schema.yaml"),
+        "\
+schema:\n  schema_id: before\n  name: Before\nspeller:\n  delimiter: \"'\"\nnavigator:\n  syllable_jump_position: before_delimiter\n",
+    )
+    .expect("before schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let left = CString::new("Left").expect("key name should be valid");
+    let right = CString::new("Right").expect("key name should be valid");
+    // SAFETY: key names are valid NUL-terminated strings.
+    let left_keycode = unsafe { RimeGetKeycodeByName(left.as_ptr()) };
+    let right_keycode = unsafe { RimeGetKeycodeByName(right.as_ptr()) };
+    let input = CString::new("ab'cd").expect("input should be valid");
+
+    let session_id = RimeCreateSession();
+    let after_schema = CString::new("after").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, after_schema.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: input is a valid NUL-terminated C string.
+    assert_eq!(unsafe { RimeSetInput(session_id, input.as_ptr()) }, TRUE);
+    assert_eq!(
+        RimeProcessKey(session_id, left_keycode, K_CONTROL_MASK),
+        TRUE
+    );
+    assert_eq!(RimeGetCaretPos(session_id), 3);
+
+    let before_schema = CString::new("before").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, before_schema.as_ptr()) },
+        TRUE
+    );
+    // SAFETY: input is a valid NUL-terminated C string.
+    assert_eq!(unsafe { RimeSetInput(session_id, input.as_ptr()) }, TRUE);
+    assert_eq!(
+        RimeProcessKey(session_id, left_keycode, K_CONTROL_MASK),
+        TRUE
+    );
+    assert_eq!(RimeGetCaretPos(session_id), 2);
+
+    RimeSetCaretPos(session_id, 0);
+    assert_eq!(
+        RimeProcessKey(session_id, right_keycode, K_CONTROL_MASK),
+        TRUE
+    );
+    assert_eq!(RimeGetCaretPos(session_id), 2);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn shift_up_down_keys_fall_back_to_control_syllable_jump_like_librime_navigator() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

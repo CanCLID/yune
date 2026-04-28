@@ -123,6 +123,7 @@ struct SessionState {
     key_binder: Option<KeyBinderProcessor>,
     speller: Option<SpellerProcessor>,
     editor_processor: Option<EditorProcessor>,
+    editor_bindings: HashMap<KeyEvent, EditorBindingAction>,
     ascii_composer_enabled: bool,
     ascii_composer_switch_bindings: HashMap<c_int, AsciiModeSwitchStyle>,
     ascii_composer_pressed_switch_key: Option<c_int>,
@@ -152,6 +153,7 @@ impl SessionState {
             key_binder: None,
             speller: None,
             editor_processor: None,
+            editor_bindings: HashMap::new(),
             ascii_composer_enabled: false,
             ascii_composer_switch_bindings: HashMap::new(),
             ascii_composer_pressed_switch_key: None,
@@ -223,6 +225,28 @@ enum KeyBindingAction {
     Toggle(String),
     SetOption { option: String, value: bool },
     SelectSchema(String),
+}
+
+#[derive(Clone, Copy)]
+enum EditorBindingAction {
+    Noop,
+    Action(EditorAction),
+}
+
+#[derive(Clone, Copy)]
+enum EditorAction {
+    Confirm,
+    ToggleSelection,
+    CommitComment,
+    CommitRawInput,
+    CommitScriptText,
+    CommitComposition,
+    Revert,
+    Back,
+    BackSyllable,
+    DeleteCandidate,
+    Delete,
+    Cancel,
 }
 
 #[derive(Default)]
@@ -2391,6 +2415,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.key_binder = None;
     session.speller = None;
     session.editor_processor = None;
+    session.editor_bindings.clear();
     session.engine.set_option("_auto_commit", false);
     session.ascii_composer_enabled = false;
     session.ascii_composer_switch_bindings.clear();
@@ -4238,6 +4263,7 @@ fn session_has_modified_printable_binding(session: &SessionState, key_event: Key
         session.engine.get_option("_linear") || session.engine.get_option("_horizontal");
     selector_configured_action(session, is_vertical, is_linear, key_event).is_some()
         || navigator_configured_action(session, is_vertical, key_event).is_some()
+        || session.editor_bindings.contains_key(&key_event)
 }
 
 fn process_navigator_configured_key(
@@ -5093,6 +5119,52 @@ fn install_schema_editor_processor(session: &mut SessionState, schema_id: &str) 
         session.editor_processor = Some(EditorProcessor::Fluid);
         session.engine.set_option("_auto_commit", false);
     }
+    if session.editor_processor.is_some() {
+        load_editor_binding_section(&schema_config, &mut session.editor_bindings);
+    }
+}
+
+fn load_editor_binding_section(
+    schema_config: &Value,
+    bindings: &mut HashMap<KeyEvent, EditorBindingAction>,
+) {
+    let Some(Value::Mapping(config_bindings)) = find_config_value(schema_config, "editor/bindings")
+    else {
+        return;
+    };
+
+    for (key, action) in config_bindings {
+        let Some(key) = config_scalar_string(key) else {
+            continue;
+        };
+        let Some(key_event) = parse_single_key_binding_event(&key) else {
+            continue;
+        };
+        let Some(action) = action.as_str().and_then(editor_binding_action_from_name) else {
+            continue;
+        };
+        bindings.insert(key_event, action);
+    }
+}
+
+fn editor_binding_action_from_name(action: &str) -> Option<EditorBindingAction> {
+    let action = match action {
+        "noop" => EditorBindingAction::Noop,
+        "confirm" => EditorBindingAction::Action(EditorAction::Confirm),
+        "toggle_selection" => EditorBindingAction::Action(EditorAction::ToggleSelection),
+        "commit_comment" => EditorBindingAction::Action(EditorAction::CommitComment),
+        "commit_raw_input" => EditorBindingAction::Action(EditorAction::CommitRawInput),
+        "commit_script_text" => EditorBindingAction::Action(EditorAction::CommitScriptText),
+        "commit_composition" => EditorBindingAction::Action(EditorAction::CommitComposition),
+        "revert" => EditorBindingAction::Action(EditorAction::Revert),
+        "back" => EditorBindingAction::Action(EditorAction::Back),
+        "back_syllable" => EditorBindingAction::Action(EditorAction::BackSyllable),
+        "delete_candidate" => EditorBindingAction::Action(EditorAction::DeleteCandidate),
+        "delete" => EditorBindingAction::Action(EditorAction::Delete),
+        "cancel" => EditorBindingAction::Action(EditorAction::Cancel),
+        _ => return None,
+    };
+    Some(action)
 }
 
 fn install_schema_speller_processor(session: &mut SessionState, schema_id: &str) {
@@ -6257,37 +6329,84 @@ fn process_editor_processor(
     session: &mut SessionState,
     key_event: KeyEvent,
 ) -> Option<SessionKeyProcessResult> {
-    if session.editor_processor != Some(EditorProcessor::Express)
-        || session.engine.context().composition.input.is_empty()
-        || key_event.modifiers.release
-        || key_event.code != KeyCode::Return
-    {
+    if session.engine.context().composition.input.is_empty() || key_event.modifiers.release {
         return None;
     }
 
-    if key_event.modifiers.is_empty() {
-        let commit = session.engine.commit_raw_input();
-        return Some(commit.map_or(
-            SessionKeyProcessResult::Accepted,
-            SessionKeyProcessResult::Commit,
-        ));
+    if let Some(action) = session.editor_bindings.get(&key_event).copied() {
+        return match action {
+            EditorBindingAction::Noop => Some(SessionKeyProcessResult::Accepted),
+            EditorBindingAction::Action(action) => Some(apply_editor_action(session, action)),
+        };
     }
 
-    if key_event.modifiers.control
-        && !key_event.modifiers.shift
-        && !key_event.modifiers.alt
-        && !key_event.modifiers.super_key
-        && !key_event.modifiers.hyper
-        && !key_event.modifiers.meta
+    if session.editor_processor == Some(EditorProcessor::Express)
+        && key_event.code == KeyCode::Return
     {
-        let commit = session.engine.commit_script_text();
-        return Some(commit.map_or(
-            SessionKeyProcessResult::Accepted,
-            SessionKeyProcessResult::Commit,
-        ));
+        if key_event.modifiers.is_empty() {
+            let commit = session.engine.commit_raw_input();
+            return Some(commit.map_or(
+                SessionKeyProcessResult::Accepted,
+                SessionKeyProcessResult::Commit,
+            ));
+        }
+
+        if key_event.modifiers.control
+            && !key_event.modifiers.shift
+            && !key_event.modifiers.alt
+            && !key_event.modifiers.super_key
+            && !key_event.modifiers.hyper
+            && !key_event.modifiers.meta
+        {
+            let commit = session.engine.commit_script_text();
+            return Some(commit.map_or(
+                SessionKeyProcessResult::Accepted,
+                SessionKeyProcessResult::Commit,
+            ));
+        }
     }
 
     None
+}
+
+fn apply_editor_action(
+    session: &mut SessionState,
+    action: EditorAction,
+) -> SessionKeyProcessResult {
+    let commit = match action {
+        EditorAction::Confirm | EditorAction::CommitComposition => {
+            session.engine.commit_composition()
+        }
+        EditorAction::ToggleSelection => {
+            session.engine.first_candidate();
+            None
+        }
+        EditorAction::CommitComment => session.engine.commit_comment(),
+        EditorAction::CommitRawInput => session.engine.commit_raw_input(),
+        EditorAction::CommitScriptText => session.engine.commit_script_text(),
+        EditorAction::Revert | EditorAction::Back | EditorAction::BackSyllable => {
+            session.engine.back_to_previous_input();
+            None
+        }
+        EditorAction::DeleteCandidate => {
+            session
+                .engine
+                .delete_candidate(session.engine.context().highlighted);
+            None
+        }
+        EditorAction::Delete => {
+            session.engine.delete_input();
+            None
+        }
+        EditorAction::Cancel => {
+            session.engine.clear_composition();
+            None
+        }
+    };
+    commit.map_or(
+        SessionKeyProcessResult::Accepted,
+        SessionKeyProcessResult::Commit,
+    )
 }
 
 fn process_ascii_composer_processor(

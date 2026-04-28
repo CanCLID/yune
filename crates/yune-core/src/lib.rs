@@ -4555,7 +4555,7 @@ impl Engine {
         Some(text)
     }
 
-    fn commit_comment(&mut self) -> Option<String> {
+    pub fn commit_comment(&mut self) -> Option<String> {
         let text = self
             .context
             .candidates
@@ -4566,6 +4566,14 @@ impl Engine {
         self.record_commit_with_type("raw", text.clone());
         self.clear_composition();
         Some(text)
+    }
+
+    pub fn back_to_previous_input(&mut self) -> Option<String> {
+        self.backspace()
+    }
+
+    pub fn delete_input(&mut self) -> Option<String> {
+        self.delete_at_caret()
     }
 
     fn commit_candidate_at_page_index(&mut self, page_index: usize) -> Option<String> {

@@ -288,6 +288,11 @@ enum PunctuationProcessResult {
     Commit(String),
 }
 
+struct SpellerProcessResult {
+    accepted: bool,
+    commit: Option<String>,
+}
+
 enum SessionKeyProcessResult {
     Noop,
     Accepted,
@@ -5369,9 +5374,12 @@ fn process_session_key_event(
             SessionKeyProcessResult::Commit,
         );
     }
-    if let Some(accepted) = process_speller_processor(session, key_event) {
+    if let Some(result) = process_speller_processor(session, key_event) {
         update_session_segment_tags(session);
-        return if accepted {
+        if let Some(commit) = result.commit {
+            return SessionKeyProcessResult::Commit(commit);
+        }
+        return if result.accepted {
             SessionKeyProcessResult::Accepted
         } else {
             SessionKeyProcessResult::Noop
@@ -5577,7 +5585,10 @@ fn process_recognizer_processor(session: &mut SessionState, key_event: KeyEvent)
     true
 }
 
-fn process_speller_processor(session: &mut SessionState, key_event: KeyEvent) -> Option<bool> {
+fn process_speller_processor(
+    session: &mut SessionState,
+    key_event: KeyEvent,
+) -> Option<SpellerProcessResult> {
     if key_event.modifiers.control
         || key_event.modifiers.alt
         || key_event.modifiers.super_key
@@ -5607,7 +5618,10 @@ fn process_speller_processor(session: &mut SessionState, key_event: KeyEvent) ->
             return if can_select_candidate {
                 None
             } else {
-                Some(false)
+                Some(SpellerProcessResult {
+                    accepted: false,
+                    commit: None,
+                })
             };
         }
         let is_initial = speller.initials.contains(ch);
@@ -5617,12 +5631,24 @@ fn process_speller_processor(session: &mut SessionState, key_event: KeyEvent) ->
                 &session.engine.context().composition.input,
             )
         {
-            return Some(false);
+            return Some(SpellerProcessResult {
+                accepted: false,
+                commit: None,
+            });
         }
     }
 
     let auto_clear = speller.auto_clear;
     let max_code_length = speller.max_code_length;
+    let is_initial = ch != ' ' && speller.initials.contains(ch);
+    let delimiters = speller.delimiters.clone();
+    let commit = if is_initial
+        && speller_auto_select_at_max_code_length(session, max_code_length, &delimiters)
+    {
+        session.engine.commit_composition()
+    } else {
+        None
+    };
     if matches!(
         auto_clear,
         SpellerAutoClear::Manual | SpellerAutoClear::MaxLength
@@ -5639,7 +5665,10 @@ fn process_speller_processor(session: &mut SessionState, key_event: KeyEvent) ->
     {
         session.engine.clear_composition();
     }
-    Some(true)
+    Some(SpellerProcessResult {
+        accepted: true,
+        commit,
+    })
 }
 
 impl SpellerProcessor {
@@ -5666,6 +5695,25 @@ fn speller_auto_clear_condition(
     auto_clear != SpellerAutoClear::MaxLength
         || max_code_length == 0
         || context.composition.input.len() >= max_code_length
+}
+
+fn speller_auto_select_at_max_code_length(
+    session: &SessionState,
+    max_code_length: usize,
+    delimiters: &str,
+) -> bool {
+    if max_code_length == 0 {
+        return false;
+    }
+    let context = session.engine.context();
+    let input = &context.composition.input;
+    if input.len() < max_code_length || input.contains(|ch| delimiters.contains(ch)) {
+        return false;
+    }
+    context
+        .candidates
+        .get(context.highlighted)
+        .is_some_and(|candidate| candidate.source == CandidateSource::Table)
 }
 
 fn speller_context_has_menu(context: &yune_core::Context) -> bool {

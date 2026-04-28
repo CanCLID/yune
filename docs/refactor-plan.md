@@ -14,8 +14,12 @@ The repository is functionally healthy but structurally crowded.
 - Phase 1 is complete for production `yune-core` modules. `lib.rs` now keeps the
   public API surface and the existing unit tests, while implementation lives in
   focused modules.
+- Phase 2 is in progress. The low-risk RIME API moves have started to reduce
+  `lib.rs`, but session, context/status/commit, schema installation, and
+  processor dispatch still need to be split.
 - `crates/yune-core/src/lib.rs` is about 5,082 lines, mostly tests.
-- `crates/yune-rime-api/src/lib.rs` is about 10,000 lines.
+- `crates/yune-rime-api/src/lib.rs` is about 5,956 lines after the current
+  Phase 2 API splits.
 - `crates/yune-rime-api/src/tests.rs` is about 23,556 lines.
 - `crates/yune-rime-api/tests/frontend_client.rs` is about 4,069 lines.
 - `crates/yune-cli/src/main.rs` is still small, but it is about to grow when it
@@ -131,6 +135,20 @@ Recommended order:
 Goal: keep ABI exports visible while moving implementation details behind
 focused modules.
 
+Current progress:
+
+- `config_api.rs` owns config open/load/read/write/update entrypoints plus
+  state-label and simulated-key-sequence APIs.
+- `ffi_memory.rs` owns the current FFI free entrypoints and shared C allocation
+  cleanup helpers.
+- `levers.rs` owns levers custom settings, switcher settings, schema-list
+  helpers, and user dictionary manager API surface.
+- `candidate_api.rs` owns candidate-list iterator entrypoints.
+- `schema_api.rs` owns `RimeGetSchemaList` and schema-list population.
+- `lib.rs` still owns session lifecycle, key processing, context/status/commit
+  entrypoints, schema selection, schema installation, processor behavior, and
+  several cross-cutting session helpers.
+
 Suggested module layout:
 
 - `session.rs`
@@ -182,14 +200,25 @@ Suggested module layout:
   - schema lists
   - user dictionary manager API surface
 
-Recommended order:
+Remaining recommended order:
 
-1. Move FFI memory helpers first. They are low-behavior and easy to verify.
-2. Move runtime path and module registry helpers.
-3. Move deployment/userdb helpers.
-4. Move schema installation helpers.
-5. Move processor implementations one component at a time.
-6. Keep exported `extern "C"` functions easy to find from `lib.rs` until the
+1. Split session registry and lifecycle into `session.rs`, including
+   `SessionRegistry`, `SessionState`, `sessions`, `with_session`, session
+   activity helpers, and create/find/destroy/cleanup entrypoints.
+2. Split context/status/commit entrypoints into a focused ABI module after
+   `session.rs` owns the session access helpers.
+3. Split schema selection and switch-state restore helpers only after the
+   session boundary is stable.
+4. Split schema installation helpers into `schema_install/` in small groups:
+   translator chain, filter chain, segment tags, switch resets, and component
+   prescription parsing.
+5. Split processor implementations one component at a time: `ascii_composer`,
+   `chord_composer`, `editor`, `key_binder`, `punctuator`, `recognizer`,
+   `speller`, selector, and navigator.
+6. Move deployment/userdb helpers only when their current module boundaries show
+   real remaining mixed responsibility. Avoid churn in files that are already
+   readable.
+7. Keep exported `extern "C"` functions easy to find from `lib.rs` until the
    module layout proves stable.
 
 ## Phase 3: Split Tests

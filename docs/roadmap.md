@@ -172,6 +172,11 @@
   Rust designs, cleaner abstractions, stronger typing, deterministic tests, and
   better algorithms where they preserve or intentionally extend the external
   contract.
+- Continue the mechanical refactor track in `docs/refactor-plan.md` before
+  starting another large compatibility push: finish the remaining
+  `yune-rime-api` session/context/status/commit, schema-installation, and
+  processor splits; then split the large RIME API test file. Keep these commits
+  behavior-preserving and backed by the normal quality gates.
 - Build `yune-cli` into a frontend-surrogate input method that drives
   `yune-rime-api` rather than `yune-core` directly: initialize with real shared
   and user data directories, deploy and select schemas, create sessions, process

@@ -69,7 +69,7 @@ The initial runner now has a companion frontend-style ABI client. The ABI tests
 exercise `yune-rime-api` through the exported `RimeApi` function table, which
 keeps the test shape closer to real frontend integration than direct Rust calls.
 
-The strongest compatibility progress is currently in two areas:
+The strongest compatibility progress is currently in these areas:
 
 - Frontend compatibility: sessions, context/status/commit, candidate iteration,
   config access and mutation, deployment helpers, schema lists, module lookup,
@@ -175,10 +175,10 @@ not just missing tests:
   fcitx-rime may expose lifetime, notification, deployment, or session edge
   cases that synthetic tests do not.
 - The schema pipeline is still a subset. The current focused coverage now
-  reaches many high-value gears, but librime's source tree also registers
-  components and deeper behaviors such as `speller` auto-select and
-  max-code-length auto-selection handling, editor variants, deeper `navigator`
-  behavior such as full candidate/segment span-aware syllable jumps beyond
+  reaches many high-value gears, but librime's source tree still has deeper
+  behavior around `speller` auto-selection and max-code-length interactions,
+  previous-match segmentation, editor variants, deeper `navigator` behavior
+  such as full candidate/segment span-aware syllable jumps beyond
   delimiter-derived stops,
   deeper `selector` navigator fallback interaction behavior beyond the current
   focused raw-tag, layout, and configured-binding coverage,
@@ -193,21 +193,23 @@ not just missing tests:
   yet equivalently modeled. `speller` still needs deeper previous-match segment
   splitting and non-auto-commit composition behavior.
 - Existing schema-loaded translator/filter support is intentionally partial.
-  Areas such as full spelling algebra, full OpenCC data and conversion chains,
-  distribution-scale schema chains, full spelling algebra beyond the current
-  focused lookup-side `xlit`/`xform`/`erase`/`derive` expansion and
-  generated-spelling ranking penalties, and
-  compiled-data interactions still need direct
-  comparison against librime behavior.
+  Areas such as full spelling algebra beyond the current focused lookup-side
+  `xlit`/`xform`/`erase`/`derive` expansion and generated-spelling ranking
+  penalties, correction-driven tolerance search, full OpenCC data and conversion
+  chains, distribution-scale schema chains, and compiled-data interactions still
+  need direct comparison against librime behavior.
 - Dictionary compatibility currently focuses on source `.dict.yaml` loading.
   Librime also builds and consumes `.table.bin`, `.prism.bin`, `.reverse.bin`,
   pack dictionaries at compiled-data level, preset-vocabulary phrase injection,
   deeper stem-column consumption through compiled reverse data and encoders,
-  correction data, full binary payload parsing beyond the current checksum
-  metadata slice, and rebuild execution.
+  table/prism/reverse binary payloads beyond metadata, `DictCompiler`
+  source-vs-prebuilt fallback behavior, pack checksum chaining, reverse-db
+  `dict_settings` payloads used by UniTE-style encoders, correction data, and
+  rebuild execution.
 - User dictionary support is currently a plain text compatibility shim. Librime
-  also has LevelDB-backed userdb storage, snapshots, recovery, learning, and
-  frequency update behavior.
+  also has LevelDB-backed userdb storage, snapshots, recovery, learning,
+  transaction rollback, predictive lookup, backdated scans, and frequency update
+  behavior.
 - Plugin compatibility remains intentionally out of scope for the first
   milestone. Yune should keep its own Rust extension points separate from
   librime's C++ plugin ABI until a real integration requires it.

@@ -195,12 +195,15 @@
   librime's compiled `.table.bin`, `.prism.bin`, `.reverse.bin`, pack
   dictionaries at compiled-data level, deeper preset-vocabulary phrase
   injection, stem-column consumption in compiled reverse data and encoders,
-  broader phrase lookup around the focused table-encoder primitive, correction
-  data, compiled binary payload parsing beyond the current checksum metadata
-  slice, and rebuild execution.
+  broader phrase lookup around the focused table-encoder primitive,
+  source-vs-prebuilt table fallback behavior, pack checksum chaining, reverse-db
+  `dict_settings` payloads used by UniTE-style encoders, correction/tolerance
+  search data, compiled binary payload parsing beyond the current checksum
+  metadata slice, and rebuild execution.
 - Expand user dictionary compatibility beyond the current plain text userdb
   shims toward librime's LevelDB/userdb storage, snapshot merging, recovery,
-  learning, and frequency update semantics.
+  learning, transaction rollback, predictive lookup/backdated scan behavior, and
+  frequency update semantics.
 - Keep plugin compatibility explicit: support Yune-native extension points
   first; defer librime C++ plugin ABI compatibility unless there is a concrete
   frontend or distribution requirement.

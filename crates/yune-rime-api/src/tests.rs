@@ -8162,7 +8162,7 @@ fn current_page_candidate_apis_use_selected_schema_page_size_like_librime() {
     fs::write(
         staging.join("luna.schema.yaml"),
         "\
-schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\n",
+schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: '2'\n",
     )
     .expect("schema config should be written");
 

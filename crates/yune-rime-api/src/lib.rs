@@ -7464,8 +7464,7 @@ fn context_menu_settings(schema_id: &str) -> ContextMenuSettings {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
     let page_size = find_config_value(&schema_config, "menu/page_size")
-        .and_then(Value::as_i64)
-        .and_then(|page_size| c_int::try_from(page_size).ok())
+        .and_then(config_scalar_int)
         .filter(|page_size| *page_size > 0)
         .map(|page_size| page_size as usize)
         .unwrap_or(DEFAULT_PAGE_SIZE);

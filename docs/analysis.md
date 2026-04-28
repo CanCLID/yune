@@ -92,7 +92,9 @@ The strongest compatibility progress is currently in two areas:
   max-code-length preselection before the next initial, plus focused
   `auto_select` exact-table unique-candidate commits and
   `auto_select_pattern` gating, and focused previous-match auto-commit reuse
-  with `express_editor`.
+  with `express_editor`. The current `schema_list_translator` coverage includes
+  current-schema-first ordering, selection commands, access-time recency sorting,
+  and `switcher/fix_schema_list_order`.
 - Data compatibility: schema-loaded table dictionaries now feed real session
   candidates, and source dictionary parsing handles many librime/yaml-cpp edge
   cases around headers, YAML nulls, quoted scalars, `columns`, `import_tables`,
@@ -124,9 +126,7 @@ not just missing tests:
   `chord_composer`, `shape_processor`, `punct_segmentor`,
   `fallback_segmentor`, and formatter behavior that are not yet equivalently
   modeled. `speller` still needs deeper previous-match segment splitting and
-  non-auto-commit composition behavior. The current `schema_list_translator`
-  support is a focused subset and does not yet model librime's access-time
-  recency sorting or `fix_schema_list_order` behavior.
+  non-auto-commit composition behavior.
 - Existing schema-loaded translator/filter support is intentionally partial.
   Areas such as full spelling algebra, full OpenCC data and conversion chains,
   distribution-scale schema chains, and compiled-data interactions still need

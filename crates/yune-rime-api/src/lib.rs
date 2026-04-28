@@ -3922,11 +3922,14 @@ fn apply_schema_list_candidate(session: &mut SessionState, candidate_index: usiz
 fn schema_list_selection_commands(session: &SessionState) -> Vec<String> {
     let current_schema = session.engine.status().schema_id;
     let mut schema_ids = vec![current_schema.clone()];
+    let schema_config = load_runtime_config_root(
+        &format!("{current_schema}.schema"),
+        ConfigOpenKind::Deployed,
+    );
     schema_ids.extend(
-        deployed_schema_list_entries()
+        schema_list_translator_entries_for_current(&current_schema, &schema_config)
             .into_iter()
-            .map(|(schema_id, _)| schema_id)
-            .filter(|schema_id| schema_id != &current_schema),
+            .map(|(schema_id, _)| schema_id),
     );
     schema_ids
 }
@@ -4094,9 +4097,13 @@ fn install_schema_translator_chain(session: &mut SessionState, schema_id: &str) 
                 install_schema_switch_translator_from_config(session, &schema_config);
             }
             "schema_list_translator" => {
+                let entries = schema_list_translator_entries_for_current(
+                    session.engine.status().schema_id.as_str(),
+                    &schema_config,
+                );
                 session
                     .engine
-                    .add_translator(SchemaListTranslator::new(deployed_schema_list_entries()));
+                    .add_translator(SchemaListTranslator::new(entries));
             }
             _ => {}
         }
@@ -6692,6 +6699,48 @@ fn deployed_schema_list_entries() -> Vec<(String, String)> {
             (schema_id, name)
         })
         .collect()
+}
+
+fn schema_list_translator_entries_for_current(
+    current_schema: &str,
+    schema_config: &Value,
+) -> Vec<(String, String)> {
+    let mut entries = deployed_schema_list_entries()
+        .into_iter()
+        .filter(|(schema_id, _)| schema_id != current_schema)
+        .map(|(schema_id, schema_name)| {
+            let access_time = schema_access_time_quality(&schema_id);
+            (schema_id, schema_name, access_time)
+        })
+        .collect::<Vec<_>>();
+
+    let fix_order = find_config_value(schema_config, "switcher/fix_schema_list_order")
+        .and_then(config_scalar_bool)
+        .unwrap_or(false);
+    if !fix_order {
+        entries.sort_by(|(_, _, x), (_, _, y)| y.cmp(x));
+    }
+
+    entries
+        .into_iter()
+        .map(|(schema_id, schema_name, _)| (schema_id, schema_name))
+        .collect()
+}
+
+fn schema_access_time_quality(schema_id: &str) -> i64 {
+    let user_config = load_runtime_config_root("user", ConfigOpenKind::User);
+    let Some(timestamp) =
+        find_config_value(&user_config, &format!("var/schema_access_time/{schema_id}"))
+            .and_then(config_scalar_int)
+    else {
+        return 0;
+    };
+    let timestamp = i64::from(timestamp);
+    if timestamp <= session_activity_now() as i64 {
+        timestamp
+    } else {
+        0
+    }
 }
 
 fn deployed_schema_name(schema_id: &str) -> String {

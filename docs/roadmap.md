@@ -109,8 +109,9 @@
   including namespace aliases, tag gating, completion toggles, sentence
   fallback, candidate quality, `dictionary_exclude`, `comment_format`, pack
   dictionaries, persisted switcher options, folded switch menus, radio
-  defaults, state-label ABI indexing, schema-list ordering, and schema
-  selection commands.
+  defaults, state-label ABI indexing, schema-list ordering, schema selection
+  commands, schema-list access-time recency sorting, and
+  `switcher/fix_schema_list_order`.
 - Expanded schema-loaded filter coverage for `simplifier`, `uniquifier`,
   `single_char_filter`, `charset_filter`/`cjk_minifier`, and
   `reverse_lookup_filter`, including tag gating, namespace aliases, OpenCC
@@ -138,9 +139,8 @@
   previous-match segment splitting and non-auto-commit composition behavior,
   `editor` variants, `navigator`, `selector`, `chord_composer`,
   `shape_processor`/`shape_formatter`, `punct_segmentor`,
-  `fallback_segmentor`, `schema_list_translator` access-time ordering and
-  `fix_schema_list_order`, full spelling algebra, full OpenCC conversion data,
-  and larger real-world processor/segmentor/translator/filter chains from
+  `fallback_segmentor`, full spelling algebra, full OpenCC conversion data, and
+  larger real-world processor/segmentor/translator/filter chains from
   distribution schemas.
 - Expand dictionary compatibility beyond source `.dict.yaml` parsing toward
   librime's compiled `.table.bin`, `.prism.bin`, `.reverse.bin`, pack

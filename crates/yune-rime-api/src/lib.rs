@@ -2275,6 +2275,7 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.punctuation_processor = None;
     session.recognizer_processor = None;
     session.paging = false;
+    restore_switcher_saved_options(session, schema_id);
     apply_schema_switch_resets(session, schema_id);
     install_schema_segment_tags(session, schema_id);
     install_schema_ascii_composer_processor(session, schema_id);
@@ -2286,6 +2287,34 @@ fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     session.engine.clear_composition();
     session.input_buffer = None;
     session.unread_commit = None;
+}
+
+fn restore_switcher_saved_options(session: &mut SessionState, schema_id: &str) {
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    let save_options = schema_string_list(&schema_config, "switcher/save_options");
+    if save_options.is_empty() {
+        return;
+    }
+
+    let Some(user_config_path) = selected_runtime_config_path("user", ConfigOpenKind::User) else {
+        return;
+    };
+    let Some(user_config) = fs::read_to_string(user_config_path)
+        .ok()
+        .and_then(|text| serde_yaml::from_str::<Value>(&text).ok())
+    else {
+        return;
+    };
+
+    for option_name in save_options {
+        let Some(value) = find_config_value(&user_config, &format!("var/option/{option_name}"))
+            .and_then(config_scalar_bool)
+        else {
+            continue;
+        };
+        session.engine.set_option(option_name, value);
+    }
 }
 
 /// Returns the currently available schema list.

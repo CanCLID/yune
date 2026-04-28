@@ -1,20 +1,22 @@
 use std::{
     collections::HashSet,
     fs,
-    os::raw::c_char,
+    os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     sync::atomic::Ordering,
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use serde_yaml::Value;
+use serde_yaml::{Mapping, Number, Value};
 
 use crate::{
-    bool_from, cstring_from_lossless_str, deploy_config_file, deploy_schema_file,
-    find_config_value, optional_c_string, path_join, prebuild_all_schemas,
-    run_workspace_maintenance_tasks, runtime_paths, runtime_user_data_sync_dir, service_started,
-    sync_all_user_dicts, user_dict_upgrade, workspace_update, Bool, RimeCleanupAllSessions,
-    RimeSetup, RimeTraits, FALSE, RIME_VERSION_BYTES, TRUE,
+    apply_config_directives, apply_custom_patch, apply_legacy_preset_config_plugins, bool_from,
+    cstring_from_lossless_str, find_config_value, load_runtime_config_root,
+    normalize_config_resource_id, optional_c_string, path_join, runtime_paths,
+    runtime_user_data_sync_dir, service_started, set_build_info, set_config_value,
+    source_modified_secs, source_uses_auto_custom_patch, sync_all_user_dicts, user_dict_upgrade,
+    Bool, ConfigOpenKind, RimeCleanupAllSessions, RimeSetup, RimeTraits, FALSE, RIME_VERSION_BYTES,
+    TRUE,
 };
 
 /// Initializes the runtime using the same trait handling as `RimeSetup`.
@@ -554,4 +556,483 @@ fn current_unix_time_string() -> String {
         |_| "0".to_owned(),
         |duration| duration.as_secs().to_string(),
     )
+}
+
+pub(crate) fn workspace_update() -> bool {
+    if !deploy_config_file("default.yaml", "config_version") {
+        return false;
+    }
+    let _ = symlink_prebuilt_dictionaries();
+
+    let default_config = load_runtime_config_root("default", ConfigOpenKind::Deployed);
+    let Some(schema_ids) = workspace_schema_ids(&default_config) else {
+        return false;
+    };
+
+    let mut built = HashSet::new();
+    let mut success = true;
+    for schema_id in schema_ids {
+        if !workspace_update_schema(&schema_id, false, &mut built) {
+            success = false;
+        }
+    }
+
+    write_last_build_time() && success
+}
+
+pub(crate) fn run_workspace_maintenance_tasks() -> bool {
+    workspace_update() && user_dict_upgrade() && cleanup_trash()
+}
+
+fn workspace_schema_ids(default_config: &Value) -> Option<Vec<String>> {
+    let Value::Sequence(schema_list) = find_config_value(default_config, "schema_list")? else {
+        return None;
+    };
+    Some(
+        schema_list
+            .iter()
+            .filter_map(|entry| {
+                let Value::Mapping(entry) = entry else {
+                    return None;
+                };
+                entry
+                    .get(Value::String("schema".to_owned()))
+                    .and_then(Value::as_str)
+                    .filter(|schema_id| !schema_id.is_empty())
+                    .map(ToOwned::to_owned)
+            })
+            .collect(),
+    )
+}
+
+fn workspace_update_schema(
+    schema_id: &str,
+    as_dependency: bool,
+    built: &mut HashSet<String>,
+) -> bool {
+    if !built.insert(schema_id.to_owned()) {
+        return true;
+    }
+
+    let schema_file = format!("{schema_id}.schema.yaml");
+    if !deploy_schema_file(&schema_file) {
+        return as_dependency;
+    }
+
+    let schema_config =
+        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
+    if !as_dependency {
+        for dependency_id in schema_dependencies(&schema_config) {
+            if !workspace_update_schema(&dependency_id, true, built) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn schema_dependencies(schema_config: &Value) -> Vec<String> {
+    let Some(Value::Sequence(dependencies)) =
+        find_config_value(schema_config, "schema/dependencies")
+    else {
+        return Vec::new();
+    };
+    dependencies
+        .iter()
+        .filter_map(Value::as_str)
+        .filter(|dependency| !dependency.is_empty())
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+fn write_last_build_time() -> bool {
+    let user_data_dir = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned())
+    };
+    if fs::create_dir_all(&user_data_dir).is_err() {
+        return false;
+    }
+
+    let user_config_path = user_data_dir.join("user.yaml");
+    let mut user_config = fs::read_to_string(&user_config_path)
+        .ok()
+        .and_then(|text| serde_yaml::from_str::<Value>(&text).ok())
+        .unwrap_or_else(|| Value::Mapping(Mapping::new()));
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_secs());
+    let timestamp = c_int::try_from(timestamp).unwrap_or(c_int::MAX);
+    if !set_config_value(
+        &mut user_config,
+        "var/last_build_time",
+        Value::Number(Number::from(timestamp)),
+    ) {
+        return false;
+    }
+    let Ok(yaml) = serde_yaml::to_string(&user_config) else {
+        return false;
+    };
+    fs::write(user_config_path, yaml).is_ok()
+}
+
+fn symlink_prebuilt_dictionaries() -> bool {
+    let (shared_data_dir, user_data_dir) = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        (
+            PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned()),
+            PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned()),
+        )
+    };
+    if !shared_data_dir.is_dir() || !user_data_dir.is_dir() {
+        return false;
+    }
+    let Ok(shared_data_dir) = shared_data_dir.canonicalize() else {
+        return false;
+    };
+    if user_data_dir
+        .canonicalize()
+        .is_ok_and(|user_data_dir| user_data_dir == shared_data_dir)
+    {
+        return false;
+    }
+
+    let Ok(entries) = fs::read_dir(&user_data_dir) else {
+        return false;
+    };
+    let mut success = true;
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        let Ok(metadata) = fs::symlink_metadata(&path) else {
+            success = false;
+            continue;
+        };
+        if !metadata.file_type().is_symlink() {
+            continue;
+        }
+
+        let target_path = path.canonicalize();
+        let bad_link = target_path.is_err();
+        let linked_to_shared_data = target_path
+            .ok()
+            .and_then(|target_path| target_path.parent().map(Path::to_path_buf))
+            .is_some_and(|parent| parent == shared_data_dir);
+        if (bad_link || linked_to_shared_data) && fs::remove_file(&path).is_err() {
+            success = false;
+        }
+    }
+    success
+}
+
+pub(crate) fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
+    if file_name.is_empty() || version_key.is_empty() {
+        return false;
+    }
+
+    let (shared_data_dir, user_data_dir, staging_dir) = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        (
+            PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned()),
+            PathBuf::from(paths.user_data_dir.to_string_lossy().into_owned()),
+            PathBuf::from(paths.staging_dir.to_string_lossy().into_owned()),
+        )
+    };
+    let source = shared_data_dir.join(file_name);
+    let destination = staging_dir.join(file_name);
+    if !source.is_file() {
+        return false;
+    }
+    if source == destination {
+        return true;
+    }
+    let user_copy = user_data_dir.join(file_name);
+    let trash_dir = user_data_dir.join("trash");
+    let _ = trash_deprecated_user_copy(&source, &user_copy, version_key, &trash_dir);
+    if !deployed_config_needs_update(&destination, file_name, &shared_data_dir, &user_data_dir) {
+        return true;
+    }
+    if let Some(parent) = destination.parent() {
+        if fs::create_dir_all(parent).is_err() {
+            return false;
+        }
+    }
+    match deployed_config_yaml_with_build_info(&source, file_name, &shared_data_dir, &user_data_dir)
+    {
+        Some(yaml) => fs::write(destination, yaml).is_ok(),
+        None => fs::copy(source, destination).is_ok(),
+    }
+}
+
+fn deployed_config_needs_update(
+    destination: &Path,
+    file_name: &str,
+    shared_data_dir: &Path,
+    user_data_dir: &Path,
+) -> bool {
+    let root = match fs::read_to_string(destination)
+        .ok()
+        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
+    {
+        Some(root) => root,
+        None => return true,
+    };
+    let Some(Value::Mapping(timestamps)) = find_config_value(&root, "__build_info/timestamps")
+    else {
+        return true;
+    };
+    let resource_id = normalize_config_resource_id(file_name);
+    if !timestamps.contains_key(Value::String(resource_id.clone())) {
+        return true;
+    }
+    let custom_resource_id = custom_patch_resource_id(&resource_id);
+    if source_uses_auto_custom_patch(&shared_data_dir.join(file_name))
+        && !timestamps.contains_key(Value::String(custom_resource_id.clone()))
+        && config_resource_path(shared_data_dir, user_data_dir, &custom_resource_id).exists()
+    {
+        return true;
+    }
+    for (resource_id, recorded_time) in timestamps {
+        let Some(resource_id) = resource_id.as_str() else {
+            return true;
+        };
+        let Some(recorded_time) = recorded_time.as_i64() else {
+            return true;
+        };
+        let source = config_resource_path(shared_data_dir, user_data_dir, resource_id);
+        if !source.exists() {
+            if recorded_time != 0 {
+                return true;
+            }
+            continue;
+        }
+        let Some(source_time) = source_modified_secs(&source) else {
+            return true;
+        };
+        if recorded_time != i64::from(source_time) {
+            return true;
+        }
+    }
+    false
+}
+
+fn deployed_config_yaml_with_build_info(
+    source: &Path,
+    file_name: &str,
+    shared_data_dir: &Path,
+    user_data_dir: &Path,
+) -> Option<String> {
+    let mut root = fs::read_to_string(source)
+        .ok()
+        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())?;
+    let resource_id = normalize_config_resource_id(file_name);
+    let timestamp = source_modified_secs(source).unwrap_or(0);
+    let mut patch_dependencies = Vec::new();
+    let apply_auto_custom_patch =
+        apply_config_directives(&mut root, shared_data_dir, &mut patch_dependencies)?;
+    apply_legacy_preset_config_plugins(
+        &mut root,
+        &resource_id,
+        shared_data_dir,
+        &mut patch_dependencies,
+    )?;
+    set_build_info(&mut root, &resource_id, timestamp)?;
+
+    if apply_auto_custom_patch {
+        let custom_resource_id = custom_patch_resource_id(&resource_id);
+        let custom_path = user_data_dir.join(format!("{custom_resource_id}.yaml"));
+        if let Some(custom_root) = fs::read_to_string(&custom_path)
+            .ok()
+            .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
+        {
+            apply_custom_patch(
+                &mut root,
+                &custom_root,
+                shared_data_dir,
+                &mut patch_dependencies,
+            )?;
+            set_build_info(
+                &mut root,
+                &custom_resource_id,
+                source_modified_secs(&custom_path).unwrap_or(0),
+            )?;
+        } else {
+            set_build_info(&mut root, &custom_resource_id, 0)?;
+        }
+    }
+    for (resource_id, timestamp) in patch_dependencies {
+        set_build_info(&mut root, &resource_id, timestamp)?;
+    }
+    serde_yaml::to_string(&root).ok()
+}
+
+fn custom_patch_resource_id(resource_id: &str) -> String {
+    let base = resource_id.strip_suffix(".schema").unwrap_or(resource_id);
+    format!("{base}.custom")
+}
+
+fn config_resource_path(
+    shared_data_dir: &Path,
+    user_data_dir: &Path,
+    resource_id: &str,
+) -> PathBuf {
+    let root = if resource_id.ends_with(".custom") {
+        user_data_dir
+    } else {
+        shared_data_dir
+    };
+    root.join(format!("{resource_id}.yaml"))
+}
+
+fn trash_deprecated_user_copy(
+    shared_copy: &Path,
+    user_copy: &Path,
+    version_key: &str,
+    trash_dir: &Path,
+) -> bool {
+    if !shared_copy.exists()
+        || !user_copy.exists()
+        || paths_equivalent(shared_copy, user_copy).unwrap_or(false)
+    {
+        return false;
+    }
+
+    let mut shared_version = config_string_from_file(shared_copy, version_key).unwrap_or_default();
+    let _ = remove_version_suffix(&mut shared_version, ".minimal");
+    let mut user_version = config_string_from_file(user_copy, version_key).unwrap_or_default();
+    let is_customized_user_copy = remove_version_suffix(&mut user_version, ".custom.");
+    if compare_version_strings(&shared_version, &user_version).is_gt()
+        || (shared_version == user_version && is_customized_user_copy)
+    {
+        if fs::create_dir_all(trash_dir).is_err() {
+            return false;
+        }
+        return fs::rename(
+            user_copy,
+            trash_dir.join(user_copy.file_name().unwrap_or_default()),
+        )
+        .is_ok();
+    }
+    false
+}
+
+fn paths_equivalent(left: &Path, right: &Path) -> Option<bool> {
+    Some(left.canonicalize().ok()? == right.canonicalize().ok()?)
+}
+
+fn config_string_from_file(path: &Path, key: &str) -> Option<String> {
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|text| serde_yaml::from_str::<Value>(&text).ok())
+        .and_then(|root| {
+            find_config_value(&root, key)
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned)
+        })
+}
+
+fn remove_version_suffix(version: &mut String, suffix: &str) -> bool {
+    let Some(index) = version.find(suffix) else {
+        return false;
+    };
+    version.truncate(index);
+    true
+}
+
+fn compare_version_strings(left: &str, right: &str) -> std::cmp::Ordering {
+    let mut left_parts = left.split('.');
+    let mut right_parts = right.split('.');
+    loop {
+        match (left_parts.next(), right_parts.next()) {
+            (None, None) => return std::cmp::Ordering::Equal,
+            (Some(part), None) => {
+                return compare_version_part(part, "0").then(std::cmp::Ordering::Greater);
+            }
+            (None, Some(part)) => {
+                return compare_version_part("0", part).then(std::cmp::Ordering::Less);
+            }
+            (Some(left), Some(right)) => {
+                let ordering = compare_version_part(left, right);
+                if !ordering.is_eq() {
+                    return ordering;
+                }
+            }
+        }
+    }
+}
+
+fn compare_version_part(left: &str, right: &str) -> std::cmp::Ordering {
+    match (left.parse::<u64>(), right.parse::<u64>()) {
+        (Ok(left), Ok(right)) => left.cmp(&right),
+        _ => left.cmp(right),
+    }
+}
+
+pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
+    if schema_file.is_empty() {
+        return false;
+    }
+
+    let shared_data_dir = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned())
+    };
+    let source = shared_data_dir.join(schema_file);
+    if !source.is_file() {
+        return false;
+    }
+
+    let schema_config = match fs::read_to_string(source)
+        .ok()
+        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
+    {
+        Some(schema_config) => schema_config,
+        None => return false,
+    };
+    let Some(schema_id) = find_config_value(&schema_config, "schema/schema_id")
+        .and_then(Value::as_str)
+        .filter(|schema_id| !schema_id.is_empty())
+    else {
+        return false;
+    };
+
+    deploy_config_file(&format!("{schema_id}.schema.yaml"), "schema/version")
+}
+
+pub(crate) fn prebuild_all_schemas() -> bool {
+    let shared_data_dir = {
+        let paths = runtime_paths()
+            .lock()
+            .expect("runtime paths should not be poisoned");
+        PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned())
+    };
+    let Ok(entries) = fs::read_dir(&shared_data_dir) else {
+        return false;
+    };
+
+    let mut success = true;
+    for entry in entries {
+        let Ok(entry) = entry else {
+            success = false;
+            continue;
+        };
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
+            continue;
+        };
+        if file_name.ends_with(".schema.yaml") && !deploy_schema_file(file_name) {
+            success = false;
+        }
+    }
+    success
 }

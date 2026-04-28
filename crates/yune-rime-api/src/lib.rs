@@ -51,8 +51,9 @@ pub use notifications::RimeSetNotificationHandler;
 pub use runtime::*;
 pub use schema_api::*;
 pub(crate) use schema_install::{
-    install_schema_filter_chain, install_schema_translator_chain, schema_component_prescription,
-    schema_string_list,
+    install_schema_filter_chain, install_schema_segment_tags, install_schema_translator_chain,
+    load_schema_recognizer_patterns, recognizer_patterns_match, schema_component_prescription,
+    schema_string_list, update_session_segment_tags,
 };
 pub(crate) use schema_selection::apply_schema_to_session;
 pub use schema_selection::{RimeGetCurrentSchema, RimeSelectSchema};
@@ -224,20 +225,20 @@ enum SwitchSelectionCommand {
 }
 
 pub(crate) struct MatcherSegmentor {
-    patterns: Vec<MatcherPattern>,
+    pub(crate) patterns: Vec<MatcherPattern>,
 }
 
 pub(crate) struct AffixSegmentor {
-    tag: String,
-    prefix: String,
-    suffix: String,
-    extra_tags: Vec<String>,
+    pub(crate) tag: String,
+    pub(crate) prefix: String,
+    pub(crate) suffix: String,
+    pub(crate) extra_tags: Vec<String>,
 }
 
 pub(crate) struct PunctSegmentor {
-    half_shape_keys: HashSet<String>,
-    full_shape_keys: HashSet<String>,
-    digit_separators: String,
+    pub(crate) half_shape_keys: HashSet<String>,
+    pub(crate) full_shape_keys: HashSet<String>,
+    pub(crate) digit_separators: String,
 }
 
 pub(crate) struct RecognizerProcessor {
@@ -262,9 +263,9 @@ pub(crate) enum AsciiModeSwitchStyle {
     UnsetAsciiMode,
 }
 
-struct MatcherPattern {
-    tag: String,
-    pattern: Regex,
+pub(crate) struct MatcherPattern {
+    pub(crate) tag: String,
+    pub(crate) pattern: Regex,
 }
 
 pub(crate) struct PunctuationProcessor {
@@ -1765,57 +1766,6 @@ fn selector_end_like_librime(session: &mut SessionState) -> Option<bool> {
     selector_home_like_librime(session)
 }
 
-pub(crate) fn install_schema_segment_tags(session: &mut SessionState, schema_id: &str) {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    let mut tags = vec!["abc".to_owned()];
-    session.affix_segmentors.clear();
-    session.matcher_segmentor = None;
-    session.ascii_segmentor_enabled = false;
-    session.punct_segmentor = None;
-    session.fallback_segmentor_enabled = false;
-
-    if let Some(Value::Sequence(segmentors)) =
-        find_config_value(&schema_config, "engine/segmentors")
-    {
-        tags.clear();
-        session.ascii_segmentor_enabled = segmentors
-            .iter()
-            .filter_map(Value::as_str)
-            .map(schema_component_prescription)
-            .any(|(component_name, _)| component_name == "ascii_segmentor");
-        if segmentors
-            .iter()
-            .filter_map(Value::as_str)
-            .map(schema_component_prescription)
-            .any(|(component_name, _)| component_name == "abc_segmentor")
-        {
-            tags.push("abc".to_owned());
-            tags.extend(schema_string_list(
-                &schema_config,
-                "abc_segmentor/extra_tags",
-            ));
-        }
-        if segmentors
-            .iter()
-            .filter_map(Value::as_str)
-            .map(schema_component_prescription)
-            .any(|(component_name, _)| component_name == "punct_segmentor")
-        {
-            session.punct_segmentor = Some(load_schema_punct_segmentor(&schema_config));
-        }
-        session.affix_segmentors = load_schema_affix_segmentors(&schema_config, segmentors);
-        session.matcher_segmentor = load_schema_matcher_segmentor(&schema_config, segmentors);
-        session.fallback_segmentor_enabled = segmentors
-            .iter()
-            .filter_map(Value::as_str)
-            .map(schema_component_prescription)
-            .any(|(component_name, _)| component_name == "fallback_segmentor");
-    }
-    session.base_segment_tags = tags;
-    update_session_segment_tags(session);
-}
-
 pub(crate) fn install_schema_ascii_composer_processor(session: &mut SessionState, schema_id: &str) {
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
@@ -2131,248 +2081,6 @@ pub(crate) fn install_schema_recognizer_processor(session: &mut SessionState, sc
         use_space,
         patterns,
     });
-}
-
-fn load_schema_matcher_segmentor(
-    schema_config: &Value,
-    segmentors: &[Value],
-) -> Option<MatcherSegmentor> {
-    let name_space = segmentors
-        .iter()
-        .filter_map(Value::as_str)
-        .map(schema_component_prescription)
-        .find_map(|(component_name, name_space)| {
-            (component_name == "matcher")
-                .then(|| {
-                    let name_space = name_space.unwrap_or("recognizer");
-                    if name_space == "segmentor" {
-                        "recognizer"
-                    } else {
-                        name_space
-                    }
-                })
-                .filter(|name_space| !name_space.is_empty())
-        })?;
-    let patterns = load_schema_recognizer_patterns(schema_config, name_space);
-    (!patterns.is_empty()).then_some(MatcherSegmentor { patterns })
-}
-
-fn load_schema_affix_segmentors(
-    schema_config: &Value,
-    segmentors: &[Value],
-) -> Vec<AffixSegmentor> {
-    segmentors
-        .iter()
-        .filter_map(Value::as_str)
-        .map(schema_component_prescription)
-        .filter_map(|(component_name, name_space)| {
-            if component_name != "affix_segmentor" {
-                return None;
-            }
-            let name_space = name_space.unwrap_or("segmentor");
-            if name_space.is_empty() {
-                return None;
-            }
-            let prefix = find_config_value(schema_config, &format!("{name_space}/prefix"))
-                .and_then(config_scalar_string)
-                .unwrap_or_default();
-            if prefix.is_empty() {
-                return None;
-            }
-            let tag = find_config_value(schema_config, &format!("{name_space}/tag"))
-                .and_then(config_scalar_string)
-                .filter(|tag| !tag.is_empty())
-                .unwrap_or_else(|| "abc".to_owned());
-            let suffix = find_config_value(schema_config, &format!("{name_space}/suffix"))
-                .and_then(config_scalar_string)
-                .unwrap_or_default();
-            let extra_tags = schema_string_list(schema_config, &format!("{name_space}/extra_tags"));
-            Some(AffixSegmentor {
-                tag,
-                prefix,
-                suffix,
-                extra_tags,
-            })
-        })
-        .collect()
-}
-
-fn load_schema_punct_segmentor(schema_config: &Value) -> PunctSegmentor {
-    PunctSegmentor {
-        half_shape_keys: punctuation_shape_segment_keys(schema_config, "half_shape"),
-        full_shape_keys: punctuation_shape_segment_keys(schema_config, "full_shape"),
-        digit_separators: find_config_value(schema_config, "punctuator/digit_separators")
-            .and_then(config_scalar_string)
-            .unwrap_or_else(|| ".:".to_owned()),
-    }
-}
-
-fn punctuation_shape_segment_keys(schema_config: &Value, shape: &str) -> HashSet<String> {
-    let Some(Value::Mapping(mapping)) =
-        find_config_value(schema_config, &format!("punctuator/{shape}"))
-    else {
-        return HashSet::new();
-    };
-    mapping
-        .keys()
-        .filter_map(config_scalar_string)
-        .filter(|key| {
-            let mut chars = key.chars();
-            chars
-                .next()
-                .is_some_and(|ch| ch.is_ascii() && !ch.is_ascii_control())
-                && chars.next().is_none()
-        })
-        .collect()
-}
-
-fn load_schema_recognizer_patterns(schema_config: &Value, name_space: &str) -> Vec<MatcherPattern> {
-    let Some(Value::Mapping(patterns)) =
-        find_config_value(schema_config, &format!("{name_space}/patterns"))
-    else {
-        return Vec::new();
-    };
-    let mut patterns = patterns
-        .iter()
-        .filter_map(|(tag, pattern)| {
-            let tag = config_scalar_string(tag)?;
-            let pattern = config_scalar_string(pattern)?;
-            Regex::new(&pattern)
-                .ok()
-                .map(|pattern| MatcherPattern { tag, pattern })
-        })
-        .collect::<Vec<_>>();
-    patterns.sort_by(|left, right| left.tag.cmp(&right.tag));
-    patterns
-}
-
-fn update_session_segment_tags(session: &mut SessionState) {
-    let input = session.engine.context().composition.input.clone();
-    if session.ascii_composer_inline_ascii && input.is_empty() {
-        session.ascii_composer_inline_ascii = false;
-        session.engine.set_option("ascii_mode", false);
-    }
-    if session.ascii_segmentor_enabled && session.engine.status().is_ascii_mode && !input.is_empty()
-    {
-        let raw_tags = vec!["raw".to_owned()];
-        if session.engine.context().segment_tags != raw_tags {
-            session.engine.set_segment_tags(raw_tags);
-        }
-        return;
-    }
-    if let Some(punct_segmentor) = &session.punct_segmentor {
-        if let Some(tag) = punct_segmentor.tag_for_input(
-            &input,
-            session.engine.status().is_full_shape,
-            session.engine.context().last_commit.as_deref(),
-        ) {
-            let punct_tags = vec![tag.to_owned()];
-            if session.engine.context().segment_tags != punct_tags {
-                session.engine.set_segment_tags(punct_tags);
-            }
-            return;
-        }
-    }
-    let mut tags = session.base_segment_tags.clone();
-    for affix_segmentor in &session.affix_segmentors {
-        if affix_segmentor.matches(&input) {
-            let mut affix_tags = vec![affix_segmentor.tag.clone()];
-            for extra_tag in &affix_segmentor.extra_tags {
-                if !affix_tags.iter().any(|existing| existing == extra_tag) {
-                    affix_tags.push(extra_tag.clone());
-                }
-            }
-            if session.engine.context().segment_tags != affix_tags {
-                session.engine.set_segment_tags(affix_tags);
-            }
-            return;
-        }
-    }
-    if let Some(matcher) = &session.matcher_segmentor {
-        if let Some(tag) = matcher.match_tag(&input) {
-            if !tags.iter().any(|existing| existing == tag) {
-                tags.push(tag.to_owned());
-            }
-        }
-    }
-    if tags.is_empty() && session.fallback_segmentor_enabled && !input.is_empty() {
-        tags.push("raw".to_owned());
-    }
-    if session.engine.context().segment_tags != tags {
-        session.engine.set_segment_tags(tags);
-    }
-}
-
-impl AffixSegmentor {
-    fn matches(&self, input: &str) -> bool {
-        let Some(mut code) = input.strip_prefix(&self.prefix) else {
-            return false;
-        };
-        if code.is_empty() {
-            return false;
-        }
-        if !self.suffix.is_empty() {
-            code = code.strip_suffix(&self.suffix).unwrap_or(code);
-        }
-        !code.is_empty()
-    }
-}
-
-impl PunctSegmentor {
-    fn tag_for_input(
-        &self,
-        input: &str,
-        full_shape: bool,
-        last_commit: Option<&str>,
-    ) -> Option<&'static str> {
-        if !self.accepts_input(input, full_shape) {
-            return None;
-        }
-        if input
-            .chars()
-            .next()
-            .is_some_and(|ch| self.digit_separators.contains(ch))
-            && last_commit.is_some_and(ends_with_ascii_digit)
-        {
-            Some("punct_number")
-        } else {
-            Some("punct")
-        }
-    }
-
-    fn accepts_input(&self, input: &str, full_shape: bool) -> bool {
-        let keys = if full_shape {
-            &self.full_shape_keys
-        } else {
-            &self.half_shape_keys
-        };
-        keys.contains(input)
-    }
-}
-
-impl MatcherSegmentor {
-    fn match_tag(&self, input: &str) -> Option<&str> {
-        if input.is_empty() {
-            return None;
-        }
-        self.patterns
-            .iter()
-            .find(|pattern| recognizer_pattern_matches(pattern, input))
-            .map(|pattern| pattern.tag.as_str())
-    }
-}
-
-fn recognizer_patterns_match(patterns: &[MatcherPattern], input: &str) -> bool {
-    patterns
-        .iter()
-        .any(|pattern| recognizer_pattern_matches(pattern, input))
-}
-
-fn recognizer_pattern_matches(pattern: &MatcherPattern, input: &str) -> bool {
-    pattern
-        .pattern
-        .find(input)
-        .is_some_and(|matched| matched.start() == 0 && matched.end() == input.len())
 }
 
 pub(crate) fn install_schema_punctuation_translator_from_config(
@@ -4482,7 +4190,7 @@ fn active_punctuation_definition_exists(session: &SessionState, key: &str) -> bo
         || processor.symbol_pairs.contains_key(key)
 }
 
-fn ends_with_ascii_digit(text: &str) -> bool {
+pub(crate) fn ends_with_ascii_digit(text: &str) -> bool {
     text.as_bytes()
         .last()
         .is_some_and(|byte| byte.is_ascii_digit())

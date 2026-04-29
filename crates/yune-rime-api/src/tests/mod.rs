@@ -15,6 +15,7 @@ mod config_api;
 mod context_status;
 mod deployment;
 mod levers;
+mod lifecycle_safety;
 mod resource_id;
 mod runtime;
 mod schema_api;

@@ -11,12 +11,16 @@ mod state;
 mod translator;
 use comment_format::CommentFormat;
 pub use dictionary::{
-    parse_rime_prism_bin_metadata, parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata,
-    rime_checksum_bytes, rime_dict_rebuild_plan, rime_dict_source_checksum, CodeCoords,
-    RimeChecksumComputer, RimeCompiledMetadataError, RimeDictRebuildError, RimeDictRebuildInput,
-    RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismChecksumMetadata, RimeReverseBinMetadata,
-    RimeTableBinMetadata, TableDictionary, TableDictionaryParseError, TableEncoder,
-    TableEncoderFormulaError, TableEncodingRule, TableEntry,
+    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload,
+    parse_rime_reverse_bin_dictionary, parse_rime_reverse_bin_metadata,
+    parse_rime_table_bin_dictionary, parse_rime_table_bin_metadata, rime_checksum_bytes,
+    rime_dict_rebuild_plan, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
+    CodeCoords, RimeChecksumComputer, RimeCompiledMetadataError, RimeDictRebuildError,
+    RimeDictRebuildInput, RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismBinParseError,
+    RimePrismBinPayload, RimePrismChecksumMetadata, RimePrismSpellingDescriptor,
+    RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError,
+    TableDictionary, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
+    TableEncodingRule, TableEntry,
 };
 pub use engine::Engine;
 pub use filter::{
@@ -132,16 +136,18 @@ impl CandidateRanker for MockAiRanker {
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_key_sequence, parse_rime_prism_bin_metadata, parse_rime_reverse_bin_metadata,
-        parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
-        rime_dict_source_checksum, Candidate, CandidateFilter, CandidateRanker, CandidateSource,
-        CharsetFilter, CodeCoords, Context, Engine, HistoryTranslator, KeyCode, MockAiRanker,
-        PunctuationTranslator, RerankResult, ReverseLookupFilter, ReverseLookupTranslator,
-        RimeChecksumComputer, RimeCompiledMetadataError, RimeDictRebuildError,
-        RimeDictRebuildInput, RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismChecksumMetadata,
-        RimeReverseBinMetadata, RimeTableBinMetadata, SimplifierFilter, SingleCharFilter,
-        StaticTableTranslator, TableDictionary, TableEncoder, TaggedFilter, Translator,
-        UniquifierFilter,
+        parse_key_sequence, parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload,
+        parse_rime_reverse_bin_dictionary, parse_rime_reverse_bin_metadata,
+        parse_rime_table_bin_dictionary, parse_rime_table_bin_metadata, rime_checksum_bytes,
+        rime_dict_rebuild_plan, rime_dict_source_checksum, Candidate, CandidateFilter,
+        CandidateRanker, CandidateSource, CharsetFilter, CodeCoords, Context, Engine,
+        HistoryTranslator, KeyCode, MockAiRanker, PunctuationTranslator, RerankResult,
+        ReverseLookupFilter, ReverseLookupTranslator, RimeChecksumComputer,
+        RimeCompiledMetadataError, RimeDictRebuildError, RimeDictRebuildInput, RimeDictRebuildPlan,
+        RimePrismBinMetadata, RimePrismBinParseError, RimePrismChecksumMetadata,
+        RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata,
+        RimeTableBinParseError, SimplifierFilter, SingleCharFilter, StaticTableTranslator,
+        TableDictionary, TableEncoder, TaggedFilter, Translator, UniquifierFilter,
     };
 
     struct CommentTranslator;
@@ -2443,6 +2449,198 @@ mod tests {
 
     fn put_u32_le(bytes: &mut [u8], offset: usize, value: u32) {
         bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+    }
+
+    fn put_i32_le(bytes: &mut [u8], offset: usize, value: i32) {
+        bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+    }
+
+    fn put_f32_le(bytes: &mut [u8], offset: usize, value: f32) {
+        bytes[offset..offset + 4].copy_from_slice(&value.to_bits().to_le_bytes());
+    }
+
+    fn put_offset(bytes: &mut [u8], field_offset: usize, target: usize) {
+        let raw = i32::try_from(target as isize - field_offset as isize)
+            .expect("fixture offset should fit i32");
+        put_i32_le(bytes, field_offset, raw);
+    }
+
+    fn append_c_string(bytes: &mut Vec<u8>, value: &str) -> usize {
+        let offset = bytes.len();
+        bytes.extend_from_slice(value.as_bytes());
+        bytes.push(0);
+        offset
+    }
+
+    fn compiled_table_fixture() -> Vec<u8> {
+        let mut bytes = vec![0; 68];
+        put_c_string(&mut bytes, 0, b"Rime::Table/4.0");
+        put_u32_le(&mut bytes, 32, 0x1111_1111);
+        put_u32_le(&mut bytes, 36, 1);
+        put_u32_le(&mut bytes, 40, 2);
+        let syllabary_offset = bytes.len();
+        bytes.resize(syllabary_offset + 8, 0);
+        put_u32_le(&mut bytes, syllabary_offset, 1);
+        let code_offset = append_c_string(&mut bytes, "ba");
+        put_offset(&mut bytes, syllabary_offset + 4, code_offset);
+        let index_offset = bytes.len();
+        bytes.resize(index_offset + 16, 0);
+        put_u32_le(&mut bytes, index_offset, 1);
+        put_u32_le(&mut bytes, index_offset + 4, 2);
+        let entries_offset = bytes.len();
+        bytes.resize(entries_offset + 16, 0);
+        let ba_offset = append_c_string(&mut bytes, "八");
+        let ba2_offset = append_c_string(&mut bytes, "爸");
+        put_offset(&mut bytes, entries_offset, ba_offset);
+        put_f32_le(&mut bytes, entries_offset + 4, 2.0);
+        put_offset(&mut bytes, entries_offset + 8, ba2_offset);
+        put_f32_le(&mut bytes, entries_offset + 12, 1.0);
+        put_offset(&mut bytes, index_offset + 8, entries_offset);
+        put_offset(&mut bytes, 44, syllabary_offset);
+        put_offset(&mut bytes, 48, index_offset);
+        bytes
+    }
+
+    fn compiled_prism_fixture() -> Vec<u8> {
+        let mut bytes = vec![0; 320];
+        put_c_string(&mut bytes, 0, b"Rime::Prism/4.0");
+        put_u32_le(&mut bytes, 32, 0x2222_2222);
+        put_u32_le(&mut bytes, 36, 0x3333_3333);
+        put_u32_le(&mut bytes, 40, 1);
+        put_u32_le(&mut bytes, 44, 1);
+        let spelling_map_offset = bytes.len();
+        bytes.resize(spelling_map_offset + 12, 0);
+        put_u32_le(&mut bytes, spelling_map_offset, 1);
+        put_u32_le(&mut bytes, spelling_map_offset + 4, 1);
+        let descriptor_offset = bytes.len();
+        bytes.resize(descriptor_offset + 16, 0);
+        let tips_offset = append_c_string(&mut bytes, "tip");
+        put_i32_le(&mut bytes, descriptor_offset, 7);
+        put_i32_le(&mut bytes, descriptor_offset + 4, (1 << 30) | 2);
+        put_f32_le(&mut bytes, descriptor_offset + 8, 0.5);
+        put_offset(&mut bytes, descriptor_offset + 12, tips_offset);
+        put_offset(&mut bytes, spelling_map_offset + 8, descriptor_offset);
+        put_offset(&mut bytes, 56, spelling_map_offset);
+        bytes
+    }
+
+    fn compiled_reverse_fixture() -> Vec<u8> {
+        let mut bytes = vec![0; 64];
+        put_c_string(&mut bytes, 0, b"Rime::Reverse/4.0");
+        put_u32_le(&mut bytes, 32, 0x4444_4444);
+        bytes.extend_from_slice(b"YUNE-REVERSE\0");
+        put_u32_le_extend(&mut bytes, 2);
+        put_len_string(&mut bytes, "ba");
+        put_len_string(&mut bytes, "八");
+        put_len_string(&mut bytes, "ba");
+        put_len_string(&mut bytes, "爸");
+        bytes
+    }
+
+    fn put_u32_le_extend(bytes: &mut Vec<u8>, value: u32) {
+        bytes.extend_from_slice(&value.to_le_bytes());
+    }
+
+    fn put_len_string(bytes: &mut Vec<u8>, value: &str) {
+        put_u32_le_extend(bytes, value.len() as u32);
+        bytes.extend_from_slice(value.as_bytes());
+    }
+
+    #[test]
+    fn parses_compiled_table_fixture_into_dictionary_order() {
+        let dictionary = parse_rime_table_bin_dictionary(compiled_table_fixture())
+            .expect("compiled table should parse");
+        let entries = dictionary.entries();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].code, "ba");
+        assert_eq!(entries[0].text, "八");
+        assert_eq!(entries[0].weight, 2.0);
+        assert_eq!(entries[1].text, "爸");
+    }
+
+    #[test]
+    fn parses_compiled_prism_fixture_payload() {
+        let payload = parse_rime_prism_bin_payload(compiled_prism_fixture())
+            .expect("compiled prism should parse");
+        assert_eq!(payload.dict_file_checksum, 0x2222_2222);
+        assert_eq!(payload.spelling_map.len(), 1);
+        assert_eq!(payload.spelling_map[0][0].syllable_id, 7);
+        assert_eq!(payload.spelling_map[0][0].spelling_type, 2);
+        assert!(payload.spelling_map[0][0].is_correction);
+        assert_eq!(payload.spelling_map[0][0].tips, "tip");
+    }
+
+    #[test]
+    fn parses_compiled_reverse_fixture_into_dictionary() {
+        let dictionary = parse_rime_reverse_bin_dictionary(compiled_reverse_fixture())
+            .expect("compiled reverse should parse");
+        let texts = dictionary
+            .entries()
+            .iter()
+            .map(|entry| entry.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["八", "爸"]);
+    }
+
+    #[test]
+    fn compiled_payload_readers_reject_malformed_bytes() {
+        assert_eq!(
+            parse_rime_table_bin_dictionary(&compiled_table_fixture()[..20]),
+            Err(RimeTableBinParseError::TooShort)
+        );
+        let mut bad_version = compiled_table_fixture();
+        put_c_string(&mut bad_version, 0, b"Rime::Table/3.0");
+        assert_eq!(
+            parse_rime_table_bin_dictionary(bad_version),
+            Err(RimeTableBinParseError::UnsupportedVersion)
+        );
+        let mut missing_section = compiled_table_fixture();
+        put_i32_le(&mut missing_section, 44, 0);
+        assert_eq!(
+            parse_rime_table_bin_dictionary(missing_section),
+            Err(RimeTableBinParseError::MissingRequiredSection)
+        );
+        let mut bad_offset = compiled_table_fixture();
+        put_i32_le(&mut bad_offset, 44, i32::MAX);
+        assert_eq!(
+            parse_rime_table_bin_dictionary(bad_offset),
+            Err(RimeTableBinParseError::OutOfBounds)
+        );
+        let mut huge_count = compiled_table_fixture();
+        let index_offset = 79;
+        put_u32_le(&mut huge_count, index_offset, u32::MAX);
+        assert_eq!(
+            parse_rime_table_bin_dictionary(huge_count),
+            Err(RimeTableBinParseError::InvalidCount)
+        );
+        let mut invalid_utf8 = compiled_table_fixture();
+        let last = invalid_utf8.len() - 1;
+        invalid_utf8[last - 1] = 0xff;
+        assert_eq!(
+            parse_rime_table_bin_dictionary(invalid_utf8),
+            Err(RimeTableBinParseError::InvalidUtf8)
+        );
+        let mut unsupported = compiled_table_fixture();
+        put_offset(&mut unsupported, 60, 68);
+        assert!(matches!(
+            parse_rime_table_bin_dictionary(unsupported),
+            Err(RimeTableBinParseError::UnsupportedSection { .. })
+        ));
+
+        let mut prism_unsupported = compiled_prism_fixture();
+        put_u32_le(&mut prism_unsupported, 48, 4);
+        put_offset(&mut prism_unsupported, 52, 320);
+        assert!(matches!(
+            parse_rime_prism_bin_payload(prism_unsupported),
+            Err(RimePrismBinParseError::UnsupportedSection { .. })
+        ));
+
+        let mut reverse_unsupported = compiled_reverse_fixture();
+        put_u32_le(&mut reverse_unsupported, 52, 1);
+        assert!(matches!(
+            parse_rime_reverse_bin_dictionary(reverse_unsupported),
+            Err(RimeReverseBinParseError::UnsupportedSection { .. })
+        ));
     }
 
     #[test]

@@ -162,14 +162,32 @@ fn ensure_len(bytes: &[u8], len: usize) -> Result<(), RimeCompiledMetadataError>
     Ok(())
 }
 
-fn read_u32_le(bytes: &[u8], offset: usize) -> Result<u32, RimeCompiledMetadataError> {
-    let Some(value) = bytes.get(offset..offset + 4) else {
+pub(crate) fn read_u32_le(bytes: &[u8], offset: usize) -> Result<u32, RimeCompiledMetadataError> {
+    let end = offset
+        .checked_add(4)
+        .ok_or(RimeCompiledMetadataError::TooShort)?;
+    let Some(value) = bytes.get(offset..end) else {
         return Err(RimeCompiledMetadataError::TooShort);
     };
     Ok(u32::from_le_bytes([value[0], value[1], value[2], value[3]]))
 }
 
+pub(crate) fn read_i32_le(bytes: &[u8], offset: usize) -> Result<i32, RimeCompiledMetadataError> {
+    read_u32_le(bytes, offset).map(|value| value as i32)
+}
+
+pub(crate) fn read_f32_le(bytes: &[u8], offset: usize) -> Result<f32, RimeCompiledMetadataError> {
+    read_u32_le(bytes, offset).map(f32::from_bits)
+}
+
 fn parse_rime_format_version(
+    bytes: &[u8],
+    prefix: &[u8],
+) -> Result<f64, RimeCompiledMetadataError> {
+    parse_rime_format_version_for_payload(bytes, prefix)
+}
+
+pub(crate) fn parse_rime_format_version_for_payload(
     bytes: &[u8],
     prefix: &[u8],
 ) -> Result<f64, RimeCompiledMetadataError> {

@@ -28,6 +28,7 @@ mod levers;
 mod modules;
 mod notifications;
 mod processors;
+mod resource_id;
 mod runtime;
 mod schema_api;
 mod schema_install;

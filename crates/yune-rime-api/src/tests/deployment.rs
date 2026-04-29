@@ -1876,7 +1876,10 @@ schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_t
         fs::read(user.join("build").join("luna.table.bin")).expect("table should be readable"),
     )
     .expect("table should parse");
-    assert!(initial_table.entries().iter().any(|entry| entry.text == "爸"));
+    assert!(initial_table
+        .entries()
+        .iter()
+        .any(|entry| entry.text == "爸"));
 
     fs::write(
         shared.join("luna_pack.dict.yaml"),
@@ -1902,7 +1905,10 @@ schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_t
         fs::read(user.join("build").join("luna.table.bin")).expect("table should be readable"),
     )
     .expect("table should parse");
-    assert!(updated_table.entries().iter().any(|entry| entry.text == "吧"));
+    assert!(updated_table
+        .entries()
+        .iter()
+        .any(|entry| entry.text == "吧"));
 
     fs::write(
         shared.join("luna.schema.yaml"),
@@ -1970,8 +1976,11 @@ schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_t
     unsafe { RimeDeployerInitialize(&traits) };
     assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
     for file_name in ["luna.table.bin", "luna.prism.bin", "luna.reverse.bin"] {
-        fs::copy(user.join("build").join(file_name), shared.join("build").join(file_name))
-            .expect("prebuilt artifact should be copied");
+        fs::copy(
+            user.join("build").join(file_name),
+            shared.join("build").join(file_name),
+        )
+        .expect("prebuilt artifact should be copied");
         fs::remove_file(user.join("build").join(file_name))
             .expect("staging artifact should be removed");
     }

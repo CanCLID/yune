@@ -674,14 +674,16 @@ fn load_schema_compiled_dictionary(
         }
     }
 
-    if let Some(prism_bytes) = prism_bytes.as_ref() {
-        parse_rime_prism_bin_payload(prism_bytes).map_err(|error| match error {
+    let prism_payload = prism_bytes
+        .as_ref()
+        .map(parse_rime_prism_bin_payload)
+        .transpose()
+        .map_err(|error| match error {
             yune_core::RimePrismBinParseError::UnsupportedSection { role } => {
                 CompiledRejectReason::Unsupported(role)
             }
             other => CompiledRejectReason::Invalid(format!("prism parse failed: {other:?}")),
         })?;
-    }
     let reverse_dictionary =
         parse_rime_reverse_bin_dictionary(&reverse_bytes).map_err(|error| match error {
             yune_core::RimeReverseBinParseError::UnsupportedSection { role } => {
@@ -690,7 +692,22 @@ fn load_schema_compiled_dictionary(
             other => CompiledRejectReason::Invalid(format!("reverse parse failed: {other:?}")),
         })?;
     parse_rime_table_bin_dictionary(&table_bytes)
-        .map(|dictionary| dictionary.with_merged_advanced_data_from(&reverse_dictionary))
+        .map(|dictionary| {
+            let mut dictionary = dictionary.with_merged_advanced_data_from(&reverse_dictionary);
+            if let Some(prism_payload) = prism_payload {
+                dictionary = dictionary.with_merged_advanced_data_from(
+                    &TableDictionary::with_advanced_data(
+                        Vec::new(),
+                        yune_core::TableDictionaryAdvancedData {
+                            corrections: prism_payload.corrections,
+                            tolerance_rules: prism_payload.tolerance_rules,
+                            ..yune_core::TableDictionaryAdvancedData::default()
+                        },
+                    ),
+                );
+            }
+            dictionary
+        })
         .map_err(|error| match error {
             yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
                 CompiledRejectReason::Unsupported(role)

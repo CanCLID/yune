@@ -224,6 +224,163 @@ fn dictionary_data_unite_encoder_payloads_do_not_require_predictive_userdb_learn
     fixture.cleanup();
 }
 
+#[test]
+fn dictionary_data_correction_source_and_compiled_paths_match_without_userdb_learning() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("dictionary-data-correction-parity");
+    let fixture = DictionaryDataFixture::new(&root, false);
+    fixture.write_correction_tolerance_schemas();
+    fixture.write_correction_tolerance_source_dictionary();
+    fixture.write_correction_tolerance_compiled_artifacts();
+    fixture.setup_runtime();
+
+    let source_canonical = fixture.candidates_for_schema("correction_source", "ba");
+    let source_corrected = fixture.candidates_for_schema("correction_source", "bq");
+    let compiled_canonical = fixture.candidates_for_schema("correction_compiled", "ba");
+    let compiled_corrected = fixture.candidates_for_schema("correction_compiled", "bq");
+
+    assert_eq!(
+        source_corrected[..2],
+        [
+            ("八".to_owned(), "ba".to_owned()),
+            ("爸".to_owned(), "ba".to_owned())
+        ]
+    );
+    assert_eq!(source_corrected[..2], source_canonical[..2]);
+    assert_eq!(compiled_corrected[..2], compiled_canonical[..2]);
+    assert_eq!(source_corrected[..2], compiled_corrected[..2]);
+    assert!(remaining_gear_deferrals_snapshot(fixture.last_session_id())
+        .expect("session should exist")
+        .is_empty());
+    fixture.cleanup();
+}
+
+#[test]
+fn dictionary_data_tolerance_source_and_compiled_paths_match_exact_first_ordering() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("dictionary-data-tolerance-parity");
+    let fixture = DictionaryDataFixture::new(&root, false);
+    fixture.write_correction_tolerance_schemas();
+    fixture.write_correction_tolerance_source_dictionary();
+    fixture.write_correction_tolerance_compiled_artifacts();
+    fixture.setup_runtime();
+
+    let expected = [
+        ("字".to_owned(), "bz".to_owned()),
+        ("八".to_owned(), "ba".to_owned()),
+        ("爸".to_owned(), "ba".to_owned()),
+    ];
+    let source_candidates = fixture.candidates_for_schema("tolerance_source", "bz");
+    let compiled_candidates = fixture.candidates_for_schema("tolerance_compiled", "bz");
+
+    assert_eq!(source_candidates[..3], expected);
+    assert_eq!(compiled_candidates[..3], expected);
+    assert_eq!(compiled_candidates[..3], source_candidates[..3]);
+    assert!(remaining_gear_deferrals_snapshot(fixture.last_session_id())
+        .expect("session should exist")
+        .is_empty());
+    fixture.cleanup();
+}
+
+#[test]
+fn dictionary_data_malformed_correction_tolerance_sections_fail_closed() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let cases: Vec<(&str, Vec<u8>, &str)> = vec![
+        (
+            "correction-offset-overflow",
+            prism_fixture_with_raw_correction_offset(i32::MAX),
+            "OutOfBounds",
+        ),
+        (
+            "correction-huge-count",
+            prism_fixture_with_correction_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-CORR\0");
+                put_u32_le_extend(bytes, u32::MAX);
+            }),
+            "InvalidCount",
+        ),
+        (
+            "correction-invalid-utf8",
+            prism_fixture_with_correction_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-CORR\0");
+                put_u32_le_extend(bytes, 1);
+                put_u32_le_extend(bytes, 1);
+                bytes.push(0xff);
+                put_len_string(bytes, "ba");
+            }),
+            "InvalidUtf8",
+        ),
+        (
+            "correction-unsupported-section",
+            prism_fixture_with_correction_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-UNKNOWN\0");
+            }),
+            "correction payload",
+        ),
+        (
+            "tolerance-offset-overflow",
+            prism_fixture_with_raw_tolerance_offset(i32::MAX),
+            "OutOfBounds",
+        ),
+        (
+            "tolerance-huge-count",
+            prism_fixture_with_tolerance_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-TOL\0");
+                put_u32_le_extend(bytes, u32::MAX);
+            }),
+            "InvalidCount",
+        ),
+        (
+            "tolerance-invalid-utf8",
+            prism_fixture_with_tolerance_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-TOL\0");
+                put_u32_le_extend(bytes, 1);
+                put_u32_le_extend(bytes, 1);
+                bytes.push(0xff);
+                put_u32_le_extend(bytes, 1);
+                put_len_string(bytes, "ba");
+            }),
+            "InvalidUtf8",
+        ),
+        (
+            "tolerance-unsupported-section",
+            prism_fixture_with_tolerance_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-UNKNOWN\0");
+            }),
+            "tolerance payload",
+        ),
+    ];
+
+    for (case, prism_bytes, expected_reason) in cases {
+        let root = unique_temp_dir(&format!("dictionary-data-malformed-{case}"));
+        let fixture = DictionaryDataFixture::new(&root, true);
+        fixture.setup_runtime();
+        fs::write(fixture.shared.join("luna.prism.bin"), prism_bytes)
+            .expect("malformed prism should be written");
+
+        assert_eq!(
+            fixture.candidates_for_schema("luna", "ba")[..2],
+            [
+                ("八".to_owned(), "ba".to_owned()),
+                ("爸".to_owned(), "ba".to_owned())
+            ]
+        );
+        let deferrals = remaining_gear_deferrals_snapshot(fixture.last_session_id())
+            .expect("session should exist");
+        assert!(
+            deferrals.iter().any(|deferral| {
+                deferral.gear == "dictionary_source_fallback"
+                    && deferral.current_yune_behavior.contains(expected_reason)
+            }),
+            "case {case} expected {expected_reason} in {deferrals:?}"
+        );
+        fixture.cleanup();
+    }
+}
+
 struct DictionaryDataFixture<'a> {
     root: &'a std::path::Path,
     shared: std::path::PathBuf,
@@ -281,6 +438,13 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
         self.write_schema_for_dictionary("advanced_compiled", "advanced_compiled");
     }
 
+    fn write_correction_tolerance_schemas(&self) {
+        self.write_schema_for_dictionary("correction_source", "correction_source");
+        self.write_schema_for_dictionary("correction_compiled", "correction_compiled");
+        self.write_schema_for_dictionary("tolerance_source", "tolerance_source");
+        self.write_schema_for_dictionary("tolerance_compiled", "tolerance_compiled");
+    }
+
     fn write_reverse_settings_schemas(&self) {
         for (schema_id, target_id) in [
             ("reverse_source", "reverse_source_comments"),
@@ -332,6 +496,19 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
         .expect("reverse source comments should be written");
     }
 
+    fn write_correction_tolerance_source_dictionary(&self) {
+        fs::write(
+            self.shared.join("correction_source.dict.yaml"),
+            "---\nname: correction_source\nversion: '0.1'\nsort: by_weight\ncorrection: [bq=>ba]\n...\n\n八\tba\t2\n爸\tba\t1\n字\tbz\t3\n",
+        )
+        .expect("correction source dictionary should be written");
+        fs::write(
+            self.shared.join("tolerance_source.dict.yaml"),
+            "---\nname: tolerance_source\nversion: '0.1'\nsort: by_weight\ntolerance: [bz: ba]\n...\n\n八\tba\t2\n爸\tba\t1\n字\tbz\t3\n",
+        )
+        .expect("tolerance source dictionary should be written");
+    }
+
     fn write_compiled_artifacts(&self) {
         let source = fs::read_to_string(self.shared.join("luna.dict.yaml"))
             .expect("source dictionary should be readable");
@@ -372,6 +549,54 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
             compiled_reverse_fixture(),
         )
         .expect("advanced compiled reverse should be written");
+    }
+
+    fn write_correction_tolerance_compiled_artifacts(&self) {
+        let correction_source = fs::read_to_string(self.shared.join("correction_source.dict.yaml"))
+            .expect("correction source dictionary should be readable");
+        let correction_checksum =
+            yune_core::rime_dict_source_checksum(0, [correction_source.as_bytes()], None);
+        fs::write(
+            self.shared.join("correction_compiled.table.bin"),
+            compiled_table_for_entries_fixture(
+                correction_checksum,
+                &[("ba", "八", 2.0), ("ba", "爸", 1.0), ("bz", "字", 3.0)],
+            ),
+        )
+        .expect("correction compiled table should be written");
+        fs::write(
+            self.shared.join("correction_compiled.prism.bin"),
+            compiled_prism_with_correction_tolerance_fixture(&[("bq", "ba")], &[]),
+        )
+        .expect("correction compiled prism should be written");
+        fs::write(
+            self.shared.join("correction_compiled.reverse.bin"),
+            compiled_reverse_fixture(),
+        )
+        .expect("correction compiled reverse should be written");
+
+        let tolerance_source = fs::read_to_string(self.shared.join("tolerance_source.dict.yaml"))
+            .expect("tolerance source dictionary should be readable");
+        let tolerance_checksum =
+            yune_core::rime_dict_source_checksum(0, [tolerance_source.as_bytes()], None);
+        fs::write(
+            self.shared.join("tolerance_compiled.table.bin"),
+            compiled_table_for_entries_fixture(
+                tolerance_checksum,
+                &[("ba", "八", 2.0), ("ba", "爸", 1.0), ("bz", "字", 3.0)],
+            ),
+        )
+        .expect("tolerance compiled table should be written");
+        fs::write(
+            self.shared.join("tolerance_compiled.prism.bin"),
+            compiled_prism_with_correction_tolerance_fixture(&[], &[("bz", &["ba"])]),
+        )
+        .expect("tolerance compiled prism should be written");
+        fs::write(
+            self.shared.join("tolerance_compiled.reverse.bin"),
+            compiled_reverse_fixture(),
+        )
+        .expect("tolerance compiled reverse should be written");
     }
 
     fn write_reverse_settings_compiled_artifacts(&self) {
@@ -464,26 +689,44 @@ fn compiled_table_for_entries_fixture(checksum: u32, entries: &[(&str, &str, f32
     let mut bytes = vec![0; 68];
     put_c_string(&mut bytes, 0, b"Rime::Table/4.0");
     put_u32_le(&mut bytes, 32, checksum);
-    put_u32_le(&mut bytes, 36, 1);
+    let mut grouped_entries: Vec<(&str, Vec<(&str, f32)>)> = Vec::new();
+    for (code, text, weight) in entries {
+        if let Some((_, group)) = grouped_entries
+            .iter_mut()
+            .find(|(group_code, _)| group_code == code)
+        {
+            group.push((text, *weight));
+        } else {
+            grouped_entries.push((code, vec![(text, *weight)]));
+        }
+    }
+
+    put_u32_le(&mut bytes, 36, grouped_entries.len() as u32);
     put_u32_le(&mut bytes, 40, entries.len() as u32);
     let syllabary_offset = bytes.len();
-    bytes.resize(syllabary_offset + 8, 0);
-    put_u32_le(&mut bytes, syllabary_offset, 1);
-    let code_offset = append_c_string(&mut bytes, entries.first().map_or("", |entry| entry.0));
-    put_offset(&mut bytes, syllabary_offset + 4, code_offset);
-    let index_offset = bytes.len();
-    bytes.resize(index_offset + 16, 0);
-    put_u32_le(&mut bytes, index_offset, 1);
-    put_u32_le(&mut bytes, index_offset + 4, entries.len() as u32);
-    let entries_offset = bytes.len();
-    bytes.resize(entries_offset + entries.len() * 8, 0);
-    for (index, (_, text, weight)) in entries.iter().enumerate() {
-        let entry_offset = entries_offset + index * 8;
-        let text_offset = append_c_string(&mut bytes, text);
-        put_offset(&mut bytes, entry_offset, text_offset);
-        put_f32_le(&mut bytes, entry_offset + 4, *weight);
+    bytes.resize(syllabary_offset + 4 + grouped_entries.len() * 4, 0);
+    put_u32_le(&mut bytes, syllabary_offset, grouped_entries.len() as u32);
+    for (index, (code, _)) in grouped_entries.iter().enumerate() {
+        let code_offset = append_c_string(&mut bytes, code);
+        put_offset(&mut bytes, syllabary_offset + 4 + index * 4, code_offset);
     }
-    put_offset(&mut bytes, index_offset + 8, entries_offset);
+
+    let index_offset = bytes.len();
+    bytes.resize(index_offset + 4 + grouped_entries.len() * 12, 0);
+    put_u32_le(&mut bytes, index_offset, grouped_entries.len() as u32);
+    for (index, (_, group)) in grouped_entries.iter().enumerate() {
+        let node_offset = index_offset + 4 + index * 12;
+        put_u32_le(&mut bytes, node_offset, group.len() as u32);
+        let entries_offset = bytes.len();
+        bytes.resize(entries_offset + group.len() * 8, 0);
+        for (entry_index, (text, weight)) in group.iter().enumerate() {
+            let entry_offset = entries_offset + entry_index * 8;
+            let text_offset = append_c_string(&mut bytes, text);
+            put_offset(&mut bytes, entry_offset, text_offset);
+            put_f32_le(&mut bytes, entry_offset + 4, *weight);
+        }
+        put_offset(&mut bytes, node_offset + 4, entries_offset);
+    }
     put_offset(&mut bytes, 44, syllabary_offset);
     put_offset(&mut bytes, 48, index_offset);
     bytes
@@ -511,12 +754,73 @@ fn compiled_advanced_table_fixture(checksum: u32) -> Vec<u8> {
 }
 
 fn compiled_prism_fixture() -> Vec<u8> {
+    compiled_prism_with_correction_tolerance_fixture(&[], &[])
+}
+
+fn compiled_prism_with_correction_tolerance_fixture(
+    corrections: &[(&str, &str)],
+    tolerance_rules: &[(&str, &[&str])],
+) -> Vec<u8> {
     let mut bytes = vec![0; 320];
     put_c_string(&mut bytes, 0, b"Rime::Prism/4.0");
     let spelling_map_offset = bytes.len();
     bytes.resize(spelling_map_offset + 4, 0);
     put_u32_le(&mut bytes, spelling_map_offset, 0);
     put_offset(&mut bytes, 56, spelling_map_offset);
+
+    if !corrections.is_empty() {
+        let correction_offset = bytes.len();
+        bytes.extend_from_slice(b"YUNE-CORR\0");
+        put_u32_le_extend(&mut bytes, corrections.len() as u32);
+        for (observed_input, canonical_code) in corrections {
+            put_len_string(&mut bytes, observed_input);
+            put_len_string(&mut bytes, canonical_code);
+        }
+        put_offset(&mut bytes, 60, correction_offset);
+    }
+
+    if !tolerance_rules.is_empty() {
+        let tolerance_offset = bytes.len();
+        bytes.extend_from_slice(b"YUNE-TOL\0");
+        put_u32_le_extend(&mut bytes, tolerance_rules.len() as u32);
+        for (near_code, candidate_codes) in tolerance_rules {
+            put_len_string(&mut bytes, near_code);
+            put_u32_le_extend(&mut bytes, candidate_codes.len() as u32);
+            for candidate_code in *candidate_codes {
+                put_len_string(&mut bytes, candidate_code);
+            }
+        }
+        put_offset(&mut bytes, 64, tolerance_offset);
+    }
+
+    bytes
+}
+
+fn prism_fixture_with_raw_correction_offset(raw_offset: i32) -> Vec<u8> {
+    let mut bytes = compiled_prism_fixture();
+    put_i32_le(&mut bytes, 60, raw_offset);
+    bytes
+}
+
+fn prism_fixture_with_raw_tolerance_offset(raw_offset: i32) -> Vec<u8> {
+    let mut bytes = compiled_prism_fixture();
+    put_i32_le(&mut bytes, 64, raw_offset);
+    bytes
+}
+
+fn prism_fixture_with_correction_payload(mut write_payload: impl FnMut(&mut Vec<u8>)) -> Vec<u8> {
+    let mut bytes = compiled_prism_fixture();
+    let correction_offset = bytes.len();
+    write_payload(&mut bytes);
+    put_offset(&mut bytes, 60, correction_offset);
+    bytes
+}
+
+fn prism_fixture_with_tolerance_payload(mut write_payload: impl FnMut(&mut Vec<u8>)) -> Vec<u8> {
+    let mut bytes = compiled_prism_fixture();
+    let tolerance_offset = bytes.len();
+    write_payload(&mut bytes);
+    put_offset(&mut bytes, 64, tolerance_offset);
     bytes
 }
 

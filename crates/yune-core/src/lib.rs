@@ -11,17 +11,17 @@ mod state;
 mod translator;
 use comment_format::CommentFormat;
 pub use dictionary::{
-    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload,
-    parse_rime_reverse_bin_dictionary, parse_rime_reverse_bin_metadata,
-    parse_rime_table_bin_dictionary, parse_rime_table_bin_metadata, rime_checksum_bytes,
-    rime_dict_rebuild_plan, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
-    CodeCoords, RimeChecksumComputer, RimeCompiledMetadataError, RimeDictArtifactStatus,
-    RimeDictRebuildError, RimeDictRebuildExecutionReport, RimeDictRebuildInput,
-    RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismBinParseError, RimePrismBinPayload,
-    RimePrismChecksumMetadata, RimePrismSpellingDescriptor, RimeReverseBinMetadata,
-    RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError, TableDictionary,
-    TableDictionaryParseError, TableEncoder, TableEncoderFormulaError, TableEncodingRule,
-    TableEntry,
+    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
+    parse_rime_reverse_bin_metadata, parse_rime_table_bin_dictionary,
+    parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
+    rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords, RimeChecksumComputer,
+    RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildError,
+    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildPlan,
+    RimePrismBinMetadata, RimePrismBinParseError, RimePrismBinPayload, RimePrismChecksumMetadata,
+    RimePrismSpellingDescriptor, RimeReverseBinMetadata, RimeReverseBinParseError,
+    RimeTableBinMetadata, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
+    TableDictionaryAdvancedData, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
+    TableEncodingRule, TableEntry,
 };
 pub use engine::Engine;
 pub use filter::{
@@ -2603,7 +2603,20 @@ mod tests {
         put_f32_le(&mut bytes, descriptor_offset + 8, 0.5);
         put_offset(&mut bytes, descriptor_offset + 12, tips_offset);
         put_offset(&mut bytes, spelling_map_offset + 8, descriptor_offset);
+        let correction_offset = bytes.len();
+        bytes.extend_from_slice(b"YUNE-CORR\0");
+        put_u32_le_extend(&mut bytes, 1);
+        put_len_string(&mut bytes, "bq");
+        put_len_string(&mut bytes, "ba");
+        let tolerance_offset = bytes.len();
+        bytes.extend_from_slice(b"YUNE-TOL\0");
+        put_u32_le_extend(&mut bytes, 1);
+        put_len_string(&mut bytes, "bz");
+        put_u32_le_extend(&mut bytes, 1);
+        put_len_string(&mut bytes, "ba");
         put_offset(&mut bytes, 56, spelling_map_offset);
+        put_offset(&mut bytes, 60, correction_offset);
+        put_offset(&mut bytes, 64, tolerance_offset);
         bytes
     }
 
@@ -2687,6 +2700,13 @@ mod tests {
         assert_eq!(payload.spelling_map[0][0].spelling_type, 2);
         assert!(payload.spelling_map[0][0].is_correction);
         assert_eq!(payload.spelling_map[0][0].tips, "tip");
+        assert_eq!(payload.corrections[0].observed_input, "bq");
+        assert_eq!(payload.corrections[0].canonical_code, "ba");
+        assert_eq!(payload.tolerance_rules[0].near_code, "bz");
+        assert_eq!(
+            payload.tolerance_rules[0].candidate_codes,
+            ["ba".to_owned()]
+        );
     }
 
     #[test]

@@ -91,10 +91,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 04-01: Implement compiled table/prism/reverse payload readers and runtime fallback from source dictionaries.
-- [ ] 04-02: Implement rebuild execution and pack checksum chaining around the existing rebuild-plan primitive.
-- [ ] 04-03: Consume stem, `dict_settings`, preset vocabulary, and UniTE encoder payloads in reverse/encoder paths.
-- [ ] 04-04: Represent correction/tolerance data in compiled lookup and validate behavior against librime.
+- [x] 04-01: Implement compiled table/prism/reverse payload readers and runtime fallback from source dictionaries.
+- [x] 04-02: Implement rebuild execution and pack checksum chaining around the existing rebuild-plan primitive.
+- [x] 04-03: Consume stem, `dict_settings`, preset vocabulary, and UniTE encoder payloads in reverse/encoder paths.
+- [x] 04-04: Represent correction/tolerance data in compiled lookup and validate behavior against librime.
 
 ### Phase 5: UserDB And Scaling Hardening
 **Goal**: User dictionary behavior and remaining quality concerns are strong enough for longer-running frontend-style sessions and future milestone planning.

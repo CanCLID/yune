@@ -122,8 +122,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. CLI Frontend Surrogate | 3/3 | Complete | 2026-04-29 |
 | 2. Native ABI Validation And Runtime Safety | 3/3 | Complete | 2026-04-29 |
-| 3. Schema Pipeline Depth | 0/4 | Not started | - |
-| 4. Compiled Dictionary Data | 0/4 | Not started | - |
+| 3. Schema Pipeline Depth | 4/4 | Complete | 2026-04-29 |
+| 4. Compiled Dictionary Data | 4/4 | Complete | 2026-04-29 |
 | 5. UserDB And Scaling Hardening | 0/3 | Not started | - |
 
 ## Future Milestone: AI-Native Input Layer

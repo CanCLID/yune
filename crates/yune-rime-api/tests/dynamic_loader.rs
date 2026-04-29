@@ -3,6 +3,7 @@ use std::{
     fs, mem,
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
+    process::Command,
     ptr,
     sync::{Mutex, MutexGuard, OnceLock},
     time::{SystemTime, UNIX_EPOCH},
@@ -147,43 +148,90 @@ fn dynamic_library_name() -> &'static str {
     }
 }
 
-fn target_dir() -> Result<PathBuf, String> {
-    std::env::var_os("CARGO_TARGET_DIR")
+fn manifest_dir() -> Result<PathBuf, String> {
+    std::env::var_os("CARGO_MANIFEST_DIR")
         .map(PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("CARGO_MANIFEST_DIR")
-                .map(PathBuf::from)
-                .and_then(|manifest_dir| manifest_dir.parent()?.parent().map(Path::to_path_buf))
-                .map(|workspace| workspace.join("target"))
-        })
-        .ok_or_else(|| {
-            "missing CARGO_MANIFEST_DIR; cannot locate Cargo target directory".to_owned()
-        })
+        .ok_or_else(|| "missing CARGO_MANIFEST_DIR; cannot locate crate manifest".to_owned())
 }
 
-fn discover_dynamic_artifact() -> Result<PathBuf, String> {
+fn workspace_dir() -> Result<PathBuf, String> {
+    manifest_dir()?
+        .parent()
+        .and_then(Path::parent)
+        .map(Path::to_path_buf)
+        .ok_or_else(|| "CARGO_MANIFEST_DIR is not under a workspace root".to_owned())
+}
+
+fn target_dir() -> Result<PathBuf, String> {
+    if let Some(target_dir) = std::env::var_os("CARGO_TARGET_DIR") {
+        Ok(PathBuf::from(target_dir))
+    } else {
+        Ok(workspace_dir()?.join("target"))
+    }
+}
+
+fn artifact_candidates() -> Result<Vec<PathBuf>, String> {
     let target_dir = target_dir()?;
     let profile = std::env::var("PROFILE").unwrap_or_else(|_| "debug".to_owned());
-    let candidates = [
+    Ok(vec![
         target_dir.join(&profile).join(dynamic_library_name()),
         target_dir.join("debug").join(dynamic_library_name()),
         target_dir.join("release").join(dynamic_library_name()),
-    ];
-    candidates
+    ])
+}
+
+fn find_dynamic_artifact() -> Result<Option<PathBuf>, String> {
+    Ok(artifact_candidates()?
+        .into_iter()
+        .find(|candidate| candidate.is_file()))
+}
+
+fn build_dynamic_artifact() -> Result<(), String> {
+    let manifest = manifest_dir()?.join("Cargo.toml");
+    let mut command = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()));
+    command
+        .arg("build")
+        .arg("-p")
+        .arg("yune-rime-api")
+        .arg("--manifest-path")
+        .arg(manifest);
+    if let Some(target_dir) = std::env::var_os("CARGO_TARGET_DIR") {
+        command.arg("--target-dir").arg(target_dir);
+    }
+
+    let output = command
+        .output()
+        .map_err(|error| format!("failed to run cargo build for dynamic artifact: {error}"))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "cargo build -p yune-rime-api failed with status {}; stderr: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    }
+}
+
+fn discover_dynamic_artifact() -> Result<PathBuf, String> {
+    if let Some(artifact) = find_dynamic_artifact()? {
+        return Ok(artifact);
+    }
+
+    build_dynamic_artifact()?;
+    if let Some(artifact) = find_dynamic_artifact()? {
+        return Ok(artifact);
+    }
+
+    let checked = artifact_candidates()?
         .iter()
-        .find(|candidate| candidate.is_file())
-        .cloned()
-        .ok_or_else(|| {
-            let checked = candidates
-                .iter()
-                .map(|candidate| candidate.display().to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
-            format!(
-                "missing Cargo-built dynamic artifact {}; checked {checked}",
-                dynamic_library_name()
-            )
-        })
+        .map(|candidate| candidate.display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(format!(
+        "missing Cargo-built dynamic artifact {}; checked {checked}",
+        dynamic_library_name()
+    ))
 }
 
 fn require<T>(name: &str, function: Option<T>) -> T {

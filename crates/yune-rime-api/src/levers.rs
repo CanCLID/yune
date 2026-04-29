@@ -14,9 +14,10 @@ use crate::{
     bool_from, c_string_key, clear_schema_list, config_state_mut, cstring_from_lossless_str,
     ensure_mapping, find_config_value, free_schema_list_items, install_config_root,
     librime_signature_modified_time, load_runtime_config_root, non_empty_cstring_ptr,
-    runtime_paths, set_config_value, Bool, ConfigOpenKind, ConfigState, RimeConfig,
-    RimeCustomSettings, RimeFreeSchemaList, RimeSchemaInfo, RimeSchemaList, RimeSchemaListItem,
-    RimeSwitcherSettings, FALSE, RIME_VERSION_BYTES, TRUE,
+    resource_id::validate_config_resource_id, runtime_paths, set_config_value, Bool,
+    ConfigOpenKind, ConfigState, RimeConfig, RimeCustomSettings, RimeFreeSchemaList,
+    RimeSchemaInfo, RimeSchemaList, RimeSchemaListItem, RimeSwitcherSettings, FALSE,
+    RIME_VERSION_BYTES, TRUE,
 };
 
 struct LeverCustomSettings {
@@ -318,6 +319,9 @@ pub unsafe extern "C" fn RimeLeversCustomSettingsInit(
     generator_id: *const c_char,
 ) -> *mut RimeCustomSettings {
     let Some(config_id) = (unsafe { c_string_key(config_id) }) else {
+        return ptr::null_mut();
+    };
+    let Some(config_id) = validate_config_resource_id(&config_id) else {
         return ptr::null_mut();
     };
     let Some(generator_id) = (unsafe { c_string_key(generator_id) }) else {

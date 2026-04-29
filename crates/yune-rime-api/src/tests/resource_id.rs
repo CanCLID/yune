@@ -8,7 +8,8 @@ use crate::{
         validate_config_resource_id, validate_data_resource_id, validate_user_dict_name,
     },
     selected_runtime_config_path, selected_runtime_data_path, ConfigOpenKind,
-    RimeLeversBackupUserDict, RimeLeversExportUserDict, RimeLeversImportUserDict, SessionState,
+    RimeLeversBackupUserDict, RimeLeversCustomSettingsDestroy, RimeLeversCustomSettingsInit,
+    RimeLeversExportUserDict, RimeLeversImportUserDict, SessionState,
 };
 
 use super::*;
@@ -213,6 +214,27 @@ fn schema_dictionary_loading_rejects_unsafe_dictionary_name() {
 
     assert!(session.engine.context().candidates.is_empty());
     let _ = fs::remove_dir_all(temp);
+}
+
+#[test]
+fn levers_custom_settings_reject_unsafe_config_ids() {
+    let _guard = test_guard();
+    let unsafe_config_id = CString::new("../evil").expect("config id C string");
+    let generator_id = CString::new("test").expect("generator id C string");
+
+    // SAFETY: pointers reference valid C strings for the call.
+    let settings =
+        unsafe { RimeLeversCustomSettingsInit(unsafe_config_id.as_ptr(), generator_id.as_ptr()) };
+
+    assert!(settings.is_null());
+
+    let safe_config_id = CString::new("default").expect("safe config id C string");
+    // SAFETY: pointers reference valid C strings for the call.
+    let settings =
+        unsafe { RimeLeversCustomSettingsInit(safe_config_id.as_ptr(), generator_id.as_ptr()) };
+    assert!(!settings.is_null());
+    // SAFETY: settings was returned by RimeLeversCustomSettingsInit.
+    unsafe { RimeLeversCustomSettingsDestroy(settings) };
 }
 
 #[test]

@@ -20,8 +20,8 @@ work.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: CLI Frontend Surrogate** - Drive `yune-rime-api` from `yune-cli` and lock in structure rules for future slices.
-- [ ] **Phase 2: Native ABI Validation And Runtime Safety** - Exercise real frontend-like loading paths and harden ABI/resource boundaries.
+- [x] **Phase 1: CLI Frontend Surrogate** - Drive `yune-rime-api` from `yune-cli` and lock in structure rules for future slices.
+- [x] **Phase 2: Native ABI Validation And Runtime Safety** - Exercise real frontend-like loading paths and harden ABI/resource boundaries.
 - [ ] **Phase 3: Schema Pipeline Depth** - Expand focused schema behavior toward deeper librime gear semantics.
 - [ ] **Phase 4: Compiled Dictionary Data** - Move from source dictionary parsing and metadata checks toward compiled payload consumption and rebuild execution.
 - [ ] **Phase 5: UserDB And Scaling Hardening** - Extend user dictionary compatibility and finish quality/test ownership cleanup for the milestone.
@@ -57,9 +57,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Build or run a native frontend validation harness and record observed ABI/frontend gaps.
-- [ ] 02-02: Fix and test lifecycle, notification, deployment, and session behavior exposed by native validation.
-- [ ] 02-03: Add logical resource-ID validation for config, dictionary, custom-settings, and userdb paths.
+- [x] 02-01: Build or run a native frontend validation harness and record observed ABI/frontend gaps.
+- [x] 02-02: Fix and test lifecycle, notification, deployment, and session behavior exposed by native validation.
+- [x] 02-03: Add logical resource-ID validation for config, dictionary, custom-settings, and userdb paths.
 
 ### Phase 3: Schema Pipeline Depth
 **Goal**: Schema-loaded behavior covers deeper librime semantics across the processor, segmentor, translator, filter, and gear components that remain outside the current focused subset.
@@ -120,8 +120,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. CLI Frontend Surrogate | 0/3 | Not started | - |
-| 2. Native ABI Validation And Runtime Safety | 0/3 | Not started | - |
+| 1. CLI Frontend Surrogate | 3/3 | Complete | 2026-04-29 |
+| 2. Native ABI Validation And Runtime Safety | 3/3 | Complete | 2026-04-29 |
 | 3. Schema Pipeline Depth | 0/4 | Not started | - |
 | 4. Compiled Dictionary Data | 0/4 | Not started | - |
 | 5. UserDB And Scaling Hardening | 0/3 | Not started | - |

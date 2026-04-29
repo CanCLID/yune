@@ -11,17 +11,17 @@ mod state;
 mod translator;
 use comment_format::CommentFormat;
 pub use dictionary::{
-    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload,
-    parse_rime_reverse_bin_dictionary, parse_rime_reverse_bin_metadata,
-    parse_rime_table_bin_dictionary, parse_rime_table_bin_metadata, rime_checksum_bytes,
-    rime_dict_rebuild_plan, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
-    CodeCoords, RimeChecksumComputer, RimeCompiledMetadataError, RimeDictArtifactStatus,
-    RimeDictRebuildError, RimeDictRebuildExecutionReport, RimeDictRebuildInput,
-    RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismBinParseError, RimePrismBinPayload,
-    RimePrismChecksumMetadata, RimePrismSpellingDescriptor, RimeReverseBinMetadata,
-    RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError, TableDictionary,
-    TableDictionaryParseError, TableEncoder, TableEncoderFormulaError, TableEncodingRule,
-    TableEntry,
+    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
+    parse_rime_reverse_bin_metadata, parse_rime_table_bin_dictionary,
+    parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
+    rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords, RimeChecksumComputer,
+    RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildError,
+    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildPlan,
+    RimePrismBinMetadata, RimePrismBinParseError, RimePrismBinPayload, RimePrismChecksumMetadata,
+    RimePrismSpellingDescriptor, RimeReverseBinMetadata, RimeReverseBinParseError,
+    RimeTableBinMetadata, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
+    TableDictionaryAdvancedData, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
+    TableEncodingRule, TableEntry,
 };
 pub use engine::Engine;
 pub use filter::{
@@ -2703,7 +2703,10 @@ mod tests {
         assert_eq!(payload.corrections[0].observed_input, "bq");
         assert_eq!(payload.corrections[0].canonical_code, "ba");
         assert_eq!(payload.tolerance_rules[0].near_code, "bz");
-        assert_eq!(payload.tolerance_rules[0].candidate_codes, ["ba".to_owned()]);
+        assert_eq!(
+            payload.tolerance_rules[0].candidate_codes,
+            ["ba".to_owned()]
+        );
     }
 
     #[test]

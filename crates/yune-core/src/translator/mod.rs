@@ -6,8 +6,8 @@ use crate::dictionary::normalize_table_code;
 use crate::filter::contains_extended_cjk;
 use crate::spelling_algebra::SpellingAlgebra;
 use crate::{
-    Candidate, CandidateSource, Context, Status, TableDictionary, TableDictionaryParseError,
-    TableEntry, Translator,
+    Candidate, CandidateSource, Context, RimeCorrectionEntry, RimeToleranceRule, Status,
+    TableDictionary, TableDictionaryParseError, TableEntry, Translator,
 };
 
 #[derive(Default)]
@@ -42,6 +42,8 @@ pub struct StaticTableTranslator {
     initial_quality: f32,
     comment_format: CommentFormat,
     dictionary_exclude: HashSet<String>,
+    corrections: Vec<RimeCorrectionEntry>,
+    tolerance_rules: Vec<RimeToleranceRule>,
 }
 
 impl StaticTableTranslator {
@@ -74,11 +76,15 @@ impl StaticTableTranslator {
             initial_quality: 0.0,
             comment_format: CommentFormat::default(),
             dictionary_exclude: HashSet::new(),
+            corrections: Vec::new(),
+            tolerance_rules: Vec::new(),
         }
     }
 
     #[must_use]
     pub fn from_dictionary(dictionary: TableDictionary) -> Self {
+        let corrections = dictionary.corrections().to_vec();
+        let tolerance_rules = dictionary.tolerance_rules().to_vec();
         let entries = dictionary
             .entries
             .into_iter()
@@ -103,6 +109,8 @@ impl StaticTableTranslator {
             initial_quality: 0.0,
             comment_format: CommentFormat::default(),
             dictionary_exclude: HashSet::new(),
+            corrections,
+            tolerance_rules,
         }
     }
 
@@ -170,6 +178,24 @@ impl StaticTableTranslator {
     }
 
     #[must_use]
+    pub fn with_corrections(
+        mut self,
+        corrections: impl IntoIterator<Item = RimeCorrectionEntry>,
+    ) -> Self {
+        self.corrections = corrections.into_iter().collect();
+        self
+    }
+
+    #[must_use]
+    pub fn with_tolerance_rules(
+        mut self,
+        tolerance_rules: impl IntoIterator<Item = RimeToleranceRule>,
+    ) -> Self {
+        self.tolerance_rules = tolerance_rules.into_iter().collect();
+        self
+    }
+
+    #[must_use]
     pub fn with_spelling_algebra(mut self, formulas: &[String]) -> Self {
         let algebra = SpellingAlgebra::parse(formulas);
         if !algebra.is_empty() {
@@ -197,6 +223,27 @@ impl StaticTableTranslator {
             || (self.enable_completion
                 && !lookup_code.is_empty()
                 && entry_code.starts_with(lookup_code))
+    }
+
+    fn expanded_lookup_codes(&self, lookup_code: &str) -> Vec<String> {
+        let mut codes = vec![lookup_code.to_owned()];
+        for correction in &self.corrections {
+            if correction.observed_input == lookup_code
+                && !codes.iter().any(|code| code == &correction.canonical_code)
+            {
+                codes.push(correction.canonical_code.clone());
+            }
+        }
+        for rule in &self.tolerance_rules {
+            if rule.near_code == lookup_code {
+                for candidate_code in &rule.candidate_codes {
+                    if !codes.iter().any(|code| code == candidate_code) {
+                        codes.push(candidate_code.clone());
+                    }
+                }
+            }
+        }
+        codes
     }
 
     fn is_dictionary_word_allowed(&self, candidate: &Candidate) -> bool {
@@ -237,16 +284,18 @@ impl StaticTableTranslator {
         }
 
         let lookup_code = self.lookup_code(input);
+        let expanded_lookup_codes = self.expanded_lookup_codes(lookup_code);
         let mut candidates = self
             .entries
             .iter()
-            .filter(|(entry_code, candidate)| {
-                self.matches_lookup_code(entry_code, lookup_code)
-                    && self.is_dictionary_word_allowed(candidate)
-                    && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
-            })
-            .map(|(entry_code, candidate)| {
-                self.candidate_for_lookup(entry_code, candidate, lookup_code)
+            .filter_map(|(entry_code, candidate)| {
+                let matched_lookup_code =
+                    expanded_lookup_codes.iter().find(|candidate_lookup_code| {
+                        self.matches_lookup_code(entry_code, candidate_lookup_code)
+                    })?;
+                (self.is_dictionary_word_allowed(candidate)
+                    && (!filter_by_charset || !contains_extended_cjk(&candidate.text)))
+                .then(|| self.candidate_for_lookup(entry_code, candidate, matched_lookup_code))
             })
             .collect::<Vec<_>>();
 

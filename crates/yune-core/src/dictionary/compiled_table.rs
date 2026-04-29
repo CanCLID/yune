@@ -1,4 +1,7 @@
-use super::{TableDictionary, TableDictionaryAdvancedData, TableEncoder, TableEntry};
+use super::{
+    RimeCorrectionEntry, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
+    TableEncoder, TableEntry,
+};
 use crate::dictionary::compiled::{
     parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
 };
@@ -218,14 +221,70 @@ fn read_yune_table_advanced_payload(
             .map_err(|_| RimeTableBinParseError::InvalidLength)?;
     }
 
+    let (corrections, tolerance_rules) = if cursor < bytes.len() {
+        read_correction_tolerance_payload(bytes, cursor)?
+    } else {
+        (Vec::new(), Vec::new())
+    };
+
     Ok(AdvancedTablePayload {
         entries,
         data: TableDictionaryAdvancedData {
             stems,
             encoder,
+            corrections,
+            tolerance_rules,
             ..TableDictionaryAdvancedData::default()
         },
     })
+}
+
+fn read_correction_tolerance_payload(
+    bytes: &[u8],
+    mut cursor: usize,
+) -> Result<(Vec<RimeCorrectionEntry>, Vec<RimeToleranceRule>), RimeTableBinParseError> {
+    if !bytes[cursor..].starts_with(b"YUNE-CORR-TOL\0") {
+        return Err(RimeTableBinParseError::UnsupportedSection {
+            role: "correction/tolerance payload".to_owned(),
+        });
+    }
+    cursor = cursor
+        .checked_add(b"YUNE-CORR-TOL\0".len())
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let correction_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let mut corrections = Vec::with_capacity(correction_count);
+    for _ in 0..correction_count {
+        let (observed_input, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        let (canonical_code, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        corrections.push(RimeCorrectionEntry::new(observed_input, canonical_code));
+    }
+
+    let tolerance_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let mut tolerance_rules = Vec::with_capacity(tolerance_count);
+    for _ in 0..tolerance_count {
+        let (near_code, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        let candidate_count = read_count(bytes, cursor)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let mut candidate_codes = Vec::with_capacity(candidate_count);
+        for _ in 0..candidate_count {
+            let (candidate_code, next) = read_len_string(bytes, cursor)?;
+            cursor = next;
+            candidate_codes.push(candidate_code);
+        }
+        tolerance_rules.push(RimeToleranceRule::new(near_code, candidate_codes));
+    }
+    Ok((corrections, tolerance_rules))
 }
 
 fn read_entry_list(

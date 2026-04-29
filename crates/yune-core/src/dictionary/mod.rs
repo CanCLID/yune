@@ -23,5 +23,6 @@ pub use compiled_table::{
 pub use encoder::{CodeCoords, TableEncoder, TableEncoderFormulaError, TableEncodingRule};
 pub(crate) use source::normalize_table_code;
 pub use source::{
-    TableDictionary, TableDictionaryAdvancedData, TableDictionaryParseError, TableEntry,
+    RimeCorrectionEntry, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
+    TableDictionaryParseError, TableEntry,
 };

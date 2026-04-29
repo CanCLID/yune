@@ -19,12 +19,54 @@ impl TableEntry {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RimeCorrectionEntry {
+    pub observed_input: String,
+    pub canonical_code: String,
+}
+
+impl RimeCorrectionEntry {
+    #[must_use]
+    pub fn new(observed_input: impl Into<String>, canonical_code: impl Into<String>) -> Self {
+        Self {
+            observed_input: normalize_table_code(&observed_input.into()),
+            canonical_code: normalize_table_code(&canonical_code.into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RimeToleranceRule {
+    pub near_code: String,
+    pub candidate_codes: Vec<String>,
+}
+
+impl RimeToleranceRule {
+    #[must_use]
+    pub fn new(
+        near_code: impl Into<String>,
+        candidate_codes: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
+        Self {
+            near_code: normalize_table_code(&near_code.into()),
+            candidate_codes: candidate_codes
+                .into_iter()
+                .map(Into::into)
+                .map(|code| normalize_table_code(&code))
+                .filter(|code| !code.is_empty())
+                .collect(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct TableDictionary {
     pub(crate) entries: Vec<TableEntry>,
     pub(crate) stems: HashMap<String, Vec<String>>,
     pub(crate) dict_settings: BTreeMap<String, String>,
     pub(crate) encoder: TableEncoder,
+    pub(crate) corrections: Vec<RimeCorrectionEntry>,
+    pub(crate) tolerance_rules: Vec<RimeToleranceRule>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -32,6 +74,8 @@ pub struct TableDictionaryAdvancedData {
     pub stems: HashMap<String, Vec<String>>,
     pub dict_settings: BTreeMap<String, String>,
     pub encoder: TableEncoder,
+    pub corrections: Vec<RimeCorrectionEntry>,
+    pub tolerance_rules: Vec<RimeToleranceRule>,
 }
 
 impl TableDictionary {
@@ -50,6 +94,8 @@ impl TableDictionary {
             stems: advanced.stems,
             dict_settings: advanced.dict_settings,
             encoder: advanced.encoder,
+            corrections: advanced.corrections,
+            tolerance_rules: advanced.tolerance_rules,
         }
     }
 
@@ -60,6 +106,8 @@ impl TableDictionary {
         if !self.encoder.loaded() && other.encoder.loaded() {
             self.encoder = other.encoder.clone();
         }
+        self.corrections.extend(other.corrections.clone());
+        self.tolerance_rules.extend(other.tolerance_rules.clone());
         self
     }
 
@@ -167,6 +215,16 @@ impl TableDictionary {
     pub fn encoder(&self) -> &TableEncoder {
         &self.encoder
     }
+
+    #[must_use]
+    pub fn corrections(&self) -> &[RimeCorrectionEntry] {
+        &self.corrections
+    }
+
+    #[must_use]
+    pub fn tolerance_rules(&self) -> &[RimeToleranceRule] {
+        &self.tolerance_rules
+    }
 }
 
 fn parse_rime_dict_yaml_parts(
@@ -267,6 +325,8 @@ fn finalize_rime_table_entries(
         stems,
         dict_settings: metadata.dict_settings.clone(),
         encoder: metadata.encoder.clone(),
+        corrections: metadata.corrections.clone(),
+        tolerance_rules: metadata.tolerance_rules.clone(),
     }
 }
 
@@ -534,6 +594,8 @@ struct RimeTableMetadata {
     min_phrase_weight: f32,
     dict_settings: BTreeMap<String, String>,
     dict_settings_stack: Vec<String>,
+    corrections: Vec<RimeCorrectionEntry>,
+    tolerance_rules: Vec<RimeToleranceRule>,
     encoder: TableEncoder,
     in_encoder: bool,
     encoder_list: Option<RimeEncoderList>,
@@ -565,6 +627,8 @@ impl Default for RimeTableMetadata {
             min_phrase_weight: 0.0,
             dict_settings: BTreeMap::new(),
             dict_settings_stack: Vec::new(),
+            corrections: Vec::new(),
+            tolerance_rules: Vec::new(),
             encoder: TableEncoder::new(),
             in_encoder: false,
             encoder_list: None,
@@ -645,6 +709,26 @@ impl RimeTableMetadata {
             if parse_yaml_scalar_node(dict_settings).is_none() {
                 self.dict_settings_stack.push("dict_settings".to_owned());
             }
+            return;
+        }
+
+        if let Some(correction) = rime_header_value(trimmed, "correction") {
+            self.read_correction_header_line(correction);
+            return;
+        }
+
+        if let Some(correction) = rime_header_value(trimmed, "corrections") {
+            self.read_correction_header_line(correction);
+            return;
+        }
+
+        if let Some(tolerance) = rime_header_value(trimmed, "tolerance") {
+            self.read_tolerance_header_line(tolerance);
+            return;
+        }
+
+        if let Some(tolerance) = rime_header_value(trimmed, "tolerance_rules") {
+            self.read_tolerance_header_line(tolerance);
             return;
         }
 
@@ -835,6 +919,26 @@ impl RimeTableMetadata {
         }
     }
 
+    fn read_correction_header_line(&mut self, value: &str) {
+        for (observed_input, canonical_code) in parse_lookup_pairs(value) {
+            if observed_input.is_empty() || canonical_code.is_empty() {
+                continue;
+            }
+            self.corrections
+                .push(RimeCorrectionEntry::new(observed_input, canonical_code));
+        }
+    }
+
+    fn read_tolerance_header_line(&mut self, value: &str) {
+        for (near_code, candidate_codes) in parse_tolerance_pairs(value) {
+            if near_code.is_empty() || candidate_codes.is_empty() {
+                continue;
+            }
+            self.tolerance_rules
+                .push(RimeToleranceRule::new(near_code, candidate_codes));
+        }
+    }
+
     fn read_dict_settings_header_line(&mut self, indent: usize, trimmed: &str) {
         let depth = indent / 2;
         self.dict_settings_stack.truncate(depth);
@@ -987,6 +1091,36 @@ impl RimeTableMetadata {
                 .add_length_in_range_rule(min_length, max_length, &formula);
         }
     }
+}
+
+fn parse_lookup_pairs(input: &str) -> Vec<(String, String)> {
+    parse_inline_yaml_list(input)
+        .unwrap_or_else(|| vec![strip_yaml_comment(input).trim().to_owned()])
+        .into_iter()
+        .filter_map(|item| {
+            let item = item.trim();
+            let (left, right) = item
+                .split_once("=>")
+                .or_else(|| item.split_once(':'))
+                .or_else(|| item.split_once('='))?;
+            Some((parse_yaml_scalar(left.trim()), parse_yaml_scalar(right.trim())))
+        })
+        .collect()
+}
+
+fn parse_tolerance_pairs(input: &str) -> Vec<(String, Vec<String>)> {
+    parse_lookup_pairs(input)
+        .into_iter()
+        .map(|(near_code, codes)| {
+            let candidate_codes = codes
+                .split('|')
+                .map(str::trim)
+                .filter(|code| !code.is_empty())
+                .map(parse_yaml_scalar)
+                .collect();
+            (near_code, candidate_codes)
+        })
+        .collect()
 }
 
 fn parse_inline_yaml_list(input: &str) -> Option<Vec<String>> {

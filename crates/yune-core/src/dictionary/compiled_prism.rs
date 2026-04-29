@@ -1,4 +1,7 @@
-use crate::dictionary::compiled::{parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le};
+use super::{RimeCorrectionEntry, RimeToleranceRule};
+use crate::dictionary::compiled::{
+    parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RimePrismBinPayload {
@@ -8,6 +11,8 @@ pub struct RimePrismBinPayload {
     pub num_spellings: u32,
     pub double_array_size: u32,
     pub spelling_map: Vec<Vec<RimePrismSpellingDescriptor>>,
+    pub corrections: Vec<RimeCorrectionEntry>,
+    pub tolerance_rules: Vec<RimeToleranceRule>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -45,6 +50,8 @@ pub fn parse_rime_prism_bin_payload(
     let double_array_offset = read_offset_ptr(bytes, 52)?;
     let spelling_map_offset = read_offset_ptr(bytes, 56)?
         .ok_or(RimePrismBinParseError::MissingRequiredSection)?;
+    let correction_offset = read_offset_ptr(bytes, 60)?;
+    let tolerance_offset = read_offset_ptr(bytes, 64)?;
     let double_array_size = read_u32_le(bytes, 48).map_err(map_metadata_error)?;
     if double_array_offset.is_some() || double_array_size != 0 {
         return Err(RimePrismBinParseError::UnsupportedSection {
@@ -59,7 +66,77 @@ pub fn parse_rime_prism_bin_payload(
         num_spellings: read_u32_le(bytes, 44).map_err(map_metadata_error)?,
         double_array_size,
         spelling_map: read_spelling_map(bytes, spelling_map_offset)?,
+        corrections: correction_offset
+            .map(|offset| read_corrections(bytes, offset))
+            .transpose()?
+            .unwrap_or_default(),
+        tolerance_rules: tolerance_offset
+            .map(|offset| read_tolerance_rules(bytes, offset))
+            .transpose()?
+            .unwrap_or_default(),
     })
+}
+
+fn read_corrections(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<Vec<RimeCorrectionEntry>, RimePrismBinParseError> {
+    if !bytes[offset..].starts_with(b"YUNE-CORR\0") {
+        return Err(RimePrismBinParseError::UnsupportedSection {
+            role: "correction payload".to_owned(),
+        });
+    }
+    let mut cursor = offset
+        .checked_add(b"YUNE-CORR\0".len())
+        .ok_or(RimePrismBinParseError::OutOfBounds)?;
+    let count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimePrismBinParseError::OutOfBounds)?;
+    let mut corrections = Vec::with_capacity(count);
+    for _ in 0..count {
+        let (observed_input, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        let (canonical_code, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        corrections.push(RimeCorrectionEntry::new(observed_input, canonical_code));
+    }
+    Ok(corrections)
+}
+
+fn read_tolerance_rules(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<Vec<RimeToleranceRule>, RimePrismBinParseError> {
+    if !bytes[offset..].starts_with(b"YUNE-TOL\0") {
+        return Err(RimePrismBinParseError::UnsupportedSection {
+            role: "tolerance payload".to_owned(),
+        });
+    }
+    let mut cursor = offset
+        .checked_add(b"YUNE-TOL\0".len())
+        .ok_or(RimePrismBinParseError::OutOfBounds)?;
+    let count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimePrismBinParseError::OutOfBounds)?;
+    let mut rules = Vec::with_capacity(count);
+    for _ in 0..count {
+        let (near_code, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        let candidate_count = read_count(bytes, cursor)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimePrismBinParseError::OutOfBounds)?;
+        let mut candidate_codes = Vec::with_capacity(candidate_count);
+        for _ in 0..candidate_count {
+            let (candidate_code, next) = read_len_string(bytes, cursor)?;
+            cursor = next;
+            candidate_codes.push(candidate_code);
+        }
+        rules.push(RimeToleranceRule::new(near_code, candidate_codes));
+    }
+    Ok(rules)
 }
 
 fn read_spelling_map(
@@ -144,6 +221,26 @@ fn read_string(bytes: &[u8], offset: usize) -> Result<String, RimePrismBinParseE
     std::str::from_utf8(&bytes[string_offset..end])
         .map(str::to_owned)
         .map_err(|_| RimePrismBinParseError::InvalidUtf8)
+}
+
+fn read_len_string(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<(String, usize), RimePrismBinParseError> {
+    let len = read_count(bytes, offset)?;
+    let start = offset
+        .checked_add(4)
+        .ok_or(RimePrismBinParseError::OutOfBounds)?;
+    let end = start
+        .checked_add(len)
+        .ok_or(RimePrismBinParseError::InvalidLength)?;
+    if end > bytes.len() {
+        return Err(RimePrismBinParseError::OutOfBounds);
+    }
+    let value = std::str::from_utf8(&bytes[start..end])
+        .map(str::to_owned)
+        .map_err(|_| RimePrismBinParseError::InvalidUtf8)?;
+    Ok((value, end))
 }
 
 fn read_offset_ptr(bytes: &[u8], field_offset: usize) -> Result<Option<usize>, RimePrismBinParseError> {

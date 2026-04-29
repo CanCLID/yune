@@ -2603,7 +2603,20 @@ mod tests {
         put_f32_le(&mut bytes, descriptor_offset + 8, 0.5);
         put_offset(&mut bytes, descriptor_offset + 12, tips_offset);
         put_offset(&mut bytes, spelling_map_offset + 8, descriptor_offset);
+        let correction_offset = bytes.len();
+        bytes.extend_from_slice(b"YUNE-CORR\0");
+        put_u32_le_extend(&mut bytes, 1);
+        put_len_string(&mut bytes, "bq");
+        put_len_string(&mut bytes, "ba");
+        let tolerance_offset = bytes.len();
+        bytes.extend_from_slice(b"YUNE-TOL\0");
+        put_u32_le_extend(&mut bytes, 1);
+        put_len_string(&mut bytes, "bz");
+        put_u32_le_extend(&mut bytes, 1);
+        put_len_string(&mut bytes, "ba");
         put_offset(&mut bytes, 56, spelling_map_offset);
+        put_offset(&mut bytes, 60, correction_offset);
+        put_offset(&mut bytes, 64, tolerance_offset);
         bytes
     }
 
@@ -2687,6 +2700,10 @@ mod tests {
         assert_eq!(payload.spelling_map[0][0].spelling_type, 2);
         assert!(payload.spelling_map[0][0].is_correction);
         assert_eq!(payload.spelling_map[0][0].tips, "tip");
+        assert_eq!(payload.corrections[0].observed_input, "bq");
+        assert_eq!(payload.corrections[0].canonical_code, "ba");
+        assert_eq!(payload.tolerance_rules[0].near_code, "bz");
+        assert_eq!(payload.tolerance_rules[0].candidate_codes, ["ba".to_owned()]);
     }
 
     #[test]

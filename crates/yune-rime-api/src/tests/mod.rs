@@ -28,6 +28,7 @@ mod userdb;
 
 use super::{
     bool_from, current_log_date_marker, find_config_value, rime_get_api, rime_levers_get_api,
+    workspace_dictionary_rebuild_reports,
     RimeApi, RimeCandidateListBegin, RimeCandidateListEnd, RimeCandidateListFromIndex,
     RimeCandidateListIterator, RimeCandidateListNext, RimeChangePage, RimeCleanupAllSessions,
     RimeCleanupStaleSessions, RimeClearComposition, RimeCommit, RimeCommitComposition, RimeConfig,

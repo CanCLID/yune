@@ -1,13 +1,21 @@
 use std::{
-    collections::HashSet,
+    collections::{BTreeSet, HashSet},
     fs,
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
-    sync::atomic::Ordering,
+    process,
+    sync::{atomic::Ordering, Mutex, OnceLock},
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde_yaml::{Mapping, Number, Value};
+use yune_core::{
+    parse_rime_prism_bin_metadata, parse_rime_reverse_bin_metadata,
+    parse_rime_table_bin_metadata, rime_checksum_bytes,
+    rime_dict_rebuild_plan, rime_dict_source_checksum, RimeDictArtifactStatus,
+    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimePrismChecksumMetadata,
+    TableDictionary,
+};
 
 use crate::{
     apply_config_directives, apply_custom_patch, apply_legacy_preset_config_plugins, bool_from,
@@ -548,7 +556,7 @@ fn generate_installation_id() -> String {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |duration| duration.as_nanos());
-    format!("yune-{nanos}-{}", std::process::id())
+    format!("yune-{nanos}-{}", process::id())
 }
 
 fn current_unix_time_string() -> String {
@@ -559,6 +567,7 @@ fn current_unix_time_string() -> String {
 }
 
 pub(crate) fn workspace_update() -> bool {
+    clear_workspace_dictionary_rebuild_reports();
     if !deploy_config_file("default.yaml", "config_version") {
         return false;
     }
@@ -627,7 +636,383 @@ fn workspace_update_schema(
             }
         }
     }
-    true
+    workspace_update_dictionary_artifacts(schema_id, &schema_config)
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorkspaceDictionaryRebuildReport {
+    pub schema_id: String,
+    pub dictionary_id: String,
+    pub report: RimeDictRebuildExecutionReport,
+}
+
+pub fn workspace_dictionary_rebuild_reports() -> Vec<WorkspaceDictionaryRebuildReport> {
+    dictionary_rebuild_reports()
+        .lock()
+        .expect("dictionary rebuild reports should not be poisoned")
+        .clone()
+}
+
+fn clear_workspace_dictionary_rebuild_reports() {
+    dictionary_rebuild_reports()
+        .lock()
+        .expect("dictionary rebuild reports should not be poisoned")
+        .clear();
+}
+
+fn dictionary_rebuild_reports() -> &'static Mutex<Vec<WorkspaceDictionaryRebuildReport>> {
+    static REPORTS: OnceLock<Mutex<Vec<WorkspaceDictionaryRebuildReport>>> = OnceLock::new();
+    REPORTS.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+fn workspace_update_dictionary_artifacts(schema_id: &str, schema_config: &Value) -> bool {
+    let mut success = true;
+    for request in schema_dictionary_artifact_requests(schema_config) {
+        match workspace_update_dictionary_artifact(&request) {
+            Some(report) => dictionary_rebuild_reports()
+                .lock()
+                .expect("dictionary rebuild reports should not be poisoned")
+                .push(WorkspaceDictionaryRebuildReport {
+                    schema_id: schema_id.to_owned(),
+                    dictionary_id: request.dictionary_id,
+                    report,
+                }),
+            None => success = false,
+        }
+    }
+    success
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct DictionaryArtifactRequest {
+    dictionary_id: String,
+    packs: Vec<String>,
+    force_rebuild_table: bool,
+    force_rebuild_prism: bool,
+}
+
+fn schema_dictionary_artifact_requests(schema_config: &Value) -> Vec<DictionaryArtifactRequest> {
+    let mut namespaces = BTreeSet::new();
+    if let Some(Value::Sequence(translators)) = find_config_value(schema_config, "engine/translators") {
+        for translator in translators.iter().filter_map(Value::as_str) {
+            let Some((component, namespace)) = schema_component_prescription(translator) else {
+                continue;
+            };
+            if matches!(
+                component,
+                "table_translator"
+                    | "script_translator"
+                    | "r10n_translator"
+                    | "reverse_lookup_translator"
+            ) {
+                namespaces.insert(namespace.unwrap_or("translator").to_owned());
+            }
+        }
+    }
+    if let Some(Value::Sequence(filters)) = find_config_value(schema_config, "engine/filters") {
+        for filter in filters.iter().filter_map(Value::as_str) {
+            let Some((component, namespace)) = schema_component_prescription(filter) else {
+                continue;
+            };
+            if component == "reverse_lookup_filter" {
+                namespaces.insert(namespace.unwrap_or("reverse_lookup").to_owned());
+            }
+        }
+    }
+
+    let mut requests = Vec::new();
+    let mut seen = BTreeSet::new();
+    for namespace in namespaces {
+        let Some(raw_dictionary_id) = find_config_value(schema_config, &format!("{namespace}/dictionary"))
+            .and_then(Value::as_str)
+        else {
+            continue;
+        };
+        let Some(dictionary_id) = validate_data_resource_id(raw_dictionary_id) else {
+            requests.push(DictionaryArtifactRequest {
+                dictionary_id: raw_dictionary_id.to_owned(),
+                packs: Vec::new(),
+                force_rebuild_table: false,
+                force_rebuild_prism: false,
+            });
+            continue;
+        };
+        if !seen.insert(dictionary_id.clone()) {
+            continue;
+        }
+        requests.push(DictionaryArtifactRequest {
+            dictionary_id,
+            packs: schema_dictionary_packs(schema_config, &namespace),
+            force_rebuild_table: config_bool_value(schema_config, &format!("{namespace}/force_rebuild_table")),
+            force_rebuild_prism: config_bool_value(schema_config, &format!("{namespace}/force_rebuild_prism")),
+        });
+    }
+    requests
+}
+
+fn workspace_update_dictionary_artifact(
+    request: &DictionaryArtifactRequest,
+) -> Option<RimeDictRebuildExecutionReport> {
+    let dictionary_id = validate_data_resource_id(&request.dictionary_id)?;
+    let (shared_data_dir, staging_dir, prebuilt_data_dir) = runtime_data_roots();
+    let source_path = shared_data_dir.join(format!("{dictionary_id}.dict.yaml"));
+    let source_yaml = fs::read_to_string(&source_path).ok();
+    let source_available = source_yaml.is_some();
+    let pack_checksums = request
+        .packs
+        .iter()
+        .filter_map(|pack| validate_data_resource_id(pack))
+        .filter_map(|pack| fs::read(shared_data_dir.join(format!("{pack}.dict.yaml"))).ok())
+        .scan(
+            source_yaml
+                .as_ref()
+                .map(|yaml| rime_dict_source_checksum(0, [yaml.as_bytes()], None))
+                .unwrap_or(0),
+            |checksum, bytes| {
+                *checksum = rime_dict_source_checksum(*checksum, [bytes.as_slice()], None);
+                Some(*checksum)
+            },
+        )
+        .collect::<Vec<_>>();
+    let source_checksum = source_yaml
+        .as_ref()
+        .map(|yaml| rime_dict_source_checksum(0, [yaml.as_bytes()], None))
+        .unwrap_or(0);
+
+    let table_path = staging_dir.join(format!("{dictionary_id}.table.bin"));
+    let prism_path = staging_dir.join(format!("{dictionary_id}.prism.bin"));
+    let reverse_path = staging_dir.join(format!("{dictionary_id}.reverse.bin"));
+    let prebuilt_table_path = prebuilt_data_dir.join(format!("{dictionary_id}.table.bin"));
+    let prebuilt_prism_path = prebuilt_data_dir.join(format!("{dictionary_id}.prism.bin"));
+    let prebuilt_reverse_path = prebuilt_data_dir.join(format!("{dictionary_id}.reverse.bin"));
+
+    let table_metadata = fs::read(&table_path)
+        .ok()
+        .and_then(|bytes| parse_rime_table_bin_metadata(bytes).ok());
+    let prism_metadata = fs::read(&prism_path)
+        .ok()
+        .and_then(|bytes| parse_rime_prism_bin_metadata(bytes).ok())
+        .map(|metadata| RimePrismChecksumMetadata {
+            dict_file_checksum: metadata.dict_file_checksum,
+            schema_file_checksum: metadata.schema_file_checksum,
+        });
+    let reverse_metadata = fs::read(&reverse_path)
+        .ok()
+        .and_then(|bytes| parse_rime_reverse_bin_metadata(bytes).ok());
+    let prebuilt_table_metadata = fs::read(&prebuilt_table_path)
+        .ok()
+        .and_then(|bytes| parse_rime_table_bin_metadata(bytes).ok());
+    let prebuilt_prism_metadata = fs::read(&prebuilt_prism_path)
+        .ok()
+        .and_then(|bytes| parse_rime_prism_bin_metadata(bytes).ok())
+        .map(|metadata| RimePrismChecksumMetadata {
+            dict_file_checksum: metadata.dict_file_checksum,
+            schema_file_checksum: metadata.schema_file_checksum,
+        });
+    let prebuilt_reverse_metadata = fs::read(&prebuilt_reverse_path)
+        .ok()
+        .and_then(|bytes| parse_rime_reverse_bin_metadata(bytes).ok());
+
+    let schema_checksum = schema_dictionary_checksum(schema_config_signature(&dictionary_id));
+    let input = RimeDictRebuildInput {
+        source_available,
+        source_dict_file_checksum: source_checksum,
+        pack_source_checksums: pack_checksums,
+        schema_file_checksum: schema_checksum,
+        table_dict_file_checksum: table_metadata
+            .map(|metadata| metadata.dict_file_checksum)
+            .or_else(|| prebuilt_table_metadata.map(|metadata| metadata.dict_file_checksum)),
+        prism: prism_metadata.or(prebuilt_prism_metadata),
+        reverse_dict_file_checksum: reverse_metadata
+            .map(|metadata| metadata.dict_file_checksum)
+            .or_else(|| prebuilt_reverse_metadata.map(|metadata| metadata.dict_file_checksum)),
+        prebuilt_table_available: prebuilt_table_path.is_file(),
+        prebuilt_prism_available: prebuilt_prism_path.is_file(),
+        prebuilt_reverse_available: prebuilt_reverse_path.is_file(),
+        force_rebuild_table: request.force_rebuild_table,
+        force_rebuild_prism: request.force_rebuild_prism,
+    };
+    let plan = match rime_dict_rebuild_plan(input) {
+        Ok(plan) => plan,
+        Err(_) => return None,
+    };
+
+    if plan.report.table == RimeDictArtifactStatus::ReusedPrebuilt {
+        copy_if_present(&prebuilt_table_path, &table_path)?;
+    } else if plan.rebuild_table {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(source_yaml.as_ref()?).ok()?;
+        write_table_artifact(&table_path, plan.dict_file_checksum, &dictionary)?;
+    }
+    if plan.report.prism == RimeDictArtifactStatus::ReusedPrebuilt {
+        copy_if_present(&prebuilt_prism_path, &prism_path)?;
+    } else if plan.rebuild_prism {
+        write_prism_artifact(&prism_path, plan.dict_file_checksum, schema_checksum)?;
+    }
+    if plan.report.reverse == RimeDictArtifactStatus::ReusedPrebuilt {
+        copy_if_present(&prebuilt_reverse_path, &reverse_path)?;
+    } else if plan.rebuild_reverse {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(source_yaml.as_ref()?).ok()?;
+        write_reverse_artifact(&reverse_path, plan.dict_file_checksum, &dictionary)?;
+    }
+    Some(plan.report)
+}
+
+fn schema_config_signature(dictionary_id: &str) -> Vec<u8> {
+    dictionary_id.as_bytes().to_vec()
+}
+
+fn schema_dictionary_checksum(bytes: impl AsRef<[u8]>) -> u32 {
+    rime_checksum_bytes(bytes)
+}
+
+fn runtime_data_roots() -> (PathBuf, PathBuf, PathBuf) {
+    let paths = runtime_paths()
+        .lock()
+        .expect("runtime paths should not be poisoned");
+    (
+        PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned()),
+        PathBuf::from(paths.staging_dir.to_string_lossy().into_owned()),
+        PathBuf::from(paths.prebuilt_data_dir.to_string_lossy().into_owned()),
+    )
+}
+
+fn copy_if_present(source: &Path, destination: &Path) -> Option<()> {
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).ok()?;
+    }
+    fs::copy(source, destination).ok()?;
+    Some(())
+}
+
+fn write_table_artifact(path: &Path, checksum: u32, dictionary: &TableDictionary) -> Option<()> {
+    let mut bytes = vec![0; 68];
+    put_c_string(&mut bytes, 0, b"Rime::Table/4.0");
+    put_u32_le(&mut bytes, 32, checksum);
+    put_u32_le(&mut bytes, 36, dictionary.entries().len() as u32);
+    put_u32_le(&mut bytes, 40, dictionary.entries().len() as u32);
+    let syllabary_offset = bytes.len();
+    bytes.resize(syllabary_offset + 4 + dictionary.entries().len() * 4, 0);
+    put_u32_le(&mut bytes, syllabary_offset, dictionary.entries().len() as u32);
+    let code_offsets = dictionary
+        .entries()
+        .iter()
+        .map(|entry| append_c_string(&mut bytes, &entry.code))
+        .collect::<Vec<_>>();
+    for (index, offset) in code_offsets.into_iter().enumerate() {
+        put_offset(&mut bytes, syllabary_offset + 4 + index * 4, offset);
+    }
+    let index_offset = bytes.len();
+    bytes.resize(index_offset + 4 + dictionary.entries().len() * 16, 0);
+    put_u32_le(&mut bytes, index_offset, dictionary.entries().len() as u32);
+    for (index, entry) in dictionary.entries().iter().enumerate() {
+        let node_offset = index_offset + 4 + index * 16;
+        put_u32_le(&mut bytes, node_offset, 1);
+        let entry_offset = bytes.len();
+        bytes.resize(entry_offset + 8, 0);
+        let text_offset = append_c_string(&mut bytes, &entry.text);
+        put_offset(&mut bytes, entry_offset, text_offset);
+        put_f32_le(&mut bytes, entry_offset + 4, entry.weight);
+        put_offset(&mut bytes, node_offset + 4, entry_offset);
+    }
+    put_offset(&mut bytes, 44, syllabary_offset);
+    put_offset(&mut bytes, 48, index_offset);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).ok()?;
+    }
+    fs::write(path, bytes).ok()
+}
+
+fn write_prism_artifact(path: &Path, dict_checksum: u32, schema_checksum: u32) -> Option<()> {
+    let mut bytes = vec![0; 320];
+    put_c_string(&mut bytes, 0, b"Rime::Prism/4.0");
+    put_u32_le(&mut bytes, 32, dict_checksum);
+    put_u32_le(&mut bytes, 36, schema_checksum);
+    let spelling_map_offset = bytes.len();
+    bytes.resize(spelling_map_offset + 4, 0);
+    put_u32_le(&mut bytes, spelling_map_offset, 0);
+    put_offset(&mut bytes, 56, spelling_map_offset);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).ok()?;
+    }
+    fs::write(path, bytes).ok()
+}
+
+fn write_reverse_artifact(path: &Path, checksum: u32, dictionary: &TableDictionary) -> Option<()> {
+    let mut bytes = vec![0; 64];
+    put_c_string(&mut bytes, 0, b"Rime::Reverse/4.0");
+    put_u32_le(&mut bytes, 32, checksum);
+    bytes.extend_from_slice(b"YUNE-REVERSE\0");
+    put_u32_le_extend(&mut bytes, dictionary.entries().len() as u32);
+    for entry in dictionary.entries() {
+        put_len_string(&mut bytes, &entry.code);
+        put_len_string(&mut bytes, &entry.text);
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).ok()?;
+    }
+    fs::write(path, bytes).ok()
+}
+
+fn put_c_string(bytes: &mut [u8], offset: usize, value: &[u8]) {
+    bytes[offset..offset + value.len()].copy_from_slice(value);
+}
+
+fn put_u32_le(bytes: &mut [u8], offset: usize, value: u32) {
+    bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+}
+
+fn put_f32_le(bytes: &mut [u8], offset: usize, value: f32) {
+    bytes[offset..offset + 4].copy_from_slice(&value.to_bits().to_le_bytes());
+}
+
+fn put_offset(bytes: &mut [u8], field_offset: usize, target: usize) {
+    let raw = i32::try_from(target as isize - field_offset as isize)
+        .expect("fixture offset should fit i32");
+    bytes[field_offset..field_offset + 4].copy_from_slice(&raw.to_le_bytes());
+}
+
+fn append_c_string(bytes: &mut Vec<u8>, value: &str) -> usize {
+    let offset = bytes.len();
+    bytes.extend_from_slice(value.as_bytes());
+    bytes.push(0);
+    offset
+}
+
+fn put_u32_le_extend(bytes: &mut Vec<u8>, value: u32) {
+    bytes.extend_from_slice(&value.to_le_bytes());
+}
+
+fn put_len_string(bytes: &mut Vec<u8>, value: &str) {
+    put_u32_le_extend(bytes, value.len() as u32);
+    bytes.extend_from_slice(value.as_bytes());
+}
+
+fn config_bool_value(schema_config: &Value, key: &str) -> bool {
+    find_config_value(schema_config, key)
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+}
+
+fn schema_dictionary_packs(schema_config: &Value, namespace: &str) -> Vec<String> {
+    let Some(Value::Sequence(packs)) = find_config_value(schema_config, &format!("{namespace}/packs")) else {
+        return Vec::new();
+    };
+    packs
+        .iter()
+        .filter_map(Value::as_str)
+        .filter_map(validate_data_resource_id)
+        .collect()
+}
+
+fn schema_component_prescription(component: &str) -> Option<(&str, Option<&str>)> {
+    let Some((component_name, namespace)) = component.split_once('@') else {
+        return Some((component, None));
+    };
+    if component_name.is_empty() || namespace.is_empty() {
+        Some((component, None))
+    } else {
+        Some((component_name, Some(namespace)))
+    }
 }
 
 fn schema_dependencies(schema_config: &Value) -> Vec<String> {

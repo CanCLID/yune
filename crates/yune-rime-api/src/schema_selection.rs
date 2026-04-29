@@ -99,6 +99,7 @@ pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &st
     session.ascii_segmentor_enabled = false;
     session.punct_segmentor = None;
     session.fallback_segmentor_enabled = false;
+    session.remaining_gear_deferrals.clear();
     session.punctuation_processor = None;
     session.recognizer_processor = None;
     session.selector_bindings = SelectorBindings::default();

@@ -14,6 +14,7 @@ mod candidate_api;
 mod config_api;
 mod context_status;
 mod deployment;
+mod distribution_schema_comparison;
 mod levers;
 mod lifecycle_safety;
 mod resource_id;

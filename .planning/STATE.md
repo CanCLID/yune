@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-29T09:03:45.404Z"
-last_activity: 2026-04-29 -- Phase 2 verified and secured
+status: ready_to_plan
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-04-29T09:33:14.656Z"
+last_activity: 2026-04-29 -- Phase 03 execution started
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
   percent: 60
 ---
 
@@ -21,22 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-28)
 
 **Core value:** Existing RIME schemas and frontends should behave predictably through Yune's Rust implementation, with every compatibility difference measurable against librime before it is accepted.
-**Current focus:** Phase 3 — Schema Pipeline Depth
+**Current focus:** Phase 03
 
 ## Current Position
 
-Phase: 2 (Native ABI Validation And Runtime Safety) — COMPLETE
+Phase: 4
+Plan: Not started
 Next phase: 3 (Schema Pipeline Depth)
-Status: Ready for Phase 3 discussion/planning
-Last activity: 2026-04-29 -- Phase 2 verified and secured
+Status: Ready to plan
+Last activity: 2026-04-29
 
-Progress: [███░░░░░░░] 35%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 6
+- Total plans completed: 10
 - Average duration: -
 - Total execution time: -
 
@@ -46,6 +47,7 @@ Progress: [███░░░░░░░] 35%
 |-------|-------|-------|----------|
 | 01 | 3/3 | - | - |
 | 02 | 3/3 | - | - |
+| 03 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -53,6 +55,7 @@ Progress: [███░░░░░░░] 35%
 - Trend: Phase 2 completed after verification gap closure
 
 *Updated after each phase completion*
+| Phase 03-schema-pipeline-depth P01 | 2h 5m | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +82,9 @@ Recent decisions affecting current work:
   semantics, compiled dictionary behavior, and userdb storage compatibility stay
   deferred to later phases.
 
+- 03-01: Non-auto previous-match splitting is owned in processors/speller.rs without lib.rs dispatch changes.
+- 03-01: Existing editor/navigator/selector and chord/punctuation/fallback behavior is now locked by schema-loaded ABI fixtures.
+
 ### Pending Todos
 
 None.
@@ -104,9 +110,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: --stopped-at
-Stopped at: Phase 3 context gathered
-Resume file: --resume-file
+Last session: 2026-04-29T09:33:14.654Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
 
 **Completed Phase:** 02 (Native ABI Validation And Runtime Safety) — 3 plans — 2026-04-29
 **Next Phase:** 03 (Schema Pipeline Depth) — 4 plans

@@ -14,7 +14,7 @@ use crate::{
     load_runtime_config_root, resource_id::validate_data_resource_id, schema_folded_switch_options,
     schema_list_translator_entries_for_current, schema_switch_translator_switches,
     selected_runtime_data_path, switch_scalar_field, AffixSegmentor, ConfigOpenKind,
-    MatcherPattern, MatcherSegmentor, PunctSegmentor, SessionState,
+    MatcherPattern, MatcherSegmentor, PunctSegmentor, RemainingGearDeferral, SessionState,
 };
 
 pub(crate) fn install_schema_translator_chain(session: &mut SessionState, schema_id: &str) {
@@ -70,6 +70,41 @@ pub(crate) fn install_schema_translator_chain(session: &mut SessionState, schema
                     .engine
                     .add_translator(SchemaListTranslator::new(entries));
             }
+            "memory" => record_remaining_gear_deferral(
+                session,
+                "memory",
+                "user dictionary memory and learning",
+                "deferred because LevelDB/userdb learning is outside Phase 3",
+                "05-userdb-and-learning",
+            ),
+            "poet" => record_remaining_gear_deferral(
+                session,
+                "poet",
+                "grammar/model-assisted candidate scoring",
+                "deferred because plugin/model behavior is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
+            "grammar" => record_remaining_gear_deferral(
+                session,
+                "grammar",
+                "grammar/model-assisted candidate scoring",
+                "deferred because plugin/model behavior is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
+            "contextual_translation" => record_remaining_gear_deferral(
+                session,
+                "contextual_translation",
+                "context-aware translation using reverse/context data",
+                "deferred because compiled reverse/context data is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
+            "unity_table_encoder" => record_remaining_gear_deferral(
+                session,
+                "unity_table_encoder",
+                "encodes phrases into UniTE table data",
+                "deferred because compiled UniTE/table payload support is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
             _ => {}
         }
     }
@@ -266,9 +301,70 @@ pub(crate) fn install_schema_filter_chain(session: &mut SessionState, schema_id:
                     .engine
                     .add_filter(TaggedFilter::new(CharsetFilter, tags));
             }
+            "memory" => record_remaining_gear_deferral(
+                session,
+                "memory",
+                "user dictionary memory and learning",
+                "deferred because LevelDB/userdb learning is outside Phase 3",
+                "05-userdb-and-learning",
+            ),
+            "poet" => record_remaining_gear_deferral(
+                session,
+                "poet",
+                "grammar/model-assisted candidate scoring",
+                "deferred because plugin/model behavior is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
+            "grammar" => record_remaining_gear_deferral(
+                session,
+                "grammar",
+                "grammar/model-assisted candidate scoring",
+                "deferred because plugin/model behavior is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
+            "contextual_translation" => record_remaining_gear_deferral(
+                session,
+                "contextual_translation",
+                "context-aware translation using reverse/context data",
+                "deferred because compiled reverse/context data is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
+            "unity_table_encoder" => record_remaining_gear_deferral(
+                session,
+                "unity_table_encoder",
+                "encodes phrases into UniTE table data",
+                "deferred because compiled UniTE/table payload support is outside Phase 3",
+                "04-compiled-dictionary-data",
+            ),
             _ => {}
         }
     }
+}
+
+fn record_remaining_gear_deferral(
+    session: &mut SessionState,
+    gear: &str,
+    observed_librime_role: &str,
+    scope_decision: &str,
+    target_phase: &str,
+) {
+    if session
+        .remaining_gear_deferrals
+        .iter()
+        .any(|deferral| deferral.gear == gear)
+    {
+        return;
+    }
+    session
+        .remaining_gear_deferrals
+        .push(RemainingGearDeferral {
+            gear: gear.to_owned(),
+            observed_librime_role: observed_librime_role.to_owned(),
+            current_yune_behavior: "recognized during schema installation as a deterministic no-op"
+                .to_owned(),
+            scope_decision: scope_decision.to_owned(),
+            target_phase: target_phase.to_owned(),
+        });
 }
 
 pub(crate) fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {

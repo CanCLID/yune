@@ -63,6 +63,15 @@ impl SessionRegistry {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct RemainingGearDeferral {
+    pub(crate) gear: String,
+    pub(crate) observed_librime_role: String,
+    pub(crate) current_yune_behavior: String,
+    pub(crate) scope_decision: String,
+    pub(crate) target_phase: String,
+}
+
 pub(crate) struct SessionState {
     pub(crate) engine: Engine,
     pub(crate) unread_commit: Option<String>,
@@ -89,6 +98,7 @@ pub(crate) struct SessionState {
     pub(crate) affix_segmentors: Vec<AffixSegmentor>,
     pub(crate) matcher_segmentor: Option<MatcherSegmentor>,
     pub(crate) fallback_segmentor_enabled: bool,
+    pub(crate) remaining_gear_deferrals: Vec<RemainingGearDeferral>,
     pub(crate) paging: bool,
     pub(crate) last_active_time: u64,
 }
@@ -121,6 +131,7 @@ impl SessionState {
             affix_segmentors: Vec::new(),
             matcher_segmentor: None,
             fallback_segmentor_enabled: false,
+            remaining_gear_deferrals: Vec::new(),
             paging: false,
             last_active_time: session_activity_now(),
         }
@@ -219,6 +230,17 @@ pub(crate) fn session_candidates_snapshot(
         .expect("session registry should not be poisoned");
     let session = registry.get_session_mut(session_id)?;
     Some(session.engine.context().candidates.clone())
+}
+
+#[cfg(test)]
+pub(crate) fn remaining_gear_deferrals_snapshot(
+    session_id: RimeSessionId,
+) -> Option<Vec<RemainingGearDeferral>> {
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let session = registry.get_session_mut(session_id)?;
+    Some(session.remaining_gear_deferrals.clone())
 }
 
 pub(crate) fn session_activity_now() -> u64 {

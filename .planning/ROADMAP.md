@@ -74,10 +74,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: Expand speller, editor, navigator, selector, chord, shape, punctuation, and fallback processor coverage.
-- [ ] 03-02: Add compatibility decisions or increments for remaining librime gear components.
-- [ ] 03-03: Compare larger distribution schema chains against librime and convert differences into focused fixtures.
-- [ ] 03-04: Broaden spelling algebra, correction/tolerance, and OpenCC behavior where current focused coverage is insufficient.
+- [x] 03-01: Expand speller, editor, navigator, selector, chord, shape, punctuation, and fallback processor coverage.
+- [x] 03-02: Add compatibility decisions or increments for remaining librime gear components.
+- [x] 03-03: Compare larger distribution schema chains against librime and convert differences into focused fixtures.
+- [x] 03-04: Broaden spelling algebra, correction/tolerance, and OpenCC behavior where current focused coverage is insufficient.
 
 ### Phase 4: Compiled Dictionary Data
 **Goal**: Dictionary loading and rebuild behavior move beyond source parsing and metadata checks toward compiled librime data compatibility.

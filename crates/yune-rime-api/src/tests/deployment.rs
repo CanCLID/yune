@@ -1832,6 +1832,220 @@ schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators
 }
 
 #[test]
+fn workspace_update_rebuilds_after_pack_changes_and_honors_force_flags() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("workspace-dictionary-pack-force");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::write(
+        shared.join("default.yaml"),
+        "config_version: '1.0'\nschema_list:\n  - schema: luna\n",
+    )
+    .expect("default config should be written");
+    fs::write(
+        shared.join("luna.schema.yaml"),
+        "\
+schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: luna\n  packs:\n    - luna_pack\n",
+    )
+    .expect("schema should be written");
+    fs::write(
+        shared.join("luna.dict.yaml"),
+        "\
+---\nname: luna\nversion: '1'\nsort: by_weight\n...\n\n八\tba\t2\n",
+    )
+    .expect("dictionary should be written");
+    fs::write(
+        shared.join("luna_pack.dict.yaml"),
+        "\
+---\nname: luna_pack\nversion: '1'\nsort: by_weight\n...\n\n爸\tba\t1\n",
+    )
+    .expect("pack should be written");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let workspace_task = CString::new("workspace_update").expect("task should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let initial_table = yune_core::parse_rime_table_bin_dictionary(
+        fs::read(user.join("build").join("luna.table.bin")).expect("table should be readable"),
+    )
+    .expect("table should parse");
+    assert!(initial_table.entries().iter().any(|entry| entry.text == "爸"));
+
+    fs::write(
+        shared.join("luna_pack.dict.yaml"),
+        "\
+---\nname: luna_pack\nversion: '2'\nsort: by_weight\n...\n\n爸\tba\t1\n吧\tba\t3\n",
+    )
+    .expect("pack update should be written");
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let pack_changed = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        pack_changed[0].report.table,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert_eq!(
+        pack_changed[0].report.prism,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert_eq!(
+        pack_changed[0].report.reverse,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    let updated_table = yune_core::parse_rime_table_bin_dictionary(
+        fs::read(user.join("build").join("luna.table.bin")).expect("table should be readable"),
+    )
+    .expect("table should parse");
+    assert!(updated_table.entries().iter().any(|entry| entry.text == "吧"));
+
+    fs::write(
+        shared.join("luna.schema.yaml"),
+        "\
+schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: luna\n  packs:\n    - luna_pack\n  force_rebuild_prism: true\n",
+    )
+    .expect("force schema should be written");
+    fs::remove_file(user.join("build").join("luna.schema.yaml"))
+        .expect("deployed schema should be removed");
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let forced = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        forced[0].report.table,
+        yune_core::RimeDictArtifactStatus::ReusedFresh
+    );
+    assert_eq!(
+        forced[0].report.prism,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert_eq!(
+        forced[0].report.reverse,
+        yune_core::RimeDictArtifactStatus::ReusedFresh
+    );
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn workspace_update_reuses_prebuilt_artifacts_when_source_is_missing() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("workspace-dictionary-prebuilt");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(shared.join("build")).expect("prebuilt dir should be created");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    fs::write(
+        shared.join("default.yaml"),
+        "config_version: '1.0'\nschema_list:\n  - schema: luna\n",
+    )
+    .expect("default config should be written");
+    fs::write(
+        shared.join("luna.schema.yaml"),
+        "\
+schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: luna\n",
+    )
+    .expect("schema should be written");
+    fs::write(
+        shared.join("luna.dict.yaml"),
+        "\
+---\nname: luna\nversion: '1'\nsort: by_weight\n...\n\n八\tba\t2\n爸\tba\t1\n",
+    )
+    .expect("dictionary should be written");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let workspace_task = CString::new("workspace_update").expect("task should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    for file_name in ["luna.table.bin", "luna.prism.bin", "luna.reverse.bin"] {
+        fs::copy(user.join("build").join(file_name), shared.join("build").join(file_name))
+            .expect("prebuilt artifact should be copied");
+        fs::remove_file(user.join("build").join(file_name))
+            .expect("staging artifact should be removed");
+    }
+    fs::remove_file(shared.join("luna.dict.yaml")).expect("source should be removed");
+
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let reports = workspace_dictionary_rebuild_reports();
+    assert_eq!(reports.len(), 1);
+    assert_eq!(
+        reports[0].report.table,
+        yune_core::RimeDictArtifactStatus::ReusedPrebuilt
+    );
+    assert_eq!(
+        reports[0].report.prism,
+        yune_core::RimeDictArtifactStatus::ReusedPrebuilt
+    );
+    assert_eq!(
+        reports[0].report.reverse,
+        yune_core::RimeDictArtifactStatus::ReusedPrebuilt
+    );
+    for file_name in ["luna.table.bin", "luna.prism.bin", "luna.reverse.bin"] {
+        assert!(user.join("build").join(file_name).is_file());
+    }
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn workspace_update_fails_for_unsafe_or_missing_dictionary_artifacts() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("workspace-dictionary-failures");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::write(
+        shared.join("default.yaml"),
+        "config_version: '1.0'\nschema_list:\n  - schema: unsafe\n  - schema: missing\n",
+    )
+    .expect("default config should be written");
+    fs::write(
+        shared.join("unsafe.schema.yaml"),
+        "\
+schema:\n  schema_id: unsafe\n  name: Unsafe\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: ../secret\n",
+    )
+    .expect("unsafe schema should be written");
+    fs::write(
+        shared.join("missing.schema.yaml"),
+        "\
+schema:\n  schema_id: missing\n  name: Missing\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: missing\n",
+    )
+    .expect("missing schema should be written");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let workspace_task = CString::new("workspace_update").expect("task should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), FALSE);
+    assert!(workspace_dictionary_rebuild_reports().is_empty());
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn workspace_update_deploys_default_schemas_and_dependencies() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

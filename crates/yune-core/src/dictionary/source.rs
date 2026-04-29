@@ -1,5 +1,5 @@
 use super::TableEncoder;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableEntry {
@@ -23,6 +23,7 @@ impl TableEntry {
 pub struct TableDictionary {
     pub(crate) entries: Vec<TableEntry>,
     pub(crate) stems: HashMap<String, Vec<String>>,
+    pub(crate) dict_settings: BTreeMap<String, String>,
     pub(crate) encoder: TableEncoder,
 }
 
@@ -32,6 +33,7 @@ impl TableDictionary {
         Self {
             entries: entries.into_iter().collect(),
             stems: HashMap::new(),
+            dict_settings: BTreeMap::new(),
             encoder: TableEncoder::new(),
         }
     }
@@ -107,6 +109,9 @@ impl TableDictionary {
             let mut pack_dictionary = finalize_rime_table_entries(&pack_metadata, pack_entries);
             dictionary.entries.append(&mut pack_dictionary.entries);
             merge_rime_table_stems(&mut dictionary.stems, pack_dictionary.stems);
+            dictionary
+                .dict_settings
+                .extend(pack_dictionary.dict_settings);
         }
 
         sort_rime_table_entries(&metadata, &mut dictionary.entries);
@@ -121,6 +126,16 @@ impl TableDictionary {
     #[must_use]
     pub fn stems(&self) -> &HashMap<String, Vec<String>> {
         &self.stems
+    }
+
+    #[must_use]
+    pub fn stems_for(&self, text: &str) -> Option<&[String]> {
+        self.stems.get(text).map(Vec::as_slice)
+    }
+
+    #[must_use]
+    pub fn dict_settings(&self) -> &BTreeMap<String, String> {
+        &self.dict_settings
     }
 
     #[must_use]
@@ -225,6 +240,7 @@ fn finalize_rime_table_entries(
     TableDictionary {
         entries,
         stems,
+        dict_settings: metadata.dict_settings.clone(),
         encoder: metadata.encoder.clone(),
     }
 }
@@ -491,6 +507,8 @@ struct RimeTableMetadata {
     vocabulary: Option<String>,
     max_phrase_length: usize,
     min_phrase_weight: f32,
+    dict_settings: BTreeMap<String, String>,
+    dict_settings_stack: Vec<String>,
     encoder: TableEncoder,
     in_encoder: bool,
     encoder_list: Option<RimeEncoderList>,
@@ -520,6 +538,8 @@ impl Default for RimeTableMetadata {
             vocabulary: None,
             max_phrase_length: 0,
             min_phrase_weight: 0.0,
+            dict_settings: BTreeMap::new(),
+            dict_settings_stack: Vec::new(),
             encoder: TableEncoder::new(),
             in_encoder: false,
             encoder_list: None,
@@ -567,6 +587,13 @@ impl RimeTableMetadata {
             self.in_encoder = false;
             self.encoder_list = None;
         }
+        if indent > 0 && !self.dict_settings_stack.is_empty() {
+            self.read_dict_settings_header_line(indent, trimmed);
+            return;
+        }
+        if !self.dict_settings_stack.is_empty() && indent == 0 {
+            self.dict_settings_stack.clear();
+        }
 
         if let Some(list) = self.reading_list {
             if trimmed == "-" {
@@ -585,6 +612,14 @@ impl RimeTableMetadata {
             self.finish_encoder_rule();
             self.in_encoder = parse_yaml_scalar_node(encoder).is_none();
             self.encoder_list = None;
+            return;
+        }
+
+        if let Some(dict_settings) = rime_header_value(trimmed, "dict_settings") {
+            self.dict_settings_stack.clear();
+            if parse_yaml_scalar_node(dict_settings).is_none() {
+                self.dict_settings_stack.push("dict_settings".to_owned());
+            }
             return;
         }
 
@@ -772,6 +807,57 @@ impl RimeTableMetadata {
                     self.import_tables.push(value);
                 }
             }
+        }
+    }
+
+    fn read_dict_settings_header_line(&mut self, indent: usize, trimmed: &str) {
+        let depth = indent / 2;
+        self.dict_settings_stack.truncate(depth);
+
+        if let Some(item) = trimmed.strip_prefix("- ") {
+            let index = self
+                .dict_settings_stack
+                .last()
+                .and_then(|key| {
+                    let prefix = format!("{key}/");
+                    self.dict_settings
+                        .keys()
+                        .filter_map(|candidate| {
+                            candidate
+                                .strip_prefix(&prefix)?
+                                .split('/')
+                                .next()?
+                                .parse::<usize>()
+                                .ok()
+                        })
+                        .max()
+                })
+                .map_or(0, |index| index + 1);
+            self.dict_settings_stack.push(index.to_string());
+            self.read_dict_settings_header_line(indent + 2, item.trim());
+            return;
+        }
+
+        let Some((key, value)) = trimmed.split_once(':') else {
+            return;
+        };
+        let key = parse_yaml_scalar(key.trim());
+        if key.is_empty() {
+            return;
+        }
+        self.dict_settings_stack.push(key);
+        if let Some(value) = parse_yaml_scalar_node(value) {
+            let path = self
+                .dict_settings_stack
+                .iter()
+                .skip(1)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("/");
+            if !path.is_empty() {
+                self.dict_settings.insert(path, value);
+            }
+            self.dict_settings_stack.pop();
         }
     }
 

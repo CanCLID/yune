@@ -1816,6 +1816,8 @@ schema:
     unsafe { RimeDeployerInitialize(&traits) };
     assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
     assert_eq!(RimeRunTask(user_dict_task.as_ptr()), TRUE);
+    let dictionary_reports = workspace_dictionary_rebuild_reports();
+    assert!(dictionary_reports.is_empty());
     for file_name in [
         "default.yaml",
         "luna.schema.yaml",

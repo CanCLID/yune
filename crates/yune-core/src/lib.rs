@@ -15,12 +15,13 @@ pub use dictionary::{
     parse_rime_reverse_bin_dictionary, parse_rime_reverse_bin_metadata,
     parse_rime_table_bin_dictionary, parse_rime_table_bin_metadata, rime_checksum_bytes,
     rime_dict_rebuild_plan, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
-    CodeCoords, RimeChecksumComputer, RimeCompiledMetadataError, RimeDictRebuildError,
-    RimeDictRebuildInput, RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismBinParseError,
-    RimePrismBinPayload, RimePrismChecksumMetadata, RimePrismSpellingDescriptor,
-    RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError,
-    TableDictionary, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
-    TableEncodingRule, TableEntry,
+    CodeCoords, RimeChecksumComputer, RimeCompiledMetadataError, RimeDictArtifactStatus,
+    RimeDictRebuildError, RimeDictRebuildExecutionReport, RimeDictRebuildInput,
+    RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismBinParseError, RimePrismBinPayload,
+    RimePrismChecksumMetadata, RimePrismSpellingDescriptor, RimeReverseBinMetadata,
+    RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError, TableDictionary,
+    TableDictionaryParseError, TableEncoder, TableEncoderFormulaError, TableEncodingRule,
+    TableEntry,
 };
 pub use engine::Engine;
 pub use filter::{

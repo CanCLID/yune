@@ -211,43 +211,104 @@ pub struct RimePrismChecksumMetadata {
     pub schema_file_checksum: u32,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RimeDictRebuildInput {
     pub source_available: bool,
     pub source_dict_file_checksum: u32,
+    pub pack_source_checksums: Vec<u32>,
     pub schema_file_checksum: u32,
     pub table_dict_file_checksum: Option<u32>,
     pub prism: Option<RimePrismChecksumMetadata>,
     pub reverse_dict_file_checksum: Option<u32>,
+    pub prebuilt_table_available: bool,
+    pub prebuilt_prism_available: bool,
+    pub prebuilt_reverse_available: bool,
     pub force_rebuild_table: bool,
     pub force_rebuild_prism: bool,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RimeDictRebuildPlan {
     pub dict_file_checksum: u32,
     pub rebuild_table: bool,
     pub rebuild_prism: bool,
+    pub rebuild_reverse: bool,
+    pub report: RimeDictRebuildExecutionReport,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RimeDictRebuildExecutionReport {
+    pub table: RimeDictArtifactStatus,
+    pub prism: RimeDictArtifactStatus,
+    pub reverse: RimeDictArtifactStatus,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RimeDictArtifactStatus {
+    Rebuilt,
+    ReusedFresh,
+    ReusedPrebuilt,
+    MissingSourceAndCompiled,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RimeDictRebuildError {
-    MissingSourceAndTable,
+    MissingSourceAndCompiled,
 }
 
 pub fn rime_dict_rebuild_plan(
     input: RimeDictRebuildInput,
 ) -> Result<RimeDictRebuildPlan, RimeDictRebuildError> {
-    let mut dict_file_checksum = input.source_dict_file_checksum;
-    let mut rebuild_table = match input.table_dict_file_checksum {
-        Some(table_checksum) if input.source_available => table_checksum != dict_file_checksum,
-        Some(table_checksum) => {
-            dict_file_checksum = table_checksum;
-            false
+    let dict_file_checksum = input
+        .pack_source_checksums
+        .last()
+        .copied()
+        .unwrap_or(input.source_dict_file_checksum);
+
+    if !input.source_available {
+        let Some(table_checksum) = input.table_dict_file_checksum else {
+            return missing_source_and_compiled(dict_file_checksum);
+        };
+        if !input.prebuilt_table_available || !input.prebuilt_reverse_available {
+            return missing_source_and_compiled(table_checksum);
         }
-        None if input.source_available => true,
-        None => return Err(RimeDictRebuildError::MissingSourceAndTable),
-    };
+        let prism_reusable = input.prebuilt_prism_available
+            && input.prism.is_some_and(|prism| {
+                prism.dict_file_checksum == table_checksum
+                    && prism.schema_file_checksum == input.schema_file_checksum
+            });
+        if !prism_reusable {
+            return missing_source_and_compiled(table_checksum);
+        }
+        let reverse_reusable = input.reverse_dict_file_checksum == Some(table_checksum);
+        if !reverse_reusable {
+            return missing_source_and_compiled(table_checksum);
+        }
+        return Ok(RimeDictRebuildPlan {
+            dict_file_checksum: table_checksum,
+            rebuild_table: false,
+            rebuild_prism: false,
+            rebuild_reverse: false,
+            report: RimeDictRebuildExecutionReport {
+                table: RimeDictArtifactStatus::ReusedPrebuilt,
+                prism: RimeDictArtifactStatus::ReusedPrebuilt,
+                reverse: RimeDictArtifactStatus::ReusedPrebuilt,
+            },
+        });
+    }
+
+    let table_stale = input.table_dict_file_checksum != Some(dict_file_checksum);
+    let mut rebuild_reverse = input.reverse_dict_file_checksum != Some(dict_file_checksum);
+    let mut rebuild_table = table_stale || rebuild_reverse || input.force_rebuild_table;
+    if input.table_dict_file_checksum.is_none() {
+        rebuild_table = true;
+    }
+    if rebuild_table && input.reverse_dict_file_checksum.is_none() {
+        rebuild_reverse = true;
+    }
+    if table_stale {
+        rebuild_reverse = true;
+    }
 
     let mut rebuild_prism = match input.prism {
         Some(prism) => {
@@ -256,13 +317,6 @@ pub fn rime_dict_rebuild_plan(
         }
         None => true,
     };
-
-    if input.reverse_dict_file_checksum != Some(dict_file_checksum) {
-        rebuild_table = true;
-    }
-    if input.source_available && input.force_rebuild_table {
-        rebuild_table = true;
-    }
     if input.force_rebuild_prism {
         rebuild_prism = true;
     }
@@ -271,5 +325,36 @@ pub fn rime_dict_rebuild_plan(
         dict_file_checksum,
         rebuild_table,
         rebuild_prism,
+        rebuild_reverse,
+        report: RimeDictRebuildExecutionReport {
+            table: artifact_status(rebuild_table),
+            prism: artifact_status(rebuild_prism),
+            reverse: artifact_status(rebuild_reverse),
+        },
     })
+}
+
+fn artifact_status(rebuild: bool) -> RimeDictArtifactStatus {
+    if rebuild {
+        RimeDictArtifactStatus::Rebuilt
+    } else {
+        RimeDictArtifactStatus::ReusedFresh
+    }
+}
+
+fn missing_source_and_compiled(
+    dict_file_checksum: u32,
+) -> Result<RimeDictRebuildPlan, RimeDictRebuildError> {
+    let _ = RimeDictRebuildPlan {
+        dict_file_checksum,
+        rebuild_table: false,
+        rebuild_prism: false,
+        rebuild_reverse: false,
+        report: RimeDictRebuildExecutionReport {
+            table: RimeDictArtifactStatus::MissingSourceAndCompiled,
+            prism: RimeDictArtifactStatus::MissingSourceAndCompiled,
+            reverse: RimeDictArtifactStatus::MissingSourceAndCompiled,
+        },
+    };
+    Err(RimeDictRebuildError::MissingSourceAndCompiled)
 }

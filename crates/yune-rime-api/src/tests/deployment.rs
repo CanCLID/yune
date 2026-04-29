@@ -1745,6 +1745,93 @@ schema:
 }
 
 #[test]
+fn workspace_update_rebuilds_source_dictionary_artifacts_and_reuses_fresh_outputs() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("workspace-dictionary-rebuild");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::write(
+        shared.join("default.yaml"),
+        "config_version: '1.0'\nschema_list:\n  - schema: luna\n",
+    )
+    .expect("default config should be written");
+    fs::write(
+        shared.join("luna.schema.yaml"),
+        "\
+schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: luna\n",
+    )
+    .expect("schema should be written");
+    fs::write(
+        shared.join("luna.dict.yaml"),
+        "\
+---\nname: luna\nversion: '1'\nsort: by_weight\n...\n\n八\tba\t2\n爸\tba\t1\n",
+    )
+    .expect("dictionary should be written");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let workspace_task = CString::new("workspace_update").expect("task should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let reports = workspace_dictionary_rebuild_reports();
+    assert_eq!(reports.len(), 1);
+    assert_eq!(reports[0].dictionary_id, "luna");
+    assert_eq!(
+        reports[0].report.table,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert_eq!(
+        reports[0].report.prism,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert_eq!(
+        reports[0].report.reverse,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    for file_name in ["luna.table.bin", "luna.prism.bin", "luna.reverse.bin"] {
+        assert!(user.join("build").join(file_name).is_file());
+    }
+    assert!(yune_core::parse_rime_table_bin_dictionary(
+        fs::read(user.join("build").join("luna.table.bin")).expect("table should be readable")
+    )
+    .is_ok());
+    assert!(yune_core::parse_rime_prism_bin_payload(
+        fs::read(user.join("build").join("luna.prism.bin")).expect("prism should be readable")
+    )
+    .is_ok());
+    assert!(yune_core::parse_rime_reverse_bin_dictionary(
+        fs::read(user.join("build").join("luna.reverse.bin")).expect("reverse should be readable")
+    )
+    .is_ok());
+
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let fresh = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        fresh[0].report.table,
+        yune_core::RimeDictArtifactStatus::ReusedFresh
+    );
+    assert_eq!(
+        fresh[0].report.prism,
+        yune_core::RimeDictArtifactStatus::ReusedFresh
+    );
+    assert_eq!(
+        fresh[0].report.reverse,
+        yune_core::RimeDictArtifactStatus::ReusedFresh
+    );
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn workspace_update_deploys_default_schemas_and_dependencies() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

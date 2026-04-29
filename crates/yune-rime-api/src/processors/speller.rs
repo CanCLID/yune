@@ -130,7 +130,7 @@ pub(crate) fn process_speller_processor(
     }
     let previous_match = speller_previous_match_backup(
         session,
-        auto_select || !session.engine.get_option("_auto_commit"),
+        auto_select || (!session.engine.get_option("_auto_commit") && ch != ' '),
         max_code_length,
         auto_select_pattern.as_ref(),
     );

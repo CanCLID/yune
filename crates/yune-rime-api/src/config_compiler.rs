@@ -204,7 +204,7 @@ pub(crate) fn load_external_config_reference(
     shared_data_dir: &Path,
     patch_dependencies: &mut Vec<(String, c_int)>,
 ) -> Option<Option<Value>> {
-    let resource_id = normalize_config_resource_id(resource);
+    let resource_id = normalize_config_resource_id(resource)?;
     let resource_path = shared_data_dir.join(format!("{resource_id}.yaml"));
     let timestamp = if resource_path.exists() {
         source_modified_secs(&resource_path).unwrap_or(0)

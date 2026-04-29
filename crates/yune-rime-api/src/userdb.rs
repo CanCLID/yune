@@ -9,7 +9,8 @@ use std::{
 
 use crate::{
     bool_from, clear_user_dict_iterator, cstring_from_lossless_str, optional_c_string,
-    runtime_paths, Bool, RimeUserDictIterator, UserDictListState, FALSE, TRUE,
+    resource_id::validate_user_dict_name, runtime_paths, Bool, RimeUserDictIterator,
+    UserDictListState, FALSE, TRUE,
 };
 
 /// Initializes an iterator over user dictionary names found in `user_data_dir`.
@@ -121,10 +122,14 @@ pub unsafe extern "C" fn RimeLeversRestoreUserDict(snapshot_file: *const c_char)
     if !snapshot.is_file() {
         return FALSE;
     }
-    let Some(dict_name) = snapshot_dict_name(&snapshot) else {
+    let Some(dict_name) =
+        snapshot_dict_name(&snapshot).and_then(|name| validate_user_dict_name(&name))
+    else {
         return FALSE;
     };
-    let destination = user_dict_path(&dict_name);
+    let Some(destination) = user_dict_path(&dict_name) else {
+        return FALSE;
+    };
     if let Some(parent) = destination.parent() {
         if fs::create_dir_all(parent).is_err() {
             return FALSE;
@@ -150,11 +155,13 @@ pub unsafe extern "C" fn RimeLeversExportUserDict(
     let Some(text_file) = optional_c_string(text_file) else {
         return -1;
     };
-    if dict_name.is_empty() || text_file.is_empty() {
+    if text_file.is_empty() {
         return -1;
     }
 
-    let source = user_dict_path(&dict_name);
+    let Some(source) = user_dict_path(&dict_name) else {
+        return -1;
+    };
     if !source.is_file() {
         return -1;
     }
@@ -190,7 +197,7 @@ pub unsafe extern "C" fn RimeLeversImportUserDict(
     let Some(text_file) = optional_c_string(text_file) else {
         return -1;
     };
-    if dict_name.is_empty() || text_file.is_empty() {
+    if text_file.is_empty() {
         return -1;
     }
 
@@ -201,7 +208,9 @@ pub unsafe extern "C" fn RimeLeversImportUserDict(
     let Ok(entry_count) = count_text_user_dict_entries(&source) else {
         return -1;
     };
-    let destination = user_dict_path(&dict_name);
+    let Some(destination) = user_dict_path(&dict_name) else {
+        return -1;
+    };
     if let Some(parent) = destination.parent() {
         if fs::create_dir_all(parent).is_err() {
             return -1;
@@ -248,24 +257,26 @@ pub(crate) fn runtime_user_data_sync_dir() -> PathBuf {
     PathBuf::from(paths.user_data_sync_dir.to_string_lossy().into_owned())
 }
 
-fn user_dict_path(dict_name: &str) -> PathBuf {
-    runtime_user_data_dir().join(format!("{dict_name}.userdb"))
+fn user_dict_path(dict_name: &str) -> Option<PathBuf> {
+    let dict_name = validate_user_dict_name(dict_name)?;
+    Some(runtime_user_data_dir().join(format!("{dict_name}.userdb")))
 }
 
-fn user_dict_snapshot_path(dict_name: &str) -> PathBuf {
-    runtime_user_data_sync_dir().join(format!("{dict_name}.userdb.txt"))
+fn user_dict_snapshot_path(dict_name: &str) -> Option<PathBuf> {
+    let dict_name = validate_user_dict_name(dict_name)?;
+    Some(runtime_user_data_sync_dir().join(format!("{dict_name}.userdb.txt")))
 }
 
 pub(crate) fn backup_plain_user_dict(dict_name: &str) -> bool {
-    if dict_name.is_empty() {
+    let Some(source) = user_dict_path(dict_name) else {
         return false;
-    }
-
-    let source = user_dict_path(dict_name);
+    };
     if !source.is_file() {
         return false;
     }
-    let snapshot = user_dict_snapshot_path(dict_name);
+    let Some(snapshot) = user_dict_snapshot_path(dict_name) else {
+        return false;
+    };
     if let Some(parent) = snapshot.parent() {
         if fs::create_dir_all(parent).is_err() {
             return false;
@@ -289,6 +300,9 @@ pub(crate) fn user_dict_upgrade() -> bool {
 }
 
 fn sync_plain_user_dict(dict_name: &str) -> bool {
+    if validate_user_dict_name(dict_name).is_none() {
+        return false;
+    }
     let mut success = true;
     for snapshot in peer_user_dict_snapshots(dict_name) {
         if merge_plain_user_dict_snapshot(dict_name, &snapshot).is_err() {
@@ -321,7 +335,12 @@ fn peer_user_dict_snapshots(dict_name: &str) -> Vec<PathBuf> {
 }
 
 fn merge_plain_user_dict_snapshot(dict_name: &str, snapshot: &Path) -> Result<(), std::io::Error> {
-    let destination = user_dict_path(dict_name);
+    let Some(destination) = user_dict_path(dict_name) else {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "invalid user dictionary name",
+        ));
+    };
     if !destination.is_file() {
         fs::copy(snapshot, destination)?;
         return Ok(());

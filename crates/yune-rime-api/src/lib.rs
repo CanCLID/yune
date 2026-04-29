@@ -8,6 +8,9 @@ use std::{
 };
 
 use regex::Regex;
+use resource_id::{
+    validate_config_resource_id, validate_data_resource_id, validate_runtime_config_resource_id,
+};
 use serde_yaml::{Mapping, Value};
 use yune_core::{
     parse_key_sequence, CandidateSource, FoldedSwitchOptions, KeyCode, KeyEvent, KeyModifiers,
@@ -1520,7 +1523,7 @@ pub(crate) fn open_runtime_config(
     kind: ConfigOpenKind,
     config: *mut RimeConfig,
 ) -> Bool {
-    if config.is_null() {
+    if config.is_null() || validate_config_resource_id(config_id).is_none() {
         return FALSE;
     }
 
@@ -1550,11 +1553,12 @@ pub(crate) unsafe fn install_config_root(config: *mut RimeConfig, root: Value) -
 }
 
 pub(crate) fn load_runtime_config_root(config_id: &str, kind: ConfigOpenKind) -> Value {
-    let resource_id = normalize_config_resource_id(config_id);
-    let selected_path = selected_runtime_config_path(&resource_id, kind);
+    let Some(selected_path) = selected_runtime_config_path(config_id, kind) else {
+        return Value::Null;
+    };
 
-    selected_path
-        .and_then(|path| fs::read_to_string(path).ok())
+    fs::read_to_string(selected_path)
+        .ok()
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
         .unwrap_or(Value::Null)
 }
@@ -1576,19 +1580,21 @@ pub(crate) fn selected_runtime_config_path(
     resource_id: &str,
     kind: ConfigOpenKind,
 ) -> Option<PathBuf> {
+    let resource_id = validate_runtime_config_resource_id(resource_id)?;
     let roots = runtime_config_roots(kind);
     roots
         .iter()
-        .map(|root| config_file_path(root, resource_id))
+        .map(|root| config_file_path(root, &resource_id))
         .find(|path| path.exists())
         .or_else(|| {
             roots
                 .first()
-                .map(|root| config_file_path(root, resource_id))
+                .map(|root| config_file_path(root, &resource_id))
         })
 }
 
 pub(crate) fn selected_runtime_data_path(file_name: &str) -> Option<PathBuf> {
+    let file_name = validate_data_resource_id(file_name)?;
     let paths = runtime_paths()
         .lock()
         .expect("runtime paths should not be poisoned");
@@ -1598,15 +1604,12 @@ pub(crate) fn selected_runtime_data_path(file_name: &str) -> Option<PathBuf> {
         paths.shared_data_dir.to_string_lossy().into_owned(),
     ]
     .into_iter()
-    .map(|root| Path::new(&root).join(file_name))
+    .map(|root| Path::new(&root).join(&file_name))
     .find(|path| path.is_file())
 }
 
-fn normalize_config_resource_id(config_id: &str) -> String {
-    config_id
-        .strip_suffix(".yaml")
-        .unwrap_or(config_id)
-        .to_owned()
+pub(crate) fn normalize_config_resource_id(config_id: &str) -> Option<String> {
+    validate_config_resource_id(config_id)
 }
 
 fn config_file_path(root: &str, resource_id: &str) -> PathBuf {

@@ -11,7 +11,7 @@ use yune_core::{
 use crate::{
     config_scalar_bool, config_scalar_double, config_scalar_int, config_scalar_string,
     ends_with_ascii_digit, find_config_value, install_schema_punctuation_translator_from_config,
-    load_runtime_config_root, schema_folded_switch_options,
+    load_runtime_config_root, resource_id::validate_data_resource_id, schema_folded_switch_options,
     schema_list_translator_entries_for_current, schema_switch_translator_switches,
     selected_runtime_data_path, switch_scalar_field, AffixSegmentor, ConfigOpenKind,
     MatcherPattern, MatcherSegmentor, PunctSegmentor, SessionState,
@@ -393,7 +393,7 @@ fn load_schema_table_dictionary(
 ) -> Option<TableDictionary> {
     let dictionary_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
         .and_then(config_scalar_string)
-        .filter(|dictionary_name| !dictionary_name.is_empty())?;
+        .and_then(|dictionary_name| validate_data_resource_id(&dictionary_name))?;
     let dictionary_path = selected_runtime_data_path(&format!("{dictionary_name}.dict.yaml"))?;
     let dictionary_yaml = fs::read_to_string(dictionary_path).ok()?;
     let packs = schema_dictionary_packs(schema_config, name_space);
@@ -401,10 +401,12 @@ fn load_schema_table_dictionary(
         &dictionary_yaml,
         packs,
         |import_table| {
+            let import_table = validate_data_resource_id(import_table)?;
             selected_runtime_data_path(&format!("{import_table}.dict.yaml"))
                 .and_then(|path| fs::read_to_string(path).ok())
         },
         |vocabulary| {
+            let vocabulary = validate_data_resource_id(vocabulary)?;
             selected_runtime_data_path(&format!("{vocabulary}.txt"))
                 .and_then(|path| fs::read_to_string(path).ok())
         },
@@ -418,7 +420,11 @@ fn schema_dictionary_packs(schema_config: &Value, name_space: &str) -> Vec<Strin
     else {
         return Vec::new();
     };
-    packs.iter().filter_map(config_scalar_string).collect()
+    packs
+        .iter()
+        .filter_map(config_scalar_string)
+        .filter_map(|pack| validate_data_resource_id(&pack))
+        .collect()
 }
 
 fn schema_comment_format(schema_config: &Value, name_space: &str) -> Vec<String> {

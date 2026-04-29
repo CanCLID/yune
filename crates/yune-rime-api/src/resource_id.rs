@@ -7,6 +7,19 @@ pub(crate) fn validate_config_resource_id(id: &str) -> Option<String> {
     validate_logical_id(normalized)
 }
 
+pub(crate) fn validate_runtime_config_resource_id(id: &str) -> Option<String> {
+    let normalized = id.strip_suffix(".yaml").unwrap_or(id);
+    validate_logical_id(normalized)
+}
+
+pub(crate) fn validate_schema_config_resource_id(id: &str) -> Option<String> {
+    let normalized = id
+        .strip_suffix(".schema.yaml")
+        .or_else(|| id.strip_suffix(".schema"))
+        .unwrap_or(id);
+    validate_logical_id(normalized).map(|id| format!("{id}.schema"))
+}
+
 pub(crate) fn validate_data_resource_id(id: &str) -> Option<String> {
     validate_logical_id(id)
 }

@@ -2,20 +2,23 @@ use std::ffi::CString;
 use std::fs;
 
 use crate::{
-    deploy_config_file, deploy_schema_file, load_runtime_config_root,
+    deploy_config_file, deploy_schema_file, install_schema_translator_chain,
+    load_runtime_config_root,
     resource_id::{
         validate_config_resource_id, validate_data_resource_id, validate_user_dict_name,
     },
-    install_schema_translator_chain, selected_runtime_config_path, selected_runtime_data_path,
-    ConfigOpenKind, RimeLeversBackupUserDict, RimeLeversExportUserDict,
-    RimeLeversImportUserDict, SessionState,
+    selected_runtime_config_path, selected_runtime_data_path, ConfigOpenKind,
+    RimeLeversBackupUserDict, RimeLeversExportUserDict, RimeLeversImportUserDict, SessionState,
 };
 
 use super::*;
 
 #[test]
 fn config_resource_ids_accept_logical_names_and_expected_suffixes() {
-    assert_eq!(validate_config_resource_id("sample"), Some("sample".to_owned()));
+    assert_eq!(
+        validate_config_resource_id("sample"),
+        Some("sample".to_owned())
+    );
     assert_eq!(
         validate_config_resource_id("sample.yaml"),
         Some("sample".to_owned())
@@ -57,7 +60,10 @@ fn config_resource_ids_reject_filesystem_syntax() {
 
 #[test]
 fn data_resource_ids_accept_logical_file_names() {
-    assert_eq!(validate_data_resource_id("sample"), Some("sample".to_owned()));
+    assert_eq!(
+        validate_data_resource_id("sample"),
+        Some("sample".to_owned())
+    );
     assert_eq!(
         validate_data_resource_id("sample_schema"),
         Some("sample_schema".to_owned())
@@ -99,7 +105,10 @@ fn user_dict_names_accept_logical_names_only() {
         validate_user_dict_name("luna_pinyin"),
         Some("luna_pinyin".to_owned())
     );
-    assert_eq!(validate_user_dict_name("default"), Some("default".to_owned()));
+    assert_eq!(
+        validate_user_dict_name("default"),
+        Some("default".to_owned())
+    );
     assert_eq!(
         validate_user_dict_name("sample.user"),
         Some("sample.user".to_owned())
@@ -237,11 +246,14 @@ fn userdb_apis_reject_unsafe_logical_dict_names_but_keep_file_paths() {
     }
 
     let dict_name = CString::new("../evil").expect("dict C string");
-    let text_file = CString::new(temp.join("input.txt").to_string_lossy().as_ref())
-        .expect("path C string");
+    let text_file =
+        CString::new(temp.join("input.txt").to_string_lossy().as_ref()).expect("path C string");
 
     // SAFETY: pointers reference valid C strings for the calls.
-    assert_eq!(unsafe { RimeLeversBackupUserDict(dict_name.as_ptr()) }, FALSE);
+    assert_eq!(
+        unsafe { RimeLeversBackupUserDict(dict_name.as_ptr()) },
+        FALSE
+    );
     assert_eq!(
         unsafe { RimeLeversExportUserDict(dict_name.as_ptr(), text_file.as_ptr()) },
         -1
@@ -257,7 +269,7 @@ fn userdb_apis_reject_unsafe_logical_dict_names_but_keep_file_paths() {
         1
     );
     assert!(user.join("safe.userdb").is_file());
-    assert!(!user.join("..") .join("evil.userdb").exists());
+    assert!(!user.join("..").join("evil.userdb").exists());
 
     let _ = fs::remove_dir_all(temp);
 }

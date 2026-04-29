@@ -12,11 +12,11 @@ use serde_yaml::{Mapping, Number, Value};
 use crate::{
     apply_config_directives, apply_custom_patch, apply_legacy_preset_config_plugins, bool_from,
     cstring_from_lossless_str, find_config_value, load_runtime_config_root,
-    normalize_config_resource_id, optional_c_string, path_join, runtime_paths,
-    runtime_user_data_sync_dir, service_started, set_build_info, set_config_value,
-    source_modified_secs, source_uses_auto_custom_patch, sync_all_user_dicts, user_dict_upgrade,
-    Bool, ConfigOpenKind, RimeCleanupAllSessions, RimeSetup, RimeTraits, FALSE, RIME_VERSION_BYTES,
-    TRUE,
+    normalize_config_resource_id, optional_c_string, path_join,
+    resource_id::validate_data_resource_id, runtime_paths, runtime_user_data_sync_dir,
+    service_started, set_build_info, set_config_value, source_modified_secs,
+    source_uses_auto_custom_patch, sync_all_user_dicts, user_dict_upgrade, Bool, ConfigOpenKind,
+    RimeCleanupAllSessions, RimeSetup, RimeTraits, FALSE, RIME_VERSION_BYTES, TRUE,
 };
 
 /// Initializes the runtime using the same trait handling as `RimeSetup`.
@@ -598,8 +598,7 @@ fn workspace_schema_ids(default_config: &Value) -> Option<Vec<String>> {
                 entry
                     .get(Value::String("schema".to_owned()))
                     .and_then(Value::as_str)
-                    .filter(|schema_id| !schema_id.is_empty())
-                    .map(ToOwned::to_owned)
+                    .and_then(validate_data_resource_id)
             })
             .collect(),
     )
@@ -640,8 +639,7 @@ fn schema_dependencies(schema_config: &Value) -> Vec<String> {
     dependencies
         .iter()
         .filter_map(Value::as_str)
-        .filter(|dependency| !dependency.is_empty())
-        .map(ToOwned::to_owned)
+        .filter_map(validate_data_resource_id)
         .collect()
 }
 
@@ -729,7 +727,10 @@ fn symlink_prebuilt_dictionaries() -> bool {
 }
 
 pub(crate) fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
-    if file_name.is_empty() || version_key.is_empty() {
+    let Some(file_name) = validate_data_resource_id(file_name) else {
+        return false;
+    };
+    if version_key.is_empty() {
         return false;
     }
 
@@ -743,18 +744,18 @@ pub(crate) fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
             PathBuf::from(paths.staging_dir.to_string_lossy().into_owned()),
         )
     };
-    let source = shared_data_dir.join(file_name);
-    let destination = staging_dir.join(file_name);
+    let source = shared_data_dir.join(&file_name);
+    let destination = staging_dir.join(&file_name);
     if !source.is_file() {
         return false;
     }
     if source == destination {
         return true;
     }
-    let user_copy = user_data_dir.join(file_name);
+    let user_copy = user_data_dir.join(&file_name);
     let trash_dir = user_data_dir.join("trash");
     let _ = trash_deprecated_user_copy(&source, &user_copy, version_key, &trash_dir);
-    if !deployed_config_needs_update(&destination, file_name, &shared_data_dir, &user_data_dir) {
+    if !deployed_config_needs_update(&destination, &file_name, &shared_data_dir, &user_data_dir) {
         return true;
     }
     if let Some(parent) = destination.parent() {
@@ -762,8 +763,12 @@ pub(crate) fn deploy_config_file(file_name: &str, version_key: &str) -> bool {
             return false;
         }
     }
-    match deployed_config_yaml_with_build_info(&source, file_name, &shared_data_dir, &user_data_dir)
-    {
+    match deployed_config_yaml_with_build_info(
+        &source,
+        &file_name,
+        &shared_data_dir,
+        &user_data_dir,
+    ) {
         Some(yaml) => fs::write(destination, yaml).is_ok(),
         None => fs::copy(source, destination).is_ok(),
     }
@@ -786,7 +791,9 @@ fn deployed_config_needs_update(
     else {
         return true;
     };
-    let resource_id = normalize_config_resource_id(file_name);
+    let Some(resource_id) = normalize_config_resource_id(file_name) else {
+        return true;
+    };
     if !timestamps.contains_key(Value::String(resource_id.clone())) {
         return true;
     }
@@ -830,7 +837,7 @@ fn deployed_config_yaml_with_build_info(
     let mut root = fs::read_to_string(source)
         .ok()
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())?;
-    let resource_id = normalize_config_resource_id(file_name);
+    let resource_id = normalize_config_resource_id(file_name)?;
     let timestamp = source_modified_secs(source).unwrap_or(0);
     let mut patch_dependencies = Vec::new();
     let apply_auto_custom_patch =
@@ -974,9 +981,9 @@ fn compare_version_part(left: &str, right: &str) -> std::cmp::Ordering {
 }
 
 pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
-    if schema_file.is_empty() {
+    let Some(schema_file) = validate_data_resource_id(schema_file) else {
         return false;
-    }
+    };
 
     let shared_data_dir = {
         let paths = runtime_paths()
@@ -984,7 +991,7 @@ pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
             .expect("runtime paths should not be poisoned");
         PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned())
     };
-    let source = shared_data_dir.join(schema_file);
+    let source = shared_data_dir.join(&schema_file);
     if !source.is_file() {
         return false;
     }
@@ -998,7 +1005,7 @@ pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
     };
     let Some(schema_id) = find_config_value(&schema_config, "schema/schema_id")
         .and_then(Value::as_str)
-        .filter(|schema_id| !schema_id.is_empty())
+        .and_then(validate_data_resource_id)
     else {
         return false;
     };

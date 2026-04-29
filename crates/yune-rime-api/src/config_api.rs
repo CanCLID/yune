@@ -11,7 +11,8 @@ use crate::{
     config_lookup, config_lookup_key, config_scalar_bool, config_scalar_double, config_scalar_int,
     config_set, config_state_mut, config_string_value, copy_c_string_with_strncpy_semantics,
     find_config_value, free_schema_list_fields, librime_signature_modified_time,
-    open_runtime_config, reset_config_iterator_for_begin, runtime_paths, set_config_value, Bool,
+    open_runtime_config, reset_config_iterator_for_begin,
+    resource_id::validate_schema_config_resource_id, runtime_paths, set_config_value, Bool,
     ConfigIteratorState, ConfigOpenKind, ConfigState, RimeConfig, RimeConfigIterator,
     RimeSchemaList, FALSE, RIME_VERSION_BYTES, TRUE,
 };
@@ -27,8 +28,10 @@ pub unsafe extern "C" fn RimeSchemaOpen(schema_id: *const c_char, config: *mut R
     let Some(schema_id) = (unsafe { c_string_key(schema_id) }) else {
         return FALSE;
     };
-    let config_id = format!("{schema_id}.schema");
-    open_runtime_config(&config_id, ConfigOpenKind::Deployed, config)
+    let Some(schema_id) = validate_schema_config_resource_id(&schema_id) else {
+        return FALSE;
+    };
+    open_runtime_config(&schema_id, ConfigOpenKind::Deployed, config)
 }
 
 /// Opens a deployed config from `<config_id>.yaml`, checking staging before

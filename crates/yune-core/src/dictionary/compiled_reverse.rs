@@ -43,7 +43,10 @@ pub fn parse_rime_reverse_bin_dictionary(
     }
 
     let payload = read_yune_reverse_payload(bytes)?;
-    Ok(TableDictionary::with_advanced_data(payload.entries, payload.data))
+    Ok(TableDictionary::with_advanced_data(
+        payload.entries,
+        payload.data,
+    ))
 }
 
 struct ReversePayload {

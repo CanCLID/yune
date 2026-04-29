@@ -53,6 +53,16 @@ impl TableDictionary {
         }
     }
 
+    #[must_use]
+    pub fn with_merged_advanced_data_from(mut self, other: &Self) -> Self {
+        merge_rime_table_stems(&mut self.stems, other.stems.clone());
+        self.dict_settings.extend(other.dict_settings.clone());
+        if !self.encoder.loaded() && other.encoder.loaded() {
+            self.encoder = other.encoder.clone();
+        }
+        self
+    }
+
     pub fn parse_rime_dict_yaml(input: &str) -> Result<Self, TableDictionaryParseError> {
         let (metadata, entries) = parse_rime_dict_yaml_parts(input)?;
         Ok(finalize_rime_table_entries(&metadata, entries))

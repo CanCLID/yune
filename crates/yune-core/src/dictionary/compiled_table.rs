@@ -1,6 +1,8 @@
 use super::{TableDictionary, TableDictionaryAdvancedData, TableEncoder, TableEntry};
+use crate::dictionary::compiled::{
+    parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
+};
 use std::collections::HashMap;
-use crate::dictionary::compiled::{parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RimeTableBinParseError {
@@ -31,10 +33,10 @@ pub fn parse_rime_table_bin_dictionary(
         return Err(RimeTableBinParseError::UnsupportedVersion);
     }
 
-    let syllabary_offset = read_offset_ptr(bytes, 44)?
-        .ok_or(RimeTableBinParseError::MissingRequiredSection)?;
-    let index_offset = read_offset_ptr(bytes, 48)?
-        .ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+    let syllabary_offset =
+        read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+    let index_offset =
+        read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
     let string_table_offset = read_offset_ptr(bytes, 60)?;
     let string_table_size = read_u32_le(bytes, 64).map_err(map_metadata_error)?;
     if string_table_offset.is_some() || string_table_size != 0 {
@@ -66,7 +68,11 @@ fn read_syllabary(bytes: &[u8], offset: usize) -> Result<Vec<String>, RimeTableB
     let mut syllables = Vec::with_capacity(count);
     for index in 0..count {
         let field_offset = start
-            .checked_add(index.checked_mul(4).ok_or(RimeTableBinParseError::InvalidCount)?)
+            .checked_add(
+                index
+                    .checked_mul(4)
+                    .ok_or(RimeTableBinParseError::InvalidCount)?,
+            )
             .ok_or(RimeTableBinParseError::OutOfBounds)?;
         syllables.push(read_string_type(bytes, field_offset)?);
     }
@@ -97,7 +103,11 @@ fn read_head_index_entries(
     let mut entries = Vec::new();
     for (index, syllable) in syllables.iter().enumerate().take(count) {
         let node_offset = start
-            .checked_add(index.checked_mul(node_size).ok_or(RimeTableBinParseError::InvalidCount)?)
+            .checked_add(
+                index
+                    .checked_mul(node_size)
+                    .ok_or(RimeTableBinParseError::InvalidCount)?,
+            )
             .ok_or(RimeTableBinParseError::OutOfBounds)?;
         let entry_count = read_count(bytes, node_offset)?;
         let entries_offset = read_offset_ptr(bytes, node_offset + 4)?
@@ -138,7 +148,10 @@ fn read_yune_table_advanced_payload(
     let marker = b"YUNE-TABLE-ADV\0";
     let Some(marker_offset) = bytes
         .get(offset..)
-        .and_then(|tail| tail.windows(marker.len()).position(|window| window == marker))
+        .and_then(|tail| {
+            tail.windows(marker.len())
+                .position(|window| window == marker)
+        })
         .map(|position| offset + position)
     else {
         return Ok(AdvancedTablePayload {
@@ -151,13 +164,17 @@ fn read_yune_table_advanced_payload(
         .checked_add(marker.len())
         .ok_or(RimeTableBinParseError::OutOfBounds)?;
     let stem_count = read_count(bytes, cursor)?;
-    cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
     let mut stems = HashMap::new();
     for _ in 0..stem_count {
         let (text, next) = read_len_string(bytes, cursor)?;
         cursor = next;
         let count = read_count(bytes, cursor)?;
-        cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
         let mut values = Vec::with_capacity(count);
         for _ in 0..count {
             let (stem, next) = read_len_string(bytes, cursor)?;
@@ -168,7 +185,9 @@ fn read_yune_table_advanced_payload(
     }
 
     let entry_count = read_count(bytes, cursor)?;
-    cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
     let mut entries = Vec::with_capacity(entry_count);
     for _ in 0..entry_count {
         let (text, next) = read_len_string(bytes, cursor)?;
@@ -176,16 +195,22 @@ fn read_yune_table_advanced_payload(
         let (code, next) = read_len_string(bytes, cursor)?;
         cursor = next;
         let weight = read_f32_le(bytes, cursor).map_err(map_metadata_error)?;
-        cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
         entries.push(TableEntry::new(code, text, weight));
     }
 
     let rule_count = read_count(bytes, cursor)?;
-    cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
     let mut encoder = TableEncoder::new();
     for _ in 0..rule_count {
         let length = read_count(bytes, cursor)?;
-        cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
         let (formula, next) = read_len_string(bytes, cursor)?;
         cursor = next;
         encoder
@@ -221,7 +246,11 @@ fn read_entry_list(
     let mut entries = Vec::with_capacity(count);
     for index in 0..count {
         let entry_offset = offset
-            .checked_add(index.checked_mul(entry_size).ok_or(RimeTableBinParseError::InvalidCount)?)
+            .checked_add(
+                index
+                    .checked_mul(entry_size)
+                    .ok_or(RimeTableBinParseError::InvalidCount)?,
+            )
             .ok_or(RimeTableBinParseError::OutOfBounds)?;
         let text = read_string_type(bytes, entry_offset)?;
         let weight = read_f32_le(bytes, entry_offset + 4).map_err(map_metadata_error)?;
@@ -231,7 +260,8 @@ fn read_entry_list(
 }
 
 fn read_string_type(bytes: &[u8], offset: usize) -> Result<String, RimeTableBinParseError> {
-    let string_offset = read_offset_ptr(bytes, offset)?.ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let string_offset =
+        read_offset_ptr(bytes, offset)?.ok_or(RimeTableBinParseError::OutOfBounds)?;
     read_c_string(bytes, string_offset)
 }
 
@@ -249,10 +279,7 @@ fn read_c_string(bytes: &[u8], offset: usize) -> Result<String, RimeTableBinPars
         .map_err(|_| RimeTableBinParseError::InvalidUtf8)
 }
 
-fn read_len_string(
-    bytes: &[u8],
-    offset: usize,
-) -> Result<(String, usize), RimeTableBinParseError> {
+fn read_len_string(bytes: &[u8], offset: usize) -> Result<(String, usize), RimeTableBinParseError> {
     let len = read_count(bytes, offset)?;
     let start = offset
         .checked_add(4)
@@ -269,7 +296,10 @@ fn read_len_string(
     Ok((value, end))
 }
 
-fn read_offset_ptr(bytes: &[u8], field_offset: usize) -> Result<Option<usize>, RimeTableBinParseError> {
+fn read_offset_ptr(
+    bytes: &[u8],
+    field_offset: usize,
+) -> Result<Option<usize>, RimeTableBinParseError> {
     let raw = read_i32_le(bytes, field_offset).map_err(map_metadata_error)?;
     if raw == 0 {
         return Ok(None);

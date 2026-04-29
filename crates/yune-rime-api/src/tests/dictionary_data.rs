@@ -13,12 +13,16 @@ fn dictionary_data_prefers_fresh_compiled_payloads_and_matches_source_order() {
     let compiled_candidates = fixture.candidates_for_schema("luna", "ba");
 
     assert_eq!(compiled_candidates[..2], source_candidates[..2]);
-    assert_eq!(compiled_candidates[..2], [("八".to_owned(), "ba".to_owned()), ("爸".to_owned(), "ba".to_owned())]);
-    assert!(
-        remaining_gear_deferrals_snapshot(fixture.last_session_id())
-            .expect("session should exist")
-            .is_empty()
+    assert_eq!(
+        compiled_candidates[..2],
+        [
+            ("八".to_owned(), "ba".to_owned()),
+            ("爸".to_owned(), "ba".to_owned())
+        ]
     );
+    assert!(remaining_gear_deferrals_snapshot(fixture.last_session_id())
+        .expect("session should exist")
+        .is_empty());
     fixture.cleanup();
 }
 
@@ -32,18 +36,25 @@ fn dictionary_data_falls_back_to_source_when_compiled_is_missing_or_corrupt() {
     fs::remove_file(fixture.shared.join("luna.table.bin")).expect("compiled table removed");
     assert_eq!(
         fixture.candidates_for_schema("luna", "ba")[..2],
-        [("八".to_owned(), "ba".to_owned()), ("爸".to_owned(), "ba".to_owned())]
+        [
+            ("八".to_owned(), "ba".to_owned()),
+            ("爸".to_owned(), "ba".to_owned())
+        ]
     );
 
     fs::write(fixture.shared.join("luna.table.bin"), [0xff, 0x00]).expect("corrupt table written");
     fs::write(fixture.shared.join("luna.prism.bin"), [0xff, 0x00]).expect("corrupt prism written");
-    fs::write(fixture.shared.join("luna.reverse.bin"), [0xff, 0x00]).expect("corrupt reverse written");
+    fs::write(fixture.shared.join("luna.reverse.bin"), [0xff, 0x00])
+        .expect("corrupt reverse written");
     assert_eq!(
         fixture.candidates_for_schema("luna", "ba")[..2],
-        [("八".to_owned(), "ba".to_owned()), ("爸".to_owned(), "ba".to_owned())]
+        [
+            ("八".to_owned(), "ba".to_owned()),
+            ("爸".to_owned(), "ba".to_owned())
+        ]
     );
-    let deferrals = remaining_gear_deferrals_snapshot(fixture.last_session_id())
-        .expect("session should exist");
+    let deferrals =
+        remaining_gear_deferrals_snapshot(fixture.last_session_id()).expect("session should exist");
     assert!(deferrals
         .iter()
         .any(|deferral| deferral.gear == "dictionary_source_fallback"));
@@ -59,15 +70,17 @@ fn dictionary_data_records_no_usable_path_without_empty_success() {
     fixture.setup_runtime();
     fs::write(fixture.shared.join("luna.table.bin"), [0xff, 0x00]).expect("corrupt table written");
     fs::write(fixture.shared.join("luna.prism.bin"), [0xff, 0x00]).expect("corrupt prism written");
-    fs::write(fixture.shared.join("luna.reverse.bin"), [0xff, 0x00]).expect("corrupt reverse written");
+    fs::write(fixture.shared.join("luna.reverse.bin"), [0xff, 0x00])
+        .expect("corrupt reverse written");
     fs::remove_file(fixture.shared.join("luna.dict.yaml")).expect("source removed");
 
     let candidates = fixture.candidates_for_schema("luna", "ba");
     assert_eq!(candidates, [("ba".to_owned(), "echo".to_owned())]);
-    let deferrals = remaining_gear_deferrals_snapshot(fixture.last_session_id())
-        .expect("session should exist");
+    let deferrals =
+        remaining_gear_deferrals_snapshot(fixture.last_session_id()).expect("session should exist");
     assert!(deferrals.iter().any(|deferral| {
-        deferral.gear == "dictionary_load" && deferral.current_yune_behavior.contains("NoUsablePath")
+        deferral.gear == "dictionary_load"
+            && deferral.current_yune_behavior.contains("NoUsablePath")
     }));
     fixture.cleanup();
 }
@@ -86,7 +99,8 @@ fn dictionary_data_rejects_unsafe_resource_ids_before_lookup() {
         let deferrals = remaining_gear_deferrals_snapshot(fixture.last_session_id())
             .expect("session should exist");
         assert!(deferrals.iter().any(|deferral| {
-            deferral.gear == "dictionary_load" && deferral.current_yune_behavior.contains("InvalidResourceId")
+            deferral.gear == "dictionary_load"
+                && deferral.current_yune_behavior.contains("InvalidResourceId")
         }));
         fixture.cleanup();
     }
@@ -109,10 +123,14 @@ fn dictionary_data_malformed_payloads_are_schema_visible_fallbacks() {
         let root = unique_temp_dir(&format!("dictionary-data-malformed-{case}"));
         let fixture = DictionaryDataFixture::new(&root, true);
         fixture.setup_runtime();
-        fs::write(fixture.shared.join("luna.table.bin"), table_bytes).expect("malformed table written");
+        fs::write(fixture.shared.join("luna.table.bin"), table_bytes)
+            .expect("malformed table written");
         assert_eq!(
             fixture.candidates_for_schema("luna", "ba")[..2],
-            [("八".to_owned(), "ba".to_owned()), ("爸".to_owned(), "ba".to_owned())]
+            [
+                ("八".to_owned(), "ba".to_owned()),
+                ("爸".to_owned(), "ba".to_owned())
+            ]
         );
         fixture.cleanup();
     }
@@ -272,7 +290,7 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
                 self.staging.join(format!("{schema_id}.schema.yaml")),
                 format!(
                     "\
-schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\n    - reverse_lookup_translator\n    - echo_translator\nreverse_lookup:\n  dictionary: reverse_lookup_table\n  target: translator\n  prefix: '`'\ntranslator:\n  dictionary: reverse_lookup_table\n  reverse_dictionary: {target_id}\n"
+schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\n    - reverse_lookup_translator\n    - echo_translator\nreverse_lookup:\n  dictionary: reverse_lookup_table\n  target: translator\n  prefix: '`'\n  tag: abc\ntranslator:\n  dictionary: reverse_lookup_table\n  reverse_dictionary: {target_id}\n"
                 ),
             )
             .expect("reverse settings schema should be written");
@@ -294,7 +312,7 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
         fs::write(
             self.shared.join("advanced_source.dict.yaml"),
             "\
----\nname: advanced_source\nversion: '0.1'\nsort: by_weight\nuse_preset_vocabulary: true\nmax_phrase_length: 2\nmin_phrase_weight: 10\nencoder:\n  rules:\n    - length_equal: 2\n      formula: AaBa\ncolumns: [text, code, weight, stem]\n...\n\n明\ta\t10\ta\n月\tx\t10\tx\n明月\t\t20\n",
+---\nname: advanced_source\nversion: '0.1'\nsort: by_weight\nuse_preset_vocabulary: true\nmax_phrase_length: 2\nmin_phrase_weight: 10\nencoder:\n  rules:\n    - length_equal: 2\n      formula: AaBa\ncolumns: [text, code, weight, stem]\n...\n\n明\ta\t10\ta\n月\tx\t10\tx\n您\tn\t10\tn\n好\th\t10\th\n明月\t\t20\n",
         )
         .expect("advanced source dictionary should be written");
         fs::write(self.shared.join("essay.txt"), "您好\t11\n")
@@ -319,13 +337,20 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
             .expect("source dictionary should be readable");
         fs::write(
             self.shared.join("luna.table.bin"),
-            compiled_table_fixture(yune_core::rime_dict_source_checksum(0, [source.as_bytes()], None)),
+            compiled_table_fixture(yune_core::rime_dict_source_checksum(
+                0,
+                [source.as_bytes()],
+                None,
+            )),
         )
         .expect("compiled table should be written");
         fs::write(self.shared.join("luna.prism.bin"), compiled_prism_fixture())
             .expect("compiled prism should be written");
-        fs::write(self.shared.join("luna.reverse.bin"), compiled_reverse_fixture())
-            .expect("compiled reverse should be written");
+        fs::write(
+            self.shared.join("luna.reverse.bin"),
+            compiled_reverse_fixture(),
+        )
+        .expect("compiled reverse should be written");
     }
 
     fn write_advanced_compiled_artifacts(&self) {
@@ -385,14 +410,20 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
         let session_id = RimeCreateSession();
         self.last_session.set(session_id);
         let schema_id = CString::new(schema_id).expect("schema id should be valid");
-        assert_eq!(unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) }, TRUE);
+        assert_eq!(
+            unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+            TRUE
+        );
         for ch in input.chars() {
             assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
         }
         let mut context = empty_context();
         assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
         let candidates = unsafe {
-            std::slice::from_raw_parts(context.menu.candidates, context.menu.num_candidates as usize)
+            std::slice::from_raw_parts(
+                context.menu.candidates,
+                context.menu.num_candidates as usize,
+            )
         };
         let result = candidates
             .iter()
@@ -459,7 +490,8 @@ fn compiled_table_for_entries_fixture(checksum: u32, entries: &[(&str, &str, f32
 }
 
 fn compiled_advanced_table_fixture(checksum: u32) -> Vec<u8> {
-    let mut bytes = compiled_table_for_entries_fixture(checksum, &[("a", "明", 10.0), ("x", "月", 10.0)]);
+    let mut bytes =
+        compiled_table_for_entries_fixture(checksum, &[("a", "明", 10.0), ("x", "月", 10.0)]);
     bytes.extend_from_slice(b"YUNE-TABLE-ADV\0");
     put_u32_le_extend(&mut bytes, 1);
     put_len_string(&mut bytes, "明");
@@ -492,7 +524,10 @@ fn compiled_reverse_fixture() -> Vec<u8> {
     compiled_reverse_with_settings_fixture(&[], &[])
 }
 
-fn compiled_reverse_with_settings_fixture(settings: &[(&str, &str)], stems: &[(&str, &[&str])]) -> Vec<u8> {
+fn compiled_reverse_with_settings_fixture(
+    settings: &[(&str, &str)],
+    stems: &[(&str, &[&str])],
+) -> Vec<u8> {
     let mut bytes = vec![0; 64];
     put_c_string(&mut bytes, 0, b"Rime::Reverse/4.0");
     bytes.extend_from_slice(b"YUNE-REVERSE\0");

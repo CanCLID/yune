@@ -663,6 +663,9 @@ fn load_schema_source_dictionary(
 }
 
 fn record_dictionary_source_fallback(session: &mut SessionState, reason: CompiledRejectReason) {
+    if reason == CompiledRejectReason::Missing {
+        return;
+    }
     let current_yune_behavior = format!("source fallback after compiled reject: {reason:?}");
     if session
         .remaining_gear_deferrals

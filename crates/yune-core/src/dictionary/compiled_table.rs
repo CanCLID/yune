@@ -92,7 +92,7 @@ fn read_head_index_entries(
     }
 
     let mut entries = Vec::new();
-    for index in 0..count {
+    for (index, syllable) in syllables.iter().enumerate().take(count) {
         let node_offset = start
             .checked_add(index.checked_mul(node_size).ok_or(RimeTableBinParseError::InvalidCount)?)
             .ok_or(RimeTableBinParseError::OutOfBounds)?;
@@ -109,7 +109,7 @@ fn read_head_index_entries(
             bytes,
             entries_offset,
             entry_count,
-            &syllables[index],
+            syllable,
         )?);
     }
     Ok(entries)

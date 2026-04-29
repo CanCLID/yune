@@ -27,14 +27,29 @@ pub struct TableDictionary {
     pub(crate) encoder: TableEncoder,
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TableDictionaryAdvancedData {
+    pub stems: HashMap<String, Vec<String>>,
+    pub dict_settings: BTreeMap<String, String>,
+    pub encoder: TableEncoder,
+}
+
 impl TableDictionary {
     #[must_use]
     pub fn new(entries: impl IntoIterator<Item = TableEntry>) -> Self {
+        Self::with_advanced_data(entries, TableDictionaryAdvancedData::default())
+    }
+
+    #[must_use]
+    pub fn with_advanced_data(
+        entries: impl IntoIterator<Item = TableEntry>,
+        advanced: TableDictionaryAdvancedData,
+    ) -> Self {
         Self {
             entries: entries.into_iter().collect(),
-            stems: HashMap::new(),
-            dict_settings: BTreeMap::new(),
-            encoder: TableEncoder::new(),
+            stems: advanced.stems,
+            dict_settings: advanced.dict_settings,
+            encoder: advanced.encoder,
         }
     }
 

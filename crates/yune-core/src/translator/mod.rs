@@ -443,11 +443,18 @@ impl ReverseLookupTranslator {
     ) -> Self {
         let mut reverse_comments: HashMap<String, Vec<String>> = HashMap::new();
         if let Some(reverse_dictionary) = reverse_dictionary {
-            for entry in reverse_dictionary.entries {
+            for entry in &reverse_dictionary.entries {
                 reverse_comments
-                    .entry(entry.text)
+                    .entry(entry.text.clone())
                     .or_default()
-                    .push(entry.code);
+                    .push(entry.code.clone());
+            }
+            if let Some(format) = reverse_dictionary.dict_settings().get("comment_format") {
+                for comments in reverse_comments.values_mut() {
+                    for comment in comments {
+                        *comment = format.replace("$comment", comment);
+                    }
+                }
             }
         }
 

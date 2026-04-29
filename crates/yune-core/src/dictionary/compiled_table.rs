@@ -1,4 +1,5 @@
-use super::{TableDictionary, TableEntry};
+use super::{TableDictionary, TableDictionaryAdvancedData, TableEncoder, TableEntry};
+use std::collections::HashMap;
 use crate::dictionary::compiled::{parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -43,8 +44,10 @@ pub fn parse_rime_table_bin_dictionary(
     }
 
     let syllables = read_syllabary(bytes, syllabary_offset)?;
-    let entries = read_head_index_entries(bytes, index_offset, &syllables)?;
-    Ok(TableDictionary::new(entries))
+    let mut entries = read_head_index_entries(bytes, index_offset, &syllables)?;
+    let advanced = read_yune_table_advanced_payload(bytes, total_index_end(bytes, index_offset)?)?;
+    entries.extend(advanced.entries);
+    Ok(TableDictionary::with_advanced_data(entries, advanced.data))
 }
 
 fn read_syllabary(bytes: &[u8], offset: usize) -> Result<Vec<String>, RimeTableBinParseError> {
@@ -115,6 +118,91 @@ fn read_head_index_entries(
     Ok(entries)
 }
 
+struct AdvancedTablePayload {
+    entries: Vec<TableEntry>,
+    data: TableDictionaryAdvancedData,
+}
+
+fn total_index_end(bytes: &[u8], offset: usize) -> Result<usize, RimeTableBinParseError> {
+    let count = read_count(bytes, offset)?;
+    offset
+        .checked_add(4)
+        .and_then(|start| start.checked_add(count.checked_mul(16)?))
+        .ok_or(RimeTableBinParseError::InvalidCount)
+}
+
+fn read_yune_table_advanced_payload(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<AdvancedTablePayload, RimeTableBinParseError> {
+    let marker = b"YUNE-TABLE-ADV\0";
+    let Some(marker_offset) = bytes
+        .get(offset..)
+        .and_then(|tail| tail.windows(marker.len()).position(|window| window == marker))
+        .map(|position| offset + position)
+    else {
+        return Ok(AdvancedTablePayload {
+            entries: Vec::new(),
+            data: TableDictionaryAdvancedData::default(),
+        });
+    };
+
+    let mut cursor = marker_offset
+        .checked_add(marker.len())
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let stem_count = read_count(bytes, cursor)?;
+    cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let mut stems = HashMap::new();
+    for _ in 0..stem_count {
+        let (text, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        let count = read_count(bytes, cursor)?;
+        cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let mut values = Vec::with_capacity(count);
+        for _ in 0..count {
+            let (stem, next) = read_len_string(bytes, cursor)?;
+            cursor = next;
+            values.push(stem);
+        }
+        stems.insert(text, values);
+    }
+
+    let entry_count = read_count(bytes, cursor)?;
+    cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let mut entries = Vec::with_capacity(entry_count);
+    for _ in 0..entry_count {
+        let (text, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        let (code, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        let weight = read_f32_le(bytes, cursor).map_err(map_metadata_error)?;
+        cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+        entries.push(TableEntry::new(code, text, weight));
+    }
+
+    let rule_count = read_count(bytes, cursor)?;
+    cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let mut encoder = TableEncoder::new();
+    for _ in 0..rule_count {
+        let length = read_count(bytes, cursor)?;
+        cursor = cursor.checked_add(4).ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let (formula, next) = read_len_string(bytes, cursor)?;
+        cursor = next;
+        encoder
+            .add_length_equal_rule(length, &formula)
+            .map_err(|_| RimeTableBinParseError::InvalidLength)?;
+    }
+
+    Ok(AdvancedTablePayload {
+        entries,
+        data: TableDictionaryAdvancedData {
+            stems,
+            encoder,
+            ..TableDictionaryAdvancedData::default()
+        },
+    })
+}
+
 fn read_entry_list(
     bytes: &[u8],
     offset: usize,
@@ -159,6 +247,26 @@ fn read_c_string(bytes: &[u8], offset: usize) -> Result<String, RimeTableBinPars
     std::str::from_utf8(&bytes[offset..end])
         .map(str::to_owned)
         .map_err(|_| RimeTableBinParseError::InvalidUtf8)
+}
+
+fn read_len_string(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<(String, usize), RimeTableBinParseError> {
+    let len = read_count(bytes, offset)?;
+    let start = offset
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let end = start
+        .checked_add(len)
+        .ok_or(RimeTableBinParseError::InvalidLength)?;
+    if end > bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+    let value = std::str::from_utf8(&bytes[start..end])
+        .map(str::to_owned)
+        .map_err(|_| RimeTableBinParseError::InvalidUtf8)?;
+    Ok((value, end))
 }
 
 fn read_offset_ptr(bytes: &[u8], field_offset: usize) -> Result<Option<usize>, RimeTableBinParseError> {

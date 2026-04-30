@@ -50,9 +50,6 @@ pub(crate) fn restore_snapshot(snapshot: &Path) -> std::io::Result<()> {
     }
     let mut next_metadata = store.metadata().clone();
     next_metadata.tick = max_tick;
-    if !metadata.user_id.is_empty() {
-        next_metadata.user_id = metadata.user_id;
-    }
     store.update_metadata(next_metadata);
     store.commit_transaction()
 }

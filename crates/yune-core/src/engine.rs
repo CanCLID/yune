@@ -23,6 +23,27 @@ pub struct Engine {
 
 const DEFAULT_PAGE_SIZE: usize = 5;
 
+fn clamp_to_char_boundary(input: &str, caret: usize) -> usize {
+    let mut caret = caret.min(input.len());
+    while caret > 0 && !input.is_char_boundary(caret) {
+        caret -= 1;
+    }
+    caret
+}
+
+fn previous_char_boundary(input: &str, caret: usize) -> Option<usize> {
+    let caret = clamp_to_char_boundary(input, caret);
+    input[..caret].char_indices().last().map(|(index, _)| index)
+}
+
+fn next_char_boundary(input: &str, caret: usize) -> Option<usize> {
+    let caret = clamp_to_char_boundary(input, caret);
+    input[caret..]
+        .chars()
+        .next()
+        .map(|character| caret + character.len_utf8())
+}
+
 impl Default for Engine {
     fn default() -> Self {
         Self {
@@ -535,22 +556,29 @@ impl Engine {
     }
 
     pub fn set_caret_pos(&mut self, caret_pos: usize) {
-        self.context.composition.caret = caret_pos.min(self.context.composition.input.len());
+        self.context.composition.caret =
+            clamp_to_char_boundary(&self.context.composition.input, caret_pos);
     }
 
     pub fn move_caret_left(&mut self) -> bool {
-        if self.context.composition.caret == 0 {
+        let Some(previous) = previous_char_boundary(
+            &self.context.composition.input,
+            self.context.composition.caret,
+        ) else {
             return false;
-        }
-        self.context.composition.caret -= 1;
+        };
+        self.context.composition.caret = previous;
         true
     }
 
     pub fn move_caret_right(&mut self) -> bool {
-        if self.context.composition.caret >= self.context.composition.input.len() {
+        let Some(next) = next_char_boundary(
+            &self.context.composition.input,
+            self.context.composition.caret,
+        ) else {
             return false;
-        }
-        self.context.composition.caret += 1;
+        };
+        self.context.composition.caret = next;
         true
     }
 
@@ -631,25 +659,25 @@ impl Engine {
     }
 
     fn backspace(&mut self) -> Option<String> {
-        if self.context.composition.caret == 0 {
-            return None;
-        }
-        self.context.composition.caret -= 1;
-        self.context
-            .composition
-            .input
-            .remove(self.context.composition.caret);
+        let previous = previous_char_boundary(
+            &self.context.composition.input,
+            self.context.composition.caret,
+        )?;
+        self.context.composition.input.remove(previous);
+        self.context.composition.caret = previous;
         self.context.composition.preedit = self.context.composition.input.clone();
         self.refresh_candidates();
         None
     }
 
     fn delete_at_caret(&mut self) -> Option<String> {
-        if self.context.composition.caret < self.context.composition.input.len() {
-            self.context
-                .composition
-                .input
-                .remove(self.context.composition.caret);
+        let caret = clamp_to_char_boundary(
+            &self.context.composition.input,
+            self.context.composition.caret,
+        );
+        if caret < self.context.composition.input.len() {
+            self.context.composition.caret = caret;
+            self.context.composition.input.remove(caret);
             self.context.composition.preedit = self.context.composition.input.clone();
             self.refresh_candidates();
         }

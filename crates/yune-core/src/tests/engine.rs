@@ -241,6 +241,27 @@ fn backspace_removes_input_before_caret_like_librime_editor_back() {
 }
 
 #[test]
+fn deletion_clamps_caret_to_utf8_boundaries() {
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("n", "你")]));
+
+    engine.set_input("é你n");
+    engine.set_caret_pos(1);
+    assert_eq!(engine.context().composition.caret, 0);
+    engine.delete_input();
+    assert_eq!(engine.context().composition.input, "你n");
+    assert_eq!(engine.context().composition.caret, 0);
+
+    engine.set_caret_pos(1);
+    assert_eq!(engine.context().composition.caret, 0);
+    engine.move_caret_right();
+    assert_eq!(engine.context().composition.caret, "你".len());
+    engine.back_to_previous_input();
+    assert_eq!(engine.context().composition.input, "n");
+    assert_eq!(engine.context().composition.caret, 0);
+}
+
+#[test]
 fn control_backspace_falls_back_to_previous_input_like_librime_editor_back_syllable() {
     let mut engine = Engine::new();
     engine.add_translator(StaticTableTranslator::new([("ni", "你")]));

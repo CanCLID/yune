@@ -22,7 +22,11 @@ impl FileUserDbStore {
     pub(crate) fn open(path: PathBuf, db_name: String, user_id: String) -> io::Result<Self> {
         if path.is_file() {
             let text = fs::read_to_string(&path)?;
-            Self::parse(path, &text)
+            let mut store = Self::parse(path, &text)?;
+            if store.metadata.user_id.is_empty() || store.metadata.user_id == "unknown" {
+                store.metadata.user_id = user_id;
+            }
+            Ok(store)
         } else {
             Ok(Self {
                 path,

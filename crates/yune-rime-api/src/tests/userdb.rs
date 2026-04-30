@@ -356,6 +356,8 @@ fn userdb_sync_merges_plain_snapshots_and_backs_up_current_state() {
         .expect("current user snapshot should be written");
     assert!(backup.contains("/db_name\tluna_pinyin\n"));
     assert!(backup.contains("/db_type\tuserdb\n"));
+    assert!(backup.contains(&format!("/user_id\t{installation_id}\n")));
+    assert!(!backup.contains("/user_id\tpeer\n"));
     assert!(backup.contains("ni hao \t你好\tc=4 d=4 t=5\n"));
     assert!(backup.contains("shuo \t说\tc=-7 d=7 t=5\n"));
     assert!(backup.contains("zhong guo \t中国\tc=2 d=2 t=5\n"));

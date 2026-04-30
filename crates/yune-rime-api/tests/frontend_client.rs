@@ -825,10 +825,11 @@ fn frontend_style_api_table_can_manage_levers_user_dicts() {
     let dict_name = CString::new("essay").expect("dict name is valid");
     assert_eq!(unsafe { backup_user_dict(dict_name.as_ptr()) }, TRUE);
     let snapshot = sync.join("frontend-device").join("essay.userdb.txt");
-    assert_eq!(
-        fs::read_to_string(&snapshot).expect("snapshot should be readable"),
-        fs::read_to_string(user.join("essay.userdb")).expect("user dict should be readable")
-    );
+    let snapshot_text = fs::read_to_string(&snapshot).expect("snapshot should be readable");
+    assert!(snapshot_text.contains("/db_name\tessay\n"));
+    assert!(snapshot_text.contains("/db_type\tuserdb\n"));
+    assert!(snapshot_text.contains("ni hao \t你好\tc=1 d=1 t=1\n"));
+    assert!(snapshot_text.contains("zhong guo \t中国\tc=2 d=2 t=1\n"));
 
     let export_path = root.join("essay_export.tsv");
     let export_path_c =
@@ -839,20 +840,19 @@ fn frontend_style_api_table_can_manage_levers_user_dicts() {
     );
     assert_eq!(
         fs::read_to_string(&export_path).expect("export should be readable"),
-        fs::read_to_string(user.join("essay.userdb")).expect("user dict should be readable")
+        "你好\tni hao\t1\n中国\tzhong guo\t2\n"
     );
 
-    fs::write(&export_path, "xin\t新\t3\nci\t词\t4\n").expect("import source should be updated");
+    fs::write(&export_path, "新\txin\t3\n词\tci\t4\n").expect("import source should be updated");
     let imported_name = CString::new("frontend_imported").expect("dict name is valid");
     assert_eq!(
         unsafe { import_user_dict(imported_name.as_ptr(), export_path_c.as_ptr()) },
         2
     );
-    assert_eq!(
-        fs::read_to_string(user.join("frontend_imported.userdb"))
-            .expect("imported dict should be readable"),
-        "xin\t新\t3\nci\t词\t4\n"
-    );
+    let imported = fs::read_to_string(user.join("frontend_imported.userdb"))
+        .expect("imported dict should be readable");
+    assert!(imported.contains("xin \t新\tc=3 d=3 t=1\n"));
+    assert!(imported.contains("ci \t词\tc=4 d=4 t=1\n"));
 
     let snapshot_c = CString::new(snapshot.to_string_lossy().as_ref()).expect("path is valid");
     fs::remove_file(user.join("essay.userdb")).expect("user dict should be removable");

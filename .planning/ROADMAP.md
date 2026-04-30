@@ -109,7 +109,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 05-01: Add userdb storage, snapshot, recovery, sync, and rollback compatibility beyond plain text shims.
+- [x] 05-01: Add userdb storage, snapshot, recovery, sync, and rollback compatibility beyond plain text shims.
 - [ ] 05-02: Add learning, frequency update, predictive lookup, and backdated scan behavior to runtime candidate/userdb flow.
 - [ ] 05-03: Split remaining core oversized tests where useful by behavior ownership.
 - [ ] 05-04: Split remaining API/frontend tests where useful and codify final Phase 05 quality gates.
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Native ABI Validation And Runtime Safety | 3/3 | Complete | 2026-04-29 |
 | 3. Schema Pipeline Depth | 4/4 | Complete | 2026-04-29 |
 | 4. Compiled Dictionary Data | 4/4 | Complete | 2026-04-29 |
-| 5. UserDB And Scaling Hardening | 0/4 | Planned | - |
+| 5. UserDB And Scaling Hardening | 1/4 | In progress | - |
 
 ## Future Milestone: AI-Native Input Layer
 

@@ -106,12 +106,13 @@ Plans:
   3. Learning, frequency updates, predictive lookup, and backdated scan behavior are represented in runtime candidate ranking and persistence.
   4. Remaining oversized compatibility tests are split along ownership boundaries where that reduces future risk.
   5. Implementation phases close with focused tests, formatting, relevant package tests, and workspace tests when shared behavior changes.
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
 - [ ] 05-01: Add userdb storage, snapshot, recovery, sync, and rollback compatibility beyond plain text shims.
 - [ ] 05-02: Add learning, frequency update, predictive lookup, and backdated scan behavior to runtime candidate/userdb flow.
-- [ ] 05-03: Split remaining oversized tests where useful and codify phase quality gates for future GSD execution.
+- [ ] 05-03: Split remaining core oversized tests where useful by behavior ownership.
+- [ ] 05-04: Split remaining API/frontend tests where useful and codify final Phase 05 quality gates.
 
 ## Progress
 
@@ -124,7 +125,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Native ABI Validation And Runtime Safety | 3/3 | Complete | 2026-04-29 |
 | 3. Schema Pipeline Depth | 4/4 | Complete | 2026-04-29 |
 | 4. Compiled Dictionary Data | 4/4 | Complete | 2026-04-29 |
-| 5. UserDB And Scaling Hardening | 0/3 | Not started | - |
+| 5. UserDB And Scaling Hardening | 0/4 | Planned | - |
 
 ## Future Milestone: AI-Native Input Layer
 

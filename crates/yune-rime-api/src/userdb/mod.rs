@@ -9,11 +9,7 @@ use std::{fs, io, os::raw::c_int, path::PathBuf};
 
 use crate::{resource_id::validate_user_dict_name, runtime_paths};
 
-use self::{
-    file_store::FileUserDbStore,
-    record::{UserDbRecord, UserDbValue},
-    store::UserDbStore,
-};
+use self::{file_store::FileUserDbStore, record::UserDbRecord, store::UserDbStore};
 
 pub(crate) fn deployed_user_dict_names() -> Vec<String> {
     let user_data_dir = runtime_user_data_dir();
@@ -50,7 +46,7 @@ pub(crate) fn backup_user_dict(dict_name: &str) -> bool {
 }
 
 pub(crate) fn restore_user_dict_snapshot(snapshot: &std::path::Path) -> bool {
-    sync::restore_snapshot(&snapshot.to_path_buf()).is_ok()
+    sync::restore_snapshot(snapshot).is_ok()
 }
 
 pub(crate) fn export_user_dict(dict_name: &str, export_destination: PathBuf) -> c_int {
@@ -183,9 +179,4 @@ pub(crate) fn user_dict_upgrade() -> bool {
     deployed_user_dict_names()
         .iter()
         .all(|dict_name| recovery::recover_user_dict(dict_name, None))
-}
-
-pub(crate) fn record_from_key_value(key: &str, value: UserDbValue) -> io::Result<UserDbRecord> {
-    UserDbRecord::from_key_value(key, value)
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "invalid userdb record"))
 }

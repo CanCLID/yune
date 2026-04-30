@@ -173,6 +173,7 @@ impl UserDbMetadata {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UserDbRecordError {
     InvalidKey,

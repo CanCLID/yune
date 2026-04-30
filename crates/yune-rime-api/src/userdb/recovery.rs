@@ -1,4 +1,4 @@
-use std::{fs, io, path::Path};
+use std::{io, path::Path};
 
 use crate::resource_id::validate_user_dict_name;
 
@@ -25,18 +25,5 @@ pub(crate) fn restore_validated_snapshot(snapshot: &Path) -> io::Result<()> {
             "invalid snapshot db_name",
         ));
     }
-    super::sync::restore_snapshot(&snapshot.to_path_buf())
-}
-
-pub(crate) fn remove_legacy_plain_artifact(path: &Path, dict_name: &str) -> bool {
-    if validate_user_dict_name(dict_name).is_none() {
-        return false;
-    }
-    let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
-        return false;
-    };
-    if file_name == format!("{dict_name}.userdb.txt") {
-        return fs::remove_file(path).is_ok();
-    }
-    false
+    super::sync::restore_snapshot(snapshot)
 }

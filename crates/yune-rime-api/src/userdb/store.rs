@@ -2,6 +2,7 @@ use std::io;
 
 use super::record::{UserDbMetadata, UserDbRecord, UserDbValue};
 
+#[allow(dead_code)]
 pub(crate) trait UserDbStore {
     fn metadata(&self) -> &UserDbMetadata;
     fn update_metadata(&mut self, metadata: UserDbMetadata);

@@ -181,7 +181,7 @@ impl UserDbStore for FileUserDbStore {
 
     fn commit_transaction(&mut self) -> io::Result<()> {
         if self.transaction_backup.is_none() {
-            return Err(io::Error::new(ErrorKind::Other, "no active transaction"));
+            return Err(io::Error::other("no active transaction"));
         }
         if let Err(error) = self.atomic_write() {
             self.rollback();

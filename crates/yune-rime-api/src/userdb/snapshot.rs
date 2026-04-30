@@ -43,10 +43,6 @@ pub(crate) fn read_snapshot(snapshot: &Path) -> io::Result<(UserDbMetadata, Vec<
     parse_snapshot_with_fallback(&text, fallback_db_name)
 }
 
-pub(crate) fn parse_snapshot(text: &str) -> io::Result<(UserDbMetadata, Vec<UserDbRecord>)> {
-    parse_snapshot_with_fallback(text, None)
-}
-
 fn parse_snapshot_with_fallback(
     text: &str,
     fallback_db_name: Option<&str>,

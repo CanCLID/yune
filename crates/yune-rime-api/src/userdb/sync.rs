@@ -1,4 +1,7 @@
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use super::{
     backup_user_dict, open_store,
@@ -32,17 +35,14 @@ pub(crate) fn sync_user_dict(dict_name: &str) -> bool {
     backup_user_dict(dict_name) && success
 }
 
-pub(crate) fn restore_snapshot(snapshot: &PathBuf) -> std::io::Result<()> {
+pub(crate) fn restore_snapshot(snapshot: &Path) -> std::io::Result<()> {
     let (metadata, records) = read_snapshot(snapshot)?;
     let mut store = open_store(&metadata.db_name)?;
     let our_tick = store.metadata().tick;
     let their_tick = metadata.tick;
     let max_tick = our_tick.max(their_tick);
     if !store.begin_transaction() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "transaction already active",
-        ));
+        return Err(std::io::Error::other("transaction already active"));
     }
     for remote in records {
         let merged = merge_record(&store, remote, our_tick, their_tick, max_tick);

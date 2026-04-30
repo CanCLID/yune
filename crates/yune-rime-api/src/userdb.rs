@@ -170,16 +170,8 @@ pub unsafe extern "C" fn RimeLeversImportUserDict(
     manager::import_user_dict(&dict_name, PathBuf::from(text_file))
 }
 
-pub(crate) fn deployed_user_dict_names() -> Vec<String> {
-    manager::deployed_user_dict_names()
-}
-
 pub(crate) fn runtime_user_data_sync_dir() -> PathBuf {
     manager::runtime_user_data_sync_dir()
-}
-
-pub(crate) fn backup_plain_user_dict(dict_name: &str) -> bool {
-    manager::backup_user_dict(dict_name)
 }
 
 pub(crate) fn sync_all_user_dicts() -> bool {

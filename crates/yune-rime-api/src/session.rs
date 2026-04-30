@@ -34,11 +34,7 @@ impl SessionRegistry {
 
         self.next_id = self.next_id.saturating_add(1).max(1);
         let session_id = self.next_id;
-        let mut session = SessionState::new();
-        let schema_id = session.engine.status().schema_id;
-        session.set_user_dict_name(schema_id);
-        session.reload_userdb_from_store();
-        self.sessions.insert(session_id, session);
+        self.sessions.insert(session_id, SessionState::new());
         session_id
     }
 
@@ -147,12 +143,19 @@ impl SessionState {
         self.user_dict_name = Some(dict_name.into());
     }
 
+    pub(crate) fn clear_user_dict_name(&mut self) {
+        self.user_dict_name = None;
+        self.reload_userdb_from_store();
+    }
+
     pub(crate) fn reload_userdb_from_store(&mut self) {
         let Some(dict_name) = self.user_dict_name.as_deref() else {
+            self.engine.set_userdb(Default::default());
             return;
         };
-        if let Ok(userdb) = userdb::load_runtime_userdb(dict_name) {
-            self.engine.set_userdb(userdb);
+        match userdb::load_runtime_userdb(dict_name) {
+            Ok(userdb) => self.engine.set_userdb(userdb),
+            Err(_) => self.engine.set_userdb(Default::default()),
         }
     }
 

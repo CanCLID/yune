@@ -268,7 +268,11 @@ pub fn normalize_code(code: &str) -> String {
     normalized
 }
 
-fn lookup_result(entry: &UserDbLearnedEntry, comment: &str, present_tick: u64) -> UserDbLookupResult {
+fn lookup_result(
+    entry: &UserDbLearnedEntry,
+    comment: &str,
+    present_tick: u64,
+) -> UserDbLookupResult {
     let mut value = entry.value.clone();
     if value.tick < present_tick {
         value.dee = formula_d(0.0, present_tick as f64, value.dee, value.tick as f64);
@@ -284,7 +288,8 @@ fn lookup_result(entry: &UserDbLearnedEntry, comment: &str, present_tick: u64) -
         text: entry.text.clone(),
         comment: comment.to_owned(),
         source: CandidateSource::UserTable,
-        quality: probability.ln() as f32 + 10.0 + USER_PHRASE_BONUS - (entry.code.len() as f32 * 0.5),
+        quality: probability.ln() as f32 + 10.0 + USER_PHRASE_BONUS
+            - (entry.code.len() as f32 * 0.5),
         value,
     }
 }
@@ -367,7 +372,10 @@ mod tests {
         engine.set_userdb(db);
         engine.set_input("ni");
 
-        assert_eq!(engine.context().candidates[0].source, CandidateSource::UserTable);
+        assert_eq!(
+            engine.context().candidates[0].source,
+            CandidateSource::UserTable
+        );
         assert_eq!(engine.context().candidates[0].text, "你");
     }
 

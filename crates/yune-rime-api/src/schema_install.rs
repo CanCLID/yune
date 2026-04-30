@@ -129,6 +129,9 @@ fn install_schema_dictionary_translator_from_config(
     component_name: &str,
     name_space: &str,
 ) {
+    let user_dict_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
+        .and_then(config_scalar_string)
+        .and_then(|name| validate_data_resource_id(&name));
     let dictionary = match load_schema_table_dictionary(schema_config, name_space) {
         DictionaryLoadOutcome::Compiled(dictionary) => dictionary,
         DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
@@ -143,6 +146,9 @@ fn install_schema_dictionary_translator_from_config(
             return;
         }
     };
+    if let Some(user_dict_name) = user_dict_name {
+        session.set_user_dict_name(user_dict_name);
+    }
     let enable_charset_filter = find_config_value(
         schema_config,
         &format!("{name_space}/enable_charset_filter"),

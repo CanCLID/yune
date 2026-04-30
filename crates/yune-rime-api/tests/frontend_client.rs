@@ -1968,22 +1968,25 @@ fn frontend_style_userdb_learning_survives_session_recreation() {
     let schema_id = CString::new("learn").expect("schema id should be valid");
     let session_id = create_session();
     assert_ne!(session_id, 0);
-    assert_eq!(unsafe { select_schema(session_id, schema_id.as_ptr()) }, TRUE);
+    assert_eq!(
+        unsafe { select_schema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
     assert_eq!(process_key(session_id, 'n' as c_int, 0), TRUE);
     assert_eq!(process_key(session_id, 'i' as c_int, 0), TRUE);
     assert_eq!(commit_composition(session_id), TRUE);
     assert_eq!(destroy_session(session_id), TRUE);
     let store_path = user.join("learn.userdb");
     let stored = fs::read_to_string(&store_path).expect("store should be readable");
-    fs::write(
-        &store_path,
-        format!("{stored}ni hao \t你好\tc=1 d=1 t=1\n"),
-    )
-    .expect("predictive store entry should be appended");
+    fs::write(&store_path, format!("{stored}ni hao \t你好\tc=1 d=1 t=1\n"))
+        .expect("predictive store entry should be appended");
 
     let reloaded_session = create_session();
     assert_ne!(reloaded_session, 0);
-    assert_eq!(unsafe { select_schema(reloaded_session, schema_id.as_ptr()) }, TRUE);
+    assert_eq!(
+        unsafe { select_schema(reloaded_session, schema_id.as_ptr()) },
+        TRUE
+    );
     assert_eq!(process_key(reloaded_session, 'n' as c_int, 0), TRUE);
     assert_eq!(process_key(reloaded_session, 'i' as c_int, 0), TRUE);
 

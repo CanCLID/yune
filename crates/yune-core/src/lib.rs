@@ -32,6 +32,10 @@ pub use filter::{
 pub use key::{parse_key_sequence, KeyCode, KeyEvent, KeyModifiers, KeySequenceParseError};
 pub use punctuation::PunctuationTranslator;
 pub use state::{Candidate, CandidateSource, CommitRecord, Composition, Context, Snapshot, Status};
+pub use userdb::{
+    BackdatedScanPolicy, UserDb, UserDbCommitMetadata, UserDbLearnedEntry, UserDbLearningUpdate,
+    UserDbLookupRequest, UserDbLookupResult, UserDbValue,
+};
 pub use translator::{
     EchoTranslator, FoldedSwitchOptions, HistoryTranslator, ReverseLookupTranslator,
     SchemaListTranslator, StaticTableTranslator, SwitchTranslator, SwitchTranslatorSwitch,

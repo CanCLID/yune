@@ -11,6 +11,7 @@ pub enum CandidateSource {
     Echo,
     Punctuation,
     Table,
+    UserTable,
     Completion,
     Sentence,
     ReverseLookup,
@@ -28,6 +29,7 @@ impl CandidateSource {
             Self::Echo => "echo",
             Self::Punctuation => "punct",
             Self::Table => "table",
+            Self::UserTable => "user_table",
             Self::Completion => "completion",
             Self::Sentence => "sentence",
             Self::ReverseLookup => "reverse_lookup",
@@ -44,6 +46,10 @@ impl CandidateSource {
 pub struct CommitRecord {
     pub candidate_type: String,
     pub text: String,
+    pub input: String,
+    pub segment_start: usize,
+    pub segment_end: usize,
+    pub tick: u64,
 }
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]

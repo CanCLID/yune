@@ -5,7 +5,7 @@ use crate::punctuation::punctuation_candidate_comment;
 use crate::{
     parse_key_sequence, Candidate, CandidateFilter, CandidateRanker, CandidateSource, CommitRecord,
     Composition, Context, EchoTranslator, KeyCode, KeyEvent, KeyModifiers, KeySequenceParseError,
-    RerankResult, Snapshot, Status, Translator,
+    RerankResult, Snapshot, Status, Translator, UserDb, UserDbCommitMetadata, UserDbLookupRequest,
 };
 
 pub struct Engine {
@@ -16,6 +16,9 @@ pub struct Engine {
     translators: Vec<Box<dyn Translator>>,
     filters: Vec<Box<dyn CandidateFilter>>,
     rankers: Vec<Box<dyn CandidateRanker>>,
+    userdb: UserDb,
+    pending_userdb_learning: Option<UserDbCommitMetadata>,
+    commit_tick: u64,
 }
 
 const DEFAULT_PAGE_SIZE: usize = 5;
@@ -30,6 +33,9 @@ impl Default for Engine {
             translators: vec![Box::new(EchoTranslator)],
             filters: Vec::new(),
             rankers: Vec::new(),
+            userdb: UserDb::default(),
+            pending_userdb_learning: None,
+            commit_tick: 0,
         }
     }
 }
@@ -73,6 +79,20 @@ impl Engine {
     pub fn set_schema(&mut self, id: impl Into<String>, name: impl Into<String>) {
         self.status.schema_id = id.into();
         self.status.schema_name = name.into();
+    }
+
+    pub fn set_userdb(&mut self, userdb: UserDb) {
+        self.userdb = userdb;
+        self.refresh_candidates();
+    }
+
+    #[must_use]
+    pub fn userdb(&self) -> &UserDb {
+        &self.userdb
+    }
+
+    pub fn take_pending_userdb_learning(&mut self) -> Option<UserDbCommitMetadata> {
+        self.pending_userdb_learning.take()
     }
 
     pub fn set_option(&mut self, option: impl Into<String>, value: bool) {
@@ -509,7 +529,7 @@ impl Engine {
 
     pub fn record_commit(&mut self, text: impl Into<String>) -> String {
         let text = text.into();
-        self.record_commit_with_type("raw", text.clone());
+        self.record_commit_with_type("raw", text.clone(), String::new());
         self.clear_composition();
         text
     }
@@ -645,7 +665,7 @@ impl Engine {
             return None;
         }
         let text = self.context.composition.input.clone();
-        self.record_commit_with_type("raw", text.clone());
+        self.record_commit_with_type("raw", text.clone(), text.clone());
         self.clear_composition();
         Some(text)
     }
@@ -655,7 +675,7 @@ impl Engine {
             return None;
         }
         let text = self.context.composition.preedit.clone();
-        self.record_commit_with_type("raw", text.clone());
+        self.record_commit_with_type("raw", text.clone(), text.clone());
         self.clear_composition();
         Some(text)
     }
@@ -668,7 +688,7 @@ impl Engine {
             .and_then(|candidate| {
                 (!candidate.comment.is_empty()).then(|| candidate.comment.clone())
             })?;
-        self.record_commit_with_type("raw", text.clone());
+        self.record_commit_with_type("raw", text.clone(), text.clone());
         self.clear_composition();
         Some(text)
     }
@@ -690,21 +710,58 @@ impl Engine {
     }
 
     fn commit_candidate(&mut self, candidate_index: usize) -> Option<String> {
-        let (text, candidate_type) = self
+        let input = self.context.composition.input.clone();
+        let segment_start = 0;
+        let segment_end = input.len();
+        let (text, candidate_source) = self
             .context
             .candidates
             .get(candidate_index)
-            .map(|candidate| (candidate.text.clone(), candidate.source.as_str().to_owned()))?;
-        self.record_commit_with_type(candidate_type, text.clone());
+            .map(|candidate| (candidate.text.clone(), candidate.source.clone()))?;
+        self.commit_tick = self.commit_tick.saturating_add(1);
+        let learning = UserDbCommitMetadata::new(
+            input.clone(),
+            text.clone(),
+            candidate_source.clone(),
+            segment_start,
+            segment_end,
+            self.commit_tick,
+        );
+        self.pending_userdb_learning = Some(learning.clone());
+        self.record_commit_with_metadata(learning);
         self.clear_composition();
         Some(text)
     }
 
-    fn record_commit_with_type(&mut self, candidate_type: impl Into<String>, text: String) {
-        self.context.last_commit = Some(text.clone());
-        self.context.commit_history.push(CommitRecord {
+    fn record_commit_with_type(
+        &mut self,
+        candidate_type: impl Into<String>,
+        text: String,
+        input: String,
+    ) {
+        self.commit_tick = self.commit_tick.saturating_add(1);
+        let segment_end = input.len();
+        let metadata = UserDbCommitMetadata {
+            input,
+            selected_text: text,
             candidate_type: candidate_type.into(),
-            text,
+            candidate_source: CandidateSource::Echo,
+            segment_start: 0,
+            segment_end,
+            tick: self.commit_tick,
+        };
+        self.record_commit_with_metadata(metadata);
+    }
+
+    fn record_commit_with_metadata(&mut self, metadata: UserDbCommitMetadata) {
+        self.context.last_commit = Some(metadata.selected_text.clone());
+        self.context.commit_history.push(CommitRecord {
+            candidate_type: metadata.candidate_type,
+            text: metadata.selected_text,
+            input: metadata.input,
+            segment_start: metadata.segment_start,
+            segment_end: metadata.segment_end,
+            tick: metadata.tick,
         });
     }
 
@@ -717,6 +774,12 @@ impl Engine {
                 translator.translate_with_context(input, &self.status, &self.options, &self.context)
             })
             .collect::<Vec<_>>();
+        candidates.extend(
+            self.userdb
+                .lookup(&UserDbLookupRequest::new(input).with_predictive(true))
+                .into_iter()
+                .map(|result| result.candidate()),
+        );
         candidates.sort_by(|left, right| {
             right
                 .quality

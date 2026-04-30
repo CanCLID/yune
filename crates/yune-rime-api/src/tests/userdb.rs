@@ -91,6 +91,100 @@ fn userdb_backup_restore_exports_typed_metadata_and_records() {
 }
 
 #[test]
+fn userdb_learning_persists_session_commits_and_reloads_candidates() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("userdb-learning-session");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("learn.schema.yaml"),
+        "schema:\n  schema_id: learn\n  name: Learn\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: learn\n",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("learn.dict.yaml"),
+        "---\nname: learn\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nni\t你\t10\nni hao\t你好\t9\n",
+    )
+    .expect("dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema = CString::new("learn").expect("schema id should be valid");
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(RimeProcessKey(session_id, 'n' as c_int, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as c_int, 0), TRUE);
+    assert_eq!(RimeCommitComposition(session_id), TRUE);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+
+    let stored = fs::read_to_string(user.join("learn.userdb")).expect("store should be readable");
+    assert!(
+        stored.contains("ni \t你\tc=1"),
+        "typed update should persist: {stored}"
+    );
+    assert!(
+        stored.contains("d="),
+        "typed update should include dee: {stored}"
+    );
+    assert!(
+        stored.contains("t="),
+        "typed update should include tick: {stored}"
+    );
+    let seeded_store = format!("{stored}ni hao \t你好\tc=1 d=1 t=1\n");
+    fs::write(user.join("learn.userdb"), seeded_store)
+        .expect("predictive store entry should be appended");
+
+    let reloaded_session = RimeCreateSession();
+    assert_eq!(
+        unsafe { RimeSelectSchema(reloaded_session, schema.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(RimeProcessKey(reloaded_session, 'n' as c_int, 0), TRUE);
+    assert_eq!(RimeProcessKey(reloaded_session, 'i' as c_int, 0), TRUE);
+    let candidates =
+        super::super::session_candidates_snapshot(reloaded_session).expect("session should exist");
+    let learned_index = candidates
+        .iter()
+        .position(|candidate| {
+            candidate.source == CandidateSource::UserTable && candidate.text == "你"
+        })
+        .expect("learned exact userdb candidate should be present");
+    let table_index = candidates
+        .iter()
+        .position(|candidate| candidate.source == CandidateSource::Table && candidate.text == "你")
+        .expect("table candidate should remain present");
+    assert!(
+        learned_index < table_index,
+        "learned candidate should rank before table duplicate: {candidates:?}"
+    );
+    assert!(
+        candidates
+            .iter()
+            .any(|candidate| candidate.text == "你好" && candidate.comment == "~hao"),
+        "predictive userdb candidate should be present: {candidates:?}"
+    );
+
+    assert_eq!(RimeDestroySession(reloaded_session), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn userdb_rejects_malformed_logical_names_before_store_creation() {
     let _guard = test_guard();
     let root = unique_temp_dir("userdb-invalid-names");

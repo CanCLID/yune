@@ -3,10 +3,13 @@ mod manager;
 
 use std::{
     ffi::c_void,
+    io,
     os::raw::{c_char, c_int},
     path::PathBuf,
     ptr,
 };
+
+use yune_core::{UserDb, UserDbCommitMetadata};
 
 use crate::{
     bool_from, clear_user_dict_iterator, cstring_from_lossless_str, optional_c_string, Bool,
@@ -172,6 +175,17 @@ pub unsafe extern "C" fn RimeLeversImportUserDict(
 
 pub(crate) fn runtime_user_data_sync_dir() -> PathBuf {
     manager::runtime_user_data_sync_dir()
+}
+
+pub(crate) fn load_runtime_userdb(dict_name: &str) -> io::Result<UserDb> {
+    manager::load_runtime_userdb(dict_name)
+}
+
+pub(crate) fn record_runtime_commit(
+    dict_name: &str,
+    event: &UserDbCommitMetadata,
+) -> io::Result<UserDb> {
+    manager::record_runtime_commit(dict_name, event)
 }
 
 pub(crate) fn sync_all_user_dicts() -> bool {

@@ -9,6 +9,7 @@ mod punctuation;
 mod spelling_algebra;
 mod state;
 mod translator;
+mod userdb;
 use comment_format::CommentFormat;
 pub use dictionary::{
     parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
@@ -34,6 +35,10 @@ pub use state::{Candidate, CandidateSource, CommitRecord, Composition, Context, 
 pub use translator::{
     EchoTranslator, FoldedSwitchOptions, HistoryTranslator, ReverseLookupTranslator,
     SchemaListTranslator, StaticTableTranslator, SwitchTranslator, SwitchTranslatorSwitch,
+};
+pub use userdb::{
+    BackdatedScanPolicy, UserDb, UserDbCommitMetadata, UserDbLearnedEntry, UserDbLearningUpdate,
+    UserDbLookupRequest, UserDbLookupResult, UserDbValue,
 };
 
 pub trait Translator: Send + Sync {

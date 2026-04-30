@@ -1131,6 +1131,7 @@ pub(crate) fn apply_visible_switch_radio_defaults(session: &mut SessionState) {
 }
 
 fn append_unread_commit(session: &mut SessionState, commit: String) {
+    session.persist_pending_userdb_learning();
     let commit = shape_formatted_commit_text(session, &commit);
     match &mut session.unread_commit {
         Some(buffer) => buffer.push_str(&commit),

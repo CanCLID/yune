@@ -7,9 +7,15 @@ pub(crate) mod sync;
 
 use std::{fs, io, os::raw::c_int, path::PathBuf};
 
+use yune_core::{UserDb, UserDbCommitMetadata};
+
 use crate::{resource_id::validate_user_dict_name, runtime_paths};
 
-use self::{file_store::FileUserDbStore, record::UserDbRecord, store::UserDbStore};
+use self::{
+    file_store::FileUserDbStore,
+    record::{formula_d, UserDbRecord, UserDbValue},
+    store::UserDbStore,
+};
 
 pub(crate) fn deployed_user_dict_names() -> Vec<String> {
     let user_data_dir = runtime_user_data_dir();
@@ -169,6 +175,66 @@ pub(crate) fn open_store(dict_name: &str) -> io::Result<FileUserDbStore> {
     };
     let user_id = runtime_user_id();
     FileUserDbStore::open(path, dict_name, user_id)
+}
+
+pub(crate) fn load_runtime_userdb(dict_name: &str) -> io::Result<UserDb> {
+    let store = open_store(dict_name)?;
+    let mut userdb = UserDb::default();
+    for record in store.ordered_records() {
+        userdb.learn_entry(
+            record.code.trim_end(),
+            record.phrase,
+            record.value.commits,
+            record.value.dee,
+            record.value.tick,
+        );
+    }
+    Ok(userdb)
+}
+
+pub(crate) fn record_runtime_commit(
+    dict_name: &str,
+    event: &UserDbCommitMetadata,
+) -> io::Result<UserDb> {
+    let mut store = open_store(dict_name)?;
+    let Some(record) = updated_record_for_commit(&store, event) else {
+        return load_runtime_userdb(dict_name);
+    };
+    if !store.begin_transaction() {
+        return Err(io::Error::other("userdb transaction already active"));
+    }
+    store.update(record);
+    if let Err(error) = store.commit_transaction() {
+        let _ = store.rollback();
+        return Err(error);
+    }
+    load_runtime_userdb(dict_name)
+}
+
+fn updated_record_for_commit(
+    store: &FileUserDbStore,
+    event: &UserDbCommitMetadata,
+) -> Option<UserDbRecord> {
+    let mut value = store
+        .get(&record_key(&event.input, &event.selected_text)?)
+        .unwrap_or_default();
+    if value.commits < 0 {
+        value.commits = -value.commits;
+    }
+    value.commits = value.commits.saturating_add(1);
+    let next_tick = store
+        .metadata()
+        .tick
+        .max(value.tick)
+        .max(event.tick)
+        .saturating_add(1);
+    value.dee = formula_d(1.0, next_tick as f64, value.dee, value.tick as f64);
+    value.tick = next_tick;
+    UserDbRecord::from_code_phrase(&event.input, &event.selected_text, value)
+}
+
+fn record_key(code: &str, phrase: &str) -> Option<String> {
+    UserDbRecord::from_code_phrase(code, phrase, UserDbValue::default()).map(|record| record.key)
 }
 
 pub(crate) fn sync_all_user_dicts() -> bool {

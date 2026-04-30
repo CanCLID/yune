@@ -83,6 +83,7 @@ pub unsafe extern "C" fn RimeSelectSchema(
 pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &str) {
     let schema_name = deployed_schema_name(schema_id);
     session.engine.set_schema(schema_id.to_owned(), schema_name);
+    session.clear_user_dict_name();
     session.engine.reset_translators();
     session.engine.reset_filters();
     session.key_binder = None;
@@ -121,6 +122,7 @@ pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &st
     install_schema_punctuation_processor(session, schema_id);
     install_schema_translator_chain(session, schema_id);
     install_schema_filter_chain(session, schema_id);
+    session.reload_userdb_from_store();
     session.engine.clear_composition();
     session.input_buffer = None;
     session.unread_commit = None;

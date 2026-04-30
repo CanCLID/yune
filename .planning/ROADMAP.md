@@ -22,9 +22,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: CLI Frontend Surrogate** - Drive `yune-rime-api` from `yune-cli` and lock in structure rules for future slices.
 - [x] **Phase 2: Native ABI Validation And Runtime Safety** - Exercise real frontend-like loading paths and harden ABI/resource boundaries.
-- [ ] **Phase 3: Schema Pipeline Depth** - Expand focused schema behavior toward deeper librime gear semantics.
-- [ ] **Phase 4: Compiled Dictionary Data** - Move from source dictionary parsing and metadata checks toward compiled payload consumption and rebuild execution.
-- [ ] **Phase 5: UserDB And Scaling Hardening** - Extend user dictionary compatibility and finish quality/test ownership cleanup for the milestone.
+- [x] **Phase 3: Schema Pipeline Depth** - Expand focused schema behavior toward deeper librime gear semantics.
+- [x] **Phase 4: Compiled Dictionary Data** - Move from source dictionary parsing and metadata checks toward compiled payload consumption and rebuild execution.
+- [x] **Phase 5: UserDB And Scaling Hardening** - Extend user dictionary compatibility and finish quality/test ownership cleanup for the milestone.
 
 ## Phase Details
 
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Native ABI Validation And Runtime Safety | 3/3 | Complete | 2026-04-29 |
 | 3. Schema Pipeline Depth | 4/4 | Complete | 2026-04-29 |
 | 4. Compiled Dictionary Data | 4/4 | Complete | 2026-04-29 |
-| 5. UserDB And Scaling Hardening | 4/4 | In progress | - |
+| 5. UserDB And Scaling Hardening | 4/4 | Complete | 2026-04-30 |
 
 ## Future Milestone: AI-Native Input Layer
 

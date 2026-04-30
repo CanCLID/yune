@@ -40,16 +40,16 @@ exactly one roadmap phase.
 
 ### User Dictionary Compatibility
 
-- [ ] **USERDB-01**: User dictionary storage supports librime-compatible LevelDB/userdb behavior or a documented compatible abstraction beyond the current plain text shim.
-- [ ] **USERDB-02**: Snapshot backup, restore, recovery, sync, and transaction rollback behavior match librime-observable semantics.
-- [ ] **USERDB-03**: Learning, frequency updates, predictive lookup, and backdated scan behavior are represented in runtime candidate ranking and userdb persistence.
+- [x] **USERDB-01**: User dictionary storage supports librime-compatible LevelDB/userdb behavior or a documented compatible abstraction beyond the current plain text shim.
+- [x] **USERDB-02**: Snapshot backup, restore, recovery, sync, and transaction rollback behavior match librime-observable semantics.
+- [x] **USERDB-03**: Learning, frequency updates, predictive lookup, and backdated scan behavior are represented in runtime candidate ranking and userdb persistence.
 
 ### Engineering Structure And Quality
 
 - [ ] **QUAL-01**: Every new compatibility slice starts with an owning implementation module, owning test module, and explicit librime comparison target.
 - [ ] **QUAL-02**: `lib.rs` and `main.rs` remain facades/orchestration glue; temporary spike code is extracted before a second related behavior lands.
-- [ ] **QUAL-03**: Remaining oversized compatibility tests are split only along behavior ownership boundaries, without mixing mechanical moves and behavior changes.
-- [ ] **QUAL-04**: Quality gates for implementation phases include focused tests, `cargo fmt`, relevant `cargo test` targets, and workspace tests when shared behavior changes.
+- [x] **QUAL-03**: Remaining oversized compatibility tests are split only along behavior ownership boundaries, without mixing mechanical moves and behavior changes.
+- [x] **QUAL-04**: Quality gates for implementation phases include focused tests, `cargo fmt`, relevant `cargo test` targets, and workspace tests when shared behavior changes.
 
 ## v2 Requirements
 
@@ -110,13 +110,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-02 | Phase 4 | Pending |
 | DATA-03 | Phase 4 | Pending |
 | DATA-04 | Phase 4 | Pending |
-| USERDB-01 | Phase 5 | Pending |
-| USERDB-02 | Phase 5 | Pending |
-| USERDB-03 | Phase 5 | Pending |
+| USERDB-01 | Phase 5 | Complete |
+| USERDB-02 | Phase 5 | Complete |
+| USERDB-03 | Phase 5 | Complete |
 | QUAL-01 | Phase 1 | Pending |
 | QUAL-02 | Phase 1 | Pending |
-| QUAL-03 | Phase 5 | Pending |
-| QUAL-04 | Phase 5 | Pending |
+| QUAL-03 | Phase 5 | Complete |
+| QUAL-04 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 25 total

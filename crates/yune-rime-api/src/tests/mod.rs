@@ -48,15 +48,15 @@ use super::{
     RimeGetStateLabelAbbreviated, RimeGetStatus, RimeGetSyncDir, RimeGetSyncDirSecure,
     RimeGetUserDataDir, RimeGetUserDataDirSecure, RimeGetUserDataSyncDir, RimeGetUserId,
     RimeGetVersion, RimeHighlightCandidate, RimeHighlightCandidateOnCurrentPage, RimeInitialize,
-    RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeLeversApi, RimeModule,
-    RimeLeversExportUserDict, RimeLeversImportUserDict, RimePrebuildAllSchemas, RimeProcessKey,
+    RimeIsMaintenancing, RimeJoinMaintenanceThread, RimeLeversApi, RimeLeversExportUserDict,
+    RimeLeversImportUserDict, RimeModule, RimePrebuildAllSchemas, RimeProcessKey,
     RimeRegisterModule, RimeRunTask, RimeSchemaOpen, RimeSelectCandidate,
-    RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos,
-    RimeSetInput, RimeSetNotificationHandler, RimeSetOption, RimeSetProperty, RimeSetup,
-    RimeSetupLogging, RimeSimulateKeySequence, RimeStartMaintenance,
-    RimeStartMaintenanceOnWorkspaceChange, RimeStatus, RimeSyncUserData, RimeTraits,
-    RimeUserConfigOpen, RimeUserDictIterator, FALSE, K_ALT_MASK, K_CONTROL_MASK, K_LOCK_MASK,
-    K_RELEASE_MASK, K_SHIFT_MASK, K_SUPER_MASK, TRUE, XK_RETURN,
+    RimeSelectCandidateOnCurrentPage, RimeSelectSchema, RimeSetCaretPos, RimeSetInput,
+    RimeSetNotificationHandler, RimeSetOption, RimeSetProperty, RimeSetup, RimeSetupLogging,
+    RimeSimulateKeySequence, RimeStartMaintenance, RimeStartMaintenanceOnWorkspaceChange,
+    RimeStatus, RimeSyncUserData, RimeTraits, RimeUserConfigOpen, RimeUserDictIterator, FALSE,
+    K_ALT_MASK, K_CONTROL_MASK, K_LOCK_MASK, K_RELEASE_MASK, K_SHIFT_MASK, K_SUPER_MASK, TRUE,
+    XK_RETURN,
 };
 
 #[derive(Debug, PartialEq, Eq)]

@@ -37,6 +37,7 @@ mod schema_api;
 mod schema_install;
 mod schema_selection;
 mod session;
+#[path = "userdb.rs"]
 mod userdb;
 pub use abi::*;
 use api_table::state_label_cache;

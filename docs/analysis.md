@@ -20,6 +20,14 @@ pipeline traits, storage abstractions, dictionary indexes, cache invalidation,
 incremental rebuilds, test harnesses, and optional AI extension points are all
 valid improvements when they preserve compatibility at the boundary.
 
+The project rule is: Yune should preserve librime's externally observable
+behavior, not inherit librime's internal complexity. Every new librime-derived
+feature must first identify the user-visible, frontend-visible, schema-visible,
+or data-format behavior it preserves. If the proposed work only mirrors a
+librime implementation detail, historical layering choice, or plugin-era
+abstraction, prefer a smaller Rust design, a storage/ABI adapter, or an explicit
+deferral.
+
 When Yune intentionally improves behavior beyond librime, the compatibility
 boundary must be explicit. Classic input behavior should remain predictable,
 and new behavior should be opt-in or isolated behind Yune-native extension

@@ -173,6 +173,12 @@
   Rust designs, cleaner abstractions, stronger typing, deterministic tests, and
   better algorithms where they preserve or intentionally extend the external
   contract.
+- Keep compatibility work from growing into a second copy of librime's internal
+  complexity. Before adding a librime-derived mechanism, name the external
+  behavior it protects: user-visible input behavior, frontend ABI behavior,
+  schema/config semantics, or deployed data compatibility. If the mechanism is
+  only an internal librime implementation detail, use a smaller Yune-native
+  design, isolate it behind an adapter, or document a deferral.
 - Treat the mechanical refactor track in `docs/refactor-plan.md` as complete
   for the current code shape. Keep future compatibility work within the new
   module boundaries, and only split further when a new behavior slice exposes a

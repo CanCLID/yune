@@ -106,6 +106,10 @@ typing.
   migration support.
 - **Architecture**: Prefer typed, idiomatic Rust modules over cloning librime's
   internal C++ structure when the boundary contract is preserved.
+- **Complexity discipline**: Preserve librime-observable behavior, not librime's
+  internal complexity. Every librime-derived feature must name the external
+  behavior it protects; implementation-only details should become smaller
+  Yune-native designs, isolated adapters, or documented deferrals.
 - **Testing**: Run focused tests for each behavior slice and `cargo test
   --workspace` after broader phases; use `cargo clippy --workspace --all-targets
   -- -D warnings` as the quality gate when implementation changes warrant it.

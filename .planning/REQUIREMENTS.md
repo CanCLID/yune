@@ -59,9 +59,9 @@ Requirements for the next validation milestone before AI-native product work.
 
 - [ ] **FRONTEND-VALIDATION-01**: A host-shaped native loader or real frontend path validates `rime_get_api`, setup, initialize, deploy, schema selection, session lifecycle, key processing, context/status reads, commit text, and teardown.
 - [ ] **FRONTEND-VALIDATION-02**: TypeDuck-Web-style browser/WebAssembly integration is attempted as a real application frontend path, with wrapper gaps and browser-specific limits documented.
-- [ ] **FRONTEND-VALIDATION-03**: Squirrel or a macOS frontend-shaped integration is attempted after the browser/WebAssembly path, with reproducible blockers documented if direct integration cannot run locally.
-- [ ] **FRONTEND-VALIDATION-04**: ibus-rime or fcitx-rime validation is scoped after the macOS path, with environment requirements and lifecycle differences documented.
-- [ ] **FRONTEND-VALIDATION-05**: Frontend-observed ABI/runtime mismatches are captured as notes, fixtures, or focused regression tests before being fixed.
+- [x] **FRONTEND-VALIDATION-03**: Squirrel or a macOS frontend-shaped integration is attempted after the browser/WebAssembly path, with reproducible blockers documented if direct integration cannot run locally.
+- [x] **FRONTEND-VALIDATION-04**: ibus-rime or fcitx-rime validation is scoped after the macOS path, with environment requirements and lifecycle differences documented.
+- [x] **FRONTEND-VALIDATION-05**: Frontend-observed ABI/runtime mismatches are captured as notes, fixtures, or focused regression tests before being fixed.
 
 ### Frontend-Sensitive Benchmarks
 
@@ -136,9 +136,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAL-04 | Phase 5 | Complete |
 | FRONTEND-VALIDATION-01 | Phase 6 | Pending |
 | FRONTEND-VALIDATION-02 | Phase 6 | Pending |
-| FRONTEND-VALIDATION-03 | Phase 6 | Pending |
-| FRONTEND-VALIDATION-04 | Phase 6 | Pending |
-| FRONTEND-VALIDATION-05 | Phase 6 | Pending |
+| FRONTEND-VALIDATION-03 | Phase 6 | Complete |
+| FRONTEND-VALIDATION-04 | Phase 6 | Complete |
+| FRONTEND-VALIDATION-05 | Phase 6 | Complete |
 | BENCH-01 | Phase 6 | Pending |
 | BENCH-02 | Phase 6 | Pending |
 

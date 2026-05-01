@@ -1,0 +1,180 @@
+{
+  "target": "squirrel_macos_source_model",
+  "scenario": "squirrel_lifecycle",
+  "source_model": "Squirrel macOS app and input-context lifecycle modeled at the RIME ABI boundary",
+  "attempted_environment": "macOS source-model regression without requiring installed Squirrel app, Xcode GUI automation, or input-method registration",
+  "resource_ids": ["squirrel_luna"],
+  "required_functions": [
+    { "name": "setup", "available": true },
+    { "name": "set_notification_handler", "available": true },
+    { "name": "initialize", "available": true },
+    { "name": "finalize", "available": true },
+    { "name": "deployer_initialize", "available": true },
+    { "name": "start_maintenance", "available": true },
+    { "name": "join_maintenance_thread", "available": true },
+    { "name": "deploy", "available": true },
+    { "name": "create_session", "available": true },
+    { "name": "find_session", "available": true },
+    { "name": "destroy_session", "available": true },
+    { "name": "cleanup_all_sessions", "available": true },
+    { "name": "select_schema", "available": true },
+    { "name": "process_key", "available": true },
+    { "name": "clear_composition", "available": true },
+    { "name": "commit_composition", "available": true },
+    { "name": "get_input", "available": true },
+    { "name": "get_status", "available": true },
+    { "name": "free_status", "available": true },
+    { "name": "get_context", "available": true },
+    { "name": "free_context", "available": true },
+    { "name": "get_commit", "available": true },
+    { "name": "free_commit", "available": true },
+    { "name": "set_option", "available": true },
+    { "name": "sync_user_data", "available": true }
+  ],
+  "call_sequence": [
+    "source_model",
+    "attempted_environment",
+    "blocker_or_gap",
+    "reproduction_status",
+    "rime_get_api",
+    "validate_api_data_size",
+    "cleanup_all_sessions",
+    "squirrel_app_setup",
+    "squirrel_deployer_initialize",
+    "squirrel_set_notification_handler",
+    "squirrel_app_initialize",
+    "squirrel_start_maintenance",
+    "squirrel_join_maintenance_thread",
+    "squirrel_deploy",
+    "squirrel_focus_in_create_session",
+    "squirrel_find_session",
+    "squirrel_select_schema",
+    "squirrel_process_key_b",
+    "squirrel_process_key_a",
+    "squirrel_get_input",
+    "squirrel_get_status",
+    "squirrel_free_status",
+    "squirrel_get_context",
+    "squirrel_free_context",
+    "squirrel_commit_composition",
+    "squirrel_get_commit",
+    "squirrel_free_commit",
+    "squirrel_set_option_primary_handler",
+    "squirrel_set_notification_handler",
+    "squirrel_set_option_replacement_handler",
+    "squirrel_set_notification_handler",
+    "squirrel_set_option_after_clear",
+    "squirrel_focus_out_clear_composition",
+    "squirrel_focus_out_get_status",
+    "squirrel_focus_out_free_status",
+    "squirrel_focus_out_destroy_session",
+    "squirrel_second_context_create_session",
+    "squirrel_second_context_select_schema",
+    "squirrel_second_context_process_key",
+    "linux_followup.focus_reset_ordering",
+    "linux_followup.ibus_focus_reset_ordering",
+    "linux_followup.fcitx_surrounding_text_scope",
+    "squirrel_second_context_destroy_session",
+    "squirrel_sync_user_data",
+    "squirrel_create_session_after_sync",
+    "squirrel_destroy_after_sync",
+    "squirrel_reinitialize_after_sync",
+    "squirrel_create_session_after_reinitialize",
+    "squirrel_destroy_after_reinitialize",
+    "squirrel_finalize",
+    "squirrel_teardown_notification_handler",
+    "squirrel_teardown_setup_reset",
+    "squirrel_teardown_remove_runtime"
+  ],
+  "expected_behavior": "Squirrel/macOS app-level setup, per-input-context sessions, key processing, context/status/commit reads, focus cleanup, notifications, stale-session rejection, and reinitialize teardown remain reproducible through Yune RimeApi calls.",
+  "observed_behavior": "Direct Squirrel app integration was not made mandatory; the source-modeled ABI fixture completed through Yune RimeApi and preserved the direct-run blocker for later frontend verification.",
+  "blocker_or_gap": "documented_blocker: direct Squirrel bundle integration is outside ordinary cargo test and requires local app/input-method packaging.",
+  "reproduction_status": "minimized_fixture_plus_documented_blocker",
+  "notifications": [
+    {
+      "handler": "squirrel_app_handler_primary",
+      "session": "app_global",
+      "message_type": "deploy",
+      "message_value": "start"
+    },
+    {
+      "handler": "squirrel_app_handler_primary",
+      "session": "app_global",
+      "message_type": "deploy",
+      "message_value": "success"
+    },
+    {
+      "handler": "squirrel_app_handler_primary",
+      "session": "input_context_primary",
+      "message_type": "schema",
+      "message_value": "squirrel_luna/Squirrel Luna"
+    },
+    {
+      "handler": "squirrel_app_handler_primary",
+      "session": "input_context_primary",
+      "message_type": "option",
+      "message_value": "ascii_mode"
+    },
+    {
+      "handler": "squirrel_app_handler_replacement",
+      "session": "input_context_primary",
+      "message_type": "option",
+      "message_value": "!ascii_mode"
+    }
+  ],
+  "free_pairs": [
+    {
+      "get_call": "squirrel_get_status",
+      "free_call": "squirrel_free_status",
+      "same_object": true
+    },
+    {
+      "get_call": "squirrel_get_context",
+      "free_call": "squirrel_free_context",
+      "same_object": true
+    },
+    {
+      "get_call": "squirrel_get_commit",
+      "free_call": "squirrel_free_commit",
+      "same_object": true
+    },
+    {
+      "get_call": "squirrel_focus_out_get_status",
+      "free_call": "squirrel_focus_out_free_status",
+      "same_object": true
+    }
+  ],
+  "stale_sessions": [
+    {
+      "after": "squirrel_focus_out_destroy_session",
+      "operation": "find_session",
+      "accepted": false
+    },
+    {
+      "after": "squirrel_focus_out_destroy_session",
+      "operation": "get_context",
+      "accepted": false
+    },
+    {
+      "after": "sync_user_data",
+      "operation": "create_session",
+      "accepted": true
+    },
+    {
+      "after": "finalize",
+      "operation": "create_session",
+      "accepted": false
+    },
+    {
+      "after": "finalize",
+      "operation": "find_session",
+      "accepted": false
+    }
+  ],
+  "mismatch": {
+    "expected_behavior": "Squirrel/macOS app-level lifecycle maps to safe RIME ABI calls before any compatibility fix is attempted.",
+    "observed_behavior": "The minimized source-modeled fixture is reproducible locally; direct Squirrel bundle execution remains a documented blocker rather than a hidden test dependency.",
+    "classification": "blocker",
+    "reproduction_status": "documented_blocker"
+  }
+}

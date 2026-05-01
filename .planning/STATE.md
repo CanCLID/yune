@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 planned
-last_updated: "2026-05-01T11:26:24.299Z"
-last_activity: 2026-05-01 -- Phase 06 Wave 2 complete
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-05-01T13:33:25.664Z"
+last_activity: 2026-05-01
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 22
-  completed_plans: 18
-  percent: 82
+  completed_plans: 21
+  percent: 95
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 6 (06) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Next phase: 6 (Real Frontend Validation And Benchmark)
-Status: Executing Phase 06
-Last activity: 2026-05-01 -- Phase 06 Wave 2 complete
+Status: Ready to execute
+Last activity: 2026-05-01
 
-Progress: [████████░░] 82%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [████████░░] 82%
 | Phase 03-schema-pipeline-depth P01 | 2h 5m | 3 tasks | 2 files |
 | Phase 04-compiled-dictionary-data P03 | 7min | 3 tasks | 8 files |
 | Phase 04-compiled-dictionary-data P04 | 16min | 3 tasks | 8 files |
+| Phase 06 P03 | 27min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,9 @@ Recent decisions affecting current work:
 - 04-04: Correction/tolerance data is represented as normalized TableDictionary metadata and merged through compiled/source dictionary paths.
 - 04-04: Lookup expansion preserves original input first, then correction canonicalization, then tolerance candidates.
 - 04-04: Correction/tolerance parser counts are capped before allocation and malformed compiled sections fall back with structured diagnostics.
+- 06-03: Squirrel/macOS validation is represented as a source-modeled RimeApi lifecycle fixture plus documented direct-run blocker rather than a mandatory app bundle or input-method registration step.
+- 06-03: Linux ibus-rime and fcitx-rime validation remains follow-up documentation with safe ABI source-model markers in native_frontends.rs, not a required daemon dependency for cargo test.
+- 06-03: Native frontend mismatch capture continues to reuse the Phase 06 host trace schema and sanitized fixture rules instead of inventing a new target-specific trace format.
 
 ### Pending Todos
 
@@ -122,9 +126,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: --stopped-at
-Stopped at: Phase 6 planned
-Resume file: .planning/phases/06-real-frontend-validation-and-benchmark/06-01-PLAN.md
+Last session: 2026-05-01T13:33:25.659Z
+Stopped at: Completed 06-03-PLAN.md
+Resume file: None
 
 **Completed Phase:** 05 (UserDB And Scaling Hardening) — 4 plans — 2026-04-30
 **Next Phase:** 06 (Real Frontend Validation And Benchmark) — 4 plans

@@ -6,6 +6,7 @@ use yune_rime_api::{
 };
 
 pub(crate) mod native;
+pub(crate) mod native_frontends;
 pub(crate) mod typeduck_web;
 
 pub(crate) const BASELINE_TRACE_FIXTURE: &str =

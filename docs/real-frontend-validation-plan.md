@@ -38,3 +38,11 @@ It should not replace native IME host validation: browser/WebAssembly integratio
 - Focused regression tests for any observed ABI/runtime mismatch.
 - Benchmark baselines for frontend-sensitive paths.
 - A go/no-go decision for beginning AI-native candidate/ranking design.
+
+## Phase 6 final outcomes
+
+- Native host validation: `fixtures/frontend-traces/native-host-lifecycle.json` and `.planning/phases/06-real-frontend-validation-and-benchmark/06-01-SUMMARY.md` preserve the cdylib-backed `rime_get_api` lifecycle trace.
+- TypeDuck-Web validation: `fixtures/frontend-traces/typeduck-web-basic.json`, `docs/frontend-validation/typeduck-web.md`, and `.planning/phases/06-real-frontend-validation-and-benchmark/06-02-SUMMARY.md` preserve the browser/WebAssembly wrapper-shaped path and browser-only limits.
+- Squirrel/macOS and Linux validation scope: `fixtures/frontend-traces/squirrel-lifecycle.json`, `docs/frontend-validation/squirrel-macos.md`, `docs/frontend-validation/linux-frontends.md`, and `.planning/phases/06-real-frontend-validation-and-benchmark/06-03-SUMMARY.md` preserve the native frontend blocker and follow-up trail.
+- Frontend benchmark baselines: `docs/frontend-validation/benchmark-baselines.md` records ABI-observed session, `RimeProcessKey`, deploy/dictionary, and userdb/sync measurements.
+- AI-native readiness: `docs/frontend-validation/ai-native-readiness.md` records the Phase 6 `GO WITH CONDITIONS` recommendation for beginning AI-native candidate/ranking design without implementing providers, rankers, context policy, memory policy, or privacy controls.

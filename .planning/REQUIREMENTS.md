@@ -65,8 +65,10 @@ Requirements for the next validation milestone before AI-native product work.
 
 ### Frontend-Sensitive Benchmarks
 
-- [ ] **BENCH-01**: Benchmarks record baseline latency for session create/destroy, per-key `RimeProcessKey`, schema deployment, dictionary loading, and userdb learning/sync paths.
-- [ ] **BENCH-02**: Benchmark output is reproducible enough to compare future frontend or AI-native changes against the compatibility foundation baseline.
+- [x] **BENCH-01
+**: Benchmarks record baseline latency for session create/destroy, per-key `RimeProcessKey`, schema deployment, dictionary loading, and userdb learning/sync paths.
+- [x] **BENCH-02
+**: Benchmark output is reproducible enough to compare future frontend or AI-native changes against the compatibility foundation baseline.
 
 ## Future Requirements
 

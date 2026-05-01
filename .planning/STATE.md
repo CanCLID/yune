@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 06 Wave 3 complete
-last_updated: "2026-05-01T13:33:25.664Z"
-last_activity: 2026-05-01 -- Phase 06 Wave 3 complete
+status: verifying
+stopped_at: Completed 06-04-PLAN.md
+last_updated: "2026-05-01T13:56:03.915Z"
+last_activity: 2026-05-01
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 Phase: 6 (06) — EXECUTING
 Plan: 4 of 4
 Next phase: 6 (Real Frontend Validation And Benchmark)
-Status: Executing Phase 06
-Last activity: 2026-05-01 -- Phase 06 Wave 3 complete
+Status: Phase complete — ready for verification
+Last activity: 2026-05-01
 
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [██████████] 95%
 | Phase 04-compiled-dictionary-data P03 | 7min | 3 tasks | 8 files |
 | Phase 04-compiled-dictionary-data P04 | 16min | 3 tasks | 8 files |
 | Phase 06 P03 | 27min | 3 tasks | 6 files |
+| Phase 06-real-frontend-validation-and-benchmark P04 | 12min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,9 @@ Recent decisions affecting current work:
 - 06-03: Squirrel/macOS validation is represented as a source-modeled RimeApi lifecycle fixture plus documented direct-run blocker rather than a mandatory app bundle or input-method registration step.
 - 06-03: Linux ibus-rime and fcitx-rime validation remains follow-up documentation with safe ABI source-model markers in native_frontends.rs, not a required daemon dependency for cargo test.
 - 06-03: Native frontend mismatch capture continues to reuse the Phase 06 host trace schema and sanitized fixture rules instead of inventing a new target-specific trace format.
+- Frontend benchmark baselines use a dependency-free Cargo bench target instead of Criterion to preserve MSRV safety and avoid unnecessary benchmark infrastructure.
+- BENCH-01/BENCH-02 measurements stay at the rime_get_api / RimeApi function-table boundary rather than direct yune-core calls.
+- AI-native readiness is GO WITH CONDITIONS, based on Phase 6 validation and benchmarks while keeping providers, rankers, context policy, memory policy, and privacy controls out of scope.
 
 ### Pending Todos
 
@@ -126,9 +130,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-01T13:33:25.659Z
-Stopped at: Phase 06 Wave 3 complete
-Resume file: .planning/phases/06-real-frontend-validation-and-benchmark/06-04-PLAN.md
+Last session: 2026-05-01T13:56:03.910Z
+Stopped at: Completed 06-04-PLAN.md
+Resume file: None
 
 **Completed Phase:** 05 (UserDB And Scaling Hardening) — 4 plans — 2026-04-30
 **Next Phase:** 06 (Real Frontend Validation And Benchmark) — 4 plans

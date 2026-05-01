@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{fmt::Write as _, mem, os::raw::c_int, ptr};
 
 use yune_rime_api::{

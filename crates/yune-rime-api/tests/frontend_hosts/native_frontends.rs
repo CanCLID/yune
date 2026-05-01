@@ -8,7 +8,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use yune_rime_api::{rime_get_api, RimeApi, RimeSessionId, RimeTraits, FALSE, TRUE};
+use yune_rime_api::{rime_get_api, RimeApi, RimeContext, RimeSessionId, RimeTraits, FALSE, TRUE};
 
 use super::{empty_commit, empty_context, empty_status, empty_traits, FrontendHostTrace};
 
@@ -289,12 +289,16 @@ fn run_squirrel_lifecycle(api: &RimeApi) -> FrontendHostTrace {
     read_context(
         &mut trace,
         first_session,
-        get_context,
-        free_context,
-        "squirrel_get_context",
-        "squirrel_free_context",
-        2,
-        1,
+        ContextReadApi {
+            get_context,
+            free_context,
+        },
+        ContextReadExpectation {
+            get_call: "squirrel_get_context",
+            free_call: "squirrel_free_context",
+            expected_page_size: 2,
+            min_candidates: 1,
+        },
     );
 
     let committed = commit_composition(first_session);
@@ -496,38 +500,46 @@ fn read_status(
     );
 }
 
+struct ContextReadApi {
+    get_context: unsafe extern "C" fn(RimeSessionId, *mut RimeContext) -> c_int,
+    free_context: unsafe extern "C" fn(*mut RimeContext) -> c_int,
+}
+
+struct ContextReadExpectation {
+    get_call: &'static str,
+    free_call: &'static str,
+    expected_page_size: c_int,
+    min_candidates: c_int,
+}
+
 fn read_context(
     trace: &mut FrontendHostTrace,
     session_id: RimeSessionId,
-    get_context: unsafe extern "C" fn(RimeSessionId, *mut yune_rime_api::RimeContext) -> c_int,
-    free_context: unsafe extern "C" fn(*mut yune_rime_api::RimeContext) -> c_int,
-    get_call: &str,
-    free_call: &str,
-    expected_page_size: c_int,
-    min_candidates: c_int,
+    api: ContextReadApi,
+    expectation: ContextReadExpectation,
 ) {
     let mut context = empty_context();
     // SAFETY: context points to caller-owned writable storage and is freed by the
     // matching free_context call before pointer fields are discarded.
-    let context_result = unsafe { get_context(session_id, &mut context) };
+    let context_result = unsafe { (api.get_context)(session_id, &mut context) };
     assert_eq!(
         context_result, TRUE,
         "native frontend source model reads context"
     );
-    assert_eq!(context.menu.page_size, expected_page_size);
-    assert!(context.menu.num_candidates >= min_candidates);
+    assert_eq!(context.menu.page_size, expectation.expected_page_size);
+    assert!(context.menu.num_candidates >= expectation.min_candidates);
     let context_ptr = &mut context as *mut _ as usize;
-    trace.call_bool(get_call, context_result);
+    trace.call_bool(expectation.get_call, context_result);
     // SAFETY: free_context receives the same caller-owned context object returned by get_context.
-    let free_context_result = unsafe { free_context(&mut context) };
+    let free_context_result = unsafe { (api.free_context)(&mut context) };
     assert_eq!(
         free_context_result, TRUE,
         "native frontend source model frees context"
     );
-    trace.call_bool(free_call, free_context_result);
+    trace.call_bool(expectation.free_call, free_context_result);
     trace.record_free_pair(
-        get_call,
-        free_call,
+        expectation.get_call,
+        expectation.free_call,
         context_ptr == &mut context as *mut _ as usize,
     );
 }

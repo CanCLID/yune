@@ -26,12 +26,13 @@ fn main() {
     let api = api_table();
     validate_api_table(api);
 
-    let mut results = Vec::new();
-    results.push(run_session_lifecycle(api));
-    results.push(run_simple_ascii_key(api));
-    results.push(run_schema_loaded_key(api));
-    results.push(run_deploy_dictionary_load(api));
-    results.push(run_userdb_learning_sync(api));
+    let results = vec![
+        run_session_lifecycle(api),
+        run_simple_ascii_key(api),
+        run_schema_loaded_key(api),
+        run_deploy_dictionary_load(api),
+        run_userdb_learning_sync(api),
+    ];
 
     print_results(&results);
 }

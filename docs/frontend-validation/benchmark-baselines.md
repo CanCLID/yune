@@ -11,7 +11,7 @@ Phase 06 Plan 04 records ABI-observed frontend-sensitive baselines for `BENCH-01
 ## How to run
 
 ```bash
-/Users/trenton/.cargo/bin/cargo bench -p yune-rime-api --bench frontend_baselines
+cargo bench -p yune-rime-api --bench frontend_baselines
 ```
 
 The bench target is declared in `crates/yune-rime-api/Cargo.toml` as:
@@ -40,7 +40,7 @@ harness = false
 
 ## Baseline results
 
-Command output from `/Users/trenton/.cargo/bin/cargo bench -p yune-rime-api --bench frontend_baselines`:
+Command output from `cargo bench -p yune-rime-api --bench frontend_baselines`:
 
 | benchmark | operations | fixture | data_size | total_ms | us_per_op |
 |---|---:|---|---|---:|---:|

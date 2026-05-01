@@ -57,18 +57,16 @@ Requirements for the next validation milestone before AI-native product work.
 
 ### Real Frontend Validation
 
-- [ ] **FRONTEND-VALIDATION-01**: A host-shaped native loader or real frontend path validates `rime_get_api`, setup, initialize, deploy, schema selection, session lifecycle, key processing, context/status reads, commit text, and teardown.
-- [ ] **FRONTEND-VALIDATION-02**: TypeDuck-Web-style browser/WebAssembly integration is attempted as a real application frontend path, with wrapper gaps and browser-specific limits documented.
+- [x] **FRONTEND-VALIDATION-01**: A host-shaped native loader or real frontend path validates `rime_get_api`, setup, initialize, deploy, schema selection, session lifecycle, key processing, context/status reads, commit text, and teardown.
+- [x] **FRONTEND-VALIDATION-02**: TypeDuck-Web-style browser/WebAssembly integration is attempted as a real application frontend path, with wrapper gaps and browser-specific limits documented.
 - [x] **FRONTEND-VALIDATION-03**: Squirrel or a macOS frontend-shaped integration is attempted after the browser/WebAssembly path, with reproducible blockers documented if direct integration cannot run locally.
 - [x] **FRONTEND-VALIDATION-04**: ibus-rime or fcitx-rime validation is scoped after the macOS path, with environment requirements and lifecycle differences documented.
 - [x] **FRONTEND-VALIDATION-05**: Frontend-observed ABI/runtime mismatches are captured as notes, fixtures, or focused regression tests before being fixed.
 
 ### Frontend-Sensitive Benchmarks
 
-- [x] **BENCH-01
-**: Benchmarks record baseline latency for session create/destroy, per-key `RimeProcessKey`, schema deployment, dictionary loading, and userdb learning/sync paths.
-- [x] **BENCH-02
-**: Benchmark output is reproducible enough to compare future frontend or AI-native changes against the compatibility foundation baseline.
+- [x] **BENCH-01**: Benchmarks record baseline latency for session create/destroy, per-key `RimeProcessKey`, schema deployment, dictionary loading, and userdb learning/sync paths.
+- [x] **BENCH-02**: Benchmark output is reproducible enough to compare future frontend or AI-native changes against the compatibility foundation baseline.
 
 ## Future Requirements
 
@@ -136,13 +134,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAL-02 | Phase 1 | Pending |
 | QUAL-03 | Phase 5 | Complete |
 | QUAL-04 | Phase 5 | Complete |
-| FRONTEND-VALIDATION-01 | Phase 6 | Pending |
-| FRONTEND-VALIDATION-02 | Phase 6 | Pending |
+| FRONTEND-VALIDATION-01 | Phase 6 | Complete |
+| FRONTEND-VALIDATION-02 | Phase 6 | Complete |
 | FRONTEND-VALIDATION-03 | Phase 6 | Complete |
 | FRONTEND-VALIDATION-04 | Phase 6 | Complete |
 | FRONTEND-VALIDATION-05 | Phase 6 | Complete |
-| BENCH-01 | Phase 6 | Pending |
-| BENCH-02 | Phase 6 | Pending |
+| BENCH-01 | Phase 6 | Complete |
+| BENCH-02 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 25 total

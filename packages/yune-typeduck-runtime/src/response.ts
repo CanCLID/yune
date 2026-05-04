@@ -60,15 +60,20 @@ export function readTypeDuckResponse(
     }
 
     const text = bindings.module.UTF8ToString(jsonPtr);
-    const parsed = JSON.parse(text) as unknown;
+    const parsed = parseResponseJson(text);
     const response = parseTypeDuckResponse(parsed);
-    const handled = bindings.responseHandled(responsePtr) !== 0;
-    if (response.handled !== handled) {
-      throw new TypeDuckResponseError("TypeDuck response handled field disagrees with adapter");
-    }
+    response.handled = bindings.responseHandled(responsePtr) !== 0;
     return response;
   } finally {
     bindings.freeResponse(responsePtr);
+  }
+}
+
+function parseResponseJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new TypeDuckResponseError("TypeDuck adapter returned malformed response JSON");
   }
 }
 

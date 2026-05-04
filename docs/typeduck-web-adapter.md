@@ -70,6 +70,8 @@ The adapter exposes one active process-global Yune/RIME service. Browser callers
 
 `yune_typeduck_cleanup` destroys the adapter session and finalizes the process-global RIME service. A later init may create a new service, but multiple simultaneous TypeDuck states with different shared/user directories are unsupported by this Phase 7 contract.
 
+When using the TypeScript wrapper, treat one Emscripten Module instance as having one active `TypeDuckRuntime` at a time. `runtime.cleanup()` calls `yune_typeduck_cleanup` to finalize the process-global service, is idempotent at the wrapper layer, and zeros the consumed native state pointer before any later teardown path can reuse it. Wrapper operations after `cleanup()` throw deterministic lifecycle errors instead of calling the consumed native state pointer. Raw `yune_typeduck_cleanup(statePtr)` remains a low-level operation for non-wrapper hosts; wrapper callers do not manage that raw cleanup call directly.
+
 ## Browser filesystem contract
 
 The Rust adapter only receives C string paths. The JS/Emscripten host is responsible for creating and syncing the virtual filesystem.
@@ -139,7 +141,100 @@ Emscripten must receive the same list with underscore-prefixed native names so o
 
 The export contract is adapter-specific. It must not add `Rime*`, `rime_get_api`, or librime-shaped function-table symbols to the TypeDuck-Web browser contract.
 
-## Suggested JS flow
+## TypeScript runtime package
+
+Phase 8 adds repository-owned bridge code at `packages/yune-typeduck-runtime` with package name `@yune-ime/typeduck-runtime`. The package is a typed wrapper around the canonical `yune_typeduck_*` adapter symbols for downstream integration; it is not a TypeDuck-Web app scaffold, bundler setup, generated binding pipeline, or browser filesystem orchestration layer.
+
+Build and test it with package-local npm tooling only:
+
+```bash
+npm --prefix packages/yune-typeduck-runtime run build
+npm --prefix packages/yune-typeduck-runtime test
+```
+
+Import the wrapper and deterministic key mapper from the package:
+
+```typescript
+import { TypeDuckRuntime, keyEventToRimeKey } from "@yune-ime/typeduck-runtime";
+```
+
+### Wrapper initialization and Module injection
+
+Construct the wrapper only after the Emscripten Module is initialized and exposes `cwrap` plus `UTF8ToString`. The wrapper binds only the canonical `yune_typeduck_*` symbols listed in this document; retaining those exports and runtime methods remains the job of the Phase 7 build script and host Emscripten flags.
+
+The browser host still owns virtual filesystem readiness before init. A typical wrapper flow is:
+
+```typescript
+await syncIdbfsFromDisk();
+
+const runtime = TypeDuckRuntime.init(Module, {
+  sharedDataDir: "/yune/shared",
+  userDataDir: "/yune/user",
+  schemaId: "luna_pinyin",
+});
+
+const response = runtime.processKeyboardEvent({
+  key: event.key,
+  shiftKey: event.shiftKey,
+  ctrlKey: event.ctrlKey,
+  altKey: event.altKey,
+  metaKey: event.metaKey,
+  type: event.type,
+});
+renderCandidates(response.context?.candidates ?? []);
+appendCommits(response.commits);
+
+runtime.cleanup();
+await syncIdbfsToDisk();
+```
+
+### Wrapper operations and adapter mapping
+
+The public wrapper operations map directly to the adapter contract:
+
+| Wrapper operation | Adapter operation |
+|-------------------|-------------------|
+| `TypeDuckRuntime.init(...)` | `yune_typeduck_init` |
+| `runtime.processKey(keycode, mask)` | `yune_typeduck_process_key` |
+| `runtime.processKeyboardEvent(event)` | `keyEventToRimeKey(event)` plus `runtime.processKey(...)` |
+| `runtime.selectCandidate(index)` | `yune_typeduck_select_candidate` |
+| `runtime.deleteCandidate(index)` | `yune_typeduck_delete_candidate` |
+| `runtime.flipPage(backward)` | `yune_typeduck_flip_page` |
+| `runtime.deploy()` | `yune_typeduck_deploy` |
+| `runtime.customize(configId, key, value)` | `yune_typeduck_customize` |
+| `runtime.cleanup()` | `yune_typeduck_cleanup` |
+
+Candidate indices are page-relative, matching the native adapter contract. `deploy` and `customize` are explicit operations; after either operation, the browser host should sync IDBFS or equivalent persistent storage back to disk.
+
+### Wrapper response ownership
+
+Low-level C/WASM adapter operations that return `YuneTypeDuckResponse` allocate owned response pointers that must be freed exactly once. Wrapper callers receive parsed `TypeDuckResponse` objects, not raw response pointers, and should not call `yune_typeduck_free_response` directly.
+
+The wrapper copies the JSON string with `Module.UTF8ToString`, parses and validates the response envelope, reads handled state through `yune_typeduck_response_handled`, and calls `yune_typeduck_free_response` in a centralized `finally` path. Null response pointers, null JSON pointers, malformed JSON, and malformed response envelopes surface as deterministic wrapper errors. The wrapper does not hide missing assets or runtime failures; those remain visible until Phase 9 adds recovery paths.
+
+Callers that bypass the wrapper must still follow the low-level rule: copy JSON before `yune_typeduck_free_response`, and free each non-null owned response pointer exactly once.
+
+### Browser key mapping
+
+The wrapper exposes `keyEventToRimeKey(event)` and `processKeyboardEvent(event)`. The accepted event is a narrow DOM-free object with `key`, optional `shiftKey`, `ctrlKey`, `altKey`, `metaKey`, and optional `type`. Mapping uses `event.key` semantics and intentionally does not depend on deprecated keyboard APIs.
+
+Phase 8 covers printable keys, Space, Enter, Backspace, Escape, Delete, arrows, PageUp/PageDown, Home/End, digit selection keys, and common modifiers. Exhaustive cross-browser keyboard edge cases are deferred until Phase 10 observes the real TypeDuck-Web seam.
+
+```typescript
+const { keycode, mask } = keyEventToRimeKey({
+  key: event.key,
+  shiftKey: event.shiftKey,
+  ctrlKey: event.ctrlKey,
+  altKey: event.altKey,
+  metaKey: event.metaKey,
+  type: event.type,
+});
+const response = runtime.processKey(keycode, mask);
+```
+
+## Low-level JS flow
+
+Hosts that do not use the TypeScript wrapper can still call the raw C/WASM exports directly:
 
 ```js
 const init = Module.cwrap('yune_typeduck_init', 'number', ['string', 'string', 'string']);
@@ -166,15 +261,13 @@ cleanup(state);
 await syncIdbfsToDisk();
 ```
 
-`deploy` and `customize` are explicit operations. After either operation, the browser host should sync IDBFS back to persistent storage.
-
 ## Current scope
 
-This adapter is native-tested through Rust integration tests. It does not yet include:
+This adapter is native-tested through Rust integration tests, and Phase 8 adds the package-local TypeScript wrapper documented above. It does not yet include:
 
-- TypeDuck-Web source patches.
-- A JS package, bundler config, or generated TypeScript wrapper.
-- Browser E2E coverage.
-- Browser filesystem persistence orchestration beyond documenting host responsibilities.
+- Upstream TypeDuck-Web checkout, source patches, or bridge replacement; Phase 10 owns that integration.
+- Real browser E2E coverage; Phase 10 owns browser app validation after the upstream seam is known.
+- Generated bindings, broad frontend bundler scaffolding, or root JavaScript workspace setup.
+- Browser filesystem persistence orchestration beyond documenting host responsibilities; Phase 9 owns MEMFS/IDBFS setup, schema and dictionary asset preload, persistence sync, and recovery paths.
 - Multi-instance isolation beyond one active process-global Yune/RIME service.
-- AI-native ranking or provider integration.
+- AI-native provider, ranking, context, memory, or privacy behavior; those remain deferred to a future milestone.

@@ -81,11 +81,16 @@ describe("readTypeDuckResponse", () => {
     const fake = new FakeTypeDuckModule();
     const ptr = fake.responseText("{not json", true);
 
-    expect(() => readTypeDuckResponse(ptr, bindings(fake))).toThrow(TypeDuckResponseError);
-    expect(() => readTypeDuckResponse(ptr, bindings(fake))).toThrow(
-      "TypeDuck adapter returned malformed response JSON",
-    );
-    expect(fake.freedResponses()).toEqual([ptr, ptr]);
+    let thrown: unknown;
+    try {
+      readTypeDuckResponse(ptr, bindings(fake));
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(TypeDuckResponseError);
+    expect(thrown).toHaveProperty("message", "TypeDuck adapter returned malformed response JSON");
+    expect(fake.freedResponses()).toEqual([ptr]);
   });
 
   it("throws a deterministic error for non-object JSON and still frees the response", () => {

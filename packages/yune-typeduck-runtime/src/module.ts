@@ -100,7 +100,12 @@ function bindExport(
   symbol: TypeDuckExport,
 ): EmscriptenWrappedFunction {
   const [returnType, argTypes] = SIGNATURES[symbol];
-  const wrapped = module.cwrap(symbol, returnType, [...argTypes]);
+  let wrapped: EmscriptenWrappedFunction;
+  try {
+    wrapped = module.cwrap(symbol, returnType, [...argTypes]);
+  } catch {
+    throw new TypeDuckBindingError(`Missing TypeDuck export: ${symbol}`);
+  }
   if (typeof wrapped !== "function") {
     throw new TypeDuckBindingError(`Missing TypeDuck export: ${symbol}`);
   }

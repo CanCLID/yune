@@ -64,17 +64,25 @@ Responses contain:
 
 If an operation cannot capture normal state, the response may include an `error` string.
 
+## Lifecycle constraints
+
+The adapter exposes one active process-global Yune/RIME service. Browser callers should treat the pointer returned by `yune_typeduck_init` as the single live TypeDuck state for the current Module instance.
+
+`yune_typeduck_cleanup` destroys the adapter session and finalizes the process-global RIME service. A later init may create a new service, but multiple simultaneous TypeDuck states with different shared/user directories are unsupported by this Phase 7 contract.
+
 ## Browser filesystem contract
 
 The Rust adapter only receives C string paths. The JS/Emscripten host is responsible for creating and syncing the virtual filesystem.
 
-Expected layout:
+Expected layout before calling `yune_typeduck_init`:
 
 - `shared_data_dir`: deploy source files such as `default.yaml`, `<schema>.schema.yaml`, and `<dict>.dict.yaml`.
 - `user_data_dir`: user state, custom patches, userdb data, and the deployed `build/` directory.
 - `user_data_dir/build`: deployed or preloaded runtime configs used by schema selection and key processing.
 
-For Emscripten, TypeDuck-Web glue should mount MEMFS/IDBFS before calling `yune_typeduck_init`.
+For Emscripten, TypeDuck-Web glue should mount MEMFS/IDBFS before calling `yune_typeduck_init`. The schema/dictionary assets must be preloaded into the virtual filesystem before init; Phase 7 native fallback tests require init to fail deterministically when those assets are missing rather than fabricating placeholder browser data.
+
+The persistence sync remains a JS host responsibility until Phase 9. Browser code should sync persistent storage before init and after deploy/customize or userdb-changing flows, but this Rust adapter does not mount IDBFS, choose storage policy, or hide sync failures.
 
 ## WASM build/export contract
 
@@ -86,7 +94,13 @@ Use one repository command path for the browser build/export check:
 ./scripts/typeduck-wasm-build.sh
 ```
 
-The command must either build/check the Emscripten output or fail with an actionable blocker. Missing local browser tooling is a blocker, not a silent skip or a successful browser build:
+The command must either build/check the Emscripten output or fail with an actionable blocker. A successful browser build prints verified output such as:
+
+```text
+TypeDuck WASM build verified: target/wasm32-unknown-emscripten/debug/yune_rime_api.wasm
+```
+
+Missing local browser tooling is a blocker, not a silent skip or a successful browser build. In blocker mode, the script prints `TypeDuck WASM build blocked:` and then runs the deterministic native fallback `cargo test -p yune-rime-api --test typeduck_web`:
 
 ```text
 TypeDuck WASM build blocked: missing wasm32-unknown-emscripten Rust target.
@@ -161,6 +175,6 @@ This adapter is native-tested through Rust integration tests. It does not yet in
 - TypeDuck-Web source patches.
 - A JS package, bundler config, or generated TypeScript wrapper.
 - Browser E2E coverage.
-- Emscripten export-list/linker configuration.
+- Browser filesystem persistence orchestration beyond documenting host responsibilities.
 - Multi-instance isolation beyond one active process-global Yune/RIME service.
 - AI-native ranking or provider integration.

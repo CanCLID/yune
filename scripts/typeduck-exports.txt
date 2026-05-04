@@ -1,0 +1,11 @@
+yune_typeduck_init
+yune_typeduck_process_key
+yune_typeduck_select_candidate
+yune_typeduck_delete_candidate
+yune_typeduck_flip_page
+yune_typeduck_deploy
+yune_typeduck_customize
+yune_typeduck_cleanup
+yune_typeduck_response_json
+yune_typeduck_response_handled
+yune_typeduck_free_response

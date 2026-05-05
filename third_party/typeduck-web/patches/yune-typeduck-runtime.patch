@@ -1,0 +1,315 @@
+diff --git a/package.json b/package.json
+index cbe61db..3f7e3f5 100644
+--- a/package.json
++++ b/package.json
+@@ -15,6 +15,7 @@
+ 		"preview": "vite preview --host"
+ 	},
+ 	"dependencies": {
++		"@yune-ime/typeduck-runtime": "file:../../../packages/yune-typeduck-runtime",
+ 		"react": "^18.3.1",
+ 		"react-dom": "^18.3.1",
+ 		"react-toastify": "^10.0.5",
+diff --git a/src/worker.ts b/src/worker.ts
+index 92b9a90..ceca187 100644
+--- a/src/worker.ts
++++ b/src/worker.ts
+@@ -1,137 +1,189 @@
+-import type { Actions, ListenerArgsMap, Message, RimeResult, RimeAPI, RimeNotification, RimeDeployStatus } from "./types";
++/**
++ * TypeDuck-Web worker with Yune runtime integration
++ *
++ * This patch replaces librime/WASM binding with Yune runtime adapter
++ * from @yune-ime/typeduck-runtime while preserving Actions interface
++ * and message handling logic.
++ */
+ 
+-type TypeToString<T> = T extends number ? "number"
+-	: T extends string ? "string"
+-	: T extends readonly unknown[] ? "array"
+-	: T extends boolean ? "boolean"
+-	: null;
++import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences } from "./types";
+ 
+-type ArgsToString<T> = { [P in keyof T]: TypeToString<T[P]> };
++// Yune integration imports
++import {
++  initYuneRuntime,
++  cleanupYuneRuntime,
++  processKey,
++  selectCandidate,
++  deleteCandidate,
++  flipPage,
++  deploy,
++  customize,
++  setOption,
++} from "../yune-integration/adapter.js";
+ 
++import {
++  loadExplicitAssets,
++  validateExplicitAssets,
++  type ExplicitTypeDuckAssets,
++} from "../yune-integration/assets.js";
++
++import type { EmscriptenTypeDuckModule } from "@yune-ime/typeduck-runtime";
++
++// Module and FS provided by Yune Emscripten artifact
+ interface Module {
+-	ccall<Method extends keyof RimeAPI>(
+-		ident: Method,
+-		returnType: TypeToString<ReturnType<RimeAPI[Method]>>,
+-		argTypes: ArgsToString<Parameters<RimeAPI[Method]>>,
+-		args: Parameters<RimeAPI[Method]>,
+-		opts?: Emscripten.CCallOpts,
+-	): ReturnType<RimeAPI[Method]>;
+-	FS: typeof FS;
++  FS: typeof FS;
+ }
+ 
+ declare const Module: Module;
+ 
+ interface PredefinedModule {
+-	printErr: (message: string) => void;
+-	onRuntimeInitialized: () => void;
+-	locateFile: (path: string, prefix: string) => string;
++  printErr: (message: string) => void;
++  onRuntimeInitialized: () => void;
++  locateFile: (path: string, prefix: string) => string;
+ }
+ 
+ declare const globalThis: {
+-	onRimeNotification<T extends keyof RimeNotification>(type: T, value: RimeNotification[T]): void;
+-	Module: PredefinedModule;
++  onRimeNotification<T extends keyof RimeNotification>(type: T, value: RimeNotification[T]): void;
++  Module: PredefinedModule;
+ };
+ 
++// Preserve upstream notification dispatch
+ globalThis.onRimeNotification = (type, value) => {
+-	switch (type) {
+-		case "deploy":
+-			dispatch("deployStatusChanged", value as RimeDeployStatus);
+-			break;
+-		case "schema":
+-			dispatch("schemaChanged", ...value.split("/") as [string, string]);
+-			break;
+-		case "option": {
+-			const disabled = value[0] === "!";
+-			dispatch("optionChanged", value.slice(+disabled), !disabled);
+-			break;
+-		}
+-	}
++  switch (type) {
++    case "deploy":
++      dispatch("deployStatusChanged", value as RimeDeployStatus);
++      break;
++    case "schema":
++      dispatch("schemaChanged", ...value.split("/") as [string, string]);
++      break;
++    case "option": {
++      const disabled = value[0] === "!";
++      dispatch("optionChanged", value.slice(+disabled), !disabled);
++      break;
++    }
++  }
+ };
+ 
+ function dispatch<K extends keyof ListenerArgsMap>(name: K, ...args: ListenerArgsMap[K]) {
+-	postMessage({ type: "listener", name, args });
+-}
+-
+-function syncUserDirectory(direction: "read" | "write") {
+-	return new Promise<void>((resolve, reject) => {
+-		Module.FS.syncfs(direction === "read", (err?: Error) => err ? reject(err) : resolve());
+-	});
++  postMessage({ type: "listener", name, args });
+ }
+ 
++// Yune adapter Actions implementation
+ const actions: Actions = {
+-	async setOption(option, value) {
+-		Module.ccall("set_option", null, ["string", "number"], [option, +value]);
+-	},
+-	async processKey(input) {
+-		const result = JSON.parse(Module.ccall("process_key", "string", ["string"], [input])) as RimeResult;
+-		if ("committed" in result) {
+-			await syncUserDirectory("write");
+-		}
+-		return result;
+-	},
+-	async selectCandidate(index) {
+-		return JSON.parse(Module.ccall("select_candidate", "string", ["number"], [index])) as RimeResult;
+-	},
+-	async deleteCandidate(index) {
+-		return JSON.parse(Module.ccall("delete_candidate", "string", ["number"], [index])) as RimeResult;
+-	},
+-	async flipPage(backward) {
+-		return JSON.parse(Module.ccall("flip_page", "string", ["boolean"], [backward])) as RimeResult;
+-	},
+-	async customize({ pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5 }) {
+-		return Module.ccall("customize", "boolean", ["number", "number"], [
+-			pageSize,
+-			[!isCangjie5, !enableLearning, !enableSentence, enableCorrection, !enableCompletion, /* showCangjieRoots */ true]
+-				.reduce((flags, curr) => (flags << 1) | +curr, 0),
+-		]);
+-	},
+-	async deploy() {
+-		const result = Module.ccall("deploy", "boolean", [], []);
+-		await syncUserDirectory("write");
+-		return result;
+-	},
++  async setOption(option, value) {
++    // Note: Yune adapter gap - setOption not in current TypeDuckRuntime
++    // Adapter raises error documenting gap per D-07
++    await setOption(option, value);
++  },
++  async processKey(input) {
++    const result = await processKey(input);
++    // Persistence sync handled by adapter
++    return result;
++  },
++  async selectCandidate(index) {
++    const result = await selectCandidate(index);
++    return result;
++  },
++  async deleteCandidate(index) {
++    const result = await deleteCandidate(index);
++    return result;
++  },
++  async flipPage(backward) {
++    const result = await flipPage(backward);
++    return result;
++  },
++  async customize(preferences) {
++    const result = await customize(preferences);
++    return result;
++  },
++  async deploy() {
++    const result = await deploy();
++    return result;
++  },
+ };
+ 
+ let loading = true;
+ const RIME_USER_DIR = "/rime";
+-const loadRime = new Promise<void>(resolve => {
+-	globalThis.Module = {
+-		printErr(message) {
+-			if (process.env.NODE_ENV !== "production" || location.search === "?debug") {
+-				const match = /^([IWEF])\S+ \S+ \S+ (.*)$/.exec(message);
+-				if (match) {
+-					console[({ I: "info", W: "warn", E: "error", F: "error" } as const)[match[1] as "I" | "W" | "E" | "F"]](`[${match[2]}`);
+-				}
+-				else {
+-					console.error(message);
+-				}
+-			}
+-		},
+-		async onRuntimeInitialized() {
+-			Module.FS.mkdir(RIME_USER_DIR);
+-			Module.FS.mount(IDBFS, {}, RIME_USER_DIR);
+-			await syncUserDirectory("read");
+-			const success = Module.ccall("init", "boolean", [], []);
+-			await syncUserDirectory("write");
+-			loading = false;
+-			dispatch("initialized", success);
+-			resolve();
+-		},
+-		locateFile(path) {
+-			return path;
+-		},
+-	};
+-	importScripts("rime.js");
++
++// Yune runtime initialization
++const loadRime = new Promise<void>((resolve, reject) => {
++  globalThis.Module = {
++    printErr(message) {
++      if (process.env.NODE_ENV !== "production" || location.search === "?debug") {
++        const match = /^([IWEF])\S+ \S+ \S+ (.*)$/.exec(message);
++        if (match) {
++          console[({ I: "info", W: "warn", E: "error", F: "error" } as const)[match[1] as "I" | "W" | "E" | "F"]](`[${match[2]}`);
++        }
++        else {
++          console.error(message);
++        }
++      }
++    },
++    async onRuntimeInitialized() {
++      try {
++        // Yune Emscripten Module is now ready
++        // Filesystem preparation and runtime init handled by adapter
++
++        // TODO: Configure explicit assets (Phase 10 E2E task)
++        // Assets must be provided by TypeDuck-Web app configuration
++        const assetsConfig: ExplicitTypeDuckAssets = {
++          defaultYaml: { type: "content", content: "" }, // Placeholder for E2E
++          schemaYaml: { type: "content", content: "" },   // Placeholder for E2E
++          dictionaryYaml: { type: "content", content: "" }, // Placeholder for E2E
++        };
++
++        const assets = await loadExplicitAssets(assetsConfig);
++        validateExplicitAssets(assets);
++
++        const initOptions = {
++          sharedDataDir: "/usr/share/rime-data",
++          userDataDir: RIME_USER_DIR,
++          schemaId: "luna_pinyin", // Default schema for E2E
++        };
++
++        await initYuneRuntime(
++          Module as EmscriptenTypeDuckModule,
++          Module.FS,
++          initOptions,
++          assets,
++          "luna_pinyin" // Default dictionary for E2E
++        );
++
++        loading = false;
++        dispatch("initialized", true);
++        resolve();
++      } catch (error) {
++        loading = false;
++        dispatch("initialized", false);
++        reject(error);
++      }
++    },
++    locateFile(path) {
++      // Yune WASM artifact path
++      return path.endsWith(".js") || path.endsWith(".wasm")
++        ? `../../../packages/yune-typeduck-runtime/dist/${path}`
++        : path;
++    },
++  };
++
++  // Load Yune Emscripten artifact
++  // Note: Build task must generate yune-typeduck.js from Phase 7 WASM artifact
++  importScripts("yune-typeduck.js");
+ });
+ 
+ addEventListener("message", async ({ data: { name, args } }: MessageEvent<Message>) => {
+-	if (loading) await loadRime;
+-	try {
+-		// @ts-expect-error Unactionable
+-		const result = await actions[name](...args);
+-		postMessage({ type: "success", result });
+-	}
+-	catch (error) {
+-		postMessage({ type: "error", error });
+-	}
++  if (loading) await loadRime;
++  try {
++    // @ts-expect-error Unactionable
++    const result = await actions[name](...args);
++    postMessage({ type: "success", result });
++  }
++  catch (error) {
++    postMessage({ type: "error", error });
++  }
+ });
++
++// Cleanup on worker termination
++addEventListener("unload", () => {
++  cleanupYuneRuntime();
++});
+\ No newline at end of file

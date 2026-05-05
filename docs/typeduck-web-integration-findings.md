@@ -276,4 +276,171 @@ The following are explicitly deferred and not part of this plan:
 **Next Plan**: 10-02 will implement minimal seam replacement using `@yune-ime/typeduck-runtime` and document any remaining blockers.
 
 ---
-*Updated: 2026-05-05T15:10:00Z*
+
+## Plan 10-02: Yune seam patch
+
+**Date**: 2026-05-05
+**Status**: Minimal patch generated, pending build gates and E2E asset configuration
+
+### Patch Scope
+
+Minimal patch touches two files only per D-03:
+
+1. `src/worker.ts` — Replace librime WASM binding with Yune runtime adapter
+   - Import Yune adapter functions from `yune-integration/adapter.js`
+   - Import asset loader from `yune-integration/assets.js`
+   - Replace `Module.ccall` calls with adapter exports (processKey, selectCandidate, deleteCandidate, flipPage, deploy, customize, setOption)
+   - Replace `importScripts("rime.js")` with `importScripts("yune-typeduck.js")` (Yune WASM artifact)
+   - Preserve notification dispatch, message handling, Actions interface
+   - Add cleanup on worker termination
+   - Preserve worker queue behavior and listener events
+
+2. `package.json` — Add package alias for local resolution
+   - Add `"@yune-ime/typeduck-runtime": "file:../../../packages/yune-typeduck-runtime"` dependency
+   - Enables upstream worker to import Yune package without publishing
+
+### Yune Integration Layer
+
+Created `third_party/typeduck-web/yune-integration/` directory with:
+
+1. **adapter.ts** — Yune seam adapter
+   - Imports TypeDuckRuntime, keyEventToRimeKey, filesystem helpers per D-04
+   - Enforces one-active-runtime-per-Module constraint per D-05
+   - Translates TypeDuckResponse to upstream RimeResult shape
+   - Parses upstream key sequence strings (e.g., `{BackSpace}`, `a`) to keyboard event-like objects
+   - Delegates persistence sync to Yune helpers (syncFromPersistenceBeforeInit, syncToPersistenceAfterMutation, deployAndSync, customizeAndSync)
+   - Documents setOption gap: throws error if called, requires Yune widening per D-07
+
+2. **assets.ts** — Explicit asset contract
+   - Requires TypeDuck-Web-owned default.yaml, schema YAML, dictionary YAML per D-06
+   - Validates no synthetic/fake/placeholder asset content
+   - Fails visibly when assets absent
+   - Provides asset checklist for init verification
+
+3. **README.md** — Integration instructions
+   - Patch application steps
+   - Lifecycle hooks (init, actions, cleanup)
+   - Contract mismatch documentation
+   - Known gaps and blockers
+   - Deferred items per D-14
+
+4. **package-alias.md** — Local package resolution methods
+   - Package.json alias (preferred)
+   - Vite resolve alias
+   - Relative import fallback
+
+### Contract Mismatches Addressed
+
+1. **String Input vs Keycode/Mask**
+   - Upstream: `processKey("{BackSpace}")`
+   - Yune: `processKey(keycode, mask)`
+   - Adapter: Parses string sequences to `TypeDuckKeyboardEventLike`, delegates to `keyEventToRimeKey`
+
+2. **RimeResult vs TypeDuckResponse**
+   - Upstream: `RimeResult` with `isComposing`, `inputBuffer`, `candidates`, `committed`
+   - Yune: `TypeDuckResponse` with `handled`, `commits`, `context.preedit`, `context.candidates`
+   - Adapter: Translates response fields to upstream shape
+
+3. **Persistence Timing**
+   - Upstream: `syncUserDirectory("read")` before init, `"write"` after commit/deploy
+   - Yune: `syncFromPersistenceBeforeInit`, `syncToPersistenceAfterMutation` match pattern
+   - Adapter: Uses Yune helpers in init and action flows
+
+4. **Missing setOption**
+   - Upstream: `Actions.setOption(option, value)`
+   - Yune: Current TypeDuck wrapper lacks method
+   - Adapter: Throws error documenting gap per D-07; requires Yune widening if E2E needs it
+
+### Patch Generation
+
+Patch file: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`
+
+Generated via:
+```bash
+cd third_party/typeduck-web/source
+git diff src/worker.ts package.json > ../patches/yune-typeduck-runtime.patch
+```
+
+Patch contents:
+- package.json: Add Yune package alias dependency
+- src/worker.ts: Import Yune adapter, replace ccall with adapter calls, load Yune WASM artifact
+
+### Known Gaps (Per D-07, D-09)
+
+#### TypeDuck-Web app/source blockers
+
+1. **Asset Configuration TODO**
+   - Patched worker contains placeholder asset configuration: `content: ""`
+   - Requires explicit TypeDuck-Web-owned YAML assets before init
+   - E2E task must provide real default.yaml, schema YAML, dictionary YAML
+   - Asset discovery mechanism needed (app config, CDN, bundled data)
+
+2. **Yune WASM Artifact Naming**
+   - Patch references `importScripts("yune-typeduck.js")`
+   - Requires build task generating Yune Emscripten artifact with correct filename
+   - locateFile path assumes artifact in `packages/yune-typeduck-runtime/dist/`
+
+3. **setOption API Gap**
+   - Adapter throws error when setOption called
+   - Requires Yune adapter widening if TypeDuck-Web E2E flows need setOption
+   - Document smallest blocker before widening per D-07
+
+#### Yune adapter/runtime mismatches
+
+1. **No native/wrapper setOption**
+   - Current TypeDuckRuntime lacks setOption method
+   - Upstream worker calls setOption through adapter error
+   - Decision: defer widening until E2E proves requirement
+
+2. **customize Options Bitmap**
+   - Upstream customize uses pageSize and options bitmap
+   - Yune customize accepts (configId, key, value) strings
+   - Adapter maps pageSize only; options bitmap handling incomplete
+
+#### Environment/tooling blockers
+
+1. **Bun Package Manager**
+   - TypeDuck-Web uses Bun for install/build
+   - Bun may be unavailable in local environment
+   - Task 3 will document: command (`bun install`), missing executable, install hint, fallback evidence
+
+2. **Yune Runtime Build**
+   - Requires `npm --prefix packages/yune-typeduck-runtime run build`
+   - Must pass before upstream worker can import Yune package
+
+3. **Yune WASM Build**
+   - Requires Phase 7 WASM artifact with `yune_typeduck_*` exports
+   - Emscripten build chain may have blockers
+   - Will document in Task 3 build gates
+
+### Deferred Items (Per D-14)
+
+The following remain deferred and are NOT part of this plan:
+
+- AI-native provider calls, candidate generation, ranking policy
+- AI-native context capture, memory, privacy controls
+- New first-party Yune graphical frontend
+- Multi-instance Yune/RIME service isolation
+- Browser CDN/cache/service worker/storage quota policy
+
+### Patch Verification
+
+```bash
+test -s third_party/typeduck-web/patches/yune-typeduck-runtime.patch
+grep -Eq "@yune-ime/typeduck-runtime|yune-integration|TypeDuckRuntime" third_party/typeduck-web/patches/yune-typeduck-runtime.patch
+! grep -E "^diff --git a/(node_modules|dist|build|\.next|coverage)/" third_party/typeduck-web/patches/yune-typeduck-runtime.patch
+```
+
+Expected: All checks pass.
+
+### Next Steps
+
+Task 3 will:
+- Run upstream build/typecheck (Bun) and document blockers
+- Run Yune runtime build (npm) and verify pass
+- Record categorized blockers in findings
+- Update README with build instructions or blocker evidence
+
+---
+
+*Updated: 2026-05-05T16:30:00Z*

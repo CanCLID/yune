@@ -1,4 +1,4 @@
-import type { TypeDuckBindings } from "./module";
+import type { TypeDuckBindings } from "./module.js";
 
 export interface TypeDuckCandidate {
   text: string;

@@ -1,6 +1,6 @@
-import { keyEventToRimeKey, type TypeDuckKeyboardEventLike } from "./keys";
-import { bindTypeDuckModule, type EmscriptenTypeDuckModule, type TypeDuckBindings } from "./module";
-import { readTypeDuckResponse, type TypeDuckResponse } from "./response";
+import { keyEventToRimeKey, type TypeDuckKeyboardEventLike } from "./keys.js";
+import { bindTypeDuckModule, type EmscriptenTypeDuckModule, type TypeDuckBindings } from "./module.js";
+import { readTypeDuckResponse, type TypeDuckResponse } from "./response.js";
 
 export interface TypeDuckInitOptions {
   sharedDataDir: string;

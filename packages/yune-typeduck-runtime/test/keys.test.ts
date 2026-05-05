@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { keyEventToRimeKey, RIME_KEY, RIME_MASK, TypeDuckKeyError } from "../src/keys";
+import { keyEventToRimeKey, RIME_KEY, RIME_MASK, TypeDuckKeyError } from "../src/keys.js";
 
 describe("keyEventToRimeKey", () => {
   it("maps printable lowercase keys", () => {
@@ -55,6 +55,47 @@ describe("keyEventToRimeKey", () => {
       Home: 0xff50,
       End: 0xff57,
       Space: 0x20,
+      Shift: 0xffe1,
+      Control: 0xffe3,
+      CapsLock: 0xffe5,
+      Alt: 0xffe9,
+      Meta: 0xffeb,
+    });
+  });
+
+  it("maps modifier-only browser keys to native keycodes", () => {
+    expect(keyEventToRimeKey({ key: "Shift" })).toEqual({ keycode: RIME_KEY.Shift, mask: 0 });
+    expect(keyEventToRimeKey({ key: "Control" })).toEqual({ keycode: RIME_KEY.Control, mask: 0 });
+    expect(keyEventToRimeKey({ key: "Alt" })).toEqual({ keycode: RIME_KEY.Alt, mask: 0 });
+    expect(keyEventToRimeKey({ key: "Meta" })).toEqual({ keycode: RIME_KEY.Meta, mask: 0 });
+    expect(keyEventToRimeKey({ key: "OS" })).toEqual({ keycode: RIME_KEY.Meta, mask: 0 });
+    expect(keyEventToRimeKey({ key: "CapsLock" })).toEqual({ keycode: RIME_KEY.CapsLock, mask: 0 });
+  });
+
+  it("suppresses self modifier masks for real modifier keydowns", () => {
+    expect(keyEventToRimeKey({ key: "Shift", shiftKey: true })).toEqual({ keycode: RIME_KEY.Shift, mask: 0 });
+    expect(keyEventToRimeKey({ key: "Control", ctrlKey: true })).toEqual({ keycode: RIME_KEY.Control, mask: 0 });
+    expect(keyEventToRimeKey({ key: "Alt", altKey: true })).toEqual({ keycode: RIME_KEY.Alt, mask: 0 });
+    expect(keyEventToRimeKey({ key: "Meta", metaKey: true })).toEqual({ keycode: RIME_KEY.Meta, mask: 0 });
+    expect(keyEventToRimeKey({ key: "OS", metaKey: true })).toEqual({ keycode: RIME_KEY.Meta, mask: 0 });
+  });
+
+  it("maps modifier-only key releases to native Release events", () => {
+    expect(keyEventToRimeKey({ key: "Shift", shiftKey: true, type: "keyup" })).toEqual({
+      keycode: RIME_KEY.Shift,
+      mask: RIME_MASK.Release,
+    });
+    expect(keyEventToRimeKey({ key: "Control", ctrlKey: true, type: "keyup" })).toEqual({
+      keycode: RIME_KEY.Control,
+      mask: RIME_MASK.Release,
+    });
+    expect(keyEventToRimeKey({ key: "Alt", altKey: true, type: "keyup" })).toEqual({
+      keycode: RIME_KEY.Alt,
+      mask: RIME_MASK.Release,
+    });
+    expect(keyEventToRimeKey({ key: "Meta", metaKey: true, type: "keyup" })).toEqual({
+      keycode: RIME_KEY.Meta,
+      mask: RIME_MASK.Release,
     });
   });
 
@@ -62,7 +103,7 @@ describe("keyEventToRimeKey", () => {
     expect(keyEventToRimeKey({ key: "a", shiftKey: true }).mask).toBe(1 << 0);
     expect(keyEventToRimeKey({ key: "a", ctrlKey: true }).mask).toBe(1 << 2);
     expect(keyEventToRimeKey({ key: "a", altKey: true }).mask).toBe(1 << 3);
-    expect(keyEventToRimeKey({ key: "a", metaKey: true }).mask).toBe(1 << 28);
+    expect(keyEventToRimeKey({ key: "a", metaKey: true }).mask).toBe(RIME_MASK.Super);
     expect(keyEventToRimeKey({ key: "a", type: "keyup" }).mask).toBe(1 << 30);
   });
 
@@ -76,7 +117,7 @@ describe("keyEventToRimeKey", () => {
         metaKey: true,
         type: "keyup",
       }).mask,
-    ).toBe(RIME_MASK.Shift | RIME_MASK.Control | RIME_MASK.Alt | RIME_MASK.Meta | RIME_MASK.Release);
+    ).toBe(RIME_MASK.Shift | RIME_MASK.Control | RIME_MASK.Alt | RIME_MASK.Super | RIME_MASK.Release);
   });
 
   it("throws a deterministic error for unknown multi-character keys", () => {

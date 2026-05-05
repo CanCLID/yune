@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { keyEventToRimeKey } from "../src/keys";
-import { bindTypeDuckModule, TYPEDUCK_EXPORTS, TypeDuckBindingError } from "../src/module";
-import { TypeDuckLifecycleError, TypeDuckRuntime } from "../src/typeduck";
-import { FakeTypeDuckModule } from "./fake-module";
+import { keyEventToRimeKey, RIME_KEY, RIME_MASK } from "../src/keys.js";
+import { bindTypeDuckModule, TYPEDUCK_EXPORTS, TypeDuckBindingError } from "../src/module.js";
+import { TypeDuckLifecycleError, TypeDuckRuntime } from "../src/typeduck.js";
+import { FakeTypeDuckModule } from "./fake-module.js";
 
 const statePtr = 42;
 const defaultInitPtr = 1;
@@ -134,6 +134,36 @@ describe("TypeDuckRuntime operations", () => {
 
     expect(fake.calls("yune_typeduck_process_key")).toEqual([
       [defaultInitPtr, mapped.keycode, mapped.mask],
+    ]);
+  });
+
+  it("processKeyboardEvent forwards browser metaKey as the supported Super mask", () => {
+    const fake = new FakeTypeDuckModule();
+    fake.processKeyResult = fake.response(responsePayload());
+    const runtime = initializedRuntime(fake);
+    const mapped = keyEventToRimeKey({ key: "x", metaKey: true });
+
+    runtime.processKeyboardEvent({ key: "x", metaKey: true });
+
+    expect(fake.calls("yune_typeduck_process_key")).toEqual([
+      [defaultInitPtr, mapped.keycode, mapped.mask],
+    ]);
+  });
+
+  it("processKeyboardEvent forwards modifier-only press and release events", () => {
+    const fake = new FakeTypeDuckModule();
+    const shiftDown = fake.response(responsePayload());
+    const shiftUp = fake.response(responsePayload());
+    fake.processKeyResult = shiftDown;
+    const runtime = initializedRuntime(fake);
+
+    runtime.processKeyboardEvent({ key: "Shift", shiftKey: true });
+    fake.processKeyResult = shiftUp;
+    runtime.processKeyboardEvent({ key: "Shift", shiftKey: true, type: "keyup" });
+
+    expect(fake.calls("yune_typeduck_process_key")).toEqual([
+      [defaultInitPtr, RIME_KEY.Shift, 0],
+      [defaultInitPtr, RIME_KEY.Shift, RIME_MASK.Release],
     ]);
   });
 

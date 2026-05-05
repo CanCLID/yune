@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { bindTypeDuckModule } from "../src/module";
-import { readTypeDuckResponse, TypeDuckResponseError } from "../src/response";
-import { FakeTypeDuckModule } from "./fake-module";
+import { bindTypeDuckModule } from "../src/module.js";
+import { readTypeDuckResponse, TypeDuckResponseError } from "../src/response.js";
+import { FakeTypeDuckModule } from "./fake-module.js";
 
 function responsePayload(overrides: Partial<Record<string, unknown>> = {}) {
   return {

@@ -34,6 +34,11 @@ export const RIME_KEY = {
   Home: 0xff50,
   End: 0xff57,
   Space: 0x20,
+  Shift: 0xffe1,
+  Control: 0xffe3,
+  CapsLock: 0xffe5,
+  Alt: 0xffe9,
+  Meta: 0xffeb,
 } as const;
 
 export const RIME_MASK = {
@@ -70,13 +75,19 @@ const NAMED_KEYCODES: Readonly<Record<string, number>> = {
   End: RIME_KEY.End,
   Space: RIME_KEY.Space,
   " ": RIME_KEY.Space,
+  Shift: RIME_KEY.Shift,
+  Control: RIME_KEY.Control,
+  CapsLock: RIME_KEY.CapsLock,
+  Alt: RIME_KEY.Alt,
+  Meta: RIME_KEY.Meta,
+  OS: RIME_KEY.Meta,
 };
 
 export function keyEventToRimeKey(event: TypeDuckKeyboardEventLike): RimeKey {
   const keycode = keyToCodePoint(event.key);
   return {
     keycode,
-    mask: eventToMask(event),
+    mask: eventToMask(event) & ~selfModifierMask(event.key),
   };
 }
 
@@ -108,10 +119,26 @@ function eventToMask(event: TypeDuckKeyboardEventLike): number {
     mask |= RIME_MASK.Alt;
   }
   if (event.metaKey === true) {
-    mask |= RIME_MASK.Meta;
+    mask |= RIME_MASK.Super;
   }
   if (event.type === "keyup") {
     mask |= RIME_MASK.Release;
   }
   return mask;
+}
+
+function selfModifierMask(key: string): number {
+  switch (key) {
+    case "Shift":
+      return RIME_MASK.Shift;
+    case "Control":
+      return RIME_MASK.Control;
+    case "Alt":
+      return RIME_MASK.Alt;
+    case "Meta":
+    case "OS":
+      return RIME_MASK.Super;
+    default:
+      return 0;
+  }
 }

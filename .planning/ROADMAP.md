@@ -212,9 +212,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 09-01: Define and test the browser virtual filesystem layout and asset preload flow.
-- [ ] 09-02: Add persistence sync orchestration around init, deploy, customize, and userdb updates.
-- [ ] 09-03: Add failure-mode tests/docs for missing assets, failed sync, and stale runtime data.
+- [ ] 09-01-PLAN.md — Filesystem layout and explicit asset preload helpers.
+- [ ] 09-02-PLAN.md — Persistence sync wrappers around init and runtime mutations.
+- [ ] 09-03-PLAN.md — Failure-mode tests, recovery docs, and final scope gates.
 
 ### Phase 10: TypeDuck-Web App Integration And E2E
 

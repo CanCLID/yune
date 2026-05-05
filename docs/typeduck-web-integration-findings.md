@@ -443,4 +443,123 @@ Task 3 will:
 
 ---
 
-*Updated: 2026-05-05T16:30:00Z*
+## Plan 10-02: Build Gates
+
+**Date**: 2026-05-05
+**Status**: Build gates passed with documentation
+
+### Repository-Owned Runtime Build
+
+**Command**: `npm --prefix packages/yune-typeduck-runtime run build`
+
+**Result**: PASSED
+- TypeScript compilation successful
+- Package builds without errors
+- Adapter exports available for import
+
+### Upstream Package Install
+
+**Command**: `bun install` (from `third_party/typeduck-web/source`)
+
+**Result**: PASSED
+- Bun 1.3.11 available
+- Dependencies resolved successfully
+- Yune package alias resolved: `@yune-ime/typeduck-runtime@../../../packages/yune-typeduck-runtime`
+- 458 packages installed
+
+### Upstream Worker Build
+
+**Command**: `bun run worker` (esbuild)
+
+**Result**: PASSED
+- Patched worker.ts compiles successfully
+- Output: `public/worker.js` (3.4kb)
+- Integration layer imports resolve correctly
+- Build completes in ~1-4ms
+
+### Upstream TypeScript Typecheck
+
+**Command**: `bunx tsc --noEmit`
+
+**Result**: PASSED (patched files only)
+- No errors in `src/worker.ts`
+- No errors in `src/yune-integration/adapter.ts`
+- No errors in `src/yune-integration/assets.ts`
+- Pre-existing errors in `scripts/build_lib.ts` and `scripts/build_native.ts` (Set.difference) ignored as out-of-scope per deviation rules
+
+### Patch Refinement
+
+**Action**: Regenerated patch to include TypeScript resolution fixes
+- Added `tsconfig.json` modifications for path aliases (later reverted)
+- Copied `yune-integration/` into `src/yune-integration/` for module resolution
+- Fixed adapter.ts to use upstream types.ts imports instead of duplicate type definitions
+- Fixed adapter.ts null checks and property access for TypeDuckContext
+- Adjusted Module type conversion with `unknown` intermediate
+
+**Final patch scope**:
+- `package.json` — Yune package alias
+- `src/worker.ts` — Yune adapter imports, runtime calls
+- `tsconfig.json` — (removed, not needed after integration files moved to src)
+- `src/yune-integration/adapter.ts` — Yune seam adapter
+- `src/yune-integration/assets.ts` — Explicit asset contract
+- `src/yune-integration/README.md` — Integration instructions
+- `src/yune-integration/package-alias.md` — Local package resolution docs
+
+### Build Gate Summary
+
+**Repository runtime**: PASSED (npm build)
+**Upstream package install**: PASSED (Bun available, alias resolved)
+**Upstream worker build**: PASSED (esbuild compiles patched worker)
+**Upstream typecheck**: PASSED (patched files error-free, pre-existing script errors out-of-scope)
+
+**Blockers documented per D-09**:
+- Bun available in environment — no blocker
+- Yune runtime build passes — no blocker
+- TypeScript errors resolved — no blocker
+- Asset configuration TODO documented — blocker for E2E, not for build
+
+### Categorized Blockers (Per D-12)
+
+#### TypeDuck-Web app/source blockers
+
+1. **Asset Configuration TODO**
+   - Patched worker contains placeholder asset configuration: `defaultYaml: { type: "content", content: "" }`
+   - Requires explicit TypeDuck-Web-owned YAML assets before runtime init
+   - E2E task (Plan 10-03) must provide real assets or asset discovery mechanism
+   - Not a build blocker; compiles successfully with placeholder
+
+2. **Yune WASM Artifact Generation**
+   - Patch references `importScripts("yune-typeduck.js")`
+   - Requires Phase 7 WASM artifact with `yune_typeduck_*` exports
+   - Artifact must be placed at expected path or `locateFile` adjusted
+   - blocker for E2E, not for build (worker compiles with placeholder artifact path)
+
+#### Yune adapter/runtime mismatches
+
+1. **TypeDuckContext properties missing**
+   - `comments` and `highlighted_candidate_index` not in current TypeDuckContext
+   - Adapter maps to undefined/0 for compatibility
+   - Does not block build or patch compilation
+   - May affect E2E candidate comment/highlight behavior
+
+2. **setOption API gap**
+   - Current TypeDuckRuntime lacks setOption method
+   - Adapter throws error documenting gap per D-07
+   - No build blocker; compiles successfully
+   - E2E flows calling setOption will fail until Yune widened
+
+#### Environment/tooling blockers
+
+**None** — All tooling available:
+- Bun 1.3.11 installed and functional
+- npm build passes
+- TypeScript compiler resolves patched imports
+- esbuild compiles worker successfully
+
+### Deferred Items (Per D-14)
+
+No deferred items implemented in build gates. AI-native behavior, new frontend, service isolation remain deferred as documented in Plan 10-02 seam patch section.
+
+---
+
+*Updated: 2026-05-05T16:45:00Z*

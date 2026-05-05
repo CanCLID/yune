@@ -11,7 +11,7 @@ index cbe61db..3f7e3f5 100644
  		"react-dom": "^18.3.1",
  		"react-toastify": "^10.0.5",
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..ceca187 100644
+index 92b9a90..744fdec 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
 @@ -1,137 +1,189 @@
@@ -29,7 +29,7 @@ index 92b9a90..ceca187 100644
 -	: T extends readonly unknown[] ? "array"
 -	: T extends boolean ? "boolean"
 -	: null;
-+import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences } from "./types";
++import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences, RimeNotification, RimeDeployStatus } from "./types";
  
 -type ArgsToString<T> = { [P in keyof T]: TypeToString<T[P]> };
 +// Yune integration imports
@@ -43,13 +43,13 @@ index 92b9a90..ceca187 100644
 +  deploy,
 +  customize,
 +  setOption,
-+} from "../yune-integration/adapter.js";
++} from "./yune-integration/adapter.js";
  
 +import {
 +  loadExplicitAssets,
 +  validateExplicitAssets,
 +  type ExplicitTypeDuckAssets,
-+} from "../yune-integration/assets.js";
++} from "./yune-integration/assets.js";
 +
 +import type { EmscriptenTypeDuckModule } from "@yune-ime/typeduck-runtime";
 +
@@ -258,7 +258,7 @@ index 92b9a90..ceca187 100644
 +        };
 +
 +        await initYuneRuntime(
-+          Module as EmscriptenTypeDuckModule,
++          Module as unknown as EmscriptenTypeDuckModule,
 +          Module.FS,
 +          initOptions,
 +          assets,

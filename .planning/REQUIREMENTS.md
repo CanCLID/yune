@@ -99,7 +99,8 @@ path before AI-native product work begins.
 - [ ] **TYPEDUCK-E2E-01**: The upstream TypeDuck-Web repository is cloned or vendored in a reproducible test location, and its current librime/WASM bridge seam is identified.
 - [ ] **TYPEDUCK-E2E-02**: TypeDuck-Web is patched or configured so its input-engine binding calls the Yune TypeScript bridge instead of the original librime bridge.
 - [ ] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, and persistence smoke flows.
-- [ ] **TYPEDUCK-E2E-04**: Integration findings end with a go/no-go recommendation for exposing AI-native behavior through real frontends.
+- [x] **TYPEDUCK-E2E-04
+**: Integration findings end with a go/no-go recommendation for exposing AI-native behavior through real frontends.
 
 ## Future Requirements
 

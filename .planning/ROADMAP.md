@@ -147,6 +147,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 4. Compiled Dictionary Data | 4/4 | Complete | 2026-04-29 |
 | 5. UserDB And Scaling Hardening | 4/4 | Complete | 2026-04-30 |
 | 6. Real Frontend Validation And Benchmark | 4/4 | Complete | 2026-05-01 |
+| 7. WASM Build And Export Contract | 3/3 | Complete | 2026-05-05 |
+| 8. TypeScript Bridge And Runtime Package | 3/3 | Complete | 2026-05-05 |
+| 9. Browser Filesystem And Persistence | 3/3 | Complete | 2026-05-05 |
 
 ## Next Milestone: TypeDuck-Web Browser Integration
 
@@ -212,9 +215,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Filesystem layout and explicit asset preload helpers.
-- [ ] 09-02-PLAN.md — Persistence sync wrappers around init and runtime mutations.
-- [ ] 09-03-PLAN.md — Failure-mode tests, recovery docs, and final scope gates.
+- [x] 09-01-PLAN.md — Filesystem layout and explicit asset preload helpers.
+- [x] 09-02-PLAN.md — Persistence sync wrappers around init and runtime mutations.
+- [x] 09-03-PLAN.md — Failure-mode tests, recovery docs, and final scope gates.
 
 ### Phase 10: TypeDuck-Web App Integration And E2E
 

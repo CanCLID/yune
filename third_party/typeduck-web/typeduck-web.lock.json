@@ -7,5 +7,12 @@
   "setupCommand": "bun install",
   "checkedAt": "2026-05-05T15:03:00Z",
   "gitStatus": "clean",
-  "seamFiles": []
+  "seamFiles": [
+    "src/worker.ts",
+    "src/rime.ts",
+    "src/types.ts",
+    "wasm/api.cpp",
+    "scripts/build_wasm.ts",
+    "src/CandidatePanel.tsx"
+  ]
 }

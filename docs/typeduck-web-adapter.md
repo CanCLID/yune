@@ -99,7 +99,7 @@ import {
 } from "@yune-ime/typeduck-runtime";
 ```
 
-Browser callers provide logical `schemaId` and `dictionaryId` values plus explicit asset contents. Both IDs must be nonempty ASCII letters, digits, `_`, or `-`; path-like IDs are rejected before write paths are joined. The helper writes exactly the required shared/build files and does not fabricate fallback schema or dictionary data:
+Browser callers provide logical `schemaId` and `dictionaryId` values plus explicit asset contents. Both IDs must be nonempty ASCII letters, digits, `_`, or `-`; path-like IDs are rejected before write paths are joined. `dictionaryId` must match the `translator.dictionary` value inside `schemaYaml`; Phase 9 helpers do not parse YAML, so a mismatch can pass helper path preflight while native `yune_typeduck_init` still rejects the layout as missing the schema-selected dictionary. The helper writes exactly the required shared/build files and does not fabricate fallback schema or dictionary data:
 
 ```typescript
 const fsOptions = {

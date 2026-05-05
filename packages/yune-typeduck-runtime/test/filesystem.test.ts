@@ -120,6 +120,37 @@ describe("TypeDuck browser filesystem preparation", () => {
     ]);
   });
 
+  it("creates absolute directories correctly when only mkdir is available", () => {
+    const fs = new FakeTypeDuckFilesystem();
+    const mkdirOnlyFs = new Proxy(fs, {
+      get(target, property, receiver) {
+        if (property === "mkdirTree") {
+          return undefined;
+        }
+        if (property === "mkdir") {
+          return (path: string, mode?: number) => {
+            if (path.startsWith("//")) {
+              throw new Error(`unexpected doubled absolute path: ${path}`);
+            }
+            target.mkdir(path, mode);
+          };
+        }
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) as FakeTypeDuckFilesystem;
+
+    prepareTypeDuckFilesystem(mkdirOnlyFs, filesystemOptions());
+
+    expect(fs.calls("mkdir").map(([path]) => path)).toEqual([
+      "/yune",
+      "/yune/shared",
+      "/yune/user",
+      "/yune/user/build",
+    ]);
+    expect(fs.readText("/yune/shared/default.yaml")).toBe(defaultYaml);
+  });
+
   it("reports missing required assets without creating fallback files", () => {
     const fs = new FakeTypeDuckFilesystem();
     fs.mkdirTree("/yune/shared");
@@ -196,6 +227,20 @@ describe("TypeDuck browser filesystem preparation", () => {
     expect(fs.calls("mount")).toEqual([[type, opts, "/yune"]]);
   });
 
+  it("wraps persistence mount backend failures with deterministic setup errors", () => {
+    const fs = new FakeTypeDuckFilesystem();
+    fs.mountError = new Error("mount backend misconfigured");
+
+    expect(() => mountTypeDuckPersistence(fs, { name: "IDBFS" }, {}, "/yune")).toThrow(TypeDuckFilesystemError);
+    expect(() => mountTypeDuckPersistence(fs, { name: "IDBFS" }, {}, "/yune")).toThrow(
+      "TypeDuck persistence mount failed",
+    );
+    expect(fs.calls("mount")).toEqual([
+      [{ name: "IDBFS" }, {}, "/yune"],
+      [{ name: "IDBFS" }, {}, "/yune"],
+    ]);
+  });
+
   it("syncs from persistence before init using the populate direction", async () => {
     const fs = new FakeTypeDuckFilesystem();
 
@@ -224,6 +269,36 @@ describe("TypeDuck browser filesystem preparation", () => {
     });
 
     await expect(syncToPersistenceAfterMutation(fs)).rejects.toMatchObject({
+      name: "TypeDuckFilesystemError",
+      message: "TypeDuck filesystem sync failed",
+      direction: "toPersistence",
+    });
+
+    expect(fs.calls("syncfs")).toEqual([[true], [false]]);
+  });
+
+  it("wraps synchronous syncfs throws with deterministic direction details", async () => {
+    const fs = new FakeTypeDuckFilesystem();
+    const throwingFs = new Proxy(fs, {
+      get(target, property, receiver) {
+        if (property === "syncfs") {
+          return (populate: boolean) => {
+            target.calls("syncfs").push([populate]);
+            throw new Error("sync backend misconfigured");
+          };
+        }
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) as FakeTypeDuckFilesystem;
+
+    await expect(syncFromPersistenceBeforeInit(throwingFs)).rejects.toMatchObject({
+      name: "TypeDuckFilesystemError",
+      message: "TypeDuck filesystem sync failed",
+      direction: "fromPersistence",
+    });
+
+    await expect(syncToPersistenceAfterMutation(throwingFs)).rejects.toMatchObject({
       name: "TypeDuckFilesystemError",
       message: "TypeDuck filesystem sync failed",
       direction: "toPersistence",

@@ -119,13 +119,17 @@ export async function syncTypeDuckFilesystem(
   }
   const populate = direction === "fromPersistence";
   await new Promise<void>((resolve, reject) => {
-    fs.syncfs!(populate, (error?: unknown) => {
-      if (error !== undefined && error !== null) {
-        reject(new TypeDuckFilesystemError("TypeDuck filesystem sync failed", { cause: error, direction }));
-        return;
-      }
-      resolve();
-    });
+    try {
+      fs.syncfs!(populate, (error?: unknown) => {
+        if (error !== undefined && error !== null) {
+          reject(new TypeDuckFilesystemError("TypeDuck filesystem sync failed", { cause: error, direction }));
+          return;
+        }
+        resolve();
+      });
+    } catch (error) {
+      reject(new TypeDuckFilesystemError("TypeDuck filesystem sync failed", { cause: error, direction }));
+    }
   });
 }
 
@@ -151,7 +155,11 @@ export function mountTypeDuckPersistence(
   if (fs.mount === undefined) {
     throw new TypeDuckFilesystemError("Emscripten FS.mount is unavailable");
   }
-  fs.mount(type, opts, mountpoint);
+  try {
+    fs.mount(type, opts, mountpoint);
+  } catch (error) {
+    throw new TypeDuckFilesystemError("TypeDuck persistence mount failed", { cause: error });
+  }
 }
 
 export async function deployAndSync(runtime: TypeDuckRuntime, fs: TypeDuckFilesystem): Promise<boolean> {
@@ -184,12 +192,11 @@ function ensureTypeDuckDirectory(fs: TypeDuckFilesystem, path: string): void {
     throw new TypeDuckFilesystemError("Emscripten filesystem directory creation is unavailable");
   }
   const segments = path.split("/").filter((segment) => segment.length > 0);
-  let current = path.startsWith("/") ? "" : ".";
+  let current = path.startsWith("/") ? "/" : "";
   for (const segment of segments) {
-    current = current === "." ? segment : `${current}/${segment}`;
-    const directory = path.startsWith("/") ? `/${current}` : current;
-    if (!fs.analyzePath(directory).exists) {
-      fs.mkdir(directory);
+    current = current === "/" || current === "" ? `${current}${segment}` : `${current}/${segment}`;
+    if (!fs.analyzePath(current).exists) {
+      fs.mkdir(current);
     }
   }
 }

@@ -1,0 +1,58 @@
+# HR-3 Browser Deploy Evidence
+
+Date: 2026-06-18
+URL: http://127.0.0.1:5173/web/?debug&realAssets=1&hr3=asset-preload-1781800797934
+Artifact: rebuilt `public/worker.js` loading real TypeDuck assets and `yune-typeduck.js`/`.wasm`
+
+Root cause:
+- Browser `deploy()` returned `false` because the worker preloaded the real mobile
+  schema/dictionary assets, but not the plain `jyut6ping3.schema.yaml` reached by
+  TypeDuck's real workspace/default schema deployment.
+- A Node replay with the exact Emscripten artifact returned `deploy: 0` with the
+  curated list missing that file, and `deploy: 1` after adding
+  `jyut6ping3.schema.yaml`.
+
+Browser console evidence:
+
+```json
+{
+  "runStart": "2026-06-18T16:39:57.931Z",
+  "url": "http://127.0.0.1:5173/web/?debug&realAssets=1&hr3=asset-preload-1781800797934",
+  "evidence": [
+    {
+      "level": "log",
+      "message": "receive {\"type\":\"listener\",\"name\":\"initialized\",\"args\":[true]}",
+      "timestamp": "2026-06-18T16:39:59.376Z"
+    },
+    {
+      "level": "log",
+      "message": "post {\"name\":\"customize\",\"args\":[{\"pageSize\":6,\"enableCompletion\":true,\"enableCorrection\":false,\"enableSentence\":true,\"enableLearning\":true,\"isCangjie5\":true}]}",
+      "timestamp": "2026-06-18T16:39:59.391Z"
+    },
+    {
+      "level": "log",
+      "message": "receive {\"type\":\"success\",\"result\":true}",
+      "timestamp": "2026-06-18T16:39:59.397Z"
+    },
+    {
+      "level": "log",
+      "message": "post {\"name\":\"deploy\",\"args\":[]}",
+      "timestamp": "2026-06-18T16:39:59.397Z"
+    },
+    {
+      "level": "log",
+      "message": "receive {\"type\":\"success\",\"result\":true}",
+      "timestamp": "2026-06-18T16:40:05.634Z"
+    }
+  ]
+}
+```
+
+Native/browser-shaped contract:
+
+```text
+cargo test -p yune-rime-api --test typeduck_web
+10 passed
+```
+
+Status: HR-3 PASS. Full persistence/reload and real-assets matrix coverage remain HR-4/HR-5.

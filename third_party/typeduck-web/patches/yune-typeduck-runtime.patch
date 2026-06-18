@@ -487,7 +487,7 @@ diff --git a/src/worker.ts b/src/worker.ts
 index 92b9a90..ad88cba 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
-@@ -1,137 +1,240 @@
+@@ -1,137 +1,242 @@
 -import type { Actions, ListenerArgsMap, Message, RimeResult, RimeAPI, RimeNotification, RimeDeployStatus } from "./types";
 -
 -type TypeToString<T> = T extends number ? "number"
@@ -710,17 +710,18 @@ index 92b9a90..ad88cba 100644
 -});
 +const SCHEMA_ID = "jyut6ping3_mobile";
 +const DICTIONARY_ID = "jyut6ping3";
++const YUNE_TYPEDUCK_ASSET_VERSION = "hr3-deploy-true";
 +
 +// Yune runtime initialization
 +const loadRime = (async () => {
 +  try {
-+    importScripts("yune-typeduck.js");
++    importScripts(`yune-typeduck.js?v=${YUNE_TYPEDUCK_ASSET_VERSION}`);
 +    const module = await createYuneTypeduckModule({
 +      printErr,
 +      noInitialRun: true,
 +      locateFile(path) {
 +        if (path.endsWith(".wasm")) {
-+          return "yune-typeduck.wasm";
++          return `yune-typeduck.wasm?v=${YUNE_TYPEDUCK_ASSET_VERSION}`;
 +        }
 +        return path;
 +      },
@@ -748,6 +749,7 @@ index 92b9a90..ad88cba 100644
 +      "common.custom.yaml",
 +      "include.yaml",
 +      "template.yaml",
++      "jyut6ping3.schema.yaml",
 +      "jyut6ping3_mobile_longpress.schema.yaml",
 +      "jyut6ping3_mobile_10keys.schema.yaml",
 +      "jyut6ping3_scolar.schema.yaml",
@@ -1094,7 +1096,7 @@ new file mode 100644
 index 0000000..c23e125
 --- /dev/null
 +++ b/src/yune-integration/adapter.ts
-@@ -0,0 +1,373 @@
+@@ -0,0 +1,384 @@
 +/**
 + * Yune seam adapter for TypeDuck-Web
 + *
@@ -1168,6 +1170,8 @@ index 0000000..c23e125
 +let currentModule: EmscriptenTypeDuckModule | null = null;
 +let currentFs: TypeDuckFilesystem | null = null;
 +let currentSchemaId: string | null = null;
++let currentPrepareOptions: PrepareTypeDuckFilesystemOptions | null = null;
++let currentExtraSharedAssets: TypeDuckExtraSharedAsset[] = [];
 +let lastKeyResult: RimeResult = { isComposing: false, success: true };
 +
 +export interface TypeDuckExtraSharedAsset {
@@ -1207,6 +1211,8 @@ index 0000000..c23e125
 +    dictionaryId,
 +    assets,
 +  };
++  currentPrepareOptions = prepareOptions;
++  currentExtraSharedAssets = extraSharedAssets;
 +
 +  // Load persisted user/build state before writing fresh app-owned assets.
 +  await syncFromPersistenceBeforeInit(fs);
@@ -1236,6 +1242,8 @@ index 0000000..c23e125
 +  currentModule = null;
 +  currentFs = null;
 +  currentSchemaId = null;
++  currentPrepareOptions = null;
++  currentExtraSharedAssets = [];
 +  lastKeyResult = { isComposing: false, success: true };
 +}
 +
@@ -1370,8 +1378,13 @@ index 0000000..c23e125
 + * Replaces upstream Module.ccall("deploy", ...)
 + */
 +export async function deploy(): Promise<boolean> {
-+  if (currentRuntime === null || currentFs === null) {
++  if (currentRuntime === null || currentFs === null || currentPrepareOptions === null) {
 +    throw new Error("Yune runtime not initialized");
++  }
++
++  prepareTypeDuckFilesystem(currentFs, currentPrepareOptions);
++  for (const asset of currentExtraSharedAssets) {
++    writeExtraSharedAsset(currentFs, currentPrepareOptions.sharedDataDir, asset);
 +  }
 +
 +  // Delegate to deployAndSync per D-04

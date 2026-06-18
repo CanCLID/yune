@@ -11,8 +11,11 @@ The earlier WI-4 evidence in this directory used Yune's echo placeholder path an
 
 **Current status**: HR-1b PASS for real-assets candidate rendering.
 
+**HR-3 update**: `deploy()` now returns true with real assets. The failure was an
+incomplete browser preload list: deployment reaches the plain
+`jyut6ping3.schema.yaml` through TypeDuck's real workspace/default schema path.
+See `deploy-browser.log` for the browser console proof.
+
 **Still open**:
 
-- HR-2: `setOption` still throws in the adapter/runtime path and causes option error toasts.
-- HR-3: `deploy()` must be made to return true with real assets.
 - HR-4/HR-5: live persistence, reload survival, paging/deletion, and dictionary-panel oracle comment bytes still need the full real-assets E2E matrix.

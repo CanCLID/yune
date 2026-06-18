@@ -12,8 +12,9 @@ matrix used the placeholder echo path, so the full E2E recommendation is
 reopened. HR-1 now proves the browser can load real TypeDuck `jyut6ping3_mobile`
 assets and render real Chinese candidates. HR-2 adds the missing `setOption`
 export/wrapper/adapter path and proves startup option toggles no longer throw in
-the live browser. Paging, deletion, deploy, persistence sync/reload, and v1.1.2
-dictionary-comment evidence still need real-assets evidence.
+the live browser. HR-3 proves browser `deploy()` now returns true with real
+assets. Paging, deletion, persistence sync/reload, and v1.1.2 dictionary-comment
+evidence still need real-assets evidence.
 
 > **Historical scope.** The Phase 10 blocker tables below describe the
 > 2026-05-05 validation attempt, before WI-1b produced a loadable
@@ -55,10 +56,10 @@ dictionary-comment evidence still need real-assets evidence.
 
 **Still open after HR-1**:
 - `setOption` was still throwing from the adapter stub; HR-2 resolves that gap.
-- Browser `deploy()` still returns `false` and is HR-3.
+- Browser `deploy()` returned `false`; HR-3 resolves that gap.
 - Persistence sync/reload still needs live-worker evidence and is HR-4.
-- Paging, deletion, deploy, persistence, reload, and dictionary-panel comment
-  bytes must be re-run against real assets in HR-5.
+- Paging, deletion, persistence, reload, and dictionary-panel comment bytes must
+  be re-run against real assets in HR-5.
 
 ---
 
@@ -83,8 +84,42 @@ dictionary-comment evidence still need real-assets evidence.
   forwarding.
 - `third_party/typeduck-web/e2e/results/set-option-browser.log` records a live
   browser reload where startup `setOption` posts receive success responses, no
-  option-error toast is visible, and no browser error logs are emitted. The
-  settings/deploy toast remains open for HR-3.
+  option-error toast is visible, and no browser error logs are emitted.
+
+---
+
+## HR-3 Deploy With Real Assets
+
+**Date**: 2026-06-18
+**Status**: PASS for browser deploy with real TypeDuck assets; full E2E matrix
+still open.
+
+**What changed**:
+- Added the plain `jyut6ping3.schema.yaml` to the TypeDuck-Web worker preload
+  set. The real `default.custom.yaml` workspace path can reach this source
+  schema during deployment even though the active browser schema is
+  `jyut6ping3_mobile`.
+- Tightened the native `typeduck_web` contract test so its "browser real assets"
+  setup mirrors the curated browser preload list instead of copying the whole
+  schema directory.
+
+**Proof**:
+- Node replay with the exact Emscripten artifact returned `deploy: 0` when the
+  curated preload list omitted `jyut6ping3.schema.yaml`, and `deploy: 1` after
+  adding it.
+- `third_party/typeduck-web/e2e/results/deploy-browser.log` records a live
+  browser run at `http://127.0.0.1:5173/web/?debug&realAssets=1` with
+  `initialized: true`, `customize` result `true`, `deploy` posted, and `deploy`
+  result `true`.
+- `cargo test -p yune-rime-api --test typeduck_web` passes 10 tests, including
+  deploy-after-init and deploy-after-customize with the browser-shaped real
+  asset set.
+
+**Still open after HR-3**:
+- HR-4 must prove live-worker persistence sync before init and after mutations,
+  plus reload survival.
+- HR-5 must rerun paging, deletion, persistence/reload, and dictionary-panel
+  comment bytes against the real assets.
 
 ---
 
@@ -1062,17 +1097,18 @@ rows superseded by HR-1 real-assets smoke above):
 | Candidate selection | Selection key -> commit text | PASS | Pressing `1` commits `ba` into the textarea |
 | Deletion | Delete key -> candidate/composition change | FAIL | `{Delete}` leaves the same composing response and candidate |
 | Backspace mutation | Backspace -> composition shorter/changed | PASS | Same-session browser log records backspace shortening `ba` to `b` |
-| Deploy | Deploy action -> visible success/error | FAIL | `deploy` returns `false` |
+| Deploy | Deploy action -> visible success/error | PASS | HR-3 `deploy-browser.log` records deploy result `true` with real assets |
 | Customize | Customize action -> visible success/error | PASS | `customize` returns `true` for the settings payload |
 | Persistence sync | sync-after-mutation marker | FAIL | No browser-visible sync markers; deploy failure prevents persistence proof |
 | Persistence reload | sync-before-init + reload/reinitialize | FAIL | Reload/reinitialize persistence survival not proven from browser evidence |
 | Dictionary-panel comment rendering | v1.1.2 candidate comment bytes render | FAIL | UI renders `echo` from `candidate.comment`, not oracle dictionary bytes |
 
-**Reason**: The WASM/browser initialization blocker is cleared and real assets
-now render real Chinese candidates. The remaining matrix rows need a real-assets
-rerun: deploy returns false, `setOption` still errors, persistence
-markers/reload survival are not proven, and dictionary-comment oracle bytes do
-not appear in the browser flow yet.
+**Reason**: The WASM/browser initialization blocker is cleared, real assets now
+render real Chinese candidates, `setOption` no longer errors, and deploy returns
+true with the real workspace assets. The remaining matrix rows need a real-assets
+rerun: persistence markers/reload survival are not proven, paging/deletion need
+fresh non-echo evidence, and dictionary-comment oracle bytes do not appear in the
+browser flow yet.
 
 **Evidence captured**:
 - `third_party/typeduck-web/e2e/results/browser-run.log`
@@ -1080,6 +1116,7 @@ not appear in the browser flow yet.
 - `third_party/typeduck-web/e2e/results/dom-snapshot-candidates.txt`
 - `third_party/typeduck-web/e2e/results/screenshot-real-assets-nei.png`
 - `third_party/typeduck-web/e2e/results/persistence-sync.log`
+- `third_party/typeduck-web/e2e/results/deploy-browser.log`
 - `third_party/typeduck-web/e2e/results/blocker.md`
 
 ---
@@ -1103,14 +1140,14 @@ UI/testability and invalid candidate DOM shape, not missing WASM.
 
 | Blocker | Status | Evidence | Affected Requirement | Blocks AI-native frontend? |
 |---------|--------|----------|----------------------|---------------------------|
-| deploy returns false | open | `browser-console.json`, `persistence-sync.log` | TYPEDUCK-E2E-03 | YES for persistence/deploy confidence |
 | Dictionary comment oracle gap | open | Browser shows `echo`, not v1.1.2 dictionary comment bytes | TYPEDUCK-E2E-03, WI-6 | YES for dictionary-panel parity |
 | Candidate paging/deletion real-assets evidence | open | HR-1 unblocks rerun; original WI-4 was echo-backed | TYPEDUCK-E2E-03 | YES for complete E2E parity |
 | setOption startup evidence | resolved | `set-option-browser.log`, native/runtime/adapter tests | D-07, TYPEDUCK-E2E-03 | NO — startup option toggles no longer throw |
+| deploy returns false | resolved | `deploy-browser.log`, native browser-shaped asset tests | TYPEDUCK-E2E-03 | NO — deploy returns true with real assets |
 
-**Explanation**: Adapter shape bugs are fixed, and the core composition ->
-candidate -> commit seam works. The remaining runtime gaps are now browser-
-observed behavioral failures.
+**Explanation**: Adapter shape bugs are fixed, `setOption` and deploy now pass in
+the browser, and the core composition -> candidate -> commit seam works. The
+remaining runtime gaps are paging/deletion evidence and dictionary-comment parity.
 
 ### Environment/tooling blockers
 
@@ -1123,11 +1160,11 @@ available locally. The browser run executed; remaining blockers are behavioral.
 
 ---
 
-**Total current blockers**: 6 (2 TypeDuck-Web app/source, 3 Yune adapter/runtime, 1 evidence-completeness gap)
+**Total current blockers**: 5 (2 TypeDuck-Web app/source, 2 Yune adapter/runtime, 1 evidence-completeness gap)
 
-**Blocking AI-native frontend exposure**: core composition/candidate/commit is
-browser-proven, but deploy, persistence, paging/deletion, and dictionary comment
-oracle parity are not production-ready.
+**Blocking AI-native frontend exposure**: core composition/candidate/commit and
+deploy are browser-proven, but persistence, paging/deletion, and dictionary
+comment oracle parity are not production-ready.
 
 ---
 

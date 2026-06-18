@@ -71,6 +71,8 @@ let currentRuntime: TypeDuckRuntime | null = null;
 let currentModule: EmscriptenTypeDuckModule | null = null;
 let currentFs: TypeDuckFilesystem | null = null;
 let currentSchemaId: string | null = null;
+let currentPrepareOptions: PrepareTypeDuckFilesystemOptions | null = null;
+let currentExtraSharedAssets: TypeDuckExtraSharedAsset[] = [];
 let lastKeyResult: RimeResult = { isComposing: false, success: true };
 
 export interface TypeDuckExtraSharedAsset {
@@ -110,6 +112,8 @@ export async function initYuneRuntime(
     dictionaryId,
     assets,
   };
+  currentPrepareOptions = prepareOptions;
+  currentExtraSharedAssets = extraSharedAssets;
 
   // Load persisted user/build state before writing fresh app-owned assets.
   await syncFromPersistenceBeforeInit(fs);
@@ -139,6 +143,8 @@ export function cleanupYuneRuntime(): void {
   currentModule = null;
   currentFs = null;
   currentSchemaId = null;
+  currentPrepareOptions = null;
+  currentExtraSharedAssets = [];
   lastKeyResult = { isComposing: false, success: true };
 }
 
@@ -273,8 +279,13 @@ export async function flipPage(backward: boolean): Promise<RimeResult> {
  * Replaces upstream Module.ccall("deploy", ...)
  */
 export async function deploy(): Promise<boolean> {
-  if (currentRuntime === null || currentFs === null) {
+  if (currentRuntime === null || currentFs === null || currentPrepareOptions === null) {
     throw new Error("Yune runtime not initialized");
+  }
+
+  prepareTypeDuckFilesystem(currentFs, currentPrepareOptions);
+  for (const asset of currentExtraSharedAssets) {
+    writeExtraSharedAsset(currentFs, currentPrepareOptions.sharedDataDir, asset);
   }
 
   // Delegate to deployAndSync per D-04

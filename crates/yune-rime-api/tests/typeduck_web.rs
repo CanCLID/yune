@@ -1,7 +1,7 @@
 use std::{
     ffi::{CStr, CString},
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     ptr,
     sync::{Mutex, MutexGuard, OnceLock},
     time::{SystemTime, UNIX_EPOCH},
@@ -397,6 +397,10 @@ struct TypeDuckRuntime {
 
 impl TypeDuckRuntime {
     fn create(label: &str) -> Self {
+        Self::create_with_schema(label, SCHEMA_ID)
+    }
+
+    fn create_with_schema(label: &str, schema_id: &str) -> Self {
         let root = unique_temp_dir(label);
         let shared = root.join("shared");
         let user = root.join("user");
@@ -405,7 +409,7 @@ impl TypeDuckRuntime {
         let shared_c =
             CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
         let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
-        let schema_id_c = CString::new(SCHEMA_ID).expect("schema id should be valid");
+        let schema_id_c = CString::new(schema_id).expect("schema id should be valid");
         Self {
             root,
             shared,
@@ -493,13 +497,105 @@ schema:\n  schema_id: typeduck_luna\n  name: TypeDuck Luna\nmenu:\n  page_size: 
             self.shared.join("jyut6ping3.dict.yaml"),
             "---\nname: jyut6ping3\nversion: '1'\nsort: original\n...\n\n\u{4f60}\tnei5\t10\n\u{5462}\tnei1\t9\n",
         )
-        .expect("dictionary should be written");
+            .expect("dictionary should be written");
+    }
+
+    fn write_browser_real_assets(&self) {
+        let schema_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../third_party/typeduck-web/source/public/schema");
+        copy_asset(&schema_root, &self.shared, "default.yaml");
+        copy_asset(&schema_root, &self.shared, "jyut6ping3_mobile.schema.yaml");
+        copy_asset(&schema_root, &self.shared, "jyut6ping3.dict.yaml");
+        let build_root = schema_root.join("build");
+        let staging = self.user.join("build");
+        for file_name in ["default.yaml", "jyut6ping3_mobile.schema.yaml"] {
+            fs::copy(build_root.join(file_name), staging.join(file_name))
+                .expect("browser preloaded build asset should be copied");
+        }
+        for file_name in [
+            "default.custom.yaml",
+            "common.yaml",
+            "common.custom.yaml",
+            "include.yaml",
+            "template.yaml",
+            "jyut6ping3.schema.yaml",
+            "jyut6ping3_mobile_longpress.schema.yaml",
+            "jyut6ping3_mobile_10keys.schema.yaml",
+            "jyut6ping3_scolar.schema.yaml",
+            "jyut6ping3_scolar.dict.yaml",
+            "luna_pinyin.schema.yaml",
+            "luna_pinyin.dict.yaml",
+            "loengfan.schema.yaml",
+            "loengfan.dict.yaml",
+            "loengfan_longpress.schema.yaml",
+            "cangjie3.schema.yaml",
+            "cangjie3.dict.yaml",
+            "cangjie5.schema.yaml",
+            "cangjie5.dict.yaml",
+            "opencc/hk2s.json",
+            "opencc/HKVariantsRev.ocd2",
+            "opencc/HKVariantsRevPhrases.ocd2",
+            "opencc/TSCharacters.ocd2",
+            "opencc/TSPhrases.ocd2",
+        ] {
+            copy_asset(&schema_root, &self.shared, file_name);
+        }
     }
 
     fn remove(self) {
         reset_rime();
         fs::remove_dir_all(self.root).expect("temp dir should be removed");
     }
+}
+
+#[test]
+fn typeduck_adapter_deploys_browser_real_assets_after_init() {
+    let _guard = test_guard();
+    let runtime = TypeDuckRuntime::create_with_schema("browser-real-deploy", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_deploys_browser_real_assets_after_customize() {
+    let _guard = test_guard();
+    let runtime =
+        TypeDuckRuntime::create_with_schema("browser-real-customize-deploy", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    let key = CString::new("page_size").expect("custom key should be valid");
+    let value = CString::new("6").expect("custom value should be valid");
+    assert_eq!(
+        unsafe { yune_typeduck_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
 }
 
 fn reset_rime() {
@@ -525,4 +621,13 @@ fn unique_temp_dir(label: &str) -> PathBuf {
         "yune-rime-api-typeduck-web-{label}-{}-{nanos}",
         std::process::id()
     ))
+}
+
+fn copy_asset(schema_root: &Path, destination_root: &Path, relative_path: &str) {
+    let source = schema_root.join(relative_path);
+    let destination = destination_root.join(relative_path);
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).expect("asset parent directory should be created");
+    }
+    fs::copy(source, destination).expect("browser preloaded asset should be copied");
 }

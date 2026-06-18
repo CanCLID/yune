@@ -400,15 +400,16 @@ was recorded as an E2E blocker, not a build blocker.
 behavioral failures.** The TypeDuck-Web app now loads the Yune Emscripten
 JS/WASM module in a real browser. Composition, candidate rendering, selection,
 commit output, backspace mutation, and customize pass. Candidate paging,
-candidate deletion, deploy, persistence sync/reload proof, and v1.1.2
-dictionary-comment rendering fail and must be tracked as behavior/runtime gaps,
-not as missing-tooling blockers.
+candidate deletion, persistence sync/reload proof, and v1.1.2 dictionary-comment
+rendering fail and must be tracked as behavior/runtime gaps, not as
+missing-tooling blockers. HR-2 later resolved `setOption`; HR-3 later resolved
+deploy false.
 
 **D-P10-7 — M9 remains NO-GO for AI-native frontend exposure after WI-5.** The
 recommendation is now evidence-based rather than tooling-based: Yune can load
 and type through TypeDuck-Web, but real frontends must not be treated as ready
-until paging/deletion, deploy, persistence/reload proof, `setOption`, and
-v1.1.2 dictionary-comment bytes pass in-browser.
+until paging/deletion, persistence/reload proof, and v1.1.2 dictionary-comment
+bytes pass in-browser.
 
 **D-P10-8 — Close M9 as a validation milestone, not a pass.** M9 is complete
 because the browser E2E ran and produced a durable GO/NO-GO recommendation. The
@@ -432,8 +433,16 @@ optional convenience.** The upstream app calls `Actions.setOption` during startu
 and settings application. HR-2 adds `yune_typeduck_set_option`, exposes it through
 the TypeScript runtime, wires the TypeDuck-Web adapter to it, and records a
 browser startup smoke where option toggles succeed without adapter/runtime
-errors. Deploy, persistence, paging/deletion, and dictionary-comment evidence
-remain outside this decision.
+errors. Persistence, paging/deletion, and dictionary-comment evidence remain
+outside this decision.
+
+**D-P10-11 — Browser deploy must preload the workspace-reachable schema set, not
+only the active schema.** HR-3 showed TypeDuck-Web `deploy()` returned false with
+real assets because the worker preloaded `jyut6ping3_mobile` and its dictionary
+but omitted the plain `jyut6ping3.schema.yaml` reached through the real
+`default.custom.yaml` workspace deployment path. The seam now treats that source
+schema as an app-owned preload asset and records browser evidence where deploy
+returns true.
 
 **D-12 / TYPEDUCK-E2E-04 — Final findings separate three blocker classes.**
 TypeDuck-Web app/source blockers, Yune adapter/runtime mismatches, and
@@ -529,4 +538,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-18 — consolidated from the retired GSD .planning/; added the M9 HR-1/HR-2 decisions (D-P10-9/10), the GSD-retirement decision (D-INIT-3), and docs-governance decisions (D-DOC-1/2).*
+*Last updated: 2026-06-18 — consolidated from the retired GSD .planning/; added the M9 HR-1/HR-2/HR-3 decisions (D-P10-9/10/11), the GSD-retirement decision (D-INIT-3), and docs-governance decisions (D-DOC-1/2).*

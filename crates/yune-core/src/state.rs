@@ -19,10 +19,21 @@ pub enum CandidateSource {
     Switch,
     Unfold,
     Schema,
-    Ai,
+    Ai {
+        provider: String,
+        confidence: AiConfidence,
+    },
 }
 
 impl CandidateSource {
+    #[must_use]
+    pub fn ai(provider: impl Into<String>, confidence: AiConfidence) -> Self {
+        Self::Ai {
+            provider: provider.into(),
+            confidence,
+        }
+    }
+
     #[must_use]
     pub const fn as_str(&self) -> &'static str {
         match self {
@@ -37,8 +48,62 @@ impl CandidateSource {
             Self::Switch => "switch",
             Self::Unfold => "unfold",
             Self::Schema => "schema",
-            Self::Ai => "ai",
+            Self::Ai { .. } => "ai",
         }
+    }
+
+    #[must_use]
+    pub const fn is_ai(&self) -> bool {
+        matches!(self, Self::Ai { .. })
+    }
+
+    #[must_use]
+    pub const fn ai_confidence(&self) -> Option<AiConfidence> {
+        match self {
+            Self::Ai { confidence, .. } => Some(*confidence),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct AiConfidence {
+    basis_points: u16,
+}
+
+impl AiConfidence {
+    const MAX_BASIS_POINTS: u16 = 10_000;
+
+    #[must_use]
+    pub const fn from_basis_points(basis_points: u16) -> Self {
+        Self {
+            basis_points: if basis_points > Self::MAX_BASIS_POINTS {
+                Self::MAX_BASIS_POINTS
+            } else {
+                basis_points
+            },
+        }
+    }
+
+    #[must_use]
+    pub fn from_score(score: f32) -> Self {
+        if !score.is_finite() || score <= 0.0 {
+            return Self::from_basis_points(0);
+        }
+        if score >= 1.0 {
+            return Self::from_basis_points(Self::MAX_BASIS_POINTS);
+        }
+        Self::from_basis_points((score * f32::from(Self::MAX_BASIS_POINTS)).round() as u16)
+    }
+
+    #[must_use]
+    pub const fn basis_points(self) -> u16 {
+        self.basis_points
+    }
+
+    #[must_use]
+    pub fn as_score(self) -> f32 {
+        f32::from(self.basis_points) / f32::from(Self::MAX_BASIS_POINTS)
     }
 }
 

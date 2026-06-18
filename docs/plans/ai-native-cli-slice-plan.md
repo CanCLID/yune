@@ -14,6 +14,11 @@
 > `yune-cli frontend` command, not `yune-rime-api/src/typeduck_web.rs`, and not
 > any browser/Windows path. That is why it runs alongside M9/M10 without file
 > conflicts. Stage by path on the shared checkout.
+>
+> **Post-S2 note.** This plan records the completed S1 slice. S1 intentionally
+> kept `CandidateSource::Ai` as a unit variant; S2 later promoted it to
+> `{ provider, confidence }` using fixed-point `AiConfidence` once the merge
+> policy consumed confidence.
 
 ## Goal
 A direct core CLI run can enable a **mock AI provider** contributing a **source-labeled**,

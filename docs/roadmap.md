@@ -138,24 +138,24 @@ Windows.
 The v1.1.2 oracle fixture used for items 2–3 is **genuine captured fork output**
 (`crates/yune-core/tests/fixtures/typeduck-v1.1.2/`).
 
-### M11: AI-native input layer *(S1 CLI slice complete; remaining gates pending)*
+### M11: AI-native input layer *(S1/S2 CLI slices complete; remaining gates pending)*
 
 The first AI-native slice is implemented only in `crates/yune-core` and the
 direct `yune-cli run` path, keeping M9/M10 frontend surfaces unchanged. The core
-now exposes an `AiCandidateProvider` interface plus a deterministic
-`MockAiProvider`; provider execution is CLI-orchestrated outside
+now exposes an `AiCandidateProvider` interface, deterministic `MockAiProvider`,
+and `AiWorker`; provider execution is CLI-orchestrated outside
 `Engine::refresh_candidates`, and the engine consumes only staged,
 input-keyed results. Matching AI candidates append after classic candidates, so
-the top classic candidate stays pinned.
+the top classic candidate stays pinned. S2 adds structured AI source metadata
+with fixed-point confidence and orders AI rows by confidence after classic rows.
 
-Safety gates from S1 are in place: `CandidateSource::Ai` remains a unit variant,
-provider/confidence data stays in the candidate comment, default Space/Return
-confirmation rejects highlighted AI candidates, explicit AI selection does not
-stage librime userdb learning, and the direct CLI transcript records a
-deterministic `ai_decision` when the mock path is enabled. Focused
-`yune-core`/`yune-cli` tests are green. Local-model providers, async workers,
-context/privacy policy, AI memory persistence, and real frontend exposure remain
-later M11 gates.
+Safety gates from S1/S2 are in place: default Space/Return confirmation rejects
+highlighted AI candidates, explicit AI selection does not stage librime userdb
+learning, keyed pending/ready results prevent stale AI state from applying to a
+different input, and the direct CLI transcript records a deterministic
+`ai_decision` when the mock path is enabled. Focused `yune-core`/`yune-cli`
+tests are green. Local-model providers, context/privacy policy, AI memory
+persistence, and real frontend exposure remain later M11 gates.
 
 ---
 
@@ -166,14 +166,14 @@ Concrete, in priority order (**web first, then Windows, then other platforms**):
 1. **Keep the M9 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, and native `typeduck_web` fallback.
 2. **Capture the remaining shared Cantonese goldens.** Five fork-specific cases remain explicit ignored blockers pending TypeDuck v1.1.2 oracle captures: option-combination behavior, completion/prediction, correction, schema-menu hiding, and per-entry userdb pronunciations.
 3. **Resume Windows, then other platforms.** Verify the native `rime.dll`/`.lib`/headers build on an MSVC host, including `rime_get_api`/`config_list_append_string` smoke and header field-order parity, then run the real TypeDuck-Windows E2E per the fork's `INTEGRATION_PLAN.md`. Other native frontends follow the same engine.
-4. **Continue M11 beyond the S1 CLI slice.** The M9 verdict permits real-frontend exposure only with AI default-off until the remaining async/provider, local-model, context, memory, and privacy gates are proven.
+4. **Continue M11 beyond the S1/S2 CLI slices.** The M9 verdict permits real-frontend exposure only with AI default-off until the remaining local-model, context, memory, and privacy gates are proven.
 
 ---
 
 ## Deferred / future
 
 - **librime C++ plugin ABI** (Lua, octagram, predict, proto): deferred until a concrete frontend or distribution requires it; prefer Yune-native extension points first.
-- **AI-native input layer (M11 later slices)** — after the completed S1 CLI mock/provider slice, remaining work covers async workers and local-model providers, context/privacy policy, AI memory persistence, and eventual real-frontend exposure behind explicit defaults. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); S1 evidence and checklist live in [`plans/ai-native-cli-slice-plan.md`](./plans/ai-native-cli-slice-plan.md).
+- **AI-native input layer (M11 later slices)** — after the completed S1/S2 CLI mock/provider and worker/confidence slices, remaining work covers local-model providers, context/privacy policy, AI memory persistence, and eventual real-frontend exposure behind explicit defaults. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); S1 evidence and checklist live in [`plans/ai-native-cli-slice-plan.md`](./plans/ai-native-cli-slice-plan.md).
 
 ## Principles (carried forward)
 

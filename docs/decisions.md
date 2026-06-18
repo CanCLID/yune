@@ -538,12 +538,24 @@ adds an `AiCandidateProvider` interface and deterministic `MockAiProvider` in
 not by `Engine::refresh_candidates` and not by `yune-rime-api`/browser/Windows
 frontends. The engine stores only staged, input-keyed `AiResult::Ready`
 candidates and appends matching AI rows after classic candidates, preserving the
-top classic candidate. AI candidates remain `CandidateSource::Ai` as a unit
-variant with provider/confidence labels in `comment`. Default Space/Return
-confirmation rejects AI candidates, while explicit AI selection records a commit
-without staging librime userdb learning. Real frontend AI exposure remains
-disabled by default until later M11 provider, local-model, context, memory, and
-privacy gates are proven.
+top classic candidate. S1 kept `CandidateSource::Ai` as a unit variant with
+provider/confidence labels in `comment`; D-M11-2 supersedes that shape once the
+merge policy consumes confidence. Default Space/Return confirmation rejects AI
+candidates, while explicit AI selection records a commit without staging librime
+userdb learning. Real frontend AI exposure remains disabled by default until
+later M11 provider, local-model, context, memory, and privacy gates are proven.
+
+**D-M11-2 — S2 uses a host-owned worker and fixed-point AI confidence metadata.**
+Provider/model work remains outside `Engine::refresh_candidates`: `AiWorker`
+runs the provider on a background thread, receives cloned context snapshots from
+the direct CLI host, and returns input-keyed `AiResult::{Pending, Ready}` so
+stale results cannot erase or apply to a different input. `CandidateSource::Ai`
+is promoted to `{ provider, confidence }`, but confidence is stored as fixed
+point `AiConfidence` rather than `f32` so `CandidateSource` keeps `Eq` and can
+continue flowing through `UserDbCommitMetadata` and tests. The merge policy still
+pins all classic rows ahead of AI rows, but now orders AI rows by confidence.
+This completes the worker/confidence part of AI-02 while leaving local-model,
+context, memory, privacy, and real-frontend exposure for later gates.
 
 ### Initialization notes (process decisions)
 
@@ -577,4 +589,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-18 — added the M11 S1 CLI-only staged-result decision (D-M11-1) and updated shared comment-oracle/web-first status.*
+*Last updated: 2026-06-18 — added the M11 S2 worker/confidence decision (D-M11-2) and updated shared comment-oracle/web-first status.*

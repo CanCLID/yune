@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use yune_core::{
-    parse_key_sequence, AiCandidateProvider, AiDecision, Engine, MockAiProvider,
-    PunctuationTranslator, StaticTableTranslator,
+    parse_key_sequence, AiDecision, AiWorker, Engine, MockAiProvider, PunctuationTranslator,
+    StaticTableTranslator,
 };
 
 use crate::args::AiProviderMode;
@@ -39,19 +39,29 @@ pub(crate) fn run_sequence_with_ai_provider(
         StaticTableTranslator::parse_rime_dict_yaml(SAMPLE_DICT)
             .map_err(|error| format!("invalid sample dictionary: {error}"))?,
     );
-    let provider = (ai_provider == AiProviderMode::Mock).then_some(MockAiProvider);
-    let mut ai_decision = provider.map(|_| AiDecision::Pending);
+    let worker = (ai_provider == AiProviderMode::Mock)
+        .then(|| AiWorker::spawn(MockAiProvider, AI_PROVIDER_BUDGET));
+    let mut ai_decision = worker.as_ref().map(|_| AiDecision::Pending);
     let mut commits = Vec::new();
     for key_event in
         parse_key_sequence(sequence).map_err(|error| format!("invalid key sequence: {error}"))?
     {
+        if let Some(worker) = &worker {
+            if let Some(result) = worker.try_recv_latest() {
+                ai_decision = Some(engine.stage_ai_result(result));
+            }
+        }
         if let Some(commit) = engine.process_key_event(key_event) {
             commits.push(commit);
         }
-        if let Some(provider) = provider {
-            ai_decision = Some(
-                engine.stage_ai_result(provider.provide(engine.context(), AI_PROVIDER_BUDGET)),
-            );
+        if let Some(worker) = &worker {
+            worker.request(engine.context());
+        }
+    }
+    if let Some(worker) = &worker {
+        let input = engine.context().composition.input.clone();
+        if let Some(result) = worker.recv_matching_timeout(&input, AI_PROVIDER_BUDGET) {
+            ai_decision = Some(engine.stage_ai_result(result));
         }
     }
 

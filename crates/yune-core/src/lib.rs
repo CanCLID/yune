@@ -13,7 +13,9 @@ mod state;
 mod tests;
 mod translator;
 mod userdb;
-pub use ai::{AiCandidateProvider, AiDecision, AiResult, MockAiProvider, StagedAiCandidates};
+pub use ai::{
+    AiCandidateProvider, AiDecision, AiResult, AiWorker, MockAiProvider, StagedAiCandidates,
+};
 use comment_format::CommentFormat;
 pub use dictionary::{
     parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
@@ -35,7 +37,9 @@ pub use filter::{
 };
 pub use key::{parse_key_sequence, KeyCode, KeyEvent, KeyModifiers, KeySequenceParseError};
 pub use punctuation::PunctuationTranslator;
-pub use state::{Candidate, CandidateSource, CommitRecord, Composition, Context, Snapshot, Status};
+pub use state::{
+    AiConfidence, Candidate, CandidateSource, CommitRecord, Composition, Context, Snapshot, Status,
+};
 pub use translator::{
     EchoTranslator, FoldedSwitchOptions, HistoryTranslator, ReverseLookupTranslator,
     SchemaListTranslator, StaticTableTranslator, SwitchTranslator, SwitchTranslatorSwitch,

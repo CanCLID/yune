@@ -108,9 +108,13 @@ impl Engine {
 
     pub fn stage_ai_result(&mut self, result: AiResult) -> AiDecision {
         let decision = match result {
-            AiResult::Pending => {
-                self.staged_ai_result = None;
-                AiDecision::Pending
+            AiResult::Pending { for_input } => {
+                if for_input == self.context.composition.input {
+                    self.staged_ai_result = None;
+                    AiDecision::Pending
+                } else {
+                    self.ai_decision_for_current_input()
+                }
             }
             AiResult::Ready {
                 for_input,
@@ -131,6 +135,18 @@ impl Engine {
         };
         self.refresh_candidates();
         decision
+    }
+
+    fn ai_decision_for_current_input(&self) -> AiDecision {
+        self.staged_ai_result
+            .as_ref()
+            .map_or(AiDecision::Off, |staged| {
+                if staged.matches_input(&self.context.composition.input) {
+                    AiDecision::Ready
+                } else {
+                    AiDecision::Pending
+                }
+            })
     }
 
     pub fn set_schema(&mut self, id: impl Into<String>, name: impl Into<String>) {
@@ -785,7 +801,7 @@ impl Engine {
             .candidates
             .get(candidate_index)
             .map(|candidate| (candidate.text.clone(), candidate.source.clone()))?;
-        if intent == CommitIntent::DefaultConfirm && candidate_source == CandidateSource::Ai {
+        if intent == CommitIntent::DefaultConfirm && candidate_source.is_ai() {
             return None;
         }
         self.commit_tick = self.commit_tick.saturating_add(1);
@@ -797,7 +813,7 @@ impl Engine {
             segment_end,
             self.commit_tick,
         );
-        if candidate_source == CandidateSource::Ai {
+        if candidate_source.is_ai() {
             self.pending_userdb_learning = None;
         } else {
             self.pending_userdb_learning = Some(learning.clone());
@@ -886,7 +902,20 @@ fn merge_classic_and_staged_ai(
 ) -> Vec<Candidate> {
     if let Some(staged) = staged_ai_result {
         if staged.matches_input(input) {
-            classic.extend(staged.candidates.iter().cloned());
+            let mut ai_candidates = staged
+                .candidates
+                .iter()
+                .cloned()
+                .enumerate()
+                .collect::<Vec<_>>();
+            ai_candidates.sort_by(|(left_index, left), (right_index, right)| {
+                right
+                    .source
+                    .ai_confidence()
+                    .cmp(&left.source.ai_confidence())
+                    .then_with(|| left_index.cmp(right_index))
+            });
+            classic.extend(ai_candidates.into_iter().map(|(_, candidate)| candidate));
         }
     }
     classic

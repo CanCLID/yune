@@ -1,6 +1,6 @@
 use crate::{
-    AiResult, Candidate, CandidateRanker, CandidateSource, Context, Engine, MockAiRanker,
-    RerankResult, StaticTableTranslator, Translator,
+    AiConfidence, AiResult, Candidate, CandidateRanker, CandidateSource, Context, Engine,
+    MockAiRanker, RerankResult, StaticTableTranslator, Translator,
 };
 
 struct CommentTranslator;
@@ -32,10 +32,14 @@ impl Translator for CommentTranslator {
 }
 
 fn ai_candidate(text: &str) -> Candidate {
+    ai_candidate_with_confidence(text, 0.62)
+}
+
+fn ai_candidate_with_confidence(text: &str, confidence: f32) -> Candidate {
     Candidate {
         text: text.to_owned(),
-        comment: "ai:mock 0.62".to_owned(),
-        source: CandidateSource::Ai,
+        comment: format!("ai:mock {confidence:.2}"),
+        source: CandidateSource::ai("mock", AiConfidence::from_score(confidence)),
         quality: 0.0,
     }
 }
@@ -1080,9 +1084,38 @@ sort: by_weight
         "吧呀"
     );
     assert_eq!(
-        candidates.last().expect("AI row should be appended").source,
-        CandidateSource::Ai
+        candidates
+            .last()
+            .expect("AI row should be appended")
+            .source
+            .as_str(),
+        "ai"
     );
+}
+
+#[test]
+fn staged_ai_merge_orders_ai_candidates_by_confidence_after_classic_candidates() {
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("ba", "把")]));
+    engine.set_input("ba");
+
+    let decision = engine.stage_ai_result(AiResult::Ready {
+        for_input: "ba".to_owned(),
+        candidates: vec![
+            ai_candidate_with_confidence("low", 0.20),
+            ai_candidate_with_confidence("high", 0.95),
+            ai_candidate_with_confidence("middle", 0.50),
+        ],
+    });
+
+    let texts = engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(decision.as_str(), "ready");
+    assert_eq!(texts, ["把", "ba", "high", "middle", "low"]);
 }
 
 #[test]
@@ -1100,7 +1133,7 @@ fn stale_or_pending_ai_result_does_not_change_classic_candidates() {
     assert_eq!(stale_decision.as_str(), "pending");
     assert_eq!(engine.context().candidates, baseline);
 
-    let pending_decision = engine.stage_ai_result(AiResult::Pending);
+    let pending_decision = engine.stage_ai_result(AiResult::pending("ba"));
 
     assert_eq!(pending_decision.as_str(), "pending");
     assert_eq!(engine.context().candidates, baseline);

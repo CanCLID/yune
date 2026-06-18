@@ -158,7 +158,7 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - [x] **AI-01**: Engine exposes an `AiCandidateProvider` interface and staged,
   input-keyed AI results without replacing classic translators. S1 implements
   this for the direct CLI mock path.
-- [ ] **AI-02**: Candidate ranking supports local model and rule-backed implementations with deterministic timeout/fallback behavior.
+- [ ] **AI-02**: Candidate ranking supports local model and rule-backed implementations with deterministic timeout/fallback behavior. S2 covers the background worker, input-keyed fallback, fixed-point confidence metadata, and confidence-ordered AI merge; local model and rule-backed provider implementations remain pending.
 - [ ] **AI-03**: Contextual phrase and sentence completion can produce source-labeled AI candidates without allowing AI candidates to auto-commit by default. S1 covers source labeling and the no-default-auto-commit gate with a mock provider; contextual/local completion remains pending.
 - [ ] **AI-04**: Context providers define what app, field, preceding text, cursor, schema, and candidate-list data may be shared with AI providers.
 - [ ] **AI-05**: Memory store records user vocabulary, phrase preferences, and domain terms through explicit, inspectable, clearable policy.
@@ -236,6 +236,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-BUILD-01 | Phase 15 | Complete as scripted; smoke verification pending on MSVC host |
 | WIN-PARITY-01 | Phase 16 | Partial - ignored oracle cases still blocked |
 | AI-01 | M11 S1 | Complete - staged provider interface in `yune-core` |
+| AI-02 | M11 S2+ | Partial - worker/fallback/confidence merge covered; local model/rule-backed providers pending |
 | AI-03 | M11 S1+ | Partial - source labels and no-default-auto-commit covered; contextual/local completion pending |
 | AI-07 | M11 S1+ | Partial - direct CLI mock provider covered; local provider pending |
 
@@ -244,9 +245,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v2 validation requirements: 7 total
 - TypeDuck-Web integration requirements: 15 total
 - TypeDuck-Windows native IME requirements: 6 total
-- Mapped to phases: 56
+- Mapped to phases: 57
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-18 — M11 S1 direct CLI mock/provider slice complete; M9 TypeDuck-Web validation complete with GO WITH CONDITIONS; TypeDuck-Windows ready to resume*
+*Last updated: 2026-06-18 — M11 S1/S2 direct CLI mock/provider and worker/confidence slices complete; M9 TypeDuck-Web validation complete with GO WITH CONDITIONS; TypeDuck-Windows ready to resume*

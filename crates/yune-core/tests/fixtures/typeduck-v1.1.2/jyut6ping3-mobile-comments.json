@@ -1,0 +1,178 @@
+{
+    "oracle":  {
+                   "engine":  "TypeDuck-HK/librime",
+                   "engine_tag":  "v1.1.2",
+                   "engine_commit":  "74cb52b78fb2411137a7643f6c8bc6517acfde69",
+                   "release_asset":  "rime-TypeDuck-v1.1.2-Windows-msvc-x64.7z",
+                   "dependency_asset":  "rime-deps-TypeDuck-v1.1.2-Windows-msvc-x64.7z",
+                   "plugin":  "TypeDuck-HK/rime-dictionary-lookup-filter",
+                   "plugin_commit":  "3e4605c4fae99f068df2edb85aaeab5a97752795",
+                   "schema":  "TypeDuck-HK/schema",
+                   "schema_commit":  "1bed1ae6a0ab48055f073774d7dfd152a171c548",
+                   "captured_on":  "2026-06-18",
+                   "host":  "Windows"
+               },
+    "schema":  "jyut6ping3_mobile",
+    "module_list":  [
+                        "default",
+                        "dictionary_lookup"
+                    ],
+    "cases":  [
+                  {
+                      "schema_id":  "jyut6ping3_mobile",
+                      "schema_name":  "粵語拼音",
+                      "input":  "nei",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "nei",
+                      "commit_text_preview":  "你",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  50,
+                      "page_no":  0,
+                      "is_last_page":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "你",
+                                                      "comment":  "\f\r1,你,nei5,1,0,,oth,,,,,,,you (singular),تم,तपाईं,आप,kamu"
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "呢",
+                                                      "comment":  "\f\r1,呢,nei1,2,0,,oth,ver,,,這,,,this,,,,\r0,呢,ne1,1,0,,part,,,,,,,(how about),(particle),,(particle),(imbuhan kata)\r0,呢,ni1,2,0,,oth,ver,,,這,,,this,,,,"
+                                                  },
+                                                  {
+                                                      "index":  13,
+                                                      "text":  "珥",
+                                                      "comment":  "\f\r1,珥,nei6,2,0,,x,,,,,,,,,,,\r0,珥,ji5,1,0,,x,,,,,,,,,,,\r0,珥,ji6,2,0,,x,,,,,,,,,,,"
+                                                  }
+                                              ]
+                  },
+                  {
+                      "schema_id":  "jyut6ping3_mobile",
+                      "schema_name":  "粵語拼音",
+                      "input":  "hou",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "hou",
+                      "commit_text_preview":  "好",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  50,
+                      "page_no":  0,
+                      "is_last_page":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "好",
+                                                      "comment":  "\f\r1,好,hou2,1,0,,adj,,,,,,,good; very,بہت,धेरै,बहुत,sangat\r0,好,hou3,2,0,,v,,,,,,,like,جیسے,जस्तै,पसंद,suka"
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "好",
+                                                      "comment":  "\f\r1,好,hou3,2,0,,v,,,,,,,like,جیسے,जस्तै,पसंद,suka\r0,好,hou2,1,0,,adj,,,,,,,good; very,بہت,धेरै,बहुत,sangat"
+                                                  },
+                                                  {
+                                                      "index":  33,
+                                                      "text":  "荷",
+                                                      "comment":  "\f\r1,荷,ho6,2,0,,morph,,,,,,負荷,load,لے کر آنا,बोक्नु,ढोना,Set\r0,荷,ho4,1,0,,morph,,,,,,,lotus; Dutch,کمل,कमल,कमल,Teratai"
+                                                  },
+                                                  {
+                                                      "index":  39,
+                                                      "text":  "厂",
+                                                      "comment":  "\f\r1,厂,ho1,2,0,,x,,,,,,,,,,,\r0,厂,am1,1,0,,x,,,,,,,,,,,\r0,厂,cong2,2,0,,x,,,,,,,,,,,\r0,厂,hon2,2,0,,x,,,,,,,,,,,\r0,厂,hon3,2,0,,x,,,,,,,,,,,\r0,厂,ngon6,2,0,,x,,,,,,,,,,,"
+                                                  }
+                                              ]
+                  },
+                  {
+                      "schema_id":  "jyut6ping3_mobile",
+                      "schema_name":  "粵語拼音",
+                      "input":  "zyu",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "zyu",
+                      "commit_text_preview":  "主",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  50,
+                      "page_no":  0,
+                      "is_last_page":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "主",
+                                                      "comment":  "\f\r1,主,zyu2,1,0,,adj n,,,,,,,main; God,میزبان,भगवान,भगवान,tuan rumah"
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "住",
+                                                      "comment":  "\f\r1,住,zyu6,1,0,,v part,,,,,,居住，住宅,live; stay,,,,"
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "注",
+                                                      "comment":  "\f\r1,注,zyu3,1,0,,morph,,,,,,注意，注定，注射,inject,,,,"
+                                                  },
+                                                  {
+                                                      "index":  13,
+                                                      "text":  "洙",
+                                                      "comment":  "\f\r1,洙,zyu1,2,0,,morph,,,,,,,,,,,\r0,洙,syu4,1,0,,x,,,,,,,,,,,"
+                                                  }
+                                              ]
+                  },
+                  {
+                      "schema_id":  "jyut6ping3_mobile",
+                      "schema_name":  "粵語拼音",
+                      "input":  "haau",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "haau",
+                      "commit_text_preview":  "考",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  50,
+                      "page_no":  0,
+                      "is_last_page":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "考",
+                                                      "comment":  "\f\r1,考,haau2,1,0,,v n,,,,,,,test,جانچنا,परीक्षण,परीक्षा देना,uji"
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "校",
+                                                      "comment":  "\f\r1,校,haau6,1,0,,morph,,,,,,學校，校園，校舍，校長,school,,,,\r0,校,gaau3,2,0,,morph,,,,,,校對，調校,adjust,,,,"
+                                                  },
+                                                  {
+                                                      "index":  32,
+                                                      "text":  "嗄",
+                                                      "comment":  "\f\r1,嗄,haa2,2,0,,x,,,,,,,,,,,\r0,嗄,aa2,1,0,,x,,,,,,,,,,,\r0,嗄,aai3,2,0,,x,,,,,,,,,,,\r0,嗄,saa3,2,0,,x,,,,,,,,,,,"
+                                                  },
+                                                  {
+                                                      "index":  38,
+                                                      "text":  "鉿",
+                                                      "comment":  "\f\r1,鉿,haa1,2,0,,n,,chem,,,,,Hafnium,,,,\r0,鉿,hap6,2,0,,x,,,,,,,,,,,"
+                                                  }
+                                              ]
+                  }
+              ]
+}

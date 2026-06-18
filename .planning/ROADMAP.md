@@ -154,7 +154,7 @@ then the TypeDuck-Windows contract continues with Phases 11 -> 16.
 | 10. TypeDuck-Web App Integration And E2E | 4/4 | Complete - NO-GO recommendation | 2026-05-05 |
 | 11. Windows Test Baseline | 1/1 | Complete | 2026-06-18 |
 | 12. Fork Config List Append ABI | 1/1 | Complete | 2026-06-18 |
-| 13. TypeDuck v1.1.2 Oracle | 0/1 | Planned | - |
+| 13. TypeDuck v1.1.2 Oracle | 1/1 | Complete | 2026-06-18 |
 | 14. Candidate Comment Semantics | 0/1 | Planned | - |
 | 15. Native Windows Artifact | 0/1 | Planned | - |
 | 16. Cantonese/Jyutping Parity Suite | 0/1 | Planned | - |
@@ -296,7 +296,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 13-01: Capture v1.1.2 oracle goldens or record the reproducible blocker.
+- [x] 13-01: Capture v1.1.2 oracle goldens or record the reproducible blocker.
 
 ### Phase 14: Candidate Comment Semantics
 

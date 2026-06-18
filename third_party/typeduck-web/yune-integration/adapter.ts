@@ -16,7 +16,6 @@
 import {
   TypeDuckRuntime,
   type EmscriptenTypeDuckModule,
-  type TypeDuckResponse,
   type TypeDuckInitOptions,
   keyEventToRimeKey,
   type TypeDuckKeyboardEventLike,
@@ -31,27 +30,7 @@ import {
   type PrepareTypeDuckFilesystemOptions,
 } from "@yune-ime/typeduck-runtime";
 
-/**
- * Upstream RimeResult shape from src/types.ts
- */
-export interface RimeResult {
-  isComposing: boolean;
-  inputBuffer?: {
-    before: string;
-    active: string;
-    after: string;
-  };
-  page?: number;
-  isLastPage?: boolean;
-  highlightedIndex?: number;
-  candidates?: Array<{
-    label?: string;
-    text: string;
-    comment?: string;
-  }>;
-  success: boolean;
-  committed?: string;
-}
+import { translateResponse, type RimeResult } from "./response.js";
 
 /**
  * Upstream Actions interface from src/types.ts
@@ -148,59 +127,6 @@ export function cleanupYuneRuntime(): void {
   currentModule = null;
   currentFs = null;
   currentSchemaId = null;
-}
-
-/**
- * Translate TypeDuckResponse to upstream RimeResult shape
- */
-function translateResponse(response: TypeDuckResponse): RimeResult {
-  if (!response.handled) {
-    return { isComposing: false, success: false };
-  }
-
-  // Extract commit text
-  const committed = response.commits.length > 0 ? response.commits.join("") : undefined;
-
-  // Extract composing state from context
-  if (response.context && response.context.preedit) {
-    const preedit = response.context.preedit;
-    const caretPos = response.context.caret || 0;
-
-    // Split preedit at caret position
-    const before = preedit.slice(0, caretPos);
-    const active = preedit.slice(caretPos);
-    const after = "";
-
-    // Extract candidates
-    const candidates = response.context.candidates?.map((candidate, index) => ({
-      label: response.context.select_labels?.[index],
-      text: candidate,
-      comment: response.context.comments?.[index],
-    }));
-
-    // Extract page state
-    const page = response.context.page_no || 0;
-    const isLastPage = response.context.is_last_page || false;
-    const highlightedIndex = response.context.highlighted_candidate_index || 0;
-
-    return {
-      isComposing: true,
-      inputBuffer: { before, active, after },
-      page,
-      isLastPage,
-      highlightedIndex,
-      candidates,
-      success: true,
-      committed,
-    };
-  }
-
-  // Non-composing state with commit
-  return {
-    isComposing: false,
-    success: true,
-    committed,
-  };
 }
 
 /**

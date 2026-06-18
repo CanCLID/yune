@@ -193,7 +193,7 @@ frontends share. Drive from the v1.1.2 oracle:
 
 ## Summary checklist
 - [x] **WI-1** — Emscripten + loadable WASM/JS artifact built; exports verified; native fallback green
-- [ ] **WI-2** — `adapter.ts` text/comment/highlight shapes fixed + unit-tested
+- [x] **WI-2** — `adapter.ts` text/comment/highlight shapes fixed + unit-tested
 - [ ] **WI-3** — browser FS layout, asset preload, and IDBFS sync working
 - [ ] **WI-4** — 10 E2E flows run in a real browser with captured PASS/FAIL evidence
 - [ ] **WI-5** — evidence-based GO/NO-GO recorded; tracking docs updated

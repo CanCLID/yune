@@ -369,7 +369,9 @@ Phase 8/9 package surface.** Prefer a patch/configuration layer over UI rewrites
 seam calls `TypeDuckRuntime`, `keyEventToRimeKey`, filesystem preparation, and
 persistence sync helpers from `@yune-ime/typeduck-runtime` rather than raw
 `yune_typeduck_*` exports. Preserve one active runtime per Emscripten Module with
-deterministic cleanup; do not promise multi-instance browser isolation.
+deterministic cleanup; do not promise multi-instance browser isolation. The
+adapter's upstream `RimeResult` mapper must consume the runtime's actual shape:
+per-candidate `text`/`comment` plus `context.highlighted`.
 
 **D-P10-3 — Use explicit TypeDuck-Web-owned assets; never fabricate fallback
 schema/dictionary data.** Missing or mismatched `default.yaml`/schema/dictionary YAML

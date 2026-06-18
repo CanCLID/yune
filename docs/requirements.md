@@ -109,7 +109,7 @@ engine has still **not actually run in the TypeDuck-Web browser E2E** — so
 ### TypeDuck-Web App Integration And E2E
 
 - [x] **TYPEDUCK-E2E-01**: The upstream TypeDuck-Web repository is cloned or vendored in a reproducible test location, and its current librime/WASM bridge seam is identified.
-- [x] **TYPEDUCK-E2E-02**: TypeDuck-Web is patched or configured so its input-engine binding calls the Yune TypeScript bridge instead of the original librime bridge.
+- [x] **TYPEDUCK-E2E-02**: TypeDuck-Web is patched or configured so its input-engine binding calls the Yune TypeScript bridge instead of the original librime bridge, with candidate text/comment/highlight mapped from the runtime response shape.
 - [ ] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, and persistence smoke flows.
 - [x] **TYPEDUCK-E2E-04**: Integration findings end with a go/no-go recommendation for exposing AI-native behavior through real frontends.
 
@@ -215,7 +215,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPEDUCK-FS-04 | Phase 9 | Complete |
 | TYPEDUCK-E2E-01 | Phase 10 | Complete |
 | TYPEDUCK-E2E-02 | Phase 10 | Complete |
-| TYPEDUCK-E2E-03 | Phase 10 / 17 | Active — artifact gate cleared; real-browser run next |
+| TYPEDUCK-E2E-03 | Phase 10 / 17 | Active — artifact + adapter gates cleared; browser FS/E2E next |
 | TYPEDUCK-E2E-04 | Phase 10 | Complete |
 | WIN-TEST-01 | Phase 11 | Complete |
 | WIN-ABI-01 | Phase 12 | Complete |

@@ -294,7 +294,12 @@ against the export list, accepting macOS leading underscores) before browser
 prerequisite detection; missing `wasm32-unknown-emscripten`/`emcc`/`emar` are
 deterministic, actionable blockers only when `cargo test -p yune-rime-api --test
 typeduck_web` passes. Native adapter contract tests in
-`crates/yune-rime-api/tests/typeduck_web.rs` are the authoritative fallback.
+`crates/yune-rime-api/tests/typeduck_web.rs` are the authoritative fallback. The
+browser artifact must be a loadable Emscripten main module (`yune-typeduck.js` +
+`.wasm`) rather than a bare side-module wasm; the build exports the
+`yune_typeduck_*` list plus `ccall`, `cwrap`, `UTF8ToString`, `FS`, and `IDBFS`,
+then smokes the module by calling one export and performing one filesystem
+write/read.
 
 **D-P7-5 — Document the one-active-process-global-service constraint and host
 filesystem assumptions.** `yune_typeduck_cleanup` finalizes the process-global RIME

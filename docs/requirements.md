@@ -80,16 +80,16 @@ Phase 6 TypeDuck-Web validation and the seed Rust adapter into a browser-usable
 path before AI-native product work begins.
 
 **Active focus (web-first).** This is the current milestone, reopened as Phase 17.
-The build-out (WASM export contract, TS bridge, browser filesystem) landed, but
-the engine has **never actually run in a browser** — so **TYPEDUCK-E2E-03** (a
-real-browser run) is the priority, and TYPEDUCK-WASM-01's "or document the
-blocker" fallback no longer satisfies the milestone: the WASM artifact must
-actually be built.
+The build-out (WASM export contract, TS bridge, browser filesystem) landed, and
+the WASM artifact now builds as loadable Emscripten `yune-typeduck.js`/`.wasm`
+with a Node smoke for one `yune_typeduck_*` call plus one `FS` operation. The
+engine has still **not actually run in the TypeDuck-Web browser E2E** — so
+**TYPEDUCK-E2E-03** (a real-browser run) remains the priority.
 
 ### WASM Build And Export Contract
 
-- [x] **TYPEDUCK-WASM-01**: Developer can build the TypeDuck adapter for the intended Emscripten/WASM target or reproduce a documented local-toolchain blocker.
-- [x] **TYPEDUCK-WASM-02**: The browser build preserves all required `yune_typeduck_*` exports for JS callers.
+- [x] **TYPEDUCK-WASM-01**: Developer can build the TypeDuck adapter for the intended Emscripten/WASM target as a loadable JS+WASM module.
+- [x] **TYPEDUCK-WASM-02**: The browser build preserves all required `yune_typeduck_*` exports for JS callers and exposes the Emscripten runtime methods needed by the TypeScript host.
 - [x] **TYPEDUCK-WASM-03**: Native adapter contract tests remain the deterministic fallback when local browser/WASM tooling is unavailable.
 
 ### TypeScript Bridge And Runtime Package
@@ -215,7 +215,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPEDUCK-FS-04 | Phase 9 | Complete |
 | TYPEDUCK-E2E-01 | Phase 10 | Complete |
 | TYPEDUCK-E2E-02 | Phase 10 | Complete |
-| TYPEDUCK-E2E-03 | Phase 10 / 17 | Active — web-first priority (real-browser run) |
+| TYPEDUCK-E2E-03 | Phase 10 / 17 | Active — artifact gate cleared; real-browser run next |
 | TYPEDUCK-E2E-04 | Phase 10 | Complete |
 | WIN-TEST-01 | Phase 11 | Complete |
 | WIN-ABI-01 | Phase 12 | Complete |

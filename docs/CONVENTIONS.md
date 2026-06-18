@@ -129,6 +129,8 @@ librime-shaped `extern "C"` ABI surface.
   `serde_json`, `serde_yaml`, `yune-core`; dev-dep `libloading`.
   **`crate-type = ["rlib", "cdylib"]`** — the rlib links into tests/`yune-cli`; the
   cdylib is the artifact loaded by native frontends (as `rime.dll`) and compiled to WASM.
+  The browser-loadable Emscripten module is linked through the tiny
+  `typeduck_web_module` bin target so the build emits JS glue plus a companion `.wasm`.
 - `yune-cli` — fixture runner + frontend surrogate. Deps: `yune-core`, `yune-rime-api`.
 
 No `build.rs`, no `rust-toolchain.toml`, no `.cargo/config.toml` — use the active
@@ -143,11 +145,17 @@ class), `response.ts` (JSON decode), `keys.ts` (DOM `KeyboardEvent` → RIME key
 
 **Emscripten / WASM build** — `scripts/typeduck-wasm-build.sh`:
 1. Builds the native cdylib, verifies its exports with `nm`.
-2. If `wasm32-unknown-emscripten` target + Emscripten `emcc`/`emar` are present, runs
-   `cargo build -p yune-rime-api --target wasm32-unknown-emscripten` with RUSTFLAGS
-   link-args `-sEXPORTED_FUNCTIONS` (the `_`-prefixed `yune_typeduck_*` list) and
-   `-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString`.
-3. If the target/toolchain is absent, **degrades gracefully** to the native fallback
+2. If `wasm32-unknown-emscripten` target + Emscripten `emcc`/`emar` are present, builds
+   `--bin typeduck_web_module` with RUSTFLAGS link-args `-sEXPORTED_FUNCTIONS` (the
+   `_`-prefixed `yune_typeduck_*` list),
+   `-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,FS,IDBFS`,
+   `-sMODULARIZE=1`, `-sEXPORT_NAME=createYuneTypeduckModule`,
+   `-sFORCE_FILESYSTEM=1`, and `-lidbfs.js`.
+3. Copies the browser-loadable pair to
+   `target/wasm32-unknown-emscripten/debug/yune-typeduck.js` and
+   `target/wasm32-unknown-emscripten/debug/yune-typeduck.wasm`, verifies exports, then
+   instantiates it in Node and proves one `yune_typeduck_*` call plus one `FS` write/read.
+4. If the target/toolchain is absent, **degrades gracefully** to the native fallback
    `cargo test -p yune-rime-api --test typeduck_web`.
 
 The exported-symbol contract is `scripts/typeduck-exports.txt` (the 11 `yune_typeduck_*`
@@ -206,6 +214,7 @@ yune/
 |   |   |   |-- frontend_hosts.rs + frontend_hosts/  # mod, native, native_frontends, typeduck_web
 |   |   |   `-- typeduck_web.rs        # TypeDuck-Web C ABI integration
 |   |   `-- src/
+|   |       |-- bin/typeduck_web_module.rs  # Emscripten JS+WASM linker anchor
 |   |       |-- lib.rs                 # ABI facade, key routing, shared glue
 |   |       |-- abi.rs                 # C ABI structs + function-table types
 |   |       |-- api_table.rs           # Static RimeApi/RimeLeversApi builders
@@ -469,12 +478,14 @@ calls are local library/CLI/FFI (native or in-browser WASM). User dictionaries a
 
 ## 9. Key Risks / Concerns (current)
 
-**M9 web validation is blocked on an Emscripten toolchain (highest-priority risk).** No
-Emscripten toolchain is installed, so the WASM artifact has **never been built** and the engine
-has **never run in a real browser**. Adapter shape assumptions are unverified — the runtime
-expects `candidate.text` / `candidate.comment` / `context.highlighted`, not non-existent
-context-level keys (`third_party/typeduck-web/yune-integration/adapter.ts`). Resolution: install
-the Emscripten SDK, run `scripts/typeduck-wasm-build.sh`, run the real-browser E2E, record an
+**M9 web validation is blocked on browser evidence, not toolchain availability
+(highest-priority risk).** The Emscripten build now emits loadable
+`yune-typeduck.js`/`.wasm` glue and smokes one `yune_typeduck_*` call plus one
+`FS` write/read in Node, but the engine has **not yet run through the real
+TypeDuck-Web browser E2E**. The next known blocker is the adapter shape mismatch:
+the runtime expects `candidate.text` / `candidate.comment` / `context.highlighted`,
+not non-existent context-level keys (`third_party/typeduck-web/yune-integration/adapter.ts`).
+Resolution: fix/reapply the adapter patch, run the real-browser E2E, record an
 evidence-based GO/NO-GO. Files: `typeduck_web.rs`, `packages/yune-typeduck-runtime/`,
 `scripts/typeduck-wasm-build.sh`, `docs/plans/typeduck-web-validation-plan.md`.
 

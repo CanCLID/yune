@@ -53,7 +53,7 @@ artifact → browser validation could not run. WI-1 removes that block.
 ### Cross-cutting rules
 - **Ownership (QUAL-01/02):** new behavior gets an owning module + owning test; keep facades thin.
 - **Quality gate:** `cargo fmt`, `cargo clippy --workspace --all-targets -- -D warnings`, focused tests, then `cargo test --workspace` if shared Rust changed; for TS, the package's typecheck + unit tests.
-- **One commit per work item.** Update this plan's checklist + `.planning` Phase 17 status as each lands.
+- **One commit per work item.** Update this plan's checklist plus `docs/roadmap.md` / `docs/requirements.md` as each lands.
 - **Native fallback stays green:** `crates/yune-rime-api/tests/typeduck_web.rs` is the deterministic fallback when a browser isn't available — keep it passing throughout.
 
 ---
@@ -69,13 +69,14 @@ artifact → browser validation could not run. WI-1 removes that block.
    ```
 2. Run the documented build:
    ```sh
-   ./scripts/typeduck-wasm-build.sh        # -> target/wasm32-unknown-emscripten/debug/.../yune_rime_api.wasm
+   ./scripts/typeduck-wasm-build.sh        # -> target/wasm32-unknown-emscripten/debug/yune-typeduck.{js,wasm}
    ```
 3. Verify **every** symbol in `scripts/typeduck-exports.txt` is present in the build's `EXPORTED_FUNCTIONS` (the script should fail loudly if not).
-4. If the toolchain genuinely cannot be installed in this environment, record a *reproducible* blocker (same discipline as the findings doc) and stop — but note this is an environment fix, not a design gap.
+4. Verify the emitted Emscripten module instantiates and exposes `cwrap`, `UTF8ToString`, `FS`, and `IDBFS`; call one `yune_typeduck_*` export and perform one `FS` write/read.
+5. If the toolchain genuinely cannot be installed in this environment, record a *reproducible* blocker (same discipline as the findings doc) and stop — but note this is an environment fix, not a design gap.
 
 ### Acceptance
-- `yune_rime_api.wasm` is produced under `target/wasm32-unknown-emscripten/debug/`; all `typeduck-exports.txt` symbols exported. If the browser host needs a different filename/location, handle that as a WI-3 packaging step rather than as a Rust build blocker.
+- `yune-typeduck.js` + `yune-typeduck.wasm` are produced under `target/wasm32-unknown-emscripten/debug/`; all `typeduck-exports.txt` symbols are exported and the module smoke proves one `yune_typeduck_*` call plus one `FS` operation.
 - `cargo test -p yune-rime-api --test typeduck_web` still green (native fallback intact).
 
 ---
@@ -186,12 +187,12 @@ frontends share. Drive from the v1.1.2 oracle:
 - **17-03** = WI-6 (shared engine parity)
 
 ## Known risks / blockers
-- **Emscripten availability** — the original Phase-10 blocker; WI-1 must install `emsdk`.
+- **Emscripten availability** — cleared locally by WI-1/WI-1b; keep the reproducible build green.
 - **Headless browser availability** for automated E2E (else documented manual smoke).
 - **Upstream TypeDuck-Web build** — the app must build and serve with the Yune bridge wired in.
 
 ## Summary checklist
-- [ ] **WI-1** — Emscripten + WASM artifact built; exports verified; native fallback green
+- [x] **WI-1** — Emscripten + loadable WASM/JS artifact built; exports verified; native fallback green
 - [ ] **WI-2** — `adapter.ts` text/comment/highlight shapes fixed + unit-tested
 - [ ] **WI-3** — browser FS layout, asset preload, and IDBFS sync working
 - [ ] **WI-4** — 10 E2E flows run in a real browser with captured PASS/FAIL evidence

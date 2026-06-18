@@ -216,7 +216,7 @@ fn lifecycle_safety_notification_handler_replacement_and_clearing_are_determinis
 #[test]
 fn lifecycle_safety_records_multithreaded_frontend_behavior_as_out_of_scope() {
     let _guard = test_guard();
-    let findings = include_str!("../../../../.planning/phases/02-native-abi-validation-and-runtime-safety/02-native-loader-findings.md");
-    assert!(findings.contains("No in-scope ABI/frontend gaps were exposed"));
-    assert!(findings.contains("No in-scope ABI/frontend gaps were exposed"));
+    let conventions = include_str!("../../../../docs/CONVENTIONS.md");
+    assert!(conventions.contains("Process-global single RIME service"));
+    assert!(conventions.contains("multiple concurrent engines/schemas in one instance are out"));
 }

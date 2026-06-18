@@ -52,6 +52,11 @@ find_native_library() {
 
 find_tool() {
   for tool in "$@"; do
+    if [ "$tool" = node ] && [ "${EMSDK_NODE+x}" = x ] && [ -x "$EMSDK_NODE" ]; then
+      printf '%s\n' "$EMSDK_NODE"
+      return 0
+    fi
+
     if command -v "$tool" >/dev/null 2>&1; then
       command -v "$tool"
       return 0
@@ -128,6 +133,15 @@ find_first_artifact() {
   find "$ARTIFACT_DIR" -type f -name "*$EXT" -print | sort | head -n 1
 }
 
+find_named_artifact() {
+  ARTIFACT_NAME=$1
+  ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/debug"
+  if [ ! -d "$ARTIFACT_DIR" ]; then
+    return 1
+  fi
+  find "$ARTIFACT_DIR" -maxdepth 2 -type f -name "$ARTIFACT_NAME" -print | sort | head -n 1
+}
+
 verify_wasm_exports() {
   WASM_ARTIFACT=$1
   JS_ARTIFACT=$2
@@ -179,6 +193,69 @@ verify_wasm_exports() {
   done
 }
 
+node_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+    return
+  fi
+  printf '%s\n' "$1"
+}
+
+verify_loadable_module() {
+  JS_ARTIFACT=$1
+  JS_DIR=$(dirname "$JS_ARTIFACT")
+
+  if ! NODE=$(find_tool node); then
+    echo "TypeDuck browser module smoke skipped: node is not available on PATH."
+    return 0
+  fi
+
+  JS_FOR_NODE=$(node_path "$JS_ARTIFACT")
+  DIR_FOR_NODE=$(node_path "$JS_DIR")
+  "$NODE" - "$JS_FOR_NODE" "$DIR_FOR_NODE" <<'NODE'
+const path = require("path");
+
+const [jsArtifact, artifactDir] = process.argv.slice(2);
+const createModule = require(jsArtifact);
+
+(async () => {
+  const module = await createModule({
+    locateFile: (file) => path.join(artifactDir, file),
+  });
+
+  if (typeof module.cwrap !== "function") {
+    throw new Error("Emscripten cwrap is unavailable");
+  }
+  if (typeof module.UTF8ToString !== "function") {
+    throw new Error("Emscripten UTF8ToString is unavailable");
+  }
+  if (module.FS === undefined || typeof module.FS.writeFile !== "function") {
+    throw new Error("Emscripten FS is unavailable");
+  }
+  if ((module.IDBFS ?? module.FS.filesystems?.IDBFS) === undefined) {
+    throw new Error("Emscripten IDBFS is unavailable");
+  }
+
+  const responseHandled = module.cwrap("yune_typeduck_response_handled", "number", ["number"]);
+  const handled = responseHandled(0);
+  if (handled !== 0) {
+    throw new Error(`yune_typeduck_response_handled(null) returned ${handled}`);
+  }
+
+  module.FS.writeFile("/tmp/yune-typeduck-smoke.txt", "ok", { flags: "w" });
+  const text = module.FS.readFile("/tmp/yune-typeduck-smoke.txt", { encoding: "utf8" });
+  if (text !== "ok") {
+    throw new Error(`Emscripten FS readback returned ${JSON.stringify(text)}`);
+  }
+
+  console.log("TypeDuck browser module smoke verified: yune_typeduck_response_handled + FS write/read");
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+NODE
+}
+
 (cd "$REPO_ROOT" && cargo build -p yune-rime-api)
 NATIVE_LIBRARY=$(find_native_library) || {
   echo "TypeDuck WASM build failed: could not locate yune-rime-api native dynamic library under target/debug" >&2
@@ -211,23 +288,40 @@ fi
 configure_emscripten_linker
 
 EXPORTED_FUNCTIONS=$(join_exported_functions)
-RUNTIME_METHODS="ccall,cwrap,UTF8ToString"
-EXTRA_RUSTFLAGS="-C link-arg=-sEXPORTED_FUNCTIONS=$EXPORTED_FUNCTIONS -C link-arg=-sEXPORTED_RUNTIME_METHODS=$RUNTIME_METHODS"
+RUNTIME_METHODS="ccall,cwrap,UTF8ToString,FS,IDBFS"
+EXTRA_RUSTFLAGS="-C link-arg=-sEXPORTED_FUNCTIONS=$EXPORTED_FUNCTIONS -C link-arg=-sEXPORTED_RUNTIME_METHODS=$RUNTIME_METHODS -C link-arg=-sMODULARIZE=1 -C link-arg=-sEXPORT_NAME=createYuneTypeduckModule -C link-arg=-sENVIRONMENT=web,worker,node -C link-arg=-sFORCE_FILESYSTEM=1 -C link-arg=-lidbfs.js"
 if [ "${RUSTFLAGS+x}" = x ] && [ -n "$RUSTFLAGS" ]; then
   export RUSTFLAGS="$RUSTFLAGS $EXTRA_RUSTFLAGS"
 else
   export RUSTFLAGS="$EXTRA_RUSTFLAGS"
 fi
 
-(cd "$REPO_ROOT" && cargo build -p yune-rime-api --target wasm32-unknown-emscripten)
-WASM_ARTIFACT=$(find_first_artifact .wasm) || {
-  echo "TypeDuck WASM build failed: no .wasm artifact found under target/wasm32-unknown-emscripten/debug" >&2
+ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/debug"
+rm -f \
+  "$ARTIFACT_DIR/typeduck_web_module.js" \
+  "$ARTIFACT_DIR/typeduck_web_module.wasm" \
+  "$ARTIFACT_DIR/deps/typeduck_web_module.js" \
+  "$ARTIFACT_DIR/deps/typeduck_web_module.wasm" \
+  "$ARTIFACT_DIR/yune-typeduck.js" \
+  "$ARTIFACT_DIR/yune-typeduck.wasm"
+
+(cd "$REPO_ROOT" && cargo build -p yune-rime-api --target wasm32-unknown-emscripten --bin typeduck_web_module)
+BROWSER_JS_ARTIFACT=$(find_named_artifact typeduck_web_module.js) || {
+  echo "TypeDuck WASM build failed: no Emscripten JS glue artifact found under target/wasm32-unknown-emscripten/debug" >&2
   exit 1
 }
-JS_ARTIFACT=$(find_first_artifact .js || true)
-verify_wasm_exports "$WASM_ARTIFACT" "$JS_ARTIFACT"
+BROWSER_WASM_ARTIFACT=$(find_named_artifact typeduck_web_module.wasm) || {
+  echo "TypeDuck WASM build failed: no Emscripten browser .wasm artifact found under target/wasm32-unknown-emscripten/debug" >&2
+  exit 1
+}
 
-echo "TypeDuck WASM build verified: $WASM_ARTIFACT"
-if [ -n "$JS_ARTIFACT" ]; then
-  echo "TypeDuck Emscripten JS glue verified: $JS_ARTIFACT"
-fi
+JS_ARTIFACT="$ARTIFACT_DIR/yune-typeduck.js"
+WASM_ARTIFACT="$ARTIFACT_DIR/yune-typeduck.wasm"
+cp "$BROWSER_JS_ARTIFACT" "$JS_ARTIFACT"
+cp "$BROWSER_WASM_ARTIFACT" "$WASM_ARTIFACT"
+
+verify_wasm_exports "$WASM_ARTIFACT" "$JS_ARTIFACT"
+verify_loadable_module "$JS_ARTIFACT"
+
+echo "TypeDuck browser WASM verified: $WASM_ARTIFACT"
+echo "TypeDuck Emscripten JS glue verified: $JS_ARTIFACT"

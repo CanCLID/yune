@@ -1,7 +1,7 @@
 use crate::{
-    Candidate, CandidateFilter, CandidateSource, CharsetFilter, Engine, ReverseLookupFilter,
-    ReverseLookupTranslator, SimplifierFilter, SingleCharFilter, StaticTableTranslator,
-    TableDictionary, TaggedFilter, Translator, UniquifierFilter,
+    Candidate, CandidateFilter, CandidateSource, CharsetFilter, DictionaryLookupFilter, Engine,
+    ReverseLookupFilter, ReverseLookupTranslator, SimplifierFilter, SingleCharFilter,
+    StaticTableTranslator, TableDictionary, TaggedFilter, Translator, UniquifierFilter,
 };
 
 #[test]
@@ -94,7 +94,58 @@ sort: original
     append_engine
         .process_key_sequence("ni")
         .expect("keys should parse");
-    assert_eq!(append_engine.context().candidates[0].comment, "ni wq");
+    assert_eq!(append_engine.context().candidates[0].comment, "ni; wq");
+}
+
+#[test]
+fn dictionary_lookup_filter_emits_typeduck_panel_comments_from_source_rows() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: typeduck_lookup
+version: "0.1"
+sort: original
+columns: [text, code, weight, stem, source, jyutping, english]
+...
+
+word	nei5	1	n	primary	nei5	you
+word	lei5	2	l	variant	lei5	you alt
+"#,
+    )
+    .expect("dictionary lookup rows should parse");
+    let filter = DictionaryLookupFilter::new(dictionary);
+
+    let mut candidates = vec![
+        Candidate {
+            text: "word".to_owned(),
+            comment: "nei5".to_owned(),
+            source: CandidateSource::Table,
+            quality: 1.0,
+        },
+        Candidate {
+            text: "word".to_owned(),
+            comment: "lei5".to_owned(),
+            source: CandidateSource::Completion,
+            quality: 0.5,
+        },
+        Candidate {
+            text: "word".to_owned(),
+            comment: "history".to_owned(),
+            source: CandidateSource::History,
+            quality: 2.0,
+        },
+    ];
+    filter.apply(&mut candidates);
+
+    assert_eq!(
+        candidates[0].comment,
+        "\u{000c}\r1,word,nei5,1,n,primary,nei5,you\r0,word,lei5,2,l,variant,lei5,you alt"
+    );
+    assert_eq!(
+        candidates[1].comment,
+        "\u{000c}\r1,word,lei5,2,l,variant,lei5,you alt\r0,word,nei5,1,n,primary,nei5,you"
+    );
+    assert_eq!(candidates[2].comment, "history");
 }
 
 #[test]

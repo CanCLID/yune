@@ -796,10 +796,7 @@ key_binder:
         unsafe { RimeSelectSchema(session_id, alpha.as_ptr()) },
         TRUE
     );
-    notification_events()
-        .lock()
-        .expect("notification events should not be poisoned")
-        .clear();
+    notification_events_lock().clear();
     RimeSetNotificationHandler(Some(record_notification), context_object);
 
     assert_eq!(
@@ -832,9 +829,7 @@ key_binder:
     // SAFETY: nested status allocations were returned by RimeGetStatus above.
     assert_eq!(unsafe { RimeFreeStatus(&mut status) }, TRUE);
 
-    let events = notification_events()
-        .lock()
-        .expect("notification events should not be poisoned");
+    let events = notification_events_lock();
     assert_eq!(
         *events,
         vec![

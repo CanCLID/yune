@@ -5,9 +5,9 @@ use serde_yaml::{Mapping, Value};
 use yune_core::{
     parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
     parse_rime_table_bin_dictionary, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
-    CharsetFilter, HistoryTranslator, ReverseLookupFilter, ReverseLookupTranslator,
-    SchemaListTranslator, SimplifierFilter, SingleCharFilter, StaticTableTranslator,
-    SwitchTranslator, TableDictionary, TaggedFilter, UniquifierFilter,
+    CharsetFilter, DictionaryLookupFilter, HistoryTranslator, ReverseLookupFilter,
+    ReverseLookupTranslator, SchemaListTranslator, SimplifierFilter, SingleCharFilter,
+    StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter, UniquifierFilter,
 };
 
 use crate::{
@@ -335,6 +335,11 @@ pub(crate) fn install_schema_filter_chain(session: &mut SessionState, schema_id:
                     Some(name_space) => name_space,
                 },
             ),
+            "dictionary_lookup_filter" => install_schema_dictionary_lookup_filter_from_config(
+                session,
+                &schema_config,
+                name_space.unwrap_or("dictionary_lookup_filter"),
+            ),
             "simplifier" => install_schema_simplifier_filter_from_config(
                 session,
                 &schema_config,
@@ -502,6 +507,48 @@ fn install_schema_reverse_lookup_filter_from_config(
             .with_overwrite_comment(overwrite_comment)
             .with_append_comment(append_comment)
             .with_comment_format(&comment_format),
+        tags,
+    ));
+}
+
+fn install_schema_dictionary_lookup_filter_from_config(
+    session: &mut SessionState,
+    schema_config: &Value,
+    name_space: &str,
+) {
+    let raw_dictionary_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let Some(dictionary_name) = validate_data_resource_id(&raw_dictionary_name) else {
+        record_dictionary_load_failure(
+            session,
+            raw_dictionary_name,
+            DictionaryLoadFailure::InvalidResourceId,
+        );
+        return;
+    };
+    let Some((_, dictionary_result)) =
+        load_schema_source_dictionary(schema_config, name_space, &dictionary_name)
+    else {
+        record_dictionary_load_failure(
+            session,
+            dictionary_name,
+            DictionaryLoadFailure::SourceMissing,
+        );
+        return;
+    };
+    let Ok(dictionary) = dictionary_result else {
+        record_dictionary_load_failure(
+            session,
+            dictionary_name,
+            DictionaryLoadFailure::SourceInvalid,
+        );
+        return;
+    };
+
+    let tags = schema_filter_tags(schema_config, name_space);
+    session.engine.add_filter(TaggedFilter::new(
+        DictionaryLookupFilter::new(dictionary),
         tags,
     ));
 }

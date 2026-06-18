@@ -10,8 +10,8 @@ use crate::{
     bool_from, c_string_key, clear_schema_list, config_child_path, config_iterator_begin,
     config_lookup, config_lookup_key, config_scalar_bool, config_scalar_double, config_scalar_int,
     config_set, config_state_mut, config_string_value, copy_c_string_with_strncpy_semantics,
-    find_config_value, free_schema_list_fields, librime_signature_modified_time,
-    open_runtime_config, reset_config_iterator_for_begin,
+    find_config_value, find_config_value_mut, free_schema_list_fields,
+    librime_signature_modified_time, open_runtime_config, reset_config_iterator_for_begin,
     resource_id::{validate_config_api_resource_id, validate_schema_config_resource_id},
     runtime_paths, set_config_value, Bool, ConfigIteratorState, ConfigOpenKind, ConfigState,
     RimeConfig, RimeConfigIterator, RimeSchemaList, FALSE, RIME_VERSION_BYTES, TRUE,
@@ -416,6 +416,70 @@ pub unsafe extern "C" fn RimeConfigSetString(
     unsafe { config_set(config, key, Value::String(value)) }
 }
 
+/// Appends a boolean scalar to a config list.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigListAppendBool(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: Bool,
+) -> Bool {
+    let value = if value != FALSE { "true" } else { "false" };
+    unsafe { config_list_append(config, key, Value::String(value.to_owned())) }
+}
+
+/// Appends an integer scalar to a config list.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigListAppendInt(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: c_int,
+) -> Bool {
+    unsafe { config_list_append(config, key, Value::String(value.to_string())) }
+}
+
+/// Appends a floating-point scalar to a config list.
+///
+/// # Safety
+///
+/// `config` and `key` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigListAppendDouble(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: f64,
+) -> Bool {
+    unsafe { config_list_append(config, key, Value::String(format!("{value:.6}"))) }
+}
+
+/// Appends a string scalar to a config list.
+///
+/// # Safety
+///
+/// `config`, `key`, and `value` must be valid pointers.
+#[no_mangle]
+pub unsafe extern "C" fn RimeConfigListAppendString(
+    config: *mut RimeConfig,
+    key: *const c_char,
+    value: *const c_char,
+) -> Bool {
+    if value.is_null() {
+        return FALSE;
+    }
+    // SAFETY: `value` is non-null and caller promises a valid C string.
+    let value = unsafe { CStr::from_ptr(value) }
+        .to_string_lossy()
+        .into_owned();
+    unsafe { config_list_append(config, key, Value::String(value)) }
+}
+
 /// Copies a config subtree into another in-memory config object.
 ///
 /// # Safety
@@ -529,6 +593,36 @@ pub unsafe extern "C" fn RimeConfigListSize(config: *mut RimeConfig, key: *const
         Value::Sequence(sequence) => sequence.len(),
         _ => 0,
     }
+}
+
+unsafe fn config_list_append(config: *mut RimeConfig, key: *const c_char, value: Value) -> Bool {
+    let Some(key) = (unsafe { c_string_key(key) }) else {
+        return FALSE;
+    };
+    let Some(state) = (unsafe { config_state_mut(config) }) else {
+        return FALSE;
+    };
+    state.cstring_borrows.clear();
+
+    if let Some(found) = find_config_value_mut(&mut state.root, &key) {
+        return match found {
+            Value::Sequence(sequence) => {
+                sequence.push(value);
+                TRUE
+            }
+            Value::Null => {
+                *found = Value::Sequence(vec![value]);
+                TRUE
+            }
+            _ => FALSE,
+        };
+    }
+
+    bool_from(set_config_value(
+        &mut state.root,
+        &key,
+        Value::Sequence(vec![value]),
+    ))
 }
 
 /// Initializes an iterator over a config list.

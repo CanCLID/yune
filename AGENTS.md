@@ -89,7 +89,7 @@ librime before it is accepted.
 - Run commands from repository root so workspace paths and CLI fixture lookup behave consistently.
 - The code relies on standard filesystem access for fixtures, RIME shared/user data directories, deployment staging, sync snapshots, and log cleanup.
 - Deploy as Rust libraries/binaries produced by Cargo.
-- `yune-rime-api` is a librime-shaped ABI shim, but its manifest does not currently declare `crate-type = ["cdylib"]`; add that in `crates/yune-rime-api/Cargo.toml` before packaging as a native dynamic library.
+- `yune-rime-api` is a librime-shaped ABI shim whose manifest declares `crate-type = ["rlib", "cdylib"]`; use `scripts/package-typeduck-windows.ps1` to package the MSVC cdylib as `rime.dll` plus `rime.lib` and headers for TypeDuck-Windows.
 - Runtime callers must provide or accept defaults for `RimeTraits` paths so `crates/yune-rime-api/src/runtime.rs` can locate shared config, user config, staging, prebuilt data, sync snapshots, and logs.
 - Network access is not part of the current runtime stack.
 <!-- GSD:stack-end -->

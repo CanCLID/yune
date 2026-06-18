@@ -582,7 +582,7 @@ impl Translator for ReverseLookupTranslator {
                     .reverse_comments
                     .get(&entry.text)
                     .filter(|comments| !comments.is_empty())
-                    .map(|comments| self.comment_format.apply(&comments.join(" ")))
+                    .map(|comments| self.comment_format.apply(&comments.join("; ")))
                     .unwrap_or_else(|| entry.code.clone());
                 Candidate {
                     text: entry.text.clone(),

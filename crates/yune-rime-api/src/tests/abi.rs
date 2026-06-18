@@ -516,39 +516,43 @@ fn rime_api_function_table_layout_matches_librime_header() {
     assert_api_slot!(config_create_list, 65);
     assert_api_slot!(config_create_map, 66);
     assert_api_slot!(config_list_size, 67);
-    assert_api_slot!(config_begin_list, 68);
-    assert_api_slot!(get_input, 69);
-    assert_api_slot!(get_caret_pos, 70);
-    assert_api_slot!(select_candidate, 71);
-    assert_api_slot!(get_version, 72);
-    assert_api_slot!(set_caret_pos, 73);
-    assert_api_slot!(select_candidate_on_current_page, 74);
-    assert_api_slot!(candidate_list_begin, 75);
-    assert_api_slot!(candidate_list_next, 76);
-    assert_api_slot!(candidate_list_end, 77);
-    assert_api_slot!(user_config_open, 78);
-    assert_api_slot!(candidate_list_from_index, 79);
-    assert_api_slot!(get_prebuilt_data_dir, 80);
-    assert_api_slot!(get_staging_dir, 81);
-    assert_api_slot!(commit_proto, 82);
-    assert_api_slot!(context_proto, 83);
-    assert_api_slot!(status_proto, 84);
-    assert_api_slot!(get_state_label, 85);
-    assert_api_slot!(delete_candidate, 86);
-    assert_api_slot!(delete_candidate_on_current_page, 87);
-    assert_api_slot!(get_state_label_abbreviated, 88);
-    assert_api_slot!(set_input, 89);
-    assert_api_slot!(get_shared_data_dir_s, 90);
-    assert_api_slot!(get_user_data_dir_s, 91);
-    assert_api_slot!(get_prebuilt_data_dir_s, 92);
-    assert_api_slot!(get_staging_dir_s, 93);
-    assert_api_slot!(get_sync_dir_s, 94);
-    assert_api_slot!(highlight_candidate, 95);
-    assert_api_slot!(highlight_candidate_on_current_page, 96);
-    assert_api_slot!(change_page, 97);
+    assert_api_slot!(config_list_append_bool, 68);
+    assert_api_slot!(config_list_append_int, 69);
+    assert_api_slot!(config_list_append_double, 70);
+    assert_api_slot!(config_list_append_string, 71);
+    assert_api_slot!(config_begin_list, 72);
+    assert_api_slot!(get_input, 73);
+    assert_api_slot!(get_caret_pos, 74);
+    assert_api_slot!(select_candidate, 75);
+    assert_api_slot!(get_version, 76);
+    assert_api_slot!(set_caret_pos, 77);
+    assert_api_slot!(select_candidate_on_current_page, 78);
+    assert_api_slot!(candidate_list_begin, 79);
+    assert_api_slot!(candidate_list_next, 80);
+    assert_api_slot!(candidate_list_end, 81);
+    assert_api_slot!(user_config_open, 82);
+    assert_api_slot!(candidate_list_from_index, 83);
+    assert_api_slot!(get_prebuilt_data_dir, 84);
+    assert_api_slot!(get_staging_dir, 85);
+    assert_api_slot!(commit_proto, 86);
+    assert_api_slot!(context_proto, 87);
+    assert_api_slot!(status_proto, 88);
+    assert_api_slot!(get_state_label, 89);
+    assert_api_slot!(delete_candidate, 90);
+    assert_api_slot!(delete_candidate_on_current_page, 91);
+    assert_api_slot!(get_state_label_abbreviated, 92);
+    assert_api_slot!(set_input, 93);
+    assert_api_slot!(get_shared_data_dir_s, 94);
+    assert_api_slot!(get_user_data_dir_s, 95);
+    assert_api_slot!(get_prebuilt_data_dir_s, 96);
+    assert_api_slot!(get_staging_dir_s, 97);
+    assert_api_slot!(get_sync_dir_s, 98);
+    assert_api_slot!(highlight_candidate, 99);
+    assert_api_slot!(highlight_candidate_on_current_page, 100);
+    assert_api_slot!(change_page, 101);
     assert_eq!(
         std::mem::size_of::<RimeApi>(),
-        align_up(table_start + fn_size * 98, fn_align)
+        align_up(table_start + fn_size * 102, fn_align)
     );
     assert_eq!(
         api.data_size,

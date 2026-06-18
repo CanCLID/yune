@@ -1,4 +1,7 @@
-use super::{Candidate, CandidateFilter, CandidateSource, CommentFormat, Context, TableDictionary};
+use super::{
+    Candidate, CandidateFilter, CandidateSource, CommentFormat, Context, DictionaryLookupRecord,
+    TableDictionary,
+};
 use std::collections::{HashMap, HashSet};
 
 pub struct UniquifierFilter;
@@ -61,6 +64,70 @@ impl CandidateFilter for CharsetFilter {
             self.apply(candidates);
         }
     }
+}
+
+pub struct DictionaryLookupFilter {
+    records_by_text: HashMap<String, Vec<DictionaryLookupRecord>>,
+}
+
+impl DictionaryLookupFilter {
+    #[must_use]
+    pub fn new(dictionary: TableDictionary) -> Self {
+        Self {
+            records_by_text: dictionary.lookup_records,
+        }
+    }
+
+    fn comment_for_candidate(&self, candidate: &Candidate) -> Option<String> {
+        let records = self.records_by_text.get(&candidate.text)?;
+        if records.is_empty() {
+            return None;
+        }
+
+        let primary_index = records
+            .iter()
+            .position(|record| !candidate.comment.is_empty() && record.code == candidate.comment)
+            .unwrap_or(0);
+        let mut comment = String::from('\u{000c}');
+        append_dictionary_lookup_record(&mut comment, true, &records[primary_index]);
+        for (index, record) in records.iter().enumerate() {
+            if index != primary_index {
+                append_dictionary_lookup_record(&mut comment, false, record);
+            }
+        }
+        Some(comment)
+    }
+}
+
+impl CandidateFilter for DictionaryLookupFilter {
+    fn name(&self) -> &'static str {
+        "dictionary_lookup_filter"
+    }
+
+    fn apply(&self, candidates: &mut Vec<Candidate>) {
+        for candidate in candidates {
+            if !matches!(
+                candidate.source,
+                CandidateSource::Table | CandidateSource::Completion | CandidateSource::Sentence
+            ) {
+                continue;
+            }
+            if let Some(comment) = self.comment_for_candidate(candidate) {
+                candidate.comment = comment;
+            }
+        }
+    }
+}
+
+fn append_dictionary_lookup_record(
+    comment: &mut String,
+    is_primary: bool,
+    record: &DictionaryLookupRecord,
+) {
+    comment.push('\r');
+    comment.push(if is_primary { '1' } else { '0' });
+    comment.push(',');
+    comment.push_str(&record.fields.join(","));
 }
 
 pub struct TaggedFilter {
@@ -538,11 +605,11 @@ impl CandidateFilter for ReverseLookupFilter {
                 continue;
             }
 
-            let reverse_comment = self.comment_format.apply(&comments.join(" "));
+            let reverse_comment = self.comment_format.apply(&comments.join("; "));
             if self.overwrite_comment || candidate.comment.is_empty() {
                 candidate.comment = reverse_comment;
             } else {
-                candidate.comment = format!("{} {reverse_comment}", candidate.comment);
+                candidate.comment = format!("{}; {reverse_comment}", candidate.comment);
             }
         }
     }

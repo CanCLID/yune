@@ -20,6 +20,12 @@ impl TableEntry {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DictionaryLookupRecord {
+    pub code: String,
+    pub fields: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RimeCorrectionEntry {
     pub observed_input: String,
     pub canonical_code: String,
@@ -67,6 +73,7 @@ pub struct TableDictionary {
     pub(crate) encoder: TableEncoder,
     pub(crate) corrections: Vec<RimeCorrectionEntry>,
     pub(crate) tolerance_rules: Vec<RimeToleranceRule>,
+    pub(crate) lookup_records: HashMap<String, Vec<DictionaryLookupRecord>>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -96,6 +103,7 @@ impl TableDictionary {
             encoder: advanced.encoder,
             corrections: advanced.corrections,
             tolerance_rules: advanced.tolerance_rules,
+            lookup_records: HashMap::new(),
         }
     }
 
@@ -108,6 +116,7 @@ impl TableDictionary {
         }
         self.corrections.extend(other.corrections.clone());
         self.tolerance_rules.extend(other.tolerance_rules.clone());
+        merge_dictionary_lookup_records(&mut self.lookup_records, other.lookup_records.clone());
         self
     }
 
@@ -182,6 +191,10 @@ impl TableDictionary {
             let mut pack_dictionary = finalize_rime_table_entries(&pack_metadata, pack_entries);
             dictionary.entries.append(&mut pack_dictionary.entries);
             merge_rime_table_stems(&mut dictionary.stems, pack_dictionary.stems);
+            merge_dictionary_lookup_records(
+                &mut dictionary.lookup_records,
+                pack_dictionary.lookup_records,
+            );
             dictionary
                 .dict_settings
                 .extend(pack_dictionary.dict_settings);
@@ -224,6 +237,11 @@ impl TableDictionary {
     #[must_use]
     pub fn tolerance_rules(&self) -> &[RimeToleranceRule] {
         &self.tolerance_rules
+    }
+
+    #[must_use]
+    pub fn lookup_records_for(&self, text: &str) -> Option<&[DictionaryLookupRecord]> {
+        self.lookup_records.get(text).map(Vec::as_slice)
     }
 }
 
@@ -314,6 +332,7 @@ fn finalize_rime_table_entries(
     mut entries: Vec<RimeParsedTableEntry>,
 ) -> TableDictionary {
     let stems = collect_rime_table_stems(&entries);
+    let lookup_records = collect_dictionary_lookup_records(&entries);
     dedupe_rime_table_entries(&mut entries);
     let mut entries = entries
         .into_iter()
@@ -327,6 +346,7 @@ fn finalize_rime_table_entries(
         encoder: metadata.encoder.clone(),
         corrections: metadata.corrections.clone(),
         tolerance_rules: metadata.tolerance_rules.clone(),
+        lookup_records,
     }
 }
 
@@ -362,6 +382,34 @@ fn merge_rime_table_stems(
             .collect::<BTreeSet<_>>();
         merged.extend(stems);
         target.insert(text, merged.into_iter().collect());
+    }
+}
+
+fn collect_dictionary_lookup_records(
+    entries: &[RimeParsedTableEntry],
+) -> HashMap<String, Vec<DictionaryLookupRecord>> {
+    let mut lookup_records: HashMap<String, Vec<DictionaryLookupRecord>> = HashMap::new();
+    for entry in entries {
+        if entry.entry.code.is_empty() || entry.raw_fields.is_empty() {
+            continue;
+        }
+        lookup_records
+            .entry(entry.entry.text.clone())
+            .or_default()
+            .push(DictionaryLookupRecord {
+                code: entry.entry.code.clone(),
+                fields: entry.raw_fields.clone(),
+            });
+    }
+    lookup_records
+}
+
+fn merge_dictionary_lookup_records(
+    target: &mut HashMap<String, Vec<DictionaryLookupRecord>>,
+    source: HashMap<String, Vec<DictionaryLookupRecord>>,
+) {
+    for (text, mut records) in source {
+        target.entry(text).or_default().append(&mut records);
     }
 }
 
@@ -471,6 +519,7 @@ impl<'a> RimeTablePhraseEncoder<'a> {
                 entry: TableEntry::new(code, phrase, weight),
                 raw_weight: weight.to_string(),
                 raw_stem: None,
+                raw_fields: Vec::new(),
                 single_syllable_duplicate_key: None,
             })
             .collect()
@@ -610,6 +659,7 @@ struct RimeParsedTableEntry {
     entry: TableEntry,
     raw_weight: String,
     raw_stem: Option<String>,
+    raw_fields: Vec<String>,
     single_syllable_duplicate_key: Option<(String, String)>,
 }
 
@@ -848,6 +898,7 @@ impl RimeTableMetadata {
             entry: TableEntry::new(code, text, weight),
             raw_weight,
             raw_stem,
+            raw_fields: fields.into_iter().map(str::to_owned).collect(),
             single_syllable_duplicate_key,
         })
     }

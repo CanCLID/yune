@@ -1,0 +1,25 @@
+# Normalize text files in the repository to LF so Windows checkouts do not
+# create CRLF-only diffs.
+* text=auto eol=lf
+
+# Keep native Windows command scripts CRLF when they are added.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts must stay LF for Unix-like environments.
+*.sh text eol=lf
+
+# Binary files should never be line-ending normalized.
+*.bin binary
+*.dll binary
+*.dylib binary
+*.exe binary
+*.gif binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.png binary
+*.so binary
+*.wasm binary
+*.webp binary

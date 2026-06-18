@@ -254,6 +254,11 @@ type ConfigSetStringFn =
 type ConfigItemFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, *mut RimeConfig) -> Bool;
 type ConfigKeyFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> Bool;
 type ConfigListSizeFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char) -> usize;
+type ConfigListAppendBoolFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, Bool) -> Bool;
+type ConfigListAppendIntFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, c_int) -> Bool;
+type ConfigListAppendDoubleFn = unsafe extern "C" fn(*mut RimeConfig, *const c_char, f64) -> Bool;
+type ConfigListAppendStringFn =
+    unsafe extern "C" fn(*mut RimeConfig, *const c_char, *const c_char) -> Bool;
 type ProtoFn = extern "C" fn(RimeSessionId, *mut c_void);
 type GetStateLabelFn = unsafe extern "C" fn(RimeSessionId, *const c_char, Bool) -> *const c_char;
 type GetStateLabelAbbreviatedFn =
@@ -333,6 +338,10 @@ pub struct RimeApi {
     pub config_create_list: Option<ConfigKeyFn>,
     pub config_create_map: Option<ConfigKeyFn>,
     pub config_list_size: Option<ConfigListSizeFn>,
+    pub config_list_append_bool: Option<ConfigListAppendBoolFn>,
+    pub config_list_append_int: Option<ConfigListAppendIntFn>,
+    pub config_list_append_double: Option<ConfigListAppendDoubleFn>,
+    pub config_list_append_string: Option<ConfigListAppendStringFn>,
     pub config_begin_list: Option<ConfigIteratorBeginFn>,
     pub get_input: Option<extern "C" fn(RimeSessionId) -> *const c_char>,
     pub get_caret_pos: Option<extern "C" fn(RimeSessionId) -> usize>,

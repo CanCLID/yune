@@ -42,13 +42,13 @@ sort: original
         CandidateSource::ReverseLookup
     );
     assert_eq!(unprefixed_candidates[0].text, "火");
-    assert_eq!(unprefixed_candidates[0].comment, "ho huo");
+    assert_eq!(unprefixed_candidates[0].comment, "ho; huo");
 
     let candidates = translator.translate("`huo");
     assert_eq!(candidates.len(), 1);
     assert_eq!(candidates[0].source, CandidateSource::ReverseLookup);
     assert_eq!(candidates[0].text, "火");
-    assert_eq!(candidates[0].comment, "ho huo");
+    assert_eq!(candidates[0].comment, "ho; huo");
 }
 
 #[test]

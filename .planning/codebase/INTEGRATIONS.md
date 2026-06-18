@@ -92,7 +92,7 @@
 
 **Packaging:**
 - Cargo workspace builds Rust libraries and the `yune-cli` binary.
-- `yune-rime-api` exposes C ABI functions, but `crates/yune-rime-api/Cargo.toml` does not declare a dynamic-library `crate-type`; native frontend packaging needs an explicit crate type.
+- `yune-rime-api` exposes C ABI functions and builds as both `rlib` and `cdylib`; native frontend packaging uses `scripts/package-typeduck-windows.ps1` to produce the TypeDuck-Windows `rime.dll`/`rime.lib` layout.
 
 ## Environment Configuration
 

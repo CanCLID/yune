@@ -548,6 +548,191 @@ fn config_set_create_clear_and_close_work() {
 }
 
 #[test]
+fn config_list_append_creates_and_extends_lists() {
+    let _guard = test_guard();
+    let mut config = empty_config();
+    let languages = CString::new("display_languages").expect("key should be valid");
+    let first_language = CString::new("display_languages/@0").expect("key should be valid");
+    let second_language = CString::new("display_languages/@1").expect("key should be valid");
+    let english = CString::new("en_US").expect("value should be valid");
+    let cantonese = CString::new("zh_HK").expect("value should be valid");
+
+    assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+    assert_eq!(
+        unsafe { RimeConfigListAppendString(&mut config, languages.as_ptr(), english.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendString(&mut config, languages.as_ptr(), cantonese.as_ptr()) },
+        TRUE
+    );
+
+    assert_eq!(
+        unsafe { RimeConfigListSize(&mut config, languages.as_ptr()) },
+        2
+    );
+    assert_eq!(
+        config_string(&mut config, first_language.to_str().unwrap()).as_deref(),
+        Some("en_US")
+    );
+    assert_eq!(
+        config_string(&mut config, second_language.to_str().unwrap()).as_deref(),
+        Some("zh_HK")
+    );
+
+    assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+}
+
+#[test]
+fn config_list_append_scalar_variants_round_trip_through_accessors() {
+    let _guard = test_guard();
+    let mut config = empty_config();
+    let items = CString::new("items").expect("key should be valid");
+    let bool_item = CString::new("items/@0").expect("key should be valid");
+    let int_item = CString::new("items/@1").expect("key should be valid");
+    let double_item = CString::new("items/@2").expect("key should be valid");
+    let string_item = CString::new("items/@3").expect("key should be valid");
+    let label = CString::new("deploy").expect("value should be valid");
+    let mut bool_output = FALSE;
+    let mut int_output = 0;
+    let mut double_output = 0.0;
+
+    assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+    assert_eq!(
+        unsafe { RimeConfigListAppendBool(&mut config, items.as_ptr(), TRUE) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendInt(&mut config, items.as_ptr(), 7) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendDouble(&mut config, items.as_ptr(), 1.25) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendString(&mut config, items.as_ptr(), label.as_ptr()) },
+        TRUE
+    );
+
+    assert_eq!(
+        unsafe { RimeConfigListSize(&mut config, items.as_ptr()) },
+        4
+    );
+    assert_eq!(
+        unsafe { RimeConfigGetBool(&mut config, bool_item.as_ptr(), &mut bool_output) },
+        TRUE
+    );
+    assert_eq!(bool_output, TRUE);
+    assert_eq!(
+        unsafe { RimeConfigGetInt(&mut config, int_item.as_ptr(), &mut int_output) },
+        TRUE
+    );
+    assert_eq!(int_output, 7);
+    assert_eq!(
+        unsafe { RimeConfigGetDouble(&mut config, double_item.as_ptr(), &mut double_output) },
+        TRUE
+    );
+    assert_eq!(double_output, 1.25);
+    assert_eq!(
+        config_string(&mut config, string_item.to_str().unwrap()).as_deref(),
+        Some("deploy")
+    );
+
+    assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+}
+
+#[test]
+fn config_list_append_rejects_invalid_and_non_list_targets() {
+    let _guard = test_guard();
+    let mut config = empty_config();
+    let scalar = CString::new("menu/page_size").expect("key should be valid");
+    let list = CString::new("items").expect("key should be valid");
+    let value = CString::new("value").expect("value should be valid");
+
+    assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+    assert_eq!(
+        unsafe { RimeConfigSetInt(&mut config, scalar.as_ptr(), 7) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendString(&mut config, scalar.as_ptr(), value.as_ptr()) },
+        FALSE
+    );
+    assert_eq!(
+        config_string(&mut config, scalar.to_str().unwrap()).as_deref(),
+        Some("7")
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendString(std::ptr::null_mut(), list.as_ptr(), value.as_ptr()) },
+        FALSE
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendString(&mut config, std::ptr::null(), value.as_ptr()) },
+        FALSE
+    );
+    assert_eq!(
+        unsafe { RimeConfigListAppendString(&mut config, list.as_ptr(), std::ptr::null()) },
+        FALSE
+    );
+
+    assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+}
+
+#[test]
+fn rime_api_exposes_config_list_append_contract() {
+    let _guard = test_guard();
+    let mut config = empty_config();
+    let api = unsafe { &*rime_get_api() };
+    let append_string = api
+        .config_list_append_string
+        .expect("TypeDuck-Windows requires config_list_append_string");
+    let append_bool = api
+        .config_list_append_bool
+        .expect("TypeDuck-Windows requires config_list_append_bool");
+    let append_int = api
+        .config_list_append_int
+        .expect("TypeDuck-Windows requires config_list_append_int");
+    let append_double = api
+        .config_list_append_double
+        .expect("TypeDuck-Windows requires config_list_append_double");
+    let list_size = api
+        .config_list_size
+        .expect("frontend requires config_list_size");
+    let values = CString::new("deployer/options").expect("key should be valid");
+    let label = CString::new("display_language").expect("value should be valid");
+
+    assert_eq!(unsafe { RimeConfigInit(&mut config) }, TRUE);
+    assert_eq!(
+        unsafe { append_string(&mut config, values.as_ptr(), label.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { append_bool(&mut config, values.as_ptr(), FALSE) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { append_int(&mut config, values.as_ptr(), 42) },
+        TRUE
+    );
+    assert_eq!(
+        unsafe { append_double(&mut config, values.as_ptr(), 2.5) },
+        TRUE
+    );
+    assert_eq!(unsafe { list_size(&mut config, values.as_ptr()) }, 4);
+    assert_eq!(
+        config_string(&mut config, "deployer/options/@0").as_deref(),
+        Some("display_language")
+    );
+    assert_eq!(
+        config_string(&mut config, "deployer/options/@1").as_deref(),
+        Some("false")
+    );
+
+    assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+}
+
+#[test]
 fn config_get_string_allows_zero_length_buffers() {
     let _guard = test_guard();
     let mut config = empty_config();

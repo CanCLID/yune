@@ -17,19 +17,19 @@ pub use dictionary::{
     parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
     parse_rime_reverse_bin_metadata, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
-    rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords, RimeChecksumComputer,
-    RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildError,
-    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildPlan,
-    RimePrismBinMetadata, RimePrismBinParseError, RimePrismBinPayload, RimePrismChecksumMetadata,
-    RimePrismSpellingDescriptor, RimeReverseBinMetadata, RimeReverseBinParseError,
-    RimeTableBinMetadata, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
-    TableDictionaryAdvancedData, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
-    TableEncodingRule, TableEntry,
+    rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords,
+    DictionaryLookupRecord, RimeChecksumComputer, RimeCompiledMetadataError, RimeCorrectionEntry,
+    RimeDictArtifactStatus, RimeDictRebuildError, RimeDictRebuildExecutionReport,
+    RimeDictRebuildInput, RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismBinParseError,
+    RimePrismBinPayload, RimePrismChecksumMetadata, RimePrismSpellingDescriptor,
+    RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError,
+    RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData, TableDictionaryParseError,
+    TableEncoder, TableEncoderFormulaError, TableEncodingRule, TableEntry,
 };
 pub use engine::Engine;
 pub use filter::{
-    CharsetFilter, ReverseLookupFilter, SimplifierFilter, SingleCharFilter, TaggedFilter,
-    UniquifierFilter,
+    CharsetFilter, DictionaryLookupFilter, ReverseLookupFilter, SimplifierFilter, SingleCharFilter,
+    TaggedFilter, UniquifierFilter,
 };
 pub use key::{parse_key_sequence, KeyCode, KeyEvent, KeyModifiers, KeySequenceParseError};
 pub use punctuation::PunctuationTranslator;

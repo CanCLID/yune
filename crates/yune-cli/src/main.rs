@@ -9,7 +9,7 @@ mod transcript;
 
 use args::{Command, FrontendOutputMode};
 use fixture::{check_fixture, check_frontend_fixture};
-use sample_core::{run_sequence, DEFAULT_SEQUENCE};
+use sample_core::{run_sequence_with_ai_provider, DEFAULT_SEQUENCE};
 
 fn main() -> ExitCode {
     match run(env::args().skip(1).collect()) {
@@ -23,8 +23,11 @@ fn main() -> ExitCode {
 
 fn run(args: Vec<String>) -> Result<(), String> {
     match Command::parse(&args)? {
-        Command::Run { sequence } => {
-            let output = run_sequence(&sequence)?;
+        Command::Run {
+            sequence,
+            ai_provider,
+        } => {
+            let output = run_sequence_with_ai_provider(&sequence, ai_provider)?;
             println!("{}", output.to_json());
             Ok(())
         }

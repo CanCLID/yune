@@ -1,7 +1,7 @@
 use crate::rime_frontend::{
     FrontendCandidate, FrontendContext, FrontendEvent, FrontendRun, FrontendStatus,
 };
-use yune_core::{Candidate, Context, Snapshot, Status};
+use yune_core::{AiDecision, Candidate, Context, Snapshot, Status};
 
 // Owns deterministic frontend transcript comparison against librime-visible
 // per-key state; no paths, timestamps, process IDs, or native frontend claims.
@@ -11,6 +11,7 @@ pub(crate) struct FixtureOutput {
     pub(crate) sequence: String,
     pub(crate) commits: Vec<String>,
     pub(crate) snapshot: Snapshot,
+    pub(crate) ai_decision: Option<AiDecision>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -92,6 +93,15 @@ impl FixtureOutput {
             &json_string_array(&self.commits),
             true,
         );
+        if let Some(ai_decision) = self.ai_decision {
+            push_field(
+                &mut json,
+                1,
+                "ai_decision",
+                &json_string(ai_decision.as_str()),
+                true,
+            );
+        }
         push_field(
             &mut json,
             1,

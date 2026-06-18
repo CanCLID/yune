@@ -155,13 +155,15 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 
 ### AI Extension Layer
 
-- **AI-01**: Engine exposes an `AiCandidateProvider` or equivalent interface that can provide candidates without replacing classic translators.
-- **AI-02**: Candidate ranking supports local model and rule-backed implementations with deterministic timeout/fallback behavior.
-- **AI-03**: Contextual phrase and sentence completion can produce source-labeled AI candidates without allowing AI candidates to auto-commit by default.
-- **AI-04**: Context providers define what app, field, preceding text, cursor, schema, and candidate-list data may be shared with AI providers.
-- **AI-05**: Memory store records user vocabulary, phrase preferences, and domain terms through explicit, inspectable, clearable policy.
-- **AI-06**: Privacy policy disables learning and remote calls for sensitive contexts and keeps classic input fully functional when AI is disabled.
-- **AI-07**: CLI frontend surrogate can demonstrate AI candidate/ranking behavior with mock and local providers before native frontends expose it.
+- [x] **AI-01**: Engine exposes an `AiCandidateProvider` interface and staged,
+  input-keyed AI results without replacing classic translators. S1 implements
+  this for the direct CLI mock path.
+- [ ] **AI-02**: Candidate ranking supports local model and rule-backed implementations with deterministic timeout/fallback behavior.
+- [ ] **AI-03**: Contextual phrase and sentence completion can produce source-labeled AI candidates without allowing AI candidates to auto-commit by default. S1 covers source labeling and the no-default-auto-commit gate with a mock provider; contextual/local completion remains pending.
+- [ ] **AI-04**: Context providers define what app, field, preceding text, cursor, schema, and candidate-list data may be shared with AI providers.
+- [ ] **AI-05**: Memory store records user vocabulary, phrase preferences, and domain terms through explicit, inspectable, clearable policy.
+- [ ] **AI-06**: Privacy policy disables learning and remote calls for sensitive contexts and keeps classic input fully functional when AI is disabled.
+- [ ] **AI-07**: CLI frontend surrogate can demonstrate AI candidate/ranking behavior with mock and local providers before native frontends expose it. S1 covers `yune-cli run --ai-provider mock`; local-provider demonstration remains pending.
 
 ## Out of Scope
 
@@ -233,15 +235,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-COMMENT-01 | Phase 14 / 17 | Complete - dictionary payload, schema prompt, and joiner oracle covered |
 | WIN-BUILD-01 | Phase 15 | Complete as scripted; smoke verification pending on MSVC host |
 | WIN-PARITY-01 | Phase 16 | Partial - ignored oracle cases still blocked |
+| AI-01 | M11 S1 | Complete - staged provider interface in `yune-core` |
+| AI-03 | M11 S1+ | Partial - source labels and no-default-auto-commit covered; contextual/local completion pending |
+| AI-07 | M11 S1+ | Partial - direct CLI mock provider covered; local provider pending |
 
 **Coverage:**
 - v1 requirements: 25 total
 - v2 validation requirements: 7 total
 - TypeDuck-Web integration requirements: 15 total
 - TypeDuck-Windows native IME requirements: 6 total
-- Mapped to phases: 53
+- Mapped to phases: 56
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-18 — M9 TypeDuck-Web validation complete with GO WITH CONDITIONS; TypeDuck-Windows ready to resume*
+*Last updated: 2026-06-18 — M11 S1 direct CLI mock/provider slice complete; M9 TypeDuck-Web validation complete with GO WITH CONDITIONS; TypeDuck-Windows ready to resume*

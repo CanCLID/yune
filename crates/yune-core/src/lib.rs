@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+mod ai;
 mod comment_format;
 mod dictionary;
 mod engine;
@@ -12,6 +13,7 @@ mod state;
 mod tests;
 mod translator;
 mod userdb;
+pub use ai::{AiCandidateProvider, AiDecision, AiResult, MockAiProvider, StagedAiCandidates};
 use comment_format::CommentFormat;
 pub use dictionary::{
     parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,

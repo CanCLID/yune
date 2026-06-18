@@ -1,6 +1,6 @@
 use crate::{
-    Candidate, CandidateRanker, CandidateSource, Context, Engine, MockAiRanker, RerankResult,
-    StaticTableTranslator, Translator,
+    AiResult, Candidate, CandidateRanker, CandidateSource, Context, Engine, MockAiRanker,
+    RerankResult, StaticTableTranslator, Translator,
 };
 
 struct CommentTranslator;
@@ -28,6 +28,15 @@ impl Translator for CommentTranslator {
                 quality: 1.0,
             },
         ]
+    }
+}
+
+fn ai_candidate(text: &str) -> Candidate {
+    Candidate {
+        text: text.to_owned(),
+        comment: "ai:mock 0.62".to_owned(),
+        source: CandidateSource::Ai,
+        quality: 0.0,
     }
 }
 
@@ -1035,6 +1044,125 @@ sort: by_weight
 
     assert_eq!(engine.context().candidates[0].text, "把");
     assert_eq!(engine.context().candidates[1].text, "吧");
+}
+
+#[test]
+fn staged_ai_result_appends_after_classic_candidates_and_preserves_top_candidate() {
+    let mut engine = Engine::new();
+    let translator = StaticTableTranslator::parse_rime_dict_yaml(
+        r#"
+---
+name: sample
+version: "0.1"
+sort: by_weight
+...
+
+把	ba	100
+吧	ba	50
+"#,
+    )
+    .expect("dictionary should parse");
+    engine.add_translator(translator);
+    engine.set_input("ba");
+    let baseline = engine.context().candidates.clone();
+
+    let decision = engine.stage_ai_result(AiResult::Ready {
+        for_input: "ba".to_owned(),
+        candidates: vec![ai_candidate("吧呀")],
+    });
+
+    let candidates = &engine.context().candidates;
+    assert_eq!(decision.as_str(), "ready");
+    assert_eq!(candidates[0], baseline[0]);
+    assert_eq!(candidates[1], baseline[1]);
+    assert_eq!(
+        candidates.last().expect("AI row should be appended").text,
+        "吧呀"
+    );
+    assert_eq!(
+        candidates.last().expect("AI row should be appended").source,
+        CandidateSource::Ai
+    );
+}
+
+#[test]
+fn stale_or_pending_ai_result_does_not_change_classic_candidates() {
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("ba", "把"), ("ba", "吧")]));
+    engine.set_input("ba");
+    let baseline = engine.context().candidates.clone();
+
+    let stale_decision = engine.stage_ai_result(AiResult::Ready {
+        for_input: "ni".to_owned(),
+        candidates: vec![ai_candidate("你呀")],
+    });
+
+    assert_eq!(stale_decision.as_str(), "pending");
+    assert_eq!(engine.context().candidates, baseline);
+
+    let pending_decision = engine.stage_ai_result(AiResult::Pending);
+
+    assert_eq!(pending_decision.as_str(), "pending");
+    assert_eq!(engine.context().candidates, baseline);
+}
+
+#[test]
+fn default_confirm_does_not_auto_commit_highlighted_ai_candidate() {
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("ba", "把")]));
+    engine.set_input("ba");
+    engine.stage_ai_result(AiResult::Ready {
+        for_input: "ba".to_owned(),
+        candidates: vec![ai_candidate("吧呀")],
+    });
+    let ai_index = engine.context().candidates.len() - 1;
+    assert!(engine.highlight_candidate(ai_index));
+
+    let commits = engine
+        .process_key_sequence("{space}")
+        .expect("key sequence should parse");
+
+    assert!(commits.is_empty());
+    assert_eq!(engine.context().composition.input, "ba");
+    assert_eq!(engine.context().last_commit, None);
+    assert_eq!(engine.take_pending_userdb_learning(), None);
+}
+
+#[test]
+fn explicit_ai_commit_skips_librime_userdb_learning_but_classic_commit_still_stages_it() {
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("ba", "把")]));
+    engine.set_input("ba");
+    engine.stage_ai_result(AiResult::Ready {
+        for_input: "ba".to_owned(),
+        candidates: vec![ai_candidate("吧呀")],
+    });
+    let ai_index = engine.context().candidates.len() - 1;
+
+    assert_eq!(engine.select_candidate(ai_index).as_deref(), Some("吧呀"));
+    assert!(engine.userdb().entries().is_empty());
+    assert_eq!(engine.take_pending_userdb_learning(), None);
+    assert_eq!(engine.context().last_commit.as_deref(), Some("吧呀"));
+    assert_eq!(
+        engine
+            .context()
+            .commit_history
+            .last()
+            .expect("AI commit should be recorded")
+            .candidate_type,
+        "ai"
+    );
+
+    let mut classic_engine = Engine::new();
+    classic_engine.add_translator(StaticTableTranslator::new([("ba", "把")]));
+    classic_engine.set_input("ba");
+
+    assert_eq!(classic_engine.select_candidate(0).as_deref(), Some("把"));
+    let event = classic_engine
+        .take_pending_userdb_learning()
+        .expect("classic commit should stage userdb learning");
+    assert_eq!(event.candidate_source, CandidateSource::Table);
+    assert_eq!(event.candidate_type, "table");
 }
 
 #[test]

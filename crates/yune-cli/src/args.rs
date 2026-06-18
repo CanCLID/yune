@@ -8,6 +8,7 @@ use crate::default_sequence;
 pub(crate) enum Command {
     Run {
         sequence: String,
+        ai_provider: AiProviderMode,
     },
     Check {
         fixture: PathBuf,
@@ -33,17 +34,20 @@ pub(crate) enum FrontendOutputMode {
     Human,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum AiProviderMode {
+    None,
+    Mock,
+}
+
 impl Command {
     pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         match args.first().map(String::as_str) {
             None => Ok(Self::Run {
                 sequence: default_sequence().to_owned(),
+                ai_provider: AiProviderMode::None,
             }),
-            Some("run") => Ok(Self::Run {
-                sequence: args
-                    .get(1)
-                    .map_or_else(|| default_sequence().to_owned(), ToOwned::to_owned),
-            }),
+            Some("run") => parse_run(&args[1..]),
             Some("check") => {
                 let fixture = args
                     .get(1)
@@ -58,6 +62,40 @@ impl Command {
             Some(command) => Err(format!("unknown command: {command}\n\n{}", help_text())),
         }
     }
+}
+
+fn parse_run(args: &[String]) -> Result<Command, String> {
+    let mut sequence = None;
+    let mut ai_provider = AiProviderMode::None;
+    let mut index = 0;
+
+    while index < args.len() {
+        match args[index].as_str() {
+            "--ai-provider" => {
+                index += 1;
+                ai_provider = parse_ai_provider(flag_value(args, index, "ai-provider")?)?;
+            }
+            flag if flag.starts_with("--") => {
+                return Err(format!(
+                    "error: unknown run flag {flag}. next: run yune-cli --help."
+                ));
+            }
+            value if sequence.is_none() => {
+                sequence = Some(value.to_owned());
+            }
+            value => {
+                return Err(format!(
+                    "error: unexpected run argument {value}. next: pass at most one key sequence."
+                ));
+            }
+        }
+        index += 1;
+    }
+
+    Ok(Command::Run {
+        sequence: sequence.unwrap_or_else(|| default_sequence().to_owned()),
+        ai_provider,
+    })
 }
 
 fn parse_frontend(args: &[String]) -> Result<Command, String> {
@@ -180,6 +218,17 @@ fn parse_output_mode(value: &str) -> Result<FrontendOutputMode, String> {
     }
 }
 
+fn parse_ai_provider(value: &str) -> Result<AiProviderMode, String> {
+    match value {
+        "none" => Ok(AiProviderMode::None),
+        "mock" => Ok(AiProviderMode::Mock),
+        _ => Err(
+            "error: unknown AI provider. next: pass --ai-provider mock or --ai-provider none."
+                .to_owned(),
+        ),
+    }
+}
+
 pub(crate) fn validate_schema_id(schema_id: String) -> Result<String, String> {
     let valid = !schema_id.is_empty()
         && schema_id != "."
@@ -212,20 +261,52 @@ fn flag_value<'args>(
 }
 
 pub(crate) fn help_text() -> &'static str {
-    "usage:\n  yune-cli run [key-sequence]\n  yune-cli check <fixture.json>\n  yune-cli frontend --shared-data-dir <path> --user-data-dir <path> --schema <schema-id> --sequence <keys> [--output json|human]\n  yune-cli frontend-check <fixture.json> --shared-data-dir <path> --user-data-dir <path>"
+    "usage:\n  yune-cli run [--ai-provider mock|none] [key-sequence]\n  yune-cli check <fixture.json>\n  yune-cli frontend --shared-data-dir <path> --user-data-dir <path> --schema <schema-id> --sequence <keys> [--output json|human]\n  yune-cli frontend-check <fixture.json> --shared-data-dir <path> --user-data-dir <path>"
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Command, FrontendOutputMode};
+    use super::{AiProviderMode, Command, FrontendOutputMode};
 
     #[test]
     fn default_command_runs_default_sequence() {
         assert_eq!(
             Command::parse(&[]),
             Ok(Command::Run {
-                sequence: "nihao ".to_owned()
+                sequence: "nihao ".to_owned(),
+                ai_provider: AiProviderMode::None
             })
+        );
+    }
+
+    #[test]
+    fn parses_run_command_with_mock_ai_provider() {
+        assert_eq!(
+            Command::parse(&[
+                "run".to_owned(),
+                "--ai-provider".to_owned(),
+                "mock".to_owned(),
+                "nihao".to_owned()
+            ]),
+            Ok(Command::Run {
+                sequence: "nihao".to_owned(),
+                ai_provider: AiProviderMode::Mock
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_run_ai_provider() {
+        assert_eq!(
+            Command::parse(&[
+                "run".to_owned(),
+                "--ai-provider".to_owned(),
+                "remote".to_owned()
+            ]),
+            Err(
+                "error: unknown AI provider. next: pass --ai-provider mock or --ai-provider none."
+                    .to_owned()
+            )
         );
     }
 
@@ -352,7 +433,8 @@ mod tests {
         assert_eq!(
             Command::parse(&["run".to_owned(), "hao".to_owned()]),
             Ok(Command::Run {
-                sequence: "hao".to_owned()
+                sequence: "hao".to_owned(),
+                ai_provider: AiProviderMode::None
             })
         );
     }

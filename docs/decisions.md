@@ -530,6 +530,21 @@ slices (comment shaping, Cantonese goldens, baseline fix) are reused by the web
 path; Windows-specific native packaging and E2E validation can resume under the
 TypeDuck-Windows milestone.
 
+### AI-native milestone (M11)
+
+**D-M11-1 — Start AI-native with a CLI-only staged-result provider slice.** M11 S1
+adds an `AiCandidateProvider` interface and deterministic `MockAiProvider` in
+`yune-core`, but provider execution is owned by the direct `yune-cli run` path,
+not by `Engine::refresh_candidates` and not by `yune-rime-api`/browser/Windows
+frontends. The engine stores only staged, input-keyed `AiResult::Ready`
+candidates and appends matching AI rows after classic candidates, preserving the
+top classic candidate. AI candidates remain `CandidateSource::Ai` as a unit
+variant with provider/confidence labels in `comment`. Default Space/Return
+confirmation rejects AI candidates, while explicit AI selection records a commit
+without staging librime userdb learning. Real frontend AI exposure remains
+disabled by default until later M11 provider, local-model, context, memory, and
+privacy gates are proven.
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 — Existing `docs/analysis.md`, `docs/roadmap.md`,
@@ -562,4 +577,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-18 — added the HR-7 GO WITH CONDITIONS decision (D-P10-13) and updated shared comment-oracle/web-first status.*
+*Last updated: 2026-06-18 — added the M11 S1 CLI-only staged-result decision (D-M11-1) and updated shared comment-oracle/web-first status.*

@@ -15,8 +15,8 @@ If browser E2E passes:
 - `screenshot-candidates.png` — Screenshot showing visible candidate list
 - `screenshot-candidate-paging.png` — Screenshot showing candidate page change
 - `screenshot-candidate-selection.png` — Screenshot showing candidate selection → commit output
-- `screenshot-persistence-after-reload.png` — Screenshot showing persisted state after reload/reinitialize
-- `persistence-sync.log` — Evidence of sync-before-init, sync-after-mutation, reload/reinitialize
+- `screenshot-persistence-after-reload.png` — Optional screenshot showing persisted state after reload/reinitialize when browser capture succeeds
+- `persistence-sync.log` — HR-4 DOM/console diagnostic evidence of sync-before-init, sync-after-mutation, and reload/reinitialize
 - `asset-sources.log` — Documented asset sources (explicit TypeDuck-Web-owned YAML)
 - `asset-validation.log` — Asset validation output
 

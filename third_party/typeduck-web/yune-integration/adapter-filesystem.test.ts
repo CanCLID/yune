@@ -13,6 +13,8 @@ let cleanupYuneRuntime: typeof import("./adapter.js").cleanupYuneRuntime;
 let initYuneRuntime: typeof import("./adapter.js").initYuneRuntime;
 let processKey: typeof import("./adapter.js").processKey;
 let setOption: typeof import("./adapter.js").setOption;
+let customize: typeof import("./adapter.js").customize;
+let deploy: typeof import("./adapter.js").deploy;
 
 const assets = {
   defaultYaml: "config_version: typeduck-web\nschema_list:\n  - schema: luna_pinyin\n",
@@ -54,10 +56,13 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     initYuneRuntime = adapter.initYuneRuntime;
     processKey = adapter.processKey;
     setOption = adapter.setOption;
+    customize = adapter.customize;
+    deploy = adapter.deploy;
   });
 
   afterEach(() => {
     cleanupYuneRuntime();
+    delete (globalThis as { onYunePersistenceDiagnostic?: unknown }).onYunePersistenceDiagnostic;
   });
 
   it("loads persisted state before preloading schema assets and flushes after init", async () => {
@@ -82,6 +87,45 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     expect(module.calls("yune_typeduck_init")).toEqual([
       ["/usr/share/rime-data", "/rime", "luna_pinyin"],
     ]);
+  });
+
+  it("emits live-worker persistence diagnostics in before-init and after-mutation order", async () => {
+    const markers: {
+      phase: string;
+      reason: string;
+      persistedConfig?: { exists: boolean; pageSize?: string | null };
+    }[] = [];
+    (globalThis as { onYunePersistenceDiagnostic?: (marker: (typeof markers)[number]) => void })
+      .onYunePersistenceDiagnostic = (marker) => markers.push(marker);
+
+    const fs = new FakeTypeDuckFilesystem();
+    fs.mkdirTree("/rime");
+    fs.writeFile("/rime/luna_pinyin.custom.yaml", "page_size: 6\n", { flags: "w" });
+    const module = new FakeTypeDuckModule();
+
+    await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
+    await customize({ pageSize: 6 });
+    await deploy();
+
+    expect(markers.map(({ phase, reason }) => `${phase}:${reason}`)).toEqual([
+      "syncFromPersistenceBeforeInit:start:before-init",
+      "syncFromPersistenceBeforeInit:pass:before-init",
+      "runtime:init:after-init",
+      "syncToPersistenceAfterMutation:start:after-init",
+      "syncToPersistenceAfterMutation:pass:after-init",
+      "syncToPersistenceAfterMutation:start:customize",
+      "syncToPersistenceAfterMutation:pass:customize",
+      "syncToPersistenceAfterMutation:start:deploy",
+      "syncToPersistenceAfterMutation:pass:deploy",
+    ]);
+
+    const beforeInitPass = markers.find(
+      (marker) => marker.phase === "syncFromPersistenceBeforeInit:pass",
+    );
+    expect(beforeInitPass?.persistedConfig).toMatchObject({
+      exists: true,
+      pageSize: "6",
+    });
   });
 
   it("fails visibly before asset writes or runtime init when before-init sync fails", async () => {

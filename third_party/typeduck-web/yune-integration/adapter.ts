@@ -23,8 +23,6 @@ import {
   prepareTypeDuckFilesystem,
   syncFromPersistenceBeforeInit,
   syncToPersistenceAfterMutation,
-  deployAndSync,
-  customizeAndSync,
   syncAfterUserDataChange,
   type TypeDuckFilesystem,
   type TypeDuckFilesystemAssets,
@@ -80,6 +78,39 @@ export interface TypeDuckExtraSharedAsset {
   content: string | Uint8Array;
 }
 
+type PersistenceSyncReason =
+  | "before-init"
+  | "after-init"
+  | "commit"
+  | "select-candidate"
+  | "delete-candidate"
+  | "customize"
+  | "deploy";
+
+type PersistenceDiagnosticPhase =
+  | "syncFromPersistenceBeforeInit:start"
+  | "syncFromPersistenceBeforeInit:pass"
+  | "syncToPersistenceAfterMutation:start"
+  | "syncToPersistenceAfterMutation:pass"
+  | "runtime:init";
+
+interface PersistedConfigSnapshot {
+  path: string;
+  exists: boolean;
+  pageSize?: string | null;
+  bytes?: number;
+  readError?: string;
+}
+
+export interface YunePersistenceDiagnostic {
+  phase: PersistenceDiagnosticPhase;
+  reason: PersistenceSyncReason;
+  schemaId: string;
+  userDataDir: string;
+  timestamp: string;
+  persistedConfig: PersistedConfigSnapshot;
+}
+
 /**
  * Initialize Yune runtime with Emscripten Module and filesystem
  *
@@ -116,7 +147,9 @@ export async function initYuneRuntime(
   currentExtraSharedAssets = extraSharedAssets;
 
   // Load persisted user/build state before writing fresh app-owned assets.
+  emitPersistenceDiagnostic(fs, prepareOptions, "syncFromPersistenceBeforeInit:start", "before-init");
   await syncFromPersistenceBeforeInit(fs);
+  emitPersistenceDiagnostic(fs, prepareOptions, "syncFromPersistenceBeforeInit:pass", "before-init");
 
   prepareTypeDuckFilesystem(fs, prepareOptions);
   for (const asset of extraSharedAssets) {
@@ -125,9 +158,10 @@ export async function initYuneRuntime(
 
   // Initialize runtime
   currentRuntime = TypeDuckRuntime.init(module, options);
+  emitPersistenceDiagnostic(fs, prepareOptions, "runtime:init", "after-init");
 
   // Sync after init to persist initial state
-  await syncToPersistenceAfterMutation(fs);
+  await syncToPersistenceWithDiagnostic(fs, prepareOptions, "after-init");
 }
 
 /**
@@ -211,7 +245,7 @@ export async function processKey(input: string): Promise<RimeResult> {
 
   // Sync persistence after commit
   if (result.committed && currentFs !== null) {
-    await syncToPersistenceAfterMutation(currentFs);
+    await syncCurrentStateToPersistence("commit");
   }
 
   return result;
@@ -232,7 +266,7 @@ export async function selectCandidate(index: number): Promise<RimeResult> {
 
   // Sync persistence after commit
   if (result.committed && currentFs !== null) {
-    await syncToPersistenceAfterMutation(currentFs);
+    await syncCurrentStateToPersistence("select-candidate");
   }
 
   return result;
@@ -252,8 +286,10 @@ export async function deleteCandidate(index: number): Promise<RimeResult> {
   const result = translateResponse(response);
 
   // Sync persistence after user data change
-  if (currentFs !== null) {
+  if (currentFs !== null && currentPrepareOptions !== null) {
+    emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "syncToPersistenceAfterMutation:start", "delete-candidate");
     await syncAfterUserDataChange(currentFs);
+    emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "syncToPersistenceAfterMutation:pass", "delete-candidate");
   }
 
   return result;
@@ -288,8 +324,8 @@ export async function deploy(): Promise<boolean> {
     writeExtraSharedAsset(currentFs, currentPrepareOptions.sharedDataDir, asset);
   }
 
-  // Delegate to deployAndSync per D-04
-  const deployed = await deployAndSync(currentRuntime, currentFs);
+  const deployed = currentRuntime.deploy();
+  await syncCurrentStateToPersistence("deploy");
   return deployed;
 }
 
@@ -311,13 +347,8 @@ export async function customize(preferences: RimePreferences): Promise<boolean> 
   let success = true;
 
   if (preferences.pageSize !== undefined) {
-    const customized = await customizeAndSync(
-      currentRuntime,
-      currentFs,
-      currentSchemaId,
-      "page_size",
-      String(preferences.pageSize),
-    );
+    const customized = currentRuntime.customize(currentSchemaId, "page_size", String(preferences.pageSize));
+    await syncCurrentStateToPersistence("customize");
     success = success && customized;
   }
 
@@ -373,6 +404,72 @@ function ensureVirtualDirectory(fs: TypeDuckFilesystem, path: string): void {
     if (!fs.analyzePath(current).exists) {
       fs.mkdir(current);
     }
+  }
+}
+
+async function syncCurrentStateToPersistence(reason: PersistenceSyncReason): Promise<void> {
+  if (currentFs === null || currentPrepareOptions === null) {
+    throw new Error("Yune runtime not initialized");
+  }
+  await syncToPersistenceWithDiagnostic(currentFs, currentPrepareOptions, reason);
+}
+
+async function syncToPersistenceWithDiagnostic(
+  fs: TypeDuckFilesystem,
+  prepareOptions: PrepareTypeDuckFilesystemOptions,
+  reason: PersistenceSyncReason,
+): Promise<void> {
+  emitPersistenceDiagnostic(fs, prepareOptions, "syncToPersistenceAfterMutation:start", reason);
+  await syncToPersistenceAfterMutation(fs);
+  emitPersistenceDiagnostic(fs, prepareOptions, "syncToPersistenceAfterMutation:pass", reason);
+}
+
+function emitPersistenceDiagnostic(
+  fs: TypeDuckFilesystem,
+  prepareOptions: PrepareTypeDuckFilesystemOptions,
+  phase: PersistenceDiagnosticPhase,
+  reason: PersistenceSyncReason,
+): void {
+  const diagnostic: YunePersistenceDiagnostic = {
+    phase,
+    reason,
+    schemaId: prepareOptions.schemaId,
+    userDataDir: prepareOptions.userDataDir,
+    timestamp: new Date().toISOString(),
+    persistedConfig: snapshotPersistedCustomConfig(fs, prepareOptions),
+  };
+  console.info(`YUNE_PERSISTENCE ${JSON.stringify(diagnostic)}`);
+  const diagnosticGlobal = globalThis as typeof globalThis & {
+    onYunePersistenceDiagnostic?: (marker: YunePersistenceDiagnostic) => void;
+  };
+  diagnosticGlobal.onYunePersistenceDiagnostic?.(diagnostic);
+}
+
+function snapshotPersistedCustomConfig(
+  fs: TypeDuckFilesystem,
+  prepareOptions: PrepareTypeDuckFilesystemOptions,
+): PersistedConfigSnapshot {
+  const path = joinTypeDuckVirtualPath(prepareOptions.userDataDir, `${prepareOptions.schemaId}.custom.yaml`);
+  if (!fs.analyzePath(path).exists) {
+    return { path, exists: false };
+  }
+
+  try {
+    const file = fs.readFile(path, { encoding: "utf8" });
+    const text = typeof file === "string" ? file : new TextDecoder().decode(file);
+    const pageSize = /^\s*page_size:\s*(\S+)/m.exec(text)?.[1] ?? null;
+    return {
+      path,
+      exists: true,
+      pageSize,
+      bytes: text.length,
+    };
+  } catch (error) {
+    return {
+      path,
+      exists: true,
+      readError: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    };
   }
 }
 

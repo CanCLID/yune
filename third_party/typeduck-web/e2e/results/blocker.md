@@ -16,6 +16,12 @@ incomplete browser preload list: deployment reaches the plain
 `jyut6ping3.schema.yaml` through TypeDuck's real workspace/default schema path.
 See `deploy-browser.log` for the browser console proof.
 
+**HR-4 update**: live persistence is browser-proven. `persistence-sync.log`
+records a fresh-origin load where before-init persistence is empty, startup
+`customize` writes `page_size: '6'`, deploy syncs after mutation, and a real page
+reload restores the persisted custom config before runtime init.
+
 **Still open**:
 
-- HR-4/HR-5: live persistence, reload survival, paging/deletion, and dictionary-panel oracle comment bytes still need the full real-assets E2E matrix.
+- HR-5: paging/deletion and dictionary-panel oracle comment bytes still need the
+  full real-assets E2E matrix.

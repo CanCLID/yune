@@ -1,13 +1,253 @@
-TypeDuck-Web WI-4 persistence evidence
-Date: 2026-06-18
-Result: FAIL
+# HR-4 Live Persistence Evidence
 
-Observed:
-- Worker initialization reached the page: receive {"type":"listener","name":"initialized","args":[true]}
-- customize returned true.
-- deploy returned false.
-- setOption calls return errors because the current Yune TypeDuckRuntime has no setOption wrapper.
-- Browser console evidence does not include syncFromPersistenceBeforeInit or syncToPersistenceAfterMutation markers.
-- Reload/persistence survival was not established from browser evidence.
+Captured: 2026-06-18T17:51:13.465Z
+URL: http://127.0.0.1:5177/web/?debug&realAssets=1&hr4FinalEvidence=1781805040939
+Rime module version first load: hr4-persistence-diagnostics-v2
+Rime module version after reload: hr4-persistence-diagnostics-v2
+Navigation issue: none
+Reload issue: none
 
-Conclusion: WI-3 has unit-level sync ordering coverage, but WI-4 browser persistence remains FAIL until deploy and browser-visible sync/reload evidence pass.
+## Assertions
+fresh origin had no persisted custom config before init: PASS
+syncFromPersistenceBeforeInit before runtime:init: PASS
+syncToPersistenceAfterMutation after customize: PASS
+syncToPersistenceAfterMutation after deploy: PASS
+Reload syncFromPersistenceBeforeInit restored persisted page_size: PASS
+
+## First Load Markers
+[
+  {
+    "phase": "worker:diagnostic-ready",
+    "timestamp": "2026-06-18T17:50:41.294Z"
+  },
+  {
+    "phase": "syncFromPersistenceBeforeInit:start",
+    "reason": "before-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:41.452Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": false
+    }
+  },
+  {
+    "phase": "syncFromPersistenceBeforeInit:pass",
+    "reason": "before-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:41.470Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": false
+    }
+  },
+  {
+    "phase": "runtime:init",
+    "reason": "after-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:42.717Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": false
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:start",
+    "reason": "after-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:42.717Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": false
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:pass",
+    "reason": "after-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:42.719Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": false
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:start",
+    "reason": "customize",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:42.741Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:pass",
+    "reason": "customize",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:42.742Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:start",
+    "reason": "deploy",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:48.895Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:pass",
+    "reason": "deploy",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:48.949Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  }
+]
+
+## After Real Reload Markers
+[
+  {
+    "phase": "worker:diagnostic-ready",
+    "timestamp": "2026-06-18T17:50:57.438Z"
+  },
+  {
+    "phase": "syncFromPersistenceBeforeInit:start",
+    "reason": "before-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:57.540Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": false
+    }
+  },
+  {
+    "phase": "syncFromPersistenceBeforeInit:pass",
+    "reason": "before-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:57.583Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "runtime:init",
+    "reason": "after-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:58.816Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:start",
+    "reason": "after-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:58.816Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:pass",
+    "reason": "after-init",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:58.818Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:start",
+    "reason": "customize",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:58.841Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:pass",
+    "reason": "customize",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:50:58.842Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:start",
+    "reason": "deploy",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:51:02.681Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  },
+  {
+    "phase": "syncToPersistenceAfterMutation:pass",
+    "reason": "deploy",
+    "schemaId": "jyut6ping3_mobile",
+    "userDataDir": "/rime",
+    "timestamp": "2026-06-18T17:51:02.683Z",
+    "persistedConfig": {
+      "path": "/rime/jyut6ping3_mobile.custom.yaml",
+      "exists": true,
+      "pageSize": "'6'",
+      "bytes": 199
+    }
+  }
+]

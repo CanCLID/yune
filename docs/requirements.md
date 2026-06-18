@@ -90,8 +90,9 @@ real browser. HR-2 resolves the startup `setOption` export/wrapper/adapter gap,
 and HR-3 proves browser `deploy()` returns true with real assets after adding the
 plain `jyut6ping3.schema.yaml` preload.
 **TYPEDUCK-E2E-03** and the final **TYPEDUCK-E2E-04** reassessment remain open
-until paging, deletion, persistence sync/reload, and v1.1.2 dictionary-comment
-evidence are re-run or fixed against real assets.
+until paging, deletion, and v1.1.2 dictionary-comment evidence are re-run or
+fixed against real assets. HR-4 proves live-worker persistence sync and real
+reload survival.
 
 ### WASM Build And Export Contract
 
@@ -117,7 +118,7 @@ evidence are re-run or fixed against real assets.
 
 - [x] **TYPEDUCK-E2E-01**: The upstream TypeDuck-Web repository is cloned or vendored in a reproducible test location, and its current librime/WASM bridge seam is identified.
 - [x] **TYPEDUCK-E2E-02**: TypeDuck-Web is patched or configured so its input-engine binding calls the Yune TypeScript bridge instead of the original librime bridge, with candidate text/comment/highlight mapped from the runtime response shape.
-- [ ] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, and persistence smoke flows, with PASS/FAIL evidence recorded. HR-1 proves real candidate rendering, HR-2 proves `setOption`, and HR-3 proves deploy true; persistence/reload, paging/deletion, and dictionary-comment evidence remain open.
+- [ ] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, and persistence smoke flows, with PASS/FAIL evidence recorded. HR-1 proves real candidate rendering, HR-2 proves `setOption`, HR-3 proves deploy true, and HR-4 proves persistence/reload; paging/deletion and dictionary-comment evidence remain open.
 - [ ] **TYPEDUCK-E2E-04**: Integration findings end with a go/no-go recommendation for exposing AI-native behavior through real frontends; current result remains NO-GO pending the real-assets matrix.
 
 ## TypeDuck-Windows Native IME Contract Requirements
@@ -222,7 +223,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPEDUCK-FS-04 | Phase 9 | Complete |
 | TYPEDUCK-E2E-01 | Phase 10 | Complete |
 | TYPEDUCK-E2E-02 | Phase 10 | Complete |
-| TYPEDUCK-E2E-03 | Phase 10 / 17 | Reopened — HR-1 real candidate rendering, HR-2 setOption, and HR-3 deploy pass; persistence/reload, paging/deletion, and dictionary-comment evidence pending |
+| TYPEDUCK-E2E-03 | Phase 10 / 17 | Reopened — HR-1 real candidate rendering, HR-2 setOption, HR-3 deploy, and HR-4 persistence/reload pass; paging/deletion and dictionary-comment evidence pending |
 | TYPEDUCK-E2E-04 | Phase 10 / 17 | Reopened — current NO-GO pending real-assets matrix |
 | WIN-TEST-01 | Phase 11 | Complete |
 | WIN-ABI-01 | Phase 12 | Complete |

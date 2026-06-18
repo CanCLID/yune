@@ -462,32 +462,80 @@ index 0000000..7d09c96
 +  prism: jyut6ping3_mobile
 \ No newline at end of file
 diff --git a/src/rime.ts b/src/rime.ts
-index 4393a9e..0553d2f 100644
+index 4393a9e..f02f81a 100644
 --- a/src/rime.ts
 +++ b/src/rime.ts
-@@ -39,7 +39,7 @@ for (const type of allListenerTypes) {
+@@ -18,7 +18,13 @@ interface ErrorPayload {
+ 	error: unknown;
+ }
  
- const worker = new Worker("./worker.js");
+-type Payload = ListenerPayload | SuccessPayload | ErrorPayload;
++interface DiagnosticPayload {
++	type: "diagnostic";
++	source: string;
++	marker: unknown;
++}
++
++type Payload = ListenerPayload | SuccessPayload | ErrorPayload | DiagnosticPayload;
+ 
+ type Listeners = { [K in keyof ListenerArgsMap]: (this: Worker, ...args: ListenerArgsMap[K]) => void };
+ 
+@@ -37,9 +43,24 @@ for (const type of allListenerTypes) {
+ 	listeners[type] = [];
+ }
+ 
+-const worker = new Worker("./worker.js");
++const YUNE_TYPEDUCK_WORKER_VERSION = "hr4-persistence-diagnostics-v2";
++const debugWindow = window as typeof window & { __YUNE_RIME_VERSION__?: string };
++debugWindow.__YUNE_RIME_VERSION__ = YUNE_TYPEDUCK_WORKER_VERSION;
++document.documentElement.dataset.yuneRimeVersion = YUNE_TYPEDUCK_WORKER_VERSION;
++const worker = new Worker(`./worker.js?v=${YUNE_TYPEDUCK_WORKER_VERSION}`);
  worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 -	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("receive", data);
-+	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("receive", JSON.stringify(data));
++	if (data.type === "diagnostic") {
++		if (shouldLogDebugMessages()) {
++			const debugWindow = window as typeof window & {
++				__YUNE_PERSISTENCE_DIAGNOSTICS__?: DiagnosticPayload[];
++			};
++			(debugWindow.__YUNE_PERSISTENCE_DIAGNOSTICS__ ??= []).push(data);
++			appendPersistenceDiagnostic(data);
++			console.info("diagnostic", JSON.stringify(data));
++		}
++		return;
++	}
++	if (shouldLogDebugMessages()) console.log("receive", JSON.stringify(data));
  	const { type } = data;
  	if (type === "listener") {
  		const { name, args } = data;
-@@ -67,7 +67,7 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
+@@ -67,11 +88,22 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
  });
  
  function postMessage(message: Message) {
 -	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("post", message);
-+	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("post", JSON.stringify({ name: message.name, args: message.args }));
++	if (shouldLogDebugMessages()) console.log("post", JSON.stringify({ name: message.name, args: message.args }));
  	const { name, args } = running = message;
  	worker.postMessage({ name, args });
  }
+ 
++function shouldLogDebugMessages() {
++	return process.env.NODE_ENV !== "production" || new URLSearchParams(location.search).has("debug");
++}
++
++function appendPersistenceDiagnostic(data: DiagnosticPayload) {
++	const existing = document.documentElement.dataset.yunePersistenceDiagnostics;
++	const diagnostics = existing ? JSON.parse(existing) as DiagnosticPayload[] : [];
++	diagnostics.push(data);
++	document.documentElement.dataset.yunePersistenceDiagnostics = JSON.stringify(diagnostics);
++}
++
+ const allActions: (keyof Actions)[] = [
+ 	"setOption",
+ 	"processKey",
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..ad88cba 100644
+index 92b9a90..a813822 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
-@@ -1,137 +1,242 @@
+@@ -1,137 +1,255 @@
 -import type { Actions, ListenerArgsMap, Message, RimeResult, RimeAPI, RimeNotification, RimeDeployStatus } from "./types";
 -
 -type TypeToString<T> = T extends number ? "number"
@@ -529,9 +577,9 @@ index 92b9a90..ad88cba 100644
 +  deploy,
 +  customize,
 +  setOption,
++  type YunePersistenceDiagnostic,
 +} from "./yune-integration/adapter.js";
- 
--declare const Module: Module;
++
 +import {
 +  loadExplicitAssets,
 +  loadAssetContent,
@@ -539,22 +587,23 @@ index 92b9a90..ad88cba 100644
 +  type ExplicitTypeDuckAssets,
 +  type AssetSource,
 +} from "./yune-integration/assets.js";
-+
+ 
+-declare const Module: Module;
 +import {
 +  mountTypeDuckPersistence,
 +  type EmscriptenTypeDuckModule,
 +  type TypeDuckFilesystem,
 +} from "@yune-ime/typeduck-runtime";
-+
-+interface YuneTypeduckBrowserModule extends EmscriptenTypeDuckModule {
-+  FS: TypeDuckFilesystem;
-+  IDBFS: unknown;
-+}
  
 -interface PredefinedModule {
 -	printErr: (message: string) => void;
 -	onRuntimeInitialized: () => void;
 -	locateFile: (path: string, prefix: string) => string;
++interface YuneTypeduckBrowserModule extends EmscriptenTypeDuckModule {
++  FS: TypeDuckFilesystem;
++  IDBFS: unknown;
++}
++
 +interface CreateYuneTypeduckModuleOptions {
 +  printErr: (message: string) => void;
 +  locateFile: (path: string, prefix: string) => string;
@@ -565,6 +614,7 @@ index 92b9a90..ad88cba 100644
 -	onRimeNotification<T extends keyof RimeNotification>(type: T, value: RimeNotification[T]): void;
 -	Module: PredefinedModule;
 +  onRimeNotification<T extends keyof RimeNotification>(type: T, value: RimeNotification[T]): void;
++  onYunePersistenceDiagnostic?: (marker: YunePersistenceDiagnostic) => void;
  };
  
 +declare function importScripts(...urls: string[]): void;
@@ -602,14 +652,25 @@ index 92b9a90..ad88cba 100644
 +  }
  };
  
- function dispatch<K extends keyof ListenerArgsMap>(name: K, ...args: ListenerArgsMap[K]) {
+-function dispatch<K extends keyof ListenerArgsMap>(name: K, ...args: ListenerArgsMap[K]) {
 -	postMessage({ type: "listener", name, args });
 -}
--
++globalThis.onYunePersistenceDiagnostic = (marker) => {
++  postMessage({ type: "diagnostic", source: "yune-persistence", marker });
++};
++setTimeout(() => {
++  postMessage({
++    type: "diagnostic",
++    source: "yune-persistence",
++    marker: { phase: "worker:diagnostic-ready", timestamp: new Date().toISOString() },
++  });
++}, 0);
+ 
 -function syncUserDirectory(direction: "read" | "write") {
 -	return new Promise<void>((resolve, reject) => {
 -		Module.FS.syncfs(direction === "read", (err?: Error) => err ? reject(err) : resolve());
 -	});
++function dispatch<K extends keyof ListenerArgsMap>(name: K, ...args: ListenerArgsMap[K]) {
 +  postMessage({ type: "listener", name, args });
  }
  
@@ -848,10 +909,10 @@ index 92b9a90..ad88cba 100644
  });
 diff --git a/src/yune-integration/README.md b/src/yune-integration/README.md
 new file mode 100644
-index 0000000..4684a65
+index 0000000..f943e18
 --- /dev/null
 +++ b/src/yune-integration/README.md
-@@ -0,0 +1,239 @@
+@@ -0,0 +1,240 @@
 +# TypeDuck-Web Yune Integration Layer
 +
 +This directory contains the Yune-owned integration layer that bridges TypeDuck-Web's Actions interface to the repository-owned `@yune-ime/typeduck-runtime` package.
@@ -893,7 +954,7 @@ index 0000000..4684a65
 +Minimal patch touches only documented seam/config files:
 +
 +- `src/worker.ts` — Replace librime WASM import with Yune runtime adapter
-+- Preserve `src/rime.ts` — Main-thread facade unchanged
++- `src/rime.ts` — Main-thread facade plus debug-only persistence diagnostics
 +- Preserve `src/types.ts` — Actions interface unchanged
 +- Preserve UI components — No visual/behavioral changes
 +
@@ -908,9 +969,10 @@ index 0000000..4684a65
 +### Persistence Pattern (Per D-04, Phase 9)
 +
 +- `syncFromPersistenceBeforeInit(fs)` before runtime init
-+- `syncToPersistenceAfterMutation(fs)` after commit/deploy
-+- `deployAndSync(runtime, fs)` for deploy action
-+- `customizeAndSync(runtime, fs, ...)` for customize action
++- `syncToPersistenceAfterMutation(fs)` after commit/deploy/customize with a
++  browser-visible reason marker
++- `runtime.deploy()` followed by reason-tagged sync for deploy action
++- `runtime.customize(...)` followed by reason-tagged sync for customize action
 +- `syncAfterUserDataChange(fs)` after candidate delete
 +
 +### Asset Contract (Per D-06)
@@ -1093,10 +1155,10 @@ index 0000000..4684a65
 +**Status**: Integration layer created, pending patch application and build gates
 diff --git a/src/yune-integration/adapter.ts b/src/yune-integration/adapter.ts
 new file mode 100644
-index 0000000..c23e125
+index 0000000..074d9ee
 --- /dev/null
 +++ b/src/yune-integration/adapter.ts
-@@ -0,0 +1,384 @@
+@@ -0,0 +1,481 @@
 +/**
 + * Yune seam adapter for TypeDuck-Web
 + *
@@ -1122,8 +1184,6 @@ index 0000000..c23e125
 +  prepareTypeDuckFilesystem,
 +  syncFromPersistenceBeforeInit,
 +  syncToPersistenceAfterMutation,
-+  deployAndSync,
-+  customizeAndSync,
 +  syncAfterUserDataChange,
 +  type TypeDuckFilesystem,
 +  type TypeDuckFilesystemAssets,
@@ -1179,6 +1239,39 @@ index 0000000..c23e125
 +  content: string | Uint8Array;
 +}
 +
++type PersistenceSyncReason =
++  | "before-init"
++  | "after-init"
++  | "commit"
++  | "select-candidate"
++  | "delete-candidate"
++  | "customize"
++  | "deploy";
++
++type PersistenceDiagnosticPhase =
++  | "syncFromPersistenceBeforeInit:start"
++  | "syncFromPersistenceBeforeInit:pass"
++  | "syncToPersistenceAfterMutation:start"
++  | "syncToPersistenceAfterMutation:pass"
++  | "runtime:init";
++
++interface PersistedConfigSnapshot {
++  path: string;
++  exists: boolean;
++  pageSize?: string | null;
++  bytes?: number;
++  readError?: string;
++}
++
++export interface YunePersistenceDiagnostic {
++  phase: PersistenceDiagnosticPhase;
++  reason: PersistenceSyncReason;
++  schemaId: string;
++  userDataDir: string;
++  timestamp: string;
++  persistedConfig: PersistedConfigSnapshot;
++}
++
 +/**
 + * Initialize Yune runtime with Emscripten Module and filesystem
 + *
@@ -1215,7 +1308,9 @@ index 0000000..c23e125
 +  currentExtraSharedAssets = extraSharedAssets;
 +
 +  // Load persisted user/build state before writing fresh app-owned assets.
++  emitPersistenceDiagnostic(fs, prepareOptions, "syncFromPersistenceBeforeInit:start", "before-init");
 +  await syncFromPersistenceBeforeInit(fs);
++  emitPersistenceDiagnostic(fs, prepareOptions, "syncFromPersistenceBeforeInit:pass", "before-init");
 +
 +  prepareTypeDuckFilesystem(fs, prepareOptions);
 +  for (const asset of extraSharedAssets) {
@@ -1224,9 +1319,10 @@ index 0000000..c23e125
 +
 +  // Initialize runtime
 +  currentRuntime = TypeDuckRuntime.init(module, options);
++  emitPersistenceDiagnostic(fs, prepareOptions, "runtime:init", "after-init");
 +
 +  // Sync after init to persist initial state
-+  await syncToPersistenceAfterMutation(fs);
++  await syncToPersistenceWithDiagnostic(fs, prepareOptions, "after-init");
 +}
 +
 +/**
@@ -1310,7 +1406,7 @@ index 0000000..c23e125
 +
 +  // Sync persistence after commit
 +  if (result.committed && currentFs !== null) {
-+    await syncToPersistenceAfterMutation(currentFs);
++    await syncCurrentStateToPersistence("commit");
 +  }
 +
 +  return result;
@@ -1331,7 +1427,7 @@ index 0000000..c23e125
 +
 +  // Sync persistence after commit
 +  if (result.committed && currentFs !== null) {
-+    await syncToPersistenceAfterMutation(currentFs);
++    await syncCurrentStateToPersistence("select-candidate");
 +  }
 +
 +  return result;
@@ -1351,8 +1447,10 @@ index 0000000..c23e125
 +  const result = translateResponse(response);
 +
 +  // Sync persistence after user data change
-+  if (currentFs !== null) {
++  if (currentFs !== null && currentPrepareOptions !== null) {
++    emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "syncToPersistenceAfterMutation:start", "delete-candidate");
 +    await syncAfterUserDataChange(currentFs);
++    emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "syncToPersistenceAfterMutation:pass", "delete-candidate");
 +  }
 +
 +  return result;
@@ -1387,8 +1485,8 @@ index 0000000..c23e125
 +    writeExtraSharedAsset(currentFs, currentPrepareOptions.sharedDataDir, asset);
 +  }
 +
-+  // Delegate to deployAndSync per D-04
-+  const deployed = await deployAndSync(currentRuntime, currentFs);
++  const deployed = currentRuntime.deploy();
++  await syncCurrentStateToPersistence("deploy");
 +  return deployed;
 +}
 +
@@ -1410,13 +1508,8 @@ index 0000000..c23e125
 +  let success = true;
 +
 +  if (preferences.pageSize !== undefined) {
-+    const customized = await customizeAndSync(
-+      currentRuntime,
-+      currentFs,
-+      currentSchemaId,
-+      "page_size",
-+      String(preferences.pageSize),
-+    );
++    const customized = currentRuntime.customize(currentSchemaId, "page_size", String(preferences.pageSize));
++    await syncCurrentStateToPersistence("customize");
 +    success = success && customized;
 +  }
 +
@@ -1472,6 +1565,72 @@ index 0000000..c23e125
 +    if (!fs.analyzePath(current).exists) {
 +      fs.mkdir(current);
 +    }
++  }
++}
++
++async function syncCurrentStateToPersistence(reason: PersistenceSyncReason): Promise<void> {
++  if (currentFs === null || currentPrepareOptions === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++  await syncToPersistenceWithDiagnostic(currentFs, currentPrepareOptions, reason);
++}
++
++async function syncToPersistenceWithDiagnostic(
++  fs: TypeDuckFilesystem,
++  prepareOptions: PrepareTypeDuckFilesystemOptions,
++  reason: PersistenceSyncReason,
++): Promise<void> {
++  emitPersistenceDiagnostic(fs, prepareOptions, "syncToPersistenceAfterMutation:start", reason);
++  await syncToPersistenceAfterMutation(fs);
++  emitPersistenceDiagnostic(fs, prepareOptions, "syncToPersistenceAfterMutation:pass", reason);
++}
++
++function emitPersistenceDiagnostic(
++  fs: TypeDuckFilesystem,
++  prepareOptions: PrepareTypeDuckFilesystemOptions,
++  phase: PersistenceDiagnosticPhase,
++  reason: PersistenceSyncReason,
++): void {
++  const diagnostic: YunePersistenceDiagnostic = {
++    phase,
++    reason,
++    schemaId: prepareOptions.schemaId,
++    userDataDir: prepareOptions.userDataDir,
++    timestamp: new Date().toISOString(),
++    persistedConfig: snapshotPersistedCustomConfig(fs, prepareOptions),
++  };
++  console.info(`YUNE_PERSISTENCE ${JSON.stringify(diagnostic)}`);
++  const diagnosticGlobal = globalThis as typeof globalThis & {
++    onYunePersistenceDiagnostic?: (marker: YunePersistenceDiagnostic) => void;
++  };
++  diagnosticGlobal.onYunePersistenceDiagnostic?.(diagnostic);
++}
++
++function snapshotPersistedCustomConfig(
++  fs: TypeDuckFilesystem,
++  prepareOptions: PrepareTypeDuckFilesystemOptions,
++): PersistedConfigSnapshot {
++  const path = joinTypeDuckVirtualPath(prepareOptions.userDataDir, `${prepareOptions.schemaId}.custom.yaml`);
++  if (!fs.analyzePath(path).exists) {
++    return { path, exists: false };
++  }
++
++  try {
++    const file = fs.readFile(path, { encoding: "utf8" });
++    const text = typeof file === "string" ? file : new TextDecoder().decode(file);
++    const pageSize = /^\s*page_size:\s*(\S+)/m.exec(text)?.[1] ?? null;
++    return {
++      path,
++      exists: true,
++      pageSize,
++      bytes: text.length,
++    };
++  } catch (error) {
++    return {
++      path,
++      exists: true,
++      readError: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
++    };
 +  }
 +}
 +

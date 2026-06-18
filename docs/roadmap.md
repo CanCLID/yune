@@ -64,10 +64,11 @@ Detail: [`plans/archive/real-frontend-validation-plan.md`](./plans/archive/real-
   fetches real `public/schema` assets before init, and runs in a real browser.
 - **Browser result:** the post-review real-assets smoke now renders
   `jyut6ping3_mobile` candidates for `nei` (`你`, `呢`, `尼`). The full matrix
-  still needs a real-assets rerun for paging, deletion, persistence sync/reload,
-  and v1.1.2 dictionary-comment evidence. HR-2 resolves the startup `setOption`
+  still needs a real-assets rerun for paging, deletion, and v1.1.2
+  dictionary-comment evidence. HR-2 resolves the startup `setOption`
   adapter/export gap; HR-3 proves browser `deploy()` returns true with the real
-  TypeDuck workspace assets.
+  TypeDuck workspace assets; HR-4 proves live persistence sync and real reload
+  survival.
 - **Outcome:** **NO-GO** for AI-native frontend exposure. This supersedes the old
   tooling-blocked Phase 10 NO-GO with a behavioral result: Yune loads and types
   real candidates in-browser, but the full frontend contract is not ready.
@@ -83,7 +84,8 @@ Detail: [`plans/typeduck-web-validation-plan.md`](./plans/typeduck-web-validatio
 > M9 *NO-GO* was a *tooling* block, not a behavioral one. The post-review
 > hardening round found that the first WI-4 matrix used the placeholder echo path
 > for candidate evidence. HR-1 now proves the real TypeDuck `jyut6ping3_mobile`
-> assets render Chinese candidates in-browser. The remaining real-assets flows
+> assets render Chinese candidates in-browser, and HR-4 proves live
+> persistence/reload survival. The remaining real-assets flows
 > are still open, so M9 is **not merge-ready**; current work is TypeDuck-Web
 > hardening and revalidation. Much of
 > the Windows work already done is **shared engine work** (comment shaping,
@@ -104,12 +106,14 @@ TypeDuck-Web worker now calls the modular Emscripten factory, mounts IDBFS,
 fetches real `public/schema` assets before init, and participates in the real
 browser run. **HR-1 browser result:** typing `nei` renders real
 `jyut6ping3_mobile` candidates (`你`, `呢`, `尼`). The original echo-backed WI-4
-matrix is now partial evidence; paging, deletion, persistence sync/reload, and
-v1.1.2 dictionary-comment bytes remain to be re-run or fixed. HR-2 adds and
+matrix is now partial evidence; paging, deletion, and v1.1.2
+dictionary-comment bytes remain to be re-run or fixed. HR-2 adds and
 browser-smokes `setOption`, so startup option toggles no longer throw. HR-3 fixes
 the deploy false gap by preloading the plain `jyut6ping3.schema.yaml` that the
-real workspace deployment reaches. The current recommendation remains **NO-GO**
-for AI-native frontend exposure.
+real workspace deployment reaches. HR-4 proves live-worker IDBFS sync before init
+and after customize/deploy, plus a real reload restoring persisted custom config
+before runtime init. The current recommendation remains **NO-GO** for AI-native
+frontend exposure.
 
 **Active validation plan:** [`plans/typeduck-web-validation-plan.md`](./plans/typeduck-web-validation-plan.md) — reopened for real-assets hardening.
 Detail: [`plans/typeduck-web-adapter.md`](./plans/typeduck-web-adapter.md), [`plans/typeduck-web-integration-findings.md`](./plans/typeduck-web-integration-findings.md), [`plans/archive/ai-native-frontend-readiness.md`](./plans/archive/ai-native-frontend-readiness.md) (superseded NO-GO).
@@ -146,7 +150,7 @@ The v1.1.2 oracle fixture used for items 2–3 is **genuine captured fork output
 
 Concrete, in priority order (**web first, then Windows, then other platforms**):
 
-1. **Fix the browser-observed failures before production exposure** — paging/deletion behavior, browser-visible persistence sync/reload proof, and v1.1.2 dictionary-comment bytes.
+1. **Fix the browser-observed failures before production exposure** — paging/deletion behavior and v1.1.2 dictionary-comment bytes.
 2. **Keep the loadable WASM artifact, adapter mapper, and app filesystem gates green.** The documented build now produces `yune-typeduck.js`/`.wasm` and smokes `cwrap`/`FS`; preserve that gate plus the candidate/comment/highlight and app init-order smokes.
 3. **Land the remaining shared engine parity** (benefits web *and* Windows): the dictionary-panel comment byte-parity is now proven non-circularly from authored source rows — extend it with the `"; "` reverse-lookup joiner and schema-name-in-prompt oracle cases (and, ideally, real `.dict.yaml` rows), and capture the remaining Cantonese goldens to activate the 5 ignored tests.
 4. **Keep tracking honest.** (Done on main: the future-dated "verified" claim was removed and the circular parity test reworked; the roll-up is set to partial.) Keep statuses evidence-based as Phase 17 proceeds.

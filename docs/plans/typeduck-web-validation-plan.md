@@ -82,7 +82,7 @@ commit per item:
 - [x] **HR-3 deploy=true** — browser `deploy()` now returns true with real assets;
   root cause was the worker preload list missing `jyut6ping3.schema.yaml`, which
   TypeDuck's real workspace deployment reaches through `default.custom.yaml`.
-- [ ] **HR-4 live persistence** — prove before-init and after-mutation IDBFS sync
+- [x] **HR-4 live persistence** — prove before-init and after-mutation IDBFS sync
   in the live worker path, including reload survival.
 - [ ] **HR-5 real-assets E2E matrix** — re-run paging, deletion, deploy,
   persistence, reload, and dictionary-panel comments against real assets.

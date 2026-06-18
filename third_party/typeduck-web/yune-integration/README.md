@@ -39,7 +39,7 @@ Documents local package resolution for `@yune-ime/typeduck-runtime` without publ
 Minimal patch touches only documented seam/config files:
 
 - `src/worker.ts` — Replace librime WASM import with Yune runtime adapter
-- Preserve `src/rime.ts` — Main-thread facade unchanged
+- `src/rime.ts` — Main-thread facade plus debug-only persistence diagnostics
 - Preserve `src/types.ts` — Actions interface unchanged
 - Preserve UI components — No visual/behavioral changes
 
@@ -54,9 +54,10 @@ Minimal patch touches only documented seam/config files:
 ### Persistence Pattern (Per D-04, Phase 9)
 
 - `syncFromPersistenceBeforeInit(fs)` before runtime init
-- `syncToPersistenceAfterMutation(fs)` after commit/deploy
-- `deployAndSync(runtime, fs)` for deploy action
-- `customizeAndSync(runtime, fs, ...)` for customize action
+- `syncToPersistenceAfterMutation(fs)` after commit/deploy/customize with a
+  browser-visible reason marker
+- `runtime.deploy()` followed by reason-tagged sync for deploy action
+- `runtime.customize(...)` followed by reason-tagged sync for customize action
 - `syncAfterUserDataChange(fs)` after candidate delete
 
 ### Asset Contract (Per D-06)

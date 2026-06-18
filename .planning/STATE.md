@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: planning
-stopped_at: Completed 10-04-PLAN.md
-last_updated: "2026-05-05T16:49:13.164Z"
-last_activity: 2026-05-05
+milestone: typeduck-windows-native-contract
+milestone_name: TypeDuck-Windows Native IME Contract
+status: execution
+stopped_at: Ready to execute 11-01 Windows test baseline
+last_updated: "2026-06-18T00:00:00.000Z"
+last_activity: 2026-06-18
 progress:
-  total_phases: 10
-  completed_phases: 9
-  total_plans: 31
+  total_phases: 16
+  completed_phases: 10
+  total_plans: 37
   completed_plans: 32
-  percent: 100
+  percent: 86
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-28)
 
 **Core value:** Existing RIME schemas and frontends should behave predictably through Yune's Rust implementation, with every compatibility difference measurable against librime before it is accepted.
-**Current focus:** Phase 09 — browser-filesystem-and-persistence
+**Current focus:** Phase 11 — Windows test baseline for the TypeDuck-Windows native IME contract
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
-Next phase: 10 — TypeDuck-Web App Integration And E2E
-Status: Ready to plan
-Last activity: 2026-05-05
+Phase: 11
+Plan: 11-01 — Windows test baseline
+Next phase: 12 — Fork Config List Append ABI
+Status: Ready to execute
+Last activity: 2026-06-18
 
-Progress: [██████████] 100%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [██████████] 100%
 | Phase 07-wasm-build-and-export-contract P03 | 4min | 3 tasks | 6 files |
 | Phase 09-browser-filesystem-and-persistence P03 | 5min | 3 tasks | 3 files |
 | Phase 10 P04 | 8m 47s | 3 tasks | 2 files |
+| Phase 11 P01 | - | pending | pending |
 
 ## Accumulated Context
 
@@ -123,16 +124,21 @@ Recent decisions affecting current work:
 - D-12/TYPEDUCK-E2E-04: Final findings separate TypeDuck-Web app/source blockers, Yune adapter/runtime mismatches, and environment/tooling blockers.
 - D-13/TYPEDUCK-E2E-04: Phase ends with NO-GO recommendation for AI-native frontend exposure due to browser validation blockers.
 - D-14: AI-native provider calls, candidate generation, ranking, context, memory, privacy controls, and new first-party Yune frontend remain deferred.
+- D-15/WIN-TEST-01: TypeDuck-Windows native IME is the next tracked milestone; first unblock Windows test trust before feature work.
+- D-16/WIN-ABI-01: Fork-only config list append APIs are the first feature slice after the Windows baseline because they need no external oracle.
+- D-17/WIN-ORACLE-01: Comment semantics and Cantonese/Jyutping parity must be driven by TypeDuck-HK/librime v1.1.2 goldens or documented blockers.
 
 ### Pending Todos
 
-- Phase 07 — WASM Build And Export Contract — should be discussed/planned next.
-- TypeDuck-Web adapter seed work exists in code and docs but should be reviewed/committed as the baseline for the new milestone.
+- Phase 11 — Windows Test Baseline — fix `librime_signature_modified_time` shape and test-only poison-lock recovery first.
+- Phase 12 — Fork Config List Append ABI — implement `config_list_append_{string,bool,int,double}` through `RimeApi`.
+- Acquire TypeDuck-HK/librime v1.1.2 plus the pinned TypeDuck schema before comment semantics or Cantonese parity changes.
 
 ### Blockers/Concerns
 
-- Browser integration may require Emscripten, TypeDuck-Web source/build access, and host-specific setup outside the Rust workspace.
-- AI-native input layer remains deferred until TypeDuck-Web browser integration produces a frontend exposure recommendation.
+- TypeDuck-Web browser integration ended NO-GO for AI-native exposure because the WASM artifact/tooling path blocked real browser validation.
+- TypeDuck-HK/librime v1.1.2 binary and pinned TypeDuck schema are required before Items 4 and 6 of the Windows contract.
+- Native Windows packaging may require MSVC target/toolchain availability outside the Rust workspace.
 
 ## Deferred Items
 
@@ -149,11 +155,11 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-05T16:49:13.162Z
-Stopped at: Completed 10-04-PLAN.md
+Last session: 2026-06-18T00:00:00.000Z
+Stopped at: Ready to execute 11-01 Windows test baseline
 Resume file: None
 
-**Completed Phase:** 06 (Real Frontend Validation And Benchmark) — 4 plans — 2026-05-01
-**Next Phase:** 07 (WASM Build And Export Contract) — 3 plans — ready for discuss/plan
+**Completed Phase:** 10 (TypeDuck-Web App Integration And E2E) — 4 plans — 2026-05-05 — ended with NO-GO recommendation
+**Next Phase:** 11 (Windows Test Baseline) — 1 plan — ready to execute
 
-**Planned Phase:** 09 (browser-filesystem-and-persistence) — 3 plans — 2026-05-05T03:15:57.691Z
+**Planned Milestone:** TypeDuck-Windows Native IME Contract — 6 phases — tracked in ROADMAP.md and REQUIREMENTS.md

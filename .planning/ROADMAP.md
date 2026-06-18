@@ -137,7 +137,8 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10,
+then the TypeDuck-Windows contract continues with Phases 11 -> 16.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -150,14 +151,24 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 7. WASM Build And Export Contract | 3/3 | Complete | 2026-05-05 |
 | 8. TypeScript Bridge And Runtime Package | 3/3 | Complete | 2026-05-05 |
 | 9. Browser Filesystem And Persistence | 3/3 | Complete | 2026-05-05 |
+| 10. TypeDuck-Web App Integration And E2E | 4/4 | Complete - NO-GO recommendation | 2026-05-05 |
+| 11. Windows Test Baseline | 0/1 | Planned | - |
+| 12. Fork Config List Append ABI | 0/1 | Planned | - |
+| 13. TypeDuck v1.1.2 Oracle | 0/1 | Planned | - |
+| 14. Candidate Comment Semantics | 0/1 | Planned | - |
+| 15. Native Windows Artifact | 0/1 | Planned | - |
+| 16. Cantonese/Jyutping Parity Suite | 0/1 | Planned | - |
 
-## Next Milestone: TypeDuck-Web Browser Integration
+## Completed Milestone: TypeDuck-Web Browser Integration
 
 Phase 6 proved that TypeDuck-Web-style lifecycle expectations can be modeled at
 the RIME ABI boundary. The next milestone turns that validation into a practical
 browser integration path: keep the Rust adapter stable, make the WASM/export
 contract reproducible, add the TypeScript bridge, and prove the flow inside a
 browser-like host before AI-native work depends on frontend plumbing.
+Execution is complete through Phase 10. The milestone ended with a NO-GO
+recommendation for AI-native frontend exposure because browser validation could
+not run without a WASM artifact/tooling path, not because the seam design failed.
 
 ### Seed Work: Yune TypeDuck Adapter
 
@@ -198,9 +209,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: Add TypeScript types and wrapper functions around the `yune_typeduck_*` symbols.
-- [ ] 08-02: Add wrapper-level tests for response parsing/freeing, error/null handling, and key mapping.
-- [ ] 08-03: Document runtime lifecycle and one-active-service constraints for TypeDuck-Web callers.
+- [x] 08-01: Add TypeScript types and wrapper functions around the `yune_typeduck_*` symbols.
+- [x] 08-02: Add wrapper-level tests for response parsing/freeing, error/null handling, and key mapping.
+- [x] 08-03: Document runtime lifecycle and one-active-service constraints for TypeDuck-Web callers.
 
 ### Phase 9: Browser Filesystem And Persistence
 
@@ -233,10 +244,101 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 10-01: Clone TypeDuck-Web, inspect its librime/WASM bridge, and document the replacement seam for Yune.
-- [ ] 10-02: Patch or configure TypeDuck-Web so its input-engine binding calls the Yune TypeScript bridge.
-- [ ] 10-03: Add real TypeDuck-Web browser E2E coverage for composition, candidate actions, deploy/customize, and persistence smoke flows.
-- [ ] 10-04: Write TypeDuck-Web integration findings and the AI-native frontend exposure recommendation.
+- [x] 10-01: Clone TypeDuck-Web, inspect its librime/WASM bridge, and document the replacement seam for Yune.
+- [x] 10-02: Patch or configure TypeDuck-Web so its input-engine binding calls the Yune TypeScript bridge.
+- [x] 10-03: Add real TypeDuck-Web browser E2E coverage for composition, candidate actions, deploy/customize, and persistence smoke flows.
+- [x] 10-04: Write TypeDuck-Web integration findings and the AI-native frontend exposure recommendation.
+
+## Next Milestone: TypeDuck-Windows Native IME Contract
+
+TypeDuck-Windows talks to the engine through the RIME C ABI, so the next milestone
+targets the native Windows/weasel contract directly. This work parks the blocked
+web exposure path and makes Yune consumable as the `rime.dll` backend once the
+graduation contract in `docs/typeduck-windows-backend-requirements.md` is met.
+
+### Phase 11: Windows Test Baseline
+
+**Goal**: Windows test results are trustworthy before feature work lands.
+**Depends on**: Phase 10
+**Requirements**: WIN-TEST-01
+**Success Criteria** (what must be TRUE):
+  1. Signature metadata uses a librime-shaped timestamp on Windows.
+  2. Test-only shared locks recover from poison so one failure does not cascade.
+  3. `cargo test --workspace` is green or remaining failures are documented with precise blockers.
+**Plans**: 1 plan
+
+Plans:
+- [ ] 11-01: Fix the Windows timestamp/test-lock baseline and verify the workspace test gate.
+
+### Phase 12: Fork Config List Append ABI
+
+**Goal**: TypeDuck-Windows deployer list writes work through the `RimeApi` function table.
+**Depends on**: Phase 11
+**Requirements**: WIN-ABI-01
+**Success Criteria** (what must be TRUE):
+  1. `config_list_append_{string,bool,int,double}` exist in `RimeApi` with the fork-compatible field order.
+  2. Appending to a missing key creates a list, and appending to an existing list preserves order and scalar type.
+  3. At least one regression test calls the append API through `rime_get_api()`.
+**Plans**: 1 plan
+
+Plans:
+- [ ] 12-01: Implement and test the fork-only config list append C ABI.
+
+### Phase 13: TypeDuck v1.1.2 Oracle
+
+**Goal**: Comment and Cantonese behavior changes are driven by real fork output, not guesses.
+**Depends on**: Phase 12
+**Requirements**: WIN-ORACLE-01
+**Success Criteria** (what must be TRUE):
+  1. The TypeDuck-HK/librime v1.1.2 binary and pinned schema are captured with exact provenance.
+  2. Golden fixtures cover candidate comments, prompt text, highlighted index, and Cantonese/Jyutping behavior inputs.
+  3. If the binary/schema cannot be obtained locally, the blocker is documented reproducibly.
+**Plans**: 1 plan
+
+Plans:
+- [ ] 13-01: Capture v1.1.2 oracle goldens or record the reproducible blocker.
+
+### Phase 14: Candidate Comment Semantics
+
+**Goal**: `RimeCandidate.comment` content matches the TypeDuck fork where the dictionary panel depends on it.
+**Depends on**: Phase 13
+**Requirements**: WIN-COMMENT-01
+**Success Criteria** (what must be TRUE):
+  1. Multiple reverse-lookup pronunciations use the oracle-confirmed joiner.
+  2. Reverse-code and original comments co-display with the oracle-confirmed separator.
+  3. Schema prompt text matches the oracle where TypeDuck expects it.
+**Plans**: 1 plan
+
+Plans:
+- [ ] 14-01: Implement golden-driven candidate comment and prompt semantics.
+
+### Phase 15: Native Windows Artifact
+
+**Goal**: Yune can be built or packaged as the native artifact consumed by the weasel MSBuild path.
+**Depends on**: Phase 12
+**Requirements**: WIN-BUILD-01
+**Success Criteria** (what must be TRUE):
+  1. `yune-rime-api` produces a native Windows dynamic library and import library, or a precise toolchain blocker is recorded.
+  2. The packaging path documents `rime.dll`, `rime.lib`, and header layout expected by TypeDuck-Windows.
+  3. A smoke check proves `rime_get_api()` exposes the required append slot from the built artifact when the build is available.
+**Plans**: 1 plan
+
+Plans:
+- [ ] 15-01: Produce or document the native Windows `rime.dll`/`.lib`/headers package.
+
+### Phase 16: Cantonese/Jyutping Parity Suite
+
+**Goal**: Fork-only Cantonese/Jyutping behavior is locked by regression coverage.
+**Depends on**: Phase 13
+**Requirements**: WIN-PARITY-01
+**Success Criteria** (what must be TRUE):
+  1. Regression fixtures assert completion, prediction, correction, reverse lookup formatting, schema-menu hiding, and userdb pronunciation behavior.
+  2. Unsupported or unavailable oracle cases are marked explicitly with documented reasons.
+  3. The suite runs deterministically as a focused Rust test target.
+**Plans**: 1 plan
+
+Plans:
+- [ ] 16-01: Add the Cantonese/Jyutping parity regression suite.
 
 ## Future Milestone: AI-Native Input Layer
 

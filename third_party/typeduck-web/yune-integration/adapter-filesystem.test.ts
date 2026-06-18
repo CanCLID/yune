@@ -201,6 +201,27 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     expect(module.calls("yune_typeduck_process_key")).toHaveLength(2);
   });
 
+  it("accepts TypeDuck-Web lowercase space key spelling", async () => {
+    const fs = new FakeTypeDuckFilesystem();
+    const module = new FakeTypeDuckModule();
+    module.processKeyResult = module.response({
+      handled: true,
+      commits: ["你"],
+      context: null,
+      status: null,
+    });
+
+    await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
+
+    await expect(processKey("{space}")).resolves.toMatchObject({
+      committed: "你",
+      isComposing: false,
+      success: true,
+    });
+
+    expect(module.calls("yune_typeduck_process_key")).toEqual([[1, 0x20, 0]]);
+  });
+
   it("forwards upstream setOption calls into the Yune runtime", async () => {
     const fs = new FakeTypeDuckFilesystem();
     const module = new FakeTypeDuckModule();

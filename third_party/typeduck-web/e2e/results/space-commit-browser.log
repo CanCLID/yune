@@ -1,0 +1,33 @@
+# Browser evidence: TypeDuck Space commit
+
+Date: 2026-06-18
+URL: http://127.0.0.1:5177/web/?debug&realAssets=1&spaceFixClean=1781806575506
+
+Flow:
+1. Reloaded the TypeDuck-Web page with real assets enabled.
+2. Focused the textarea.
+3. Pressed `n`, `g`, `o`, then Space.
+
+Observed console sequence:
+
+```text
+post {"name":"processKey","args":["{n}"]}
+receive {"type":"success","result":{"isComposing":true,"inputBuffer":{"before":"n"},"candidates":[{"text":"我","comment":"\\fngo5"},{"text":"你","comment":"\\fnei5"}...],"success":true}}
+post {"name":"processKey","args":["{g}"]}
+receive {"type":"success","result":{"isComposing":true,"inputBuffer":{"before":"ng"},"candidates":[{"text":"我","comment":"\\fngo5"},{"text":"外","comment":"\\fngoi6"}...],"success":true}}
+post {"name":"processKey","args":["{o}"]}
+receive {"type":"success","result":{"isComposing":true,"inputBuffer":{"before":"ngo"},"candidates":[{"text":"我","comment":"\\fngo5"},{"text":"外","comment":"\\fngoi6"},{"text":"我們","comment":"\\fngo5mun4"}...],"success":true}}
+post {"name":"processKey","args":["{space}"]}
+receive {"type":"success","result":{"isComposing":false,"success":true,"committed":"我"}}
+```
+
+Observed DOM state after Space:
+
+```json
+{
+  "value": "我",
+  "alerts": []
+}
+```
+
+Result: PASS. Lowercase TypeDuck-Web `{space}` no longer surfaces the reload/error toast and commits the highlighted real candidate.

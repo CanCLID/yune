@@ -208,6 +208,7 @@ function parseKeySequence(input: string): TypeDuckKeyboardEventLike {
     if (key === "Page_Up") key = "PageUp";
     if (key === "Page_Down") key = "PageDown";
     if (key === "Return") key = "Enter";
+    if (key === "space") key = " ";
     if (key === "Esc") key = "Escape";
     if (key === "Prior") key = "PageUp";
     if (key === "Next") key = "PageDown";

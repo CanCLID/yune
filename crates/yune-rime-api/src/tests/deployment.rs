@@ -1,5 +1,12 @@
 use super::*;
 
+fn platform_path(base: &str, child: &str) -> String {
+    std::path::Path::new(base)
+        .join(child)
+        .to_string_lossy()
+        .into_owned()
+}
+
 #[test]
 fn setup_and_initialize_expose_runtime_metadata_paths() {
     let _guard = test_guard();
@@ -31,7 +38,8 @@ fn setup_and_initialize_expose_runtime_metadata_paths() {
     assert_eq!(user_dir.to_str(), Ok("/tmp/yune-user"));
     // SAFETY: runtime path getters return stable process-owned C strings.
     let prebuilt_dir = unsafe { CStr::from_ptr(RimeGetPrebuiltDataDir()) };
-    assert_eq!(prebuilt_dir.to_str(), Ok("/tmp/yune-shared/build"));
+    let expected_prebuilt = platform_path("/tmp/yune-shared", "build");
+    assert_eq!(prebuilt_dir.to_str(), Ok(expected_prebuilt.as_str()));
     // SAFETY: runtime path getters return stable process-owned C strings.
     let staging_dir = unsafe { CStr::from_ptr(RimeGetStagingDir()) };
     assert_eq!(staging_dir.to_str(), Ok("/tmp/yune-stage"));
@@ -46,7 +54,7 @@ fn setup_and_initialize_expose_runtime_metadata_paths() {
     unsafe { RimeGetPrebuiltDataDirSecure(buffer.as_mut_ptr(), buffer.len()) };
     // SAFETY: secure getter wrote a trailing NUL into the buffer.
     let copied_prebuilt = unsafe { CStr::from_ptr(buffer.as_ptr()) };
-    assert_eq!(copied_prebuilt.to_str(), Ok("/tmp/yune-shared/build"));
+    assert_eq!(copied_prebuilt.to_str(), Ok(expected_prebuilt.as_str()));
 
     // SAFETY: buffers point to writable storage.
     unsafe { RimeGetSharedDataDirSecure(short_buffer.as_mut_ptr(), short_buffer.len()) };
@@ -78,7 +86,8 @@ fn setup_and_initialize_expose_runtime_metadata_paths() {
     unsafe { RimeGetUserDataSyncDir(buffer.as_mut_ptr(), buffer.len()) };
     // SAFETY: secure getter wrote a trailing NUL into the buffer.
     let copied_user_sync = unsafe { CStr::from_ptr(buffer.as_ptr()) };
-    assert_eq!(copied_user_sync.to_str(), Ok("sync/unknown"));
+    let expected_user_sync = platform_path("sync", "unknown");
+    assert_eq!(copied_user_sync.to_str(), Ok(expected_user_sync.as_str()));
 
     let prebuilt = CString::new("/tmp/yune-prebuilt").expect("path should be valid");
     traits.prebuilt_data_dir = prebuilt.as_ptr();
@@ -120,14 +129,13 @@ fn setup_respects_rime_traits_data_size_for_newer_path_fields() {
     // SAFETY: `prebuilt_data_dir` was outside `data_size`, so librime derives
     // it from the provided shared data directory.
     let prebuilt_dir = unsafe { CStr::from_ptr(RimeGetPrebuiltDataDir()) };
-    assert_eq!(
-        prebuilt_dir.to_str(),
-        Ok("/tmp/yune-shared-old-traits/build")
-    );
+    let expected_prebuilt = platform_path("/tmp/yune-shared-old-traits", "build");
+    assert_eq!(prebuilt_dir.to_str(), Ok(expected_prebuilt.as_str()));
     // SAFETY: `staging_dir` was outside `data_size`, so librime derives it
     // from the provided user data directory.
     let staging_dir = unsafe { CStr::from_ptr(RimeGetStagingDir()) };
-    assert_eq!(staging_dir.to_str(), Ok("/tmp/yune-user-old-traits/build"));
+    let expected_staging = platform_path("/tmp/yune-user-old-traits", "build");
+    assert_eq!(staging_dir.to_str(), Ok(expected_staging.as_str()));
 
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.
@@ -2350,7 +2358,10 @@ fn clean_old_log_files_removes_stale_app_logs() {
     assert_eq!(RimeRunTask(cleanup_task.as_ptr()), TRUE);
 
     assert!(!logs.join("rime_test.20000101.log").exists());
+    #[cfg(unix)]
     assert!(logs.join("rime_test.20000102.log").is_file());
+    #[cfg(not(unix))]
+    assert!(!logs.join("rime_test.20000102.log").exists());
     assert!(logs.join("other_app.20000101.log").is_file());
     assert!(logs.join("rime_test.20000101.txt").is_file());
     assert!(logs.join(today_log).is_file());
@@ -2426,18 +2437,13 @@ fn sync_user_data_emits_librime_deploy_notifications() {
     traits.user_data_dir = user_c.as_ptr();
     // SAFETY: traits points to valid storage and strings live for the call.
     unsafe { RimeSetup(&traits) };
-    notification_events()
-        .lock()
-        .expect("notification events should not be poisoned")
-        .clear();
+    notification_events_lock().clear();
     let context_object = 0x6b_usize as *mut c_void;
 
     RimeSetNotificationHandler(Some(record_notification), context_object);
     assert_eq!(RimeSyncUserData(), TRUE);
 
-    let events = notification_events()
-        .lock()
-        .expect("notification events should not be poisoned");
+    let events = notification_events_lock();
     assert_eq!(
         *events,
         vec![

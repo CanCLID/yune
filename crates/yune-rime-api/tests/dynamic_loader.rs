@@ -149,5 +149,8 @@ fn dynamic_loader_harness_loads_cargo_cdylib_and_api_table() {
 
     let trace = frontend_hosts::native::run_native_host_lifecycle(api)
         .unwrap_or_else(|blocker| panic!("native host validation blocker: {blocker:?}"));
-    assert_eq!(trace.to_json(), frontend_hosts::BASELINE_TRACE_FIXTURE);
+    assert_eq!(
+        trace.to_json(),
+        frontend_hosts::BASELINE_TRACE_FIXTURE.replace("\r\n", "\n")
+    );
 }

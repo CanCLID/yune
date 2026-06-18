@@ -152,7 +152,7 @@ then the TypeDuck-Windows contract continues with Phases 11 -> 16.
 | 8. TypeScript Bridge And Runtime Package | 3/3 | Complete | 2026-05-05 |
 | 9. Browser Filesystem And Persistence | 3/3 | Complete | 2026-05-05 |
 | 10. TypeDuck-Web App Integration And E2E | 4/4 | Complete - NO-GO recommendation | 2026-05-05 |
-| 11. Windows Test Baseline | 0/1 | Planned | - |
+| 11. Windows Test Baseline | 1/1 | Complete | 2026-06-18 |
 | 12. Fork Config List Append ABI | 0/1 | Planned | - |
 | 13. TypeDuck v1.1.2 Oracle | 0/1 | Planned | - |
 | 14. Candidate Comment Semantics | 0/1 | Planned | - |
@@ -268,7 +268,7 @@ graduation contract in `docs/typeduck-windows-backend-requirements.md` is met.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 11-01: Fix the Windows timestamp/test-lock baseline and verify the workspace test gate.
+- [x] 11-01: Fix the Windows timestamp/test-lock baseline and verify the workspace test gate.
 
 ### Phase 12: Fork Config List Append ABI
 

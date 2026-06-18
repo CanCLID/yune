@@ -441,10 +441,10 @@ change), once/if the web path is revived.
 
 ## Summary checklist
 
-- [ ] **Item 1** — Windows test baseline green (`librime_signature_modified_time` shape + poison-tolerant lock)
+- [x] **Item 1** — Windows test baseline green (`librime_signature_modified_time` shape + poison-tolerant lock)
 - [ ] **Item 2** — `config_list_append_{string,bool,int,double}` on struct + table + impl + tests *(Contract #1)*
 - [ ] **Item 3** — v1.1.2 goldens captured (or reproducible blocker) *(prereq)*
 - [ ] **Item 4** — comment semantics: `"; "` join, reverse-code co-display, schema-in-prompt, golden-tested *(Contract #2)*
 - [ ] **Item 5** — native `rime.dll`/`.lib`/headers build documented + produced *(Contract #4)*
 - [ ] **Item 6** — Cantonese/Jyutping parity suite green *(Contract #3)*
-- [ ] **Item 0** — untracked files committed, EOL policy recorded, planning state reconciled, Windows milestone tracked
+- [x] **Item 0** — untracked files committed, EOL policy recorded, planning state reconciled, Windows milestone tracked

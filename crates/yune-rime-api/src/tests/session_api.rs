@@ -5,10 +5,7 @@ fn finalize_clears_sessions_but_preserves_notification_handler() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     RimeSetNotificationHandler(None, std::ptr::null_mut());
-    notification_events()
-        .lock()
-        .expect("notification events should not be poisoned")
-        .clear();
+    notification_events_lock().clear();
     let context_object = 0x7c_usize as *mut c_void;
     let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
 
@@ -27,9 +24,7 @@ fn finalize_clears_sessions_but_preserves_notification_handler() {
     // SAFETY: option is a valid NUL-terminated C string.
     unsafe { RimeSetOption(new_session_id, ascii_mode.as_ptr(), TRUE) };
 
-    let events = notification_events()
-        .lock()
-        .expect("notification events should not be poisoned");
+    let events = notification_events_lock();
     assert_eq!(
         *events,
         vec![NotificationEvent {

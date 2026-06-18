@@ -107,7 +107,7 @@ Requirements for the next implementation milestone. These requirements target th
 TypeDuck-Windows/weasel path, which consumes Yune through the RIME C ABI rather than the web
 TypeScript bridge.
 
-- [ ] **WIN-TEST-01**: Windows `cargo test --workspace` has a trustworthy green baseline, including portable signature timestamp shape and test-only poison-lock recovery.
+- [x] **WIN-TEST-01**: Windows `cargo test --workspace` has a trustworthy green baseline, including portable signature timestamp shape and test-only poison-lock recovery.
 - [ ] **WIN-ABI-01**: `config_list_append_{string,bool,int,double}` is implemented on the RIME C ABI function table with tests that call through `rime_get_api()`.
 - [ ] **WIN-ORACLE-01**: The TypeDuck-HK/librime v1.1.2 binary and pinned schema are captured as a reproducible oracle, or a precise blocker is documented.
 - [ ] **WIN-COMMENT-01**: Candidate comment semantics match the v1.1.2 oracle for reverse lookup joins, reverse-code/original-comment co-display, and schema prompt shaping.
@@ -202,7 +202,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPEDUCK-E2E-02 | Phase 10 | Complete |
 | TYPEDUCK-E2E-03 | Phase 10 | Blocked |
 | TYPEDUCK-E2E-04 | Phase 10 | Complete |
-| WIN-TEST-01 | Phase 11 | Pending |
+| WIN-TEST-01 | Phase 11 | Complete |
 | WIN-ABI-01 | Phase 12 | Pending |
 | WIN-ORACLE-01 | Phase 13 | Pending |
 | WIN-COMMENT-01 | Phase 14 | Pending |

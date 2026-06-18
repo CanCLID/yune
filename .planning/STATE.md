@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: typeduck-windows-native-contract
 milestone_name: TypeDuck-Windows Native IME Contract
 status: execution
-stopped_at: Ready to execute 11-01 Windows test baseline
+stopped_at: Completed 11-01; ready to execute 12-01 Fork Config List Append ABI
 last_updated: "2026-06-18T00:00:00.000Z"
 last_activity: 2026-06-18
 progress:
   total_phases: 16
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 37
-  completed_plans: 32
-  percent: 86
+  completed_plans: 33
+  percent: 89
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-28)
 
 **Core value:** Existing RIME schemas and frontends should behave predictably through Yune's Rust implementation, with every compatibility difference measurable against librime before it is accepted.
-**Current focus:** Phase 11 — Windows test baseline for the TypeDuck-Windows native IME contract
+**Current focus:** Phase 12 — fork config list append ABI for TypeDuck-Windows
 
 ## Current Position
 
-Phase: 11
-Plan: 11-01 — Windows test baseline
-Next phase: 12 — Fork Config List Append ABI
+Phase: 12
+Plan: 12-01 — Fork Config List Append ABI
+Next phase: 13 — TypeDuck v1.1.2 Oracle
 Status: Ready to execute
 Last activity: 2026-06-18
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -70,7 +70,7 @@ Progress: [█████████░] 86%
 | Phase 07-wasm-build-and-export-contract P03 | 4min | 3 tasks | 6 files |
 | Phase 09-browser-filesystem-and-persistence P03 | 5min | 3 tasks | 3 files |
 | Phase 10 P04 | 8m 47s | 3 tasks | 2 files |
-| Phase 11 P01 | - | pending | pending |
+| Phase 11 P01 | - | completed | 8 files |
 
 ## Accumulated Context
 
@@ -130,7 +130,6 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Phase 11 — Windows Test Baseline — fix `librime_signature_modified_time` shape and test-only poison-lock recovery first.
 - Phase 12 — Fork Config List Append ABI — implement `config_list_append_{string,bool,int,double}` through `RimeApi`.
 - Acquire TypeDuck-HK/librime v1.1.2 plus the pinned TypeDuck schema before comment semantics or Cantonese parity changes.
 
@@ -156,10 +155,10 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-06-18T00:00:00.000Z
-Stopped at: Ready to execute 11-01 Windows test baseline
+Stopped at: Completed 11-01; ready to execute 12-01 Fork Config List Append ABI
 Resume file: None
 
-**Completed Phase:** 10 (TypeDuck-Web App Integration And E2E) — 4 plans — 2026-05-05 — ended with NO-GO recommendation
-**Next Phase:** 11 (Windows Test Baseline) — 1 plan — ready to execute
+**Completed Phase:** 11 (Windows Test Baseline) — 1 plan — 2026-06-18
+**Next Phase:** 12 (Fork Config List Append ABI) — 1 plan — ready to execute
 
 **Planned Milestone:** TypeDuck-Windows Native IME Contract — 6 phases — tracked in ROADMAP.md and REQUIREMENTS.md

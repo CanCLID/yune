@@ -1354,10 +1354,7 @@ fn notification_handler_receives_runtime_events_and_can_be_cleared() {
     traits.user_data_dir = user_c.as_ptr();
     // SAFETY: traits points to valid storage and strings live for the call.
     unsafe { RimeSetup(&traits) };
-    notification_events()
-        .lock()
-        .expect("notification events should not be poisoned")
-        .clear();
+    notification_events_lock().clear();
     let session_id = RimeCreateSession();
     let ascii_mode = CString::new("ascii_mode").expect("option name should be valid");
     let property = CString::new("client_app").expect("property name should be valid");
@@ -1377,9 +1374,7 @@ fn notification_handler_receives_runtime_events_and_can_be_cleared() {
     assert_eq!(RimeStartMaintenance(TRUE), TRUE);
     assert_eq!(RimeDeployWorkspace(), TRUE);
 
-    let events = notification_events()
-        .lock()
-        .expect("notification events should not be poisoned");
+    let events = notification_events_lock();
     assert_eq!(
         *events,
         vec![
@@ -1426,13 +1421,7 @@ fn notification_handler_receives_runtime_events_and_can_be_cleared() {
     RimeSetNotificationHandler(None, std::ptr::null_mut());
     // SAFETY: option name is a valid NUL-terminated C string.
     unsafe { RimeSetOption(session_id, ascii_mode.as_ptr(), TRUE) };
-    assert_eq!(
-        notification_events()
-            .lock()
-            .expect("notification events should not be poisoned")
-            .len(),
-        6
-    );
+    assert_eq!(notification_events_lock().len(), 6);
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();

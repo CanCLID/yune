@@ -3,7 +3,7 @@ use std::ffi::{c_void, CStr, CString};
 use std::fs;
 use std::os::raw::{c_char, c_int};
 use std::path::PathBuf;
-use std::sync::{Mutex, MutexGuard, OnceLock};
+use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_yaml::Value;
@@ -100,7 +100,7 @@ fn test_guard() -> MutexGuard<'static, ()> {
     let guard = TEST_LOCK
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .expect("test lock should not be poisoned");
+        .unwrap_or_else(PoisonError::into_inner);
     let traits = empty_traits();
     // SAFETY: empty traits points to valid storage for the duration of the call.
     unsafe { RimeInitialize(&traits) };
@@ -110,6 +110,12 @@ fn test_guard() -> MutexGuard<'static, ()> {
 fn notification_events() -> &'static Mutex<Vec<NotificationEvent>> {
     static NOTIFICATION_EVENTS: OnceLock<Mutex<Vec<NotificationEvent>>> = OnceLock::new();
     NOTIFICATION_EVENTS.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+fn notification_events_lock() -> MutexGuard<'static, Vec<NotificationEvent>> {
+    notification_events()
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
 }
 
 fn current_highlighted(session_id: super::RimeSessionId) -> usize {
@@ -139,15 +145,12 @@ extern "C" fn record_notification(
     let message_value = unsafe { CStr::from_ptr(message_value) }
         .to_string_lossy()
         .into_owned();
-    notification_events()
-        .lock()
-        .expect("notification events should not be poisoned")
-        .push(NotificationEvent {
-            context_object: context_object as usize,
-            session_id,
-            message_type,
-            message_value,
-        });
+    notification_events_lock().push(NotificationEvent {
+        context_object: context_object as usize,
+        session_id,
+        message_type,
+        message_value,
+    });
 }
 
 extern "C" fn sample_module_initialize() {}
@@ -329,6 +332,11 @@ fn assert_librime_ctime_shape(value: &str) {
     assert_eq!(parts[3].as_bytes()[2], b':');
     assert_eq!(parts[3].as_bytes()[5], b':');
     assert!(parts[4].parse::<u16>().is_ok());
+}
+
+#[test]
+fn librime_signature_modified_time_uses_ctime_shape() {
+    assert_librime_ctime_shape(&super::librime_signature_modified_time());
 }
 
 fn unique_temp_dir(name: &str) -> std::path::PathBuf {

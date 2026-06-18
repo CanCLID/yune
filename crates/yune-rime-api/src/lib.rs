@@ -1847,12 +1847,57 @@ pub(crate) fn librime_signature_modified_time() -> String {
 
 #[cfg(any(not(unix), target_os = "emscripten"))]
 pub(crate) fn librime_signature_modified_time() -> String {
-    std::time::SystemTime::now()
+    let epoch_seconds = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or_else(
-            |_| "0".to_owned(),
-            |duration| duration.as_secs().to_string(),
-        )
+        .map_or(0, |duration| {
+            i64::try_from(duration.as_secs()).unwrap_or(i64::MAX)
+        });
+    format_ctime_utc(epoch_seconds)
+}
+
+#[cfg(any(not(unix), target_os = "emscripten"))]
+fn format_ctime_utc(epoch_seconds: i64) -> String {
+    let days_since_epoch = epoch_seconds.div_euclid(86_400);
+    let seconds_of_day = epoch_seconds.rem_euclid(86_400);
+    let hours = seconds_of_day / 3_600;
+    let minutes = (seconds_of_day % 3_600) / 60;
+    let seconds = seconds_of_day % 60;
+    let weekday_index = usize::try_from((days_since_epoch + 4).rem_euclid(7))
+        .expect("weekday index should be in range");
+    let (year, month, day) = civil_from_days(days_since_epoch);
+    let month_index = usize::try_from(month - 1).expect("month index should be in range");
+    const WEEKDAYS: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    format!(
+        "{} {} {} {:02}:{:02}:{:02} {}",
+        WEEKDAYS[weekday_index], MONTHS[month_index], day, hours, minutes, seconds, year
+    )
+}
+
+#[cfg(any(not(unix), target_os = "emscripten"))]
+fn civil_from_days(days_since_epoch: i64) -> (i64, i64, i64) {
+    let shifted_days = days_since_epoch + 719_468;
+    let era = (if shifted_days >= 0 {
+        shifted_days
+    } else {
+        shifted_days - 146_096
+    }) / 146_097;
+    let day_of_era = shifted_days - era * 146_097;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_prime = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+    let month = if month_prime < 10 {
+        month_prime + 3
+    } else {
+        month_prime - 9
+    };
+    let year = if month <= 2 { year + 1 } else { year };
+    (year, month, day)
 }
 
 #[cfg(test)]

@@ -103,10 +103,7 @@ fn lifecycle_safety_schema_switching_and_deployment_emit_ordered_notifications()
     traits.user_data_dir = user_c.as_ptr();
     unsafe { RimeSetup(&traits) };
 
-    notification_events()
-        .lock()
-        .expect("notification events should not be poisoned")
-        .clear();
+    notification_events_lock().clear();
     RimeSetNotificationHandler(Some(record_notification), 0x7b_usize as *mut c_void);
 
     let session_id = RimeCreateSession();
@@ -127,9 +124,7 @@ fn lifecycle_safety_schema_switching_and_deployment_emit_ordered_notifications()
         TRUE
     );
 
-    let events = notification_events()
-        .lock()
-        .expect("notification events should not be poisoned");
+    let events = notification_events_lock();
     assert_eq!(
         *events,
         vec![
@@ -184,10 +179,7 @@ fn lifecycle_safety_schema_switching_and_deployment_emit_ordered_notifications()
 fn lifecycle_safety_notification_handler_replacement_and_clearing_are_deterministic() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
-    notification_events()
-        .lock()
-        .expect("notification events should not be poisoned")
-        .clear();
+    notification_events_lock().clear();
 
     let session_id = RimeCreateSession();
     let ascii_mode = CString::new("ascii_mode").expect("option name is valid");
@@ -199,9 +191,7 @@ fn lifecycle_safety_notification_handler_replacement_and_clearing_are_determinis
     RimeSetNotificationHandler(None, ptr::null_mut());
     unsafe { RimeSetOption(session_id, ascii_mode.as_ptr(), TRUE) };
 
-    let events = notification_events()
-        .lock()
-        .expect("notification events should not be poisoned");
+    let events = notification_events_lock();
     assert_eq!(
         *events,
         vec![

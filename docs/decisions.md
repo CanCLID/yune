@@ -580,6 +580,15 @@ The store exports/imports a stable text snapshot for future hosts and exposes
 `.ai-memory` / `.ai-memory.txt` resources and reject path-like or `*.userdb`
 logical ids. M9/M10 frontends still do not expose AI.
 
+**D-M11-5 — S5 proves local AI through the direct CLI only.**
+`LocalModelProvider` is a deterministic, local `AiCandidateProvider` with
+rule-backed/contextual completions plus optional `MemoryStore` suggestions. It
+declares `AiProviderKind::Local`, runs through the existing `AiWorker`, returns
+input-keyed candidates with fixed-point confidence, and obeys deterministic
+zero-budget fallback. The direct CLI accepts `--ai-provider local` and records
+the same `ai_decision` field used by the mock provider; the ABI-backed
+`frontend` command, TypeDuck-Web, and Windows surfaces remain AI-free.
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 — Existing `docs/analysis.md`, `docs/roadmap.md`,
@@ -612,4 +621,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-18 — added the M11 S4 memory-store decision (D-M11-4) and updated shared comment-oracle/web-first status.*
+*Last updated: 2026-06-18 — added the M11 S5 local-provider decision (D-M11-5) and updated shared comment-oracle/web-first status.*

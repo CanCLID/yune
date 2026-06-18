@@ -15,10 +15,11 @@
 > any browser/Windows path. That is why it runs alongside M9/M10 without file
 > conflicts. Stage by path on the shared checkout.
 >
-> **Post-S2 note.** This plan records the completed S1 slice. S1 intentionally
+> **Post-S5 note.** This plan records the completed S1 slice. S1 intentionally
 > kept `CandidateSource::Ai` as a unit variant; S2 later promoted it to
 > `{ provider, confidence }` using fixed-point `AiConfidence` once the merge
-> policy consumed confidence.
+> policy consumed confidence. S2-S5 are now covered by
+> [`ai-native-design.md`](./ai-native-design.md).
 
 ## Goal
 A direct core CLI run can enable a **mock AI provider** contributing a **source-labeled**,
@@ -65,8 +66,8 @@ Owned tests in `yune-core` + `yune-cli`:
 - **userdb isolation:** after an `Ai` commit, `userdb().entries()` unchanged + `take_pending_userdb_learning()` is `None`; after a classic commit, learning is staged as before.
 - Deterministic (mock is pure; assertions are value-based, not timing-based).
 
-## Out of scope for S1 (later slices)
-Async background worker + input-keyed results + time budget and the `CandidateSource::Ai` struct variant (**S2**); `ContextProvider` + privacy classifier (**S3**); persisted `MemoryStore` (**S4**); local-model/remote backends (**S5**).
+## Out of scope for S1 (completed in later slices)
+Async background worker + input-keyed results + time budget and the `CandidateSource::Ai` struct variant (**S2**); `ContextProvider` + privacy classifier (**S3**); persisted `MemoryStore` (**S4**); local-model backend (**S5**). Optional remote backends remain later explicit work.
 
 ## Quality gate
 `cargo fmt` · `cargo clippy --workspace --all-targets -- -D warnings` · focused `yune-core` + `yune-cli` tests · `cargo test --workspace`. Per CONVENTIONS: own each slice (new behavior in `crates/yune-core/src/ai/` + matching tests; keep `lib.rs`/`main.rs` facades). Do not touch `yune-rime-api`, M9 TypeDuck-Web files, or Windows packaging files in S1; stage by path.

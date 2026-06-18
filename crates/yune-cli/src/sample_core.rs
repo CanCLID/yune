@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use yune_core::{
-    parse_key_sequence, AiDecision, AiWorker, Engine, MockAiProvider, PunctuationTranslator,
-    StaticTableTranslator,
+    parse_key_sequence, AiDecision, AiWorker, Engine, LocalModelProvider, MockAiProvider,
+    PunctuationTranslator, StaticTableTranslator,
 };
 
 use crate::args::AiProviderMode;
@@ -39,8 +39,14 @@ pub(crate) fn run_sequence_with_ai_provider(
         StaticTableTranslator::parse_rime_dict_yaml(SAMPLE_DICT)
             .map_err(|error| format!("invalid sample dictionary: {error}"))?,
     );
-    let worker = (ai_provider == AiProviderMode::Mock)
-        .then(|| AiWorker::spawn(MockAiProvider, AI_PROVIDER_BUDGET));
+    let worker = match ai_provider {
+        AiProviderMode::None => None,
+        AiProviderMode::Mock => Some(AiWorker::spawn(MockAiProvider, AI_PROVIDER_BUDGET)),
+        AiProviderMode::Local => Some(AiWorker::spawn(
+            LocalModelProvider::sample(),
+            AI_PROVIDER_BUDGET,
+        )),
+    };
     let mut ai_decision = worker.as_ref().map(|_| AiDecision::Pending);
     let mut commits = Vec::new();
     for key_event in
@@ -111,6 +117,28 @@ mod tests {
         assert_eq!(candidates[0].source.as_str(), "table");
         assert_eq!(ai_candidate.text, "你好呀");
         assert_eq!(ai_candidate.comment, "ai:mock 0.62");
+        assert_eq!(ai_candidate.source.as_str(), "ai");
+        assert!(output.to_json().contains("\"ai_decision\": \"ready\""));
+    }
+
+    #[test]
+    fn local_provider_appends_source_labeled_ai_candidate() {
+        let output = run_sequence_with_ai_provider("nihao", AiProviderMode::Local)
+            .expect("sample sequence should run");
+        let candidates = &output.snapshot.context.candidates;
+        let ai_candidate = candidates
+            .iter()
+            .find(|candidate| candidate.source.is_ai())
+            .expect("local AI candidate should be appended");
+
+        assert_eq!(
+            output.ai_decision.map(|decision| decision.as_str()),
+            Some("ready")
+        );
+        assert_eq!(candidates[0].text, "\u{4f60}\u{597d}");
+        assert_eq!(candidates[0].source.as_str(), "table");
+        assert_eq!(ai_candidate.text, "\u{4f60}\u{597d}\u{5566}");
+        assert_eq!(ai_candidate.comment, "ai:local-model 0.82");
         assert_eq!(ai_candidate.source.as_str(), "ai");
         assert!(output.to_json().contains("\"ai_decision\": \"ready\""));
     }

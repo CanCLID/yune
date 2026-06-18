@@ -158,12 +158,12 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - [x] **AI-01**: Engine exposes an `AiCandidateProvider` interface and staged,
   input-keyed AI results without replacing classic translators. S1 implements
   this for the direct CLI mock path.
-- [ ] **AI-02**: Candidate ranking supports local model and rule-backed implementations with deterministic timeout/fallback behavior. S2 covers the background worker, input-keyed fallback, fixed-point confidence metadata, and confidence-ordered AI merge; local model and rule-backed provider implementations remain pending.
-- [ ] **AI-03**: Contextual phrase and sentence completion can produce source-labeled AI candidates without allowing AI candidates to auto-commit by default. S1 covers source labeling and the no-default-auto-commit gate with a mock provider; contextual/local completion remains pending.
+- [x] **AI-02**: Candidate ranking supports local model and rule-backed implementations with deterministic timeout/fallback behavior. S2 covers the background worker, input-keyed fallback, fixed-point confidence metadata, and confidence-ordered AI merge; S5 adds the local rule-backed provider.
+- [x] **AI-03**: Contextual phrase and sentence completion can produce source-labeled AI candidates without allowing AI candidates to auto-commit by default. S1 covers source labeling and the no-default-auto-commit gate; S5 adds contextual local-model completions.
 - [x] **AI-04**: Context providers define what app, field, preceding text, cursor, schema, and candidate-list data may be shared with AI providers. S3 implements `AiContext` plus `EngineAiContextProvider` snapshots.
 - [x] **AI-05**: Memory store records user vocabulary, phrase preferences, and domain terms through explicit, inspectable, clearable policy. S4 implements `MemoryStore`, clear/disable controls, snapshot import/export, and `.ai-memory` namespace helpers.
 - [x] **AI-06**: Privacy policy disables learning and remote calls for sensitive contexts and keeps classic input fully functional when AI is disabled. S3 blocks remote calls; S4 applies the same privacy gate to AI memory writes.
-- [ ] **AI-07**: CLI frontend surrogate can demonstrate AI candidate/ranking behavior with mock and local providers before native frontends expose it. S1 covers `yune-cli run --ai-provider mock`; local-provider demonstration remains pending.
+- [x] **AI-07**: CLI frontend surrogate can demonstrate AI candidate/ranking behavior with mock and local providers before native frontends expose it. S1 covers `yune-cli run --ai-provider mock`; S5 adds `--ai-provider local`.
 
 ## Out of Scope
 
@@ -236,12 +236,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-BUILD-01 | Phase 15 | Complete as scripted; smoke verification pending on MSVC host |
 | WIN-PARITY-01 | Phase 16 | Partial - ignored oracle cases still blocked |
 | AI-01 | M11 S1 | Complete - staged provider interface in `yune-core` |
-| AI-02 | M11 S2+ | Partial - worker/fallback/confidence merge covered; local model/rule-backed providers pending |
-| AI-03 | M11 S1+ | Partial - source labels and no-default-auto-commit covered; contextual/local completion pending |
+| AI-02 | M11 S2/S5 | Complete - worker/fallback/confidence merge plus local rule-backed provider |
+| AI-03 | M11 S1/S5 | Complete - source-labeled contextual/local completions with no default AI auto-commit |
 | AI-04 | M11 S3 | Complete - context snapshot provider covers app, field, preceding text, cursor, schema, and candidate count |
 | AI-05 | M11 S4 | Complete - AI memory store records explicit AI selections, is inspectable/clearable/disable-able, and uses `.ai-memory` namespace helpers |
 | AI-06 | M11 S3/S4 | Complete - default-sensitive privacy blocks remote calls and suppresses AI memory writes while classic input remains available |
-| AI-07 | M11 S1+ | Partial - direct CLI mock provider covered; local provider pending |
+| AI-07 | M11 S1/S5 | Complete - direct CLI demonstrates `--ai-provider mock` and `--ai-provider local` |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -253,4 +253,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-18 — M11 S1-S4 direct CLI/core mock/provider, worker/confidence, context/privacy, and memory slices complete; M9 TypeDuck-Web validation complete with GO WITH CONDITIONS; TypeDuck-Windows ready to resume*
+*Last updated: 2026-06-18 — M11 S1-S5 direct CLI/core AI-native layer complete; M9 TypeDuck-Web validation complete with GO WITH CONDITIONS; TypeDuck-Windows ready to resume*

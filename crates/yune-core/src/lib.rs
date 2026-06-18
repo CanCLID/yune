@@ -17,8 +17,9 @@ pub use ai::{
     memory_store_file_name, memory_store_snapshot_file_name, validate_memory_store_id,
     AiCandidateProvider, AiContextProvider, AiContextSnapshot, AiDecision, AiMemoryEntry,
     AiMemoryRecordResult, AiMemorySkipReason, AiMemorySnapshotError, AiOffReason, AiPrivacyPolicy,
-    AiProviderKind, AiResult, AiWorker, EngineAiContextProvider, MemoryStore, MockAiProvider,
-    StagedAiCandidates, MEMORY_STORE_FILE_SUFFIX, MEMORY_STORE_SNAPSHOT_SUFFIX,
+    AiProviderKind, AiResult, AiWorker, EngineAiContextProvider, LocalModelProvider,
+    LocalModelRule, MemoryStore, MockAiProvider, StagedAiCandidates, LOCAL_MODEL_PROVIDER_NAME,
+    MEMORY_STORE_FILE_SUFFIX, MEMORY_STORE_SNAPSHOT_SUFFIX,
 };
 use comment_format::CommentFormat;
 pub use dictionary::{

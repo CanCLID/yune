@@ -1,3 +1,4 @@
+mod local_model;
 mod memory;
 
 use std::{
@@ -8,6 +9,7 @@ use std::{
 
 use crate::{AiConfidence, Candidate, CandidateSource, Context, PrivacyClass, Status};
 
+pub use local_model::{LocalModelProvider, LocalModelRule, LOCAL_MODEL_PROVIDER_NAME};
 pub use memory::{
     memory_store_file_name, memory_store_snapshot_file_name, validate_memory_store_id,
     AiMemoryEntry, AiMemoryRecordResult, AiMemorySkipReason, AiMemorySnapshotError, MemoryStore,

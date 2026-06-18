@@ -43,6 +43,7 @@ Owned module `crates/yune-core/src/ai/`. `trait AiCandidateProvider { fn name(&s
 Provider execution is **host/orchestrator-owned**, not engine-refresh-owned:
 - **S1:** the direct CLI `run` path called the pure `MockAiProvider` outside the engine hot path and staged the returned `Ready { for_input, candidates }` through `Engine::stage_ai_result`.
 - **S2:** the direct CLI now uses `AiWorker` to run the provider on a background thread; the key path only polls ready results and submits snapshots.
+- **S5:** the same worker path can run `LocalModelProvider`, a deterministic local provider with rule-backed/contextual completions and optional `MemoryStore`-backed suggestions.
 
 The engine stores staged results, not provider trait objects. **Off unless a result is staged** → AI-off path byte-identical to today.
 - **Source label is structured after S2.** `CandidateSource::Ai { provider, confidence }` carries a provider string plus fixed-point `AiConfidence`, avoiding the `f32`/`Eq` trap while giving the merge policy metadata to consume. The CLI still serializes `source: "ai"` and keeps the human-readable label in `Candidate.comment`.
@@ -78,17 +79,17 @@ which produce `.ai-memory` / `.ai-memory.txt` names and reject logical ids that
 look like `*.userdb` resources.
 
 ### 4.5 Provider backends
-`mock` (deterministic; tests + CLI demos) -> `local-model` (on-device) -> optional `remote`. Backend-agnostic trait; baseline currently ships mock; local-model is S5.
+`mock` (deterministic; tests + CLI demos) -> `local-model` (on-device) -> optional `remote`. Backend-agnostic trait; baseline now ships mock plus `LocalModelProvider`. Remote remains optional/later.
 
 ## 5. Observability & CLI playground (AI-07)
-CLI flags on the direct core runner enable a mock provider per run (`yune-cli run --ai-provider mock|none`, default `none`; local provider remains S5). The ABI-backed `frontend` command remains AI-free so M9/M10 validation surfaces do not change. The transcript records AI source labels and the **discrete `ai_decision` (`ready|pending|off`)** (§2.5) — observable and diffable in the CLI before any native frontend depends on it.
+CLI flags on the direct core runner enable a provider per run (`yune-cli run --ai-provider none|mock|local`, default `none`). The ABI-backed `frontend` command remains AI-free so M9/M10 validation surfaces do not change. The transcript records AI source labels and the **discrete `ai_decision` (`ready|pending|off`)** (§2.5) — observable and diffable in the CLI before any native frontend depends on it.
 
 ## 6. Phasing (slices → requirements)
 - **S1 — provider interface + mock in direct CLI `run`** (AI-01/03/07) **implemented 2026-06-18**, including the three cheap, safety-critical enforcement fixes promoted from later slices: (a) source-gate userdb learning on `Ai` at the commit boundary; (b) commit intent that blocks `Ai` default auto-commit while allowing explicit selection; (c) the single deterministic merge function pinning the top classic candidate. Mock is pure/synchronous (no thread, no clock) and is called outside `Engine::refresh_candidates`. *(See the slice plan.)*
 - **S2 — async budget worker + input-keyed results + merge policy that consumes confidence** (AI-02) **implemented 2026-06-18**: `AiWorker`, keyed pending/ready results, fixed-point `AiConfidence`, and confidence-ordered AI rows after classic candidates.
 - **S3 — `ContextProvider` + privacy classifier** (AI-04/06) **implemented 2026-06-18**: `AiContext`, `PrivacyClass`, `EngineAiContextProvider`, `AiProviderKind`, and `AiPrivacyPolicy` default to sensitive, block remote calls in sensitive contexts, and expose the future memory-learning gate.
 - **S4 — `MemoryStore`** (AI-05/06) **implemented 2026-06-18**: explicit AI selections can be learned into an inspectable, clearable, disable-able store; sensitive contexts suppress memory writes; snapshot helpers use `.ai-memory` names outside the userdb namespace.
-- **S5 — local-model backend**; remote stays optional/later.
+- **S5 — local-model backend** (AI-02/03/07) **implemented 2026-06-18**: `LocalModelProvider` supplies deterministic local, rule-backed/contextual completions, can read `MemoryStore`, runs through `AiWorker`, and is exposed only through direct `yune-cli run --ai-provider local`; remote stays optional/later.
 
 ## 6.1 Implementation Evidence
 - **S1 evidence:** `cargo test -p yune-core`, `cargo test -p yune-cli`,
@@ -109,13 +110,18 @@ CLI flags on the direct core runner enable a mock provider per run (`yune-cli ru
   write suppression, snapshot round-trip, `.ai-memory` namespace helpers, and
   the live `Engine::commit_candidate` path routing standard-context AI commits
   to memory while keeping `take_pending_userdb_learning()` empty.
+- **S5 evidence:** `cargo test -p yune-core local_model`, `cargo test -p yune-cli`,
+  and `cargo run -q -p yune-cli -- run --ai-provider local nihao` prove the
+  local provider produces source-labeled contextual/local candidates through the
+  same worker/staged-result path, preserves classic-first ordering, honors
+  deterministic zero-budget fallback, and keeps ABI/frontend paths AI-free.
 
 ## 7. Risks / open questions
-- **A non-conforming provider can still block its host/orchestrator** — S1 keeps provider calls out of `Engine::refresh_candidates`; later hosts must preserve that boundary. The engine-side contract is only "consume staged input-keyed results".
-- **Worker lifecycle on a single-shot CLI run** can make transcripts vary; S1's pure-synchronous mock avoids this (no worker yet).
+- **A non-conforming provider can still block its host/orchestrator** — providers stay out of `Engine::refresh_candidates`; future hosts must preserve that boundary. The engine-side contract is only "consume staged input-keyed results".
+- **Worker lifecycle on a single-shot CLI run** can make transcripts vary if hosts derive results from wall-clock timing; the CLI records the discrete input-derived `ai_decision`.
 - **Stale-result correctness depends on keying by the FULL input** (+ ideally caret/segment); a coarse session key would let a stale result apply.
 - **Tail-appended AI rows interact with filters that run after the append and with paging** (`DEFAULT_PAGE_SIZE`); a filter could drop/reorder them — validate.
-- **Privacy false-negatives remain the highest-severity future-provider risk** — S3 defaults to sensitive and blocks remote calls, and S4 applies the same gate to memory writes; future frontend/local-model wiring must preserve that default.
+- **Privacy false-negatives remain the highest-severity future-provider risk** — S3 defaults to sensitive and blocks remote calls, and S4 applies the same gate to memory writes; future frontend wiring must preserve that default.
 - **The commit-boundary source gate touches the hot path shared with classic input** — guard it so classic learning is unaffected (test both paths).
 
 ## 8. Safety invariants the test suite must enforce

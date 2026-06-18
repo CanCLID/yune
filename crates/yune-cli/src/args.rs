@@ -38,6 +38,7 @@ pub(crate) enum FrontendOutputMode {
 pub(crate) enum AiProviderMode {
     None,
     Mock,
+    Local,
 }
 
 impl Command {
@@ -222,9 +223,9 @@ fn parse_ai_provider(value: &str) -> Result<AiProviderMode, String> {
     match value {
         "none" => Ok(AiProviderMode::None),
         "mock" => Ok(AiProviderMode::Mock),
+        "local" | "local-model" => Ok(AiProviderMode::Local),
         _ => Err(
-            "error: unknown AI provider. next: pass --ai-provider mock or --ai-provider none."
-                .to_owned(),
+            "error: unknown AI provider. next: pass --ai-provider none, mock, or local.".to_owned(),
         ),
     }
 }
@@ -261,7 +262,7 @@ fn flag_value<'args>(
 }
 
 pub(crate) fn help_text() -> &'static str {
-    "usage:\n  yune-cli run [--ai-provider mock|none] [key-sequence]\n  yune-cli check <fixture.json>\n  yune-cli frontend --shared-data-dir <path> --user-data-dir <path> --schema <schema-id> --sequence <keys> [--output json|human]\n  yune-cli frontend-check <fixture.json> --shared-data-dir <path> --user-data-dir <path>"
+    "usage:\n  yune-cli run [--ai-provider none|mock|local] [key-sequence]\n  yune-cli check <fixture.json>\n  yune-cli frontend --shared-data-dir <path> --user-data-dir <path> --schema <schema-id> --sequence <keys> [--output json|human]\n  yune-cli frontend-check <fixture.json> --shared-data-dir <path> --user-data-dir <path>"
 }
 
 #[cfg(test)]
@@ -296,6 +297,22 @@ mod tests {
     }
 
     #[test]
+    fn parses_run_command_with_local_ai_provider() {
+        assert_eq!(
+            Command::parse(&[
+                "run".to_owned(),
+                "--ai-provider".to_owned(),
+                "local".to_owned(),
+                "nihao".to_owned()
+            ]),
+            Ok(Command::Run {
+                sequence: "nihao".to_owned(),
+                ai_provider: AiProviderMode::Local
+            })
+        );
+    }
+
+    #[test]
     fn rejects_unknown_run_ai_provider() {
         assert_eq!(
             Command::parse(&[
@@ -304,7 +321,7 @@ mod tests {
                 "remote".to_owned()
             ]),
             Err(
-                "error: unknown AI provider. next: pass --ai-provider mock or --ai-provider none."
+                "error: unknown AI provider. next: pass --ai-provider none, mock, or local."
                     .to_owned()
             )
         );

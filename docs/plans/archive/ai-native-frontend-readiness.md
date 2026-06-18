@@ -1,5 +1,7 @@
 # AI-Native Frontend Exposure Readiness Recommendation
 
+> **Status:** Superseded · **Milestone:** M9 / Phase 10 record · **Closed:** 2026-05-05 · **Type:** decision record (archived) — NO-GO superseded pending the Phase 17 real-browser GO/NO-GO.
+
 **Generated**: 2026-05-05T16:40:00Z
 **Phase**: 10 (TypeDuck-Web App Integration And E2E)
 **Evidence Source**: docs/plans/typeduck-web-integration-findings.md

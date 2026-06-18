@@ -1,5 +1,7 @@
 # Frontend-Sensitive Benchmark Baselines
 
+> **Status:** Finished · **Milestone:** M8 / Phase 6 · **Closed:** 2026-05-01 · **Type:** benchmark record (archived)
+
 Phase 06 Plan 04 records ABI-observed frontend-sensitive baselines for `BENCH-01` and `BENCH-02` after the validation evidence from D-12 was available: native host lifecycle validation, TypeDuck-Web wrapper validation, and Squirrel/macOS plus Linux follow-up scoping. These are not direct `yune-core` microbenchmarks; the harness resolves `yune_rime_api::rime_get_api` and drives the `RimeApi` function table that frontend hosts observe.
 
 ## Scope and decisions

@@ -1,5 +1,7 @@
 # Linux Frontend Validation Follow-up
 
+> **Status:** Finished · **Milestone:** M8 / Phase 6 · **Closed:** 2026-05-01 · **Type:** validation record (archived)
+
 ## Scope and plan decisions
 
 Per D-05, ibus-rime and fcitx-rime validation is scoped after the macOS/Squirrel

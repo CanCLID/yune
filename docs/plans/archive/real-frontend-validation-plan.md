@@ -1,5 +1,7 @@
 # Real Frontend Validation Plan
 
+> **Status:** Finished · **Milestone:** M8 (Real frontend validation & benchmarks) · **Closed:** 2026-05-01 · **Type:** plan record (archived)
+
 ## Goal
 
 Exercise Yune's RIME ABI through real frontend lifecycle hosts before starting AI-native product work.
@@ -42,7 +44,7 @@ It should not replace native IME host validation: browser/WebAssembly integratio
 ## Phase 6 final outcomes
 
 - Native host validation: `fixtures/frontend-traces/native-host-lifecycle.json` and `.planning/phases/06-real-frontend-validation-and-benchmark/06-01-SUMMARY.md` preserve the cdylib-backed `rime_get_api` lifecycle trace.
-- TypeDuck-Web validation: `fixtures/frontend-traces/typeduck-web-basic.json`, `docs/plans/frontend-validation/typeduck-web.md`, and `.planning/phases/06-real-frontend-validation-and-benchmark/06-02-SUMMARY.md` preserve the browser/WebAssembly wrapper-shaped path and browser-only limits.
-- Squirrel/macOS and Linux validation scope: `fixtures/frontend-traces/squirrel-lifecycle.json`, `docs/plans/frontend-validation/squirrel-macos.md`, `docs/plans/frontend-validation/linux-frontends.md`, and `.planning/phases/06-real-frontend-validation-and-benchmark/06-03-SUMMARY.md` preserve the native frontend blocker and follow-up trail.
-- Frontend benchmark baselines: `docs/plans/frontend-validation/benchmark-baselines.md` records ABI-observed session, `RimeProcessKey`, deploy/dictionary, and userdb/sync measurements.
-- AI-native readiness: `docs/plans/frontend-validation/ai-native-readiness.md` records the Phase 6 `GO WITH CONDITIONS` recommendation for beginning AI-native candidate/ranking design without implementing providers, rankers, context policy, memory policy, or privacy controls.
+- TypeDuck-Web validation: `fixtures/frontend-traces/typeduck-web-basic.json`, `docs/plans/archive/frontend-validation/typeduck-web.md`, and `.planning/phases/06-real-frontend-validation-and-benchmark/06-02-SUMMARY.md` preserve the browser/WebAssembly wrapper-shaped path and browser-only limits.
+- Squirrel/macOS and Linux validation scope: `fixtures/frontend-traces/squirrel-lifecycle.json`, `docs/plans/archive/frontend-validation/squirrel-macos.md`, `docs/plans/archive/frontend-validation/linux-frontends.md`, and `.planning/phases/06-real-frontend-validation-and-benchmark/06-03-SUMMARY.md` preserve the native frontend blocker and follow-up trail.
+- Frontend benchmark baselines: `docs/plans/archive/frontend-validation/benchmark-baselines.md` records ABI-observed session, `RimeProcessKey`, deploy/dictionary, and userdb/sync measurements.
+- AI-native readiness: `docs/plans/archive/frontend-validation/ai-native-readiness.md` records the Phase 6 `GO WITH CONDITIONS` recommendation for beginning AI-native candidate/ranking design without implementing providers, rankers, context policy, memory policy, or privacy controls.

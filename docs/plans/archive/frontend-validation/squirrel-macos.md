@@ -1,5 +1,7 @@
 # Squirrel/macOS Frontend Validation
 
+> **Status:** Finished · **Milestone:** M8 / Phase 6 · **Closed:** 2026-05-01 · **Type:** validation record (archived)
+
 ## Target and plan decisions
 
 This note records the Phase 06 D-04 Squirrel/macOS validation attempt after the

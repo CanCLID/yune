@@ -1,5 +1,7 @@
 # Yune → TypeDuck-Windows: Concrete Implementation Plan
 
+> **Status:** Parked (M10 — deferred behind M9) · **Updated:** 2026-06-17 · **Type:** execution plan
+
 > **Audience.** An autonomous coding agent (e.g. GPT) executing directly in the
 > `yune` repo. Every work item is independently committable, names exact files,
 > and ends with copy-pasteable verification commands.

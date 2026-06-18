@@ -1,5 +1,7 @@
 # Temporary Refactor Plan
 
+> **Status:** Finished (refactor complete) · **Closed:** 2026-04-30 · **Type:** conventions reference (still cited by AGENTS.md)
+
 This document is a temporary engineering guide for reducing maintenance risk
 while preserving the current compatibility work. It should be treated as a
 working plan, not as a permanent architecture document.

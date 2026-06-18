@@ -1,5 +1,7 @@
 # TypeDuck-Web Browser/WebAssembly Validation
 
+> **Status:** Finished · **Milestone:** M8 / Phase 6 · **Closed:** 2026-05-01 · **Type:** validation record (archived)
+
 ## Scope
 
 This note covers `FRONTEND-VALIDATION-02` and `FRONTEND-VALIDATION-05` for Phase 6 Plan 02. Per D-02, TypeDuck-Web is the first real application frontend validation target after the native loader harness. The checked-in reproduction artifact is `fixtures/frontend-traces/typeduck-web-basic.json`.

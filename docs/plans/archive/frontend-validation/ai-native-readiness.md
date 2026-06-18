@@ -1,5 +1,7 @@
 # AI-Native Readiness Recommendation
 
+> **Status:** Finished · **Milestone:** M8 / Phase 6 · **Closed:** 2026-05-01 · **Type:** validation record (archived)
+
 Phase 06 closes with the `D-15` go/no-go gate for beginning AI-native candidate/ranking design. Per `D-16`, this recommendation is based on frontend lifecycle compatibility, documented wrapper/native blockers, captured ABI/runtime mismatch evidence, and benchmark baselines. It is not based on AI feature desirability.
 
 ## Recommendation: GO WITH CONDITIONS
@@ -14,10 +16,10 @@ The validated ABI foundation is strong enough for design of provider/ranker inte
 |---|---|---|
 | Native host lifecycle | `fixtures/frontend-traces/native-host-lifecycle.json`, Plan 06-01 summary | `rime_get_api`, setup, initialize, deploy/maintenance, schema selection, session lifecycle, key processing, context/status/commit reads, notifications, stale sessions, and teardown are validated through the Cargo-built cdylib boundary. |
 | Frontend mismatch capture | Plan 06-01, 06-02, and 06-03 summaries | Frontend-observed behavior is captured as sanitized traces, blocker notes, or focused tests before future fixes, satisfying the Phase 06 mismatch-capture discipline. |
-| TypeDuck-Web wrapper path | `fixtures/frontend-traces/typeduck-web-basic.json`, `docs/plans/frontend-validation/typeduck-web.md` | The browser/WebAssembly wrapper-shaped path completes through Yune-owned `RimeApi` calls without a Yune ABI/runtime mismatch; Emscripten worker lifecycle, IDBFS persistence, and unavailable native dynamic loading are documented as browser/WASM limits. |
-| Squirrel/macOS native path | `fixtures/frontend-traces/squirrel-lifecycle.json`, `docs/plans/frontend-validation/squirrel-macos.md` | Squirrel-shaped lifecycle expectations are preserved as a source-modeled RimeApi fixture with a direct app-run blocker, rather than being treated as completed native product integration. |
-| Linux frontend path | `docs/plans/frontend-validation/linux-frontends.md` | ibus-rime and fcitx-rime validation are scoped with environment, daemon/session, build/runtime, lifecycle, and fixture requirements while staying out of ordinary Cargo tests. |
-| Benchmark baselines | `docs/plans/frontend-validation/benchmark-baselines.md` | ABI-observed baselines cover session create/destroy, simple ASCII `RimeProcessKey`, schema-loaded lookup, deploy/dictionary loading, and userdb learning/sync for `BENCH-01` and `BENCH-02`. |
+| TypeDuck-Web wrapper path | `fixtures/frontend-traces/typeduck-web-basic.json`, `docs/plans/archive/frontend-validation/typeduck-web.md` | The browser/WebAssembly wrapper-shaped path completes through Yune-owned `RimeApi` calls without a Yune ABI/runtime mismatch; Emscripten worker lifecycle, IDBFS persistence, and unavailable native dynamic loading are documented as browser/WASM limits. |
+| Squirrel/macOS native path | `fixtures/frontend-traces/squirrel-lifecycle.json`, `docs/plans/archive/frontend-validation/squirrel-macos.md` | Squirrel-shaped lifecycle expectations are preserved as a source-modeled RimeApi fixture with a direct app-run blocker, rather than being treated as completed native product integration. |
+| Linux frontend path | `docs/plans/archive/frontend-validation/linux-frontends.md` | ibus-rime and fcitx-rime validation are scoped with environment, daemon/session, build/runtime, lifecycle, and fixture requirements while staying out of ordinary Cargo tests. |
+| Benchmark baselines | `docs/plans/archive/frontend-validation/benchmark-baselines.md` | ABI-observed baselines cover session create/destroy, simple ASCII `RimeProcessKey`, schema-loaded lookup, deploy/dictionary loading, and userdb learning/sync for `BENCH-01` and `BENCH-02`. |
 
 ## Conditions before AI-native implementation
 

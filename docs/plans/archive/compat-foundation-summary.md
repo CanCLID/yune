@@ -1,5 +1,7 @@
 # Compatibility Foundation Summary
 
+> **Status:** Finished · **Milestone:** M5–M7 (Compatibility foundation) · **Closed:** 2026-04-30 · **Type:** milestone summary (archived)
+
 Yune's first compatibility foundation milestone is complete as of `v0.1-compat-foundation`.
 
 ## Completed scope

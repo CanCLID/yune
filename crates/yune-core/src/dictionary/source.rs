@@ -288,8 +288,7 @@ fn parse_rime_dict_yaml_parts(
     let mut comments_enabled = true;
 
     for line in input.lines().skip(body_start) {
-        let line = line.trim_end();
-        if line.is_empty() {
+        if line.trim().is_empty() {
             continue;
         }
         if comments_enabled && line.starts_with('#') {

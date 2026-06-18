@@ -80,85 +80,97 @@ fn typeduck_v112_jyutping_oracle_fixture_is_locked() {
 }
 
 #[test]
-fn yune_dictionary_lookup_filter_replays_typeduck_comment_payloads() {
+fn yune_dictionary_lookup_filter_emits_oracle_bytes_from_source_rows() {
     let fixture = oracle_fixture();
-    let hou_case = fixture["cases"]
+
+    assert_source_rows_emit_oracle_comment(
+        &fixture,
+        "nei",
+        0,
+        "你",
+        "nei5",
+        &["你\tnei5\t1\t0\t\toth\t\t\t\t\t\t\tyou (singular)\tتم\tतपाईं\tआप\tkamu"],
+    );
+    assert_source_rows_emit_oracle_comment(
+        &fixture,
+        "nei",
+        1,
+        "呢",
+        "nei1",
+        &[
+            "呢\tnei1\t2\t0\t\toth\tver\t\t\t這\t\t\tthis\t\t\t\t",
+            "呢\tne1\t1\t0\t\tpart\t\t\t\t\t\t\t(how about)\t(particle)\t\t(particle)\t(imbuhan kata)",
+            "呢\tni1\t2\t0\t\toth\tver\t\t\t這\t\t\tthis\t\t\t\t",
+        ],
+    );
+    assert_source_rows_emit_oracle_comment(
+        &fixture,
+        "hou",
+        0,
+        "好",
+        "hou2",
+        &[
+            "好\thou2\t1\t0\t\tadj\t\t\t\t\t\t\tgood; very\tبہت\tधेरै\tबहुत\tsangat",
+            "好\thou3\t2\t0\t\tv\t\t\t\t\t\t\tlike\tجیسے\tजस्तै\tपसंद\tsuka",
+        ],
+    );
+    assert_source_rows_emit_oracle_comment(
+        &fixture,
+        "hou",
+        1,
+        "好",
+        "hou3",
+        &[
+            "好\thou2\t1\t0\t\tadj\t\t\t\t\t\t\tgood; very\tبہت\tधेरै\tबहुत\tsangat",
+            "好\thou3\t2\t0\t\tv\t\t\t\t\t\t\tlike\tجیسے\tजस्तै\tपसंद\tsuka",
+        ],
+    );
+}
+
+fn assert_source_rows_emit_oracle_comment(
+    fixture: &Value,
+    input: &str,
+    index: i64,
+    text: &str,
+    code: &str,
+    source_rows: &[&str],
+) {
+    let expected_comment = oracle_candidate_comment(fixture, input, index);
+    let dictionary_yaml = dictionary_yaml_from_source_rows(source_rows);
+    let dictionary = TableDictionary::parse_rime_dict_yaml(&dictionary_yaml)
+        .expect("TypeDuck source rows should parse as dictionary rows");
+    let mut candidates = vec![Candidate {
+        text: text.to_owned(),
+        comment: code.to_owned(),
+        source: CandidateSource::Table,
+        quality: 1.0,
+    }];
+
+    DictionaryLookupFilter::new(dictionary).apply(&mut candidates);
+
+    assert_eq!(candidates[0].comment, expected_comment);
+}
+
+fn oracle_candidate_comment<'a>(fixture: &'a Value, input: &str, index: i64) -> &'a str {
+    let case = fixture["cases"]
         .as_array()
         .expect("oracle cases should be an array")
         .iter()
-        .find(|case| case["input"] == "hou")
-        .expect("hou case should be captured");
-    let selected_candidates = hou_case["selected_candidates"]
+        .find(|case| case["input"] == input)
+        .expect("input should be captured");
+    case["selected_candidates"]
         .as_array()
-        .expect("selected candidates should be an array");
-
-    for candidate in selected_candidates.iter().take(2) {
-        let expected_comment = candidate["comment"]
-            .as_str()
-            .expect("candidate comment should be a string");
-        assert!(
-            expected_comment.contains("\r0,"),
-            "hou sample should include alternate pronunciation records"
-        );
-        let dictionary_yaml = dictionary_yaml_from_typeduck_comment(expected_comment);
-        let dictionary = TableDictionary::parse_rime_dict_yaml(&dictionary_yaml)
-            .expect("TypeDuck comment records should round-trip as dictionary rows");
-        let (text, code) = primary_text_and_code(expected_comment);
-        let mut candidates = vec![Candidate {
-            text,
-            comment: code,
-            source: CandidateSource::Table,
-            quality: 1.0,
-        }];
-
-        DictionaryLookupFilter::new(dictionary).apply(&mut candidates);
-
-        assert_eq!(candidates[0].comment, expected_comment);
-    }
+        .expect("selected candidates should be an array")
+        .iter()
+        .find(|candidate| candidate["index"] == index)
+        .expect("candidate index should be captured")["comment"]
+        .as_str()
+        .expect("candidate comment should be a string")
 }
 
-fn dictionary_yaml_from_typeduck_comment(comment: &str) -> String {
-    let rows = typeduck_comment_records(comment)
-        .into_iter()
-        .map(|record| record.join("\t"))
-        .collect::<Vec<_>>()
-        .join("\n");
+fn dictionary_yaml_from_source_rows(rows: &[&str]) -> String {
+    let rows = rows.join("\n");
     format!("---\nname: typeduck_oracle\nversion: '0.1'\nsort: original\n...\n\n{rows}\n")
-}
-
-fn primary_text_and_code(comment: &str) -> (String, String) {
-    let primary = typeduck_comment_records(comment)
-        .into_iter()
-        .next()
-        .expect("comment should contain a primary record");
-    (
-        primary
-            .first()
-            .expect("primary record should contain text")
-            .clone(),
-        primary
-            .get(1)
-            .expect("primary record should contain code")
-            .clone(),
-    )
-}
-
-fn typeduck_comment_records(comment: &str) -> Vec<Vec<String>> {
-    comment
-        .trim_start_matches('\u{000c}')
-        .split('\r')
-        .filter(|record| !record.is_empty())
-        .map(|record| {
-            let (marker, fields) = record
-                .split_once(',')
-                .expect("TypeDuck comment record should have a marker");
-            assert!(
-                marker == "1" || marker == "0",
-                "TypeDuck comment marker should be primary or alternate"
-            );
-            fields.split(',').map(ToOwned::to_owned).collect()
-        })
-        .collect()
 }
 
 #[test]

@@ -70,6 +70,11 @@ These are the genuinely fork-only behaviors (everything else has converged with 
 A Cantonese/Jyutping **regression suite** should snapshot goldens from the released **v1.1.2** binary
 + pinned schema, then assert parity.
 
+Yune now has `crates/yune-core/tests/cantonese_parity.rs` locking the captured
+`jyut6ping3_mobile` menu/comment fixture. Full behavior parity remains unchecked until dedicated
+v1.1.2 goldens are captured for the suite's ignored option, completion, correction, schema-menu,
+and userdb-pronunciation cases.
+
 ### 4. A native (non-WASM) Windows build
 The web path is Emscripten/WASM. Windows needs a **native** engine artifact:
 
@@ -83,7 +88,7 @@ The web path is Emscripten/WASM. Windows needs a **native** engine artifact:
 
 - [x] (1) `config_list_append_string` (+ siblings) on the RIME C ABI
 - [x] (2) `RimeCandidate.comment` emitted with TypeDuck shaping
-- [ ] (3) Cantonese behavior parity vs v1.1.2 (regression suite green)
+- [ ] (3) Cantonese behavior parity vs v1.1.2 (regression suite added; full parity still has documented ignored oracle gaps)
 - [x] (4) Native Windows engine artifact (`rime.dll`/`.lib`/headers) + deployment APIs
 
 When all four are met (and real E2E passes), revisit `TypeDuck-Windows/INTEGRATION_PLAN.md`: the

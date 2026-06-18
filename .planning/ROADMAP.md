@@ -157,7 +157,7 @@ then the TypeDuck-Windows contract continues with Phases 11 -> 16.
 | 13. TypeDuck v1.1.2 Oracle | 1/1 | Complete | 2026-06-18 |
 | 14. Candidate Comment Semantics | 1/1 | Complete | 2026-06-18 |
 | 15. Native Windows Artifact | 1/1 | Complete | 2026-06-18 |
-| 16. Cantonese/Jyutping Parity Suite | 0/1 | Planned | - |
+| 16. Cantonese/Jyutping Parity Suite | 1/1 | Complete with documented ignored oracle gaps | 2026-06-18 |
 
 ## Completed Milestone: TypeDuck-Web Browser Integration
 
@@ -338,7 +338,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 16-01: Add the Cantonese/Jyutping parity regression suite.
+- [x] 16-01: Add the Cantonese/Jyutping parity regression suite.
 
 ## Future Milestone: AI-Native Input Layer
 

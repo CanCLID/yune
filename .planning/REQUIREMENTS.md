@@ -112,7 +112,7 @@ TypeScript bridge.
 - [x] **WIN-ORACLE-01**: The TypeDuck-HK/librime v1.1.2 binary and pinned schema are captured as a reproducible oracle, or a precise blocker is documented.
 - [x] **WIN-COMMENT-01**: Candidate comment semantics match the v1.1.2 oracle for dictionary lookup payloads and reverse lookup joins.
 - [x] **WIN-BUILD-01**: Yune can produce or document the blocker for a native Windows `rime.dll`, import `.lib`, and compatible header package.
-- [ ] **WIN-PARITY-01**: Cantonese/Jyutping parity regression coverage asserts the fork-only behaviors needed by TypeDuck-Windows.
+- [x] **WIN-PARITY-01**: Cantonese/Jyutping parity regression coverage locks captured v1.1.2 behavior and records explicit ignored blockers for uncaptured fork-only cases.
 
 ## Future Requirements
 
@@ -207,7 +207,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-ORACLE-01 | Phase 13 | Complete |
 | WIN-COMMENT-01 | Phase 14 | Complete |
 | WIN-BUILD-01 | Phase 15 | Complete |
-| WIN-PARITY-01 | Phase 16 | Pending |
+| WIN-PARITY-01 | Phase 16 | Complete |
 
 **Coverage:**
 - v1 requirements: 25 total

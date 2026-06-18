@@ -404,6 +404,16 @@ Yune parity for the genuinely fork-only behaviors:
    not be captured as an explicit `#[ignore]` with a documented reason (no silent
    gaps).
 
+### Implemented result
+
+`crates/yune-core/tests/cantonese_parity.rs` reads the v1.1.2 fixture, locks the
+captured `jyut6ping3_mobile` schema/menu/comment shape, and replays sampled
+TypeDuck dictionary-panel comment payloads through Yune's `DictionaryLookupFilter`.
+The behaviors not captured by `jyut6ping3-mobile-comments.json` are present as
+explicit ignored tests with the missing oracle called out in the ignore reason:
+option toggles, completion/prediction, correction penalties, schema-menu hiding,
+and per-entry userdb pronunciations.
+
 ### Acceptance (Item 6)
 ```sh
 cargo test -p yune-core --test cantonese_parity   # all green (or documented ignores)
@@ -464,5 +474,5 @@ change), once/if the web path is revived.
 - [x] **Item 3** — v1.1.2 goldens captured (or reproducible blocker) *(prereq)*
 - [x] **Item 4** — comment semantics: TypeDuck dictionary lookup payload + `"; "` reverse-lookup joins, golden-tested *(Contract #2)*
 - [x] **Item 5** — native `rime.dll`/`.lib`/headers build documented + produced *(Contract #4)*
-- [ ] **Item 6** — Cantonese/Jyutping parity suite green *(Contract #3)*
+- [x] **Item 6** — Cantonese/Jyutping parity suite added with documented ignored oracle gaps *(Contract #3 regression path)*
 - [x] **Item 0** — untracked files committed, EOL policy recorded, planning state reconciled, Windows milestone tracked

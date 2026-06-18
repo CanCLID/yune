@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: typeduck-windows-native-contract
 milestone_name: TypeDuck-Windows Native IME Contract
-status: execution
-stopped_at: Completed 15-01; ready to execute 16-01 Cantonese/Jyutping Parity Suite
+status: complete
+stopped_at: Completed 16-01; TypeDuck-Windows contract implementation plan executed
 last_updated: "2026-06-18T00:00:00.000Z"
 last_activity: 2026-06-18
 progress:
   total_phases: 16
-  completed_phases: 15
+  completed_phases: 16
   total_plans: 38
-  completed_plans: 37
-  percent: 97
+  completed_plans: 38
+  percent: 100
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-28)
 
 **Core value:** Existing RIME schemas and frontends should behave predictably through Yune's Rust implementation, with every compatibility difference measurable against librime before it is accepted.
-**Current focus:** Phase 16 — Cantonese/Jyutping parity suite
+**Current focus:** TypeDuck-Windows native contract implementation plan complete, with Cantonese breadth gaps documented as ignored oracle fixtures
 
 ## Current Position
 
 Phase: 16
 Plan: 16-01 — Cantonese/Jyutping Parity Suite
 Next phase: None — close the TypeDuck-Windows contract milestone
-Status: Ready to execute
+Status: Complete with documented ignored oracle gaps
 Last activity: 2026-06-18
 
-Progress: [██████████] 97%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 37
+- Total plans completed: 38
 - Planned Phase 06 plans: 4
 - Average duration: -
 - Total execution time: -
@@ -75,6 +75,7 @@ Progress: [██████████] 97%
 | Phase 13 P01 | - | completed | 2 files |
 | Phase 14 P01 | - | completed | 9 files |
 | Phase 15 P01 | - | completed | 2 files |
+| Phase 16 P01 | - | completed | 2 files |
 
 ## Accumulated Context
 
@@ -135,10 +136,11 @@ Recent decisions affecting current work:
 - D-19/WIN-ORACLE-01: The v1.1.2 oracle uses `TypeDuck-HK/librime` commit `74cb52b78fb2411137a7643f6c8bc6517acfde69`, `rime-dictionary-lookup-filter` commit `3e4605c4fae99f068df2edb85aaeab5a97752795`, and `TypeDuck-HK/schema` commit `1bed1ae6a0ab48055f073774d7dfd152a171c548`.
 - D-20/WIN-COMMENT-01: Candidate comments for TypeDuck-Windows are represented as source-row dictionary lookup payloads (`\f\r1,...\r0,...`) through `dictionary_lookup_filter`; normal reverse lookup joins use `"; "`, while schema identity remains in existing status/menu fields.
 - D-21/WIN-BUILD-01: The native Windows package is produced by `scripts/package-typeduck-windows.ps1`, which builds `yune-rime-api` for `x86_64-pc-windows-msvc`, renames the DLL/import library to `rime.dll`/`rime.lib`, copies TypeDuck fork headers, and smoke-checks `rime_get_api` plus the `config_list_append_string` slot.
+- D-22/WIN-PARITY-01: The Cantonese/Jyutping parity suite locks the captured v1.1.2 schema/menu/comment behavior and keeps uncaptured option, completion, correction, schema-menu, and userdb pronunciation behaviors as explicit ignored tests until dedicated oracle fixtures are captured.
 
 ### Pending Todos
 
-- Phase 16 — Cantonese/Jyutping Parity Suite — add focused regression coverage over captured fork-only behavior cases.
+- Capture dedicated v1.1.2 goldens for the ignored Cantonese/Jyutping parity cases before claiming full behavior parity for TypeDuck-Windows contract item 3.
 
 ### Blockers/Concerns
 
@@ -161,10 +163,10 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-06-18T00:00:00.000Z
-Stopped at: Completed 15-01; ready to execute 16-01 Cantonese/Jyutping Parity Suite
+Stopped at: Completed 16-01; TypeDuck-Windows contract implementation plan executed
 Resume file: None
 
-**Completed Phase:** 15 (Native Windows Artifact) — 1 plan — 2026-06-18
-**Next Phase:** 16 (Cantonese/Jyutping Parity Suite) — 1 plan — ready to execute
+**Completed Phase:** 16 (Cantonese/Jyutping Parity Suite) — 1 plan — 2026-06-18
+**Next Phase:** None — capture ignored parity goldens before claiming full TypeDuck-Windows behavior parity
 
 **Planned Milestone:** TypeDuck-Windows Native IME Contract — 6 phases — tracked in ROADMAP.md and REQUIREMENTS.md

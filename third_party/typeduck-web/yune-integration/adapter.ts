@@ -71,6 +71,7 @@ let currentRuntime: TypeDuckRuntime | null = null;
 let currentModule: EmscriptenTypeDuckModule | null = null;
 let currentFs: TypeDuckFilesystem | null = null;
 let currentSchemaId: string | null = null;
+let lastKeyResult: RimeResult = { isComposing: false, success: true };
 
 export interface TypeDuckExtraSharedAsset {
   path: string;
@@ -99,6 +100,7 @@ export async function initYuneRuntime(
   currentModule = module;
   currentFs = fs;
   currentSchemaId = options.schemaId;
+  lastKeyResult = { isComposing: false, success: true };
 
   // Prepare filesystem with explicit assets per D-06
   const prepareOptions: PrepareTypeDuckFilesystemOptions = {
@@ -137,6 +139,7 @@ export function cleanupYuneRuntime(): void {
   currentModule = null;
   currentFs = null;
   currentSchemaId = null;
+  lastKeyResult = { isComposing: false, success: true };
 }
 
 /**
@@ -161,6 +164,9 @@ function parseKeySequence(input: string): TypeDuckKeyboardEventLike {
       key = inner;
     }
     // Normalize key names
+    if (key === "BackSpace") key = "Backspace";
+    if (key === "Page_Up") key = "PageUp";
+    if (key === "Page_Down") key = "PageDown";
     if (key === "Return") key = "Enter";
     if (key === "Esc") key = "Escape";
     if (key === "Prior") key = "PageUp";
@@ -186,11 +192,16 @@ export async function processKey(input: string): Promise<RimeResult> {
   // Parse upstream key sequence to event-like object
   const eventLike = parseKeySequence(input);
 
+  if (eventLike.type === "keyup") {
+    return lastKeyResult;
+  }
+
   // Delegate to Yune runtime via keyEventToRimeKey per D-04
   const response = currentRuntime.processKeyboardEvent(eventLike);
 
   // Translate to upstream RimeResult
   const result = translateResponse(response);
+  lastKeyResult = result;
 
   // Sync persistence after commit
   if (result.committed && currentFs !== null) {

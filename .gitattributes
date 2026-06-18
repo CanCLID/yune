@@ -9,6 +9,10 @@
 # Shell scripts must stay LF for Unix-like environments.
 *.sh text eol=lf
 
+# Stored patch artifacts contain diff context marker lines that can look like
+# whitespace errors to `git diff --check`.
+*.patch text eol=lf whitespace=-space-before-tab,-blank-at-eol
+
 # Binary files should never be line-ending normalized.
 *.bin binary
 *.dll binary

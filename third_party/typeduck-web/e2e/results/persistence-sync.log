@@ -1,0 +1,13 @@
+TypeDuck-Web WI-4 persistence evidence
+Date: 2026-06-18
+Result: FAIL
+
+Observed:
+- Worker initialization reached the page: receive {"type":"listener","name":"initialized","args":[true]}
+- customize returned true.
+- deploy returned false.
+- setOption calls return errors because the current Yune TypeDuckRuntime has no setOption wrapper.
+- Browser console evidence does not include syncFromPersistenceBeforeInit or syncToPersistenceAfterMutation markers.
+- Reload/persistence survival was not established from browser evidence.
+
+Conclusion: WI-3 has unit-level sync ordering coverage, but WI-4 browser persistence remains FAIL until deploy and browser-visible sync/reload evidence pass.

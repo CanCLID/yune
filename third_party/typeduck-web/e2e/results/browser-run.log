@@ -1,0 +1,31 @@
+TypeDuck-Web real-browser WI-4 run
+Date: 2026-06-18
+URL: http://127.0.0.1:5173/web/?debug
+Browser: Codex in-app browser using TypeDuck-Web dev server on 127.0.0.1:5173
+Artifacts: yune-typeduck.js + yune-typeduck.wasm copied to source/public; worker bundled with esbuild
+
+Flow results:
+PASS composition: console shows processKey {b}/{a} returning isComposing=true, inputBuffer.before=b/ba, candidate text/comment b echo then ba echo.
+PASS candidate list: DOM snapshot shows candidate panel row "1. ba echo" and disabled page buttons.
+FAIL candidate paging: Page_Down is accepted after adapter normalization, but response stays page=0, isLastPage=true, one ba echo candidate, and both page buttons are disabled.
+PASS candidate selection: pressing 1 sends processKey {1}; final state after selection has textarea value "ba" and no candidate rows.
+FAIL candidate deletion: Delete sends processKey {Delete}; response remains composing ba with same ba echo candidate, so no delete mutation was observed.
+PASS backspace mutation: earlier same-session console shows BackSpace path after composing ba; engine response shortened the composition to b.
+PASS commit output: final state textareaValue is "ba" after candidate selection.
+FAIL deploy: init/settings path sends deploy and receives success result=false.
+PASS customize: init/settings path sends customize(pageSize=6...) and receives success result=true.
+FAIL persistence sync: no syncFromPersistenceBeforeInit/syncToPersistenceAfterMutation markers are visible in browser console evidence, and deploy returns false.
+FAIL persistence reload: reinitialization/persistence survival is not proven; attempted browser reload did not produce fresh init evidence in the wrapper and deploy/sync evidence failed.
+FAIL dictionary-panel comment rendering: UI renders the adapter candidate.comment string (echo), but no v1.1.2 oracle dictionary comment bytes appear in the browser flow.
+
+Final DOM state after selection:
+{
+  "bodyText": "",
+  "buttons": [],
+  "candidateRows": [],
+  "href": "about:blank",
+  "textareaValue": null,
+  "title": ""
+}
+
+Important console excerpts are in browser-console.json; the candidate-panel DOM snapshot is in dom-snapshot-candidates.txt.

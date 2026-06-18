@@ -1,116 +1,46 @@
-# Browser E2E Blocker
+# TypeDuck-Web WI-4 Browser Failures
 
-**Category**: Yune adapter/runtime
+Date: 2026-06-18
 
-**Flow**: Persistence sync evidence
+The TypeDuck-Web browser run is no longer blocked by missing WASM/tooling. The
+loadable Emscripten artifact initializes in the upstream app, and core
+composition through commit works in the real browser. Remaining failures are
+behavioral and should be treated as follow-up work, not environment blockers.
 
-**Issue**: No persistence sync marker logged after mutation
+Evidence files in this directory:
 
-**Expected**: syncToPersistenceAfterMutation or FS.syncfs(false) console log
+- `browser-run.log` - PASS/FAIL summary plus final DOM state.
+- `browser-console.json` - captured browser console messages from the run.
+- `dom-snapshot-candidates.txt` - DOM snapshot showing the candidate panel.
+- `persistence-sync.log` - persistence-specific failure evidence.
 
-**Impact**: Cannot verify persistence timing per D-11
-# Browser E2E Blocker
+Current failures:
 
-**Category**: TypeDuck-Web app/source
+- Candidate paging: `{Page_Down}` is accepted, but the response remains
+  `page: 0`, `isLastPage: true`, with a single `ba echo` candidate and disabled
+  paging buttons.
+- Candidate deletion: `{Delete}` leaves the same `ba echo` candidate and does
+  not mutate composition or delete a candidate.
+- Deploy: the app sends `deploy` during the settings path and receives
+  `result: false`.
+- Persistence sync/reload: browser evidence does not expose
+  `syncFromPersistenceBeforeInit` / `syncToPersistenceAfterMutation` markers,
+  and persistence survival cannot be proven while deploy fails.
+- Dictionary-panel comments: the browser renders the adapter `candidate.comment`
+  value (`echo`), but no TypeDuck v1.1.2 oracle dictionary comment bytes appear
+  in the browser flow.
+- Option toggles: TypeDuck-Web calls `setOption` on load/settings changes; the
+  current Yune TypeDuckRuntime wrapper does not implement it, so the app logs
+  errors for those calls.
+- Upstream DOM shape: React reports invalid nesting in `Candidate.tsx`
+  (`tr` inside `button`, `button` inside `tbody`) when candidates render.
 
-**Flow**: Candidate list visible
+Passing browser evidence:
 
-**Issue**: No candidate panel selector found
-
-**Selectors tried**: [data-candidates], .candidate-panel, .candidate-list
-
-**Evidence**: screenshot-candidates.png
-
-**Impact**: Cannot verify candidate paging/selection flows
-# Browser E2E Blocker
-
-**Category**: TypeDuck-Web app/source
-
-**Flow**: Customize settings
-
-**Issue**: No settings/customize panel found
-
-**Selectors tried**: [data-settings], .settings-panel, .customize-panel
-
-**Impact**: Cannot verify customize flow
-# Browser E2E Blocker
-
-**Category**: Yune adapter/runtime
-
-**Flow**: Persistence sync evidence
-
-**Issue**: No persistence sync marker logged after mutation
-
-**Expected**: syncToPersistenceAfterMutation or FS.syncfs(false) console log
-
-**Impact**: Cannot verify persistence timing per D-11
-# Browser E2E Blocker
-
-**Category**: Yune adapter/runtime
-
-**Flow**: Candidate list visible
-
-**Issue**: No candidate panel appeared after schema-valid input
-
-**Selectors tried**: [data-candidates], .candidate-panel, .candidate-list
-
-**Evidence**: screenshot-candidates.png
-
-**Impact**: Cannot verify candidate paging/selection flows
-# Browser E2E Blocker
-
-**Category**: TypeDuck-Web app/source
-
-**Flow**: Customize settings
-
-**Issue**: No settings/customize panel found
-
-**Selectors tried**: [data-settings], .settings-panel, .customize-panel
-
-**Impact**: Cannot verify customize flow
-# Browser E2E Blocker
-
-**Category**: Yune adapter/runtime
-
-**Flow**: Persistence sync evidence
-
-**Issue**: No persistence sync marker logged after mutation
-
-**Expected**: syncToPersistenceAfterMutation or FS.syncfs(false) console log
-
-**Impact**: Cannot verify persistence timing per D-11
-# Browser E2E Blocker
-
-**Category**: Yune adapter/runtime
-
-**Flow**: Candidate list visible
-
-**Issue**: No candidate panel appeared after schema-valid input
-
-**Selectors tried**: [data-candidates], .candidate-panel, .candidate-list
-
-**Evidence**: screenshot-candidates.png
-
-**Impact**: Cannot verify candidate paging/selection flows
-# Browser E2E Blocker
-
-**Category**: TypeDuck-Web app/source
-
-**Flow**: Customize settings
-
-**Issue**: No settings/customize panel found
-
-**Selectors tried**: [data-settings], .settings-panel, .customize-panel
-
-**Impact**: Cannot verify customize flow
-# Browser E2E Blocker
-
-**Category**: Yune adapter/runtime
-
-**Flow**: Persistence sync evidence
-
-**Issue**: No persistence sync marker logged after mutation
-
-**Expected**: syncToPersistenceAfterMutation or FS.syncfs(false) console log
-
-**Impact**: Cannot verify persistence timing per D-11
+- Initialization reaches the page with `initialized: true`.
+- Composition from `b` then `a` returns composing results and visible preedit
+  `ba`.
+- Candidate list rendering shows `1. ba echo`.
+- Candidate selection with `1` commits `ba` into the textarea.
+- Backspace mutates composition from `ba` to `b` in the same browser session.
+- Customize returns `true` for the settings payload observed during app init.

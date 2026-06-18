@@ -1,0 +1,93 @@
+- banner:
+  - link "TypeDuck Logo":
+    - /url: /
+    - img "TypeDuck Logo"
+  - heading "TypeDuck 網頁版" [level=1]
+  - checkbox "Theme Switcher"
+  - generic: Theme Switcher
+- main:
+  - text: 中文／英文字母 Chinese / Alphabet
+  - button "中"
+  - text: 繁體字／簡體字 Traditional / Simplified
+  - button "繁"
+  - text: 半形／全形字母及符號 Halfwidth / Fullwidth Letters & Symbols
+  - button "半"
+  - text: 半形／全形標點符號 Halfwidth / Fullwidth Punctuations
+  - button "。"
+  - textbox [active]
+  - generic: ba
+  - button "‹" [disabled]:
+    - generic: ‹
+  - button "›" [disabled]:
+    - generic: ›
+  - table:
+    - rowgroup:
+      - button "1. ba echo":
+        - row "1. ba echo":
+          - cell "1."
+          - cell "ba"
+          - cell "echo"
+  - heading "輸入法設定 IME Settings" [level=3]
+  - list:
+    - group "顯示語言 Display Languages":
+      - generic: 顯示語言 Display Languages
+      - radio [checked]
+      - generic: 英語 English
+      - checkbox "英語 English" [checked]
+      - radio
+      - generic: 印地語 Hindi
+      - checkbox "印地語 Hindi"
+      - radio
+      - generic: 印尼語 Indonesian
+      - checkbox "印尼語 Indonesian"
+      - radio
+      - generic: 尼泊爾語 Nepali
+      - checkbox "尼泊爾語 Nepali"
+      - radio
+      - generic: 烏爾都語 Urdu
+      - checkbox "烏爾都語 Urdu"
+      - generic: ⬑ 主要語言 Main Language
+    - generic: 每頁候選詞數量 No. of Candidates Per Page
+    - slider: "6"
+    - generic: "| 4"
+    - generic: "| 5"
+    - generic: "| 6"
+    - generic: "| 7"
+    - generic: "| 8"
+    - generic: "| 9"
+    - generic: "| 10"
+    - generic: 中文字體 Chinese Typeface
+    - radio "宋體 Sung" [checked]
+    - text: 宋體 Sung
+    - radio "黑體 Hei"
+    - text: 黑體 Hei
+    - group "候選詞粵拼 Candidates Jyutping":
+      - generic: 候選詞粵拼 Candidates Jyutping
+      - radio "顯示 Always Show" [checked]
+      - generic: 顯示 Always Show
+      - radio "僅反查 Only in Reverse Lookup"
+      - generic: 僅反查 Only in Reverse Lookup
+      - radio "隱藏 Hide"
+      - generic: 隱藏 Hide
+    - generic: 自動完成 Auto-completion
+    - checkbox "自動完成 Auto-completion" [checked]
+    - generic: 自動校正 Auto-correction
+    - checkbox "自動校正 Auto-correction"
+    - generic: 自動組詞 Auto-composition
+    - checkbox "自動組詞 Auto-composition" [checked]
+    - generic: 輸入記憶 Input Memory
+    - checkbox "輸入記憶 Input Memory" [checked]
+  - heading "反查設定 Reverse Lookup Settings" [level=3]
+  - list:
+    - generic: 顯示完整輸入碼 Show Full Input Code
+    - checkbox "顯示完整輸入碼 Show Full Input Code" [checked]
+    - generic: 倉頡版本 Cangjie Version
+    - radio "三代 Version 3"
+    - text: 三代 Version 3
+    - radio "五代 Version 5" [checked]
+    - text: 五代 Version 5
+- contentinfo:
+  - complementary:
+    - text: © Copyright 2024 TypeDuck Team. All rights reserved.
+    - link "Source Code":
+      - /url: https://github.com/TypeDuck-HK/TypeDuck-Web

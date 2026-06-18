@@ -1,13 +1,13 @@
 # TypeDuck-Web Integration Findings
 
-> **Status:** Active · **Milestone:** M9 (TypeDuck-Web browser validation) · **Updated:** 2026-06-17 · **Type:** findings / reference
+> **Status:** Active · **Milestone:** M9 (TypeDuck-Web browser validation) · **Updated:** 2026-06-18 · **Type:** findings / reference
 
 This document records findings from integrating Yune with the upstream TypeDuck-Web browser application.
 
 > **Historical scope.** The Phase 10 blocker tables below describe the
-> 2026-05-05 validation attempt, before later local dev-server smoke testing.
-> Treat "browser never ran" as "the Emscripten-backed full TypeDuck-Web E2E did
-> not run"; Phase 17 owns the current full browser-validation gate.
+> 2026-05-05 validation attempt, before WI-1b produced a loadable
+> Emscripten JS/WASM module. The current WI-4 browser evidence is the
+> Phase 17 matrix in this file's final summary.
 
 ---
 
@@ -752,22 +752,25 @@ Created `third_party/typeduck-web/e2e/` with explicit asset/result instructions:
 - Missing testability selectors (TypeDuck-Web UI)
 - Persistence sync markers not logged (Yune adapter)
 
-### Flow Pass/Fail/Blocked Tracking (Task 3 will populate)
+### Flow Pass/Fail Tracking (superseded by WI-4)
 
 | Flow | D-08/D-10/D-11 Requirement | Status | Evidence |
 |------|----------------------------|--------|----------|
-| Composition | Schema-valid keys → preedit visible | PENDING | browser-run.log, screenshot-composition.png |
-| Candidate list | Visible after composition | PENDING | screenshot-candidates.png |
-| Candidate paging | PageDown → page change | PENDING | screenshot-candidate-paging.png |
-| Candidate selection | Selection key → commit text | PENDING | screenshot-candidate-selection.png |
-| Deletion | Delete key → candidate/composition change | PENDING | screenshot-deletion.png |
-| Backspace mutation | Backspace → composition shorter/changed | PENDING | browser-run.log |
-| Deploy | Deploy action → visible success/error | PENDING | screenshot-deploy.png, browser-run.log |
-| Customize | Customize action → visible success/error | PENDING | screenshot-customize.png, browser-run.log |
-| Persistence sync | sync-after-mutation marker | PENDING | persistence-sync.log |
-| Persistence reload | sync-before-init + reload/reinitialize | PENDING | screenshot-persistence-after-reload.png, persistence-sync.log |
+| Composition | Schema-valid keys -> preedit visible | PASS | `e2e/results/browser-run.log`, `e2e/results/browser-console.json` |
+| Candidate list | Visible after composition | PASS | `e2e/results/dom-snapshot-candidates.txt` |
+| Candidate paging | PageDown -> page change | FAIL | PageDown accepted but page remains `0`, `isLastPage: true`; paging buttons disabled |
+| Candidate selection | Selection key -> commit text | PASS | `browser-run.log`; pressing `1` commits `ba` |
+| Deletion | Delete key -> candidate/composition change | FAIL | Delete leaves same `ba echo` candidate |
+| Backspace mutation | Backspace -> composition shorter/changed | PASS | `browser-run.log`; same-session console shows `ba` -> `b` |
+| Deploy | Deploy action -> visible success/error | FAIL | `browser-console.json`; deploy returns `false` |
+| Customize | Customize action -> visible success/error | PASS | `browser-console.json`; customize returns `true` |
+| Persistence sync | sync-after-mutation marker | FAIL | `persistence-sync.log`; no browser-visible sync markers and deploy fails |
+| Persistence reload | sync-before-init + reload/reinitialize | FAIL | `persistence-sync.log`; reload survival not proven |
+| Dictionary-panel comment rendering | v1.1.2 candidate comment bytes render | FAIL | Browser shows adapter `candidate.comment` as `echo`, not oracle dictionary bytes |
 
-**Note**: Task 3 execution will populate PASS/FAIL/BLOCKED status for each flow.
+**Note**: WI-4 moved the flow matrix from blocked/pending to evidence-backed
+PASS/FAIL. Screenshots were not available from the Codex browser wrapper; the
+captured evidence is console JSON plus DOM snapshots.
 
 ---
 
@@ -972,28 +975,33 @@ RIME session → JSON result → Worker parse → Main thread render
 9. Persistence sync after mutation (D-11)
 10. Persistence reload/reinitialize (D-11)
 
-**Flow status** (from 10-03 execution):
+**Flow status** (from WI-4 browser execution, 2026-06-18):
 
 | Flow | D-08/D-10/D-11 Requirement | Status | Evidence/Blocker |
 |------|----------------------------|--------|------------------|
-| Composition | Schema-valid keys → preedit visible | BLOCKED | WASM artifact missing (cargo/rustup/emcc unavailable) |
-| Candidate list | Visible after composition | BLOCKED | WASM artifact missing |
-| Candidate paging | PageDown → page change | BLOCKED | WASM artifact missing |
-| Candidate selection | Selection key → commit text | BLOCKED | WASM artifact missing |
-| Deletion | Delete key → candidate/composition change | BLOCKED | WASM artifact missing |
-| Backspace mutation | Backspace → composition shorter/changed | BLOCKED | WASM artifact missing |
-| Deploy | Deploy action → visible success/error | BLOCKED | WASM artifact missing |
-| Customize | Customize action → visible success/error | BLOCKED | WASM artifact missing |
-| Persistence sync | sync-after-mutation marker | BLOCKED | WASM artifact missing |
-| Persistence reload | sync-before-init + reload/reinitialize | BLOCKED | WASM artifact missing |
+| Composition | Schema-valid keys -> preedit visible | PASS | `browser-console.json` records `{b}`/`{a}` composing responses; DOM shows preedit `ba` |
+| Candidate list | Visible after composition | PASS | `dom-snapshot-candidates.txt` shows `1. ba echo` |
+| Candidate paging | PageDown -> page change | FAIL | `{Page_Down}` returns success but remains `page: 0`, `isLastPage: true` |
+| Candidate selection | Selection key -> commit text | PASS | Pressing `1` commits `ba` into the textarea |
+| Deletion | Delete key -> candidate/composition change | FAIL | `{Delete}` leaves the same composing response and candidate |
+| Backspace mutation | Backspace -> composition shorter/changed | PASS | Same-session browser log records backspace shortening `ba` to `b` |
+| Deploy | Deploy action -> visible success/error | FAIL | `deploy` returns `false` |
+| Customize | Customize action -> visible success/error | PASS | `customize` returns `true` for the settings payload |
+| Persistence sync | sync-after-mutation marker | FAIL | No browser-visible sync markers; deploy failure prevents persistence proof |
+| Persistence reload | sync-before-init + reload/reinitialize | FAIL | Reload/reinitialize persistence survival not proven from browser evidence |
+| Dictionary-panel comment rendering | v1.1.2 candidate comment bytes render | FAIL | UI renders `echo` from `candidate.comment`, not oracle dictionary bytes |
 
-**Reason**: WASM artifact generation blocked by missing cargo/rustup/emcc tooling in execution environment. Browser runtime cannot initialize without WASM artifact.
+**Reason**: The WASM/browser initialization blocker is cleared. Failures are now
+behavioral: paging/deletion are echo-path limited, deploy returns false,
+persistence markers/reload survival are not proven, and dictionary-comment
+oracle bytes do not appear in the browser flow.
 
 **Evidence captured**:
-- blocker.md — Documents exact commands, missing dependencies, install hints per D-09
-- No browser-run.log — Browser never ran
-- No screenshots — Browser never ran
-- No persistence-sync.log — Browser never ran
+- `third_party/typeduck-web/e2e/results/browser-run.log`
+- `third_party/typeduck-web/e2e/results/browser-console.json`
+- `third_party/typeduck-web/e2e/results/dom-snapshot-candidates.txt`
+- `third_party/typeduck-web/e2e/results/persistence-sync.log`
+- `third_party/typeduck-web/e2e/results/blocker.md`
 
 ---
 
@@ -1005,40 +1013,45 @@ Phase 10 blockers categorized per D-12 with status, evidence, affected requireme
 
 | Blocker | Status | Evidence | Affected Requirement | Blocks AI-native frontend? |
 |---------|--------|----------|----------------------|---------------------------|
-| Asset configuration TODO | open | src/worker.ts lines 246-251 placeholder YAML content | TYPEDUCK-E2E-03 | NO — Non-critical follow-up; explicit assets can be provided by E2E runner or app deployment |
-| Yune WASM artifact path | open | src/worker.ts importScripts("yune-typeduck.js") assumes Phase 7 artifact | TYPEDUCK-E2E-03 | NO — Artifact generation is environment/tooling blocker, not upstream seam incompatibility |
+| Candidate DOM nesting warning | open | Browser console React warning from `Candidate.tsx` | TYPEDUCK-E2E-03 | NO — candidate rendering works, but the DOM is invalid |
+| Browser reload evidence gap | open | `persistence-sync.log` | TYPEDUCK-E2E-03 | YES for persistence confidence — reload survival is not proven |
 
-**Explanation**: TypeDuck-Web upstream source is compatible with Yune seam patch. Asset configuration is a deployment/setup requirement, not a seam incompatibility. WASM artifact naming is a build dependency, not an upstream structural blocker.
+**Explanation**: The app now loads explicit assets and the generated
+`yune-typeduck.js` / `.wasm` artifact. Remaining app-source issues are around
+UI/testability and invalid candidate DOM shape, not missing WASM.
 
 ### Yune adapter/runtime mismatches
 
 | Blocker | Status | Evidence | Affected Requirement | Blocks AI-native frontend? |
 |---------|--------|----------|----------------------|---------------------------|
-| TypeDuckContext properties missing | accepted | adapter.ts maps comments/highlighted_candidate_index to undefined/0 | TYPEDUCK-E2E-03 | NO — Adapter compatibility layer handles mismatch; candidate comments may differ but composition/commit works |
-| setOption API gap | accepted | adapter.ts throws error documenting missing Yune wrapper method | D-07, TYPEDUCK-E2E-03 | NO — setOption not required for composition/candidate/commit flows; customize/deploy paths work |
-| customize options bitmap incomplete | accepted | adapter.ts maps pageSize only, options bitmap handling partial | TYPEDUCK-E2E-03 | NO — Customize flow may have partial behavior, but deploy/customize actions compile and return visible success/error |
+| setOption API gap | open | Browser logs repeated `setOption` errors | D-07, TYPEDUCK-E2E-03 | YES for settings parity — startup/settings path reports errors |
+| deploy returns false | open | `browser-console.json`, `persistence-sync.log` | TYPEDUCK-E2E-03 | YES for persistence/deploy confidence |
+| Dictionary comment oracle gap | open | Browser shows `echo`, not v1.1.2 dictionary comment bytes | TYPEDUCK-E2E-03, WI-6 | YES for dictionary-panel parity |
+| Candidate paging/deletion echo limitations | open | `browser-run.log` | TYPEDUCK-E2E-03 | YES for complete E2E parity |
 
-**Explanation**: Yune adapter/runtime mismatches are documented and handled with compatibility layers. TypeDuckContext property gaps are mapped to defaults. setOption is not called by core composition/candidate/commit flows. Customize bitmap incompleteness is a non-critical edge case. Core composition/candidate/commit seam works through adapter translation.
+**Explanation**: Adapter shape bugs are fixed, and the core composition ->
+candidate -> commit seam works. The remaining runtime gaps are now browser-
+observed behavioral failures.
 
 ### Environment/tooling blockers
 
 | Blocker | Status | Evidence | Affected Requirement | Blocks AI-native frontend? |
 |---------|--------|----------|----------------------|---------------------------|
-| cargo missing | open | blocker.md: `./scripts/typeduck-wasm-build.sh` → `cargo: command not found` | TYPEDUCK-E2E-03, Phase 7 dependency | YES — WASM artifact cannot be built; browser validation cannot run; classic input through TypeDuck-Web cannot be tested |
-| rustup missing | open | blocker.md: `rustup target list --installed` → `command not found: rustup` | TYPEDUCK-E2E-03 | YES — Cannot install wasm32-unknown-emscripten target; WASM artifact generation blocked |
-| emcc missing | open | blocker.md: `emcc --version` → `emcc not found` | TYPEDUCK-E2E-03 | YES — Cannot compile Rust to WASM/JS glue; browser runtime cannot initialize |
-| WASM artifact not built | open | blocker.md: No yune-typeduck.js/yune-typeduck.wasm generated | TYPEDUCK-E2E-03 | YES — Browser runtime cannot initialize; all flows blocked; classic input through TypeDuck-Web cannot be validated |
+| Browser screenshot capture unavailable | accepted | Codex browser wrapper returned no screenshot persistence API | WI-4 evidence | NO — console JSON and DOM snapshots captured the flows |
 
-**Explanation**: Environment/tooling blockers prevent WASM artifact generation, blocking all browser validation flows. These are reproducible blockers with documented commands, missing dependencies, and install hints per D-09. Browser validation cannot run at all without WASM artifact.
+**Explanation**: Cargo, rustup, Emscripten, and the loadable WASM/JS artifact are
+available locally. The browser run executed; remaining blockers are behavioral.
 
 ---
 
-**Total blockers**: 8 (2 TypeDuck-Web source, 3 Yune adapter/runtime, 3 environment/tooling)
+**Total current blockers**: 7 (2 TypeDuck-Web app/source, 4 Yune adapter/runtime, 1 evidence tooling)
 
-**Blocking AI-native frontend exposure**: 4 environment/tooling blockers prevent browser validation of classic input through TypeDuck-Web. TypeDuck-Web seam patch is structurally sound; adapter/runtime mismatches are handled; environment/tooling setup is the gating requirement.
+**Blocking AI-native frontend exposure**: core composition/candidate/commit is
+browser-proven, but deploy, persistence, settings-option parity, paging/deletion,
+and dictionary comment oracle parity are not production-ready.
 
 ---
 
-*Findings consolidated: 2026-05-05T16:38:00Z*
-*Phase: 10 (TypeDuck-Web App Integration And E2E)*
+*Findings consolidated: 2026-06-18*
+*Phase: 17 / M9 (TypeDuck-Web Browser Validation)*
 *Requirement coverage: TYPEDUCK-E2E-01, TYPEDUCK-E2E-02, TYPEDUCK-E2E-03, TYPEDUCK-E2E-04*

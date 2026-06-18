@@ -79,14 +79,16 @@ Requirements for the next integration milestone. These requirements turn the
 Phase 6 TypeDuck-Web validation and the seed Rust adapter into a browser-usable
 path before AI-native product work begins.
 
-**Active focus (web-first).** This is the current milestone, reopened as Phase 17.
-The build-out (WASM export contract, TS bridge, browser filesystem) landed, and
-the WASM artifact now builds as loadable Emscripten `yune-typeduck.js`/`.wasm`
-with a Node smoke for one `yune_typeduck_*` call plus one `FS` operation. The
-patched TypeDuck-Web worker now loads that modular artifact, mounts IDBFS,
-fetches real schema assets from `public/schema`, and records before/after sync
-markers. The engine has still **not actually run in the TypeDuck-Web browser
-E2E** — so **TYPEDUCK-E2E-03** (a real-browser run) remains the priority.
+**Active focus (web-first).** This milestone was reopened as Phase 17. The
+build-out (WASM export contract, TS bridge, browser filesystem) landed, and the
+WASM artifact now builds as loadable Emscripten `yune-typeduck.js`/`.wasm` with
+a Node smoke for one `yune_typeduck_*` call plus one `FS` operation. The patched
+TypeDuck-Web worker loads that modular artifact, mounts IDBFS, fetches real
+schema assets from `public/schema`, and the WI-4 browser run executed. Core
+composition, candidate rendering, selection, commit output, backspace mutation,
+and customize pass; candidate paging, deletion, deploy, persistence sync/reload,
+and v1.1.2 dictionary-comment evidence fail. **TYPEDUCK-E2E-03** is complete as
+a validation run, with follow-up failures tracked in the findings matrix.
 
 ### WASM Build And Export Contract
 
@@ -112,7 +114,7 @@ E2E** — so **TYPEDUCK-E2E-03** (a real-browser run) remains the priority.
 
 - [x] **TYPEDUCK-E2E-01**: The upstream TypeDuck-Web repository is cloned or vendored in a reproducible test location, and its current librime/WASM bridge seam is identified.
 - [x] **TYPEDUCK-E2E-02**: TypeDuck-Web is patched or configured so its input-engine binding calls the Yune TypeScript bridge instead of the original librime bridge, with candidate text/comment/highlight mapped from the runtime response shape.
-- [ ] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, and persistence smoke flows.
+- [x] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, and persistence smoke flows, with PASS/FAIL evidence recorded.
 - [x] **TYPEDUCK-E2E-04**: Integration findings end with a go/no-go recommendation for exposing AI-native behavior through real frontends.
 
 ## TypeDuck-Windows Native IME Contract Requirements
@@ -217,7 +219,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPEDUCK-FS-04 | Phase 9 | Complete |
 | TYPEDUCK-E2E-01 | Phase 10 | Complete |
 | TYPEDUCK-E2E-02 | Phase 10 | Complete |
-| TYPEDUCK-E2E-03 | Phase 10 / 17 | Active — artifact, adapter, and app FS gates cleared; real-browser E2E next |
+| TYPEDUCK-E2E-03 | Phase 10 / 17 | Complete — browser E2E executed; failures remain for paging/deletion/deploy/persistence/dictionary comments |
 | TYPEDUCK-E2E-04 | Phase 10 | Complete |
 | WIN-TEST-01 | Phase 11 | Complete |
 | WIN-ABI-01 | Phase 12 | Complete |

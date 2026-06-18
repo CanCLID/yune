@@ -1,8 +1,13 @@
 diff --git a/package.json b/package.json
-index cbe61db..3f7e3f5 100644
+index cbe61db..6d1043d 100644
 --- a/package.json
 +++ b/package.json
-@@ -15,6 +15,7 @@
+@@ -11,10 +11,11 @@
+ 		"wasm": "bun scripts/build_wasm.ts",
+ 		"start": "vite --host",
+ 		"build": "bun run worker --minify && vite build",
+-		"worker": "esbuild src/worker.ts --outdir=public",
++		"worker": "esbuild src/worker.ts --bundle --format=iife --outdir=public",
  		"preview": "vite preview --host"
  	},
  	"dependencies": {
@@ -10,11 +15,33 @@ index cbe61db..3f7e3f5 100644
  		"react": "^18.3.1",
  		"react-dom": "^18.3.1",
  		"react-toastify": "^10.0.5",
+diff --git a/src/rime.ts b/src/rime.ts
+index 4393a9e..0553d2f 100644
+--- a/src/rime.ts
++++ b/src/rime.ts
+@@ -39,7 +39,7 @@ for (const type of allListenerTypes) {
+ 
+ const worker = new Worker("./worker.js");
+ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
+-	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("receive", data);
++	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("receive", JSON.stringify(data));
+ 	const { type } = data;
+ 	if (type === "listener") {
+ 		const { name, args } = data;
+@@ -67,7 +67,7 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
+ });
+ 
+ function postMessage(message: Message) {
+-	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("post", message);
++	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("post", JSON.stringify({ name: message.name, args: message.args }));
+ 	const { name, args } = running = message;
+ 	worker.postMessage({ name, args });
+ }
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..f5781d2 100644
+index 92b9a90..f0581a3 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
-@@ -1,137 +1,232 @@
+@@ -1,137 +1,235 @@
 -import type { Actions, ListenerArgsMap, Message, RimeResult, RimeAPI, RimeNotification, RimeDeployStatus } from "./types";
 -
 -type TypeToString<T> = T extends number ? "number"
@@ -248,6 +275,9 @@ index 92b9a90..f5781d2 100644
 +      printErr,
 +      noInitialRun: true,
 +      locateFile(path) {
++        if (path.endsWith(".wasm")) {
++          return "yune-typeduck.wasm";
++        }
 +        return path;
 +      },
 +    });
@@ -363,3 +393,1000 @@ index 92b9a90..f5781d2 100644
 +addEventListener("unload", () => {
 +  cleanupYuneRuntime();
  });
+diff --git a/src/yune-integration/README.md b/src/yune-integration/README.md
+new file mode 100644
+index 0000000..606bf86
+--- /dev/null
++++ b/src/yune-integration/README.md
+@@ -0,0 +1,241 @@
++# TypeDuck-Web Yune Integration Layer
++
++This directory contains the Yune-owned integration layer that bridges TypeDuck-Web's Actions interface to the repository-owned `@yune-ime/typeduck-runtime` package.
++
++## Purpose
++
++Replaces the upstream TypeDuck-Web librime/WASM binding with Yune runtime helpers while preserving the app's UI, worker queue, and Actions interface.
++
++## Components
++
++### adapter.ts
++
++Primary seam adapter that:
++
++- Imports `TypeDuckRuntime`, `keyEventToRimeKey`, filesystem/persistence helpers from `@yune-ime/typeduck-runtime` per D-04
++- Preserves one active runtime per Emscripten Module per D-05
++- Translates `TypeDuckResponse` to upstream `RimeResult` shape
++- Parses upstream key sequence strings to keyboard event-like objects
++- Enforces explicit sync boundaries (before init, after commit/deploy/customize)
++- Provides deterministic cleanup on worker teardown
++
++### assets.ts
++
++Explicit asset contract that:
++
++- Requires TypeDuck-Web-owned `default.yaml`, schema YAML, and dictionary YAML
++- Validates no synthetic/fake/substitute YAML content per D-06
++- Fails visibly when assets are absent
++- Documents asset sources before runtime init
++
++### package-alias.md
++
++Documents local package resolution for `@yune-ime/typeduck-runtime` without publishing.
++
++## Integration Strategy
++
++### Patch Scope (Per D-03)
++
++Minimal patch touches only documented seam/config files:
++
++- `src/worker.ts` — Replace librime WASM import with Yune runtime adapter
++- Preserve `src/rime.ts` — Main-thread facade unchanged
++- Preserve `src/types.ts` — Actions interface unchanged
++- Preserve UI components — No visual/behavioral changes
++
++### Lifecycle (Per D-05)
++
++1. Worker loads Yune Emscripten Module (provides `yune_typeduck_*` exports)
++2. Adapter initializes one `TypeDuckRuntime` instance
++3. All actions reuse same runtime instance
++4. Cleanup called before worker teardown or re-initialization
++5. One active runtime per Module enforced at adapter level
++
++### Persistence Pattern (Per D-04, Phase 9)
++
++- `syncFromPersistenceBeforeInit(fs)` before runtime init
++- `syncToPersistenceAfterMutation(fs)` after commit/deploy
++- `deployAndSync(runtime, fs)` for deploy action
++- `customizeAndSync(runtime, fs, ...)` for customize action
++- `syncAfterUserDataChange(fs)` after candidate delete
++
++### Asset Contract (Per D-06)
++
++Required assets before init:
++
++- `default.yaml` — RIME default configuration
++- `${schemaId}.schema.yaml` — Schema definition
++- `${dictionaryId}.dict.yaml` — Dictionary source
++
++All assets must be explicit TypeDuck-Web-owned YAML files. Missing assets fail visibly at filesystem preparation.
++
++## Contract Mismatches
++
++### String Input vs Keycode/Mask
++
++**Upstream**: `processKey(input: string)` sends sequences like `{BackSpace}`, `a`, `{Release+Enter}`
++
++**Yune**: `processKeyboardEvent(event)` or `processKey(keycode, mask)` uses integer codes
++
++**Adapter**: Parses string sequences to `TypeDuckKeyboardEventLike`, delegates to `keyEventToRimeKey`
++
++### RimeResult vs TypeDuckResponse
++
++**Upstream**: `RimeResult` with `isComposing`, `inputBuffer`, `candidates`, `page`, `committed`
++
++**Yune**: `TypeDuckResponse` with `handled`, `commits`, `context.preedit`, `context.candidates`
++
++**Adapter**: Translates Yune response fields to upstream RimeResult shape
++
++### Missing setOption
++
++**Upstream**: `Actions.setOption(option: string, value: boolean)` sets session options
++
++**Yune**: Current TypeDuck wrapper lacks `setOption` method
++
++**Adapter**: Throws error documenting gap; requires Yune widening per D-07 if E2E flows need it
++
++## Patch Application Instructions
++
++### Prerequisites
++
++1. Clone upstream TypeDuck-Web to `third_party/typeduck-web/source`
++2. Build Yune WASM artifact (provides `yune_typeduck_*` exports and Module)
++3. Build `@yune-ime/typeduck-runtime` package
++4. Alias local package per package-alias.md
++
++### Apply Patch
++
++```bash
++# From repository root
++cd third_party/typeduck-web/source
++
++# Apply Yune seam patch
++git apply ../patches/yune-typeduck-runtime.patch
++
++# Verify patch applied
++git status
++```
++
++### Configure Assets
++
++Provide explicit YAML assets before worker init:
++
++1. Create or fetch `default.yaml`
++2. Create or fetch schema YAML (e.g., `luna_pinyin.schema.yaml`)
++3. Create or fetch dictionary YAML (e.g., `luna_pinyin.dict.yaml`)
++4. Configure asset loader in patched worker
++
++### Build and Run
++
++```bash
++# Install dependencies (upstream uses Bun)
++bun install
++
++# Build worker
++bun run worker
++
++# Start development server
++bun run start
++```
++
++## Lifecycle Hooks
++
++### Worker Initialization
++
++Patch replaces upstream `loadRime()` with:
++
++```typescript
++import { initYuneRuntime } from "../yune-integration/adapter.js";
++import { loadExplicitAssets, validateExplicitAssets } from "../yune-integration/assets.js";
++
++// Before Module init
++const assets = await loadExplicitAssets(explicitAssetsConfig);
++validateExplicitAssets(assets);
++
++await initYuneRuntime(Module, FS, initOptions, assets, dictionaryId);
++```
++
++### Action Handlers
++
++Patch replaces `Module.ccall` calls with adapter exports:
++
++```typescript
++import {
++  processKey,
++  selectCandidate,
++  deleteCandidate,
++  flipPage,
++  deploy,
++  customize,
++  setOption,
++} from "../yune-integration/adapter.js";
++
++// processKey(input) instead of Module.ccall("process_key", ...)
++// selectCandidate(index) instead of Module.ccall("select_candidate", ...)
++// deploy() instead of Module.ccall("deploy", ...)
++```
++
++### Worker Teardown
++
++Patch adds cleanup before worker termination:
++
++```typescript
++import { cleanupYuneRuntime } from "../yune-integration/adapter.js";
++
++// Before worker unload
++cleanupYuneRuntime();
++```
++
++## Known Gaps
++
++### Yune Adapter Widening Needed
++
++If E2E flows require `setOption`, Yune adapter must add native/wrapper support per D-07.
++
++Document smallest proven blocker before widening:
++
++- What upstream flow calls `setOption`
++- What Yune API surface lacks
++- What native change needed (smallest possible)
++
++### Upstream Build Tooling
++
++TypeDuck-Web uses Bun. If Bun unavailable, document:
++
++- Missing executable
++- Install hint from upstream docs
++- Fallback evidence (npm build attempt)
++
++### Asset Discovery
++
++TypeDuck-Web may expect specific asset paths or CDN URLs. Document:
++
++- Required asset locations
++- Missing asset discovery mechanism
++- Yune-side workaround (explicit loader)
++
++## Deferred Items (Per D-14)
++
++Explicitly NOT part of this integration:
++
++- AI-native provider calls, candidate generation, ranking policy
++- AI-native context capture, memory, privacy controls
++- New first-party Yune graphical frontend
++- Multi-instance Yune/RIME service isolation
++- Browser CDN/cache/service worker/storage quota policy
++
++## Next Steps
++
++After patch application:
++
++1. Run upstream build/typecheck to verify compilation
++2. Test browser E2E flows (composition, candidates, deploy, customize, persistence)
++3. Document any remaining blockers in findings
++4. Recommend AI-native frontend readiness (go/no-go with conditions)
++
++---
++
++**Phase**: 10-typeduck-web-app-integration-and-e2e
++**Plan**: 10-02 (Yune seam patch/configuration layer)
++**Status**: Integration layer created, pending patch application and build gates
+\ No newline at end of file
+diff --git a/src/yune-integration/adapter.ts b/src/yune-integration/adapter.ts
+new file mode 100644
+index 0000000..04f692e
+--- /dev/null
++++ b/src/yune-integration/adapter.ts
+@@ -0,0 +1,382 @@
++/**
++ * Yune seam adapter for TypeDuck-Web
++ *
++ * This adapter bridges TypeDuck-Web's Actions interface to the Yune runtime
++ * (@yune-ime/typeduck-runtime). It preserves one active TypeDuckRuntime per
++ * Emscripten Module and handles lifecycle cleanup per D-05.
++ *
++ * Contract:
++ * - Replaces upstream src/worker.ts librime/WASM binding
++ * - Delegates to TypeDuckRuntime, keyEventToRimeKey, filesystem helpers per D-04
++ * - Enforces one-live-runtime-per-Module constraint
++ * - Translates TypeDuckResponse to RimeResult shape for upstream compatibility
++ * - Calls cleanup() deterministically when worker tears down
++ */
++
++import {
++  TypeDuckRuntime,
++  type EmscriptenTypeDuckModule,
++  type TypeDuckInitOptions,
++  keyEventToRimeKey,
++  type TypeDuckKeyboardEventLike,
++  joinTypeDuckVirtualPath,
++  prepareTypeDuckFilesystem,
++  syncFromPersistenceBeforeInit,
++  syncToPersistenceAfterMutation,
++  deployAndSync,
++  customizeAndSync,
++  syncAfterUserDataChange,
++  type TypeDuckFilesystem,
++  type TypeDuckFilesystemAssets,
++  type PrepareTypeDuckFilesystemOptions,
++} from "@yune-ime/typeduck-runtime";
++
++import { translateResponse, type RimeResult } from "./response.js";
++
++/**
++ * Upstream Actions interface from src/types.ts
++ */
++export interface Actions {
++  setOption(option: string, value: boolean): Promise<void>;
++  processKey(input: string): Promise<RimeResult>;
++  selectCandidate(index: number): Promise<RimeResult>;
++  deleteCandidate(index: number): Promise<RimeResult>;
++  flipPage(backward: boolean): Promise<RimeResult>;
++  customize(preferences: RimePreferences): Promise<boolean>;
++  deploy(): Promise<boolean>;
++}
++
++/**
++ * Upstream preferences shape from src/types.ts
++ */
++export interface RimePreferences {
++  pageSize?: number;
++  /** Pre-2024 options encoding */
++  options?: number;
++}
++
++/**
++ * Upstream listener event types from src/types.ts
++ */
++export type ListenerEvent =
++  | "deployStatusChanged"
++  | "schemaChanged"
++  | "optionChanged"
++  | "initialized";
++
++/**
++ * Adapter state: one active runtime per Module
++ */
++let currentRuntime: TypeDuckRuntime | null = null;
++let currentModule: EmscriptenTypeDuckModule | null = null;
++let currentFs: TypeDuckFilesystem | null = null;
++let currentSchemaId: string | null = null;
++let lastKeyResult: RimeResult = { isComposing: false, success: true };
++
++export interface TypeDuckExtraSharedAsset {
++  path: string;
++  content: string | Uint8Array;
++}
++
++/**
++ * Initialize Yune runtime with Emscripten Module and filesystem
++ *
++ * Replaces upstream worker.ts loadRime() and init sequence
++ */
++export async function initYuneRuntime(
++  module: EmscriptenTypeDuckModule,
++  fs: TypeDuckFilesystem,
++  options: TypeDuckInitOptions,
++  assets: TypeDuckFilesystemAssets,
++  dictionaryId: string,
++  extraSharedAssets: TypeDuckExtraSharedAsset[] = [],
++): Promise<void> {
++  // Cleanup previous runtime if exists (one-active-runtime constraint)
++  if (currentRuntime !== null) {
++    currentRuntime.cleanup();
++    currentRuntime = null;
++  }
++
++  currentModule = module;
++  currentFs = fs;
++  currentSchemaId = options.schemaId;
++  lastKeyResult = { isComposing: false, success: true };
++
++  // Prepare filesystem with explicit assets per D-06
++  const prepareOptions: PrepareTypeDuckFilesystemOptions = {
++    sharedDataDir: options.sharedDataDir,
++    userDataDir: options.userDataDir,
++    schemaId: options.schemaId,
++    dictionaryId,
++    assets,
++  };
++
++  // Load persisted user/build state before writing fresh app-owned assets.
++  await syncFromPersistenceBeforeInit(fs);
++
++  prepareTypeDuckFilesystem(fs, prepareOptions);
++  for (const asset of extraSharedAssets) {
++    writeExtraSharedAsset(fs, options.sharedDataDir, asset);
++  }
++
++  // Initialize runtime
++  currentRuntime = TypeDuckRuntime.init(module, options);
++
++  // Sync after init to persist initial state
++  await syncToPersistenceAfterMutation(fs);
++}
++
++/**
++ * Cleanup current runtime deterministically
++ *
++ * Call when worker tears down or before re-initialization
++ */
++export function cleanupYuneRuntime(): void {
++  if (currentRuntime !== null) {
++    currentRuntime.cleanup();
++    currentRuntime = null;
++  }
++  currentModule = null;
++  currentFs = null;
++  currentSchemaId = null;
++  lastKeyResult = { isComposing: false, success: true };
++}
++
++/**
++ * Parse upstream key sequence string to keyboard event-like object
++ *
++ * Upstream CandidatePanel.tsx sends strings like "{BackSpace}", "a", "{Release+Enter}"
++ * This adapter translates to TypeDuckKeyboardEventLike for keyEventToRimeKey
++ */
++function parseKeySequence(input: string): TypeDuckKeyboardEventLike {
++  // Release prefix
++  const isRelease = input.startsWith("{Release+");
++  const type = isRelease ? "keyup" : "keydown";
++
++  // Extract key name
++  let key: string;
++  if (input.startsWith("{") && input.endsWith("}")) {
++    // Special key wrapped in braces
++    const inner = input.slice(1, -1);
++    if (isRelease) {
++      key = inner.replace("Release+", "");
++    } else {
++      key = inner;
++    }
++    // Normalize key names
++    if (key === "BackSpace") key = "Backspace";
++    if (key === "Page_Up") key = "PageUp";
++    if (key === "Page_Down") key = "PageDown";
++    if (key === "Return") key = "Enter";
++    if (key === "Esc") key = "Escape";
++    if (key === "Prior") key = "PageUp";
++    if (key === "Next") key = "PageDown";
++  } else {
++    // Printable key sent directly
++    key = input;
++  }
++
++  return { key, type };
++}
++
++/**
++ * Process key event using Yune runtime
++ *
++ * Replaces upstream Module.ccall("process_key", ...)
++ */
++export async function processKey(input: string): Promise<RimeResult> {
++  if (currentRuntime === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++
++  // Parse upstream key sequence to event-like object
++  const eventLike = parseKeySequence(input);
++
++  if (eventLike.type === "keyup") {
++    return lastKeyResult;
++  }
++
++  // Delegate to Yune runtime via keyEventToRimeKey per D-04
++  const response = currentRuntime.processKeyboardEvent(eventLike);
++
++  // Translate to upstream RimeResult
++  const result = translateResponse(response);
++  lastKeyResult = result;
++
++  // Sync persistence after commit
++  if (result.committed && currentFs !== null) {
++    await syncToPersistenceAfterMutation(currentFs);
++  }
++
++  return result;
++}
++
++/**
++ * Select candidate using Yune runtime
++ *
++ * Replaces upstream Module.ccall("select_candidate", ...)
++ */
++export async function selectCandidate(index: number): Promise<RimeResult> {
++  if (currentRuntime === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++
++  const response = currentRuntime.selectCandidate(index);
++  const result = translateResponse(response);
++
++  // Sync persistence after commit
++  if (result.committed && currentFs !== null) {
++    await syncToPersistenceAfterMutation(currentFs);
++  }
++
++  return result;
++}
++
++/**
++ * Delete candidate using Yune runtime
++ *
++ * Replaces upstream Module.ccall("delete_candidate", ...)
++ */
++export async function deleteCandidate(index: number): Promise<RimeResult> {
++  if (currentRuntime === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++
++  const response = currentRuntime.deleteCandidate(index);
++  const result = translateResponse(response);
++
++  // Sync persistence after user data change
++  if (currentFs !== null) {
++    await syncAfterUserDataChange(currentFs);
++  }
++
++  return result;
++}
++
++/**
++ * Flip page using Yune runtime
++ *
++ * Replaces upstream Module.ccall("flip_page", ...)
++ */
++export async function flipPage(backward: boolean): Promise<RimeResult> {
++  if (currentRuntime === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++
++  const response = currentRuntime.flipPage(backward);
++  return translateResponse(response);
++}
++
++/**
++ * Deploy schema using Yune runtime and sync persistence
++ *
++ * Replaces upstream Module.ccall("deploy", ...)
++ */
++export async function deploy(): Promise<boolean> {
++  if (currentRuntime === null || currentFs === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++
++  // Delegate to deployAndSync per D-04
++  const deployed = await deployAndSync(currentRuntime, currentFs);
++  return deployed;
++}
++
++/**
++ * Customize preferences using Yune runtime and sync persistence
++ *
++ * Replaces upstream Module.ccall("customize", ...)
++ *
++ * Note: Upstream customize uses pageSize and options bitmap.
++ * Yune customize API accepts configId, key, value strings.
++ * This adapter maps preferences to Yune customize calls.
++ */
++export async function customize(preferences: RimePreferences): Promise<boolean> {
++  if (currentRuntime === null || currentFs === null || currentSchemaId === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++
++  // Map preferences to Yune customize calls
++  let success = true;
++
++  if (preferences.pageSize !== undefined) {
++    const customized = await customizeAndSync(
++      currentRuntime,
++      currentFs,
++      currentSchemaId,
++      "page_size",
++      String(preferences.pageSize),
++    );
++    success = success && customized;
++  }
++
++  // Note: options bitmap handling not implemented yet
++  // Requires Yune adapter widening or explicit preference mapping
++
++  return success;
++}
++
++/**
++ * Set option on current runtime
++ *
++ * Note: Upstream Actions.setOption is not present in current Yune TypeDuck wrapper.
++ * This adapter documents the gap and raises an error documenting the missing feature.
++ *
++ * @throws Error if setOption is called (Yune adapter gap)
++ */
++export async function setOption(option: string, value: boolean): Promise<void> {
++  // Yune adapter gap: setOption not in current TypeDuckRuntime interface
++  // Requires Yune adapter widening per D-07 if E2E flows require this action
++
++  throw new Error(
++    `Yune adapter gap: setOption("${option}", ${value}) not implemented. ` +
++      `Requires Yune adapter widening or mapping to customize/status API.`,
++  );
++}
++
++function writeExtraSharedAsset(
++  fs: TypeDuckFilesystem,
++  sharedDataDir: string,
++  asset: TypeDuckExtraSharedAsset,
++): void {
++  if (
++    asset.path.length === 0 ||
++    asset.path.startsWith("/") ||
++    asset.path.includes("\\") ||
++    asset.path.split("/").includes("..")
++  ) {
++    throw new Error(`Invalid TypeDuck shared asset path: ${asset.path}`);
++  }
++
++  const fullPath = joinTypeDuckVirtualPath(sharedDataDir, asset.path);
++  ensureVirtualDirectory(fs, fullPath.split("/").slice(0, -1).join("/"));
++  fs.writeFile(fullPath, asset.content, { flags: "w" });
++}
++
++function ensureVirtualDirectory(fs: TypeDuckFilesystem, path: string): void {
++  if (fs.analyzePath(path).exists) {
++    return;
++  }
++  if (fs.mkdirTree !== undefined) {
++    fs.mkdirTree(path);
++    return;
++  }
++  if (fs.mkdir === undefined) {
++    throw new Error(`TypeDuck filesystem cannot create directory: ${path}`);
++  }
++  const segments = path.split("/").filter((segment) => segment.length > 0);
++  let current = path.startsWith("/") ? "/" : "";
++  for (const segment of segments) {
++    current = current === "/" || current === "" ? `${current}${segment}` : `${current}/${segment}`;
++    if (!fs.analyzePath(current).exists) {
++      fs.mkdir(current);
++    }
++  }
++}
++
++/**
++ * Get current runtime for testing/debugging
++ */
++export function getCurrentRuntime(): TypeDuckRuntime | null {
++  return currentRuntime;
++}
+diff --git a/src/yune-integration/assets.ts b/src/yune-integration/assets.ts
+new file mode 100644
+index 0000000..1fc89c3
+--- /dev/null
++++ b/src/yune-integration/assets.ts
+@@ -0,0 +1,179 @@
++/**
++ * Explicit asset loader contract for TypeDuck-Web
++ *
++ * Enforces that TypeDuck-Web-owned default.yaml, schema YAML, and dictionary YAML
++ * assets are explicitly provided and visible. No synthetic data is fabricated per D-06.
++ *
++ * Contract:
++ * - Require explicit asset paths or content
++ * - Fail visibly when assets are absent
++ * - No synthetic/fake/substitute YAML content
++ * - Assets are TypeDuck-Web app-owned, not Yune-owned
++ */
++
++import { type TypeDuckFilesystemAssets } from "@yune-ime/typeduck-runtime";
++
++/**
++ * Asset source types
++ */
++export type AssetSource =
++  | { type: "content"; content: string | Uint8Array }
++  | { type: "path"; path: string }
++  | { type: "url"; url: string };
++
++/**
++ * Explicit TypeDuck-Web assets configuration
++ */
++export interface ExplicitTypeDuckAssets {
++  defaultYaml: AssetSource;
++  schemaYaml: AssetSource;
++  dictionaryYaml: AssetSource;
++}
++
++/**
++ * Load asset content from source
++ *
++ * @throws Error if asset is absent or loading fails
++ */
++export async function loadAssetContent(source: AssetSource): Promise<string | Uint8Array> {
++  switch (source.type) {
++    case "content":
++      return source.content;
++
++    case "path":
++      // Note: File loading requires runtime environment (Node fs or fetch)
++      // Implementation deferred to patch/application stage
++      throw new Error(
++        `Asset path loading not implemented: ${source.path}. ` +
++          `Provide asset content explicitly or implement loader in patched worker.`,
++      );
++
++    case "url": {
++      const response = await fetch(source.url);
++      if (!response.ok) {
++        throw new Error(`Asset URL loading failed: ${source.url} (${response.status})`);
++      }
++      return response.text();
++    }
++
++    default:
++      throw new Error(`Invalid asset source type: ${source}`);
++  }
++}
++
++/**
++ * Load explicit TypeDuck-Web assets
++ *
++ * Converts ExplicitTypeDuckAssets to TypeDuckFilesystemAssets for
++ * prepareTypeDuckFilesystem.
++ *
++ * @throws Error if any asset is absent
++ */
++export async function loadExplicitAssets(
++  assets: ExplicitTypeDuckAssets,
++): Promise<TypeDuckFilesystemAssets> {
++  const defaultYaml = await loadAssetContent(assets.defaultYaml);
++  const schemaYaml = await loadAssetContent(assets.schemaYaml);
++  const dictionaryYaml = await loadAssetContent(assets.dictionaryYaml);
++
++  return {
++    defaultYaml,
++    schemaYaml,
++    dictionaryYaml,
++  };
++}
++
++/**
++ * Validate that asset content is not fake/substitute data
++ *
++ * Rejects synthetic schema/dictionary patterns per D-06
++ */
++export function validateNoFallbackAssets(content: string | Uint8Array, assetName: string): void {
++  if (typeof content !== "string") {
++    // Binary content, skip string validation
++    return;
++  }
++
++  if (content.trim().length === 0) {
++    throw new Error(`TypeDuck-Web asset ${assetName} is empty. Provide explicit app-owned YAML per D-06.`);
++  }
++
++  const forbiddenPatterns = [
++    "synthetic yaml",
++    "fake asset",
++    "incomplete schema",
++    "incomplete dictionary",
++    "test yaml",
++    "sample only",
++    "TODO",
++    "FIXME",
++    "not available",
++    "coming soon",
++    "temporary yaml",
++    "stub data",
++  ];
++
++  for (const pattern of forbiddenPatterns) {
++    if (content.includes(pattern)) {
++      throw new Error(
++        `TypeDuck-Web asset ${assetName} contains forbidden synthetic pattern: "${pattern}". ` +
++          `Provide explicit app-owned YAML per D-06.`,
++      );
++    }
++  }
++}
++
++/**
++ * Validate explicit assets have no synthetic content
++ *
++ * @throws Error if any asset contains synthetic/fake patterns
++ */
++export function validateExplicitAssets(assets: TypeDuckFilesystemAssets): void {
++  validateNoFallbackAssets(assets.defaultYaml, "default.yaml");
++  validateNoFallbackAssets(assets.schemaYaml, "schema YAML");
++  validateNoFallbackAssets(assets.dictionaryYaml, "dictionary YAML");
++}
++
++/**
++ * Asset requirement checklist for TypeDuck-Web
++ *
++ * Documents required assets and their sources before runtime init
++ */
++export interface AssetRequirementChecklist {
++  schemaId: string;
++  dictionaryId: string;
++  assets: ExplicitTypeDuckAssets;
++  validated: boolean;
++}
++
++/**
++ * Create asset requirement checklist
++ *
++ * Records required assets before init, enforces explicit sources
++ */
++export function createAssetChecklist(
++  schemaId: string,
++  dictionaryId: string,
++  assets: ExplicitTypeDuckAssets,
++): AssetRequirementChecklist {
++  return {
++    schemaId,
++    dictionaryId,
++    assets,
++    validated: false,
++  };
++}
++
++/**
++ * Verify asset checklist is complete before runtime init
++ *
++ * @throws Error if assets are not validated
++ */
++export function verifyAssetChecklist(checklist: AssetRequirementChecklist): void {
++  if (!checklist.validated) {
++    throw new Error(
++      `Asset checklist for schema ${checklist.schemaId} not validated. ` +
++        `Call loadExplicitAssets and validateExplicitAssets before init.`,
++    );
++  }
++}
+diff --git a/src/yune-integration/package-alias.md b/src/yune-integration/package-alias.md
+new file mode 100644
+index 0000000..e5f998a
+--- /dev/null
++++ b/src/yune-integration/package-alias.md
+@@ -0,0 +1,101 @@
++# Local Package Alias for @yune-ime/typeduck-runtime
++
++TypeDuck-Web integration imports `@yune-ime/typeduck-runtime` from the repository-owned package without publishing to npm.
++
++## Alias Methods
++
++### Method 1: Package.json Alias (Preferred)
++
++Add alias to TypeDuck-Web's `package.json`:
++
++```json
++{
++  "dependencies": {
++    "@yune-ime/typeduck-runtime": "file:../../../packages/yune-typeduck-runtime"
++  }
++}
++```
++
++Then install:
++
++```bash
++cd third_party/typeduck-web/source
++bun install
++```
++
++Alias resolves to local package directory, making `import "@yune-ime/typeduck-runtime"` work.
++
++### Method 2: Vite Resolve Alias
++
++If upstream uses Vite (TypeDuck-Web does), add resolve alias to `vite.config.ts`:
++
++```typescript
++import { defineConfig } from "vite";
++import path from "path";
++
++export default defineConfig({
++  resolve: {
++    alias: {
++      "@yune-ime/typeduck-runtime": path.resolve(
++        __dirname,
++        "../../../packages/yune-typeduck-runtime/src/index.ts"
++      ),
++    },
++  },
++});
++```
++
++Alias resolves imports to TypeScript source directly during dev server.
++
++### Method 3: Relative Import (Fallback)
++
++If alias mechanisms unavailable, use relative import in adapter:
++
++```typescript
++// Instead of:
++import { TypeDuckRuntime } from "@yune-ime/typeduck-runtime";
++
++// Use:
++import { TypeDuckRuntime } from "../../../packages/yune-typeduck-runtime/src/index.js";
++```
++
++Less maintainable, but works without package alias configuration.
++
++## Verify Alias
++
++After alias configuration, verify import resolves:
++
++```bash
++cd third_party/typeduck-web/source
++
++# Check package installed (Method 1)
++ls node_modules/@yune-ime/typeduck-runtime
++
++# Or test import (Method 2/3)
++bun run worker
++```
++
++Worker build should compile adapter imports without errors.
++
++## Build Local Package
++
++Before alias, ensure local package builds:
++
++```bash
++# From repository root
++npm --prefix packages/yune-typeduck-runtime run build
++```
++
++Output in `packages/yune-typeduck-runtime/dist/` used by alias.
++
++## Notes
++
++- Alias only for local development/testing, not for distribution
++- Do not publish `@yune-ime/typeduck-runtime` to npm during Phase 10
++- Alias path assumes TypeDuck-Web checkout at `third_party/typeduck-web/source`
++- Adjust path if checkout location differs
++
++---
++
++**Phase**: 10-typeduck-web-app-integration-and-e2e
++**Plan**: 10-02 (Yune seam patch/configuration layer)
+\ No newline at end of file
+diff --git a/src/yune-integration/response.ts b/src/yune-integration/response.ts
+new file mode 100644
+index 0000000..cced079
+--- /dev/null
++++ b/src/yune-integration/response.ts
+@@ -0,0 +1,62 @@
++import type { TypeDuckResponse } from "@yune-ime/typeduck-runtime";
++
++/**
++ * Upstream RimeResult shape from src/types.ts
++ */
++export interface RimeResult {
++  isComposing: boolean;
++  inputBuffer?: {
++    before: string;
++    active: string;
++    after: string;
++  };
++  page?: number;
++  isLastPage?: boolean;
++  highlightedIndex?: number;
++  candidates?: Array<{
++    label?: string;
++    text: string;
++    comment?: string;
++  }>;
++  success: boolean;
++  committed?: string;
++}
++
++export function translateResponse(response: TypeDuckResponse): RimeResult {
++  if (!response.handled) {
++    return { isComposing: false, success: false };
++  }
++
++  const committed = response.commits.length > 0 ? response.commits.join("") : undefined;
++
++  if (response.context && response.context.preedit) {
++    const preedit = response.context.preedit;
++    const caretPos = response.context.caret ?? 0;
++    const before = preedit.slice(0, caretPos);
++    const active = preedit.slice(caretPos);
++    const after = "";
++
++    const candidates = response.context.candidates?.map((candidate, index) => ({
++      label: response.context?.select_labels?.[index],
++      text: candidate.text,
++      comment: candidate.comment,
++    }));
++
++    return {
++      isComposing: true,
++      inputBuffer: { before, active, after },
++      page: response.context.page_no ?? 0,
++      isLastPage: response.context.is_last_page ?? false,
++      highlightedIndex: response.context.highlighted ?? 0,
++      candidates,
++      success: true,
++      committed,
++    };
++  }
++
++  return {
++    isComposing: false,
++    success: true,
++    committed,
++  };
++}

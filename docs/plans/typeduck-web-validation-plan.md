@@ -31,7 +31,7 @@ Verified present on `main`:
 | TypeScript runtime | `packages/yune-typeduck-runtime/src/` (`response.ts`, `keys.ts`) | Parses per-candidate `comment`; `TypeDuckContext` exposes `highlighted` + `candidates`; key/mask mapping (incl. the recent `BackSpace` alias). |
 | WASM build script | `scripts/typeduck-wasm-build.sh` | Emscripten / `wasm32-unknown-emscripten`; export list in `scripts/typeduck-exports.txt`. |
 | Upstream app seam | tracked source: `third_party/typeduck-web/yune-integration/adapter.ts`; patch: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`; ignored checkout: `third_party/typeduck-web/source/src/yune-integration/adapter.ts` | Wires TypeDuck-Web's input engine to the Yune bridge. The tracked source/patch are the versions to fix in WI-2; the ignored checkout may be hot-patched locally but will not land in git. |
-| Findings + blockers | [`typeduck-web-integration-findings.md`](./typeduck-web-integration-findings.md) | 10 E2E flows recorded as **BLOCKED** (WASM artifact never built). |
+| Findings + blockers | [`typeduck-web-integration-findings.md`](./typeduck-web-integration-findings.md) | WI-4 browser run recorded PASS/FAIL evidence; core composition/selection pass, but paging/deletion/deploy/persistence/dictionary-comment parity fail. |
 | Superseded recommendation | [`archive/ai-native-frontend-readiness.md`](./archive/ai-native-frontend-readiness.md) | The tooling-blocked NO-GO this plan replaces. |
 
 The single thing that blocked Phase 10 was **no Emscripten toolchain** → no WASM
@@ -195,6 +195,6 @@ frontends share. Drive from the v1.1.2 oracle:
 - [x] **WI-1** — Emscripten + loadable WASM/JS artifact built; exports verified; native fallback green
 - [x] **WI-2** — `adapter.ts` text/comment/highlight shapes fixed + unit-tested
 - [x] **WI-3** — browser FS layout, asset preload, and IDBFS sync wired into the patched app seam
-- [ ] **WI-4** — 10 E2E flows run in a real browser with captured PASS/FAIL evidence
+- [x] **WI-4** — 10 E2E flows run in a real browser with captured PASS/FAIL evidence
 - [ ] **WI-5** — evidence-based GO/NO-GO recorded; tracking docs updated
 - [ ] **WI-6** — shared engine parity (`"; "` joiner + schema-prompt; Cantonese goldens)

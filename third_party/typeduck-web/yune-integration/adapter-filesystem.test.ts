@@ -11,6 +11,7 @@ vi.mock("@yune-ime/typeduck-runtime", async () => {
 
 let cleanupYuneRuntime: typeof import("./adapter.js").cleanupYuneRuntime;
 let initYuneRuntime: typeof import("./adapter.js").initYuneRuntime;
+let processKey: typeof import("./adapter.js").processKey;
 
 const assets = {
   defaultYaml: "config_version: typeduck-web\nschema_list:\n  - schema: luna_pinyin\n",
@@ -50,6 +51,7 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     const adapter = await import("./adapter.js");
     cleanupYuneRuntime = adapter.cleanupYuneRuntime;
     initYuneRuntime = adapter.initYuneRuntime;
+    processKey = adapter.processKey;
   });
 
   afterEach(() => {
@@ -92,5 +94,64 @@ describe("initYuneRuntime browser filesystem ordering", () => {
 
     expect(fs.calls("writeFile")).toEqual([]);
     expect(module.calls("yune_typeduck_init")).toEqual([]);
+  });
+
+  it("preserves the last composing result for TypeDuck-Web key release events", async () => {
+    const fs = new FakeTypeDuckFilesystem();
+    const module = new FakeTypeDuckModule();
+    module.processKeyResult = module.response({
+      handled: true,
+      commits: [],
+      context: {
+        input: "b",
+        preedit: "b",
+        caret: 1,
+        highlighted: 0,
+        page_size: 5,
+        page_no: 0,
+        is_last_page: true,
+        select_keys: "12345",
+        select_labels: ["1", "2", "3", "4", "5"],
+        candidates: [{ text: "b", comment: "echo" }],
+      },
+      status: null,
+    });
+
+    await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
+
+    const composing = await processKey("{b}");
+    const release = await processKey("{Release+b}");
+
+    expect(release).toEqual(composing);
+    expect(module.calls("yune_typeduck_process_key")).toHaveLength(1);
+  });
+
+  it("accepts TypeDuck-Web underscore page-key spellings", async () => {
+    const fs = new FakeTypeDuckFilesystem();
+    const module = new FakeTypeDuckModule();
+    module.processKeyResult = module.response({
+      handled: true,
+      commits: [],
+      context: {
+        input: "ba",
+        preedit: "ba",
+        caret: 2,
+        highlighted: 0,
+        page_size: 5,
+        page_no: 0,
+        is_last_page: true,
+        select_keys: "12345",
+        select_labels: ["1", "2", "3", "4", "5"],
+        candidates: [{ text: "ba", comment: "echo" }],
+      },
+      status: null,
+    });
+
+    await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
+
+    await expect(processKey("{Page_Down}")).resolves.toMatchObject({ isComposing: true });
+    await expect(processKey("{Page_Up}")).resolves.toMatchObject({ isComposing: true });
+
+    expect(module.calls("yune_typeduck_process_key")).toHaveLength(2);
   });
 });

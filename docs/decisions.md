@@ -396,6 +396,14 @@ sync markers for the E2E evidence. Missing browser/local tooling is recorded
 reproducibly (command, missing dependency, fallback evidence). Asset configuration
 was recorded as an E2E blocker, not a build blocker.
 
+**D-P10-6 — WI-4 browser evidence replaces the old tooling blocker with concrete
+behavioral failures.** The TypeDuck-Web app now loads the Yune Emscripten
+JS/WASM module in a real browser. Composition, candidate rendering, selection,
+commit output, backspace mutation, and customize pass. Candidate paging,
+candidate deletion, deploy, persistence sync/reload proof, and v1.1.2
+dictionary-comment rendering fail and must be tracked as behavior/runtime gaps,
+not as missing-tooling blockers.
+
 **D-12 / TYPEDUCK-E2E-04 — Final findings separate three blocker classes.**
 TypeDuck-Web app/source blockers, Yune adapter/runtime mismatches, and
 environment/tooling blockers are reported separately.

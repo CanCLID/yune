@@ -1,0 +1,602 @@
+[
+  {
+    "level": "error",
+    "message": "Warning: validateDOMNesting(...): %s cannot appear as a child of <%s>.%s%s%s <tr> button   \n    at tr\n    at button\n    at tbody\n    at Candidate (http://127.0.0.1:5173/web/src/Candidate.tsx:25:37)\n    at table\n    at div\n    at div\n    at CaretFollower (http://127.0.0.1:5173/web/src/CaretFollower.tsx:24:84)\n    at CandidatePanel (http://127.0.0.1:5173/web/src/CandidatePanel.tsx?t=1781756784362:30:42)\n    at main\n    at App (http://127.0.0.1:5173/web/src/App.tsx?t=1781756784362:34:37)",
+    "timestamp": "2026-06-18T06:55:04.757Z",
+    "url": "http://127.0.0.1:5173/web/node_modules/.vite/deps/react-dom_client.js?v=583a38c7"
+  },
+  {
+    "level": "error",
+    "message": "Warning: validateDOMNesting(...): %s cannot appear as a child of <%s>.%s%s%s <button> tbody   \n    at button\n    at tbody\n    at Candidate (http://127.0.0.1:5173/web/src/Candidate.tsx:25:37)\n    at table\n    at div\n    at div\n    at CaretFollower (http://127.0.0.1:5173/web/src/CaretFollower.tsx:24:84)\n    at CandidatePanel (http://127.0.0.1:5173/web/src/CandidatePanel.tsx?t=1781756784362:30:42)\n    at main\n    at App (http://127.0.0.1:5173/web/src/App.tsx?t=1781756784362:34:37)",
+    "timestamp": "2026-06-18T06:55:04.757Z",
+    "url": "http://127.0.0.1:5173/web/node_modules/.vite/deps/react-dom_client.js?v=583a38c7"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+b}\"]}",
+    "timestamp": "2026-06-18T06:55:04.762Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"b\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"b\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:55:04.762Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{a}\"]}",
+    "timestamp": "2026-06-18T06:55:04.786Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:55:04.786Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+a}\"]}",
+    "timestamp": "2026-06-18T06:55:04.791Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:55:04.791Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{1}\"]}",
+    "timestamp": "2026-06-18T06:55:53.709Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":false,\"success\":true,\"committed\":\"ba\"}}",
+    "timestamp": "2026-06-18T06:55:53.709Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{b}\"]}",
+    "timestamp": "2026-06-18T06:56:09.191Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"b\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"b\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:56:09.191Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+b}\"]}",
+    "timestamp": "2026-06-18T06:56:09.196Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"b\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"b\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:56:09.196Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{a}\"]}",
+    "timestamp": "2026-06-18T06:56:09.218Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:56:09.218Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+a}\"]}",
+    "timestamp": "2026-06-18T06:56:09.223Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:56:09.223Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Page_Down}\"]}",
+    "timestamp": "2026-06-18T06:56:09.752Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:09.752Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+Page_Down}\"]}",
+    "timestamp": "2026-06-18T06:56:09.758Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:56:09.758Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{BackSpace}\"]}",
+    "timestamp": "2026-06-18T06:56:10.113Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"b\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"b\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:56:10.113Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+BackSpace}\"]}",
+    "timestamp": "2026-06-18T06:56:10.118Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"b\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"b\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:56:10.118Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "debug",
+    "message": "[vite] connecting...",
+    "timestamp": "2026-06-18T06:56:52.898Z",
+    "url": "http://127.0.0.1:5173/web/@vite/client"
+  },
+  {
+    "level": "debug",
+    "message": "[vite] connected.",
+    "timestamp": "2026-06-18T06:56:52.900Z",
+    "url": "http://127.0.0.1:5173/web/@vite/client"
+  },
+  {
+    "level": "info",
+    "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+    "timestamp": "2026-06-18T06:56:52.910Z",
+    "url": "http://127.0.0.1:5173/web/node_modules/.vite/deps/react-dom_client.js?v=583a38c7"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"soft_cursor\",true]}",
+    "timestamp": "2026-06-18T06:56:52.919Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"listener\",\"name\":\"initialized\",\"args\":[true]}",
+    "timestamp": "2026-06-18T06:56:53.071Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.071Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_mode\",false]}",
+    "timestamp": "2026-06-18T06:56:53.071Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.073Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"simplification\",false]}",
+    "timestamp": "2026-06-18T06:56:53.073Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.073Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"full_shape\",false]}",
+    "timestamp": "2026-06-18T06:56:53.073Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.074Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_punct\",false]}",
+    "timestamp": "2026-06-18T06:56:53.074Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.074Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"customize\",\"args\":[{\"pageSize\":6,\"enableCompletion\":true,\"enableCorrection\":false,\"enableSentence\":true,\"enableLearning\":true,\"isCangjie5\":true}]}",
+    "timestamp": "2026-06-18T06:56:53.074Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":true}",
+    "timestamp": "2026-06-18T06:56:53.079Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"deploy\",\"args\":[]}",
+    "timestamp": "2026-06-18T06:56:53.079Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":false}",
+    "timestamp": "2026-06-18T06:56:53.097Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"soft_cursor\",true]}",
+    "timestamp": "2026-06-18T06:56:53.099Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.101Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_mode\",false]}",
+    "timestamp": "2026-06-18T06:56:53.101Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.101Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"simplification\",false]}",
+    "timestamp": "2026-06-18T06:56:53.101Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.102Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"full_shape\",false]}",
+    "timestamp": "2026-06-18T06:56:53.102Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.103Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_punct\",false]}",
+    "timestamp": "2026-06-18T06:56:53.103Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:56:53.103Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "debug",
+    "message": "[vite] connecting...",
+    "timestamp": "2026-06-18T06:57:05.677Z",
+    "url": "http://127.0.0.1:5173/web/@vite/client"
+  },
+  {
+    "level": "debug",
+    "message": "[vite] connected.",
+    "timestamp": "2026-06-18T06:57:05.679Z",
+    "url": "http://127.0.0.1:5173/web/@vite/client"
+  },
+  {
+    "level": "info",
+    "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+    "timestamp": "2026-06-18T06:57:05.693Z",
+    "url": "http://127.0.0.1:5173/web/node_modules/.vite/deps/react-dom_client.js?v=583a38c7"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"soft_cursor\",true]}",
+    "timestamp": "2026-06-18T06:57:05.702Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"listener\",\"name\":\"initialized\",\"args\":[true]}",
+    "timestamp": "2026-06-18T06:57:05.853Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.854Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_mode\",false]}",
+    "timestamp": "2026-06-18T06:57:05.854Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.854Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"simplification\",false]}",
+    "timestamp": "2026-06-18T06:57:05.854Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.855Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"full_shape\",false]}",
+    "timestamp": "2026-06-18T06:57:05.855Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.856Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_punct\",false]}",
+    "timestamp": "2026-06-18T06:57:05.856Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.857Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"customize\",\"args\":[{\"pageSize\":6,\"enableCompletion\":true,\"enableCorrection\":false,\"enableSentence\":true,\"enableLearning\":true,\"isCangjie5\":true}]}",
+    "timestamp": "2026-06-18T06:57:05.857Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":true}",
+    "timestamp": "2026-06-18T06:57:05.862Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"deploy\",\"args\":[]}",
+    "timestamp": "2026-06-18T06:57:05.862Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":false}",
+    "timestamp": "2026-06-18T06:57:05.880Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"soft_cursor\",true]}",
+    "timestamp": "2026-06-18T06:57:05.882Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.883Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_mode\",false]}",
+    "timestamp": "2026-06-18T06:57:05.883Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.884Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"simplification\",false]}",
+    "timestamp": "2026-06-18T06:57:05.884Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.885Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"full_shape\",false]}",
+    "timestamp": "2026-06-18T06:57:05.885Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.886Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"setOption\",\"args\":[\"ascii_punct\",false]}",
+    "timestamp": "2026-06-18T06:57:05.886Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"error\",\"error\":{}}",
+    "timestamp": "2026-06-18T06:57:05.887Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{b}\"]}",
+    "timestamp": "2026-06-18T06:57:07.543Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"b\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"b\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:57:07.551Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "error",
+    "message": "Warning: validateDOMNesting(...): %s cannot appear as a child of <%s>.%s%s%s <tr> button   \n    at tr\n    at button\n    at tbody\n    at Candidate (http://127.0.0.1:5173/web/src/Candidate.tsx:25:37)\n    at table\n    at div\n    at div\n    at CaretFollower (http://127.0.0.1:5173/web/src/CaretFollower.tsx:24:84)\n    at CandidatePanel (http://127.0.0.1:5173/web/src/CandidatePanel.tsx?t=1781756784362:30:42)\n    at main\n    at App (http://127.0.0.1:5173/web/src/App.tsx?t=1781756784362:34:37)",
+    "timestamp": "2026-06-18T06:57:07.551Z",
+    "url": "http://127.0.0.1:5173/web/node_modules/.vite/deps/react-dom_client.js?v=583a38c7"
+  },
+  {
+    "level": "error",
+    "message": "Warning: validateDOMNesting(...): %s cannot appear as a child of <%s>.%s%s%s <button> tbody   \n    at button\n    at tbody\n    at Candidate (http://127.0.0.1:5173/web/src/Candidate.tsx:25:37)\n    at table\n    at div\n    at div\n    at CaretFollower (http://127.0.0.1:5173/web/src/CaretFollower.tsx:24:84)\n    at CandidatePanel (http://127.0.0.1:5173/web/src/CandidatePanel.tsx?t=1781756784362:30:42)\n    at main\n    at App (http://127.0.0.1:5173/web/src/App.tsx?t=1781756784362:34:37)",
+    "timestamp": "2026-06-18T06:57:07.551Z",
+    "url": "http://127.0.0.1:5173/web/node_modules/.vite/deps/react-dom_client.js?v=583a38c7"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{a}\"]}",
+    "timestamp": "2026-06-18T06:57:07.575Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:57:07.575Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+a}\"]}",
+    "timestamp": "2026-06-18T06:57:07.580Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:57:07.581Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Page_Down}\"]}",
+    "timestamp": "2026-06-18T06:57:08.105Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:57:08.105Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+Page_Down}\"]}",
+    "timestamp": "2026-06-18T06:57:08.110Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:57:08.111Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Delete}\"]}",
+    "timestamp": "2026-06-18T06:57:17.319Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:57:17.319Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{Release+Delete}\"]}",
+    "timestamp": "2026-06-18T06:57:17.325Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":true,\"inputBuffer\":{\"before\":\"ba\",\"active\":\"\",\"after\":\"\"},\"page\":0,\"isLastPage\":true,\"highlightedIndex\":0,\"candidates\":[{\"text\":\"ba\",\"comment\":\"echo\"}],\"success\":true}}",
+    "timestamp": "2026-06-18T06:57:17.325Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "post {\"name\":\"processKey\",\"args\":[\"{1}\"]}",
+    "timestamp": "2026-06-18T07:00:50.564Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  },
+  {
+    "level": "log",
+    "message": "receive {\"type\":\"success\",\"result\":{\"isComposing\":false,\"success\":true,\"committed\":\"ba\"}}",
+    "timestamp": "2026-06-18T07:00:50.566Z",
+    "url": "http://127.0.0.1:5173/web/src/rime.ts?t=1781756784362"
+  }
+]

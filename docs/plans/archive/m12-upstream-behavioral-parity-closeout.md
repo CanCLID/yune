@@ -1,5 +1,5 @@
 # M12 Upstream Behavioral Parity Closeout Implementation Plan
-> **Status:** Active - **Milestone:** M12 (Upstream Behavioral Parity Closeout) - **Updated:** 2026-06-19 - **Type:** execution plan
+> **Status:** Complete - **Milestone:** M12 (Upstream Behavioral Parity Closeout) - **Updated:** 2026-06-19 - **Type:** execution plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

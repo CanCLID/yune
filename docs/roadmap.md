@@ -154,7 +154,7 @@ The phrase/language-model surface (`zhongguo` full-page sentence output),
 `ascii_punct` processor bypass, and punctuation immediate-commit processor
 behavior are fixture-backed ignored blockers, not hidden parity claims.
 
-Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-oracle-refresh.md) and [`plans/m12-upstream-behavioral-parity-closeout.md`](./plans/m12-upstream-behavioral-parity-closeout.md).
+Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-oracle-refresh.md) and [`plans/archive/m12-upstream-behavioral-parity-closeout.md`](./plans/archive/m12-upstream-behavioral-parity-closeout.md).
 
 **Status**:
 

@@ -84,7 +84,7 @@ plus the first expanded upstream behavioral parity gate. The current baseline is
 upstream `rime/librime 1.17.0` for default core behavior. M10 TypeDuck-Windows
 is parked as a TypeDuck compatibility profile until an explicit profile surface
 exists. See `docs/roadmap.md`, `docs/plans/archive/upstream-oracle-refresh.md`,
-and `docs/plans/m12-upstream-behavioral-parity-closeout.md`.
+and `docs/plans/archive/m12-upstream-behavioral-parity-closeout.md`.
 
 **Behavior oracle.** The default compatibility oracle is upstream
 `rime/librime 1.17.0` (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`). The

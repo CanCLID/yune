@@ -688,6 +688,25 @@ touch librime userdb, and AI-memory learning is suppressed in the default browse
 context. Real-browser M13 evidence is required alongside native `typeduck_web`
 and TypeScript runtime gates. *Outcome: Good.*
 
+### TypeDuck-Web fork parity (project-wide D-27)
+
+**D-27 / TYPEDUCK-PARITY — Complete the TypeDuck `jyut6ping3` target (M14–M16) as
+the next arc; it needs golden capture + dictionary-driven features, not the
+upstream language model.** Reaching "open TypeDuck-Web and get fork-like Cantonese
+behavior" is scheduled as **M14** (capture the v1.1.2 Cantonese goldens via a
+backported scenario/`set_option` probe), **M15** (implement the dictionary-driven
+behaviors: `combine_candidates`, `show_full_code`, `enable_sentence`, completion,
+correction, full `hk2s` OpenCC), and **M16** (prove it in the TypeDuck-Web browser
+E2E and un-ignore the `cantonese_parity` tests). **Gap-map finding:** `jyut6ping3`
+uses `script_translator` + `dictionary_lookup_filter` + `simplifier`, not
+`poet`/`octagram`/grammar — so the upstream statistical language model is **Track 2
+/ M17**, not on the TypeDuck-parity critical path. Per-entry userdb pronunciations
+are not exposed by the standard RIME C ABI, but the levers user-dict export/import
+hooks may allow capture via seeded state — M14 runs a feasibility spike before any
+permanent deferral. Track 2 (M17 upstream LM, M18 deployment/processor depth, M19
+breadth) stays lighter until TypeDuck-Web parity is proven. Extends D-24 (oracle
+precedence) and D-25 (target-driven scope). *Outcome: Pending.*
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/archive/analysis.md`, `docs/roadmap.md`, and

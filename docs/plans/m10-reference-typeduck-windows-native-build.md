@@ -146,4 +146,4 @@ Artifact check after the run:
 This proves only the archived pre-M12 package smoke, not current default ABI
 package support and not the full TypeDuck-Windows frontend lifecycle. The real
 frontend E2E remains blocked as documented in
-[`yune-windows-contract-implementation-plan.md`](./yune-windows-contract-implementation-plan.md).
+[`m10-reference-typeduck-windows-contract.md`](./m10-reference-typeduck-windows-contract.md).

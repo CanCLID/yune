@@ -18,8 +18,8 @@ TypeDuck fork-only slots such as `start_quick` or `config_list_append_*`.
 | `crates/yune-rime-api/src/tests/schema_selection.rs` reverse lookup prompt fixture | Reverse lookup prompt and schema prompt bytes captured from TypeDuck `v1.1.2` | TypeDuck profile | Keep explicit TypeDuck profile labeling; do not promote to upstream core unless upstream goldens are captured. |
 | `crates/yune-rime-api/tests/typeduck_web.rs` | TypeDuck-Web adapter, runtime response, real-assets fallback gate | TypeDuck-Web profile gate | Keep green as the web compatibility-profile gate; do not convert to an upstream core ABI requirement. |
 | `scripts/package-typeduck-windows.ps1` | Native TypeDuck-Windows package path and historical slot smoke | parked TypeDuck-Windows profile | Fail fast during M12; re-enable only after a named TypeDuck profile ABI surface exists and slot smoke is re-derived from TypeDuck-HK/librime `v1.1.2` `rime_api.h`. |
-| `docs/plans/yune-windows-contract-implementation-plan.md` | TypeDuck-Windows contract and historical execution notes | parked TypeDuck-Windows profile | Keep as parked reference; older default-table assumptions are not current M12 gates. |
-| `docs/plans/yune-windows-native-build.md` | Native package reproduction notes and archived smoke evidence | parked TypeDuck-Windows profile | Keep as parked reference; package smoke is historical and not valid against default upstream `RimeApi`. |
+| `docs/plans/m10-reference-typeduck-windows-contract.md` | TypeDuck-Windows contract and historical execution notes | parked TypeDuck-Windows profile | Keep as parked reference; older default-table assumptions are not current M12 gates. |
+| `docs/plans/m10-reference-typeduck-windows-native-build.md` | Native package reproduction notes and archived smoke evidence | parked TypeDuck-Windows profile | Keep as parked reference; package smoke is historical and not valid against default upstream `RimeApi`. |
 
 ## Closeout Notes
 

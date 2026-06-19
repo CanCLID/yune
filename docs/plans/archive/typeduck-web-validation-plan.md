@@ -25,7 +25,7 @@
 > named symbol/file before editing. Trust names over line numbers.
 
 This is the M9 counterpart to the parked
-[`yune-windows-contract-implementation-plan.md`](../yune-windows-contract-implementation-plan.md).
+[`m10-reference-typeduck-windows-contract.md`](../m10-reference-typeduck-windows-contract.md).
 Per web-first sequencing ([`../../roadmap.md`](../../roadmap.md)), finish this **before**
 resuming the TypeDuck-Windows native work.
 

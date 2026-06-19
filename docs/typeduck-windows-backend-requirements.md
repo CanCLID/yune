@@ -9,8 +9,8 @@
 > explicitly resumed behind a named TypeDuck profile ABI surface.
 >
 > **Source of truth.** The local execution notes are
-> [`plans/yune-windows-contract-implementation-plan.md`](./plans/yune-windows-contract-implementation-plan.md)
-> and [`plans/yune-windows-native-build.md`](./plans/yune-windows-native-build.md). Earlier
+> [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md)
+> and [`plans/m10-reference-typeduck-windows-native-build.md`](./plans/m10-reference-typeduck-windows-native-build.md). Earlier
 > downstream analysis referenced `LIBRIME_INTEGRATION_PLAN.md` and `INTEGRATION_PLAN.md`
 > in the external `TypeDuck-Windows` repo (<https://github.com/TypeDuck-HK/TypeDuck-Windows>),
 > but the 2026-06-19 pinned checkout at

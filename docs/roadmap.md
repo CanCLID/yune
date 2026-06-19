@@ -116,7 +116,7 @@ Detail: [`plans/archive/real-frontend-validation-plan.md`](./plans/archive/real-
   disabled by default in real frontends until the M11 provider/ranking/privacy
   contracts are proven and explicitly enabled.
 
-Detail: [`plans/archive/typeduck-web-validation-plan.md`](./plans/archive/typeduck-web-validation-plan.md), [`plans/typeduck-web-adapter.md`](./plans/typeduck-web-adapter.md), [`plans/archive/typeduck-web-integration-findings.md`](./plans/archive/typeduck-web-integration-findings.md), [`plans/archive/ai-native-frontend-readiness.md`](./plans/archive/ai-native-frontend-readiness.md) (HR-7 recommendation).
+Detail: [`plans/archive/typeduck-web-validation-plan.md`](./plans/archive/typeduck-web-validation-plan.md), [`plans/m09-reference-typeduck-web-adapter.md`](./plans/m09-reference-typeduck-web-adapter.md), [`plans/archive/typeduck-web-integration-findings.md`](./plans/archive/typeduck-web-integration-findings.md), [`plans/archive/ai-native-frontend-readiness.md`](./plans/archive/ai-native-frontend-readiness.md) (HR-7 recommendation).
 
 ### M11: AI-native input layer — S1–S5 CLI/core complete *(2026-06-18; frontend exposure deferred)*
 
@@ -136,7 +136,7 @@ classic-first, non-blocking, no default auto-commit, **no userdb leak**,
 privacy-gated, deterministic fallback. Real frontend exposure remains deferred
 and default-off (see *Deferred / future*).
 
-Detail: [`plans/ai-native-design.md`](./plans/ai-native-design.md) (living architecture), [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md) (S1 record).
+Detail: [`plans/m11-design-ai-native.md`](./plans/m11-design-ai-native.md) (living architecture), [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md) (S1 record).
 
 ---
 
@@ -218,7 +218,60 @@ off, and disabling AI clears stale staged rows for the current input. This
 supersedes the *Deferred / future* "AI-native frontend exposure" item for the web
 surface only; native frontend exposure remains deferred.
 
-Detail: [`plans/archive/m13-ai-native-frontend-exposure.md`](./plans/archive/m13-ai-native-frontend-exposure.md) (execution plan) and [`plans/ai-native-design.md`](./plans/ai-native-design.md) (architecture).
+Detail: [`plans/archive/m13-ai-native-frontend-exposure.md`](./plans/archive/m13-ai-native-frontend-exposure.md) (execution plan) and [`plans/m11-design-ai-native.md`](./plans/m11-design-ai-native.md) (architecture).
+
+---
+
+## Next up - M14–M16: TypeDuck-Web fork parity
+
+The chosen next arc: complete the **TypeDuck `jyut6ping3` target** so the
+TypeDuck-Web example behaves like the fork — the named (A) target from the
+*Compatibility goal*, not feature-completeness for its own sake. **Key gap-map
+finding:** `jyut6ping3` is dictionary-driven (`script_translator` +
+`dictionary_lookup_filter` + `simplifier`); it does **not** use
+`poet`/`octagram`/grammar, so this arc needs **golden capture + dictionary-driven
+features**, *not* the upstream language model (that is Track 2 / M17). Five
+behaviors are currently `#[ignore]`-blocked in `cantonese_parity.rs`.
+
+### M14 — Capture the TypeDuck v1.1.2 Cantonese goldens
+
+Parameterize the scenario-capable `oracle-rime-probe.cs` (its traits currently
+hardcode upstream `1.17.0` identity) — or add a TypeDuck v1.1.2 capture wrapper —
+with the **correct v1.1.2 oracle identity** (modules, distribution name/version,
+provenance) and a `jyut6ping3` fixture composer, then capture goldens from the
+v1.1.2 oracle binary (oracle-measured, non-circular).
+
+| # | Work item | State | Notes |
+|---|---|---|---|
+| 0 | v1.1.2 capture wrapper | Planned | Parameterize the scenario-capable `oracle-rime-probe.cs` (upstream-identity hardcoded) or add a v1.1.2 wrapper with correct oracle identity / modules / provenance + a `jyut6ping3` fixture composer. |
+| 1 | Option-toggle goldens | Planned | `combine_candidates`, `show_full_code`, `enable_sentence` captured from v1.1.2 at multiple input lengths. |
+| 2 | Completion + correction goldens | Planned | `enable_completion`/prediction and correction (minimal-distance, m-abbreviation). |
+| 3 | Schema-menu goldens | Planned | First identify the **oracle-observable** surface (config API, schema-list/switcher API, or TypeDuck-Web UI state) and capture emitted behavior — not static config inspection alone (would be circular). |
+| 4 | userdb-pronunciation **feasibility spike** | Planned | Direct userdb introspection is not in the RIME C ABI, but the **levers** ABI exposes user-dict export/import/backup hooks — *first prove* whether the behavior is capturable via seeded/imported userdb state or exported snapshots; only if not, document it as a real fork-only deferred gap. |
+
+### M15 — Dictionary-driven feature parity
+
+Implement / refine Yune behaviors to pass the M14 goldens. Most have partial
+scaffolding to refine; `combine_candidates` and `show_full_code` are from scratch.
+
+| # | Work item | State | Notes |
+|---|---|---|---|
+| 0 | `combine_candidates` | Planned | Candidate grouping/dedup so homophones coalesce under one row (from scratch). |
+| 1 | `show_full_code` | Planned | Cangjie preedit algebra for the side-lookup path (from scratch). |
+| 2 | `enable_sentence` | Planned | Refine the existing Viterbi sentence path (`translator/mod.rs` `sentence_candidate`) to match v1.1.2. |
+| 3 | completion + correction | Planned | Improve completion ranking (prefix-search exists) and tune correction/tolerance weights. |
+| 4 | OpenCC `hk2s` data | Planned | Expand the ~60-char built-in simplifier to full `hk2s` coverage (also serves upstream). |
+
+### M16 — TypeDuck-Web fork-parity validation
+
+Re-run the full TypeDuck-Web browser matrix with every behavior enabled; un-ignore
+the `cantonese_parity` tests; resolve the userdb-pronunciation gap per the M14
+spike (native inspection vs documented deferral). **Done = TypeDuck-Web is
+fork-like for all captured target behaviors (plus the M13 AI layer), with any
+uncapturable fork-only gap explicitly listed** (e.g. userdb pronunciations if the
+M14 spike proves them uncapturable).
+
+Detail: [`plans/m14-plan-typeduck-v112-golden-capture.md`](./plans/m14-plan-typeduck-v112-golden-capture.md), [`plans/m15-plan-typeduck-dictionary-driven-parity.md`](./plans/m15-plan-typeduck-dictionary-driven-parity.md), and [`plans/m16-plan-typeduck-web-parity-validation.md`](./plans/m16-plan-typeduck-web-parity-validation.md).
 
 ---
 
@@ -237,38 +290,39 @@ five uncaptured v1.1.2 Cantonese/Jyutping goldens and the real TypeDuck-Windows
 frontend E2E.
 
 Detail: [`typeduck-windows-backend-requirements.md`](./typeduck-windows-backend-requirements.md),
-[`plans/yune-windows-contract-implementation-plan.md`](./plans/yune-windows-contract-implementation-plan.md),
-and [`plans/yune-windows-native-build.md`](./plans/yune-windows-native-build.md).
+[`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md),
+and [`plans/m10-reference-typeduck-windows-native-build.md`](./plans/m10-reference-typeduck-windows-native-build.md).
 
 ## Concrete next steps
 
 In priority order:
 
-1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
-2. **Keep M9/M13 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, and default-off M13 AI scenarios.
-3. **Broaden upstream parity opportunistically.** Reuse the M12 fixture/provenance harness for the next named upstream schema or parked `luna_pinyin` blockers **when a target needs them** (per the scope ledger).
-4. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
+1. **Execute M14–M16 — TypeDuck-Web fork parity (the chosen next arc).** Capture the v1.1.2 Cantonese goldens, implement the dictionary-driven behaviors, and prove fork-like Cantonese behavior in the TypeDuck-Web browser E2E. See the M14–M16 milestones above.
+2. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
+3. **Keep M9/M13 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, and default-off M13 AI scenarios.
+4. **Hold Track 2 (M17–M19) lighter until TypeDuck-Web parity is proven.** The upstream language model, prism generation, deployment-write, and breadth schemas advance opportunistically per the scope ledger — not ahead of M14–M16.
+5. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
 
 ---
 
 ## Beyond M12 — trajectory & scope ledger
 
 Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
-list. The broad arc after M12's first behavioral-parity slice:
+list. **TypeDuck `jyut6ping3` reconciliation is now the active arc — see M14–M16
+above.** The remaining arc is **Track 2 (broad upstream depth), kept lighter until
+TypeDuck-Web fork parity is proven:**
 
-1. **Breadth (toward B)** — bring more target schemas through the M12 parity
-   harness (e.g. Shuangpin, Cangjie, Zhuyin), each measured against the upstream
-   `1.17.0` oracle.
-2. **Depth** — close the parity-*blocking* engine gaps, but only as a target
-   demands them: the grammar / language model (sentence quality),
-   processor-level punctuation/ascii-punctuation behavior, spelling-algebra
-   prism generation, and binary-dictionary / deployment writing. These are
-   today's known gaps (see the ledger).
-3. **TypeDuck profile reconciliation** — un-ignore the five Cantonese / Jyutping
-   goldens and decide, per difference, fix-in-core versus keep-as-profile.
-4. **AI-native frontend expansion** — the proven TypeDuck-Web surface remains
-   default-off; Windows and other native frontend exposure stay deferred until
-   they have their own safety evidence.
+- **M17 — Upstream sentence / language model (poet)** — the statistical LM for
+  `luna_pinyin` sentence/lattice parity (the two blocked upstream tests). The
+  heavy item; *not* required for TypeDuck-Web parity.
+- **M18 — Deployment & processor depth** — spelling-algebra prism generation, a
+  public binary-dictionary write API, and the `ascii_punct` / immediate-commit
+  punctuation processor behaviors.
+- **M19 — Breadth (toward B)** — more upstream schemas through the M12 harness
+  (Shuangpin, Cangjie, Zhuyin); resume TypeDuck-Windows.
+- **AI-native frontend expansion** — the proven TypeDuck-Web surface stays
+  default-off; Windows and other native frontend exposure wait for their own
+  safety evidence.
 
 ### Scope ledger
 
@@ -289,7 +343,7 @@ the *Non-goal* column is not a backlog. Standing deferrals also appear in
 ## Deferred / future
 
 - **librime C++ plugin ABI** (Lua, octagram, predict, proto): deferred until a concrete frontend or distribution requires it; prefer Yune-native extension points first.
-- **AI-native input layer (future native/frontend expansion)** - after M13, TypeDuck-Web has a default-off local AI surface with browser safety evidence. Remaining AI-native product integration is exposing equivalent gates in additional real frontends without changing upstream-core, TypeDuck-Web classic behavior, or parked TypeDuck-Windows compatibility behavior. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); CLI evidence lives in [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md), and web exposure evidence lives in [`plans/archive/m13-ai-native-frontend-exposure.md`](./plans/archive/m13-ai-native-frontend-exposure.md).
+- **AI-native input layer (future native/frontend expansion)** - after M13, TypeDuck-Web has a default-off local AI surface with browser safety evidence. Remaining AI-native product integration is exposing equivalent gates in additional real frontends without changing upstream-core, TypeDuck-Web classic behavior, or parked TypeDuck-Windows compatibility behavior. The architecture remains in [`plans/m11-design-ai-native.md`](./plans/m11-design-ai-native.md); CLI evidence lives in [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md), and web exposure evidence lives in [`plans/archive/m13-ai-native-frontend-exposure.md`](./plans/archive/m13-ai-native-frontend-exposure.md).
 
 ## Principles (carried forward)
 

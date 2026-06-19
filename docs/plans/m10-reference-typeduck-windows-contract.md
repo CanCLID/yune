@@ -389,7 +389,7 @@ list-append) APIs the deployer drives — including Item 2's new append function
    verify field-order parity (tie this back to the Item 2 ABI-ordering caveat).
 4. Document required linker/export flags, the artifact layout, and the
    release-tag (`git describe`) keying that `github.install.bat` relies on, in a
-   new `docs/plans/yune-windows-native-build.md`.
+   new `docs/plans/m10-reference-typeduck-windows-native-build.md`.
 5. If the MSVC toolchain isn't available in this environment, record a
    reproducible blocker (Phase 7 pattern) and keep the native adapter contract
    tests as the fallback validation path.
@@ -402,7 +402,7 @@ layout as `dist/lib/rime.dll` and `dist/lib/rime.lib`, copied
 `rime_api.h`/`rime_levers_api.h` from the v1.1.2 oracle headers, and
 smoke-checked that the packaged DLL exported `rime_get_api` with a non-null
 `config_list_append_string` table slot. The archived steps are documented in
-[`yune-windows-native-build.md`](./yune-windows-native-build.md).
+[`m10-reference-typeduck-windows-native-build.md`](./m10-reference-typeduck-windows-native-build.md).
 
 This was verified on 2026-06-19 by running the script without `-SkipSmoke` and
 without `-NoBuild`; the script built the MSVC-target artifact, loaded the

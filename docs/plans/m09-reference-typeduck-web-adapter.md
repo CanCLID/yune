@@ -1,6 +1,6 @@
 # TypeDuck-Web Adapter
 
-> **Status:** Active · **Milestone:** M9 (TypeDuck-Web browser validation) · **Updated:** 2026-06-17 · **Type:** reference
+> **Status:** Active · **Milestone:** M9 (TypeDuck-Web browser validation) · **Updated:** 2026-06-19 · **Type:** reference
 
 Yune exposes a small TypeDuck-Web-shaped C/WASM bridge from `yune-rime-api`. It is a facade over the existing `RimeApi` lifecycle, not a vendored TypeDuck-Web fork or a complete browser package.
 

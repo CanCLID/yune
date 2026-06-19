@@ -1,6 +1,6 @@
 # AI-Native Input Layer — Design
 
-> **Status:** Active · **Milestone:** M11 (AI-native input layer) · **Updated:** 2026-06-18 · **Type:** design
+> **Status:** Active · **Milestone:** M11 (AI-native input layer) · **Updated:** 2026-06-19 · **Type:** design
 
 > **Audience.** Yune maintainers + an executing agent. North-star architecture for
 > the AI-native layer; the completed first executable slice is in

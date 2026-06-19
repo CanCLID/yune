@@ -673,8 +673,8 @@ Create `docs/plans/m12-coverage-audit.md`:
 | `crates/yune-rime-api/src/tests/schema_selection.rs` | Reverse lookup prompt bytes from TypeDuck v1.1.2 | TypeDuck profile | Keep explicit TypeDuck name in test and fixture |
 | `crates/yune-rime-api/tests/typeduck_web.rs` | TypeDuck-Web adapter and real-assets behavior | TypeDuck-Web profile gate | Keep green; do not convert to upstream core |
 | `scripts/package-typeduck-windows.ps1` | Native TypeDuck-Windows package smoke | parked TypeDuck-Windows profile | Do not run as an M12 gate; update only when TypeDuck profile resumes |
-| `docs/plans/yune-windows-contract-implementation-plan.md` | TypeDuck-Windows plan | parked TypeDuck-Windows profile | Keep parked/reference banner |
-| `docs/plans/yune-windows-native-build.md` | TypeDuck-Windows packaging | parked TypeDuck-Windows profile | Keep parked/reference banner |
+| `docs/plans/m10-reference-typeduck-windows-contract.md` | TypeDuck-Windows plan | parked TypeDuck-Windows profile | Keep parked/reference banner |
+| `docs/plans/m10-reference-typeduck-windows-native-build.md` | TypeDuck-Windows packaging | parked TypeDuck-Windows profile | Keep parked/reference banner |
 ```
 
 - [ ] **Step 3: Rename or comment any unlabeled profile tests**
@@ -703,7 +703,7 @@ Expected:
 Run:
 
 ```powershell
-git add docs\plans\m12-coverage-audit.md crates\yune-core\tests\cantonese_parity.rs crates\yune-rime-api\src\tests\schema_selection.rs crates\yune-rime-api\tests\typeduck_web.rs scripts\package-typeduck-windows.ps1 docs\plans\yune-windows-contract-implementation-plan.md docs\plans\yune-windows-native-build.md
+git add docs\plans\m12-coverage-audit.md crates\yune-core\tests\cantonese_parity.rs crates\yune-rime-api\src\tests\schema_selection.rs crates\yune-rime-api\tests\typeduck_web.rs scripts\package-typeduck-windows.ps1 docs\plans\m10-reference-typeduck-windows-contract.md docs\plans\m10-reference-typeduck-windows-native-build.md
 git diff --cached --name-only
 git commit -m "docs: audit TypeDuck profile coverage for M12"
 ```

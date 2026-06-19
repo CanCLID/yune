@@ -10,7 +10,7 @@
 
 **1. The provider runs in Rust, never in JS.** The `LocalModelProvider` is reused verbatim from M11; JS carries **no** provider logic. yune-rime-api already depends on yune-core, so the provider is importable into the WASM module.
 
-**2. Two-pass, so the per-key path never invokes provider code (preserves M11 invariant #1 literally).** M11 requires the synchronous per-key path to *never* run provider/model code — it only reads an already-staged result ([ai-native-design.md §2.1](../ai-native-design.md)). M13 honors this with two calls per keystroke:
+**2. Two-pass, so the per-key path never invokes provider code (preserves M11 invariant #1 literally).** M11 requires the synchronous per-key path to *never* run provider/model code — it only reads an already-staged result ([m11-design-ai-native.md §2.1](../m11-design-ai-native.md)). M13 honors this with two calls per keystroke:
 
 - `yune_typeduck_process_key` is **unchanged** — it returns the classic response (plus any AI already staged for the *current* input from a prior pass) and **never runs the provider**. AI-off is therefore byte-identical by construction, and even AI-on's *first* response for a new input is classic-only.
 - A **new** `yune_typeduck_stage_ai(state)` export runs `LocalModelProvider::provide(engine.context(), budget)` **synchronously**, calls `engine.stage_ai_result(result)`, and returns the AI-augmented response. The TypeDuck-Web Web Worker calls it **after** posting the classic result to the UI (e.g. next microtask), so classic candidates are never delayed; AI rows arrive as a bounded **second-pass update**.

@@ -203,6 +203,21 @@ provider-free. Additional native frontend exposure remains future work.
 - [x] **M13-AI-05**: Explicit AI commits do not touch librime userdb; under the sensitive browser default, AI-memory learning is suppressed and no `.ai-memory` persistence is written.
 - [x] **M13-AI-06**: Real TypeDuck-Web browser evidence covers AI-off byte identity, AI-on source-labeled second-pass rows, no auto-commit, explicit AI selection, and zero warning/error console entries.
 
+## M14–M16 TypeDuck-Web Fork Parity Requirements
+
+**Status: planned (next arc).** Complete the TypeDuck `jyut6ping3` target so the
+TypeDuck-Web example behaves like the fork. Oracle-measured against TypeDuck-HK
+v1.1.2; `jyut6ping3` is dictionary-driven and does **not** require the upstream
+language model (Track 2 / M17). See roadmap M14–M16 and `decisions.md` D-27.
+
+- [ ] **TYPEDUCK-PARITY-01**: The v1.1.2 capture probe gains scenario / `set_option` / snapshot support (backported from the upstream probe), and Cantonese goldens are captured from the v1.1.2 oracle binary for `combine_candidates`, `show_full_code`, `enable_sentence`, completion/prediction, and correction at multiple input lengths.
+- [ ] **TYPEDUCK-PARITY-02**: The oracle-observable surface for schema-menu hiding (`hide_lone_schema`/`hide_caret`) is identified (config API, schema-list/switcher API, or TypeDuck-Web UI state) and emitted behavior is captured — not static config inspection alone.
+- [ ] **TYPEDUCK-PARITY-03**: A feasibility spike determines whether per-entry userdb pronunciations are capturable via the levers user-dict export/import/seed hooks; if not, the gap is documented as a fork-only deferral with the precise blocker.
+- [ ] **TYPEDUCK-PARITY-04**: `combine_candidates` (candidate grouping) and `show_full_code` (cangjie preedit algebra) are implemented and pass the captured goldens through Yune's real engine path.
+- [ ] **TYPEDUCK-PARITY-05**: `enable_sentence`, completion ranking, and correction/tolerance tuning are refined to pass the captured goldens.
+- [ ] **TYPEDUCK-PARITY-06**: OpenCC `hk2s` coverage is expanded from the built-in slice to the full conversion data the jyut6ping3 simplifier needs.
+- [ ] **TYPEDUCK-PARITY-07**: The full TypeDuck-Web browser matrix passes with all parity behaviors enabled, the `cantonese_parity` ignored tests are activated (or carry documented fork-only deferrals), and the result is non-circular oracle-measured.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -296,6 +311,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M13-AI-04 | M13 | Complete - browser/default commit remains classic; AI selection is explicit |
 | M13-AI-05 | M13 | Complete - AI commits skip userdb and sensitive default suppresses AI memory learning |
 | M13-AI-06 | M13 | Complete - real TypeDuck-Web M13 Playwright evidence covers the safety scenarios |
+| TYPEDUCK-PARITY-01 | M14 | Planned - v1.1.2 capture wrapper + Cantonese option/completion/correction goldens |
+| TYPEDUCK-PARITY-02 | M14 | Planned - oracle-observable schema-menu hiding surface captured |
+| TYPEDUCK-PARITY-03 | M14 | Planned - userdb-pronunciation capture feasibility spike (defer only if proven uncapturable) |
+| TYPEDUCK-PARITY-04 | M15 | Planned - combine_candidates + show_full_code implemented |
+| TYPEDUCK-PARITY-05 | M15 | Planned - enable_sentence/completion/correction refined to pass goldens |
+| TYPEDUCK-PARITY-06 | M15 | Planned - OpenCC hk2s coverage expanded |
+| TYPEDUCK-PARITY-07 | M16 | Planned - full TypeDuck-Web browser matrix + cantonese_parity tests activated |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -304,9 +326,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - TypeDuck-Windows native IME requirements: 6 total
 - M12 upstream oracle and behavioral parity requirements: 9 total, 9 complete
 - M13 AI-native frontend exposure requirements: 6 total, 6 complete
-- Mapped to phases: 75
+- M14–M16 TypeDuck-Web fork parity requirements: 7 total, 0 complete (planned)
+- Mapped to phases: 82
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-19 - M13 TypeDuck-Web AI-native frontend exposure complete; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*
+*Last updated: 2026-06-19 - M13 complete; M14–M16 TypeDuck-Web fork-parity requirements added (planned); M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*

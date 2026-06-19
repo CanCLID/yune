@@ -365,8 +365,8 @@ misplaced field silently breaks every native frontend.
   `crates/yune-rime-api/src/tests/abi.rs` against upstream `1.17.0`. Never
   reorder/insert without updating these locks and confirming against the
   relevant upstream or explicit TypeDuck profile header. Historical TypeDuck
-  slot rationale lives in `docs/plans/yune-windows-native-build.md` and
-  `yune-windows-contract-implementation-plan.md`.
+  slot rationale lives in `docs/plans/m10-reference-typeduck-windows-native-build.md` and
+  `m10-reference-typeduck-windows-contract.md`.
 - **Comment panel:** `yune-core` ships `DictionaryLookupFilter` (filter name
   `"dictionary_lookup_filter"`, `filter/mod.rs`) emitting the TypeDuck comment-panel bytes —
   a leading `\u{000c}` form-feed, per-row `\r` markers, a `1`/`0` primary flag, and
@@ -601,6 +601,7 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 - **`Milestone` is a required field, kept separate from `Status`.** Write `**Status:** Parked · **Milestone:** M10 (…)`, never `**Status:** Parked (M10)`. Append the within-milestone stage where useful, e.g. `**Milestone:** M9 — stage HR-3`.
 - Use `Updated:` for `Active`/`Reopened`/`Parked` docs and `Closed:` for `Finished`/`Superseded` ones.
+- **Active plan filenames use `m<two-digit milestone>[-<stage>]-<doc-type>-<short-topic>.md`.** Allowed type tokens are `plan`, `design`, `reference`, `analysis`, `findings`, `record`, and `audit`. Example active names: `m11-design-ai-native.md`, `m14-plan-typeduck-v112-golden-capture.md`, and `m09-reference-typeduck-web-adapter.md`. Archived files keep their historical names unless a separate archival normalization is explicitly requested.
 - `grep -rn "Status:" docs/plans` is the at-a-glance dashboard of every plan — its milestone/stage and its state.
 - **Finished or superseded plans move to `docs/plans/archive/`** (banner flipped accordingly), never deleted — the trail stays.
 - The milestone → plans → status mapping lives in `docs/roadmap.md`; keep a plan's banner milestone consistent with the roadmap.

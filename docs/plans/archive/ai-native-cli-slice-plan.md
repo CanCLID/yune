@@ -3,7 +3,7 @@
 > **Status:** Finished · **Milestone:** M11 (AI-native input layer) · **Closed:** 2026-06-18 · **Type:** execution plan (S1–S5 complete; record)
 
 > **Audience.** An executing agent. Slice **S1** of the AI-native layer
-> ([design](../ai-native-design.md)): the minimal, source-labeled, non-blocking,
+> ([design](../m11-design-ai-native.md)): the minimal, source-labeled, non-blocking,
 > off-by-default AI candidate path in the CLI. Delivers **AI-01, AI-03, AI-07** —
 > **plus three cheap, safety-critical enforcement fixes the design review promoted
 > into S1** (userdb-leak gate, commit-boundary no-auto-commit, single merge
@@ -19,7 +19,7 @@
 > kept `CandidateSource::Ai` as a unit variant; S2 later promoted it to
 > `{ provider, confidence }` using fixed-point `AiConfidence` once the merge
 > policy consumed confidence. S2-S5 are now covered by
-> [`ai-native-design.md`](../ai-native-design.md).
+> [`m11-design-ai-native.md`](../m11-design-ai-native.md).
 
 ## Goal
 A direct core CLI run can enable a **mock AI provider** contributing a **source-labeled**,
@@ -97,4 +97,4 @@ The focused evidence is:
 
 ---
 
-*Draft 2026-06-18, revised after the judge-panel design review. First slice of the AI-native layer ([design](../ai-native-design.md)); delivers AI-01/03/07 + the promoted safety gates; parallel-safe with M9/M10.*
+*Draft 2026-06-18, revised after the judge-panel design review. First slice of the AI-native layer ([design](../m11-design-ai-native.md)); delivers AI-01/03/07 + the promoted safety gates; parallel-safe with M9/M10.*

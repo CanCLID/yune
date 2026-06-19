@@ -4,7 +4,7 @@
 
 > **Audience.** Yune maintainers + an executing agent. North-star architecture for
 > the AI-native layer; the completed first executable slice is in
-> [`ai-native-cli-slice-plan.md`](./ai-native-cli-slice-plan.md). **Revised after a
+> [`ai-native-cli-slice-plan.md`](./archive/ai-native-cli-slice-plan.md). **Revised after a
 > judge-panel design review** (3 alternative architectures + an adversarial
 > invariant critic): the review confirmed the scope but tightened several
 > invariants from "by convention" to "structural" and surfaced a real userdb-leak

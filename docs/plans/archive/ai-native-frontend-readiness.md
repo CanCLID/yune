@@ -4,7 +4,7 @@
 
 **Generated**: 2026-06-18
 **Phase**: 17 / M9 (TypeDuck-Web Browser Validation)
-**Evidence Source**: docs/plans/typeduck-web-integration-findings.md
+**Evidence Source**: docs/plans/archive/typeduck-web-integration-findings.md
 
 This record supersedes the Phase 10 tooling-blocked recommendation from
 2026-05-05. That earlier result was a principled NO-GO because browser
@@ -47,7 +47,7 @@ with core and RIME C ABI tests asserting Yune against that oracle.
 - `third_party/typeduck-web/e2e/results/screenshot-hr5-after-delete.png`
 - `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json`
 - `crates/yune-core/tests/fixtures/typeduck-v1.1.2/reverse-lookup-prompt.json`
-- `docs/plans/typeduck-web-integration-findings.md`
+- `docs/plans/archive/typeduck-web-integration-findings.md`
 
 ## Deferred Scope
 

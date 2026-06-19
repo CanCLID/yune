@@ -76,57 +76,42 @@ Detail: [`plans/archive/real-frontend-validation-plan.md`](./plans/archive/real-
   disabled by default in real frontends until the M11 provider/ranking/privacy
   contracts are proven and explicitly enabled.
 
-Detail: [`plans/typeduck-web-validation-plan.md`](./plans/typeduck-web-validation-plan.md), [`plans/typeduck-web-adapter.md`](./plans/typeduck-web-adapter.md), [`plans/typeduck-web-integration-findings.md`](./plans/typeduck-web-integration-findings.md), [`plans/archive/ai-native-frontend-readiness.md`](./plans/archive/ai-native-frontend-readiness.md) (HR-7 recommendation).
+Detail: [`plans/archive/typeduck-web-validation-plan.md`](./plans/archive/typeduck-web-validation-plan.md), [`plans/typeduck-web-adapter.md`](./plans/typeduck-web-adapter.md), [`plans/archive/typeduck-web-integration-findings.md`](./plans/archive/typeduck-web-integration-findings.md), [`plans/archive/ai-native-frontend-readiness.md`](./plans/archive/ai-native-frontend-readiness.md) (HR-7 recommendation).
+
+### M11: AI-native input layer — S1–S5 CLI/core complete *(2026-06-18; frontend exposure deferred)*
+
+The AI-native layer (M11) is implemented in `crates/yune-core` and the direct
+`yune-cli run` path only, leaving the M9/M10 frontend surfaces unchanged. The
+core exposes an `AiCandidateProvider` interface, deterministic `MockAiProvider`,
+and an `AiWorker` (provider execution is CLI-orchestrated outside
+`Engine::refresh_candidates`; the engine consumes only staged, input-keyed
+results); structured `Ai { provider, confidence }` source metadata with
+fixed-point confidence; one merge function that pins the top classic candidate
+at index 0; a default-sensitive `AiPrivacyPolicy` that blocks remote providers
+before invocation and gates learning; an inspectable / clearable / disable-able
+`MemoryStore` kept **outside** the librime `*.userdb` namespace; and a
+deterministic local rule-backed provider (`yune-cli run --ai-provider local`).
+All eight S1–S5 safety criteria are independently verified — source-labeled,
+classic-first, non-blocking, no default auto-commit, **no userdb leak**,
+privacy-gated, deterministic fallback. Real frontend exposure remains deferred
+and default-off (see *Deferred / future*).
+
+Detail: [`plans/ai-native-design.md`](./plans/ai-native-design.md) (living architecture), [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md) (S1 record).
 
 ---
 
-## In progress
+## Next up — M10: TypeDuck-Windows native backend
 
-> **Sequencing — web first.** The original plan stands: prove Yune in a real
-> **web browser before** expanding to Windows and other native platforms. The
-> M9's original *NO-GO* was a *tooling* block, not a behavioral one. The
-> post-review hardening round found that the first WI-4 matrix used the
-> placeholder echo path for candidate evidence; HR-5 reran the matrix against
-> real TypeDuck assets, and HR-6 locked the remaining shared joiner/prompt oracle
-> slice. M9 is now closed as **GO WITH CONDITIONS**. Much of
-> the Windows work already done is **shared engine work** (comment shaping,
-> Cantonese goldens, the cross-platform baseline fix) and stays; only the
-> Windows-*platform*-specific pieces wait their turn.
-
-### Post-M9 TypeDuck-Web hardening *(completed 2026-06-18)*
-
-Build-out is done — WASM/Emscripten export contract for the `yune_typeduck_*`
-adapter, TypeScript bridge/runtime package, browser filesystem + IDBFS
-persistence, and an app-shaped E2E seam against upstream TypeDuck-Web. The
-Emscripten build now emits loadable `yune-typeduck.js`/`.wasm` glue, and a Node
-smoke instantiates it, calls a `yune_typeduck_*` export, and performs an
-Emscripten `FS` write/read. The TypeDuck-Web adapter now maps runtime
-`candidate.text`, `candidate.comment`, and `context.highlighted` into the
-upstream candidate panel shape with a focused mapper smoke. The patched
-TypeDuck-Web worker now calls the modular Emscripten factory, mounts IDBFS,
-fetches real `public/schema` assets before init, and participates in the real
-browser run. HR-1 through HR-4 cleared real-asset loading, startup `setOption`,
-deploy, and live persistence/reload. HR-5 reran the full browser matrix against
-real TypeDuck assets with zero warning/error console entries after the
-post-review pure-modifier delete-path fix. HR-6 covered the shared
-reverse-lookup joiner and schema-prompt oracle cases. The current
-recommendation is **GO WITH CONDITIONS** for AI-native frontend exposure.
-
-**Validation plan:** [`plans/typeduck-web-validation-plan.md`](./plans/typeduck-web-validation-plan.md) — complete for M9; keep its evidence gates green.
-Detail: [`plans/typeduck-web-adapter.md`](./plans/typeduck-web-adapter.md), [`plans/typeduck-web-integration-findings.md`](./plans/typeduck-web-integration-findings.md), [`plans/archive/ai-native-frontend-readiness.md`](./plans/archive/ai-native-frontend-readiness.md) (HR-7 recommendation).
-
-### M10: TypeDuck-Windows native backend *(started early; platform work deferred)*
-
-TypeDuck-Windows (a weasel fork) talks only to the RIME C ABI, so swapping
-`librime → Yune` is contained **iff** Yune presents the same ABI surface and
-emits the same candidate data. The contract is in
+Web-first is now satisfied (M9 complete), so the previously **parked Windows
+platform work can resume.** TypeDuck-Windows (a weasel fork) talks only to the
+RIME C ABI, so swapping `librime → Yune` is contained **iff** Yune presents the
+same ABI surface and emits the same candidate data. The contract is in
 [`typeduck-windows-backend-requirements.md`](./typeduck-windows-backend-requirements.md);
 the implementation plan and its execution notes are in
 [`plans/yune-windows-contract-implementation-plan.md`](./plans/yune-windows-contract-implementation-plan.md).
-A first pass already landed. Now that M9 browser validation is complete, the
-platform-specific Windows package and real TypeDuck-Windows E2E can resume. The
-remaining shared Cantonese parity captures continue to benefit both web and
-Windows.
+A first pass already landed; the shared engine work (comment shaping, Cantonese
+goldens, the cross-platform baseline) benefits both web and Windows. What remains
+is the platform-specific native package and the real TypeDuck-Windows E2E.
 
 **Status** (workspace tests green and clippy clean, independently verified):
 
@@ -141,37 +126,11 @@ Windows.
 The v1.1.2 oracle fixture used for items 2–3 is **genuine captured fork output**
 (`crates/yune-core/tests/fixtures/typeduck-v1.1.2/`).
 
-### M11: AI-native input layer *(S1-S5 CLI/core slices complete; frontend exposure deferred)*
-
-The first AI-native slice is implemented only in `crates/yune-core` and the
-direct `yune-cli run` path, keeping M9/M10 frontend surfaces unchanged. The core
-now exposes an `AiCandidateProvider` interface, deterministic `MockAiProvider`,
-and `AiWorker`; provider execution is CLI-orchestrated outside
-`Engine::refresh_candidates`, and the engine consumes only staged,
-input-keyed results. Matching AI candidates append after classic candidates, so
-the top classic candidate stays pinned. S2 adds structured AI source metadata
-with fixed-point confidence and orders AI rows by confidence after classic rows.
-
-Safety gates from S1/S2 are in place: default Space/Return confirmation rejects
-highlighted AI candidates, explicit AI selection does not stage librime userdb
-learning, keyed pending/ready results prevent stale AI state from applying to a
-different input, and the direct CLI transcript records a deterministic
-`ai_decision` when the mock path is enabled. Focused `yune-core`/`yune-cli`
-tests are green. S3 adds explicit AI context snapshots and a default-sensitive
-privacy policy that blocks remote providers before invocation and exposes the
-future memory-learning gate. S4 adds an inspectable, clearable, disable-able
-`MemoryStore` for explicit AI selections, suppresses writes in sensitive
-contexts, and gives persistence hosts `.ai-memory` names instead of librime
-`*.userdb` names. S5 adds a deterministic local rule-backed provider that can
-use contextual rules plus AI memory and is available through direct
-`yune-cli run --ai-provider local`. Real frontend exposure remains deferred and
-must stay explicit/default-off.
-
 ---
 
-## Next
+## Concrete next steps
 
-Concrete, in priority order (**web first, then Windows, then other platforms**):
+In priority order (**web first, then Windows, then other platforms**):
 
 1. **Keep the M9 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, and native `typeduck_web` fallback.
 2. **Capture the remaining shared Cantonese goldens.** Five fork-specific cases remain explicit ignored blockers pending TypeDuck v1.1.2 oracle captures: option-combination behavior, completion/prediction, correction, schema-menu hiding, and per-entry userdb pronunciations.
@@ -183,7 +142,7 @@ Concrete, in priority order (**web first, then Windows, then other platforms**):
 ## Deferred / future
 
 - **librime C++ plugin ABI** (Lua, octagram, predict, proto): deferred until a concrete frontend or distribution requires it; prefer Yune-native extension points first.
-- **AI-native input layer (future frontend exposure)** — after the completed S1-S5 CLI/core mock/provider, worker/confidence, context/privacy, memory, and local-model slices, remaining AI-native work is product integration: exposing AI behind explicit defaults in real frontends without changing M9/M10 compatibility behavior. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); S1 evidence and checklist live in [`plans/ai-native-cli-slice-plan.md`](./plans/ai-native-cli-slice-plan.md).
+- **AI-native input layer (future frontend exposure)** — after the completed S1-S5 CLI/core mock/provider, worker/confidence, context/privacy, memory, and local-model slices, remaining AI-native work is product integration: exposing AI behind explicit defaults in real frontends without changing M9/M10 compatibility behavior. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); S1 evidence and checklist live in [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md).
 
 ## Principles (carried forward)
 

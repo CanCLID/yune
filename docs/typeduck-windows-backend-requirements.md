@@ -2,7 +2,7 @@
 
 > **Purpose.** This records what the **TypeDuck-Windows** native IME frontend needs from the
 > engine, so Yune development can target it deliberately. It complements
-> [`typeduck-web-integration-findings.md`](./plans/typeduck-web-integration-findings.md), which covers the
+> [`typeduck-web-integration-findings.md`](./plans/archive/typeduck-web-integration-findings.md), which covers the
 > *web* frontend. As of 2026-06-17 the TypeDuck-Windows modernization is **intentionally parked**
 > pending Yune reaching the contract below; the engine is on the critical path, the Windows
 > frontend is the downstream consumer.

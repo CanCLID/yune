@@ -81,9 +81,10 @@ none reach into `yune-core` directly):
 **Direction is web-first.** The active milestone (**M9, TypeDuck-Web**) validates
 Yune in a real browser through the WASM adapter before resuming the **parked**
 native milestone (**M10, TypeDuck-Windows**). M10 had a first pass land early (the
-fork-only ABI slots + comment-panel filter), but platform packaging is deferred
-until web validation completes. See `docs/roadmap.md` and
-`docs/plans/typeduck-web-validation-plan.md`.
+fork-only ABI slots + comment-panel filter); **M9 browser validation is now
+complete (GO WITH CONDITIONS)**, so the previously deferred Windows platform
+packaging can resume. See `docs/roadmap.md` and
+`docs/plans/archive/typeduck-web-validation-plan.md`.
 
 **Behavior oracle.** The compatibility oracle is **upstream librime**
 (`https://github.com/rime/librime`) plus the **TypeDuck fork**
@@ -497,32 +498,29 @@ calls are local library/CLI/FFI (native or in-browser WASM). User dictionaries a
 
 ## 9. Key Risks / Concerns (current)
 
-**M9 web validation is blocked on browser evidence, not toolchain availability
-(highest-priority risk).** The Emscripten build now emits loadable
-`yune-typeduck.js`/`.wasm` glue and smokes one `yune_typeduck_*` call plus one
-`FS` write/read in Node, but the engine has **not yet run through the real
-TypeDuck-Web browser E2E**. The adapter shape and app filesystem gates are now
-unit/build-smoked: the patch maps `candidate.text` / `candidate.comment` /
-`context.highlighted`, calls the modular Emscripten factory, mounts IDBFS, and
-preloads real TypeDuck-Web `public/schema` assets. Resolution: run the
-real-browser E2E, record PASS/FAIL evidence for every flow, then write the
-evidence-based GO/NO-GO. Files: `typeduck_web.rs`,
+**M9 web validation is complete — residual risk is regression (keep gates
+green).** The engine now runs through the real TypeDuck-Web browser E2E: the
+HR-5 real-assets matrix passes (composition, paging, selection, deletion,
+Space/phrase commit, deploy, customize, persistence sync, reload, dictionary
+panel) against `jyut6ping3_mobile`, and HR-7 recorded **GO WITH CONDITIONS**.
+The remaining concern is keeping it green: preserve the reproducible Emscripten
+build, the runtime tests/build, the TypeDuck-Web worker build, and the committed
+browser evidence on every merge. Files: `typeduck_web.rs`,
 `packages/yune-typeduck-runtime/`, `scripts/typeduck-wasm-build.sh`,
-`docs/plans/typeduck-web-validation-plan.md`.
+`docs/plans/archive/typeduck-web-validation-plan.md`.
 
 **Native Windows artifact is unverified on an MSVC host (parked).**
 `scripts/package-typeduck-windows.ps1` has **not** been run on a real MSVC host, so the
 `rime.dll`/`rime.lib` artifact and the `rime_get_api` + `config_list_append_string` smoke check
-are unproven; the MSVC target may be unavailable in the current workspace. Resume only after the
-M9 GO.
+are unproven; the MSVC target may be unavailable in the current workspace. **M9 GO is now achieved
+(HR-7), so this is cleared to resume** once an MSVC host is available.
 
-**Comment-parity oracle gaps.** Comment/Cantonese parity against the v1.1.2 oracle is byte-locked
-only for the captured source rows. **Not yet golden-covered:** (a) the normal reverse-lookup
-`"; "` joiner (the join `comments.join("; ")` exists in `filter/mod.rs` but no oracle asserts
-it), and (b) schema-name-in-prompt parity. Five Cantonese/Jyutping parity cases are also
-`#[ignore]`d pending dedicated v1.1.2 goldens (options `combine_candidates`/`show_full_code`/
+**Comment-parity oracle gaps (narrowed).** HR-6 added oracle coverage for the reverse-lookup
+`"; "` joiner (`comments.join("; ")` in `filter/mod.rs`) and schema-name-in-prompt parity, so
+those are now byte-locked. **Still not golden-covered:** five Cantonese/Jyutping parity cases
+remain `#[ignore]`d pending dedicated v1.1.2 goldens (options `combine_candidates`/`show_full_code`/
 `enable_sentence`; completion/prediction; correction minimal-distance + m-abbreviation; schema-
-menu hiding; per-entry userdb pronunciation). Regressions in any of these pass CI because no
+menu hiding; per-entry userdb pronunciation). Regressions in those pass CI because no
 oracle asserts them.
 
 **Process-global single RIME service.** Runtime paths, sessions, module pointers, notifications,

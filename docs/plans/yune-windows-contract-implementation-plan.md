@@ -275,7 +275,7 @@ capture goldens from the real binary first.
    pulls `rime-TypeDuck-{x86,x64}` release archives via `github.install.bat`,
    keyed on the release tag = `git describe`). Record the exact source + revision,
    matching the evidence discipline used in
-   [`typeduck-web-integration-findings.md`](./typeduck-web-integration-findings.md).
+   [`typeduck-web-integration-findings.md`](./archive/typeduck-web-integration-findings.md).
 2. Run a fixed input transcript through the fork and capture, per candidate:
    `text`, `comment`, the menu `highlighted_candidate_index`, and the prompt
    string — for cases that exercise: single reverse-lookup pronunciation,

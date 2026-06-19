@@ -170,6 +170,56 @@ Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-or
 
 ---
 
+## Next up - M13: AI-native frontend exposure
+
+The first test of the product thesis: take M11's completed CLI/core AI layer to a
+**real frontend** — default-off, local-first, and gated by the same safety
+invariants already proven in the CLI. M11 owns the hard parts (the
+`AiCandidateProvider` trait, `MockAiProvider`/`LocalModelProvider`, the
+input-keyed merge that pins the top classic candidate at index 0, the
+default-sensitive `AiPrivacyPolicy`, and the `MemoryStore` kept outside the
+librime `*.userdb` namespace). M13 carries that surface — **unchanged and still
+safe** — across the frontend boundary on **TypeDuck-Web**, the only
+GO-WITH-CONDITIONS frontend (M9). No core or TypeDuck compatibility behavior
+changes.
+
+**Orchestration decision.** M11 requires the per-key path to *never* run provider
+code — it only reads an already-staged result. The browser has no CLI host, and
+`AiWorker` uses `std::thread`, which does not port to Emscripten. M13 honors the
+invariant with **two passes in Rust**: `yune_typeduck_process_key` stays
+unchanged and returns the classic response (so AI-off is byte-identical and the
+key path never invokes the provider); a new `yune_typeduck_stage_ai` export then
+runs the `LocalModelProvider` **synchronously** and stages an input-keyed result,
+which the worker requests **after** rendering classic. Classic input is never
+delayed; AI rows arrive as a bounded **second-pass update** on the
+off-main-thread worker. The async / second-Web-Worker port is deferred.
+
+**Non-goals (deferred).** Remote LLM providers; the async background-worker port;
+exposure through Windows or other native frontends; any change to classic-input
+defaults.
+
+**Status** (planned — nothing landed yet):
+
+| # | Work item | State | Notes |
+|---|---|---|---|
+| 0 | Browser AI orchestration | Planned | `process_key` stays classic-only; a new `yune_typeduck_stage_ai` runs the `LocalModelProvider` in Rust as a second pass after classic renders, so the per-key path never invokes the provider. |
+| 1 | Default-off + opt-in toggle | Planned | AI is invisible until a user enables it; with AI off, candidate output is **byte-identical** to today (hard gate). |
+| 2 | Source-labeled candidates in the panel | Planned | AI rows render *after* classic and are visibly labeled; index 0 stays classic. |
+| 3 | Commit-boundary safety in the browser | Planned | No AI auto-commit (Space/Return/default is always classic); an AI commit never touches the librime userdb, and under the sensitive browser default AI-memory learning is suppressed (no `MemoryStore` write). |
+| 4 | Privacy in browser context | Planned | Browser context has no app/field signal → defaults to **sensitive** → remote blocked; M13 ships mock/local only. |
+| 5 | Browser-E2E safety evidence | Planned | A real-browser run proves the M11 invariants hold in TypeDuck-Web exactly as the CLI asserts them, plus AI-off byte-identity. |
+
+**Definition of done.** The M11 safety invariants (classic-first, non-blocking,
+no default auto-commit, no userdb leak, privacy-gated, deterministic fallback)
+are asserted in the browser as they are in the CLI; AI candidates render, label,
+and never auto-commit in a real TypeDuck-Web run; and classic input is
+byte-identical with AI off. Completing M13 supersedes the *Deferred / future*
+"AI-native (future frontend exposure)" item for the web surface.
+
+Detail: [`plans/m13-ai-native-frontend-exposure.md`](./plans/m13-ai-native-frontend-exposure.md) (execution plan) and [`plans/ai-native-design.md`](./plans/ai-native-design.md) (architecture).
+
+---
+
 ## Parked - M10: TypeDuck-Windows native backend
 
 TypeDuck-Windows remains valuable, but it is no longer the active core-engine
@@ -192,10 +242,10 @@ and [`plans/yune-windows-native-build.md`](./plans/yune-windows-native-build.md)
 
 In priority order:
 
-1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
-2. **Broaden upstream parity schema-by-schema.** Reuse the M12 fixture/provenance harness for the next named upstream schema or for parked `luna_pinyin` blockers when a target needs them.
+1. **Execute M13 — AI-native frontend exposure (the chosen next milestone).** Take M11's CLI/core AI layer to TypeDuck-Web, default-off and local-first, per [`plans/m13-ai-native-frontend-exposure.md`](./plans/m13-ai-native-frontend-exposure.md); preserve every compatibility gate and keep AI default-off until its safety gates pass in a real browser.
+2. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 3. **Keep M9 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, and native `typeduck_web` fallback.
-4. **Keep AI frontend exposure separate and default-off.** M11's CLI/core layer is complete; any future TypeDuck-Web, Windows, or other frontend exposure needs a new explicit plan and must preserve compatibility gates.
+4. **Broaden upstream parity opportunistically.** Reuse the M12 fixture/provenance harness for the next named upstream schema or parked `luna_pinyin` blockers **when a target needs them** (per the scope ledger — not ahead of M13).
 5. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
 
 ---

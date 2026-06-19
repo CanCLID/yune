@@ -1,0 +1,11 @@
+{
+  "fixture_family": "typeduck-profile",
+  "oracle": {
+    "engine": "TypeDuck-HK/librime",
+    "engine_tag": "v1.1.2",
+    "engine_commit": "74cb52b78fb2411137a7643f6c8bc6517acfde69",
+    "canonical_repository": "https://github.com/TypeDuck-HK/librime",
+    "release_url": "https://github.com/TypeDuck-HK/librime/releases/tag/v1.1.2"
+  },
+  "profile_only": true
+}

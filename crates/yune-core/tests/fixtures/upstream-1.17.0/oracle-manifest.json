@@ -1,0 +1,12 @@
+{
+  "fixture_family": "upstream-core",
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "tag_object": "a52a3400f8b7679e839bc5fb8e6309a0fc4424da",
+    "canonical_repository": "https://github.com/rime/librime",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0"
+  },
+  "profile_only": false
+}

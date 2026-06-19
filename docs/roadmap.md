@@ -108,7 +108,10 @@ Detail: [`plans/ai-native-design.md`](./plans/ai-native-design.md) (living archi
 
 Yune's core engine now tracks upstream `rime/librime 1.17.0` as the default
 oracle target. M12 turned TypeDuck behavior into an explicit compatibility
-profile instead of the default engine truth.
+profile instead of the default engine truth. The first post-M12 upstream
+behavioral fixture now captures `luna_pinyin` context/candidate bytes from the
+official upstream Windows MSVC release binary and compares the single-code first
+page through Yune's real table translator path.
 
 Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-oracle-refresh.md).
 
@@ -120,6 +123,7 @@ Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-or
 | 1 | Fixture naming policy | Done | Fixture manifests and the provenance guard test distinguish `upstream-1.17.0` from `typeduck-v1.1.2`. |
 | 2 | TypeDuck assumption audit | Done | Existing TypeDuck-derived behavior is classified in `docs/plans/archive/m12-coverage-audit.md`. |
 | 3 | First upstream parity slice | Done | Default `RimeApi` ABI parity was refreshed to `rime/librime 1.17.0`; fork-only `start_quick` and `config_list_append_*` slots are excluded from the core table. |
+| 4 | First upstream behavioral fixture | Done | `luna-pinyin-basic.json` is captured from the official upstream `1.17.0` binary and checked by `upstream_luna_pinyin_parity`. |
 
 ---
 
@@ -146,7 +150,7 @@ and [`plans/yune-windows-native-build.md`](./plans/yune-windows-native-build.md)
 In priority order:
 
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
-2. **Capture upstream behavioral goldens.** Use the official upstream `1.17.0` Windows MSVC release binary, canonical upstream schema data such as `luna_pinyin`, and the existing oracle-probe pattern to capture non-circular context/candidate/commit fixtures under `upstream-1.17.0/`.
+2. **Expand upstream behavioral parity.** Extend from the first `luna_pinyin` single-code fixture into phrase/sentence behavior, reverse lookup, punctuation, paging, and schema-option toggles using the official upstream `1.17.0` oracle.
 3. **Keep M9 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, and native `typeduck_web` fallback.
 4. **Keep AI frontend exposure separate and default-off.** M11's CLI/core layer is complete; any future TypeDuck-Web, Windows, or other frontend exposure needs a new explicit plan and must preserve compatibility gates.
 5. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.

@@ -26,6 +26,27 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
 - If a case cannot be captured, keep the Yune test ignored with a `panic!()` body
   and document the exact command that would unblock it.
 
+## Captured Fixtures
+
+### `luna-pinyin-basic.json`
+
+- Schema: `luna_pinyin`
+- Upstream schema data: `rime/rime-luna-pinyin`
+- Schema-data dependencies: `rime/rime-prelude`, `rime/rime-essay`, and
+  `rime/rime-stroke`
+- Inputs: `ni`, `hao`, `zhong`, `guo`, `zhongguo`
+- Capture command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json
+```
+
+The active Yune check is:
+
+```powershell
+cargo test -p yune-core --test upstream_luna_pinyin_parity
+```
+
 ## Oracle Binary Evidence
 
 - Release assets:

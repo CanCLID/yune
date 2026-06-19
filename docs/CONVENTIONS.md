@@ -397,6 +397,7 @@ hand-written fakes (`CommentTranslator` in `tests/engine.rs`; `test/fake-{filesy
 ```bash
 cargo test --workspace                              # all Rust tests
 cargo test -p yune-rime-api --test typeduck_web     # TypeDuck-Web ABI/adapter contract
+cargo test -p yune-core --test upstream_luna_pinyin_parity # upstream 1.17.0 oracle parity
 cargo test -p yune-core --test cantonese_parity     # v1.1.2 oracle parity
 cargo clippy --workspace --all-targets -- -D warnings
 npm test  # (in packages/yune-typeduck-runtime) -> vitest run
@@ -406,6 +407,10 @@ npm test  # (in packages/yune-typeduck-runtime) -> vitest run
 from the **external oracle** (upstream librime / TypeDuck fork v1.1.2) into a checked-in
 fixture, then run Yune's **real production path** and assert it reproduces the oracle output.
 **Never derive the expected value from Yune itself.** Canonical example:
+`upstream_luna_pinyin_parity.rs` captures the first upstream `luna_pinyin`
+behavior slice from official `rime/librime 1.17.0`, then feeds the captured
+upstream dictionary/vocabulary rows through Yune's real `TableDictionary` and
+`StaticTableTranslator` path. TypeDuck profile example:
 `cantonese_parity.rs` feeds raw TypeDuck TSV source rows through the real
 `DictionaryLookupFilter` and compares the emitted comment against the golden
 `tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json` (each comment begins with

@@ -73,11 +73,13 @@ describe("bindTypeDuckModule", () => {
     fake.deployResult = 0;
     fake.customizeResult = 2;
     fake.setOptionResult = 1;
+    fake.setAiEnabledResult = 1;
     const bindings = bindTypeDuckModule(fake);
 
     expect(bindings.deploy(1)).toBe(0);
     expect(bindings.customize(1, "typeduck_luna.schema", "schema/name", "TypeDuck")).toBe(2);
     expect(bindings.setOption(1, "ascii_mode", 1)).toBe(1);
+    expect(bindings.setAiEnabled(1, 1)).toBe(1);
   });
 });
 
@@ -208,17 +210,32 @@ describe("TypeDuckRuntime operations", () => {
     fake.deployResult = 1;
     fake.customizeResult = 0;
     fake.setOptionResult = 1;
+    fake.setAiEnabledResult = 1;
     const runtime = initializedRuntime(fake);
 
     expect(runtime.deploy()).toBe(true);
     expect(runtime.customize("typeduck_luna.schema", "schema/name", "TypeDuck Luna Web")).toBe(false);
     expect(runtime.setOption("ascii_mode", true)).toBe(true);
+    expect(runtime.setAiEnabled(true)).toBe(true);
 
     expect(fake.calls("yune_typeduck_deploy")).toEqual([[defaultInitPtr]]);
     expect(fake.calls("yune_typeduck_customize")).toEqual([
       [defaultInitPtr, "typeduck_luna.schema", "schema/name", "TypeDuck Luna Web"],
     ]);
     expect(fake.calls("yune_typeduck_set_option")).toEqual([[defaultInitPtr, "ascii_mode", 1]]);
+    expect(fake.calls("yune_typeduck_set_ai_enabled")).toEqual([[defaultInitPtr, 1]]);
+  });
+
+  it("stageAi returns the second-pass response and frees it", () => {
+    const fake = new FakeTypeDuckModule();
+    const staged = fake.response(responsePayload({ commits: [], context: null }));
+    fake.stageAiResult = staged;
+    const runtime = initializedRuntime(fake);
+
+    expect(runtime.stageAi()).toEqual(responsePayload({ commits: [], context: null }));
+
+    expect(fake.calls("yune_typeduck_stage_ai")).toEqual([[defaultInitPtr]]);
+    expect(fake.freedResponses()).toEqual([staged]);
   });
 });
 
@@ -247,6 +264,8 @@ describe("TypeDuckRuntime lifecycle", () => {
     expect(() => runtime.deploy()).toThrow(cleanedUpMessage);
     expect(() => runtime.customize("config", "key", "value")).toThrow(cleanedUpMessage);
     expect(() => runtime.setOption("ascii_mode", true)).toThrow(cleanedUpMessage);
+    expect(() => runtime.setAiEnabled(true)).toThrow(cleanedUpMessage);
+    expect(() => runtime.stageAi()).toThrow(cleanedUpMessage);
 
     expect(fake.calls("yune_typeduck_process_key")).toEqual([]);
     expect(fake.calls("yune_typeduck_select_candidate")).toEqual([]);
@@ -255,6 +274,8 @@ describe("TypeDuckRuntime lifecycle", () => {
     expect(fake.calls("yune_typeduck_deploy")).toEqual([]);
     expect(fake.calls("yune_typeduck_customize")).toEqual([]);
     expect(fake.calls("yune_typeduck_set_option")).toEqual([]);
+    expect(fake.calls("yune_typeduck_set_ai_enabled")).toEqual([]);
+    expect(fake.calls("yune_typeduck_stage_ai")).toEqual([]);
   });
 
   it("failed init cannot be cleaned up because no runtime object is returned", () => {

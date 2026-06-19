@@ -101,13 +101,14 @@ mod tests {
     }
 
     #[test]
-    fn mock_provider_appends_source_labeled_ai_candidate() {
+    fn mock_provider_adds_source_labeled_ai_candidate() {
         let output = run_sequence_with_ai_provider("nihao", AiProviderMode::Mock)
             .expect("sample sequence should run");
         let candidates = &output.snapshot.context.candidates;
         let ai_candidate = candidates
-            .last()
-            .expect("mock AI candidate should be appended");
+            .iter()
+            .find(|candidate| candidate.source.is_ai())
+            .expect("mock AI candidate should be present");
 
         assert_eq!(
             output.ai_decision.map(|decision| decision.as_str()),
@@ -122,14 +123,14 @@ mod tests {
     }
 
     #[test]
-    fn local_provider_appends_source_labeled_ai_candidate() {
+    fn local_provider_adds_source_labeled_ai_candidate() {
         let output = run_sequence_with_ai_provider("nihao", AiProviderMode::Local)
             .expect("sample sequence should run");
         let candidates = &output.snapshot.context.candidates;
         let ai_candidate = candidates
             .iter()
             .find(|candidate| candidate.source.is_ai())
-            .expect("local AI candidate should be appended");
+            .expect("local AI candidate should be present");
 
         assert_eq!(
             output.ai_decision.map(|decision| decision.as_str()),

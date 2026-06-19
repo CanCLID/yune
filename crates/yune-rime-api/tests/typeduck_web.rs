@@ -12,7 +12,8 @@ use yune_rime_api::{
     rime_get_api, yune_typeduck_cleanup, yune_typeduck_customize, yune_typeduck_delete_candidate,
     yune_typeduck_deploy, yune_typeduck_flip_page, yune_typeduck_free_response, yune_typeduck_init,
     yune_typeduck_process_key, yune_typeduck_response_handled, yune_typeduck_response_json,
-    yune_typeduck_select_candidate, yune_typeduck_set_option, Bool, FALSE, TRUE,
+    yune_typeduck_select_candidate, yune_typeduck_set_ai_enabled, yune_typeduck_set_option,
+    yune_typeduck_stage_ai, Bool, FALSE, TRUE,
 };
 
 const SCHEMA_ID: &str = "typeduck_luna";
@@ -455,6 +456,193 @@ fn typeduck_adapter_set_option_updates_session_status() {
 }
 
 #[test]
+fn typeduck_adapter_stage_ai_is_default_off_and_second_pass_source_labeled() {
+    let _guard = test_guard();
+    let runtime = TypeDuckRuntime::create("stage-ai-second-pass");
+    runtime.write_mobile_schema_with_dictionary("jyut6ping3");
+    runtime.write_cantonese_dictionary();
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let classic = process_input(state, "nei");
+    let classic_candidates = classic["context"]["candidates"]
+        .as_array()
+        .expect("classic candidates should be an array")
+        .clone();
+    assert_eq!(
+        classic_candidates[0]["text"],
+        Value::String("\u{4f60}".to_owned())
+    );
+
+    let default_off = response_json(unsafe { yune_typeduck_stage_ai(state) });
+    assert_eq!(
+        default_off["context"]["candidates"],
+        Value::Array(classic_candidates.clone())
+    );
+
+    assert_eq!(unsafe { yune_typeduck_set_ai_enabled(state, TRUE) }, TRUE);
+    let staged = response_json(unsafe { yune_typeduck_stage_ai(state) });
+    let staged_candidates = staged["context"]["candidates"]
+        .as_array()
+        .expect("staged candidates should be an array");
+    assert_eq!(
+        staged_candidates[0]["text"], classic_candidates[0]["text"],
+        "classic top candidate must stay at index 0"
+    );
+    let ai_index = staged_candidates
+        .iter()
+        .position(|candidate| candidate["source"] == Value::String("ai:local".to_owned()))
+        .expect("staged response should include a visible source-labeled AI candidate");
+    assert!(
+        staged_candidates.len() > classic_candidates.len(),
+        "stage_ai should add a deterministic local AI row"
+    );
+    assert!(
+        ai_index > 0,
+        "AI rows must not displace the classic top candidate"
+    );
+    assert!(
+        staged_candidates[..ai_index]
+            .iter()
+            .all(|candidate| candidate.get("source").is_none()),
+        "classic rows before the AI row should remain unlabeled"
+    );
+    let ai_candidate = &staged_candidates[ai_index];
+    assert_eq!(
+        ai_candidate["text"],
+        Value::String("\u{4f60}\u{554a}".to_owned())
+    );
+    let later_response = response_json(unsafe { yune_typeduck_flip_page(state, TRUE) });
+    assert!(later_response["context"]["candidates"]
+        .as_array()
+        .expect("later response candidates should be an array")
+        .iter()
+        .any(|candidate| candidate["source"] == Value::String("ai:local".to_owned())));
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_disabling_ai_clears_staged_rows_for_current_input() {
+    let _guard = test_guard();
+    let runtime = TypeDuckRuntime::create("stage-ai-disable-clears");
+    runtime.write_mobile_schema_with_dictionary("jyut6ping3");
+    runtime.write_cantonese_dictionary();
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let classic = process_input(state, "nei");
+    let classic_candidates = classic["context"]["candidates"].clone();
+    assert_eq!(unsafe { yune_typeduck_set_ai_enabled(state, TRUE) }, TRUE);
+    let staged = response_json(unsafe { yune_typeduck_stage_ai(state) });
+    assert!(staged["context"]["candidates"]
+        .as_array()
+        .expect("staged candidates should be an array")
+        .iter()
+        .any(|candidate| candidate["source"] == Value::String("ai:local".to_owned())));
+
+    assert_eq!(unsafe { yune_typeduck_set_ai_enabled(state, FALSE) }, TRUE);
+    let disabled = response_json(unsafe { yune_typeduck_stage_ai(state) });
+    assert_eq!(disabled["context"]["candidates"], classic_candidates);
+    assert!(
+        disabled["context"]["candidates"]
+            .as_array()
+            .expect("disabled candidates should be an array")
+            .iter()
+            .all(|candidate| candidate.get("source").is_none()),
+        "disabling AI must remove stale source-labeled rows immediately"
+    );
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_ai_rows_do_not_auto_commit_and_do_not_write_userdb() {
+    let _guard = test_guard();
+    let runtime = TypeDuckRuntime::create("stage-ai-commit-safety");
+    runtime.write_mobile_schema_with_dictionary("jyut6ping3");
+    runtime.write_cantonese_dictionary();
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let classic = process_input(state, "nei");
+    let classic_top = classic["context"]["candidates"][0]["text"].clone();
+    assert_eq!(unsafe { yune_typeduck_set_ai_enabled(state, TRUE) }, TRUE);
+    let staged = response_json(unsafe { yune_typeduck_stage_ai(state) });
+    assert!(staged["context"]["candidates"]
+        .as_array()
+        .expect("staged candidates should be an array")
+        .iter()
+        .any(|candidate| candidate["source"] == Value::String("ai:local".to_owned())));
+
+    let default_commit = response_json(unsafe { yune_typeduck_process_key(state, ' ' as i32, 0) });
+    assert_eq!(
+        default_commit["commits"],
+        Value::Array(vec![classic_top]),
+        "Space/default confirm must commit the classic top row"
+    );
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+
+    let runtime = TypeDuckRuntime::create("stage-ai-explicit-commit-safety");
+    runtime.write_mobile_schema_with_dictionary("jyut6ping3");
+    runtime.write_cantonese_dictionary();
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    process_input(state, "nei");
+    assert_eq!(unsafe { yune_typeduck_set_ai_enabled(state, TRUE) }, TRUE);
+    let staged = response_json(unsafe { yune_typeduck_stage_ai(state) });
+    let ai_index = staged["context"]["candidates"]
+        .as_array()
+        .expect("staged candidates should be an array")
+        .iter()
+        .position(|candidate| candidate["source"] == Value::String("ai:local".to_owned()))
+        .expect("AI row should be selectable");
+    let selected = response_json(unsafe { yune_typeduck_select_candidate(state, ai_index) });
+    assert_eq!(
+        selected["commits"],
+        Value::Array(vec![Value::String("\u{4f60}\u{554a}".to_owned())])
+    );
+    assert!(
+        !runtime.user.join("jyut6ping3.userdb").exists(),
+        "explicit AI selection must not create or update the librime userdb"
+    );
+    assert!(
+        !runtime.user.join("jyut6ping3.ai-memory").exists(),
+        "sensitive browser default must suppress persisted AI-memory learning"
+    );
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
 fn typeduck_adapter_handles_null_inputs_and_response_freeing() {
     let _guard = test_guard();
     assert!(unsafe { yune_typeduck_init(ptr::null(), ptr::null(), ptr::null()) }.is_null());
@@ -467,13 +655,26 @@ fn typeduck_adapter_handles_null_inputs_and_response_freeing() {
         unsafe { yune_typeduck_set_option(ptr::null_mut(), ptr::null(), TRUE) },
         FALSE
     );
+    assert_eq!(
+        unsafe { yune_typeduck_set_ai_enabled(ptr::null_mut(), TRUE) },
+        FALSE
+    );
     assert!(unsafe { yune_typeduck_process_key(ptr::null_mut(), 'a' as i32, 0) }.is_null());
+    assert!(unsafe { yune_typeduck_stage_ai(ptr::null_mut()) }.is_null());
     assert!(unsafe { yune_typeduck_response_json(ptr::null()) }.is_null());
     assert_eq!(
         unsafe { yune_typeduck_response_handled(ptr::null()) },
         FALSE
     );
     unsafe { yune_typeduck_free_response(ptr::null_mut()) };
+}
+
+fn process_input(state: *mut yune_rime_api::YuneTypeDuckState, input: &str) -> Value {
+    let mut response = Value::Null;
+    for key in input.chars() {
+        response = response_json(unsafe { yune_typeduck_process_key(state, key as i32, 0) });
+    }
+    response
 }
 
 fn response_json(response: *mut yune_rime_api::YuneTypeDuckResponse) -> Value {

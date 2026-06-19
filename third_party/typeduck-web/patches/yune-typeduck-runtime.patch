@@ -1,3 +1,16 @@
+diff --git a/index.html b/index.html
+index 5803fa4..6fa66f8 100644
+--- a/index.html
++++ b/index.html
+@@ -4,8 +4,6 @@
+ 		<meta charset="UTF-8" />
+ 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+ 		<title>TypeDuck 網頁版</title>
+-		<link rel="icon" type="image/png" href="/images/favicon.png" />
+-		<link rel="preload" type="image/png" href="/images/logo.png" as="image" />
+ 		<meta name="description" content="設有少數族裔語言提示粵拼輸入法 Cantonese input keyboard with minority language prompts" />
+ 		<meta property="og:title" content="TypeDuck 網頁版" />
+ 		<meta property="og:description" content="設有少數族裔語言提示粵拼輸入法 Cantonese input keyboard with minority language prompts" />
 diff --git a/package.json b/package.json
 index cbe61db..6d1043d 100644
 --- a/package.json
@@ -15,454 +28,326 @@ index cbe61db..6d1043d 100644
  		"react": "^18.3.1",
  		"react-dom": "^18.3.1",
  		"react-toastify": "^10.0.5",
-diff --git a/public/schema/build/default.yaml b/public/schema/build/default.yaml
-new file mode 100644
-index 0000000..b194a4e
---- /dev/null
-+++ b/public/schema/build/default.yaml
-@@ -0,0 +1,178 @@
-+__build_info:
-+  rime_version: 1.1.2
-+  timestamps:
-+    default: 1731663570
-+    default.custom: 1731663569
-+ascii_composer:
-+  good_old_caps_lock: true
-+  switch_key:
-+    Caps_Lock: clear
-+    Control_L: noop
-+    Control_R: noop
-+    Eisu_toggle: clear
-+    Shift_L: noop
-+    Shift_R: noop
-+config_version: 2024.05.10
-+key_binder:
-+  bindings:
-+    - {accept: "Control+p", send: Up, when: composing}
-+    - {accept: "Control+n", send: Down, when: composing}
-+    - {accept: "Control+b", send: Left, when: composing}
-+    - {accept: "Control+f", send: Right, when: composing}
-+    - {accept: "Control+a", send: Home, when: composing}
-+    - {accept: "Control+e", send: End, when: composing}
-+    - {accept: "Control+d", send: Delete, when: composing}
-+    - {accept: "Control+k", send: "Shift+Delete", when: composing}
-+    - {accept: "Control+h", send: BackSpace, when: composing}
-+    - {accept: "Control+g", send: Escape, when: composing}
-+    - {accept: "Control+bracketleft", send: Escape, when: composing}
-+    - {accept: "Control+y", send: Page_Up, when: composing}
-+    - {accept: "Alt+v", send: Page_Up, when: composing}
-+    - {accept: "Control+v", send: Page_Down, when: composing}
-+    - {accept: ISO_Left_Tab, send: "Shift+Left", when: composing}
-+    - {accept: "Shift+Tab", send: "Shift+Left", when: composing}
-+    - {accept: Tab, send: "Shift+Right", when: composing}
-+    - {accept: minus, send: Page_Up, when: paging}
-+    - {accept: equal, send: Page_Down, when: has_menu}
-+    - {accept: comma, send: Page_Up, when: paging}
-+    - {accept: period, send: Page_Down, when: has_menu}
-+    - {accept: bracketleft, send: Page_Up, when: paging}
-+    - {accept: bracketright, send: Page_Down, when: has_menu}
-+    - {accept: "Control+Shift+1", select: .next, when: always}
-+    - {accept: "Control+Shift+2", toggle: ascii_mode, when: always}
-+    - {accept: "Control+Shift+3", toggle: full_shape, when: always}
-+    - {accept: "Control+Shift+exclam", select: .next, when: always}
-+    - {accept: "Control+Shift+at", toggle: ascii_mode, when: always}
-+    - {accept: "Control+Shift+numbersign", toggle: full_shape, when: always}
-+    - {accept: "Control+Shift+space", select: .next, when: always}
-+    - {accept: "Control+comma", toggle: full_shape, when: always}
-+    - {accept: "Control+period", toggle: ascii_punct, when: always}
-+menu:
-+  page_size: 50
-+punctuator:
-+  ascii_style:
-+    "!": {commit: "!"}
-+    "\"": "\""
-+    "#": "#"
-+    "$": "$"
-+    "%": "%"
-+    "&": "&"
-+    "'": "'"
-+    "(": "("
-+    ")": ")"
-+    "*": "*"
-+    "+": "+"
-+    ",": {commit: ","}
-+    "-": "-"
-+    .: {commit: .}
-+    "/": "/"
-+    ":": {commit: ":"}
-+    ";": {commit: ";"}
-+    "<": "<"
-+    "=": "="
-+    ">": ">"
-+    "?": {commit: "?"}
-+    "@": "@"
-+    "[": "["
-+    "\\": "\\"
-+    "]": "]"
-+    "^": "^"
-+    _: _
-+    "`": "`"
-+    "{": "{"
-+    "|": "|"
-+    "}": "}"
-+    "~": "~"
-+  full_shape:
-+    " ": {commit: "　"}
-+    "!": {commit: "！"}
-+    "\"": ["＂", "\"", "“", "”", "„", "‟", "″", "〃", "〝", "〞", "〟"]
-+    "#": ["＃", "#", "№", "⌘", "⌥", "⌃"]
-+    "$": ["＄", "$", "￥", "¥", "￦", "₩", "￡", "£", "￠", "¢", "€", "₽", "¤"]
-+    "%": ["％", "%", "‰", "‱", "℃", "℉"]
-+    "&": ["＆", "&", "¶", "§"]
-+    "'": ["＇", "'", "‘", "’", "‛", "′", "↑", "↓"]
-+    "(": {commit: "（"}
-+    ")": {commit: "）"}
-+    "*": ["＊", "*", "×", "※", "✓", "✗"]
-+    "+": ["＋", "+", "±", "∓"]
-+    ",": {commit: "，"}
-+    "-": ["－", "-", "‒", "―", "–", "—", "＿", _, "￣", "‾"]
-+    .: {commit: "。"}
-+    "/": ["／", "/", "＼", "\\", "､", "÷", "∕", "√"]
-+    ":": {commit: "："}
-+    ";": {commit: "；"}
-+    "<": ["《", "〈", "＜", "<", "«", "‹", "⟨", "←", "⇐", "↔", "⇔", "≤", "⩽", "≦", "⫹"]
-+    "=": ["＝", "=", "≡", "≈", "≠", "≒", "≅"]
-+    ">": ["》", "〉", "＞", ">", "»", "›", "⟩", "→", "⇒", "↔", "⇔", "≥", "⩾", "≧", "⫺"]
-+    "?": {commit: "？"}
-+    "@": ["＠", "@", "©", "®", "℗", "™", "℠", "∅"]
-+    "[": ["「", "｢", "【", "〔", "［", "[", "〚", "〘"]
-+    "\\": {commit: "、"}
-+    "]": ["」", "｣", "】", "〕", "］", "]", "〛", "〙"]
-+    "^": {commit: "……"}
-+    _: {commit: "——"}
-+    "`": ["｀", "`", "·", "•", "‣", "°", "○", "◌", "◦"]
-+    "{": ["『", "〖", "｛", "{", "⦅", "⸨", "｟"]
-+    "|": ["｜", "|", "＼", "\\", "¦"]
-+    "}": ["』", "〗", "｝", "}", "⦆", "⸩", "｠"]
-+    "~": ["～", "~", "﹏", "﹋"]
-+  half_shape:
-+    "!": {commit: "！"}
-+    "\"": ["\"", "＂", "“", "”", "„", "‟", "″", "〃", "〝", "〞", "〟"]
-+    "#": ["#", "＃", "№", "⌘", "⌥", "⌃"]
-+    "$": ["$", "＄", "¥", "￥", "₩", "￦", "£", "￡", "¢", "￠", "€", "₽", "¤"]
-+    "%": ["％", "%", "‰", "‱", "℃", "℉"]
-+    "&": ["＆", "&", "¶", "§"]
-+    "'": ["'", "＇", "‘", "’", "‛", "′", "↑", "↓"]
-+    "(": {commit: "（"}
-+    ")": {commit: "）"}
-+    "*": ["＊", "*", "×", "※", "✓", "✗"]
-+    "+": ["+", "＋", "±", "∓"]
-+    ",": {commit: "，"}
-+    "-": ["-", "－", "‒", "―", "–", "—", _, "＿", "‾", "￣"]
-+    .: {commit: "。"}
-+    "/": ["/", "／", "\\", "＼", "､", "÷", "∕", "√"]
-+    ":": {commit: "："}
-+    ";": {commit: "；"}
-+    "<": ["《", "〈", "<", "＜", "«", "‹", "⟨", "←", "⇐", "↔", "⇔", "≤", "⩽", "≦", "⫹"]
-+    "=": ["=", "＝", "≡", "≈", "≠", "≒", "≅"]
-+    ">": ["》", "〉", ">", "＞", "»", "›", "⟩", "→", "⇒", "↔", "⇔", "≥", "⩾", "≧", "⫺"]
-+    "?": {commit: "？"}
-+    "@": ["@", "＠", "©", "®", "℗", "™", "℠", "∅"]
-+    "[": ["「", "｢", "【", "〔", "［", "[", "〚", "〘"]
-+    "\\": {commit: "、"}
-+    "]": ["」", "｣", "】", "〕", "］", "]", "〛", "〙"]
-+    "^": {commit: "……"}
-+    _: {commit: "——"}
-+    "`": ["`", "｀", "·", "•", "‣", "°", "○", "◌", "◦"]
-+    "{": ["『", "〖", "｛", "{", "⦅", "⸨", "｟"]
-+    "|": ["|", "｜", "＼", "\\", "¦"]
-+    "}": ["』", "〗", "｝", "}", "⦆", "⸩", "｠"]
-+    "~": ["~", "～", "﹏", "﹋"]
-+recognizer:
-+  patterns:
-+    email: "^[A-Za-z][-_.0-9A-Za-z]*@.*$"
-+    uppercase: "[A-Z][-_+.'0-9A-Za-z]*$"
-+    url: "^(www[.]|https?:|ftp[.:]|mailto:|file:).*$|^[a-z]+[.].+$"
-+schema_list:
-+  - schema: jyut6ping3_mobile
-+  - schema: jyut6ping3_mobile_longpress
-+  - schema: jyut6ping3_mobile_10keys
-+  - schema: jyut6ping3_scolar
-+  - schema: luna_pinyin
-+  - schema: loengfan
-+  - schema: loengfan_longpress
-+  - schema: cangjie3
-+  - schema: cangjie5
-+switcher:
-+  caption: "快捷選項 Options Menu"
-+  hide_lone_schema: true
-+  hotkeys:
-+    - "Control+grave"
-+    - "Control+Shift+grave"
-+    - F4
-+  option_list_separator: " / "
-+  save_options:
-+    - full_shape
-+    - ascii_punct
-\ No newline at end of file
-diff --git a/public/schema/build/jyut6ping3_mobile.schema.yaml b/public/schema/build/jyut6ping3_mobile.schema.yaml
-new file mode 100644
-index 0000000..7d09c96
---- /dev/null
-+++ b/public/schema/build/jyut6ping3_mobile.schema.yaml
-@@ -0,0 +1,254 @@
-+__build_info:
-+  rime_version: 1.1.2
-+  timestamps:
-+    common: 1731663570
-+    common.custom: 1731663570
-+    default: 1731663570
-+    default.custom: 1731663570
-+    include: 1731663570
-+    include.custom: 0
-+    jyut6ping3_mobile.schema: 1731663569
-+    template: 1731663570
-+    template.custom: 0
-+dictionary_lookup_filter:
-+  dictionary: jyut6ping3_scolar
-+engine:
-+  filters:
-+    - dictionary_lookup_filter
-+    - simplifier
-+  processors:
-+    - ascii_composer
-+    - recognizer
-+    - key_binder
-+    - speller
-+    - punctuator
-+    - selector
-+    - navigator
-+    - express_editor
-+  segmentors:
-+    - ascii_segmentor
-+    - matcher
-+    - abc_segmentor
-+    - punct_segmentor
-+    - fallback_segmentor
-+  translators:
-+    - punct_translator
-+    - script_translator
-+key_binder:
-+  bindings:
-+    - {accept: "Control+p", send: Up, when: composing}
-+    - {accept: "Control+n", send: Down, when: composing}
-+    - {accept: "Control+b", send: Left, when: composing}
-+    - {accept: "Control+f", send: Right, when: composing}
-+    - {accept: "Control+a", send: Home, when: composing}
-+    - {accept: "Control+e", send: End, when: composing}
-+    - {accept: "Control+d", send: Delete, when: composing}
-+    - {accept: "Control+k", send: "Shift+Delete", when: composing}
-+    - {accept: "Control+h", send: BackSpace, when: composing}
-+    - {accept: "Control+g", send: Escape, when: composing}
-+    - {accept: "Control+bracketleft", send: Escape, when: composing}
-+    - {accept: "Control+y", send: Page_Up, when: composing}
-+    - {accept: "Alt+v", send: Page_Up, when: composing}
-+    - {accept: "Control+v", send: Page_Down, when: composing}
-+    - {accept: ISO_Left_Tab, send: "Shift+Left", when: composing}
-+    - {accept: "Shift+Tab", send: "Shift+Left", when: composing}
-+    - {accept: Tab, send: "Shift+Right", when: composing}
-+    - {accept: minus, send: Page_Up, when: paging}
-+    - {accept: equal, send: Page_Down, when: has_menu}
-+    - {accept: comma, send: Page_Up, when: paging}
-+    - {accept: period, send: Page_Down, when: has_menu}
-+    - {accept: bracketleft, send: Page_Up, when: paging}
-+    - {accept: bracketright, send: Page_Down, when: has_menu}
-+    - {accept: "Control+Shift+1", select: .next, when: always}
-+    - {accept: "Control+Shift+2", toggle: ascii_mode, when: always}
-+    - {accept: "Control+Shift+3", toggle: full_shape, when: always}
-+    - {accept: "Control+Shift+exclam", select: .next, when: always}
-+    - {accept: "Control+Shift+at", toggle: ascii_mode, when: always}
-+    - {accept: "Control+Shift+numbersign", toggle: full_shape, when: always}
-+    - {accept: "Control+Shift+space", select: .next, when: always}
-+    - {accept: "Control+comma", toggle: full_shape, when: always}
-+    - {accept: "Control+period", toggle: ascii_punct, when: always}
-+  import_preset: default
-+menu:
-+  alternative_select_keys: "\x00"
-+  page_size: 50
-+punctuator:
-+  ascii_style:
-+    "!": {commit: "!"}
-+    "\"": "\""
-+    "#": "#"
-+    "$": "$"
-+    "%": "%"
-+    "&": "&"
-+    "'": "'"
-+    "(": "("
-+    ")": ")"
-+    "*": "*"
-+    "+": "+"
-+    ",": {commit: ","}
-+    "-": "-"
-+    .: {commit: .}
-+    "/": "/"
-+    ":": {commit: ":"}
-+    ";": {commit: ";"}
-+    "<": "<"
-+    "=": "="
-+    ">": ">"
-+    "?": {commit: "?"}
-+    "@": "@"
-+    "[": "["
-+    "\\": "\\"
-+    "]": "]"
-+    "^": "^"
-+    _: _
-+    "`": "`"
-+    "{": "{"
-+    "|": "|"
-+    "}": "}"
-+    "~": "~"
-+  full_shape:
-+    " ": {commit: "　"}
-+    "!": {commit: "！"}
-+    "\"": ["＂", "\"", "“", "”", "„", "‟", "″", "〃", "〝", "〞", "〟"]
-+    "#": ["＃", "#", "№", "⌘", "⌥", "⌃"]
-+    "$": ["＄", "$", "￥", "¥", "￦", "₩", "￡", "£", "￠", "¢", "€", "₽", "¤"]
-+    "%": ["％", "%", "‰", "‱", "℃", "℉"]
-+    "&": ["＆", "&", "¶", "§"]
-+    "'": ["＇", "'", "‘", "’", "‛", "′", "↑", "↓"]
-+    "(": {commit: "（"}
-+    ")": {commit: "）"}
-+    "*": ["＊", "*", "×", "※", "✓", "✗"]
-+    "+": ["＋", "+", "±", "∓"]
-+    ",": {commit: "，"}
-+    "-": ["－", "-", "‒", "―", "–", "—", "＿", _, "￣", "‾"]
-+    .: {commit: "。"}
-+    "/": ["／", "/", "＼", "\\", "､", "÷", "∕", "√"]
-+    ":": {commit: "："}
-+    ";": {commit: "；"}
-+    "<": ["《", "〈", "＜", "<", "«", "‹", "⟨", "←", "⇐", "↔", "⇔", "≤", "⩽", "≦", "⫹"]
-+    "=": ["＝", "=", "≡", "≈", "≠", "≒", "≅"]
-+    ">": ["》", "〉", "＞", ">", "»", "›", "⟩", "→", "⇒", "↔", "⇔", "≥", "⩾", "≧", "⫺"]
-+    "?": {commit: "？"}
-+    "@": ["＠", "@", "©", "®", "℗", "™", "℠", "∅"]
-+    "[": ["「", "｢", "【", "〔", "［", "[", "〚", "〘"]
-+    "\\": {commit: "、"}
-+    "]": ["」", "｣", "】", "〕", "］", "]", "〛", "〙"]
-+    "^": {commit: "……"}
-+    _: {commit: "——"}
-+    "`": ["｀", "`", "·", "•", "‣", "°", "○", "◌", "◦"]
-+    "{": ["『", "〖", "｛", "{", "⦅", "⸨", "｟"]
-+    "|": ["｜", "|", "＼", "\\", "¦"]
-+    "}": ["』", "〗", "｝", "}", "⦆", "⸩", "｠"]
-+    "~": ["～", "~", "﹏", "﹋"]
-+  half_shape:
-+    "!": {commit: "！"}
-+    "\"": ["\"", "＂", "“", "”", "„", "‟", "″", "〃", "〝", "〞", "〟"]
-+    "#": ["#", "＃", "№", "⌘", "⌥", "⌃"]
-+    "$": ["$", "＄", "¥", "￥", "₩", "￦", "£", "￡", "¢", "￠", "€", "₽", "¤"]
-+    "%": ["％", "%", "‰", "‱", "℃", "℉"]
-+    "&": ["＆", "&", "¶", "§"]
-+    "'": ["'", "＇", "‘", "’", "‛", "′", "↑", "↓"]
-+    "(": {commit: "（"}
-+    ")": {commit: "）"}
-+    "*": ["＊", "*", "×", "※", "✓", "✗"]
-+    "+": ["+", "＋", "±", "∓"]
-+    ",": {commit: "，"}
-+    "-": ["-", "－", "‒", "―", "–", "—", _, "＿", "‾", "￣"]
-+    .: {commit: "。"}
-+    "/": ["/", "／", "\\", "＼", "､", "÷", "∕", "√"]
-+    ":": {commit: "："}
-+    ";": {commit: "；"}
-+    "<": ["《", "〈", "<", "＜", "«", "‹", "⟨", "←", "⇐", "↔", "⇔", "≤", "⩽", "≦", "⫹"]
-+    "=": ["=", "＝", "≡", "≈", "≠", "≒", "≅"]
-+    ">": ["》", "〉", ">", "＞", "»", "›", "⟩", "→", "⇒", "↔", "⇔", "≥", "⩾", "≧", "⫺"]
-+    "?": {commit: "？"}
-+    "@": ["@", "＠", "©", "®", "℗", "™", "℠", "∅"]
-+    "[": ["「", "｢", "【", "〔", "［", "[", "〚", "〘"]
-+    "\\": {commit: "、"}
-+    "]": ["」", "｣", "】", "〕", "］", "]", "〛", "〙"]
-+    "^": {commit: "……"}
-+    _: {commit: "——"}
-+    "`": ["`", "｀", "·", "•", "‣", "°", "○", "◌", "◦"]
-+    "{": ["『", "〖", "｛", "{", "⦅", "⸨", "｟"]
-+    "|": ["|", "｜", "＼", "\\", "¦"]
-+    "}": ["』", "〗", "｝", "}", "⦆", "⸩", "｠"]
-+    "~": ["~", "～", "﹏", "﹋"]
-+  import_preset: default
-+recognizer:
-+  import_preset: default
-+  patterns:
-+    email: "^[A-Za-z][-_.0-9A-Za-z]*@.*$"
-+    uppercase: "[A-Z][-_+.'0-9A-Za-z]*$"
-+    url: "^(www[.]|https?:|ftp[.:]|mailto:|file:).*$|^[a-z]+[.].+$"
-+schema:
-+  author:
-+    - "Ayaka Mikazuki <ayaka@mail.shn.hk>"
-+    - "LeiMaau <leimaau@qq.com>"
-+    - "chaaklau <chaakming@gmail.com>"
-+    - "laubonghaudoi <laubonghaudoi@icloud.com>"
-+    - "tanxpyox <tanxpyox@gmail.com>"
-+    - "William915 <William915@gmail.com>"
-+    - "szc126 (@szc126)"
-+    - "Bing Jeung <bing@ososo.io>"
-+    - "graphemecluster <graphemecluster@gmail.com>"
-+  description: |
-+    採用香港語言學學會粵語拼音方案
-+    https://www.lshk.org/jyutping
-+    支援聲調顯示同輸入
-+    Telegram 用户交流組 https://t.me/rime_cantonese
-+  name: "粵語拼音"
-+  schema_id: jyut6ping3_mobile
-+  version: 2023.11.03
-+simplifier:
-+  opencc_config: hk2s.json
-+speller:
-+  algebra:
-+    - "derive/^ng(?=[aeiou])//"
-+    - "derive/^(?=[aeiou])/ng/"
-+    - "derive/^n(?!g)/l/"
-+    - "derive/^ng(?=\\d)/m/"
-+    - "derive/^(g|k)w(?=o)/$1/"
-+    - "derive/^jy?(?=[aeiou])/y/"
-+    - "derive/^jyu/ju/"
-+    - "derive/yu(?!ng|k)/y/"
-+    - "derive/(g|k)u(?!ng|k)/$1wu/"
-+    - "derive/^([zcs])/$1h/"
-+    - "derive/eoi(?=\\d)/eoy/"
-+    - "derive/eo/oe/"
-+    - "derive/oe/eo/"
-+    - "derive/aa(?=\\d)/a/"
-+    - "derive/\\d//"
-+    - "abbrev/^([a-z]).+$/$1/"
-+    - "xform/1/v/"
-+    - "xform/4/vv/"
-+    - "xform/2/x/"
-+    - "xform/5/xx/"
-+    - "xform/3/q/"
-+    - "xform/6/qq/"
-+  alphabet: zyxwvutsrqponmlkjihgfedcba
-+  delimiter: " '"
-+switches:
-+  - name: ascii_mode
-+    reset: 0
-+    states: ["中文", "英文"]
-+  - name: full_shape
-+    states: ["半形", "全形"]
-+  - name: simplification
-+    reset: 0
-+    states: ["繁體", "简体"]
-+  - name: ascii_punct
-+    states: ["。，", "．，"]
-+translator:
-+  always_show_comments: true
-+  combine_candidates: false
-+  comment_format:
-+    - "xform/^/\\f/"
-+  dictionary: jyut6ping3
-+  preedit_format:
-+    - "xform/([aeiouymngptk])vv/${1}4/"
-+    - "xform/([aeiouymngptk])xx/${1}5/"
-+    - "xform/([aeiouymngptk])qq/${1}6/"
-+    - "xform/([aeiouymngptk])v/${1}1/"
-+    - "xform/([aeiouymngptk])x/${1}2/"
-+    - "xform/([aeiouymngptk])q/${1}3/"
-+  prism: jyut6ping3_mobile
-\ No newline at end of file
+diff --git a/src/App.tsx b/src/App.tsx
+index c43ccbc..479bc38 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,4 +1,4 @@
+-import { useEffect, useReducer, useState } from "react";
++﻿import { useEffect, useReducer, useState } from "react";
+ 
+ import { ToastContainer } from "react-toastify";
+ 
+@@ -15,11 +15,15 @@ export default function App() {
+ 	const [textArea, setTextArea] = useState<HTMLTextAreaElement | null>(null);
+ 	const [loading, runAsyncTask, startAsyncTask] = useLoading();
+ 
++	useEffect(() => {
++		document.documentElement.dataset.yuneLoading = String(loading);
++	}, [loading]);
++
+ 	useEffect(() => {
+ 		const { resolve } = startAsyncTask();
+ 		return subscribe("initialized", success => {
+ 			if (!success) {
+-				notify("error", "啟動輸入法引擎", "initializing the input method engine");
++				notify("error", "å•Ÿå‹•è¼¸å…¥æ³•å¼•æ“Ž", "initializing the input method engine");
+ 			}
+ 			resolve();
+ 		});
+@@ -37,7 +41,7 @@ export default function App() {
+ 					resolve();
+ 					break;
+ 				case "failure":
+-					notify("warning", "重新整理", "refreshing");
++					notify("warning", "é‡æ–°æ•´ç†", "refreshing");
+ 					reject();
+ 					break;
+ 			}
+@@ -45,8 +49,9 @@ export default function App() {
+ 	}, [startAsyncTask]);
+ 
+ 	const [deployStatus, updateDeployStatus] = useReducer((n: number) => n + 1, 0);
++	const [aiStatus, updateAiStatus] = useReducer((n: number) => n + 1, 0);
+ 	const preferences = usePreferences();
+-	const { pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, isHeiTypeface } = preferences;
++	const { pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, enableAI, isCangjie5, isHeiTypeface } = preferences;
+ 	useEffect(() =>
+ 		runAsyncTask(async () => {
+ 			let type: "warning" | "error" | undefined;
+@@ -60,28 +65,45 @@ export default function App() {
+ 				type = "error";
+ 			}
+ 			if (type) {
+-				notify(type, "套用設定", "applying the settings");
++				notify(type, "å¥—ç”¨è¨­å®š", "applying the settings");
+ 			}
+ 			updateDeployStatus();
+ 		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, updateDeployStatus, runAsyncTask]);
+ 
++	useEffect(() =>
++		runAsyncTask(async () => {
++			let type: "warning" | "error" | undefined;
++			try {
++				if (!(await Rime.customize({ enableAI }))) {
++					type = "warning";
++				}
++			}
++			catch {
++				type = "error";
++			}
++			if (type) {
++				notify(type, "Apply AI settings", "applying the AI settings");
++			}
++			updateAiStatus();
++		}), [enableAI, updateAiStatus, runAsyncTask]);
++
+ 	return <>
+ 		<header className="p-8 border-b border-base-300 flex items-center">
+-			<a className="mr-4 w-48" href="/">
+-				<img src="/images/logo.png" alt="TypeDuck Logo" />
++			<a className="mr-4 w-48 text-xl font-bold" href="/">
++				TypeDuck
+ 			</a>
+-			<h1 className="flex-1 text-2xl">TypeDuck 網頁版</h1>
++			<h1 className="flex-1 text-2xl">TypeDuck ç¶²é ç‰ˆ</h1>
+ 			<ThemeSwitcher />
+ 		</header>
+ 		<main className="m-auto p-8 max-w-7xl">
+ 			<Toolbar loading={loading} deployStatus={deployStatus} />
+ 			<textarea className={`block w-full min-h-64 my-6 textarea textarea-bordered text-lg px-3 ${isHeiTypeface ? "font-hei" : "font-sung"}`} ref={setTextArea} {...NO_AUTO_FILL} />
+-			{textArea && <CandidatePanel runAsyncTask={runAsyncTask} textArea={textArea} prefs={preferences} deployStatus={deployStatus} />}
++			{textArea && <CandidatePanel runAsyncTask={runAsyncTask} textArea={textArea} prefs={preferences} deployStatus={deployStatus} aiStatus={aiStatus} />}
+ 			<Preferences {...preferences} />
+ 		</main>
+ 		<footer className="footer footer-center p-6 bg-secondary text-secondary-content">
+ 			<aside>
+-				© Copyright 2024 TypeDuck Team. All rights reserved.
++				Â© Copyright 2024 TypeDuck Team. All rights reserved.
+ 				<a href="https://github.com/TypeDuck-HK/TypeDuck-Web" target="_blank" rel="noreferrer">
+ 					Source Code
+ 				</a>
+diff --git a/src/Candidate.tsx b/src/Candidate.tsx
+index f0c2b50..c8c32b6 100644
+--- a/src/Candidate.tsx
++++ b/src/Candidate.tsx
+@@ -51,9 +51,11 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
+ 	const commentStyle300 = isHighlighted ? "bg-primary text-primary-content-300" : "text-base-content-300";
+ 	const commentStyle400 = isHighlighted ? "bg-primary text-primary-content-400" : "text-base-content-400";
+ 	const labelColSpan = definitionLayout.filter(languages => languages.some(language => prefs.displayLanguages.has(language))).length;
+-	return <tbody>
+-		<button
+-			className={`contents join rounded-md${isHighlighted ? " highlighted" : ""}`}
++	const sourceBadge = info.isAi && <span className={`ai-source ml-1 rounded px-1 text-[8pt] ${isHighlighted ? "bg-primary text-primary-content" : "bg-accent text-accent-content"}`} data-ai-source={info.source}>AI</span>;
++	return <tbody
++			className={`join rounded-md${isHighlighted ? " highlighted" : ""}${info.isAi ? " ai-candidate" : ""}`}
++			data-candidate-text={info.text}
++			data-source={info.source}
+ 			onClick={_selectCandidate}
+ 			onMouseEnter={_showDictionary}
+ 			onMouseMove={_showDictionary}
+@@ -68,7 +70,7 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
+ 			onTouchCancel={_hideDictionary}>
+ 			{info.matchedEntries?.map((entry, index) =>
+ 				<tr key={index}>
+-					<td className={`font-geometric text-[11pt] ${commentStyle200}`}>{!index && info.label}</td>
++					<td className={`font-geometric text-[11pt] ${commentStyle200}`}>{!index && <>{info.label}{sourceBadge}</>}</td>
+ 					<td className={isHighlighted ? "bg-primary" : ""}>
+ 						{showJyutping && <div className={`text-[10pt] ${commentStyle300}`}>{entry.jyutping}</div>}
+ 						<div className={`${prefs.isHeiTypeface ? "font-hei" : "font-sung"} text-[13pt]${isHighlighted ? " text-primary-content" : ""}${showJyutping ? " tracking-[8pt]" : ""}`}>{entry.honzi}</div>
+@@ -87,10 +89,9 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
+ 					<td className={`font-geometric text-[11pt] ${commentStyle200} align-middle text-right w-full`}>{!index && info.hasDictionaryEntry(prefs) && "ⓘ"}</td>
+ 				</tr>
+ 			) || <tr>
+-				<td className={`font-geometric text-[11pt] ${commentStyle200}`}>{info.label}</td>
++				<td className={`font-geometric text-[11pt] ${commentStyle200}`}>{info.label}{sourceBadge}</td>
+ 				<td className={`${prefs.isHeiTypeface ? "font-hei" : "font-sung"} text-[13pt]${isHighlighted ? " bg-primary text-primary-content" : ""}`}>{info.text}</td>
+ 				<td className={`${commentStyle400} w-full`} colSpan={labelColSpan + 2}>{(!info.isReverseLookup || prefs.showReverseCode) && info.note}</td>
+ 			</tr>}
+-		</button>
+ 	</tbody>;
+ }
+diff --git a/src/CandidateInfo.ts b/src/CandidateInfo.ts
+index 0add9ac..9390478 100644
+--- a/src/CandidateInfo.ts
++++ b/src/CandidateInfo.ts
+@@ -10,7 +10,7 @@ export default class CandidateInfo {
+ 	note: string;
+ 	entries: CandidateEntry[];
+ 
+-	constructor(public label: string, public text: string, commentString = "") {
++	constructor(public label: string, public text: string, commentString = "", public source?: string) {
+ 		const comment = new ConsumedString(commentString);
+ 		this.isReverseLookup = comment.consume("\v");
+ 		this.note = comment.consumeUntil("\f");
+@@ -28,6 +28,10 @@ export default class CandidateInfo {
+ 	hasDictionaryEntry(preferences: InterfacePreferences) {
+ 		return this.entries.some(entry => entry.isDictionaryEntry(preferences));
+ 	}
++
++	get isAi() {
++		return this.source?.startsWith("ai:") ?? false;
++	}
+ }
+ 
+ export class CandidateEntry {
+diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
+index 298a42d..9d339cc 100644
+--- a/src/CandidatePanel.tsx
++++ b/src/CandidatePanel.tsx
+@@ -8,15 +8,17 @@ import DictionaryPanel from "./DictionaryPanel";
+ import Rime from "./rime";
+ import { isPrintable, notify } from "./utils";
+ 
+-import type { InputState, InterfacePreferences, RimeResult } from "./types";
++import type { InputState, Preferences, RimeResult } from "./types";
+ 
+-export default function CandidatePanel({ runAsyncTask, textArea, prefs, deployStatus }: {
++export default function CandidatePanel({ runAsyncTask, textArea, prefs, deployStatus, aiStatus }: {
+ 	runAsyncTask(asyncTask: () => Promise<void>): void;
+ 	textArea: HTMLTextAreaElement;
+-	prefs: InterfacePreferences;
++	prefs: Preferences;
+ 	deployStatus: number;
++	aiStatus: number;
+ }) {
+ 	const [inputState, setInputState] = useState<InputState | undefined>();
++	const inputStateRef = useRef<InputState | undefined>();
+ 	const [showDictionaryIndex, setShowDictionaryIndex] = useState<number | undefined>();
+ 	const candidateList = useRef<HTMLTableElement>(null);
+ 	const dictionaryPanel = useRef<HTMLDivElement>(null);
+@@ -44,12 +46,12 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 						inputBuffer: result.inputBuffer,
+ 						highlightedIndex: result.highlightedIndex,
+ 						candidates: result.candidates.map(
+-							({ label, text, comment }, i) => new CandidateInfo(label || `${(i + 1) % 10}.`, text, comment),
++							({ label, text, comment, source }, i) => new CandidateInfo(label || `${(i + 1) % 10}.`, text, comment, source),
+ 						),
+ 						isPrevDisabled: !result.page,
+ 						isNextDisabled: result.isLastPage,
+ 					}
+-					: inputState;
++					: inputStateRef.current;
+ 				if (result.committed) {
+ 					insert(result.committed);
+ 				}
+@@ -66,9 +68,19 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 				notify(type, "執行操作", "performing the operation");
+ 			}
+ 			textArea.focus();
+-		}), [hideDictionary, inputState, insert, runAsyncTask, textArea]);
++		}), [hideDictionary, insert, runAsyncTask, textArea]);
+ 
+-	const processKey = useCallback((input: string, key?: string) => handleRimeResult(Rime.processKey(input), key), [handleRimeResult]);
++	const processKey = useCallback((input: string, key?: string) => {
++		const classicResult = Rime.processKey(input);
++		handleRimeResult(classicResult, key);
++		if (prefs.enableAI) {
++			void classicResult.then(result => {
++				if (result.isComposing) {
++					handleRimeResult(Rime.stageAi());
++				}
++			}).catch(() => undefined);
++		}
++	}, [handleRimeResult, prefs.enableAI]);
+ 	const flipPage = useCallback((backward: boolean) => handleRimeResult(Rime.flipPage(backward)), [handleRimeResult]);
+ 	const selectCandidate = useCallback((index: number) => handleRimeResult(Rime.selectCandidate(index)), [handleRimeResult]);
+ 	const deleteCandidate = useCallback((index: number) => handleRimeResult(Rime.deleteCandidate(index)), [handleRimeResult]);
+@@ -143,6 +155,16 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 		hideDictionary();
+ 	}, [deployStatus, setInputState, hideDictionary]);
+ 
++	useEffect(() => {
++		inputStateRef.current = inputState;
++	}, [inputState]);
++
++	useEffect(() => {
++		if (inputStateRef.current) {
++			handleRimeResult(Rime.stageAi());
++		}
++	}, [aiStatus, handleRimeResult]);
++
+ 	const hideDictionaryOnLeaveCandidate = useCallback(() => {
+ 		function hideDictionaryOnLeaveDictionaryPanel() {
+ 			if (!candidateList.current?.matches(":hover")) {
+diff --git a/src/DictionaryPanel.tsx b/src/DictionaryPanel.tsx
+index d58fbab..f6a855f 100644
+--- a/src/DictionaryPanel.tsx
++++ b/src/DictionaryPanel.tsx
+@@ -35,14 +35,16 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+ 							[entry.otherData],
+ 							otherData =>
+ 								<table>
+-									{otherData?.map(([key, name, value]) =>
+-										<tr key={key}>
+-											<th>{name}</th>
+-											<td className={prefs.isHeiTypeface ? "font-hei" : "font-sung"}>
+-												{value.split("，").map((line, i) => <div key={i}>{line}</div>)}
+-											</td>
+-										</tr>
+-									)}
++									<tbody>
++										{otherData?.map(([key, name, value]) =>
++											<tr key={key}>
++												<th>{name}</th>
++												<td className={prefs.isHeiTypeface ? "font-hei" : "font-sung"}>
++													{value.split("\u{ff0c}").map((line, i) => <div key={i}>{line}</div>)}
++												</td>
++											</tr>
++										)}
++									</tbody>
+ 								</table>,
+ 						)}
+ 						{letSome(
+@@ -50,12 +52,14 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+ 							otherDefinitions =>
+ 								<table>
+ 									<caption className="font-medium text-[13pt] pb-1 text-left whitespace-nowrap">More Languages</caption>
+-									{otherDefinitions?.map(([lang, name, value]) =>
+-										<tr key={lang}>
+-											<th>{name}</th>
+-											<td lang={lang}>{value}</td>
+-										</tr>
+-									)}
++									<tbody>
++										{otherDefinitions?.map(([lang, name, value]) =>
++											<tr key={lang}>
++												<th>{name}</th>
++												<td lang={lang}>{value}</td>
++											</tr>
++										)}
++									</tbody>
+ 								</table>,
+ 						)}
+ 					</div>,
+diff --git a/src/Preferences.tsx b/src/Preferences.tsx
+index 820a2e0..a62e457 100644
+--- a/src/Preferences.tsx
++++ b/src/Preferences.tsx
+@@ -89,6 +89,9 @@ export default function Preferences(prefs: PreferencesWithSetter) {
+ 			<li>
+ 				<Toggle label="輸入記憶 Input Memory" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
+ 			</li>
++			<li>
++				<Toggle label="AI 候選 AI Candidates" checked={prefs.enableAI} setChecked={prefs.setEnableAI} />
++			</li>
+ 		</ul>
+ 		<h3 className="font-bold text-xl my-2">反查設定 Reverse Lookup Settings</h3>
+ 		<ul>
+diff --git a/src/consts.ts b/src/consts.ts
+index 25ec3bf..dc454a0 100644
+--- a/src/consts.ts
++++ b/src/consts.ts
+@@ -55,6 +55,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
+ 	enableCorrection: false,
+ 	enableSentence: true,
+ 	enableLearning: true,
++	enableAI: false,
+ 	showReverseCode: true,
+ 	isCangjie5: true,
+ };
 diff --git a/src/rime.ts b/src/rime.ts
-index 4393a9e..f02f81a 100644
+index 4393a9e..d681aac 100644
 --- a/src/rime.ts
 +++ b/src/rime.ts
 @@ -18,7 +18,13 @@ interface ErrorPayload {
@@ -480,12 +365,14 @@ index 4393a9e..f02f81a 100644
  
  type Listeners = { [K in keyof ListenerArgsMap]: (this: Worker, ...args: ListenerArgsMap[K]) => void };
  
-@@ -37,9 +43,24 @@ for (const type of allListenerTypes) {
+@@ -36,13 +42,33 @@ const listeners = {} as { [K in keyof Listeners]: Listeners[K][] };
+ for (const type of allListenerTypes) {
  	listeners[type] = [];
  }
++const lastListenerArgs = {} as Partial<{ [K in keyof ListenerArgsMap]: ListenerArgsMap[K] }>;
  
 -const worker = new Worker("./worker.js");
-+const YUNE_TYPEDUCK_WORKER_VERSION = "sentence-composition";
++const YUNE_TYPEDUCK_WORKER_VERSION = "m13-ai-native";
 +const debugWindow = window as typeof window & { __YUNE_RIME_VERSION__?: string };
 +debugWindow.__YUNE_RIME_VERSION__ = YUNE_TYPEDUCK_WORKER_VERSION;
 +document.documentElement.dataset.yuneRimeVersion = YUNE_TYPEDUCK_WORKER_VERSION;
@@ -507,7 +394,14 @@ index 4393a9e..f02f81a 100644
  	const { type } = data;
  	if (type === "listener") {
  		const { name, args } = data;
-@@ -67,11 +88,22 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
++		lastListenerArgs[name] = args;
++		if (name === "initialized") {
++			document.documentElement.dataset.yuneInitialized = String(args[0]);
++		}
+ 		for (const listener of listeners[name]) {
+ 			// @ts-expect-error Unactionable
+ 			listener.apply(worker, args);
+@@ -67,14 +93,26 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
  });
  
  function postMessage(message: Message) {
@@ -531,11 +425,63 @@ index 4393a9e..f02f81a 100644
  const allActions: (keyof Actions)[] = [
  	"setOption",
  	"processKey",
++	"stageAi",
+ 	"selectCandidate",
+ 	"deleteCandidate",
+ 	"flipPage",
+@@ -104,6 +142,14 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
+ 
+ export function subscribe<K extends keyof Listeners>(type: K, callback: Listeners[K]) {
+ 	listeners[type].push(callback);
++	const cachedArgs = lastListenerArgs[type];
++	if (cachedArgs) {
++		queueMicrotask(() => {
++			if (listeners[type].includes(callback)) {
++				callback.apply(worker, cachedArgs);
++			}
++		});
++	}
+ 	return () => {
+ 		listeners[type] = listeners[type].filter(listener => listener !== callback) as never;
+ 	};
+diff --git a/src/types.ts b/src/types.ts
+index 5d47525..bf64ae6 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -16,10 +16,11 @@ export interface RimeAPI {
+ export interface Actions {
+ 	setOption(option: string, value: boolean): Promise<void>;
+ 	processKey(input: string): Promise<RimeResult>;
++	stageAi(): Promise<RimeResult>;
+ 	selectCandidate(index: number): Promise<RimeResult>;
+ 	deleteCandidate(index: number): Promise<RimeResult>;
+ 	flipPage(backward: boolean): Promise<RimeResult>;
+-	customize(preferences: RimePreferences): Promise<boolean>;
++	customize(preferences: Partial<RimePreferences>): Promise<boolean>;
+ 	deploy(): Promise<boolean>;
+ }
+ 
+@@ -39,6 +40,7 @@ interface RimeComposing {
+ 		label?: string;
+ 		text: string;
+ 		comment?: string;
++		source?: string;
+ 	}[];
+ }
+ 
+@@ -91,6 +93,7 @@ export interface RimePreferences {
+ 	enableCorrection: boolean;
+ 	enableSentence: boolean;
+ 	enableLearning: boolean;
++	enableAI: boolean;
+ 	isCangjie5: boolean;
+ }
+ 
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..a813822 100644
+index 92b9a90..2a83110 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
-@@ -1,137 +1,255 @@
+@@ -1,137 +1,276 @@
 -import type { Actions, ListenerArgsMap, Message, RimeResult, RimeAPI, RimeNotification, RimeDeployStatus } from "./types";
 -
 -type TypeToString<T> = T extends number ? "number"
@@ -571,6 +517,7 @@ index 92b9a90..a813822 100644
 +  initYuneRuntime,
 +  cleanupYuneRuntime,
 +  processKey,
++  stageAi,
 +  selectCandidate,
 +  deleteCandidate,
 +  flipPage,
@@ -715,6 +662,10 @@ index 92b9a90..a813822 100644
 +    // Persistence sync handled by adapter
 +    return result;
 +  },
++  async stageAi() {
++    const result = await stageAi();
++    return result;
++  },
 +  async selectCandidate(index) {
 +    const result = await selectCandidate(index);
 +    return result;
@@ -771,7 +722,7 @@ index 92b9a90..a813822 100644
 -});
 +const SCHEMA_ID = "jyut6ping3_mobile";
 +const DICTIONARY_ID = "jyut6ping3";
-+const YUNE_TYPEDUCK_ASSET_VERSION = "sentence-composition";
++const YUNE_TYPEDUCK_ASSET_VERSION = "m13-ai-native";
 +
 +// Yune runtime initialization
 +const loadRime = (async () => {
@@ -1171,10 +1122,10 @@ index 0000000..f943e18
 +**Status**: Integration layer created, pending patch application and build gates
 diff --git a/src/yune-integration/adapter.ts b/src/yune-integration/adapter.ts
 new file mode 100644
-index 0000000..074d9ee
+index 0000000..788e72a
 --- /dev/null
 +++ b/src/yune-integration/adapter.ts
-@@ -0,0 +1,481 @@
+@@ -0,0 +1,578 @@
 +/**
 + * Yune seam adapter for TypeDuck-Web
 + *
@@ -1214,6 +1165,7 @@ index 0000000..074d9ee
 +export interface Actions {
 +  setOption(option: string, value: boolean): Promise<void>;
 +  processKey(input: string): Promise<RimeResult>;
++  stageAi(): Promise<RimeResult>;
 +  selectCandidate(index: number): Promise<RimeResult>;
 +  deleteCandidate(index: number): Promise<RimeResult>;
 +  flipPage(backward: boolean): Promise<RimeResult>;
@@ -1226,6 +1178,12 @@ index 0000000..074d9ee
 + */
 +export interface RimePreferences {
 +  pageSize?: number;
++  enableCompletion?: boolean;
++  enableCorrection?: boolean;
++  enableSentence?: boolean;
++  enableLearning?: boolean;
++  enableAI?: boolean;
++  isCangjie5?: boolean;
 +  /** Pre-2024 options encoding */
 +  options?: number;
 +}
@@ -1267,6 +1225,25 @@ index 0000000..074d9ee
 +  "Super_L",
 +  "Super_R",
 +]);
++
++type BooleanRimePreference =
++  | "enableCompletion"
++  | "enableCorrection"
++  | "enableSentence"
++  | "enableLearning";
++
++const BOOLEAN_CUSTOMIZATION_KEYS: readonly {
++  preference: BooleanRimePreference;
++  keys: readonly string[];
++}[] = [
++  { preference: "enableCompletion", keys: ["translator/enable_completion"] },
++  { preference: "enableCorrection", keys: ["translator/enable_correction"] },
++  { preference: "enableSentence", keys: ["translator/enable_sentence"] },
++  {
++    preference: "enableLearning",
++    keys: ["translator/enable_user_dict", "translator/encode_commit_history"],
++  },
++];
 +
 +export interface TypeDuckExtraSharedAsset {
 +  path: string;
@@ -1468,6 +1445,17 @@ index 0000000..074d9ee
 +  return result;
 +}
 +
++export async function stageAi(): Promise<RimeResult> {
++  if (currentRuntime === null) {
++    throw new Error("Yune runtime not initialized");
++  }
++
++  const response = currentRuntime.stageAi();
++  const result = translateResponse(response);
++  lastKeyResult = result;
++  return result;
++}
++
 +/**
 + * Select candidate using Yune runtime
 + *
@@ -1551,7 +1539,7 @@ index 0000000..074d9ee
 + *
 + * Replaces upstream Module.ccall("customize", ...)
 + *
-+ * Note: Upstream customize uses pageSize and options bitmap.
++ * Note: upstream TypeDuck used pageSize and an options bitmap.
 + * Yune customize API accepts configId, key, value strings.
 + * This adapter maps preferences to Yune customize calls.
 + */
@@ -1562,15 +1550,35 @@ index 0000000..074d9ee
 +
 +  // Map preferences to Yune customize calls
 +  let success = true;
++  let customizedAny = false;
 +
-+  if (preferences.pageSize !== undefined) {
-+    const customized = currentRuntime.customize(currentSchemaId, "page_size", String(preferences.pageSize));
-+    await syncCurrentStateToPersistence("customize");
-+    success = success && customized;
++  if (preferences.enableAI !== undefined) {
++    success = currentRuntime.setAiEnabled(preferences.enableAI) && success;
 +  }
 +
-+  // Note: options bitmap handling not implemented yet
-+  // Requires Yune adapter widening or explicit preference mapping
++  const customizeSetting = (key: string, value: string): void => {
++    const customized = currentRuntime.customize(currentSchemaId, key, value);
++    success = success && customized;
++    customizedAny = true;
++  };
++
++  if (preferences.pageSize !== undefined) {
++    customizeSetting("page_size", String(preferences.pageSize));
++  }
++
++  for (const { preference, keys } of BOOLEAN_CUSTOMIZATION_KEYS) {
++    const value = preferences[preference];
++    if (value === undefined) {
++      continue;
++    }
++    for (const key of keys) {
++      customizeSetting(key, value ? "true" : "false");
++    }
++  }
++
++  if (customizedAny) {
++    await syncCurrentStateToPersistence("customize");
++  }
 +
 +  return success;
 +}
@@ -2005,10 +2013,10 @@ index 0000000..e5f998a
 \ No newline at end of file
 diff --git a/src/yune-integration/response.ts b/src/yune-integration/response.ts
 new file mode 100644
-index 0000000..cced079
+index 0000000..0121f54
 --- /dev/null
 +++ b/src/yune-integration/response.ts
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,64 @@
 +import type { TypeDuckResponse } from "@yune-ime/typeduck-runtime";
 +
 +/**
@@ -2028,6 +2036,7 @@ index 0000000..cced079
 +    label?: string;
 +    text: string;
 +    comment?: string;
++    source?: string;
 +  }>;
 +  success: boolean;
 +  committed?: string;
@@ -2051,6 +2060,7 @@ index 0000000..cced079
 +      label: response.context?.select_labels?.[index],
 +      text: candidate.text,
 +      comment: candidate.comment,
++      source: candidate.source,
 +    }));
 +
 +    return {
@@ -2071,77 +2081,3 @@ index 0000000..cced079
 +    committed,
 +  };
 +}
-
-diff --git a/src/Candidate.tsx b/src/Candidate.tsx
-index f0c2b50..7e753dd 100644
---- a/src/Candidate.tsx
-+++ b/src/Candidate.tsx
-@@ -51,9 +51,8 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
- 	const commentStyle300 = isHighlighted ? "bg-primary text-primary-content-300" : "text-base-content-300";
- 	const commentStyle400 = isHighlighted ? "bg-primary text-primary-content-400" : "text-base-content-400";
- 	const labelColSpan = definitionLayout.filter(languages => languages.some(language => prefs.displayLanguages.has(language))).length;
--	return <tbody>
--		<button
--			className={`contents join rounded-md${isHighlighted ? " highlighted" : ""}`}
-+	return <tbody
-+			className={`join rounded-md${isHighlighted ? " highlighted" : ""}`}
- 			onClick={_selectCandidate}
- 			onMouseEnter={_showDictionary}
- 			onMouseMove={_showDictionary}
-@@ -91,6 +90,5 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
- 				<td className={`${prefs.isHeiTypeface ? "font-hei" : "font-sung"} text-[13pt]${isHighlighted ? " bg-primary text-primary-content" : ""}`}>{info.text}</td>
- 				<td className={`${commentStyle400} w-full`} colSpan={labelColSpan + 2}>{(!info.isReverseLookup || prefs.showReverseCode) && info.note}</td>
- 			</tr>}
--		</button>
- 	</tbody>;
- }
-diff --git a/src/DictionaryPanel.tsx b/src/DictionaryPanel.tsx
-index d58fbab..f6a855f 100644
---- a/src/DictionaryPanel.tsx
-+++ b/src/DictionaryPanel.tsx
-@@ -35,14 +35,16 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
- 							[entry.otherData],
- 							otherData =>
- 								<table>
--									{otherData?.map(([key, name, value]) =>
--										<tr key={key}>
--											<th>{name}</th>
--											<td className={prefs.isHeiTypeface ? "font-hei" : "font-sung"}>
--												{value.split("，").map((line, i) => <div key={i}>{line}</div>)}
--											</td>
--										</tr>
--									)}
-+									<tbody>
-+										{otherData?.map(([key, name, value]) =>
-+											<tr key={key}>
-+												<th>{name}</th>
-+												<td className={prefs.isHeiTypeface ? "font-hei" : "font-sung"}>
-+													{value.split("\u{ff0c}").map((line, i) => <div key={i}>{line}</div>)}
-+												</td>
-+											</tr>
-+										)}
-+									</tbody>
- 								</table>,
- 						)}
- 						{letSome(
-@@ -50,12 +52,14 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
- 							otherDefinitions =>
- 								<table>
- 									<caption className="font-medium text-[13pt] pb-1 text-left whitespace-nowrap">More Languages</caption>
--									{otherDefinitions?.map(([lang, name, value]) =>
--										<tr key={lang}>
--											<th>{name}</th>
--											<td lang={lang}>{value}</td>
--										</tr>
--									)}
-+									<tbody>
-+										{otherDefinitions?.map(([lang, name, value]) =>
-+											<tr key={lang}>
-+												<th>{name}</th>
-+												<td lang={lang}>{value}</td>
-+											</tr>
-+										)}
-+									</tbody>
- 								</table>,
- 						)}
- 					</div>,

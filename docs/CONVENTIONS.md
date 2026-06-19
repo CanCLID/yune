@@ -95,18 +95,20 @@ TypeDuck behavior must be isolated behind a named TypeDuck-profile test,
 fixture, adapter, or ABI note. These are referenced repositories, **NOT local
 checkout paths**. librime is never linked or called at runtime.
 
-**AI-native input is an explicitly separate M11 layer** above librime
-compatibility - not part of M9, M12, or the parked TypeDuck profile. The current implementation is still
-core/CLI-only: `crates/yune-core/src/ai/` owns `AiCandidateProvider`,
-`MockAiProvider`, `LocalModelProvider`, `AiWorker`, staged input-keyed results,
-`AiContext` snapshots, `AiPrivacyPolicy`, and `MemoryStore`; the direct
-`yune-cli run` path can opt into `--ai-provider mock` or `--ai-provider local`.
-ABI, TypeDuck-Web, and parked TypeDuck-Windows frontends keep AI off. AI context defaults to
-sensitive, remote providers are blocked before invocation under sensitive
-context, and AI memory writes are suppressed under the same policy. AI memory
-uses `.ai-memory` / `.ai-memory.txt` namespace helpers rather than librime
-`*.userdb` files. Remote model backends and real frontend exposure remain future
-explicit/default-off work.
+**AI-native input is an explicitly separate layer** above librime compatibility -
+not part of M9, M12, or the parked TypeDuck profile. `crates/yune-core/src/ai/`
+owns `AiCandidateProvider`, `MockAiProvider`, `LocalModelProvider`, `AiWorker`,
+staged input-keyed results, `AiContext` snapshots, `AiPrivacyPolicy`, and
+`MemoryStore`; the direct `yune-cli run` path can opt into `--ai-provider mock`
+or `--ai-provider local`. M13 exposes the local provider through TypeDuck-Web
+only, default-off, using a provider-free first pass (`yune_typeduck_process_key`)
+and a Rust/WASM second pass (`yune_typeduck_stage_ai`) requested by the browser
+worker after classic rendering. Parked TypeDuck-Windows and other native
+frontends keep AI off. AI context defaults to sensitive, remote providers are
+blocked before invocation under sensitive context, and AI memory writes are
+suppressed under the same policy. AI memory uses `.ai-memory` / `.ai-memory.txt`
+namespace helpers rather than librime `*.userdb` files. Remote model backends
+and additional frontend exposure remain future explicit/default-off work.
 
 **Key data flow (RIME key path):** Frontend obtains the table via `rime_get_api`
 and calls `RimeApi.process_key` (`api_table.rs`, `RimeProcessKey`). `RimeProcessKey`
@@ -167,7 +169,7 @@ class), `response.ts` (JSON decode), `keys.ts` (DOM `KeyboardEvent` → RIME key
 4. If the target/toolchain is absent, **degrades gracefully** to the native fallback
    `cargo test -p yune-rime-api --test typeduck_web`.
 
-The exported-symbol contract is `scripts/typeduck-exports.txt` (the 11 `yune_typeduck_*`
+The exported-symbol contract is `scripts/typeduck-exports.txt` (the 14 `yune_typeduck_*`
 names — see [§4](#4-coding-conventions)).
 
 **Native packaging** - `scripts/package-typeduck-windows.ps1` is parked during
@@ -298,10 +300,11 @@ yune/
 **The TWO export families — do not mix them:**
 - **librime-shaped ABI → `RimePascalCase`.** `#[no_mangle] extern "C"` functions mirroring
   librime's C ABI, e.g. `RimeConfigOpen` (`config_api.rs`), `RimeSetup` (`runtime.rs`).
-- **Yune-owned WASM/browser ABI → `snake_case` `yune_typeduck_*`.** The 11 exports in
+- **Yune-owned WASM/browser ABI → `snake_case` `yune_typeduck_*`.** The 14 exports in
   `typeduck_web.rs`: `yune_typeduck_init`, `process_key`, `select_candidate`,
-  `delete_candidate`, `flip_page`, `deploy`, `customize`, `cleanup`, `response_json`,
-  `response_handled`, `free_response`. These names are an **explicit export contract**
+  `delete_candidate`, `flip_page`, `deploy`, `customize`, `set_option`,
+  `set_ai_enabled`, `stage_ai`, `cleanup`, `response_json`, `response_handled`,
+  `free_response`. These names are an **explicit export contract**
   enforced by the allowlist `scripts/typeduck-exports.txt` and `-sEXPORTED_FUNCTIONS`.
   Add or rename an exported C function → **update the allowlist** or the WASM build
   silently drops it.
@@ -493,7 +496,8 @@ directories must name the oracle, e.g. `upstream-1.17.0/` or
 call librime at runtime.
 
 **TypeDuck-Web / Emscripten / IDBFS.** The `yune_typeduck_*` adapter (`typeduck_web.rs`)
-exports 11 functions over the `rime_get_api()`/`rime_levers_get_api()` tables. The TS runtime
+exports 14 functions over the `rime_get_api()`/`rime_levers_get_api()` tables and the
+Yune-owned AI sidecar. The TS runtime
 consumes the WASM module via Emscripten `cwrap`/`UTF8ToString`. **Browser persistence** uses an
 Emscripten **IDBFS** mount over a virtual data dir, flushed with `FS.syncfs`:
 `packages/.../src/filesystem.ts` defines `prepareTypeDuckFilesystem` (writes `default.yaml`,
@@ -502,7 +506,10 @@ Emscripten **IDBFS** mount over a virtual data dir, flushed with `FS.syncfs`:
 `customizeAndSync` / `syncAfterUserDataChange`). The upstream seam adapter translates Yune's
 `TypeDuckResponse` (`handled`, `commits`, `context.preedit`, `context.candidates`) into the
 upstream `RimeResult` shape and parses key strings (`a`, `{BackSpace}`, `{Release+Enter}`) via
-`keyEventToRimeKey`; patch scope is intentionally minimal.
+`keyEventToRimeKey`; M13 maps `enableAI` to the runtime-only `set_ai_enabled`
+flag and requests `stage_ai` as a serialized second action. Source labels for AI
+rows come from engine snapshot data aligned to the rendered page, not from
+`RimeCandidate`; patch scope is intentionally minimal.
 
 **weasel / TypeDuck-Windows native.** Parked TypeDuck-profile work. The old
 package path is retained as reference material, but `scripts/package-typeduck-windows.ps1`
@@ -600,4 +607,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-19 - M12 upstream behavioral parity closeout complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*
+*Last reviewed: 2026-06-19 - M13 TypeDuck-Web AI exposure complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*

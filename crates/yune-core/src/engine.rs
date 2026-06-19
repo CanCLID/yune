@@ -957,7 +957,11 @@ fn merge_classic_and_staged_ai(
                     .cmp(&left.source.ai_confidence())
                     .then_with(|| left_index.cmp(right_index))
             });
-            classic.extend(ai_candidates.into_iter().map(|(_, candidate)| candidate));
+            let insertion_index = classic.len().min(1);
+            classic.splice(
+                insertion_index..insertion_index,
+                ai_candidates.into_iter().map(|(_, candidate)| candidate),
+            );
         }
     }
     classic

@@ -37,6 +37,7 @@ import { translateResponse, type RimeResult } from "./response.js";
 export interface Actions {
   setOption(option: string, value: boolean): Promise<void>;
   processKey(input: string): Promise<RimeResult>;
+  stageAi(): Promise<RimeResult>;
   selectCandidate(index: number): Promise<RimeResult>;
   deleteCandidate(index: number): Promise<RimeResult>;
   flipPage(backward: boolean): Promise<RimeResult>;
@@ -53,6 +54,7 @@ export interface RimePreferences {
   enableCorrection?: boolean;
   enableSentence?: boolean;
   enableLearning?: boolean;
+  enableAI?: boolean;
   isCangjie5?: boolean;
   /** Pre-2024 options encoding */
   options?: number;
@@ -315,6 +317,17 @@ export async function processKey(input: string): Promise<RimeResult> {
   return result;
 }
 
+export async function stageAi(): Promise<RimeResult> {
+  if (currentRuntime === null) {
+    throw new Error("Yune runtime not initialized");
+  }
+
+  const response = currentRuntime.stageAi();
+  const result = translateResponse(response);
+  lastKeyResult = result;
+  return result;
+}
+
 /**
  * Select candidate using Yune runtime
  *
@@ -410,6 +423,10 @@ export async function customize(preferences: RimePreferences): Promise<boolean> 
   // Map preferences to Yune customize calls
   let success = true;
   let customizedAny = false;
+
+  if (preferences.enableAI !== undefined) {
+    success = currentRuntime.setAiEnabled(preferences.enableAI) && success;
+  }
 
   const customizeSetting = (key: string, value: string): void => {
     const customized = currentRuntime.customize(currentSchemaId, key, value);

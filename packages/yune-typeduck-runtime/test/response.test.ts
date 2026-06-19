@@ -50,6 +50,23 @@ describe("readTypeDuckResponse", () => {
     expect(fake.freedResponses()).toEqual([ptr]);
   });
 
+  it("parses optional candidate source labels", () => {
+    const fake = new FakeTypeDuckModule();
+    const payload = responsePayload({
+      context: {
+        ...responsePayload().context,
+        candidates: [
+          { text: "你", comment: "" },
+          { text: "你啊", comment: "ai:local-model 0.83", source: "ai:local" },
+        ],
+      },
+    });
+    const ptr = fake.response(payload, true);
+
+    expect(readTypeDuckResponse(ptr, bindings(fake))).toEqual(payload);
+    expect(fake.freedResponses()).toEqual([ptr]);
+  });
+
   it("uses response_handled as the authoritative handled value", () => {
     const fake = new FakeTypeDuckModule();
     const ptr = fake.response(responsePayload({ handled: false }), true);

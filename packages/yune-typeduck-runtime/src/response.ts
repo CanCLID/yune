@@ -3,6 +3,7 @@ import type { TypeDuckBindings } from "./module.js";
 export interface TypeDuckCandidate {
   text: string;
   comment: string;
+  source?: string;
 }
 
 export interface TypeDuckContext {
@@ -140,10 +141,14 @@ function parseCandidates(value: unknown): TypeDuckCandidate[] {
   }
   return value.map((candidate) => {
     const object = expectRecord(candidate, "TypeDuck candidate must be an object");
-    return {
+    const parsed: TypeDuckCandidate = {
       text: expectString(object.text, "TypeDuck candidate text must be a string"),
       comment: expectString(object.comment, "TypeDuck candidate comment must be a string"),
     };
+    if (object.source !== undefined) {
+      parsed.source = expectString(object.source, "TypeDuck candidate source must be a string");
+    }
+    return parsed;
   });
 }
 

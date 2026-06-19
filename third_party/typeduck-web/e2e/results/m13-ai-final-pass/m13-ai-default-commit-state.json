@@ -1,0 +1,14 @@
+{
+  "aiEnabled": true,
+  "committed": "你",
+  "classicTop": {
+    "index": 0,
+    "text": "你",
+    "source": null
+  },
+  "aiRow": {
+    "index": 1,
+    "text": "你啊",
+    "source": "ai:local"
+  }
+}

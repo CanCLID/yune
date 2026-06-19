@@ -1,0 +1,31 @@
+{
+  "aiEnabled": false,
+  "inputValue": "",
+  "candidates": [
+    {
+      "index": 0,
+      "text": "你",
+      "source": null
+    },
+    {
+      "index": 1,
+      "text": "呢",
+      "source": null
+    },
+    {
+      "index": 2,
+      "text": "尼",
+      "source": null
+    },
+    {
+      "index": 3,
+      "text": "妮",
+      "source": null
+    },
+    {
+      "index": 4,
+      "text": "彌",
+      "source": null
+    }
+  ]
+}

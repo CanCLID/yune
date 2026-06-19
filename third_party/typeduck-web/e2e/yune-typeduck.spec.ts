@@ -28,7 +28,7 @@ const EVIDENCE_DIR = process.env.TYPEDUCK_EVIDENCE_DIR || "../e2e/results";
 async function captureConsoleErrors(page: Page, evidenceFile: string): Promise<string[]> {
   const errors: string[] = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error" || APP_URL.includes("debug")) {
+    if (msg.type() === "error" || msg.type() === "warning" || APP_URL.includes("debug")) {
       errors.push(`[${new Date().toISOString()}] console:${msg.type()} ${msg.text()}`);
     }
   });
@@ -62,6 +62,54 @@ async function takeEvidenceScreenshot(page: Page, flowName: string): Promise<voi
   await (await import("fs/promises")).mkdir(EVIDENCE_DIR, { recursive: true });
   const screenshotPath = path.join(EVIDENCE_DIR, `screenshot-${flowName}.png`);
   await page.screenshot({ path: screenshotPath, fullPage: false });
+}
+
+interface CandidateRowSnapshot {
+  index: number;
+  text: string | null;
+  source: string | null;
+}
+
+interface CandidatePanelSnapshot {
+  aiEnabled: boolean;
+  inputValue: string;
+  candidates: CandidateRowSnapshot[];
+}
+
+async function saveJsonEvidence(filename: string, value: unknown): Promise<void> {
+  await saveEvidence(filename, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function readCandidatePanelSnapshot(page: Page, aiEnabled: boolean): Promise<CandidatePanelSnapshot> {
+  const inputField = page.locator("input[type='text'], textarea").first();
+  const rows = page.locator(".candidate-panel .candidates tbody");
+  return {
+    aiEnabled,
+    inputValue: await inputField.inputValue(),
+    candidates: await rows.evaluateAll((elements) =>
+      elements.map((element, index) => ({
+        index,
+        text: element.getAttribute("data-candidate-text"),
+        source: element.getAttribute("data-source"),
+      })),
+    ),
+  };
+}
+
+async function focusInputAndType(page: Page, text: string): Promise<void> {
+  const inputField = page.locator("input[type='text'], textarea").first();
+  await inputField.focus();
+  await inputField.type(text, { delay: 80 });
+  await expect(page.locator(".candidate-panel .candidates tbody").first()).toBeVisible({ timeout: 5000 });
+}
+
+async function setAiToggle(page: Page, enabled: boolean): Promise<void> {
+  const aiToggle = page.getByLabel(/AI Candidates/);
+  if (enabled) {
+    await aiToggle.check();
+  } else {
+    await aiToggle.uncheck();
+  }
 }
 
 /**
@@ -108,7 +156,14 @@ test.describe("TypeDuck-Web Browser E2E", () => {
 
     await page.goto(APP_URL, { timeout: TIMEOUT_MS, waitUntil: "domcontentloaded" });
 
-    await expect(page.locator("text=載入中 Loading…")).toHaveCount(0, { timeout: TIMEOUT_MS });
+    await page.waitForFunction(
+      () =>
+        document.documentElement.dataset.yuneInitialized === "true"
+        && document.documentElement.dataset.yuneLoading === "false",
+      undefined,
+      { timeout: TIMEOUT_MS },
+    );
+    await expect(page.locator(".loading")).toHaveCount(0, { timeout: TIMEOUT_MS });
   });
 
   test.afterEach(async ({ page }, testInfo) => {
@@ -132,45 +187,23 @@ test.describe("TypeDuck-Web Browser E2E", () => {
   test("Composition after typing schema-valid keys", async ({ page }) => {
     // D-08/D-10: Composition appears after typing schema-valid keys
 
-    // Focus input field
-    const inputField = page.locator("input[type='text'], textarea").first();
-    await inputField.focus();
-
-    // Type schema-valid keys (assuming luna_pinyin schema)
-    await inputField.type("abc", { delay: 100 });
-
-    // Verify composition visible (preedit in UI)
-    // TypeDuck-Web shows preedit in input field or composition panel
-    const compositionVisible = await page.waitForSelector(
-      "[data-composition], [data-preedit], .composition-panel",
-      { timeout: 5000, state: "visible" }
-    ).catch(() => null);
-
-    if (compositionVisible) {
-      await takeEvidenceScreenshot(page, "composition");
-      expect(compositionVisible).toBeTruthy();
-    } else {
-      // Composition may be inline in input field
-      const inputValue = await inputField.inputValue();
-      await takeEvidenceScreenshot(page, "composition");
-      expect(inputValue.length).toBeGreaterThan(0);
-      await saveEvidence(
-        "browser-run.log",
-        `[${new Date().toISOString()}] Composition: input="${inputValue}"\n`
-      );
-    }
+    await focusInputAndType(page, "nei");
+    const state = await readCandidatePanelSnapshot(page, false);
+    expect(state.candidates.length).toBeGreaterThan(0);
+    expect(state.candidates[0].text).toBe("你");
+    await takeEvidenceScreenshot(page, "composition");
+    await saveEvidence(
+      "browser-run.log",
+      `[${new Date().toISOString()}] Composition: input="nei" candidates=${state.candidates.length}\n`
+    );
   });
 
   test("Candidate list visible", async ({ page }) => {
     // D-08/D-10: Candidate list is visible after composition
 
-    const inputField = page.locator("input[type='text'], textarea").first();
-    await inputField.focus();
-    await inputField.type("ba", { delay: 100 }); // Type to trigger candidates
-
-    // Wait for candidate panel
+    await focusInputAndType(page, "nei");
     const candidatePanel = await page.waitForSelector(
-      "[data-candidates], .candidate-panel, .candidate-list",
+      ".candidate-panel",
       { timeout: 5000, state: "visible" }
     ).catch(() => null);
 
@@ -179,7 +212,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     if (candidatePanel) {
       expect(candidatePanel).toBeTruthy();
 
-      const candidates = await page.locator(".candidate-panel .candidates button, .candidate-panel .candidates tbody").count();
+      const candidates = await page.locator(".candidate-panel .candidates tbody").count();
       expect(candidates).toBeGreaterThan(0);
 
       await saveEvidence(
@@ -195,14 +228,79 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     }
   });
 
+  test("M13 AI-off identity and AI-on second-pass source labels", async ({ page }) => {
+    await focusInputAndType(page, "nei");
+
+    const offState = await readCandidatePanelSnapshot(page, false);
+    expect(offState.candidates.length).toBeGreaterThanOrEqual(2);
+    expect(offState.candidates[0].text).toBe("你");
+    expect(offState.candidates.every((candidate) => candidate.source === null)).toBe(true);
+    await saveJsonEvidence("m13-ai-off-state.json", offState);
+    await takeEvidenceScreenshot(page, "m13-ai-off");
+
+    await setAiToggle(page, true);
+    await expect(page.locator('.candidate-panel .candidates tbody[data-source="ai:local"]')).toHaveCount(1, { timeout: 5000 });
+    const onState = await readCandidatePanelSnapshot(page, true);
+    const aiRow = onState.candidates.find((candidate) => candidate.source === "ai:local");
+    const aiIndex = onState.candidates.findIndex((candidate) => candidate.source === "ai:local");
+    expect(aiRow).toBeDefined();
+    expect(aiRow?.text).toBe("你啊");
+    expect(onState.candidates[0].text).toBe(offState.candidates[0].text);
+    expect(aiIndex).toBeGreaterThan(0);
+    expect(aiIndex).toBeLessThan(onState.candidates.length);
+    expect(onState.candidates.slice(0, aiIndex).every((candidate) => candidate.source === null)).toBe(true);
+    await saveJsonEvidence("m13-ai-on-state.json", onState);
+    await takeEvidenceScreenshot(page, "m13-ai-on");
+
+    await setAiToggle(page, false);
+    await expect(page.locator('.candidate-panel .candidates tbody[data-source="ai:local"]')).toHaveCount(0, { timeout: 5000 });
+    const disabledState = await readCandidatePanelSnapshot(page, false);
+    expect(disabledState.candidates).toEqual(offState.candidates);
+    await saveJsonEvidence("m13-ai-disabled-state.json", disabledState);
+    await takeEvidenceScreenshot(page, "m13-ai-disabled");
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test("M13 AI commit safety", async ({ page }) => {
+    await setAiToggle(page, true);
+    await focusInputAndType(page, "nei");
+    await expect(page.locator('.candidate-panel .candidates tbody[data-source="ai:local"]')).toHaveCount(1, { timeout: 5000 });
+    const stagedState = await readCandidatePanelSnapshot(page, true);
+    const aiIndex = stagedState.candidates.findIndex((candidate) => candidate.source === "ai:local");
+    expect(aiIndex).toBeGreaterThan(0);
+
+    await page.keyboard.press("Space");
+    const inputField = page.locator("input[type='text'], textarea").first();
+    await expect(inputField).toHaveValue("你", { timeout: 5000 });
+    await saveJsonEvidence("m13-ai-default-commit-state.json", {
+      aiEnabled: true,
+      committed: await inputField.inputValue(),
+      classicTop: stagedState.candidates[0],
+      aiRow: stagedState.candidates[aiIndex],
+    });
+    await takeEvidenceScreenshot(page, "m13-ai-default-commit");
+
+    await inputField.fill("");
+    await focusInputAndType(page, "nei");
+    await expect(page.locator('.candidate-panel .candidates tbody[data-source="ai:local"]')).toHaveCount(1, { timeout: 5000 });
+    const selectableState = await readCandidatePanelSnapshot(page, true);
+    const selectableAiIndex = selectableState.candidates.findIndex((candidate) => candidate.source === "ai:local");
+    await page.locator('.candidate-panel .candidates tbody[data-source="ai:local"]').click();
+    await expect(inputField).toHaveValue("你啊", { timeout: 5000 });
+    await saveJsonEvidence("m13-ai-explicit-commit-state.json", {
+      aiEnabled: true,
+      committed: await inputField.inputValue(),
+      selectedIndex: selectableAiIndex,
+      aiRow: selectableState.candidates[selectableAiIndex],
+    });
+    await takeEvidenceScreenshot(page, "m13-ai-explicit-commit");
+    expect(consoleErrors).toEqual([]);
+  });
+
   test("Candidate paging", async ({ page }) => {
     // D-08/D-10: Candidate paging changes page/candidate state
 
-    const inputField = page.locator("input[type='text'], textarea").first();
-    await inputField.focus();
-    await inputField.type("sh", { delay: 100 }); // Type to generate many candidates
-
-    await page.waitForTimeout(1000);
+    await focusInputAndType(page, "nei");
 
     // Press PageDown to flip candidate page
     await page.keyboard.press("PageDown");
@@ -222,14 +320,11 @@ test.describe("TypeDuck-Web Browser E2E", () => {
   test("Candidate selection → commit output", async ({ page }) => {
     // D-08/D-10: Candidate selection commits text to app output field
 
+    await focusInputAndType(page, "nei");
     const inputField = page.locator("input[type='text'], textarea").first();
-    await inputField.focus();
-    await inputField.type("ba", { delay: 100 });
 
-    await page.waitForTimeout(1000);
-
-    // Press selection key (TypeDuck-Web uses digit keys 1-5 or Space/Enter)
-    await page.keyboard.press("1"); // Select first candidate
+    // Press default commit key for the highlighted classic top candidate.
+    await page.keyboard.press("Space");
 
     await page.waitForTimeout(500);
 
@@ -237,7 +332,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
 
     // Verify committed text
     const inputValue = await inputField.inputValue();
-    expect(inputValue.length).toBeGreaterThan(0);
+    expect(inputValue).toBe("你");
 
     await saveEvidence(
       "browser-run.log",
@@ -248,11 +343,8 @@ test.describe("TypeDuck-Web Browser E2E", () => {
   test("Deletion removes candidate or triggers delete path", async ({ page }) => {
     // D-08/D-10: Delete key removes candidate or triggers delete-candidate path
 
+    await focusInputAndType(page, "nei");
     const inputField = page.locator("input[type='text'], textarea").first();
-    await inputField.focus();
-    await inputField.type("ba", { delay: 100 });
-
-    await page.waitForTimeout(1000);
 
     // Press Delete key
     await page.keyboard.press("Delete");
@@ -273,11 +365,8 @@ test.describe("TypeDuck-Web Browser E2E", () => {
   test("Backspace mutates composition", async ({ page }) => {
     // D-08/D-10: Backspace/Delete mutates composition
 
+    await focusInputAndType(page, "nei");
     const inputField = page.locator("input[type='text'], textarea").first();
-    await inputField.focus();
-    await inputField.type("abc", { delay: 100 });
-
-    await page.waitForTimeout(1000);
 
     const beforeBackspace = await inputField.inputValue();
 

@@ -1,0 +1,21 @@
+[2026-06-19T07:42:22.317Z] Browser E2E started
+URL: http://127.0.0.1:5173/web/
+[2026-06-19T07:42:37.522Z] Composition: input="nei" candidates=5
+[2026-06-19T07:42:37.523Z] Test: Composition after typing schema-valid keys - passed (15197ms)
+[2026-06-19T07:42:50.041Z] Candidates: 5 visible
+[2026-06-19T07:42:50.041Z] Test: Candidate list visible - passed (12504ms)
+[2026-06-19T07:43:02.771Z] Test: M13 AI-off identity and AI-on second-pass source labels - passed (12720ms)
+[2026-06-19T07:43:15.638Z] Test: M13 AI commit safety - passed (12856ms)
+[2026-06-19T07:43:28.655Z] Candidate paging: PageDown pressed, panel count=1
+[2026-06-19T07:43:28.656Z] Test: Candidate paging - passed (13008ms)
+[2026-06-19T07:43:41.571Z] Candidate selection: committed="你"
+[2026-06-19T07:43:41.572Z] Test: Candidate selection → commit output - passed (12906ms)
+[2026-06-19T07:43:54.491Z] Deletion: input=""
+[2026-06-19T07:43:54.492Z] Test: Deletion removes candidate or triggers delete path - passed (12911ms)
+[2026-06-19T07:44:07.533Z] Backspace: before="" after=""
+[2026-06-19T07:44:07.534Z] Test: Backspace mutates composition - passed (13033ms)
+[2026-06-19T07:44:22.751Z] Deploy: triggered (no visible notification)
+[2026-06-19T07:44:22.752Z] Test: Deploy returns visible success/error evidence - passed (15208ms)
+[2026-06-19T07:44:34.883Z] Test: Customize returns visible success/error evidence - passed (12123ms)
+[2026-06-19T07:44:53.105Z] Test: Persistence sync after deploy/customize mutations - passed (18207ms)
+[2026-06-19T07:45:14.725Z] Test: Reload/reinitialize preserves persisted state - passed (21612ms)

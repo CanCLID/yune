@@ -668,6 +668,26 @@ zero-budget fallback. The direct CLI accepts `--ai-provider local` and records
 the same `ai_decision` field used by the mock provider; the ABI-backed
 `frontend` command, TypeDuck-Web, and Windows surfaces remain AI-free.
 
+### AI-native frontend exposure (M13)
+
+**D-26 / M13-WEB-AI — Expose AI in TypeDuck-Web through a default-off, two-pass
+Rust sidecar, not through the classic key path.** M13 keeps
+`yune_typeduck_process_key` provider-free and classic-first. The browser worker
+renders that classic result first, then requests the new
+`yune_typeduck_stage_ai` sidecar action; the sidecar runs `LocalModelProvider`
+synchronously in Rust/WASM, stages an input-keyed result, and returns a second
+response. The JS side carries no provider logic. Source labels are attached from
+engine snapshot data aligned to the rendered page, not by widening
+`RimeCandidate` or altering the upstream `RimeApi` table. AI remains default-off,
+TypeDuck-Web-only, local-only, and toggle-controlled; disabling AI stages an
+`Off` result for the current input so stale AI rows disappear immediately and
+classic output is restored. The browser host supplies no app/field context, so
+the existing sensitive default applies: local providers are allowed, remote
+providers remain out of scope/blocked by policy, explicit AI commits do not
+touch librime userdb, and AI-memory learning is suppressed in the default browser
+context. Real-browser M13 evidence is required alongside native `typeduck_web`
+and TypeScript runtime gates. *Outcome: Good.*
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/archive/analysis.md`, `docs/roadmap.md`, and
@@ -701,4 +721,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-19 - D-24 records M12 upstream behavioral parity closeout and parked TypeDuck-Windows profile ABI/package work; D-25 records the target-driven (not 100% feature-parity) compatibility scope.*
+*Last updated: 2026-06-19 - D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; M10 TypeDuck-Windows remains parked pending a named profile surface.*

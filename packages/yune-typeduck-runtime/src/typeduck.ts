@@ -71,6 +71,15 @@ export class TypeDuckRuntime {
     return this.#bindings.setOption(this.requireLiveState(), option, value ? 1 : 0) !== 0;
   }
 
+  setAiEnabled(enabled: boolean): boolean {
+    return this.#bindings.setAiEnabled(this.requireLiveState(), enabled ? 1 : 0) !== 0;
+  }
+
+  stageAi(): TypeDuckResponse {
+    const responsePtr = this.#bindings.stageAi(this.requireLiveState());
+    return readTypeDuckResponse(responsePtr, this.#bindings);
+  }
+
   cleanup(): void {
     if (this.#cleanedUp) {
       return;

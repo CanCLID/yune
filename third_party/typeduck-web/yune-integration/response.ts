@@ -17,6 +17,7 @@ export interface RimeResult {
     label?: string;
     text: string;
     comment?: string;
+    source?: string;
   }>;
   success: boolean;
   committed?: string;
@@ -40,6 +41,7 @@ export function translateResponse(response: TypeDuckResponse): RimeResult {
       label: response.context?.select_labels?.[index],
       text: candidate.text,
       comment: candidate.comment,
+      source: candidate.source,
     }));
 
     return {

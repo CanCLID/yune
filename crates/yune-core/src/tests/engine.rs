@@ -44,6 +44,15 @@ fn ai_candidate_with_confidence(text: &str, confidence: f32) -> Candidate {
     }
 }
 
+fn visible_ai_candidate_index(engine: &Engine) -> usize {
+    engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.source.is_ai())
+        .expect("AI candidate should be visible")
+}
+
 #[test]
 fn commits_table_candidate_before_echo_candidate() {
     let mut engine = Engine::new();
@@ -1051,7 +1060,7 @@ sort: by_weight
 }
 
 #[test]
-fn staged_ai_result_appends_after_classic_candidates_and_preserves_top_candidate() {
+fn staged_ai_result_inserts_after_classic_top_candidate_and_preserves_top_candidate() {
     let mut engine = Engine::new();
     let translator = StaticTableTranslator::parse_rime_dict_yaml(
         r#"
@@ -1078,23 +1087,26 @@ sort: by_weight
     let candidates = &engine.context().candidates;
     assert_eq!(decision.as_str(), "ready");
     assert_eq!(candidates[0], baseline[0]);
-    assert_eq!(candidates[1], baseline[1]);
     assert_eq!(
-        candidates.last().expect("AI row should be appended").text,
+        candidates
+            .get(1)
+            .expect("AI row should follow classic top candidate")
+            .text,
         "吧呀"
     );
     assert_eq!(
         candidates
-            .last()
-            .expect("AI row should be appended")
+            .get(1)
+            .expect("AI row should follow classic top candidate")
             .source
             .as_str(),
         "ai"
     );
+    assert_eq!(candidates[2], baseline[1]);
 }
 
 #[test]
-fn staged_ai_merge_orders_ai_candidates_by_confidence_after_classic_candidates() {
+fn staged_ai_merge_orders_ai_candidates_by_confidence_after_classic_top_candidate() {
     let mut engine = Engine::new();
     engine.add_translator(StaticTableTranslator::new([("ba", "把")]));
     engine.set_input("ba");
@@ -1115,7 +1127,7 @@ fn staged_ai_merge_orders_ai_candidates_by_confidence_after_classic_candidates()
         .map(|candidate| candidate.text.as_str())
         .collect::<Vec<_>>();
     assert_eq!(decision.as_str(), "ready");
-    assert_eq!(texts, ["把", "ba", "high", "middle", "low"]);
+    assert_eq!(texts, ["把", "high", "middle", "low", "ba"]);
 }
 
 #[test]
@@ -1173,7 +1185,12 @@ fn default_confirm_does_not_auto_commit_highlighted_ai_candidate() {
         for_input: "ba".to_owned(),
         candidates: vec![ai_candidate("吧呀")],
     });
-    let ai_index = engine.context().candidates.len() - 1;
+    let ai_index = engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.source.is_ai())
+        .expect("AI candidate should be visible");
     assert!(engine.highlight_candidate(ai_index));
 
     let commits = engine
@@ -1195,7 +1212,12 @@ fn explicit_ai_commit_skips_librime_userdb_learning_but_classic_commit_still_sta
         for_input: "ba".to_owned(),
         candidates: vec![ai_candidate("吧呀")],
     });
-    let ai_index = engine.context().candidates.len() - 1;
+    let ai_index = engine
+        .context()
+        .candidates
+        .iter()
+        .position(|candidate| candidate.source.is_ai())
+        .expect("AI candidate should be visible");
 
     assert_eq!(engine.select_candidate(ai_index).as_deref(), Some("吧呀"));
     assert!(engine.userdb().entries().is_empty());
@@ -1239,7 +1261,7 @@ fn explicit_ai_commit_records_memory_for_standard_context() {
         for_input: "ba".to_owned(),
         candidates: vec![ai_candidate_with_confidence("\u{5427}\u{5440}", 0.62)],
     });
-    let ai_index = engine.context().candidates.len() - 1;
+    let ai_index = visible_ai_candidate_index(&engine);
 
     assert_eq!(
         engine.select_candidate(ai_index).as_deref(),
@@ -1268,7 +1290,7 @@ fn sensitive_ai_commit_does_not_write_memory_or_userdb() {
         for_input: "ba".to_owned(),
         candidates: vec![ai_candidate("\u{5427}\u{5440}")],
     });
-    let ai_index = engine.context().candidates.len() - 1;
+    let ai_index = visible_ai_candidate_index(&engine);
 
     assert_eq!(
         engine.select_candidate(ai_index).as_deref(),
@@ -1291,7 +1313,7 @@ fn disabled_ai_memory_skips_standard_context_ai_commits() {
         for_input: "ba".to_owned(),
         candidates: vec![ai_candidate("\u{5427}\u{5440}")],
     });
-    let ai_index = engine.context().candidates.len() - 1;
+    let ai_index = visible_ai_candidate_index(&engine);
 
     assert_eq!(
         engine.select_candidate(ai_index).as_deref(),
@@ -1305,7 +1327,7 @@ fn disabled_ai_memory_skips_standard_context_ai_commits() {
         for_input: "ba".to_owned(),
         candidates: vec![ai_candidate("\u{5427}\u{5440}")],
     });
-    let ai_index = engine.context().candidates.len() - 1;
+    let ai_index = visible_ai_candidate_index(&engine);
     assert_eq!(
         engine.select_candidate(ai_index).as_deref(),
         Some("\u{5427}\u{5440}")

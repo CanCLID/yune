@@ -3,15 +3,25 @@ use std::{
     mem,
     os::raw::{c_char, c_int},
     ptr,
+    time::Duration,
 };
 
 use serde_json::json;
 use serde_yaml::Value;
+use yune_core::{
+    AiCandidateProvider, AiConfidence, AiOffReason, AiPrivacyPolicy, AiResult, CandidateSource,
+    LocalModelProvider, LocalModelRule, LOCAL_MODEL_PROVIDER_NAME,
+};
 
 use crate::{
     rime_get_api, rime_levers_get_api, Bool, RimeCandidate, RimeCommit, RimeComposition,
     RimeContext, RimeLeversApi, RimeMenu, RimeSessionId, RimeStatus, RimeTraits, FALSE, TRUE,
 };
+
+use crate::session::{session_candidates_snapshot, with_session};
+
+const AI_BUDGET: Duration = Duration::from_millis(25);
+const LOCAL_AI_SOURCE_LABEL: &str = "ai:local";
 
 #[repr(C)]
 pub struct YuneTypeDuckState {
@@ -20,6 +30,8 @@ pub struct YuneTypeDuckState {
     user_data_dir: CString,
     schema_id: CString,
     initialized: bool,
+    ai_enabled: bool,
+    ai_provider: Option<LocalModelProvider>,
 }
 
 #[repr(C)]
@@ -89,6 +101,8 @@ pub unsafe extern "C" fn yune_typeduck_init(
         user_data_dir,
         schema_id,
         initialized: true,
+        ai_enabled: false,
+        ai_provider: None,
     }))
 }
 
@@ -307,6 +321,86 @@ pub unsafe extern "C" fn yune_typeduck_set_option(
 }
 
 /// # Safety
+/// `state` must be live.
+#[no_mangle]
+pub unsafe extern "C" fn yune_typeduck_set_ai_enabled(
+    state: *mut YuneTypeDuckState,
+    enabled: Bool,
+) -> Bool {
+    if state.is_null() {
+        return FALSE;
+    }
+    let state = unsafe { &mut *state };
+    if !state.initialized || state.session_id == 0 {
+        return FALSE;
+    }
+    state.ai_enabled = enabled != FALSE;
+    if state.ai_enabled {
+        return TRUE;
+    }
+
+    let cleared = with_session(state.session_id, |session| {
+        let input = session.engine.context().composition.input.clone();
+        session
+            .engine
+            .stage_ai_result(AiResult::off(input, AiOffReason::Privacy));
+        true
+    });
+    if cleared == TRUE {
+        state.ai_provider = None;
+    }
+    cleared
+}
+
+/// # Safety
+/// `state` must be a live pointer returned by `yune_typeduck_init`.
+#[no_mangle]
+pub unsafe extern "C" fn yune_typeduck_stage_ai(
+    state: *mut YuneTypeDuckState,
+) -> *mut YuneTypeDuckResponse {
+    if state.is_null() {
+        return ptr::null_mut();
+    }
+    let Some(api) = api_table() else {
+        return response(FALSE, vec![], None, None, Some("RimeApi unavailable"));
+    };
+    let state = unsafe { &mut *state };
+    if !state.initialized || state.session_id == 0 {
+        return response(
+            FALSE,
+            vec![],
+            None,
+            None,
+            Some("TypeDuck state is not initialized"),
+        );
+    }
+    let session_id = state.session_id;
+    if !state.ai_enabled {
+        return response_from_session(api, session_id, TRUE, None);
+    }
+
+    let provider = state
+        .ai_provider
+        .get_or_insert_with(browser_local_model_provider)
+        .clone();
+    let staged = with_session(session_id, |session| {
+        let input = session.engine.context().composition.input.clone();
+        let result = if AiPrivacyPolicy.allows_provider(session.engine.context(), provider.kind()) {
+            provider.provide(session.engine.context(), AI_BUDGET)
+        } else {
+            AiResult::off(input, AiOffReason::Privacy)
+        };
+        session.engine.stage_ai_result(result);
+        true
+    });
+    if staged != TRUE {
+        return response(FALSE, vec![], None, None, Some("session unavailable"));
+    }
+
+    response_from_session(api, session_id, TRUE, None)
+}
+
+/// # Safety
 /// `state` must be null or an unfreed pointer returned by `yune_typeduck_init`.
 #[no_mangle]
 pub unsafe extern "C" fn yune_typeduck_cleanup(state: *mut YuneTypeDuckState) {
@@ -319,6 +413,8 @@ pub unsafe extern "C" fn yune_typeduck_cleanup(state: *mut YuneTypeDuckState) {
             destroy_session(api, state.session_id);
             finalize_api(api);
             state.initialized = false;
+            state.ai_enabled = false;
+            state.ai_provider = None;
         }
     }
 }
@@ -386,7 +482,10 @@ fn response_from_session(
     error: Option<&str>,
 ) -> *mut YuneTypeDuckResponse {
     let commits = capture_commits(api, session_id).unwrap_or_default();
-    let context = capture_context(api, session_id).ok();
+    let mut context = capture_context(api, session_id).ok();
+    if let Some(context) = context.as_mut() {
+        attach_candidate_sources(session_id, context);
+    }
     let status = capture_status(api, session_id).ok();
     response(handled, commits, context, status, error)
 }
@@ -487,6 +586,48 @@ fn copy_candidate(candidate: &RimeCandidate) -> serde_json::Value {
     })
 }
 
+fn attach_candidate_sources(session_id: RimeSessionId, context: &mut serde_json::Value) {
+    let Some(engine_candidates) = session_candidates_snapshot(session_id) else {
+        return;
+    };
+    let page_no = context
+        .get("page_no")
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|page_no| usize::try_from(page_no).ok())
+        .unwrap_or(0);
+    let page_size = context
+        .get("page_size")
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|page_size| usize::try_from(page_size).ok())
+        .unwrap_or(0);
+    let Some(page_candidates) = context
+        .get_mut("candidates")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    let page_start = page_no.saturating_mul(page_size);
+    for (page_index, candidate) in page_candidates.iter_mut().enumerate() {
+        let full_index = page_start.saturating_add(page_index);
+        let Some(engine_candidate) = engine_candidates.get(full_index) else {
+            continue;
+        };
+        if let Some(source) = source_label(&engine_candidate.source) {
+            candidate["source"] = json!(source);
+        }
+    }
+}
+
+fn source_label(source: &CandidateSource) -> Option<&'static str> {
+    match source {
+        CandidateSource::Ai { provider, .. } if provider == LOCAL_MODEL_PROVIDER_NAME => {
+            Some(LOCAL_AI_SOURCE_LABEL)
+        }
+        CandidateSource::Ai { .. } => Some("ai"),
+        _ => None,
+    }
+}
+
 fn copy_select_labels(context: &RimeContext) -> Vec<String> {
     if context.select_labels.is_null() || context.menu.page_size <= 0 {
         return Vec::new();
@@ -524,6 +665,14 @@ fn capture_status(
         return Err(());
     }
     Ok(captured)
+}
+
+fn browser_local_model_provider() -> LocalModelProvider {
+    LocalModelProvider::new([LocalModelRule::new(
+        "nei",
+        "\u{4f60}\u{554a}",
+        AiConfidence::from_basis_points(8_300),
+    )])
 }
 
 fn api_table() -> Option<&'static crate::RimeApi> {

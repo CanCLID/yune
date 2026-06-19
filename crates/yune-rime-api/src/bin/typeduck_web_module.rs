@@ -32,6 +32,10 @@ fn keep_typeduck_exports_linked() {
         ) -> Bool;
     let _ = yune_rime_api::yune_typeduck_set_option
         as unsafe extern "C" fn(*mut YuneTypeDuckState, *const c_char, Bool) -> Bool;
+    let _ = yune_rime_api::yune_typeduck_set_ai_enabled
+        as unsafe extern "C" fn(*mut YuneTypeDuckState, Bool) -> Bool;
+    let _ = yune_rime_api::yune_typeduck_stage_ai
+        as unsafe extern "C" fn(*mut YuneTypeDuckState) -> *mut YuneTypeDuckResponse;
     let _ = yune_rime_api::yune_typeduck_cleanup as unsafe extern "C" fn(*mut YuneTypeDuckState);
     let _ = yune_rime_api::yune_typeduck_response_json
         as unsafe extern "C" fn(*const YuneTypeDuckResponse) -> *const c_char;

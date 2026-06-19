@@ -170,7 +170,7 @@ Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-or
 
 ---
 
-## Next up - M13: AI-native frontend exposure
+## Completed - M13: AI-native frontend exposure
 
 The first test of the product thesis: take M11's completed CLI/core AI layer to a
 **real frontend** — default-off, local-first, and gated by the same safety
@@ -198,23 +198,25 @@ off-main-thread worker. The async / second-Web-Worker port is deferred.
 exposure through Windows or other native frontends; any change to classic-input
 defaults.
 
-**Status** (planned — nothing landed yet):
+**Status**:
 
 | # | Work item | State | Notes |
 |---|---|---|---|
-| 0 | Browser AI orchestration | Planned | `process_key` stays classic-only; a new `yune_typeduck_stage_ai` runs the `LocalModelProvider` in Rust as a second pass after classic renders, so the per-key path never invokes the provider. |
-| 1 | Default-off + opt-in toggle | Planned | AI is invisible until a user enables it; with AI off, candidate output is **byte-identical** to today (hard gate). |
-| 2 | Source-labeled candidates in the panel | Planned | AI rows render *after* classic and are visibly labeled; index 0 stays classic. |
-| 3 | Commit-boundary safety in the browser | Planned | No AI auto-commit (Space/Return/default is always classic); an AI commit never touches the librime userdb, and under the sensitive browser default AI-memory learning is suppressed (no `MemoryStore` write). |
-| 4 | Privacy in browser context | Planned | Browser context has no app/field signal → defaults to **sensitive** → remote blocked; M13 ships mock/local only. |
-| 5 | Browser-E2E safety evidence | Planned | A real-browser run proves the M11 invariants hold in TypeDuck-Web exactly as the CLI asserts them, plus AI-off byte-identity. |
+| 0 | Browser AI orchestration | Done | `process_key` stays provider-free; `yune_typeduck_stage_ai` runs the `LocalModelProvider` in Rust as a second pass after classic renders. |
+| 1 | Default-off + opt-in toggle | Done | AI is invisible until enabled; disabling AI clears staged rows for the current input so the visible candidate page returns to classic output. |
+| 2 | Source-labeled candidates in the panel | Done | AI rows render after the classic top candidate with `source: "ai:local"` from engine snapshot data aligned to the rendered page; `RimeCandidate` remains unchanged. |
+| 3 | Commit-boundary safety in the browser | Done | Space/Return/default commits classic; explicit AI selection never writes librime userdb, and sensitive-default browser context suppresses AI-memory learning. |
+| 4 | Privacy in browser context | Done | Browser context has no app/field signal and defaults to **sensitive**; M13 ships local only and keeps remote providers out of scope. |
+| 5 | Browser-E2E safety evidence | Done | Native `typeduck_web`, TS runtime tests/build, and the real TypeDuck-Web Playwright M13 scenarios cover AI-off identity, AI labels, no auto-commit, and explicit AI selection. |
 
-**Definition of done.** The M11 safety invariants (classic-first, non-blocking,
-no default auto-commit, no userdb leak, privacy-gated, deterministic fallback)
-are asserted in the browser as they are in the CLI; AI candidates render, label,
-and never auto-commit in a real TypeDuck-Web run; and classic input is
-byte-identical with AI off. Completing M13 supersedes the *Deferred / future*
-"AI-native (future frontend exposure)" item for the web surface.
+**Outcome:** M13 proves the web surface of the product thesis. The M11 safety
+invariants (classic-first, non-blocking classic path, no default AI auto-commit,
+no userdb leak, privacy-gated local provider, deterministic fallback) now hold
+through TypeDuck-Web. AI candidates render as a second-pass update, are labeled,
+and never preempt classic index 0. Classic input remains byte-identical with AI
+off, and disabling AI clears stale staged rows for the current input. This
+supersedes the *Deferred / future* "AI-native frontend exposure" item for the web
+surface only; native frontend exposure remains deferred.
 
 Detail: [`plans/m13-ai-native-frontend-exposure.md`](./plans/m13-ai-native-frontend-exposure.md) (execution plan) and [`plans/ai-native-design.md`](./plans/ai-native-design.md) (architecture).
 
@@ -242,11 +244,10 @@ and [`plans/yune-windows-native-build.md`](./plans/yune-windows-native-build.md)
 
 In priority order:
 
-1. **Execute M13 — AI-native frontend exposure (the chosen next milestone).** Take M11's CLI/core AI layer to TypeDuck-Web, default-off and local-first, per [`plans/m13-ai-native-frontend-exposure.md`](./plans/m13-ai-native-frontend-exposure.md); preserve every compatibility gate and keep AI default-off until its safety gates pass in a real browser.
-2. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
-3. **Keep M9 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, and native `typeduck_web` fallback.
-4. **Broaden upstream parity opportunistically.** Reuse the M12 fixture/provenance harness for the next named upstream schema or parked `luna_pinyin` blockers **when a target needs them** (per the scope ledger — not ahead of M13).
-5. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
+1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
+2. **Keep M9/M13 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, and default-off M13 AI scenarios.
+3. **Broaden upstream parity opportunistically.** Reuse the M12 fixture/provenance harness for the next named upstream schema or parked `luna_pinyin` blockers **when a target needs them** (per the scope ledger).
+4. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
 
 ---
 
@@ -265,8 +266,9 @@ list. The broad arc after M12's first behavioral-parity slice:
    today's known gaps (see the ledger).
 3. **TypeDuck profile reconciliation** — un-ignore the five Cantonese / Jyutping
    goldens and decide, per difference, fix-in-core versus keep-as-profile.
-4. **AI-native frontend exposure** — M11's CLI/core layer → real frontends,
-   default-off until proven (see *Deferred / future*).
+4. **AI-native frontend expansion** — the proven TypeDuck-Web surface remains
+   default-off; Windows and other native frontend exposure stay deferred until
+   they have their own safety evidence.
 
 ### Scope ledger
 
@@ -287,7 +289,7 @@ the *Non-goal* column is not a backlog. Standing deferrals also appear in
 ## Deferred / future
 
 - **librime C++ plugin ABI** (Lua, octagram, predict, proto): deferred until a concrete frontend or distribution requires it; prefer Yune-native extension points first.
-- **AI-native input layer (future frontend exposure)** - after the completed S1-S5 CLI/core mock/provider, worker/confidence, context/privacy, memory, and local-model slices, remaining AI-native work is product integration: exposing AI behind explicit defaults in real frontends without changing upstream-core, TypeDuck-Web, or parked TypeDuck-Windows compatibility behavior. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); S1 evidence and checklist live in [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md).
+- **AI-native input layer (future native/frontend expansion)** - after M13, TypeDuck-Web has a default-off local AI surface with browser safety evidence. Remaining AI-native product integration is exposing equivalent gates in additional real frontends without changing upstream-core, TypeDuck-Web classic behavior, or parked TypeDuck-Windows compatibility behavior. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); CLI evidence lives in [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md), and web exposure evidence lives in [`plans/m13-ai-native-frontend-exposure.md`](./plans/m13-ai-native-frontend-exposure.md) until archived.
 
 ## Principles (carried forward)
 

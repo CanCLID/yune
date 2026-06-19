@@ -1,0 +1,10 @@
+{
+  "aiEnabled": true,
+  "committed": "你啊",
+  "selectedIndex": 1,
+  "aiRow": {
+    "index": 1,
+    "text": "你啊",
+    "source": "ai:local"
+  }
+}

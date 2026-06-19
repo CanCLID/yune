@@ -190,6 +190,19 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - [x] **AI-06**: Privacy policy disables learning and remote calls for sensitive contexts and keeps classic input fully functional when AI is disabled. S3 blocks remote calls; S4 applies the same privacy gate to AI memory writes.
 - [x] **AI-07**: CLI frontend surrogate can demonstrate AI candidate/ranking behavior with mock and local providers before native frontends expose it. S1 covers `yune-cli run --ai-provider mock`; S5 adds `--ai-provider local`.
 
+## M13 AI-native Frontend Exposure Requirements
+
+**Status: complete for TypeDuck-Web.** M13 exposes the M11 local AI layer through
+TypeDuck-Web only, default-off and local-first, with the key path still
+provider-free. Additional native frontend exposure remains future work.
+
+- [x] **M13-AI-01**: `yune_typeduck_process_key` remains provider-free and classic-first; AI provider work runs only through the second-pass `yune_typeduck_stage_ai` path.
+- [x] **M13-AI-02**: Browser AI is default-off, can be toggled without redeploy, and `set_ai_enabled(false)` clears any staged result for the current input.
+- [x] **M13-AI-03**: AI candidates render after the classic top candidate, never at index 0, with source labels derived from engine snapshot data aligned to the rendered page; `RimeCandidate` and the upstream `RimeApi` table remain unchanged.
+- [x] **M13-AI-04**: Browser commit safety preserves classic default commit behavior; AI rows never auto-commit and require explicit selection.
+- [x] **M13-AI-05**: Explicit AI commits do not touch librime userdb; under the sensitive browser default, AI-memory learning is suppressed and no `.ai-memory` persistence is written.
+- [x] **M13-AI-06**: Real TypeDuck-Web browser evidence covers AI-off byte identity, AI-on source-labeled second-pass rows, no auto-commit, explicit AI selection, and zero warning/error console entries.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -277,6 +290,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AI-05 | M11 S4 | Complete - AI memory store records explicit AI selections, is inspectable/clearable/disable-able, and uses `.ai-memory` namespace helpers |
 | AI-06 | M11 S3/S4 | Complete - default-sensitive privacy blocks remote calls and suppresses AI memory writes while classic input remains available |
 | AI-07 | M11 S1/S5 | Complete - direct CLI demonstrates `--ai-provider mock` and `--ai-provider local` |
+| M13-AI-01 | M13 | Complete - `process_key` stays provider-free; `stage_ai` owns the local provider pass |
+| M13-AI-02 | M13 | Complete - default-off browser toggle and disable-clears-staged-row behavior covered |
+| M13-AI-03 | M13 | Complete - source labels flow from engine snapshot data without ABI/table changes |
+| M13-AI-04 | M13 | Complete - browser/default commit remains classic; AI selection is explicit |
+| M13-AI-05 | M13 | Complete - AI commits skip userdb and sensitive default suppresses AI memory learning |
+| M13-AI-06 | M13 | Complete - real TypeDuck-Web M13 Playwright evidence covers the safety scenarios |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -284,9 +303,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - TypeDuck-Web integration requirements: 15 total
 - TypeDuck-Windows native IME requirements: 6 total
 - M12 upstream oracle and behavioral parity requirements: 9 total, 9 complete
-- Mapped to phases: 69
+- M13 AI-native frontend exposure requirements: 6 total, 6 complete
+- Mapped to phases: 75
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-19 - M12 upstream behavioral parity closeout complete; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*
+*Last updated: 2026-06-19 - M13 TypeDuck-Web AI-native frontend exposure complete; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*

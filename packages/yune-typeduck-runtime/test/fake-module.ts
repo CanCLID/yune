@@ -29,6 +29,8 @@ export class FakeTypeDuckModule implements EmscriptenTypeDuckModule {
   deployResult = 1;
   customizeResult = 1;
   setOptionResult = 1;
+  setAiEnabledResult = 1;
+  stageAiResult = 0;
 
   constructor() {
     this.registerDefaultExports();
@@ -126,6 +128,14 @@ export class FakeTypeDuckModule implements EmscriptenTypeDuckModule {
     this.register("yune_typeduck_set_option", (...args) => {
       this.record("yune_typeduck_set_option", args);
       return this.setOptionResult;
+    });
+    this.register("yune_typeduck_set_ai_enabled", (...args) => {
+      this.record("yune_typeduck_set_ai_enabled", args);
+      return this.setAiEnabledResult;
+    });
+    this.register("yune_typeduck_stage_ai", (...args) => {
+      this.record("yune_typeduck_stage_ai", args);
+      return this.stageAiResult;
     });
     this.register("yune_typeduck_cleanup", (...args) => {
       this.record("yune_typeduck_cleanup", args);

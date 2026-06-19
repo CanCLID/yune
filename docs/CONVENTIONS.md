@@ -252,7 +252,7 @@ yune/
 |   |-- source/                        # Upstream app (own librime/)
 |   |-- yune-integration/ (adapter.ts, assets.ts, ...)
 |   |-- e2e/ (Playwright)  / patches/  / typeduck-web.lock.json
-|-- docs/                              # analysis.md, roadmap.md, plans/ (+ archive/),
+|-- docs/                              # roadmap.md, decisions.md, requirements.md, plans/ (+ archive/),
 |   |                                  #   typeduck-windows-backend-requirements.md, this file
 |-- fixtures/                          # sample-*.json CLI fixtures + frontend-traces/
 `-- .planning/codebase/                # Former generated maps (superseded by this doc)
@@ -558,8 +558,8 @@ crates (command-line discipline only); the core facade `lib.rs` (~3.3k lines) an
 `lib.rs` (~1.9k lines) still own residual inline tests / cross-module glue; production session
 locks panic on poison (a scaling limit); dictionary lookup is linear and clones large snapshots
 (performance); the userdb store is file-backed (not LevelDB); `SimplifierFilter` is an OpenCC
-approximation. No production `TODO`/`FIXME` markers exist — use `docs/analysis.md`,
-`docs/roadmap.md`, and this doc as the active issue inventory.
+approximation. No production `TODO`/`FIXME` markers exist — use `docs/roadmap.md`
+and this doc as the active issue inventory.
 
 ## 10. Planning Docs
 

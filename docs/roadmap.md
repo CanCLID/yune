@@ -19,7 +19,7 @@ AI-native behavior on top as a separate product milestone.
 
 **Document map**
 - This file — high-level roadmap (what's done, what's next).
-- [`analysis.md`](./analysis.md) — founding architecture decisions.
+- [`analysis.md`](./plans/archive/analysis.md) — founding architecture decisions (archived historical snapshot).
 - [`CONVENTIONS.md`](./CONVENTIONS.md) — architecture, stack, structure, coding/testing conventions, integrations, and current risks (one consolidated reference).
 - [`decisions.md`](./decisions.md) — the consolidated decision log (standing principles + `D-*` entries).
 - [`requirements.md`](./requirements.md) — requirement IDs and their status.
@@ -164,6 +164,4 @@ In priority order:
 
 ## Principles (carried forward)
 
-- **Oracle, not template.** Treat librime as the behavior oracle, but prefer idiomatic Rust, cleaner abstractions, stronger typing, and deterministic tests over cloning librime's internal C++ structure.
-- **Name the behavior.** Before adding a librime-derived mechanism, name the external behavior it protects (user-visible input, frontend ABI, schema/config semantics, or deployed-data compatibility). If it's only an internal librime detail, use a smaller Yune-native design, isolate it behind an adapter, or document a deferral.
-- **Own each slice.** Choose the owning implementation module, matching test module, and librime comparison target before writing a compatibility slice. Keep `lib.rs`/`main.rs` as facades.
+The standing principles that govern all current and future work — librime as oracle not template, name-the-protected-behavior, own-each-slice, AI-native as a separate local-first layer, fixtures before module replacement, deferred plugin ABI, and upstream-first oracle sequencing — have one canonical home: [`decisions.md` → Standing principles](./decisions.md#standing-principles).

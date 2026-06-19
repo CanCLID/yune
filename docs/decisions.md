@@ -30,6 +30,13 @@ Cross-cutting decisions that govern all current and future work:
   as long as the boundary contract is preserved. Preserve librime-*observable
   behavior*, not librime's internal C++ complexity.
 
+- **Name the protected behavior before mirroring librime.** Before adding a
+  librime-derived mechanism, name the external behavior it preserves
+  (user-visible input, frontend ABI, schema/config semantics, or deployed-data
+  compatibility). If it only mirrors a librime implementation detail, prefer a
+  smaller Yune-native design, isolate it behind an adapter, or document an
+  explicit deferral.
+
 - **AI-native input is a separate, local-first, non-blocking, source-labeled
   layer.** LLM assistance is layered as optional candidate providers, rankers,
   context providers, and memory stores with timeout/fallback policy. AI results
@@ -628,7 +635,7 @@ the same `ai_decision` field used by the mock provider; the ABI-backed
 
 ### Initialization notes (process decisions)
 
-**D-INIT-1 - Existing `docs/analysis.md`, `docs/roadmap.md`, and
+**D-INIT-1 - Existing `docs/plans/archive/analysis.md`, `docs/roadmap.md`, and
 `docs/plans/archive/refactor-plan.md` are the retained source context** for the
 now-retired GSD project. Historical `.planning/codebase/` notes were folded into
 the retained docs before `.planning/` was removed. External research was skipped

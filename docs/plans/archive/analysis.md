@@ -1,6 +1,6 @@
 # Yune Initial Analysis
 
-> _Founding analysis, ~2026-04-28 — a historical snapshot of the original direction and reasoning, kept as a record. The founding bets still hold, but the present-tense sections below ("Current Compatibility Progress", "Gaps Against Librime", "Non-Goals For The First Milestone") describe the early project state, not today's. For current status see [`roadmap.md`](./roadmap.md), [`CONVENTIONS.md`](./CONVENTIONS.md), and [`decisions.md`](./decisions.md)._
+> _Founding analysis, ~2026-04-28 — a historical snapshot of the original direction and reasoning, kept as a record. **Archived 2026-06-18** to `docs/plans/archive/`, preserved verbatim as the founding record. The founding bets still hold, but the present-tense sections below ("Current Compatibility Progress", "Gaps Against Librime", "Non-Goals For The First Milestone") describe the early project state, not today's. For current status and the living principles see [`roadmap.md`](../../roadmap.md), [`CONVENTIONS.md`](../../CONVENTIONS.md), and [`decisions.md`](../../decisions.md) (the canonical Standing principles)._
 
 ## Decision
 

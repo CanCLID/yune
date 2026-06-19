@@ -518,10 +518,11 @@ Native packaging can resume only after a named TypeDuck profile ABI surface
 exists (see [section 5](#5-c-abi-rules)). Frontend-host integration tests:
 `tests/frontend_hosts/{native,native_frontends}.rs`.
 
-**OpenCC.** `SimplifierFilter` (`filter/mod.rs`) honors a *limited subset* of librime OpenCC
-config names — `from_opencc_config` maps e.g. `t2s`/`hk2s` (traditional→simplified), `t2tw`
-(traditional→Taiwan). This is a **built-in approximation, not the real OpenCC library**; wired
-during install in `schema_install.rs`.
+**OpenCC.** `SimplifierFilter` (`filter/mod.rs`) honors a focused subset of librime OpenCC
+config names. `t2s` uses checked-in OpenCC `TS*` source dictionaries, `hk2s` runs the
+TypeDuck-required HK reverse stage plus the TS stage from `crates/yune-core/src/opencc/data/`,
+and `t2tw` remains the small built-in Taiwan-variant path. This is still an in-process
+approximation, not the real OpenCC library; wired during install in `schema_install.rs`.
 
 **Other in-process seams:** RIME schema/config/dictionary YAML (the primary compatibility
 boundary, via `serde_yaml` + local helpers); the frontend notification callback
@@ -569,17 +570,17 @@ TypeDuck-Windows/weasel frontend E2E also remains blocked: the pinned fork
 checkout lacked the referenced integration-plan files, and local frontend build
 tools (`msbuild.exe`, `cmake.exe`, etc.) were not on PATH.
 
-**TypeDuck `jyut6ping3` fork-parity arc is active but not complete.** HR-6 added
+**TypeDuck `jyut6ping3` fork-parity arc is active; M16 browser proof remains.** HR-6 added
 oracle coverage for the reverse-lookup `"; "` joiner (`comments.join("; ")` in
 `filter/mod.rs`) and schema-name-in-prompt parity, so those are byte-locked. The
 remaining Cantonese/Jyutping gaps are now tracked by M14-M16, not loose backlog:
-M14 captured TypeDuck-HK/librime `v1.1.2` goldens, M15 implements
-dictionary-driven behavior, and M16 proves it in TypeDuck-Web. Until M15/M16
-land, the five `cantonese_parity` cases remain `#[ignore]`d (options
-`combine_candidates`/`show_full_code`/`enable_sentence`; completion/prediction;
-correction minimal-distance + m-abbreviation; schema-menu hiding; per-entry
-userdb pronunciation), so do not claim TypeDuck-Web fork parity beyond
-fixture-backed capture.
+M14 captured TypeDuck-HK/librime `v1.1.2` goldens, M15 implemented
+dictionary-driven engine behavior, and M16 proves it in TypeDuck-Web. The active
+`cantonese_parity` cases now cover options (`combine_candidates`/`show_full_code`/
+`enable_sentence`), completion, and correction against M14 fixtures. Schema-menu
+hiding and per-entry userdb pronunciation remain documented `#[ignore]` blockers
+for M16/browser evidence, so do not claim full TypeDuck-Web fork parity until the
+browser matrix lands.
 
 **Process-global single RIME service.** Runtime paths, sessions, module pointers, notifications,
 state-label cache, API tables, and switcher registries are process-wide singletons (e.g.
@@ -616,4 +617,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-19 - M13 TypeDuck-Web AI exposure complete; M14 TypeDuck `jyut6ping3` v1.1.2 capture complete; M15/M16 fork-parity implementation/browser validation active; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*
+*Last reviewed: 2026-06-19 - M13 TypeDuck-Web AI exposure complete; M14 TypeDuck `jyut6ping3` v1.1.2 capture complete; M15 dictionary-driven engine parity complete; M16 browser validation active; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*

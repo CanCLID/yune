@@ -45,6 +45,10 @@ pub struct StaticTableTranslator {
     dictionary_exclude: HashSet<String>,
     corrections: Vec<RimeCorrectionEntry>,
     tolerance_rules: Vec<RimeToleranceRule>,
+    combine_candidates: bool,
+    prefix: String,
+    suffix: String,
+    show_full_code: bool,
 }
 
 impl StaticTableTranslator {
@@ -81,6 +85,10 @@ impl StaticTableTranslator {
             dictionary_exclude: HashSet::new(),
             corrections: Vec::new(),
             tolerance_rules: Vec::new(),
+            combine_candidates: false,
+            prefix: String::new(),
+            suffix: String::new(),
+            show_full_code: true,
         }
     }
 
@@ -116,6 +124,10 @@ impl StaticTableTranslator {
             dictionary_exclude: HashSet::new(),
             corrections,
             tolerance_rules,
+            combine_candidates: false,
+            prefix: String::new(),
+            suffix: String::new(),
+            show_full_code: true,
         }
     }
 
@@ -183,6 +195,25 @@ impl StaticTableTranslator {
     }
 
     #[must_use]
+    pub fn with_combine_candidates(mut self, combine_candidates: bool) -> Self {
+        self.combine_candidates = combine_candidates;
+        self
+    }
+
+    #[must_use]
+    pub fn with_affix(mut self, prefix: impl Into<String>, suffix: impl Into<String>) -> Self {
+        self.prefix = prefix.into();
+        self.suffix = suffix.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_show_full_code(mut self, show_full_code: bool) -> Self {
+        self.show_full_code = show_full_code;
+        self
+    }
+
+    #[must_use]
     pub fn with_corrections(
         mut self,
         corrections: impl IntoIterator<Item = RimeCorrectionEntry>,
@@ -210,8 +241,16 @@ impl StaticTableTranslator {
         self
     }
 
-    fn lookup_code<'a>(&self, input: &'a str) -> &'a str {
-        input.trim_end_matches(|ch| self.delimiters.contains(ch))
+    fn lookup_code<'a>(&self, input: &'a str) -> Option<&'a str> {
+        let mut code = if self.prefix.is_empty() {
+            input
+        } else {
+            input.strip_prefix(&self.prefix)?
+        };
+        if !self.suffix.is_empty() {
+            code = code.strip_suffix(&self.suffix).unwrap_or(code);
+        }
+        Some(code.trim_end_matches(|ch| self.delimiters.contains(ch)))
     }
 
     fn accepts_default_segment(&self) -> bool {
@@ -256,7 +295,21 @@ impl StaticTableTranslator {
         lookup_code: &str,
     ) -> Candidate {
         let mut candidate = candidate.clone();
-        candidate.comment = self.comment_format.apply(&candidate.comment);
+        let comment_code = if self.show_full_code {
+            candidate.comment.clone()
+        } else if entry_code == lookup_code {
+            String::new()
+        } else {
+            entry_code
+                .strip_prefix(lookup_code)
+                .filter(|suffix| !suffix.is_empty())
+                .map_or_else(|| candidate.comment.clone(), |suffix| format!("~{suffix}"))
+        };
+        candidate.comment = if comment_code.is_empty() {
+            String::new()
+        } else {
+            self.comment_format.apply(&comment_code)
+        };
         candidate.quality = candidate.quality.exp() + self.initial_quality;
         if entry_code != lookup_code {
             candidate.source = CandidateSource::Completion;
@@ -329,10 +382,15 @@ impl StaticTableTranslator {
             return Vec::new();
         }
 
-        let lookup_code = self.lookup_code(input);
+        let Some(lookup_code) = self.lookup_code(input) else {
+            return Vec::new();
+        };
         let expanded_lookup_codes = self.expanded_lookup_codes(lookup_code);
         let mut candidates =
             self.candidates_for_lookup_codes(&expanded_lookup_codes, filter_by_charset);
+        if self.combine_candidates {
+            candidates = combine_duplicate_text_candidates(candidates);
+        }
 
         if candidates.is_empty() && self.enable_sentence {
             if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
@@ -518,6 +576,59 @@ fn entries_by_code(entries: &[(String, Candidate)]) -> BTreeMap<String, Vec<Cand
             .push(candidate.clone());
     }
     indexed
+}
+
+fn combine_duplicate_text_candidates(candidates: Vec<Candidate>) -> Vec<Candidate> {
+    let mut index_by_text = HashMap::<String, usize>::new();
+    let mut combined = Vec::<Candidate>::new();
+    for candidate in candidates {
+        if let Some(index) = index_by_text.get(&candidate.text).copied() {
+            let existing = &mut combined[index];
+            existing.comment = combine_lookup_comments(&existing.comment, &candidate.comment);
+            if candidate.quality > existing.quality {
+                existing.quality = candidate.quality;
+            }
+        } else {
+            index_by_text.insert(candidate.text.clone(), combined.len());
+            combined.push(candidate);
+        }
+    }
+    combined
+}
+
+fn combine_lookup_comments(existing: &str, next: &str) -> String {
+    let (prefix, existing_lookup, had_separator) = split_comment_prefix(existing);
+    let (_, next_lookup, next_had_separator) = split_comment_prefix(next);
+    let mut codes = split_lookup_codes(existing_lookup);
+    for code in split_lookup_codes(next_lookup) {
+        if !codes.iter().any(|existing| existing == &code) {
+            codes.push(code);
+        }
+    }
+    if codes.is_empty() {
+        return existing.to_owned();
+    }
+    if had_separator || next_had_separator || !prefix.is_empty() {
+        format!("{prefix}\u{000c}{}", codes.join(";"))
+    } else {
+        codes.join(";")
+    }
+}
+
+fn split_comment_prefix(comment: &str) -> (&str, &str, bool) {
+    comment
+        .split_once('\u{000c}')
+        .map_or(("", comment, false), |(prefix, lookup)| {
+            (prefix, lookup, true)
+        })
+}
+
+fn split_lookup_codes(comment: &str) -> Vec<String> {
+    comment
+        .split(['\u{000c}', ';', ' ', '\t'])
+        .filter(|code| !code.is_empty())
+        .map(ToOwned::to_owned)
+        .collect()
 }
 
 impl Translator for StaticTableTranslator {

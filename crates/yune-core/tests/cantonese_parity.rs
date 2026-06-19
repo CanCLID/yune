@@ -1,7 +1,7 @@
 use serde_json::Value;
 use yune_core::{
     Candidate, CandidateFilter, CandidateSource, DictionaryLookupFilter, ReverseLookupTranslator,
-    TableDictionary, Translator,
+    StaticTableTranslator, TableDictionary, Translator,
 };
 
 const ORACLE: &str = include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json");
@@ -491,24 +491,197 @@ fn dictionary_yaml_from_fixture_rows(name: &str, rows: &Value) -> String {
     format!("---\nname: {name}\nversion: '0.1'\nsort: original\n...\n\n{rows}\n")
 }
 
+fn dictionary_yaml_from_oracle_comments(name: &str, comments: &[&str]) -> String {
+    let rows = comments
+        .iter()
+        .flat_map(|comment| comment.split('\u{000c}').skip(1))
+        .flat_map(|records| records.split('\r'))
+        .filter_map(|record| {
+            record
+                .strip_prefix("1,")
+                .or_else(|| record.strip_prefix("0,"))
+        })
+        .map(|fields| fields.split(',').collect::<Vec<_>>().join("\t"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!("---\nname: {name}\nversion: '0.1'\nsort: original\n...\n\n{rows}\n")
+}
+
 #[test]
-#[ignore = "blocked: implement Yune option parity against the captured v1.1.2 combine_candidates, show_full_code, and enable_sentence goldens"]
 fn options_combine_candidates_show_full_code_enable_sentence_parity() {
-    panic!(
-        "Yune implementation does not yet pass the captured TypeDuck v1.1.2 option-toggle fixture"
+    let fixture = m14_options_fixture();
+    let form_feed_comment = vec!["xform/^/\u{000c}/".to_owned()];
+    let jyutping_algebra = vec!["derive/\\d//".to_owned()];
+
+    let combined_hou = m14_case(&fixture, "combine_candidates_default", "hou");
+    let separate_hou = m14_case(&fixture, "combine_candidates_separate", "hou");
+    let hou_dictionary =
+        TableDictionary::parse_rime_dict_yaml(&dictionary_yaml_from_oracle_comments(
+            "hou_lookup",
+            &[
+                selected_candidate_comment(combined_hou, 0),
+                selected_candidate_comment(combined_hou, 1),
+            ],
+        ))
+        .expect("M14 hou source rows should parse");
+
+    let combined_translator =
+        StaticTableTranslator::new([("hou2", "好"), ("hou3", "好"), ("hou6", "號")])
+            .with_spelling_algebra(&jyutping_algebra)
+            .with_comment_format(&form_feed_comment)
+            .with_combine_candidates(true);
+    let mut combined_candidates = combined_translator.translate("hou");
+    DictionaryLookupFilter::new(hou_dictionary.clone()).apply(&mut combined_candidates);
+    assert_eq!(
+        combined_candidates[0].text,
+        selected_candidate_text(combined_hou, 0)
+    );
+    assert_eq!(
+        combined_candidates[0].comment,
+        selected_candidate_comment(combined_hou, 0)
+    );
+
+    let separate_translator =
+        StaticTableTranslator::new([("hou2", "好"), ("hou3", "好"), ("hou6", "號")])
+            .with_spelling_algebra(&jyutping_algebra)
+            .with_comment_format(&form_feed_comment)
+            .with_combine_candidates(false);
+    let mut separate_candidates = separate_translator.translate("hou");
+    DictionaryLookupFilter::new(hou_dictionary).apply(&mut separate_candidates);
+    assert_eq!(
+        separate_candidates[0].comment,
+        selected_candidate_comment(separate_hou, 0)
+    );
+    assert_eq!(
+        separate_candidates[1].comment,
+        selected_candidate_comment(separate_hou, 1)
+    );
+
+    let cangjie_formulas = vec![
+        "xform/^/\u{000b}/".to_owned(),
+        "xlit|abcdefghijklmnopqrstuvwxyz~|日月金木水火土竹戈十大中一弓人心手口尸廿山女田難卜符～|"
+            .to_owned(),
+    ];
+    let full_code_off = m14_case(&fixture, "show_full_code_default", "`cam");
+    let full_code_on = m14_case(&fixture, "show_full_code_enabled", "`cam");
+    let cangjie_dictionary =
+        TableDictionary::parse_rime_dict_yaml(&dictionary_yaml_from_oracle_comments(
+            "cangjie_lookup",
+            &[
+                selected_candidate_comment(full_code_off, 0),
+                selected_candidate_comment(full_code_off, 1),
+            ],
+        ))
+        .expect("M14 cangjie source rows should parse");
+
+    let short_code_translator = StaticTableTranslator::new([("am", "旦"), ("amd", "旴")])
+        .with_completion(true)
+        .with_affix("`c", ";")
+        .with_show_full_code(false)
+        .with_comment_format(&cangjie_formulas);
+    let mut short_code_candidates = short_code_translator.translate("`cam");
+    DictionaryLookupFilter::new(cangjie_dictionary.clone()).apply(&mut short_code_candidates);
+    assert_eq!(
+        short_code_candidates[0].comment,
+        selected_candidate_comment(full_code_off, 0)
+    );
+    assert_eq!(
+        short_code_candidates[1].comment,
+        selected_candidate_comment(full_code_off, 1)
+    );
+
+    let full_code_translator = StaticTableTranslator::new([("am", "旦"), ("amd", "旴")])
+        .with_completion(true)
+        .with_affix("`c", ";")
+        .with_show_full_code(true)
+        .with_comment_format(&cangjie_formulas);
+    let mut full_code_candidates = full_code_translator.translate("`cam");
+    DictionaryLookupFilter::new(cangjie_dictionary).apply(&mut full_code_candidates);
+    assert_eq!(
+        full_code_candidates[0].comment,
+        selected_candidate_comment(full_code_on, 0)
+    );
+    assert_eq!(
+        full_code_candidates[1].comment,
+        selected_candidate_comment(full_code_on, 1)
+    );
+
+    let sentence = m14_case(&fixture, "enable_sentence_default", "ngohaigo");
+    let sentence_dictionary =
+        TableDictionary::parse_rime_dict_yaml(&dictionary_yaml_from_oracle_comments(
+            "sentence_lookup",
+            &[selected_candidate_comment(sentence, 0)],
+        ))
+        .expect("M14 sentence source rows should parse");
+    let sentence_translator = StaticTableTranslator::new([("ngo5hai6", "我係"), ("go3", "個")])
+        .with_spelling_algebra(&jyutping_algebra)
+        .with_sentence(true);
+    let mut sentence_candidates = sentence_translator.translate("ngohaigo");
+    DictionaryLookupFilter::new(sentence_dictionary).apply(&mut sentence_candidates);
+    assert_eq!(
+        sentence_candidates[0].text,
+        selected_candidate_text(sentence, 0)
+    );
+    assert_eq!(
+        sentence_candidates[0].comment,
+        selected_candidate_comment(sentence, 0)
     );
 }
 
 #[test]
-#[ignore = "blocked: implement Yune completion/prediction parity against the captured v1.1.2 goldens"]
 fn completion_prediction_and_enable_completion_parity() {
-    panic!("Yune implementation does not yet pass the captured TypeDuck v1.1.2 completion/prediction fixture");
+    let fixture = m14_completion_correction_fixture();
+    let completion_ne = m14_case(&fixture, "completion_default", "ne");
+    let dictionary = TableDictionary::parse_rime_dict_yaml(&dictionary_yaml_from_oracle_comments(
+        "completion_lookup",
+        &[selected_candidate_comment(completion_ne, 0)],
+    ))
+    .expect("M14 completion source rows should parse");
+    let translator = StaticTableTranslator::from_dictionary(dictionary.clone())
+        .with_spelling_algebra(&["derive/\\d//".to_owned()])
+        .with_comment_format(&["xform/^/\u{000c}/".to_owned()]);
+
+    let mut candidates = translator.translate("ne");
+    DictionaryLookupFilter::new(dictionary).apply(&mut candidates);
+
+    assert_eq!(candidates.len(), candidate_count(completion_ne));
+    assert_eq!(
+        candidates[0].text,
+        selected_candidate_text(completion_ne, 0)
+    );
+    assert_eq!(
+        candidates[0].comment,
+        selected_candidate_comment(completion_ne, 0)
+    );
 }
 
 #[test]
-#[ignore = "blocked: implement Yune correction parity against the captured v1.1.2 minimal-distance and m-abbreviation goldens"]
 fn correction_minimal_distance_and_m_abbreviation_parity() {
-    panic!("Yune implementation does not yet pass the captured TypeDuck v1.1.2 correction fixture");
+    let fixture = m14_completion_correction_fixture();
+    let correction_enabled = m14_case(&fixture, "correction_enabled", "nri");
+    let dictionary = TableDictionary::parse_rime_dict_yaml(&dictionary_yaml_from_oracle_comments(
+        "correction_lookup",
+        &[selected_candidate_comment(correction_enabled, 0)],
+    ))
+    .expect("M14 correction source rows should parse");
+    let translator = StaticTableTranslator::from_dictionary(dictionary.clone())
+        .with_spelling_algebra(&[
+            "derive/\\d//".to_owned(),
+            "derive/^nei$/nri/correction".to_owned(),
+        ])
+        .with_comment_format(&["xform/^/\u{000c}/".to_owned()]);
+
+    let mut candidates = translator.translate("nri");
+    DictionaryLookupFilter::new(dictionary).apply(&mut candidates);
+
+    assert_eq!(
+        candidates[0].text,
+        selected_candidate_text(correction_enabled, 0)
+    );
+    assert_eq!(
+        candidates[0].comment,
+        selected_candidate_comment(correction_enabled, 0)
+    );
 }
 
 #[test]

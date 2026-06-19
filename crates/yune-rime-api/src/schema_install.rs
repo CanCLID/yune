@@ -184,6 +184,24 @@ fn install_schema_dictionary_translator_from_config(
             enable_completion = enable_word_completion;
         }
     }
+    let combine_candidates =
+        find_config_value(schema_config, &format!("{name_space}/combine_candidates"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(matches!(
+                component_name,
+                "script_translator" | "r10n_translator"
+            ));
+    let prefix = find_config_value(schema_config, &format!("{name_space}/prefix"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let suffix = find_config_value(schema_config, &format!("{name_space}/suffix"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let has_affix = !prefix.is_empty();
+    let show_full_code = find_config_value(schema_config, &format!("{name_space}/show_full_code"))
+        .or_else(|| find_config_value(schema_config, "show_full_code/show_full_code"))
+        .and_then(config_scalar_bool)
+        .unwrap_or(!has_affix);
     let delimiters = find_config_value(schema_config, &format!("{name_space}/delimiter"))
         .or_else(|| find_config_value(schema_config, "speller/delimiter"))
         .and_then(config_scalar_string)
@@ -209,7 +227,10 @@ fn install_schema_dictionary_translator_from_config(
             .with_tags(tags)
             .with_initial_quality(initial_quality)
             .with_comment_format(&comment_format)
-            .with_dictionary_exclude(dictionary_exclude),
+            .with_dictionary_exclude(dictionary_exclude)
+            .with_combine_candidates(combine_candidates)
+            .with_affix(prefix, suffix)
+            .with_show_full_code(show_full_code),
     );
 }
 

@@ -202,6 +202,101 @@ ni1,2,0,,oth,ver,,,this,,,this,,,,\t{}\n",
 }
 
 #[test]
+fn dictionary_lookup_filter_marks_combined_lookup_codes_as_primary() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: typeduck_lookup
+version: "0.1"
+sort: original
+columns: [text, code, weight, stem, source, english]
+...
+
+好	hou2	1	0	adj	good; very
+好	hou3	2	0	v	like
+"#,
+    )
+    .expect("dictionary lookup rows should parse");
+    let filter = DictionaryLookupFilter::new(dictionary);
+
+    let mut candidates = vec![Candidate {
+        text: "好".to_owned(),
+        comment: "\u{000c}hou2;hou3".to_owned(),
+        source: CandidateSource::Table,
+        quality: 1.0,
+    }];
+    filter.apply(&mut candidates);
+
+    assert_eq!(
+        candidates[0].comment,
+        "\u{000c}\r1,好,hou2,1,0,adj,good; very\r1,好,hou3,2,0,v,like"
+    );
+}
+
+#[test]
+fn dictionary_lookup_filter_preserves_side_lookup_comment_prefix() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: typeduck_lookup
+version: "0.1"
+sort: original
+...
+
+旴	heoi1	1	0	rare
+"#,
+    )
+    .expect("dictionary lookup rows should parse");
+    let filter = DictionaryLookupFilter::new(dictionary);
+
+    let mut candidates = vec![Candidate {
+        text: "旴".to_owned(),
+        comment: "\u{000b}～木".to_owned(),
+        source: CandidateSource::Completion,
+        quality: -1.0,
+    }];
+    filter.apply(&mut candidates);
+
+    assert_eq!(
+        candidates[0].comment,
+        "\u{000b}～木\u{000c}\r1,旴,heoi1,1,0,rare"
+    );
+}
+
+#[test]
+fn dictionary_lookup_filter_expands_sentence_candidates_into_segment_records() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: typeduck_sentence_lookup
+version: "0.1"
+sort: original
+columns: [text, code, weight, stem, source, english]
+...
+
+我係個	ngo5hai6go3	1	0	composition
+我係	ngo5hai6	1	0	oth	I am
+個	go3	1	0	mw	item of
+"#,
+    )
+    .expect("dictionary lookup rows should parse");
+    let filter = DictionaryLookupFilter::new(dictionary);
+
+    let mut candidates = vec![Candidate {
+        text: "我係個".to_owned(),
+        comment: " ☯ ".to_owned(),
+        source: CandidateSource::Sentence,
+        quality: 1.0,
+    }];
+    filter.apply(&mut candidates);
+
+    assert_eq!(
+        candidates[0].comment,
+        "\u{000c}\r1,我係個,ngo5hai6go3,1,0,composition\r1,我係,ngo5hai6,1,0,oth,I am\r1,個,go3,1,0,mw,item of"
+    );
+}
+
+#[test]
 fn typeduck_lookup_parser_rejects_regular_table_rows() {
     let dictionary_yaml = r#"
 ---
@@ -618,6 +713,61 @@ fn static_table_translator_applies_librime_comment_format() {
 }
 
 #[test]
+fn static_table_translator_combines_duplicate_text_candidates_with_lookup_codes() {
+    let formulas = vec!["xform/^/\u{000c}/".to_owned()];
+    let translator = StaticTableTranslator::new([("hou2", "好"), ("hou3", "好"), ("hou6", "號")])
+        .with_spelling_algebra(&["derive/\\d//".to_owned()])
+        .with_combine_candidates(true)
+        .with_comment_format(&formulas);
+
+    let candidates = translator.translate("hou");
+
+    let texts = candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    let comments = candidates
+        .iter()
+        .map(|candidate| candidate.comment.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(texts, ["好", "號"]);
+    assert_eq!(comments, ["\u{000c}hou2;hou3", "\u{000c}hou6"]);
+}
+
+#[test]
+fn static_table_translator_supports_affix_lookup_and_cangjie_short_code_comments() {
+    let formulas = vec![
+        "xform/^/\u{000b}/".to_owned(),
+        "xlit|abcdefghijklmnopqrstuvwxyz~|日月金木水火土竹戈十大中一弓人心手口尸廿山女田難卜符～|"
+            .to_owned(),
+    ];
+
+    let short_code = StaticTableTranslator::new([("am", "旦"), ("amd", "旴")])
+        .with_completion(true)
+        .with_affix("`c", ";")
+        .with_show_full_code(false)
+        .with_comment_format(&formulas);
+    let short_candidates = short_code.translate("`cam");
+    let short_comments = short_candidates
+        .iter()
+        .map(|candidate| candidate.comment.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(short_comments, ["", "\u{000b}～木"]);
+
+    let full_code = StaticTableTranslator::new([("am", "旦"), ("amd", "旴")])
+        .with_completion(true)
+        .with_affix("`c", ";")
+        .with_show_full_code(true)
+        .with_comment_format(&formulas);
+    let full_candidates = full_code.translate("`cam");
+    let full_comments = full_candidates
+        .iter()
+        .map(|candidate| candidate.comment.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(full_comments, ["\u{000b}日一", "\u{000b}日一木"]);
+}
+
+#[test]
 fn static_table_translator_applies_librime_dictionary_exclude() {
     let mut engine = Engine::new();
     engine.add_translator(
@@ -813,6 +963,24 @@ fn simplifier_filter_honors_librime_opencc_config() {
         .map(|candidate| candidate.text.as_str())
         .collect::<Vec<_>>();
     assert_eq!(texts, ["臺灣", "裡", "tw"]);
+}
+
+#[test]
+fn simplifier_filter_uses_opencc_hk2s_source_data() {
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("hk", "枱粧一口吃個")]));
+    engine.add_filter(
+        SimplifierFilter::new()
+            .with_option_name("zh_hans")
+            .with_opencc_config("hk2s.json"),
+    );
+
+    engine
+        .process_key_sequence("hk")
+        .expect("keys should parse");
+    engine.set_option("zh_hans", true);
+
+    assert_eq!(engine.context().candidates[0].text, "台妆一口吃个");
 }
 
 #[test]

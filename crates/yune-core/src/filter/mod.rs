@@ -2,7 +2,10 @@ use super::{
     Candidate, CandidateFilter, CandidateSource, CommentFormat, Context, DictionaryLookupRecord,
     TableDictionary,
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::OnceLock,
+};
 
 pub struct UniquifierFilter;
 
@@ -79,36 +82,105 @@ impl DictionaryLookupFilter {
     }
 
     fn comment_for_candidate(&self, candidate: &Candidate) -> Option<String> {
+        if candidate.source == CandidateSource::Sentence {
+            if let Some(records) = self.sentence_lookup_records(&candidate.text) {
+                let mut comment = String::new();
+                comment.push('\u{000c}');
+                for record in records {
+                    append_dictionary_lookup_record(&mut comment, true, record);
+                }
+                return Some(comment);
+            }
+        }
+
         let records = self.records_by_text.get(&candidate.text)?;
         if records.is_empty() {
             return None;
         }
 
-        let (comment_prefix, lookup_comment) = candidate
-            .comment
-            .split_once('\u{000c}')
-            .map_or(("", candidate.comment.as_str()), |(prefix, comment)| {
-                (prefix, comment)
-            });
-        let lookup_code = lookup_comment
-            .split('\u{000c}')
-            .next()
-            .unwrap_or_default()
-            .replace([';', ' '], "");
-        let primary_index = records
+        let (comment_prefix, lookup_comment) = dictionary_lookup_comment_parts(&candidate.comment);
+        let lookup_codes = split_lookup_codes(lookup_comment);
+        let primary_indices = records
             .iter()
-            .position(|record| !lookup_code.is_empty() && record.code == lookup_code)
-            .unwrap_or(0);
+            .enumerate()
+            .filter_map(|(index, record)| lookup_codes.contains(&record.code).then_some(index))
+            .collect::<Vec<_>>();
         let mut comment = String::from(comment_prefix);
         comment.push('\u{000c}');
-        append_dictionary_lookup_record(&mut comment, true, &records[primary_index]);
-        for (index, record) in records.iter().enumerate() {
-            if index != primary_index {
+        if primary_indices.is_empty() {
+            append_dictionary_lookup_record(&mut comment, true, &records[0]);
+            for record in records.iter().skip(1) {
                 append_dictionary_lookup_record(&mut comment, false, record);
+            }
+        } else {
+            for index in &primary_indices {
+                append_dictionary_lookup_record(&mut comment, true, &records[*index]);
+            }
+            for (index, record) in records.iter().enumerate() {
+                if !primary_indices.contains(&index) {
+                    append_dictionary_lookup_record(&mut comment, false, record);
+                }
             }
         }
         Some(comment)
     }
+
+    fn sentence_lookup_records(&self, text: &str) -> Option<Vec<&DictionaryLookupRecord>> {
+        let mut records = Vec::new();
+        if let Some(exact_records) = self.records_by_text.get(text) {
+            records.extend(exact_records.iter());
+        }
+
+        let mut cursor = 0;
+        while cursor < text.len() {
+            let Some((prefix_len, prefix_records)) = self.longest_sentence_prefix(text, cursor)
+            else {
+                return (!records.is_empty()).then_some(records);
+            };
+            records.extend(prefix_records.iter());
+            cursor += prefix_len;
+        }
+
+        (!records.is_empty()).then_some(records)
+    }
+
+    fn longest_sentence_prefix(
+        &self,
+        text: &str,
+        cursor: usize,
+    ) -> Option<(usize, &Vec<DictionaryLookupRecord>)> {
+        let boundaries = text[cursor..]
+            .char_indices()
+            .map(|(offset, _)| cursor + offset)
+            .chain(std::iter::once(text.len()))
+            .skip(1)
+            .filter(|end| !(*end == text.len() && cursor == 0))
+            .collect::<Vec<_>>();
+        boundaries.into_iter().rev().find_map(|end| {
+            let prefix = &text[cursor..end];
+            self.records_by_text
+                .get(prefix)
+                .map(|records| (prefix.len(), records))
+        })
+    }
+}
+
+fn dictionary_lookup_comment_parts(comment: &str) -> (&str, &str) {
+    if let Some((prefix, lookup_comment)) = comment.split_once('\u{000c}') {
+        return (prefix, lookup_comment);
+    }
+    if comment.starts_with('\u{000b}') {
+        return (comment, "");
+    }
+    ("", comment)
+}
+
+fn split_lookup_codes(comment: &str) -> HashSet<String> {
+    comment
+        .split(['\u{000c}', ';', ' ', '\t'])
+        .filter(|code| !code.is_empty())
+        .map(ToOwned::to_owned)
+        .collect()
 }
 
 impl CandidateFilter for DictionaryLookupFilter {
@@ -231,6 +303,7 @@ pub struct SimplifierFilter {
 enum SimplifierConversion {
     None,
     TraditionalToSimplified,
+    HongKongToSimplified,
     SimplifiedToTraditional,
     TraditionalToTaiwan,
     SimplifiedToTaiwan,
@@ -327,7 +400,8 @@ impl SimplifierConversion {
             .to_ascii_lowercase();
         let config_stem = config_name.strip_suffix(".json").unwrap_or(&config_name);
         match config_stem {
-            "" | "t2s" | "hk2s" => Self::TraditionalToSimplified,
+            "" | "t2s" => Self::TraditionalToSimplified,
+            "hk2s" => Self::HongKongToSimplified,
             "s2t" => Self::SimplifiedToTraditional,
             "t2tw" => Self::TraditionalToTaiwan,
             "s2tw" => Self::SimplifiedToTaiwan,
@@ -342,6 +416,7 @@ impl SimplifierConversion {
         match self {
             Self::None => text.to_owned(),
             Self::TraditionalToSimplified => simplify_traditional_text(text),
+            Self::HongKongToSimplified => simplify_hong_kong_text(text),
             Self::SimplifiedToTraditional => traditionalize_simplified_text(text),
             Self::TraditionalToTaiwan => traditional_to_taiwan_text(text),
             Self::SimplifiedToTaiwan => {
@@ -407,124 +482,193 @@ impl CandidateFilter for SimplifierFilter {
     }
 }
 
-fn simplify_traditional_text(text: &str) -> String {
-    text.chars().map(simplify_traditional_char).collect()
+const HK_VARIANTS: &str = include_str!("../opencc/data/HKVariants.txt");
+const HK_VARIANTS_REV_PHRASES: &str = include_str!("../opencc/data/HKVariantsRevPhrases.txt");
+const TS_CHARACTERS: &str = include_str!("../opencc/data/TSCharacters.txt");
+const TS_PHRASES: &str = include_str!("../opencc/data/TSPhrases.txt");
+
+static HK2S_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
+static T2S_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
+static S2T_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
+
+#[derive(Default)]
+struct OpenCcStage {
+    phrases: HashMap<String, String>,
+    chars: HashMap<char, String>,
+    max_phrase_chars: usize,
 }
 
-fn simplify_traditional_char(ch: char) -> char {
-    match ch {
-        '臺' | '檯' | '颱' => '台',
-        '灣' => '湾',
-        '龍' => '龙',
-        '風' => '风',
-        '雲' => '云',
-        '馬' => '马',
-        '門' => '门',
-        '車' => '车',
-        '書' => '书',
-        '學' => '学',
-        '國' => '国',
-        '語' => '语',
-        '體' => '体',
-        '電' => '电',
-        '腦' => '脑',
-        '麵' => '面',
-        '裏' | '裡' => '里',
-        '後' => '后',
-        '萬' => '万',
-        '與' => '与',
-        '為' => '为',
-        '會' => '会',
-        '個' => '个',
-        '們' => '们',
-        '來' => '来',
-        '時' => '时',
-        '對' => '对',
-        '說' => '说',
-        '這' => '这',
-        '還' => '还',
-        '過' => '过',
-        '\u{934b}' => '\u{9505}',
-        '開' => '开',
-        '關' => '关',
-        '見' => '见',
-        '長' => '长',
-        '發' => '发',
-        '頭' => '头',
-        '東' => '东',
-        '廣' => '广',
-        '愛' => '爱',
-        '氣' => '气',
-        '無' => '无',
-        '點' => '点',
-        '話' => '话',
-        '機' => '机',
-        '樂' => '乐',
-        '貓' => '猫',
-        '鳥' => '鸟',
-        '魚' => '鱼',
-        _ => ch,
+struct OpenCcChain {
+    stages: Vec<OpenCcStage>,
+}
+
+impl OpenCcChain {
+    fn convert(&self, text: &str) -> String {
+        self.stages
+            .iter()
+            .fold(text.to_owned(), |converted, stage| {
+                stage.convert(&converted)
+            })
     }
+}
+
+impl OpenCcStage {
+    fn convert(&self, text: &str) -> String {
+        let mut converted = String::new();
+        let mut cursor = 0;
+        while cursor < text.len() {
+            if let Some((matched_len, replacement)) = self.longest_phrase_match(text, cursor) {
+                converted.push_str(replacement);
+                cursor += matched_len;
+                continue;
+            }
+            let Some(ch) = text[cursor..].chars().next() else {
+                break;
+            };
+            if let Some(replacement) = self.chars.get(&ch) {
+                converted.push_str(replacement);
+            } else {
+                converted.push(ch);
+            }
+            cursor += ch.len_utf8();
+        }
+        converted
+    }
+
+    fn longest_phrase_match<'a>(
+        &'a self,
+        text: &'a str,
+        cursor: usize,
+    ) -> Option<(usize, &'a str)> {
+        if self.max_phrase_chars == 0 {
+            return None;
+        }
+        let mut boundaries = text[cursor..]
+            .char_indices()
+            .map(|(offset, _)| cursor + offset)
+            .chain(std::iter::once(text.len()))
+            .skip(1)
+            .take(self.max_phrase_chars)
+            .collect::<Vec<_>>();
+        boundaries.reverse();
+        boundaries.into_iter().find_map(|end| {
+            let phrase = &text[cursor..end];
+            self.phrases
+                .get(phrase)
+                .map(|replacement| (phrase.len(), replacement.as_str()))
+        })
+    }
+}
+
+fn simplify_traditional_text(text: &str) -> String {
+    t2s_opencc_chain().convert(text)
+}
+
+fn simplify_hong_kong_text(text: &str) -> String {
+    hk2s_opencc_chain().convert(text)
 }
 
 fn traditionalize_simplified_text(text: &str) -> String {
-    text.chars().map(traditionalize_simplified_char).collect()
+    s2t_opencc_chain().convert(text)
 }
 
-fn traditionalize_simplified_char(ch: char) -> char {
-    match ch {
-        '台' => '臺',
-        '湾' => '灣',
-        '龙' => '龍',
-        '风' => '風',
-        '云' => '雲',
-        '马' => '馬',
-        '门' => '門',
-        '车' => '車',
-        '书' => '書',
-        '学' => '學',
-        '国' => '國',
-        '语' => '語',
-        '体' => '體',
-        '电' => '電',
-        '脑' => '腦',
-        '面' => '麵',
-        '里' => '裏',
-        '后' => '後',
-        '万' => '萬',
-        '与' => '與',
-        '为' => '為',
-        '会' => '會',
-        '个' => '個',
-        '们' => '們',
-        '来' => '來',
-        '时' => '時',
-        '对' => '對',
-        '说' => '說',
-        '这' => '這',
-        '还' => '還',
-        '过' => '過',
-        '\u{9505}' => '\u{934b}',
-        '开' => '開',
-        '关' => '關',
-        '见' => '見',
-        '长' => '長',
-        '发' => '發',
-        '头' => '頭',
-        '东' => '東',
-        '广' => '廣',
-        '爱' => '愛',
-        '气' => '氣',
-        '无' => '無',
-        '点' => '點',
-        '话' => '話',
-        '机' => '機',
-        '乐' => '樂',
-        '猫' => '貓',
-        '鸟' => '鳥',
-        '鱼' => '魚',
-        _ => ch,
+fn hk2s_opencc_chain() -> &'static OpenCcChain {
+    HK2S_OPENCC_CHAIN.get_or_init(|| OpenCcChain {
+        stages: vec![
+            OpenCcStage {
+                phrases: parse_opencc_phrase_map(HK_VARIANTS_REV_PHRASES),
+                chars: parse_reverse_opencc_char_map(HK_VARIANTS),
+                max_phrase_chars: max_opencc_key_chars(HK_VARIANTS_REV_PHRASES),
+            },
+            OpenCcStage {
+                phrases: parse_opencc_phrase_map(TS_PHRASES),
+                chars: parse_opencc_char_map(TS_CHARACTERS),
+                max_phrase_chars: max_opencc_key_chars(TS_PHRASES),
+            },
+        ],
+    })
+}
+
+fn t2s_opencc_chain() -> &'static OpenCcChain {
+    T2S_OPENCC_CHAIN.get_or_init(|| OpenCcChain {
+        stages: vec![OpenCcStage {
+            phrases: parse_opencc_phrase_map(TS_PHRASES),
+            chars: parse_opencc_char_map(TS_CHARACTERS),
+            max_phrase_chars: max_opencc_key_chars(TS_PHRASES),
+        }],
+    })
+}
+
+fn s2t_opencc_chain() -> &'static OpenCcChain {
+    S2T_OPENCC_CHAIN.get_or_init(|| OpenCcChain {
+        stages: vec![OpenCcStage {
+            phrases: HashMap::new(),
+            chars: parse_reverse_opencc_char_map(TS_CHARACTERS),
+            max_phrase_chars: 0,
+        }],
+    })
+}
+
+fn parse_opencc_phrase_map(data: &str) -> HashMap<String, String> {
+    parse_opencc_entries(data)
+        .filter(|(key, _)| key.chars().count() > 1)
+        .map(|(key, value)| (key.to_owned(), value.to_owned()))
+        .collect()
+}
+
+fn parse_opencc_char_map(data: &str) -> HashMap<char, String> {
+    parse_opencc_entries(data)
+        .filter_map(|(key, value)| {
+            let mut key_chars = key.chars();
+            let key = key_chars.next()?;
+            key_chars.next().is_none().then(|| (key, value.to_owned()))
+        })
+        .collect()
+}
+
+fn parse_reverse_opencc_char_map(data: &str) -> HashMap<char, String> {
+    let mut chars = HashMap::new();
+    for (key, values) in parse_opencc_entries_with_values(data) {
+        if key.chars().count() != 1 {
+            continue;
+        }
+        for value in values {
+            let mut value_chars = value.chars();
+            let Some(value_ch) = value_chars.next() else {
+                continue;
+            };
+            if value_chars.next().is_none() {
+                chars.entry(value_ch).or_insert_with(|| key.to_owned());
+            }
+        }
     }
+    chars
+}
+
+fn max_opencc_key_chars(data: &str) -> usize {
+    parse_opencc_entries(data)
+        .map(|(key, _)| key.chars().count())
+        .max()
+        .unwrap_or(0)
+}
+
+fn parse_opencc_entries(data: &str) -> impl Iterator<Item = (&str, &str)> {
+    parse_opencc_entries_with_values(data)
+        .filter_map(|(key, mut values)| values.next().map(|value| (key, value)))
+}
+
+fn parse_opencc_entries_with_values(
+    data: &str,
+) -> impl Iterator<Item = (&str, std::str::SplitWhitespace<'_>)> {
+    data.lines().filter_map(|line| {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            return None;
+        }
+        let mut parts = line.split_whitespace();
+        let key = parts.next()?;
+        Some((key, parts))
+    })
 }
 
 fn traditional_to_taiwan_text(text: &str) -> String {

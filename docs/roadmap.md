@@ -251,16 +251,16 @@ v1.1.2 oracle binary (oracle-measured, non-circular).
 
 ### M15 — Dictionary-driven feature parity
 
-Implement / refine Yune behaviors to pass the M14 goldens. Most have partial
-scaffolding to refine; `combine_candidates` and `show_full_code` are from scratch.
+Complete. Yune's real engine now passes the M14 dictionary-driven goldens without
+adding a language model or changing the upstream ABI.
 
 | # | Work item | State | Notes |
 |---|---|---|---|
-| 0 | `combine_candidates` | Planned | Implement exactly the grouping/dedup the v1.1.2 oracle defines (grouping key, comment shape, order) — do not assume the axis before M14 captures it. From scratch. |
-| 1 | `show_full_code` | Planned | Cangjie preedit algebra for the side-lookup path (from scratch). |
-| 2 | `enable_sentence` | Planned | Refine the existing Viterbi sentence path (`translator/mod.rs` `sentence_candidate`) to match v1.1.2. |
-| 3 | completion + correction | Planned | Improve completion ranking (prefix-search exists) and tune correction/tolerance weights. |
-| 4 | OpenCC `hk2s` data | Planned | Expand the ~60-char built-in simplifier to full `hk2s` coverage (also serves upstream). |
+| 0 | `combine_candidates` | Done | Same-text rows coalesce with multi-primary TypeDuck dictionary comments when `translator/combine_candidates` is enabled; separate mode remains available. |
+| 1 | `show_full_code` | Done | Affix-aware table lookup and cangjie short/full-code comments match the M14 side-lookup fixture. |
+| 2 | `enable_sentence` | Done | Viterbi dictionary sentence candidates plus sentence-aware lookup comments reproduce the `ngohaigo` M14 row. |
+| 3 | completion + correction | Done | Completion/correction fixture paths are active in `cantonese_parity`; correction uses the real spelling-algebra path. |
+| 4 | OpenCC `hk2s` data | Done | `SimplifierFilter` now loads checked-in OpenCC source dictionaries for the `hk2s` chain instead of a hardcoded char slice. |
 
 ### M16 — TypeDuck-Web fork-parity validation
 
@@ -270,7 +270,7 @@ userdb-pronunciation behavior. **Done = TypeDuck-Web is
 fork-like for all captured target behaviors (plus the M13 AI layer), with any
 uncapturable fork-only gap explicitly listed**.
 
-Detail: [`plans/archive/m14-plan-typeduck-v112-golden-capture.md`](./plans/archive/m14-plan-typeduck-v112-golden-capture.md), [`plans/m15-plan-typeduck-dictionary-driven-parity.md`](./plans/m15-plan-typeduck-dictionary-driven-parity.md), and [`plans/m16-plan-typeduck-web-parity-validation.md`](./plans/m16-plan-typeduck-web-parity-validation.md).
+Detail: [`plans/archive/m14-plan-typeduck-v112-golden-capture.md`](./plans/archive/m14-plan-typeduck-v112-golden-capture.md), [`plans/archive/m15-plan-typeduck-dictionary-driven-parity.md`](./plans/archive/m15-plan-typeduck-dictionary-driven-parity.md), and [`plans/m16-plan-typeduck-web-parity-validation.md`](./plans/m16-plan-typeduck-web-parity-validation.md).
 
 ---
 
@@ -297,7 +297,7 @@ and [`plans/m10-reference-typeduck-windows-native-build.md`](./plans/m10-referen
 
 In priority order:
 
-1. **Execute M15–M16 — TypeDuck-Web fork parity (the chosen next arc).** M14 captured the v1.1.2 Cantonese goldens; next implement the dictionary-driven behaviors and prove fork-like Cantonese behavior in the TypeDuck-Web browser E2E. See the M14–M16 milestones above.
+1. **Execute M16 — TypeDuck-Web fork-parity browser validation.** M14 captured the v1.1.2 Cantonese goldens and M15 implemented the dictionary-driven engine paths; next prove fork-like Cantonese behavior in the TypeDuck-Web browser E2E. See the M14–M16 milestones above.
 2. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 3. **Keep M9/M13 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, and default-off M13 AI scenarios.
 4. **Hold Track 2 (M17–M19) lighter until TypeDuck-Web parity is proven.** The upstream language model, prism generation, deployment-write, and breadth schemas advance opportunistically per the scope ledger — not ahead of M14–M16.
@@ -334,7 +334,7 @@ the *Non-goal* column is not a backlog. Standing deferrals also appear in
 | In scope — target-driven, measured | Deferred — implement when a target needs it | Non-goal |
 |---|---|---|
 | `luna_pinyin` core vs upstream `1.17.0` oracle | Grammar / language model (poet / octagram); processor-level punctuation/ascii-punctuation parity | Bit-for-bit parity with librime internals |
-| TypeDuck `jyut6ping3` profile vs `v1.1.2` oracle | Broader OpenCC dictionary coverage beyond the currently covered M12 `zh_hans` slice | librime C++ plugin ABI as a requirement |
+| TypeDuck `jyut6ping3` profile vs `v1.1.2` oracle | Browser/userdb UI evidence after M15 engine parity; broader OpenCC phrase/config breadth beyond the checked-in `hk2s` source chain | librime C++ plugin ABI as a requirement |
 | Common RIME schemas, as breadth (B) is added | Spelling-algebra prism generation; binary-dict / deployment writing | Cloud inference as a hard dependency |
 | AI-native layer (M11) on the compatible base | `contextual_translation`, `unity_table_encoder`, deeper gear coverage | Replacing or altering classic input paths by default |
 

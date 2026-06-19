@@ -218,7 +218,7 @@ off, and disabling AI clears stale staged rows for the current input. This
 supersedes the *Deferred / future* "AI-native frontend exposure" item for the web
 surface only; native frontend exposure remains deferred.
 
-Detail: [`plans/m13-ai-native-frontend-exposure.md`](./plans/m13-ai-native-frontend-exposure.md) (execution plan) and [`plans/ai-native-design.md`](./plans/ai-native-design.md) (architecture).
+Detail: [`plans/archive/m13-ai-native-frontend-exposure.md`](./plans/archive/m13-ai-native-frontend-exposure.md) (execution plan) and [`plans/ai-native-design.md`](./plans/ai-native-design.md) (architecture).
 
 ---
 
@@ -289,7 +289,7 @@ the *Non-goal* column is not a backlog. Standing deferrals also appear in
 ## Deferred / future
 
 - **librime C++ plugin ABI** (Lua, octagram, predict, proto): deferred until a concrete frontend or distribution requires it; prefer Yune-native extension points first.
-- **AI-native input layer (future native/frontend expansion)** - after M13, TypeDuck-Web has a default-off local AI surface with browser safety evidence. Remaining AI-native product integration is exposing equivalent gates in additional real frontends without changing upstream-core, TypeDuck-Web classic behavior, or parked TypeDuck-Windows compatibility behavior. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); CLI evidence lives in [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md), and web exposure evidence lives in [`plans/m13-ai-native-frontend-exposure.md`](./plans/m13-ai-native-frontend-exposure.md) until archived.
+- **AI-native input layer (future native/frontend expansion)** - after M13, TypeDuck-Web has a default-off local AI surface with browser safety evidence. Remaining AI-native product integration is exposing equivalent gates in additional real frontends without changing upstream-core, TypeDuck-Web classic behavior, or parked TypeDuck-Windows compatibility behavior. The architecture remains in [`plans/ai-native-design.md`](./plans/ai-native-design.md); CLI evidence lives in [`plans/archive/ai-native-cli-slice-plan.md`](./plans/archive/ai-native-cli-slice-plan.md), and web exposure evidence lives in [`plans/archive/m13-ai-native-frontend-exposure.md`](./plans/archive/m13-ai-native-frontend-exposure.md).
 
 ## Principles (carried forward)
 

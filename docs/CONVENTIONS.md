@@ -79,11 +79,12 @@ none reach into `yune-core` directly):
    a named TypeDuck profile ABI surface first (see [section 5](#5-c-abi-rules)).
 
 **Direction is upstream-oracle-first.** M9 browser validation is complete,
-M11's core/CLI AI layer is complete, and M12 closed the upstream oracle refresh.
-The current baseline is upstream `rime/librime 1.17.0` for default core behavior.
-M10 TypeDuck-Windows is parked as a TypeDuck compatibility profile until an
-explicit profile surface exists. See `docs/roadmap.md` and
-`docs/plans/archive/upstream-oracle-refresh.md`.
+M11's core/CLI AI layer is complete, and M12 closed the upstream oracle refresh
+plus the first expanded upstream behavioral parity gate. The current baseline is
+upstream `rime/librime 1.17.0` for default core behavior. M10 TypeDuck-Windows
+is parked as a TypeDuck compatibility profile until an explicit profile surface
+exists. See `docs/roadmap.md`, `docs/plans/archive/upstream-oracle-refresh.md`,
+and `docs/plans/m12-upstream-behavioral-parity-closeout.md`.
 
 **Behavior oracle.** The default compatibility oracle is upstream
 `rime/librime 1.17.0` (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`). The
@@ -212,8 +213,13 @@ yune/
 |   |   |   |-- filter/                # Uniquifier, SingleChar, Charset, DictionaryLookup, ...
 |   |   |   `-- tests/                 # Unit tests: engine.rs, filter.rs, translator.rs
 |   |   `-- tests/
+|   |       |-- upstream_luna_pinyin_parity.rs
+|   |       |                          # Oracle parity vs upstream 1.17.0
+|   |       |-- oracle_fixture_provenance.rs
 |   |       |-- cantonese_parity.rs    # Oracle parity vs captured TypeDuck v1.1.2
-|   |       `-- fixtures/typeduck-v1.1.2/  # Captured oracle fixture + provenance README
+|   |       |-- fixtures/upstream-1.17.0/
+|   |       |                          # Captured upstream fixtures + provenance README
+|   |       `-- fixtures/typeduck-v1.1.2/  # Captured TypeDuck profile fixture + README
 |   |-- yune-rime-api/                 # RIME-shaped C ABI crate (rlib + cdylib)
 |   |   |-- benches/frontend_baselines.rs  # [[bench]] (harness = false)
 |   |   |-- tests/                     # Integration tests driving the exported ABI
@@ -407,10 +413,20 @@ npm test  # (in packages/yune-typeduck-runtime) -> vitest run
 from the **external oracle** (upstream librime / TypeDuck fork v1.1.2) into a checked-in
 fixture, then run Yune's **real production path** and assert it reproduces the oracle output.
 **Never derive the expected value from Yune itself.** Canonical example:
-`upstream_luna_pinyin_parity.rs` captures the first upstream `luna_pinyin`
-behavior slice from official `rime/librime 1.17.0`, then feeds the captured
-upstream dictionary/vocabulary rows through Yune's real `TableDictionary` and
-`StaticTableTranslator` path. TypeDuck profile example:
+`upstream_luna_pinyin_parity.rs` uses official upstream `rime/librime 1.17.0`
+release-binary fixtures for `luna_pinyin`. Curated mechanics fixtures feed
+captured upstream dictionary/vocabulary rows through Yune's real
+`TableDictionary` and `StaticTableTranslator` path. Full selection fixtures must
+include every competing upstream dictionary row for the tested code plus
+relevant `essay.txt` rows for every in-scope candidate so ranking cannot
+silently use default/zero essay weights. Any behavior affected by menu state,
+paging, selection, commit, filters, or options must drive Yune's real `Engine`
+path or an equivalent full-pipeline harness; translator-direct output is only
+mechanics coverage. `oracle_fixture_provenance.rs` scans all upstream
+`luna_pinyin` JSON files for oracle identity, schema repository commits, capture
+commands, source-row policies, and absence of local absolute cache paths.
+Unsupported upstream behavior stays as an ignored test with a blocker string and
+`panic!()` body, not as undocumented absence. TypeDuck profile example:
 `cantonese_parity.rs` feeds raw TypeDuck TSV source rows through the real
 `DictionaryLookupFilter` and compares the emitted comment against the golden
 `tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json` (each comment begins with
@@ -523,10 +539,15 @@ browser evidence on every merge. Files: `typeduck_web.rs`,
 `packages/yune-typeduck-runtime/`, `scripts/typeduck-wasm-build.sh`,
 `docs/plans/archive/typeduck-web-validation-plan.md`.
 
-**Upstream latest-stable oracle refresh is complete.** Default core behavior and
-default `RimeApi` follow upstream `rime/librime 1.17.0`. TypeDuck-derived
-fixtures remain profile-only unless separate upstream goldens prove the same
-behavior.
+**Upstream latest-stable behavioral closeout is complete for the first
+`luna_pinyin` gate.** Default core behavior and default `RimeApi` follow
+upstream `rime/librime 1.17.0`. The active gate covers curated single-code
+mechanics, full `ni` dictionary selection with essay weights, Engine
+paging/selection/commit, reverse lookup, punctuation/symbols, and supported
+option paths. `zhongguo` phrase/language-model output, `ascii_punct` processor
+bypass, and punctuation immediate commit remain explicit ignored blockers.
+TypeDuck-derived fixtures remain profile-only unless separate upstream goldens
+prove the same behavior.
 
 **TypeDuck-Windows ABI/package work is parked and not yet proven as a current
 profile.** A pre-M12 package smoke built `rime.dll`/`rime.lib`/headers and
@@ -579,4 +600,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-19 - M12 upstream oracle refresh complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*
+*Last reviewed: 2026-06-19 - M12 upstream behavioral parity closeout complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*

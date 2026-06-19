@@ -32,6 +32,7 @@
     },
     "dictionary": "luna_pinyin.dict.yaml",
     "vocabulary": "essay.txt",
+    "source_row_policy": "curated_oracle_winners",
     "source_dictionary_rows": [
       "中\tzhong",
       "仲\tzhong",

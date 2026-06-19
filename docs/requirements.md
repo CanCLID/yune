@@ -126,18 +126,25 @@ M9 with **GO WITH CONDITIONS** for gated AI-native frontend exposure.
 - [x] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, persistence smoke flows, and dictionary-panel rendering, with PASS evidence recorded from the HR-5 real-assets matrix. Rich dictionary-comment byte parity is committed in `cantonese_parity`; the browser-shaped native rich-comment test is explicitly skipped unless local v1.1.2 oracle build assets are present.
 - [x] **TYPEDUCK-E2E-04**: Integration findings end with a go/no-go recommendation for exposing AI-native behavior through real frontends; HR-7 records **GO WITH CONDITIONS**.
 
-## M12 Upstream Oracle Refresh Requirements
+## M12 Upstream Oracle And Behavioral Parity Requirements
 
 **Status: complete.** Upstream `rime/librime 1.17.0` is the default core
 oracle target. TypeDuck `v1.1.2` remains a compatibility-profile oracle for
 TypeDuck-Web/Windows only. The official upstream Windows MSVC release binary is
-available as the preferred behavioral-capture oracle; local source builds are a
-reproducibility check rather than the primary capture source.
+the behavioral-capture oracle; local source builds are a reproducibility check
+rather than the primary capture source. The expanded closeout keeps unsupported
+language-model and processor-level behavior visible as ignored tests with
+fixture-backed blocker reasons.
 
 - [x] **UPSTREAM-ORACLE-01**: Upstream `rime/librime 1.17.0` and commit `33e78140250125871856cdc5b42ddc6a5fcd3cd4` are pinned as the default core oracle in docs and fixture provenance.
 - [x] **UPSTREAM-ORACLE-02**: Oracle fixture/golden naming distinguishes upstream core fixtures from TypeDuck profile fixtures, e.g. `upstream-1.17.0/` vs `typeduck-v1.1.2/`.
 - [x] **UPSTREAM-AUDIT-01**: Existing compatibility coverage is audited for TypeDuck-only assumptions that should not define core Yune behavior.
 - [x] **TYPEDUCK-PROFILE-01**: TypeDuck-specific ABI, comment, and Cantonese/Jyutping behavior remains documented as profile-only and parked until explicitly resumed.
+- [x] **UPSTREAM-BEHAVIOR-01**: Upstream `luna_pinyin` behavioral fixtures are captured from the official `1.17.0` release binary for curated mechanics, full `ni` selection, action/paging/commit, reverse lookup, punctuation/symbols, and option toggles.
+- [x] **UPSTREAM-BEHAVIOR-02**: Full-dictionary `ni` selection uses every exact-code `luna_pinyin.dict.yaml` row plus relevant `essay.txt` rows for in-scope candidates, with provenance checks preventing default/zero essay-weight ranking.
+- [x] **UPSTREAM-BEHAVIOR-03**: Menu-dependent behavior is compared through Yune's real `Engine` path for paging, numeric selection, space commit, reverse lookup, punctuation, and supported option behavior.
+- [x] **UPSTREAM-BEHAVIOR-04**: Unsupported upstream behavior remains explicit: `zhongguo` phrase/language-model parity, `ascii_punct` processor bypass, and punctuation immediate commit are ignored tests with panic bodies and blocker reasons.
+- [x] **UPSTREAM-BEHAVIOR-05**: `oracle_fixture_provenance` enforces non-circular fixture metadata, source-row policies, schema repository commits, capture commands, and absence of local absolute oracle-cache paths across all upstream `luna_pinyin` fixtures.
 
 ## TypeDuck-Windows Native IME Contract Requirements
 
@@ -193,6 +200,7 @@ Explicitly excluded from the current milestone.
 | Cloud inference as a required dependency | Classic input behavior must remain local-first and predictable |
 | New GUI frontend | Native frontend integration should validate the ABI first; `yune-cli` is only a frontend surrogate |
 | Behavior changes during mechanical refactors | Compatibility work needs measurable, reviewable behavior slices |
+| 100% feature parity with librime internals | The oracle is a behavioral floor, not a feature target; a librime feature is implemented only when a named target schema/frontend needs it (see roadmap "Compatibility goal" and `decisions.md` D-25) |
 
 ## Traceability
 
@@ -257,6 +265,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UPSTREAM-ORACLE-02 | M12 | Complete - fixture naming separates `upstream-1.17.0` and `typeduck-v1.1.2` goldens |
 | UPSTREAM-AUDIT-01 | M12 | Complete - coverage audit captured in `docs/plans/archive/m12-coverage-audit.md` |
 | TYPEDUCK-PROFILE-01 | M12 | Complete - TypeDuck-specific coverage remains profile-only and parked until explicitly resumed |
+| UPSTREAM-BEHAVIOR-01 | M12 | Complete - six official-binary `luna_pinyin` fixture files are checked in under `upstream-1.17.0` |
+| UPSTREAM-BEHAVIOR-02 | M12 | Complete - full `ni` selection fixture includes all exact dictionary rows and candidate essay rows |
+| UPSTREAM-BEHAVIOR-03 | M12 | Complete - active parity tests drive real parser/dictionary/translator/filter/Engine paths |
+| UPSTREAM-BEHAVIOR-04 | M12 | Complete - unsupported phrase/language-model and processor-only gaps are explicit ignored blockers |
+| UPSTREAM-BEHAVIOR-05 | M12 | Complete - provenance test scans all upstream `luna_pinyin` fixtures and source policies |
 | AI-01 | M11 S1 | Complete - staged provider interface in `yune-core` |
 | AI-02 | M11 S2/S5 | Complete - worker/fallback/confidence merge plus local rule-backed provider |
 | AI-03 | M11 S1/S5 | Complete - source-labeled contextual/local completions with no default AI auto-commit |
@@ -270,10 +283,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v2 validation requirements: 7 total
 - TypeDuck-Web integration requirements: 15 total
 - TypeDuck-Windows native IME requirements: 6 total
-- M12 upstream oracle requirements: 4 total, 4 complete
-- Mapped to phases: 64
+- M12 upstream oracle and behavioral parity requirements: 9 total, 9 complete
+- Mapped to phases: 69
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-19 - M12 upstream oracle refresh complete; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*
+*Last updated: 2026-06-19 - M12 upstream behavioral parity closeout complete; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*

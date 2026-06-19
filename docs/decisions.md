@@ -70,6 +70,16 @@ Cross-cutting decisions that govern all current and future work:
   TypeDuck behavior disagree, upstream wins for core Yune; TypeDuck behavior must
   stay behind a named profile test, fixture, adapter, or ABI note.
 
+- **Compatibility is target-driven, not feature-complete.** The oracle is a
+  behavioral *floor*, not a feature checklist. "Done" is always relative to a
+  *named* set of target schemas and frontends that must behave correctly versus
+  the oracle (near-term: the `luna_pinyin` core path and the TypeDuck
+  `jyut6ping3` profile), broadening over time toward common RIME schemas and real
+  frontends. Reproducing every librime gear, plugin, or code path is an explicit
+  **non-goal**; a librime feature is implemented only when a named target needs
+  it (see *Name the protected behavior*). The AI-native layer on top of this
+  compatible base — not parity for its own sake — is the product goal. See D-25.
+
 ## Decision log
 
 ### Foundational decisions (from PROJECT.md Key Decisions and Context/Constraints)
@@ -568,11 +578,36 @@ TypeDuck-Web/Windows profile behavior such as fork-only ABI slots and
 dictionary-panel/Cantonese fork behavior. When upstream and TypeDuck disagree,
 core Yune follows upstream; TypeDuck differences must be isolated behind named
 profile fixtures, tests, adapters, or ABI notes. M12 pinned upstream fixture
-provenance, added the TypeDuck coverage audit, and refreshed default `RimeApi`
-parity to the pinned `rime/librime 1.17.0` target. `start_quick` remains absent
-from the default table. M12 removed the `config_list_append_*` fork-only slots
-from the default upstream table. M10 is therefore parked until a named TypeDuck
-profile ABI surface is implemented.
+provenance, added the TypeDuck coverage audit, refreshed default `RimeApi`
+parity to the pinned `rime/librime 1.17.0` target, and expanded
+`luna_pinyin` behavioral parity fixtures captured from the official upstream
+release binary. Active upstream-core gates now cover curated single-code
+mechanics, full `ni` dictionary selection with essay weights, Engine
+paging/selection/commit, reverse lookup, punctuation/symbols, and supported
+option paths. Phrase/language-model output, `ascii_punct` processor bypass, and
+punctuation immediate commit remain explicit ignored blockers until a named
+target needs those implementation slices. `start_quick` remains absent from the
+default table. M12 removed the `config_list_append_*` fork-only slots from the
+default upstream table. M10 is therefore parked until a named TypeDuck profile
+ABI surface is implemented.
+
+### Compatibility scope (project-wide D-25)
+
+**D-25 / COMPAT-SCOPE — Compatibility is target-driven, not 100% feature parity
+with librime.** Yune treats librime as a behavioral oracle (a floor), not a
+feature target to clone. Success is that a *named* set of target schemas and
+frontends behaves correctly against the oracle, every difference measured and
+either fixed or documented: **(A)** a bounded near-term target set — the
+`luna_pinyin` core path vs upstream `1.17.0` and the TypeDuck `jyut6ping3`
+profile vs `v1.1.2` — as the working definition of "done"; and **(B)** a broader
+common-RIME-schema and real-frontend compatibility ambition, added incrementally
+through the same oracle-measured parity harness. Bit-for-bit parity with librime
+internals (every gear, plugin, and code path) is a non-goal; a librime feature is
+implemented only when a named (A)/(B) target requires it. "The engine is done" is
+therefore never absolute — it reads "the current target set is green against the
+oracle; everything else is deferred-and-documented." Extends D-01 (oracle, not
+template) and D-24 (oracle precedence) with an explicit scope boundary; mirrored
+in `roadmap.md` ("Compatibility goal" + scope ledger). *Outcome: Good.*
 
 ### AI-native milestone (M11)
 
@@ -666,4 +701,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-19 - D-24 now records M12 closeout, upstream default RimeApi parity, and parked TypeDuck-Windows profile ABI/package work.*
+*Last updated: 2026-06-19 - D-24 records M12 upstream behavioral parity closeout and parked TypeDuck-Windows profile ABI/package work; D-25 records the target-driven (not 100% feature-parity) compatibility scope.*

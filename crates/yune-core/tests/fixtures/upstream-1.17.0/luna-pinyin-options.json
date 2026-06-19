@@ -1,0 +1,488 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "capture_date": "2026-06-19",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json"
+  },
+  "schema": "luna_pinyin",
+  "module_list": [
+    "default"
+  ],
+  "scenarios": [
+    {
+      "name": "option_zh_hans_off",
+      "actions": [
+        {
+          "type": "set_option",
+          "option": "zh_hans",
+          "value": 0
+        },
+        {
+          "type": "input",
+          "text": "zhongguo"
+        },
+        {
+          "type": "snapshot",
+          "label": "traditional"
+        }
+      ]
+    },
+    {
+      "name": "option_zh_hans_on",
+      "actions": [
+        {
+          "type": "set_option",
+          "option": "zh_hans",
+          "value": 1
+        },
+        {
+          "type": "input",
+          "text": "zhongguo"
+        },
+        {
+          "type": "snapshot",
+          "label": "simplified"
+        }
+      ]
+    },
+    {
+      "name": "option_zh_hans_single_off",
+      "actions": [
+        {
+          "type": "set_option",
+          "option": "zh_hans",
+          "value": 0
+        },
+        {
+          "type": "input",
+          "text": "guo"
+        },
+        {
+          "type": "snapshot",
+          "label": "traditional_single"
+        }
+      ]
+    },
+    {
+      "name": "option_zh_hans_single_on",
+      "actions": [
+        {
+          "type": "set_option",
+          "option": "zh_hans",
+          "value": 1
+        },
+        {
+          "type": "input",
+          "text": "guo"
+        },
+        {
+          "type": "snapshot",
+          "label": "simplified_single"
+        }
+      ]
+    },
+    {
+      "name": "option_ascii_punct_on",
+      "actions": [
+        {
+          "type": "set_option",
+          "option": "ascii_punct",
+          "value": 1
+        },
+        {
+          "type": "key",
+          "keycode": 46,
+          "mask": 0,
+          "label": "ascii_period"
+        },
+        {
+          "type": "snapshot",
+          "label": "ascii_period_snapshot"
+        }
+      ]
+    },
+    {
+      "name": "option_full_shape_on",
+      "actions": [
+        {
+          "type": "set_option",
+          "option": "full_shape",
+          "value": 1
+        },
+        {
+          "type": "key",
+          "keycode": 47,
+          "mask": 0,
+          "label": "full_shape_slash"
+        },
+        {
+          "type": "snapshot",
+          "label": "full_shape_slash_snapshot"
+        }
+      ]
+    }
+  ],
+  "capture": {
+    "schema_data": "rime/rime-luna-pinyin",
+    "schema_data_commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    },
+    "source_row_policy": "option_action_sequence_oracle_snapshots",
+    "dictionary": "luna_pinyin.dict.yaml",
+    "vocabulary": "essay.txt",
+    "source_dictionary_rows": [
+      "中\tzhong",
+      "仲\tzhong",
+      "你\tni",
+      "呢\tne\t98.97%",
+      "呢\tni\t1.03%",
+      "國\tguo",
+      "好\thao",
+      "尼\tni",
+      "擬\tni",
+      "果\tguo",
+      "泥\tni",
+      "浩\thao",
+      "種\tzhong",
+      "耗\thao",
+      "號\thao",
+      "衆\tzhong",
+      "豪\thao",
+      "過\tguo",
+      "郭\tguo",
+      "重\tchong\t41.55%",
+      "重\tzhong\t58.45%",
+      "鍋\tguo"
+    ],
+    "source_vocabulary_rows": [
+      "中\t243870",
+      "中古\t1110",
+      "中國\t174824",
+      "仲\t4114",
+      "你\t972978",
+      "呢\t242959",
+      "國\t11114",
+      "好\t378951",
+      "尼\t3288",
+      "忠果\t0",
+      "擬\t3654",
+      "果\t5384",
+      "泥\t2738",
+      "浩\t2429",
+      "種\t12344",
+      "種果\t73",
+      "種過\t516",
+      "耗\t1832",
+      "號\t71247",
+      "衆\t3955",
+      "豪\t2416",
+      "過\t112999",
+      "郭\t5243",
+      "重\t11822",
+      "鍋\t2726"
+    ],
+    "punctuation_entries": {
+      "half_shape": [
+        [
+          ".",
+          "。"
+        ],
+        [
+          "/",
+          "、"
+        ]
+      ],
+      "full_shape": [
+        [
+          ".",
+          "。"
+        ],
+        [
+          "/",
+          "／"
+        ]
+      ],
+      "symbols": [
+        [
+          "/fh",
+          "©"
+        ],
+        [
+          "/fh",
+          "®"
+        ],
+        [
+          "/fh",
+          "℗"
+        ],
+        [
+          "/fh",
+          "℠"
+        ],
+        [
+          "/fh",
+          "™"
+        ]
+      ]
+    }
+  },
+  "snapshots": [
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "option_zh_hans_off",
+      "label": "traditional",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 9,
+      "cursor_pos": 9,
+      "preedit": "zhong guo",
+      "commit_text_preview": "中國",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "中國",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "種過",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "種果",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "忠果",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "中古",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "option_zh_hans_on",
+      "label": "simplified",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 9,
+      "cursor_pos": 9,
+      "preedit": "zhong guo",
+      "commit_text_preview": "中国",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "中国",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "种过",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "种果",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "忠果",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "中古",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "option_zh_hans_single_off",
+      "label": "traditional_single",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 3,
+      "cursor_pos": 3,
+      "preedit": "guo",
+      "commit_text_preview": "過",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "過",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "國",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "果",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "郭",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "鍋",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "option_zh_hans_single_on",
+      "label": "simplified_single",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 3,
+      "cursor_pos": 3,
+      "preedit": "guo",
+      "commit_text_preview": "过",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "过",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "国",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "果",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "郭",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "锅",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "option_ascii_punct_on",
+      "label": "ascii_period_snapshot",
+      "is_composing": false,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": true,
+      "composition_length": 0,
+      "cursor_pos": 0,
+      "preedit": null,
+      "commit_text_preview": null,
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": []
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "option_full_shape_on",
+      "label": "full_shape_slash_snapshot",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": true,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 3,
+      "cursor_pos": 3,
+      "preedit": "／",
+      "commit_text_preview": "／",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "／",
+          "comment": "〔全角〕"
+        },
+        {
+          "index": 1,
+          "text": "÷",
+          "comment": null
+        }
+      ]
+    }
+  ]
+}

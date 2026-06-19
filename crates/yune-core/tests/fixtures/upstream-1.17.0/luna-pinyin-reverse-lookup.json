@@ -1,0 +1,221 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "capture_date": "2026-06-19",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json"
+  },
+  "schema": "luna_pinyin",
+  "module_list": [
+    "default"
+  ],
+  "scenarios": [
+    {
+      "name": "reverse_lookup_h",
+      "actions": [
+        {
+          "type": "input",
+          "text": "`h"
+        },
+        {
+          "type": "snapshot",
+          "label": "prefix_h"
+        }
+      ]
+    },
+    {
+      "name": "reverse_lookup_hs",
+      "actions": [
+        {
+          "type": "input",
+          "text": "`hs"
+        },
+        {
+          "type": "snapshot",
+          "label": "prefix_hs"
+        }
+      ]
+    },
+    {
+      "name": "reverse_lookup_no_result",
+      "actions": [
+        {
+          "type": "input",
+          "text": "`q"
+        },
+        {
+          "type": "snapshot",
+          "label": "no_result"
+        }
+      ]
+    }
+  ],
+  "capture": {
+    "schema_data": "rime/rime-luna-pinyin",
+    "schema_data_commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    },
+    "source_row_policy": "curated_reverse_lookup_rows",
+    "reverse_lookup_dictionary": "stroke.dict.yaml",
+    "reverse_lookup_prefix": "`",
+    "reverse_lookup_suffix": "'",
+    "source_stroke_rows": [
+      "一\th",
+      "丁\thz",
+      "丅\ths",
+      "二\thh",
+      "十\ths",
+      "𠃍\ths",
+      "丁\ths",
+      "𠃍\tz",
+      "㇀\th",
+      "𘠀\th",
+      "𘠌\ths",
+      "𘬁\th"
+    ],
+    "source_stroke_vocabulary_rows": [
+      "一\t135314",
+      "丁\t4862",
+      "丅\t671",
+      "二\t21289",
+      "十\t6899"
+    ],
+    "source_reverse_comment_rows": [
+      "一\tyi",
+      "丁\tding\t99.93%",
+      "丁\tzheng\t0.07%",
+      "丅\txia",
+      "二\ter",
+      "十\tshi"
+    ]
+  },
+  "snapshots": [
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "reverse_lookup_h",
+      "label": "prefix_h",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 16,
+      "cursor_pos": 4,
+      "preedit": "`一〔筆畫〕",
+      "commit_text_preview": "一",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "一",
+          "comment": "yi"
+        },
+        {
+          "index": 1,
+          "text": "㇀",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "𘠀",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "𘬁",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "二",
+          "comment": "er"
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "reverse_lookup_hs",
+      "label": "prefix_hs",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 19,
+      "cursor_pos": 7,
+      "preedit": "`一丨〔筆畫〕",
+      "commit_text_preview": "十",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "十",
+          "comment": "shi"
+        },
+        {
+          "index": 1,
+          "text": "丁",
+          "comment": "ding zheng"
+        },
+        {
+          "index": 2,
+          "text": "丅",
+          "comment": "xia"
+        },
+        {
+          "index": 3,
+          "text": "𠃍",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "𘠌",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "scenario": "reverse_lookup_no_result",
+      "label": "no_result",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 14,
+      "cursor_pos": 2,
+      "preedit": "`q〔筆畫〕",
+      "commit_text_preview": "`q",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": []
+    }
+  ]
+}

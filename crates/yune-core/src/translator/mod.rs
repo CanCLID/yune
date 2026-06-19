@@ -644,6 +644,7 @@ impl Translator for ReverseLookupTranslator {
         } else {
             0
         };
+        let has_prefix = start > 0;
         let mut code = &input[start..];
         if !self.suffix.is_empty() && code.ends_with(&self.suffix) {
             code = &code[..code.len() - self.suffix.len()];
@@ -669,11 +670,16 @@ impl Translator for ReverseLookupTranslator {
                     .filter(|comments| !comments.is_empty())
                     .map(|comments| self.comment_format.apply(&comments.join("; ")))
                     .unwrap_or_else(|| entry.code.clone());
+                let quality = if self.enable_completion && has_prefix && entry.code == code {
+                    entry.weight + 1_000_000.0
+                } else {
+                    entry.weight
+                };
                 Candidate {
                     text: entry.text.clone(),
                     comment,
                     source: CandidateSource::ReverseLookup,
-                    quality: entry.weight,
+                    quality,
                 }
             })
             .collect()

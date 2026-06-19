@@ -50,6 +50,9 @@ M12 behavioral closeout is complete when all of these are true:
 - At least one single-code fixture proves full dictionary selection:
   - start with `ni`;
   - extract every upstream `luna_pinyin.dict.yaml` row whose code is exactly `ni`;
+  - extract relevant `essay.txt` vocabulary rows for every in-scope candidate
+    character or term so ranking cannot fall back to default or zero essay
+    weights;
   - feed that complete competing row set into Yune;
   - assert Yune selects and orders the same page-one candidates captured from upstream.
 - Curated source-row fixtures are explicitly labeled as mechanics fixtures, not full behavior-selection fixtures.
@@ -66,7 +69,9 @@ M12 behavioral closeout is complete when all of these are true:
   - schema repository commits,
   - capture command,
   - input/action sequence,
-  - source-row policy, such as `curated_oracle_winners` or `all_rows_for_exact_code`,
+  - source-row policy, such as `curated_oracle_winners`,
+    `all_rows_for_exact_code`, or
+    `all_rows_for_exact_code_plus_relevant_essay_rows`,
   - generation timestamp or session date.
 - Docs reflect the final state:
   - `docs/roadmap.md` marks the expanded M12 behavioral closeout as finished,
@@ -99,7 +104,8 @@ M12 behavioral closeout is complete when all of these are true:
   - schema parsing,
   - table dictionary loading,
   - static table translation,
-  - full-dictionary selection from all matching source rows for at least one code,
+  - full-dictionary selection from all matching source rows and relevant essay
+    vocabulary rows for at least one code,
   - full engine/context execution for menu-dependent behavior,
   - reverse lookup translation,
   - punctuation translation,
@@ -273,6 +279,9 @@ rg -n "zhongguo|reverse_lookup|punct|Page|page|select_candidate|commit|set_optio
 - [ ] Add a fixture case named `single_code_ni_full_dictionary_selection`.
 - [ ] Capture upstream's page-one candidates for input `ni` from the official upstream oracle.
 - [ ] Extract source rows from pinned `rime-luna-pinyin/luna_pinyin.dict.yaml` by code, not by candidate text.
+- [ ] Extract vocabulary rows from pinned `rime-essay/essay.txt` for every
+  in-scope candidate character or term represented by the exact-code dictionary
+  row set.
 - [ ] The extraction rule is exact:
 
 ```javascript
@@ -286,12 +295,22 @@ const rowsForExactCode = (file, code) => readUtf8(file)
 ```
 
 - [ ] Store those rows under a fixture field named `source_dictionary_rows_all_for_code`.
-- [ ] Record `"source_row_policy": "all_rows_for_exact_code"` in fixture provenance.
+- [ ] Store the essay rows under a fixture field named
+  `essay_vocabulary_rows_for_candidates`.
+- [ ] Record `"source_row_policy": "all_rows_for_exact_code_plus_relevant_essay_rows"` in fixture provenance.
+- [ ] Record the exact tested code, source dictionary file, essay vocabulary
+  file, dictionary source row count, essay source row count, and the
+  in-scope candidate text set used for essay extraction.
 - [ ] Add a provenance assertion that this fixture has more source rows than upstream's page size, so it cannot silently collapse back into a curated-winner slice.
+- [ ] Add a provenance assertion that this fixture has non-empty essay rows
+  and that every upstream page-one candidate text has either a matching essay
+  row or an explicit fixture-local `essay_row_absent` explanation.
 - [ ] Add an active Yune test that builds `TableDictionary` from all exact-code rows and asserts:
   - actual top page candidate text equals upstream captured page-one text;
   - actual top page length equals upstream captured page-one length;
   - rows outside the upstream first page are present in the source input but not selected into page one.
+  - candidate ranking consumes the fixture essay weights rather than implicit
+    default or zero weights.
 - [ ] Keep the existing `luna-pinyin-basic.json` test, but label it as `"source_row_policy": "curated_oracle_winners"` and treat it as ordering/mechanics coverage.
 
 **Full-Pipeline Harness Steps:**
@@ -544,6 +563,15 @@ cargo test -p yune-core --test upstream_luna_pinyin_parity option
   - the exact tested code,
   - the exact source dictionary file,
   - a source row count greater than the captured upstream page size.
+- [ ] Reject any fixture labeled
+  `all_rows_for_exact_code_plus_relevant_essay_rows` unless it records:
+  - the exact tested code,
+  - the exact source dictionary file,
+  - the exact essay vocabulary file,
+  - the in-scope candidate text set,
+  - dictionary source row count greater than the captured upstream page size,
+  - non-empty essay source rows or per-candidate `essay_row_absent`
+    explanations.
 - [ ] Reject any test metadata that uses a `curated_oracle_winners` fixture to satisfy a `selection` completion criterion.
 - [ ] Preserve the existing manifest checks.
 - [ ] Run:

@@ -30,6 +30,42 @@ AI-native behavior on top as a separate product milestone.
 
 ---
 
+## Compatibility goal — oracle as a floor, not a feature checklist
+
+Yune treats librime as a **behavioral oracle, not a feature target.** Success is
+**not** "reimplement 100% of librime 1.17.0" — that would contradict the standing
+*"oracle, not template"* principle and add no product value, since librime
+already exists. Success is that **the schemas and frontends Yune targets behave
+correctly against the oracle**, every difference measured and either fixed or
+documented, with the **AI-native layer librime cannot provide** riding on top of
+that compatible base.
+
+The goal has two horizons and one explicit non-goal:
+
+- **(A) Target-driven compatibility — the near-term definition of "done."** A
+  bounded, *named* set of schemas and frontends must behave correctly versus the
+  oracle. Today that set is the `luna_pinyin` core path (vs the upstream `1.17.0`
+  oracle) and the TypeDuck `jyut6ping3` profile (vs the `v1.1.2` oracle). "Done"
+  is always relative to this named list — never an open-ended checklist. This is
+  what M12 begins.
+- **(B) Broad RIME compatibility — the expansion ambition.** Over time, widen the
+  named set so the **common** RIME schemas and the **real third-party frontends**
+  (ibus / fcitx / Squirrel / weasel, TypeDuck-Web / Windows) work predictably.
+  Breadth is added schema-by-schema and frontend-by-frontend through the same
+  oracle-measured parity harness — not in one leap, and not by cloning librime
+  wholesale.
+- **Non-goal: bit-for-bit feature parity with librime internals.** Reproducing
+  every librime gear, plugin, and code path is out of scope. A librime feature is
+  implemented only when a named (A)/(B) target needs it (*"name the behavior"*).
+
+So **"the engine is done" is never absolute** — it reads *"the current target set
+is green against the oracle; everything else is deferred-and-documented."* The
+product north star is the AI-native layer on top of a compatible base, not parity
+for its own sake. *(Ratified as a standing principle and `D-25` in
+[`decisions.md`](./decisions.md#standing-principles).)*
+
+---
+
 ## Completed
 
 ### M0–M4: Foundation
@@ -104,16 +140,21 @@ Detail: [`plans/ai-native-design.md`](./plans/ai-native-design.md) (living archi
 
 ---
 
-## Current baseline - M12: Upstream Oracle Refresh complete
+## Current baseline - M12: Upstream Behavioral Parity Closeout complete
 
 Yune's core engine now tracks upstream `rime/librime 1.17.0` as the default
 oracle target. M12 turned TypeDuck behavior into an explicit compatibility
-profile instead of the default engine truth. The first post-M12 upstream
-behavioral fixture now captures `luna_pinyin` context/candidate bytes from the
-official upstream Windows MSVC release binary and compares the single-code first
-page through Yune's real table translator path.
+profile instead of the default engine truth. The expanded M12 closeout captures
+`luna_pinyin` behavior from the official upstream Windows MSVC release binary
+and checks Yune against those bytes for curated single-code mechanics, full
+`ni` dictionary selection with essay weights, Engine paging/selection/commit,
+reverse lookup, punctuation/symbol candidates, and supported option paths
+(`zh_hans` single-code conversion and full-shape punctuation first candidate).
+The phrase/language-model surface (`zhongguo` full-page sentence output),
+`ascii_punct` processor bypass, and punctuation immediate-commit processor
+behavior are fixture-backed ignored blockers, not hidden parity claims.
 
-Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-oracle-refresh.md).
+Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-oracle-refresh.md) and [`plans/m12-upstream-behavioral-parity-closeout.md`](./plans/m12-upstream-behavioral-parity-closeout.md).
 
 **Status**:
 
@@ -124,6 +165,8 @@ Detail: [`plans/archive/upstream-oracle-refresh.md`](./plans/archive/upstream-or
 | 2 | TypeDuck assumption audit | Done | Existing TypeDuck-derived behavior is classified in `docs/plans/archive/m12-coverage-audit.md`. |
 | 3 | First upstream parity slice | Done | Default `RimeApi` ABI parity was refreshed to `rime/librime 1.17.0`; fork-only `start_quick` and `config_list_append_*` slots are excluded from the core table. |
 | 4 | First upstream behavioral fixture | Done | `luna-pinyin-basic.json` is captured from the official upstream `1.17.0` binary and checked by `upstream_luna_pinyin_parity`. |
+| 5 | Expanded upstream behavioral fixtures | Done | `luna-pinyin-selection`, `actions`, `reverse-lookup`, `punctuation`, and `options` fixtures are captured from the official release binary with provenance enforced by `oracle_fixture_provenance`. |
+| 6 | Full-pipeline parity gates | Done | Active `upstream_luna_pinyin_parity` coverage drives Yune's real parser, dictionary, translator, filter, and Engine paths; unsupported phrase/language-model and processor-only edges are explicit ignored blockers. |
 
 ---
 
@@ -150,10 +193,44 @@ and [`plans/yune-windows-native-build.md`](./plans/yune-windows-native-build.md)
 In priority order:
 
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
-2. **Expand upstream behavioral parity.** Extend from the first `luna_pinyin` single-code fixture into phrase/sentence behavior, reverse lookup, punctuation, paging, and schema-option toggles using the official upstream `1.17.0` oracle.
+2. **Broaden upstream parity schema-by-schema.** Reuse the M12 fixture/provenance harness for the next named upstream schema or for parked `luna_pinyin` blockers when a target needs them.
 3. **Keep M9 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, and native `typeduck_web` fallback.
 4. **Keep AI frontend exposure separate and default-off.** M11's CLI/core layer is complete; any future TypeDuck-Web, Windows, or other frontend exposure needs a new explicit plan and must preserve compatibility gates.
 5. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
+
+---
+
+## Beyond M12 — trajectory & scope ledger
+
+Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
+list. The broad arc after M12's first behavioral-parity slice:
+
+1. **Breadth (toward B)** — bring more target schemas through the M12 parity
+   harness (e.g. Shuangpin, Cangjie, Zhuyin), each measured against the upstream
+   `1.17.0` oracle.
+2. **Depth** — close the parity-*blocking* engine gaps, but only as a target
+   demands them: the grammar / language model (sentence quality),
+   processor-level punctuation/ascii-punctuation behavior, spelling-algebra
+   prism generation, and binary-dictionary / deployment writing. These are
+   today's known gaps (see the ledger).
+3. **TypeDuck profile reconciliation** — un-ignore the five Cantonese / Jyutping
+   goldens and decide, per difference, fix-in-core versus keep-as-profile.
+4. **AI-native frontend exposure** — M11's CLI/core layer → real frontends,
+   default-off until proven (see *Deferred / future*).
+
+### Scope ledger
+
+A living map so "parity" always names a target. Deferred rows move into *in
+scope* only as a named target needs them; nothing here commits to a timeline, and
+the *Non-goal* column is not a backlog. Standing deferrals also appear in
+*Deferred / future* below.
+
+| In scope — target-driven, measured | Deferred — implement when a target needs it | Non-goal |
+|---|---|---|
+| `luna_pinyin` core vs upstream `1.17.0` oracle | Grammar / language model (poet / octagram); processor-level punctuation/ascii-punctuation parity | Bit-for-bit parity with librime internals |
+| TypeDuck `jyut6ping3` profile vs `v1.1.2` oracle | Broader OpenCC dictionary coverage beyond the currently covered M12 `zh_hans` slice | librime C++ plugin ABI as a requirement |
+| Common RIME schemas, as breadth (B) is added | Spelling-algebra prism generation; binary-dict / deployment writing | Cloud inference as a hard dependency |
+| AI-native layer (M11) on the compatible base | `contextual_translation`, `unity_table_encoder`, deeper gear coverage | Replacing or altering classic input paths by default |
 
 ---
 

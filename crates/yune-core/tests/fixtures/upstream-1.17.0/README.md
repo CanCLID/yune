@@ -35,6 +35,46 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
 - Schema-data dependencies: `rime/rime-prelude`, `rime/rime-essay`, and
   `rime/rime-stroke`
 - Inputs: `ni`, `hao`, `zhong`, `guo`, `zhongguo`
+- Source-row policy: `curated_oracle_winners`
+
+### `luna-pinyin-selection.json`
+
+- Input: `ni`
+- Source-row policy: `all_rows_for_exact_code_plus_relevant_essay_rows`
+- Includes every exact-code `ni` row from `luna_pinyin.dict.yaml`.
+- Includes relevant `essay.txt` rows for every in-scope candidate so Yune cannot
+  accidentally rank page-one candidates with default or zero essay weights.
+
+### `luna-pinyin-actions.json`
+
+- Scenarios: first page, next page, previous page, numeric selection, and Space
+  commit for `ni`.
+- Source-row policy: `action_sequence_oracle_snapshots`.
+- Yune-side tests must use the `Engine` key path because menu state and commits
+  are part of the behavior.
+
+### `luna-pinyin-reverse-lookup.json`
+
+- Scenarios: stroke reverse lookup prefixes `` `h ``, `` `hs ``, and a no-result
+  prefix.
+- Source-row policy: `curated_reverse_lookup_rows`.
+- Includes stroke dictionary rows, stroke essay rows, and luna_pinyin comment
+  rows used by the reverse lookup assertions.
+
+### `luna-pinyin-punctuation.json`
+
+- Scenarios: ordinary punctuation commit, `/fh` symbol candidates, and an
+  unmatched symbol path.
+- Source-row policy: `curated_symbols_from_pinned_prelude`.
+- Includes the exact punctuation/symbol entries consumed by the Yune test.
+
+### `luna-pinyin-options.json`
+
+- Scenarios: `zh_hans` off/on for phrase and single-code inputs,
+  `ascii_punct`, and `full_shape`.
+- Source-row policy: `option_action_sequence_oracle_snapshots`.
+- Active Yune coverage is limited to supported paths; phrase/language-model and
+  processor-only gaps are represented by ignored tests with blocker strings.
 - Capture command:
 
 ```powershell
@@ -45,6 +85,7 @@ The active Yune check is:
 
 ```powershell
 cargo test -p yune-core --test upstream_luna_pinyin_parity
+cargo test -p yune-core --test oracle_fixture_provenance
 ```
 
 ## Oracle Binary Evidence

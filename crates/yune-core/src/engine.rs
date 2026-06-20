@@ -908,7 +908,7 @@ impl Engine {
         let segment_start = 0;
         let segment_end = input.len();
         let candidate = self.context.candidates.get(candidate_index).cloned()?;
-        let text = candidate.text.clone();
+        let text = candidate.commit_text_for_input(&input);
         let candidate_source = candidate.source.clone();
         if intent == CommitIntent::DefaultConfirm && candidate_source.is_ai() {
             return None;

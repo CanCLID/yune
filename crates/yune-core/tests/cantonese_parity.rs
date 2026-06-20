@@ -1,8 +1,8 @@
 use serde_json::Value;
 use yune_core::{
     Candidate, CandidateFilter, CandidateSource, DictionaryLookupFilter, Engine,
-    ReverseLookupTranslator, SchemaListTranslator, StaticTableTranslator, Status, TableDictionary,
-    Translator, UserDb,
+    ReverseLookupTranslator, RimeCorrectionEntry, SchemaListTranslator, StaticTableTranslator,
+    Status, TableDictionary, Translator, UserDb,
 };
 
 const ORACLE: &str = include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json");
@@ -16,6 +16,8 @@ const M14_SCHEMA_MENU_ORACLE: &str =
 const M14_USERDB_ORACLE: &str = include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m14-userdb.json");
 const M21_SENTENCE_COMPOSITION_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m21-sentence-composition.json");
+const M21_PREDICTION_RANKING_ORACLE: &str =
+    include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m21-prediction-ranking.json");
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
 const FORK_PARITY_02_PREFER_USER_PHRASE_ORACLE: &str =
@@ -59,6 +61,11 @@ fn m14_userdb_fixture() -> Value {
 fn m21_sentence_composition_fixture() -> Value {
     serde_json::from_str(M21_SENTENCE_COMPOSITION_ORACLE)
         .expect("TypeDuck v1.1.2 M21 sentence-composition fixture should be valid JSON")
+}
+
+fn m21_prediction_ranking_fixture() -> Value {
+    serde_json::from_str(M21_PREDICTION_RANKING_ORACLE)
+        .expect("TypeDuck v1.1.2 M21 prediction-ranking fixture should be valid JSON")
 }
 
 fn fork_parity_01_real_dictionary_fuzzy_fixture() -> Value {
@@ -266,6 +273,16 @@ fn typeduck_v112_m14_completion_and_correction_fixtures_are_locked() {
     let correction_enabled = m14_case(&fixture, "correction_enabled", "nri");
     assert_eq!(candidate_count(correction_default), 50);
     assert_eq!(candidate_count(correction_enabled), 6);
+    assert_eq!(correction_default["preedit"], "nri");
+    assert_eq!(correction_default["commit_text_preview"], "我ri");
+    assert_eq!(
+        (0..6)
+            .map(|index| selected_candidate_text(correction_default, index))
+            .collect::<Vec<_>>(),
+        ["我", "你", "外", "能", "內", "呢"]
+    );
+    assert_eq!(correction_enabled["commit_text_preview"], "你");
+    assert_eq!(selected_candidate_text(correction_enabled, 0), "你");
     assert_ne!(
         selected_candidate_text(correction_default, 0),
         selected_candidate_text(correction_enabled, 0),
@@ -317,6 +334,121 @@ fn typeduck_v112_m21_sentence_composition_fixture_is_locked() {
         assert_eq!(case["commit_text_preview"], text, "input {input}");
         assert_eq!(selected_candidate_text(case, 0), text, "input {input}");
         assert!(selected_candidate_comment(case, 0).contains(",composition,"));
+    }
+}
+
+#[test]
+fn typeduck_v112_m21_prediction_ranking_fixture_is_locked() {
+    let fixture = m21_prediction_ranking_fixture();
+    assert_eq!(fixture["oracle"]["engine"], "TypeDuck-HK/librime");
+    assert_eq!(fixture["oracle"]["engine_tag"], "v1.1.2");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"],
+        "74cb52b78fb2411137a7643f6c8bc6517acfde69"
+    );
+    assert_eq!(fixture["schema"], "jyut6ping3_mobile");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default", "dictionary_lookup"])
+    );
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "typeduck_v112_prediction_count_interleave"
+    );
+    assert_eq!(
+        fixture["capture"]["prediction_threshold"],
+        "kPredictionThreshold = log(100)"
+    );
+    assert_eq!(
+        fixture["capture"]["input_sequence"],
+        serde_json::json!(["santai", "sigin", "gwongdung", "hoenggong"])
+    );
+
+    let expected_top = [
+        (
+            "santai",
+            "san tai",
+            [
+                "身體",
+                "身體健康",
+                "神體",
+                "新",
+                "身",
+                "神",
+                "申",
+                "辛",
+                "晨",
+                "薪",
+                "臣",
+                "伸",
+            ],
+        ),
+        (
+            "sigin",
+            "si gin",
+            [
+                "事件",
+                "市建局",
+                "時",
+                "是",
+                "事",
+                "市",
+                "士",
+                "示",
+                "司",
+                "師",
+                "視",
+                "斯",
+            ],
+        ),
+        (
+            "gwongdung",
+            "gwong dung",
+            [
+                "廣東",
+                "廣東話",
+                "光",
+                "廣",
+                "胱",
+                "洸",
+                "獷",
+                "鑛",
+                "誑",
+                "撗",
+                "誆",
+                "侊",
+            ],
+        ),
+        (
+            "hoenggong",
+            "hoeng gong",
+            [
+                "香港",
+                "香港人",
+                "香江",
+                "香",
+                "向",
+                "響",
+                "享",
+                "鄉",
+                "嚮",
+                "餉",
+                "响",
+                "晌",
+            ],
+        ),
+    ];
+    for (input, preedit, top_texts) in expected_top {
+        let case = m21_prediction_case(&fixture, input);
+        assert_eq!(case["preedit"], preedit, "input {input}");
+        assert_eq!(candidate_count(case).min(12), 12, "input {input}");
+        assert_eq!(
+            (0..12)
+                .map(|index| selected_candidate_text(case, index))
+                .collect::<Vec<_>>(),
+            top_texts,
+            "input {input}"
+        );
     }
 }
 
@@ -903,6 +1035,15 @@ fn m21_sentence_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
         .unwrap_or_else(|| panic!("M21 sentence-composition fixture should capture {input}"))
 }
 
+fn m21_prediction_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
+    fixture["cases"]
+        .as_array()
+        .expect("M21 prediction-ranking cases should be an array")
+        .iter()
+        .find(|case| case["input"] == input)
+        .unwrap_or_else(|| panic!("M21 prediction-ranking fixture should capture {input}"))
+}
+
 fn candidate_count(case: &Value) -> usize {
     case["selected_candidates"]
         .as_array()
@@ -961,6 +1102,34 @@ fn typeduck_public_schema_asset(relative_path: &str) -> String {
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
 }
 
+fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
+    let translator_dictionary = TableDictionary::parse_rime_dict_yaml(
+        &typeduck_public_schema_asset("jyut6ping3.dict.yaml"),
+    )
+    .expect("production jyut6ping3 dictionary should parse");
+    let lookup_dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(
+        &typeduck_public_schema_asset("jyut6ping3_scolar.dict.yaml"),
+    )
+    .expect("production jyut6ping3_scolar lookup dictionary should parse");
+    let mut translator = StaticTableTranslator::from_dictionary(translator_dictionary)
+        .with_completion(true)
+        .with_correction(enable_correction)
+        .with_sentence(true)
+        .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
+        .with_comment_format(&["xform/^/\u{000c}/".to_owned()])
+        .with_combine_candidates(true)
+        .with_prediction_never_first(true)
+        .with_prediction_candidate_limit(1)
+        .with_prefix_fallback(true);
+    if enable_correction {
+        translator = translator.with_corrections([RimeCorrectionEntry::new("nri", "nei")]);
+    }
+    let mut engine = Engine::new();
+    engine.add_translator(translator);
+    engine.add_filter(DictionaryLookupFilter::new(lookup_dictionary));
+    engine
+}
+
 fn jyut6ping3_mobile_spelling_algebra() -> Vec<String> {
     [
         "derive/^ng(?=[aeiou])//",
@@ -989,6 +1158,76 @@ fn jyut6ping3_mobile_spelling_algebra() -> Vec<String> {
     .into_iter()
     .map(str::to_owned)
     .collect()
+}
+
+#[test]
+fn m21_nri_prefix_fallback_matches_typeduck_v112_real_dictionary_goldens() {
+    let fixture = m14_completion_correction_fixture();
+    let correction_default = m14_case(&fixture, "correction_default", "nri");
+    let correction_enabled = m14_case(&fixture, "correction_enabled", "nri");
+
+    let mut default_engine = typeduck_jyut6ping3_mobile_engine(false);
+    default_engine.set_input("nri");
+    let default_texts = default_engine
+        .context()
+        .candidates
+        .iter()
+        .take(6)
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        default_texts,
+        (0..6)
+            .map(|index| selected_candidate_text(correction_default, index))
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        default_engine.commit_composition().as_deref(),
+        correction_default["commit_text_preview"].as_str()
+    );
+
+    let mut correction_engine = typeduck_jyut6ping3_mobile_engine(true);
+    correction_engine.set_input("nri");
+    assert_eq!(
+        correction_engine.context().candidates[0].text,
+        selected_candidate_text(correction_enabled, 0)
+    );
+}
+
+#[test]
+fn m21_prediction_count_matches_typeduck_v112_real_dictionary_goldens() {
+    let fixture = m21_prediction_ranking_fixture();
+    let mut engine = typeduck_jyut6ping3_mobile_engine(false);
+
+    for input in ["santai", "sigin", "gwongdung", "hoenggong"] {
+        let expected = m21_prediction_case(&fixture, input);
+        engine.set_input(input);
+        let actual_texts = engine
+            .context()
+            .candidates
+            .iter()
+            .take(12)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let expected_texts = (0..12)
+            .map(|index| selected_candidate_text(expected, index))
+            .collect::<Vec<_>>();
+        assert_eq!(actual_texts, expected_texts, "input {input}");
+    }
+}
+
+#[test]
+fn m21_prediction_limit_preserves_m14_short_completion_boundary() {
+    let fixture = m14_completion_correction_fixture();
+    let expected = m14_case(&fixture, "completion_default", "ne");
+    let mut engine = typeduck_jyut6ping3_mobile_engine(false);
+
+    engine.set_input("ne");
+
+    assert_eq!(
+        engine.context().candidates[0].text,
+        selected_candidate_text(expected, 0)
+    );
 }
 
 #[test]

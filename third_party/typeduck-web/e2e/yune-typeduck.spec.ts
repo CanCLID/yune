@@ -270,12 +270,12 @@ async function readCandidatePanelSnapshot(page: Page, aiEnabled: boolean): Promi
   };
 }
 
-async function focusInputAndType(page: Page, text: string): Promise<void> {
+async function focusInputAndType(page: Page, text: string, expectedVisibleText = text): Promise<void> {
   const inputField = page.locator("input[type='text'], textarea").first();
   await inputField.focus();
   await inputField.type(text, { delay: 80 });
   await expect(page.locator(".candidate-panel .candidates tbody").first()).toBeVisible({ timeout: 5000 });
-  await expect(page.locator(".candidate-panel").first()).toContainText(text, { timeout: 5000 });
+  await expect(page.locator(".candidate-panel").first()).toContainText(expectedVisibleText, { timeout: 5000 });
 }
 
 async function typeCompositionAndWaitForCandidate(page: Page, input: string, expectedText: string): Promise<CandidatePanelSnapshot> {
@@ -287,6 +287,18 @@ async function typeCompositionAndWaitForCandidate(page: Page, input: string, exp
     const state = await readCandidatePanelSnapshot(page, false);
     return state.candidates.map((candidate) => candidate.text);
   }, { timeout: 10000 }).toContain(expectedText);
+  return readCandidatePanelSnapshot(page, false);
+}
+
+async function typeCompositionAndWaitForTopCandidate(page: Page, input: string, expectedText: string): Promise<CandidatePanelSnapshot> {
+  const inputField = page.locator("input[type='text'], textarea").first();
+  await clearComposition(page);
+  await inputField.focus();
+  await inputField.type(input, { delay: 120 });
+  await expect.poll(async () => {
+    const state = await readCandidatePanelSnapshot(page, false);
+    return state.candidates[0]?.text ?? null;
+  }, { timeout: 10000 }).toBe(expectedText);
   return readCandidatePanelSnapshot(page, false);
 }
 
@@ -350,10 +362,16 @@ async function setPreferenceToggle(page: Page, label: RegExp, enabled: boolean):
   const toggle = page.getByLabel(label).last();
   const checked = await toggle.isChecked();
   if (checked !== enabled) {
+    await toggle.evaluate((element, nextEnabled) => {
+      const input = element as HTMLInputElement;
+      if (input.checked !== nextEnabled) {
+        input.click();
+      }
+    }, enabled);
     if (enabled) {
-      await toggle.check({ force: true });
+      await expect(toggle).toBeChecked({ timeout: 5000 });
     } else {
-      await toggle.uncheck({ force: true });
+      await expect(toggle).not.toBeChecked({ timeout: 5000 });
     }
     await page.waitForTimeout(250);
     await waitForAppReady(page);
@@ -370,10 +388,16 @@ async function setPreferenceToggleAndWaitForSettings(
   const toggle = page.getByLabel(label).last();
   const checked = await toggle.isChecked();
   if (checked !== enabled) {
+    await toggle.evaluate((element, nextEnabled) => {
+      const input = element as HTMLInputElement;
+      if (input.checked !== nextEnabled) {
+        input.click();
+      }
+    }, enabled);
     if (enabled) {
-      await toggle.check({ force: true });
+      await expect(toggle).toBeChecked({ timeout: 5000 });
     } else {
-      await toggle.uncheck({ force: true });
+      await expect(toggle).not.toBeChecked({ timeout: 5000 });
     }
   }
   const settings = await waitForPersistedSettings(page, expectedSettings);
@@ -444,6 +468,28 @@ async function waitForPersistedSettings(
       Object.keys(expected).map((key) => [key, settings[key] ?? null]),
     );
   }, { timeout: 15000 }).toEqual(expected);
+  return latestPersistedSettings(page);
+}
+
+async function waitForDeployedSettings(
+  page: Page,
+  expected: Record<string, string | null>,
+): Promise<Record<string, string | null>> {
+  await expect.poll(async () => {
+    const diagnostics = await readPersistenceDiagnostics(page);
+    const deployPass = diagnostics
+      .slice()
+      .reverse()
+      .find((diagnostic) =>
+        diagnostic.marker.phase === "syncToPersistenceAfterMutation:pass"
+        && diagnostic.marker.reason === "deploy"
+        && diagnostic.marker.persistedConfig?.settings
+      );
+    const settings = deployPass?.marker.persistedConfig?.settings ?? {};
+    return Object.fromEntries(
+      Object.keys(expected).map((key) => [key, settings[key] ?? null]),
+    );
+  }, { timeout: 30000 }).toEqual(expected);
   return latestPersistedSettings(page);
 }
 
@@ -791,8 +837,10 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     scenarios.m = m.candidates.map((candidate) => candidate.rowText);
     await expectNoToasts(page);
 
-    const toneLetters = await clickShowcaseScenario(page, "tone letters", "瀡板");
-    expect(toneLetters.candidates[0].text).toBe("瀡板");
+    await clearComposition(page);
+    await focusInputAndType(page, "neivv", "nei4");
+    const toneLetters = await readCandidatePanelSnapshot(page, false);
+    expect(toneLetters.candidates[0].text).toBe("尼");
     scenarios.toneLetters = toneLetters.candidates.map((candidate) => candidate.rowText);
     await expectNoToasts(page);
 
@@ -988,6 +1036,10 @@ test.describe("TypeDuck-Web Browser E2E", () => {
 
   test("M16 completion browser path matches M14", async ({ page }) => {
     await setPreferenceToggle(page, /Auto-completion/, true);
+    await setPreferenceToggle(page, /Auto-correction/, false);
+    await waitForDeployedSettings(page, {
+      "translator/enable_correction": "false",
+    });
     await focusInputAndType(page, "ne");
     await captureM16Scenario(
       page,
@@ -997,34 +1049,24 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(consoleErrors).toEqual([]);
   });
 
-  test("M16 correction browser path records explicit M20 browser-surface N/A", async ({ page }) => {
-    const correctionBrowserSurface = {
-      status: "explicit browser-surface N/A",
-      activeBrowserSchema: "jyut6ping3_mobile",
-      input: "nri",
-      reason: "Engine-proven at cantonese_parity; the correction candidate for nri is not browser-renderable on the current jyut6ping3_mobile TypeDuck-Web surface.",
-      engineCoverage: "cargo test -p yune-core --test cantonese_parity correction_minimal_distance_and_m_abbreviation_parity covers the TypeDuck v1.1.2 correction row.",
-      evidencePolicy: "Empty candidate arrays are recorded only as this browser-surface limit, not as proof that Auto-correction changes candidate output.",
-    };
-
+  test("M16 correction browser path matches M14 visible before/after", async ({ page }) => {
     await setPreferenceToggle(page, /Auto-correction/, false);
     const persistedCorrectionDefault = await waitForPersistedSettings(page, {
       "translator/enable_correction": "false",
     });
-    const inputField = page.locator("input[type='text'], textarea").first();
-    await inputField.focus();
-    await inputField.type("nri", { delay: 80 });
-    await page.waitForTimeout(1000);
-    const defaultPanelCount = await page.locator(".candidate-panel .candidates tbody").count();
-    expect(defaultPanelCount).toBe(0);
-    const defaultState = defaultPanelCount > 0
-      ? await readCandidatePanelSnapshot(page, false)
-      : { aiEnabled: false, inputValue: await inputField.inputValue(), candidates: [] };
+    await waitForDeployedSettings(page, {
+      "translator/enable_correction": "false",
+    });
+    const defaultState = await typeCompositionAndWaitForTopCandidate(page, "nri", "我");
+    const expectedDefaultTexts = await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_default", "nri", 5);
+    const expectedDefaultEngineTexts = await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_default", "nri", 6);
+    expect(defaultState.candidates.slice(0, 5).map((candidate) => candidate.text)).toEqual(expectedDefaultTexts);
     await saveJsonEvidence("m16-correction-default-state.json", {
-      expectedM14Texts: await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_default", "nri", 5),
+      expectedM14Texts: expectedDefaultTexts,
+      expectedM14EngineTexts: expectedDefaultEngineTexts,
       browserState: defaultState,
       persistedSettings: persistedCorrectionDefault,
-      browserSurface: correctionBrowserSurface,
+      browserSurface: "Candidate panel rendered for nri with correction off via prefix fallback; the visible page shows the first five oracle rows, and cantonese_parity asserts the sixth row plus commit preview.",
     });
     await takeEvidenceScreenshot(page, "m16-correction-default");
 
@@ -1033,31 +1075,31 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     const persistedCorrectionEnabled = await waitForPersistedSettings(page, {
       "translator/enable_correction": "true",
     });
-    await inputField.focus();
-    await inputField.type("nri", { delay: 80 });
-    await page.waitForTimeout(1000);
-    const enabledPanelCount = await page.locator(".candidate-panel .candidates tbody").count();
-    expect(enabledPanelCount).toBe(0);
-    const enabledState = enabledPanelCount > 0
-      ? await readCandidatePanelSnapshot(page, false)
-      : { aiEnabled: false, inputValue: await inputField.inputValue(), candidates: [] };
+    await waitForDeployedSettings(page, {
+      "translator/enable_correction": "true",
+    });
+    const enabledState = await typeCompositionAndWaitForTopCandidate(page, "nri", "你");
+    const expectedEnabledTexts = await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_enabled", "nri", 5);
+    expect(enabledState.candidates.slice(0, 5).map((candidate) => candidate.text)).toEqual(expectedEnabledTexts);
+    expect(defaultState.candidates[0].text).not.toEqual(enabledState.candidates[0].text);
     await saveJsonEvidence("m16-correction-enabled-state.json", {
-      expectedM14Texts: await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_enabled", "nri", 5),
+      expectedM14Texts: expectedEnabledTexts,
       browserState: enabledState,
       persistedSettings: persistedCorrectionEnabled,
-      browserSurface: correctionBrowserSurface,
+      browserSurface: "Candidate panel rendered for nri with correction on; the first row matches the v1.1.2 correction fixture.",
     });
-    await saveJsonEvidence("m20-auto-correction-browser-surface-na-state.json", {
-      defaultPanelCount,
-      enabledPanelCount,
+    await saveJsonEvidence("m20-auto-correction-visible-before-after-state.json", {
       defaultState,
       enabledState,
       persistedCorrectionDefault,
       persistedCorrectionEnabled,
-      browserSurface: correctionBrowserSurface,
+      expectedDefaultTexts,
+      expectedDefaultEngineTexts,
+      expectedEnabledTexts,
+      browserSurface: "Auto-correction is a visible before/after browser behavior for nri: off shows prefix fallback rows on the browser page, on shows correction 你 first, and engine parity asserts the full oracle prefix list.",
     });
     await takeEvidenceScreenshot(page, "m16-correction-enabled");
-    await takeEvidenceScreenshot(page, "m20-auto-correction-browser-surface-na");
+    await takeEvidenceScreenshot(page, "m20-auto-correction-visible-before-after");
     expect(consoleErrors).toEqual([]);
   });
 
@@ -1098,7 +1140,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       },
       browserRuntimeLimits: {
         sentenceDisabled: "The browser records the disabled Auto-composition state separately because full ngohaigo does not render the native disabled-prefix candidate panel.",
-        correction: "The browser records nri correction default/enabled persisted settings separately; correction candidate output is explicit N/A on jyut6ping3_mobile, and M15 cantonese_parity remains the oracle-backed correction proof.",
+        correction: "The browser records nri correction default/enabled as visible candidate-output before/after evidence: correction off renders prefix fallback, correction on renders the v1.1.2 correction row first.",
       },
       schemaMenu: {
         oracleSurface: schemaMenuFixture["capture"],

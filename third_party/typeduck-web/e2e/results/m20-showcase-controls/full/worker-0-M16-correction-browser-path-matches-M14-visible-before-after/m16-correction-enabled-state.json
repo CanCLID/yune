@@ -1,0 +1,63 @@
+{
+  "expectedM14Texts": [
+    "你",
+    "呢",
+    "尼",
+    "妮",
+    "彌"
+  ],
+  "browserState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "你",
+        "note": null,
+        "source": null,
+        "rowText": "1.nei5你you (singular)ⓘ"
+      },
+      {
+        "index": 1,
+        "text": "呢",
+        "note": null,
+        "source": null,
+        "rowText": "2.ne1呢(how about)ⓘ"
+      },
+      {
+        "index": 2,
+        "text": "尼",
+        "note": null,
+        "source": null,
+        "rowText": "3.nei4尼nunⓘ"
+      },
+      {
+        "index": 3,
+        "text": "妮",
+        "note": null,
+        "source": null,
+        "rowText": "4.nei4妮little girlⓘ"
+      },
+      {
+        "index": 4,
+        "text": "彌",
+        "note": null,
+        "source": null,
+        "rowText": "5.nei4彌full; fillⓘ"
+      }
+    ]
+  },
+  "persistedSettings": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "true",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
+  "browserSurface": "Candidate panel rendered for nri with correction on; the first row matches the v1.1.2 correction fixture."
+}

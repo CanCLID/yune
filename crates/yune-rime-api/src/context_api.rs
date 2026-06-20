@@ -134,9 +134,10 @@ pub unsafe extern "C" fn RimeGetContext(
                 .context
                 .candidates
                 .get(snapshot.context.highlighted)
-                .map_or(composition.input.as_str(), |candidate| {
-                    candidate.text.as_str()
-                });
+                .map_or_else(
+                    || composition.input.clone(),
+                    |candidate| candidate.commit_text_for_input(&composition.input),
+                );
             match CString::new(preview) {
                 Ok(preview) => Some(preview),
                 Err(_) => return FALSE,

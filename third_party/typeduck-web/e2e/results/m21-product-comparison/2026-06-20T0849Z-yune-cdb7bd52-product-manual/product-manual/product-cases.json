@@ -69,25 +69,25 @@
       "notes": "pending manual capture"
     },
     {
-      "id": "tone-letters-seov",
-      "input": "seov",
+      "id": "tone-letters-neivv",
+      "input": "neivv",
       "productOutput": null,
       "screenshots": [],
-      "notes": "pending manual capture"
+      "notes": "pending manual capture; replaces seov because v1.1.2 still applies eo/oe fuzzy while the moving deployed product appears to differ"
     },
     {
       "id": "one-edit-typo-nri-correction-off",
       "input": "nri",
       "productOutput": null,
       "screenshots": [],
-      "notes": "pending manual capture"
+      "notes": "pending manual capture; hard v1.1.2/Yune evidence now renders prefix fallback rows with correction off"
     },
     {
       "id": "one-edit-typo-nri-correction-on",
       "input": "nri",
       "productOutput": null,
       "screenshots": [],
-      "notes": "pending manual capture"
+      "notes": "pending manual capture; hard v1.1.2/Yune evidence now renders correction candidate 你 first"
     },
     {
       "id": "hk2s-ngohaigo-simplification-on",

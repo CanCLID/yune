@@ -1,0 +1,71 @@
+{
+  "expectedM14Texts": [
+    "我",
+    "你",
+    "外",
+    "能",
+    "內"
+  ],
+  "expectedM14EngineTexts": [
+    "我",
+    "你",
+    "外",
+    "能",
+    "內",
+    "呢"
+  ],
+  "browserState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "我",
+        "note": "\\fngo5",
+        "source": null,
+        "rowText": "1.我\\fngo5"
+      },
+      {
+        "index": 1,
+        "text": "你",
+        "note": "\\fnei5",
+        "source": null,
+        "rowText": "2.你\\fnei5"
+      },
+      {
+        "index": 2,
+        "text": "外",
+        "note": "\\fngoi6",
+        "source": null,
+        "rowText": "3.外\\fngoi6"
+      },
+      {
+        "index": 3,
+        "text": "能",
+        "note": "\\fnang4",
+        "source": null,
+        "rowText": "4.能\\fnang4"
+      },
+      {
+        "index": 4,
+        "text": "內",
+        "note": "\\fnoi6",
+        "source": null,
+        "rowText": "5.內\\fnoi6"
+      }
+    ]
+  },
+  "persistedSettings": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "false",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
+  "browserSurface": "Candidate panel rendered for nri with correction off via prefix fallback; the visible page shows the first five oracle rows, and cantonese_parity asserts the sixth row plus commit preview."
+}

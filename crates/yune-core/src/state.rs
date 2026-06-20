@@ -7,11 +7,32 @@ pub struct Candidate {
     pub quality: f32,
 }
 
+impl Candidate {
+    #[must_use]
+    pub fn commit_text_for_input(&self, input: &str) -> String {
+        let Some(consumed) = self.source.partial_consumed_len() else {
+            return self.text.clone();
+        };
+        if consumed > input.len() || !input.is_char_boundary(consumed) {
+            return self.text.clone();
+        }
+        let suffix = &input[consumed..];
+        if suffix.is_empty() {
+            self.text.clone()
+        } else {
+            format!("{}{}", self.text, suffix)
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CandidateSource {
     Echo,
     Punctuation,
     Table,
+    PartialTable {
+        consumed: usize,
+    },
     UserTable,
     Completion,
     Sentence,
@@ -40,7 +61,7 @@ impl CandidateSource {
         match self {
             Self::Echo => "echo",
             Self::Punctuation => "punct",
-            Self::Table => "table",
+            Self::Table | Self::PartialTable { .. } => "table",
             Self::UserTable => "user_table",
             Self::Completion => "completion",
             Self::Sentence => "sentence",
@@ -56,6 +77,19 @@ impl CandidateSource {
     #[must_use]
     pub const fn is_ai(&self) -> bool {
         matches!(self, Self::Ai { .. })
+    }
+
+    #[must_use]
+    pub const fn is_table_like(&self) -> bool {
+        matches!(self, Self::Table | Self::PartialTable { .. })
+    }
+
+    #[must_use]
+    pub const fn partial_consumed_len(&self) -> Option<usize> {
+        match self {
+            Self::PartialTable { consumed } => Some(*consumed),
+            _ => None,
+        }
     }
 
     #[must_use]

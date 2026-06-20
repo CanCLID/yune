@@ -213,7 +213,7 @@ fn speller_auto_select_at_max_code_length(
     context
         .candidates
         .get(context.highlighted)
-        .is_some_and(|candidate| candidate.source == CandidateSource::Table)
+        .is_some_and(|candidate| candidate.source.is_table_like())
 }
 
 fn speller_previous_match_backup(
@@ -230,7 +230,7 @@ fn speller_previous_match_backup(
         return None;
     }
     let candidate = context.candidates.get(context.highlighted)?;
-    (candidate.source == CandidateSource::Table).then(|| {
+    candidate.source.is_table_like().then(|| {
         (
             context.composition.input.clone(),
             context.highlighted,
@@ -309,7 +309,7 @@ fn speller_auto_select_unique_candidate(
     let mut table_candidates = context
         .candidates
         .iter()
-        .filter(|candidate| candidate.source == CandidateSource::Table);
+        .filter(|candidate| candidate.source.is_table_like());
     let _ = table_candidates.next()?;
     if table_candidates.next().is_some() {
         return None;

@@ -123,7 +123,7 @@ is a *tuning* question, not a missing feature.
 1. ¹ The large-dictionary algebra filter was relaxed for the TypeDuck Cantonese profile, and a real-dictionary golden now covers the production `jyut6ping3` path. A follow-up fix also keeps generated one-letter abbreviation aliases from acting as interior sentence boundaries without suppressing normal one-letter dictionary codes in other schemas.
 2. ² Yune has no librime `SyllableGraph`; abbreviation spellings are flat penalized entries that coexist with normal ones by construction, so the C++ "perfect match disqualifies abbreviation" hazard cannot arise. Architecturally inapplicable.
 3. ³ Implemented through the TypeDuck profile's `preedit_format` wiring; partial letter-tone completion keeps raw preedit where the fork does.
-4. ⁴ Upstream 1.17.0 has its *own* word completion (`#848`, which the fork excluded from its 1.11.0 merge). Product decision: do not chase exact fork ranking byte parity; preserve upstream completion/ranking, keep long-entry prediction visible, and expose `prediction_weight_threshold` / `prediction_frequency_threshold` plus `prediction_never_first` profile controls.
+4. ⁴ Upstream 1.17.0 has its *own* word completion (`#848`, which the fork excluded from its 1.11.0 merge). Product decision: do not chase exact fork ranking byte parity; preserve upstream completion/ranking, keep long-entry prediction visible, and expose `prediction_weight_threshold` / `prediction_frequency_threshold` plus `prediction_never_first` profile controls. M21-GAP-02 narrows this for the TypeDuck `jyut6ping3` profile only: the v1.1.2 fixture `jyut6ping3-m21-prediction-ranking.json` shows one long prediction interleaved ahead of single-character matches for `santai`, `sigin`, `gwongdung`, and `hoenggong`, so Yune applies a calibrated prediction candidate limit of 1 on that profile without broad fork ranking byte parity.
 5. ⁵ M21-GAP-01 provided the future oracle-backed scenario: TypeDuck v1.1.2 composes `loengnincin`, `leoicijyu`, `loengjathau`, `geijatcin`, and `gamjatheoi` as top-1 dictionary sentences while pre-fix Yune composed high-frequency short-piece garbage. Yune now preserves a scoped log-space sentence word-penalty heuristic for the TypeDuck `jyut6ping3` profile path, effectively preferring fewer pieces with frequency as a tiebreak across the six locked fixture cases. This does not reopen broad fork ranking byte parity or M17 poet/octagram LM work; expand the composition corpus opportunistically when new product cases appear.
 6. ⁶ Verified: upstream `translator_commons.{h,cc}` and `table_translator.cc` (33e7814) have no `show_full_code` member/accessor — it is a fork engine addition. Yune ported it (`translator/mod.rs`). The `\v`-prefix + cangjie-root xlit is fork-schema-data on top.
 7. ⁷ Implemented data-driven via checked-in OpenCC source dicts; note the chain omits `TSCharactersExt` (immaterial for Cantonese output).
@@ -201,9 +201,10 @@ Recorded so nobody re-derives a dead end.
 ## Closed product decisions
 
 1. **Prediction ranking:** do not chase full TypeDuck ranking byte parity. Yune keeps
-   upstream `1.17.0` ranking behavior, preserves long-entry completion, and exposes
-   profile controls for raw-weight/frequency thresholds plus prediction-never-first
-   behavior.
+   upstream `1.17.0` ranking behavior except for the M21-GAP-02
+   oracle-backed TypeDuck `jyut6ping3` prediction-count limit, preserves
+   long-entry completion, and exposes profile controls for raw-weight/frequency
+   thresholds plus prediction-never-first behavior.
 2. **Composition word penalty:** a scoped M21-GAP-01 word-penalty fix is preserved
    for oracle-backed TypeDuck dictionary sentence composition. This remains narrower
    than full fork ranking byte parity.

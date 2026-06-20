@@ -860,14 +860,12 @@ schema:\n  schema_id: typeduck_luna\n  name: TypeDuck Luna\nmenu:\n  page_size: 
     }
 
     fn write_browser_real_assets(&self) {
-        let app_schema_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../third_party/typeduck-web/source/public/schema");
         let oracle_root = typeduck_oracle_root();
         let oracle_schema_root = oracle_root.join("rime-shared");
         let schema_root = if oracle_schema_root.is_dir() {
             oracle_schema_root
         } else {
-            app_schema_root
+            browser_app_schema_root()
         };
         copy_asset(&schema_root, &self.shared, "default.yaml");
         copy_asset(&schema_root, &self.shared, "jyut6ping3_mobile.schema.yaml");
@@ -925,6 +923,59 @@ schema:\n  schema_id: typeduck_luna\n  name: TypeDuck Luna\nmenu:\n  page_size: 
         }
     }
 
+    fn write_browser_app_assets(&self) {
+        let schema_root = browser_app_schema_root();
+        copy_asset(&schema_root, &self.shared, "default.yaml");
+        copy_asset(&schema_root, &self.shared, "jyut6ping3_mobile.schema.yaml");
+        copy_asset(&schema_root, &self.shared, "jyut6ping3.dict.yaml");
+        let staging = self.user.join("build");
+        for file_name in ["default.yaml", "jyut6ping3_mobile.schema.yaml"] {
+            fs::copy(
+                schema_root.join("build").join(file_name),
+                staging.join(file_name),
+            )
+            .expect("browser app preloaded build asset should be copied");
+        }
+        for file_name in [
+            "default.custom.yaml",
+            "common.yaml",
+            "common.custom.yaml",
+            "include.yaml",
+            "template.yaml",
+            "jyut6ping3.schema.yaml",
+            "jyut6ping3_mobile_longpress.schema.yaml",
+            "jyut6ping3_mobile_10keys.schema.yaml",
+            "jyut6ping3_scolar.schema.yaml",
+            "jyut6ping3_scolar.dict.yaml",
+            "luna_pinyin.schema.yaml",
+            "luna_pinyin.dict.yaml",
+            "loengfan.schema.yaml",
+            "loengfan.dict.yaml",
+            "loengfan_longpress.schema.yaml",
+            "cangjie3.schema.yaml",
+            "cangjie3.dict.yaml",
+            "cangjie5.schema.yaml",
+            "cangjie5.dict.yaml",
+            "opencc/hk2s.json",
+            "opencc/HKVariantsRev.ocd2",
+            "opencc/HKVariantsRevPhrases.ocd2",
+            "opencc/TSCharacters.ocd2",
+            "opencc/TSPhrases.ocd2",
+        ] {
+            copy_asset(&schema_root, &self.shared, file_name);
+        }
+        for file_name in [
+            "jyut6ping3.table.bin",
+            "jyut6ping3.reverse.bin",
+            "jyut6ping3_mobile.prism.bin",
+            "jyut6ping3_scolar.table.bin",
+            "jyut6ping3_scolar.reverse.bin",
+            "jyut6ping3_scolar.prism.bin",
+        ] {
+            copy_asset(&schema_root, &self.shared, file_name);
+        }
+    }
+
     fn remove(self) {
         reset_rime();
         fs::remove_dir_all(self.root).expect("temp dir should be removed");
@@ -947,6 +998,148 @@ fn typeduck_adapter_deploys_browser_real_assets_after_init() {
     assert!(!state.is_null());
 
     assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_real_assets_prefix_fallback_keeps_raw_tail() {
+    let _guard = test_guard();
+    let runtime =
+        TypeDuckRuntime::create_with_schema("browser-real-prefix-fallback", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    let key = CString::new("page_size").expect("custom key should be valid");
+    let value = CString::new("6").expect("custom value should be valid");
+    assert_eq!(
+        unsafe { yune_typeduck_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+
+    let composing = process_input(state, "nri");
+    let candidates = composing["context"]["candidates"]
+        .as_array()
+        .expect("nri prefix fallback candidates should be an array");
+    let top_texts = candidates
+        .iter()
+        .take(5)
+        .map(|candidate| candidate["text"].as_str().unwrap_or_default())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        top_texts,
+        vec!["\u{6211}", "\u{4f60}", "\u{5916}", "\u{80fd}", "\u{5167}"]
+    );
+
+    let committed = response_json(unsafe { yune_typeduck_select_candidate(state, 0) });
+    assert_eq!(
+        committed["commits"],
+        Value::Array(vec![Value::String("\u{6211}ri".to_owned())])
+    );
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_real_assets_correction_enabled_reorders_nri() {
+    let _guard = test_guard();
+    let runtime =
+        TypeDuckRuntime::create_with_schema("browser-real-correction-enabled", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    let key = CString::new("translator/enable_correction").expect("custom key should be valid");
+    let value = CString::new("true").expect("custom value should be valid");
+    assert_eq!(
+        unsafe { yune_typeduck_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+
+    let composing = process_input(state, "nri");
+    assert_eq!(
+        composing["context"]["candidates"][0]["text"],
+        Value::String("\u{4f60}".to_owned())
+    );
+
+    let committed = response_json(unsafe { yune_typeduck_select_candidate(state, 0) });
+    assert_eq!(
+        committed["commits"],
+        Value::Array(vec![Value::String("\u{4f60}".to_owned())])
+    );
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_real_assets_browser_defaults_keep_correction_nri_first() {
+    let _guard = test_guard();
+    let runtime = TypeDuckRuntime::create_with_schema(
+        "browser-real-correction-browser-defaults",
+        "jyut6ping3_mobile",
+    );
+    runtime.write_browser_app_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    for (key, value) in [
+        ("page_size", "6"),
+        ("translator/enable_completion", "true"),
+        ("translator/enable_correction", "true"),
+        ("translator/enable_sentence", "true"),
+        ("translator/enable_user_dict", "true"),
+        ("translator/encode_commit_history", "true"),
+        ("translator/combine_candidates", "true"),
+        ("translator/prediction_never_first", "true"),
+        ("translator/prediction_weight_threshold", "0"),
+        ("cangjie/dictionary", "cangjie5"),
+    ] {
+        let key = CString::new(key).expect("custom key should be valid");
+        let value = CString::new(value).expect("custom value should be valid");
+        assert_eq!(
+            unsafe {
+                yune_typeduck_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr())
+            },
+            TRUE
+        );
+    }
+    assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+
+    let composing = process_input(state, "nri");
+    assert_eq!(
+        composing["context"]["candidates"][0]["text"],
+        Value::String("\u{4f60}".to_owned())
+    );
 
     unsafe { yune_typeduck_cleanup(state) };
     runtime.remove();
@@ -1179,6 +1372,11 @@ fn typeduck_adapter_real_assets_emit_oracle_dictionary_panel_comments() {
 
 fn typeduck_oracle_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/typeduck-oracle/v1.1.2")
+}
+
+fn browser_app_schema_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../third_party/typeduck-web/source/public/schema")
 }
 
 fn rich_dictionary_comment_oracle_build_status() -> Result<PathBuf, String> {

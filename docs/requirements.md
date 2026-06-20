@@ -291,8 +291,10 @@ browser gates and the upstream-first ABI constraints. Browser evidence is under
   independently visible keep real persisted `jyut6ping3_mobile.custom.yaml`
   assertions, but are not counted as candidate-output proof. Input Memory has a
   visible learned-prediction on-state and an explicit browser-surface N/A for
-  memory-off suppression; Auto-correction is explicit browser-surface N/A for
-  `nri` candidate rendering and remains engine-proven by `cantonese_parity`.
+  memory-off suppression; Auto-correction now has real `nri` browser
+  before/after evidence, with correction off rendering the v1.1.2 prefix
+  fallback rows and correction on rendering `你` first. The full oracle row set
+  and commit previews remain engine-proven by `cantonese_parity`.
   `ascii_punct` is not exposed as a working toggle until M18 implements the
   processor behavior. The fixed `jyut6ping3_mobile` browser schema lacks a
   `cangjie` namespace, so Reverse code display / Cangjie / `show_full_code` are
@@ -419,13 +421,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORK-PARITY-05 | backlog | Complete - correction edit-distance/min-distance/enable_correction gate/normal-only behavior implemented |
 | FORK-PARITY-06 | backlog | Complete - TypeDuck letter-tone preedit path implemented |
 | FORK-PARITY-07 | backlog | Complete - TypeDuck-profile `全形`/`半形` labels locked |
-| FORK-PARITY-08 | backlog | Complete - upstream ranking accepted; long-entry prediction preserved; threshold and never-first controls implemented |
+| FORK-PARITY-08 | backlog | Complete - upstream ranking accepted except the oracle-backed TypeDuck `jyut6ping3` prediction-count limit; long-entry prediction preserved with threshold and never-first controls implemented |
 | FORK-PARITY-09 | backlog | Complete - UI-side `display_languages` decision recorded |
 | M20-DEMO-01 | M20 | Complete - controls use existing customize/deploy and setOption paths while preserving ABI/export boundaries |
 | M20-DEMO-02 | M20 | Complete - prediction never-first defaults on; real-assets-calibrated threshold control filters `santai` predictions with documented range bounds |
 | M20-DEMO-03 | M20 | Complete - static/default-on features use guided scenarios, not fake toggles |
 | M20-DEMO-04 | M20 | Complete - local AGENTS guidance added for internal TypeDuck-Web harness, runtime package, and product-surface distinction |
-| M20-DEMO-05 | M20 | Complete - browser honesty gate separates visible before/after controls from explicit browser-surface N/A for Input Memory off-state, Auto-correction candidate rendering, and current-schema Cangjie/show_full_code limits; no working `ascii_punct` toggle before M18 |
+| M20-DEMO-05 | M20 | Complete - browser honesty gate separates visible before/after controls from explicit browser-surface N/A for Input Memory off-state and current-schema Cangjie/show_full_code limits; Auto-correction `nri` now has real browser before/after evidence; no working `ascii_punct` toggle before M18 |
 | M20-DEMO-06 | M20 | Complete - internal TypeDuck-Web harness is documented as the canonical browser playground for supported engine features |
 | M20-DEMO-07 | M20 | Complete - documented demo-default `combine_candidates` active control plus current-schema `show_full_code`/Cangjie N/A evidence |
 

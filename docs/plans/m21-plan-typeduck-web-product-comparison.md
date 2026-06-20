@@ -47,7 +47,7 @@ Run the **same typed inputs** in both apps (reuse the M20 guided scenarios + led
 | `ngohaigo` | auto-composition / sentence (`我係個`) |
 | `loengnincin`, `leoicijyu` | cross-boundary dictionary-phrase composition (`兩年前`; live-site observation expected `類似於`, but the hard `v1.1.2` oracle composes `類似如`) — the M21-GAP-01 investigation; verify each input's jyutping against the dict first |
 | `hou` | homograph grouping vs separate (`combine_candidates`) |
-| tone-letters (`seov`…) | `letter_to_tone` preedit |
+| tone-letters (`neivv`…) | `letter_to_tone` preedit; avoid `seov` because v1.1.2 still has the `eo`/`oe` lazy-sound fuzzy rule while the moving live product appears to have refined or dropped it |
 | a 1-edit typo | correction (on/off) |
 | an `hk2s` case | simplification toggle |
 | a reverse-lookup case | dictionary-panel pronunciations |
@@ -73,7 +73,7 @@ Label every difference. This is the fork-parity ledger applied to a live diff:
 | `needs-engine-investigation` | Unclear; capture and triage | triage |
 
 **Should-match (ledger `preserve✓`) behaviors** — a divergence here is real signal: core candidate set, fuzzy/容錯, auto-composition fallback, `combine_candidates`/separate, `hk2s` simplification, reverse-lookup pronunciations, `letter_to_tone`, `show_full_code`.
-**Expected-to-diverge** — prediction ranking order (F08), composition penalty / `matching_code_size` (do-not-preserve), LM sentence lattice (M17), display columns (F09), all UI.
+**Expected-to-diverge** — broad prediction ranking order (F08) beyond the M21-GAP-02 `jyut6ping3` prediction-count fixture, composition penalty / `matching_code_size` (do-not-preserve), LM sentence lattice (M17), display columns (F09), all UI.
 
 > **Dictionary-phrase composition is should-match; only its *ranking* may diverge.**
 > Producing the composed sentence *at all* (e.g. `兩年前` from `兩年`+`前`) is M15
@@ -196,11 +196,37 @@ so the cause must be found empirically, not assumed.
    the captured `v1.1.2` golden. Then update the ledger note-5 row and add a tracked
    engine work item. No ABI / `RimeCandidate` change; AI stays default-off.
 
+## Section 5c — M21-GAP-02: prefix fallback and prediction-count divergence (fixed)
+
+> **Status:** classified and fixed on 2026-06-20 · `unexpected-candidate-gap`
+> / narrowed `unexpected-ranking-gap`, confirmed by `v1.1.2` oracle fixtures.
+
+**Item A — `nri` prefix fallback.** Existing M14 correction fixtures already proved
+the hard oracle behavior: with correction off, `nri` falls back to the longest valid
+leading segment `n`, surfaces rows `我`, `你`, `外`, `能`, `內`, `呢`, and previews
+`我ri`; with correction on, `你` is first and commits as `你`. Yune now applies that
+partial-parse prefix fallback for the TypeDuck `jyut6ping3` profile, and the M20
+browser evidence was regenerated as a real correction off/on before/after rather
+than a browser-surface N/A.
+
+**Item B — prediction count / single-character crowding.** New fixture
+`jyut6ping3-m21-prediction-ranking.json` locks TypeDuck v1.1.2 behavior for
+`santai`, `sigin`, `gwongdung`, and `hoenggong`: one long prediction is kept near the
+front, while single-character matches remain on page 1. Yune now adopts that
+prediction-count limit for the `jyut6ping3` profile only. This narrows
+fork-parity-ledger note 4 without reopening broad fork ranking byte parity.
+
+**Item C — `seov` version skew.** The v1.1.2 schema still contains the `eo`/`oe`
+lazy-sound fuzzy rule in `include.yaml` (`derive/eo/oe/ # 容錯 eo/oe 不分`), so Yune is
+correct to apply it. The deployed product appears to have refined or dropped that
+rule. Treat `seov` as expected version skew and use a non-`eo`/`oe` input such as
+`neivv` for future letter-to-tone product captures.
+
 ## Guardrails
 
 - **Complements, does not replace,** the `v1.1.2` fixture parity (which stays the reproducible gold standard).
 - The deployed site is a **moving target** — re-stamp its version every run; a diff may be version skew, not a Yune bug.
-- **Do not chase** F08 prediction-ranking or M17–M19 LM gaps as bugs — they are expected.
+- **Do not chase** broad F08 prediction-ranking or M17–M19 LM gaps as bugs — they are expected, except where a locked `v1.1.2` fixture such as M21-GAP-02 proves a TypeDuck-profile prediction-count rule.
 - **No automated scraping** of the deployed product.
 - **Off the parity critical path** — timebox it; it is a sanity check + backlog feeder, not a gate.
 

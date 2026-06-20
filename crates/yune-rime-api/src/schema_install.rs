@@ -138,6 +138,8 @@ fn install_schema_dictionary_translator_from_config(
     let user_dict_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
         .and_then(config_scalar_string)
         .and_then(|name| validate_data_resource_id(&name));
+    let is_typeduck_jyut6ping3_profile =
+        is_typeduck_jyut6ping3_profile(schema_config, user_dict_name.as_deref());
     let dictionary = match load_schema_table_dictionary(schema_config, name_space) {
         DictionaryLoadOutcome::Compiled(dictionary) => dictionary,
         DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
@@ -241,6 +243,30 @@ fn install_schema_dictionary_translator_from_config(
     })
     .and_then(config_scalar_bool)
     .unwrap_or(false);
+    let prediction_candidate_limit = find_config_value(
+        schema_config,
+        &format!("{name_space}/prediction_candidate_limit"),
+    )
+    .or_else(|| {
+        find_config_value(
+            schema_config,
+            &format!("{name_space}/prediction/candidate_limit"),
+        )
+    })
+    .or_else(|| find_config_value(schema_config, &format!("{name_space}/prediction_limit")))
+    .and_then(config_scalar_int)
+    .and_then(|limit| usize::try_from(limit).ok())
+    .or_else(|| is_typeduck_jyut6ping3_profile.then_some(1));
+    let prefix_fallback =
+        find_config_value(schema_config, &format!("{name_space}/prefix_fallback"))
+            .or_else(|| {
+                find_config_value(
+                    schema_config,
+                    &format!("{name_space}/partial_parse_prefix_fallback"),
+                )
+            })
+            .and_then(config_scalar_bool)
+            .unwrap_or(is_typeduck_jyut6ping3_profile);
     let delimiters = find_config_value(schema_config, &format!("{name_space}/delimiter"))
         .or_else(|| find_config_value(schema_config, "speller/delimiter"))
         .and_then(config_scalar_string)
@@ -259,6 +285,7 @@ fn install_schema_dictionary_translator_from_config(
         .with_spelling_algebra(&spelling_algebra)
         .with_completion(enable_completion)
         .with_correction(enable_correction)
+        .with_dynamic_correction_lookup(is_typeduck_jyut6ping3_profile)
         .with_charset_filter(enable_charset_filter)
         .with_sentence(enable_sentence)
         .with_sentence_over_completion(sentence_over_completion)
@@ -271,14 +298,27 @@ fn install_schema_dictionary_translator_from_config(
         .with_combine_candidates(combine_candidates)
         .with_affix(prefix, suffix)
         .with_show_full_code(show_full_code)
-        .with_prediction_never_first(prediction_never_first);
+        .with_prediction_never_first(prediction_never_first)
+        .with_prefix_fallback(prefix_fallback);
     if let Some(threshold) = prediction_weight_threshold {
         translator = translator.with_prediction_weight_threshold(threshold);
+    }
+    if let Some(limit) = prediction_candidate_limit {
+        translator = translator.with_prediction_candidate_limit(limit);
     }
     if prediction_never_first {
         session.engine.set_prediction_never_first(true);
     }
     session.engine.add_translator(translator);
+}
+
+fn is_typeduck_jyut6ping3_profile(schema_config: &Value, dictionary_name: Option<&str>) -> bool {
+    if dictionary_name != Some("jyut6ping3") {
+        return false;
+    }
+    find_config_value(schema_config, "schema/schema_id")
+        .and_then(config_scalar_string)
+        .is_some_and(|schema_id| schema_id == "jyut6ping3" || schema_id.starts_with("jyut6ping3_"))
 }
 
 fn spelling_algebra_for_dictionary(schema_config: &Value) -> Vec<String> {

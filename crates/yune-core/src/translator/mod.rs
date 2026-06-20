@@ -37,6 +37,24 @@ impl LookupCodeSpec {
     }
 }
 
+#[derive(Clone)]
+struct PendingLookupCandidate {
+    entry_code: String,
+    lookup_code: String,
+    candidate: Candidate,
+    correction_distance: Option<usize>,
+}
+
+impl PendingLookupCandidate {
+    fn raw_quality(&self) -> f32 {
+        let mut quality = self.candidate.quality;
+        if let Some(distance) = self.correction_distance {
+            quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
+        }
+        quality
+    }
+}
+
 fn sentence_piece_quality(raw_quality: f32) -> f32 {
     raw_quality.max(1.0).ln() - TYPEDUCK_SENTENCE_WORD_PENALTY
 }
@@ -69,6 +87,7 @@ pub struct StaticTableTranslator {
     normal_codes: HashSet<String>,
     enable_completion: bool,
     enable_correction: bool,
+    dynamic_correction_lookup: bool,
     enable_charset_filter: bool,
     enable_sentence: bool,
     sentence_over_completion: bool,
@@ -87,6 +106,8 @@ pub struct StaticTableTranslator {
     single_letter_sentence_guard_enabled: bool,
     prediction_weight_threshold: Option<f32>,
     prediction_never_first: bool,
+    prediction_candidate_limit: Option<usize>,
+    prefix_fallback: bool,
 }
 
 impl StaticTableTranslator {
@@ -117,6 +138,7 @@ impl StaticTableTranslator {
             normal_codes,
             enable_completion: false,
             enable_correction: false,
+            dynamic_correction_lookup: false,
             enable_charset_filter: false,
             enable_sentence: false,
             sentence_over_completion: false,
@@ -135,6 +157,8 @@ impl StaticTableTranslator {
             single_letter_sentence_guard_enabled: false,
             prediction_weight_threshold: None,
             prediction_never_first: false,
+            prediction_candidate_limit: None,
+            prefix_fallback: false,
         }
     }
 
@@ -164,6 +188,7 @@ impl StaticTableTranslator {
             normal_codes,
             enable_completion: false,
             enable_correction: false,
+            dynamic_correction_lookup: false,
             enable_charset_filter: false,
             enable_sentence: false,
             sentence_over_completion: false,
@@ -182,6 +207,8 @@ impl StaticTableTranslator {
             single_letter_sentence_guard_enabled: false,
             prediction_weight_threshold: None,
             prediction_never_first: false,
+            prediction_candidate_limit: None,
+            prefix_fallback: false,
         }
     }
 
@@ -194,6 +221,12 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_correction(mut self, enable_correction: bool) -> Self {
         self.enable_correction = enable_correction;
+        self
+    }
+
+    #[must_use]
+    pub fn with_dynamic_correction_lookup(mut self, dynamic_correction_lookup: bool) -> Self {
+        self.dynamic_correction_lookup = dynamic_correction_lookup;
         self
     }
 
@@ -292,6 +325,18 @@ impl StaticTableTranslator {
     }
 
     #[must_use]
+    pub fn with_prediction_candidate_limit(mut self, limit: usize) -> Self {
+        self.prediction_candidate_limit = Some(limit);
+        self
+    }
+
+    #[must_use]
+    pub fn with_prefix_fallback(mut self, prefix_fallback: bool) -> Self {
+        self.prefix_fallback = prefix_fallback;
+        self
+    }
+
+    #[must_use]
     pub fn with_corrections(
         mut self,
         corrections: impl IntoIterator<Item = RimeCorrectionEntry>,
@@ -365,6 +410,22 @@ impl StaticTableTranslator {
                 }
                 corrections.push((correction.canonical_code.clone(), distance));
             }
+            if self.dynamic_correction_lookup {
+                for canonical_code in &self.normal_codes {
+                    if canonical_code == lookup_code {
+                        continue;
+                    }
+                    let distance = typeduck_restricted_distance(
+                        canonical_code,
+                        lookup_code,
+                        TYPEDUCK_CORRECTION_MAX_DISTANCE,
+                    );
+                    if distance == 0 || distance > TYPEDUCK_CORRECTION_MAX_DISTANCE {
+                        continue;
+                    }
+                    corrections.push((canonical_code.clone(), distance));
+                }
+            }
             if let Some(min_distance) = corrections.iter().map(|(_, distance)| *distance).min() {
                 for (code, distance) in corrections {
                     if distance == min_distance && !specs.iter().any(|spec| spec.code == code) {
@@ -389,11 +450,17 @@ impl StaticTableTranslator {
         !self.dictionary_exclude.contains(&candidate.text)
     }
 
-    fn is_prediction_candidate_allowed(&self, candidate: &Candidate) -> bool {
+    fn is_prediction_candidate_allowed(&self, lookup_code: &str, candidate: &Candidate) -> bool {
         match self.prediction_weight_threshold {
-            Some(threshold) => candidate.quality >= threshold,
-            None => true,
+            Some(threshold) if candidate.quality < threshold => return false,
+            _ => {}
         }
+        if self.prediction_candidate_limit.is_some()
+            && complete_syllable_prefix_count(&candidate.comment, lookup_code).is_none()
+        {
+            return false;
+        }
+        true
     }
 
     fn enforce_prediction_never_first(&self, candidates: &mut [Candidate]) {
@@ -468,59 +535,150 @@ impl StaticTableTranslator {
         let mut candidates = Vec::new();
         for lookup_spec in lookup_specs {
             let lookup_code = lookup_spec.code.as_str();
+            let mut pending = Vec::new();
             if let Some(exact_candidates) = self.entries_by_code.get(lookup_code) {
-                candidates.extend(
+                pending.extend(
                     exact_candidates
                         .iter()
                         .filter(|candidate| {
                             self.is_dictionary_word_allowed(candidate)
                                 && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
                         })
-                        .map(|candidate| {
-                            self.candidate_for_lookup(
-                                lookup_code,
-                                candidate,
-                                lookup_code,
-                                lookup_spec.correction_distance,
-                            )
+                        .map(|candidate| PendingLookupCandidate {
+                            entry_code: lookup_code.to_owned(),
+                            lookup_code: lookup_code.to_owned(),
+                            candidate: candidate.clone(),
+                            correction_distance: lookup_spec.correction_distance,
                         }),
                 );
             }
-            if lookup_spec.correction_distance.is_some()
-                || !self.enable_completion
-                || lookup_code.is_empty()
+            if lookup_spec.correction_distance.is_none()
+                && self.enable_completion
+                && !lookup_code.is_empty()
             {
-                continue;
-            }
-            for (entry_code, entry_candidates) in
-                self.entries_by_code.range(lookup_code.to_owned()..)
-            {
-                if !entry_code.starts_with(lookup_code) {
-                    break;
+                let mut completion_candidates = Vec::new();
+                for (entry_code, entry_candidates) in
+                    self.entries_by_code.range(lookup_code.to_owned()..)
+                {
+                    if !entry_code.starts_with(lookup_code) {
+                        break;
+                    }
+                    if entry_code == lookup_code {
+                        continue;
+                    }
+                    completion_candidates.extend(
+                        entry_candidates
+                            .iter()
+                            .filter(|candidate| {
+                                self.is_dictionary_word_allowed(candidate)
+                                    && self.is_prediction_candidate_allowed(lookup_code, candidate)
+                                    && (!filter_by_charset
+                                        || !contains_extended_cjk(&candidate.text))
+                            })
+                            .map(|candidate| PendingLookupCandidate {
+                                entry_code: entry_code.clone(),
+                                lookup_code: lookup_code.to_owned(),
+                                candidate: candidate.clone(),
+                                correction_distance: lookup_spec.correction_distance,
+                            }),
+                    );
                 }
-                if entry_code == lookup_code {
-                    continue;
+                if let Some(limit) = self.prediction_candidate_limit {
+                    completion_candidates.sort_by(|left, right| {
+                        right
+                            .raw_quality()
+                            .partial_cmp(&left.raw_quality())
+                            .unwrap_or(Ordering::Equal)
+                            .then_with(|| left.entry_code.cmp(&right.entry_code))
+                            .then_with(|| left.candidate.text.cmp(&right.candidate.text))
+                    });
+                    completion_candidates.truncate(limit);
                 }
-                candidates.extend(
-                    entry_candidates
-                        .iter()
-                        .filter(|candidate| {
-                            self.is_dictionary_word_allowed(candidate)
-                                && self.is_prediction_candidate_allowed(candidate)
-                                && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
-                        })
-                        .map(|candidate| {
-                            self.candidate_for_lookup(
-                                entry_code,
-                                candidate,
-                                lookup_code,
-                                lookup_spec.correction_distance,
-                            )
-                        }),
-                );
+                pending.extend(completion_candidates);
             }
+            if self.prediction_candidate_limit.is_some() {
+                pending.sort_by(|left, right| {
+                    right
+                        .raw_quality()
+                        .partial_cmp(&left.raw_quality())
+                        .unwrap_or(Ordering::Equal)
+                        .then_with(|| left.entry_code.cmp(&right.entry_code))
+                        .then_with(|| left.candidate.text.cmp(&right.candidate.text))
+                });
+            }
+            candidates.extend(pending.into_iter().map(|pending| {
+                self.candidate_for_lookup(
+                    &pending.entry_code,
+                    &pending.candidate,
+                    &pending.lookup_code,
+                    pending.correction_distance,
+                )
+            }));
         }
         candidates
+    }
+
+    fn prefix_fallback_candidates(
+        &self,
+        input: &str,
+        lookup_code: &str,
+        filter_by_charset: bool,
+        existing_candidates: &[Candidate],
+    ) -> Vec<Candidate> {
+        let Some((prefix, consumed_lookup_len)) = self.longest_valid_lookup_prefix(lookup_code)
+        else {
+            return Vec::new();
+        };
+        let Some(prefix_candidates) = self.entries_by_code.get(prefix) else {
+            return Vec::new();
+        };
+        let consumed_input_len = input
+            .len()
+            .saturating_sub(lookup_code.len())
+            .saturating_add(consumed_lookup_len);
+        let mut seen_texts = existing_candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<HashSet<_>>();
+        let mut candidates = Vec::new();
+        for candidate in prefix_candidates.iter().filter(|candidate| {
+            self.is_dictionary_word_allowed(candidate)
+                && original_code_allows_prefix_fallback(&candidate.comment, prefix)
+                && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+        }) {
+            let mut candidate = self.candidate_for_lookup(prefix, candidate, prefix, None);
+            if !seen_texts.insert(candidate.text.clone()) {
+                continue;
+            }
+            candidate.source = CandidateSource::PartialTable {
+                consumed: consumed_input_len,
+            };
+            candidates.push(candidate);
+        }
+        candidates
+    }
+
+    fn longest_valid_lookup_prefix<'a>(&self, lookup_code: &'a str) -> Option<(&'a str, usize)> {
+        let mut boundaries = lookup_code
+            .char_indices()
+            .map(|(index, _)| index)
+            .filter(|index| *index > 0)
+            .collect::<Vec<_>>();
+        boundaries.reverse();
+        for end in boundaries {
+            let prefix = &lookup_code[..end];
+            if self.entries_by_code.contains_key(prefix) {
+                return Some((prefix, end));
+            }
+        }
+        None
+    }
+
+    fn assign_ordered_candidate_qualities(candidates: &mut [Candidate]) {
+        let base = candidates.len() as f32 + 1.0;
+        for (index, candidate) in candidates.iter_mut().enumerate() {
+            candidate.quality = base - index as f32;
+        }
     }
 
     fn translated_candidates(&self, input: &str, filter_by_charset: bool) -> Vec<Candidate> {
@@ -546,14 +704,22 @@ impl StaticTableTranslator {
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         let mut candidates =
             self.candidates_for_lookup_codes(&expanded_lookup_codes, filter_by_charset);
+        let has_correction_lookup = expanded_lookup_codes
+            .iter()
+            .any(|spec| spec.correction_distance.is_some());
+        let has_full_exact_candidate = candidates
+            .iter()
+            .any(|candidate| candidate.source == CandidateSource::Table);
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
         self.enforce_prediction_never_first(&mut candidates);
 
+        let mut used_sentence = false;
         if candidates.is_empty() && self.enable_sentence {
             if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
                 candidates.push(sentence);
+                used_sentence = true;
             }
         } else if self.sentence_over_completion
             && candidates
@@ -569,6 +735,23 @@ impl StaticTableTranslator {
             {
                 candidates.push(sentence);
             }
+        }
+
+        if self.prefix_fallback && !has_correction_lookup {
+            let should_add_prefix_fallback =
+                candidates.is_empty() || (!used_sentence && has_full_exact_candidate);
+            if should_add_prefix_fallback {
+                let prefix_candidates = self.prefix_fallback_candidates(
+                    input,
+                    lookup_code,
+                    filter_by_charset,
+                    &candidates,
+                );
+                candidates.extend(prefix_candidates);
+            }
+        }
+        if self.prefix_fallback || self.prediction_candidate_limit.is_some() {
+            Self::assign_ordered_candidate_qualities(&mut candidates);
         }
 
         candidates
@@ -751,6 +934,52 @@ fn entries_by_code(entries: &[(String, Candidate)]) -> BTreeMap<String, Vec<Cand
 
 fn normal_codes(entries: &[(String, Candidate)]) -> HashSet<String> {
     entries.iter().map(|(code, _)| code.clone()).collect()
+}
+
+fn complete_syllable_prefix_count(raw_code: &str, lookup_code: &str) -> Option<usize> {
+    let mut normalized = String::new();
+    let mut syllables = 0;
+    for ch in raw_code.chars() {
+        if ch.is_ascii_digit() {
+            syllables += 1;
+            if normalized == lookup_code {
+                return Some(syllables);
+            }
+            if normalized.len() >= lookup_code.len() {
+                return None;
+            }
+        } else if ch.is_ascii_alphabetic() {
+            normalized.push(ch.to_ascii_lowercase());
+        }
+    }
+    None
+}
+
+fn original_code_allows_prefix_fallback(raw_code: &str, lookup_code: &str) -> bool {
+    let normalized = normalized_original_code(raw_code);
+    let lookup = lookup_code
+        .chars()
+        .map(|ch| ch.to_ascii_lowercase())
+        .collect::<String>();
+    normalized == lookup || (lookup.len() == 1 && normalized.starts_with(&lookup))
+}
+
+fn normalized_original_code(raw_code: &str) -> String {
+    typeduck_rich_comment_code(raw_code)
+        .unwrap_or(raw_code)
+        .chars()
+        .filter(|ch| ch.is_ascii_alphabetic())
+        .map(|ch| ch.to_ascii_lowercase())
+        .collect()
+}
+
+fn typeduck_rich_comment_code(raw_code: &str) -> Option<&str> {
+    let normalized = raw_code.trim_start_matches(['\u{000b}', '\u{000c}', '\r']);
+    let mut fields = normalized.split(',');
+    let _rank = fields.next()?;
+    let _text = fields.next()?;
+    let code = fields.next()?.trim();
+    (!code.is_empty()).then_some(code)
 }
 
 fn typeduck_restricted_distance(left: &str, right: &str, threshold: usize) -> usize {

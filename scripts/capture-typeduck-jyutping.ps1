@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels", "All")]
+    [ValidateSet("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels", "PredictionRanking", "All")]
     [string]$Fixture = "Smoke",
     [string]$OracleRoot,
     [string]$Output,
@@ -453,7 +453,7 @@ $SchemaCommit = Get-SchemaCommit
 New-Item -ItemType Directory -Force -Path $CaptureRoot | Out-Null
 
 if ($Fixture -eq "All") {
-    foreach ($Name in @("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels")) {
+    foreach ($Name in @("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels", "PredictionRanking")) {
         & $PSCommandPath -Fixture $Name -OracleRoot $OracleRoot
         if ($LASTEXITCODE -ne 0) {
             throw "fixture capture failed for $Name with exit code $LASTEXITCODE"
@@ -472,6 +472,7 @@ if ([string]::IsNullOrWhiteSpace($Output)) {
         "PreferUserPhrase" { "jyut6ping3-fork-parity-02-prefer-user-phrase.json" }
         "LetterToTone" { "jyut6ping3-fork-parity-06-letter-to-tone.json" }
         "StateLabels" { "jyut6ping3-fork-parity-07-state-labels.json" }
+        "PredictionRanking" { "jyut6ping3-m21-prediction-ranking.json" }
     }
     $Output = Join-Path $RepoRoot (Join-Path "crates\yune-core\tests\fixtures\typeduck-v1.1.2" $OutputName)
 }
@@ -626,6 +627,26 @@ if ($Fixture -eq "Smoke") {
         deployed_schema_file = "jyut6ping3_mobile.schema.yaml"
     }
     $FixtureBody = New-Fixture "typeduck_v112_full_shape_state_labels" @("jyut6ping3_mobile") @("state_labels") $Cases $Finding
+    Write-JsonFile $Output $FixtureBody
+} elseif ($Fixture -eq "PredictionRanking") {
+    if ($null -eq $Inputs -or $Inputs.Count -eq 0) {
+        $Inputs = [string[]]@("santai", "sigin", "gwongdung", "hoenggong")
+    }
+    $Variant = New-Variant `
+        -Group "m21-prediction-ranking" `
+        -Name "prediction_ranking_mobile" `
+        -VariantSchema "jyut6ping3_mobile" `
+        -Patches ([string[]]@()) `
+        -VariantInputs $Inputs
+    $Cases = Invoke-ChildCapture $Variant
+    $Finding = [ordered]@{
+        input_sequence = $Inputs
+        oracle_observable_surface = "RimeGetContext selected_candidates records the TypeDuck v1.1.2 long-prediction interleave with leading single-character matches"
+        prediction_source = "TypeDuck-HK/librime v1.1.2 script_translator Dictionary::lookup_table and PrepareCandidate prediction path"
+        prediction_threshold = "kPredictionThreshold = log(100)"
+    }
+    $FixtureBody = New-Fixture "typeduck_v112_prediction_count_interleave" @("jyut6ping3_mobile") @("prediction_ranking", "prefix_fallback") $Cases $Finding
+    $FixtureBody["input_sequence"] = $Inputs
     Write-JsonFile $Output $FixtureBody
 }
 

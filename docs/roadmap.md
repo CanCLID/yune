@@ -315,9 +315,11 @@ live session options through `setOption()` (`ascii_mode`, `full_shape`,
 `simplification`). Browser-visible controls have before/after assertions,
 including learned prediction ranking for `prediction_never_first`; Input Memory
 records a visible learned-prediction on-state but an explicit browser-surface
-N/A for memory-off suppression, and Auto-correction records explicit
-browser-surface N/A for `nri` candidate rendering while retaining
-`cantonese_parity` as the engine proof. Deploy-time controls whose current
+N/A for memory-off suppression, and Auto-correction records real `nri`
+browser before/after evidence: correction off renders the v1.1.2 prefix
+fallback page and correction on renders `你` first, while `cantonese_parity`
+continues to lock the full oracle row set and commit previews. Deploy-time
+controls whose current
 browser panel effect is not independently visible keep persisted
 `jyut6ping3_mobile.custom.yaml` assertions, without being counted as
 candidate-output proof. Display-only controls are grouped separately and prove
@@ -457,6 +459,14 @@ is **Track 2 (broad upstream depth):**
   penalty for dictionary sentence composition, and
   [`fork-parity-ledger.md`](./fork-parity-ledger.md) note 5 records the narrowed
   exception to the previous do-not-preserve decision.
+- **M21-GAP-02 — partial-parse prefix fallback and prediction-count behavior
+  (fixed against `v1.1.2`).** The TypeDuck `jyut6ping3` profile now falls back to
+  the longest valid leading segment when full-input lookup fails, so `nri` with
+  correction off surfaces the oracle `n` candidates and commits `我ri`, while
+  correction on returns `你` first. A new locked prediction-ranking fixture
+  (`santai`, `sigin`, `gwongdung`, `hoenggong`) also adopts the fork's
+  prediction-count limiting for this profile only, keeping single-character
+  matches on page 1 without reopening broad fork ranking byte parity.
 - **M22 — TypeDuck-Web playground feature-completeness + multi-schema + engine
   debug inspector** — the M20 successor (playground build-out, *not* M21's
   product-comparison protocol). Surfaces more of Yune's engine in the internal

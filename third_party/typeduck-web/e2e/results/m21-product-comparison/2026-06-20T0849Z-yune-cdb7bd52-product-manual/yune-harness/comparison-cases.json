@@ -463,9 +463,9 @@
       "notes": null
     },
     {
-      "id": "tone-letters-seov",
-      "input": "seov",
-      "expectedText": "瀡板",
+      "id": "tone-letters-neivv",
+      "input": "neivv",
+      "expectedText": "尼",
       "expectedFound": true,
       "aiEnabled": false,
       "inputValue": "",
@@ -473,51 +473,147 @@
       "candidates": [
         {
           "index": 0,
-          "text": "瀡板",
+          "text": "尼",
           "note": null,
           "source": null,
-          "rowText": "1.soe4 baan2瀡板"
+          "rowText": "1.nei4尼"
         }
       ],
       "highlightedIndex": 0,
       "topNText": [
-        "瀡板"
+        "尼"
       ],
       "rowText": [
-        "1.soe4 baan2瀡板"
+        "1.nei4尼"
       ],
       "comments": [],
-      "notes": null
+      "notes": "Replaces seov so the letter_to_tone product-capture row does not collide with v1.1.2 eo/oe fuzzy version skew."
     },
     {
       "id": "one-edit-typo-nri-correction-off",
       "input": "nri",
-      "expectedText": null,
-      "expectedFound": null,
+      "expectedText": "我",
+      "expectedFound": true,
       "aiEnabled": false,
       "inputValue": "",
-      "panelCount": 0,
-      "candidates": [],
+      "panelCount": 1,
+      "candidates": [
+        {
+          "index": 0,
+          "text": "我",
+          "note": "\\fngo5",
+          "source": null,
+          "rowText": "1.我\\fngo5"
+        },
+        {
+          "index": 1,
+          "text": "你",
+          "note": "\\fnei5",
+          "source": null,
+          "rowText": "2.你\\fnei5"
+        },
+        {
+          "index": 2,
+          "text": "外",
+          "note": "\\fngoi6",
+          "source": null,
+          "rowText": "3.外\\fngoi6"
+        },
+        {
+          "index": 3,
+          "text": "能",
+          "note": "\\fnang4",
+          "source": null,
+          "rowText": "4.能\\fnang4"
+        },
+        {
+          "index": 4,
+          "text": "內",
+          "note": "\\fnoi6",
+          "source": null,
+          "rowText": "5.內\\fnoi6"
+        }
+      ],
       "highlightedIndex": 0,
-      "topNText": [],
-      "rowText": [],
+      "topNText": [
+        "我",
+        "你",
+        "外",
+        "能",
+        "內"
+      ],
+      "rowText": [
+        "1.我\\fngo5",
+        "2.你\\fnei5",
+        "3.外\\fngoi6",
+        "4.能\\fnang4",
+        "5.內\\fnoi6"
+      ],
       "comments": [],
-      "notes": "No browser candidate panel renders for nri with correction off."
+      "notes": "M21-GAP-02 fixed browser path: prefix fallback renders the v1.1.2 correction_default rows; cantonese_parity locks row 6 and commit preview 我ri."
     },
     {
       "id": "one-edit-typo-nri-correction-on",
       "input": "nri",
-      "expectedText": null,
-      "expectedFound": null,
+      "expectedText": "你",
+      "expectedFound": true,
       "aiEnabled": false,
       "inputValue": "",
-      "panelCount": 0,
-      "candidates": [],
+      "panelCount": 1,
+      "candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "note": null,
+          "source": null,
+          "rowText": "1.nei5你you (singular)ⓘ"
+        },
+        {
+          "index": 1,
+          "text": "呢",
+          "note": null,
+          "source": null,
+          "rowText": "2.ne1呢(how about)ⓘ"
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "note": null,
+          "source": null,
+          "rowText": "3.nei4尼nunⓘ"
+        },
+        {
+          "index": 3,
+          "text": "妮",
+          "note": null,
+          "source": null,
+          "rowText": "4.nei4妮little girlⓘ"
+        },
+        {
+          "index": 4,
+          "text": "彌",
+          "note": null,
+          "source": null,
+          "rowText": "5.nei4彌full; fillⓘ"
+        }
+      ],
       "highlightedIndex": 0,
-      "topNText": [],
-      "rowText": [],
+      "topNText": [
+        "你",
+        "呢",
+        "尼",
+        "妮",
+        "彌"
+      ],
+      "rowText": [
+        "1.nei5你you (singular)ⓘ",
+        "2.ne1呢(how about)ⓘ",
+        "3.nei4尼nunⓘ",
+        "4.nei4妮little girlⓘ",
+        "5.nei4彌full; fillⓘ"
+      ],
       "comments": [],
-      "notes": "No browser candidate panel renders for nri with correction on; explicit browser-surface N/A, engine-proven at cantonese_parity."
+      "notes": "M21-GAP-02 fixed browser path: correction-enabled output matches the v1.1.2 correction_enabled fixture top row."
     },
     {
       "id": "hk2s-ngohaigo-simplification-on",

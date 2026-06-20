@@ -1,0 +1,131 @@
+{
+  "defaultState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "我",
+        "note": "\\fngo5",
+        "source": null,
+        "rowText": "1.我\\fngo5"
+      },
+      {
+        "index": 1,
+        "text": "你",
+        "note": "\\fnei5",
+        "source": null,
+        "rowText": "2.你\\fnei5"
+      },
+      {
+        "index": 2,
+        "text": "外",
+        "note": "\\fngoi6",
+        "source": null,
+        "rowText": "3.外\\fngoi6"
+      },
+      {
+        "index": 3,
+        "text": "能",
+        "note": "\\fnang4",
+        "source": null,
+        "rowText": "4.能\\fnang4"
+      },
+      {
+        "index": 4,
+        "text": "內",
+        "note": "\\fnoi6",
+        "source": null,
+        "rowText": "5.內\\fnoi6"
+      }
+    ]
+  },
+  "enabledState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "你",
+        "note": null,
+        "source": null,
+        "rowText": "1.nei5你you (singular)ⓘ"
+      },
+      {
+        "index": 1,
+        "text": "呢",
+        "note": null,
+        "source": null,
+        "rowText": "2.ne1呢(how about)ⓘ"
+      },
+      {
+        "index": 2,
+        "text": "尼",
+        "note": null,
+        "source": null,
+        "rowText": "3.nei4尼nunⓘ"
+      },
+      {
+        "index": 3,
+        "text": "妮",
+        "note": null,
+        "source": null,
+        "rowText": "4.nei4妮little girlⓘ"
+      },
+      {
+        "index": 4,
+        "text": "彌",
+        "note": null,
+        "source": null,
+        "rowText": "5.nei4彌full; fillⓘ"
+      }
+    ]
+  },
+  "persistedCorrectionDefault": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "false",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
+  "persistedCorrectionEnabled": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "true",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
+  "expectedDefaultTexts": [
+    "我",
+    "你",
+    "外",
+    "能",
+    "內"
+  ],
+  "expectedDefaultEngineTexts": [
+    "我",
+    "你",
+    "外",
+    "能",
+    "內",
+    "呢"
+  ],
+  "expectedEnabledTexts": [
+    "你",
+    "呢",
+    "尼",
+    "妮",
+    "彌"
+  ],
+  "browserSurface": "Auto-correction is a visible before/after browser behavior for nri: off shows prefix fallback rows on the browser page, on shows correction 你 first, and engine parity asserts the full oracle prefix list."
+}

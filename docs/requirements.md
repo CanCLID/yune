@@ -253,6 +253,47 @@ oracle or closed by an explicit product decision.
 - [x] **FORK-PARITY-08**: Product decision and implementation: do **not** chase full TypeDuck prediction-ranking byte parity; preserve upstream `1.17.0` long-entry completion (`santai` can surface `身體健康`) and expose profile controls for `prediction_never_first` plus raw-weight/frequency thresholds.
 - [x] **FORK-PARITY-09**: Product decision: `display_languages` gloss-column selection lives in TypeDuck-Web UI; the engine continues to emit stable, ordered lookup payloads without adding engine-side language filtering.
 
+## M20 Web Demo Showcase Controls Requirements
+
+**Status: planned.** M20 is a web/demo track for the patched TypeDuck-Web app,
+not a reopened M13. It exposes already-supported Yune behavior through honest UI
+controls and guided scenarios while preserving the M9/M13/M16 browser gates and
+the upstream-first ABI constraints.
+
+- [ ] **M20-DEMO-01**: TypeDuck-Web exposes only runtime-backed active controls:
+  schema/deploy-time controls flow through `customize()` plus deploy, live
+  session controls flow through `setOption()`, display-only controls are grouped
+  separately, and no new `RimeApi`, `RimeCandidate`, or `yune_typeduck_*` export
+  is added for UI convenience.
+- [ ] **M20-DEMO-02**: Prediction controls are honest and profile-aligned:
+  `prediction_never_first` defaults on, and the UI exposes one prediction
+  threshold control because the frequency/weight config aliases drive the same
+  engine threshold; the fine-grained threshold UI scale is derived from real
+  loaded dictionary/candidate quality and proven on real browser assets.
+- [ ] **M20-DEMO-03**: Static or default-on engine features are guided
+  scenarios, not fake toggles: long-entry prediction (`santai` -> `身體健康`),
+  Cantonese fuzzy/容錯, letter-to-tone, reverse lookup/dictionary panels, and
+  AI second-pass behavior are demonstrable without misrepresenting their
+  configurability.
+- [ ] **M20-DEMO-04**: The TypeDuck-Web and `@yune-ime/typeduck-runtime` subtrees
+  have local `AGENTS.md` guidance covering patch discipline, runtime wrapper
+  boundaries, browser evidence, and the control-honesty rule.
+- [ ] **M20-DEMO-05**: Real browser evidence includes an honesty gate proving
+  every visible active control changes candidate output, committed output,
+  status output, or persisted config, and every visible display control changes
+  rendering; `ascii_punct` is not exposed as a working toggle until M18
+  implements the processor behavior.
+- [ ] **M20-DEMO-06**: TypeDuck-Web is documented and maintained as Yune's
+  canonical browser playground: every browser-safe supported engine feature is
+  reachable through an active control or guided scenario, and unsupported or
+  deferred behavior is clearly absent or labeled rather than partially exposed.
+- [ ] **M20-DEMO-07**: Headline TypeDuck profile toggles are not lost in the
+  playground: `translator/combine_candidates` is an active control whose
+  default is verified against the real browser asset behavior, and
+  `show_full_code` is either exercised through a browser-reachable Cangjie
+  side-lookup scenario/control or explicitly recorded as N/A for the current
+  `jyut6ping3_mobile`-only surface.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -362,6 +403,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORK-PARITY-07 | backlog | Complete - TypeDuck-profile `全形`/`半形` labels locked |
 | FORK-PARITY-08 | backlog | Complete - upstream ranking accepted; long-entry prediction preserved; threshold and never-first controls implemented |
 | FORK-PARITY-09 | backlog | Complete - UI-side `display_languages` decision recorded |
+| M20-DEMO-01 | M20 | Planned - controls must use existing customize/setOption paths, keep display controls separate, and preserve ABI/export boundaries |
+| M20-DEMO-02 | M20 | Planned - prediction never-first defaults on; one fine-grained real-assets-scaled prediction threshold control |
+| M20-DEMO-03 | M20 | Planned - static/default-on features use guided scenarios, not fake toggles |
+| M20-DEMO-04 | M20 | Planned - local AGENTS guidance for TypeDuck-Web and runtime package |
+| M20-DEMO-05 | M20 | Planned - browser honesty gate for active and display controls; no working `ascii_punct` toggle before M18 |
+| M20-DEMO-06 | M20 | Planned - TypeDuck-Web is the canonical browser playground for supported engine features |
+| M20-DEMO-07 | M20 | Planned - verified-default `combine_candidates` active control plus `show_full_code` browser scenario or N/A |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -372,9 +420,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M13 AI-native frontend exposure requirements: 6 total, 6 complete
 - M14–M16 TypeDuck-Web fork parity requirements: 7 total, 7 complete (M16 complete with explicit browser/userdb inspection limits)
 - Fork parity backlog (Cantonese engine-parity, vs upstream 1.17.0): 9 total, 9 complete; see [`fork-parity-ledger.md`](./fork-parity-ledger.md)
-- Mapped to phases: 91
+- M20 web demo showcase controls requirements: 7 total, 0 complete
+- Mapped to phases: 98
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-19 - M13 complete; M14 TypeDuck v1.1.2 capture complete; M15 TypeDuck dictionary-driven engine parity complete; M16 TypeDuck-Web browser validation complete with documented browser/userdb limits; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*
+*Last updated: 2026-06-20 - M20 Web Demo Showcase Controls planned as a separate web/demo track; M13 remains complete; M14 TypeDuck v1.1.2 capture complete; M15 TypeDuck dictionary-driven engine parity complete; M16 TypeDuck-Web browser validation complete with documented browser/userdb limits; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*

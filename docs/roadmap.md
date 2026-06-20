@@ -298,6 +298,36 @@ Detail: [`plans/archive/m14-plan-typeduck-v112-golden-capture.md`](./plans/archi
 
 ---
 
+## Planned - M20: Web demo showcase controls
+
+M20 turns the patched TypeDuck-Web app into Yune's canonical browser playground
+for demoing, stress-testing, and comparing the behavior already proven by M9,
+M13, M14-M16, and the FORK-PARITY backlog. It is a **separate web/demo track**,
+not a reopened M13: M13 remains the completed default-off AI frontend exposure
+milestone, while M20 is about making the browser demo highly controllable,
+honest, inspectable, and useful for manual dogfooding before deeper M17-M19
+work.
+
+The milestone exposes only controls backed by real runtime behavior:
+schema/deploy-time knobs through `customize()` (`enable_completion`,
+`enable_correction`, `enable_sentence`, learning, `combine_candidates`,
+`prediction_never_first`, and one measured, fine-grained real-assets-scaled
+prediction threshold) and
+live session options through `setOption()` (`ascii_mode`, `full_shape`,
+`simplification`). Display-only controls are grouped separately and must prove a
+visible rendering change. Static or default-on engine features such as `santai`
+-> `身體健康`, Cantonese fuzzy/容錯, letter-to-tone input, reverse lookup,
+`show_full_code` reachability/N-A, and AI second-pass behavior are presented as
+guided scenarios rather than fake toggles. `ascii_punct` is explicitly not
+exposed as a working toggle until M18 implements the processor-level behavior.
+As Yune adds browser-safe engine features, this playground should gain either an
+active control or a guided scenario so the web surface stays useful for future
+regression hunts and product demos.
+
+Detail: [`plans/m20-plan-web-demo-showcase-controls.md`](./plans/m20-plan-web-demo-showcase-controls.md).
+
+---
+
 ## Parked - M10: TypeDuck-Windows native backend
 
 TypeDuck-Windows remains valuable, but it is no longer the active core-engine
@@ -323,20 +353,24 @@ In priority order:
 
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 2. **Keep M9/M13/M16 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, and default-off M13 AI scenarios.
-3. **Advance Track 2 (M17–M19) opportunistically.** The upstream language model, prism generation, deployment-write, and breadth schemas now follow the upstream-first scope ledger after the M14–M16 TypeDuck-Web closeout.
-4. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
-5. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
+3. **Execute M20 as a web/demo track before or alongside Track 2.** Make TypeDuck-Web the canonical browser playground for real controls, guided scenarios, stress cases, and browser honesty checks without reopening M13 or changing the ABI.
+4. **Advance Track 2 (M17-M19) opportunistically.** The upstream language model, prism generation, deployment-write, and breadth schemas now follow the upstream-first scope ledger after the M14-M16 TypeDuck-Web closeout.
+5. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
+6. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
 
 ---
 
 ## Beyond M12 — trajectory & scope ledger
 
 Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
-list. **TypeDuck `jyut6ping3` reconciliation is now the active arc — see M15–M16
-above.** The remaining arc is **Track 2 (broad upstream depth), kept lighter until
-TypeDuck-Web fork parity is proven:**
+list. **TypeDuck `jyut6ping3` reconciliation is complete; M20 is the active
+web/demo track that makes the proven behavior easier to dogfood.** The remaining
+engine-depth arc is **Track 2 (broad upstream depth):**
 
-- **M17 — Upstream sentence / language model (poet)** — the statistical LM for
+- **M20 - Web demo showcase controls** - TypeDuck-Web controls and guided
+  scenarios for already-supported engine behavior, with an honesty gate proving
+  every visible active control changes observable output or persisted config.
+- **M17 - Upstream sentence / language model (poet)** - the statistical LM for
   `luna_pinyin` sentence/lattice parity (the two blocked upstream tests). The
   heavy item; *not* required for TypeDuck-Web parity.
 - **M18 — Deployment & processor depth** — spelling-algebra prism generation, a

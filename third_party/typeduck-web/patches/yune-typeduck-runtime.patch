@@ -224,9 +224,15 @@ index 0add9ac..9390478 100644
  
  export class CandidateEntry {
 diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
-index 298a42d..5589b2d 100644
+index 298a42d..e5e1cff 100644
 --- a/src/CandidatePanel.tsx
 +++ b/src/CandidatePanel.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useEffect, useRef, useCallback } from "react";
++import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
+ 
+ import Candidate from "./Candidate";
+ import CandidateInfo from "./CandidateInfo";
 @@ -8,15 +8,17 @@ import DictionaryPanel from "./DictionaryPanel";
  import Rime from "./rime";
  import { isPrintable, notify } from "./utils";
@@ -333,7 +339,7 @@ index 298a42d..5589b2d 100644
  		hideDictionary();
  	}, [deployStatus, setInputState, hideDictionary]);
  
-+	useEffect(() => {
++	useLayoutEffect(() => {
 +		inputStateRef.current = inputState;
 +	}, [inputState]);
 +
@@ -614,10 +620,10 @@ index ff262af..156941a 100644
  }
 diff --git a/src/YuneFeatureShowcase.tsx b/src/YuneFeatureShowcase.tsx
 new file mode 100644
-index 0000000..c71cc06
+index 0000000..2d0c463
 --- /dev/null
 +++ b/src/YuneFeatureShowcase.tsx
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,70 @@
 +interface Scenario {
 +	label: string;
 +	input: string;
@@ -658,7 +664,6 @@ index 0000000..c71cc06
 +	textArea.focus();
 +	if (document.querySelector(".candidate-panel")) {
 +		sendKeyboardEvent(textArea, "keydown", "Escape", "Escape");
-+		sendKeyboardEvent(textArea, "keyup", "Escape", "Escape");
 +	}
 +	textArea.value = "";
 +	textArea.selectionStart = textArea.selectionEnd = 0;

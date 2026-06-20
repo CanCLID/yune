@@ -1,0 +1,27 @@
+{
+  "learningOn": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "false",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
+  "learningOff": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "false",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "false",
+    "translator/encode_commit_history": "false",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
+  "proof": "Input Memory is a deploy-time schema customization verified through the persisted jyut6ping3_mobile.custom.yaml snapshot emitted by the real browser worker."
+}

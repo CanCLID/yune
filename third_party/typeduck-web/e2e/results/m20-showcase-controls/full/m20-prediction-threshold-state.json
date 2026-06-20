@@ -61,5 +61,11 @@
     ]
   },
   "calibratedValue": 50000,
+  "selectorRange": {
+    "min": 0,
+    "max": 200000,
+    "step": 1000,
+    "rationale": "Fine-grained browser control around the observed 50000 cutoff; range remains above the real-assets probe value so future higher-weight dictionary predictions remain reachable without exposing separate alias sliders."
+  },
   "calibration": "Derived from real jyut6ping3_mobile browser assets: santai predictions disappear at 50000 while direct candidates remain."
 }

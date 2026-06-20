@@ -29,16 +29,10 @@ index cbe61db..6d1043d 100644
  		"react-dom": "^18.3.1",
  		"react-toastify": "^10.0.5",
 diff --git a/src/App.tsx b/src/App.tsx
-index c43ccbc..9165d12 100644
+index c43ccbc..33e5383 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -1,4 +1,4 @@
--import { useEffect, useReducer, useState } from "react";
-+﻿import { useEffect, useReducer, useState } from "react";
- 
- import { ToastContainer } from "react-toastify";
- 
-@@ -10,16 +10,21 @@ import Rime, { subscribe } from "./rime";
+@@ -10,11 +10,16 @@ import Rime, { subscribe } from "./rime";
  import ThemeSwitcher from "./ThemeSwitcher";
  import Toolbar from "./Toolbar";
  import { notify } from "./utils";
@@ -55,21 +49,6 @@ index c43ccbc..9165d12 100644
  	useEffect(() => {
  		const { resolve } = startAsyncTask();
  		return subscribe("initialized", success => {
- 			if (!success) {
--				notify("error", "啟動輸入法引擎", "initializing the input method engine");
-+				notify("error", "å•Ÿå‹•è¼¸å…¥æ³•å¼•æ“Ž", "initializing the input method engine");
- 			}
- 			resolve();
- 		});
-@@ -37,7 +42,7 @@ export default function App() {
- 					resolve();
- 					break;
- 				case "failure":
--					notify("warning", "重新整理", "refreshing");
-+					notify("warning", "é‡æ–°æ•´ç†", "refreshing");
- 					reject();
- 					break;
- 			}
 @@ -45,13 +50,39 @@ export default function App() {
  	}, [startAsyncTask]);
  
@@ -112,12 +91,8 @@ index c43ccbc..9165d12 100644
  				if (!(await Rime.deploy() && success)) {
  					type = "warning";
  				}
-@@ -60,28 +91,70 @@ export default function App() {
- 				type = "error";
- 			}
- 			if (type) {
--				notify(type, "套用設定", "applying the settings");
-+				notify(type, "å¥—ç”¨è¨­å®š", "applying the settings");
+@@ -63,20 +94,62 @@ export default function App() {
+ 				notify(type, "套用設定", "applying the settings");
  			}
  			updateDeployStatus();
 -		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, updateDeployStatus, runAsyncTask]);
@@ -164,8 +139,7 @@ index c43ccbc..9165d12 100644
 +			<a className="mr-4 w-48 text-xl font-bold" href="/">
 +				TypeDuck
  			</a>
--			<h1 className="flex-1 text-2xl">TypeDuck 網頁版</h1>
-+			<h1 className="flex-1 text-2xl">TypeDuck ç¶²é ç‰ˆ</h1>
+ 			<h1 className="flex-1 text-2xl">TypeDuck 網頁版</h1>
  			<ThemeSwitcher />
  		</header>
  		<main className="m-auto p-8 max-w-7xl">
@@ -185,12 +159,6 @@ index c43ccbc..9165d12 100644
  			<Preferences {...preferences} />
  		</main>
  		<footer className="footer footer-center p-6 bg-secondary text-secondary-content">
- 			<aside>
--				© Copyright 2024 TypeDuck Team. All rights reserved.
-+				Â© Copyright 2024 TypeDuck Team. All rights reserved.
- 				<a href="https://github.com/TypeDuck-HK/TypeDuck-Web" target="_blank" rel="noreferrer">
- 					Source Code
- 				</a>
 diff --git a/src/Candidate.tsx b/src/Candidate.tsx
 index f0c2b50..c8c32b6 100644
 --- a/src/Candidate.tsx
@@ -473,22 +441,23 @@ index d5451b8..becad87 100644
  	return <label className="cursor-pointer label gap-2">
  		<input
 diff --git a/src/Preferences.tsx b/src/Preferences.tsx
-index 820a2e0..4e4169b 100644
+index 820a2e0..137ef1d 100644
 --- a/src/Preferences.tsx
 +++ b/src/Preferences.tsx
-@@ -1,8 +1,10 @@
+@@ -1,8 +1,11 @@
  import { LANGUAGE_LABELS, SHOW_ROMANIZATION_LABELS, Language, ShowRomanization } from "./consts";
 -import { Radio, RadioCheckbox, Segment, Toggle } from "./Inputs";
 +import { Radio, RadioCheckbox, Range, Segment, Toggle } from "./Inputs";
  
  import type { PreferencesWithSetter } from "./types";
  
++// Real-assets M20 probe: 50000 filters santai long predictions while preserving direct candidates.
 +const thresholdRange = { min: 0, max: 200000, step: 1000 } as const;
 +
  export default function Preferences(prefs: PreferencesWithSetter) {
  	function toggleDisplayLanguage(language: Language, checked: boolean) {
  		const newDisplayLanguages = new Set(prefs.displayLanguages);
-@@ -12,9 +14,51 @@ export default function Preferences(prefs: PreferencesWithSetter) {
+@@ -12,9 +15,51 @@ export default function Preferences(prefs: PreferencesWithSetter) {
  	return <section className="max-w-5xl lg:columns-2 m-auto">
  		<h3 className="font-bold text-2xl mb-2">輸入法設定 IME Settings</h3>
  		<ul>
@@ -541,7 +510,7 @@ index 820a2e0..4e4169b 100644
  					{(Object.entries(LANGUAGE_LABELS) as [Language, string][]).map(([language, label]) =>
  						<RadioCheckbox
  							key={language}
-@@ -65,7 +109,7 @@ export default function Preferences(prefs: PreferencesWithSetter) {
+@@ -65,7 +110,7 @@ export default function Preferences(prefs: PreferencesWithSetter) {
  			</li>
  			<li>
  				<fieldset className="border border-base-300 rounded px-3 pb-2 mb-1">
@@ -550,7 +519,7 @@ index 820a2e0..4e4169b 100644
  					{(Object.entries(SHOW_ROMANIZATION_LABELS) as [ShowRomanization, string][]).map(([value, label]) =>
  						<Radio
  							key={value}
-@@ -78,26 +122,11 @@ export default function Preferences(prefs: PreferencesWithSetter) {
+@@ -78,26 +123,11 @@ export default function Preferences(prefs: PreferencesWithSetter) {
  				</fieldset>
  			</li>
  			<li>
@@ -645,10 +614,10 @@ index ff262af..156941a 100644
  }
 diff --git a/src/YuneFeatureShowcase.tsx b/src/YuneFeatureShowcase.tsx
 new file mode 100644
-index 0000000..a24f6c3
+index 0000000..f024a74
 --- /dev/null
 +++ b/src/YuneFeatureShowcase.tsx
-@@ -0,0 +1,68 @@
+@@ -0,0 +1,69 @@
 +interface Scenario {
 +	label: string;
 +	input: string;
@@ -656,6 +625,7 @@ index 0000000..a24f6c3
 +
 +const SCENARIOS: Scenario[] = [
 +	{ label: "nei", input: "nei" },
++	{ label: "ngo", input: "ngo" },
 +	{ label: "santai", input: "santai" },
 +	{ label: "m", input: "m" },
 +	{ label: "mgoi", input: "mgoi" },
@@ -718,14 +688,15 @@ index 0000000..a24f6c3
 +	</section>;
 +}
 diff --git a/src/consts.ts b/src/consts.ts
-index 25ec3bf..4b9c645 100644
+index 25ec3bf..da869e8 100644
 --- a/src/consts.ts
 +++ b/src/consts.ts
-@@ -55,6 +55,13 @@ export const DEFAULT_PREFERENCES: Preferences = {
+@@ -55,6 +55,14 @@ export const DEFAULT_PREFERENCES: Preferences = {
  	enableCorrection: false,
  	enableSentence: true,
  	enableLearning: true,
 +	enableAI: false,
++	// M20 playground default keeps the grouped candidate demo path visible; the raw mobile asset can still be set false.
 +	combineCandidates: true,
 +	predictionNeverFirst: true,
 +	predictionThreshold: 0,
@@ -736,7 +707,7 @@ index 25ec3bf..4b9c645 100644
  	isCangjie5: true,
  };
 diff --git a/src/rime.ts b/src/rime.ts
-index 4393a9e..adfb538 100644
+index 4393a9e..7a01c94 100644
 --- a/src/rime.ts
 +++ b/src/rime.ts
 @@ -18,7 +18,13 @@ interface ErrorPayload {
@@ -769,12 +740,12 @@ index 4393a9e..adfb538 100644
  worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 -	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("receive", data);
 +	if (data.type === "diagnostic") {
++		const diagnosticWindow = window as typeof window & {
++			__YUNE_PERSISTENCE_DIAGNOSTICS__?: DiagnosticPayload[];
++		};
++		(diagnosticWindow.__YUNE_PERSISTENCE_DIAGNOSTICS__ ??= []).push(data);
++		appendPersistenceDiagnostic(data);
 +		if (shouldLogDebugMessages()) {
-+			const debugWindow = window as typeof window & {
-+				__YUNE_PERSISTENCE_DIAGNOSTICS__?: DiagnosticPayload[];
-+			};
-+			(debugWindow.__YUNE_PERSISTENCE_DIAGNOSTICS__ ??= []).push(data);
-+			appendPersistenceDiagnostic(data);
 +			console.info("diagnostic", JSON.stringify(data));
 +		}
 +		return;
@@ -1517,10 +1488,10 @@ index 0000000..f943e18
 +**Status**: Integration layer created, pending patch application and build gates
 diff --git a/src/yune-integration/adapter.ts b/src/yune-integration/adapter.ts
 new file mode 100644
-index 0000000..9c17b05
+index 0000000..2ab2b88
 --- /dev/null
 +++ b/src/yune-integration/adapter.ts
-@@ -0,0 +1,613 @@
+@@ -0,0 +1,636 @@
 +/**
 + * Yune seam adapter for TypeDuck-Web
 + *
@@ -1668,9 +1639,23 @@ index 0000000..9c17b05
 +  path: string;
 +  exists: boolean;
 +  pageSize?: string | null;
++  settings?: Record<string, string | null>;
 +  bytes?: number;
 +  readError?: string;
 +}
++
++const PERSISTED_CUSTOM_CONFIG_KEYS = [
++  "page_size",
++  "translator/enable_completion",
++  "translator/enable_correction",
++  "translator/enable_sentence",
++  "translator/enable_user_dict",
++  "translator/encode_commit_history",
++  "translator/combine_candidates",
++  "translator/prediction_never_first",
++  "translator/prediction_weight_threshold",
++  "cangjie/dictionary",
++] as const;
 +
 +export interface YunePersistenceDiagnostic {
 +  phase: PersistenceDiagnosticPhase;
@@ -2112,11 +2097,14 @@ index 0000000..9c17b05
 +  try {
 +    const file = fs.readFile(path, { encoding: "utf8" });
 +    const text = typeof file === "string" ? file : new TextDecoder().decode(file);
-+    const pageSize = /^\s*page_size:\s*(\S+)/m.exec(text)?.[1] ?? null;
++    const settings = Object.fromEntries(
++      PERSISTED_CUSTOM_CONFIG_KEYS.map((key) => [key, readScalarYamlSetting(text, key)]),
++    );
 +    return {
 +      path,
 +      exists: true,
-+      pageSize,
++      pageSize: settings["page_size"],
++      settings,
 +      bytes: text.length,
 +    };
 +  } catch (error) {
@@ -2126,6 +2114,12 @@ index 0000000..9c17b05
 +      readError: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
 +    };
 +  }
++}
++
++function readScalarYamlSetting(text: string, key: string): string | null {
++  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
++  const rawValue = new RegExp(`^\\s*${escapedKey}:\\s*(\\S+)`, "m").exec(text)?.[1] ?? null;
++  return rawValue?.replace(/^['"](.+)['"]$/, "$1") ?? null;
 +}
 +
 +/**

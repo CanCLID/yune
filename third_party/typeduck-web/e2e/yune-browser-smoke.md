@@ -265,13 +265,16 @@ If both automated runner AND manual browser are impossible:
 5. Confirm `ascii_punct` is not exposed as a working control.
 6. Record before/after evidence:
    - `hou` with Combine same-text candidates on and off.
+   - Record that the UI's grouped candidate default is an M20 demo default; the raw mobile assets still enable `common:/separate_candidates`.
    - `santai` with Prediction threshold `0` and `50000`.
+   - Record the Prediction threshold selector range and step alongside the `50000` real-assets cutoff.
+   - Input Memory, Auto-correction, Auto-composition, and Prediction never first with persisted `jyut6ping3_mobile.custom.yaml` key snapshots.
    - `abc` with ASCII mode on.
    - `/` with Full shape off and on.
    - `ngohaigo` with Simplification on.
    - `nei` with Candidate Jyutping shown and hidden.
    - `nei` with English-only display and with Hindi enabled.
-7. Run guided scenario buttons for `santai`, `mgoi`, `m`, tone letters, and AI trigger.
+7. Run guided scenario buttons for `ngo`, `santai`, `mgoi`, `m`, tone letters, and AI trigger.
 8. For show-full-code, Reverse code display, and Cangjie version, use a browser-reachable Cangjie side lookup only if the active browser schema declares a `cangjie` namespace. If the active schema remains `jyut6ping3_mobile`, record them as N/A for this mobile-only browser surface and cite the schema file.
 
 ---

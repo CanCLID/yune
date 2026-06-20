@@ -1,5 +1,12 @@
 {
   "scenarios": {
+    "ngo": [
+      "1.ngo5我I, meⓘ",
+      "2.nei5你you (singular)ⓘ",
+      "3.ngoi6外outsideⓘ",
+      "4.nang4能can; abilityⓘ",
+      "5.noi6內inside; withinⓘ"
+    ],
     "santai": [
       "1.san1 tai2身體bodyⓘ",
       "2.san4 tai2神體",
@@ -8,8 +15,11 @@
       "5.san1 tai2 bou6 fan6身體部分"
     ],
     "mgoi": [
-      "1.m4 goi1唔該thank youⓘ",
-      "2.m4 goi1 saai3唔該晒thank youⓘ"
+      "1.ng5 go3五個5 (items)ⓘ",
+      "2.m4 goi1唔該thank youⓘ",
+      "3.m4 goi1 saai3唔該晒thank youⓘ",
+      "4.m4 gok3唔覺do not think soⓘ",
+      "5.m4 gok3 dak1唔覺得do not think soⓘ"
     ],
     "m": [
       "1.m4唔notⓘ",

@@ -12,5 +12,17 @@
     "inputValue": "",
     "candidates": []
   },
+  "persistedSettings": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "false",
+    "translator/enable_sentence": "false",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
   "browserSurface": "No candidate panel rendered for full ngohaigo after disabling Auto-composition in TypeDuck-Web."
 }

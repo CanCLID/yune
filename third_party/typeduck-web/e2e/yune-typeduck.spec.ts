@@ -111,6 +111,19 @@ interface CandidatePanelSnapshot {
   candidates: CandidateRowSnapshot[];
 }
 
+interface PersistenceDiagnosticSnapshot {
+  type: "diagnostic";
+  source: string;
+  marker: {
+    phase?: string;
+    reason?: string;
+    persistedConfig?: {
+      exists?: boolean;
+      settings?: Record<string, string | null>;
+    };
+  };
+}
+
 async function writeEvidence(filename: string, content: string): Promise<void> {
   const fs = await import("fs/promises");
   const path = await import("path");
@@ -282,6 +295,24 @@ async function setPreferenceToggle(page: Page, label: RegExp, enabled: boolean):
   }
 }
 
+async function setPreferenceToggleAndWaitForSettings(
+  page: Page,
+  label: RegExp,
+  enabled: boolean,
+  expectedSettings: Record<string, string | null>,
+): Promise<Record<string, string | null>> {
+  const toggle = page.getByLabel(label).last();
+  const checked = await toggle.isChecked();
+  if (checked !== enabled) {
+    if (enabled) {
+      await toggle.check({ force: true });
+    } else {
+      await toggle.uncheck({ force: true });
+    }
+  }
+  return waitForPersistedSettings(page, expectedSettings);
+}
+
 async function setPreferenceRange(page: Page, label: RegExp, value: number): Promise<void> {
   const range = page.getByLabel(label).last();
   await range.evaluate((element, nextValue) => {
@@ -311,30 +342,47 @@ async function setAiToggle(page: Page, enabled: boolean): Promise<void> {
   await page.waitForTimeout(1000);
 }
 
+async function readPersistenceDiagnostics(page: Page): Promise<PersistenceDiagnosticSnapshot[]> {
+  const raw = await page.evaluate(() => document.documentElement.dataset.yunePersistenceDiagnostics ?? "[]");
+  return JSON.parse(raw) as PersistenceDiagnosticSnapshot[];
+}
+
+async function latestPersistedSettings(page: Page): Promise<Record<string, string | null>> {
+  const diagnostics = await readPersistenceDiagnostics(page);
+  for (let index = diagnostics.length - 1; index >= 0; index -= 1) {
+    const diagnostic = diagnostics[index];
+    const settings = diagnostic.marker.persistedConfig?.settings;
+    if (settings) {
+      return settings;
+    }
+  }
+  return {};
+}
+
+async function waitForPersistedSettings(
+  page: Page,
+  expected: Record<string, string | null>,
+): Promise<Record<string, string | null>> {
+  await expect.poll(async () => {
+    const settings = await latestPersistedSettings(page);
+    return Object.fromEntries(
+      Object.keys(expected).map((key) => [key, settings[key] ?? null]),
+    );
+  }, { timeout: 15000 }).toEqual(expected);
+  return latestPersistedSettings(page);
+}
+
 /**
  * Helper: Verify persistence sync markers in console
  */
 async function verifyPersistenceMarker(page: Page, marker: string): Promise<boolean> {
-  const logs: string[] = [];
-  page.on("console", (msg) => {
-    logs.push(msg.text());
-  });
-
-  // Wait for marker to appear in console logs
   try {
-    await page.waitForFunction(
-      (expectedMarker: string) => {
-        // Check if persistence marker logged (implementation-specific)
-        return window.performance
-          .getEntriesByType("measure")
-          .some((entry) => entry.name.includes(expectedMarker));
-      },
-      marker,
-      { timeout: 5000 }
-    );
+    await expect.poll(async () => {
+      const diagnostics = await readPersistenceDiagnostics(page);
+      return diagnostics.some((diagnostic) => diagnostic.marker.phase?.includes(marker));
+    }, { timeout: 5000 }).toBe(true);
     return true;
   } catch {
-    // Marker not found - persistence timing may not be logged
     return false;
   }
 }
@@ -529,13 +577,20 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await expect(page.getByLabel(/Prediction threshold/).last()).toHaveValue("0");
     await expect(page.getByText(/ascii_punct/i)).toHaveCount(0);
     await expect(page.getByLabel(/ascii_punct/i)).toHaveCount(0);
+    const commonCustom = await readRepoText("third_party/typeduck-web/source/public/schema/common.custom.yaml");
+    const commonYaml = await readRepoText("third_party/typeduck-web/source/public/schema/common.yaml");
+    expect(commonCustom).toContain("- common:/separate_candidates");
+    expect(commonYaml).toContain("translator/combine_candidates: false");
 
     await saveJsonEvidence("m20-control-surface-state.json", {
       activeControls: ACTIVE_SHOWCASE_CONTROLS.map(String),
       liveControls: LIVE_SHOWCASE_CONTROLS.map(String),
       displayControls: DISPLAY_SHOWCASE_CONTROLS.map(String),
       defaults: {
-        combineCandidates: true,
+        combineCandidates: {
+          uiDemoDefault: true,
+          rawAssetPatch: "common.custom.yaml enables common:/separate_candidates, which maps to translator/combine_candidates: false in common.yaml.",
+        },
         predictionNeverFirst: true,
         predictionThreshold: 0,
         aiCandidates: false,
@@ -546,8 +601,54 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
+  test("M20 Input Memory persists schema customization", async ({ page }) => {
+    const learningOn = await waitForPersistedSettings(page, {
+      "translator/enable_user_dict": "true",
+      "translator/encode_commit_history": "true",
+    });
+
+    const learningOff = await setPreferenceToggleAndWaitForSettings(page, /Input Memory/, false, {
+      "translator/enable_user_dict": "false",
+      "translator/encode_commit_history": "false",
+    });
+
+    await saveJsonEvidence("m20-input-memory-persistence-state.json", {
+      learningOn,
+      learningOff,
+      proof: "Input Memory is a deploy-time schema customization verified through the persisted jyut6ping3_mobile.custom.yaml snapshot emitted by the real browser worker.",
+    });
+    await takeEvidenceScreenshot(page, "m20-input-memory-persistence");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M20 Prediction never first persists schema customization", async ({ page }) => {
+    const neverFirstOn = await waitForPersistedSettings(page, {
+      "translator/prediction_never_first": "true",
+    });
+
+    const neverFirstOff = await setPreferenceToggleAndWaitForSettings(page, /Prediction never first/, false, {
+      "translator/prediction_never_first": "false",
+    });
+
+    await saveJsonEvidence("m20-prediction-never-first-persistence-state.json", {
+      neverFirstOn,
+      neverFirstOff,
+      m16CoveredControls: {
+        autoCorrection: "m16-correction-*-state.json asserts translator/enable_correction before/after persisted settings.",
+        autoComposition: "m16-sentence-disabled-state.json asserts translator/enable_sentence off-state persisted settings.",
+      },
+      proof: "Prediction never first is a deploy-time schema customization verified through the persisted jyut6ping3_mobile.custom.yaml snapshot emitted by the real browser worker.",
+    });
+    await takeEvidenceScreenshot(page, "m20-prediction-never-first-persistence");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
   test("M20 guided scenarios use real TypeDuck-Web assets", async ({ page }) => {
     const scenarios: Record<string, string[]> = {};
+
+    const ngo = await clickShowcaseScenario(page, "ngo", "我");
+    expect(ngo.candidates[0].text).toBe("我");
+    scenarios.ngo = ngo.candidates.map((candidate) => candidate.rowText);
 
     const santai = await clickShowcaseScenario(page, "santai", "身體健康");
     expect(santai.candidates.map((candidate) => candidate.text)).toContain("身體");
@@ -620,6 +721,12 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       thresholdZero,
       threshold50000,
       calibratedValue: 50000,
+      selectorRange: {
+        min: 0,
+        max: 200000,
+        step: 1000,
+        rationale: "Fine-grained browser control around the observed 50000 cutoff; range remains above the real-assets probe value so future higher-weight dictionary predictions remain reachable without exposing separate alias sliders.",
+      },
       calibration: "Derived from real jyut6ping3_mobile browser assets: santai predictions disappear at 50000 while direct candidates remain.",
     });
     await takeEvidenceScreenshot(page, "m20-prediction-threshold");
@@ -724,6 +831,9 @@ test.describe("TypeDuck-Web Browser E2E", () => {
 
     await clearComposition(page);
     await setPreferenceToggle(page, /Auto-composition/, false);
+    const persistedSentenceDisabled = await waitForPersistedSettings(page, {
+      "translator/enable_sentence": "false",
+    });
     const inputField = page.locator("input[type='text'], textarea").first();
     await inputField.focus();
     await inputField.type("ngohaigo", { delay: 80 });
@@ -735,6 +845,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await saveJsonEvidence("m16-sentence-disabled-state.json", {
       expectedM14Texts: await m14Texts("jyut6ping3-m14-options.json", "enable_sentence_disabled", "ngohaigo", 6),
       browserState: sentenceDisabledState,
+      persistedSettings: persistedSentenceDisabled,
       browserSurface: sentenceDisabledPanelCount > 0
         ? "Candidate panel rendered after disabling Auto-composition."
         : "No candidate panel rendered for full ngohaigo after disabling Auto-composition in TypeDuck-Web.",
@@ -756,6 +867,9 @@ test.describe("TypeDuck-Web Browser E2E", () => {
 
   test("M16 correction browser path is explicit", async ({ page }) => {
     await setPreferenceToggle(page, /Auto-correction/, false);
+    const persistedCorrectionDefault = await waitForPersistedSettings(page, {
+      "translator/enable_correction": "false",
+    });
     const inputField = page.locator("input[type='text'], textarea").first();
     await inputField.focus();
     await inputField.type("nri", { delay: 80 });
@@ -767,11 +881,15 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await saveJsonEvidence("m16-correction-default-state.json", {
       expectedM14Texts: await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_default", "nri", 5),
       browserState: defaultState,
+      persistedSettings: persistedCorrectionDefault,
     });
     await takeEvidenceScreenshot(page, "m16-correction-default");
 
     await clearComposition(page);
     await setPreferenceToggle(page, /Auto-correction/, true);
+    const persistedCorrectionEnabled = await waitForPersistedSettings(page, {
+      "translator/enable_correction": "true",
+    });
     await inputField.focus();
     await inputField.type("nri", { delay: 80 });
     await page.waitForTimeout(1000);
@@ -782,6 +900,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await saveJsonEvidence("m16-correction-enabled-state.json", {
       expectedM14Texts: await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_enabled", "nri", 5),
       browserState: enabledState,
+      persistedSettings: persistedCorrectionEnabled,
       browserSurface: enabledPanelCount > 0
         ? "Candidate panel rendered after enabling Auto-correction."
         : "No candidate panel rendered for nri after enabling Auto-correction in TypeDuck-Web.",
@@ -1006,24 +1125,33 @@ test.describe("TypeDuck-Web Browser E2E", () => {
   test("Customize returns visible success/error evidence", async ({ page }) => {
     // D-08/D-10: Customize returns visible success/error evidence
 
+    const m20Settings = page.getByText(/Active engine controls/).first();
+    if (await m20Settings.count() > 0) {
+      await expect(m20Settings).toBeVisible();
+      await setPreferenceRange(page, /Prediction threshold/, 1000);
+      const persistedSettings = await waitForPersistedSettings(page, {
+        "translator/prediction_weight_threshold": "1000",
+      });
+      await takeEvidenceScreenshot(page, "customize");
+      await saveJsonEvidence("customize-state.json", {
+        surface: "M20 settings controls",
+        changed: "Prediction threshold",
+        persistedSettings,
+      });
+      await saveEvidence(
+        "browser-run.log",
+        `[${new Date().toISOString()}] Customize: M20 settings control persisted prediction threshold\n`
+      );
+      return;
+    }
+
     // Locate customize settings panel
     // TypeDuck-Web may have settings panel for pageSize, completion, etc.
     const settingsPanel = await page.locator("[data-settings], .settings-panel, .customize-panel").first();
 
     if (await settingsPanel.count() > 0) {
       await settingsPanel.click();
-
       await page.waitForTimeout(1000);
-
-      // Change a setting (e.g., pageSize)
-      const pageSizeInput = await page.locator("input[name='pageSize'], [data-page-size]").first();
-      if (await pageSizeInput.count() > 0) {
-        await pageSizeInput.fill("10");
-        await page.keyboard.press("Enter");
-      }
-
-      await page.waitForTimeout(2000);
-
       await takeEvidenceScreenshot(page, "customize");
 
       // Verify customize result visible
@@ -1043,7 +1171,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     } else {
       await saveEvidence(
         "blocker.md",
-        `# Browser E2E Blocker\n\n**Category**: TypeDuck-Web app/source\n\n**Flow**: Customize settings\n\n**Issue**: No settings/customize panel found\n\n**Selectors tried**: [data-settings], .settings-panel, .customize-panel\n\n**Impact**: Cannot verify customize flow\n`
+        `# Browser E2E Blocker\n\n**Category**: TypeDuck-Web app/source\n\n**Flow**: Customize settings\n\n**Issue**: No settings/customize panel found\n\n**Selectors tried**: M20 Active engine controls, [data-settings], .settings-panel, .customize-panel\n\n**Impact**: Cannot verify customize flow\n`
       );
     }
   });

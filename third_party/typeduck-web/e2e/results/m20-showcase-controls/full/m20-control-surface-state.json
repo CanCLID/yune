@@ -21,7 +21,10 @@
     "/Cangjie version/"
   ],
   "defaults": {
-    "combineCandidates": true,
+    "combineCandidates": {
+      "uiDemoDefault": true,
+      "rawAssetPatch": "common.custom.yaml enables common:/separate_candidates, which maps to translator/combine_candidates: false in common.yaml."
+    },
     "predictionNeverFirst": true,
     "predictionThreshold": 0,
     "aiCandidates": false

@@ -145,9 +145,23 @@ interface PersistedConfigSnapshot {
   path: string;
   exists: boolean;
   pageSize?: string | null;
+  settings?: Record<string, string | null>;
   bytes?: number;
   readError?: string;
 }
+
+const PERSISTED_CUSTOM_CONFIG_KEYS = [
+  "page_size",
+  "translator/enable_completion",
+  "translator/enable_correction",
+  "translator/enable_sentence",
+  "translator/enable_user_dict",
+  "translator/encode_commit_history",
+  "translator/combine_candidates",
+  "translator/prediction_never_first",
+  "translator/prediction_weight_threshold",
+  "cangjie/dictionary",
+] as const;
 
 export interface YunePersistenceDiagnostic {
   phase: PersistenceDiagnosticPhase;
@@ -589,11 +603,14 @@ function snapshotPersistedCustomConfig(
   try {
     const file = fs.readFile(path, { encoding: "utf8" });
     const text = typeof file === "string" ? file : new TextDecoder().decode(file);
-    const pageSize = /^\s*page_size:\s*(\S+)/m.exec(text)?.[1] ?? null;
+    const settings = Object.fromEntries(
+      PERSISTED_CUSTOM_CONFIG_KEYS.map((key) => [key, readScalarYamlSetting(text, key)]),
+    );
     return {
       path,
       exists: true,
-      pageSize,
+      pageSize: settings["page_size"],
+      settings,
       bytes: text.length,
     };
   } catch (error) {
@@ -603,6 +620,12 @@ function snapshotPersistedCustomConfig(
       readError: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
     };
   }
+}
+
+function readScalarYamlSetting(text: string, key: string): string | null {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rawValue = new RegExp(`^\\s*${escapedKey}:\\s*(\\S+)`, "m").exec(text)?.[1] ?? null;
+  return rawValue?.replace(/^['"](.+)['"]$/, "$1") ?? null;
 }
 
 /**

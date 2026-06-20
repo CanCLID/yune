@@ -11,5 +11,17 @@
     "inputValue": "",
     "candidates": []
   },
+  "persistedSettings": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "true",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
   "browserSurface": "No candidate panel rendered for nri after enabling Auto-correction in TypeDuck-Web."
 }

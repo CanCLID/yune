@@ -1,16 +1,6 @@
 {
-  "expectedM14Texts": [
-    "我",
-    "你",
-    "外",
-    "能",
-    "內"
-  ],
-  "browserState": {
-    "aiEnabled": false,
-    "inputValue": "",
-    "candidates": []
-  },
+  "surface": "M20 settings controls",
+  "changed": "Prediction threshold",
   "persistedSettings": {
     "page_size": "6",
     "translator/enable_completion": "true",
@@ -20,7 +10,7 @@
     "translator/encode_commit_history": "true",
     "translator/combine_candidates": "true",
     "translator/prediction_never_first": "true",
-    "translator/prediction_weight_threshold": "0",
+    "translator/prediction_weight_threshold": "1000",
     "cangjie/dictionary": "cangjie5"
   }
 }

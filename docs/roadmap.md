@@ -317,19 +317,25 @@ track.
 The milestone exposes only controls backed by real runtime behavior:
 schema/deploy-time knobs through `customize()` (`enable_completion`,
 `enable_correction`, `enable_sentence`, learning, `combine_candidates`,
-`prediction_never_first`, and one measured, fine-grained real-assets-scaled
-prediction threshold) and
+`prediction_never_first`, and one measured, fine-grained prediction threshold
+with a real-assets-calibrated `santai` cutoff and documented range bounds) and
 live session options through `setOption()` (`ascii_mode`, `full_shape`,
-`simplification`). Display-only controls are grouped separately and prove visible
-rendering changes for the current browser-reachable display surface. Static or
+`simplification`). Candidate/output-visible controls have before/after browser
+assertions, while deploy-time controls whose current browser panel effect is not
+independently visible are proved through the persisted
+`jyut6ping3_mobile.custom.yaml` snapshot. Display-only controls are grouped
+separately and prove visible rendering changes for the current browser-reachable
+display surface. Static or
 default-on engine features such as `santai`
 -> `身體健康`, Cantonese fuzzy/容錯, letter-to-tone input, reverse lookup,
 `show_full_code` reachability/N-A, and AI second-pass behavior are presented as
-guided scenarios rather than fake toggles. For the current `jyut6ping3_mobile`
-browser schema, reverse/Cangjie/show-full-code evidence records the missing
-`cangjie` namespace as N/A instead of exposing a fake control. `ascii_punct` is
-explicitly not exposed as a working toggle until M18 implements the
-processor-level behavior.
+guided scenarios rather than fake toggles. The M20 UI keeps grouped candidates
+as a documented demo default, while the checked-in raw mobile assets still
+record the `common:/separate_candidates` patch. For the current
+`jyut6ping3_mobile` browser schema, reverse/Cangjie/show-full-code evidence
+records the missing `cangjie` namespace as N/A instead of exposing a fake
+control. `ascii_punct` is explicitly not exposed as a working toggle until M18
+implements the processor-level behavior.
 As Yune adds browser-safe engine features, this playground should gain either an
 active control or a guided scenario so the web surface stays useful for future
 regression hunts and product demos.

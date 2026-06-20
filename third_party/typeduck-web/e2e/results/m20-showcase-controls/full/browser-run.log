@@ -1,37 +1,38 @@
-[2026-06-20T04:52:35.053Z] Browser E2E started
-URL: http://127.0.0.1:5174
-[2026-06-20T04:53:23.073Z] Composition: input="nei" candidates=5
-[2026-06-20T04:53:23.074Z] Test: Composition after typing schema-valid keys - passed (48012ms)
-[2026-06-20T04:54:10.524Z] Candidates: 5 visible
-[2026-06-20T04:54:10.525Z] Test: Candidate list visible - passed (47435ms)
-[2026-06-20T04:54:59.803Z] Test: M13 AI-off identity and AI-on second-pass source labels - passed (49267ms)
-[2026-06-20T04:55:48.884Z] Test: M13 AI commit safety - passed (49067ms)
-[2026-06-20T04:56:34.916Z] Test: M20 showcase control surface exposes honest controls - passed (46021ms)
-[2026-06-20T04:57:28.131Z] Test: M20 guided scenarios use real TypeDuck-Web assets - passed (53206ms)
-[2026-06-20T04:58:38.378Z] Test: M20 combine_candidates changes real candidate output - passed (70238ms)
-[2026-06-20T04:59:49.990Z] Test: M20 prediction threshold changes real candidate output - passed (71603ms)
-[2026-06-20T05:00:41.807Z] Test: M20 live session controls use setOption-visible output - passed (51804ms)
-[2026-06-20T05:01:29.708Z] Test: M20 display controls change rendering and record mobile-only side-lookup limits - passed (47894ms)
-[2026-06-20T05:02:16.534Z] Test: M16 combine candidates browser default matches M14 - passed (46818ms)
-[2026-06-20T05:03:29.680Z] Test: M16 sentence composition browser path matches M14 - passed (73140ms)
-[2026-06-20T05:04:16.847Z] Test: M16 completion browser path matches M14 - passed (47159ms)
-[2026-06-20T05:05:30.559Z] Test: M16 correction browser path is explicit - passed (73703ms)
-[2026-06-20T05:06:21.575Z] Test: M16 simplification toggle converts browser candidates through OpenCC - passed (51006ms)
-[2026-06-20T05:07:10.889Z] Test: M16 schema menu and userdb pronunciation limits are explicit - passed (49306ms)
-[2026-06-20T05:08:00.780Z] Candidate paging: PageDown pressed, panel count=1
-[2026-06-20T05:08:00.781Z] Test: Candidate paging - passed (49884ms)
-[2026-06-20T05:08:51.334Z] Test: Keyboard paging shortcuts do not error - passed (50543ms)
-[2026-06-20T05:09:42.303Z] Candidate selection: committed="你"
-[2026-06-20T05:09:42.303Z] Test: Candidate selection → commit output - passed (50959ms)
-[2026-06-20T05:10:34.554Z] Test: Number keys commit visible candidates - passed (52241ms)
-[2026-06-20T05:11:00.142Z] Browser E2E started
-URL: http://127.0.0.1:5174
-[2026-06-20T05:11:51.531Z] Deletion: input=""
-[2026-06-20T05:11:51.533Z] Test: Deletion removes candidate or triggers delete path - passed (51382ms)
-[2026-06-20T05:12:42.382Z] Backspace: before="" after=""
-[2026-06-20T05:12:42.383Z] Test: Backspace mutates composition - passed (50834ms)
-[2026-06-20T05:13:35.522Z] Deploy: triggered (no visible notification)
-[2026-06-20T05:13:35.523Z] Test: Deploy returns visible success/error evidence - passed (53130ms)
-[2026-06-20T05:14:25.504Z] Test: Customize returns visible success/error evidence - passed (49970ms)
-[2026-06-20T05:15:21.320Z] Test: Persistence sync after deploy/customize mutations - passed (55807ms)
-[2026-06-20T05:16:21.080Z] Test: Reload/reinitialize preserves persisted state - passed (59750ms)
+[2026-06-20T06:26:37.423Z] Browser E2E started
+URL: http://127.0.0.1:5174/web/
+[2026-06-20T06:27:27.239Z] Composition: input="nei" candidates=5
+[2026-06-20T06:27:27.240Z] Test: Composition after typing schema-valid keys - passed (49808ms)
+[2026-06-20T06:28:16.523Z] Candidates: 5 visible
+[2026-06-20T06:28:16.525Z] Test: Candidate list visible - passed (49271ms)
+[2026-06-20T06:29:09.000Z] Test: M13 AI-off identity and AI-on second-pass source labels - passed (52466ms)
+[2026-06-20T06:29:59.931Z] Test: M13 AI commit safety - passed (50921ms)
+[2026-06-20T06:30:49.043Z] Test: M20 showcase control surface exposes honest controls - passed (49099ms)
+[2026-06-20T06:31:37.831Z] Test: M20 Input Memory persists schema customization - passed (48777ms)
+[2026-06-20T06:32:26.894Z] Test: M20 Prediction never first persists schema customization - passed (49053ms)
+[2026-06-20T06:33:25.490Z] Test: M20 guided scenarios use real TypeDuck-Web assets - passed (58588ms)
+[2026-06-20T06:34:41.320Z] Test: M20 combine_candidates changes real candidate output - passed (75820ms)
+[2026-06-20T06:35:58.499Z] Test: M20 prediction threshold changes real candidate output - passed (77170ms)
+[2026-06-20T06:36:54.415Z] Test: M20 live session controls use setOption-visible output - passed (55903ms)
+[2026-06-20T06:37:46.283Z] Test: M20 display controls change rendering and record mobile-only side-lookup limits - passed (51859ms)
+[2026-06-20T06:38:36.579Z] Test: M16 combine candidates browser default matches M14 - passed (50287ms)
+[2026-06-20T06:39:54.357Z] Test: M16 sentence composition browser path matches M14 - passed (77769ms)
+[2026-06-20T06:40:45.041Z] Test: M16 completion browser path matches M14 - passed (50675ms)
+[2026-06-20T06:42:03.784Z] Test: M16 correction browser path is explicit - passed (78731ms)
+[2026-06-20T06:42:56.151Z] Test: M16 simplification toggle converts browser candidates through OpenCC - passed (52358ms)
+[2026-06-20T06:43:46.646Z] Test: M16 schema menu and userdb pronunciation limits are explicit - passed (50487ms)
+[2026-06-20T06:44:37.779Z] Candidate paging: PageDown pressed, panel count=1
+[2026-06-20T06:44:37.780Z] Test: Candidate paging - passed (51126ms)
+[2026-06-20T06:45:28.704Z] Test: Keyboard paging shortcuts do not error - passed (50915ms)
+[2026-06-20T06:46:20.075Z] Candidate selection: committed="你"
+[2026-06-20T06:46:20.075Z] Test: Candidate selection → commit output - passed (51363ms)
+[2026-06-20T06:47:10.921Z] Test: Number keys commit visible candidates - passed (50835ms)
+[2026-06-20T06:48:02.222Z] Deletion: input=""
+[2026-06-20T06:48:02.223Z] Test: Deletion removes candidate or triggers delete path - passed (51290ms)
+[2026-06-20T06:48:53.320Z] Backspace: before="" after=""
+[2026-06-20T06:48:53.321Z] Test: Backspace mutates composition - passed (51090ms)
+[2026-06-20T06:49:47.264Z] Deploy: triggered (no visible notification)
+[2026-06-20T06:49:47.265Z] Test: Deploy returns visible success/error evidence - passed (53935ms)
+[2026-06-20T06:51:02.347Z] Customize: M20 settings control persisted prediction threshold
+[2026-06-20T06:51:02.348Z] Test: Customize returns visible success/error evidence - passed (75071ms)
+[2026-06-20T06:51:53.776Z] Test: Persistence sync after deploy/customize mutations - passed (51418ms)
+[2026-06-20T06:52:48.550Z] Test: Reload/reinitialize preserves persisted state - passed (54763ms)

@@ -1,6 +1,6 @@
 # M21 — TypeDuck-Web Product Behavioral Comparison Protocol
 
-> **Status:** Draft · **Type:** comparison protocol (validation activity) · **Updated:** 2026-06-20 · **Depends on:** M20 · **Critical path:** no (qualitative real-world sanity check that feeds the backlog)
+> **Status:** Active · **Type:** comparison protocol (validation activity) · **Updated:** 2026-06-20 · **Depends on:** M20 (merged) · **Critical path:** no (qualitative real-world sanity check that feeds the backlog)
 
 > **For agentic workers:** This is **not** an engine milestone and produces **no fixes by itself** — it produces a *divergence gap ledger*. It compares Yune's internal harness against the real deployed product as a *behavior/feel* target, **not a hard oracle**. The hard oracle remains the captured TypeDuck `v1.1.2` fixtures. Run this **after M20 merges** (M20 gives the harness the toggles needed to match the product's settings).
 
@@ -79,6 +79,24 @@ Label every difference. This is the fork-parity ledger applied to a live diff:
 - **Deployed product:** **manual / one-time capture only.** Do **not** build an automated Playwright scraper against `typeduck.hk` (third-party site: fragile DOM, ToS). Capture screenshots + transcribed candidate lists + JSON notes; stamp: browser, date, deployed URL, observed engine/dict version, settings, fresh-userdb confirmation.
 - **Yune harness:** the M20 playground via Playwright or manual; stamp: Yune commit, M20 branch/commit, schema/config state, settings.
 - Store under `third_party/typeduck-web/e2e/results/m21-product-comparison/` with a dated reference snapshot.
+
+**Settings profile snapshot (record per run, both sides).** Capture the exact control
+states up front so any divergence is attributable to a setting, not an unrecorded
+difference (this operationalizes the Section 0 "matched settings" confounder):
+
+| Setting | Yune harness (M20 control) | Deployed product |
+|---|---|---|
+| completion (`enable_completion`) | | |
+| correction (`enable_correction`) | | |
+| auto-composition (`enable_sentence`) | | |
+| input memory (`enable_user_dict`) | | |
+| combine vs separate (`combine_candidates`) | | |
+| prediction never-first | | |
+| prediction threshold | | |
+| simplification (`hk2s`) | | |
+| full-shape / ASCII mode | | |
+| userdb state (fresh / accumulated) | | |
+| engine + dict version | Yune commit | observed product version |
 
 ## Section 5 — Output: the gap ledger
 

@@ -389,6 +389,10 @@ is **Track 2 (broad upstream depth):**
   punctuation processor behaviors.
 - **M19 — Breadth (toward B)** — more upstream schemas through the M12 harness
   (Shuangpin, Cangjie, Zhuyin); resume TypeDuck-Windows.
+- **M21 — TypeDuck-Web product comparison** — a documented protocol (off the parity
+  critical path) comparing the Yune harness against the deployed `typeduck.hk/web`
+  product as a behavior/feel target (the `v1.1.2` fixtures stay the hard oracle); runs
+  after M20. See [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-typeduck-web-product-comparison.md).
 - **AI-native frontend expansion** — the proven TypeDuck-Web surface stays
   default-off; Windows and other native frontend exposure wait for their own
   safety evidence.

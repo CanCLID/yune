@@ -386,14 +386,62 @@ list. **TypeDuck `jyut6ping3` reconciliation (M14–M16) and the M20 browser
 playground are complete** (see *Completed* above). The remaining engine-depth arc
 is **Track 2 (broad upstream depth):**
 
-- **M17 - Upstream sentence / language model (poet)** - the statistical LM for
-  `luna_pinyin` sentence/lattice parity (the two blocked upstream tests). The
-  heavy item; *not* required for TypeDuck-Web parity.
-- **M18 — Deployment & processor depth** — spelling-algebra prism generation, a
-  public binary-dictionary write API, and the `ascii_punct` / immediate-commit
-  punctuation processor behaviors.
-- **M19 — Breadth (toward B)** — more upstream schemas through the M12 harness
-  (Shuangpin, Cangjie, Zhuyin); resume TypeDuck-Windows.
+- **M17 — Upstream sentence / language model (poet)** — implements the upstream
+  `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE
+  output matches the captured oracle, un-ignoring the two blocked stubs in
+  `upstream_luna_pinyin_parity.rs` (`zhongguo_phrase_mechanics_parity_is_blocked:107`,
+  `full_sentence_lattice_parity_for_zhongguo_is_blocked:376`). Grounded finding that
+  makes it tractable: `luna_pinyin` ships an `essay.txt` vocabulary but **no `.gram`
+  model**, so the oracle's poet runs the `grammar == nullptr` branch where
+  `Grammar::Evaluate` returns `entry_weight + kPenalty` with
+  `kPenalty = -13.815510557964274` (`ln(1e-6)`) — a fixed per-word log-prob penalty,
+  *not* a learned bigram. M17 owns a new `poet` module in `yune-core` (log-space
+  Viterbi/beam DP over a dictionary `WordGraph` with that constant and `MakeSentences`
+  multi-candidate beam) behind a named `luna_pinyin`/upstream profile, **without**
+  disturbing the TypeDuck `sentence_candidate` heuristic (the `21.0` jyut6ping3
+  penalty) or the upstream-first ABI, capturing both goldens non-circularly from the
+  pinned `1.17.0` binary. The HEAVY Track-2 item; explicitly **not** required for
+  TypeDuck-Web parity. Octagram/`.gram` bigram models, the C++ plugin ABI, and
+  `contextual_translation` beyond the two named tests stay out of scope.
+  Detail: [`plans/m17-plan-upstream-language-model-poet.md`](./plans/m17-plan-upstream-language-model-poet.md).
+- **M18 — Deployment & processor depth** — turns the dictionary subsystem from
+  read-and-plan into read-write and teaches the Engine the punctuation-processor
+  behaviors the M12 harness left blocked. Today Yune parses source YAML and compiled
+  `.table.bin`/`.prism.bin`/`.reverse.bin` and `rime_dict_rebuild_plan` decides what
+  is stale, but no code writes artifact bytes (the prism reader hard-rejects any darts
+  double-array, `compiled_prism.rs:60-64`; `spelling_algebra.rs` is a runtime expander,
+  not a serializer). M18 adds a pure-Rust darts double-array, a `speller/algebra`-driven
+  prism generator, and public `build_table_bin`/`build_reverse_bin`/`build_prism_bin`
+  writers (Yune's own round-trippable format, not marisa) plus a `rime_dict_rebuild_plan`
+  executor. On the processor side it wires the already-tracked-but-unconsulted
+  `ascii_punct` status (`engine.rs:281,296`) into a real `kNoop`-style bypass and adds
+  immediate-commit/confirm-unique/pair punctuation from upstream `punctuator.cc`,
+  un-ignoring the two M12 blockers (`upstream_luna_pinyin_parity.rs:383,389`) and landing
+  the M20-deferred `ascii_punct` toggle through the existing `setOption()` path with no
+  ABI change. Oracle discipline: the blocked punctuation tests get
+  **capture-goldens-first** (the current fixture has no `ascii_punct=ON` snapshot), not
+  Yune-derived expectations. Heavy/risky slice = the darts writer (it gates prism
+  generation); fallback is Yune-native prism bytes that round-trip Yune's reader,
+  recorded as a named divergence.
+  Detail: [`plans/m18-plan-deployment-and-processor-depth.md`](./plans/m18-plan-deployment-and-processor-depth.md).
+- **M19 — Breadth (toward B)** — onboards three common upstream schemas — Shuangpin
+  (`double_pinyin`), Cangjie (`cangjie5`), Zhuyin (`bopomofo`) — into Yune's named
+  compatibility set, each measured against the upstream `1.17.0` oracle through the
+  existing M12 harness (`oracle-rime-probe.cs` capture → provenance-stamped
+  `upstream-1.17.0/` fixtures → an owning parity test per schema modeled on
+  `upstream_luna_pinyin_parity.rs`). It reuses Yune primitives — `SpellingAlgebra`
+  (`xform`/`xlit`/`derive`/`fuzz`/`abbrev`/`erase`), `StaticTableTranslator`
+  (`with_spelling_algebra`/`with_show_full_code`), the schema-driven `SpellerProcessor`
+  — adding only the per-schema gaps a captured oracle case proves; sentence/lattice
+  cases defer to M17 as explicit ignored blockers. In parallel M19 *names* (does not
+  package) the TypeDuck-profile ABI surface the parked M10 needs: the fork-only
+  `config_list_append_{string,bool,int,double}` slots already exist as `#[no_mangle]`
+  symbols in `config_api.rs` but are absent from the default `rime_get_api()` table, so
+  M19 exposes them through an explicitly named opt-in profile accessor while keeping the
+  default upstream `1.17.0` ABI byte-for-byte unchanged — satisfying graduation-contract
+  item (1) of `typeduck-windows-backend-requirements.md` without reopening Windows
+  packaging.
+  Detail: [`plans/m19-plan-breadth-schemas.md`](./plans/m19-plan-breadth-schemas.md).
 - **M21 — TypeDuck-Web product comparison** — a documented protocol (off the parity
   critical path) comparing the Yune harness against the deployed `typeduck.hk/web`
   product as a behavior/feel target (the `v1.1.2` fixtures stay the hard oracle); runs

@@ -398,6 +398,21 @@ is **Track 2 (broad upstream depth):**
   critical path) comparing the Yune harness against the deployed `typeduck.hk/web`
   product as a behavior/feel target (the `v1.1.2` fixtures stay the hard oracle); runs
   after M20. See [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-typeduck-web-product-comparison.md).
+- **M21-GAP-01 — multi-syllable dictionary-composition divergence (first M21 gap
+  candidate; classification pending oracle capture).** Manual harness testing found
+  that toneless multi-syllable inputs whose target is a *dictionary-phrase* sentence —
+  e.g. `loengnincin` → `兩年前` (`兩年`+`前`), `leoicijyu` → `類似於` (`類似`+`於`) —
+  return a chaotic candidate list instead of the composed sentence, while
+  `typeduck.hk/web` composes them. This is **dictionary-driven sentence composition
+  (M15 scope), not the M17 poet/octagram LM**, and it is *asymmetric*: `ngohaigo` →
+  `我係個` already composes top-1 on a fresh userdb (M21 snapshot). Classification is
+  deliberately **undetermined** until a `v1.1.2` oracle golden is captured for these
+  inputs — the deployed product is a feel target only. Tracked in
+  [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-typeduck-web-product-comparison.md);
+  if the oracle confirms a correctness regression it reopens
+  [`fork-parity-ledger.md`](./fork-parity-ledger.md) note 5 (composition word-penalty
+  `do-not-preserve`) and becomes a tracked engine work item, otherwise it is recorded
+  as expected-by-design.
 - **AI-native frontend expansion** — the proven TypeDuck-Web surface stays
   default-off; Windows and other native frontend exposure wait for their own
   safety evidence.
@@ -416,7 +431,7 @@ the *Non-goal* column is not a backlog. Standing deferrals also appear in
 
 | In scope — target-driven, measured | Deferred — implement when a target needs it | Non-goal |
 |---|---|---|
-| `luna_pinyin` core vs upstream `1.17.0` oracle | Grammar / language model (poet / octagram); processor-level punctuation/ascii-punctuation parity | Bit-for-bit parity with librime internals |
+| `luna_pinyin` core vs upstream `1.17.0` oracle | Grammar / language model (poet / octagram) — *the statistical LM/lattice only; dictionary-phrase sentence composition (e.g. `我係個`, `兩年前`) stays in-scope under the `jyut6ping3` profile (M15)*; processor-level punctuation/ascii-punctuation parity | Bit-for-bit parity with librime internals |
 | TypeDuck `jyut6ping3` profile vs `v1.1.2` oracle | Browser/userdb UI evidence after M15 engine parity; broader OpenCC phrase/config breadth beyond the checked-in `hk2s` source chain | librime C++ plugin ABI as a requirement |
 | Common RIME schemas, as breadth (B) is added | Spelling-algebra prism generation; binary-dict / deployment writing | Cloud inference as a hard dependency |
 | AI-native layer (M11) on the compatible base | `contextual_translation`, `unity_table_encoder`, deeper gear coverage | Replacing or altering classic input paths by default |

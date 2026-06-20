@@ -45,6 +45,7 @@ Run the **same typed inputs** in both apps (reuse the M20 guided scenarios + led
 | `sigin` | code-path prediction (`市建局` without a `市建` word) |
 | `m`, `mgoi` | standalone-`m` + fuzzy/容錯 (`ng→m`) |
 | `ngohaigo` | auto-composition / sentence (`我係個`) |
+| `loengnincin`, `leoicijyu` | cross-boundary dictionary-phrase composition (`兩年前` = `兩年`+`前`; `類似於` = `類似`+`於`) — the M21-GAP-01 investigation; verify each input's jyutping against the dict first |
 | `hou` | homograph grouping vs separate (`combine_candidates`) |
 | tone-letters (`seov`…) | `letter_to_tone` preedit |
 | a 1-edit typo | correction (on/off) |
@@ -64,15 +65,24 @@ Label every difference. This is the fork-parity ledger applied to a live diff:
 |---|---|---|
 | `matches` | Same observable behavior | none |
 | `expected-by-design` | F08 prediction **ranking order** (we track upstream-1.17.0 ranking + knobs, **not** fork byte-parity); composition word-penalty / `matching_code_size` preedit (`do-not-preserve`); F09 display-language columns (UI-side) | none — **do not log as a bug** |
-| `pending-M17-M19` | Sentence/LM-lattice-dependent differences (poet/octagram not implemented) | defer; note only |
+| `pending-M17-M19` | Differences that depend on the **statistical LM lattice** (poet/octagram not implemented). **Not** dictionary-phrase composition (e.g. `我係個`, `兩年前`), which is M15 should-match — route that to `unexpected-composition-gap`. | defer; note only |
 | `product-only-UI` | Layout/UX of the shipping product, not engine behavior | out of scope here |
 | `unexpected-candidate-gap` | Missing/extra candidates in the **core set** | **investigate** |
-| `unexpected-composition-gap` | Auto-composition / fuzzy / simplification / reverse-lookup pronunciation differs | **investigate** |
+| `unexpected-composition-gap` | Auto-composition (incl. **dictionary-phrase sentence composition** like `兩年前`/`類似於`) / fuzzy / simplification / reverse-lookup pronunciation differs | **investigate** |
 | `unexpected-ranking-gap` | Ranking differs in a **non-prediction** path that should match | **investigate** |
 | `needs-engine-investigation` | Unclear; capture and triage | triage |
 
 **Should-match (ledger `preserve✓`) behaviors** — a divergence here is real signal: core candidate set, fuzzy/容錯, auto-composition fallback, `combine_candidates`/separate, `hk2s` simplification, reverse-lookup pronunciations, `letter_to_tone`, `show_full_code`.
 **Expected-to-diverge** — prediction ranking order (F08), composition penalty / `matching_code_size` (do-not-preserve), LM sentence lattice (M17), display columns (F09), all UI.
+
+> **Dictionary-phrase composition is should-match; only its *ranking* may diverge.**
+> Producing the composed sentence *at all* (e.g. `兩年前` from `兩年`+`前`) is M15
+> dictionary-driven behavior and a `preserve✓` should-match target — it is **not** the
+> deferred M17 poet/octagram LM. The `do-not-preserve` part (ledger note 5) is only the
+> fork's *word-penalty / fewer-syllables preference among valid composed sentences*.
+> So the decision rule is: **no composed sentence where the oracle has one = correctness
+> gap (`unexpected-composition-gap`, investigate); composed sentence present but ranked
+> differently = expected-by-design.** This is exactly what M21-GAP-01 below must resolve.
 
 ## Section 4 — Evidence capture
 
@@ -106,6 +116,54 @@ Produce a table, **not immediate fixes**:
 |---|---|---|---|---|
 
 Disposition ∈ { real bug → capture a `v1.1.2` golden + fix against it · `pending-M17-M19` · `expected-by-design` · `product-UX` · `out-of-scope` }. Real "should-match" divergences feed the improvement backlog as oracle-golden work; everything else is recorded so it is not re-investigated.
+
+## Section 5b — M21-GAP-01: multi-syllable dictionary-composition divergence (open)
+
+> **Status:** open · classification **undetermined** pending `v1.1.2` oracle capture.
+
+**Observation (manual, harness).** Toneless multi-syllable inputs whose target is a
+*dictionary-phrase* sentence return a chaotic candidate list instead of the composed
+sentence, while `typeduck.hk/web` composes them:
+
+- `loengnincin` → expected `兩年前` (`兩年` loeng5 nin4 + `前` cin4)
+- `leoicijyu` → expected `類似於` (`類似` leoi6 ci5 + `於` jyu1)
+
+**Why this is not obviously expected.** It is *dictionary-phrase composition (M15
+scope), not the M17 poet/octagram LM*, and it is **asymmetric**: the same-shaped
+`ngohaigo` → `我係個` (a 2-syllable phrase + 1 syllable) composes **top-1 on a fresh
+userdb** in the M21 snapshot (`run-manifest.json` fresh context). So a flat/chaotic
+result for `loengnincin`/`leoicijyu` is a real anomaly, not merely the
+`do-not-preserve` word-penalty ranking. Mechanically, Yune has no librime
+syllable-graph speller; `sentence_candidate()` ([`translator/mod.rs`](../../crates/yune-core/src/translator/mod.rs))
+is a fallback-only Viterbi gated on `candidates.is_empty()` over toneless-aliased
+substring probes — but note the obvious "zero matches / no tone-stripping" theory is
+**false** (the schema's `derive/\d//` adds toneless aliases and `ngohaigo` composes),
+so the cause must be found empirically, not assumed.
+
+**Oracle-first investigation (do in this order; do not fix preemptively):**
+
+1. **Reproduce at a pinned Yune commit.** Run `loengnincin`, `leoicijyu`, `ngohaigo`
+   (working control), and 2–3 more analogous two-word cross-boundary inputs through the
+   real harness on the production `jyut6ping3.dict.yaml`; capture the **actual** full
+   ranked candidate JSON (top-N text, codes, preedit, and whether/where the `☯` sentence
+   row appears) — not a screenshot. Investigate *why* a flat multi-candidate list appears
+   when `sentence_candidate()` returns a single path (check whether the visible rows come
+   from completion/correction/userdb rather than the sentence path, and whether the
+   `translator/mod.rs` `candidates.is_empty()` fallback gate is even firing).
+2. **Capture `v1.1.2` oracle goldens for the same inputs** under `jyut6ping3_mobile`
+   against the production dict via `scripts/capture-typeduck-jyutping.ps1` +
+   `oracle-rime-probe.cs`. Store a provenance-stamped locked fixture (e.g.
+   `jyut6ping3-m21-sentence-composition.json`) beside `jyut6ping3-m14-options.json`.
+   Non-circular: expected bytes come from the oracle binary, never from Yune or the live
+   site.
+3. **Classify per Section 3.** Oracle composes the sentence **and** Yune produces none /
+   only chaos → `unexpected-composition-gap` (correctness regression that reopens
+   fork-parity-ledger note 5). Oracle composes it and Yune produces it but ranks lower →
+   already-decided `do-not-preserve`; record as expected, do **not** fix.
+4. **Conditional fix — only if step 3 proves a correctness regression.** Minimal change
+   in `sentence_candidate()` / the fallback gate, plus a regression test asserting against
+   the captured `v1.1.2` golden. Then update the ledger note-5 row and add a tracked
+   engine work item. No ABI / `RimeCandidate` change; AI stays default-off.
 
 ## Guardrails
 

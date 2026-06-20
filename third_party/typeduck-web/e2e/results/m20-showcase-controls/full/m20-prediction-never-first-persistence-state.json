@@ -23,9 +23,104 @@
     "translator/prediction_weight_threshold": "0",
     "cangjie/dictionary": "cangjie5"
   },
-  "m16CoveredControls": {
-    "autoCorrection": "m16-correction-*-state.json asserts translator/enable_correction before/after persisted settings.",
-    "autoComposition": "m16-sentence-disabled-state.json asserts translator/enable_sentence off-state persisted settings."
+  "visibleBehavior": {
+    "learnedCommit": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "我係個",
+          "note": null,
+          "source": null,
+          "rowText": "1.ngo5 hai6我係I amⓘgo3個item of"
+        }
+      ]
+    },
+    "neverFirstOnRanking": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "我",
+          "note": null,
+          "source": null,
+          "rowText": "1.ngo5我I, meⓘ"
+        },
+        {
+          "index": 1,
+          "text": "我係個",
+          "note": "~ngo5hai6 go3",
+          "source": null,
+          "rowText": "2.我係個~ngo5hai6 go3"
+        },
+        {
+          "index": 2,
+          "text": "俄",
+          "note": null,
+          "source": null,
+          "rowText": "3.ngo4俄Russianⓘ"
+        },
+        {
+          "index": 3,
+          "text": "柯",
+          "note": null,
+          "source": null,
+          "rowText": "4.o1柯surname [Or]ⓘ"
+        },
+        {
+          "index": 4,
+          "text": "餓",
+          "note": null,
+          "source": null,
+          "rowText": "5.ngo6餓hungryⓘ"
+        }
+      ]
+    },
+    "neverFirstOffRanking": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "我係個",
+          "note": "~ngo5hai6 go3",
+          "source": null,
+          "rowText": "1.我係個~ngo5hai6 go3"
+        },
+        {
+          "index": 1,
+          "text": "我",
+          "note": null,
+          "source": null,
+          "rowText": "2.ngo5我I, meⓘ"
+        },
+        {
+          "index": 2,
+          "text": "俄",
+          "note": null,
+          "source": null,
+          "rowText": "3.ngo4俄Russianⓘ"
+        },
+        {
+          "index": 3,
+          "text": "柯",
+          "note": null,
+          "source": null,
+          "rowText": "4.o1柯surname [Or]ⓘ"
+        },
+        {
+          "index": 4,
+          "text": "餓",
+          "note": null,
+          "source": null,
+          "rowText": "5.ngo6餓hungryⓘ"
+        }
+      ]
+    },
+    "learnedOnIndex": 1,
+    "classicOffIndex": 1
   },
-  "proof": "Prediction never first is a deploy-time schema customization verified through the persisted jyut6ping3_mobile.custom.yaml snapshot emitted by the real browser worker."
+  "proof": "Prediction never first is a deploy-time schema customization and a visible browser behavior: after learning a phrase, classic 我 stays first while never-first is enabled, and the learned prefix prediction moves to index 0 after the control is disabled."
 }

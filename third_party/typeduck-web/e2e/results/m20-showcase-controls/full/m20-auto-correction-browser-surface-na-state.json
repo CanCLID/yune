@@ -1,20 +1,32 @@
 {
-  "expectedM14Texts": [
-    "我",
-    "你",
-    "外",
-    "能",
-    "內"
-  ],
-  "browserState": {
+  "defaultPanelCount": 0,
+  "enabledPanelCount": 0,
+  "defaultState": {
     "aiEnabled": false,
     "inputValue": "",
     "candidates": []
   },
-  "persistedSettings": {
+  "enabledState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": []
+  },
+  "persistedCorrectionDefault": {
     "page_size": "6",
     "translator/enable_completion": "true",
     "translator/enable_correction": "false",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "cangjie/dictionary": "cangjie5"
+  },
+  "persistedCorrectionEnabled": {
+    "page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "true",
     "translator/enable_sentence": "true",
     "translator/enable_user_dict": "true",
     "translator/encode_commit_history": "true",

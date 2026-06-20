@@ -46,6 +46,11 @@ const DISPLAY_SHOWCASE_CONTROLS = [
   /Cangjie version/,
 ] as const;
 
+const LEARNED_PREFIX_INPUT = "ngo";
+const LEARNED_PHRASE_INPUT = "ngohaigo";
+const CLASSIC_NGO_TEXT = "\u6211";
+const LEARNED_PHRASE_TEXT = "\u6211\u4fc2\u500b";
+
 /**
  * Helper: Capture browser console errors to evidence file
  */
@@ -250,6 +255,29 @@ async function typeCompositionAndWaitForCandidate(page: Page, input: string, exp
   return readCandidatePanelSnapshot(page, false);
 }
 
+async function learnPhraseThroughBrowser(page: Page): Promise<CandidatePanelSnapshot> {
+  const learnedPhrase = await typeCompositionAndWaitForCandidate(
+    page,
+    LEARNED_PHRASE_INPUT,
+    LEARNED_PHRASE_TEXT,
+  );
+  expect(learnedPhrase.candidates[0].text).toBe(LEARNED_PHRASE_TEXT);
+
+  const inputField = page.locator("input[type='text'], textarea").first();
+  await page.keyboard.press("Space");
+  await expect(inputField).toHaveValue(LEARNED_PHRASE_TEXT, { timeout: 5000 });
+  await page.waitForTimeout(500);
+  return learnedPhrase;
+}
+
+function candidateTexts(state: CandidatePanelSnapshot): (string | null)[] {
+  return state.candidates.map((candidate) => candidate.text);
+}
+
+async function expectNoToasts(page: Page): Promise<void> {
+  await expect(page.locator(".Toastify__toast")).toHaveCount(0, { timeout: 1000 });
+}
+
 async function clickShowcaseScenario(page: Page, name: string | RegExp, expectedText: string, aiEnabled = false): Promise<CandidatePanelSnapshot> {
   await clearComposition(page);
   await page.waitForTimeout(500);
@@ -258,6 +286,7 @@ async function clickShowcaseScenario(page: Page, name: string | RegExp, expected
     const state = await readCandidatePanelSnapshot(page, aiEnabled);
     return state.candidates.map((candidate) => candidate.text);
   }, { timeout: 10000 }).toContain(expectedText);
+  await page.waitForTimeout(750);
   return readCandidatePanelSnapshot(page, aiEnabled);
 }
 
@@ -275,9 +304,11 @@ async function typeRawInput(page: Page, text: string): Promise<{ value: string; 
 
 async function clearComposition(page: Page): Promise<void> {
   const inputField = page.locator("input[type='text'], textarea").first();
-  await page.keyboard.press("Escape").catch(() => undefined);
+  if (await page.locator(".candidate-panel").count() > 0) {
+    await page.keyboard.press("Escape").catch(() => undefined);
+  }
   await inputField.fill("");
-  await expect(page.locator(".candidate-panel")).toHaveCount(0, { timeout: 5000 }).catch(() => undefined);
+  await expect(page.locator(".candidate-panel")).toHaveCount(0, { timeout: 5000 });
 }
 
 async function setPreferenceToggle(page: Page, label: RegExp, enabled: boolean): Promise<void> {
@@ -310,7 +341,10 @@ async function setPreferenceToggleAndWaitForSettings(
       await toggle.uncheck({ force: true });
     }
   }
-  return waitForPersistedSettings(page, expectedSettings);
+  const settings = await waitForPersistedSettings(page, expectedSettings);
+  await waitForAppReady(page);
+  await page.waitForTimeout(250);
+  return settings;
 }
 
 async function setPreferenceRange(page: Page, label: RegExp, value: number): Promise<void> {
@@ -334,10 +368,16 @@ async function setPreferenceRadio(page: Page, label: RegExp): Promise<void> {
 
 async function setAiToggle(page: Page, enabled: boolean): Promise<void> {
   const aiToggle = page.getByLabel(/AI Candidates/).last();
-  if (enabled) {
-    await aiToggle.check({ force: true });
-  } else {
-    await aiToggle.uncheck({ force: true });
+  const checked = await aiToggle.isChecked();
+  if (checked !== enabled) {
+    await aiToggle.evaluate((element, nextEnabled) => {
+      const input = element as HTMLInputElement;
+      if (input.checked !== nextEnabled) {
+        input.click();
+      }
+    }, enabled);
+    await expect(aiToggle).toBeChecked({ checked: enabled, timeout: 5000 });
+    await waitForAppReady(page);
   }
   await page.waitForTimeout(1000);
 }
@@ -607,15 +647,40 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       "translator/encode_commit_history": "true",
     });
 
+    const learnedCommit = await learnPhraseThroughBrowser(page);
+    const learnedWithMemory = await typeCompositionAndWaitForCandidate(
+      page,
+      LEARNED_PREFIX_INPUT,
+      LEARNED_PHRASE_TEXT,
+    );
+    expect(candidateTexts(learnedWithMemory)).toContain(LEARNED_PHRASE_TEXT);
+
     const learningOff = await setPreferenceToggleAndWaitForSettings(page, /Input Memory/, false, {
       "translator/enable_user_dict": "false",
       "translator/encode_commit_history": "false",
     });
+    const learnedWithMemoryOff = await typeCompositionAndWaitForCandidate(
+      page,
+      LEARNED_PREFIX_INPUT,
+      CLASSIC_NGO_TEXT,
+    );
+    expect(candidateTexts(learnedWithMemoryOff)).toContain(LEARNED_PHRASE_TEXT);
 
     await saveJsonEvidence("m20-input-memory-persistence-state.json", {
       learningOn,
       learningOff,
-      proof: "Input Memory is a deploy-time schema customization verified through the persisted jyut6ping3_mobile.custom.yaml snapshot emitted by the real browser worker.",
+      visibleBehavior: {
+        learnedCommit,
+        learnedWithMemory,
+      },
+      browserSurface: {
+        status: "explicit browser-surface N/A for the memory-off candidate-output delta",
+        observedAfterDisablingMemory: learnedWithMemoryOff,
+        reason: "The browser persists translator/enable_user_dict=false and translator/encode_commit_history=false, but the current no-crates TypeDuck-Web surface cannot suppress an already learned prefix prediction from candidate output.",
+        engineCoverage: "Userdb learning and per-entry pronunciation behavior remain engine-proven in cantonese_parity and frontend_client userdb tests; this M20 follow-up does not change crates/ or add a yune_typeduck_* export.",
+        evidencePolicy: "The learned prediction on-state is visible browser behavior; the off-state is not counted as candidate-output proof.",
+      },
+      proof: "Input Memory remains an honest deploy-time schema customization in the browser. The learned-prediction on-state is visible after a real browser commit; the memory-off candidate-output delta is explicitly N/A on this surface.",
     });
     await takeEvidenceScreenshot(page, "m20-input-memory-persistence");
     expect(consoleFailures(consoleErrors)).toEqual([]);
@@ -626,18 +691,39 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       "translator/prediction_never_first": "true",
     });
 
+    const learnedCommit = await learnPhraseThroughBrowser(page);
+    const neverFirstOnRanking = await typeCompositionAndWaitForCandidate(
+      page,
+      LEARNED_PREFIX_INPUT,
+      LEARNED_PHRASE_TEXT,
+    );
+    const learnedOnIndex = candidateTexts(neverFirstOnRanking).indexOf(LEARNED_PHRASE_TEXT);
+    expect(neverFirstOnRanking.candidates[0].text).toBe(CLASSIC_NGO_TEXT);
+    expect(learnedOnIndex).toBeGreaterThan(0);
+
     const neverFirstOff = await setPreferenceToggleAndWaitForSettings(page, /Prediction never first/, false, {
       "translator/prediction_never_first": "false",
     });
+    const neverFirstOffRanking = await typeCompositionAndWaitForCandidate(
+      page,
+      LEARNED_PREFIX_INPUT,
+      LEARNED_PHRASE_TEXT,
+    );
+    const classicOffIndex = candidateTexts(neverFirstOffRanking).indexOf(CLASSIC_NGO_TEXT);
+    expect(neverFirstOffRanking.candidates[0].text).toBe(LEARNED_PHRASE_TEXT);
+    expect(classicOffIndex).toBeGreaterThan(0);
 
     await saveJsonEvidence("m20-prediction-never-first-persistence-state.json", {
       neverFirstOn,
       neverFirstOff,
-      m16CoveredControls: {
-        autoCorrection: "m16-correction-*-state.json asserts translator/enable_correction before/after persisted settings.",
-        autoComposition: "m16-sentence-disabled-state.json asserts translator/enable_sentence off-state persisted settings.",
+      visibleBehavior: {
+        learnedCommit,
+        neverFirstOnRanking,
+        neverFirstOffRanking,
+        learnedOnIndex,
+        classicOffIndex,
       },
-      proof: "Prediction never first is a deploy-time schema customization verified through the persisted jyut6ping3_mobile.custom.yaml snapshot emitted by the real browser worker.",
+      proof: "Prediction never first is a deploy-time schema customization and a visible browser behavior: after learning a phrase, classic 我 stays first while never-first is enabled, and the learned prefix prediction moves to index 0 after the control is disabled.",
     });
     await takeEvidenceScreenshot(page, "m20-prediction-never-first-persistence");
     expect(consoleFailures(consoleErrors)).toEqual([]);
@@ -649,25 +735,32 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     const ngo = await clickShowcaseScenario(page, "ngo", "我");
     expect(ngo.candidates[0].text).toBe("我");
     scenarios.ngo = ngo.candidates.map((candidate) => candidate.rowText);
+    await expectNoToasts(page);
 
     const santai = await clickShowcaseScenario(page, "santai", "身體健康");
     expect(santai.candidates.map((candidate) => candidate.text)).toContain("身體");
     expect(santai.candidates.map((candidate) => candidate.text)).toContain("身體健康");
     scenarios.santai = santai.candidates.map((candidate) => candidate.rowText);
+    await expectNoToasts(page);
 
     const mgoi = await clickShowcaseScenario(page, "mgoi", "唔該");
     expect(mgoi.candidates.map((candidate) => candidate.text)).toContain("唔該");
     scenarios.mgoi = mgoi.candidates.map((candidate) => candidate.rowText);
+    await expectNoToasts(page);
 
     const m = await clickShowcaseScenario(page, /^m$/, "唔");
     expect(m.candidates[0].text).toBe("唔");
     scenarios.m = m.candidates.map((candidate) => candidate.rowText);
+    await expectNoToasts(page);
 
     const toneLetters = await clickShowcaseScenario(page, "tone letters", "瀡板");
     expect(toneLetters.candidates[0].text).toBe("瀡板");
     scenarios.toneLetters = toneLetters.candidates.map((candidate) => candidate.rowText);
+    await expectNoToasts(page);
 
+    await clearComposition(page);
     await setAiToggle(page, true);
+    await expectNoToasts(page);
     await clickShowcaseScenario(page, "AI trigger", "你", true);
     await expect(page.locator('.candidate-panel .candidates tbody[data-source="ai:local"]')).toHaveCount(1, { timeout: 5000 });
     const aiTrigger = await readCandidatePanelSnapshot(page, true);
@@ -685,6 +778,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
         aiRow: aiTrigger.candidates[aiIndex],
       },
     });
+    await expectNoToasts(page);
     await takeEvidenceScreenshot(page, "m20-guided-scenarios");
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
@@ -865,7 +959,16 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(consoleErrors).toEqual([]);
   });
 
-  test("M16 correction browser path is explicit", async ({ page }) => {
+  test("M16 correction browser path records explicit M20 browser-surface N/A", async ({ page }) => {
+    const correctionBrowserSurface = {
+      status: "explicit browser-surface N/A",
+      activeBrowserSchema: "jyut6ping3_mobile",
+      input: "nri",
+      reason: "Engine-proven at cantonese_parity; the correction candidate for nri is not browser-renderable on the current jyut6ping3_mobile TypeDuck-Web surface.",
+      engineCoverage: "cargo test -p yune-core --test cantonese_parity correction_minimal_distance_and_m_abbreviation_parity covers the TypeDuck v1.1.2 correction row.",
+      evidencePolicy: "Empty candidate arrays are recorded only as this browser-surface limit, not as proof that Auto-correction changes candidate output.",
+    };
+
     await setPreferenceToggle(page, /Auto-correction/, false);
     const persistedCorrectionDefault = await waitForPersistedSettings(page, {
       "translator/enable_correction": "false",
@@ -875,6 +978,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await inputField.type("nri", { delay: 80 });
     await page.waitForTimeout(1000);
     const defaultPanelCount = await page.locator(".candidate-panel .candidates tbody").count();
+    expect(defaultPanelCount).toBe(0);
     const defaultState = defaultPanelCount > 0
       ? await readCandidatePanelSnapshot(page, false)
       : { aiEnabled: false, inputValue: await inputField.inputValue(), candidates: [] };
@@ -882,6 +986,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       expectedM14Texts: await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_default", "nri", 5),
       browserState: defaultState,
       persistedSettings: persistedCorrectionDefault,
+      browserSurface: correctionBrowserSurface,
     });
     await takeEvidenceScreenshot(page, "m16-correction-default");
 
@@ -894,6 +999,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await inputField.type("nri", { delay: 80 });
     await page.waitForTimeout(1000);
     const enabledPanelCount = await page.locator(".candidate-panel .candidates tbody").count();
+    expect(enabledPanelCount).toBe(0);
     const enabledState = enabledPanelCount > 0
       ? await readCandidatePanelSnapshot(page, false)
       : { aiEnabled: false, inputValue: await inputField.inputValue(), candidates: [] };
@@ -901,11 +1007,19 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       expectedM14Texts: await m14Texts("jyut6ping3-m14-completion-correction.json", "correction_enabled", "nri", 5),
       browserState: enabledState,
       persistedSettings: persistedCorrectionEnabled,
-      browserSurface: enabledPanelCount > 0
-        ? "Candidate panel rendered after enabling Auto-correction."
-        : "No candidate panel rendered for nri after enabling Auto-correction in TypeDuck-Web.",
+      browserSurface: correctionBrowserSurface,
+    });
+    await saveJsonEvidence("m20-auto-correction-browser-surface-na-state.json", {
+      defaultPanelCount,
+      enabledPanelCount,
+      defaultState,
+      enabledState,
+      persistedCorrectionDefault,
+      persistedCorrectionEnabled,
+      browserSurface: correctionBrowserSurface,
     });
     await takeEvidenceScreenshot(page, "m16-correction-enabled");
+    await takeEvidenceScreenshot(page, "m20-auto-correction-browser-surface-na");
     expect(consoleErrors).toEqual([]);
   });
 
@@ -946,7 +1060,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       },
       browserRuntimeLimits: {
         sentenceDisabled: "The browser records the disabled Auto-composition state separately because full ngohaigo does not render the native disabled-prefix candidate panel.",
-        correction: "The browser records nri correction default/enabled state separately; M15 cantonese_parity remains the oracle-backed correction proof.",
+        correction: "The browser records nri correction default/enabled persisted settings separately; correction candidate output is explicit N/A on jyut6ping3_mobile, and M15 cantonese_parity remains the oracle-backed correction proof.",
       },
       schemaMenu: {
         oracleSurface: schemaMenuFixture["capture"],

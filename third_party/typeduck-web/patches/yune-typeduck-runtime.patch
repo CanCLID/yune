@@ -614,10 +614,10 @@ index ff262af..156941a 100644
  }
 diff --git a/src/YuneFeatureShowcase.tsx b/src/YuneFeatureShowcase.tsx
 new file mode 100644
-index 0000000..f024a74
+index 0000000..c71cc06
 --- /dev/null
 +++ b/src/YuneFeatureShowcase.tsx
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,71 @@
 +interface Scenario {
 +	label: string;
 +	input: string;
@@ -656,8 +656,10 @@ index 0000000..f024a74
 +
 +function resetInput(textArea: HTMLTextAreaElement) {
 +	textArea.focus();
-+	sendKeyboardEvent(textArea, "keydown", "Escape", "Escape");
-+	sendKeyboardEvent(textArea, "keyup", "Escape", "Escape");
++	if (document.querySelector(".candidate-panel")) {
++		sendKeyboardEvent(textArea, "keydown", "Escape", "Escape");
++		sendKeyboardEvent(textArea, "keyup", "Escape", "Escape");
++	}
 +	textArea.value = "";
 +	textArea.selectionStart = textArea.selectionEnd = 0;
 +	textArea.dispatchEvent(new Event("input", { bubbles: true }));

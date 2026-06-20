@@ -23,5 +23,108 @@
     "translator/prediction_weight_threshold": "0",
     "cangjie/dictionary": "cangjie5"
   },
-  "proof": "Input Memory is a deploy-time schema customization verified through the persisted jyut6ping3_mobile.custom.yaml snapshot emitted by the real browser worker."
+  "visibleBehavior": {
+    "learnedCommit": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "我係個",
+          "note": null,
+          "source": null,
+          "rowText": "1.ngo5 hai6我係I amⓘgo3個item of"
+        }
+      ]
+    },
+    "learnedWithMemory": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "我",
+          "note": null,
+          "source": null,
+          "rowText": "1.ngo5我I, meⓘ"
+        },
+        {
+          "index": 1,
+          "text": "我係個",
+          "note": "~ngo5hai6 go3",
+          "source": null,
+          "rowText": "2.我係個~ngo5hai6 go3"
+        },
+        {
+          "index": 2,
+          "text": "俄",
+          "note": null,
+          "source": null,
+          "rowText": "3.ngo4俄Russianⓘ"
+        },
+        {
+          "index": 3,
+          "text": "柯",
+          "note": null,
+          "source": null,
+          "rowText": "4.o1柯surname [Or]ⓘ"
+        },
+        {
+          "index": 4,
+          "text": "餓",
+          "note": null,
+          "source": null,
+          "rowText": "5.ngo6餓hungryⓘ"
+        }
+      ]
+    }
+  },
+  "browserSurface": {
+    "status": "explicit browser-surface N/A for the memory-off candidate-output delta",
+    "observedAfterDisablingMemory": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "我",
+          "note": null,
+          "source": null,
+          "rowText": "1.ngo5我I, meⓘ"
+        },
+        {
+          "index": 1,
+          "text": "我係個",
+          "note": "~ngo5hai6 go3",
+          "source": null,
+          "rowText": "2.我係個~ngo5hai6 go3"
+        },
+        {
+          "index": 2,
+          "text": "俄",
+          "note": null,
+          "source": null,
+          "rowText": "3.ngo4俄Russianⓘ"
+        },
+        {
+          "index": 3,
+          "text": "柯",
+          "note": null,
+          "source": null,
+          "rowText": "4.o1柯surname [Or]ⓘ"
+        },
+        {
+          "index": 4,
+          "text": "餓",
+          "note": null,
+          "source": null,
+          "rowText": "5.ngo6餓hungryⓘ"
+        }
+      ]
+    },
+    "reason": "The browser persists translator/enable_user_dict=false and translator/encode_commit_history=false, but the current no-crates TypeDuck-Web surface cannot suppress an already learned prefix prediction from candidate output.",
+    "engineCoverage": "Userdb learning and per-entry pronunciation behavior remain engine-proven in cantonese_parity and frontend_client userdb tests; this M20 follow-up does not change crates/ or add a yune_typeduck_* export.",
+    "evidencePolicy": "The learned prediction on-state is visible browser behavior; the off-state is not counted as candidate-output proof."
+  },
+  "proof": "Input Memory remains an honest deploy-time schema customization in the browser. The learned-prediction on-state is visible after a real browser commit; the memory-off candidate-output delta is explicitly N/A on this surface."
 }

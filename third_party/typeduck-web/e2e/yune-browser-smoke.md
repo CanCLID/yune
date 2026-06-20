@@ -268,7 +268,10 @@ If both automated runner AND manual browser are impossible:
    - Record that the UI's grouped candidate default is an M20 demo default; the raw mobile assets still enable `common:/separate_candidates`.
    - `santai` with Prediction threshold `0` and `50000`.
    - Record the Prediction threshold selector range and step alongside the `50000` real-assets cutoff.
-   - Input Memory, Auto-correction, Auto-composition, and Prediction never first with persisted `jyut6ping3_mobile.custom.yaml` key snapshots.
+   - Prediction never first with a learned `ngohaigo` -> `ngo` ranking before/after: classic `我` remains first while enabled, and learned `我係個` can move first when disabled.
+   - Input Memory with a learned-prediction on-state plus explicit browser-surface N/A for the memory-off candidate-output delta if the current no-crates browser surface still renders an already learned row.
+   - Auto-correction as visible correction-row before/after only if the current `jyut6ping3_mobile` browser surface renders one; otherwise record explicit browser-surface N/A, not empty candidates as proof, and cite `cantonese_parity`.
+   - Auto-composition with persisted `translator/enable_sentence` snapshots and any current browser-renderable before/after state.
    - `abc` with ASCII mode on.
    - `/` with Full shape off and on.
    - `ngohaigo` with Simplification on.

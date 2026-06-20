@@ -312,12 +312,17 @@ schema/deploy-time knobs through `customize()` (`enable_completion`,
 `prediction_never_first`, and one measured, fine-grained prediction threshold
 with a real-assets-calibrated `santai` cutoff and documented range bounds) and
 live session options through `setOption()` (`ascii_mode`, `full_shape`,
-`simplification`). Candidate/output-visible controls have before/after browser
-assertions, while deploy-time controls whose current browser panel effect is not
-independently visible are proved through the persisted
-`jyut6ping3_mobile.custom.yaml` snapshot. Display-only controls are grouped
-separately and prove visible rendering changes for the current browser-reachable
-display surface. Static or
+`simplification`). Browser-visible controls have before/after assertions,
+including learned prediction ranking for `prediction_never_first`; Input Memory
+records a visible learned-prediction on-state but an explicit browser-surface
+N/A for memory-off suppression, and Auto-correction records explicit
+browser-surface N/A for `nri` candidate rendering while retaining
+`cantonese_parity` as the engine proof. Deploy-time controls whose current
+browser panel effect is not independently visible keep persisted
+`jyut6ping3_mobile.custom.yaml` assertions, without being counted as
+candidate-output proof. Display-only controls are grouped separately and prove
+visible rendering changes for the current browser-reachable display surface.
+Static or
 default-on engine features such as `santai`
 -> `身體健康`, Cantonese fuzzy/容錯, letter-to-tone input, reverse lookup,
 `show_full_code` reachability/N-A, and AI second-pass behavior are presented as

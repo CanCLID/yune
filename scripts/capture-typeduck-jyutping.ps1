@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels", "PredictionRanking", "All")]
+    [ValidateSet("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels", "PredictionRanking", "M21Closeout", "All")]
     [string]$Fixture = "Smoke",
     [string]$OracleRoot,
     [string]$Output,
@@ -7,6 +7,7 @@ param(
     [switch]$InternalCapture,
     [switch]$InternalSchemaList,
     [switch]$InternalStateLabels,
+    [switch]$InternalScenarioCapture,
     [switch]$InternalUserDbProbe,
     [switch]$InternalUserDbImportCapture,
     [string]$Shared,
@@ -15,6 +16,7 @@ param(
     [string]$Schema,
     [string[]]$Modules,
     [string]$InputsFile,
+    [string]$ScenariosFile,
     [string]$CasesOutput,
     [string]$DictName = "jyut6ping3",
     [string]$ExportPath,
@@ -258,6 +260,89 @@ function Invoke-ChildStateLabels($Variant) {
     }
 }
 
+function New-ProbeAction($Action) {
+    $TypedAction = [RimeProbe+ProbeAction]::new()
+    $TypedAction.type = [string]$Action.type
+    if ($null -ne $Action.text) {
+        $TypedAction.text = [string]$Action.text
+    }
+    if ($null -ne $Action.keycode) {
+        $TypedAction.keycode = [int]$Action.keycode
+    }
+    if ($null -ne $Action.mask) {
+        $TypedAction.mask = [int]$Action.mask
+    }
+    if ($null -ne $Action.option) {
+        $TypedAction.option = [string]$Action.option
+    }
+    if ($null -ne $Action.value) {
+        $TypedAction.value = [int]$Action.value
+    }
+    if ($null -ne $Action.label) {
+        $TypedAction.label = [string]$Action.label
+    }
+    $TypedAction
+}
+
+function New-ProbeScenario($Scenario) {
+    $TypedScenario = [RimeProbe+ProbeScenario]::new()
+    $TypedScenario.name = [string]$Scenario.name
+    $Actions = @()
+    foreach ($Action in @($Scenario.actions)) {
+        $Actions += New-ProbeAction $Action
+    }
+    $TypedScenario.actions = [RimeProbe+ProbeAction[]]$Actions
+    $TypedScenario
+}
+
+function Invoke-ChildScenarioCapture($Variant, $Scenarios) {
+    $CasesPath = Join-Path $Variant.root "scenario-cases.json"
+    $ScenariosPath = Join-Path $Variant.root "scenarios.json"
+    Write-JsonFile $ScenariosPath $Scenarios
+    $Args = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $PSCommandPath,
+        "-InternalScenarioCapture",
+        "-OracleRoot", $OracleRoot,
+        "-Shared", $Variant.shared,
+        "-User", $Variant.user,
+        "-Build", $Variant.build,
+        "-Schema", $Variant.schema,
+        "-CasesOutput", $CasesPath,
+        "-ScenariosFile", $ScenariosPath,
+        "-Modules", ($Modules -join ",")
+    )
+    & powershell @Args
+    if ($LASTEXITCODE -ne 0) {
+        throw "scenario capture failed for $($Variant.name) with exit code $LASTEXITCODE"
+    }
+
+    $ScenarioInputs = @{}
+    foreach ($Scenario in @($Scenarios)) {
+        if ($null -ne $Scenario.input) {
+            $ScenarioInputs[[string]$Scenario.name] = [string]$Scenario.input
+        }
+    }
+    $RawCases = Get-Content -LiteralPath $CasesPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $CaseList = if ($RawCases -is [System.Array]) { $RawCases } else { @($RawCases) }
+    foreach ($_ in $CaseList) {
+        $Row = [ordered]@{}
+        foreach ($Property in $_.PSObject.Properties) {
+            $Row[$Property.Name] = $Property.Value
+        }
+        $ScenarioName = [string]$Row["scenario"]
+        if ($ScenarioInputs.ContainsKey($ScenarioName)) {
+            $Row["input"] = $ScenarioInputs[$ScenarioName]
+        }
+        $Row["variant"] = $Variant.name
+        $Row["variant_schema"] = $Variant.schema
+        $Row["patches"] = $Variant.patches
+        $Row["default_custom_mode"] = $Variant.default_custom_mode
+        [pscustomobject]$Row
+    }
+}
+
 function Invoke-ChildUserDbProbe($Variant) {
     $CasesPath = Join-Path $Variant.root "userdb-probe.json"
     $Export = Join-Path $Variant.root "jyut6ping3-userdb-export.txt"
@@ -382,7 +467,7 @@ if ($null -ne $Inputs -and $Inputs.Count -eq 1 -and $Inputs[0].Contains(",")) {
 
 $env:PATH = (Join-Path $Extract "dist\lib") + ";" + (Join-Path $Extract "bin") + ";" + $env:PATH
 
-if ($InternalCapture -or $InternalSchemaList -or $InternalStateLabels -or $InternalUserDbProbe -or $InternalUserDbImportCapture) {
+if ($InternalCapture -or $InternalSchemaList -or $InternalStateLabels -or $InternalScenarioCapture -or $InternalUserDbProbe -or $InternalUserDbImportCapture) {
     Add-Type -Path (Join-Path $RepoRoot "scripts\oracle-rime-probe.cs")
     $Identity = [RimeProbe]::TypeDuckV112Identity()
     if ($InternalCapture) {
@@ -418,6 +503,26 @@ if ($InternalCapture -or $InternalSchemaList -or $InternalStateLabels -or $Inter
             $Identity
         )
         Write-JsonFile $CasesOutput $Result
+    } elseif ($InternalScenarioCapture) {
+        if ([string]::IsNullOrWhiteSpace($ScenariosFile)) {
+            throw "Internal scenario capture requires -ScenariosFile"
+        }
+        $RawScenarios = Read-JsonFile $ScenariosFile
+        $ScenarioList = if ($RawScenarios -is [System.Array]) { $RawScenarios } else { @($RawScenarios) }
+        $TypedScenarios = @()
+        foreach ($Scenario in $ScenarioList) {
+            $TypedScenarios += New-ProbeScenario $Scenario
+        }
+        $Cases = [RimeProbe]::CaptureScenariosWithIdentity(
+            $Shared,
+            $User,
+            $Build,
+            $Schema,
+            [string[]]$Modules,
+            [RimeProbe+ProbeScenario[]]$TypedScenarios,
+            $Identity
+        )
+        Write-JsonFile $CasesOutput $Cases
     } elseif ($InternalUserDbProbe) {
         $Result = [RimeProbe]::ProbeUserDictExportWithIdentity(
             $Shared,
@@ -453,7 +558,7 @@ $SchemaCommit = Get-SchemaCommit
 New-Item -ItemType Directory -Force -Path $CaptureRoot | Out-Null
 
 if ($Fixture -eq "All") {
-    foreach ($Name in @("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels", "PredictionRanking")) {
+    foreach ($Name in @("Smoke", "Options", "CompletionCorrection", "SchemaMenu", "UserDb", "PreferUserPhrase", "LetterToTone", "StateLabels", "PredictionRanking", "M21Closeout")) {
         & $PSCommandPath -Fixture $Name -OracleRoot $OracleRoot
         if ($LASTEXITCODE -ne 0) {
             throw "fixture capture failed for $Name with exit code $LASTEXITCODE"
@@ -473,6 +578,7 @@ if ([string]::IsNullOrWhiteSpace($Output)) {
         "LetterToTone" { "jyut6ping3-fork-parity-06-letter-to-tone.json" }
         "StateLabels" { "jyut6ping3-fork-parity-07-state-labels.json" }
         "PredictionRanking" { "jyut6ping3-m21-prediction-ranking.json" }
+        "M21Closeout" { "jyut6ping3-m21-closeout.json" }
     }
     $Output = Join-Path $RepoRoot (Join-Path "crates\yune-core\tests\fixtures\typeduck-v1.1.2" $OutputName)
 }
@@ -646,6 +752,45 @@ if ($Fixture -eq "Smoke") {
         prediction_threshold = "kPredictionThreshold = log(100)"
     }
     $FixtureBody = New-Fixture "typeduck_v112_prediction_count_interleave" @("jyut6ping3_mobile") @("prediction_ranking", "prefix_fallback") $Cases $Finding
+    $FixtureBody["input_sequence"] = $Inputs
+    Write-JsonFile $Output $FixtureBody
+} elseif ($Fixture -eq "M21Closeout") {
+    if ($null -eq $Inputs -or $Inputs.Count -eq 0) {
+        $Inputs = [string[]]@("nei", "ngo", "m", "mgoi", "ngohaigo", "hou", "neivv")
+    }
+    $CombinedVariant = New-Variant `
+        -Group "m21-closeout" `
+        -Name "default_combined" `
+        -VariantSchema "jyut6ping3_mobile" `
+        -Patches ([string[]]@()) `
+        -VariantInputs $Inputs
+    $Cases = @(Invoke-ChildCapture $CombinedVariant)
+
+    $SimplificationVariant = New-Variant `
+        -Group "m21-closeout" `
+        -Name "simplification_on" `
+        -VariantSchema "jyut6ping3_mobile" `
+        -Patches ([string[]]@()) `
+        -VariantInputs ([string[]]@())
+    $Scenarios = @(
+        [pscustomobject]@{
+            name = "hk2s_ngohaigo_simplification_on"
+            input = "ngohaigo"
+            actions = @(
+                [pscustomobject]@{ type = "set_option"; option = "simplification"; value = 1 },
+                [pscustomobject]@{ type = "input"; text = "ngohaigo" },
+                [pscustomobject]@{ type = "snapshot"; label = "simplification_on" }
+            )
+        }
+    )
+    $Cases += Invoke-ChildScenarioCapture $SimplificationVariant $Scenarios
+    $Finding = [ordered]@{
+        input_sequence = $Inputs
+        scenario_sequence = @("hk2s_ngohaigo_simplification_on")
+        oracle_observable_surface = "RimeGetContext selected_candidates closes the M21 product-comparison ledger rows against TypeDuck v1.1.2, with combine_candidates on and simplification on only for the hk2s scenario"
+        settings_profile = "default_combined uses no common.custom patches so translator/combine_candidates stays true; simplification_on uses runtime RimeSetOption('simplification', 1)"
+    }
+    $FixtureBody = New-Fixture "typeduck_v112_m21_product_comparison_closeout" @("jyut6ping3_mobile") @("product_comparison_closeout", "hk2s") $Cases $Finding
     $FixtureBody["input_sequence"] = $Inputs
     Write-JsonFile $Output $FixtureBody
 }

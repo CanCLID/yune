@@ -1,6 +1,6 @@
 # M21 — TypeDuck-Web Product Behavioral Comparison Protocol
 
-> **Status:** Active (product-side manual capture pending; M21-GAP-01/02 fixed) · **Milestone:** M21 (TypeDuck-Web product comparison) · **Updated:** 2026-06-20 · **Type:** comparison protocol (validation activity) · **Depends on:** M20 (merged) · **Critical path:** no (qualitative real-world sanity check that feeds the backlog)
+> **Status:** Complete (hard-oracle gap ledger fully dispositioned; future live-product spot checks are optional feel-target work) · **Milestone:** M21 (TypeDuck-Web product comparison) · **Updated:** 2026-06-20 · **Type:** comparison protocol / closeout reference · **Depends on:** M20 (merged) · **Critical path:** no (qualitative real-world sanity check that feeds the backlog)
 
 > **For agentic workers:** This is **not** an engine milestone and produces **no fixes by itself** — it produces a *divergence gap ledger*. It compares Yune's internal harness against the real deployed product as a *behavior/feel* target, **not a hard oracle**. The hard oracle remains the captured TypeDuck `v1.1.2` fixtures. Run this **after M20 merges** (M20 gives the harness the toggles needed to match the product's settings).
 
@@ -15,18 +15,23 @@ so we know **which differences are real engine gaps, which are expected-by-desig
 
 ## Current status
 
-M21 is not complete as a product-comparison activity: the deployed-product manual
-capture column in the gap ledger is still pending. The two hard-oracle-backed
-implementation gaps found while preparing that comparison are complete:
+M21 is complete as a hard-oracle closeout. The product-comparison ledger has no
+remaining hard-oracle action rows: live product observations are recorded only as a
+moving feel target, while every should-match row is either fixed against or matched
+to a pinned TypeDuck v1.1.2 fixture.
 
 - **M21-GAP-01:** dictionary sentence-composition divergence, fixed against the
   `v1.1.2` fixture.
 - **M21-GAP-02:** `nri` prefix fallback plus `jyut6ping3` prediction-count
   behavior, fixed against `v1.1.2` fixtures and browser evidence.
+- **M21 closeout fixture:** `jyut6ping3-m21-closeout.json` locks the remaining
+  `nei`, `ngo`, `m`, `mgoi`, `ngohaigo`, `hou`, `neivv`, and `hk2s`
+  dispositions, including the final standalone-`m` and `mgoi` abbreviation/fuzzy
+  fixes.
 
-Keep this protocol under `docs/plans/` until the product capture is either run
-and classified or explicitly closed as no longer needed. Do not archive it merely
-because GAP-01/GAP-02 are fixed.
+Keep this protocol under `docs/plans/` as the reference for any future optional
+live-product spot check. Such checks must still classify differences against a new
+pinned oracle fixture before changing engine behavior.
 
 ## Why the deployed product is a target, not an oracle
 
@@ -236,6 +241,30 @@ lazy-sound fuzzy rule in `include.yaml` (`derive/eo/oe/ # 容錯 eo/oe 不分`),
 correct to apply it. The deployed product appears to have refined or dropped that
 rule. Treat `seov` as expected version skew and use a non-`eo`/`oe` input such as
 `neivv` for future letter-to-tone product captures.
+
+## Section 5d — M21 closeout fixture and final ledger (complete)
+
+> **Status:** classified and fixed on 2026-06-20 · remaining rows locked by
+> `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-closeout.json`
+> and recorded in
+> `third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0849Z-yune-cdb7bd52-product-manual/gap-ledger.md`.
+
+The closeout fixture captures the remaining product-comparison rows against the
+hard v1.1.2 oracle: baseline `nei`/`ngo`, standalone `m`, `mgoi`,
+`ngohaigo`, `hou`, tone-letter `neivv`, and `ngohaigo` with `hk2s`
+simplification enabled. The final ledger contains no product-capture-pending rows:
+each row is now one of `match`, `oracle-backed-fixed`, `expected-by-design`, or
+`browser-surface-N/A`.
+
+Two additional implementation gaps were fixed during closeout:
+
+- Standalone `m` now preserves normal `ng→m` fuzzy rows ahead of generated
+  one-letter abbreviation rows, matching the v1.1.2 top order.
+- `mgoi` now matches the v1.1.2 two-syllable `m` abbreviation/fuzzy family:
+  `唔該`, `唔該晒`, `唔過`, `五個`, `每個`.
+
+The deployed product remains useful as a future feel target, but M21 no longer has
+an open hard-oracle action item.
 
 ## Guardrails
 

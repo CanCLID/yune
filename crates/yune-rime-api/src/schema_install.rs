@@ -256,6 +256,8 @@ fn install_schema_dictionary_translator_from_config(
     .or_else(|| find_config_value(schema_config, &format!("{name_space}/prediction_limit")))
     .and_then(config_scalar_int)
     .and_then(|limit| usize::try_from(limit).ok())
+    // TypeDuck v1.1.2 calibrates jyut6ping3 to one long prediction before
+    // single-character rows; see jyut6ping3-m21-prediction-ranking.json.
     .or_else(|| is_typeduck_jyut6ping3_profile.then_some(1));
     let prefix_fallback =
         find_config_value(schema_config, &format!("{name_space}/prefix_fallback"))

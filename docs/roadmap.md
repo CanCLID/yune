@@ -344,6 +344,35 @@ Evidence lives under
 plan is archived at
 [`plans/archive/m20-plan-web-demo-showcase-controls.md`](./plans/archive/m20-plan-web-demo-showcase-controls.md).
 
+### M21: TypeDuck-Web product comparison closeout
+
+M21 compared the internal Yune TypeDuck-Web harness against the deployed
+`typeduck.hk/web` product as a qualitative feel target while keeping the pinned
+TypeDuck v1.1.2 fixtures as the only hard oracle. The final gap ledger has no
+remaining hard-oracle action rows: every row is now classified as a v1.1.2 match,
+an oracle-backed fix, expected version skew, or current browser-surface N/A.
+
+Three oracle-backed slices closed during M21:
+
+- **M21-GAP-01:** multi-syllable dictionary sentence composition now matches the
+  v1.1.2 fixture for `loengnincin`, `leoicijyu`, `ngohaigo`, and analogous
+  cases, with the sentence word penalty documented as a Yune heuristic validated
+  against that fixture.
+- **M21-GAP-02:** `nri` partial-parse prefix fallback and the TypeDuck
+  `jyut6ping3` prediction-count behavior now match v1.1.2, with browser
+  before/after evidence replacing the old auto-correction N/A.
+- **Closeout fixture:** `jyut6ping3-m21-closeout.json` locks the remaining
+  baseline, fuzzy, sentence, `hk2s`, tone-letter, and paging rows, including the
+  final standalone-`m` and `mgoi` abbreviation/fuzzy ordering fixes.
+
+Live product differences such as `leoicijyu` (`類似於` live vs `類似如` in
+v1.1.2) and `seov` (`eo`/`oe` fuzzy version skew) are recorded as
+expected-by-design unless a future pinned oracle fixture says otherwise.
+
+Detail: [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-typeduck-web-product-comparison.md)
+and
+[`third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0849Z-yune-cdb7bd52-product-manual/gap-ledger.md`](../third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0849Z-yune-cdb7bd52-product-manual/gap-ledger.md).
+
 ---
 
 ## Parked
@@ -373,11 +402,13 @@ In priority order:
 
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 2. **Keep M9/M13/M16/M20 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, default-off M13 AI scenarios, and M20 showcase-control honesty checks.
-3. **Advance Track 2 (M17-M19) opportunistically.** The upstream language model, prism generation, deployment-write, and breadth schemas now follow the upstream-first scope ledger after the M14-M16 TypeDuck-Web closeout and M20 browser playground work.
-4. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
-5. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
-6. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
-7. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
+3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
+4. **Do the bounded architecture-hardening milestone (M23) next, before broad product/native expansion.** M21 did not require a rewrite, but the finishable debt is now scoped as **M23** ([`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md)): gate the `TYPEDUCK_*` constants out of the shared default path (before M19), enable the workspace lint policy per crate (before M18 writer code), resolve `yune-schema`, and split the oversized test modules. The larger core-owned processor/native-engine API extraction stays **trigger-gated** (D-28) until a real non-ABI consumer needs it — it is not part of M23 and is not scheduled speculatively.
+5. **Advance Track 2 (M17-M19) opportunistically.** The upstream language model, prism generation, deployment-write, and breadth schemas now follow the upstream-first scope ledger after the M14-M16 TypeDuck-Web closeout and M20 browser playground work.
+6. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
+7. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
+8. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
+9. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
 
 ---
 
@@ -388,6 +419,71 @@ list. **TypeDuck `jyut6ping3` reconciliation (M14–M16) and the M20 browser
 playground are complete** (see *Completed* above). The remaining engine-depth arc
 is **Track 2 (broad upstream depth):**
 
+### Execution order — what to do next
+
+This is the **authoritative sequence**; the per-milestone detail bullets below
+are reference, not order. The ordering follows the dependency map from the
+2026-06-20 architecture review: **M18 is an unblocker** (no dictionary writers
+exist yet, so M19 breadth / M22 multi-schema otherwise build on a precompiled-
+asset crutch — see M18 and M22 bullets), **M17 is the heaviest and least
+product-critical slice** (not required by any current named target), and the
+TypeDuck profile-tuning leak must be gated **before** M19 adds schemas through
+the same shared sentence path.
+
+1. **M23 — architecture hardening (bounded).** Gate the `TYPEDUCK_*` constants
+   out of the shared default path (before M19), enable the workspace lint policy
+   per crate (before M18 writer code), resolve `yune-schema`, split the oversized
+   test modules. Small and closeable. Plan:
+   [`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md).
+2. **M18 — deployment & processor depth (the unblocker).** Dictionary-writer
+   bytes (`build_table_bin` / `build_prism_bin` / `build_reverse_bin` + a pure-Rust
+   darts double array + a rebuild executor) and the deferred `ascii_punct`
+   processor toggle. Everything breadth / multi-schema / product sits on this.
+3. **M22 read-only debug inspector bucket (pull forward, parallelizable).** This
+   bucket of M22 has no M18 dependency and makes verifying every later milestone
+   far easier, so do it early. M22's multi-schema bucket waits for M18 + M19.
+4. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
+   the real `cangjie5` / `luna_pinyin` artifacts M22 multi-schema needs, and names
+   the TypeDuck-profile ABI surface the parked M10 is waiting on.
+5. **M22 multi-schema bucket.** Multi-schema playground on real M18 + M19 output,
+   not a precompiled workaround.
+6. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
+   not required by any current named target. Do it when a frontend actually ships
+   `luna_pinyin` sentence input to users.
+
+**Trigger-gated, not scheduled:** the core/ABI **processor extraction** (move
+processor semantics into `yune-core`) lands only when a real non-ABI consumer
+(iOS package / Yune-native frontend) needs the full input pipeline — see
+`decisions.md` D-28. Do not milestone it speculatively.
+
+---
+
+### Per-milestone detail
+
+> The bullets below are reference detail. The **Execution order** above is the
+> authoritative sequence (note: M18 precedes M17, despite list position here).
+
+- **M23 — Architecture hardening (bounded; do first)** —
+  make the known structural debt reviewable
+  before Yune depends on more non-librime surfaces. The current state is honest but
+  not ideal: the RIME processor pipeline lives in `yune-rime-api`, so the full input
+  path is easiest to drive through the librime-shaped C ABI; `yune-schema` is a
+  workspace crate but not the production schema-install source of truth; workspace
+  lint policy is declared but not enforced by member crates; the ABI facade still
+  carries production glue; and large single-file test modules plus core inline
+  facade tests make behavior ownership harder to scan. Acceptance for this
+  hardening track: document the intended native-engine API boundary; move processor
+  semantics toward `yune-core` when a non-ABI frontend/iOS/native product path
+  actually needs that entry point; either promote `yune-schema` into production
+  schema parsing or mark it parked/delete it; enable `[lints] workspace = true`
+  where appropriate with an explicit FFI exception strategy for `yune-rime-api`;
+  split large ABI tests and core inline facade tests only along behavior ownership
+  lines; keep TypeDuck-profile tuning behind explicit profile/config gates; and
+  keep each extraction behavior-preserving with existing oracle/browser gates
+  unchanged. Bounded, finishable scope and acceptance gates:
+  [`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md).
+  (The core-owned processor/native-engine API extraction is **not** in M23 — it
+  is the trigger-gated D-28 item.)
 - **M17 — Upstream sentence / language model (poet)** — implements the upstream
   `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE
   output matches the captured oracle, un-ignoring the two blocked stubs in
@@ -444,32 +540,6 @@ is **Track 2 (broad upstream depth):**
   item (1) of `typeduck-windows-backend-requirements.md` without reopening Windows
   packaging.
   Detail: [`plans/m19-plan-breadth-schemas.md`](./plans/m19-plan-breadth-schemas.md).
-- **M21 — TypeDuck-Web product comparison** — an active documented protocol (off the
-  parity critical path) comparing the Yune harness against the deployed
-  `typeduck.hk/web` product as a behavior/feel target (the `v1.1.2` fixtures stay
-  the hard oracle). Product-side manual capture is still pending, so the protocol
-  remains active; the hard-oracle implementation gaps found so far are tracked
-  below as M21-GAP-01 and M21-GAP-02. See
-  [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-typeduck-web-product-comparison.md).
-- **M21-GAP-01 — multi-syllable dictionary-composition divergence (fixed against
-  `v1.1.2`).** Manual harness testing found that toneless multi-syllable inputs
-  whose target is a *dictionary-phrase* sentence returned wrong high-frequency
-  short-piece compositions. A new `v1.1.2` fixture now locks `loengnincin` →
-  `兩年前`, `leoicijyu` → `類似如` (the oracle result, even though the live-site feel
-  target suggested `類似於`), `ngohaigo` → `我係個`, and three analogous inputs.
-  This was classified as `unexpected-composition-gap`, not M17 poet/octagram LM
-  work. Yune now uses oracle-backed log-space sentence scoring with a scoped word
-  penalty for dictionary sentence composition, and
-  [`fork-parity-ledger.md`](./fork-parity-ledger.md) note 5 records the narrowed
-  exception to the previous do-not-preserve decision.
-- **M21-GAP-02 — partial-parse prefix fallback and prediction-count behavior
-  (fixed against `v1.1.2`).** The TypeDuck `jyut6ping3` profile now falls back to
-  the longest valid leading segment when full-input lookup fails, so `nri` with
-  correction off surfaces the oracle `n` candidates and commits `我ri`, while
-  correction on returns `你` first. A new locked prediction-ranking fixture
-  (`santai`, `sigin`, `gwongdung`, `hoenggong`) also adopts the fork's
-  prediction-count limiting for this profile only, keeping single-character
-  matches on page 1 without reopening broad fork ranking byte parity.
 - **M22 — TypeDuck-Web playground feature-completeness + multi-schema + engine
   debug inspector** — the M20 successor (playground build-out, *not* M21's
   product-comparison protocol). Surfaces more of Yune's engine in the internal

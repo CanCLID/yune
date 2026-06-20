@@ -500,6 +500,24 @@ fn static_table_translator_completion_matches_librime_option() {
 }
 
 #[test]
+fn static_table_translator_prefix_fallback_preserves_full_match() {
+    let translator =
+        StaticTableTranslator::new([("a", "prefix"), ("ab", "full")]).with_prefix_fallback(true);
+
+    let candidates = translator.translate("ab");
+    let texts = candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+
+    assert_eq!(texts, ["full", "prefix"]);
+    assert!(matches!(
+        candidates[1].source,
+        CandidateSource::PartialTable { consumed: 1 }
+    ));
+}
+
+#[test]
 fn static_table_translator_completion_can_filter_by_prediction_weight_threshold() {
     let dictionary = TableDictionary::parse_rime_dict_yaml(
         "\

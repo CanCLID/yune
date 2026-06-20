@@ -711,6 +711,36 @@ breadth) resumes opportunistically after the TypeDuck-Web closeout. Extends D-24
 precedence) and D-25 (target-driven scope). *Outcome: M14-M16 complete with explicit
 browser/userdb inspection limits.*
 
+### Architecture hardening (project-wide D-28)
+
+**D-28 / ARCH-HARDENING — Keep the strategic architecture, but name the current
+core/ABI boundary debt before product/native expansion.** The strategic decisions
+remain correct: librime is the oracle rather than the template, upstream 1.17.0
+is the default core reference, TypeDuck v1.1.2 is a named compatibility profile,
+and AI stays a separate default-off layer. The structural debt is narrower: the
+full production key path is currently easiest to drive through the
+librime-shaped ABI because the RIME processor pipeline lives in
+`yune-rime-api/src/processors/` and falls through to `yune-core::Engine`, while
+`crates/yune-schema` exists but is not the production schema-install source of
+truth. This is acceptable for current compatibility and TypeDuck-Web WASM work,
+but it must be visible before broad Track 2, M22 multi-schema, TypeDuck-Windows,
+iOS, or Yune-native frontend work deepens the dependency. M21 satisfied the
+immediate guardrail by keeping TypeDuck-calibrated ranking, sentence, correction,
+and prediction behavior profile-scoped: such constants must not affect default
+upstream core behavior unless installed through an explicit profile predicate /
+typed translator config, or renamed with upstream-oracle evidence that the
+behavior is global. Next, create a hardening track with
+these acceptance points: enable or explicitly scope workspace lint policy per
+crate (with a clear FFI strategy for `yune-rime-api`), split large ABI test
+modules and core inline facade tests only along behavior ownership lines, decide
+whether `yune-schema` is promoted into the production schema path or
+parked/deleted, and move processor semantics toward a core-owned Rust API when a
+real non-ABI consumer needs the full input pipeline. Every extraction must be
+behavior-preserving and keep existing oracle, ABI, and browser gates unchanged.
+*Outcome: Active architectural debt register; M21 profile isolation guardrail
+was satisfied, and the architecture-hardening track remains future work rather
+than a retroactive rewrite trigger.*
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/archive/m00-analysis-founding.md`, `docs/roadmap.md`, and
@@ -744,4 +774,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-19 - D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending a named profile surface.*
+*Last updated: 2026-06-20 - D-28 records the architecture-hardening debt register; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending a named profile surface.*

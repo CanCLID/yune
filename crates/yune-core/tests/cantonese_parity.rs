@@ -1,8 +1,8 @@
 use serde_json::Value;
 use yune_core::{
     Candidate, CandidateFilter, CandidateSource, DictionaryLookupFilter, Engine,
-    ReverseLookupTranslator, RimeCorrectionEntry, SchemaListTranslator, StaticTableTranslator,
-    Status, TableDictionary, Translator, UserDb,
+    ReverseLookupTranslator, RimeCorrectionEntry, SchemaListTranslator, SimplifierFilter,
+    StaticTableTranslator, Status, TableDictionary, Translator, UserDb,
 };
 
 const ORACLE: &str = include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json");
@@ -18,6 +18,8 @@ const M21_SENTENCE_COMPOSITION_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m21-sentence-composition.json");
 const M21_PREDICTION_RANKING_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m21-prediction-ranking.json");
+const M21_CLOSEOUT_ORACLE: &str =
+    include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m21-closeout.json");
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
 const FORK_PARITY_02_PREFER_USER_PHRASE_ORACLE: &str =
@@ -66,6 +68,11 @@ fn m21_sentence_composition_fixture() -> Value {
 fn m21_prediction_ranking_fixture() -> Value {
     serde_json::from_str(M21_PREDICTION_RANKING_ORACLE)
         .expect("TypeDuck v1.1.2 M21 prediction-ranking fixture should be valid JSON")
+}
+
+fn m21_closeout_fixture() -> Value {
+    serde_json::from_str(M21_CLOSEOUT_ORACLE)
+        .expect("TypeDuck v1.1.2 M21 closeout fixture should be valid JSON")
 }
 
 fn fork_parity_01_real_dictionary_fuzzy_fixture() -> Value {
@@ -450,6 +457,48 @@ fn typeduck_v112_m21_prediction_ranking_fixture_is_locked() {
             "input {input}"
         );
     }
+}
+
+#[test]
+fn typeduck_v112_m21_closeout_fixture_is_locked() {
+    let fixture = m21_closeout_fixture();
+    assert_eq!(fixture["oracle"]["engine"], "TypeDuck-HK/librime");
+    assert_eq!(fixture["oracle"]["engine_tag"], "v1.1.2");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"],
+        "74cb52b78fb2411137a7643f6c8bc6517acfde69"
+    );
+    assert_eq!(fixture["schema"], "jyut6ping3_mobile");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default", "dictionary_lookup"])
+    );
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "typeduck_v112_m21_product_comparison_closeout"
+    );
+    assert_eq!(
+        fixture["capture"]["input_sequence"],
+        serde_json::json!(["nei", "ngo", "m", "mgoi", "ngohaigo", "hou", "neivv"])
+    );
+    assert_eq!(
+        fixture["capture"]["scenario_sequence"],
+        serde_json::json!(["hk2s_ngohaigo_simplification_on"])
+    );
+
+    for input in ["nei", "ngo", "m", "mgoi", "ngohaigo", "hou", "neivv"] {
+        let case = m21_closeout_case(&fixture, "default_combined", input);
+        assert_eq!(case["schema_id"], "jyut6ping3_mobile", "input {input}");
+        assert_eq!(case["is_composing"], true, "input {input}");
+        assert!(
+            candidate_count(case) > 0,
+            "input {input} should preserve at least one candidate"
+        );
+    }
+
+    let hk2s = m21_closeout_case(&fixture, "simplification_on", "ngohaigo");
+    assert_eq!(hk2s["is_simplified"], true);
+    assert_eq!(selected_candidate_text(hk2s, 0), "\u{6211}\u{7cfb}\u{4e2a}");
 }
 
 #[test]
@@ -1044,6 +1093,17 @@ fn m21_prediction_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
         .unwrap_or_else(|| panic!("M21 prediction-ranking fixture should capture {input}"))
 }
 
+fn m21_closeout_case<'a>(fixture: &'a Value, variant: &str, input: &str) -> &'a Value {
+    fixture["cases"]
+        .as_array()
+        .expect("M21 closeout cases should be an array")
+        .iter()
+        .find(|case| case["variant"] == variant && case["input"] == input)
+        .unwrap_or_else(|| {
+            panic!("M21 closeout fixture should capture variant {variant} input {input}")
+        })
+}
+
 fn candidate_count(case: &Value) -> usize {
     case["selected_candidates"]
         .as_array()
@@ -1114,6 +1174,7 @@ fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
     let mut translator = StaticTableTranslator::from_dictionary(translator_dictionary)
         .with_completion(true)
         .with_correction(enable_correction)
+        .with_dynamic_correction_lookup(true)
         .with_sentence(true)
         .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
         .with_comment_format(&["xform/^/\u{000c}/".to_owned()])
@@ -1227,6 +1288,57 @@ fn m21_prediction_limit_preserves_m14_short_completion_boundary() {
     assert_eq!(
         engine.context().candidates[0].text,
         selected_candidate_text(expected, 0)
+    );
+}
+
+#[test]
+fn m21_closeout_rows_match_typeduck_v112_real_dictionary_goldens() {
+    let fixture = m21_closeout_fixture();
+    let mut engine = typeduck_jyut6ping3_mobile_engine(false);
+
+    for input in ["nei", "ngo", "m", "mgoi", "ngohaigo", "hou", "neivv"] {
+        let expected = m21_closeout_case(&fixture, "default_combined", input);
+        engine.set_input(input);
+        let compare_count = candidate_count(expected).min(5);
+        let actual_texts = engine
+            .context()
+            .candidates
+            .iter()
+            .take(compare_count)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let actual_details = engine
+            .context()
+            .candidates
+            .iter()
+            .take(compare_count)
+            .map(|candidate| {
+                (
+                    candidate.text.as_str(),
+                    candidate.comment.as_str(),
+                    candidate.source.as_str(),
+                    candidate.quality,
+                )
+            })
+            .collect::<Vec<_>>();
+        let expected_texts = (0..compare_count)
+            .map(|index| selected_candidate_text(expected, index))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            actual_texts, expected_texts,
+            "input {input}; actual details {actual_details:?}"
+        );
+    }
+
+    let expected_hk2s = m21_closeout_case(&fixture, "simplification_on", "ngohaigo");
+    let mut hk2s_engine = typeduck_jyut6ping3_mobile_engine(false);
+    hk2s_engine.add_filter(SimplifierFilter::new().with_opencc_config("hk2s.json"));
+    hk2s_engine.set_option("simplification", true);
+    hk2s_engine.set_input("ngohaigo");
+
+    assert_eq!(
+        hk2s_engine.context().candidates[0].text,
+        selected_candidate_text(expected_hk2s, 0)
     );
 }
 

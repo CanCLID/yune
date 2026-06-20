@@ -7,6 +7,12 @@ pub(crate) struct SpellingAlgebra {
     formulas: Vec<SpellingAlgebraFormula>,
 }
 
+pub(crate) struct ExpandedSpellingEntry {
+    pub(crate) code: String,
+    pub(crate) candidate: Candidate,
+    pub(crate) abbreviation: bool,
+}
+
 const SPELLING_ALGEBRA_FUZZY_PENALTY: f32 = -std::f32::consts::LN_2;
 const SPELLING_ALGEBRA_ABBREVIATION_PENALTY: f32 = -std::f32::consts::LN_2;
 const SPELLING_ALGEBRA_CORRECTION_PENALTY: f32 = -std::f32::consts::LN_10 * 2.0;
@@ -29,7 +35,7 @@ impl SpellingAlgebra {
     pub(crate) fn expand_entries_with_normal_codes(
         &self,
         entries: Vec<(String, Candidate)>,
-    ) -> (Vec<(String, Candidate)>, HashSet<String>, bool) {
+    ) -> (Vec<ExpandedSpellingEntry>, HashSet<String>, bool) {
         let mut entries = entries
             .into_iter()
             .map(|(code, candidate)| SpellingAlgebraEntry {
@@ -64,6 +70,14 @@ impl SpellingAlgebra {
             }
             entries = dedupe_spelling_algebra_entries(next);
         }
+        if self
+            .formulas
+            .iter()
+            .any(SpellingAlgebraFormula::is_abbreviation)
+        {
+            entries.extend(leading_syllable_abbreviations(&entries));
+            entries = dedupe_spelling_algebra_entries(entries);
+        }
         let normal_codes = entries
             .iter()
             .filter(|entry| entry.normal)
@@ -74,7 +88,11 @@ impl SpellingAlgebra {
             .any(|entry| entry.abbreviation && !entry.normal && entry.code.len() == 1);
         let entries = entries
             .into_iter()
-            .map(|entry| (entry.code, entry.candidate))
+            .map(|entry| ExpandedSpellingEntry {
+                code: entry.code,
+                candidate: entry.candidate,
+                abbreviation: entry.abbreviation && !entry.normal,
+            })
             .collect();
         (entries, normal_codes, has_single_letter_abbreviations)
     }
@@ -94,6 +112,7 @@ enum SpellingAlgebraFormula {
     Transform {
         pattern: Regex,
         replacement: String,
+        syllable_scoped: bool,
         keep_original: bool,
         add_transformed: bool,
         quality_penalty: f32,
@@ -104,6 +123,7 @@ enum SpellingAlgebraFormula {
         lookahead: Regex,
         positive: bool,
         replacement: String,
+        syllable_scoped: bool,
         keep_original: bool,
         add_transformed: bool,
         quality_penalty: f32,
@@ -118,17 +138,23 @@ impl SpellingAlgebraFormula {
         let args = definition.split(separator).collect::<Vec<_>>();
         match args.first().copied()? {
             "xlit" => Self::parse_xlit(&args),
-            "xform" => Self::parse_transform(&args, false, true, 0.0, false),
+            "xform" => Self::parse_transform(&args, false, true, 0.0, false, false),
             "derive" => Self::parse_derivation(&args),
-            "fuzz" => {
-                Self::parse_transform(&args, true, true, SPELLING_ALGEBRA_FUZZY_PENALTY, false)
-            }
+            "fuzz" => Self::parse_transform(
+                &args,
+                true,
+                true,
+                SPELLING_ALGEBRA_FUZZY_PENALTY,
+                false,
+                true,
+            ),
             "abbrev" => Self::parse_transform(
                 &args,
                 true,
                 true,
                 SPELLING_ALGEBRA_ABBREVIATION_PENALTY,
                 true,
+                false,
             ),
             "erase" => Self::parse_erase(&args),
             _ => None,
@@ -153,6 +179,7 @@ impl SpellingAlgebraFormula {
         add_transformed: bool,
         quality_penalty: f32,
         abbreviation: bool,
+        syllable_scope_anchor: bool,
     ) -> Option<Self> {
         if args.len() < 3 || args[1].is_empty() {
             return None;
@@ -163,6 +190,7 @@ impl SpellingAlgebraFormula {
                 lookahead,
                 positive,
                 replacement: args[2].to_owned(),
+                syllable_scoped: syllable_scope_anchor && args[1].starts_with('^'),
                 keep_original,
                 add_transformed,
                 quality_penalty,
@@ -172,6 +200,7 @@ impl SpellingAlgebraFormula {
         Some(Self::Transform {
             pattern: Regex::new(args[1]).ok()?,
             replacement: args[2].to_owned(),
+            syllable_scoped: syllable_scope_anchor && args[1].starts_with('^'),
             keep_original,
             add_transformed,
             quality_penalty,
@@ -186,7 +215,7 @@ impl SpellingAlgebraFormula {
             Some("correction") => (SPELLING_ALGEBRA_CORRECTION_PENALTY, false),
             _ => (0.0, false),
         };
-        Self::parse_transform(args, true, true, quality_penalty, abbreviation)
+        Self::parse_transform(args, true, true, quality_penalty, abbreviation, true)
     }
 
     fn parse_erase(args: &[&str]) -> Option<Self> {
@@ -266,12 +295,23 @@ impl SpellingAlgebraFormula {
             Self::Transform {
                 pattern,
                 replacement,
+                syllable_scoped,
                 add_transformed,
                 ..
             } => {
-                let transformed = pattern
-                    .replace_all(value, replacement.as_str())
-                    .into_owned();
+                let transformed = if *syllable_scoped {
+                    replace_by_syllable(value, |syllable| {
+                        let transformed = pattern
+                            .replace_all(syllable, replacement.as_str())
+                            .into_owned();
+                        (transformed != syllable).then_some(transformed)
+                    })
+                    .unwrap_or_else(|| value.clone())
+                } else {
+                    pattern
+                        .replace_all(value, replacement.as_str())
+                        .into_owned()
+                };
                 let modified = transformed != *value;
                 if modified && *add_transformed {
                     *value = transformed;
@@ -283,11 +323,23 @@ impl SpellingAlgebraFormula {
                 lookahead,
                 positive,
                 replacement,
+                syllable_scoped,
                 add_transformed,
                 ..
             } => {
-                let transformed =
-                    replace_lookahead_matches(value, prefix, lookahead, *positive, replacement);
+                let transformed = if *syllable_scoped {
+                    replace_by_syllable(value, |syllable| {
+                        replace_lookahead_matches(
+                            syllable,
+                            prefix,
+                            lookahead,
+                            *positive,
+                            replacement,
+                        )
+                    })
+                } else {
+                    replace_lookahead_matches(value, prefix, lookahead, *positive, replacement)
+                };
                 let modified = transformed
                     .as_ref()
                     .is_some_and(|transformed| transformed != value);
@@ -307,6 +359,97 @@ impl SpellingAlgebraFormula {
             }
         }
     }
+}
+
+fn replace_by_syllable(
+    value: &str,
+    mut replace: impl FnMut(&str) -> Option<String>,
+) -> Option<String> {
+    let mut output = String::with_capacity(value.len());
+    let mut start = 0;
+    let mut modified = false;
+
+    for (index, ch) in value.char_indices() {
+        if !ch.is_ascii_digit() {
+            continue;
+        }
+        let end = index + ch.len_utf8();
+        let syllable = &value[start..end];
+        if let Some(transformed) = replace(syllable) {
+            output.push_str(&transformed);
+            modified = true;
+        } else {
+            output.push_str(syllable);
+        }
+        start = end;
+    }
+
+    if start < value.len() {
+        let syllable = &value[start..];
+        if let Some(transformed) = replace(syllable) {
+            output.push_str(&transformed);
+            modified = true;
+        } else {
+            output.push_str(syllable);
+        }
+    }
+
+    modified.then_some(output)
+}
+
+fn leading_syllable_abbreviations(entries: &[SpellingAlgebraEntry]) -> Vec<SpellingAlgebraEntry> {
+    entries
+        .iter()
+        .filter(|entry| !entry.abbreviation)
+        .filter_map(|entry| {
+            if toned_syllable_count(&entry.candidate.comment) != Some(2) {
+                return None;
+            }
+            let first_syllable = first_toned_syllable_letters(&entry.candidate.comment)?;
+            if first_syllable.len() <= 1 || !entry.code.starts_with(first_syllable) {
+                return None;
+            }
+            let suffix = &entry.code[first_syllable.len()..];
+            if suffix.is_empty() {
+                return None;
+            }
+            let initial = first_syllable.chars().next()?;
+            if initial != 'm' {
+                return None;
+            }
+            let code = format!("{initial}{suffix}");
+            if code == entry.code {
+                return None;
+            }
+            let mut candidate = entry.candidate.clone();
+            candidate.quality += SPELLING_ALGEBRA_ABBREVIATION_PENALTY;
+            Some(SpellingAlgebraEntry {
+                code,
+                candidate,
+                normal: false,
+                abbreviation: true,
+            })
+        })
+        .collect()
+}
+
+fn first_toned_syllable_letters(raw_code: &str) -> Option<&str> {
+    let mut start = None;
+    for (index, ch) in raw_code.char_indices() {
+        if ch.is_ascii_alphabetic() {
+            start.get_or_insert(index);
+        } else if ch.is_ascii_digit() {
+            return start.map(|start| &raw_code[start..index]);
+        } else if start.is_some() {
+            return None;
+        }
+    }
+    None
+}
+
+fn toned_syllable_count(raw_code: &str) -> Option<usize> {
+    let count = raw_code.chars().filter(char::is_ascii_digit).count();
+    (count > 0).then_some(count)
 }
 
 fn parse_lookahead_pattern(pattern: &str) -> Option<(Regex, Regex, bool)> {

@@ -187,6 +187,60 @@ fn typeduck_v112_m21_prediction_ranking_fixture_has_non_circular_source_provenan
 }
 
 #[test]
+fn typeduck_v112_m21_closeout_fixture_has_non_circular_source_provenance() {
+    let root = fixture_root("typeduck-v1.1.2");
+    let path = root.join("jyut6ping3-m21-closeout.json");
+    assert!(
+        path.is_file(),
+        "M21 closeout should check in the TypeDuck product-comparison closeout fixture"
+    );
+    let fixture = read_json(&path);
+    assert_typeduck_v112_fixture_header(&path, &fixture);
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_eq!(
+        fixture["capture"]["source_row_policy"], "typeduck_v112_m21_product_comparison_closeout",
+        "{path:?}"
+    );
+    assert_eq!(fixture["schema"], "jyut6ping3_mobile", "{path:?}");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default", "dictionary_lookup"]),
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["input_sequence"],
+        serde_json::json!(["nei", "ngo", "m", "mgoi", "ngohaigo", "hou", "neivv"]),
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["scenario_sequence"],
+        serde_json::json!(["hk2s_ngohaigo_simplification_on"]),
+        "{path:?}"
+    );
+    for input in ["nei", "ngo", "m", "mgoi", "ngohaigo", "hou", "neivv"] {
+        let case = fixture["cases"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{path:?} cases should be an array"))
+            .iter()
+            .find(|case| case["variant"] == "default_combined" && case["input"] == input)
+            .unwrap_or_else(|| panic!("{path:?} should capture default_combined {input}"));
+        assert!(
+            case["selected_candidates"]
+                .as_array()
+                .is_some_and(|candidates| !candidates.is_empty()),
+            "{path:?} {input} should preserve oracle candidates"
+        );
+    }
+    let hk2s = fixture["cases"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{path:?} cases should be an array"))
+        .iter()
+        .find(|case| case["variant"] == "simplification_on" && case["input"] == "ngohaigo")
+        .unwrap_or_else(|| panic!("{path:?} should capture simplification_on ngohaigo"));
+    assert_eq!(hk2s["is_simplified"], true, "{path:?}");
+}
+
+#[test]
 fn typeduck_v112_fork_parity_fixtures_have_non_circular_source_provenance() {
     let root = fixture_root("typeduck-v1.1.2");
     let mut fixture_files = fs::read_dir(&root)

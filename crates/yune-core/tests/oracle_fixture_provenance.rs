@@ -91,6 +91,56 @@ fn typeduck_v112_m14_fixtures_have_non_circular_source_provenance() {
 }
 
 #[test]
+fn typeduck_v112_m21_sentence_composition_fixture_has_non_circular_source_provenance() {
+    let root = fixture_root("typeduck-v1.1.2");
+    let path = root.join("jyut6ping3-m21-sentence-composition.json");
+    assert!(
+        path.is_file(),
+        "M21-GAP-01 should check in the TypeDuck sentence-composition fixture"
+    );
+    let fixture = read_json(&path);
+    assert_typeduck_v112_fixture_header(&path, &fixture);
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_eq!(
+        fixture["capture"]["source_row_policy"], "typeduck_v112_binary_smoke",
+        "{path:?}"
+    );
+    assert_eq!(fixture["schema"], "jyut6ping3_mobile", "{path:?}");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default", "dictionary_lookup"]),
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["input_sequence"],
+        serde_json::json!([
+            "loengnincin",
+            "leoicijyu",
+            "ngohaigo",
+            "loengjathau",
+            "geijatcin",
+            "gamjatheoi"
+        ]),
+        "{path:?}"
+    );
+    for case in fixture["cases"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{path:?} cases should be an array"))
+    {
+        let input = case["input"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{path:?} case input should be a string"));
+        let top_comment = case["selected_candidates"][0]["comment"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{path:?} {input} top comment should be a string"));
+        assert!(
+            top_comment.contains(",composition,"),
+            "{path:?} {input} should preserve the oracle composition row"
+        );
+    }
+}
+
+#[test]
 fn typeduck_v112_fork_parity_fixtures_have_non_circular_source_provenance() {
     let root = fixture_root("typeduck-v1.1.2");
     let mut fixture_files = fs::read_dir(&root)

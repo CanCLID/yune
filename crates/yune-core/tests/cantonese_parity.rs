@@ -14,6 +14,8 @@ const M14_COMPLETION_CORRECTION_ORACLE: &str =
 const M14_SCHEMA_MENU_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m14-schema-menu.json");
 const M14_USERDB_ORACLE: &str = include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m14-userdb.json");
+const M21_SENTENCE_COMPOSITION_ORACLE: &str =
+    include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m21-sentence-composition.json");
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
 const FORK_PARITY_02_PREFER_USER_PHRASE_ORACLE: &str =
@@ -52,6 +54,11 @@ fn m14_schema_menu_fixture() -> Value {
 fn m14_userdb_fixture() -> Value {
     serde_json::from_str(M14_USERDB_ORACLE)
         .expect("TypeDuck v1.1.2 M14 userdb fixture should be valid JSON")
+}
+
+fn m21_sentence_composition_fixture() -> Value {
+    serde_json::from_str(M21_SENTENCE_COMPOSITION_ORACLE)
+        .expect("TypeDuck v1.1.2 M21 sentence-composition fixture should be valid JSON")
 }
 
 fn fork_parity_01_real_dictionary_fuzzy_fixture() -> Value {
@@ -264,6 +271,53 @@ fn typeduck_v112_m14_completion_and_correction_fixtures_are_locked() {
         selected_candidate_text(correction_enabled, 0),
         "enable_correction should capture a different top row for nri"
     );
+}
+
+#[test]
+fn typeduck_v112_m21_sentence_composition_fixture_is_locked() {
+    let fixture = m21_sentence_composition_fixture();
+    assert_eq!(fixture["oracle"]["engine"], "TypeDuck-HK/librime");
+    assert_eq!(fixture["oracle"]["engine_tag"], "v1.1.2");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"],
+        "74cb52b78fb2411137a7643f6c8bc6517acfde69"
+    );
+    assert_eq!(fixture["schema"], "jyut6ping3_mobile");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default", "dictionary_lookup"])
+    );
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "typeduck_v112_binary_smoke"
+    );
+    assert_eq!(
+        fixture["capture"]["input_sequence"],
+        serde_json::json!([
+            "loengnincin",
+            "leoicijyu",
+            "ngohaigo",
+            "loengjathau",
+            "geijatcin",
+            "gamjatheoi"
+        ])
+    );
+
+    let expected_top = [
+        ("loengnincin", "兩年前", "loeng nin cin"),
+        ("leoicijyu", "類似如", "leoi ci jyu"),
+        ("ngohaigo", "我係個", "ngo hai go"),
+        ("loengjathau", "兩日後", "loeng jat hau"),
+        ("geijatcin", "機日前", "gei jat cin"),
+        ("gamjatheoi", "今日去", "gam jat heoi"),
+    ];
+    for (input, text, preedit) in expected_top {
+        let case = m21_sentence_case(&fixture, input);
+        assert_eq!(case["preedit"], preedit, "input {input}");
+        assert_eq!(case["commit_text_preview"], text, "input {input}");
+        assert_eq!(selected_candidate_text(case, 0), text, "input {input}");
+        assert!(selected_candidate_comment(case, 0).contains(",composition,"));
+    }
 }
 
 #[test]
@@ -840,6 +894,15 @@ fn fork_parity_06_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
         .unwrap_or_else(|| panic!("FORK-PARITY-06 fixture should capture input {input}"))
 }
 
+fn m21_sentence_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
+    fixture["cases"]
+        .as_array()
+        .expect("M21 sentence-composition cases should be an array")
+        .iter()
+        .find(|case| case["input"] == input)
+        .unwrap_or_else(|| panic!("M21 sentence-composition fixture should capture {input}"))
+}
+
 fn candidate_count(case: &Value) -> usize {
     case["selected_candidates"]
         .as_array()
@@ -888,6 +951,98 @@ fn dictionary_yaml_from_oracle_comments(name: &str, comments: &[&str]) -> String
         .collect::<Vec<_>>()
         .join("\n");
     format!("---\nname: {name}\nversion: '0.1'\nsort: original\n...\n\n{rows}\n")
+}
+
+fn typeduck_public_schema_asset(relative_path: &str) -> String {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../third_party/typeduck-web/source/public/schema")
+        .join(relative_path);
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
+}
+
+fn jyut6ping3_mobile_spelling_algebra() -> Vec<String> {
+    [
+        "derive/^ng(?=[aeiou])//",
+        "derive/^(?=[aeiou])/ng/",
+        "derive/^n(?!g)/l/",
+        "derive/^ng(?=\\d)/m/",
+        "derive/^(g|k)w(?=o)/$1/",
+        "derive/^jy?(?=[aeiou])/y/",
+        "derive/^jyu/ju/",
+        "derive/yu(?!ng|k)/y/",
+        "derive/(g|k)u(?!ng|k)/$1wu/",
+        "derive/^([zcs])/$1h/",
+        "derive/eoi(?=\\d)/eoy/",
+        "derive/eo/oe/",
+        "derive/oe/eo/",
+        "derive/aa(?=\\d)/a/",
+        "derive/\\d//",
+        "abbrev/^([a-z]).+$/$1/",
+        "xform/1/v/",
+        "xform/4/vv/",
+        "xform/2/x/",
+        "xform/5/xx/",
+        "xform/3/q/",
+        "xform/6/qq/",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect()
+}
+
+#[test]
+fn m21_sentence_composition_matches_typeduck_v112_real_dictionary_goldens() {
+    let fixture = m21_sentence_composition_fixture();
+    let translator_dictionary = TableDictionary::parse_rime_dict_yaml(
+        &typeduck_public_schema_asset("jyut6ping3.dict.yaml"),
+    )
+    .expect("production jyut6ping3 dictionary should parse");
+    let lookup_dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(
+        &typeduck_public_schema_asset("jyut6ping3_scolar.dict.yaml"),
+    )
+    .expect("production jyut6ping3_scolar lookup dictionary should parse");
+    let translator = StaticTableTranslator::from_dictionary(translator_dictionary)
+        .with_completion(true)
+        .with_sentence(true)
+        .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
+        .with_comment_format(&["xform/^/\u{000c}/".to_owned()]);
+
+    for input in [
+        "loengnincin",
+        "leoicijyu",
+        "ngohaigo",
+        "loengjathau",
+        "geijatcin",
+        "gamjatheoi",
+    ] {
+        let expected = m21_sentence_case(&fixture, input);
+        let mut candidates = translator.translate(input);
+        DictionaryLookupFilter::new(lookup_dictionary.clone()).apply(&mut candidates);
+        let first = candidates
+            .first()
+            .unwrap_or_else(|| panic!("input {input} should produce candidates"));
+        assert_eq!(
+            first.source,
+            CandidateSource::Sentence,
+            "input {input} should stay on the dictionary sentence path"
+        );
+        assert_eq!(
+            first.text,
+            selected_candidate_text(expected, 0),
+            "input {input}"
+        );
+        let expected_composition_record = selected_candidate_comment(expected, 0)
+            .split('\r')
+            .take(2)
+            .collect::<Vec<_>>()
+            .join("\r");
+        assert!(
+            first.comment.starts_with(&expected_composition_record),
+            "input {input} should preserve the oracle composition row; got {:?}",
+            first.comment
+        );
+    }
 }
 
 #[test]

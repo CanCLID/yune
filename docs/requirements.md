@@ -310,7 +310,7 @@ browser gates and the upstream-first ABI constraints. Browser evidence is under
   side-lookup scenario/control or explicitly recorded as N/A for the current
   `jyut6ping3_mobile`-only surface.
 
-**Follow-on (no requirement IDs):** [`M21`](./plans/m21-plan-typeduck-web-product-comparison.md) is a post-M20 *comparison protocol* — a documented, off-critical-path activity that compares the Yune harness against the deployed `typeduck.hk/web` product as a behavior/feel target. It produces a divergence gap ledger, not requirement IDs; the `v1.1.2` fixtures remain the hard oracle.
+**Follow-on (no requirement IDs):** [`M21`](./plans/m21-plan-typeduck-web-product-comparison.md) is a post-M20 *comparison protocol* — a documented, off-critical-path activity that compares the Yune harness against the deployed `typeduck.hk/web` product as a behavior/feel target. It produces a divergence gap ledger, not requirement IDs; the `v1.1.2` fixtures remain the hard oracle. M21-GAP-01 is closed as an oracle-backed TypeDuck sentence-composition regression fix, with its fixture locked in `jyut6ping3-m21-sentence-composition.json`.
 
 ## Out of Scope
 

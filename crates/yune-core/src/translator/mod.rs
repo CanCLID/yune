@@ -12,6 +12,8 @@ use crate::{
 
 const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
 const TYPEDUCK_CORRECTION_MAX_DISTANCE: usize = 4;
+// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture; re-validate that fixture if changed.
+const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 21.0;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct LookupCodeSpec {
@@ -33,6 +35,10 @@ impl LookupCodeSpec {
             correction_distance: Some(distance),
         }
     }
+}
+
+fn sentence_piece_quality(raw_quality: f32) -> f32 {
+    raw_quality.max(1.0).ln() - TYPEDUCK_SENTENCE_WORD_PENALTY
 }
 
 #[derive(Default)]
@@ -653,9 +659,12 @@ impl StaticTableTranslator {
                             continue;
                         }
                         let mut next_path = path.clone();
-                        next_path.quality += candidate.quality.exp();
+                        next_path.quality += sentence_piece_quality(candidate.quality);
                         next_path.raw_quality += candidate.quality;
                         next_path.pieces.push(candidate.text.clone());
+                        if is_final_segment && next_path.pieces.len() <= 1 {
+                            continue;
+                        }
                         let replace = match paths[end_pos].as_ref() {
                             Some(existing) => match next_path
                                 .quality
@@ -682,7 +691,7 @@ impl StaticTableTranslator {
         }
         let quality = priority_floor
             .map(|floor| floor + 1.0)
-            .unwrap_or(path.quality + self.initial_quality);
+            .unwrap_or(path.quality.max(1.0) + self.initial_quality);
         Some(Candidate {
             text: path.pieces.join(""),
             comment: " ☯ ".to_owned(),

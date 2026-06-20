@@ -62,13 +62,17 @@ fn learning_code_for_candidate(input: &str, candidate: &Candidate) -> String {
     if primary_records.is_empty() {
         input.to_owned()
     } else if candidate.source == CandidateSource::Sentence {
+        let component_records = primary_records
+            .iter()
+            .filter(|record| !record.is_composition)
+            .collect::<Vec<_>>();
         let exact_codes = primary_records
             .iter()
-            .filter(|record| record.text == candidate.text)
+            .filter(|record| record.text == candidate.text && !record.is_composition)
             .map(|record| record.code.as_str())
             .collect::<Vec<_>>();
         if exact_codes.is_empty() {
-            primary_records
+            component_records
                 .iter()
                 .map(|record| record.code.as_str())
                 .collect::<Vec<_>>()
@@ -85,6 +89,7 @@ fn learning_code_for_candidate(input: &str, candidate: &Candidate) -> String {
 struct PrimaryDictionaryLookupRecord {
     text: String,
     code: String,
+    is_composition: bool,
 }
 
 fn primary_dictionary_lookup_records(comment: &str) -> Vec<PrimaryDictionaryLookupRecord> {
@@ -99,12 +104,14 @@ fn primary_dictionary_lookup_records(comment: &str) -> Vec<PrimaryDictionaryLook
             if flag != "1" {
                 return None;
             }
-            let mut fields = fields.split(',');
-            let text = fields.next()?.trim();
-            let code = fields.next()?.trim();
+            let fields = fields.split(',').collect::<Vec<_>>();
+            let text = fields.first()?.trim();
+            let code = fields.get(1)?.trim();
+            let is_composition = fields.get(7).is_some_and(|field| *field == "composition");
             (!code.is_empty()).then(|| PrimaryDictionaryLookupRecord {
                 text: text.to_owned(),
                 code: code.to_owned(),
+                is_composition,
             })
         })
         .collect()

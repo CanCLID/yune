@@ -52,6 +52,16 @@
       "notes": "pending manual capture"
     },
     {
+      "id": "leoicijyu-version-skew",
+      "input": "leoicijyu",
+      "productOutput": {
+        "topCandidate": "類似於",
+        "source": "live-site observation recorded before manual product capture"
+      },
+      "screenshots": [],
+      "notes": "Expected-by-design version skew: hard TypeDuck v1.1.2 oracle and Yune M21-GAP-01 fixture top candidate is 類似如, while the moving deployed product was observed as 類似於. Do not treat this as a regression without a new pinned oracle fixture."
+    },
+    {
       "id": "hou",
       "input": "hou",
       "productOutput": null,

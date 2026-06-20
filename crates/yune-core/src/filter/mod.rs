@@ -86,6 +86,10 @@ impl DictionaryLookupFilter {
             if let Some(records) = self.sentence_lookup_records(&candidate.text) {
                 let mut comment = String::new();
                 comment.push('\u{000c}');
+                if !self.records_by_text.contains_key(&candidate.text) {
+                    let composition_record = composition_lookup_record(&candidate.text, &records);
+                    append_dictionary_lookup_record(&mut comment, true, &composition_record);
+                }
                 for record in records {
                     append_dictionary_lookup_record(&mut comment, true, record);
                 }
@@ -201,6 +205,28 @@ impl CandidateFilter for DictionaryLookupFilter {
             }
         }
     }
+}
+
+fn composition_lookup_record(
+    text: &str,
+    records: &[&DictionaryLookupRecord],
+) -> DictionaryLookupRecord {
+    let code = records
+        .iter()
+        .map(|record| record.code.as_str())
+        .collect::<String>();
+    let mut fields = vec![
+        text.to_owned(),
+        code.clone(),
+        "1".to_owned(),
+        "0".to_owned(),
+        String::new(),
+        String::new(),
+        String::new(),
+        "composition".to_owned(),
+    ];
+    fields.extend(std::iter::repeat_with(String::new).take(9));
+    DictionaryLookupRecord { code, fields }
 }
 
 fn append_dictionary_lookup_record(

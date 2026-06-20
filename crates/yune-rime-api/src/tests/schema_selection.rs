@@ -18,6 +18,140 @@ fn typeduck_v112_reverse_lookup_case(fixture: &Value) -> &Value {
         .expect("reverse lookup fixture should have a case")
 }
 
+fn m21_gap_01_copy_asset(
+    schema_root: &std::path::Path,
+    destination_root: &std::path::Path,
+    relative_path: &str,
+) {
+    let source = schema_root.join(relative_path);
+    let destination = destination_root.join(relative_path);
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).expect("M21 asset parent directory should be created");
+    }
+    fs::copy(&source, &destination).unwrap_or_else(|error| {
+        panic!(
+            "failed to copy M21 asset {} -> {}: {error}",
+            source.display(),
+            destination.display()
+        )
+    });
+}
+
+fn m21_gap_01_write_real_browser_assets(shared: &std::path::Path, staging: &std::path::Path) {
+    let schema_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../third_party/typeduck-web/source/public/schema");
+    for file_name in [
+        "default.yaml",
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3.dict.yaml",
+        "jyut6ping3_scolar.dict.yaml",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+    ] {
+        m21_gap_01_copy_asset(&schema_root, shared, file_name);
+    }
+    for file_name in ["default.yaml", "jyut6ping3_mobile.schema.yaml"] {
+        m21_gap_01_copy_asset(&schema_root.join("build"), staging, file_name);
+    }
+}
+
+fn m21_gap_01_context_snapshot(session_id: crate::RimeSessionId) -> Value {
+    let mut context = empty_context();
+    // SAFETY: context points to writable storage initialized with positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    let preedit = static_c_string(context.composition.preedit);
+    let commit_text_preview = static_c_string(context.commit_text_preview);
+    let page_size = context.menu.page_size;
+    let page_no = context.menu.page_no;
+    let highlighted_candidate_index = context.menu.highlighted_candidate_index;
+    let is_last_page = context.menu.is_last_page == TRUE;
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    serde_json::json!({
+        "preedit": preedit,
+        "commit_text_preview": commit_text_preview,
+        "page_size": page_size,
+        "page_no": page_no,
+        "highlighted_candidate_index": highlighted_candidate_index,
+        "is_last_page": is_last_page,
+    })
+}
+
+fn m21_gap_01_capture_case(session_id: crate::RimeSessionId, input: &str) -> Value {
+    RimeClearComposition(session_id);
+    let processed = input
+        .chars()
+        .map(|key| RimeProcessKey(session_id, key as c_int, 0))
+        .collect::<Vec<_>>();
+    let context = m21_gap_01_context_snapshot(session_id);
+    let engine_candidates =
+        super::super::session_candidates_snapshot(session_id).expect("session should exist");
+    let sentence_row_position = engine_candidates
+        .iter()
+        .position(|candidate| candidate.source == CandidateSource::Sentence);
+    let fallback_gate = if sentence_row_position.is_some() {
+        "fired_returned_sentence"
+    } else if engine_candidates.is_empty() {
+        "fired_no_sentence_returned"
+    } else {
+        "not_fired_base_candidates_nonempty"
+    };
+    let mut source_counts = std::collections::BTreeMap::<&'static str, usize>::new();
+    for candidate in &engine_candidates {
+        *source_counts.entry(candidate.source.as_str()).or_default() += 1;
+    }
+    let completion_seen = source_counts.contains_key("completion");
+    let userdb_seen = source_counts.contains_key("user_table");
+    let sentence_seen = source_counts.contains_key("sentence");
+    let top_candidates = engine_candidates
+        .iter()
+        .take(50)
+        .enumerate()
+        .map(|(index, candidate)| {
+            serde_json::json!({
+                "index": index,
+                "text": candidate.text.as_str(),
+                "comment": candidate.comment.as_str(),
+                "candidate_preedit": candidate.preedit.as_deref(),
+                "source": candidate.source.as_str(),
+                "quality": candidate.quality,
+                "is_sentence": candidate.source == CandidateSource::Sentence,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    serde_json::json!({
+        "input": input,
+        "processed": processed,
+        "preedit": context["preedit"],
+        "commit_text_preview": context["commit_text_preview"],
+        "page_size": context["page_size"],
+        "page_no": context["page_no"],
+        "highlighted_candidate_index": context["highlighted_candidate_index"],
+        "is_last_page": context["is_last_page"],
+        "candidate_count": engine_candidates.len(),
+        "sentence_row_position": sentence_row_position,
+        "source_counts": source_counts,
+        "source_path_diagnostics": {
+            "fallback_gate": fallback_gate,
+            "completion_seen": completion_seen,
+            "userdb_seen": userdb_seen,
+            "sentence_seen": sentence_seen,
+            "correction_seen": false,
+            "correction_note": "CandidateSource does not distinguish correction rows; this corpus contains dictionary-composition inputs rather than typo probes."
+        },
+        "top_candidates": top_candidates,
+    })
+}
+
 fn current_candidate_pairs(session_id: crate::RimeSessionId) -> Vec<(String, String)> {
     let mut context = empty_context();
     // SAFETY: context points to writable storage initialized with positive `data_size`.
@@ -49,6 +183,88 @@ fn current_candidate_pairs(session_id: crate::RimeSessionId) -> Vec<(String, Str
     // SAFETY: nested pointers were allocated by `RimeGetContext` above.
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
     pairs
+}
+
+// Owner: m21-plan-typeduck-web-product-comparison.md M21-GAP-01. This ignored
+// probe captures the Yune real-browser-assets candidate surface with engine
+// source labels; it does not add public ABI or TypeDuck-Web exports.
+#[test]
+#[ignore = "diagnostic: writes M21-GAP-01 Yune real-assets candidate evidence"]
+fn m21_gap_01_sentence_composition_probe() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("m21-gap-01-sentence-composition");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    m21_gap_01_write_real_browser_assets(&shared, &staging);
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeInitialize(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("jyut6ping3_mobile").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+
+    let inputs = [
+        "loengnincin",
+        "leoicijyu",
+        "ngohaigo",
+        "loengjathau",
+        "geijatcin",
+        "gamjatheoi",
+    ];
+    let cases = inputs
+        .iter()
+        .map(|input| m21_gap_01_capture_case(session_id, input))
+        .collect::<Vec<_>>();
+    let evidence = serde_json::json!({
+        "capture": {
+            "scenario": "M21-GAP-01 Yune real-assets sentence-composition probe",
+            "schema": "jyut6ping3_mobile",
+            "candidate_source": "session_candidates_snapshot after RimeGetContext on the real RimeApi path",
+            "asset_root": "third_party/typeduck-web/source/public/schema",
+            "dictionary": "jyut6ping3.dict.yaml",
+            "lookup_dictionary": "jyut6ping3_scolar.dict.yaml",
+            "pinned_yune_commit": std::env::var("YUNE_M21_GAP_01_COMMIT").unwrap_or_else(|_| "unknown".to_owned()),
+            "notes": [
+                "fallback_gate=fired_returned_sentence when a sentence source row is present under the default sentence-only-as-fallback path",
+                "fallback_gate=not_fired_base_candidates_nonempty when non-sentence candidates prevent sentence fallback",
+                "correction rows are not separately encoded in CandidateSource; this corpus is not a typo/correction probe"
+            ]
+        },
+        "inputs": inputs,
+        "cases": cases,
+    });
+    let output =
+        serde_json::to_string_pretty(&evidence).expect("M21 evidence should serialize as JSON");
+    if let Ok(output_path) = std::env::var("YUNE_M21_GAP_01_OUTPUT") {
+        fs::write(&output_path, output)
+            .unwrap_or_else(|error| panic!("failed to write {output_path}: {error}"));
+    } else {
+        println!("M21_GAP_01_YUNE_JSON_BEGIN");
+        println!("{output}");
+        println!("M21_GAP_01_YUNE_JSON_END");
+    }
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
 
 fn dictionary_yaml_from_oracle_rows(name: &str, rows: &Value) -> String {

@@ -398,21 +398,17 @@ is **Track 2 (broad upstream depth):**
   critical path) comparing the Yune harness against the deployed `typeduck.hk/web`
   product as a behavior/feel target (the `v1.1.2` fixtures stay the hard oracle); runs
   after M20. See [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-typeduck-web-product-comparison.md).
-- **M21-GAP-01 — multi-syllable dictionary-composition divergence (first M21 gap
-  candidate; classification pending oracle capture).** Manual harness testing found
-  that toneless multi-syllable inputs whose target is a *dictionary-phrase* sentence —
-  e.g. `loengnincin` → `兩年前` (`兩年`+`前`), `leoicijyu` → `類似於` (`類似`+`於`) —
-  return a chaotic candidate list instead of the composed sentence, while
-  `typeduck.hk/web` composes them. This is **dictionary-driven sentence composition
-  (M15 scope), not the M17 poet/octagram LM**, and it is *asymmetric*: `ngohaigo` →
-  `我係個` already composes top-1 on a fresh userdb (M21 snapshot). Classification is
-  deliberately **undetermined** until a `v1.1.2` oracle golden is captured for these
-  inputs — the deployed product is a feel target only. Tracked in
-  [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-typeduck-web-product-comparison.md);
-  if the oracle confirms a correctness regression it reopens
-  [`fork-parity-ledger.md`](./fork-parity-ledger.md) note 5 (composition word-penalty
-  `do-not-preserve`) and becomes a tracked engine work item, otherwise it is recorded
-  as expected-by-design.
+- **M21-GAP-01 — multi-syllable dictionary-composition divergence (fixed against
+  `v1.1.2`).** Manual harness testing found that toneless multi-syllable inputs
+  whose target is a *dictionary-phrase* sentence returned wrong high-frequency
+  short-piece compositions. A new `v1.1.2` fixture now locks `loengnincin` →
+  `兩年前`, `leoicijyu` → `類似如` (the oracle result, even though the live-site feel
+  target suggested `類似於`), `ngohaigo` → `我係個`, and three analogous inputs.
+  This was classified as `unexpected-composition-gap`, not M17 poet/octagram LM
+  work. Yune now uses oracle-backed log-space sentence scoring with a scoped word
+  penalty for dictionary sentence composition, and
+  [`fork-parity-ledger.md`](./fork-parity-ledger.md) note 5 records the narrowed
+  exception to the previous do-not-preserve decision.
 - **AI-native frontend expansion** — the proven TypeDuck-Web surface stays
   default-off; Windows and other native frontend exposure wait for their own
   safety evidence.

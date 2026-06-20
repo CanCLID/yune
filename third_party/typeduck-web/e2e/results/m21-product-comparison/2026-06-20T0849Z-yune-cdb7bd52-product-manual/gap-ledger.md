@@ -11,6 +11,7 @@ Product-side rows are pending manual capture. No row below is a Yune bug signal 
 | `m` | pending manual capture | Top 5: `唔`, `無`, `面`, `明`, `民` | pending-product-capture | Should-match standalone-m/fuzzy path, but no bug claim without product capture. |
 | `mgoi` | pending manual capture | Top 2: `唔該`, `唔該晒` | pending-product-capture | Should-match fuzzy/容錯 path, but no bug claim without product capture. |
 | `ngohaigo` | pending manual capture | Top 1: `我係個` | pending-product-capture | Sentence/composition differences may be pending-M17-M19; classify only after manual product output. |
+| `leoicijyu` | live-site observation: `類似於`; capture still pending | Oracle v1.1.2 / Yune M21-GAP-01: top 1 `類似如` | expected-by-design | Version skew: hard `v1.1.2` oracle differs from the moving deployed product, so do not re-investigate this as a regression unless a new pinned oracle fixture changes. |
 | `hou` | pending manual capture | Top 5: `好`, `號`, `豪`, `毫`, `浩` | pending-product-capture | Should-match combine/separate behavior needs matched product setting before classification. |
 | tone letters `seov` | pending manual capture | Top 1: `瀡板` | pending-product-capture | Should-match `letter_to_tone`; capture product row before classifying. |
 | 1-edit typo `nri`, correction off | pending manual capture | No browser candidate panel rendered | pending-product-capture | Yune browser-surface N/A for correction candidate rendering; engine proof remains `cantonese_parity`. |

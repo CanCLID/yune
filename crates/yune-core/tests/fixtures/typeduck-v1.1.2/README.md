@@ -62,6 +62,12 @@ inputs such as `neivv` and `neiqq` display numeric Jyutping preedit (`nei4`,
 and `neiq` rows intentionally prove that partial or unmatched inputs can remain
 raw in the composition preedit.
 
+`jyut6ping3-m21-sentence-composition.json` is a focused 2026-06-20 capture for
+M21-GAP-01. It locks the TypeDuck v1.1.2 `jyut6ping3_mobile` sentence
+composition surface for `loengnincin`, `leoicijyu`, `ngohaigo`, and three
+analogous cross-boundary dictionary inputs. The fixture is the hard oracle for
+this gap; the deployed `typeduck.hk/web` product remains a feel target only.
+
 The `comment` fields intentionally preserve the raw fork bytes as JSON escapes,
 including leading `\f`, record separators `\r`, and multilingual dictionary
 columns. Do not normalize these strings when using them as goldens.

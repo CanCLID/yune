@@ -101,7 +101,7 @@ is a *tuning* question, not a missing feature.
 | — | Exact fork prediction metadata/preedit (`matching_code_size`) | TypeDuck | `a01dd1af` | `fork-engine-code` | no | n/a ⁴ | do-not-preserve |
 | F3 | Option to disable auto-composition (`enable_sentence:false` switch) | TypeDuck | `5e50fcdb` | `fork-schema-config` | yes (option) | done | preserve✓ |
 | F4 | Auto-compose only when no exact phrase (sentence fallback gating) | upstream | — | `upstream-1.17.0` | **yes** | done | preserve✓ |
-| — | Composition prefers fewer syllables / tuned word penalty | TypeDuck | `2ea5f56f`,`c1938644` | `fork-engine-code` | no | n/a ⁵ | do-not-preserve |
+| — | Composition prefers fewer syllables / tuned word penalty | TypeDuck | `2ea5f56f`,`c1938644` | `fork-engine-code` | no | done (scoped M21-GAP-01) ⁵ | preserve✓ (oracle-backed scope only) |
 | F5 | Reverse/dict lookup shows candidate text **+** looked-up pronunciation(s), joined `"; "` | TypeDuck | `3e90bf97`,`3f7b9a36` + plugin | `fork-plugin` | no | done | preserve✓ |
 | F6 | Homographs: all pronunciations as separate rows / folded comments (`combine_candidates`) | TypeDuck | `0b5dd737`,`97b193f7` | `fork-engine-code` | no | done | preserve✓ |
 | — | `show_full_code` (full input code / cangjie-root `\v` comment) | TypeDuck | `d8667c92` | `fork-engine-code` | **no** ⁶ | done | preserve✓ |
@@ -124,7 +124,7 @@ is a *tuning* question, not a missing feature.
 2. ² Yune has no librime `SyllableGraph`; abbreviation spellings are flat penalized entries that coexist with normal ones by construction, so the C++ "perfect match disqualifies abbreviation" hazard cannot arise. Architecturally inapplicable.
 3. ³ Implemented through the TypeDuck profile's `preedit_format` wiring; partial letter-tone completion keeps raw preedit where the fork does.
 4. ⁴ Upstream 1.17.0 has its *own* word completion (`#848`, which the fork excluded from its 1.11.0 merge). Product decision: do not chase exact fork ranking byte parity; preserve upstream completion/ranking, keep long-entry prediction visible, and expose `prediction_weight_threshold` / `prediction_frequency_threshold` plus `prediction_never_first` profile controls.
-5. ⁵ Product decision: do not port the fork's composition word-penalty tuning unless a future oracle-backed scenario proves a user-visible regression. Yune keeps its upstream-first sentence ranking behavior.
+5. ⁵ M21-GAP-01 provided the future oracle-backed scenario: TypeDuck v1.1.2 composes `loengnincin`, `leoicijyu`, `loengjathau`, `geijatcin`, and `gamjatheoi` as top-1 dictionary sentences while pre-fix Yune composed high-frequency short-piece garbage. Yune now preserves a scoped log-space sentence word-penalty heuristic for the TypeDuck `jyut6ping3` profile path, effectively preferring fewer pieces with frequency as a tiebreak across the six locked fixture cases. This does not reopen broad fork ranking byte parity or M17 poet/octagram LM work; expand the composition corpus opportunistically when new product cases appear.
 6. ⁶ Verified: upstream `translator_commons.{h,cc}` and `table_translator.cc` (33e7814) have no `show_full_code` member/accessor — it is a fork engine addition. Yune ported it (`translator/mod.rs`). The `\v`-prefix + cangjie-root xlit is fork-schema-data on top.
 7. ⁷ Implemented data-driven via checked-in OpenCC source dicts; note the chain omits `TSCharactersExt` (immaterial for Cantonese output).
 8. ⁸ Yune has no `spelling_hints` suppression, so comments already render unconditionally — the override is a latent no-op until `spelling_hints` exists. Low priority.
@@ -204,8 +204,9 @@ Recorded so nobody re-derives a dead end.
    upstream `1.17.0` ranking behavior, preserves long-entry completion, and exposes
    profile controls for raw-weight/frequency thresholds plus prediction-never-first
    behavior.
-2. **Composition word penalty:** do not port the fork tuning by default. Revisit only
-   if a future oracle-backed scenario shows a user-visible regression.
+2. **Composition word penalty:** a scoped M21-GAP-01 word-penalty fix is preserved
+   for oracle-backed TypeDuck dictionary sentence composition. This remains narrower
+   than full fork ranking byte parity.
 3. **`display_languages`:** TypeDuck-Web owns gloss-column language selection. The
    engine keeps stable lookup payload shape/order and does not add engine-side
    language filtering.

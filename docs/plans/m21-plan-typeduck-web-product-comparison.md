@@ -45,7 +45,7 @@ Run the **same typed inputs** in both apps (reuse the M20 guided scenarios + led
 | `sigin` | code-path prediction (`市建局` without a `市建` word) |
 | `m`, `mgoi` | standalone-`m` + fuzzy/容錯 (`ng→m`) |
 | `ngohaigo` | auto-composition / sentence (`我係個`) |
-| `loengnincin`, `leoicijyu` | cross-boundary dictionary-phrase composition (`兩年前` = `兩年`+`前`; `類似於` = `類似`+`於`) — the M21-GAP-01 investigation; verify each input's jyutping against the dict first |
+| `loengnincin`, `leoicijyu` | cross-boundary dictionary-phrase composition (`兩年前`; live-site observation expected `類似於`, but the hard `v1.1.2` oracle composes `類似如`) — the M21-GAP-01 investigation; verify each input's jyutping against the dict first |
 | `hou` | homograph grouping vs separate (`combine_candidates`) |
 | tone-letters (`seov`…) | `letter_to_tone` preedit |
 | a 1-edit typo | correction (on/off) |
@@ -117,16 +117,21 @@ Produce a table, **not immediate fixes**:
 
 Disposition ∈ { real bug → capture a `v1.1.2` golden + fix against it · `pending-M17-M19` · `expected-by-design` · `product-UX` · `out-of-scope` }. Real "should-match" divergences feed the improvement backlog as oracle-golden work; everything else is recorded so it is not re-investigated.
 
-## Section 5b — M21-GAP-01: multi-syllable dictionary-composition divergence (open)
+## Section 5b — M21-GAP-01: multi-syllable dictionary-composition divergence (fixed)
 
-> **Status:** open · classification **undetermined** pending `v1.1.2` oracle capture.
+> **Status:** classified and fixed on 2026-06-20 · `unexpected-composition-gap`
+> confirmed by `v1.1.2` oracle capture. Evidence:
+> `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-sentence-composition.json`
+> and
+> `third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0748Z-m21-gap-01-sentence-composition/`.
 
 **Observation (manual, harness).** Toneless multi-syllable inputs whose target is a
 *dictionary-phrase* sentence return a chaotic candidate list instead of the composed
 sentence, while `typeduck.hk/web` composes them:
 
-- `loengnincin` → expected `兩年前` (`兩年` loeng5 nin4 + `前` cin4)
-- `leoicijyu` → expected `類似於` (`類似` leoi6 ci5 + `於` jyu1)
+- `loengnincin` → product expectation and `v1.1.2` oracle: `兩年前`
+- `leoicijyu` → live-site/product expectation was `類似於`, but the hard
+  `v1.1.2` oracle composes `類似如`; Yune follows the oracle fixture.
 
 **Why this is not obviously expected.** It is *dictionary-phrase composition (M15
 scope), not the M17 poet/octagram LM*, and it is **asymmetric**: the same-shaped
@@ -140,7 +145,33 @@ substring probes — but note the obvious "zero matches / no tone-stripping" the
 **false** (the schema's `derive/\d//` adds toneless aliases and `ngohaigo` composes),
 so the cause must be found empirically, not assumed.
 
-**Oracle-first investigation (do in this order; do not fix preemptively):**
+**Oracle-first investigation result:**
+
+- Corpus verified against the production `jyut6ping3.dict.yaml`: `loengnincin`,
+  `leoicijyu`, `ngohaigo`, `loengjathau`, `geijatcin`, and `gamjatheoi`.
+- Pre-fix Yune source-aware evidence showed the fallback gate **did fire** and
+  produced a `sentence` row at index 0, but the sentence text was wrong for five
+  of six cases:
+  `loengnincin` → `𦧲五官前次我`, `leoicijyu` → `呢在次如中`,
+  `loengjathau` → `兩一後`, `geijatcin` → `機一次我`, and
+  `gamjatheoi` → `今一靴時`. `ngohaigo` already matched.
+- The `v1.1.2` oracle composed all six cases at top-1:
+  `兩年前`, `類似如`, `我係個`, `兩日後`, `機日前`, `今日去`.
+- Classification: `unexpected-composition-gap`. The problem was sentence path
+  scoring: raw frequency exponentials let high-frequency short pieces dominate
+  dictionary phrase compositions. The fix changes sentence path scoring to
+  log-space with an oracle-backed word penalty, preserving fallback-only gating
+  and adding the TypeDuck-style synthetic `composition` lookup row for composed
+  sentence comments.
+- The word penalty is a Yune heuristic, effectively "prefer fewer pieces, then
+  use frequency as a tiebreak", validated on these six fixture cases rather than
+  an oracle-exported quantity. Harder composition tradeoffs that need true
+  phrase probabilities remain M17 poet/LM territory, and this composition corpus
+  should be expanded opportunistically as new real product cases appear.
+- Post-fix source-aware evidence shows all six Yune top sentence rows match the
+  oracle top text, with `fallback_gate=fired_returned_sentence`.
+
+**Protocol retained for future M21 gaps:**
 
 1. **Reproduce at a pinned Yune commit.** Run `loengnincin`, `leoicijyu`, `ngohaigo`
    (working control), and 2–3 more analogous two-word cross-boundary inputs through the

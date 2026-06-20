@@ -67,6 +67,26 @@ describe("readTypeDuckResponse", () => {
     expect(fake.freedResponses()).toEqual([ptr]);
   });
 
+  it("treats null candidate source labels as classic candidates", () => {
+    const fake = new FakeTypeDuckModule();
+    const payload = responsePayload({
+      context: {
+        ...responsePayload().context,
+        candidates: [
+          { text: "ä½ ", comment: "", source: null },
+          { text: "ä½ å•Š", comment: "ai:local-model 0.83", source: "ai:local" },
+        ],
+      },
+    });
+    const ptr = fake.response(payload, true);
+
+    expect(readTypeDuckResponse(ptr, bindings(fake)).context?.candidates).toEqual([
+      { text: "ä½ ", comment: "" },
+      { text: "ä½ å•Š", comment: "ai:local-model 0.83", source: "ai:local" },
+    ]);
+    expect(fake.freedResponses()).toEqual([ptr]);
+  });
+
   it("uses response_handled as the authoritative handled value", () => {
     const fake = new FakeTypeDuckModule();
     const ptr = fake.response(responsePayload({ handled: false }), true);

@@ -18,6 +18,20 @@ describe("keyEventToRimeKey", () => {
     expect(keyEventToRimeKey({ key: "1" })).toEqual({ keycode: 49, mask: 0 });
   });
 
+  it("maps Rime punctuation aliases emitted by TypeDuck-Web", () => {
+    expect(keyEventToRimeKey({ key: "minus" })).toEqual({ keycode: "-".charCodeAt(0), mask: 0 });
+    expect(keyEventToRimeKey({ key: "equal" })).toEqual({ keycode: "=".charCodeAt(0), mask: 0 });
+    expect(keyEventToRimeKey({ key: "comma" })).toEqual({ keycode: ",".charCodeAt(0), mask: 0 });
+    expect(keyEventToRimeKey({ key: "period" })).toEqual({ keycode: ".".charCodeAt(0), mask: 0 });
+    expect(keyEventToRimeKey({ key: "bracketleft" })).toEqual({ keycode: "[".charCodeAt(0), mask: 0 });
+    expect(keyEventToRimeKey({ key: "bracketright" })).toEqual({ keycode: "]".charCodeAt(0), mask: 0 });
+  });
+
+  it("maps TypeDuck-Web keypad digit aliases to keypad keycodes", () => {
+    expect(keyEventToRimeKey({ key: "KP_1" })).toEqual({ keycode: 0xffb1, mask: 0 });
+    expect(keyEventToRimeKey({ key: "KP_9" })).toEqual({ keycode: 0xffb9, mask: 0 });
+  });
+
   it("maps space key spellings", () => {
     expect(keyEventToRimeKey({ key: " " })).toEqual({ keycode: 0x20, mask: 0 });
     expect(keyEventToRimeKey({ key: "Space" })).toEqual({ keycode: 0x20, mask: 0 });

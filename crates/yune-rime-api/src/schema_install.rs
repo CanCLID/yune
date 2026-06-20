@@ -275,6 +275,9 @@ fn install_schema_dictionary_translator_from_config(
     if let Some(threshold) = prediction_weight_threshold {
         translator = translator.with_prediction_weight_threshold(threshold);
     }
+    if prediction_never_first {
+        session.engine.set_prediction_never_first(true);
+    }
     session.engine.add_translator(translator);
 }
 

@@ -21,6 +21,7 @@ pub struct Engine {
     staged_ai_result: Option<StagedAiCandidates>,
     ai_memory: MemoryStore,
     userdb: UserDb,
+    prediction_never_first: bool,
     pending_userdb_learning: Option<UserDbCommitMetadata>,
     commit_tick: u64,
 }
@@ -122,6 +123,7 @@ impl Default for Engine {
             staged_ai_result: None,
             ai_memory: MemoryStore::default(),
             userdb: UserDb::default(),
+            prediction_never_first: false,
             pending_userdb_learning: None,
             commit_tick: 0,
         }
@@ -233,6 +235,11 @@ impl Engine {
     #[must_use]
     pub fn userdb(&self) -> &UserDb {
         &self.userdb
+    }
+
+    pub fn set_prediction_never_first(&mut self, prediction_never_first: bool) {
+        self.prediction_never_first = prediction_never_first;
+        self.refresh_candidates();
     }
 
     pub fn take_pending_userdb_learning(&mut self) -> Option<UserDbCommitMetadata> {
@@ -979,6 +986,7 @@ impl Engine {
             &mut candidates,
             self.userdb
                 .lookup(&UserDbLookupRequest::new(input.as_str()).with_predictive(true)),
+            self.prediction_never_first,
         );
         for filter in &self.filters {
             filter.apply_with_context(&mut candidates, &self.options, &self.context);
@@ -998,16 +1006,21 @@ fn merge_userdb_candidates(
     input: &str,
     candidates: &mut Vec<Candidate>,
     userdb_results: Vec<UserDbLookupResult>,
+    prediction_never_first: bool,
 ) {
     let input_code_len = comparable_userdb_code_len(input);
     for result in userdb_results {
         let user_code_len = result.comparable_code_len();
         let user_candidate = result.candidate();
         let mut insertion_index = if user_code_len > input_code_len {
-            candidates
+            let mut index = candidates
                 .iter()
                 .position(|candidate| candidate.source != CandidateSource::UserTable)
-                .unwrap_or(candidates.len())
+                .unwrap_or(candidates.len());
+            if prediction_never_first && index == 0 && !candidates.is_empty() {
+                index = 1;
+            }
+            index
         } else if result.is_multi_segment_code() && user_code_len == input_code_len {
             candidates
                 .iter()

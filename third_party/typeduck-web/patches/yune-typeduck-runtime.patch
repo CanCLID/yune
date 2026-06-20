@@ -192,7 +192,7 @@ index 0add9ac..9390478 100644
  
  export class CandidateEntry {
 diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
-index 298a42d..9d339cc 100644
+index 298a42d..5589b2d 100644
 --- a/src/CandidatePanel.tsx
 +++ b/src/CandidatePanel.tsx
 @@ -8,15 +8,17 @@ import DictionaryPanel from "./DictionaryPanel";
@@ -231,7 +231,7 @@ index 298a42d..9d339cc 100644
  				if (result.committed) {
  					insert(result.committed);
  				}
-@@ -66,9 +68,19 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -66,12 +68,35 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				notify(type, "執行操作", "performing the operation");
  			}
  			textArea.focus();
@@ -253,7 +253,51 @@ index 298a42d..9d339cc 100644
  	const flipPage = useCallback((backward: boolean) => handleRimeResult(Rime.flipPage(backward)), [handleRimeResult]);
  	const selectCandidate = useCallback((index: number) => handleRimeResult(Rime.selectCandidate(index)), [handleRimeResult]);
  	const deleteCandidate = useCallback((index: number) => handleRimeResult(Rime.deleteCandidate(index)), [handleRimeResult]);
-@@ -143,6 +155,16 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
++	const selectCandidateFromDigitKey = useCallback((event: KeyboardEvent) => {
++		const state = inputStateRef.current;
++		if (!state || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || !/^[0-9]$/.test(event.key)) {
++			return false;
++		}
++		const index = event.key === "0" ? 9 : Number(event.key) - 1;
++		if (index >= state.candidates.length) {
++			return false;
++		}
++		event.preventDefault();
++		selectCandidate(index);
++		return true;
++	}, [selectCandidate]);
+ 
+ 	const parseKey = useCallback((event: KeyboardEvent) => {
+ 		const { code, key } = event;
+@@ -118,6 +143,9 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 
+ 	useEffect(() => {
+ 		function onKeyDown(event: KeyboardEvent) {
++			if (selectCandidateFromDigitKey(event)) {
++				return;
++			}
+ 			const key = parseKey(event);
+ 			if (key) {
+ 				event.preventDefault();
+@@ -125,6 +153,9 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 			}
+ 		}
+ 		function onKeyUp(event: KeyboardEvent) {
++			if (/^[0-9]$/.test(event.key) && inputStateRef.current) {
++				return;
++			}
+ 			if (inputState) {
+ 				const key = parseKey(event);
+ 				if (key) processKey(`{Release+${key}}`);
+@@ -136,13 +167,23 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 			document.removeEventListener("keydown", onKeyDown);
+ 			document.removeEventListener("keyup", onKeyUp);
+ 		};
+-	}, [inputState, parseKey, processKey]);
++	}, [inputState, parseKey, processKey, selectCandidateFromDigitKey]);
+ 
+ 	useEffect(() => {
+ 		setInputState(undefined);
  		hideDictionary();
  	}, [deployStatus, setInputState, hideDictionary]);
  
@@ -347,7 +391,7 @@ index 25ec3bf..dc454a0 100644
  	isCangjie5: true,
  };
 diff --git a/src/rime.ts b/src/rime.ts
-index 4393a9e..d681aac 100644
+index 4393a9e..4ef3ca7 100644
 --- a/src/rime.ts
 +++ b/src/rime.ts
 @@ -18,7 +18,13 @@ interface ErrorPayload {
@@ -372,7 +416,7 @@ index 4393a9e..d681aac 100644
 +const lastListenerArgs = {} as Partial<{ [K in keyof ListenerArgsMap]: ListenerArgsMap[K] }>;
  
 -const worker = new Worker("./worker.js");
-+const YUNE_TYPEDUCK_WORKER_VERSION = "m13-ai-native";
++const YUNE_TYPEDUCK_WORKER_VERSION = "prediction-never-first";
 +const debugWindow = window as typeof window & { __YUNE_RIME_VERSION__?: string };
 +debugWindow.__YUNE_RIME_VERSION__ = YUNE_TYPEDUCK_WORKER_VERSION;
 +document.documentElement.dataset.yuneRimeVersion = YUNE_TYPEDUCK_WORKER_VERSION;
@@ -478,7 +522,7 @@ index 5d47525..bf64ae6 100644
  }
  
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..2a83110 100644
+index 92b9a90..b7f2dc8 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
 @@ -1,137 +1,276 @@
@@ -722,7 +766,7 @@ index 92b9a90..2a83110 100644
 -});
 +const SCHEMA_ID = "jyut6ping3_mobile";
 +const DICTIONARY_ID = "jyut6ping3";
-+const YUNE_TYPEDUCK_ASSET_VERSION = "m13-ai-native";
++const YUNE_TYPEDUCK_ASSET_VERSION = "prediction-never-first";
 +
 +// Yune runtime initialization
 +const loadRime = (async () => {
@@ -2081,3 +2125,27 @@ index 0000000..0121f54
 +    committed,
 +  };
 +}
+diff --git a/public/schema/template.yaml b/public/schema/template.yaml
+index 0000000..0000000 100644
+--- a/public/schema/template.yaml
++++ b/public/schema/template.yaml
+@@ -69,6 +69,7 @@ speller:
+ 
+ translator:
+   dictionary: jyut6ping3
++  prediction_never_first: true
+   always_show_comments: true
+   comment_format:
+     - xform/^/\f/
+diff --git a/public/schema/build/jyut6ping3_mobile.schema.yaml b/public/schema/build/jyut6ping3_mobile.schema.yaml
+index 0000000..0000000 100644
+--- a/public/schema/build/jyut6ping3_mobile.schema.yaml
++++ b/public/schema/build/jyut6ping3_mobile.schema.yaml
+@@ -243,6 +243,7 @@ translator:
+   comment_format:
+     - "xform/^/\\f/"
+   dictionary: jyut6ping3
++  prediction_never_first: true
+   preedit_format:
+     - "xform/([aeiouymngptk])vv/${1}4/"
+     - "xform/([aeiouymngptk])xx/${1}5/"

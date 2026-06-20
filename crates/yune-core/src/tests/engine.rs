@@ -1,6 +1,6 @@
 use crate::{
     AiConfidence, AiContext, AiOffReason, AiResult, Candidate, CandidateRanker, CandidateSource,
-    Context, Engine, MockAiRanker, RerankResult, StaticTableTranslator, Translator,
+    Context, Engine, MockAiRanker, RerankResult, StaticTableTranslator, Translator, UserDb,
 };
 
 struct CommentTranslator;
@@ -179,6 +179,31 @@ fn control_shift_numeric_selection_matches_librime_selector_digit_fallback() {
     assert_eq!(commits, ["吧"]);
     assert_eq!(engine.context().last_commit.as_deref(), Some("吧"));
     assert!(!engine.status().is_composing);
+}
+
+#[test]
+fn prediction_never_first_keeps_learned_prefix_prediction_behind_table_top() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("ni hao", "LEARNED", 2, 2.0, 2);
+
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("ni", "EXACT")]));
+    engine.set_userdb(userdb);
+    engine.set_prediction_never_first(true);
+    engine.set_input("ni");
+
+    let texts = engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+
+    assert_eq!(texts, ["EXACT", "LEARNED", "ni"]);
+    assert_eq!(
+        engine.context().candidates[1].source,
+        CandidateSource::UserTable
+    );
 }
 
 #[test]

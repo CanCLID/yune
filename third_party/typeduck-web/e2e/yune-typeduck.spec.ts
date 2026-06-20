@@ -17,7 +17,7 @@ import { test, expect, Page, BrowserContext } from "@playwright/test";
 
 // Test configuration
 const APP_URL = process.env.TYPEDUCK_APP_URL || "http://localhost:5173";
-const TIMEOUT_MS = 30000; // WASM load and runtime init may be slow
+const TIMEOUT_MS = 120000; // WASM load and runtime init may be slow
 
 // E2E evidence directory
 const EVIDENCE_DIR = process.env.TYPEDUCK_EVIDENCE_DIR || "../e2e/results";
@@ -41,6 +41,15 @@ async function captureConsoleErrors(page: Page, evidenceFile: string): Promise<s
     }
   });
   return errors;
+}
+
+function consoleFailures(messages: string[]): string[] {
+  return messages.filter((message) =>
+    message.includes("console:error")
+    || message.includes("console:warning")
+    || message.includes("pageerror:")
+    || message.includes("response:")
+  );
 }
 
 /**
@@ -577,6 +586,28 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(candidatePanel).toBeGreaterThan(0);
   });
 
+  test("Keyboard paging shortcuts do not error", async ({ page }) => {
+    await focusInputAndType(page, "n");
+    const firstPage = await readCandidatePanelSnapshot(page, false);
+    expect(firstPage.candidates.length).toBeGreaterThan(1);
+
+    await page.keyboard.press("=");
+    await expect.poll(async () =>
+      (await readCandidatePanelSnapshot(page, false)).candidates[0]?.text,
+    { timeout: 5000 }).not.toBe(firstPage.candidates[0].text);
+    const secondPage = await readCandidatePanelSnapshot(page, false);
+    expect(secondPage.candidates[0].text).not.toBe(firstPage.candidates[0].text);
+
+    await page.keyboard.press("-");
+    await expect.poll(async () =>
+      (await readCandidatePanelSnapshot(page, false)).candidates[0]?.text,
+    { timeout: 5000 }).toBe(firstPage.candidates[0].text);
+    const returnedPage = await readCandidatePanelSnapshot(page, false);
+    expect(returnedPage.candidates[0].text).toBe(firstPage.candidates[0].text);
+    await expect(page.locator(".Toastify__toast")).toHaveCount(0, { timeout: 1000 });
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
   test("Candidate selection → commit output", async ({ page }) => {
     // D-08/D-10: Candidate selection commits text to app output field
 
@@ -598,6 +629,19 @@ test.describe("TypeDuck-Web Browser E2E", () => {
       "browser-run.log",
       `[${new Date().toISOString()}] Candidate selection: committed="${inputValue}"\n`
     );
+  });
+
+  test("Number keys commit visible candidates", async ({ page }) => {
+    await focusInputAndType(page, "nei");
+    const inputField = page.locator("input[type='text'], textarea").first();
+    const beforeSelection = await readCandidatePanelSnapshot(page, false);
+    expect(beforeSelection.candidates[1].text).toBe("\u5462");
+
+    await page.keyboard.press("2");
+    await expect(inputField).toHaveValue("\u5462", { timeout: 5000 });
+    await expect(page.locator(".candidate-panel")).toHaveCount(0, { timeout: 5000 });
+    await expect(page.locator(".Toastify__toast")).toHaveCount(0, { timeout: 1000 });
+    expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
   test("Deletion removes candidate or triggers delete path", async ({ page }) => {

@@ -145,7 +145,7 @@ function parseCandidates(value: unknown): TypeDuckCandidate[] {
       text: expectString(object.text, "TypeDuck candidate text must be a string"),
       comment: expectString(object.comment, "TypeDuck candidate comment must be a string"),
     };
-    if (object.source !== undefined) {
+    if (object.source !== undefined && object.source !== null) {
       parsed.source = expectString(object.source, "TypeDuck candidate source must be a string");
     }
     return parsed;

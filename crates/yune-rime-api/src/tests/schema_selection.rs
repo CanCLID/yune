@@ -2621,6 +2621,92 @@ HIGH\tsanhigh\t4
 }
 
 #[test]
+fn select_schema_prediction_never_first_applies_to_learned_prefix_predictions() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-prediction-never-first-userdb");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("prediction.schema.yaml"),
+        "\
+schema:
+  schema_id: prediction
+  name: Prediction
+engine:
+  translators:
+    - table_translator
+    - echo_translator
+translator:
+  dictionary: prediction
+  enable_completion: true
+  prediction_never_first: true
+",
+    )
+    .expect("prediction schema config should be written");
+    fs::write(
+        shared.join("prediction.dict.yaml"),
+        "\
+---
+name: prediction
+version: '0.1'
+sort: by_weight
+columns: [text, code, weight]
+...
+
+EXACT\tsan\t1
+HIGH\tsanhigh\t4
+",
+    )
+    .expect("dictionary should be written");
+    fs::write(
+        user.join("prediction.userdb"),
+        "\
+# yune userdb
+/db_name\tprediction
+/db_type\tuserdb
+/tick\t5
+sanlearn \tLEARNED\tc=2 d=2 t=2
+",
+    )
+    .expect("seed userdb should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("prediction").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    for ch in ['s', 'a', 'n'] {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+    let texts = current_candidate_pairs(session_id)
+        .into_iter()
+        .map(|(text, _)| text)
+        .collect::<Vec<_>>();
+
+    assert_eq!(texts, ["EXACT", "LEARNED", "HIGH", "san"]);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_wires_typeduck_table_translator_comment_options() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

@@ -69,8 +69,10 @@ const NAMED_KEYCODES: Readonly<Record<string, number>> = {
   ArrowDown: RIME_KEY.ArrowDown,
   Down: RIME_KEY.ArrowDown,
   PageUp: RIME_KEY.PageUp,
+  Page_Up: RIME_KEY.PageUp,
   Prior: RIME_KEY.PageUp,
   PageDown: RIME_KEY.PageDown,
+  Page_Down: RIME_KEY.PageDown,
   Next: RIME_KEY.PageDown,
   Home: RIME_KEY.Home,
   End: RIME_KEY.End,
@@ -82,6 +84,39 @@ const NAMED_KEYCODES: Readonly<Record<string, number>> = {
   Alt: RIME_KEY.Alt,
   Meta: RIME_KEY.Meta,
   OS: RIME_KEY.Meta,
+  asciitilde: "~".charCodeAt(0),
+  quoteleft: "`".charCodeAt(0),
+  exclam: "!".charCodeAt(0),
+  at: "@".charCodeAt(0),
+  numbersign: "#".charCodeAt(0),
+  dollar: "$".charCodeAt(0),
+  percent: "%".charCodeAt(0),
+  asciicircum: "^".charCodeAt(0),
+  ampersand: "&".charCodeAt(0),
+  asterisk: "*".charCodeAt(0),
+  parenleft: "(".charCodeAt(0),
+  parenright: ")".charCodeAt(0),
+  minus: "-".charCodeAt(0),
+  underscore: "_".charCodeAt(0),
+  plus: "+".charCodeAt(0),
+  equal: "=".charCodeAt(0),
+  braceleft: "{".charCodeAt(0),
+  bracketleft: "[".charCodeAt(0),
+  braceright: "}".charCodeAt(0),
+  bracketright: "]".charCodeAt(0),
+  colon: ":".charCodeAt(0),
+  semicolon: ";".charCodeAt(0),
+  quotedbl: "\"".charCodeAt(0),
+  apostrophe: "'".charCodeAt(0),
+  bar: "|".charCodeAt(0),
+  backslash: "\\".charCodeAt(0),
+  less: "<".charCodeAt(0),
+  comma: ",".charCodeAt(0),
+  greater: ">".charCodeAt(0),
+  period: ".".charCodeAt(0),
+  question: "?".charCodeAt(0),
+  slash: "/".charCodeAt(0),
+  space: RIME_KEY.Space,
 };
 
 export function keyEventToRimeKey(event: TypeDuckKeyboardEventLike): RimeKey {
@@ -93,6 +128,11 @@ export function keyEventToRimeKey(event: TypeDuckKeyboardEventLike): RimeKey {
 }
 
 function keyToCodePoint(key: string): number {
+  const keypadDigit = /^KP_([0-9])$/.exec(key);
+  if (keypadDigit !== null) {
+    return 0xffb0 + Number(keypadDigit[1]);
+  }
+
   const named = NAMED_KEYCODES[key];
   if (named !== undefined) {
     return named;

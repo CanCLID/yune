@@ -85,6 +85,7 @@ pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &st
     session.engine.set_schema(schema_id.to_owned(), schema_name);
     session.clear_user_dict_name();
     session.engine.clear_translators();
+    session.engine.set_prediction_never_first(false);
     session.engine.reset_filters();
     session.key_binder = None;
     session.speller = None;

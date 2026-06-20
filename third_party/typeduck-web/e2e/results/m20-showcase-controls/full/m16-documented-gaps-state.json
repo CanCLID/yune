@@ -17,7 +17,7 @@
   },
   "browserRuntimeLimits": {
     "sentenceDisabled": "The browser records the disabled Auto-composition state separately because full ngohaigo does not render the native disabled-prefix candidate panel.",
-    "correction": "The browser records nri correction default/enabled persisted settings separately; correction candidate output is explicit N/A on jyut6ping3_mobile, and M15 cantonese_parity remains the oracle-backed correction proof."
+    "correction": "Superseded by M21-GAP-02 real browser evidence under worker-0-M16-correction-browser-path-matches-M14-visible-before-after: nri correction off renders prefix fallback rows, correction on renders the v1.1.2 correction row first, and cantonese_parity locks the full oracle prefix list plus commit preview."
   },
   "schemaMenu": {
     "oracleSurface": {

@@ -17,7 +17,7 @@ URL: http://127.0.0.1:5174/web/
 [2026-06-20T09:22:48.598Z] Test: M16 combine candidates browser default matches M14 - passed (46884ms)
 [2026-06-20T09:24:01.245Z] Test: M16 sentence composition browser path matches M14 - passed (72640ms)
 [2026-06-20T09:24:48.426Z] Test: M16 completion browser path matches M14 - passed (47170ms)
-[2026-06-20T09:26:01.006Z] Test: M16 correction browser path records explicit M20 browser-surface N/A - passed (72569ms)
+[2026-06-20T09:26:01.006Z] Test: M16 correction browser path superseded by M21-GAP-02 real before/after evidence - passed (72569ms)
 [2026-06-20T09:26:52.322Z] Test: M16 simplification toggle converts browser candidates through OpenCC - passed (51308ms)
 [2026-06-20T09:27:40.453Z] Test: M16 schema menu and userdb pronunciation limits are explicit - passed (48117ms)
 [2026-06-20T09:28:29.802Z] Candidate paging: PageDown pressed, panel count=1

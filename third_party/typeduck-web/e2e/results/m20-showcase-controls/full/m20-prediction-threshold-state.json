@@ -1,0 +1,65 @@
+{
+  "thresholdZero": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "身體",
+        "note": null,
+        "source": null,
+        "rowText": "1.san1 tai2身體bodyⓘ"
+      },
+      {
+        "index": 1,
+        "text": "神體",
+        "note": null,
+        "source": null,
+        "rowText": "2.san4 tai2神體"
+      },
+      {
+        "index": 2,
+        "text": "身體健康",
+        "note": null,
+        "source": null,
+        "rowText": "3.san1 tai2 gin6 hong1身體健康have good healthⓘ"
+      },
+      {
+        "index": 3,
+        "text": "身體力行",
+        "note": null,
+        "source": null,
+        "rowText": "4.san1 tai2 lik6 hang4身體力行make good earnestlyⓘ"
+      },
+      {
+        "index": 4,
+        "text": "身體部分",
+        "note": null,
+        "source": null,
+        "rowText": "5.san1 tai2 bou6 fan6身體部分"
+      }
+    ]
+  },
+  "threshold50000": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "身體",
+        "note": null,
+        "source": null,
+        "rowText": "1.san1 tai2身體bodyⓘ"
+      },
+      {
+        "index": 1,
+        "text": "神體",
+        "note": null,
+        "source": null,
+        "rowText": "2.san4 tai2神體"
+      }
+    ]
+  },
+  "calibratedValue": 50000,
+  "calibration": "Derived from real jyut6ping3_mobile browser assets: santai predictions disappear at 50000 while direct candidates remain."
+}

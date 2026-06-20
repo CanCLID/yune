@@ -1,0 +1,84 @@
+{
+  "defaultOn": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "好",
+        "note": null,
+        "source": null,
+        "rowText": "1.hou2好good; veryⓘ"
+      },
+      {
+        "index": 1,
+        "text": "號",
+        "note": null,
+        "source": null,
+        "rowText": "2.hou6號sign; numberⓘ"
+      },
+      {
+        "index": 2,
+        "text": "豪",
+        "note": null,
+        "source": null,
+        "rowText": "3.hou4豪richⓘ"
+      },
+      {
+        "index": 3,
+        "text": "毫",
+        "note": null,
+        "source": null,
+        "rowText": "4.hou4毫centⓘ"
+      },
+      {
+        "index": 4,
+        "text": "浩",
+        "note": null,
+        "source": null,
+        "rowText": "5.hou6浩grandⓘ"
+      }
+    ]
+  },
+  "disabled": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "好",
+        "note": null,
+        "source": null,
+        "rowText": "1.hou2好good; veryⓘ"
+      },
+      {
+        "index": 1,
+        "text": "好",
+        "note": null,
+        "source": null,
+        "rowText": "2.hou2好good; veryⓘ"
+      },
+      {
+        "index": 2,
+        "text": "號",
+        "note": null,
+        "source": null,
+        "rowText": "3.hou6號sign; numberⓘ"
+      },
+      {
+        "index": 3,
+        "text": "豪",
+        "note": null,
+        "source": null,
+        "rowText": "4.hou4豪richⓘ"
+      },
+      {
+        "index": 4,
+        "text": "毫",
+        "note": null,
+        "source": null,
+        "rowText": "5.hou4毫centⓘ"
+      }
+    ]
+  }
+}

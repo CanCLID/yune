@@ -1,0 +1,18 @@
+{
+  "aiEnabled": true,
+  "committed": "你",
+  "classicTop": {
+    "index": 0,
+    "text": "你",
+    "note": null,
+    "source": null,
+    "rowText": "1.nei5你you (singular)ⓘ"
+  },
+  "aiRow": {
+    "index": 1,
+    "text": "你啊",
+    "note": "ai:local-model 0.83",
+    "source": "ai:local",
+    "rowText": "2.AI你啊ai:local-model 0.83"
+  }
+}

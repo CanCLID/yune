@@ -332,6 +332,9 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       enableCorrection: false,
       enableSentence: true,
       enableLearning: true,
+      combineCandidates: true,
+      predictionNeverFirst: true,
+      predictionThreshold: 0.05,
       isCangjie5: true,
     })).resolves.toBe(true);
 
@@ -342,6 +345,11 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       [1, "luna_pinyin", "translator/enable_sentence", "true"],
       [1, "luna_pinyin", "translator/enable_user_dict", "true"],
       [1, "luna_pinyin", "translator/encode_commit_history", "true"],
+      [1, "luna_pinyin", "translator/combine_candidates", "true"],
+      [1, "luna_pinyin", "translator/prediction_never_first", "true"],
+      [1, "luna_pinyin", "translator/prediction_weight_threshold", "0.05"],
+      [1, "luna_pinyin", "cangjie/dictionary", "cangjie5"],
+      [1, "luna_pinyin", "cangjie/tips", "【倉頡五代】"],
     ]);
   });
 

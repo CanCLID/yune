@@ -1,0 +1,58 @@
+{
+  "deployOnlyVariants": {
+    "browserSurface": "The checked-in TypeDuck-Web app initializes jyut6ping3_mobile only and exposes no schema/deploy-variant selector for common:/separate_candidates or common:/show_full_code.",
+    "engineCoverage": "cargo test -p yune-core --test cantonese_parity covers combine_candidates and show_full_code against the M14 v1.1.2 goldens.",
+    "oracleSurface": {
+      "schema_data": "TypeDuck-HK/schema",
+      "schema_data_commit": "1bed1ae6a0ab48055f073774d7dfd152a171c548",
+      "dictionary": "jyut6ping3.dict.yaml",
+      "source_row_policy": "typeduck_v112_deploy_time_option_variants",
+      "candidate_layout": "TypeDuck v1.1.2 RimeCandidate includes quality before reserved",
+      "option_delivery": "deploy-time common.custom.yaml/default.custom.yaml variants; runtime set_option does not apply these schema __patch hooks",
+      "modules": [
+        "default",
+        "dictionary_lookup"
+      ]
+    }
+  },
+  "browserRuntimeLimits": {
+    "sentenceDisabled": "The browser records the disabled Auto-composition state separately because full ngohaigo does not render the native disabled-prefix candidate panel.",
+    "correction": "The browser records nri correction default/enabled state separately; M15 cantonese_parity remains the oracle-backed correction proof."
+  },
+  "schemaMenu": {
+    "oracleSurface": {
+      "schema_data": "TypeDuck-HK/schema",
+      "schema_data_commit": "1bed1ae6a0ab48055f073774d7dfd152a171c548",
+      "dictionary": "jyut6ping3.dict.yaml",
+      "source_row_policy": "typeduck_v112_schema_list_emitted_surface",
+      "candidate_layout": "TypeDuck v1.1.2 RimeCandidate includes quality before reserved",
+      "option_delivery": "deploy-time common.custom.yaml/default.custom.yaml variants; runtime set_option does not apply these schema __patch hooks",
+      "modules": [
+        "default",
+        "dictionary_lookup"
+      ],
+      "oracle_observable_surface": "RimeGetSchemaList emits selected schema rows; hide_lone_schema/hide_caret are switcher/frontend decoration, not candidate ABI rows",
+      "m16_delivery": "assert TypeDuck-Web UI behavior against one-schema and multi-schema emitted lists"
+    },
+    "browserSurface": "TypeDuck-Web exposes no schema-selector DOM control; M14 RimeGetSchemaList remains the oracle evidence.",
+    "visibleSchemaControls": 0
+  },
+  "userdbPronunciation": {
+    "oracleSurface": {
+      "schema_data": "TypeDuck-HK/schema",
+      "schema_data_commit": "1bed1ae6a0ab48055f073774d7dfd152a171c548",
+      "dictionary": "jyut6ping3.dict.yaml",
+      "source_row_policy": "typeduck_v112_userdb_levers_export_probe",
+      "candidate_layout": "TypeDuck v1.1.2 RimeCandidate includes quality before reserved",
+      "option_delivery": "deploy-time common.custom.yaml/default.custom.yaml variants; runtime set_option does not apply these schema __patch hooks",
+      "modules": [
+        "default",
+        "dictionary_lookup",
+        "levers"
+      ],
+      "feasibility_spike": "trained one highlighted candidate, called RimeSyncUserData, then tried RimeFindModule('levers') and RimeLeversApi.export_user_dict",
+      "dict_name": "jyut6ping3"
+    },
+    "browserSurface": "No TypeDuck-Web native inspection surface exposes fork-only per-entry pronunciation levers."
+  }
+}

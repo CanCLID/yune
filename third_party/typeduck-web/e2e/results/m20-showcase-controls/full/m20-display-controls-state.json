@@ -1,0 +1,40 @@
+{
+  "candidateJyutping": {
+    "shown": {
+      "index": 0,
+      "text": "你",
+      "note": null,
+      "source": null,
+      "rowText": "1.nei5你you (singular)ⓘ"
+    },
+    "hidden": {
+      "index": 0,
+      "text": "你",
+      "note": null,
+      "source": null,
+      "rowText": "1.你you (singular)ⓘ"
+    }
+  },
+  "displayLanguages": {
+    "englishOnly": {
+      "index": 0,
+      "text": "你",
+      "note": null,
+      "source": null,
+      "rowText": "1.nei5你you (singular)ⓘ"
+    },
+    "hindiVisible": {
+      "index": 0,
+      "text": "你",
+      "note": null,
+      "source": null,
+      "rowText": "1.nei5你you (singular)आपⓘ"
+    }
+  },
+  "reverseCodeAndCangjie": {
+    "status": "N/A for the current browser surface",
+    "activeBrowserSchema": "jyut6ping3_mobile",
+    "reason": "The real browser schema does not declare a cangjie namespace or show_full_code patch; reverse/Cangjie rendering remains engine-covered but not browser-reachable here.",
+    "visibleSchemaControls": 0
+  }
+}

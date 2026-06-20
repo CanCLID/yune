@@ -1,0 +1,41 @@
+{
+  "aiEnabled": true,
+  "inputValue": "",
+  "candidates": [
+    {
+      "index": 0,
+      "text": "你",
+      "note": null,
+      "source": null,
+      "rowText": "1.nei5你you (singular)ⓘ"
+    },
+    {
+      "index": 1,
+      "text": "你啊",
+      "note": "ai:local-model 0.83",
+      "source": "ai:local",
+      "rowText": "2.AI你啊ai:local-model 0.83"
+    },
+    {
+      "index": 2,
+      "text": "呢",
+      "note": null,
+      "source": null,
+      "rowText": "3.ne1呢(how about)ⓘ"
+    },
+    {
+      "index": 3,
+      "text": "尼",
+      "note": null,
+      "source": null,
+      "rowText": "4.nei4尼nunⓘ"
+    },
+    {
+      "index": 4,
+      "text": "妮",
+      "note": null,
+      "source": null,
+      "rowText": "5.nei4妮little girlⓘ"
+    }
+  ]
+}

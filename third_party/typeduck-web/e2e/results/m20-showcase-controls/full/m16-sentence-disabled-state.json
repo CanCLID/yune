@@ -1,0 +1,16 @@
+{
+  "expectedM14Texts": [
+    "我係",
+    "我喺",
+    "我",
+    "俄",
+    "柯",
+    "餓"
+  ],
+  "browserState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": []
+  },
+  "browserSurface": "No candidate panel rendered for full ngohaigo after disabling Auto-composition in TypeDuck-Web."
+}

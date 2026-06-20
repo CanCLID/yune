@@ -253,6 +253,27 @@ If both automated runner AND manual browser are impossible:
 3. Clearly label fallback as "NOT satisfying real browser E2E per D-08"
 4. Document missing browser/tooling for Plan 10-04 recommendation
 
+### Step 14: M20 Showcase Controls
+
+1. Verify the settings panel has exactly these M20 groups:
+   - Active engine controls
+   - Live session controls
+   - Display controls
+2. Verify active controls include Auto-completion, Auto-correction, Auto-composition, Input Memory, AI Candidates, Combine same-text candidates, Prediction never first, and Prediction threshold.
+3. Verify live controls include ASCII mode, Full shape, and Simplification.
+4. Verify display controls include Display languages, Candidate Jyutping, Reverse code display, and Cangjie version.
+5. Confirm `ascii_punct` is not exposed as a working control.
+6. Record before/after evidence:
+   - `hou` with Combine same-text candidates on and off.
+   - `santai` with Prediction threshold `0` and `50000`.
+   - `abc` with ASCII mode on.
+   - `/` with Full shape off and on.
+   - `ngohaigo` with Simplification on.
+   - `nei` with Candidate Jyutping shown and hidden.
+   - `nei` with English-only display and with Hindi enabled.
+7. Run guided scenario buttons for `santai`, `mgoi`, `m`, tone letters, and AI trigger.
+8. For show-full-code, Reverse code display, and Cangjie version, use a browser-reachable Cangjie side lookup only if the active browser schema declares a `cangjie` namespace. If the active schema remains `jyut6ping3_mobile`, record them as N/A for this mobile-only browser surface and cite the schema file.
+
 ---
 
 **Phase**: 10-typeduck-web-app-integration-and-e2e

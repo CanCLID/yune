@@ -1,0 +1,49 @@
+{
+  "scenarios": {
+    "santai": [
+      "1.san1 tai2身體bodyⓘ",
+      "2.san4 tai2神體",
+      "3.san1 tai2 gin6 hong1身體健康have good healthⓘ",
+      "4.san1 tai2 lik6 hang4身體力行make good earnestlyⓘ",
+      "5.san1 tai2 bou6 fan6身體部分"
+    ],
+    "mgoi": [
+      "1.m4 goi1唔該thank youⓘ",
+      "2.m4 goi1 saai3唔該晒thank youⓘ"
+    ],
+    "m": [
+      "1.m4唔notⓘ",
+      "2.mou4無not; withoutⓘ",
+      "3.min6面face; sideⓘ",
+      "4.ming4明understandⓘ",
+      "5.man4民citizenⓘ"
+    ],
+    "toneLetters": [
+      "1.soe4 baan2瀡板"
+    ],
+    "aiTrigger": [
+      "1.nei5你you (singular)ⓘ",
+      "2.AI你啊ai:local-model 0.83",
+      "3.ne1呢(how about)ⓘ",
+      "4.nei4尼nunⓘ",
+      "5.nei4妮little girlⓘ"
+    ]
+  },
+  "aiTrigger": {
+    "aiIndex": 1,
+    "classicFirst": {
+      "index": 0,
+      "text": "你",
+      "note": null,
+      "source": null,
+      "rowText": "1.nei5你you (singular)ⓘ"
+    },
+    "aiRow": {
+      "index": 1,
+      "text": "你啊",
+      "note": "ai:local-model 0.83",
+      "source": "ai:local",
+      "rowText": "2.AI你啊ai:local-model 0.83"
+    }
+  }
+}

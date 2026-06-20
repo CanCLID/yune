@@ -1,0 +1,18 @@
+{
+  "expectedTexts": [
+    "我係個"
+  ],
+  "state": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "我係個",
+        "note": null,
+        "source": null,
+        "rowText": "1.ngo5 hai6我係I amⓘgo3個item of"
+      }
+    ]
+  }
+}

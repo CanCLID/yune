@@ -1,0 +1,14 @@
+{
+  "expectedM14Texts": [
+    "我",
+    "你",
+    "外",
+    "能",
+    "內"
+  ],
+  "browserState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": []
+  }
+}

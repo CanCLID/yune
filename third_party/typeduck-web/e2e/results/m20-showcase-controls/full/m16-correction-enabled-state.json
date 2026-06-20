@@ -1,0 +1,15 @@
+{
+  "expectedM14Texts": [
+    "你",
+    "呢",
+    "尼",
+    "妮",
+    "彌"
+  ],
+  "browserState": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": []
+  },
+  "browserSurface": "No candidate panel rendered for nri after enabling Auto-correction in TypeDuck-Web."
+}

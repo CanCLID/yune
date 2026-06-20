@@ -55,6 +55,9 @@ export interface RimePreferences {
   enableSentence?: boolean;
   enableLearning?: boolean;
   enableAI?: boolean;
+  combineCandidates?: boolean;
+  predictionNeverFirst?: boolean;
+  predictionThreshold?: number;
   isCangjie5?: boolean;
   /** Pre-2024 options encoding */
   options?: number;
@@ -446,6 +449,38 @@ export async function customize(preferences: RimePreferences): Promise<boolean> 
     for (const key of keys) {
       customizeSetting(key, value ? "true" : "false");
     }
+  }
+
+  if (preferences.combineCandidates !== undefined) {
+    customizeSetting(
+      "translator/combine_candidates",
+      preferences.combineCandidates ? "true" : "false",
+    );
+  }
+
+  if (preferences.predictionNeverFirst !== undefined) {
+    customizeSetting(
+      "translator/prediction_never_first",
+      preferences.predictionNeverFirst ? "true" : "false",
+    );
+  }
+
+  if (preferences.predictionThreshold !== undefined) {
+    customizeSetting(
+      "translator/prediction_weight_threshold",
+      String(preferences.predictionThreshold),
+    );
+  }
+
+  if (preferences.isCangjie5 !== undefined) {
+    customizeSetting(
+      "cangjie/dictionary",
+      preferences.isCangjie5 ? "cangjie5" : "cangjie3",
+    );
+    customizeSetting(
+      "cangjie/tips",
+      preferences.isCangjie5 ? "【倉頡五代】" : "【倉頡三代】",
+    );
   }
 
   if (customizedAny) {

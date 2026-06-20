@@ -1,0 +1,30 @@
+{
+  "activeControls": [
+    "/Auto-completion/",
+    "/Auto-correction/",
+    "/Auto-composition/",
+    "/Input Memory/",
+    "/AI Candidates/",
+    "/Combine same-text candidates/",
+    "/Prediction never first/",
+    "/Prediction threshold/"
+  ],
+  "liveControls": [
+    "/ASCII mode/",
+    "/Full shape/",
+    "/Simplification/"
+  ],
+  "displayControls": [
+    "/Display languages/",
+    "/Candidate Jyutping/",
+    "/Reverse code display/",
+    "/Cangjie version/"
+  ],
+  "defaults": {
+    "combineCandidates": true,
+    "predictionNeverFirst": true,
+    "predictionThreshold": 0,
+    "aiCandidates": false
+  },
+  "unsupportedAsciiPunctExposed": false
+}

@@ -29,7 +29,7 @@ index cbe61db..6d1043d 100644
  		"react-dom": "^18.3.1",
  		"react-toastify": "^10.0.5",
 diff --git a/src/App.tsx b/src/App.tsx
-index c43ccbc..479bc38 100644
+index c43ccbc..9165d12 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
 @@ -1,4 +1,4 @@
@@ -38,7 +38,13 @@ index c43ccbc..479bc38 100644
  
  import { ToastContainer } from "react-toastify";
  
-@@ -15,11 +15,15 @@ export default function App() {
+@@ -10,16 +10,21 @@ import Rime, { subscribe } from "./rime";
+ import ThemeSwitcher from "./ThemeSwitcher";
+ import Toolbar from "./Toolbar";
+ import { notify } from "./utils";
++import YuneFeatureShowcase from "./YuneFeatureShowcase";
+ 
+ export default function App() {
  	const [textArea, setTextArea] = useState<HTMLTextAreaElement | null>(null);
  	const [loading, runAsyncTask, startAsyncTask] = useLoading();
  
@@ -55,7 +61,7 @@ index c43ccbc..479bc38 100644
  			}
  			resolve();
  		});
-@@ -37,7 +41,7 @@ export default function App() {
+@@ -37,7 +42,7 @@ export default function App() {
  					resolve();
  					break;
  				case "failure":
@@ -64,18 +70,49 @@ index c43ccbc..479bc38 100644
  					reject();
  					break;
  			}
-@@ -45,8 +49,9 @@ export default function App() {
+@@ -45,13 +50,39 @@ export default function App() {
  	}, [startAsyncTask]);
  
  	const [deployStatus, updateDeployStatus] = useReducer((n: number) => n + 1, 0);
 +	const [aiStatus, updateAiStatus] = useReducer((n: number) => n + 1, 0);
  	const preferences = usePreferences();
 -	const { pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, isHeiTypeface } = preferences;
-+	const { pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, enableAI, isCangjie5, isHeiTypeface } = preferences;
++	const {
++		pageSize,
++		enableCompletion,
++		enableCorrection,
++		enableSentence,
++		enableLearning,
++		enableAI,
++		combineCandidates,
++		predictionNeverFirst,
++		predictionThreshold,
++		isAsciiMode,
++		isFullShape,
++		isSimplification,
++		isCangjie5,
++		isHeiTypeface,
++	} = preferences;
  	useEffect(() =>
  		runAsyncTask(async () => {
  			let type: "warning" | "error" | undefined;
-@@ -60,28 +65,45 @@ export default function App() {
+ 			try {
+-				const success = await Rime.customize({ pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5 });
++				const success = await Rime.customize({
++					pageSize,
++					enableCompletion,
++					enableCorrection,
++					enableSentence,
++					enableLearning,
++					combineCandidates,
++					predictionNeverFirst,
++					predictionThreshold,
++					isCangjie5,
++				});
+ 				if (!(await Rime.deploy() && success)) {
+ 					type = "warning";
+ 				}
+@@ -60,28 +91,70 @@ export default function App() {
  				type = "error";
  			}
  			if (type) {
@@ -83,8 +120,26 @@ index c43ccbc..479bc38 100644
 +				notify(type, "å¥—ç”¨è¨­å®š", "applying the settings");
  			}
  			updateDeployStatus();
- 		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, updateDeployStatus, runAsyncTask]);
- 
+-		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, updateDeployStatus, runAsyncTask]);
++		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, combineCandidates, predictionNeverFirst, predictionThreshold, isCangjie5, updateDeployStatus, runAsyncTask]);
++
++	useEffect(() =>
++		runAsyncTask(async () => {
++			let type: "warning" | "error" | undefined;
++			try {
++				await Rime.setOption("soft_cursor", true);
++				await Rime.setOption("ascii_mode", isAsciiMode);
++				await Rime.setOption("full_shape", isFullShape);
++				await Rime.setOption("simplification", isSimplification);
++			}
++			catch {
++				type = "error";
++			}
++			if (type) {
++				notify(type, "Apply live options", "applying the live options");
++			}
++		}), [isAsciiMode, isFullShape, isSimplification, runAsyncTask]);
++
 +	useEffect(() =>
 +		runAsyncTask(async () => {
 +			let type: "warning" | "error" | undefined;
@@ -101,7 +156,7 @@ index c43ccbc..479bc38 100644
 +			}
 +			updateAiStatus();
 +		}), [enableAI, updateAiStatus, runAsyncTask]);
-+
+ 
  	return <>
  		<header className="p-8 border-b border-base-300 flex items-center">
 -			<a className="mr-4 w-48" href="/">
@@ -114,9 +169,18 @@ index c43ccbc..479bc38 100644
  			<ThemeSwitcher />
  		</header>
  		<main className="m-auto p-8 max-w-7xl">
- 			<Toolbar loading={loading} deployStatus={deployStatus} />
+-			<Toolbar loading={loading} deployStatus={deployStatus} />
++			<Toolbar
++				loading={loading}
++				isAsciiMode={preferences.isAsciiMode}
++				setIsAsciiMode={preferences.setIsAsciiMode}
++				isSimplification={preferences.isSimplification}
++				setIsSimplification={preferences.setIsSimplification}
++				isFullShape={preferences.isFullShape}
++				setIsFullShape={preferences.setIsFullShape} />
  			<textarea className={`block w-full min-h-64 my-6 textarea textarea-bordered text-lg px-3 ${isHeiTypeface ? "font-hei" : "font-sung"}`} ref={setTextArea} {...NO_AUTO_FILL} />
 -			{textArea && <CandidatePanel runAsyncTask={runAsyncTask} textArea={textArea} prefs={preferences} deployStatus={deployStatus} />}
++			{textArea && <YuneFeatureShowcase textArea={textArea} />}
 +			{textArea && <CandidatePanel runAsyncTask={runAsyncTask} textArea={textArea} prefs={preferences} deployStatus={deployStatus} aiStatus={aiStatus} />}
  			<Preferences {...preferences} />
  		</main>
@@ -364,34 +428,315 @@ index d58fbab..f6a855f 100644
  								</table>,
  						)}
  					</div>,
+diff --git a/src/Inputs.tsx b/src/Inputs.tsx
+index d5451b8..becad87 100644
+--- a/src/Inputs.tsx
++++ b/src/Inputs.tsx
+@@ -16,6 +16,15 @@ interface RadioProps<T> {
+ 	value: T;
+ }
+ 
++interface RangeProps {
++	label: string;
++	min: number;
++	max: number;
++	step: number;
++	value: number;
++	setValue(value: number): void;
++}
++
+ export function Toggle({ label, checked, setChecked }: CheckboxProps) {
+ 	return <label className="cursor-pointer label gap-2">
+ 		<span className="text-lg text-base-content-200 flex-1">{label}</span>
+@@ -28,6 +37,23 @@ export function Toggle({ label, checked, setChecked }: CheckboxProps) {
+ 	</label>;
+ }
+ 
++export function Range({ label, min, max, step, value, setValue }: RangeProps) {
++	return <label className="label block">
++		<div className="flex items-center gap-3">
++			<span className="text-lg text-base-content-200 flex-1">{label}</span>
++			<span className="badge badge-outline">{value}</span>
++		</div>
++		<input
++			type="range"
++			className="range range-primary range-sm"
++			min={min}
++			max={max}
++			step={step}
++			value={value}
++			onChange={event => setValue(Number(event.target.value))} />
++	</label>;
++}
++
+ export function Radio<T>({ name, label, state, setState, value }: RadioProps<T>) {
+ 	return <label className="cursor-pointer label gap-2">
+ 		<input
 diff --git a/src/Preferences.tsx b/src/Preferences.tsx
-index 820a2e0..a62e457 100644
+index 820a2e0..4e4169b 100644
 --- a/src/Preferences.tsx
 +++ b/src/Preferences.tsx
-@@ -89,6 +89,9 @@ export default function Preferences(prefs: PreferencesWithSetter) {
- 			<li>
- 				<Toggle label="輸入記憶 Input Memory" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
- 			</li>
+@@ -1,8 +1,10 @@
+ import { LANGUAGE_LABELS, SHOW_ROMANIZATION_LABELS, Language, ShowRomanization } from "./consts";
+-import { Radio, RadioCheckbox, Segment, Toggle } from "./Inputs";
++import { Radio, RadioCheckbox, Range, Segment, Toggle } from "./Inputs";
+ 
+ import type { PreferencesWithSetter } from "./types";
+ 
++const thresholdRange = { min: 0, max: 200000, step: 1000 } as const;
++
+ export default function Preferences(prefs: PreferencesWithSetter) {
+ 	function toggleDisplayLanguage(language: Language, checked: boolean) {
+ 		const newDisplayLanguages = new Set(prefs.displayLanguages);
+@@ -12,9 +14,51 @@ export default function Preferences(prefs: PreferencesWithSetter) {
+ 	return <section className="max-w-5xl lg:columns-2 m-auto">
+ 		<h3 className="font-bold text-2xl mb-2">輸入法設定 IME Settings</h3>
+ 		<ul>
++			<li>
++				<h4 className="font-semibold text-xl my-2">Active engine controls</h4>
++			</li>
++			<li>
++				<Toggle label="自動完成 Auto-completion" checked={prefs.enableCompletion} setChecked={prefs.setEnableCompletion} />
++			</li>
++			<li>
++				<Toggle label="自動校正 Auto-correction" checked={prefs.enableCorrection} setChecked={prefs.setEnableCorrection} />
++			</li>
++			<li>
++				<Toggle label="自動組詞 Auto-composition" checked={prefs.enableSentence} setChecked={prefs.setEnableSentence} />
++			</li>
++			<li>
++				<Toggle label="輸入記憶 Input Memory" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
++			</li>
 +			<li>
 +				<Toggle label="AI 候選 AI Candidates" checked={prefs.enableAI} setChecked={prefs.setEnableAI} />
 +			</li>
- 		</ul>
- 		<h3 className="font-bold text-xl my-2">反查設定 Reverse Lookup Settings</h3>
- 		<ul>
++			<li>
++				<Toggle label="Combine same-text candidates" checked={prefs.combineCandidates} setChecked={prefs.setCombineCandidates} />
++			</li>
++			<li>
++				<Toggle label="Prediction never first" checked={prefs.predictionNeverFirst} setChecked={prefs.setPredictionNeverFirst} />
++			</li>
++			<li>
++				<Range label="Prediction threshold" min={thresholdRange.min} max={thresholdRange.max} step={thresholdRange.step} value={prefs.predictionThreshold} setValue={prefs.setPredictionThreshold} />
++			</li>
++			<li>
++				<h4 className="font-semibold text-xl my-2">Live session controls</h4>
++			</li>
++			<li>
++				<Toggle label="ASCII mode" checked={prefs.isAsciiMode} setChecked={prefs.setIsAsciiMode} />
++			</li>
++			<li>
++				<Toggle label="Full shape" checked={prefs.isFullShape} setChecked={prefs.setIsFullShape} />
++			</li>
++			<li>
++				<Toggle label="Simplification" checked={prefs.isSimplification} setChecked={prefs.setIsSimplification} />
++			</li>
++			<li>
++				<h4 className="font-semibold text-xl my-2">Display controls</h4>
++			</li>
+ 			<li>
+ 				<fieldset className="border border-base-300 rounded px-3">
+-					<legend className="text-xl text-base-content mb-1 px-2">顯示語言 Display Languages</legend>
++					<legend className="text-xl text-base-content mb-1 px-2">Display languages</legend>
+ 					{(Object.entries(LANGUAGE_LABELS) as [Language, string][]).map(([language, label]) =>
+ 						<RadioCheckbox
+ 							key={language}
+@@ -65,7 +109,7 @@ export default function Preferences(prefs: PreferencesWithSetter) {
+ 			</li>
+ 			<li>
+ 				<fieldset className="border border-base-300 rounded px-3 pb-2 mb-1">
+-					<legend className="text-xl text-base-content my-2 px-2">候選詞粵拼 Candidates Jyutping</legend>
++					<legend className="text-xl text-base-content my-2 px-2">Candidate Jyutping</legend>
+ 					{(Object.entries(SHOW_ROMANIZATION_LABELS) as [ShowRomanization, string][]).map(([value, label]) =>
+ 						<Radio
+ 							key={value}
+@@ -78,26 +122,11 @@ export default function Preferences(prefs: PreferencesWithSetter) {
+ 				</fieldset>
+ 			</li>
+ 			<li>
+-				<Toggle label="自動完成 Auto-completion" checked={prefs.enableCompletion} setChecked={prefs.setEnableCompletion} />
+-			</li>
+-			<li>
+-				<Toggle label="自動校正 Auto-correction" checked={prefs.enableCorrection} setChecked={prefs.setEnableCorrection} />
+-			</li>
+-			<li>
+-				<Toggle label="自動組詞 Auto-composition" checked={prefs.enableSentence} setChecked={prefs.setEnableSentence} />
+-			</li>
+-			<li>
+-				<Toggle label="輸入記憶 Input Memory" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
+-			</li>
+-		</ul>
+-		<h3 className="font-bold text-xl my-2">反查設定 Reverse Lookup Settings</h3>
+-		<ul>
+-			<li>
+-				<Toggle label="顯示完整輸入碼 Show Full Input Code" checked={prefs.showReverseCode} setChecked={prefs.setShowReverseCode} />
++				<Toggle label="Reverse code display" checked={prefs.showReverseCode} setChecked={prefs.setShowReverseCode} />
+ 			</li>
+ 			<li>
+ 				<div className="label gap-2">
+-					<span className="text-lg text-base-content-200">倉頡版本 Cangjie Version</span>
++					<span className="text-lg text-base-content-200">Cangjie version</span>
+ 					<div className="join">
+ 						<Segment name="cangjieVersion" label="三代 Version 3" state={prefs.isCangjie5} setState={prefs.setIsCangjie5} value={false} />
+ 						<Segment name="cangjieVersion" label="五代 Version 5" state={prefs.isCangjie5} setState={prefs.setIsCangjie5} value={true} />
+diff --git a/src/Toolbar.tsx b/src/Toolbar.tsx
+index ff262af..156941a 100644
+--- a/src/Toolbar.tsx
++++ b/src/Toolbar.tsx
+@@ -1,8 +1,24 @@
+ import { useEffect, useRef, useState } from "react";
+ 
+-import { useRimeOption } from "./hooks";
++import type { Dispatch, SetStateAction } from "react";
+ 
+-export default function Toolbar({ loading, deployStatus }: { loading: boolean; deployStatus: number }) {
++export default function Toolbar({
++	loading,
++	isAsciiMode,
++	setIsAsciiMode,
++	isSimplification,
++	setIsSimplification,
++	isFullShape,
++	setIsFullShape,
++}: {
++	loading: boolean;
++	isAsciiMode: boolean;
++	setIsAsciiMode: Dispatch<SetStateAction<boolean>>;
++	isSimplification: boolean;
++	setIsSimplification: Dispatch<SetStateAction<boolean>>;
++	isFullShape: boolean;
++	setIsFullShape: Dispatch<SetStateAction<boolean>>;
++}) {
+ 	const [debouncedLoading, setDebouncedLoading] = useState(loading);
+ 	const timeout = useRef<ReturnType<typeof setTimeout>>();
+ 	useEffect(() => {
+@@ -22,28 +38,20 @@ export default function Toolbar({ loading, deployStatus }: { loading: boolean; d
+ 		}
+ 	}, [loading]);
+ 
+-	useRimeOption("soft_cursor", true, deployStatus); // Not modifiable by user
+-	const [isASCIIMode, toggleIsASCIIMode] = useRimeOption("ascii_mode", false, deployStatus);
+-	const [isSimplified, toggleIsSimplified] = useRimeOption("simplification", false, deployStatus);
+-	const [isFullwidthLettersAndSymbols, toggleIsFullwidthLettersAndSymbols] = useRimeOption("full_shape", false, deployStatus, "isFullwidthLettersAndSymbols");
+-	const [isHalfwidthPunctuation, toggleIsHalfwidthPunctuation] = useRimeOption("ascii_punct", false, deployStatus, "isHalfwidthPunctuation");
+ 	return <div>
+ 		<div className="join align-middle">
+ 			<div className="tooltip" data-tip={"中文／英文字母\nChinese / Alphabet"}>
+-				<button className="btn-toolbar join-item" onClick={toggleIsASCIIMode}>{isASCIIMode ? "En" : "中"}</button>
++				<button className="btn-toolbar join-item" aria-label="ASCII mode" onClick={() => setIsAsciiMode(value => !value)}>{isAsciiMode ? "En" : "中"}</button>
+ 			</div>
+ 			<div className="tooltip" data-tip={"繁體字／簡體字\nTraditional / Simplified"}>
+-				<button className="btn-toolbar join-item" onClick={toggleIsSimplified}>{isSimplified ? "简" : "繁"}</button>
++				<button className="btn-toolbar join-item" aria-label="Simplification" onClick={() => setIsSimplification(value => !value)}>{isSimplification ? "简" : "繁"}</button>
+ 			</div>
+ 			<div className="tooltip" data-tip={"半形／全形字母及符號\nHalfwidth / Fullwidth Letters & Symbols"}>
+-				<button className="btn-toolbar join-item" onClick={toggleIsFullwidthLettersAndSymbols}>{isFullwidthLettersAndSymbols ? "全" : "半"}</button>
+-			</div>
+-			<div className="tooltip" data-tip={"半形／全形標點符號\nHalfwidth / Fullwidth Punctuations"}>
+-				<button className="btn-toolbar join-item" onClick={toggleIsHalfwidthPunctuation}>{isHalfwidthPunctuation ? "." : "。"}</button>
++				<button className="btn-toolbar join-item" aria-label="Full shape" onClick={() => setIsFullShape(value => !value)}>{isFullShape ? "全" : "半"}</button>
+ 			</div>
+ 		</div>
+ 		{debouncedLoading && <span className="text-base-content-200">
+-			<div className="mx-3 align-middle loading loading-spinner loading-lg" />載入中 Loading…
++			<div className="mx-3 align-middle loading loading-spinner loading-lg" />載入中 Loading...
+ 		</span>}
+ 	</div>;
+ }
+diff --git a/src/YuneFeatureShowcase.tsx b/src/YuneFeatureShowcase.tsx
+new file mode 100644
+index 0000000..a24f6c3
+--- /dev/null
++++ b/src/YuneFeatureShowcase.tsx
+@@ -0,0 +1,68 @@
++interface Scenario {
++	label: string;
++	input: string;
++}
++
++const SCENARIOS: Scenario[] = [
++	{ label: "nei", input: "nei" },
++	{ label: "santai", input: "santai" },
++	{ label: "m", input: "m" },
++	{ label: "mgoi", input: "mgoi" },
++	{ label: "tone letters", input: "seov" },
++	{ label: "AI trigger", input: "nei" },
++];
++
++function keyCodeFor(char: string): string {
++	if (/^[a-z]$/.test(char)) {
++		return `Key${char.toUpperCase()}`;
++	}
++	return char;
++}
++
++function sendKeyboardEvent(textArea: HTMLTextAreaElement, type: "keydown" | "keyup", key: string, code = keyCodeFor(key)) {
++	textArea.dispatchEvent(new KeyboardEvent(type, {
++		key,
++		code,
++		bubbles: true,
++		cancelable: true,
++	}));
++}
++
++function sendPrintable(textArea: HTMLTextAreaElement, char: string) {
++	sendKeyboardEvent(textArea, "keydown", char);
++	sendKeyboardEvent(textArea, "keyup", char);
++}
++
++function resetInput(textArea: HTMLTextAreaElement) {
++	textArea.focus();
++	sendKeyboardEvent(textArea, "keydown", "Escape", "Escape");
++	sendKeyboardEvent(textArea, "keyup", "Escape", "Escape");
++	textArea.value = "";
++	textArea.selectionStart = textArea.selectionEnd = 0;
++	textArea.dispatchEvent(new Event("input", { bubbles: true }));
++}
++
++function delay(ms: number) {
++	return new Promise(resolve => setTimeout(resolve, ms));
++}
++
++export default function YuneFeatureShowcase({ textArea }: { textArea: HTMLTextAreaElement }) {
++	async function runScenario(input: string) {
++		resetInput(textArea);
++		await delay(120);
++		for (const char of input) {
++			sendPrintable(textArea, char);
++			await delay(120);
++		}
++	}
++
++	return <section className="my-4">
++		<div className="join flex flex-wrap gap-y-2">
++			{SCENARIOS.map(scenario =>
++				<button key={scenario.label} type="button" className="btn btn-outline btn-primary btn-sm join-item" onClick={() => void runScenario(scenario.input)}>
++					{scenario.label}
++				</button>
++			)}
++		</div>
++	</section>;
++}
 diff --git a/src/consts.ts b/src/consts.ts
-index 25ec3bf..dc454a0 100644
+index 25ec3bf..4b9c645 100644
 --- a/src/consts.ts
 +++ b/src/consts.ts
-@@ -55,6 +55,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
+@@ -55,6 +55,13 @@ export const DEFAULT_PREFERENCES: Preferences = {
  	enableCorrection: false,
  	enableSentence: true,
  	enableLearning: true,
 +	enableAI: false,
++	combineCandidates: true,
++	predictionNeverFirst: true,
++	predictionThreshold: 0,
++	isAsciiMode: false,
++	isFullShape: false,
++	isSimplification: false,
  	showReverseCode: true,
  	isCangjie5: true,
  };
 diff --git a/src/rime.ts b/src/rime.ts
-index 4393a9e..4ef3ca7 100644
+index 4393a9e..adfb538 100644
 --- a/src/rime.ts
 +++ b/src/rime.ts
 @@ -18,7 +18,13 @@ interface ErrorPayload {
@@ -416,7 +761,7 @@ index 4393a9e..4ef3ca7 100644
 +const lastListenerArgs = {} as Partial<{ [K in keyof ListenerArgsMap]: ListenerArgsMap[K] }>;
  
 -const worker = new Worker("./worker.js");
-+const YUNE_TYPEDUCK_WORKER_VERSION = "prediction-never-first";
++const YUNE_TYPEDUCK_WORKER_VERSION = "m20-showcase-controls";
 +const debugWindow = window as typeof window & { __YUNE_RIME_VERSION__?: string };
 +debugWindow.__YUNE_RIME_VERSION__ = YUNE_TYPEDUCK_WORKER_VERSION;
 +document.documentElement.dataset.yuneRimeVersion = YUNE_TYPEDUCK_WORKER_VERSION;
@@ -489,7 +834,7 @@ index 4393a9e..4ef3ca7 100644
  		listeners[type] = listeners[type].filter(listener => listener !== callback) as never;
  	};
 diff --git a/src/types.ts b/src/types.ts
-index 5d47525..bf64ae6 100644
+index 5d47525..50147ed 100644
 --- a/src/types.ts
 +++ b/src/types.ts
 @@ -16,10 +16,11 @@ export interface RimeAPI {
@@ -513,16 +858,22 @@ index 5d47525..bf64ae6 100644
  	}[];
  }
  
-@@ -91,6 +93,7 @@ export interface RimePreferences {
+@@ -91,6 +93,13 @@ export interface RimePreferences {
  	enableCorrection: boolean;
  	enableSentence: boolean;
  	enableLearning: boolean;
 +	enableAI: boolean;
++	combineCandidates: boolean;
++	predictionNeverFirst: boolean;
++	predictionThreshold: number;
++	isAsciiMode: boolean;
++	isFullShape: boolean;
++	isSimplification: boolean;
  	isCangjie5: boolean;
  }
  
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..b7f2dc8 100644
+index 92b9a90..431f4c7 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
 @@ -1,137 +1,276 @@
@@ -766,7 +1117,7 @@ index 92b9a90..b7f2dc8 100644
 -});
 +const SCHEMA_ID = "jyut6ping3_mobile";
 +const DICTIONARY_ID = "jyut6ping3";
-+const YUNE_TYPEDUCK_ASSET_VERSION = "prediction-never-first";
++const YUNE_TYPEDUCK_ASSET_VERSION = "m20-showcase-controls";
 +
 +// Yune runtime initialization
 +const loadRime = (async () => {
@@ -1166,10 +1517,10 @@ index 0000000..f943e18
 +**Status**: Integration layer created, pending patch application and build gates
 diff --git a/src/yune-integration/adapter.ts b/src/yune-integration/adapter.ts
 new file mode 100644
-index 0000000..788e72a
+index 0000000..9c17b05
 --- /dev/null
 +++ b/src/yune-integration/adapter.ts
-@@ -0,0 +1,578 @@
+@@ -0,0 +1,613 @@
 +/**
 + * Yune seam adapter for TypeDuck-Web
 + *
@@ -1227,6 +1578,9 @@ index 0000000..788e72a
 +  enableSentence?: boolean;
 +  enableLearning?: boolean;
 +  enableAI?: boolean;
++  combineCandidates?: boolean;
++  predictionNeverFirst?: boolean;
++  predictionThreshold?: number;
 +  isCangjie5?: boolean;
 +  /** Pre-2024 options encoding */
 +  options?: number;
@@ -1618,6 +1972,38 @@ index 0000000..788e72a
 +    for (const key of keys) {
 +      customizeSetting(key, value ? "true" : "false");
 +    }
++  }
++
++  if (preferences.combineCandidates !== undefined) {
++    customizeSetting(
++      "translator/combine_candidates",
++      preferences.combineCandidates ? "true" : "false",
++    );
++  }
++
++  if (preferences.predictionNeverFirst !== undefined) {
++    customizeSetting(
++      "translator/prediction_never_first",
++      preferences.predictionNeverFirst ? "true" : "false",
++    );
++  }
++
++  if (preferences.predictionThreshold !== undefined) {
++    customizeSetting(
++      "translator/prediction_weight_threshold",
++      String(preferences.predictionThreshold),
++    );
++  }
++
++  if (preferences.isCangjie5 !== undefined) {
++    customizeSetting(
++      "cangjie/dictionary",
++      preferences.isCangjie5 ? "cangjie5" : "cangjie3",
++    );
++    customizeSetting(
++      "cangjie/tips",
++      preferences.isCangjie5 ? "【倉頡五代】" : "【倉頡三代】",
++    );
 +  }
 +
 +  if (customizedAny) {
@@ -2125,27 +2511,3 @@ index 0000000..0121f54
 +    committed,
 +  };
 +}
-diff --git a/public/schema/template.yaml b/public/schema/template.yaml
-index 0000000..0000000 100644
---- a/public/schema/template.yaml
-+++ b/public/schema/template.yaml
-@@ -69,6 +69,7 @@ speller:
- 
- translator:
-   dictionary: jyut6ping3
-+  prediction_never_first: true
-   always_show_comments: true
-   comment_format:
-     - xform/^/\f/
-diff --git a/public/schema/build/jyut6ping3_mobile.schema.yaml b/public/schema/build/jyut6ping3_mobile.schema.yaml
-index 0000000..0000000 100644
---- a/public/schema/build/jyut6ping3_mobile.schema.yaml
-+++ b/public/schema/build/jyut6ping3_mobile.schema.yaml
-@@ -243,6 +243,7 @@ translator:
-   comment_format:
-     - "xform/^/\\f/"
-   dictionary: jyut6ping3
-+  prediction_never_first: true
-   preedit_format:
-     - "xform/([aeiouymngptk])vv/${1}4/"
-     - "xform/([aeiouymngptk])xx/${1}5/"

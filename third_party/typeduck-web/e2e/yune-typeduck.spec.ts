@@ -22,6 +22,30 @@ const TIMEOUT_MS = 120000; // WASM load and runtime init may be slow
 // E2E evidence directory
 const EVIDENCE_DIR = process.env.TYPEDUCK_EVIDENCE_DIR || "../e2e/results";
 
+const ACTIVE_SHOWCASE_CONTROLS = [
+  /Auto-completion/,
+  /Auto-correction/,
+  /Auto-composition/,
+  /Input Memory/,
+  /AI Candidates/,
+  /Combine same-text candidates/,
+  /Prediction never first/,
+  /Prediction threshold/,
+] as const;
+
+const LIVE_SHOWCASE_CONTROLS = [
+  /ASCII mode/,
+  /Full shape/,
+  /Simplification/,
+] as const;
+
+const DISPLAY_SHOWCASE_CONTROLS = [
+  /Display languages/,
+  /Candidate Jyutping/,
+  /Reverse code display/,
+  /Cangjie version/,
+] as const;
+
 /**
  * Helper: Capture browser console errors to evidence file
  */
@@ -201,6 +225,41 @@ async function focusInputAndType(page: Page, text: string): Promise<void> {
   await expect(page.locator(".candidate-panel").first()).toContainText(text, { timeout: 5000 });
 }
 
+async function typeCompositionAndWaitForCandidate(page: Page, input: string, expectedText: string): Promise<CandidatePanelSnapshot> {
+  const inputField = page.locator("input[type='text'], textarea").first();
+  await clearComposition(page);
+  await inputField.focus();
+  await inputField.type(input, { delay: 120 });
+  await expect.poll(async () => {
+    const state = await readCandidatePanelSnapshot(page, false);
+    return state.candidates.map((candidate) => candidate.text);
+  }, { timeout: 10000 }).toContain(expectedText);
+  return readCandidatePanelSnapshot(page, false);
+}
+
+async function clickShowcaseScenario(page: Page, name: string | RegExp, expectedText: string, aiEnabled = false): Promise<CandidatePanelSnapshot> {
+  await clearComposition(page);
+  await page.waitForTimeout(500);
+  await page.getByRole("button", { name }).click();
+  await expect.poll(async () => {
+    const state = await readCandidatePanelSnapshot(page, aiEnabled);
+    return state.candidates.map((candidate) => candidate.text);
+  }, { timeout: 10000 }).toContain(expectedText);
+  return readCandidatePanelSnapshot(page, aiEnabled);
+}
+
+async function typeRawInput(page: Page, text: string): Promise<{ value: string; panelCount: number }> {
+  const inputField = page.locator("input[type='text'], textarea").first();
+  await clearComposition(page);
+  await inputField.focus();
+  await inputField.type(text, { delay: 80 });
+  await page.waitForTimeout(500);
+  return {
+    value: await inputField.inputValue(),
+    panelCount: await page.locator(".candidate-panel").count(),
+  };
+}
+
 async function clearComposition(page: Page): Promise<void> {
   const inputField = page.locator("input[type='text'], textarea").first();
   await page.keyboard.press("Escape").catch(() => undefined);
@@ -209,25 +268,47 @@ async function clearComposition(page: Page): Promise<void> {
 }
 
 async function setPreferenceToggle(page: Page, label: RegExp, enabled: boolean): Promise<void> {
-  const toggle = page.getByLabel(label);
+  const toggle = page.getByLabel(label).last();
   const checked = await toggle.isChecked();
   if (checked !== enabled) {
     if (enabled) {
-      await toggle.check();
+      await toggle.check({ force: true });
     } else {
-      await toggle.uncheck();
+      await toggle.uncheck({ force: true });
     }
+    await page.waitForTimeout(250);
     await waitForAppReady(page);
+    await page.waitForTimeout(250);
   }
 }
 
+async function setPreferenceRange(page: Page, label: RegExp, value: number): Promise<void> {
+  const range = page.getByLabel(label).last();
+  await range.evaluate((element, nextValue) => {
+    const input = element as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    setter?.call(input, String(nextValue));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }, value);
+  await page.waitForTimeout(250);
+  await waitForAppReady(page);
+  await page.waitForTimeout(250);
+}
+
+async function setPreferenceRadio(page: Page, label: RegExp): Promise<void> {
+  await page.getByLabel(label).last().check({ force: true });
+  await waitForAppReady(page).catch(() => undefined);
+}
+
 async function setAiToggle(page: Page, enabled: boolean): Promise<void> {
-  const aiToggle = page.getByLabel(/AI Candidates/);
+  const aiToggle = page.getByLabel(/AI Candidates/).last();
   if (enabled) {
-    await aiToggle.check();
+    await aiToggle.check({ force: true });
   } else {
-    await aiToggle.uncheck();
+    await aiToggle.uncheck({ force: true });
   }
+  await page.waitForTimeout(1000);
 }
 
 /**
@@ -279,7 +360,7 @@ async function captureM16Scenario(
 }
 
 test.describe("TypeDuck-Web Browser E2E", () => {
-  test.setTimeout(60000);
+  test.setTimeout(TIMEOUT_MS);
 
   let consoleErrors: string[] = [];
 
@@ -425,6 +506,202 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     });
     await takeEvidenceScreenshot(page, "m13-ai-explicit-commit");
     expect(consoleErrors).toEqual([]);
+  });
+
+  test("M20 showcase control surface exposes honest controls", async ({ page }) => {
+    await expect(page.getByText(/Active engine controls/)).toBeVisible();
+    await expect(page.getByText(/Live session controls/)).toBeVisible();
+    await expect(page.getByText(/Display controls/)).toBeVisible();
+
+    for (const label of ACTIVE_SHOWCASE_CONTROLS) {
+      await expect(page.getByLabel(label).last()).toBeVisible();
+    }
+    for (const label of LIVE_SHOWCASE_CONTROLS) {
+      await expect(page.getByLabel(label).last()).toBeVisible();
+    }
+    for (const label of DISPLAY_SHOWCASE_CONTROLS) {
+      await expect(page.getByText(label).last()).toBeVisible();
+    }
+
+    await expect(page.getByLabel(/Combine same-text candidates/).last()).toBeChecked();
+    await expect(page.getByLabel(/Prediction never first/).last()).toBeChecked();
+    await expect(page.getByLabel(/AI Candidates/).last()).not.toBeChecked();
+    await expect(page.getByLabel(/Prediction threshold/).last()).toHaveValue("0");
+    await expect(page.getByText(/ascii_punct/i)).toHaveCount(0);
+    await expect(page.getByLabel(/ascii_punct/i)).toHaveCount(0);
+
+    await saveJsonEvidence("m20-control-surface-state.json", {
+      activeControls: ACTIVE_SHOWCASE_CONTROLS.map(String),
+      liveControls: LIVE_SHOWCASE_CONTROLS.map(String),
+      displayControls: DISPLAY_SHOWCASE_CONTROLS.map(String),
+      defaults: {
+        combineCandidates: true,
+        predictionNeverFirst: true,
+        predictionThreshold: 0,
+        aiCandidates: false,
+      },
+      unsupportedAsciiPunctExposed: false,
+    });
+    await takeEvidenceScreenshot(page, "m20-control-surface");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M20 guided scenarios use real TypeDuck-Web assets", async ({ page }) => {
+    const scenarios: Record<string, string[]> = {};
+
+    const santai = await clickShowcaseScenario(page, "santai", "身體健康");
+    expect(santai.candidates.map((candidate) => candidate.text)).toContain("身體");
+    expect(santai.candidates.map((candidate) => candidate.text)).toContain("身體健康");
+    scenarios.santai = santai.candidates.map((candidate) => candidate.rowText);
+
+    const mgoi = await clickShowcaseScenario(page, "mgoi", "唔該");
+    expect(mgoi.candidates.map((candidate) => candidate.text)).toContain("唔該");
+    scenarios.mgoi = mgoi.candidates.map((candidate) => candidate.rowText);
+
+    const m = await clickShowcaseScenario(page, /^m$/, "唔");
+    expect(m.candidates[0].text).toBe("唔");
+    scenarios.m = m.candidates.map((candidate) => candidate.rowText);
+
+    const toneLetters = await clickShowcaseScenario(page, "tone letters", "瀡板");
+    expect(toneLetters.candidates[0].text).toBe("瀡板");
+    scenarios.toneLetters = toneLetters.candidates.map((candidate) => candidate.rowText);
+
+    await setAiToggle(page, true);
+    await clickShowcaseScenario(page, "AI trigger", "你", true);
+    await expect(page.locator('.candidate-panel .candidates tbody[data-source="ai:local"]')).toHaveCount(1, { timeout: 5000 });
+    const aiTrigger = await readCandidatePanelSnapshot(page, true);
+    const aiIndex = aiTrigger.candidates.findIndex((candidate) => candidate.source === "ai:local");
+    expect(aiIndex).toBeGreaterThan(0);
+    expect(aiTrigger.candidates[0].source).toBeNull();
+    expect(aiTrigger.candidates[aiIndex].text).toBe("你啊");
+    scenarios.aiTrigger = aiTrigger.candidates.map((candidate) => candidate.rowText);
+
+    await saveJsonEvidence("m20-guided-scenarios-state.json", {
+      scenarios,
+      aiTrigger: {
+        aiIndex,
+        classicFirst: aiTrigger.candidates[0],
+        aiRow: aiTrigger.candidates[aiIndex],
+      },
+    });
+    await takeEvidenceScreenshot(page, "m20-guided-scenarios");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M20 combine_candidates changes real candidate output", async ({ page }) => {
+    const combineOn = await typeCompositionAndWaitForCandidate(page, "hou", "好");
+    expect(combineOn.candidates[0].text).toBe("好");
+    expect(combineOn.candidates[1].text).not.toBe("好");
+
+    await clearComposition(page);
+    await setPreferenceToggle(page, /Combine same-text candidates/, false);
+    const combineOff = await typeCompositionAndWaitForCandidate(page, "hou", "好");
+    expect(combineOff.candidates.slice(0, 2).map((candidate) => candidate.text)).toEqual(["好", "好"]);
+
+    await saveJsonEvidence("m20-combine-candidates-state.json", {
+      defaultOn: combineOn,
+      disabled: combineOff,
+    });
+    await takeEvidenceScreenshot(page, "m20-combine-candidates");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M20 prediction threshold changes real candidate output", async ({ page }) => {
+    const thresholdZero = await typeCompositionAndWaitForCandidate(page, "santai", "身體健康");
+    expect(thresholdZero.candidates.map((candidate) => candidate.text)).toContain("身體健康");
+
+    await clearComposition(page);
+    await setPreferenceRange(page, /Prediction threshold/, 50000);
+    const threshold50000 = await typeCompositionAndWaitForCandidate(page, "santai", "身體");
+    expect(threshold50000.candidates[0].text).toBe("身體");
+    expect(threshold50000.candidates.map((candidate) => candidate.text)).not.toContain("身體健康");
+
+    await saveJsonEvidence("m20-prediction-threshold-state.json", {
+      thresholdZero,
+      threshold50000,
+      calibratedValue: 50000,
+      calibration: "Derived from real jyut6ping3_mobile browser assets: santai predictions disappear at 50000 while direct candidates remain.",
+    });
+    await takeEvidenceScreenshot(page, "m20-prediction-threshold");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M20 live session controls use setOption-visible output", async ({ page }) => {
+    await setPreferenceToggle(page, /ASCII mode/, true);
+    const asciiMode = await typeRawInput(page, "abc");
+    expect(asciiMode).toEqual({ value: "abc", panelCount: 0 });
+
+    await setPreferenceToggle(page, /ASCII mode/, false);
+    await setPreferenceToggle(page, /Full shape/, false);
+    const halfShapeSlash = await typeRawInput(page, "/");
+    expect(halfShapeSlash).toEqual({ value: "/", panelCount: 0 });
+
+    await setPreferenceToggle(page, /Full shape/, true);
+    const fullShapeSlash = await typeRawInput(page, "/");
+    expect(fullShapeSlash).toEqual({ value: "／", panelCount: 0 });
+
+    await setPreferenceToggle(page, /Full shape/, false);
+    await setPreferenceToggle(page, /Simplification/, true);
+    const simplification = await typeCompositionAndWaitForCandidate(page, "ngohaigo", "我系个");
+    expect(simplification.candidates[0].text).toBe("我系个");
+
+    await saveJsonEvidence("m20-live-session-controls-state.json", {
+      asciiMode,
+      halfShapeSlash,
+      fullShapeSlash,
+      simplification,
+    });
+    await takeEvidenceScreenshot(page, "m20-live-session-controls");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M20 display controls change rendering and record mobile-only side-lookup limits", async ({ page }) => {
+    const jyutpingShown = await typeCompositionAndWaitForCandidate(page, "nei", "你");
+    expect(jyutpingShown.candidates[0].rowText).toContain("nei5");
+
+    await clearComposition(page);
+    await setPreferenceRadio(page, /Hide/);
+    const jyutpingHidden = await typeCompositionAndWaitForCandidate(page, "nei", "你");
+    expect(jyutpingHidden.candidates[0].rowText).not.toContain("nei5");
+    expect(jyutpingHidden.candidates[0].text).toBe("你");
+
+    await clearComposition(page);
+    await setPreferenceRadio(page, /Always Show/);
+    const englishOnly = await typeCompositionAndWaitForCandidate(page, "nei", "你");
+    expect(englishOnly.candidates[0].rowText).toContain("you (singular)");
+
+    await clearComposition(page);
+    await page.getByLabel(/Hindi/).last().check({ force: true });
+    const hindiVisible = await typeCompositionAndWaitForCandidate(page, "nei", "你");
+    expect(hindiVisible.candidates[0].rowText).toContain("आप");
+
+    await expect(page.getByLabel(/Reverse code display/).last()).toBeVisible();
+    await expect(page.getByText(/Cangjie version/)).toBeVisible();
+    const mobileSchema = await readRepoText("third_party/typeduck-web/source/public/schema/jyut6ping3_mobile.schema.yaml");
+    expect(mobileSchema).not.toContain("cangjie");
+    expect(mobileSchema).not.toContain("show_full_code");
+    const visibleSchemaControls = await page.locator(
+      "[data-schema], [data-schema-selector], .schema-selector, select[name='schema']",
+    ).count();
+
+    await saveJsonEvidence("m20-display-controls-state.json", {
+      candidateJyutping: {
+        shown: jyutpingShown.candidates[0],
+        hidden: jyutpingHidden.candidates[0],
+      },
+      displayLanguages: {
+        englishOnly: englishOnly.candidates[0],
+        hindiVisible: hindiVisible.candidates[0],
+      },
+      reverseCodeAndCangjie: {
+        status: "N/A for the current browser surface",
+        activeBrowserSchema: "jyut6ping3_mobile",
+        reason: "The real browser schema does not declare a cangjie namespace or show_full_code patch; reverse/Cangjie rendering remains engine-covered but not browser-reachable here.",
+        visibleSchemaControls,
+      },
+    });
+    await takeEvidenceScreenshot(page, "m20-display-controls");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
   test("M16 combine candidates browser default matches M14", async ({ page }) => {

@@ -1,0 +1,33 @@
+{
+  "captured_at": "2026-06-21T21:55:00Z",
+  "app_url": "http://localhost:5173/web/",
+  "action": "Focused the textarea, sent keypresses h, a, i, and counted rendered candidate rows.",
+  "input": "hai",
+  "page_size_control": {
+    "label": "每頁候選詞數量 No. of Candidates Per Page6",
+    "min": "4",
+    "max": "10",
+    "value": "6"
+  },
+  "observed_visible_candidate_rows": 50,
+  "expected_visible_candidate_rows": "At most the configured page size. User request: slider should allow 3 through 10 and setting 9 should show 9 candidates.",
+  "first_16_rows": [
+    "1.hai6係ⓘ",
+    "2.hai6係ⓘ",
+    "3.hai2喺ⓘ",
+    "4.hai6系ⓘ",
+    "5.hai6繫ⓘ",
+    "6.hai4奚ⓘ",
+    "7.hai4兮ⓘ",
+    "8.hai4蹊ⓘ",
+    "9.hai1閪ⓘ",
+    "0.hai4谿ⓘ",
+    "1.hai5匸(rare 罕見)",
+    "2.hai4鼷(rare 罕見)",
+    "3.hau6後",
+    "4.ho2可",
+    "5.hoi1開",
+    "6.heoi3去"
+  ],
+  "triage_note": "The slider exists in Display controls but is hard to discover and currently has min=4. Despite value=6, the vertical candidate panel renders 50 rows for hai."
+}

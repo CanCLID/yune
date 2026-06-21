@@ -77,10 +77,12 @@ Before closing any row that changes TypeDuck-Web source:
 
 ## Running Issue Ledger
 
-No M25 feedback rows have been captured yet. When feedback arrives, append one row per distinct user-visible symptom using the next `M25-DOGFOOD-XX` id.
+M25 intake began on 2026-06-21 with two user-reported browser dogfooding regressions. Keep adding one row per distinct user-visible symptom using the next `M25-DOGFOOD-XX` id.
 
 | ID | Status | Classification | User-visible issue | First repro / evidence | Owning surfaces to inspect first | Close criteria |
 |---|---|---|---|---|---|---|
+| M25-DOGFOOD-01 | Open | Browser integration / performance | Refreshing `http://localhost:5173/web/` still leaves `載入中 Loading...` visible for too long; the user sees no practical improvement compared with the pre-M24 app and considers this unacceptable for real users. | Reproduced in the in-app browser on 2026-06-21: reload took `47.752s`; startup marker reported `totalMs=47331`, with `runtime:initialized` consuming nearly the entire delay after assets loaded. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-01/reload-startup-repro.json`. | `third_party/typeduck-web/source/src/worker.ts`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `third_party/typeduck-web/source/src/yune-integration/assets.ts`, `packages/yune-typeduck-runtime/src/typeduck.ts`, `packages/yune-typeduck-runtime/src/module.ts`, `packages/yune-typeduck-runtime/src/filesystem.ts`, `crates/yune-rime-api/src/typeduck_web.rs`, schema deploy/init paths under `crates/yune-rime-api/src/`. | Close only after a measured startup optimization lands. Add a Playwright startup budget test that records phase timings, preserve `startup:complete` diagnostics, and capture before/after evidence under this issue id. Target: interactive shell visible quickly and warm reload IME readiness materially below the current ~47s baseline; any chosen budget must be written into the test and justified by local evidence. |
+| M25-DOGFOOD-02 | Open | Browser integration / settings and candidate pagination | The page-size control is hard to find after M24 UI changes, its allowed range is wrong for the requested behavior, and changing it still does not cap the rendered candidate list. The user expects a visible slider/control allowing 3-10 candidates, where setting 9 shows exactly 9 visible candidates. | User screenshot showed `hai` rendering far more than 10 rows. Reproduced in the in-app browser on 2026-06-21: DOM had page-size slider `min=4`, `max=10`, `value=6`, but typing `hai` rendered `50` visible candidate rows. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-02/page-size-hai-repro.json`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-rime-api/src/context_api.rs`, `crates/yune-rime-api/tests/typeduck_web.rs`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when the UI exposes an obvious 3-10 page-size control and the rendered candidate panel never exceeds the configured page size. Add/extend native `typeduck_web` coverage for `menu/page_size` at 3 and 9, add Playwright coverage that sets 3/9/10 and types `hai`, verify page navigation still works, regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, and capture browser JSON/screenshot evidence under this issue id. |
 
 ## Intake Task
 
@@ -119,6 +121,73 @@ No M25 feedback rows have been captured yet. When feedback arrives, append one r
 - [ ] **Step 6: Write close criteria that can be verified**
 
   Each row needs concrete close criteria: owning test, evidence path, patch regeneration if applicable, and the focused gate to run.
+
+### Task 2: M25-DOGFOOD-01 Startup Performance Optimization
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/worker.ts`
+- Modify: `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
+- Modify if profiling points there: `packages/yune-typeduck-runtime/src/typeduck.ts`
+- Modify if profiling points there: `packages/yune-typeduck-runtime/src/filesystem.ts`
+- Modify if profiling points there: `crates/yune-rime-api/src/typeduck_web.rs`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-01/`
+
+- [ ] **Step 1: Add a failing startup budget characterization**
+
+  Add a Playwright test that reloads `/web/`, waits for `document.documentElement.dataset.yuneLoading === "false"`, captures the latest `startup:complete` diagnostic, and writes `m25-dogfooding/M25-DOGFOOD-01/startup-before.json`. The test should initially fail against the current ~47s local baseline with a deliberately strict but achievable warm-reload budget chosen during implementation.
+
+- [ ] **Step 2: Split `runtime:initialized` into smaller timed phases**
+
+  The current marker only says `runtime:initialized` takes ~47s. Add nested markers around `TypeDuckRuntime.init`, filesystem mount/sync, schema deploy, default schema selection, dictionary/table loading, and any persistence sync. The next evidence file must show which sub-phase owns the delay.
+
+- [ ] **Step 3: Implement the narrowest optimization proven by the trace**
+
+  Prefer optimizations that keep behavior unchanged: avoid redundant deploy/init on reload, cache stable prepared resources, skip unnecessary schema rebuilds when `assetVersion` is unchanged, or make the visible app shell interactive while IME initialization continues in the worker. Do not remove real schema assets or weaken M24 startup correctness checks just to reduce the number.
+
+- [ ] **Step 4: Prove the improvement**
+
+  Re-run the startup test, save `startup-after.json`, and compare `startup:complete.totalMs` and the user-visible loading duration against `reload-startup-repro.json`. The final row update must state the before/after timings and the remaining bottleneck if startup is still above the chosen budget.
+
+- [ ] **Step 5: Regenerate the TypeDuck-Web patch if source changed**
+
+  If any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from `source/`, and forward-check it on a clean source checkout.
+
+### Task 3: M25-DOGFOOD-02 Page-Size Slider And Candidate Cap
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/Preferences.tsx`
+- Modify if needed: `third_party/typeduck-web/source/src/Inputs.tsx`
+- Modify if needed: `third_party/typeduck-web/source/src/CandidatePanel.tsx`
+- Modify if needed: `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
+- Modify if needed: `crates/yune-rime-api/src/typeduck_web.rs`
+- Test: `crates/yune-rime-api/tests/typeduck_web.rs`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-02/`
+
+- [ ] **Step 1: Add failing native page-size coverage for 3 and 9**
+
+  Extend `typeduck_adapter_real_assets_page_size_customize_limits_context_page` or add a focused companion test that customizes `menu/page_size` to `3` and `9`, types a high-candidate input such as `hai`, and asserts `context.page_size` and `context.candidates.len()` match the requested cap.
+
+- [ ] **Step 2: Add failing browser coverage for the visible control**
+
+  Add a Playwright test that locates the page-size control by its Cantonese/English label, asserts the range is `3` through `10`, sets it to `9`, types `hai`, and asserts exactly 9 visible candidate rows. Repeat with `3` to protect the lower bound.
+
+- [ ] **Step 3: Fix discoverability and the allowed range**
+
+  Keep the control in the settings UI, but make it visibly discoverable in the candidate/display area and set its range to `3..10`. The visible value must update immediately when the slider changes.
+
+- [ ] **Step 4: Fix the runtime cap**
+
+  Trace the browser response after `Rime.customize({ pageSize })`. If native `typeduck_web` returns a paged `context.candidates` array but the browser renders all candidates, fix `CandidatePanel` or the adapter mapping. If native returns too many candidates for `menu/page_size`, fix `typeduck_web.rs` or `context_api.rs`. Do not hide extra rows with CSS while leaving selection/page navigation semantics wrong.
+
+- [ ] **Step 5: Prove paging and selection still work**
+
+  The browser test must verify first-page row count, next/previous page behavior, and digit selection after the cap is applied. Save JSON and screenshots under `M25-DOGFOOD-02`.
+
+- [ ] **Step 6: Regenerate the TypeDuck-Web patch if source changed**
+
+  If any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from `source/`, and forward-check it on a clean source checkout.
 
 ## Execution Order After Intake
 

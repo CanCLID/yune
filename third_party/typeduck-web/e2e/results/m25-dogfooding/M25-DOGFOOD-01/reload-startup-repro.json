@@ -1,0 +1,28 @@
+{
+  "captured_at": "2026-06-21T21:49:21Z",
+  "app_url": "http://localhost:5173/web/",
+  "action": "Reloaded the local app tab and waited for documentElement.dataset.yuneLoading to become false.",
+  "observed_total_load_ms": 47752,
+  "final_readiness": {
+    "elapsed_ms": 47729,
+    "yune_loading": "false",
+    "has_loading_indicator": false
+  },
+  "startup_marker": {
+    "phase": "startup:complete",
+    "total_ms": 47331,
+    "asset_version": "m24-dogfood-v3",
+    "schema": "jyut6ping3_mobile",
+    "wasm_glue": "yune-typeduck.js",
+    "wasm_binary": "yune-typeduck.wasm",
+    "markers": [
+      { "phase": "worker:start", "ms": 0 },
+      { "phase": "wasm-glue:loaded", "ms": 6 },
+      { "phase": "module:created", "ms": 49 },
+      { "phase": "persistence:mounted", "ms": 49 },
+      { "phase": "assets:loaded", "ms": 97 },
+      { "phase": "runtime:initialized", "ms": 47331 }
+    ]
+  },
+  "triage_note": "The long delay is concentrated in runtime initialization after assets are loaded, not in fetching text/binary assets."
+}

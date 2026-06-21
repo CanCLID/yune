@@ -589,9 +589,10 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
 
 - **M25 - TypeDuck-Web dogfooding round 2 (intake)** - captures the next manual
   play-testing batch for the internal `third_party/typeduck-web/` playground.
-  It starts as an active issue ledger rather than an implementation claim:
-  each feedback item should be classified before code changes, browser evidence
-  goes under `third_party/typeduck-web/e2e/results/m25-dogfooding/`, and any
+  The first open rows are `M25-DOGFOOD-01` for slow reload/startup
+  performance and `M25-DOGFOOD-02` for page-size slider discoverability plus
+  candidate pagination correctness. Browser evidence goes under
+  `third_party/typeduck-web/e2e/results/m25-dogfooding/`, and any
   engine-output/ranking change remains fixture-gated against TypeDuck `v1.1.2`
   or upstream `1.17.0`. Detail:
   [`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md).

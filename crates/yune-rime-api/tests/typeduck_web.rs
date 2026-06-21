@@ -511,8 +511,33 @@ fn typeduck_adapter_inspector_is_opt_in_and_preserves_classic_candidate_output()
         .expect("off candidates should be an array")
         .iter()
         .all(|candidate| candidate.get("quality").is_none()));
+    let off_full_bytes =
+        serde_json::to_vec(&inspector_off).expect("inspector-off response should serialize");
     let off_classic_bytes = serde_json::to_vec(&classic_candidate_projection(&inspector_off))
         .expect("classic projection should serialize");
+
+    unsafe { yune_typeduck_cleanup(state) };
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    assert_eq!(
+        unsafe { yune_typeduck_set_option(state, inspector.as_ptr(), FALSE) },
+        TRUE
+    );
+
+    let inspector_explicitly_off = process_input(state, "nei");
+    let explicitly_off_full_bytes = serde_json::to_vec(&inspector_explicitly_off)
+        .expect("explicitly disabled inspector response should serialize");
+    assert_eq!(
+        explicitly_off_full_bytes, off_full_bytes,
+        "explicitly disabled inspector must preserve the full classic response"
+    );
 
     unsafe { yune_typeduck_cleanup(state) };
 

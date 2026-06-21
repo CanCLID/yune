@@ -49,6 +49,7 @@ If a report is ambiguous, classify it as **Needs triage**, capture the screensho
 | M24-DOGFOOD-03 | Open | UI polish / candidate layout | Compound-candidate dictionary glosses render horizontally next to the candidate text, making `而家要思考(compound 詞組) 而家 (now) 要 (want; need) 思考 (think; ponder)` read like one confusing inline candidate. | Type `jigaajiusihaa`; screenshot shows the first highlighted candidate widened across the horizontal row. | `third_party/typeduck-web/source/src/Candidate.tsx`, `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/DictionaryPanel.tsx`, `third_party/typeduck-web/source/src/index.css` | Main candidate row stays compact; detailed English/gloss content moves below the candidate or into the dictionary/detail panel; before/after screenshots prove no horizontal overflow or misleading inline gloss. |
 | M24-DOGFOOD-04 | Open | Engine correctness / oracle recheck | For `jigaajiusihaa`, after the first compound candidate the next candidates are single characters, while the user-observed live TypeDuck behavior appears to prefer word entries such as `而家`, `依家`, `宜家` before single characters. | User compared the internal playground with `https://www.typeduck.hk/web/`; live product appears to show word candidates in positions 2-3. | `scripts/capture-typeduck-jyutping.ps1`, `crates/yune-core/tests/cantonese_parity.rs`, `crates/yune-core/src/translator/mod.rs`, `crates/yune-core/src/dictionary/`, `crates/yune-rime-api/tests/typeduck_web.rs`, M21 source-aware evidence under `third_party/typeduck-web/e2e/results/m21-product-comparison/` | A pinned TypeDuck `v1.1.2` fixture or a documented version-skew decision determines the expected row order; Yune either matches the fixture with active tests or records the live-site behavior as non-oracle product skew. |
 | M24-DOGFOOD-05 | Open | UI polish / settings localization and help text | Settings and developer controls mix Cantonese/English and many labels are English-only, so a new developer cannot tell what active engine controls or live session controls do. Cantonese should come first for all labels; active engine and live session toggles need short description text. Display controls need Cantonese-first labels but no extra descriptions. | Browser comment on `/web/` settings area: selected controls include `Active engine controls`, `Live session controls`, `Display controls`, `Yune inspector`, `Schema`, and English-only toggle labels such as `ASCII mode`, `Full shape`, `Prediction threshold`, and `Dictionary exclude`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/Toolbar.tsx`, `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/YuneInspector.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | All visible settings/developer labels use Cantonese-first bilingual text; active-engine and live-session toggles show concise helper copy; display controls remain compact without helper paragraphs; before/after screenshots prove the settings page stays readable at desktop and narrow widths. |
+| M24-DOGFOOD-06 | Open | UI polish / display-language control semantics | The display-language fieldset shows both radio buttons and checkboxes, making it unclear whether the radio or checklist controls dictionary/comment language display. The visible UI should be a checklist only. | Browser comment on `/web/` display controls: `Display languages` shows five radio buttons on the left, five checkboxes on the right, and an arrow row for `主要語言 Main Language`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/CandidateInfo.ts`, `third_party/typeduck-web/source/src/DictionaryPanel.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | Display-language settings expose only checkboxes; the `主要語言 Main Language` arrow/radio concept is gone from the visible UI; at least one language remains selected; dictionary/detail output still has a deterministic primary definition when multiple languages are checked. |
 
 ---
 
@@ -542,7 +543,129 @@ await expect(page.getByText("直接輸入英文字母，暫停中文組字。"))
 
 Save after screenshots under `third_party/typeduck-web/e2e/results/m24-dogfooding/M24-DOGFOOD-05/`, including a narrow viewport. Verify that the new helper text does not overlap switches, sliders, or display-control groups.
 
-## Task 7: M24 Regression Sweep And Closeout Discipline
+## Task 7: M24-DOGFOOD-06 Simplify Display-Language Selection
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/Preferences.tsx`
+- Modify: `third_party/typeduck-web/source/src/Inputs.tsx`
+- Inspect first, then modify only if primary-definition behavior becomes unclear after removing visible radios: `third_party/typeduck-web/source/src/CandidateInfo.ts`
+- Inspect first, then modify only if dictionary-panel primary-definition behavior becomes unclear after removing visible radios: `third_party/typeduck-web/source/src/DictionaryPanel.tsx`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+
+- [ ] **Step 1: Capture the current confusing control state**
+
+Save the current display-language fieldset before changing behavior:
+
+```ts
+test("M24 display language selector uses one clear control type", async ({ page }) => {
+  await page.goto(APP_URL, { timeout: TIMEOUT_MS, waitUntil: "domcontentloaded" });
+  await waitForAppReady(page);
+  await takeM24Screenshot(page, "M24-DOGFOOD-06", "display-languages-before");
+
+  const fieldset = page.locator("fieldset").filter({ hasText: "Display languages" });
+  await expect(fieldset.getByRole("radio")).toHaveCount(5);
+  await expect(fieldset.getByRole("checkbox")).toHaveCount(5);
+});
+```
+
+Expected before the fix: the test documents that both radio and checkbox controls are visible.
+
+- [ ] **Step 2: Replace the visible radio-plus-checkbox component with a checklist**
+
+Remove `RadioCheckbox` from the display-language fieldset. Add a checkbox-only shared input if one does not already exist:
+
+```tsx
+export function Checkbox({ label, checked, setChecked }: CheckboxProps) {
+  return <label className="cursor-pointer label gap-2">
+    <span className="text-lg text-base-content-200 flex-1">{label}</span>
+    <input
+      type="checkbox"
+      className="checkbox checkbox-primary"
+      {...NO_AUTO_FILL}
+      checked={checked}
+      onChange={event => setChecked(event.target.checked)} />
+  </label>;
+}
+```
+
+Use that checkbox-only control for each `LANGUAGE_LABELS` entry:
+
+```tsx
+<fieldset className="border border-base-300 rounded px-3">
+  <legend className="text-xl text-base-content mb-1 px-2">顯示語言 Display Languages</legend>
+  {(Object.entries(LANGUAGE_LABELS) as [Language, string][]).map(([language, label]) =>
+    <Checkbox
+      key={language}
+      label={label}
+      checked={prefs.displayLanguages.has(language)}
+      setChecked={checked => toggleDisplayLanguage(language, checked)} />
+  )}
+</fieldset>
+```
+
+If `RadioCheckbox` is no longer used anywhere after this change, delete it from `Inputs.tsx` instead of leaving dead UI code.
+
+- [ ] **Step 3: Keep at least one display language selected**
+
+Update `toggleDisplayLanguage` so the last checked language cannot be removed:
+
+```ts
+function toggleDisplayLanguage(language: Language, checked: boolean) {
+  const newDisplayLanguages = new Set(prefs.displayLanguages);
+  if (checked) {
+    newDisplayLanguages.add(language);
+  }
+  else if (newDisplayLanguages.size > 1) {
+    newDisplayLanguages.delete(language);
+  }
+  prefs.setDisplayLanguages(newDisplayLanguages);
+}
+```
+
+This keeps the checklist honest: it chooses which dictionary/comment languages are displayed, and it never leaves the UI in an empty-language state.
+
+- [ ] **Step 4: Preserve deterministic primary-definition behavior internally**
+
+The current dictionary panel uses `prefs.mainLanguage` to choose the primary definition line. After removing the visible radio controls, keep that behavior deterministic without exposing a second control:
+
+```ts
+const orderedDisplayLanguages = (Object.keys(LANGUAGE_LABELS) as Language[])
+  .filter(language => newDisplayLanguages.has(language));
+
+if (!newDisplayLanguages.has(prefs.mainLanguage) && orderedDisplayLanguages[0]) {
+  prefs.setMainLanguage(orderedDisplayLanguages[0]);
+}
+```
+
+Checking a new language should not automatically steal primary status. Unchecking the current primary language should move primary status to the first still-checked language in the stable `LANGUAGE_LABELS` order. If the final implementation derives primary language instead of storing it, update `CandidateInfo.ts` and `DictionaryPanel.tsx` together so both surfaces use the same rule.
+
+- [ ] **Step 5: Add browser assertions for the simplified control**
+
+Replace the characterization assertions with the expected final behavior:
+
+```ts
+const fieldset = page.locator("fieldset").filter({ hasText: "顯示語言 Display Languages" });
+await expect(fieldset.getByRole("radio")).toHaveCount(0);
+await expect(fieldset.getByRole("checkbox")).toHaveCount(5);
+await expect(fieldset).not.toContainText("主要語言 Main Language");
+```
+
+Then verify the checklist actually controls visible dictionary/comment languages:
+
+```ts
+await fieldset.getByLabel("印地語 Hindi").check();
+await fieldset.getByLabel("英語 English").uncheck();
+await captureM24Phrase(page, "M24-DOGFOOD-06", "jigaajiusihaa", "而家要思考");
+await takeM24Screenshot(page, "M24-DOGFOOD-06", "display-languages-after-hindi");
+```
+
+This checks Hindi first, then unchecks English, so the at-least-one-language guard remains covered.
+
+- [ ] **Step 6: Verify layout after the simplification**
+
+Save after screenshots under `third_party/typeduck-web/e2e/results/m24-dogfooding/M24-DOGFOOD-06/` for desktop and narrow viewports. The fieldset should show one checkbox column/list only, with no radio column, no arrow row, and no ambiguous "main language" hint.
+
+## Task 8: M24 Regression Sweep And Closeout Discipline
 
 **Files:**
 - Modify: this plan as issue rows close

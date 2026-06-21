@@ -70,7 +70,7 @@ for its own sake. *(Ratified as a standing principle and `D-25` in
 ## Completed
 
 ### M0–M4: Foundation
-- Rust workspace (`yune-core`, `yune-schema`, `yune-rime-api`, `yune-cli`); core session/candidate types; CLI smoke test.
+- Rust workspace (`yune-core`, `yune-rime-api`, `yune-cli`; the early orphaned `yune-schema` crate was removed in M23); core session/candidate types; CLI smoke test.
 - Deterministic compatibility harness: recorded fixtures, JSON output for context/candidates/commit/status, workspace tests.
 - RIME-style schema subset: processors, segmentors, translators, filters as named components; config patch/include behavior.
 - Table dictionary prototype with deterministic lookup and ranking.
@@ -373,6 +373,26 @@ Detail: [`plans/m21-plan-typeduck-web-product-comparison.md`](./plans/m21-plan-t
 and
 [`third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0849Z-yune-cdb7bd52-product-manual/gap-ledger.md`](../third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0849Z-yune-cdb7bd52-product-manual/gap-ledger.md).
 
+### M23: Architecture hardening
+
+M23 closed the bounded architecture-hardening register without doing the larger
+trigger-gated processor extraction. The TypeDuck-calibrated `21.0` sentence word
+penalty is now a typed translator setting defaulting to upstream-neutral behavior
+and installed only for the `jyut6ping3` TypeDuck profile; default upstream
+schemas such as `luna_pinyin` no longer inherit it. The correction constants were
+audited and remain unreachable from default upstream schemas because correction
+is opt-in and dynamic correction lookup is already profile-gated.
+
+The workspace lint policy now applies to the unsafe-free core crate, while
+`yune-rime-api` and the ABI-driving `yune-cli` have explicit non-inheriting FFI
+lint exceptions. M23 also removed the orphaned `yune-schema` crate instead of
+parking it; production schema parsing/install remains in `yune-rime-api`.
+Finally, the inline core facade tests and oversized ABI test modules were split
+into behavior-owned include files with unchanged test names.
+
+The completed plan is archived at
+[`plans/archive/m23-plan-architecture-hardening.md`](./plans/archive/m23-plan-architecture-hardening.md).
+
 ---
 
 ## Parked
@@ -403,20 +423,19 @@ In priority order:
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 2. **Keep M9/M13/M16/M20 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, default-off M13 AI scenarios, and M20 showcase-control honesty checks.
 3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
-4. **Do the bounded architecture-hardening milestone (M23) next, before broad product/native expansion.** M21 did not require a rewrite, but the finishable debt is now scoped as **M23** ([`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md)): gate the `TYPEDUCK_*` constants out of the shared default path (before M19), enable the workspace lint policy per crate (before M18 writer code), resolve `yune-schema`, and split the oversized test modules. The larger core-owned processor/native-engine API extraction stays **trigger-gated** (D-28) until a real non-ABI consumer needs it — it is not part of M23 and is not scheduled speculatively.
-5. **Advance Track 2 (M17-M19) opportunistically.** The upstream language model, prism generation, deployment-write, and breadth schemas now follow the upstream-first scope ledger after the M14-M16 TypeDuck-Web closeout and M20 browser playground work.
-6. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
-7. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
-8. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
-9. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
+4. **Advance Track 2 (M17-M19) opportunistically.** The upstream language model, prism generation, deployment-write, and breadth schemas now follow the upstream-first scope ledger after the M14-M16 TypeDuck-Web closeout, M20 browser playground work, and M23 hardening.
+5. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
+6. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
+7. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
+8. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
 
 ---
 
 ## Planned / Next up
 
 Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
-list. **TypeDuck `jyut6ping3` reconciliation (M14–M16) and the M20 browser
-playground are complete** (see *Completed* above). The remaining engine-depth arc
+list. **TypeDuck `jyut6ping3` reconciliation (M14–M16), the M20 browser
+playground, and M23 architecture hardening are complete** (see *Completed* above). The remaining engine-depth arc
 is **Track 2 (broad upstream depth):**
 
 ### Execution order — what to do next
@@ -427,27 +446,22 @@ are reference, not order. The ordering follows the dependency map from the
 exist yet, so M19 breadth / M22 multi-schema otherwise build on a precompiled-
 asset crutch — see M18 and M22 bullets), **M17 is the heaviest and least
 product-critical slice** (not required by any current named target), and the
-TypeDuck profile-tuning leak must be gated **before** M19 adds schemas through
+TypeDuck profile-tuning leak was gated in M23 before M19 adds schemas through
 the same shared sentence path.
 
-1. **M23 — architecture hardening (bounded).** Gate the `TYPEDUCK_*` constants
-   out of the shared default path (before M19), enable the workspace lint policy
-   per crate (before M18 writer code), resolve `yune-schema`, split the oversized
-   test modules. Small and closeable. Plan:
-   [`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md).
-2. **M18 — deployment & processor depth (the unblocker).** Dictionary-writer
+1. **M18 — deployment & processor depth (the unblocker).** Dictionary-writer
    bytes (`build_table_bin` / `build_prism_bin` / `build_reverse_bin` + a pure-Rust
    darts double array + a rebuild executor) and the deferred `ascii_punct`
    processor toggle. Everything breadth / multi-schema / product sits on this.
-3. **M22 read-only debug inspector bucket (pull forward, parallelizable).** This
+2. **M22 read-only debug inspector bucket (pull forward, parallelizable).** This
    bucket of M22 has no M18 dependency and makes verifying every later milestone
    far easier, so do it early. M22's multi-schema bucket waits for M18 + M19.
-4. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
+3. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
    the real `cangjie5` / `luna_pinyin` artifacts M22 multi-schema needs, and names
    the TypeDuck-profile ABI surface the parked M10 is waiting on.
-5. **M22 multi-schema bucket.** Multi-schema playground on real M18 + M19 output,
+4. **M22 multi-schema bucket.** Multi-schema playground on real M18 + M19 output,
    not a precompiled workaround.
-6. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
+5. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
    not required by any current named target. Do it when a frontend actually ships
    `luna_pinyin` sentence input to users.
 
@@ -463,27 +477,6 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
 > The bullets below are reference detail. The **Execution order** above is the
 > authoritative sequence (note: M18 precedes M17, despite list position here).
 
-- **M23 — Architecture hardening (bounded; do first)** —
-  make the known structural debt reviewable
-  before Yune depends on more non-librime surfaces. The current state is honest but
-  not ideal: the RIME processor pipeline lives in `yune-rime-api`, so the full input
-  path is easiest to drive through the librime-shaped C ABI; `yune-schema` is a
-  workspace crate but not the production schema-install source of truth; workspace
-  lint policy is declared but not enforced by member crates; the ABI facade still
-  carries production glue; and large single-file test modules plus core inline
-  facade tests make behavior ownership harder to scan. Acceptance for this
-  hardening track: document the intended native-engine API boundary; move processor
-  semantics toward `yune-core` when a non-ABI frontend/iOS/native product path
-  actually needs that entry point; either promote `yune-schema` into production
-  schema parsing or mark it parked/delete it; enable `[lints] workspace = true`
-  where appropriate with an explicit FFI exception strategy for `yune-rime-api`;
-  split large ABI tests and core inline facade tests only along behavior ownership
-  lines; keep TypeDuck-profile tuning behind explicit profile/config gates; and
-  keep each extraction behavior-preserving with existing oracle/browser gates
-  unchanged. Bounded, finishable scope and acceptance gates:
-  [`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md).
-  (The core-owned processor/native-engine API extraction is **not** in M23 — it
-  is the trigger-gated D-28 item.)
 - **M17 — Upstream sentence / language model (poet)** — implements the upstream
   `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE
   output matches the captured oracle, un-ignoring the two blocked stubs in

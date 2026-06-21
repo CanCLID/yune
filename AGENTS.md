@@ -1,6 +1,6 @@
 # Repository Guide
 
-**Yune** is a Rust input-method engine that uses **librime as a compatibility oracle** while building toward an AI-native input engine librime cannot provide. It has a deterministic core (`yune-core`), a librime-shaped C ABI (`yune-rime-api`), a typed schema-subset parser (`yune-schema`), a CLI surrogate (`yune-cli`), and a TypeScript browser runtime (`packages/yune-typeduck-runtime`).
+**Yune** is a Rust input-method engine that uses **librime as a compatibility oracle** while building toward an AI-native input engine librime cannot provide. It has a deterministic core (`yune-core`), a librime-shaped C ABI (`yune-rime-api`), a CLI surrogate (`yune-cli`), and a TypeScript browser runtime (`packages/yune-typeduck-runtime`).
 
 **Core value:** existing RIME schemas and frontends should behave predictably through Yune, with every compatibility difference measured against librime before it is accepted.
 

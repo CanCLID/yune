@@ -47,13 +47,12 @@ external consumes the engine through that ABI.
             | config, deployment, schema install, processors        |
             +-----------------------+-------------------------------+
                                     |
-                  +-----------------+-----------------+
-                  v                                   v
-       +----------------------------+      +------------------------+
-       | Core input engine          |      | Schema model subset    |
-       | crates/yune-core/src/      |      | crates/yune-schema/    |
-       | translators, filters,      |      | parse RIME YAML shape  |
-       | rankers, dictionaries      |      +------------------------+
+                  v
+       +----------------------------+
+       | Core input engine          |
+       | crates/yune-core/src/      |
+       | translators, filters,      |
+       | rankers, dictionaries      |
        +----------------------------+
 ```
 
@@ -147,14 +146,10 @@ librime-shaped `extern "C"` ABI surface.
 **Rust workspace crates** (`Cargo.toml`, resolver 2, BSD-3-Clause):
 - `yune-core` — input engine: session state, translators, filters, candidate-ranking
   hook, key handling, punctuation, spelling algebra, dictionary parsing. Dep: `regex`.
-- `yune-schema` — minimal standalone RIME schema-subset parser. Deps: `serde`, `serde_yaml`.
-  Current caveat: no workspace crate depends on it; production schema parsing and
-  install behavior live in `yune-rime-api` (`config.rs`, `schema_install.rs`,
-  `schema_selection.rs`). Either promote it into the production schema path or
-  mark/delete it before treating it as the canonical schema layer.
 - `yune-rime-api` — RIME-style C ABI shim, session registry, config/deployment APIs,
-  levers, function tables, the `yune_typeduck_*` WASM adapter. Deps: `libc`, `regex`,
-  `serde_json`, `serde_yaml`, `yune-core`; dev-dep `libloading`.
+  schema parsing/install, levers, function tables, the `yune_typeduck_*` WASM
+  adapter. Deps: `libc`, `regex`, `serde_json`, `serde_yaml`, `yune-core`;
+  dev-dep `libloading`.
   **`crate-type = ["rlib", "cdylib"]`** — the rlib links into tests/`yune-cli`; the
   cdylib is the artifact loaded by native frontends (as `rime.dll`) and compiled to WASM.
   The browser-loadable Emscripten module is linked through the tiny
@@ -270,7 +265,6 @@ yune/
 |   |       |-- processors/            # ascii_composer, chord_composer, editor, key_binder,
 |   |       |                          #   navigator, punctuation, recognizer, selector, shape, speller
 |   |       `-- tests/                 # Focused ABI/unit compatibility modules
-|   |-- yune-schema/src/lib.rs         # Standalone typed RIME schema-subset parser
 |   `-- yune-cli/src/                  # CLI surrogate frontend
 |       |-- main.rs / args.rs / sample_core.rs / fixture.rs / transcript.rs / render.rs
 |       `-- rime_frontend.rs           # RIME ABI-backed frontend surrogate
@@ -336,7 +330,7 @@ yune/
 
 **Error handling:**
 - Library parsers return custom error types implementing `Display`/`Error`
-  (`KeySequenceParseError`, `SchemaParseError`, `TableDictionaryParseError`,
+  (`KeySequenceParseError`, `TableDictionaryParseError`,
   `TableEncoderFormulaError`). CLI `run` returns `Result<(), String>` → stderr +
   `ExitCode::FAILURE`.
 - C ABI functions return librime-shaped `Bool`/null instead of panicking; validate null
@@ -363,14 +357,13 @@ commit CRLF into normalized files**, or `.sh` scripts and byte-exact fixtures br
 **Formatting & lint gate:** `cargo fmt` (no repo `rustfmt.toml`). Quality gate:
 `cargo clippy --workspace --all-targets -- -D warnings`. Root `Cargo.toml`
 `[workspace.lints]` declares `rust.unsafe_code = "forbid"` and clippy
-`all`/`pedantic = "warn"` — but **member crates do not opt in** with
-`[lints] workspace = true`, so the forbid does not currently block the `unsafe extern "C"`
-ABI code (this is tech debt — see [§9](#9-key-risks--concerns-current); the paydown is
-M23 WI-2, [`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md).
-Note the workspace `forbid(unsafe_code)` cannot be locally overridden, so `yune-rime-api`
-needs its own non-inheriting `[lints]` table as the documented FFI exception). Public pure
-accessors/constructors commonly carry `#[must_use]`. Imports group as std → external →
-local (`crate::`/`super::`); no custom path aliases.
+`all`/`pedantic = "warn"` with explicit existing-debt exceptions. Unsafe-free
+crates inherit the workspace table (`yune-core`), so `unsafe` fails there.
+ABI/FFI-facing crates (`yune-rime-api` and the ABI-driving `yune-cli`) use
+explicit non-inheriting lint tables with `unsafe_code = "allow"` because the
+workspace `forbid(unsafe_code)` cannot be locally overridden. Public pure
+accessors/constructors commonly carry `#[must_use]`. Imports group as std →
+external → local (`crate::`/`super::`); no custom path aliases.
 
 ---
 
@@ -612,19 +605,17 @@ pronunciation are documented browser/userdb inspection limits; do not turn those
 into unqualified browser claims without a new TypeDuck-Web UI or native inspection
 surface.
 
-**Profile isolation is a live guardrail, especially during M21.** TypeDuck
+**Profile isolation is a live guardrail.** TypeDuck
 `v1.1.2` heuristics may live in shared core types only when installed or
 configured by a named TypeDuck profile, or when separate upstream oracle evidence
 proves the same behavior is global. A `TYPEDUCK_*` constant in shared translator
 code that affects default upstream schemas is a red flag: thread it through
 typed translator config / schema-profile install wiring, or rename it neutrally
-only after proving it is not profile-specific. **Known open instance:** the
-M21-GAP-01 sentence word penalty (`TYPEDUCK_SENTENCE_WORD_PENALTY = 21.0`,
-`translator/mod.rs`) is currently shared and unconditional, so default
-`luna_pinyin` inherits it whenever `enable_sentence` composes a candidate; gating
-it is **M23 WI-1**
-([`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md)),
-and it must land before M19 adds schemas through the same path.
+only after proving it is not profile-specific. M23 applied this to the
+M21-GAP-01 sentence word penalty: `TYPEDUCK_SENTENCE_WORD_PENALTY = 21.0` is now
+threaded through typed translator config and installed only for the
+`jyut6ping3` TypeDuck profile, so default upstream schemas such as
+`luna_pinyin` do not inherit it.
 
 **Process-global single RIME service.** Runtime paths, sessions, module pointers, notifications,
 state-label cache, API tables, and switcher registries are process-wide singletons (e.g.
@@ -643,15 +634,13 @@ extraction trigger is a real non-ABI consumer; the extraction rule is
 behavior-preserving movement of processor semantics toward `yune-core`, not a
 rewrite or a weakening of the C ABI gates.
 
-**Other notable items (condensed):** workspace lints are declared but not enabled by member
-crates (command-line discipline only); `yune-schema` is present but not on the
-production schema-install path; `yune-core/src/lib.rs` is mostly inline
-`facade_tests` that should move under behavior-owned tests, while
-`yune-rime-api/src/lib.rs` still owns production glue and large single-file ABI
-test modules remain split candidates (the lint opt-in, the `yune-schema`
-promote-or-delete call, and the test-module splits are the bounded **M23**
-paydown, [`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md));
-production session locks panic on poison (a scaling limit); dictionary lookup is
+**Other notable items (condensed):** workspace lints are inherited by unsafe-free
+crates, while ABI/FFI crates keep explicit local lint tables documenting their
+unsafe exceptions; the orphaned `yune-schema` crate was removed in M23, leaving
+production schema parsing/install owned by `yune-rime-api`; the inline core
+facade tests and oversized ABI test modules were split into behavior-owned files
+in M23; `yune-rime-api/src/lib.rs` still owns production glue; production session
+locks panic on poison (a scaling limit); dictionary lookup is
 linear and clones large snapshots (performance); the userdb store is file-backed
 (not LevelDB); `SimplifierFilter` is an OpenCC approximation. No production
 `TODO`/`FIXME` markers exist — use `docs/roadmap.md` and this doc as the active
@@ -676,4 +665,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-20 - M13 TypeDuck-Web AI exposure complete; M14 TypeDuck `jyut6ping3` v1.1.2 capture complete; M15 dictionary-driven engine parity complete; M16 TypeDuck-Web browser validation complete with explicit browser/userdb limits; profile-specific TypeDuck tuning must stay gated by named profiles; finishable architecture-hardening debt (lints, `yune-schema`, test splits, gating the shared `21.0` constant) is scoped as M23 (`plans/m23-plan-architecture-hardening.md`); default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*
+*Last reviewed: 2026-06-21 - M23 architecture hardening complete: profile-specific TypeDuck tuning stays gated by named profiles, the `21.0` sentence penalty is no longer shared by default upstream schemas, lint inheritance/FFI exceptions are explicit, `yune-schema` was removed, and oversized test modules were split. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*

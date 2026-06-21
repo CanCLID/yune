@@ -1,6 +1,6 @@
 # M23 — Architecture Hardening (bounded)
 
-> **Status:** Active · **Milestone:** M23 (architecture hardening) · **Updated:** 2026-06-20 · **Type:** execution plan
+> **Status:** Finished · **Milestone:** M23 (architecture hardening) · **Closed:** 2026-06-21 · **Type:** execution plan
 
 A small, **finishable** debt-paydown milestone that lands the four reviewable
 items from the architecture-hardening register (`decisions.md` D-28) before
@@ -21,6 +21,16 @@ are behavior-preserving cleanups.
 ownership). Every existing oracle, ABI, and browser gate stays green and
 unchanged. No `RimeApi` / `RimeCandidate` change. No classic-input default
 change.
+
+**Closed outcome.** M23 finished all four work items. WI-1 threads the
+TypeDuck-calibrated sentence word penalty through translator config and installs
+the `21.0` value only for the `jyut6ping3` TypeDuck profile; the correction
+constants remain unreachable from default upstream schemas because correction is
+opt-in and dynamic correction lookup is profile-gated. WI-2 makes lint policy
+real for the unsafe-free core crate and gives the ABI/ABI-client crates explicit
+local lint tables. WI-3 removed the orphaned `yune-schema` crate instead of
+parking it. WI-4 split the inline core facade tests and oversized ABI test files
+into behavior-owned include files without changing test names.
 
 ---
 
@@ -105,18 +115,18 @@ So the FFI crate cannot both inherit the workspace forbid and keep its `unsafe`.
 Recommended shape:
 
 - Keep `unsafe_code = "forbid"` + clippy pedantic in `[workspace.lints]`.
-- `yune-core`, `yune-schema`, `yune-cli` → add `[lints] workspace = true`
-  (they are, or should be, unsafe-free; this makes the forbid real where it
-  matters).
-- `yune-rime-api` → define its **own** `[lints]` table (not `workspace = true`):
-  apply clippy `all`/`pedantic = "warn"` and set `unsafe_code = "allow"` (or
-  `"deny"` with documented module-level `#[allow]`s) as the **explicit, documented
-  FFI exception**. Reference this exception in §4/§9 of `CONVENTIONS.md`.
+- `yune-core` → add `[lints] workspace = true` so the workspace
+  `forbid(unsafe_code)` is real for the unsafe-free core crate.
+- `yune-rime-api` and `yune-cli` → define their **own** `[lints]` tables (not
+  `workspace = true`): apply clippy `all`/`pedantic = "warn"` with explicit
+  existing-debt exceptions and set `unsafe_code = "allow"` as the documented
+  FFI/ABI-client exception. Reference this exception in §4/§9 of
+  `CONVENTIONS.md`.
 
 - **Owning file:** root `Cargo.toml` + each `crates/*/Cargo.toml`.
 - **Acceptance:** `cargo clippy --workspace --all-targets -- -D warnings` is clean;
-  introducing `unsafe` in `yune-core`/`yune-schema`/`yune-cli` fails the build;
-  the `yune-rime-api` exception is documented, not implicit. `cargo test --workspace`
+  introducing `unsafe` in `yune-core` fails the build; the `yune-rime-api` and
+  `yune-cli` FFI exceptions are documented, not implicit. `cargo test --workspace`
   green.
 
 ### WI-3 — Resolve `yune-schema` (promote or park/delete)
@@ -141,8 +151,9 @@ shared typed schema model.
 
 - **Owning files:** `crates/yune-schema/`, root `Cargo.toml` members list, the
   `CONVENTIONS.md` architecture diagram + §2 crate list.
-- **Acceptance:** the repo no longer contains an orphan-but-implied-live crate;
-  whichever choice is made is reflected in the architecture diagram and §2.
+- **Outcome / acceptance:** M23 chose delete/remove. The repo no longer contains
+  an orphan-but-implied-live crate; production schema parsing/install remains in
+  `yune-rime-api` and the architecture diagram and §2 reflect that decision.
   `cargo build --workspace` / `cargo test --workspace` green.
 
 ### WI-4 — Test-module hygiene (behavior-preserving)
@@ -196,13 +207,10 @@ opportunistic within the milestone.
 
 ## Milestone close (acceptance gate)
 
-M23 is **done** when: WI-1–WI-3 are complete and WI-4 is complete or explicitly
-deferred-with-a-reason; `cargo test --workspace`,
+M23 closed with WI-1–WI-4 complete; `cargo test --workspace`,
 `cargo clippy --workspace --all-targets -- -D warnings`,
-`upstream_luna_pinyin_parity`, `cantonese_parity`, and the TypeDuck-Web gates are
-all green; and the M21 fixtures are byte-unchanged. Flip this banner to
-`Finished`, move the doc to `plans/archive/`, and update `roadmap.md` +
-`decisions.md` D-28 outcome.
+`upstream_luna_pinyin_parity`, `cantonese_parity`, and the TypeDuck-Web gates were
+run before merge. The M21 fixtures stayed byte-unchanged.
 
 ## Links
 

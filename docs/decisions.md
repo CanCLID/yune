@@ -720,38 +720,26 @@ is the default core reference, TypeDuck v1.1.2 is a named compatibility profile,
 and AI stays a separate default-off layer. The structural debt is narrower: the
 full production key path is currently easiest to drive through the
 librime-shaped ABI because the RIME processor pipeline lives in
-`yune-rime-api/src/processors/` and falls through to `yune-core::Engine`, while
-`crates/yune-schema` exists but is not the production schema-install source of
-truth. This is acceptable for current compatibility and TypeDuck-Web WASM work,
-but it must be visible before broad Track 2, M22 multi-schema, TypeDuck-Windows,
-iOS, or Yune-native frontend work deepens the dependency. M21 scoped most
-TypeDuck-calibrated behavior correctly — the prediction-count limit (M21-GAP-02)
-and the dynamic-correction lookup are installed behind the named
-`is_typeduck_jyut6ping3_profile()` predicate — but the 2026-06-20 review found
-the M21-GAP-01 sentence word penalty (`TYPEDUCK_SENTENCE_WORD_PENALTY = 21.0` in
-`yune-core/src/translator/mod.rs`) landed as a **shared, unconditional** constant
-that default upstream schemas (e.g. `luna_pinyin`) inherit whenever
-`enable_sentence` composes a candidate. The standing rule holds: TypeDuck-
-calibrated constants must not affect default upstream core behavior unless
-installed through an explicit profile predicate / typed translator config, or
-renamed with upstream-oracle evidence that the behavior is global. The finishable
-paydown is now the bounded **M23 — Architecture Hardening** milestone
-([`plans/m23-plan-architecture-hardening.md`](./plans/m23-plan-architecture-hardening.md)),
-which must land before M18/M19 deepen the dependency: (1) gate the `TYPEDUCK_*`
-constants out of the shared path (M23 WI-1, before M19); (2) enable or explicitly
-scope the workspace lint policy per crate — noting the workspace
-`forbid(unsafe_code)` cannot be locally overridden, so `yune-rime-api` needs its
-own non-inheriting `[lints]` table (WI-2, before M18 writer code); (3) decide
-whether `yune-schema` is promoted into the production schema path or
-parked/deleted (WI-3); and (4) split large ABI test modules and core inline
-facade tests only along behavior ownership lines (WI-4). The larger **core/ABI
-processor extraction stays trigger-gated** and is *not* part of M23: move
-processor semantics toward a core-owned Rust API only when a real non-ABI
-consumer needs the full input pipeline. Every change must be behavior-preserving
-and keep existing oracle, ABI, and browser gates unchanged.
-*Outcome: Active architectural debt register; the finishable paydown is scoped as
-M23, while the processor extraction remains trigger-gated future work rather than
-a retroactive rewrite trigger.*
+`yune-rime-api/src/processors/` and falls through to `yune-core::Engine`. M23
+closed the finishable debt around that boundary without doing the larger
+processor extraction: TypeDuck-calibrated translator tuning is profile/config
+gated, the workspace lint policy is real for unsafe-free crates with explicit
+FFI/ABI-client lint exceptions, the orphaned `yune-schema` crate was removed
+instead of parked, and the oversized test modules were split along behavior
+ownership lines.
+
+The standing rule remains: TypeDuck-calibrated constants must not affect default
+upstream core behavior unless installed through an explicit profile predicate /
+typed translator config, or renamed with upstream-oracle evidence that the
+behavior is global. The larger **core/ABI processor extraction stays
+trigger-gated**: move processor semantics toward a core-owned Rust API only when
+a real non-ABI consumer needs the full input pipeline. Every such extraction must
+be behavior-preserving and keep existing oracle, ABI, and browser gates unchanged.
+*Outcome: M23 finished the bounded architecture-hardening paydown; the completed
+plan is archived at
+[`plans/archive/m23-plan-architecture-hardening.md`](./plans/archive/m23-plan-architecture-hardening.md).
+The processor extraction remains trigger-gated future work rather than a
+retroactive rewrite trigger.*
 
 ### Initialization notes (process decisions)
 
@@ -786,4 +774,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-20 - D-28 records the architecture-hardening debt register, now scoped as the bounded M23 milestone (`plans/m23-plan-architecture-hardening.md`); D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending a named profile surface.*
+*Last updated: 2026-06-21 - D-28 records M23 architecture hardening as finished (`plans/archive/m23-plan-architecture-hardening.md`) while keeping the processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending a named profile surface.*

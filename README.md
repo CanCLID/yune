@@ -25,7 +25,6 @@ without code changes.
 | Crate | Description |
 |-------|-------------|
 | `yune-core` | Engine, session state, composition, candidates, translators, filters, ranker trait, key parsing, spelling algebra, punctuation, dictionary parsing (YAML source + compiled `.table.bin` / `.prism.bin` / `.reverse.bin`), table encoding, user dictionary. |
-| `yune-schema` | Standalone RIME schema YAML parser producing typed `Schema` and `EngineSpec` structs. |
 | `yune-rime-api` | Librime-shaped C ABI shim: session registry, runtime paths, config compiler (`__include` / `__patch` / list merge / freshness), deployment, schema installation, 9-processor input pipeline, config/context/candidate/levers APIs, function table (`RimeApi` + `RimeLeversApi`), TypeDuck Web WASM adapter. |
 | `yune-cli` | CLI test harness: run key sequences through core or ABI pipeline, compare output against checked-in JSON fixtures. |
 

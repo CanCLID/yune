@@ -27,6 +27,7 @@ AI-native behavior on top as a separate product milestone.
 - [`fork-parity-ledger.md`](./fork-parity-ledger.md) — the single source of truth for *every* Cantoboard + TypeDuck fork improvement vs upstream `1.17.0`, with origin, category, and Yune status (done / todo / non-goal). Sourced from archived provenance notes under [`archive/fork-provenance/`](./archive/fork-provenance/).
 - [`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md) - active Phase 2 TypeDuck-Web dogfooding round-2 intake ledger.
 - [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md) - Phase 2 planning for a Yune-first TypeDuck-Windows product/frontend track.
+- [`plans/p2-win02-plan-typeduck-boundary-compat.md`](./plans/p2-win02-plan-typeduck-boundary-compat.md) - active Yune-side TypeDuck Windows boundary compatibility fix created from Phase 0C evidence.
 - [`plans/`](./plans/) — per-stage implementation plans, findings, build notes, and validation artifacts (finished ones under `plans/archive/`).
 
 > The GSD planning system (`.planning/`) has been retired; its durable content now lives in `decisions.md`, `requirements.md`, and `CONVENTIONS.md`.
@@ -58,6 +59,10 @@ The active TypeDuck-Web dogfooding intake ledger is
 [`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md).
 The first Phase 2 Windows planning artifact is
 [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md).
+Phase 0C in the separate TypeDuck-Windows repo has now classified the first
+interactive Windows blocker as a Yune TypeDuck-profile boundary bug, so Windows
+product work is blocked on
+[`plans/p2-win02-plan-typeduck-boundary-compat.md`](./plans/p2-win02-plan-typeduck-boundary-compat.md).
 
 ---
 
@@ -549,7 +554,7 @@ In priority order:
 4. **Keep Track 2 complete and fixture-gated.** M17's upstream `luna_pinyin` null-grammar sentence/lattice path, M18's prism/deployment/processor depth, M19's breadth schemas, and M22's playground build-out are complete. Future upstream-depth work needs a named target and fresh oracle fixtures before implementation.
 5. **Keep the completed M24 TypeDuck-Web dogfood baseline green.** The first M24 demo-hardening batch is archived at [`plans/archive/m24-plan-typeduck-web-dogfooding.md`](./plans/archive/m24-plan-typeduck-web-dogfooding.md) with 13/13 rows closed. New round-2 manual web-demo issues belong in [`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md) and must classify each report as browser integration, UI polish, engine correctness, unsupported/N/A, future product integration, or needs triage before changing code.
 6. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
-7. **Start Phase 2 Windows work with a repo/architecture decision, not direct porting.** M10 completed with T1/T2 package/build evidence and a stock TypeDuck-Windows real-server IPC smoke. The Yune-side boundary is proven; the next Windows effort is a Yune-first product/frontend track. Use [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md) to decide whether to continue inside `TypeDuck-HK/TypeDuck-Windows`, start a fresh repo, or use a hybrid extraction path. None of those choices should widen Yune's default ABI.
+7. **Unblock Phase 2 Windows by fixing the Yune TypeDuck boundary bug first.** M10 completed with T1/T2 package/build evidence and a stock TypeDuck-Windows real-server IPC smoke. TypeDuck-Windows Phase 0C then classified the interactive Notepad blocker as a Yune TypeDuck-profile compatibility/boundary bug: `ngohaig` comment bytes differ from the TypeDuck `v1.1.2` rich `\f\r1,` oracle payloads, and AppVerifier stops the server inside Yune-backed session/schema creation before candidate rendering. Finish [`plans/p2-win02-plan-typeduck-boundary-compat.md`](./plans/p2-win02-plan-typeduck-boundary-compat.md) before resuming [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md). None of those choices should widen Yune's default ABI.
 8. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
 9. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
 
@@ -562,9 +567,11 @@ list. **TypeDuck `jyut6ping3` reconciliation (M14-M16), the M20 browser
 playground, M23 architecture hardening, M17 upstream sentence/lattice depth, M18
 deployment/processor depth, M19 breadth schemas, M22 playground build-out, and
 M24 TypeDuck-Web dogfooding/demo hardening are complete** (see *Completed*
-above). Phase 2 Windows work starts as **P2-WIN-01**
-planning, not as another Yune-core milestone. Future engine-depth work remains
-trigger-gated by named targets and fresh oracle fixtures.
+above). Phase 2 Windows work started as **P2-WIN-01** planning, then the
+TypeDuck-Windows Phase 0C diagnosis turned the first interactive blocker into
+**P2-WIN-02**, a Yune-side TypeDuck boundary compatibility milestone. Future
+engine-depth work remains trigger-gated by named targets and fresh oracle
+fixtures.
 
 ### Execution order — what to do next
 
@@ -572,8 +579,11 @@ This is the **authoritative sequence**; the per-milestone detail bullets below
 are reference, not order. M17, M18, M19, M22, M23, and M24 are complete. M25 is
 the active intake ledger for the next manual dogfooding/debug loop for the
 internal TypeDuck-Web playground and must not reopen completed parity claims
-without oracle-backed evidence. New engine milestone work should start only after a plan
-names its target, oracle, fixtures, and front-end or schema need.
+without oracle-backed evidence. **P2-WIN-02 is the active Windows unblocker**:
+fix the Yune TypeDuck-profile boundary bug, rerun the Windows smoke, then return
+to the P2-WIN-01 repo/process/product decision checkpoint. New engine milestone
+work should start only after a plan names its target, oracle, fixtures, and
+front-end or schema need.
 
 **Trigger-gated, not scheduled:** the core/ABI **processor extraction** (move
 processor semantics into `yune-core`) lands only when a real non-ABI consumer
@@ -626,13 +636,23 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   behavior remains fixture-gated against TypeDuck `v1.1.2` or upstream
   `1.17.0`; M24 did not treat `typeduck.hk/web` as a hard oracle.
   Detail: [`plans/archive/m24-plan-typeduck-web-dogfooding.md`](./plans/archive/m24-plan-typeduck-web-dogfooding.md).
+- **P2-WIN-02 - TypeDuck Windows boundary compatibility (active)** - fixes the
+  Yune-side boundary incompatibility found by TypeDuck-Windows Phase 0C before
+  product/frontend work resumes. The first target is `jyut6ping3` `ngohaig`:
+  TypeDuck-Windows evidence shows Yune's candidate texts match the TypeDuck
+  `v1.1.2` oracle, but rich dictionary-panel comment bytes do not yet match the
+  `\f\r1,` payload shape that the Windows path expects. This milestone promotes
+  that evidence into Yune fixtures/tests, fixes the TypeDuck profile behavior
+  without widening default `RimeApi` or `RimeCandidate`, rebuilds the Windows
+  package, and reruns IPC plus Notepad smoke before P2-WIN-01 can continue.
+  Detail:
+  [`plans/p2-win02-plan-typeduck-boundary-compat.md`](./plans/p2-win02-plan-typeduck-boundary-compat.md).
 - **P2-WIN-01 — TypeDuck-Windows next product/frontend planning (draft)** —
-  starts Phase 2 by defining a Yune-first Windows IME product track. The engine
-  direction is Yune-only; old librime/Weasel code is reference material and a
-  platform-shell extraction source, not a runtime fallback requirement. The plan
-  is deliberately decision-gated: audit the existing TypeDuck-Windows repo,
-  compare fresh-repo vs in-place modernization vs hybrid extraction, and prove a
-  minimal TSF + Yune host spike before committing to a large implementation path.
+  remains the Phase 2 Yune-first Windows IME product track. The engine direction
+  is Yune-only; old librime/Weasel code is reference material and a platform-shell
+  extraction source, not a runtime fallback requirement. This plan is currently
+  blocked by P2-WIN-02; resume it at the repo/process/product decision checkpoint
+  only after the Yune boundary fix has a rerun Windows smoke result.
   Detail: [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md).
 - **M17 — Upstream sentence / language model (poet) (complete)** — implements the upstream
   `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE

@@ -5,14 +5,17 @@
 This records the current TypeDuck-Windows native package evidence after the M10
 resume. Yune now produces a Windows package and validates it through the named
 TypeDuck-profile ABI, but the real TypeDuck-Windows build and frontend smoke
-are still blocked by missing C++ build tools in this shell.
+are still blocked by missing ATL/MFC components in the local Visual Studio
+installation.
 
 ## Tier Status
 
 - **T0 ABI/header decision:** complete. The package uses an upstream-shaped
   default `rime_api.h` and a separate `rime_typeduck_profile_api.h` extension.
-- **T1 package/link:** blocked. `msbuild` is not available, so
-  TypeDuck-Windows has not been built or linked against the Yune package.
+- **T1 package/link:** blocked. An explicit Visual Studio 2022 MSBuild path can
+  build the solution far enough to compile against the Yune package, but the
+  selected TypeDuck-Windows projects require ATL/MFC headers that are not
+  installed locally (`atlbase.h`, `afxres.h`).
 - **T2 packaged host-loader lifecycle:** complete. The package script loads the
   packaged `dist/lib/rime.dll`, resolves `rime_get_typeduck_profile_api()`,
   verifies profile append slots, and runs the dynamic-loader lifecycle smoke.
@@ -127,7 +130,7 @@ f3ffcfe3b6a3018b1c3c9d256a6f0d587a2d2e27
 The checkout had local batch-file modifications under `target/`; they were not
 reset or edited.
 
-Tool lookup from this shell:
+Initial tool lookup from this shell showed `msbuild.exe` was not on PATH:
 
 ```text
 msbuild: MISSING
@@ -137,21 +140,63 @@ nuget: MISSING
 nmake: MISSING
 ```
 
-Attempted T1 command:
+Visual Studio 2022 Community was later found at:
+
+```text
+C:\Program Files\Microsoft Visual Studio\2022\Community
+```
+
+and the installed MSBuild was usable by absolute path:
+
+```text
+C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe
+```
+
+The T1 checkout was prepared with the Yune package copied into:
+
+```text
+target\typeduck-windows-e2e\TypeDuck-Windows\include
+target\typeduck-windows-e2e\TypeDuck-Windows\lib
+target\typeduck-windows-e2e\TypeDuck-Windows\output
+```
+
+and Boost 1.84.0 was built locally at the short path:
+
+```text
+C:\b184
+```
+
+`weasel.props` was generated with `BOOST_ROOT=C:\b184` and
+`PLATFORM_TOOLSET=v143`.
+
+Attempted T1 commands:
 
 ```powershell
 msbuild target\typeduck-windows-e2e\TypeDuck-Windows\weasel.sln /p:Configuration=Release /p:Platform=x64
+& 'C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe' target\typeduck-windows-e2e\TypeDuck-Windows\weasel.sln /p:Configuration=Release /p:Platform=x64
 ```
 
-Result:
+Results:
 
 ```text
 msbuild : The term 'msbuild' is not recognized as the name of a cmdlet, function, script file, or operable program.
 FullyQualifiedErrorId : CommandNotFoundException
+
+WeaselIPC.vcxproj -> ...\x64\Release\TypeDuckIPC.lib
+WeaselUI\stdafx.h(12,10): error C1083: Cannot open include file: 'atlbase.h': No such file or directory
+WeaselIME.rc(11): fatal error RC1015: cannot open include file 'afxres.h'.
 ```
 
-Because T1 did not run, T3 real TypeDuck-Windows frontend smoke also did not
-run. A future T1/T3 worker should use the package above, patch the settings path
-to call `rime_get_typeduck_profile_api()` for `config_list_append_*`, build from
-a Visual Studio developer shell, then record real frontend input/output smoke
+The missing headers were confirmed absent under the installed MSVC tree:
+
+```text
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlbase.h
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\atlmfc\include\afxres.h
+```
+
+Because T1 still did not complete, T3 real TypeDuck-Windows frontend smoke also
+did not run. A future T1/T3 worker should install the Visual Studio ATL/MFC C++
+components, reuse the package above, patch the settings path to call
+`rime_get_typeduck_profile_api()` for `config_list_append_*`, build from a
+Visual Studio developer shell, then record real frontend input/output smoke
 against the Yune package.

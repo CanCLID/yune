@@ -164,7 +164,7 @@ milestone.
 - [x] **WIN-COMMENT-01**: Candidate comment semantics match the v1.1.2 oracle for dictionary lookup payloads, reverse lookup joins, and prompt/schema identity. Dictionary lookup payload bytes, schema-prompt bytes, and reverse-lookup joiner coverage are oracle-backed.
 - [x] **WIN-BUILD-01**: Yune produces a current TypeDuck-profile native Windows package (`rime.dll`, import `.lib`, upstream-shaped default headers, and `rime_typeduck_profile_api.h`) and the package script loads the packaged DLL through `rime_get_typeduck_profile_api()`.
 - [x] **WIN-PARITY-01**: Cantonese/Jyutping parity regression coverage locks the captured v1.1.2 engine behavior in active `cantonese_parity` tests; schema-menu/userdb observations remain frontend/T3 evidence limits.
-- [ ] **WIN-FRONTEND-01**: TypeDuck-Windows builds/links against the Yune package and passes real frontend smoke. Current blocker: `msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, and `nmake.exe` are missing from PATH, so T1/T3 did not run.
+- [ ] **WIN-FRONTEND-01**: TypeDuck-Windows builds/links against the Yune package and passes real frontend smoke. Current blocker: explicit Visual Studio 2022 MSBuild can compile the x64 solution against the Yune package and local Boost, but the installed Visual Studio C++ toolchain lacks ATL/MFC headers (`atlbase.h`, `afxres.h`), so T1/T3 still do not pass.
 
 ## Future Requirements
 
@@ -408,7 +408,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-COMMENT-01 | Phase 14 / 17 | Complete - dictionary payload, schema prompt, and joiner oracle covered |
 | WIN-BUILD-01 | Phase 15 / M10 | Complete - current TypeDuck-profile package/header smoke and packaged DLL profile lifecycle pass |
 | WIN-PARITY-01 | Phase 16 / M10 | Complete - captured v1.1.2 engine behavior is active; frontend-only schema-menu/userdb observations remain T3 evidence scope |
-| WIN-FRONTEND-01 | M10 | Blocked - TypeDuck-Windows T1/T3 not run because `msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, and `nmake.exe` are missing from PATH |
+| WIN-FRONTEND-01 | M10 | Blocked - TypeDuck-Windows T1 reaches x64 compilation against the Yune package, then fails because ATL/MFC headers (`atlbase.h`, `afxres.h`) are missing from the local Visual Studio install |
 | UPSTREAM-ORACLE-01 | M12 | Complete - upstream `1.17.0` provenance pinned as default core oracle |
 | UPSTREAM-ORACLE-02 | M12 | Complete - fixture naming separates `upstream-1.17.0` and `typeduck-v1.1.2` goldens |
 | UPSTREAM-AUDIT-01 | M12 | Complete - coverage audit captured in `docs/plans/archive/m12-audit-coverage.md` |
@@ -482,4 +482,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-21 - M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile with current T2 package/profile smoke complete and T1/T3 blocked by missing TypeDuck-Windows build tools/frontend smoke*
+*Last updated: 2026-06-21 - M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile with current T2 package/profile smoke complete and T1/T3 blocked by missing ATL/MFC components in the local Visual Studio C++ install*

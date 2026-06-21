@@ -561,7 +561,10 @@ dedicated oracle fixtures are captured.
 `scripts/package-typeduck-windows.ps1` now builds the current Windows package
 with upstream-shaped default headers plus `rime_typeduck_profile_api.h`, rejects
 fork-shaped default headers, and smoke-checks the packaged DLL through
-`rime_get_typeduck_profile_api()`. That reaches T2. T1/T3 remain blocked until
+`rime_get_typeduck_profile_api()`. That reaches T2. A later T1 probe found
+Visual Studio 2022 Community, built local Boost, and got the x64
+TypeDuck-Windows solution compiling against the Yune package, but it stops on
+missing ATL/MFC headers (`atlbase.h`, `afxres.h`). T1/T3 remain blocked until
 the TypeDuck-Windows checkout can build/link and run real frontend smoke against
 the Yune package.
 

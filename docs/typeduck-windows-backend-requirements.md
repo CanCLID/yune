@@ -131,20 +131,26 @@ The web path is Emscripten/WASM. Windows needs a **native** engine artifact:
 - [x] (4) Native Windows engine artifact (`rime.dll`/`.lib`/headers) current TypeDuck-profile package/header smoke passes through `rime_get_typeduck_profile_api()`.
   - [x] T0 ABI/header decision: package uses upstream-shaped `RimeCandidate` and default `rime_get_api()`, plus `rime_typeduck_profile_api.h`.
   - [x] T2 packaged host-loader lifecycle: packaged `dist/lib/rime.dll` loads, profile append slots round-trip, and the native lifecycle smoke passes.
-  - [ ] T1 TypeDuck-Windows build/link: blocked because `msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, and `nmake.exe` are missing from PATH.
+  - [ ] T1 TypeDuck-Windows build/link: blocked because the installed Visual Studio 2022 C++ toolchain lacks ATL/MFC headers (`atlbase.h`, `afxres.h`).
   - [ ] T3 real TypeDuck-Windows frontend smoke: blocked behind T1; no real frontend binary was built against the Yune package.
 
 The real TypeDuck-Windows frontend E2E is still **not** green: a pinned checkout
-was captured under `target/typeduck-windows-e2e/TypeDuck-Windows`, but the
-referenced integration-plan files were absent and the local shell did not expose
-`msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, or `nmake.exe`. The M10
-resume attempted:
+was captured under `target/typeduck-windows-e2e/TypeDuck-Windows`. The initial
+M10 resume attempt could not find `msbuild.exe` on PATH, but Visual Studio 2022
+Community was later found and its absolute MSBuild path could compile the x64
+solution after the Yune package was copied into the checkout and Boost 1.84.0
+was built at `C:\b184`. The current T1 attempt is:
 
 ```powershell
-msbuild target\typeduck-windows-e2e\TypeDuck-Windows\weasel.sln /p:Configuration=Release /p:Platform=x64
+& 'C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe' target\typeduck-windows-e2e\TypeDuck-Windows\weasel.sln /p:Configuration=Release /p:Platform=x64
 ```
 
-and stopped at `CommandNotFoundException`.
+and stops after `WeaselIPC` builds because ATL/MFC are missing:
+
+```text
+WeaselUI\stdafx.h(12,10): error C1083: Cannot open include file: 'atlbase.h': No such file or directory
+WeaselIME.rc(11): fatal error RC1015: cannot open include file 'afxres.h'.
+```
 
 When the real build/link and frontend smoke pass against the M19 profile
 accessor, revisit the current TypeDuck-Windows frontend lifecycle docs or

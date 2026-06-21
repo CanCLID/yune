@@ -596,10 +596,11 @@ against the default upstream `rime_get_api()` table. M19 added the named
 `rime_get_typeduck_profile_api()` accessor for the list-append fork slots, and
 the M10 resume produced a current package/header smoke plus packaged DLL
 dynamic-loader lifecycle against that profile accessor. The default table and
-`RimeCandidate` remain upstream-shaped. Real TypeDuck-Windows/weasel build/link
-and frontend E2E remain blocked because local frontend build tools
-(`msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, `nmake.exe`) were not on
-PATH.
+`RimeCandidate` remain upstream-shaped. A later T1 probe found Visual Studio
+2022 Community, built local Boost, and reached x64 TypeDuck-Windows compilation
+against the Yune package, but the installed C++ toolchain lacks ATL/MFC headers
+(`atlbase.h`, `afxres.h`). Real TypeDuck-Windows/weasel build/link and frontend
+E2E remain blocked.
 
 **TypeDuck `jyut6ping3` fork-parity arc is closed with explicit browser limits.** HR-6 added
 oracle coverage for the reverse-lookup `"; "` joiner (`comments.join("; ")` in

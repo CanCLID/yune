@@ -492,10 +492,12 @@ package smoke is not an active or valid gate for the default upstream
 upstream-shaped default `rime_api.h` plus `rime_typeduck_profile_api.h`, loads
 the packaged DLL, resolves `rime_get_typeduck_profile_api()`, verifies the
 profile append slots, and runs the dynamic-loader lifecycle. Remaining
-TypeDuck-Windows work is blocked by T1/T3: `msbuild.exe`, `devenv.exe`,
-`cmake.exe`, `nuget.exe`, and `nmake.exe` are not on PATH, so the pinned
-TypeDuck-Windows checkout has not built/linked against the Yune package and no
-real frontend smoke has run.
+TypeDuck-Windows work is blocked by T1/T3: Visual Studio 2022 Community and
+MSBuild are installed, and the pinned TypeDuck-Windows checkout now reaches x64
+compilation against the Yune package plus local Boost, but the installed C++
+toolchain lacks ATL/MFC headers (`atlbase.h`, `afxres.h`). The real
+TypeDuck-Windows binary therefore still has not built/linked against the Yune
+package and no real frontend smoke has run.
 
 Detail: [`typeduck-windows-backend-requirements.md`](./typeduck-windows-backend-requirements.md),
 [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md),

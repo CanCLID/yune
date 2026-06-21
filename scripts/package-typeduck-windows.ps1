@@ -8,16 +8,21 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-throw "TypeDuck-Windows packaging is parked during M12: default RimeApi follows upstream rime/librime 1.17.0 and does not expose TypeDuck fork-only config_list_append_* slots. Re-enable this script only after a named TypeDuck profile ABI surface is implemented and its slot smoke is re-derived from TypeDuck-HK/librime v1.1.2 rime_api.h."
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
+if ($SkipSmoke) {
+    throw "-SkipSmoke is not a valid M10 package gate; the TypeDuck profile smoke must load the packaged DLL."
+}
+if ($Profile -ne "release" -and $Profile -ne "debug") {
+    throw "unsupported profile '$Profile'; expected 'release' or 'debug'"
+}
 
 if ($OutputDir -eq "") {
     $OutputDir = Join-Path $RepoRoot "target\typeduck-windows-native\$Target"
 }
 if ($HeaderSource -eq "") {
-    $HeaderSource = Join-Path $RepoRoot "target\typeduck-oracle\v1.1.2\extract\dist\include"
+    $HeaderSource = Join-Path $RepoRoot "target\upstream-oracle\1.17.0\extract\dist\include"
 }
 
 if (-not $NoBuild) {
@@ -25,7 +30,11 @@ if (-not $NoBuild) {
     if (-not (Test-Path $cargo)) {
         $cargo = "cargo"
     }
-    & $cargo build -p yune-rime-api --release --target $Target
+    $BuildArgs = @("build", "-p", "yune-rime-api", "--target", $Target)
+    if ($Profile -eq "release") {
+        $BuildArgs += "--release"
+    }
+    & $cargo @BuildArgs
     if ($LASTEXITCODE -ne 0) {
         throw "cargo build failed for target $Target"
     }
@@ -54,8 +63,24 @@ if (-not (Test-Path $ApiHeader)) {
 if (-not (Test-Path $LeversHeader)) {
     throw "missing rime_levers_api.h in $HeaderSource"
 }
-if (-not (Select-String -Path $ApiHeader -Pattern "config_list_append_string" -Quiet)) {
-    throw "rime_api.h does not expose config_list_append_string"
+if (Select-String -Path $ApiHeader -Pattern "double quality" -Quiet) {
+    throw "rime_api.h is fork-shaped and widens RimeCandidate with quality; package must use the upstream-shaped default candidate ABI"
+}
+if (Select-String -Path $ApiHeader -Pattern "start_quick" -Quiet) {
+    throw "rime_api.h is fork-shaped and exposes start_quick in the default RimeApi; package must use the upstream-shaped default table"
+}
+if (Select-String -Path $ApiHeader -Pattern "config_list_append_string" -Quiet) {
+    throw "rime_api.h exposes TypeDuck fork-only config_list_append_string in the default RimeApi; use rime_typeduck_profile_api.h instead"
+}
+$ProfileHeader = Join-Path $RepoRoot "crates\yune-rime-api\include\rime_typeduck_profile_api.h"
+if (-not (Test-Path $ProfileHeader)) {
+    throw "missing TypeDuck profile header: $ProfileHeader"
+}
+if (-not (Select-String -Path $ProfileHeader -Pattern "rime_get_typeduck_profile_api" -Quiet)) {
+    throw "TypeDuck profile header does not declare rime_get_typeduck_profile_api"
+}
+if (-not (Select-String -Path $ProfileHeader -Pattern "config_list_append_string" -Quiet)) {
+    throw "TypeDuck profile header does not expose config_list_append_string"
 }
 
 $DistLib = Join-Path $OutputDir "dist\lib"
@@ -70,45 +95,27 @@ if (Test-Path $SourcePdb) {
 }
 Copy-Item -LiteralPath $ApiHeader -Destination (Join-Path $DistInclude "rime_api.h") -Force
 Copy-Item -LiteralPath $LeversHeader -Destination (Join-Path $DistInclude "rime_levers_api.h") -Force
+Copy-Item -LiteralPath $ProfileHeader -Destination (Join-Path $DistInclude "rime_typeduck_profile_api.h") -Force
 
-if (-not $SkipSmoke) {
-    $SmokeSource = @"
-using System;
-using System.Runtime.InteropServices;
-
-public static class YuneRimeSmoke {
-    [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern IntPtr LoadLibraryW(string path);
-
-    [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
-    private static extern IntPtr GetProcAddress(IntPtr module, string name);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate IntPtr RimeGetApi();
-
-    public static void Check(string path) {
-        IntPtr module = LoadLibraryW(path);
-        if (module == IntPtr.Zero) {
-            throw new InvalidOperationException("LoadLibraryW failed for " + path);
-        }
-        IntPtr symbol = GetProcAddress(module, "rime_get_api");
-        if (symbol == IntPtr.Zero) {
-            throw new InvalidOperationException("missing rime_get_api");
-        }
-        RimeGetApi getApi = (RimeGetApi)Marshal.GetDelegateForFunctionPointer(symbol, typeof(RimeGetApi));
-        IntPtr api = getApi();
-        if (api == IntPtr.Zero) {
-            throw new InvalidOperationException("rime_get_api returned null");
-        }
-        int dataSize = Marshal.ReadInt32(api);
-        if (dataSize <= 0) {
-            throw new InvalidOperationException("RimeApi data_size is not positive");
-        }
+$PackagedDll = Join-Path $DistLib "rime.dll"
+$previousPackageDll = $env:YUNE_TYPEDUCK_PACKAGE_RIME_DLL
+$env:YUNE_TYPEDUCK_PACKAGE_RIME_DLL = $PackagedDll
+try {
+    $cargo = Join-Path $env:USERPROFILE ".cargo\bin\cargo.exe"
+    if (-not (Test-Path $cargo)) {
+        $cargo = "cargo"
+    }
+    & $cargo test -p yune-rime-api --test dynamic_loader dynamic_loader_harness_loads_packaged_typeduck_profile_dll -- --nocapture
+    if ($LASTEXITCODE -ne 0) {
+        throw "packaged TypeDuck profile smoke failed for $PackagedDll"
     }
 }
-"@
-    Add-Type -TypeDefinition $SmokeSource
-    [YuneRimeSmoke]::Check((Join-Path $DistLib "rime.dll"))
+finally {
+    if ($null -eq $previousPackageDll) {
+        Remove-Item Env:\YUNE_TYPEDUCK_PACKAGE_RIME_DLL -ErrorAction SilentlyContinue
+    } else {
+        $env:YUNE_TYPEDUCK_PACKAGE_RIME_DLL = $previousPackageDll
+    }
 }
 
 Write-Host "Packaged TypeDuck Windows native artifacts:"
@@ -116,3 +123,4 @@ Write-Host "  $OutputDir\dist\lib\rime.dll"
 Write-Host "  $OutputDir\dist\lib\rime.lib"
 Write-Host "  $OutputDir\dist\include\rime_api.h"
 Write-Host "  $OutputDir\dist\include\rime_levers_api.h"
+Write-Host "  $OutputDir\dist\include\rime_typeduck_profile_api.h"

@@ -240,13 +240,20 @@ pub(crate) fn apply_patch_reference(
             return Some(());
         };
         return match referenced {
-            Value::Mapping(patch) => apply_patch_map(
-                root,
-                &patch,
-                shared_data_dir,
-                patch_dependencies,
-                local_reference_root,
-            ),
+            Value::Mapping(patch) => {
+                let patch = if optional {
+                    patch
+                } else {
+                    normalize_external_named_patch(reference, patch)
+                };
+                apply_patch_map(
+                    root,
+                    &patch,
+                    shared_data_dir,
+                    patch_dependencies,
+                    local_reference_root,
+                )
+            }
             _ => None,
         };
     }
@@ -300,6 +307,20 @@ pub(crate) fn load_external_config_reference(
         }
         None => optional.then_some(None),
     }
+}
+
+fn normalize_external_named_patch(reference: &str, patch: Mapping) -> Mapping {
+    let Some(name) = reference.rsplit('/').find(|part| !part.is_empty()) else {
+        return patch;
+    };
+    if patch.len() != 1 {
+        return patch;
+    }
+    let key = Value::String(name.to_owned());
+    if let Some(Value::Mapping(inner)) = patch.get(&key) {
+        return inner.clone();
+    }
+    patch
 }
 
 pub(crate) fn apply_custom_patch(

@@ -934,6 +934,136 @@ patch:
 }
 
 #[test]
+fn deploy_schema_file_applies_typeduck_common_disable_completion_patch() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("deploy-schema-typeduck-disable-completion");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    fs::write(
+        shared.join("common.yaml"),
+        "\
+disable_completion:
+  disable_completion:
+    translator/enable_completion: false
+",
+    )
+    .expect("common config should be written");
+    fs::write(
+        shared.join("jyut6ping3_mobile.schema.yaml"),
+        "\
+schema:
+  schema_id: jyut6ping3_mobile
+  name: Jyutping Mobile
+translator:
+  dictionary: jyut6ping3
+  enable_completion: true
+__patch:
+  - common:/disable_completion
+",
+    )
+    .expect("schema config should be written");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let schema_file = CString::new("jyut6ping3_mobile.schema.yaml").expect("file should be valid");
+    let version_key = CString::new("schema/version").expect("key should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    assert_eq!(
+        RimeDeployConfigFile(schema_file.as_ptr(), version_key.as_ptr()),
+        TRUE
+    );
+    let destination = staging.join("jyut6ping3_mobile.schema.yaml");
+    let staged: Value = serde_yaml::from_str(
+        &fs::read_to_string(&destination).expect("staged schema should be readable"),
+    )
+    .expect("staged schema should parse");
+    assert_eq!(
+        find_config_value(&staged, "translator/enable_completion").and_then(Value::as_bool),
+        Some(false)
+    );
+    assert!(find_config_value(&staged, "__patch").is_none());
+    assert!(find_config_value(&staged, "__build_info/timestamps/common")
+        .and_then(Value::as_i64)
+        .is_some_and(|timestamp| timestamp > 0));
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn deploy_schema_file_keeps_typeduck_optional_common_disable_completion_patch_inactive() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("deploy-schema-typeduck-optional-disable-completion");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    fs::write(
+        shared.join("common.yaml"),
+        "\
+disable_completion:
+  disable_completion:
+    translator/enable_completion: false
+",
+    )
+    .expect("common config should be written");
+    fs::write(
+        shared.join("jyut6ping3_mobile.schema.yaml"),
+        "\
+schema:
+  schema_id: jyut6ping3_mobile
+  name: Jyutping Mobile
+translator:
+  enable_completion: true
+__patch:
+  - common:/disable_completion?
+",
+    )
+    .expect("schema config should be written");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let schema_file = CString::new("jyut6ping3_mobile.schema.yaml").expect("file should be valid");
+    let version_key = CString::new("schema/version").expect("key should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    assert_eq!(
+        RimeDeployConfigFile(schema_file.as_ptr(), version_key.as_ptr()),
+        TRUE
+    );
+    let destination = staging.join("jyut6ping3_mobile.schema.yaml");
+    let staged: Value = serde_yaml::from_str(
+        &fs::read_to_string(&destination).expect("staged schema should be readable"),
+    )
+    .expect("staged schema should parse");
+    assert_eq!(
+        find_config_value(&staged, "translator/enable_completion").and_then(Value::as_bool),
+        Some(true)
+    );
+    assert!(find_config_value(&staged, "disable_completion").is_some());
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn deploy_config_file_applies_local_root_patch_reference() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

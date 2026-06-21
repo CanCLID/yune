@@ -564,7 +564,8 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   before changing engine behavior. Initial findings cover slow first load,
   literal `\f` comment-control leakage, horizontal candidate-gloss crowding, and
   `jigaajiusihaa` word-candidate ordering that needs a TypeDuck `v1.1.2` oracle
-  recheck before any engine change.
+  recheck before any engine change, plus Cantonese-first settings labels and
+  short helper text for active engine/live session controls.
   Detail: [`plans/m24-plan-typeduck-web-dogfooding.md`](./plans/m24-plan-typeduck-web-dogfooding.md).
 - **M17 — Upstream sentence / language model (poet) (complete)** — implements the upstream
   `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE

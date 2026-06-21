@@ -48,6 +48,7 @@ If a report is ambiguous, classify it as **Needs triage**, capture the screensho
 | M24-DOGFOOD-02 | Open | Browser integration / comment rendering | Long phrase candidates show a literal `\f` before Jyutping on following single-character candidates, while single-character input does not show it. | Type a long phrase such as `jigaajiusihaa`; screenshot shows candidates like `以 \fji5`. | `third_party/typeduck-web/source/src/CandidateInfo.ts`, `third_party/typeduck-web/source/src/Candidate.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`, candidate comments from `crates/yune-rime-api/tests/typeduck_web.rs` | No visible literal `\f`, `\r`, or `\v` appears in candidate rows; dictionary-rich comments still parse into entries; single-character and phrase inputs both render cleanly. |
 | M24-DOGFOOD-03 | Open | UI polish / candidate layout | Compound-candidate dictionary glosses render horizontally next to the candidate text, making `而家要思考(compound 詞組) 而家 (now) 要 (want; need) 思考 (think; ponder)` read like one confusing inline candidate. | Type `jigaajiusihaa`; screenshot shows the first highlighted candidate widened across the horizontal row. | `third_party/typeduck-web/source/src/Candidate.tsx`, `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/DictionaryPanel.tsx`, `third_party/typeduck-web/source/src/index.css` | Main candidate row stays compact; detailed English/gloss content moves below the candidate or into the dictionary/detail panel; before/after screenshots prove no horizontal overflow or misleading inline gloss. |
 | M24-DOGFOOD-04 | Open | Engine correctness / oracle recheck | For `jigaajiusihaa`, after the first compound candidate the next candidates are single characters, while the user-observed live TypeDuck behavior appears to prefer word entries such as `而家`, `依家`, `宜家` before single characters. | User compared the internal playground with `https://www.typeduck.hk/web/`; live product appears to show word candidates in positions 2-3. | `scripts/capture-typeduck-jyutping.ps1`, `crates/yune-core/tests/cantonese_parity.rs`, `crates/yune-core/src/translator/mod.rs`, `crates/yune-core/src/dictionary/`, `crates/yune-rime-api/tests/typeduck_web.rs`, M21 source-aware evidence under `third_party/typeduck-web/e2e/results/m21-product-comparison/` | A pinned TypeDuck `v1.1.2` fixture or a documented version-skew decision determines the expected row order; Yune either matches the fixture with active tests or records the live-site behavior as non-oracle product skew. |
+| M24-DOGFOOD-05 | Open | UI polish / settings localization and help text | Settings and developer controls mix Cantonese/English and many labels are English-only, so a new developer cannot tell what active engine controls or live session controls do. Cantonese should come first for all labels; active engine and live session toggles need short description text. Display controls need Cantonese-first labels but no extra descriptions. | Browser comment on `/web/` settings area: selected controls include `Active engine controls`, `Live session controls`, `Display controls`, `Yune inspector`, `Schema`, and English-only toggle labels such as `ASCII mode`, `Full shape`, `Prediction threshold`, and `Dictionary exclude`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/Toolbar.tsx`, `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/YuneInspector.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | All visible settings/developer labels use Cantonese-first bilingual text; active-engine and live-session toggles show concise helper copy; display controls remain compact without helper paragraphs; before/after screenshots prove the settings page stays readable at desktop and narrow widths. |
 
 ---
 
@@ -440,7 +441,108 @@ test("M24 jigaajiusihaa shows word candidates before single-character fallback",
 
 If the pinned fixture differs from the live product, replace the expected list with the pinned fixture output and record the live product difference as version skew in the evidence JSON.
 
-## Task 6: M24 Regression Sweep And Closeout Discipline
+## Task 6: M24-DOGFOOD-05 Cantonese-First Settings Labels And Toggle Help
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/Preferences.tsx`
+- Modify: `third_party/typeduck-web/source/src/Inputs.tsx`
+- Modify: `third_party/typeduck-web/source/src/Toolbar.tsx`
+- Modify: `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`
+- Modify: `third_party/typeduck-web/source/src/App.tsx`
+- Inspect first, then modify only if the inspector panel remains visible in the same developer settings flow: `third_party/typeduck-web/source/src/YuneInspector.tsx`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+
+- [ ] **Step 1: Capture the current settings readability problem**
+
+Save desktop and narrow-width screenshots of the settings area before changing labels:
+
+```ts
+test("M24 settings labels are Cantonese-first and documented", async ({ page }) => {
+  await page.goto(APP_URL, { timeout: TIMEOUT_MS, waitUntil: "domcontentloaded" });
+  await waitForAppReady(page);
+  await takeM24Screenshot(page, "M24-DOGFOOD-05", "settings-labels-before");
+});
+```
+
+Also capture a text snapshot of the headings and labels so the regression test can compare specific strings rather than relying only on screenshots.
+
+- [ ] **Step 2: Add structured helper text support for controls that need it**
+
+Extend the shared input components instead of hard-coding helper paragraphs in `Preferences.tsx`:
+
+```ts
+interface ControlCopy {
+  label: string;
+  description?: string;
+}
+```
+
+Allow `Toggle` and `Range` to accept `description?: string`. Render the helper copy under the label in smaller text, keeping the switch/range aligned and ensuring the description does not force the row to overflow on narrow widths.
+
+- [ ] **Step 3: Localize headings and all visible settings labels Cantonese-first**
+
+Use Cantonese-first bilingual text for settings labels. Cover at least:
+
+- `Schema` -> `方案 Schema`,
+- `Yune inspector` -> `Yune 檢查器 Yune Inspector`,
+- `Active engine controls` -> `輸入引擎控制 Active Engine Controls`,
+- `Live session controls` -> `即時輸入狀態 Live Session Controls`,
+- `Display controls` -> `顯示設定 Display Controls`,
+- `Prediction threshold` -> `預測門檻 Prediction Threshold`,
+- `Dictionary exclude` -> `字典排除 Dictionary Exclude`,
+- `ASCII mode`, `Full shape`, `Simplification`, `Traditionalization`, `Extended charset`, and `Disabled`,
+- display-control labels such as `Candidate Jyutping`, `Reverse code display`, and `Cangjie version`.
+
+Keep the Cantonese term first for every bilingual label. Do not add explanatory descriptions to display controls unless a later user report specifically asks for it.
+
+- [ ] **Step 4: Add short explanations for active engine controls**
+
+Add one-line helper copy for active engine controls. Keep each description concise enough to scan in the settings panel:
+
+```text
+自動完成 Auto-completion - 用輸入開頭搵候選字詞。
+自動校正 Auto-correction - 容許常見錯碼或近音修正。
+自動組詞 Auto-composition - 將多段輸入砌成長詞句候選。
+輸入記憶 Input Memory - 用本機輸入記錄改善常用候選排序。
+AI 候選 AI Candidates - 顯示本機 AI staging 候選。
+合併相同候選 Combine Same-Text Candidates - 合併同字候選，避免重複。
+預測不排第一 Prediction Never First - 保持預測候選不會排第一。
+預測門檻 Prediction Threshold - 調高門檻先顯示分數較高預測。
+字典排除 Dictionary Exclude - 臨時隱藏測試用字典項目。
+```
+
+Treat the English half as a fallback label, not the primary explanation.
+
+- [ ] **Step 5: Add short explanations for live session controls**
+
+Add one-line helper copy for live session controls:
+
+```text
+英文模式 ASCII Mode - 直接輸入英文字母，暫停中文組字。
+全形 Full Shape - 使用全形英文字母及標點。
+簡化 Simplification - 將候選或輸出轉成簡體。
+繁化 Traditionalization - 將候選或輸出轉成繁體。
+擴展字集 Extended Charset - 顯示較少見或擴展漢字候選。
+停用 Disabled - 暫停輸入法處理，保留原始按鍵。
+```
+
+If a control is a visible no-op for the current schema, keep the label but route the implementation to the existing status/output mechanism so it remains honest instead of silently implying unsupported behavior.
+
+- [ ] **Step 6: Add browser assertions and screenshots**
+
+Add a focused Playwright check:
+
+```ts
+await expect(page.getByText("輸入引擎控制 Active Engine Controls")).toBeVisible();
+await expect(page.getByText("即時輸入狀態 Live Session Controls")).toBeVisible();
+await expect(page.getByText("顯示設定 Display Controls")).toBeVisible();
+await expect(page.getByText("用輸入開頭搵候選字詞。")).toBeVisible();
+await expect(page.getByText("直接輸入英文字母，暫停中文組字。")).toBeVisible();
+```
+
+Save after screenshots under `third_party/typeduck-web/e2e/results/m24-dogfooding/M24-DOGFOOD-05/`, including a narrow viewport. Verify that the new helper text does not overlap switches, sliders, or display-control groups.
+
+## Task 7: M24 Regression Sweep And Closeout Discipline
 
 **Files:**
 - Modify: this plan as issue rows close

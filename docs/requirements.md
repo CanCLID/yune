@@ -313,6 +313,25 @@ browser gates and the upstream-first ABI constraints. Browser evidence is under
   side-lookup scenario/control or explicitly recorded as N/A for the current
   `jyut6ping3_mobile`-only surface.
 
+## M22 Web Playground Requirements
+
+- [x] **M22-PLAY-01**: The internal TypeDuck-Web playground has an opt-in
+  read-only engine inspector showing segment tags, candidate source/quality/
+  preedit/comment details, spelling-algebra expansion, filter audit, prediction
+  score/threshold data, and AI staging state.
+- [x] **M22-PLAY-02**: The inspector is off by default, preserves classic
+  candidate response identity when disabled, has committed browser evidence, and
+  does not change the default `RimeApi`, `RimeCandidate`, or ABI layout files.
+- [ ] **M22-PLAY-03**: Remaining browser-safe controls
+  (`traditionalization`, `extended_charset`, `disabled`, `dictionary_exclude`,
+  and any `ascii_punct` exposure after M18) are exposed only when they clear the
+  M20 honesty gate with real browser before/after evidence; otherwise they are
+  documented as browser-surface N/A.
+- [ ] **M22-PLAY-04**: The playground loads `jyut6ping3_mobile`, `cangjie5`,
+  and `luna_pinyin` through a real schema switcher with reverse lookup for the
+  new schemas, using generated or provenance-stamped compiled artifacts with
+  measured browser asset sizes.
+
 **Follow-on (no requirement IDs):** [`M21`](./plans/m21-plan-typeduck-web-product-comparison.md) is complete as a post-M20 *comparison protocol* and hard-oracle closeout. It compared the Yune harness against the deployed `typeduck.hk/web` product as a behavior/feel target, but the `v1.1.2` fixtures remained the hard oracle. The final gap ledger has no remaining hard-oracle action rows: M21-GAP-01 is closed by `jyut6ping3-m21-sentence-composition.json`, M21-GAP-02 is closed by `jyut6ping3-m21-prediction-ranking.json` plus real `nri` browser before/after evidence, and `jyut6ping3-m21-closeout.json` locks the remaining baseline/fuzzy/sentence/`hk2s`/tone-letter/paging rows including the final `m` and `mgoi` fixes.
 
 ## Out of Scope
@@ -431,6 +450,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M20-DEMO-05 | M20 | Complete - browser honesty gate separates visible before/after controls from explicit browser-surface N/A for Input Memory off-state and current-schema Cangjie/show_full_code limits; Auto-correction `nri` now has real browser before/after evidence; `ascii_punct` still needs browser-visible evidence before becoming a working web toggle |
 | M20-DEMO-06 | M20 | Complete - internal TypeDuck-Web harness is documented as the canonical browser playground for supported engine features |
 | M20-DEMO-07 | M20 | Complete - documented demo-default `combine_candidates` active control plus current-schema `show_full_code`/Cangjie N/A evidence |
+| M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
+| M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
+| M22-PLAY-03 | M22 Bucket 1 | Active - remaining honest browser controls still need before/after evidence or documented N/A |
+| M22-PLAY-04 | M22 Bucket 3 | Active - multi-schema playground and reverse lookup wait for M19 schema breadth output |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -442,9 +465,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M14–M16 TypeDuck-Web fork parity requirements: 7 total, 7 complete (M16 complete with explicit browser/userdb inspection limits)
 - Fork parity backlog (Cantonese engine-parity, vs upstream 1.17.0): 9 total, 9 complete; see [`fork-parity-ledger.md`](./fork-parity-ledger.md)
 - M20 web demo showcase controls requirements: 7 total, 7 complete
-- Mapped to phases: 98
+- M22 web playground requirements: 4 total, 2 complete, 2 active
+- Mapped to phases: 102
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-20 - M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout with no remaining action rows; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track with real browser evidence; M13 remains complete; M14 TypeDuck v1.1.2 capture complete; M15 TypeDuck dictionary-driven engine parity complete; M16 TypeDuck-Web browser validation complete with documented browser/userdb limits; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until a named profile ABI surface exists*
+*Last updated: 2026-06-20 - M23 architecture hardening and M18 deployment/processor depth are complete; M22 Bucket 2 read-only inspector is complete with browser evidence while M22 honest controls and multi-schema buckets remain active; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until M19 names the profile ABI surface*

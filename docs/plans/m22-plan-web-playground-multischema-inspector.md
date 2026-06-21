@@ -6,9 +6,17 @@
 
 **Goal:** Surface *more* of Yune's engine inside this repo's internal patched TypeDuck-Web playground (`third_party/typeduck-web/`) as **honest controls** plus a **read-only debug inspector**, and load **more schemas** with a schema-switcher and reverse lookup — extending M20's canonical browser workbench without reopening M13, without changing the default `RimeApi`/`RimeCandidate` ABI, and without representing any unsupported behavior as working.
 
-**Architecture:** M22 is the M20 successor (build-out), **not** M21 (M21 is the product-comparison protocol, complete once its gap-ledger is fully dispositioned). Three explicit, separately-tracked work buckets: (1) missing honest browser-safe toggles, (2) a read-only per-keystroke debug inspector, (3) multi-schema loading + schema switcher + reverse lookup. Runtime-changing controls flow through the existing `customize()` schema-key path (`adapter.ts:435-505`) or the `setOption()` session-option path (`adapter.ts:507-514`); schema switching flows through the existing `RimeSelectSchema` ABI slot (`abi.rs:301`) via a runtime re-init. The inspector adds only **opt-in debug JSON fields** in the TypeDuck response plus optional `yune_typeduck_*` read helpers; it must not widen `RimeCandidate`, reorder the `RimeApi` table, or move provider work into the per-key path. New schemas ship as **pre-compiled upstream `.bin` artifacts** because Yune cannot build dictionaries until M18.
+**Architecture:** M22 is the M20 successor (build-out), **not** M21 (M21 is the product-comparison protocol, complete once its gap-ledger is fully dispositioned). Three explicit, separately-tracked work buckets: (1) missing honest browser-safe toggles, (2) a read-only per-keystroke debug inspector, (3) multi-schema loading + schema switcher + reverse lookup. Runtime-changing controls flow through the existing `customize()` schema-key path (`adapter.ts:435-505`) or the `setOption()` session-option path (`adapter.ts:507-514`); schema switching flows through the existing `RimeSelectSchema` ABI slot (`abi.rs:301`) via a runtime re-init. The inspector adds only **opt-in debug JSON fields** in the TypeDuck response plus optional `yune_typeduck_*` read helpers; it must not widen `RimeCandidate`, reorder the `RimeApi` table, or move provider work into the per-key path. M18 can now build Yune-native `.table.bin`/`.prism.bin`/`.reverse.bin` artifacts; Bucket 3 should choose Yune-generated artifacts or pre-compiled upstream artifacts based on browser asset-budget and provenance needs.
 
 **Tech Stack:** Rust `yune-core` / `yune-rime-api`, Emscripten WASM, `@yune-ime/typeduck-runtime`, TypeDuck-Web React/TypeScript, Playwright.
+
+**Progress note (2026-06-20).** Bucket 2 is complete in `d548c9cf`
+(`Implement M22 Bucket 2 debug inspector`). The inspector is opt-in/off by
+default, preserves classic response identity when disabled, has committed
+Playwright evidence under
+`third_party/typeduck-web/e2e/results/m22-bucket2-inspector/`, and did not
+change the default ABI layout files. Bucket 1 honest controls and Bucket 3
+multi-schema/reverse-lookup work remain active.
 
 ---
 
@@ -27,7 +35,7 @@
 - **`RimeCandidate.reserved` is the only fork-only extension slot.** `crates/yune-rime-api/src/abi.rs:57` (`pub reserved: *mut std::ffi::c_void`) — a null `void*` per upstream Rime ABI, safe to repurpose without changing the default table. `select_schema` already exists as a table slot (`abi.rs:301`).
 - **Multi-schema assets are half-present.** `worker.ts:132` hard-codes `SCHEMA_ID = "jyut6ping3_mobile"`; `worker.ts:167-200` already loads `luna_pinyin.schema.yaml`/`.dict.yaml`, `cangjie5.schema.yaml`/`.dict.yaml`, and `cangjie3.*` as **source YAML extra-shared assets**, but the second `loadExtraSharedAssets([...], true)` binary block (`worker.ts:193-200`) lists **only `jyut6ping3*` compiled `.bin` artifacts**. Directory listing confirms `cangjie5.dict.yaml` (449 KB) and `luna_pinyin.dict.yaml` (471 KB) exist with **no** `.table.bin`/`.prism.bin`/`.reverse.bin`. The `jyut6ping3.schema.yaml` (`source/public/schema/jyut6ping3.schema.yaml`) already declares `luna_pinyin`/`cangjie5` as reverse-lookup namespaces with `prefix: "\`p"`/`"\`c"`, proving the reverse-lookup shape Yune already runs.
 - **Reverse lookup is supported in-engine.** `ReverseLookupTranslator` (`crates/yune-core/src/translator/mod.rs:1184-1325`, codes joined `"; "` at `:1295`) and `ReverseLookupFilter` (`crates/yune-core/src/filter/mod.rs:723-800`); config loaders at `schema_install.rs:340-393` / `:590-630` / `:764-778`; the `"; "` joiner is a locked fork-parity behavior (`docs/fork-parity-ledger.md:105`, F5).
-- **M18 blocks dictionary compilation.** `docs/plans/m18-plan-deployment-and-processor-depth.md` adds `build_prism_bin`/`build_table_bin`/`build_reverse_bin`; until then Yune consumes pre-compiled upstream `.bin` only (`docs/decisions.md` D-08). So `cangjie5`/`luna_pinyin` must ship as **pre-compiled upstream artifacts** extracted with `rime_deployer.exe --build` (`scripts/capture-upstream-luna-pinyin.ps1`).
+- **M18 removed the dictionary-compilation blocker.** `docs/plans/archive/m18-plan-deployment-and-processor-depth.md` added `build_prism_bin`/`build_table_bin`/`build_reverse_bin`, so M22 no longer has to rely on a precompiled-asset workaround. Bucket 3 should still record whether it uses Yune-generated artifacts or pre-compiled upstream artifacts, with provenance and measured browser asset sizes either way.
 - **TypeDuck profile artifacts already proven (parallel oracle).** M19 onboards upstream `cangjie5` and `luna_pinyin` parity against the `1.17.0` oracle (`docs/plans/m19-plan-breadth-schemas.md`). M22 reuses those provenance-stamped schema/dictionary identities for the browser bundle; it does **not** reopen M19 capture.
 
 ---
@@ -37,7 +45,7 @@
 **In scope.**
 
 - **Bucket 1 — Missing honest toggles** (browser-safe, genuinely user-facing, not yet surfaced): `traditionalization` (live `setOption("traditionalization")`, conditioned on a real observable simplifier gear), `extended_charset` (live `setOption("extended_charset")`) **plus its `charset_filter`/`cjk_minifier` install dependency for the active schema**, `disabled` (live `setOption("disabled")`), and `dictionary_exclude` (deploy-time `customize()` + `deploy()`). Each ACTIVE control must clear the M20 honesty gate with real browser before/after evidence; otherwise it is a documented browser-surface N/A.
-- **Bucket 2 — Read-only debug inspector** (observation, NOT toggles): a per-keystroke panel showing segments + `segment_tags`, each candidate's SOURCE (which translator/filter produced it), comments, preedit, spelling-algebra code expansion, the filter pipeline, prediction scores vs the weight threshold, and AI staging. Delivered as additive opt-in debug JSON fields in the TypeDuck response plus optional `yune_typeduck_*` read helpers and additive `Engine` accessors; **zero default-ABI change**.
+- **Bucket 2 — Read-only debug inspector (complete)**: shipped in `d548c9cf` as additive opt-in debug JSON plus a read-only browser panel. It shows segments + `segment_tags`, candidate source/quality/preedit/comment details, spelling-algebra expansion, filter audit, prediction scores vs the weight threshold, and AI staging; **zero default-ABI change**.
 - **Bucket 3 — Multi-schema**: load THREE schemas in the playground — `jyut6ping3_mobile` + `cangjie5` + `luna_pinyin` — behind a schema-switcher UI wired through `RimeSelectSchema` (runtime re-init), with **reverse lookup enabled for both new schemas** (`cangjie5` and `luna_pinyin`). This unblocks `show_full_code` and the schema-switch surface (M20 browser-surface N/A) and gives M21 a multi-schema surface.
 - Browser evidence under `third_party/typeduck-web/e2e/results/m22-playground-multischema-inspector/` for every ACTIVE control, every inspector field, and every schema switch.
 - Patch regeneration + reverse/forward check of `patches/yune-typeduck-runtime.patch`.
@@ -45,12 +53,12 @@
 **Non-goals.**
 
 - **These must NOT become toggles** (inspect-only in Bucket 2, or left as always-on internals, because none has an honest user-facing before/after): `uniquifier_filter`, `single_char_filter`, `charset_filter` (**always-on** install gear; only its `extended_charset` *option* is a Bucket-1 toggle), schema-owned templates (`spelling_algebra`, `comment_format`, `preedit_format`, `tolerance_rules`, `prefix_suffix`, `segment_tags`), and internal `_`-prefixed options (`_vertical`, `_fold_options`, `_auto_commit`, `_chord_typing`, `_hide_candidate`). The inspector *shows* these; it does not expose them as controls.
-- **`ascii_punct` stays deferred to M18.** Do not expose it as a working toggle. Keep it labeled deferred (it is present in `engine.set_option()` at `engine.rs:281`, but its processor-level bypass lands in M18 per `docs/plans/m18-plan-deployment-and-processor-depth.md`).
+- **`ascii_punct` is engine-backed after M18 but still needs browser evidence.** Do not expose it as a working toggle until Bucket 1 proves a browser-visible before/after through the M20 honesty gate.
 - **No change to the default `RimeApi` table or `RimeCandidate` ABI.** No widening, no reorder, no new default-table slot. Inspector extensions are opt-in JSON + optional non-default `yune_typeduck_*` helpers only. (`abi.rs`, `api_table.rs`, `candidate_api.rs` stay diff-free.)
 - **AI invariants unchanged:** AI default-off, classic-first, second-pass-only; `yune_typeduck_process_key` stays provider-free; provider work only behind `stage_ai`.
 - **Upstream-first baseline preserved** outside the TypeDuck-Web/profile surface.
 - **userdb persistence stays browser-limited** (in-memory / IndexedDB via IDBFS, not native file I/O); the inspector observes learning state but does not promise native-file persistence.
-- Building `.bin` dictionaries in-repo (blocked until M18). New schemas ship as pre-compiled upstream artifacts.
+- Claiming browser multi-schema support without generated or provenance-stamped compiled artifacts. Bucket 3 can use M18's Yune-native writers or pre-compiled upstream artifacts, but must record provenance, measured sizes, and any per-schema blocker.
 - Reopening M13 (AI exposure), M19 (oracle capture), or M21 (product-comparison protocol). M22 does not touch a separately cloned `TypeDuck-HK/TypeDuck-Web` product checkout.
 
 ---
@@ -76,7 +84,7 @@
 
 - [ ] Render `traditionalization`, `extended_charset`, `disabled` toggles only for controls that passed the Task-1 honesty pre-check; render `dictionary_exclude` as a small comma/line list editor. Group them under the existing engine-controls section, separate from display-only controls.
 - [ ] Wire live toggles into the existing `setOption()` effect in `App.tsx` (the effect family added in M20 for `ascii_mode`/`full_shape`/`simplification`) and the `dictionary_exclude` editor into the `customize()`/`deploy()` effect; add the new keys to the effect dependency lists.
-- [ ] Keep `ascii_punct` absent from active controls. If the UI mentions it, the text must say "deferred to M18" and render no toggle.
+- [ ] Keep `ascii_punct` absent from active controls unless the Bucket-1 honesty gate proves a browser-visible before/after for the now engine-backed behavior. If it is mentioned before that evidence exists, label it as "engine-backed; browser evidence pending" and render no working toggle.
 - [ ] For any control the honesty pre-check downgraded to N/A, render it as an explicitly labeled, disabled/annotated row (or omit it) — never as an interactive toggle that does nothing.
 - [ ] **Acceptance:** the app builds (`npm run build` in `source/`, or the checkout's Bun script); every rendered Bucket-1 toggle is backed by a measured before/after; `ascii_punct` renders no working toggle.
 
@@ -90,7 +98,11 @@
 - [ ] Add an M22 Bucket-1 section to `yune-browser-smoke.md`.
 - [ ] **Acceptance:** the honesty gate passes; each ACTIVE Bucket-1 control has committed before/after browser evidence; each N/A is documented.
 
-### Bucket 2 — Engine debug inspector (READ-ONLY)
+### Bucket 2 — Engine debug inspector (READ-ONLY, complete)
+
+Closed by `d548c9cf`. The checklist below is retained as the completed
+acceptance record; future M22 workers should not redo this bucket except for
+regression fixes.
 
 #### Task 4 — Additive engine-state marshalling (no default-ABI change)
 
@@ -133,7 +145,7 @@
 
 **Files:** `third_party/typeduck-web/source/public/schema/` (add `.bin` artifacts), `scripts/` capture wrapper notes
 
-- [ ] **Honesty gate (M18 dependency):** Yune cannot build `.table.bin`/`.prism.bin`/`.reverse.bin` until M18 (`docs/plans/m18-plan-deployment-and-processor-depth.md`, `docs/decisions.md` D-08). Extract pre-compiled upstream artifacts for `cangjie5` and `luna_pinyin` from the pinned upstream `1.17.0` data using `rime_deployer.exe --build` (template: `scripts/capture-upstream-luna-pinyin.ps1`), with provenance stamped to match the M19 schema-data identities. Add `cangjie5.table.bin`, `cangjie5.prism.bin`, `cangjie5.reverse.bin`, `luna_pinyin.table.bin`, `luna_pinyin.prism.bin`, `luna_pinyin.reverse.bin`.
+- [ ] **Honesty gate (artifact provenance):** M18 can now build `.table.bin`/`.prism.bin`/`.reverse.bin`, so choose either Yune-generated artifacts or pre-compiled upstream artifacts for `cangjie5` and `luna_pinyin`. Stamp provenance to match the M19 schema-data identities, record which producer was used, and add `cangjie5.table.bin`, `cangjie5.prism.bin`, `cangjie5.reverse.bin`, `luna_pinyin.table.bin`, `luna_pinyin.prism.bin`, `luna_pinyin.reverse.bin` or a precise per-schema blocker.
 - [ ] **Asset-budget risk (luna_pinyin):** `luna_pinyin.dict.yaml` is 471 KB source; its compiled `.table.bin` size is unknown (estimate 1–5 MB by analogy to `jyut6ping3.table.bin` 4.2 MB). Record measured `.bin` sizes and the total multi-schema bundle size; if the bundle threatens the browser WASM memory budget, document the size and consider lazy per-schema asset fetch (fetch a schema's `.bin` only on first switch) rather than eager bundling.
 - [ ] If an upstream-`.bin` cannot be produced for a schema, record a precise blocker and ship that schema as **source-only / N/A** rather than a half-loaded broken schema.
 - [ ] **Acceptance:** the three schemas have compiled artifacts checked in with provenance, or a recorded per-schema blocker; measured sizes documented.
@@ -151,7 +163,7 @@
 
 **Files:** schema config for the loaded `cangjie5`/`luna_pinyin` browser schemas, `source/public/schema/` reverse dicts/`.reverse.bin`
 
-- [ ] Enable reverse lookup for **both** new schemas using the in-engine `ReverseLookupTranslator`/`ReverseLookupFilter` already supported (`translator/mod.rs:1184-1325`, `filter/mod.rs:723-800`; loaders `schema_install.rs:340-393`/`:590-630`/`:764-778`). Provide each schema a `reverse_lookup` namespace (dictionary, `prefix`, optional `suffix`, optional `comment_format`) — mirror the existing `jyut6ping3.schema.yaml` reverse-lookup shape (`prefix: "\`c"`/`"\`p"`). Ship the reverse dict as a pre-compiled upstream `.reverse.bin` (Task 8) since Yune cannot build it pre-M18.
+- [ ] Enable reverse lookup for **both** new schemas using the in-engine `ReverseLookupTranslator`/`ReverseLookupFilter` already supported (`translator/mod.rs:1184-1325`, `filter/mod.rs:723-800`; loaders `schema_install.rs:340-393`/`:590-630`/`:764-778`). Provide each schema a `reverse_lookup` namespace (dictionary, `prefix`, optional `suffix`, optional `comment_format`) — mirror the existing `jyut6ping3.schema.yaml` reverse-lookup shape (`prefix: "\`c"`/`"\`p"`). Ship a generated or provenance-stamped `.reverse.bin` from Task 8.
 - [ ] Preserve the locked `"; "` reverse-lookup joiner (`fork-parity-ledger.md:105`, F5; `translator/mod.rs:1295`) so reverse lookup shows candidate text + looked-up code(s).
 - [ ] **Honesty note:** reverse-dict availability for `luna_pinyin` is uncertain (the live fixture has no reverse lookup defined); if no upstream reverse dict can be produced, record reverse lookup for that schema as N/A rather than shipping a dead `\`` trigger.
 - [ ] **Acceptance:** typing the reverse-lookup trigger in `cangjie5` and `luna_pinyin` returns candidates with both the looked-up code and the schema comment; or a documented per-schema N/A.
@@ -190,10 +202,10 @@
 
 ## Acceptance criteria
 
-- **Bucket 1:** every shipped ACTIVE toggle (`traditionalization`/`extended_charset`/`disabled`/`dictionary_exclude`) has real browser before/after evidence; any control that could not be made browser-observable is a documented browser-surface N/A, not a fake toggle; `ascii_punct` renders no working toggle and stays labeled deferred to M18.
+- **Bucket 1:** every shipped ACTIVE toggle (`traditionalization`/`extended_charset`/`disabled`/`dictionary_exclude`, and `ascii_punct` only if browser evidence proves the M18 engine-backed behavior is visible) has real browser before/after evidence; any control that could not be made browser-observable is a documented browser-surface N/A, not a fake toggle.
 - **Bucket 2:** the read-only inspector shows segments + `segment_tags`, full candidate SOURCE coverage, comments/preedit/quality, spelling-algebra expansion, the filter pipeline, prediction scores vs the weight threshold, and AI staging; it is opt-in and off by default; classic candidate output is byte-identical with the inspector on or off; the honesty-gate exclusion-list features are inspected, not toggled.
-- **Bucket 3:** three schemas (`jyut6ping3_mobile` + `cangjie5` + `luna_pinyin`) load with a working schema switcher (via `RimeSelectSchema`/re-init) and reverse lookup enabled for both new schemas (or a documented per-schema N/A); `show_full_code` and the schema-switch surface — both M20 browser-surface N/A — now have real browser before/after evidence; new schemas ship as pre-compiled upstream `.bin` artifacts with provenance and measured sizes.
-- **Invariants:** default `RimeApi` table and `RimeCandidate` unchanged (`abi.rs`/`api_table.rs`/`candidate_api.rs` diff-free); AI default-off / classic-first / second-pass-only preserved; upstream-first baseline preserved; `ascii_punct` deferred to M18; userdb persistence stays browser-limited (IndexedDB/in-memory).
+- **Bucket 3:** three schemas (`jyut6ping3_mobile` + `cangjie5` + `luna_pinyin`) load with a working schema switcher (via `RimeSelectSchema`/re-init) and reverse lookup enabled for both new schemas (or a documented per-schema N/A); `show_full_code` and the schema-switch surface — both M20 browser-surface N/A — now have real browser before/after evidence; new schemas ship with generated or provenance-stamped compiled artifacts and measured sizes.
+- **Invariants:** default `RimeApi` table and `RimeCandidate` unchanged (`abi.rs`/`api_table.rs`/`candidate_api.rs` diff-free); AI default-off / classic-first / second-pass-only preserved; upstream-first baseline preserved; `ascii_punct` is not exposed as a working browser toggle without fresh before/after evidence; userdb persistence stays browser-limited (IndexedDB/in-memory).
 - **Honesty:** every ACTIVE control changes candidate/commit/status/persisted config; every display change proves a rendering diff; everything else is a guided scenario or documented N/A.
 - The maintained TypeDuck-Web patch reverse- and forward-checks cleanly; full Rust/TS/browser gates pass or record a precise blocker.
 
@@ -203,7 +215,7 @@
 
 - **Bucket 1 toggles:** extended `RimePreferences`/`DEFAULT_PREFERENCES` (`types.ts`, `consts.ts`); adapter `setOption`/`customize` mappings for `traditionalization`/`extended_charset`/`disabled`/`dictionary_exclude` (`source/src/yune-integration/adapter.ts`) + `adapter-filesystem.test.ts` coverage; honest grouped UI controls (`App.tsx`, `Preferences.tsx`, `Inputs.tsx`).
 - **Bucket 2 inspector:** additive full-source + debug-field marshalling and optional `yune_typeduck_set_inspector_enabled` / `yune_typeduck_candidate_metadata` helpers (`crates/yune-rime-api/src/typeduck_web.rs`); additive read-only `Engine` accessors (`crates/yune-core/src/engine.rs`); `YuneInspector.tsx` read-only panel + `response.ts` debug passthrough; tests in `crates/yune-rime-api/tests/typeduck_web.rs`.
-- **Bucket 3 multi-schema:** pre-compiled upstream `cangjie5.*`/`luna_pinyin.*` `.table.bin`/`.prism.bin`/`.reverse.bin` artifacts under `source/public/schema/` with provenance; multi-schema worker loading (`worker.ts`); `SchemaSelector.tsx` + `RimeSelectSchema` wiring; reverse-lookup config for both new schemas.
+- **Bucket 3 multi-schema:** generated or provenance-stamped `cangjie5.*`/`luna_pinyin.*` `.table.bin`/`.prism.bin`/`.reverse.bin` artifacts under `source/public/schema/`; multi-schema worker loading (`worker.ts`); `SchemaSelector.tsx` + `RimeSelectSchema` wiring; reverse-lookup config for both new schemas.
 - **Evidence:** `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` honesty/inspector/multi-schema assertions; `e2e/yune-browser-smoke.md` M22 section; committed evidence under `third_party/typeduck-web/e2e/results/m22-playground-multischema-inspector/` (per-control before/after, inspector snapshots, schema-switch + reverse-lookup screenshots, ABI no-diff log, AI-invariant log).
 - **Patch + docs:** regenerated `patches/yune-typeduck-runtime.patch`; `docs/roadmap.md` + `docs/requirements.md` (`M22-PLAY-0x`) updated to landed status.
 - **This plan:** `docs/plans/m22-plan-web-playground-multischema-inspector.md`.

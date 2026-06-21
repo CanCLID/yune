@@ -420,6 +420,21 @@ punctuation fixture is captured by `scripts/capture-upstream-m18-punctuation.ps1
 The completed plan is archived at
 [`plans/archive/m18-plan-deployment-and-processor-depth.md`](./plans/archive/m18-plan-deployment-and-processor-depth.md).
 
+### M22 Bucket 2: Read-only debug inspector
+
+The read-only debug inspector bucket of M22 is complete. The inspector is
+opt-in/off by default, adds debug JSON and a browser panel for segment tags,
+candidate source/quality/preedit/comment details, spelling-algebra expansion,
+prediction score/threshold data, filter audit, and AI staging state, and
+preserves classic candidate output identity when disabled. The default
+`RimeApi` table, `RimeCandidate`, and ABI layout files remain unchanged.
+
+Evidence is committed under
+`third_party/typeduck-web/e2e/results/m22-bucket2-inspector/`, and the
+implementation landed in `d548c9cf` (`Implement M22 Bucket 2 debug inspector`).
+M22 remains active for Bucket 1 honest browser controls and Bucket 3
+multi-schema/reverse-lookup playground work.
+
 ---
 
 ## Parked
@@ -450,7 +465,7 @@ In priority order:
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 2. **Keep M9/M13/M16/M20 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, default-off M13 AI scenarios, and M20 showcase-control honesty checks.
 3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
-4. **Advance Track 2 (M17/M19/M22) opportunistically.** M18's prism generation, deployment writers, rebuild executor, and punctuation processor depth are complete; the remaining upstream-depth work is breadth schemas, multi-schema product/debug surfaces, and the optional M17 language-model slice.
+4. **Advance Track 2 (M19/M22/M17) opportunistically.** M18's prism generation, deployment writers, rebuild executor, and punctuation processor depth are complete, and M22's read-only debug inspector bucket has landed. The remaining upstream-depth work is breadth schemas, M22's honest browser controls and multi-schema product surface, and the optional M17 language-model slice.
 5. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
 6. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
 7. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
@@ -461,9 +476,10 @@ In priority order:
 ## Planned / Next up
 
 Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
-list. **TypeDuck `jyut6ping3` reconciliation (M14–M16), the M20 browser
-playground, M23 architecture hardening, and M18 deployment/processor depth are complete** (see *Completed* above). The remaining engine-depth arc
-is **Track 2 (broad upstream depth):**
+list. **TypeDuck `jyut6ping3` reconciliation (M14-M16), the M20 browser
+playground, M23 architecture hardening, M18 deployment/processor depth, and M22
+Bucket 2 read-only inspector are complete** (see *Completed* above). The
+remaining engine-depth arc is **Track 2 (broad upstream depth):**
 
 ### Execution order — what to do next
 
@@ -474,15 +490,13 @@ product-critical slice** (not required by any current named target), and the
 TypeDuck profile-tuning leak was gated in M23 before M19 adds schemas through
 the same shared sentence path.
 
-1. **M22 read-only debug inspector bucket (pull forward, parallelizable).** This
-   bucket makes verifying every later milestone far easier, so do it early.
-   M22's multi-schema bucket still waits for M19.
-2. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
+1. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
    the real `cangjie5` / `luna_pinyin` artifacts M22 multi-schema needs, and names
    the TypeDuck-profile ABI surface the parked M10 is waiting on.
-3. **M22 multi-schema bucket.** Multi-schema playground on real M18 + M19 output,
-   not a precompiled workaround.
-4. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
+2. **M22 remaining playground buckets.** Finish honest browser controls (Bucket 1)
+   and multi-schema/reverse-lookup playground work (Bucket 3) on real M18 + M19
+   output, not a precompiled workaround. Bucket 2 is already complete.
+3. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
    not required by any current named target. Do it when a frontend actually ships
    `luna_pinyin` sentence input to users.
 
@@ -556,12 +570,13 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   after M18 but still needs M22 browser evidence before it becomes an active web
   toggle. Every active control must clear the M20 honesty
   gate (real browser before/after) or be a documented browser-surface N/A. **(2)
-  Read-only debug inspector:** a per-keystroke panel that *observes* (never toggles)
-  segments + `segment_tags`, each candidate's source translator/filter (extending
-  `attach_candidate_sources()`, `typeduck_web.rs:589-619`), comments/preedit,
-  spelling-algebra expansion, the filter pipeline, prediction scores vs the threshold,
-  and AI staging — additive opt-in debug JSON only, **no default
-  `RimeApi`/`RimeCandidate` ABI change**. **(3) Multi-schema (highest leverage):**
+  Read-only debug inspector (complete):** an opt-in per-keystroke panel observes
+  segments + `segment_tags`, each candidate's source/quality/preedit/comment,
+  spelling-algebra expansion, the filter pipeline, prediction scores vs the
+  threshold, and AI staging with additive debug JSON only and **no default
+  `RimeApi`/`RimeCandidate` ABI change**; evidence lives under
+  `third_party/typeduck-web/e2e/results/m22-bucket2-inspector/`. **(3)
+  Multi-schema (highest leverage):**
   load three schemas — `jyut6ping3_mobile` + `cangjie5` + `luna_pinyin` — behind a
   schema-switcher wired to the existing `RimeSelectSchema` ABI (`abi.rs:301`), with
   reverse lookup on both new schemas; unblocks `show_full_code` and the schema-switch

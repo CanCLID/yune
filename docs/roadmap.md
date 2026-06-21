@@ -589,19 +589,18 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
 
 - **M25 - TypeDuck-Web dogfooding round 2 (intake)** - captures the next manual
   play-testing batch for the internal `third_party/typeduck-web/` playground.
-  The first open rows are `M25-DOGFOOD-01` for slow reload/startup
-  performance, `M25-DOGFOOD-02` for page-size slider discoverability plus
-  candidate pagination correctness, and `M25-DOGFOOD-03` for per-key typing
-  responsiveness and loading-state separation. `M25-DOGFOOD-04` adds a compact
-  schema switcher layout row and the `luna_pinyin` visible-name correction;
-  `M25-DOGFOOD-05` moves the Cangjie version control into that same top-control
-  area; `M25-DOGFOOD-06` swaps Display controls above Live session controls in
-  the settings grid; `M25-DOGFOOD-07` replaces unintuitive pill-style binary
-  switches with checkbox-style controls; `M25-DOGFOOD-08` corrects the Jyutping
-  luna_pinyin reverse-lookup trigger from `` `p`` to bare `` ` ``; and
-  `M25-DOGFOOD-09` changes Candidate Menu Layout from a segmented control to
-  radio selection; `M25-DOGFOOD-10` aligns IME Settings horizontal margins
-  with the playground content above it.
+  Current intake is grouped for review and execution:
+  - Performance and responsiveness blockers: `M25-DOGFOOD-01` slow
+    reload/startup and `M25-DOGFOOD-03` per-key typing responsiveness.
+  - Candidate/settings correctness: `M25-DOGFOOD-02` page-size slider plus
+    rendered candidate cap and `M25-DOGFOOD-08` Jyutping luna_pinyin
+    reverse-lookup trigger from `` `p`` to bare `` ` ``.
+  - Top-control and settings layout: `M25-DOGFOOD-04` compact schema switcher
+    plus `luna_pinyin` visible-name correction, `M25-DOGFOOD-05` Cangjie
+    version in top controls, `M25-DOGFOOD-06` Display controls above Live
+    session controls, and `M25-DOGFOOD-10` IME Settings margin alignment.
+  - Control affordance polish: `M25-DOGFOOD-07` checkbox-style binary controls
+    and `M25-DOGFOOD-09` Candidate Menu Layout as radio selection.
   The startup row now prioritizes
   release-mode browser WASM and deploy-state reuse before lower-level runtime
   micro-optimization, because current evidence points at a debug Emscripten

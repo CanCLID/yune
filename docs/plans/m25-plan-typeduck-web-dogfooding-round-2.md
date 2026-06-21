@@ -59,6 +59,24 @@ Classify every report before editing code:
 - Do not use `https://www.typeduck.hk/web/` as a hard oracle. It is a useful feel target only.
 - Keep completed M9/M13/M16/M20/M22/M24 gates green unless a row explicitly changes a supported contract with fresh evidence.
 
+## Review Summary For Claude
+
+Use this section as the high-level review map. The running ledger below remains the source of truth for exact evidence paths, owning files, and close criteria.
+
+| Execution group | Rows | Why this grouping matters |
+|---|---|---|
+| Performance and responsiveness blockers | `M25-DOGFOOD-01`, `M25-DOGFOOD-03` | These decide whether the app feels usable at all. Review first for measurement quality, startup phase attribution, and whether normal typing is separated from deploy/customize/loading work. |
+| Candidate/settings correctness | `M25-DOGFOOD-02`, `M25-DOGFOOD-08` | These affect user-visible IME behavior. `M25-DOGFOOD-02` must fix both the settings key path and rendered candidate cap; `M25-DOGFOOD-08` intentionally supersedes the historical M24 `` `p`` web trigger request with the new bare-grave dogfood expectation. |
+| Top-control and settings layout | `M25-DOGFOOD-04`, `M25-DOGFOOD-05`, `M25-DOGFOOD-06`, `M25-DOGFOOD-10` | These should be implemented together only after the correctness blockers are understood, because they share `App.tsx`, `Toolbar.tsx`, `SchemaSwitcher.tsx`, and `Preferences.tsx` layout surfaces. |
+| Control affordance polish | `M25-DOGFOOD-07`, `M25-DOGFOOD-09` | These are local component presentation changes. They can be batched if tests preserve the individual checkbox and radio close criteria. |
+
+Claude review should focus on four questions:
+
+1. Is the startup plan still aimed at the validated P0 suspects: debug browser WASM and forced schema invalidation before lower-level micro-optimization?
+2. Does the page-size row protect both `menu/page_size` browser/runtime wiring and the candidate panel's rendered row cap?
+3. Is the reverse-lookup row clear that bare `` ` `` is an M25 dogfood correction request, even though captured TypeDuck `v1.1.2` schema evidence still shows `` `p``?
+4. Can the UI rows be batched by touched surfaces without losing per-row browser evidence and close criteria?
+
 ## Patch-Layer Rule
 
 `third_party/typeduck-web/source/` is gitignored in the Yune repository. Local edits there are allowed for development, but a M25 row is not closed until the matching tracked artifacts are updated.

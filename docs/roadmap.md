@@ -333,8 +333,9 @@ as a documented demo default, while the checked-in raw mobile assets still
 record the `common:/separate_candidates` patch. For the current
 `jyut6ping3_mobile` browser schema, reverse/Cangjie/show-full-code evidence
 records the missing `cangjie` namespace as N/A instead of exposing a fake
-control. `ascii_punct` is explicitly not exposed as a working toggle until M18
-implements the processor-level behavior.
+control. `ascii_punct` now has M18 core/ABI processor behavior, but the browser
+playground should expose it only after a dedicated browser-visible M22 evidence
+slice proves the control honestly changes observable output.
 As Yune adds browser-safe engine features, this playground should gain either an
 active control or a guided scenario so the web surface stays useful for future
 regression hunts and product demos.
@@ -393,6 +394,32 @@ into behavior-owned include files with unchanged test names.
 The completed plan is archived at
 [`plans/archive/m23-plan-architecture-hardening.md`](./plans/archive/m23-plan-architecture-hardening.md).
 
+### M18: Deployment & processor depth
+
+M18 turned the dictionary subsystem from read/plan-only into read/write for the
+named Yune artifact surface. `yune-core` now has pure-Rust Darts double-array
+support, parses real upstream prism double-array sections, builds
+`build_table_bin` / `build_reverse_bin` / `build_prism_bin`, and exposes
+`execute_rebuild_plan` so a rebuild plan can write exactly the artifacts it marks
+rebuilt. The RIME deployer path now delegates to those public writers instead of
+private placeholder serializers; generated table/reverse artifacts round-trip
+through the existing readers, and generated prism artifacts include a real
+double-array spelling index.
+
+M18 also closed the M12/M20 punctuation processor blockers without changing
+`RimeApi`, candidate ABI, or TypeDuck profile ABI. A new upstream 1.17.0
+curated punctuation fixture proves `ascii_punct` returns upstream no-op for
+configured punctuation keys, `{commit: ...}` commits immediately, scalar
+punctuation creates confirm-unique preview state, pair punctuation alternates
+preview text, and list punctuation cycles the selected candidate. The former
+ignored core parity blockers are now active, and the ABI processor follows the
+same behavior. The upstream prism fixture
+`m18-luna-pinyin-prism.bin` proves Yune parses a real librime Darts section; the
+punctuation fixture is captured by `scripts/capture-upstream-m18-punctuation.ps1`.
+
+The completed plan is archived at
+[`plans/archive/m18-plan-deployment-and-processor-depth.md`](./plans/archive/m18-plan-deployment-and-processor-depth.md).
+
 ---
 
 ## Parked
@@ -423,7 +450,7 @@ In priority order:
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 2. **Keep M9/M13/M16/M20 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, default-off M13 AI scenarios, and M20 showcase-control honesty checks.
 3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
-4. **Advance Track 2 (M17-M19) opportunistically.** The upstream language model, prism generation, deployment-write, and breadth schemas now follow the upstream-first scope ledger after the M14-M16 TypeDuck-Web closeout, M20 browser playground work, and M23 hardening.
+4. **Advance Track 2 (M17/M19/M22) opportunistically.** M18's prism generation, deployment writers, rebuild executor, and punctuation processor depth are complete; the remaining upstream-depth work is breadth schemas, multi-schema product/debug surfaces, and the optional M17 language-model slice.
 5. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
 6. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
 7. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
@@ -435,33 +462,27 @@ In priority order:
 
 Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
 list. **TypeDuck `jyut6ping3` reconciliation (M14–M16), the M20 browser
-playground, and M23 architecture hardening are complete** (see *Completed* above). The remaining engine-depth arc
+playground, M23 architecture hardening, and M18 deployment/processor depth are complete** (see *Completed* above). The remaining engine-depth arc
 is **Track 2 (broad upstream depth):**
 
 ### Execution order — what to do next
 
 This is the **authoritative sequence**; the per-milestone detail bullets below
-are reference, not order. The ordering follows the dependency map from the
-2026-06-20 architecture review: **M18 is an unblocker** (no dictionary writers
-exist yet, so M19 breadth / M22 multi-schema otherwise build on a precompiled-
-asset crutch — see M18 and M22 bullets), **M17 is the heaviest and least
+are reference, not order. M18 has removed the precompiled-asset crutch for later
+breadth and multi-schema work. **M17 remains the heaviest and least
 product-critical slice** (not required by any current named target), and the
 TypeDuck profile-tuning leak was gated in M23 before M19 adds schemas through
 the same shared sentence path.
 
-1. **M18 — deployment & processor depth (the unblocker).** Dictionary-writer
-   bytes (`build_table_bin` / `build_prism_bin` / `build_reverse_bin` + a pure-Rust
-   darts double array + a rebuild executor) and the deferred `ascii_punct`
-   processor toggle. Everything breadth / multi-schema / product sits on this.
-2. **M22 read-only debug inspector bucket (pull forward, parallelizable).** This
-   bucket of M22 has no M18 dependency and makes verifying every later milestone
-   far easier, so do it early. M22's multi-schema bucket waits for M18 + M19.
-3. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
+1. **M22 read-only debug inspector bucket (pull forward, parallelizable).** This
+   bucket makes verifying every later milestone far easier, so do it early.
+   M22's multi-schema bucket still waits for M19.
+2. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
    the real `cangjie5` / `luna_pinyin` artifacts M22 multi-schema needs, and names
    the TypeDuck-profile ABI surface the parked M10 is waiting on.
-4. **M22 multi-schema bucket.** Multi-schema playground on real M18 + M19 output,
+3. **M22 multi-schema bucket.** Multi-schema playground on real M18 + M19 output,
    not a precompiled workaround.
-5. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
+4. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
    not required by any current named target. Do it when a frontend actually ships
    `luna_pinyin` sentence input to users.
 
@@ -495,26 +516,17 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   TypeDuck-Web parity. Octagram/`.gram` bigram models, the C++ plugin ABI, and
   `contextual_translation` beyond the two named tests stay out of scope.
   Detail: [`plans/m17-plan-upstream-language-model-poet.md`](./plans/m17-plan-upstream-language-model-poet.md).
-- **M18 — Deployment & processor depth** — turns the dictionary subsystem from
+- **M18 — Deployment & processor depth (complete)** — turned the dictionary subsystem from
   read-and-plan into read-write and teaches the Engine the punctuation-processor
-  behaviors the M12 harness left blocked. Today Yune parses source YAML and compiled
-  `.table.bin`/`.prism.bin`/`.reverse.bin` and `rime_dict_rebuild_plan` decides what
-  is stale, but no code writes artifact bytes (the prism reader hard-rejects any darts
-  double-array, `compiled_prism.rs:60-64`; `spelling_algebra.rs` is a runtime expander,
-  not a serializer). M18 adds a pure-Rust darts double-array, a `speller/algebra`-driven
+  behaviors the M12 harness left blocked. Yune now parses source YAML and compiled
+  `.table.bin`/`.prism.bin`/`.reverse.bin`, and `rime_dict_rebuild_plan` decisions can be
+  executed by public writers. M18 added a pure-Rust darts double-array, a `speller/algebra`-driven
   prism generator, and public `build_table_bin`/`build_reverse_bin`/`build_prism_bin`
-  writers (Yune's own round-trippable format, not marisa) plus a `rime_dict_rebuild_plan`
-  executor. On the processor side it wires the already-tracked-but-unconsulted
-  `ascii_punct` status (`engine.rs:281,296`) into a real `kNoop`-style bypass and adds
-  immediate-commit/confirm-unique/pair punctuation from upstream `punctuator.cc`,
-  un-ignoring the two M12 blockers (`upstream_luna_pinyin_parity.rs:383,389`) and landing
-  the M20-deferred `ascii_punct` toggle through the existing `setOption()` path with no
-  ABI change. Oracle discipline: the blocked punctuation tests get
-  **capture-goldens-first** (the current fixture has no `ascii_punct=ON` snapshot), not
-  Yune-derived expectations. Heavy/risky slice = the darts writer (it gates prism
-  generation); fallback is Yune-native prism bytes that round-trip Yune's reader,
-  recorded as a named divergence.
-  Detail: [`plans/m18-plan-deployment-and-processor-depth.md`](./plans/m18-plan-deployment-and-processor-depth.md).
+  writers (Yune's own round-trippable table/reverse format, not marisa) plus a rebuild
+  executor. On the processor side it wires `ascii_punct` into an upstream no-op bypass
+  and adds immediate-commit/confirm-unique/pair/list punctuation from upstream
+  `punctuator.cc`, un-ignoring the two M12 blockers with fresh upstream fixtures.
+  Detail: [`plans/archive/m18-plan-deployment-and-processor-depth.md`](./plans/archive/m18-plan-deployment-and-processor-depth.md).
 - **M19 — Breadth (toward B)** — onboards three common upstream schemas — Shuangpin
   (`double_pinyin`), Cangjie (`cangjie5`), Zhuyin (`bopomofo`) — into Yune's named
   compatibility set, each measured against the upstream `1.17.0` oracle through the
@@ -540,8 +552,9 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   honest toggles:** the browser-safe user-facing controls M20 skipped —
   `traditionalization`, `disabled`, `extended_charset` (via `setOption()`; the option
   the always-on `CharsetFilter` reads, `filter/mod.rs:65-69`), and deploy-time
-  `dictionary_exclude` (`schema_install.rs:281-297`); `ascii_punct` stays deferred to
-  M18 and is never shown as working. Every active control must clear the M20 honesty
+  `dictionary_exclude` (`schema_install.rs:281-297`); `ascii_punct` is now engine-backed
+  after M18 but still needs M22 browser evidence before it becomes an active web
+  toggle. Every active control must clear the M20 honesty
   gate (real browser before/after) or be a documented browser-surface N/A. **(2)
   Read-only debug inspector:** a per-keystroke panel that *observes* (never toggles)
   segments + `segment_tags`, each candidate's source translator/filter (extending
@@ -553,10 +566,9 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   schema-switcher wired to the existing `RimeSelectSchema` ABI (`abi.rs:301`), with
   reverse lookup on both new schemas; unblocks `show_full_code` and the schema-switch
   surface M20 could only mark browser-surface N/A as a single-schema harness, and gives
-  M21 a multi-schema surface. Honest dependency: Yune cannot build dictionaries until
-  M18, so `cangjie5`/`luna_pinyin` must ship as **pre-compiled upstream
-  `.table.bin`/`.prism.bin`/`.reverse.bin` artifacts** (only `.dict.yaml` source exists
-  today; `luna_pinyin`'s table-bin size is an asset-budget risk). Honesty-gate
+  M21 a multi-schema surface. M18 removed the dictionary-build blocker; M22 can choose
+  between Yune-generated artifacts and pre-compiled upstream artifacts based on its
+  browser asset-budget and provenance needs. Honesty-gate
   exclusions (`uniquifier_filter`, `single_char_filter`, always-on `charset_filter`,
   schema-owned templates, internal `_`-prefixed options) stay inspect-only or
   always-on — never toggles.

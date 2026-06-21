@@ -1,6 +1,162 @@
 use super::{Candidate, CandidateSource, Context, Status, Translator};
 use std::collections::HashMap;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum PunctuationDefinition {
+    Candidates(Vec<String>),
+    Commit(String),
+    ConfirmUnique(String),
+    Pair([String; 2]),
+}
+
+impl PunctuationDefinition {
+    #[must_use]
+    pub fn candidate_texts(&self) -> Vec<String> {
+        match self {
+            Self::Candidates(values) => values.clone(),
+            Self::Commit(value) => vec![value.clone()],
+            Self::ConfirmUnique(value) => vec![value.clone()],
+            Self::Pair(values) => values.to_vec(),
+        }
+    }
+}
+
+pub struct PunctuationProcessor {
+    half_shape_definitions: HashMap<String, PunctuationDefinition>,
+    full_shape_definitions: HashMap<String, PunctuationDefinition>,
+    symbol_definitions: HashMap<String, PunctuationDefinition>,
+    pair_oddness: HashMap<String, usize>,
+}
+
+pub(crate) enum PunctuationProcessorResult {
+    Accepted,
+    Preview(String),
+    Candidates {
+        input: String,
+        texts: Vec<String>,
+        highlighted: usize,
+    },
+    Commit(String),
+}
+
+impl PunctuationProcessor {
+    #[must_use]
+    pub fn with_shape_definitions(
+        half_shape_definitions: impl IntoIterator<Item = (impl Into<String>, PunctuationDefinition)>,
+        full_shape_definitions: impl IntoIterator<Item = (impl Into<String>, PunctuationDefinition)>,
+        symbol_definitions: impl IntoIterator<Item = (impl Into<String>, PunctuationDefinition)>,
+    ) -> Self {
+        Self {
+            half_shape_definitions: half_shape_definitions
+                .into_iter()
+                .map(|(key, definition)| (key.into(), definition))
+                .collect(),
+            full_shape_definitions: full_shape_definitions
+                .into_iter()
+                .map(|(key, definition)| (key.into(), definition))
+                .collect(),
+            symbol_definitions: symbol_definitions
+                .into_iter()
+                .map(|(key, definition)| (key.into(), definition))
+                .collect(),
+            pair_oddness: HashMap::new(),
+        }
+    }
+
+    pub(crate) fn process_key(
+        &mut self,
+        key: &str,
+        is_full_shape: bool,
+        is_ascii_punct: bool,
+        current_input: &str,
+        candidates_len: usize,
+        highlighted: usize,
+    ) -> Option<PunctuationProcessorResult> {
+        let definition = self.active_definition(key, is_full_shape).cloned()?;
+        if is_ascii_punct {
+            return Some(PunctuationProcessorResult::Accepted);
+        }
+
+        match definition {
+            PunctuationDefinition::Commit(value) => Some(PunctuationProcessorResult::Commit(value)),
+            PunctuationDefinition::ConfirmUnique(value) => {
+                Some(PunctuationProcessorResult::Preview(value))
+            }
+            PunctuationDefinition::Pair(_) => self.pair_preview(key, is_full_shape, current_input),
+            PunctuationDefinition::Candidates(values) => {
+                if values.is_empty() {
+                    return None;
+                }
+                let count = values.len();
+                let next_index = if candidates_len > 0 && !current_input.is_empty() {
+                    (highlighted + 1) % count
+                } else {
+                    0
+                };
+                Some(PunctuationProcessorResult::Candidates {
+                    input: values[next_index].clone(),
+                    texts: values,
+                    highlighted: next_index,
+                })
+            }
+        }
+    }
+
+    fn active_definition(&self, key: &str, is_full_shape: bool) -> Option<&PunctuationDefinition> {
+        let shape_definitions = if is_full_shape {
+            &self.full_shape_definitions
+        } else {
+            &self.half_shape_definitions
+        };
+        shape_definitions
+            .get(key)
+            .or_else(|| self.symbol_definitions.get(key))
+    }
+
+    fn pair_preview(
+        &mut self,
+        key: &str,
+        is_full_shape: bool,
+        current_input: &str,
+    ) -> Option<PunctuationProcessorResult> {
+        let shape_name = if is_full_shape {
+            "full_shape"
+        } else {
+            "half_shape"
+        };
+        let (pair_name, pair) = if is_full_shape {
+            self.full_shape_definitions
+                .get(key)
+                .and_then(|definition| match definition {
+                    PunctuationDefinition::Pair(pair) => Some((shape_name, pair.clone())),
+                    _ => None,
+                })
+        } else {
+            self.half_shape_definitions
+                .get(key)
+                .and_then(|definition| match definition {
+                    PunctuationDefinition::Pair(pair) => Some((shape_name, pair.clone())),
+                    _ => None,
+                })
+        }
+        .or_else(|| {
+            self.symbol_definitions
+                .get(key)
+                .and_then(|definition| match definition {
+                    PunctuationDefinition::Pair(pair) => Some(("symbols", pair.clone())),
+                    _ => None,
+                })
+        })?;
+        let oddness_key = format!("{pair_name}:{key}");
+        let oddness = self.pair_oddness.entry(oddness_key).or_insert(0);
+        let text = pair[*oddness % 2].clone();
+        *oddness = 1 - (*oddness % 2);
+        Some(PunctuationProcessorResult::Preview(format!(
+            "{current_input}{text}"
+        )))
+    }
+}
+
 pub struct PunctuationTranslator {
     half_shape_entries: Vec<(String, Candidate)>,
     full_shape_entries: Vec<(String, Candidate)>,

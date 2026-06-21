@@ -373,12 +373,13 @@
             Err(RimeTableBinParseError::UnsupportedSection { .. })
         ));
 
-        let mut prism_unsupported = compiled_prism_fixture();
-        put_u32_le(&mut prism_unsupported, 48, 4);
-        put_offset(&mut prism_unsupported, 52, 320);
+        let mut prism_malformed_double_array = compiled_prism_fixture();
+        put_u32_le(&mut prism_malformed_double_array, 48, 4);
+        put_offset(&mut prism_malformed_double_array, 52, 320);
+        prism_malformed_double_array.truncate(324);
         assert!(matches!(
-            parse_rime_prism_bin_payload(prism_unsupported),
-            Err(RimePrismBinParseError::UnsupportedSection { .. })
+            parse_rime_prism_bin_payload(prism_malformed_double_array),
+            Err(RimePrismBinParseError::OutOfBounds)
         ));
 
         let mut reverse_unsupported = compiled_reverse_fixture();

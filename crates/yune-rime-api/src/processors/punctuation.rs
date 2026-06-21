@@ -55,15 +55,27 @@ pub(crate) fn install_schema_punctuation_processor(session: &mut SessionState, s
         )
         .and_then(config_scalar_string)
         .is_some_and(|action| action == "commit"),
-        half_shape_alternating_counts: punctuation_alternating_counts_from_config(
+        half_shape_alternating_values: punctuation_alternating_values_from_config(
             &schema_config,
             "half_shape",
         ),
-        full_shape_alternating_counts: punctuation_alternating_counts_from_config(
+        full_shape_alternating_values: punctuation_alternating_values_from_config(
             &schema_config,
             "full_shape",
         ),
-        symbol_alternating_counts: punctuation_alternating_counts_from_config(
+        symbol_alternating_values: punctuation_alternating_values_from_config(
+            &schema_config,
+            "symbols",
+        ),
+        half_shape_immediate_commits: punctuation_immediate_commits_from_config(
+            &schema_config,
+            "half_shape",
+        ),
+        full_shape_immediate_commits: punctuation_immediate_commits_from_config(
+            &schema_config,
+            "full_shape",
+        ),
+        symbol_immediate_commits: punctuation_immediate_commits_from_config(
             &schema_config,
             "symbols",
         ),
@@ -85,9 +97,12 @@ pub(crate) fn install_schema_punctuation_processor(session: &mut SessionState, s
     if processor.half_shape_unique_commits.is_empty()
         && processor.full_shape_unique_commits.is_empty()
         && processor.symbol_unique_commits.is_empty()
-        && processor.half_shape_alternating_counts.is_empty()
-        && processor.full_shape_alternating_counts.is_empty()
-        && processor.symbol_alternating_counts.is_empty()
+        && processor.half_shape_immediate_commits.is_empty()
+        && processor.full_shape_immediate_commits.is_empty()
+        && processor.symbol_immediate_commits.is_empty()
+        && processor.half_shape_alternating_values.is_empty()
+        && processor.full_shape_alternating_values.is_empty()
+        && processor.symbol_alternating_values.is_empty()
         && processor.half_shape_pairs.is_empty()
         && processor.full_shape_pairs.is_empty()
         && processor.symbol_pairs.is_empty()
@@ -134,10 +149,30 @@ fn punctuation_unique_commits_from_config(
         .collect()
 }
 
-fn punctuation_alternating_counts_from_config(
+fn punctuation_immediate_commits_from_config(
     schema_config: &Value,
     shape: &str,
-) -> HashMap<String, usize> {
+) -> HashMap<String, String> {
+    let Some(Value::Mapping(mapping)) =
+        find_config_value(schema_config, &format!("punctuator/{shape}"))
+    else {
+        return HashMap::new();
+    };
+
+    mapping
+        .iter()
+        .filter_map(|(key, definition)| {
+            let key = config_scalar_string(key)?;
+            let text = punctuation_immediate_commit(definition)?;
+            Some((key, text))
+        })
+        .collect()
+}
+
+fn punctuation_alternating_values_from_config(
+    schema_config: &Value,
+    shape: &str,
+) -> HashMap<String, Vec<String>> {
     let Some(Value::Mapping(mapping)) =
         find_config_value(schema_config, &format!("punctuator/{shape}"))
     else {
@@ -151,8 +186,11 @@ fn punctuation_alternating_counts_from_config(
             let Value::Sequence(values) = definition else {
                 return None;
             };
-            let count = values.iter().filter_map(config_scalar_string).count();
-            (count > 0).then_some((key, count))
+            let values = values
+                .iter()
+                .filter_map(config_scalar_string)
+                .collect::<Vec<_>>();
+            (!values.is_empty()).then_some((key, values))
         })
         .collect()
 }
@@ -178,9 +216,10 @@ fn punctuation_pairs_from_config(
 }
 
 fn punctuation_unique_commit(definition: &Value) -> Option<String> {
-    if let Some(text) = config_scalar_string(definition) {
-        return Some(text);
-    }
+    config_scalar_string(definition)
+}
+
+fn punctuation_immediate_commit(definition: &Value) -> Option<String> {
     let Value::Mapping(mapping) = definition else {
         return None;
     };
@@ -254,7 +293,6 @@ pub(crate) fn process_punctuation_processor(
         || key_event.modifiers.alt
         || key_event.modifiers.super_key
         || key_event.modifiers.release
-        || session.engine.get_option("ascii_punct")
     {
         return None;
     }
@@ -266,6 +304,12 @@ pub(crate) fn process_punctuation_processor(
         return None;
     }
 
+    let key = ch.to_string();
+    if session.engine.get_option("ascii_punct") {
+        return active_punctuation_definition_exists(session, &key)
+            .then_some(PunctuationProcessResult::Noop);
+    }
+
     if let Some(result) = process_pending_digit_separator(session, ch, &ch.to_string()) {
         return Some(result);
     }
@@ -275,34 +319,29 @@ pub(crate) fn process_punctuation_processor(
         return None;
     }
 
-    let key = ch.to_string();
     if let Some(result) = process_digit_separator(session, ch, &key) {
         return Some(result);
     }
 
-    if let Some(count) = active_alternating_punct_count(session, &key) {
-        let highlighted = session.engine.context().highlighted;
-        let next_index = (highlighted + 1) % count;
-        session.engine.highlight_candidate(next_index);
+    if process_alternating_punct(session, &key) {
         return Some(PunctuationProcessResult::Accepted);
     }
 
-    if let Some(commit) = active_pair_commit(session, &key) {
+    if let Some(commit) = active_immediate_commit(session, &key) {
         return Some(PunctuationProcessResult::Commit(commit));
     }
 
-    let processor = session.punctuation_processor.as_ref()?;
-    let shape_entries = if session.engine.status().is_full_shape {
-        &processor.full_shape_unique_commits
-    } else {
-        &processor.half_shape_unique_commits
-    };
+    if let Some(preview) = active_pair_preview(session, &key) {
+        session.engine.set_punctuation_preview(preview);
+        return Some(PunctuationProcessResult::Accepted);
+    }
 
-    shape_entries
-        .get(&key)
-        .or_else(|| processor.symbol_unique_commits.get(&key))
-        .cloned()
-        .map(PunctuationProcessResult::Commit)
+    if let Some(preview) = active_unique_preview(session, &key) {
+        session.engine.set_punctuation_preview(preview);
+        return Some(PunctuationProcessResult::Accepted);
+    }
+
+    None
 }
 
 fn process_digit_separator(
@@ -388,32 +427,63 @@ fn active_punctuation_definition_exists(session: &SessionState, key: &str) -> bo
     let Some(processor) = session.punctuation_processor.as_ref() else {
         return false;
     };
-    let (shape_unique_commits, shape_alternating_counts, shape_pairs) =
+    let (shape_unique_commits, shape_immediate_commits, shape_alternating_values, shape_pairs) =
         if session.engine.status().is_full_shape {
             (
                 &processor.full_shape_unique_commits,
-                &processor.full_shape_alternating_counts,
+                &processor.full_shape_immediate_commits,
+                &processor.full_shape_alternating_values,
                 &processor.full_shape_pairs,
             )
         } else {
             (
                 &processor.half_shape_unique_commits,
-                &processor.half_shape_alternating_counts,
+                &processor.half_shape_immediate_commits,
+                &processor.half_shape_alternating_values,
                 &processor.half_shape_pairs,
             )
         };
 
     shape_unique_commits.contains_key(key)
-        || shape_alternating_counts.contains_key(key)
+        || shape_immediate_commits.contains_key(key)
+        || shape_alternating_values.contains_key(key)
         || shape_pairs.contains_key(key)
         || processor.symbol_unique_commits.contains_key(key)
-        || processor.symbol_alternating_counts.contains_key(key)
+        || processor.symbol_immediate_commits.contains_key(key)
+        || processor.symbol_alternating_values.contains_key(key)
         || processor.symbol_pairs.contains_key(key)
 }
 
-fn active_pair_commit(session: &mut SessionState, key: &str) -> Option<String> {
-    let processor = session.punctuation_processor.as_mut()?;
+fn active_immediate_commit(session: &SessionState, key: &str) -> Option<String> {
+    let processor = session.punctuation_processor.as_ref()?;
+    let shape_commits = if session.engine.status().is_full_shape {
+        &processor.full_shape_immediate_commits
+    } else {
+        &processor.half_shape_immediate_commits
+    };
+    shape_commits
+        .get(key)
+        .or_else(|| processor.symbol_immediate_commits.get(key))
+        .cloned()
+}
+
+fn active_unique_preview(session: &SessionState, key: &str) -> Option<String> {
+    let processor = session.punctuation_processor.as_ref()?;
+    let shape_entries = if session.engine.status().is_full_shape {
+        &processor.full_shape_unique_commits
+    } else {
+        &processor.half_shape_unique_commits
+    };
+    shape_entries
+        .get(key)
+        .or_else(|| processor.symbol_unique_commits.get(key))
+        .cloned()
+}
+
+fn active_pair_preview(session: &mut SessionState, key: &str) -> Option<String> {
     let is_full_shape = session.engine.status().is_full_shape;
+    let current_input = session.engine.context().composition.input.clone();
+    let processor = session.punctuation_processor.as_mut()?;
     let shape_name = if is_full_shape {
         "full_shape"
     } else {
@@ -436,27 +506,42 @@ fn active_pair_commit(session: &mut SessionState, key: &str) -> Option<String> {
 
     let oddness_key = format!("{pair_name}:{key}");
     let oddness = processor.pair_oddness.entry(oddness_key).or_insert(0);
-    let commit = pair[*oddness % 2].clone();
+    let punct = pair[*oddness % 2].clone();
     *oddness = 1 - (*oddness % 2);
-    Some(commit)
+    Some(format!("{current_input}{punct}"))
 }
 
-fn active_alternating_punct_count(session: &SessionState, key: &str) -> Option<usize> {
-    let context = session.engine.context();
-    if context.composition.input != key || context.candidates.is_empty() {
-        return None;
-    }
-
-    let processor = session.punctuation_processor.as_ref()?;
-    let shape_counts = if session.engine.status().is_full_shape {
-        &processor.full_shape_alternating_counts
-    } else {
-        &processor.half_shape_alternating_counts
+fn process_alternating_punct(session: &mut SessionState, key: &str) -> bool {
+    let Some(values) = active_alternating_punct_values(session, key).cloned() else {
+        return false;
     };
-    shape_counts
+    if values.is_empty() {
+        return false;
+    }
+    let context = session.engine.context();
+    let next_index = if context.candidates.is_empty() || context.composition.input.is_empty() {
+        0
+    } else {
+        (context.highlighted + 1) % values.len()
+    };
+    let input = values[next_index].clone();
+    session
+        .engine
+        .set_punctuation_candidate_list(input, values, next_index);
+    true
+}
+
+fn active_alternating_punct_values<'a>(
+    session: &'a SessionState,
+    key: &str,
+) -> Option<&'a Vec<String>> {
+    let processor = session.punctuation_processor.as_ref()?;
+    let shape_values = if session.engine.status().is_full_shape {
+        &processor.full_shape_alternating_values
+    } else {
+        &processor.half_shape_alternating_values
+    };
+    shape_values
         .get(key)
-        .or_else(|| processor.symbol_alternating_counts.get(key))
-        .copied()
-        .filter(|count| *count > 0)
-        .map(|count| count.min(context.candidates.len()))
+        .or_else(|| processor.symbol_alternating_values.get(key))
 }

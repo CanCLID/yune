@@ -290,8 +290,12 @@ fn dictionary_data_malformed_correction_tolerance_sections_fail_closed() {
     RimeCleanupAllSessions();
     let cases: Vec<(&str, Vec<u8>, &str)> = vec![
         (
-            "correction-offset-overflow",
-            prism_fixture_with_raw_correction_offset(i32::MAX),
+            "correction-truncated-yune-payload",
+            prism_fixture_with_correction_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-CORR\0");
+                put_u32_le_extend(bytes, 1);
+                put_u32_le_extend(bytes, 64);
+            }),
             "OutOfBounds",
         ),
         (
@@ -321,8 +325,12 @@ fn dictionary_data_malformed_correction_tolerance_sections_fail_closed() {
             "correction payload",
         ),
         (
-            "tolerance-offset-overflow",
-            prism_fixture_with_raw_tolerance_offset(i32::MAX),
+            "tolerance-truncated-yune-payload",
+            prism_fixture_with_tolerance_payload(|bytes| {
+                bytes.extend_from_slice(b"YUNE-TOL\0");
+                put_u32_le_extend(bytes, 1);
+                put_u32_le_extend(bytes, 64);
+            }),
             "OutOfBounds",
         ),
         (
@@ -726,10 +734,10 @@ fn compiled_table_for_entries_fixture(checksum: u32, entries: &[(&str, &str, f32
     }
 
     let index_offset = bytes.len();
-    bytes.resize(index_offset + 4 + grouped_entries.len() * 12, 0);
+    bytes.resize(index_offset + 4 + grouped_entries.len() * 16, 0);
     put_u32_le(&mut bytes, index_offset, grouped_entries.len() as u32);
     for (index, (_, group)) in grouped_entries.iter().enumerate() {
-        let node_offset = index_offset + 4 + index * 12;
+        let node_offset = index_offset + 4 + index * 16;
         put_u32_le(&mut bytes, node_offset, group.len() as u32);
         let entries_offset = bytes.len();
         bytes.resize(entries_offset + group.len() * 8, 0);
@@ -807,18 +815,6 @@ fn compiled_prism_with_correction_tolerance_fixture(
         put_offset(&mut bytes, 64, tolerance_offset);
     }
 
-    bytes
-}
-
-fn prism_fixture_with_raw_correction_offset(raw_offset: i32) -> Vec<u8> {
-    let mut bytes = compiled_prism_fixture();
-    put_i32_le(&mut bytes, 60, raw_offset);
-    bytes
-}
-
-fn prism_fixture_with_raw_tolerance_offset(raw_offset: i32) -> Vec<u8> {
-    let mut bytes = compiled_prism_fixture();
-    put_i32_le(&mut bytes, 64, raw_offset);
     bytes
 }
 

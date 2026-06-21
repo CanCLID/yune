@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeSet, HashSet},
     fs,
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
@@ -10,15 +10,16 @@ use std::{
 
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
-    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata,
-    parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
-    rime_dict_source_checksum, RimeDictArtifactStatus, RimeDictRebuildExecutionReport,
-    RimeDictRebuildInput, RimePrismChecksumMetadata, TableDictionary,
+    execute_rebuild_plan, parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload,
+    parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata, rime_checksum_bytes,
+    rime_dict_rebuild_plan, rime_dict_source_checksum, RimeDictArtifactStatus,
+    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildSources,
+    RimePrismChecksumMetadata, TableDictionary,
 };
 
 use crate::{
     apply_config_directives, apply_custom_patch, apply_legacy_preset_config_plugins, bool_from,
-    cstring_from_lossless_str, find_config_value, load_runtime_config_root,
+    config_scalar_string, cstring_from_lossless_str, find_config_value, load_runtime_config_root,
     normalize_config_resource_id, optional_c_string, path_join,
     resource_id::validate_data_resource_id, runtime_paths, runtime_user_data_sync_dir,
     service_started, set_build_info, set_config_value, source_modified_secs,
@@ -842,30 +843,43 @@ fn workspace_update_dictionary_artifact(
         Err(_) => return None,
     };
 
+    let mut write_plan = plan.clone();
+    let dictionary =
+        if write_plan.rebuild_table || write_plan.rebuild_prism || write_plan.rebuild_reverse {
+            Some(load_workspace_table_dictionary(
+                source_yaml.as_ref()?,
+                &request.packs,
+                &shared_data_dir,
+            )?)
+        } else {
+            None
+        };
+
     if plan.report.table == RimeDictArtifactStatus::ReusedPrebuilt {
         copy_if_present(&prebuilt_table_path, &table_path)?;
-    } else if plan.rebuild_table {
-        let dictionary = load_workspace_table_dictionary(
-            source_yaml.as_ref()?,
-            &request.packs,
-            &shared_data_dir,
-        )?;
-        write_table_artifact(&table_path, plan.dict_file_checksum, &dictionary)?;
+        write_plan.rebuild_table = false;
     }
     if plan.report.prism == RimeDictArtifactStatus::ReusedPrebuilt {
         copy_if_present(&prebuilt_prism_path, &prism_path)?;
-    } else if plan.rebuild_prism {
-        write_prism_artifact(&prism_path, plan.dict_file_checksum, schema_checksum)?;
+        write_plan.rebuild_prism = false;
     }
     if plan.report.reverse == RimeDictArtifactStatus::ReusedPrebuilt {
         copy_if_present(&prebuilt_reverse_path, &reverse_path)?;
-    } else if plan.rebuild_reverse {
-        let dictionary = load_workspace_table_dictionary(
-            source_yaml.as_ref()?,
-            &request.packs,
-            &shared_data_dir,
-        )?;
-        write_reverse_artifact(&reverse_path, plan.dict_file_checksum, &dictionary)?;
+        write_plan.rebuild_reverse = false;
+    }
+    if write_plan.rebuild_table || write_plan.rebuild_prism || write_plan.rebuild_reverse {
+        let dictionary = dictionary.as_ref()?;
+        let syllabary = dictionary_syllabary(dictionary);
+        let algebra_formulas = schema_speller_algebra(schema_config);
+        let sources = RimeDictRebuildSources {
+            artifact_stem: &dictionary_id,
+            table_dictionary: dictionary,
+            reverse_dictionary: dictionary,
+            syllabary: &syllabary,
+            algebra_formulas: &algebra_formulas,
+            schema_file_checksum: schema_checksum,
+        };
+        execute_rebuild_plan(&write_plan, &sources, &staging_dir).ok()?;
     }
     Some(plan.report)
 }
@@ -937,113 +951,27 @@ fn copy_if_present(source: &Path, destination: &Path) -> Option<()> {
     Some(())
 }
 
-fn write_table_artifact(path: &Path, checksum: u32, dictionary: &TableDictionary) -> Option<()> {
-    let mut entries_by_code: BTreeMap<&str, Vec<&yune_core::TableEntry>> = BTreeMap::new();
-    for entry in dictionary.entries() {
-        entries_by_code.entry(&entry.code).or_default().push(entry);
-    }
-    let mut bytes = vec![0; 68];
-    put_c_string(&mut bytes, 0, b"Rime::Table/4.0");
-    put_u32_le(&mut bytes, 32, checksum);
-    put_u32_le(&mut bytes, 36, entries_by_code.len() as u32);
-    put_u32_le(&mut bytes, 40, dictionary.entries().len() as u32);
-    let syllabary_offset = bytes.len();
-    bytes.resize(syllabary_offset + 4 + entries_by_code.len() * 4, 0);
-    put_u32_le(&mut bytes, syllabary_offset, entries_by_code.len() as u32);
-    let code_offsets = entries_by_code
-        .keys()
-        .map(|code| append_c_string(&mut bytes, code))
-        .collect::<Vec<_>>();
-    for (index, offset) in code_offsets.into_iter().enumerate() {
-        put_offset(&mut bytes, syllabary_offset + 4 + index * 4, offset);
-    }
-    let index_offset = bytes.len();
-    bytes.resize(index_offset + 4 + entries_by_code.len() * 16, 0);
-    put_u32_le(&mut bytes, index_offset, entries_by_code.len() as u32);
-    for (index, entries) in entries_by_code.values().enumerate() {
-        let node_offset = index_offset + 4 + index * 16;
-        put_u32_le(&mut bytes, node_offset, entries.len() as u32);
-        let entry_offset = bytes.len();
-        bytes.resize(entry_offset + entries.len() * 8, 0);
-        for (entry_index, entry) in entries.iter().enumerate() {
-            let current_entry_offset = entry_offset + entry_index * 8;
-            let text_offset = append_c_string(&mut bytes, &entry.text);
-            put_offset(&mut bytes, current_entry_offset, text_offset);
-            put_f32_le(&mut bytes, current_entry_offset + 4, entry.weight);
-        }
-        put_offset(&mut bytes, node_offset + 4, entry_offset);
-    }
-    put_offset(&mut bytes, 44, syllabary_offset);
-    put_offset(&mut bytes, 48, index_offset);
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).ok()?;
-    }
-    fs::write(path, bytes).ok()
+fn dictionary_syllabary(dictionary: &TableDictionary) -> Vec<String> {
+    let mut seen = HashSet::new();
+    dictionary
+        .entries()
+        .iter()
+        .filter_map(|entry| {
+            if seen.insert(entry.code.as_str()) {
+                Some(entry.code.clone())
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
-fn write_prism_artifact(path: &Path, dict_checksum: u32, schema_checksum: u32) -> Option<()> {
-    let mut bytes = vec![0; 320];
-    put_c_string(&mut bytes, 0, b"Rime::Prism/4.0");
-    put_u32_le(&mut bytes, 32, dict_checksum);
-    put_u32_le(&mut bytes, 36, schema_checksum);
-    let spelling_map_offset = bytes.len();
-    bytes.resize(spelling_map_offset + 4, 0);
-    put_u32_le(&mut bytes, spelling_map_offset, 0);
-    put_offset(&mut bytes, 56, spelling_map_offset);
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).ok()?;
-    }
-    fs::write(path, bytes).ok()
-}
-
-fn write_reverse_artifact(path: &Path, checksum: u32, dictionary: &TableDictionary) -> Option<()> {
-    let mut bytes = vec![0; 64];
-    put_c_string(&mut bytes, 0, b"Rime::Reverse/4.0");
-    put_u32_le(&mut bytes, 32, checksum);
-    bytes.extend_from_slice(b"YUNE-REVERSE\0");
-    put_u32_le_extend(&mut bytes, dictionary.entries().len() as u32);
-    for entry in dictionary.entries() {
-        put_len_string(&mut bytes, &entry.code);
-        put_len_string(&mut bytes, &entry.text);
-    }
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).ok()?;
-    }
-    fs::write(path, bytes).ok()
-}
-
-fn put_c_string(bytes: &mut [u8], offset: usize, value: &[u8]) {
-    bytes[offset..offset + value.len()].copy_from_slice(value);
-}
-
-fn put_u32_le(bytes: &mut [u8], offset: usize, value: u32) {
-    bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
-}
-
-fn put_f32_le(bytes: &mut [u8], offset: usize, value: f32) {
-    bytes[offset..offset + 4].copy_from_slice(&value.to_bits().to_le_bytes());
-}
-
-fn put_offset(bytes: &mut [u8], field_offset: usize, target: usize) {
-    let raw = i32::try_from(target as isize - field_offset as isize)
-        .expect("fixture offset should fit i32");
-    bytes[field_offset..field_offset + 4].copy_from_slice(&raw.to_le_bytes());
-}
-
-fn append_c_string(bytes: &mut Vec<u8>, value: &str) -> usize {
-    let offset = bytes.len();
-    bytes.extend_from_slice(value.as_bytes());
-    bytes.push(0);
-    offset
-}
-
-fn put_u32_le_extend(bytes: &mut Vec<u8>, value: u32) {
-    bytes.extend_from_slice(&value.to_le_bytes());
-}
-
-fn put_len_string(bytes: &mut Vec<u8>, value: &str) {
-    put_u32_le_extend(bytes, value.len() as u32);
-    bytes.extend_from_slice(value.as_bytes());
+fn schema_speller_algebra(schema_config: &Value) -> Vec<String> {
+    let Some(Value::Sequence(formulas)) = find_config_value(schema_config, "speller/algebra")
+    else {
+        return Vec::new();
+    };
+    formulas.iter().filter_map(config_scalar_string).collect()
 }
 
 fn config_bool_value(schema_config: &Value, key: &str) -> bool {

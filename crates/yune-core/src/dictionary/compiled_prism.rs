@@ -2,6 +2,7 @@ use super::{RimeCorrectionEntry, RimeToleranceRule};
 use crate::dictionary::compiled::{
     parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
 };
+use crate::dictionary::double_array::DartsDoubleArray;
 
 const MAX_CORRECTION_COUNT: usize = 4096;
 const MAX_TOLERANCE_RULE_COUNT: usize = 4096;
@@ -14,6 +15,7 @@ pub struct RimePrismBinPayload {
     pub num_syllables: u32,
     pub num_spellings: u32,
     pub double_array_size: u32,
+    pub double_array: Option<DartsDoubleArray>,
     pub spelling_map: Vec<Vec<RimePrismSpellingDescriptor>>,
     pub corrections: Vec<RimeCorrectionEntry>,
     pub tolerance_rules: Vec<RimeToleranceRule>,
@@ -54,14 +56,10 @@ pub fn parse_rime_prism_bin_payload(
     let double_array_offset = read_offset_ptr(bytes, 52)?;
     let spelling_map_offset =
         read_offset_ptr(bytes, 56)?.ok_or(RimePrismBinParseError::MissingRequiredSection)?;
-    let correction_offset = read_offset_ptr(bytes, 60)?;
-    let tolerance_offset = read_offset_ptr(bytes, 64)?;
+    let correction_offset = read_yune_payload_offset(bytes, 60, b"YUNE-CORR\0")?;
+    let tolerance_offset = read_yune_payload_offset(bytes, 64, b"YUNE-TOL\0")?;
     let double_array_size = read_u32_le(bytes, 48).map_err(map_metadata_error)?;
-    if double_array_offset.is_some() || double_array_size != 0 {
-        return Err(RimePrismBinParseError::UnsupportedSection {
-            role: "darts double_array".to_owned(),
-        });
-    }
+    let double_array = read_double_array(bytes, double_array_offset, double_array_size)?;
 
     Ok(RimePrismBinPayload {
         dict_file_checksum: read_u32_le(bytes, 32).map_err(map_metadata_error)?,
@@ -69,6 +67,7 @@ pub fn parse_rime_prism_bin_payload(
         num_syllables: read_u32_le(bytes, 40).map_err(map_metadata_error)?,
         num_spellings: read_u32_le(bytes, 44).map_err(map_metadata_error)?,
         double_array_size,
+        double_array,
         spelling_map: read_spelling_map(bytes, spelling_map_offset)?,
         corrections: correction_offset
             .map(|offset| read_corrections(bytes, offset))
@@ -79,6 +78,39 @@ pub fn parse_rime_prism_bin_payload(
             .transpose()?
             .unwrap_or_default(),
     })
+}
+
+fn read_double_array(
+    bytes: &[u8],
+    offset: Option<usize>,
+    size: u32,
+) -> Result<Option<DartsDoubleArray>, RimePrismBinParseError> {
+    let Some(offset) = offset else {
+        if size == 0 {
+            return Ok(None);
+        }
+        return Err(RimePrismBinParseError::MissingRequiredSection);
+    };
+    if size == 0 {
+        return Err(RimePrismBinParseError::InvalidCount);
+    }
+    let size = usize::try_from(size).map_err(|_| RimePrismBinParseError::InvalidCount)?;
+    let byte_len = size
+        .checked_mul(4)
+        .ok_or(RimePrismBinParseError::InvalidCount)?;
+    let end = offset
+        .checked_add(byte_len)
+        .ok_or(RimePrismBinParseError::OutOfBounds)?;
+    if end > bytes.len() {
+        return Err(RimePrismBinParseError::OutOfBounds);
+    }
+    let units = bytes[offset..end]
+        .chunks_exact(4)
+        .map(|chunk| u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+        .collect::<Vec<_>>();
+    DartsDoubleArray::from_units(units)
+        .map(Some)
+        .map_err(|_| RimePrismBinParseError::InvalidCount)
 }
 
 fn read_corrections(
@@ -232,8 +264,9 @@ fn read_spelling_descriptors(
 }
 
 fn read_string(bytes: &[u8], offset: usize) -> Result<String, RimePrismBinParseError> {
-    let string_offset =
-        read_offset_ptr(bytes, offset)?.ok_or(RimePrismBinParseError::OutOfBounds)?;
+    let Some(string_offset) = read_offset_ptr(bytes, offset)? else {
+        return Ok(String::new());
+    };
     if string_offset >= bytes.len() {
         return Err(RimePrismBinParseError::OutOfBounds);
     }
@@ -279,6 +312,28 @@ fn read_offset_ptr(
         return Err(RimePrismBinParseError::OutOfBounds);
     }
     Ok(Some(target))
+}
+
+fn read_yune_payload_offset(
+    bytes: &[u8],
+    field_offset: usize,
+    marker: &[u8],
+) -> Result<Option<usize>, RimePrismBinParseError> {
+    let raw = read_i32_le(bytes, field_offset).map_err(map_metadata_error)?;
+    if raw == 0 {
+        return Ok(None);
+    }
+    let Some(target) = field_offset.checked_add_signed(raw as isize) else {
+        return Ok(None);
+    };
+    if target >= bytes.len() {
+        return Ok(None);
+    }
+    if bytes[target..].starts_with(marker) || bytes[target..].starts_with(b"YUNE-") {
+        Ok(Some(target))
+    } else {
+        Ok(None)
+    }
 }
 
 fn read_count(bytes: &[u8], offset: usize) -> Result<usize, RimePrismBinParseError> {

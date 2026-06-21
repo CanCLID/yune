@@ -245,9 +245,12 @@ pub(crate) struct PunctuationProcessor {
     pub(crate) use_space: bool,
     pub(crate) digit_separators: String,
     pub(crate) digit_separator_commit: bool,
-    pub(crate) half_shape_alternating_counts: HashMap<String, usize>,
-    pub(crate) full_shape_alternating_counts: HashMap<String, usize>,
-    pub(crate) symbol_alternating_counts: HashMap<String, usize>,
+    pub(crate) half_shape_alternating_values: HashMap<String, Vec<String>>,
+    pub(crate) full_shape_alternating_values: HashMap<String, Vec<String>>,
+    pub(crate) symbol_alternating_values: HashMap<String, Vec<String>>,
+    pub(crate) half_shape_immediate_commits: HashMap<String, String>,
+    pub(crate) full_shape_immediate_commits: HashMap<String, String>,
+    pub(crate) symbol_immediate_commits: HashMap<String, String>,
     pub(crate) half_shape_unique_commits: HashMap<String, String>,
     pub(crate) full_shape_unique_commits: HashMap<String, String>,
     pub(crate) symbol_unique_commits: HashMap<String, String>,
@@ -271,6 +274,7 @@ pub(crate) enum EditorCharHandler {
 }
 
 pub(crate) enum PunctuationProcessResult {
+    Noop,
     Accepted,
     Commit(String),
 }
@@ -1443,6 +1447,7 @@ pub(crate) fn process_session_key_event(
     }
     if let Some(result) = process_punctuation_processor(session, key_event) {
         let commit = match result {
+            PunctuationProcessResult::Noop => return SessionKeyProcessResult::Noop,
             PunctuationProcessResult::Accepted => None,
             PunctuationProcessResult::Commit(commit) => Some(session.engine.record_commit(commit)),
         };

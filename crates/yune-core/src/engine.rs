@@ -1,7 +1,9 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-use crate::punctuation::punctuation_candidate_comment;
+use crate::punctuation::{
+    punctuation_candidate_comment, PunctuationProcessor, PunctuationProcessorResult,
+};
 use crate::AiContext;
 use crate::{
     parse_key_sequence, AiDecision, AiResult, Candidate, CandidateFilter, CandidateRanker,
@@ -16,6 +18,7 @@ pub struct Engine {
     options: HashMap<String, bool>,
     properties: HashMap<String, String>,
     translators: Vec<Box<dyn Translator>>,
+    punctuation_processor: Option<PunctuationProcessor>,
     filters: Vec<Box<dyn CandidateFilter>>,
     rankers: Vec<Box<dyn CandidateRanker>>,
     staged_ai_result: Option<StagedAiCandidates>,
@@ -125,6 +128,7 @@ impl Default for Engine {
             options: HashMap::new(),
             properties: HashMap::new(),
             translators: vec![Box::new(EchoTranslator)],
+            punctuation_processor: None,
             filters: Vec::new(),
             rankers: Vec::new(),
             staged_ai_result: None,
@@ -151,6 +155,10 @@ impl Engine {
             .unwrap_or(self.translators.len());
         self.translators.insert(insert_at, Box::new(translator));
         self.refresh_candidates();
+    }
+
+    pub fn set_punctuation_processor(&mut self, processor: PunctuationProcessor) {
+        self.punctuation_processor = Some(processor);
     }
 
     pub fn reset_translators(&mut self) {
@@ -470,6 +478,25 @@ impl Engine {
             return None;
         }
 
+        if let Some(result) = self.process_punctuation_processor(key_event) {
+            return match result {
+                PunctuationProcessorResult::Accepted => None,
+                PunctuationProcessorResult::Preview(text) => {
+                    self.set_punctuation_preview(text);
+                    None
+                }
+                PunctuationProcessorResult::Candidates {
+                    input,
+                    texts,
+                    highlighted,
+                } => {
+                    self.set_punctuation_candidate_list(input, texts, highlighted);
+                    None
+                }
+                PunctuationProcessorResult::Commit(commit) => Some(self.record_commit(commit)),
+            };
+        }
+
         match key_event.code {
             KeyCode::Character(ch) => self.process_char(ch),
             KeyCode::KeypadDigit(ch) if self.has_selectable_candidates() => {
@@ -544,6 +571,27 @@ impl Engine {
             }
             KeyCode::Return | KeyCode::KeypadEnter => self.commit_highlighted(),
         }
+    }
+
+    fn process_punctuation_processor(
+        &mut self,
+        key_event: KeyEvent,
+    ) -> Option<PunctuationProcessorResult> {
+        let KeyCode::Character(ch) = key_event.code else {
+            return None;
+        };
+        if !is_printable_ascii(ch) {
+            return None;
+        }
+        let key = ch.to_string();
+        self.punctuation_processor.as_mut()?.process_key(
+            &key,
+            self.status.is_full_shape,
+            self.status.is_ascii_punct,
+            &self.context.composition.input,
+            self.context.candidates.len(),
+            self.context.highlighted,
+        )
     }
 
     pub fn process_sequence(&mut self, input: &str) -> Vec<String> {
@@ -712,6 +760,43 @@ impl Engine {
             quality: 1.0,
         }];
         self.context.highlighted = 0;
+    }
+
+    pub fn set_punctuation_preview(&mut self, text: impl Into<String>) {
+        let text = text.into();
+        self.staged_ai_result = None;
+        self.context.composition.input = text.clone();
+        self.context.composition.caret = text.len();
+        self.context.composition.preedit = text;
+        self.context.candidates.clear();
+        self.context.highlighted = 0;
+    }
+
+    pub fn set_punctuation_candidate_list(
+        &mut self,
+        input: impl Into<String>,
+        texts: impl IntoIterator<Item = impl Into<String>>,
+        highlighted: usize,
+    ) {
+        let input = input.into();
+        self.staged_ai_result = None;
+        self.context.composition.input = input.clone();
+        self.context.composition.caret = input.len();
+        self.context.composition.preedit = input;
+        self.context.candidates = texts
+            .into_iter()
+            .map(|text| {
+                let text = text.into();
+                Candidate {
+                    comment: punctuation_candidate_comment(&text).to_owned(),
+                    text,
+                    preedit: None,
+                    source: CandidateSource::Punctuation,
+                    quality: 1.0,
+                }
+            })
+            .collect();
+        self.context.highlighted = highlighted.min(self.context.candidates.len().saturating_sub(1));
     }
 
     pub fn record_commit(&mut self, text: impl Into<String>) -> String {

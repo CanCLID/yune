@@ -632,14 +632,20 @@ fine for compatibility validation, but it should not become the only way a futur
 Yune-native frontend, iOS package, or product host can use the full engine. The
 extraction trigger is a real non-ABI consumer; the extraction rule is
 behavior-preserving movement of processor semantics toward `yune-core`, not a
-rewrite or a weakening of the C ABI gates.
+rewrite or a weakening of the C ABI gates. M18 made the narrow punctuation
+processor behavior needed by upstream fixtures available in `yune-core`
+(`ascii_punct`, direct commit, confirm-unique preview, pair preview, and list
+cycling), but the broader processor-pipeline extraction remains trigger-gated.
 
 **Other notable items (condensed):** workspace lints are inherited by unsafe-free
 crates, while ABI/FFI crates keep explicit local lint tables documenting their
 unsafe exceptions; the orphaned `yune-schema` crate was removed in M23, leaving
 production schema parsing/install owned by `yune-rime-api`; the inline core
 facade tests and oversized ABI test modules were split into behavior-owned files
-in M23; `yune-rime-api/src/lib.rs` still owns production glue; production session
+in M23; M18 added Yune-owned binary dictionary writers and a rebuild executor
+(`build_table_bin`, `build_reverse_bin`, `build_prism_bin`, `execute_rebuild_plan`)
+whose table/reverse bytes are Yune-native round-trippable artifacts, not upstream
+marisa-compatible outputs; `yune-rime-api/src/lib.rs` still owns production glue; production session
 locks panic on poison (a scaling limit); dictionary lookup is
 linear and clones large snapshots (performance); the userdb store is file-backed
 (not LevelDB); `SimplifierFilter` is an OpenCC approximation. No production
@@ -665,4 +671,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-21 - M23 architecture hardening complete: profile-specific TypeDuck tuning stays gated by named profiles, the `21.0` sentence penalty is no longer shared by default upstream schemas, lint inheritance/FFI exceptions are explicit, `yune-schema` was removed, and oversized test modules were split. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*
+*Last reviewed: 2026-06-21 - M18 deployment/processor depth and M23 architecture hardening are complete: Yune now has public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*

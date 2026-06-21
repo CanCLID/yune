@@ -2,8 +2,8 @@ use std::{fs, path::Path};
 
 use serde_json::Value;
 use yune_core::{
-    Engine, PunctuationTranslator, ReverseLookupTranslator, SimplifierFilter,
-    StaticTableTranslator, TableDictionary, Translator,
+    Engine, PunctuationDefinition, PunctuationProcessor, PunctuationTranslator,
+    ReverseLookupTranslator, SimplifierFilter, StaticTableTranslator, TableDictionary, Translator,
 };
 
 const FIXTURE_ROOT: &str = "tests/fixtures/upstream-1.17.0";
@@ -12,6 +12,7 @@ const SELECTION_FIXTURE: &str = "luna-pinyin-selection.json";
 const ACTIONS_FIXTURE: &str = "luna-pinyin-actions.json";
 const REVERSE_LOOKUP_FIXTURE: &str = "luna-pinyin-reverse-lookup.json";
 const PUNCTUATION_FIXTURE: &str = "luna-pinyin-punctuation.json";
+const M18_PUNCTUATION_FIXTURE: &str = "m18-punctuation-processor.json";
 const OPTIONS_FIXTURE: &str = "luna-pinyin-options.json";
 
 #[test]
@@ -380,17 +381,70 @@ fn full_sentence_lattice_parity_for_zhongguo_is_blocked() {
 }
 
 #[test]
-#[ignore = "blocked: ascii_punct is processor-level bypass behavior not yet represented in the core punctuation translator"]
-fn ascii_punct_option_processor_bypass_parity_is_blocked() {
-    panic!("teach the Engine punctuation processor path to honor ascii_punct before enabling");
+fn ascii_punct_option_processor_bypass_matches_upstream_fixture() {
+    let fixture = fixture(M18_PUNCTUATION_FIXTURE);
+    assert_upstream_oracle_header_for_schema(&fixture, "m18_punct");
+    let mut engine = m18_punctuation_engine(&fixture);
+
+    engine.set_option("ascii_punct", true);
+    let commits = engine
+        .process_key_sequence(".")
+        .expect("key sequence should parse");
+
+    let expected = snapshot(&fixture, "ascii_punct_period", "period_noop");
+    assert!(commits.is_empty());
+    assert_eq!(expected["processed"], 0);
+    assert_engine_snapshot_matches(&engine, expected, None);
 }
 
 #[test]
-#[ignore = "blocked: punctuation processor immediate-commit behavior is not yet represented in the core Engine path"]
-fn punctuation_immediate_commit_processor_parity_is_blocked() {
-    panic!(
-        "teach the Engine punctuation processor path to commit one-key punctuation before enabling"
+fn punctuation_processor_commit_confirm_pair_and_list_match_upstream_fixture() {
+    let fixture = fixture(M18_PUNCTUATION_FIXTURE);
+    assert_upstream_oracle_header_for_schema(&fixture, "m18_punct");
+
+    let mut direct_commit_engine = m18_punctuation_engine(&fixture);
+    let period_commits = direct_commit_engine
+        .process_key_sequence(".")
+        .expect("key sequence should parse");
+    let period = snapshot(&fixture, "direct_commit_period", "period_commit");
+    assert_eq!(period["processed"], 1);
+    assert_eq!(period_commits, vec![commit_text(period)]);
+    assert_engine_snapshot_matches(
+        &direct_commit_engine,
+        period,
+        period_commits.first().map(String::as_str),
     );
+
+    let mut confirm_unique_engine = m18_punctuation_engine(&fixture);
+    let bang_commits = confirm_unique_engine
+        .process_key_sequence("!")
+        .expect("key sequence should parse");
+    let bang = snapshot(&fixture, "confirm_unique_bang", "bang_commit");
+    assert_eq!(bang["processed"], 1);
+    assert!(bang_commits.is_empty());
+    assert_engine_snapshot_matches(&confirm_unique_engine, bang, None);
+
+    let mut pair_engine = m18_punctuation_engine(&fixture);
+    for label in ["open_commit", "close_commit", "open_again_commit"] {
+        let commits = pair_engine
+            .process_key_sequence("(")
+            .expect("key sequence should parse");
+        let expected = snapshot(&fixture, "pair_parenthesis", label);
+        assert_eq!(expected["processed"], 1);
+        assert!(commits.is_empty());
+        assert_engine_snapshot_matches(&pair_engine, expected, None);
+    }
+
+    let mut slash_engine = m18_punctuation_engine(&fixture);
+    for label in ["slash_candidates", "slash_next"] {
+        let commits = slash_engine
+            .process_key_sequence("/")
+            .expect("key sequence should parse");
+        let expected = snapshot(&fixture, "slash_candidates", label);
+        assert_eq!(expected["processed"], 1);
+        assert!(commits.is_empty());
+        assert_engine_snapshot_matches(&slash_engine, expected, None);
+    }
 }
 
 fn fixture(name: &str) -> Value {
@@ -403,13 +457,17 @@ fn fixture(name: &str) -> Value {
 }
 
 fn assert_upstream_oracle_header(fixture: &Value) {
+    assert_upstream_oracle_header_for_schema(fixture, "luna_pinyin");
+}
+
+fn assert_upstream_oracle_header_for_schema(fixture: &Value, schema: &str) {
     assert_eq!(fixture["oracle"]["engine"], "rime/librime");
     assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0");
     assert_eq!(
         fixture["oracle"]["engine_commit"],
         "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
     );
-    assert_eq!(fixture["schema"], "luna_pinyin");
+    assert_eq!(fixture["schema"], schema);
     assert_eq!(fixture["module_list"], serde_json::json!(["default"]));
 }
 
@@ -485,6 +543,23 @@ fn punctuation_engine(entries: &Value) -> Engine {
     engine
 }
 
+fn m18_punctuation_engine(fixture: &Value) -> Engine {
+    let definitions = &fixture["capture"]["punctuation_definitions"];
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.add_translator(PunctuationTranslator::with_shape_and_symbol_entries(
+        punctuation_definition_candidate_rows(&definitions["half_shape"]),
+        punctuation_definition_candidate_rows(&definitions["full_shape"]),
+        punctuation_definition_candidate_rows(&definitions["symbols"]),
+    ));
+    engine.set_punctuation_processor(PunctuationProcessor::with_shape_definitions(
+        punctuation_definition_rows(&definitions["half_shape"]),
+        punctuation_definition_rows(&definitions["full_shape"]),
+        punctuation_definition_rows(&definitions["symbols"]),
+    ));
+    engine
+}
+
 fn dictionary_yaml_from_fixture_rows(
     name: &str,
     sort: &str,
@@ -528,6 +603,72 @@ fn tuple_rows(rows: &Value) -> Vec<(String, String)> {
                     .expect("tuple value should be a string")
                     .to_owned(),
             )
+        })
+        .collect()
+}
+
+fn punctuation_definition_rows(rows: &Value) -> Vec<(String, PunctuationDefinition)> {
+    rows.as_array()
+        .expect("definition rows should be an array")
+        .iter()
+        .map(|row| {
+            let key = row["key"]
+                .as_str()
+                .expect("definition key should be a string")
+                .to_owned();
+            let values = row["values"]
+                .as_array()
+                .expect("definition values should be an array")
+                .iter()
+                .map(|value| {
+                    value
+                        .as_str()
+                        .expect("definition value should be a string")
+                        .to_owned()
+                })
+                .collect::<Vec<_>>();
+            let definition = match row["kind"]
+                .as_str()
+                .expect("definition kind should be a string")
+            {
+                "commit" => PunctuationDefinition::Commit(
+                    values
+                        .first()
+                        .expect("commit definition should have a value")
+                        .clone(),
+                ),
+                "confirm_unique" => PunctuationDefinition::ConfirmUnique(
+                    values
+                        .first()
+                        .expect("confirm definition should have a value")
+                        .clone(),
+                ),
+                "pair" => PunctuationDefinition::Pair([
+                    values
+                        .first()
+                        .expect("pair definition should have an opening value")
+                        .clone(),
+                    values
+                        .get(1)
+                        .expect("pair definition should have a closing value")
+                        .clone(),
+                ]),
+                "candidates" => PunctuationDefinition::Candidates(values),
+                kind => panic!("unsupported punctuation definition kind: {kind}"),
+            };
+            (key, definition)
+        })
+        .collect()
+}
+
+fn punctuation_definition_candidate_rows(rows: &Value) -> Vec<(String, String)> {
+    punctuation_definition_rows(rows)
+        .into_iter()
+        .flat_map(|(key, definition)| {
+            definition
+                .candidate_texts()
+                .into_iter()
+                .map(move |text| (key.clone(), text))
         })
         .collect()
 }

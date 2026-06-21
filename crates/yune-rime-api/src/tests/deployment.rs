@@ -1910,10 +1910,12 @@ schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators
         fs::read(user.join("build").join("luna.table.bin")).expect("table should be readable")
     )
     .is_ok());
-    assert!(yune_core::parse_rime_prism_bin_payload(
-        fs::read(user.join("build").join("luna.prism.bin")).expect("prism should be readable")
+    let prism = yune_core::parse_rime_prism_bin_payload(
+        fs::read(user.join("build").join("luna.prism.bin")).expect("prism should be readable"),
     )
-    .is_ok());
+    .expect("prism should parse");
+    assert!(prism.double_array_size > 0);
+    assert!(prism.double_array.is_some());
     assert!(yune_core::parse_rime_reverse_bin_dictionary(
         fs::read(user.join("build").join("luna.reverse.bin")).expect("reverse should be readable")
     )

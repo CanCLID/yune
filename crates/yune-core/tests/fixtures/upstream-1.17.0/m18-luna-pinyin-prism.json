@@ -1,0 +1,60 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "capture_date": "2026-06-21",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0; copy target/upstream-oracle/1.17.0/rime-user/build/luna_pinyin.prism.bin crates/yune-core/tests/fixtures/upstream-1.17.0/m18-luna-pinyin-prism.bin"
+  },
+  "schema": "luna_pinyin",
+  "module_list": [
+    "default"
+  ],
+  "input_sequence": [
+    "artifact:luna_pinyin.prism.bin"
+  ],
+  "capture": {
+    "schema_data": "rime/rime-luna-pinyin",
+    "schema_data_commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    },
+    "source_row_policy": "upstream_deployer_compiled_prism_artifact",
+    "binary_file": "m18-luna-pinyin-prism.bin",
+    "binary_sha256": "bb1c0d1de14f88b024617be090bed333277cd11536200dfe4da63042226596f9",
+    "binary_size": 31728,
+    "format": "Rime::Prism/4.0",
+    "expected_metadata": {
+      "dict_file_checksum": 3110588399,
+      "schema_file_checksum": 289014381,
+      "num_syllables": 424,
+      "num_spellings": 698,
+      "double_array_size": 1792
+    },
+    "exact_matches": [
+      {
+        "spelling": "a",
+        "spelling_index": 0
+      },
+      {
+        "spelling": "ai",
+        "spelling_index": 2
+      },
+      {
+        "spelling": "ba",
+        "spelling_index": 7
+      },
+      {
+        "spelling": "ni",
+        "spelling_index": 365
+      },
+      {
+        "spelling": "zhong",
+        "spelling_index": 671
+      }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 #[test]
-fn schema_punctuator_processor_commits_unique_punctuation() {
+fn schema_punctuator_processor_handles_commit_and_unique_preview_punctuation() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     let root = unique_temp_dir("schema-punctuator-processor");
@@ -62,12 +62,17 @@ punctuator:
 
     assert_eq!(RimeProcessKey(session_id, '.' as i32, 0), TRUE);
     // SAFETY: commit points to valid writable storage for this test.
-    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
-    // SAFETY: RimeGetCommit populated a valid NUL-terminated C string.
-    let text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+    let mut context = empty_context();
+    // SAFETY: context points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    // SAFETY: RimeGetContext populated a valid NUL-terminated preedit string.
+    let text = unsafe { CStr::from_ptr(context.composition.preedit) };
     assert_eq!(text.to_str(), Ok("。"));
-    // SAFETY: commit.text was returned by RimeGetCommit above.
-    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    RimeClearComposition(session_id);
 
     let full_shape = CString::new("full_shape").expect("option name should be valid");
     // SAFETY: option name is a valid NUL-terminated string.
@@ -139,12 +144,16 @@ punctuator:
         text: std::ptr::null_mut(),
     };
     // SAFETY: commit points to valid writable storage for this test.
-    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
-    // SAFETY: RimeGetCommit populated a valid NUL-terminated C string.
-    let text = unsafe { CStr::from_ptr(commit.text) };
+    assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+    let mut context = empty_context();
+    // SAFETY: context points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    // SAFETY: RimeGetContext populated a valid NUL-terminated preedit string.
+    let text = unsafe { CStr::from_ptr(context.composition.preedit) };
     assert_eq!(text.to_str(), Ok("。"));
-    // SAFETY: commit.text was returned by RimeGetCommit above.
-    assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();
@@ -467,8 +476,8 @@ punctuator:
     assert_eq!(
         context_state(),
         (
-            "/".to_owned(),
-            vec!["A".to_owned(), "B".to_owned(), "/".to_owned()],
+            "A".to_owned(),
+            vec!["A".to_owned(), "B".to_owned()],
             0
         )
     );
@@ -477,8 +486,8 @@ punctuator:
     assert_eq!(
         context_state(),
         (
-            "/".to_owned(),
-            vec!["A".to_owned(), "B".to_owned(), "/".to_owned()],
+            "B".to_owned(),
+            vec!["A".to_owned(), "B".to_owned()],
             1
         )
     );
@@ -487,8 +496,8 @@ punctuator:
     assert_eq!(
         context_state(),
         (
-            "/".to_owned(),
-            vec!["A".to_owned(), "B".to_owned(), "/".to_owned()],
+            "A".to_owned(),
+            vec!["A".to_owned(), "B".to_owned()],
             0
         )
     );
@@ -501,7 +510,7 @@ punctuator:
 }
 
 #[test]
-fn schema_punctuator_processor_commits_paired_punctuation_alternately() {
+fn schema_punctuator_processor_previews_paired_punctuation_alternately() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     let root = unique_temp_dir("schema-punctuator-pair");
@@ -547,34 +556,39 @@ punctuator:
         TRUE
     );
 
-    let committed_pair = || {
+    let pair_preview = || {
         let mut commit = RimeCommit {
             data_size: 0,
             text: std::ptr::null_mut(),
         };
         assert_eq!(RimeProcessKey(session_id, '(' as i32, 0), TRUE);
         // SAFETY: commit points to valid writable storage for this test.
-        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, TRUE);
-        // SAFETY: RimeGetCommit populated a valid NUL-terminated C string.
-        let text = unsafe { CStr::from_ptr(commit.text) }
+        assert_eq!(unsafe { RimeGetCommit(session_id, &mut commit) }, FALSE);
+        let mut context = empty_context();
+        // SAFETY: context points to writable storage initialized with positive
+        // `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        // SAFETY: RimeGetContext populated a valid NUL-terminated preedit string.
+        let text = unsafe { CStr::from_ptr(context.composition.preedit) }
             .to_str()
-            .expect("commit text should be valid UTF-8")
+            .expect("preedit text should be valid UTF-8")
             .to_owned();
-        // SAFETY: commit.text was returned by RimeGetCommit above.
-        assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
+        // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
         text
     };
 
-    assert_eq!(committed_pair(), "（");
-    assert_eq!(committed_pair(), "）");
-    assert_eq!(committed_pair(), "（");
+    assert_eq!(pair_preview(), "（");
+    assert_eq!(pair_preview(), "（）");
+    assert_eq!(pair_preview(), "（）（");
+    RimeClearComposition(session_id);
 
     let full_shape = CString::new("full_shape").expect("option name should be valid");
     // SAFETY: option name is a valid NUL-terminated string.
     unsafe { RimeSetOption(session_id, full_shape.as_ptr(), TRUE) };
 
-    assert_eq!(committed_pair(), "〔");
-    assert_eq!(committed_pair(), "〕");
+    assert_eq!(pair_preview(), "〔");
+    assert_eq!(pair_preview(), "〔〕");
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();

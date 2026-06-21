@@ -1,0 +1,400 @@
+{
+    "oracle":  {
+                   "engine":  "rime/librime",
+                   "engine_tag":  "1.17.0",
+                   "engine_commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                   "release_url":  "https://github.com/rime/librime/releases/tag/1.17.0",
+                   "binary_assets":  [
+                                         "rime-33e7814-Windows-msvc-x64.7z",
+                                         "rime-deps-33e7814-Windows-msvc-x64.7z"
+                                     ],
+                   "capture_date":  "2026-06-21",
+                   "capture_command":  "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-m18-punctuation.ps1 -OracleRoot target/upstream-oracle/1.17.0"
+               },
+    "schema":  "m18_punct",
+    "module_list":  [
+                        "default"
+                    ],
+    "scenarios":  [
+                      {
+                          "name":  "ascii_punct_period",
+                          "actions":  [
+                                          {
+                                              "type":  "set_option",
+                                              "option":  "ascii_punct",
+                                              "value":  1
+                                          },
+                                          {
+                                              "type":  "key",
+                                              "keycode":  46,
+                                              "mask":  0,
+                                              "label":  "period_noop"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "direct_commit_period",
+                          "actions":  [
+                                          {
+                                              "type":  "key",
+                                              "keycode":  46,
+                                              "mask":  0,
+                                              "label":  "period_commit"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "confirm_unique_bang",
+                          "actions":  [
+                                          {
+                                              "type":  "key",
+                                              "keycode":  33,
+                                              "mask":  0,
+                                              "label":  "bang_commit"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "pair_parenthesis",
+                          "actions":  [
+                                          {
+                                              "type":  "key",
+                                              "keycode":  40,
+                                              "mask":  0,
+                                              "label":  "open_commit"
+                                          },
+                                          {
+                                              "type":  "key",
+                                              "keycode":  40,
+                                              "mask":  0,
+                                              "label":  "close_commit"
+                                          },
+                                          {
+                                              "type":  "key",
+                                              "keycode":  40,
+                                              "mask":  0,
+                                              "label":  "open_again_commit"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "slash_candidates",
+                          "actions":  [
+                                          {
+                                              "type":  "key",
+                                              "keycode":  47,
+                                              "mask":  0,
+                                              "label":  "slash_candidates"
+                                          },
+                                          {
+                                              "type":  "key",
+                                              "keycode":  47,
+                                              "mask":  0,
+                                              "label":  "slash_next"
+                                          }
+                                      ]
+                      }
+                  ],
+    "capture":  {
+                    "schema_data":  "inline curated m18_punct.schema.yaml",
+                    "source_row_policy":  "curated_processor_schema_literal",
+                    "fixture_schema_yaml":  "schema:\n  schema_id: m18_punct\n  name: M18 Punctuation\n  version: \u00271\u0027\nengine:\n  processors:\n    - punctuator\n  segmentors:\n    - abc_segmentor\n    - punct_segmentor\n  translators:\n    - punct_translator\n    - echo_translator\npunctuator:\n  use_space: true\n  half_shape:\n    \".\": {commit: \"。\"}\n    \"!\": \"！\"\n    \"(\": {pair: [\"（\", \"）\"]}\n    \"/\": [\"、\", \"/\"]\n  full_shape:\n    \".\": {commit: \"。\"}\n    \"!\": \"！\"\n    \"(\": {pair: [\"（\", \"）\"]}\n    \"/\": [\"／\", \"÷\"]",
+                    "punctuation_definitions":  {
+                                                    "half_shape":  [
+                                                                       {
+                                                                           "key":  ".",
+                                                                           "kind":  "commit",
+                                                                           "values":  [
+                                                                                          "。"
+                                                                                      ]
+                                                                       },
+                                                                       {
+                                                                           "key":  "!",
+                                                                           "kind":  "confirm_unique",
+                                                                           "values":  [
+                                                                                          "！"
+                                                                                      ]
+                                                                       },
+                                                                       {
+                                                                           "key":  "(",
+                                                                           "kind":  "pair",
+                                                                           "values":  [
+                                                                                          "（",
+                                                                                          "）"
+                                                                                      ]
+                                                                       },
+                                                                       {
+                                                                           "key":  "/",
+                                                                           "kind":  "candidates",
+                                                                           "values":  [
+                                                                                          "、",
+                                                                                          "/"
+                                                                                      ]
+                                                                       }
+                                                                   ],
+                                                    "full_shape":  [
+                                                                       {
+                                                                           "key":  ".",
+                                                                           "kind":  "commit",
+                                                                           "values":  [
+                                                                                          "。"
+                                                                                      ]
+                                                                       },
+                                                                       {
+                                                                           "key":  "!",
+                                                                           "kind":  "confirm_unique",
+                                                                           "values":  [
+                                                                                          "！"
+                                                                                      ]
+                                                                       },
+                                                                       {
+                                                                           "key":  "(",
+                                                                           "kind":  "pair",
+                                                                           "values":  [
+                                                                                          "（",
+                                                                                          "）"
+                                                                                      ]
+                                                                       },
+                                                                       {
+                                                                           "key":  "/",
+                                                                           "kind":  "candidates",
+                                                                           "values":  [
+                                                                                          "／",
+                                                                                          "÷"
+                                                                                      ]
+                                                                       }
+                                                                   ],
+                                                    "symbols":  [
+
+                                                                ]
+                                                }
+                },
+    "snapshots":  [
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "ascii_punct_period",
+                          "label":  "period_noop",
+                          "rime_get_input":  null,
+                          "is_composing":  false,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  true,
+                          "composition_length":  0,
+                          "cursor_pos":  0,
+                          "preedit":  null,
+                          "commit_text_preview":  null,
+                          "commit_text":  null,
+                          "highlighted_candidate_index":  0,
+                          "page_size":  0,
+                          "page_no":  0,
+                          "is_last_page":  false,
+                          "selected_candidates":  [
+
+                                                  ],
+                          "processed":  0
+                      },
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "direct_commit_period",
+                          "label":  "period_commit",
+                          "rime_get_input":  null,
+                          "is_composing":  false,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  false,
+                          "composition_length":  0,
+                          "cursor_pos":  0,
+                          "preedit":  null,
+                          "commit_text_preview":  null,
+                          "commit_text":  "。",
+                          "highlighted_candidate_index":  0,
+                          "page_size":  0,
+                          "page_no":  0,
+                          "is_last_page":  false,
+                          "selected_candidates":  [
+
+                                                  ],
+                          "processed":  1
+                      },
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "confirm_unique_bang",
+                          "label":  "bang_commit",
+                          "rime_get_input":  "！",
+                          "is_composing":  true,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  false,
+                          "composition_length":  3,
+                          "cursor_pos":  3,
+                          "preedit":  "！",
+                          "commit_text_preview":  "！",
+                          "commit_text":  null,
+                          "highlighted_candidate_index":  0,
+                          "page_size":  0,
+                          "page_no":  0,
+                          "is_last_page":  false,
+                          "selected_candidates":  [
+
+                                                  ],
+                          "processed":  1
+                      },
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "pair_parenthesis",
+                          "label":  "open_commit",
+                          "rime_get_input":  "（",
+                          "is_composing":  true,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  false,
+                          "composition_length":  3,
+                          "cursor_pos":  3,
+                          "preedit":  "（",
+                          "commit_text_preview":  "（",
+                          "commit_text":  null,
+                          "highlighted_candidate_index":  0,
+                          "page_size":  0,
+                          "page_no":  0,
+                          "is_last_page":  false,
+                          "selected_candidates":  [
+
+                                                  ],
+                          "processed":  1
+                      },
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "pair_parenthesis",
+                          "label":  "close_commit",
+                          "rime_get_input":  "（）",
+                          "is_composing":  true,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  false,
+                          "composition_length":  6,
+                          "cursor_pos":  6,
+                          "preedit":  "（）",
+                          "commit_text_preview":  "（）",
+                          "commit_text":  null,
+                          "highlighted_candidate_index":  0,
+                          "page_size":  0,
+                          "page_no":  0,
+                          "is_last_page":  false,
+                          "selected_candidates":  [
+
+                                                  ],
+                          "processed":  1
+                      },
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "pair_parenthesis",
+                          "label":  "open_again_commit",
+                          "rime_get_input":  "（）（",
+                          "is_composing":  true,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  false,
+                          "composition_length":  9,
+                          "cursor_pos":  9,
+                          "preedit":  "（）（",
+                          "commit_text_preview":  "（）（",
+                          "commit_text":  null,
+                          "highlighted_candidate_index":  0,
+                          "page_size":  0,
+                          "page_no":  0,
+                          "is_last_page":  false,
+                          "selected_candidates":  [
+
+                                                  ],
+                          "processed":  1
+                      },
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "slash_candidates",
+                          "label":  "slash_candidates",
+                          "rime_get_input":  "、",
+                          "is_composing":  true,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  false,
+                          "composition_length":  3,
+                          "cursor_pos":  3,
+                          "preedit":  "、",
+                          "commit_text_preview":  "、",
+                          "commit_text":  null,
+                          "highlighted_candidate_index":  0,
+                          "page_size":  5,
+                          "page_no":  0,
+                          "is_last_page":  true,
+                          "selected_candidates":  [
+                                                      {
+                                                          "index":  0,
+                                                          "text":  "、",
+                                                          "comment":  "〔全角〕"
+                                                      },
+                                                      {
+                                                          "index":  1,
+                                                          "text":  "/",
+                                                          "comment":  "〔半角〕"
+                                                      }
+                                                  ],
+                          "processed":  1
+                      },
+                      {
+                          "schema_id":  "m18_punct",
+                          "schema_name":  "M18 Punctuation",
+                          "scenario":  "slash_candidates",
+                          "label":  "slash_next",
+                          "rime_get_input":  "/",
+                          "is_composing":  true,
+                          "is_ascii_mode":  false,
+                          "is_full_shape":  false,
+                          "is_simplified":  false,
+                          "is_traditional":  false,
+                          "is_ascii_punct":  false,
+                          "composition_length":  1,
+                          "cursor_pos":  1,
+                          "preedit":  "/",
+                          "commit_text_preview":  "/",
+                          "commit_text":  null,
+                          "highlighted_candidate_index":  1,
+                          "page_size":  5,
+                          "page_no":  0,
+                          "is_last_page":  true,
+                          "selected_candidates":  [
+                                                      {
+                                                          "index":  0,
+                                                          "text":  "、",
+                                                          "comment":  "〔全角〕"
+                                                      },
+                                                      {
+                                                          "index":  1,
+                                                          "text":  "/",
+                                                          "comment":  "〔半角〕"
+                                                      }
+                                                  ],
+                          "processed":  1
+                      }
+                  ]
+}

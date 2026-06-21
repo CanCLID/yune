@@ -295,8 +295,9 @@ browser gates and the upstream-first ABI constraints. Browser evidence is under
   before/after evidence, with correction off rendering the v1.1.2 prefix
   fallback rows and correction on rendering `你` first. The full oracle row set
   and commit previews remain engine-proven by `cantonese_parity`.
-  `ascii_punct` is not exposed as a working toggle until M18 implements the
-  processor behavior. The fixed `jyut6ping3_mobile` browser schema lacks a
+  `ascii_punct` now has M18 engine behavior but remains absent as a working
+  browser toggle until a browser-visible evidence slice proves it. The fixed
+  `jyut6ping3_mobile` browser schema lacks a
   `cangjie` namespace, so Reverse code display / Cangjie / `show_full_code` are
   labeled current-surface N/A rather than fake working toggles.
 - [x] **M20-DEMO-06**: The internal TypeDuck-Web harness is documented and
@@ -427,7 +428,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M20-DEMO-02 | M20 | Complete - prediction never-first defaults on; real-assets-calibrated threshold control filters `santai` predictions with documented range bounds |
 | M20-DEMO-03 | M20 | Complete - static/default-on features use guided scenarios, not fake toggles |
 | M20-DEMO-04 | M20 | Complete - local AGENTS guidance added for internal TypeDuck-Web harness, runtime package, and product-surface distinction |
-| M20-DEMO-05 | M20 | Complete - browser honesty gate separates visible before/after controls from explicit browser-surface N/A for Input Memory off-state and current-schema Cangjie/show_full_code limits; Auto-correction `nri` now has real browser before/after evidence; no working `ascii_punct` toggle before M18 |
+| M20-DEMO-05 | M20 | Complete - browser honesty gate separates visible before/after controls from explicit browser-surface N/A for Input Memory off-state and current-schema Cangjie/show_full_code limits; Auto-correction `nri` now has real browser before/after evidence; `ascii_punct` still needs browser-visible evidence before becoming a working web toggle |
 | M20-DEMO-06 | M20 | Complete - internal TypeDuck-Web harness is documented as the canonical browser playground for supported engine features |
 | M20-DEMO-07 | M20 | Complete - documented demo-default `combine_candidates` active control plus current-schema `show_full_code`/Cangjie N/A evidence |
 

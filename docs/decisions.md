@@ -731,8 +731,10 @@ ownership lines.
 The standing rule remains: TypeDuck-calibrated constants must not affect default
 upstream core behavior unless installed through an explicit profile predicate /
 typed translator config, or renamed with upstream-oracle evidence that the
-behavior is global. The larger **core/ABI processor extraction stays
-trigger-gated**: move processor semantics toward a core-owned Rust API only when
+behavior is global. M18 later shipped the narrow punctuation processor behavior
+needed by upstream fixtures in both `yune-core` and the ABI path, but that does
+not change the larger rule: the full **core/ABI processor extraction stays
+trigger-gated**. Move processor semantics toward a core-owned Rust API only when
 a real non-ABI consumer needs the full input pipeline. Every such extraction must
 be behavior-preserving and keep existing oracle, ABI, and browser gates unchanged.
 *Outcome: M23 finished the bounded architecture-hardening paydown; the completed
@@ -774,4 +776,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-21 - D-28 records M23 architecture hardening as finished (`plans/archive/m23-plan-architecture-hardening.md`) while keeping the processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending a named profile surface.*
+*Last updated: 2026-06-21 - D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending a named profile surface.*

@@ -23,13 +23,15 @@ pub use ai::{
 };
 use comment_format::CommentFormat;
 pub use dictionary::{
+    build_prism_bin, build_reverse_bin, build_table_bin, execute_rebuild_plan,
     parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
     parse_rime_reverse_bin_metadata, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
-    rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords,
-    DictionaryLookupRecord, RimeChecksumComputer, RimeCompiledMetadataError, RimeCorrectionEntry,
-    RimeDictArtifactStatus, RimeDictRebuildError, RimeDictRebuildExecutionReport,
-    RimeDictRebuildInput, RimeDictRebuildPlan, RimePrismBinMetadata, RimePrismBinParseError,
+    rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords, DartsDoubleArray,
+    DartsDoubleArrayError, DartsMatch, DictionaryLookupRecord, RimeChecksumComputer,
+    RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildError,
+    RimeDictRebuildExecuteError, RimeDictRebuildExecutionReport, RimeDictRebuildInput,
+    RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismBinMetadata, RimePrismBinParseError,
     RimePrismBinPayload, RimePrismChecksumMetadata, RimePrismSpellingDescriptor,
     RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError,
     RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData, TableDictionaryParseError,
@@ -41,7 +43,7 @@ pub use filter::{
     TaggedFilter, UniquifierFilter,
 };
 pub use key::{parse_key_sequence, KeyCode, KeyEvent, KeyModifiers, KeySequenceParseError};
-pub use punctuation::PunctuationTranslator;
+pub use punctuation::{PunctuationDefinition, PunctuationProcessor, PunctuationTranslator};
 pub use state::{
     AiConfidence, AiContext, Candidate, CandidateSource, CommitRecord, Composition, Context,
     PrivacyClass, Snapshot, Status,

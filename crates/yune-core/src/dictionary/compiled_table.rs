@@ -95,7 +95,7 @@ fn read_head_index_entries(
     let start = offset
         .checked_add(4)
         .ok_or(RimeTableBinParseError::OutOfBounds)?;
-    let node_size = 12usize;
+    let node_size = 16usize;
     let total = count
         .checked_mul(node_size)
         .and_then(|len| start.checked_add(len))

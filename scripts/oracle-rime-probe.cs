@@ -397,6 +397,14 @@ public static class RimeProbe {
     return schemas;
   }
 
+  static string CurrentInput(UIntPtr session, RimeContext ctx) {
+    try {
+      return S(RimeGetInput(session));
+    } catch (EntryPointNotFoundException) {
+      return S(ctx.composition.preedit);
+    }
+  }
+
   static Dictionary<string, object> Snapshot(
       UIntPtr session,
       string scenario,
@@ -420,7 +428,7 @@ public static class RimeProbe {
     result["schema_name"] = S(status.schema_name);
     result["scenario"] = scenario;
     result["label"] = label;
-    result["rime_get_input"] = S(RimeGetInput(session));
+    result["rime_get_input"] = CurrentInput(session, ctx);
     result["is_composing"] = status.is_composing != 0;
     result["is_ascii_mode"] = status.is_ascii_mode != 0;
     result["is_full_shape"] = status.is_full_shape != 0;
@@ -593,13 +601,15 @@ public static class RimeProbe {
               }
             }
           } else if (type == "key") {
-            RimeProcessKey(session, action.keycode, action.mask);
+            var processed = RimeProcessKey(session, action.keycode, action.mask);
             var commit = TakeCommit(session);
-            if (commit != null) {
+            if (commit != null || !string.IsNullOrEmpty(action.label)) {
               var label = string.IsNullOrEmpty(action.label)
                   ? "after_key_" + action.keycode.ToString()
                   : action.label;
-              results.Add(Snapshot(session, scenario.name, label, commit, identity));
+              var snapshot = Snapshot(session, scenario.name, label, commit, identity);
+              snapshot["processed"] = processed;
+              results.Add(snapshot);
             }
           } else if (type == "set_option") {
             RimeSetOption(session, U8(action.option ?? "", ptrs), action.value);
@@ -951,13 +961,15 @@ public static class RimeProbe {
               }
             }
           } else if (type == "key") {
-            RimeProcessKey(session, action.keycode, action.mask);
+            var processed = RimeProcessKey(session, action.keycode, action.mask);
             var commit = TakeCommit(session);
-            if (commit != null) {
+            if (commit != null || !string.IsNullOrEmpty(action.label)) {
               var label = string.IsNullOrEmpty(action.label)
                   ? "after_key_" + action.keycode.ToString()
                   : action.label;
-              results.Add(Snapshot(session, scenario.name, label, commit, identity));
+              var snapshot = Snapshot(session, scenario.name, label, commit, identity);
+              snapshot["processed"] = processed;
+              results.Add(snapshot);
             }
           } else if (type == "set_option") {
             RimeSetOption(session, U8(action.option ?? "", ptrs), action.value);

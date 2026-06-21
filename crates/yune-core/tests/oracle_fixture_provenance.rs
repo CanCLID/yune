@@ -61,6 +61,67 @@ fn upstream_luna_pinyin_fixtures_have_non_circular_source_provenance() {
 }
 
 #[test]
+fn upstream_m18_prism_fixture_has_non_circular_source_provenance() {
+    let root = fixture_root("upstream-1.17.0");
+    let path = root.join("m18-luna-pinyin-prism.json");
+    assert!(
+        path.is_file(),
+        "M18 should check in the upstream prism artifact manifest"
+    );
+    let fixture = read_json(&path);
+    assert_luna_fixture_header(&path, &fixture);
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_policy_specific_provenance(&path, &fixture);
+
+    let binary_file = fixture["capture"]["binary_file"]
+        .as_str()
+        .expect("M18 prism fixture should name its binary");
+    let binary_path = root.join(binary_file);
+    assert!(
+        binary_path.is_file(),
+        "M18 prism binary should be checked in next to the manifest"
+    );
+    let expected_size = fixture["capture"]["binary_size"]
+        .as_u64()
+        .expect("M18 prism fixture should include binary size");
+    let actual_size = fs::metadata(&binary_path)
+        .unwrap_or_else(|error| panic!("failed to stat {}: {error}", binary_path.display()))
+        .len();
+    assert_eq!(actual_size, expected_size, "{binary_path:?}");
+}
+
+#[test]
+fn upstream_m18_punctuation_fixture_has_non_circular_source_provenance() {
+    let root = fixture_root("upstream-1.17.0");
+    let path = root.join("m18-punctuation-processor.json");
+    assert!(
+        path.is_file(),
+        "M18 should check in the upstream punctuation processor fixture"
+    );
+    let fixture = read_json(&path);
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0", "{path:?}");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert!(
+        fixture["oracle"]["capture_command"]
+            .as_str()
+            .is_some_and(|command| command.contains("scripts/capture-upstream-m18-punctuation.ps1")),
+        "{path:?} must include a reproducible M18 capture command"
+    );
+    assert_eq!(fixture["schema"], "m18_punct", "{path:?}");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default"]),
+        "{path:?}"
+    );
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_policy_specific_provenance(&path, &fixture);
+}
+
+#[test]
 fn typeduck_v112_m14_fixtures_have_non_circular_source_provenance() {
     let root = fixture_root("typeduck-v1.1.2");
     let mut fixture_files = fs::read_dir(&root)
@@ -726,6 +787,47 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
                 "option_full_shape_on",
                 "full_shape_slash_snapshot",
             );
+        }
+        "upstream_deployer_compiled_prism_artifact" => {
+            assert_eq!(
+                fixture["capture"]["binary_file"], "m18-luna-pinyin-prism.bin",
+                "{path:?}"
+            );
+            assert_eq!(fixture["capture"]["format"], "Rime::Prism/4.0", "{path:?}");
+            assert_non_empty_array(path, fixture, &["capture", "exact_matches"]);
+            assert!(
+                fixture["capture"]["expected_metadata"]["double_array_size"]
+                    .as_u64()
+                    .is_some_and(|size| size > 0),
+                "{path:?} must prove a non-empty upstream Darts section"
+            );
+        }
+        "curated_processor_schema_literal" => {
+            assert_eq!(
+                fixture["capture"]["schema_data"], "inline curated m18_punct.schema.yaml",
+                "{path:?}"
+            );
+            assert!(
+                fixture["capture"]["fixture_schema_yaml"]
+                    .as_str()
+                    .is_some_and(|schema| schema.contains("punctuator:")),
+                "{path:?} must include the curated processor schema"
+            );
+            assert_non_empty_array(
+                path,
+                fixture,
+                &["capture", "punctuation_definitions", "half_shape"],
+            );
+            assert_non_empty_array(
+                path,
+                fixture,
+                &["capture", "punctuation_definitions", "full_shape"],
+            );
+            assert_snapshot(path, fixture, "ascii_punct_period", "period_noop");
+            assert_snapshot(path, fixture, "direct_commit_period", "period_commit");
+            assert_snapshot(path, fixture, "confirm_unique_bang", "bang_commit");
+            assert_snapshot(path, fixture, "pair_parenthesis", "close_commit");
+            assert_snapshot(path, fixture, "slash_candidates", "slash_next");
         }
         policy => panic!("{path:?} has unknown source row policy {policy}"),
     }

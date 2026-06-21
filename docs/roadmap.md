@@ -593,7 +593,9 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   performance, `M25-DOGFOOD-02` for page-size slider discoverability plus
   candidate pagination correctness, and `M25-DOGFOOD-03` for per-key typing
   responsiveness and loading-state separation. `M25-DOGFOOD-04` adds a compact
-  schema switcher layout row and the `luna_pinyin` visible-name correction.
+  schema switcher layout row and the `luna_pinyin` visible-name correction;
+  `M25-DOGFOOD-05` moves the Cangjie version control into that same top-control
+  area.
   The startup row now prioritizes
   release-mode browser WASM and deploy-state reuse before lower-level runtime
   micro-optimization, because current evidence points at a debug Emscripten

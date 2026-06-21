@@ -85,6 +85,7 @@ M25 intake began on 2026-06-21 with user-reported browser dogfooding regressions
 | M25-DOGFOOD-02 | Open | Browser integration / settings and candidate pagination | The page-size control is hard to find after M24 UI changes, its allowed range is wrong for the requested behavior, and changing it still does not cap the rendered candidate list. The user expects a visible slider/control allowing 3-10 candidates, where setting 9 shows exactly 9 visible candidates. | User screenshot showed `hai` rendering far more than 10 rows. Reproduced in the in-app browser on 2026-06-21: DOM had page-size slider `min=4`, `max=10`, `value=6`, but typing `hai` rendered `50` visible candidate rows. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-02/page-size-hai-repro.json`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-rime-api/src/context_api.rs`, `crates/yune-rime-api/tests/typeduck_web.rs`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when the UI exposes an obvious 3-10 page-size control and the rendered candidate panel never exceeds the configured page size. Add/extend native `typeduck_web` coverage for `menu/page_size` at 3 and 9, add Playwright coverage that sets 3/9/10 and types `hai`, verify page navigation still works, regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, and capture browser JSON/screenshot evidence under this issue id. |
 | M25-DOGFOOD-03 | Open | Browser integration / typing responsiveness | Typing in the textbox can still show the global `è¼‰å…¥ä¸­ Loading...` state and can stall for about a second when entering a character. This makes the dogfood IME feel blocked even after the page becomes visible. | User-reported during manual dogfooding on 2026-06-21. Evidence placeholder with exact report: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-03/typing-latency-user-report.json`. Needs measured browser repro with keydown-to-candidate timing. | `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/rime.ts`, `third_party/typeduck-web/source/src/worker.ts`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/Toolbar.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `packages/yune-typeduck-runtime/src/typeduck.ts`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-core/src/engine.rs`. | Close only after per-key latency is measured and improved. Add Playwright instrumentation for keydown-to-candidate update latency on `hai`, `nei`, and a long phrase; split queue wait, worker roundtrip, Rust `process_key`, and React render time; remove global loading from normal per-key composition; ensure typing remains responsive while startup/deploy/customize is in flight; save before/after latency JSON under this issue id. |
 | M25-DOGFOOD-04 | Open | UI polish / schema switcher layout | The schema list sits in its own vertical block below the three mode buttons, wasting vertical space. The user wants the schema list moved into the same top row as the three buttons. The `luna_pinyin` option is also currently shown as `普通話`, but the user expects the schema name `朙月拼音`. | User-reported during manual dogfooding on 2026-06-21. Local verification found upstream `1.17.0` `luna_pinyin.schema.yaml` uses `朙月拼音`, while the current TypeDuck-Web source and TypeDuck v1.1.2 captured schema use `普通話`. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-04/schema-switcher-toolbar-and-luna-name-report.json`. | `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/Toolbar.tsx`, `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`, `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when the schema selector is part of the top control row with the three mode buttons on desktop, wraps within the same compact control band on narrow screens, and `luna_pinyin` is labeled `朙月拼音` as the primary user-facing schema name unless the row is explicitly revised with TypeDuck-v1.1.2-specific rationale. Add Playwright evidence covering desktop and mobile layout, active schema switching, and the visible Luna label; regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` if source changed. |
+| M25-DOGFOOD-05 | Open | UI polish / top controls layout | The `倉頡版本 Cangjie version` control currently lives in a separate lower `Web Frontend Controls` section, but it is tightly related to schema choice. The user wants it moved to the top beside the schema selection so the page does not spend vertical space on a one-control section. | User-reported during manual dogfooding on 2026-06-21. Local verification found the control in `third_party/typeduck-web/source/src/Preferences.tsx` under `Web Frontend Controls`, using `prefs.isCangjie5` with `三代 Version 3` and `五代 Version 5` segments. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-05/cangjie-version-top-controls-report.json`. | `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/Toolbar.tsx`, `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`, `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when the Cangjie version segmented control is colocated with the schema selector in the top control band on desktop and wraps within that same compact band on narrow screens, the lower `Web Frontend Controls` section is removed if it has no remaining controls, and changing 三代/五代 still updates the `isCangjie5` customize path. Add Playwright evidence for layout and both Cangjie version values; regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` if source changed. |
 
 ## Accepted Review Corrections
 
@@ -282,6 +283,45 @@ M25 intake began on 2026-06-21 with user-reported browser dogfooding regressions
 - [ ] **Step 6: Capture visual evidence**
 
   Save desktop and narrow-viewport screenshots plus a JSON summary under `M25-DOGFOOD-04`. The JSON should include viewport size, active schema before/after switching, bounding boxes for the three mode buttons and schema switcher, and the visible text for the Luna option.
+
+- [ ] **Step 7: Regenerate the TypeDuck-Web patch if source changed**
+
+  If any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from `source/`, and forward-check it on a clean source checkout.
+
+### Task 6: M25-DOGFOOD-05 Cangjie Version In Top Controls
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/App.tsx`
+- Modify: `third_party/typeduck-web/source/src/Toolbar.tsx`
+- Modify: `third_party/typeduck-web/source/src/SchemaSwitcher.tsx` if the schema row becomes the shared top-control layout
+- Modify: `third_party/typeduck-web/source/src/Preferences.tsx`
+- Modify if segment markup needs shared compact styling: `third_party/typeduck-web/source/src/Inputs.tsx`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-05/`
+
+- [ ] **Step 1: Preserve the Cangjie-version baseline**
+
+  Keep `cangjie-version-top-controls-report.json` as the issue baseline. The current control lives in `Preferences.tsx` under `Web Frontend Controls`, uses `prefs.isCangjie5`, and exposes `三代 Version 3` plus `五代 Version 5`. The implementation must move this existing control, not create a second independent setting.
+
+- [ ] **Step 2: Add failing browser layout coverage**
+
+  Add a Playwright test that loads `/web/` at a desktop viewport and asserts the Cangjie version control is in the same top control band as `[data-yune-schema-switcher]`. The test should assert that the `三代 Version 3` and `五代 Version 5` controls appear before the status strip and textarea, and that no lower section titled `Web Frontend Controls` remains when this was its only control. Add a narrow viewport assertion that schema selection and Cangjie version wrap within the same compact top band.
+
+- [ ] **Step 3: Move the control into the top control component**
+
+  Pass `isCangjie5` and `setIsCangjie5` from `App.tsx` into the top toolbar/control component created or updated by `M25-DOGFOOD-04`. Render a compact segmented control next to the schema selector with the label `倉頡版本 Cangjie version`, options `三代 Version 3` and `五代 Version 5`, and the existing `Segment` interaction pattern. Keep the control keyboard-accessible and do not add another UI framework.
+
+- [ ] **Step 4: Remove the empty lower section**
+
+  Delete the `Web Frontend Controls` section from `Preferences.tsx` if moving Cangjie version leaves it empty. If later rows add other frontend controls, keep those controls in an appropriately named settings group, but do not keep a one-control Cangjie section at the bottom.
+
+- [ ] **Step 5: Prove the existing customize path still works**
+
+  In Playwright, switch to the Cangjie schema, choose `三代 Version 3`, apply or trigger the existing settings flow, then choose `五代 Version 5`. Capture the active segment state and a worker/debug signal showing `isCangjie5` changed, or use the existing UI/evidence hook that proves `Rime.customize({ isCangjie5 })` was invoked. Do not change engine behavior or Cangjie candidate ordering in this UI row.
+
+- [ ] **Step 6: Capture visual evidence**
+
+  Save desktop and narrow-viewport screenshots plus a JSON summary under `M25-DOGFOOD-05`. The JSON should include viewport size, bounding boxes for schema selector and Cangjie version, active Cangjie version before/after toggling, and whether any lower `Web Frontend Controls` section remains.
 
 - [ ] **Step 7: Regenerate the TypeDuck-Web patch if source changed**
 

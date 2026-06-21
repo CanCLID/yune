@@ -55,6 +55,7 @@ If a report is ambiguous, classify it as **Needs triage**, capture the screensho
 | M24-DOGFOOD-09 | Open | UI polish / engine status strip explanation | The status strip under the schema switcher shows raw badges such as `jyut6ping3_mobile`, `enabled`, `not traditional`, and `Chinese` with no hint explaining what the strip is or what each value means. | Browser comment on `/web/` status strip: selected `jyut6ping3_mobile enabled not traditional Chinese`; user requested a UI hint for what this is. | `third_party/typeduck-web/source/src/YuneStatusStrip.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`, `third_party/typeduck-web/source/src/index.css` | Status strip has a Cantonese-first label and one-line hint; badges use labeled, user-readable text instead of raw booleans; existing `data-yune-status-*` attributes remain for tests; before/after screenshots prove the hint is clear without crowding the toolbar/schema area. |
 | M24-DOGFOOD-10 | Open | UI polish / schema switcher names | The schema switcher uses English-ish labels such as `Jyutping`, `Cangjie 5`, and `Luna Pinyin`, even though the bundled schema YAML has real names: `粵語拼音`, `倉頡五代`, and `普通話`. The UI should show the real schema names where possible, with romanized/English helper text only as secondary text. | Browser comment on `/web/` schema switcher: user asked whether the real names should be `粵拼` / `倉頡五代` instead of English spellings. Local schema check: `jyut6ping3_mobile.schema.yaml` has `schema/name: 粵語拼音`, `cangjie5.schema.yaml` has `schema/name: 倉頡五代`, and `luna_pinyin.schema.yaml` has `schema/name: 普通話`. | `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`, `third_party/typeduck-web/source/schema/*.schema.yaml`, `third_party/typeduck-web/source/src/YuneStatusStrip.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | Schema switcher labels are Cantonese/Chinese-first and checked against bundled `schema/name` values; schema IDs are not the primary visible labels; the status strip and switcher agree on the selected schema name; browser screenshots prove the schema selector remains readable. |
 | M24-DOGFOOD-11 | Open | Browser integration / reverse lookup dogfood | The web dogfood does not visibly support the expected Jyutping reverse-lookup flow: with Jyutping active, typing Mandarin pinyin after a backtick, for example `` `zhe ``, should use the `luna_pinyin` lookup path and offer `這` as a candidate. | User feedback on `/web/`: expected `` `zhe `` to show `這`. Local code check: core and ABI have reverse-lookup translator/filter tests; `typeduck_web.rs` already proves browser app assets can reverse lookup for Cangjie/Luna schemas, but the visible Jyutping option is `jyut6ping3_mobile`, whose source schema does not declare the full reverse-lookup recognizer/translator path from `jyut6ping3.schema.yaml`. | `third_party/typeduck-web/source/schema/jyut6ping3_mobile.schema.yaml`, `third_party/typeduck-web/source/schema/jyut6ping3.schema.yaml`, `third_party/typeduck-web/source/schema/luna_pinyin.*`, `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`, `crates/yune-rime-api/tests/typeduck_web.rs`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-rime-api/src/schema_install.rs` | With the visible Jyutping schema active, typing `` `zhe `` produces a candidate page containing `這`; the UI exposes a Cantonese-first reverse-lookup hint/example; normal `nei` / `jigaajiusihaa` Jyutping composition remains unchanged; native `typeduck_web` and browser Playwright evidence prove the path uses packaged browser assets, not an ad hoc frontend mock. |
+| M24-DOGFOOD-12 | Open | UI polish / Chinese typeface picker | The `中文字體 Chinese Typeface` control is a two-button `宋體 Sung` / `黑體 Hei` toggle backed by `isHeiTypeface`, which is ambiguous and hides the actual font family. It should become a radio list using full font family names. | Browser comment on `/web/` display controls: user selected `中文字體 Chinese Typeface 宋體 Sung 黑體 Hei` and requested a radio list with full names. Official Google Fonts pages confirm the requested family names: Chocolate Classical Sans, Iansui, LXGW WenKai Mono TC, LXGW WenKai TC, WDXL Lubrifont TC, Chiron GoRound TC, Chiron Hei HK, and Chiron Sung HK. | `third_party/typeduck-web/source/src/types.ts`, `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/source/src/hooks.ts`, `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/Candidate.tsx`, `third_party/typeduck-web/source/src/DictionaryPanel.tsx`, `third_party/typeduck-web/source/src/index.css`, `third_party/typeduck-web/source/tailwind.config.ts`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | The display controls expose a Cantonese-first `中文字款 Chinese Typeface` radio list with the eight full family names; the selected family applies consistently to textarea, candidate rows, and dictionary panel text; the old `宋體 Sung` / `黑體 Hei` segmented toggle is gone; legacy `isHeiTypeface` storage maps to Chiron Sung HK / Chiron Hei HK; font loading does not block IME initialization. |
 
 ---
 
@@ -1390,7 +1391,322 @@ npx --prefix third_party/typeduck-web/source playwright test third_party/typeduc
 
 Expected: `jyut6ping3_mobile` still initializes from the browser app assets, `` `zhe `` exposes `這`, normal Jyutping composition stays green, and the screenshot under `M24-DOGFOOD-11` shows the reverse-lookup candidate in the real web panel.
 
-## Task 13: M24 Regression Sweep And Closeout Discipline
+## Task 13: M24-DOGFOOD-12 Replace The Sung/Hei Toggle With A Full Typeface Picker
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/types.ts`
+- Modify: `third_party/typeduck-web/source/src/consts.ts`
+- Modify: `third_party/typeduck-web/source/src/hooks.ts`
+- Modify: `third_party/typeduck-web/source/src/Preferences.tsx`
+- Modify: `third_party/typeduck-web/source/src/App.tsx`
+- Modify: `third_party/typeduck-web/source/src/Candidate.tsx`
+- Modify: `third_party/typeduck-web/source/src/DictionaryPanel.tsx`
+- Modify: `third_party/typeduck-web/source/src/index.css`
+- Modify: `third_party/typeduck-web/source/tailwind.config.ts`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+
+- [ ] **Step 1: Add a failing browser test for the new typeface picker**
+
+Add a Playwright test that expects a radio list with the eight full family names and no binary `宋體 Sung` / `黑體 Hei` segmented control:
+
+```ts
+const EXPECTED_CHINESE_TYPEFACES = [
+  "Chocolate Classical Sans",
+  "Iansui",
+  "LXGW WenKai Mono TC",
+  "LXGW WenKai TC",
+  "WDXL Lubrifont TC",
+  "Chiron GoRound TC",
+  "Chiron Hei HK",
+  "Chiron Sung HK",
+] as const;
+
+test("M24 Chinese typeface picker uses full font family names", async ({ page }) => {
+  const picker = page.locator("[data-yune-chinese-typeface]");
+  await expect(picker).toBeVisible();
+  await expect(picker).toContainText("中文字款 Chinese Typeface");
+  await expect(picker).not.toContainText("宋體 Sung");
+  await expect(picker).not.toContainText("黑體 Hei");
+
+  for (const family of EXPECTED_CHINESE_TYPEFACES) {
+    await expect(picker.getByLabel(family)).toBeVisible();
+  }
+
+  await picker.getByLabel("Iansui").check();
+  await expect(page.locator("textarea")).toHaveAttribute("data-chinese-typeface", "iansui");
+  await focusInputAndType(page, "nei", "你");
+  await expect(page.locator(".candidate-panel [data-chinese-typeface='iansui']").first()).toBeVisible();
+
+  const textareaFont = await page.locator("textarea").evaluate((element) =>
+    window.getComputedStyle(element).fontFamily,
+  );
+  expect(textareaFont).toContain("Iansui");
+
+  await saveM24Json("M24-DOGFOOD-12", "typeface-picker-font-resources.json", {
+    selected: "Iansui",
+    textareaFont,
+    fontResources: await page.evaluate(() =>
+      performance.getEntriesByType("resource")
+        .filter((entry) => /fonts\.(googleapis|gstatic)\.com/.test(entry.name))
+        .map((entry) => ({ name: entry.name, duration: entry.duration })),
+    ),
+  });
+  await takeM24Screenshot(page, "M24-DOGFOOD-12", "typeface-picker-iansui");
+});
+```
+
+Expected before the fix: the locator is missing or the test finds only the old binary `宋體 Sung` / `黑體 Hei` control.
+
+- [ ] **Step 2: Replace the boolean preference with a font-family ID**
+
+In `types.ts`, replace `isHeiTypeface: boolean` with an explicit union:
+
+```ts
+export type ChineseTypefaceId =
+  | "chocolate-classical-sans"
+  | "iansui"
+  | "lxgw-wenkai-mono-tc"
+  | "lxgw-wenkai-tc"
+  | "wdxl-lubrifont-tc"
+  | "chiron-goround-tc"
+  | "chiron-hei-hk"
+  | "chiron-sung-hk";
+
+export interface InterfacePreferences {
+  displayLanguages: Set<Language>;
+  mainLanguage: Language;
+  chineseTypeface: ChineseTypefaceId;
+  showRomanization: ShowRomanization;
+  showReverseCode: boolean;
+}
+```
+
+Delete all new references to `isHeiTypeface` in TypeScript. The old localStorage key is handled only by the migration in Step 4.
+
+- [ ] **Step 3: Add checked font metadata in `consts.ts`**
+
+Add the exact Google Fonts family names as data, and preserve the old default by making `Chiron Sung HK` the default family:
+
+```ts
+import type { ChineseTypefaceId, Preferences, RimeSchemaId } from "./types";
+
+export interface ChineseTypefaceOption {
+  id: ChineseTypefaceId;
+  family: string;
+  label: string;
+  className: string;
+  googleFontsUrl: string;
+}
+
+export const CHINESE_TYPEFACE_OPTIONS: readonly ChineseTypefaceOption[] = [
+  {
+    id: "chocolate-classical-sans",
+    family: "Chocolate Classical Sans",
+    label: "Chocolate Classical Sans",
+    className: "font-chinese-chocolate-classical-sans",
+    googleFontsUrl: "https://fonts.google.com/specimen/Chocolate+Classical+Sans",
+  },
+  {
+    id: "iansui",
+    family: "Iansui",
+    label: "Iansui",
+    className: "font-chinese-iansui",
+    googleFontsUrl: "https://fonts.google.com/specimen/Iansui",
+  },
+  {
+    id: "lxgw-wenkai-mono-tc",
+    family: "LXGW WenKai Mono TC",
+    label: "LXGW WenKai Mono TC",
+    className: "font-chinese-lxgw-wenkai-mono-tc",
+    googleFontsUrl: "https://fonts.google.com/specimen/LXGW+WenKai+Mono+TC",
+  },
+  {
+    id: "lxgw-wenkai-tc",
+    family: "LXGW WenKai TC",
+    label: "LXGW WenKai TC",
+    className: "font-chinese-lxgw-wenkai-tc",
+    googleFontsUrl: "https://fonts.google.com/specimen/LXGW+WenKai+TC",
+  },
+  {
+    id: "wdxl-lubrifont-tc",
+    family: "WDXL Lubrifont TC",
+    label: "WDXL Lubrifont TC",
+    className: "font-chinese-wdxl-lubrifont-tc",
+    googleFontsUrl: "https://fonts.google.com/specimen/WDXL+Lubrifont+TC",
+  },
+  {
+    id: "chiron-goround-tc",
+    family: "Chiron GoRound TC",
+    label: "Chiron GoRound TC",
+    className: "font-chinese-chiron-goround-tc",
+    googleFontsUrl: "https://fonts.google.com/specimen/Chiron+GoRound+TC",
+  },
+  {
+    id: "chiron-hei-hk",
+    family: "Chiron Hei HK",
+    label: "Chiron Hei HK",
+    className: "font-chinese-chiron-hei-hk",
+    googleFontsUrl: "https://fonts.google.com/specimen/Chiron+Hei+HK",
+  },
+  {
+    id: "chiron-sung-hk",
+    family: "Chiron Sung HK",
+    label: "Chiron Sung HK",
+    className: "font-chinese-chiron-sung-hk",
+    googleFontsUrl: "https://fonts.google.com/specimen/Chiron+Sung+HK",
+  },
+];
+
+export const CHINESE_TYPEFACE_BY_ID = Object.fromEntries(
+  CHINESE_TYPEFACE_OPTIONS.map((option) => [option.id, option]),
+) as Record<ChineseTypefaceId, ChineseTypefaceOption>;
+```
+
+Then update `DEFAULT_PREFERENCES`:
+
+```ts
+chineseTypeface: "chiron-sung-hk",
+```
+
+- [ ] **Step 4: Migrate old `isHeiTypeface` storage in `hooks.ts`**
+
+Map the old boolean to the closest new family and ignore malformed stored values:
+
+```ts
+import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language } from "./consts";
+import type { ChineseTypefaceId, Preferences } from "./types";
+
+function defaultChineseTypeface(): ChineseTypefaceId {
+  if (typeof window === "undefined") {
+    return DEFAULT_PREFERENCES.chineseTypeface;
+  }
+  const stored = window.localStorage.getItem("chineseTypeface");
+  if (stored && stored in CHINESE_TYPEFACE_BY_ID) {
+    return stored as ChineseTypefaceId;
+  }
+  const legacy = window.localStorage.getItem("isHeiTypeface");
+  return legacy === "true" ? "chiron-hei-hk" : "chiron-sung-hk";
+}
+```
+
+Inside `usePreferences()`, use the migrated default only for this key:
+
+```ts
+const effectiveDefaultValue = key === "chineseTypeface"
+  ? defaultChineseTypeface()
+  : defaultValue;
+const [optionValue, setOptionValue] = useLocalStorageState(
+  key,
+  {
+    defaultValue: effectiveDefaultValue,
+    serializer: key === "displayLanguages"
+      ? {
+        stringify: languages => [...languages as Set<Language>].join(),
+        parse: values => new Set(values.split(",").map(value => value.trim() as Language)),
+      }
+      : typeof effectiveDefaultValue === "string"
+      ? {
+        stringify: String,
+        parse: value => value in CHINESE_TYPEFACE_BY_ID || key !== "chineseTypeface"
+          ? value
+          : DEFAULT_PREFERENCES.chineseTypeface,
+      }
+      : JSON,
+  },
+);
+```
+
+This keeps existing users on a visually similar default without storing the obsolete boolean again.
+
+- [ ] **Step 5: Render a radio list in `Preferences.tsx`**
+
+Replace the segmented toggle with a fieldset. Keep it in display controls and do not add helper paragraphs there:
+
+```tsx
+<li>
+  <fieldset className="border border-base-300 rounded px-3 pb-2 mb-1" data-yune-chinese-typeface>
+    <legend className="text-xl text-base-content my-2 px-2">中文字款 Chinese Typeface</legend>
+    <div className="grid gap-2 sm:grid-cols-2">
+      {CHINESE_TYPEFACE_OPTIONS.map(option =>
+        <Radio
+          key={option.id}
+          name="chineseTypeface"
+          label={option.label}
+          state={prefs.chineseTypeface}
+          setState={prefs.setChineseTypeface}
+          value={option.id} />
+      )}
+    </div>
+  </fieldset>
+</li>
+```
+
+Import `CHINESE_TYPEFACE_OPTIONS` from `consts.ts`. The visible option text must be the full family name, not a generic category such as `Sung`, `Hei`, or `Kai`.
+
+- [ ] **Step 6: Apply the selected family to all Chinese text surfaces**
+
+In `App.tsx`, derive the class once:
+
+```ts
+const {
+  chineseTypeface,
+} = preferences;
+const chineseTypefaceClass = CHINESE_TYPEFACE_BY_ID[chineseTypeface].className;
+```
+
+Use it on the textarea:
+
+```tsx
+<textarea
+  className={`block w-full min-h-64 my-6 textarea textarea-bordered text-lg px-3 ${chineseTypefaceClass}`}
+  data-chinese-typeface={chineseTypeface}
+  ref={setTextArea}
+  {...NO_AUTO_FILL} />
+```
+
+In `Candidate.tsx` and `DictionaryPanel.tsx`, replace every `prefs.isHeiTypeface ? "font-hei" : "font-sung"` and `font-kai-fallback-*` branch with the selected option class:
+
+```ts
+const chineseTypefaceClass = CHINESE_TYPEFACE_BY_ID[prefs.chineseTypeface].className;
+```
+
+Add `data-chinese-typeface={prefs.chineseTypeface}` to the rendered candidate Hanzi cell and dictionary headword/table cells so the browser test can prove the selected family reaches all visible Chinese surfaces.
+
+- [ ] **Step 7: Wire Google Fonts without blocking IME startup**
+
+In `index.css`, import the families with `display=swap`:
+
+```css
+@import url("https://fonts.googleapis.com/css2?family=Chocolate+Classical+Sans&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&family=Chiron+GoRound+TC&family=Chiron+Hei+HK&family=Chiron+Sung+HK&display=swap");
+```
+
+In `tailwind.config.ts`, add named font families:
+
+```ts
+"chinese-chocolate-classical-sans": ['"Chocolate Classical Sans"', "var(--font-sans)", "var(--font-emoji)"],
+"chinese-iansui": ['"Iansui"', "var(--font-sans)", "var(--font-emoji)"],
+"chinese-lxgw-wenkai-mono-tc": ['"LXGW WenKai Mono TC"', "var(--font-sans)", "var(--font-emoji)"],
+"chinese-lxgw-wenkai-tc": ['"LXGW WenKai TC"', "var(--font-sans)", "var(--font-emoji)"],
+"chinese-wdxl-lubrifont-tc": ['"WDXL Lubrifont TC"', "var(--font-sans)", "var(--font-emoji)"],
+"chinese-chiron-goround-tc": ['"Chiron GoRound TC"', "var(--font-sans)", "var(--font-emoji)"],
+"chinese-chiron-hei-hk": ['"Chiron Hei HK"', "var(--font-sans)", "var(--font-emoji)"],
+"chinese-chiron-sung-hk": ['"Chiron Sung HK"', "var(--font-serif)", "var(--font-emoji)"],
+```
+
+Do not render each radio label with its own font preview in this first slice; doing so would encourage the browser to load all eight large Chinese fonts on first paint. The first performance pass should load only the CSS and the selected family.
+
+- [ ] **Step 8: Run focused gates**
+
+Run:
+
+```powershell
+npm.cmd --prefix third_party/typeduck-web/source run build
+npx --prefix third_party/typeduck-web/source playwright test third_party/typeduck-web/e2e/yune-typeduck.spec.ts -g "M24 Chinese typeface"
+```
+
+Expected: the picker lists all eight full family names, selecting `Iansui` changes the computed textarea font and candidate/dictionary `data-chinese-typeface` markers, the old Sung/Hei toggle is absent, and the screenshot under `M24-DOGFOOD-12` proves the control is readable.
+
+## Task 14: M24 Regression Sweep And Closeout Discipline
 
 **Files:**
 - Modify: this plan as issue rows close

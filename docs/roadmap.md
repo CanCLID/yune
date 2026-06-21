@@ -575,7 +575,9 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   labels that use checked schema names such as `粵語拼音` and `倉頡五代`. The
   queue now also tracks the visible Jyutping reverse-lookup path, where typing a
   Mandarin pinyin probe such as `` `zhe `` should show `這` from packaged browser
-  assets without regressing normal Jyutping composition.
+  assets without regressing normal Jyutping composition, and a full Chinese
+  typeface radio picker replacing the ambiguous Sung/Hei toggle with named
+  Google Fonts families.
   Detail: [`plans/m24-plan-typeduck-web-dogfooding.md`](./plans/m24-plan-typeduck-web-dogfooding.md).
 - **M17 — Upstream sentence / language model (poet) (complete)** — implements the upstream
   `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE

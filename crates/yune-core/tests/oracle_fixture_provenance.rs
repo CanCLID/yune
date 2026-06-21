@@ -48,8 +48,8 @@ fn upstream_luna_pinyin_fixtures_have_non_circular_source_provenance() {
     fixture_files.sort();
     assert_eq!(
         fixture_files.len(),
-        6,
-        "M12 closeout should keep the full upstream luna_pinyin fixture set checked in"
+        8,
+        "M17 closeout should keep the full upstream luna_pinyin fixture set checked in"
     );
 
     for path in fixture_files {
@@ -685,7 +685,10 @@ fn assert_luna_fixture_header(path: &Path, fixture: &Value) {
     assert!(
         fixture["oracle"]["capture_command"]
             .as_str()
-            .is_some_and(|command| command.contains("scripts/capture-upstream-luna-pinyin.ps1")),
+            .is_some_and(|command| {
+                command.contains("scripts/capture-upstream-luna-pinyin.ps1")
+                    || command.contains("scripts/capture-upstream-m17-poet.ps1")
+            }),
         "{path:?} must include a reproducible capture command"
     );
     assert_eq!(fixture["schema"], "luna_pinyin", "{path:?}");
@@ -912,6 +915,59 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
                 "option_full_shape_on",
                 "full_shape_slash_snapshot",
             );
+        }
+        "m17_upstream_luna_sentence_language_model" | "m17_upstream_luna_sentence_lattice" => {
+            assert_eq!(
+                fixture["capture"]["source_dictionary_file"],
+                "rime-luna-pinyin/luna_pinyin.dict.yaml",
+                "{path:?}"
+            );
+            assert_eq!(
+                fixture["capture"]["essay_vocabulary_file"], "rime-essay/essay.txt",
+                "{path:?}"
+            );
+            assert_eq!(fixture["capture"]["grammar_model"], Value::Null, "{path:?}");
+            assert_eq!(
+                fixture["capture"]["grammar_fallback_penalty"],
+                serde_json::json!(-13.815510557964274_f64),
+                "{path:?}"
+            );
+            assert_non_empty_array(
+                path,
+                fixture,
+                &["capture", "source_dictionary_rows_for_tested_codes"],
+            );
+            assert_non_empty_array(
+                path,
+                fixture,
+                &["capture", "essay_vocabulary_rows_for_candidates"],
+            );
+            assert_non_empty_array(path, fixture, &["capture", "tested_codes"]);
+            assert_non_empty_array(path, fixture, &["capture", "in_scope_candidate_texts"]);
+            assert_eq!(
+                fixture["capture"]["source_row_counts"]["dictionary"]
+                    .as_u64()
+                    .expect("M17 dictionary source row count should be numeric"),
+                fixture["capture"]["source_dictionary_rows_for_tested_codes"]
+                    .as_array()
+                    .expect("M17 dictionary rows should be an array")
+                    .len() as u64,
+                "{path:?}"
+            );
+            assert_eq!(
+                fixture["capture"]["source_row_counts"]["essay"]
+                    .as_u64()
+                    .expect("M17 essay source row count should be numeric"),
+                fixture["capture"]["essay_vocabulary_rows_for_candidates"]
+                    .as_array()
+                    .expect("M17 essay rows should be an array")
+                    .len() as u64,
+                "{path:?}"
+            );
+            if fixture["capture"]["source_row_policy"] == "m17_upstream_luna_sentence_lattice" {
+                assert_snapshot(path, fixture, "sentence_lattice_zhongguo", "page_1");
+                assert_snapshot(path, fixture, "sentence_lattice_zhongguo", "page_2");
+            }
         }
         "upstream_deployer_compiled_prism_artifact" => {
             assert_eq!(

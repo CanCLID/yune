@@ -149,9 +149,9 @@ and checks Yune against those bytes for curated single-code mechanics, full
 `ni` dictionary selection with essay weights, Engine paging/selection/commit,
 reverse lookup, punctuation/symbol candidates, and supported option paths
 (`zh_hans` single-code conversion and full-shape punctuation first candidate).
-The phrase/language-model surface (`zhongguo` full-page sentence output),
-`ascii_punct` processor bypass, and punctuation immediate-commit processor
-behavior are fixture-backed ignored blockers, not hidden parity claims.
+The later M17 and M18 milestones closed the `zhongguo` sentence/lattice,
+`ascii_punct` processor bypass, and punctuation immediate-commit blockers with
+fresh upstream fixtures instead of retroactively expanding M12.
 
 Detail: [`plans/archive/m12-plan-upstream-oracle-refresh.md`](./plans/archive/m12-plan-upstream-oracle-refresh.md) and [`plans/archive/m12-plan-upstream-behavioral-parity-closeout.md`](./plans/archive/m12-plan-upstream-behavioral-parity-closeout.md).
 
@@ -165,7 +165,7 @@ Detail: [`plans/archive/m12-plan-upstream-oracle-refresh.md`](./plans/archive/m1
 | 3 | First upstream parity slice | Done | Default `RimeApi` ABI parity was refreshed to `rime/librime 1.17.0`; fork-only `start_quick` and `config_list_append_*` slots are excluded from the core table. |
 | 4 | First upstream behavioral fixture | Done | `luna-pinyin-basic.json` is captured from the official upstream `1.17.0` binary and checked by `upstream_luna_pinyin_parity`. |
 | 5 | Expanded upstream behavioral fixtures | Done | `luna-pinyin-selection`, `actions`, `reverse-lookup`, `punctuation`, and `options` fixtures are captured from the official release binary with provenance enforced by `oracle_fixture_provenance`. |
-| 6 | Full-pipeline parity gates | Done | Active `upstream_luna_pinyin_parity` coverage drives Yune's real parser, dictionary, translator, filter, and Engine paths; unsupported phrase/language-model and processor-only edges are explicit ignored blockers. |
+| 6 | Full-pipeline parity gates | Done | Active `upstream_luna_pinyin_parity` coverage drives Yune's real parser, dictionary, translator, filter, and Engine paths; later M17/M18 fixtures closed the formerly ignored sentence/lattice and processor blockers. |
 
 ### M13: AI-native frontend exposure
 
@@ -298,7 +298,7 @@ behavior already proven by M9, M13, M14-M16, and the FORK-PARITY backlog. It is 
 **separate web/demo track**,
 not a reopened M13: M13 remains the completed default-off AI frontend exposure
 milestone, while M20 made the browser demo highly controllable, honest,
-inspectable, and useful for manual dogfooding before future M17 and frontend work.
+inspectable, and useful for manual dogfooding before later M17 and frontend work.
 
 This is not the same surface as a separately cloned `TypeDuck-HK/TypeDuck-Web`
 product checkout. `packages/yune-typeduck-runtime/` remains the reusable Yune
@@ -504,7 +504,7 @@ In priority order:
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 2. **Keep M9/M13/M16/M20 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, default-off M13 AI scenarios, and M20 showcase-control honesty checks.
 3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
-4. **Advance the remaining Track 2 slices opportunistically.** M18's prism generation, deployment writers, rebuild executor, and punctuation processor depth are complete, M19's breadth schemas are complete, and M22's playground build-out is complete. The remaining upstream-depth work is the optional M17 language-model slice.
+4. **Keep Track 2 complete and fixture-gated.** M17's upstream `luna_pinyin` null-grammar sentence/lattice path, M18's prism/deployment/processor depth, M19's breadth schemas, and M22's playground build-out are complete. Future upstream-depth work needs a named target and fresh oracle fixtures before implementation.
 5. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
 6. **Resume TypeDuck-Windows only with profile smoke and real E2E.** The M19 profile ABI accessor exists; return to TypeDuck-Windows packaging only after package/header smoke is re-derived against that accessor and the real frontend E2E path is available.
 7. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
@@ -516,23 +516,18 @@ In priority order:
 
 Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
 list. **TypeDuck `jyut6ping3` reconciliation (M14-M16), the M20 browser
-playground, M23 architecture hardening, M18 deployment/processor depth, M19
-breadth schemas, and M22 playground build-out are complete** (see *Completed*
-above). The remaining engine-depth arc is **Track 2 (broad upstream depth):**
+playground, M23 architecture hardening, M17 upstream sentence/lattice depth, M18
+deployment/processor depth, M19 breadth schemas, and M22 playground build-out
+are complete** (see *Completed* above). There is no active numbered compatibility
+milestone queued; future engine-depth work is trigger-gated by named targets and
+fresh oracle fixtures.
 
 ### Execution order — what to do next
 
 This is the **authoritative sequence**; the per-milestone detail bullets below
-are reference, not order. M18 has removed the precompiled-asset crutch for later
-breadth and multi-schema work, M19 has added the first breadth schemas, and M22
-has exposed them in the internal browser playground.
-**M17 remains the heaviest and least product-critical slice** (not required by
-any current named target), and the TypeDuck profile-tuning leak was gated in M23
-before M19 added schemas through the same shared sentence path.
-
-1. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
-   not required by any current named target. Do it when a frontend actually ships
-   `luna_pinyin` sentence input to users.
+are reference, not order. M17, M18, M19, M22, and M23 are complete. New milestone
+work should start only after a plan names its target, oracle, fixtures, and
+front-end or schema need.
 
 **Trigger-gated, not scheduled:** the core/ABI **processor extraction** (move
 processor semantics into `yune-core`) lands only when a real non-ABI consumer
@@ -546,11 +541,11 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
 > The bullets below are reference detail. The **Execution order** above is the
 > authoritative sequence (note: M18 precedes M17, despite list position here).
 
-- **M17 — Upstream sentence / language model (poet)** — implements the upstream
+- **M17 — Upstream sentence / language model (poet) (complete)** — implements the upstream
   `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE
-  output matches the captured oracle, un-ignoring the two blocked stubs in
-  `upstream_luna_pinyin_parity.rs` (`zhongguo_phrase_mechanics_parity_is_blocked:107`,
-  `full_sentence_lattice_parity_for_zhongguo_is_blocked:376`). Grounded finding that
+  output matches the captured oracle, with the former `zhongguo` phrase and
+  full-page sentence-lattice blockers now active in `upstream_luna_pinyin_parity.rs`.
+  Grounded finding that
   makes it tractable: `luna_pinyin` ships an `essay.txt` vocabulary but **no `.gram`
   model**, so the oracle's poet runs the `grammar == nullptr` branch where
   `Grammar::Evaluate` returns `entry_weight + kPenalty` with
@@ -560,10 +555,10 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   multi-candidate beam) behind a named `luna_pinyin`/upstream profile, **without**
   disturbing the TypeDuck `sentence_candidate` heuristic (the `21.0` jyut6ping3
   penalty) or the upstream-first ABI, capturing both goldens non-circularly from the
-  pinned `1.17.0` binary. The HEAVY Track-2 item; explicitly **not** required for
+  pinned `1.17.0` binary. The Track-2 item is complete; it remains explicitly **not** required for
   TypeDuck-Web parity. Octagram/`.gram` bigram models, the C++ plugin ABI, and
   `contextual_translation` beyond the two named tests stay out of scope.
-  Detail: [`plans/m17-plan-upstream-language-model-poet.md`](./plans/m17-plan-upstream-language-model-poet.md).
+  Detail: [`plans/archive/m17-plan-upstream-language-model-poet.md`](./plans/archive/m17-plan-upstream-language-model-poet.md).
 - **M18 — Deployment & processor depth (complete)** — turned the dictionary subsystem from
   read-and-plan into read-write and teaches the Engine the punctuation-processor
   behaviors the M12 harness left blocked. Yune now parses source YAML and compiled
@@ -584,7 +579,8 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   (`xform`/`xlit`/`derive`/`fuzz`/`abbrev`/`erase`), `StaticTableTranslator`
   (`with_spelling_algebra`/`with_show_full_code`), the schema-driven `SpellerProcessor`
   — adding only the per-schema gaps a captured oracle case proves; sentence/lattice
-  cases defer to M17 as explicit ignored blockers. In parallel M19 *names* (does not
+  cases outside the M17-owned `luna_pinyin` fixtures need their own future oracle
+  evidence before implementation. In parallel M19 *names* (does not
   package) the TypeDuck-profile ABI surface the parked M10 needs: the fork-only
   `config_list_append_{string,bool,int,double}` slots already exist as `#[no_mangle]`
   symbols in `config_api.rs` but are absent from the default `rime_get_api()` table, so
@@ -642,7 +638,7 @@ the *Non-goal* column is not a backlog. Standing deferrals also appear in
 
 | In scope — target-driven, measured | Deferred — implement when a target needs it | Non-goal |
 |---|---|---|
-| `luna_pinyin` core vs upstream `1.17.0` oracle | Grammar / language model (poet / octagram) — *the statistical LM/lattice only; dictionary-phrase sentence composition (e.g. `我係個`, `兩年前`) stays in-scope under the `jyut6ping3` profile (M15)*; processor-level punctuation/ascii-punctuation parity | Bit-for-bit parity with librime internals |
+| `luna_pinyin` core vs upstream `1.17.0` oracle, including M17 null-grammar sentence/lattice and M18 punctuation processor slices | Learned `.gram`/octagram grammar, contextual translation, and broader plugin-backed gears until a named target needs them | Bit-for-bit parity with librime internals |
 | TypeDuck `jyut6ping3` profile vs `v1.1.2` oracle | Browser/userdb UI evidence after M15 engine parity; broader OpenCC phrase/config breadth beyond the checked-in `hk2s` source chain | librime C++ plugin ABI as a requirement |
 | Common RIME schemas, as breadth (B) is added | Spelling-algebra prism generation; binary-dict / deployment writing | Cloud inference as a hard dependency |
 | AI-native layer (M11) on the compatible base | `contextual_translation`, `unity_table_encoder`, deeper gear coverage | Replacing or altering classic input paths by default |

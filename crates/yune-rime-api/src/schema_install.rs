@@ -141,6 +141,8 @@ fn install_schema_dictionary_translator_from_config(
         .and_then(|name| validate_data_resource_id(&name));
     let is_typeduck_jyut6ping3_profile =
         is_typeduck_jyut6ping3_profile(schema_config, user_dict_name.as_deref());
+    let is_upstream_luna_pinyin_profile =
+        is_upstream_luna_pinyin_profile(schema_config, user_dict_name.as_deref(), component_name);
     let dictionary = match load_schema_table_dictionary(schema_config, name_space) {
         DictionaryLoadOutcome::Compiled(dictionary) => dictionary,
         DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
@@ -309,6 +311,9 @@ fn install_schema_dictionary_translator_from_config(
     if let Some(limit) = prediction_candidate_limit {
         translator = translator.with_prediction_candidate_limit(limit);
     }
+    if is_upstream_luna_pinyin_profile {
+        translator = translator.with_upstream_sentence_model(100);
+    }
     if is_typeduck_jyut6ping3_profile {
         translator = translator.with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY);
     }
@@ -325,6 +330,19 @@ fn is_typeduck_jyut6ping3_profile(schema_config: &Value, dictionary_name: Option
     find_config_value(schema_config, "schema/schema_id")
         .and_then(config_scalar_string)
         .is_some_and(|schema_id| schema_id == "jyut6ping3" || schema_id.starts_with("jyut6ping3_"))
+}
+
+fn is_upstream_luna_pinyin_profile(
+    schema_config: &Value,
+    dictionary_name: Option<&str>,
+    component_name: &str,
+) -> bool {
+    if component_name != "script_translator" || dictionary_name != Some("luna_pinyin") {
+        return false;
+    }
+    find_config_value(schema_config, "schema/schema_id")
+        .and_then(config_scalar_string)
+        .is_some_and(|schema_id| schema_id == "luna_pinyin")
 }
 
 fn spelling_algebra_for_dictionary(schema_config: &Value) -> Vec<String> {

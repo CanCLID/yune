@@ -1,9 +1,19 @@
 # M17 — Upstream Language Model (Poet) Implementation Plan
 
-> **Status:** Active · **Milestone:** M17 (upstream sentence/LM poet) · **Updated:** 2026-06-20 · **Type:** execution plan
+> **Status:** Finished · **Milestone:** M17 (upstream sentence/LM poet) · **Closed:** 2026-06-21 · **Type:** execution plan
 > **For agentic workers:** implement task-by-task; steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Implement the upstream `rime/librime 1.17.0` statistical sentence path (`poet` + `grammar`) so that `luna_pinyin` single-best SENTENCE composition and full-page multi-sentence LATTICE output match the captured upstream oracle, and un-ignore the two blocked parity stubs in `crates/yune-core/tests/upstream_luna_pinyin_parity.rs` (`zhongguo_phrase_mechanics_parity_is_blocked` at line 107; `full_sentence_lattice_parity_for_zhongguo_is_blocked` at line 376).
+
+**Completion note (2026-06-21):** M17 is complete. `luna-pinyin-sentence.json`
+and `luna-pinyin-lattice.json` were captured from the pinned upstream 1.17.0
+release binary before implementation. Yune now owns a `poet` module with the
+upstream null-grammar penalty (`-13.815510557964274`) and installs the upstream
+sentence model only for the `luna_pinyin` script-translator profile. The two
+M17-owned `upstream_luna_pinyin_parity` blockers are active tests, TypeDuck
+`jyut6ping3` sentence tuning remains profile-gated, and ABI structs/tables were
+unchanged. Learned `.gram`/octagram and broader contextual translation remain
+future named-target work.
 
 **Architecture:** A new owned `poet` module in `crates/yune-core/src/` reproduces librime's `Poet::MakeSentence`/`MakeSentences` (`src/rime/gear/poet.{h,cc}`) as a log-space Viterbi (single-best, the `DynamicProgramming` strategy) + beam (multi-sentence, the `BeamSearch` strategy) DP over a dictionary `WordGraph`. The crucial grounded fact: `luna_pinyin` ships an `essay.txt` preset vocabulary but **no `.gram` grammar model**, so the oracle's `Poet` runs the `grammar_ == nullptr` branch — `MakeSentenceWithStrategy<DynamicProgramming>` — and `Grammar::Evaluate` returns `entry_weight + kPenalty` where the verbatim upstream constant is `kPenalty = -13.815510557964274` (≈ `ln(1e-6)`, often shorthand `-13.82`) — a fixed per-word log-probability penalty, *not* a learned bigram model (confirmed below). M17 owns this constant and the upstream scoring/comparator (`CompareWeight`, `LeftAssociateCompare`) behind a **named upstream profile flag** so it does **not** disturb the existing TypeDuck `sentence_candidate` heuristic (`translator/mod.rs:577-702`, `sentence_piece_quality = ln(weight) - 21.0`) calibrated to the M21 jyut6ping3 fixture.
 

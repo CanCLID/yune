@@ -584,12 +584,12 @@ parity to the pinned `rime/librime 1.17.0` target, and expanded
 release binary. Active upstream-core gates now cover curated single-code
 mechanics, full `ni` dictionary selection with essay weights, Engine
 paging/selection/commit, reverse lookup, punctuation/symbols, and supported
-option paths. Phrase/language-model output, `ascii_punct` processor bypass, and
-punctuation immediate commit remain explicit ignored blockers until a named
-target needs those implementation slices. `start_quick` remains absent from the
-default table. M12 removed the `config_list_append_*` fork-only slots from the
-default upstream table. M10 is therefore parked until a named TypeDuck profile
-ABI surface is implemented.
+option paths. Later M17/M18 milestones closed the `luna_pinyin`
+sentence/lattice, `ascii_punct` processor bypass, and punctuation immediate
+commit blockers with fresh upstream fixtures. `start_quick` remains absent from
+the default table. M12 removed the `config_list_append_*` fork-only slots from
+the default upstream table. M10 is therefore parked until a named TypeDuck
+profile ABI surface is implemented.
 
 ### Compatibility scope (project-wide D-25)
 
@@ -764,6 +764,28 @@ upstream `1.17.0` shape; the opt-in profile table exposes
 remain out of surface until separately resumed. Extends D-24 (oracle precedence)
 and D-25 (target-driven scope). *Outcome: Good.*
 
+### Upstream sentence / language model poet (project-wide D-30)
+
+**D-30 / UPSTREAM-POET - Implement `luna_pinyin` sentence/lattice parity through
+the upstream null-grammar path, not through TypeDuck tuning.** M17 captures
+`luna-pinyin-sentence.json` and `luna-pinyin-lattice.json` from the pinned
+upstream `rime/librime 1.17.0` release binary before implementation. The
+captured schema has `essay.txt` preset vocabulary but no `.gram` model, so Yune
+implements the grammar-absent poet scoring path in `yune-core`: `entry_weight +
+kPenalty` per word, with the verbatim upstream `kPenalty =
+-13.815510557964274`, plus a bounded sentence/lattice candidate path installed
+only for the upstream `luna_pinyin` script-translator profile. The existing
+TypeDuck `jyut6ping3` sentence heuristic and its `21.0` word penalty remain
+profile-gated and separate.
+
+This closes the two M17-owned `luna_pinyin` blockers in
+`upstream_luna_pinyin_parity.rs` without changing `RimeApi`, `RimeCandidate`, or
+the TypeDuck-profile ABI surface. Learned `.gram`/octagram models, the C++
+plugin ABI, and broader contextual translation stay deferred until a future
+named target proves they are required. Extends D-24 (oracle precedence), D-25
+(target-driven scope), and D-28 (profile-specific tuning isolation). *Outcome:
+Good.*
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/archive/m00-analysis-founding.md`, `docs/roadmap.md`, and
@@ -797,4 +819,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-21 - D-29 records M19 schema breadth and the named TypeDuck-profile ABI accessor; D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending package/header smoke and real frontend E2E against the profile surface.*
+*Last updated: 2026-06-21 - D-30 records M17 upstream `luna_pinyin` null-grammar poet completion and keeps learned `.gram`/octagram deferred; D-29 records M19 schema breadth and the named TypeDuck-profile ABI accessor; D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending package/header smoke and real frontend E2E against the profile surface.*

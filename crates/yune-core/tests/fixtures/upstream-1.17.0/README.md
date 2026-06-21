@@ -11,7 +11,8 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
 - Tag object: `a52a3400f8b7679e839bc5fb8e6309a0fc4424da`
 - Release URL: <https://github.com/rime/librime/releases/tag/1.17.0>
 - Canonical repository: <https://github.com/rime/librime>
-- Captured for: M12 upstream oracle refresh
+- Captured for: M12 upstream oracle refresh; M17 upstream `luna_pinyin`
+  sentence/lattice closeout; M18 deployment/processor depth; M19 breadth schemas
 
 ## Capture Rules
 
@@ -94,8 +95,34 @@ powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -Or
 - Scenarios: `zh_hans` off/on for phrase and single-code inputs,
   `ascii_punct`, and `full_shape`.
 - Source-row policy: `option_action_sequence_oracle_snapshots`.
-- Active Yune coverage is limited to supported paths; phrase/language-model and
-  processor-only gaps are represented by ignored tests with blocker strings.
+- Active Yune coverage is limited to supported paths; M17/M18 later closed the
+  formerly blocked sentence/lattice and processor-only gaps with separate
+  fixtures.
+
+### `luna-pinyin-sentence.json`
+
+- Source-row policy: `m17_upstream_luna_sentence_language_model`.
+- Inputs: `zhongguo`, `nihao`, `woshi`, `tiantian`, and `renmin`.
+- Captures upstream `luna_pinyin` first-page sentence candidates from the pinned
+  1.17.0 release binary.
+- Carries source dictionary rows for every tested code plus the in-scope
+  `essay.txt` rows needed to reconstruct candidate weights.
+- Records `grammar_model: null` and `grammar_fallback_penalty:
+  -13.815510557964274`, matching upstream `grammar.h`'s null-grammar branch.
+
+### `luna-pinyin-lattice.json`
+
+- Source-row policy: `m17_upstream_luna_sentence_lattice`.
+- Scenario: `zhongguo` page 1, Page_Down page 2, and Page_Up page 1 again.
+- Captures the full first two pages needed to prove the M17 lattice behavior,
+  including the highlighted page-2 commit preview (`中谷o`) for the partial-code
+  sentence candidate.
+- Uses the same null-grammar provenance as `luna-pinyin-sentence.json`.
+- Capture command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-m17-poet.ps1 -OracleRoot target/upstream-oracle/1.17.0
+```
 
 ### `m18-luna-pinyin-prism.json` / `m18-luna-pinyin-prism.bin`
 

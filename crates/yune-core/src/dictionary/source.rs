@@ -19,6 +19,22 @@ impl TableEntry {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct PresetVocabularyEntry {
+    pub text: String,
+    pub weight: f32,
+}
+
+impl PresetVocabularyEntry {
+    #[must_use]
+    pub fn new(text: impl Into<String>, weight: f32) -> Self {
+        Self {
+            text: text.into(),
+            weight,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DictionaryLookupRecord {
     pub code: String,
@@ -74,6 +90,7 @@ pub struct TableDictionary {
     pub(crate) corrections: Vec<RimeCorrectionEntry>,
     pub(crate) tolerance_rules: Vec<RimeToleranceRule>,
     pub(crate) lookup_records: HashMap<String, Vec<DictionaryLookupRecord>>,
+    pub(crate) preset_vocabulary: Vec<PresetVocabularyEntry>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -83,6 +100,7 @@ pub struct TableDictionaryAdvancedData {
     pub encoder: TableEncoder,
     pub corrections: Vec<RimeCorrectionEntry>,
     pub tolerance_rules: Vec<RimeToleranceRule>,
+    pub preset_vocabulary: Vec<PresetVocabularyEntry>,
 }
 
 impl TableDictionary {
@@ -104,6 +122,7 @@ impl TableDictionary {
             corrections: advanced.corrections,
             tolerance_rules: advanced.tolerance_rules,
             lookup_records: HashMap::new(),
+            preset_vocabulary: advanced.preset_vocabulary,
         }
     }
 
@@ -116,6 +135,8 @@ impl TableDictionary {
         }
         self.corrections.extend(other.corrections.clone());
         self.tolerance_rules.extend(other.tolerance_rules.clone());
+        self.preset_vocabulary
+            .extend(other.preset_vocabulary.clone());
         merge_dictionary_lookup_records(&mut self.lookup_records, other.lookup_records.clone());
         self
     }
@@ -157,8 +178,13 @@ impl TableDictionary {
         append_rime_import_table_entries(&metadata, &mut entries, &mut import_loader)?;
         let vocabulary =
             apply_rime_preset_vocabulary_weights(&metadata, &mut entries, &mut vocabulary_loader);
+        let preset_vocabulary = vocabulary
+            .as_deref()
+            .map(parse_rime_preset_vocabulary_entries)
+            .unwrap_or_default();
         apply_rime_table_encoder_phrase_entries(&metadata, &mut entries, vocabulary.as_deref());
         let mut dictionary = finalize_rime_table_entries(&metadata, entries);
+        dictionary.preset_vocabulary = preset_vocabulary;
 
         for pack in packs {
             let pack = pack.as_ref();
@@ -183,13 +209,21 @@ impl TableDictionary {
                 &mut pack_entries,
                 &mut vocabulary_loader,
             );
+            let preset_vocabulary = vocabulary
+                .as_deref()
+                .map(parse_rime_preset_vocabulary_entries)
+                .unwrap_or_default();
             apply_rime_table_encoder_phrase_entries(
                 &pack_metadata,
                 &mut pack_entries,
                 vocabulary.as_deref(),
             );
             let mut pack_dictionary = finalize_rime_table_entries(&pack_metadata, pack_entries);
+            pack_dictionary.preset_vocabulary = preset_vocabulary;
             dictionary.entries.append(&mut pack_dictionary.entries);
+            dictionary
+                .preset_vocabulary
+                .append(&mut pack_dictionary.preset_vocabulary);
             merge_rime_table_stems(&mut dictionary.stems, pack_dictionary.stems);
             merge_dictionary_lookup_records(
                 &mut dictionary.lookup_records,
@@ -255,6 +289,7 @@ impl TableDictionary {
             corrections: metadata.corrections,
             tolerance_rules: metadata.tolerance_rules,
             lookup_records,
+            preset_vocabulary: Vec::new(),
         })
     }
 
@@ -296,6 +331,11 @@ impl TableDictionary {
     #[must_use]
     pub fn lookup_records_for(&self, text: &str) -> Option<&[DictionaryLookupRecord]> {
         self.lookup_records.get(text).map(Vec::as_slice)
+    }
+
+    #[must_use]
+    pub fn preset_vocabulary_entries(&self) -> &[PresetVocabularyEntry] {
+        &self.preset_vocabulary
     }
 }
 
@@ -407,6 +447,7 @@ fn finalize_rime_table_entries(
         corrections: metadata.corrections.clone(),
         tolerance_rules: metadata.tolerance_rules.clone(),
         lookup_records,
+        preset_vocabulary: Vec::new(),
     }
 }
 
@@ -520,13 +561,13 @@ fn apply_rime_table_encoder_phrase_entries(
         .collect::<Vec<_>>();
 
     if let Some(vocabulary) = vocabulary {
-        for (phrase, weight) in parse_rime_preset_vocabulary_entries(vocabulary) {
-            if source_collection.contains(&phrase)
-                || !metadata.is_qualified_preset_phrase(&phrase, weight)
+        for entry in parse_rime_preset_vocabulary_entries(vocabulary) {
+            if source_collection.contains(&entry.text)
+                || !metadata.is_qualified_preset_phrase(&entry.text, entry.weight)
             {
                 continue;
             }
-            encoded_entries.extend(phrase_encoder.encode_phrase_entries(&phrase, weight));
+            encoded_entries.extend(phrase_encoder.encode_phrase_entries(&entry.text, entry.weight));
         }
     }
 
@@ -1454,10 +1495,11 @@ fn parse_rime_entry_weight_percentage(input: &str) -> f32 {
 fn parse_rime_preset_vocabulary(input: &str) -> HashMap<String, f32> {
     parse_rime_preset_vocabulary_entries(input)
         .into_iter()
+        .map(|entry| (entry.text, entry.weight))
         .collect()
 }
 
-fn parse_rime_preset_vocabulary_entries(input: &str) -> Vec<(String, f32)> {
+fn parse_rime_preset_vocabulary_entries(input: &str) -> Vec<PresetVocabularyEntry> {
     let mut vocabulary = Vec::new();
     let mut comments_enabled = true;
     for line in input.lines() {
@@ -1480,7 +1522,7 @@ fn parse_rime_preset_vocabulary_entries(input: &str) -> Vec<(String, f32)> {
             .get(1)
             .map(|value| parse_rime_entry_weight(value))
             .unwrap_or(0.0);
-        vocabulary.push((phrase.to_owned(), weight));
+        vocabulary.push(PresetVocabularyEntry::new(phrase, weight));
     }
     vocabulary
 }

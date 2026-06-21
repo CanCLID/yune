@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use serde_json::Value;
 use yune_core::{
-    Engine, PunctuationDefinition, PunctuationProcessor, PunctuationTranslator,
+    CandidateSource, Engine, PunctuationDefinition, PunctuationProcessor, PunctuationTranslator,
     ReverseLookupTranslator, SimplifierFilter, StaticTableTranslator, TableDictionary, Translator,
 };
 
@@ -14,6 +14,8 @@ const REVERSE_LOOKUP_FIXTURE: &str = "luna-pinyin-reverse-lookup.json";
 const PUNCTUATION_FIXTURE: &str = "luna-pinyin-punctuation.json";
 const M18_PUNCTUATION_FIXTURE: &str = "m18-punctuation-processor.json";
 const OPTIONS_FIXTURE: &str = "luna-pinyin-options.json";
+const SENTENCE_FIXTURE: &str = "luna-pinyin-sentence.json";
+const LATTICE_FIXTURE: &str = "luna-pinyin-lattice.json";
 
 #[test]
 fn upstream_luna_pinyin_fixture_is_locked() {
@@ -105,9 +107,39 @@ fn yune_table_translator_matches_upstream_luna_pinyin_single_code_first_page() {
 }
 
 #[test]
-#[ignore = "blocked: zhongguo upstream phrase output comes from the compiled language model/essay surface, not source phrase rows Yune can load yet"]
-fn zhongguo_phrase_mechanics_parity_is_blocked() {
-    panic!("add a non-circular phrase/language-model source fixture before enabling");
+fn zhongguo_phrase_mechanics_matches_upstream_sentence_fixture() {
+    let fixture = fixture(SENTENCE_FIXTURE);
+    assert_upstream_oracle_header(&fixture);
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "m17_upstream_luna_sentence_language_model"
+    );
+
+    let dictionary = m17_luna_dictionary_from_rows(&fixture);
+
+    for case in cases(&fixture) {
+        let input = case["input"]
+            .as_str()
+            .expect("case input should be a string");
+        let expected = selected_texts(case);
+        let mut engine = m17_luna_sentence_engine(dictionary.clone());
+        engine
+            .process_key_sequence(input)
+            .expect("key sequence should parse");
+        let actual = current_page_texts(&engine, expected.len())
+            .into_iter()
+            .take(expected.len())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            actual, expected,
+            "first sentence page should match for {input}"
+        );
+        assert_eq!(
+            engine.context().candidates[0].source,
+            CandidateSource::Sentence,
+            "top candidate should come from the M17 upstream sentence path for {input}"
+        );
+    }
 }
 
 #[test]
@@ -375,9 +407,46 @@ fn options_fixture_matches_supported_yune_option_paths() {
 }
 
 #[test]
-#[ignore = "blocked: full luna_pinyin sentence/lattice parity needs complete upstream compiled language-model surface, not curated phrase rows"]
-fn full_sentence_lattice_parity_for_zhongguo_is_blocked() {
-    panic!("capture a complete upstream language model fixture before enabling this parity test");
+fn full_sentence_lattice_parity_for_zhongguo_matches_upstream_fixture() {
+    let fixture = fixture(LATTICE_FIXTURE);
+    assert_upstream_oracle_header(&fixture);
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "m17_upstream_luna_sentence_lattice"
+    );
+
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.add_translator(
+        StaticTableTranslator::from_dictionary(m17_luna_dictionary_from_rows(&fixture))
+            .with_charset_filter(true)
+            .with_upstream_sentence_model(100),
+    );
+
+    engine
+        .process_key_sequence("zhongguo")
+        .expect("key sequence should parse");
+    assert_engine_snapshot_matches(
+        &engine,
+        snapshot(&fixture, "sentence_lattice_zhongguo", "page_1"),
+        None,
+    );
+
+    engine
+        .process_key_sequence("{Page_Down}")
+        .expect("page down should parse");
+    let page_2 = snapshot(&fixture, "sentence_lattice_zhongguo", "page_2");
+    assert_engine_snapshot_matches(&engine, page_2, None);
+    assert_highlighted_commit_preview_matches(&engine, page_2);
+
+    engine
+        .process_key_sequence("{Page_Up}")
+        .expect("page up should parse");
+    assert_engine_snapshot_matches(
+        &engine,
+        snapshot(&fixture, "sentence_lattice_zhongguo", "page_1_again"),
+        None,
+    );
 }
 
 #[test]
@@ -529,6 +598,38 @@ fn luna_engine_from_rows(dictionary_rows: &Value, vocabulary_rows: &Value) -> En
     engine.add_translator(StaticTableTranslator::from_dictionary(
         luna_dictionary_from_rows(dictionary_rows, vocabulary_rows),
     ));
+    engine
+}
+
+fn m17_luna_dictionary_from_rows(fixture: &Value) -> TableDictionary {
+    TableDictionary::parse_rime_dict_yaml_with_imports_packs_and_vocabulary(
+        &dictionary_yaml_from_fixture_rows(
+            "luna_pinyin",
+            "by_weight",
+            true,
+            &fixture["capture"]["source_dictionary_rows_for_tested_codes"],
+        ),
+        std::iter::empty::<&str>(),
+        |_| None,
+        |name| {
+            (name == "essay").then(|| {
+                essay_txt_from_fixture_rows(
+                    &fixture["capture"]["essay_vocabulary_rows_for_candidates"],
+                )
+            })
+        },
+    )
+    .expect("M17 upstream sentence source rows should parse")
+}
+
+fn m17_luna_sentence_engine(dictionary: TableDictionary) -> Engine {
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.add_translator(
+        StaticTableTranslator::from_dictionary(dictionary)
+            .with_charset_filter(true)
+            .with_upstream_sentence_model(100),
+    );
     engine
 }
 
@@ -728,6 +829,15 @@ fn assert_engine_snapshot_matches(
             expected_snapshot["commit_text"].as_str()
         );
     }
+}
+
+fn assert_highlighted_commit_preview_matches(engine: &Engine, expected_snapshot: &Value) {
+    let actual = engine.context().candidates[engine.context().highlighted]
+        .commit_text_for_input(&engine.context().composition.input);
+    assert_eq!(
+        Some(actual.as_str()),
+        expected_snapshot["commit_text_preview"].as_str()
+    );
 }
 
 fn current_page_texts(engine: &Engine, page_size: usize) -> Vec<String> {

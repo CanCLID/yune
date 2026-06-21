@@ -132,19 +132,19 @@ M9 with **GO WITH CONDITIONS** for gated AI-native frontend exposure.
 oracle target. TypeDuck `v1.1.2` remains a compatibility-profile oracle for
 TypeDuck-Web/Windows only. The official upstream Windows MSVC release binary is
 the behavioral-capture oracle; local source builds are a reproducibility check
-rather than the primary capture source. The expanded closeout keeps unsupported
-language-model and processor-level behavior visible as ignored tests with
-fixture-backed blocker reasons.
+rather than the primary capture source. Later M17/M18 closeouts resolved the
+former sentence/lattice and processor blockers with fresh upstream fixtures.
 
 - [x] **UPSTREAM-ORACLE-01**: Upstream `rime/librime 1.17.0` and commit `33e78140250125871856cdc5b42ddc6a5fcd3cd4` are pinned as the default core oracle in docs and fixture provenance.
 - [x] **UPSTREAM-ORACLE-02**: Oracle fixture/golden naming distinguishes upstream core fixtures from TypeDuck profile fixtures, e.g. `upstream-1.17.0/` vs `typeduck-v1.1.2/`.
 - [x] **UPSTREAM-AUDIT-01**: Existing compatibility coverage is audited for TypeDuck-only assumptions that should not define core Yune behavior.
 - [x] **TYPEDUCK-PROFILE-01**: TypeDuck-specific ABI, comment, and Cantonese/Jyutping behavior remains documented as profile-only and parked until explicitly resumed.
-- [x] **UPSTREAM-BEHAVIOR-01**: Upstream `luna_pinyin` behavioral fixtures are captured from the official `1.17.0` release binary for curated mechanics, full `ni` selection, action/paging/commit, reverse lookup, punctuation/symbols, and option toggles.
+- [x] **UPSTREAM-BEHAVIOR-01**: Upstream `luna_pinyin` behavioral fixtures are captured from the official `1.17.0` release binary for curated mechanics, full `ni` selection, action/paging/commit, reverse lookup, punctuation/symbols, option toggles, and later M17/M18 sentence/processor slices.
 - [x] **UPSTREAM-BEHAVIOR-02**: Full-dictionary `ni` selection uses every exact-code `luna_pinyin.dict.yaml` row plus relevant `essay.txt` rows for in-scope candidates, with provenance checks preventing default/zero essay-weight ranking.
 - [x] **UPSTREAM-BEHAVIOR-03**: Menu-dependent behavior is compared through Yune's real `Engine` path for paging, numeric selection, space commit, reverse lookup, punctuation, and supported option behavior.
-- [x] **UPSTREAM-BEHAVIOR-04**: Unsupported upstream behavior remains explicit: `zhongguo` phrase/language-model parity, `ascii_punct` processor bypass, and punctuation immediate commit are ignored tests with panic bodies and blocker reasons.
+- [x] **UPSTREAM-BEHAVIOR-04**: Unsupported upstream behavior remains explicit: former `zhongguo` sentence/lattice and punctuation processor blockers were closed by M17/M18 fixtures, while learned `.gram`/octagram grammar and contextual translation remain deferred until a named target needs them.
 - [x] **UPSTREAM-BEHAVIOR-05**: `oracle_fixture_provenance` enforces non-circular fixture metadata, source-row policies, schema repository commits, capture commands, and absence of local absolute oracle-cache paths across all upstream `luna_pinyin` fixtures.
+- [x] **UPSTREAM-BEHAVIOR-06**: M17 captures upstream `luna_pinyin` sentence and lattice goldens, implements the null-grammar poet path with `kPenalty = -13.815510557964274`, and keeps TypeDuck `jyut6ping3` sentence tuning isolated.
 
 ## TypeDuck-Windows Native IME Contract Requirements
 
@@ -413,8 +413,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UPSTREAM-BEHAVIOR-01 | M12 | Complete - six official-binary `luna_pinyin` fixture files are checked in under `upstream-1.17.0` |
 | UPSTREAM-BEHAVIOR-02 | M12 | Complete - full `ni` selection fixture includes all exact dictionary rows and candidate essay rows |
 | UPSTREAM-BEHAVIOR-03 | M12 | Complete - active parity tests drive real parser/dictionary/translator/filter/Engine paths |
-| UPSTREAM-BEHAVIOR-04 | M12 | Complete - unsupported phrase/language-model and processor-only gaps are explicit ignored blockers |
+| UPSTREAM-BEHAVIOR-04 | M12/M17/M18 | Complete - former sentence/lattice and processor blockers are fixture-backed; learned grammar/contextual paths remain deferred |
 | UPSTREAM-BEHAVIOR-05 | M12 | Complete - provenance test scans all upstream `luna_pinyin` fixtures and source policies |
+| UPSTREAM-BEHAVIOR-06 | M17 | Complete - upstream `luna_pinyin` sentence/lattice fixtures and null-grammar poet path are active |
 | AI-01 | M11 S1 | Complete - staged provider interface in `yune-core` |
 | AI-02 | M11 S2/S5 | Complete - worker/fallback/confidence merge plus local rule-backed provider |
 | AI-03 | M11 S1/S5 | Complete - source-labeled contextual/local completions with no default AI auto-commit |
@@ -466,14 +467,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v2 validation requirements: 7 total
 - TypeDuck-Web integration requirements: 15 total
 - TypeDuck-Windows native IME requirements: 6 total
-- M12 upstream oracle and behavioral parity requirements: 9 total, 9 complete
+- M12/M17/M18 upstream oracle and behavioral parity requirements: 10 total, 10 complete
 - M13 AI-native frontend exposure requirements: 6 total, 6 complete
 - M14–M16 TypeDuck-Web fork parity requirements: 7 total, 7 complete (M16 complete with explicit browser/userdb inspection limits)
 - Fork parity backlog (Cantonese engine-parity, vs upstream 1.17.0): 9 total, 9 complete; see [`fork-parity-ledger.md`](./fork-parity-ledger.md)
 - M20 web demo showcase controls requirements: 7 total, 7 complete
 - M19 schema breadth and TypeDuck-profile ABI requirements: 5 total, 5 complete
 - M22 web playground requirements: 4 total, 4 complete
-- Mapped to phases: 107
+- Mapped to phases: 108
 - Unmapped: 0
 
 ---

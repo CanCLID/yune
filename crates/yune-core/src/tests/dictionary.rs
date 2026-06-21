@@ -281,6 +281,7 @@ fn sample_dictionary() -> TableDictionary {
             encoder,
             corrections: vec![RimeCorrectionEntry::new("uen", "un")],
             tolerance_rules: vec![RimeToleranceRule::new("en", ["eng"])],
+            ..TableDictionaryAdvancedData::default()
         },
     )
 }

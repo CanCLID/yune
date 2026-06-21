@@ -4,11 +4,12 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use crate::comment_format::CommentFormat;
 use crate::dictionary::normalize_table_code;
 use crate::filter::contains_extended_cjk;
+use crate::poet::UpstreamSentenceModel;
 use crate::spelling_algebra::{ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
-    Candidate, CandidateSource, Context, RimeCorrectionEntry, RimeToleranceRule,
-    SpellingAlgebraDebug, Status, TableDictionary, TableDictionaryParseError, TableEntry,
-    Translator,
+    Candidate, CandidateSource, Context, PresetVocabularyEntry, RimeCorrectionEntry,
+    RimeToleranceRule, SpellingAlgebraDebug, Status, TableDictionary, TableDictionaryParseError,
+    TableEntry, Translator,
 };
 
 const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
@@ -131,6 +132,8 @@ pub struct StaticTableTranslator {
     prefix_fallback: bool,
     sentence_word_penalty: f32,
     spelling_algebra_formulas: Vec<String>,
+    preset_vocabulary: Vec<PresetVocabularyEntry>,
+    upstream_sentence_model: Option<UpstreamSentenceModel>,
 }
 
 impl StaticTableTranslator {
@@ -185,11 +188,14 @@ impl StaticTableTranslator {
             prefix_fallback: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
+            preset_vocabulary: Vec::new(),
+            upstream_sentence_model: None,
         }
     }
 
     #[must_use]
     pub fn from_dictionary(dictionary: TableDictionary) -> Self {
+        let preset_vocabulary = dictionary.preset_vocabulary_entries().to_vec();
         let corrections = dictionary.corrections().to_vec();
         let tolerance_rules = dictionary.tolerance_rules().to_vec();
         let entries: Vec<(String, Candidate)> = dictionary
@@ -238,6 +244,8 @@ impl StaticTableTranslator {
             prefix_fallback: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
+            preset_vocabulary,
+            upstream_sentence_model: None,
         }
     }
 
@@ -368,6 +376,21 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_prefix_fallback(mut self, prefix_fallback: bool) -> Self {
         self.prefix_fallback = prefix_fallback;
+        self
+    }
+
+    #[must_use]
+    pub fn with_upstream_sentence_model(mut self, max_candidates: usize) -> Self {
+        let entries = self
+            .entries
+            .iter()
+            .map(|(code, candidate)| TableEntry::new(code, &candidate.text, candidate.quality))
+            .collect::<Vec<_>>();
+        self.upstream_sentence_model = Some(UpstreamSentenceModel::from_entries(
+            &entries,
+            &self.preset_vocabulary,
+            max_candidates,
+        ));
         self
     }
 
@@ -876,6 +899,18 @@ impl StaticTableTranslator {
         self.enforce_prediction_never_first(&mut candidates);
 
         let mut used_sentence = false;
+        if candidates.is_empty() {
+            if let Some(model) = &self.upstream_sentence_model {
+                candidates = model
+                    .candidates_for_input(input)
+                    .into_iter()
+                    .filter(|candidate| {
+                        !filter_by_charset || !contains_extended_cjk(&candidate.text)
+                    })
+                    .collect();
+                used_sentence = !candidates.is_empty();
+            }
+        }
         if candidates.is_empty() && self.enable_sentence {
             if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
                 candidates.push(sentence);

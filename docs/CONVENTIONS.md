@@ -580,8 +580,10 @@ browser evidence, and default-off AI scenarios on every merge. Files:
 upstream `rime/librime 1.17.0`. The active gate covers curated single-code
 mechanics, full `ni` dictionary selection with essay weights, Engine
 paging/selection/commit, reverse lookup, punctuation/symbols, and supported
-option paths. `zhongguo` phrase/language-model output, `ascii_punct` processor
-bypass, and punctuation immediate commit remain explicit ignored blockers.
+option paths. M17 adds the upstream null-grammar `luna_pinyin` sentence/lattice
+path, and M18 adds the previously blocked `ascii_punct` bypass plus punctuation
+immediate commit behavior. Learned `.gram`/octagram grammar and broader
+contextual translation remain deferred until a named target needs them.
 TypeDuck-derived fixtures remain profile-only unless separate upstream goldens
 prove the same behavior.
 
@@ -675,4 +677,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-21 - M19 breadth schemas, M18 deployment/processor depth, and M23 architecture hardening are complete: Yune now has upstream-captured `double_pinyin`, `cangjie5`, and `bopomofo` fixtures/tests, public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending package/header smoke and real frontend E2E against the M19 profile surface.*
+*Last reviewed: 2026-06-21 - M17 upstream `luna_pinyin` null-grammar sentence/lattice parity, M19 breadth schemas, M18 deployment/processor depth, and M23 architecture hardening are complete: Yune now has upstream-captured sentence/lattice, `double_pinyin`, `cangjie5`, and `bopomofo` fixtures/tests, public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending package/header smoke and real frontend E2E against the M19 profile surface.*

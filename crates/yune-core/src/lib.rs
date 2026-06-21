@@ -6,6 +6,7 @@ mod dictionary;
 mod engine;
 mod filter;
 mod key;
+mod poet;
 mod punctuation;
 mod spelling_algebra;
 mod state;
@@ -28,14 +29,15 @@ pub use dictionary::{
     parse_rime_reverse_bin_metadata, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
     rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords, DartsDoubleArray,
-    DartsDoubleArrayError, DartsMatch, DictionaryLookupRecord, RimeChecksumComputer,
-    RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildError,
-    RimeDictRebuildExecuteError, RimeDictRebuildExecutionReport, RimeDictRebuildInput,
-    RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismBinMetadata, RimePrismBinParseError,
-    RimePrismBinPayload, RimePrismChecksumMetadata, RimePrismSpellingDescriptor,
-    RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError,
-    RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData, TableDictionaryParseError,
-    TableEncoder, TableEncoderFormulaError, TableEncodingRule, TableEntry,
+    DartsDoubleArrayError, DartsMatch, DictionaryLookupRecord, PresetVocabularyEntry,
+    RimeChecksumComputer, RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus,
+    RimeDictRebuildError, RimeDictRebuildExecuteError, RimeDictRebuildExecutionReport,
+    RimeDictRebuildInput, RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismBinMetadata,
+    RimePrismBinParseError, RimePrismBinPayload, RimePrismChecksumMetadata,
+    RimePrismSpellingDescriptor, RimeReverseBinMetadata, RimeReverseBinParseError,
+    RimeTableBinMetadata, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
+    TableDictionaryAdvancedData, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
+    TableEncodingRule, TableEntry,
 };
 pub use engine::Engine;
 pub use filter::{
@@ -43,6 +45,10 @@ pub use filter::{
     TaggedFilter, UniquifierFilter,
 };
 pub use key::{parse_key_sequence, KeyCode, KeyEvent, KeyModifiers, KeySequenceParseError};
+pub use poet::{
+    make_sentence, make_sentences, null_grammar_score, Grammar, NullGrammar, SentencePath,
+    UpstreamSentenceModel, WordGraph, WordGraphEntry, UPSTREAM_NO_GRAMMAR_PENALTY,
+};
 pub use punctuation::{PunctuationDefinition, PunctuationProcessor, PunctuationTranslator};
 pub use state::{
     AiConfidence, AiContext, AiStagingDebug, Candidate, CandidateSource, CommitRecord, Composition,

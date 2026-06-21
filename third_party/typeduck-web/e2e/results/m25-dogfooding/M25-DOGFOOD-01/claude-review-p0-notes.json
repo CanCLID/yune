@@ -1,0 +1,15 @@
+{
+  "captured_at": "2026-06-21T22:18:00Z",
+  "source": "external review of the M25 optimization plan",
+  "review_summary": {
+    "accepted": true,
+    "main_correction": "Do not start with micro-profiling alone. First address the two highest-leverage startup suspects: the debug Emscripten WASM build and forced schema invalidation before every deploy.",
+    "verified_repo_facts": [
+      "scripts/typeduck-wasm-build.sh currently builds the wasm32-unknown-emscripten browser artifact under target/wasm32-unknown-emscripten/debug.",
+      "Cargo.toml currently has no [profile.release] tuning.",
+      "third_party/typeduck-web/source/src/yune-integration/adapter.ts calls invalidateDeployedSchema before currentRuntime.deploy().",
+      "The existing M25 reload evidence shows assets loaded in under 100 ms while runtime initialization took about 47 seconds."
+    ]
+  },
+  "plan_change": "M25-DOGFOOD-01 Task 2 should run release-WASM and skip-fresh-deploy work before broader startup micro-optimizations, then re-measure and set the warm-reload budget from the optimized baseline."
+}

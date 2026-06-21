@@ -85,6 +85,11 @@ M25 intake began on 2026-06-21 with user-reported browser dogfooding regressions
 | M25-DOGFOOD-02 | Open | Browser integration / settings and candidate pagination | The page-size control is hard to find after M24 UI changes, its allowed range is wrong for the requested behavior, and changing it still does not cap the rendered candidate list. The user expects a visible slider/control allowing 3-10 candidates, where setting 9 shows exactly 9 visible candidates. | User screenshot showed `hai` rendering far more than 10 rows. Reproduced in the in-app browser on 2026-06-21: DOM had page-size slider `min=4`, `max=10`, `value=6`, but typing `hai` rendered `50` visible candidate rows. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-02/page-size-hai-repro.json`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-rime-api/src/context_api.rs`, `crates/yune-rime-api/tests/typeduck_web.rs`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when the UI exposes an obvious 3-10 page-size control and the rendered candidate panel never exceeds the configured page size. Add/extend native `typeduck_web` coverage for `menu/page_size` at 3 and 9, add Playwright coverage that sets 3/9/10 and types `hai`, verify page navigation still works, regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, and capture browser JSON/screenshot evidence under this issue id. |
 | M25-DOGFOOD-03 | Open | Browser integration / typing responsiveness | Typing in the textbox can still show the global `è¼‰å…¥ä¸­ Loading...` state and can stall for about a second when entering a character. This makes the dogfood IME feel blocked even after the page becomes visible. | User-reported during manual dogfooding on 2026-06-21. Evidence placeholder with exact report: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-03/typing-latency-user-report.json`. Needs measured browser repro with keydown-to-candidate timing. | `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/rime.ts`, `third_party/typeduck-web/source/src/worker.ts`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/Toolbar.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `packages/yune-typeduck-runtime/src/typeduck.ts`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-core/src/engine.rs`. | Close only after per-key latency is measured and improved. Add Playwright instrumentation for keydown-to-candidate update latency on `hai`, `nei`, and a long phrase; split queue wait, worker roundtrip, Rust `process_key`, and React render time; remove global loading from normal per-key composition; ensure typing remains responsive while startup/deploy/customize is in flight; save before/after latency JSON under this issue id. |
 
+## Accepted Review Corrections
+
+- `M25-DOGFOOD-01` startup work must address the two validated P0 suspects before broader micro-optimization: the browser WASM artifact is currently built from `target/wasm32-unknown-emscripten/debug`, and the TypeDuck-Web adapter forces deploy freshness by calling `invalidateDeployedSchema(...)` before `currentRuntime.deploy()`. The review evidence is tracked at `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-01/claude-review-p0-notes.json`.
+- Do not treat fast asset fetches as proof that startup is network-bound. The current reproduction showed assets loading in under 100 ms while `runtime:initialized` consumed about 47 seconds, so Task 2 must re-measure release WASM and deploy reuse before setting the final warm-reload budget.
+
 ## Intake Task
 
 ### Task 1: Convert User Feedback Into M25 Rows
@@ -126,37 +131,43 @@ M25 intake began on 2026-06-21 with user-reported browser dogfooding regressions
 ### Task 2: M25-DOGFOOD-01 Startup Performance Optimization
 
 **Files:**
+- Modify: `Cargo.toml`
+- Modify: `scripts/typeduck-wasm-build.sh`
 - Modify: `third_party/typeduck-web/source/src/worker.ts`
 - Modify: `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
-- Modify if profiling points there: `packages/yune-typeduck-runtime/src/typeduck.ts`
-- Modify if profiling points there: `packages/yune-typeduck-runtime/src/filesystem.ts`
-- Modify if profiling points there: `crates/yune-rime-api/src/typeduck_web.rs`
+- Modify if profiling still points there: `packages/yune-typeduck-runtime/src/typeduck.ts`
+- Modify if profiling still points there: `packages/yune-typeduck-runtime/src/filesystem.ts`
+- Modify if profiling still points there: `crates/yune-rime-api/src/typeduck_web.rs`
 - Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
 - Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-01/`
 
-- [ ] **Step 1: Add a failing startup budget characterization**
+- [ ] **Step 1: Preserve the failing startup characterization and artifact facts**
 
-  Add a Playwright test that reloads `/web/`, waits for `document.documentElement.dataset.yuneLoading === "false"`, captures the latest `startup:complete` diagnostic, and writes `m25-dogfooding/M25-DOGFOOD-01/startup-before.json`. The test should initially fail against the current ~47s local baseline with a deliberately strict but achievable warm-reload budget chosen during implementation.
+  Keep the current reload evidence as the baseline, then add a Playwright startup budget characterization that reloads `/web/`, waits for `document.documentElement.dataset.yuneLoading === "false"`, captures the latest `startup:complete` diagnostic, and writes `m25-dogfooding/M25-DOGFOOD-01/startup-before.json`. Also record the shipped `.wasm` size, whether the build came from `debug` or `release`, and whether Emscripten/wasm optimization flags were applied. The first test may fail against the current ~47s local baseline, but the final budget should be chosen after the P0 fixes below are measured.
 
-- [ ] **Step 2: Split `runtime:initialized` into smaller timed phases**
+- [ ] **Step 2: Ship release-mode browser WASM first**
 
-  The current marker only says `runtime:initialized` takes ~47s. Add nested markers around `TypeDuckRuntime.init`, filesystem mount/sync, schema deploy, default schema selection, dictionary/table loading, and any persistence sync. The next evidence file must show which sub-phase owns the delay.
+  Update the TypeDuck-Web build path so the browser artifact is not copied from `target/wasm32-unknown-emscripten/debug`. Add conservative release tuning in `Cargo.toml` for the existing workspace (`opt-level = 3`, `lto = true`, `codegen-units = 1`, `panic = "abort"`, and `strip = true` if supported by the active toolchain), update `scripts/typeduck-wasm-build.sh` to build `typeduck_web_module` with `--release`, copy from `target/wasm32-unknown-emscripten/release`, and add Emscripten optimization flags such as `-O3` or `-Oz` to the link path. Run `wasm-opt -O3` only when available and record whether it was skipped. Preserve the existing JS glue contract: `createYuneTypeduckModule`, `cwrap`, `UTF8ToString`, `FS`, and `IDBFS` must still exist after the build.
 
-- [ ] **Step 3: Keep startup latency separate from typing latency**
+- [ ] **Step 3: Stop rebuilding/deploying fresh state on every reload**
+
+  Remove or guard the unconditional `invalidateDeployedSchema(currentFs, currentPrepareOptions)` call before `currentRuntime.deploy()`. Do not simply delete the safety check; replace it with freshness validation based on `assetVersion`, schema/resource checksums, or another deterministic deploy stamp. Persist and reuse `/rime/build` through IDBFS when fresh. If `jyut6ping3_mobile` still spends startup time generating stable table/reverse artifacts, ship or prefer precompiled artifacts only after adding fixture-backed evidence that the resulting candidates and paging behavior remain unchanged.
+
+- [ ] **Step 4: Re-measure after the P0 fixes before choosing deeper work**
+
+  Rebuild the patchable TypeDuck-Web source, reload `/web/`, and save `startup-after-release-wasm.json` and `startup-after-deploy-reuse.json` as applicable. Compare `startup:complete.totalMs`, the user-visible loading duration, `.wasm` size, and deploy/cache diagnostics against `reload-startup-repro.json`. The final warm-reload budget must be written from this measured optimized baseline, not guessed from the pre-fix 47s number.
+
+- [ ] **Step 5: Add finer `runtime:initialized` phase markers only if needed**
+
+  If release WASM plus deploy reuse do not meet the startup budget, split `runtime:initialized` into nested markers around `TypeDuckRuntime.init`, filesystem mount/sync, schema deploy, default schema selection, dictionary/table loading, and persistence sync. The next evidence file must show which sub-phase owns the remaining delay.
+
+- [ ] **Step 6: Keep startup latency separate from typing latency**
 
   Startup optimization must not hide the separate typing-stutter problem. If typing is still blocked while startup continues, keep `M25-DOGFOOD-03` open and measure it separately instead of claiming startup fixed the perceived performance problem.
 
-- [ ] **Step 4: Implement the narrowest optimization proven by the trace**
+- [ ] **Step 7: Prove the improvement and regenerate the TypeDuck-Web patch if source changed**
 
-  Prefer optimizations that keep behavior unchanged: avoid redundant deploy/init on reload, cache stable prepared resources, skip unnecessary schema rebuilds when `assetVersion` is unchanged, or make the visible app shell interactive while IME initialization continues in the worker. Do not remove real schema assets or weaken M24 startup correctness checks just to reduce the number.
-
-- [ ] **Step 5: Prove the improvement**
-
-  Re-run the startup test, save `startup-after.json`, and compare `startup:complete.totalMs` and the user-visible loading duration against `reload-startup-repro.json`. The final row update must state the before/after timings and the remaining bottleneck if startup is still above the chosen budget.
-
-- [ ] **Step 6: Regenerate the TypeDuck-Web patch if source changed**
-
-  If any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from `source/`, and forward-check it on a clean source checkout.
+  Re-run the startup test, save the final `startup-after.json`, and compare `startup:complete.totalMs` plus the visible loading duration against the baseline evidence. The final row update must state before/after timings, the release/deploy evidence paths, and any remaining bottleneck. If any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from `source/`, and forward-check it on a clean source checkout.
 
 ### Task 3: M25-DOGFOOD-02 Page-Size Slider And Candidate Cap
 

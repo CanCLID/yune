@@ -592,7 +592,11 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   The first open rows are `M25-DOGFOOD-01` for slow reload/startup
   performance, `M25-DOGFOOD-02` for page-size slider discoverability plus
   candidate pagination correctness, and `M25-DOGFOOD-03` for per-key typing
-  responsiveness and loading-state separation. Browser evidence goes under
+  responsiveness and loading-state separation. The startup row now prioritizes
+  release-mode browser WASM and deploy-state reuse before lower-level runtime
+  micro-optimization, because current evidence points at a debug Emscripten
+  artifact and forced schema invalidation rather than asset fetch latency.
+  Browser evidence goes under
   `third_party/typeduck-web/e2e/results/m25-dogfooding/`, and any
   engine-output/ranking change remains fixture-gated against TypeDuck `v1.1.2`
   or upstream `1.17.0`. Detail:

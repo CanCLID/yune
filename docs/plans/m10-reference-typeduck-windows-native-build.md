@@ -1,15 +1,16 @@
 # Yune Windows Native Build
 
-> **Status:** T1/T2 verified / M10 blocked at T3 - **Milestone:** M10 (TypeDuck-Windows compatibility profile) - **Updated:** 2026-06-21 - **Type:** reference
+> **Status:** T1/T2/T3 verified / M10 complete - **Milestone:** M10 (TypeDuck-Windows compatibility profile) - **Updated:** 2026-06-21 - **Type:** reference
 
 This records the current TypeDuck-Windows native package evidence after the M10
 resume. Yune now produces a Windows package and validates it through the named
 TypeDuck-profile ABI. With ATL/MFC installed, the pinned TypeDuck-Windows
 checkout also builds and links against that package after local frontend
-handshake patches. M10 remains blocked at T3 because the real server starts and
-deploys with Yune, but the TypeDuck IPC start-session response path returns `0`
-to the client while the server has created session `1`, so key events do not yet
-flow through the frontend IPC path.
+handshake patches. T3 now passes with the stock real server IPC path:
+`TypeDuckServer.exe` starts from `output\`, loads packaged `output\rime.dll`,
+and stock `TestTypeDuckIPC.exe /console` returns a nonzero session, sends
+`ngohaig` key events, and receives `status.schema_id=jyut6ping3` plus
+candidate/context data.
 
 ## Tier Status
 
@@ -22,15 +23,14 @@ flow through the frontend IPC path.
 - **T2 packaged host-loader lifecycle:** complete. The package script loads the
   packaged `dist/lib/rime.dll`, resolves `rime_get_typeduck_profile_api()`,
   verifies profile append slots, and runs the dynamic-loader lifecycle smoke.
-- **T3 real TypeDuck-Windows frontend smoke:** blocked. `TypeDuckServer.exe`
-  starts from `output`, loads `output\rime.dll`, deploys TypeDuck schema data
-  into an isolated user directory, and the same packaged DLL directly creates a
-  session and handles `ngohaig` key input. The remaining blocker is the
-  TypeDuck IPC session handshake: `RimeWithWeaselHandler::AddSession` creates
-  session `1`, but the TypeDuck IPC client receives `StartSession ret=0`; the
-  pipe then does not deliver key events to the server.
+- **T3 real TypeDuck-Windows frontend smoke:** complete. Stock
+  `TypeDuckServer.exe` starts from `output`, loads packaged `output\rime.dll`,
+  and stock `TestTypeDuckIPC.exe /console` returns a nonzero session, sends
+  `ngohaig` key events, and receives `status.schema_id=jyut6ping3` plus
+  candidate/context data.
 
-Highest verified tier: **T1 + T2**. M10 remains **blocked at T3**, not complete.
+Highest verified tier: **T1 + T2 + documented T3**. M10 is **complete** as a
+TypeDuck-Windows compatibility-profile backend milestone.
 
 ## ABI/Header Decision
 
@@ -258,7 +258,7 @@ WeaselServer.vcxproj -> ...\output\TypeDuckServer.exe
 
 T1 is complete for the pinned checkout with those local patches.
 
-T3 evidence captured so far:
+T3 evidence:
 
 - `TypeDuckServer.exe` starts from the pinned checkout's `output\` directory.
 - The process loads
@@ -271,13 +271,18 @@ T3 evidence captured so far:
   returns `RimeStartMaintenance(FALSE) == FALSE`, `RimeCreateSession() == 1`,
   and `RimeProcessKey(session, 'n', 0) == TRUE`,
   `RimeProcessKey(session, 'g', 0) == TRUE`.
-- The server-side `RimeWithWeaselHandler::AddSession` creates session `1` and
-  is not disabled (`RimeStartMaintenance(FALSE) == FALSE`).
-
-T3 is still blocked because the TypeDuck IPC start-session transaction returns
-`0` to the client while the server has created session `1`. After that failed
-return, the stock `TestTypeDuckIPC.exe /console` path does not send key events
-to `TypeDuckServer.exe`. This is not a default Yune ABI issue and does not
-justify widening `rime_get_api()` or `RimeCandidate`; the remaining work is a
-frontend IPC/session harness fix or a manual TSF/IME smoke that proves real key
-events flow through TypeDuck-Windows to the Yune package.
+- Root cause of the prior stock IPC blocker: fresh sessions stayed on Yune's
+  placeholder `default` schema, so TypeDuck-Windows reached schema-specific
+  settings with a non-schema id. Librime's default engine immediately asks the
+  switcher for the first schema from `default.yaml`; Yune now mirrors that by
+  applying the first deployed schema on session creation when a deployed schema
+  list exists.
+- Focused regression:
+  `fresh_session_uses_first_deployed_schema_for_schema_specific_settings`.
+- Final stock IPC evidence:
+  `target\typeduck-windows-e2e\evidence\m10-t3-20260621-100337-stock-real-server`.
+- Final packaged DLL SHA256:
+  `6F6BABFD8C09EC1706D471457D7758D1D1F246D23D078992F3DD4ED1A6E2A6F2`.
+- Final stock `TestTypeDuckIPC.exe /console` result: exit code `0`, handled key
+  replies present, `status.schema_id=jyut6ping3`, `ctx.preedit=ngohaig`, and
+  candidate data present; no temporary diagnostic fallback remained.

@@ -5,16 +5,16 @@
 > [`m09-findings-typeduck-web-integration.md`](./plans/archive/m09-findings-typeduck-web-integration.md), which covers the
 > *web* frontend. This M10 contract is parked as a TypeDuck compatibility
 > profile after M12 made upstream `rime/librime 1.17.0` the default core oracle.
-> The M10 resume reached T1/T2 on 2026-06-21: Yune now has a current native
-> TypeDuck-profile package/header smoke, packaged DLL lifecycle gate, and a
-> pinned TypeDuck-Windows x64 build/link against the Yune package. The package
-> also exposes upstream-deprecated direct-call declarations for the existing
-> TypeDuck-Windows source without widening default ABI structs or the default
-> `rime_get_api()` table. M10 remains blocked at T3 because the real
-> TypeDuck-Windows server starts and deploys with Yune, but the IPC
-> start-session response path returns `0` to the client while the server has
-> created session `1`, so key events do not yet flow through the frontend IPC
-> path.
+> The M10 resume completed T1/T2/T3 on 2026-06-21: Yune now has a current
+> native TypeDuck-profile package/header smoke, packaged DLL lifecycle gate, a
+> pinned TypeDuck-Windows x64 build/link against the Yune package, and stock
+> TypeDuck-Windows real-server IPC smoke evidence. The package also exposes
+> upstream-deprecated direct-call declarations for the existing TypeDuck-Windows
+> source without widening default ABI structs or the default `rime_get_api()`
+> table. T3 evidence shows stock `TypeDuckServer.exe` loading packaged
+> `output\rime.dll` and stock `TestTypeDuckIPC.exe /console` returning a
+> nonzero session, sending `ngohaig` key events, and receiving
+> `status.schema_id=jyut6ping3` plus candidate/context data.
 >
 > **Source of truth.** The local execution notes are
 > [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md)
@@ -142,11 +142,11 @@ The web path is Emscripten/WASM. Windows needs a **native** engine artifact:
   - [x] T0 ABI/header decision: package uses upstream-shaped `RimeCandidate` and default `rime_get_api()`, plus `rime_typeduck_profile_api.h`.
   - [x] T2 packaged host-loader lifecycle: packaged `dist/lib/rime.dll` loads, profile append slots round-trip, and the native lifecycle smoke passes.
   - [x] T1 TypeDuck-Windows build/link: Visual Studio 2022 Community MSBuild builds the pinned x64 solution plus the deployer/server projects against the Yune package after local profile-accessor and x64 WinSparkle fixes.
-  - [ ] T3 real TypeDuck-Windows frontend smoke: blocked at the IPC session/key path. `TypeDuckServer.exe` starts, loads `output\rime.dll`, deploys schema data, and the same packaged DLL directly creates a session and handles `ngohaig` keys, but `TestTypeDuckIPC.exe /console` receives `StartSession ret=0` while the server created session `1`, and key events are not delivered through IPC.
+  - [x] T3 real TypeDuck-Windows frontend smoke: stock `TypeDuckServer.exe` starts from `output\`, loads packaged Yune `output\rime.dll`, and stock `TestTypeDuckIPC.exe /console` returns a nonzero session, sends `ngohaig` key events, and receives `status.schema_id=jyut6ping3` plus candidate/context data. Evidence: `target\typeduck-windows-e2e\evidence\m10-t3-20260621-100337-stock-real-server`.
 
-The real TypeDuck-Windows frontend E2E is still **not** green: a pinned checkout
-was captured under `target/typeduck-windows-e2e/TypeDuck-Windows`. The initial
-M10 resume attempt could not find `msbuild.exe` on PATH; Visual Studio 2022
+The real TypeDuck-Windows stock server IPC smoke is green: a pinned checkout was
+captured under `target/typeduck-windows-e2e/TypeDuck-Windows`. The initial M10
+resume attempt could not find `msbuild.exe` on PATH; Visual Studio 2022
 Community was later found, Boost 1.84.0 was built at `C:\b184`, ATL/MFC was
 installed, and the Yune package was copied into the checkout. The current T1
 build command is:
@@ -160,13 +160,13 @@ and `typeduckx64.ime`. Direct project builds also produce
 `output\TypeDuckDeployer.exe` and `output\TypeDuckServer.exe`. The checkout was
 locally patched so `WeaselDeployer/TypeDuckSettings.cpp` uses
 `rime_get_typeduck_profile_api()` for fork-only `config_list_append_*`, and the
-server links the x64 WinSparkle import library. That confirms the package/header
-shape is viable for the frontend source, but it is still short of a complete
-TypeDuck-Windows frontend smoke because IPC input does not yet flow after
-session startup.
+server links the x64 WinSparkle import library. The T3 stock IPC smoke then
+starts `TypeDuckServer.exe` from `output\`, points
+`HKCU\Software\Rime\TypeDuck\RimeUserDir` at an isolated deployed user data
+directory, runs `TestTypeDuckIPC.exe /console` with `ngohaig`, and records
+handled key replies, `status.schema_id=jyut6ping3`, `ctx.preedit=ngohaig`, and
+candidate data.
 
-When the real build/link and frontend smoke pass against the M19 profile
-accessor, revisit the current TypeDuck-Windows frontend lifecycle docs or
-harness: the engine swap behind that profile ABI is then a contained change,
-and the engine-agnostic frontend modernization can proceed independently in the
-meantime.
+The engine swap behind the M19 profile ABI is now a contained compatibility
+path. Future full TSF automation or frontend modernization can proceed
+independently without changing Yune's default ABI.

@@ -140,6 +140,76 @@ fn select_schema_uses_deployed_schema_name_like_librime() {
 }
 
 #[test]
+fn fresh_session_uses_first_deployed_schema_for_schema_specific_settings() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    RimeFinalize();
+    let root = unique_temp_dir("fresh-session-first-deployed-schema");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    fs::write(
+        shared.join("default.yaml"),
+        "config_version: test\nschema_list:\n  - schema: jyut6ping3\n  - schema: luna_pinyin\n",
+    )
+    .expect("default config should be written");
+    fs::write(
+        shared.join("jyut6ping3.schema.yaml"),
+        "schema:\n  schema_id: jyut6ping3\n  name: Jyutping\n",
+    )
+    .expect("first schema config should be written");
+    fs::write(
+        shared.join("luna_pinyin.schema.yaml"),
+        "schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\n",
+    )
+    .expect("second schema config should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeInitialize(&traits) };
+    let _ = RimeStartMaintenance(FALSE);
+
+    let session_id = RimeCreateSession();
+    assert_ne!(session_id, 0);
+    let mut status = empty_status();
+    // SAFETY: status points to writable storage initialized with positive
+    // `data_size`.
+    assert_eq!(unsafe { RimeGetStatus(session_id, &mut status) }, TRUE);
+    // SAFETY: `RimeGetStatus` populated owned C strings.
+    let status_schema_id = unsafe { CStr::from_ptr(status.schema_id) }
+        .to_string_lossy()
+        .into_owned();
+    // SAFETY: `RimeGetStatus` populated owned C strings.
+    let status_schema_name = unsafe { CStr::from_ptr(status.schema_name) }
+        .to_string_lossy()
+        .into_owned();
+    assert_eq!(status_schema_id, "jyut6ping3");
+    assert_eq!(status_schema_name, "Jyutping");
+    // SAFETY: nested pointers were allocated by `RimeGetStatus` above.
+    assert_eq!(unsafe { RimeFreeStatus(&mut status) }, TRUE);
+
+    let schema_id = CString::new(status_schema_id).expect("schema id should be valid");
+    let mut config = empty_config();
+    // SAFETY: the status schema id is a valid NUL-terminated logical schema id
+    // and config points to writable storage.
+    assert_eq!(unsafe { RimeSchemaOpen(schema_id.as_ptr(), &mut config) }, TRUE);
+    // SAFETY: config was opened by `RimeSchemaOpen`.
+    assert_eq!(unsafe { RimeConfigClose(&mut config) }, TRUE);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    RimeFinalize();
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeInitialize(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_applies_librime_switch_reset_options() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

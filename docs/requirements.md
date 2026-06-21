@@ -148,15 +148,15 @@ former sentence/lattice and processor blockers with fresh upstream fixtures.
 
 ## TypeDuck-Windows Native IME Contract Requirements
 
-**Status: parked as a TypeDuck compatibility profile.** A first pass landed
+**Status: complete as a TypeDuck compatibility profile.** A first pass landed
 (Phases 11-16), M9 web validation is complete, and the archived pre-M12 native
 Windows package smoke has been superseded by current M10 T1/T2 profile package,
-build/link, and packaged lifecycle evidence against `rime_get_typeduck_profile_api()`. The shared comment requirement
-is covered for the current v1.1.2 oracle slices; captured Cantonese engine
-fixtures are active, while real TypeDuck-Windows frontend key-input smoke
-remains an explicit T3 blocker. These requirements target the native
-TypeDuck-Windows/weasel path and no longer define Yune's active core oracle
-milestone.
+build/link, packaged lifecycle evidence, and stock TypeDuck-Windows real-server
+IPC smoke evidence against `rime_get_typeduck_profile_api()`. The shared comment
+requirement is covered for the current v1.1.2 oracle slices; captured Cantonese
+engine fixtures are active, and the M10 T3 smoke now proves key input/output
+through the native TypeDuck-Windows/weasel IPC path. These requirements target
+that native path and no longer define Yune's active core oracle milestone.
 
 - [x] **WIN-TEST-01**: Windows `cargo test --workspace` has a trustworthy green baseline, including portable signature timestamp shape and test-only poison-lock recovery.
 - [x] **WIN-ABI-01**: `config_list_append_{string,bool,int,double}` helper behavior is implemented and exposed through the named, opt-in M19 TypeDuck-profile accessor; the default upstream `rime_get_api()` does not expose these fork-only slots.
@@ -164,7 +164,7 @@ milestone.
 - [x] **WIN-COMMENT-01**: Candidate comment semantics match the v1.1.2 oracle for dictionary lookup payloads, reverse lookup joins, and prompt/schema identity. Dictionary lookup payload bytes, schema-prompt bytes, and reverse-lookup joiner coverage are oracle-backed.
 - [x] **WIN-BUILD-01**: Yune produces a current TypeDuck-profile native Windows package (`rime.dll`, import `.lib`, upstream-shaped default headers, and `rime_typeduck_profile_api.h`) and the package script loads the packaged DLL through `rime_get_typeduck_profile_api()`.
 - [x] **WIN-PARITY-01**: Cantonese/Jyutping parity regression coverage locks the captured v1.1.2 engine behavior in active `cantonese_parity` tests; schema-menu/userdb observations remain frontend/T3 evidence limits.
-- [ ] **WIN-FRONTEND-01**: TypeDuck-Windows builds/links against the Yune package and passes real frontend smoke. Current blocker: T1 build/link now passes, `TypeDuckServer.exe` starts, loads Yune `output\rime.dll`, and deploys schema data, but the TypeDuck IPC start-session response path returns `0` to the client while the server created session `1`, so real key events do not yet flow through the frontend IPC path.
+- [x] **WIN-FRONTEND-01**: TypeDuck-Windows builds/links against the Yune package and passes real frontend smoke. Stock `TypeDuckServer.exe` starts from `output\`, loads packaged Yune `output\rime.dll`, and stock `TestTypeDuckIPC.exe /console` returns a nonzero session, sends `ngohaig` key events, and receives `status.schema_id=jyut6ping3` plus candidate/context data. Evidence: `target\typeduck-windows-e2e\evidence\m10-t3-20260621-100337-stock-real-server`.
 
 ## Future Requirements
 
@@ -408,7 +408,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-COMMENT-01 | Phase 14 / 17 | Complete - dictionary payload, schema prompt, and joiner oracle covered |
 | WIN-BUILD-01 | Phase 15 / M10 | Complete - current TypeDuck-profile package/header smoke and packaged DLL profile lifecycle pass |
 | WIN-PARITY-01 | Phase 16 / M10 | Complete - captured v1.1.2 engine behavior is active; frontend-only schema-menu/userdb observations remain T3 evidence scope |
-| WIN-FRONTEND-01 | M10 | Blocked - T1 build/link passes, but T3 real frontend input is blocked because the TypeDuck IPC start-session response returns `0` while the server created session `1`, preventing key events from flowing through IPC |
+| WIN-FRONTEND-01 | M10 | Complete - T1 build/link and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke pass against the Yune package |
 | UPSTREAM-ORACLE-01 | M12 | Complete - upstream `1.17.0` provenance pinned as default core oracle |
 | UPSTREAM-ORACLE-02 | M12 | Complete - fixture naming separates `upstream-1.17.0` and `typeduck-v1.1.2` goldens |
 | UPSTREAM-AUDIT-01 | M12 | Complete - coverage audit captured in `docs/plans/archive/m12-audit-coverage.md` |
@@ -482,4 +482,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-21 - M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile with current T1/T2 package/profile smoke and build/link complete, blocked at T3 by the TypeDuck IPC session/key path*
+*Last updated: 2026-06-21 - M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows is complete as a TypeDuck compatibility profile with T1/T2 package/profile smoke, build/link evidence, and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke*

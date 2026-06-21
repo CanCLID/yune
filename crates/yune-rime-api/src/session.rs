@@ -12,10 +12,11 @@ use std::{
 use yune_core::{Engine, KeyEvent};
 
 use crate::{
-    bool_from, userdb, AffixSegmentor, AsciiModeSwitchStyle, Bool, ChordComposerProcessor,
-    EditorBindingAction, EditorCharHandler, EditorProcessor, KeyBinderProcessor, MatcherSegmentor,
-    NavigatorBindings, NavigatorSyllableJumpPosition, PunctSegmentor, PunctuationProcessor,
-    RecognizerProcessor, RimeSessionId, SelectorBindings, SpellerProcessor, FALSE,
+    apply_schema_to_session, bool_from, deployed_schema_list_entries, userdb, AffixSegmentor,
+    AsciiModeSwitchStyle, Bool, ChordComposerProcessor, EditorBindingAction, EditorCharHandler,
+    EditorProcessor, KeyBinderProcessor, MatcherSegmentor, NavigatorBindings,
+    NavigatorSyllableJumpPosition, PunctSegmentor, PunctuationProcessor, RecognizerProcessor,
+    RimeSessionId, SelectorBindings, SpellerProcessor, FALSE,
 };
 
 pub(crate) const SESSION_LIFESPAN_SECS: u64 = 5 * 60;
@@ -34,7 +35,9 @@ impl SessionRegistry {
 
         self.next_id = self.next_id.saturating_add(1).max(1);
         let session_id = self.next_id;
-        self.sessions.insert(session_id, SessionState::new());
+        let mut session = SessionState::new();
+        apply_initial_schema_to_session(&mut session);
+        self.sessions.insert(session_id, session);
         session_id
     }
 
@@ -60,6 +63,12 @@ impl SessionRegistry {
         self.sessions.retain(|_, session| {
             now.saturating_sub(session.last_active_time) <= SESSION_LIFESPAN_SECS
         });
+    }
+}
+
+fn apply_initial_schema_to_session(session: &mut SessionState) {
+    if let Some((schema_id, _)) = deployed_schema_list_entries().into_iter().next() {
+        apply_schema_to_session(session, &schema_id);
     }
 }
 

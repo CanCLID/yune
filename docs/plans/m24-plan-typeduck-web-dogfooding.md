@@ -53,6 +53,7 @@ If a report is ambiguous, classify it as **Needs triage**, capture the screensho
 | M24-DOGFOOD-07 | Open | Browser integration / customize page-size wiring | The `每頁候選詞數量 No. of Candidates Per Page` slider appears not to control candidate page size; typing after selecting a smaller value still shows more candidates than selected. | Browser comment on `/web/` settings area: user changed the candidate-number control, then typed input whose candidate row clearly exceeded the selected page size. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`, `crates/yune-rime-api/tests/typeduck_web.rs`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-rime-api/src/context_api.rs` | Changing the slider to 4, 6, or 10 changes the deployed runtime `context.page_size` and visible candidate count on the next composition; the browser does not render more candidate cells than the selected page size; persistence evidence shows the setting is saved under the key the deployed schema actually reads. |
 | M24-DOGFOOD-08 | Open | UI polish / frontend candidate-menu layout | The playground has no control for horizontal versus vertical candidate menu layout. Users familiar with RIME expect a menu style choice, but this web setting should be clearly grouped as a frontend display preference rather than an engine/schema control. | Browser comment on `/web/` settings area: user requested a horizontal/vertical candidate list control and clearer grouping that distinguishes engine controls from web frontend controls. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/types.ts`, `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/Candidate.tsx`, `third_party/typeduck-web/source/src/index.css`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | Settings expose a Cantonese-first `候選排版 Candidate Menu Layout` segmented control with horizontal and vertical choices under a clearly frontend/display group; switching layout changes only the web candidate panel presentation, not engine output, page size, ranking, or ABI behavior; browser screenshots prove both layouts are readable. |
 | M24-DOGFOOD-09 | Open | UI polish / engine status strip explanation | The status strip under the schema switcher shows raw badges such as `jyut6ping3_mobile`, `enabled`, `not traditional`, and `Chinese` with no hint explaining what the strip is or what each value means. | Browser comment on `/web/` status strip: selected `jyut6ping3_mobile enabled not traditional Chinese`; user requested a UI hint for what this is. | `third_party/typeduck-web/source/src/YuneStatusStrip.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`, `third_party/typeduck-web/source/src/index.css` | Status strip has a Cantonese-first label and one-line hint; badges use labeled, user-readable text instead of raw booleans; existing `data-yune-status-*` attributes remain for tests; before/after screenshots prove the hint is clear without crowding the toolbar/schema area. |
+| M24-DOGFOOD-10 | Open | UI polish / schema switcher names | The schema switcher uses English-ish labels such as `Jyutping`, `Cangjie 5`, and `Luna Pinyin`, even though the bundled schema YAML has real names: `粵語拼音`, `倉頡五代`, and `普通話`. The UI should show the real schema names where possible, with romanized/English helper text only as secondary text. | Browser comment on `/web/` schema switcher: user asked whether the real names should be `粵拼` / `倉頡五代` instead of English spellings. Local schema check: `jyut6ping3_mobile.schema.yaml` has `schema/name: 粵語拼音`, `cangjie5.schema.yaml` has `schema/name: 倉頡五代`, and `luna_pinyin.schema.yaml` has `schema/name: 普通話`. | `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`, `third_party/typeduck-web/source/schema/*.schema.yaml`, `third_party/typeduck-web/source/src/YuneStatusStrip.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | Schema switcher labels are Cantonese/Chinese-first and checked against bundled `schema/name` values; schema IDs are not the primary visible labels; the status strip and switcher agree on the selected schema name; browser screenshots prove the schema selector remains readable. |
 
 ---
 
@@ -1081,7 +1082,132 @@ npx --prefix third_party/typeduck-web/source playwright test third_party/typeduc
 
 Expected: the strip is labeled and explained, status badges still update from the runtime status object, and existing status tests continue to locate the same `data-yune-status-*` attributes.
 
-## Task 11: M24 Regression Sweep And Closeout Discipline
+## Task 11: M24-DOGFOOD-10 Show Real Schema Names In The Switcher
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/consts.ts`
+- Modify: `third_party/typeduck-web/source/src/SchemaSwitcher.tsx`
+- Inspect first, then modify only if needed for agreement: `third_party/typeduck-web/source/src/YuneStatusStrip.tsx`
+- Read-only oracle metadata: `third_party/typeduck-web/source/schema/jyut6ping3_mobile.schema.yaml`, `third_party/typeduck-web/source/schema/cangjie5.schema.yaml`, `third_party/typeduck-web/source/schema/luna_pinyin.schema.yaml`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+
+- [ ] **Step 1: Capture the current schema switcher labels**
+
+Add a characterization test that records the current English-ish switcher before changing the UI:
+
+```ts
+test("M24 schema switcher shows real schema names", async ({ page }) => {
+  await page.goto(APP_URL, { timeout: TIMEOUT_MS, waitUntil: "domcontentloaded" });
+  await waitForAppReady(page);
+
+  const switcher = page.locator("[data-yune-schema-switcher]");
+  await expect(switcher).toBeVisible();
+  await expect(switcher).toContainText("Jyutping");
+  await expect(switcher).toContainText("Cangjie 5");
+  await expect(switcher).toContainText("Luna Pinyin");
+  await takeM24Screenshot(page, "M24-DOGFOOD-10", "schema-switcher-before");
+});
+```
+
+Expected before the fix: the schema names are shown as `Jyutping`, `Cangjie 5`, and `Luna Pinyin`, while the real bundled schema names are only available in YAML/status metadata.
+
+- [ ] **Step 2: Make schema option metadata carry checked real names**
+
+Update `SCHEMA_OPTIONS` so each entry records the real `schema/name` value from the bundled YAML. Do not guess from the schema ID.
+
+```ts
+export interface SchemaOption {
+  id: RimeSchemaId;
+  label: string;
+  shortLabel: string;
+  schemaName: string;
+  romanizationLabel: string;
+  reverseLookup: string;
+}
+
+export const SCHEMA_OPTIONS: readonly SchemaOption[] = [
+  {
+    id: "jyut6ping3_mobile",
+    schemaName: "粵語拼音",
+    romanizationLabel: "Jyutping",
+    shortLabel: "粵拼 Jyutping",
+    label: "粵語拼音 Jyutping",
+    reverseLookup: "`nei; -> jyut6ping3 reverse lookup",
+  },
+  {
+    id: "cangjie5",
+    schemaName: "倉頡五代",
+    romanizationLabel: "Cangjie 5",
+    shortLabel: "倉頡五代",
+    label: "倉頡五代 Cangjie 5",
+    reverseLookup: "`nei; -> Jyutping lookup with Cangjie comments",
+  },
+  {
+    id: "luna_pinyin",
+    schemaName: "普通話",
+    romanizationLabel: "Luna Pinyin",
+    shortLabel: "普通話",
+    label: "普通話 Luna Pinyin",
+    reverseLookup: "`a; -> Cangjie lookup with Pinyin comments",
+  },
+];
+```
+
+Before finalizing the exact labels, re-open the three schema YAML files and verify the `schema/name` values. If a future schema is added, update the YAML and `SCHEMA_OPTIONS` metadata in the same slice.
+
+- [ ] **Step 3: Render Cantonese/Chinese-first schema controls**
+
+Update `SchemaSwitcher.tsx` so the visible legend and segmented labels are user-readable:
+
+```tsx
+<legend className="mb-2 font-semibold">方案 Schema</legend>
+```
+
+Use `schema.label` for the accessible label. If the existing `Segment` helper only accepts a string label, keep the combined bilingual string there. If richer rendering is already available, the primary visible text should be `schema.schemaName` and the romanized/English label should be visually secondary.
+
+Do not show `jyut6ping3_mobile`, `cangjie5`, or `luna_pinyin` as the primary visible label in the switcher.
+
+- [ ] **Step 4: Keep the status strip and switcher consistent**
+
+If M24-DOGFOOD-09 has already landed, make sure the status strip uses `status.schema_name || schema.schemaName || status.schema_id` so it shows the same real schema name as the switcher whenever the runtime reports it. Preserve the diagnostic `data-yune-status-schema` attribute.
+
+After switching schemas, assert the user-facing name remains consistent:
+
+```ts
+await page.getByRole("radio", { name: /倉頡五代/ }).check();
+await typeInputForStatus(page, "a");
+await expect(page.locator("[data-yune-schema-switcher]")).toContainText("倉頡五代");
+await expect(page.locator("[data-yune-status-schema]")).toContainText(/倉頡五代|cangjie5/);
+```
+
+If the status strip task has not landed yet, keep this assertion inside the same M24 test but allow the `cangjie5` fallback until M24-DOGFOOD-09 closes.
+
+- [ ] **Step 5: Add final browser assertions and screenshot**
+
+Extend the characterization test after the fix:
+
+```ts
+await expect(page.locator("[data-yune-schema-switcher]")).toContainText("方案 Schema");
+await expect(page.getByRole("radio", { name: /粵語拼音 Jyutping/ })).toBeVisible();
+await expect(page.getByRole("radio", { name: /倉頡五代 Cangjie 5/ })).toBeVisible();
+await expect(page.getByRole("radio", { name: /普通話 Luna Pinyin/ })).toBeVisible();
+await takeM24Screenshot(page, "M24-DOGFOOD-10", "schema-switcher-after");
+```
+
+If the segmented helper does not expose a radio role, use `getByText(...)` for the visible assertions and separately preserve whatever accessibility role the helper currently uses.
+
+- [ ] **Step 6: Run focused gates**
+
+Run:
+
+```powershell
+npm.cmd --prefix third_party/typeduck-web/source run build
+npx --prefix third_party/typeduck-web/source playwright test third_party/typeduck-web/e2e/yune-typeduck.spec.ts -g "M24 schema switcher"
+```
+
+Expected: the schema switcher uses checked real schema names, the selected schema is still controllable, the status strip remains diagnostic-friendly, and the screenshot shows readable labels at the existing desktop width.
+
+## Task 12: M24 Regression Sweep And Closeout Discipline
 
 **Files:**
 - Modify: this plan as issue rows close

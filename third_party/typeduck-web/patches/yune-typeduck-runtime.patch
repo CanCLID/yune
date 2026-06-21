@@ -1619,7 +1619,7 @@ index 25ec3bf..7fcdab2 100644
  	isCangjie5: true,
  };
 diff --git a/src/hooks.ts b/src/hooks.ts
-index ef2a4f3..f04c69e 100644
+index ef2a4f3..dd5645f 100644
 --- a/src/hooks.ts
 +++ b/src/hooks.ts
 @@ -3,10 +3,11 @@ import { useCallback, useEffect, useState } from "react";
@@ -1635,7 +1635,7 @@ index ef2a4f3..f04c69e 100644
  import type { Preferences, PreferencesWithSetter } from "./types";
  import type { DispatchWithoutAction } from "react";
  
-@@ -69,15 +70,21 @@ export function useRimeOption(option: string, defaultValue: boolean, deployStatu
+@@ -69,15 +70,26 @@ export function useRimeOption(option: string, defaultValue: boolean, deployStatu
  export function usePreferences() {
  	return Object.fromEntries(
  		Object.entries(DEFAULT_PREFERENCES).flatMap(([key, defaultValue]: [string, Preferences[keyof Preferences]]) => {
@@ -1656,13 +1656,33 @@ index ef2a4f3..f04c69e 100644
 +								const parsed = new Set(values.split(",").map(value => value.trim()).filter(Boolean) as Language[]);
 +								return parsed.size ? parsed : new Set(DEFAULT_PREFERENCES.displayLanguages);
 +							},
++						}
++						: key === "chineseTypeface"
++						? {
++							stringify: String,
++							parse: value => parseChineseTypeface(value, defaultValue as ChineseTypefaceId),
  						}
  						: typeof defaultValue === "string"
  						? {
-@@ -91,3 +98,31 @@ export function usePreferences() {
+@@ -91,3 +103,46 @@ export function usePreferences() {
  		}),
  	) as PreferencesWithSetter;
  }
++
++function parseChineseTypeface(value: string, defaultValue: ChineseTypefaceId): ChineseTypefaceId {
++	try {
++		const parsed = JSON.parse(value) as unknown;
++		if (typeof parsed === "string" && parsed in CHINESE_TYPEFACE_BY_ID) {
++			return parsed as ChineseTypefaceId;
++		}
++	}
++	catch {
++		if (value in CHINESE_TYPEFACE_BY_ID) {
++			return value as ChineseTypefaceId;
++		}
++	}
++	return legacyChineseTypefaceDefault(defaultValue);
++}
 +
 +function legacyChineseTypefaceDefault(defaultValue: ChineseTypefaceId): ChineseTypefaceId {
 +	if (typeof window === "undefined") {

@@ -570,7 +570,8 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   UI dogfooding queue also tracks the candidate page-size slider, which must
   drive the deployed `menu/page_size` setting and visible candidate page length,
   plus a frontend-only horizontal/vertical candidate-menu layout control that is
-  grouped separately from engine/schema controls.
+  grouped separately from engine/schema controls, and a clearer engine-status
+  strip with a visible label and Cantonese-first hint text.
   Detail: [`plans/m24-plan-typeduck-web-dogfooding.md`](./plans/m24-plan-typeduck-web-dogfooding.md).
 - **M17 — Upstream sentence / language model (poet) (complete)** — implements the upstream
   `1.17.0` statistical sentence path so `luna_pinyin` SENTENCE + full-page LATTICE

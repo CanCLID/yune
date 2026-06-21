@@ -52,6 +52,7 @@ If a report is ambiguous, classify it as **Needs triage**, capture the screensho
 | M24-DOGFOOD-06 | Open | UI polish / display-language control semantics | The display-language fieldset shows both radio buttons and checkboxes, making it unclear whether the radio or checklist controls dictionary/comment language display. The visible UI should be a checklist only. | Browser comment on `/web/` display controls: `Display languages` shows five radio buttons on the left, five checkboxes on the right, and an arrow row for `主要語言 Main Language`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/CandidateInfo.ts`, `third_party/typeduck-web/source/src/DictionaryPanel.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | Display-language settings expose only checkboxes; the `主要語言 Main Language` arrow/radio concept is gone from the visible UI; at least one language remains selected; dictionary/detail output still has a deterministic primary definition when multiple languages are checked. |
 | M24-DOGFOOD-07 | Open | Browser integration / customize page-size wiring | The `每頁候選詞數量 No. of Candidates Per Page` slider appears not to control candidate page size; typing after selecting a smaller value still shows more candidates than selected. | Browser comment on `/web/` settings area: user changed the candidate-number control, then typed input whose candidate row clearly exceeded the selected page size. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/yune-integration/adapter.ts`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`, `crates/yune-rime-api/tests/typeduck_web.rs`, `crates/yune-rime-api/src/typeduck_web.rs`, `crates/yune-rime-api/src/context_api.rs` | Changing the slider to 4, 6, or 10 changes the deployed runtime `context.page_size` and visible candidate count on the next composition; the browser does not render more candidate cells than the selected page size; persistence evidence shows the setting is saved under the key the deployed schema actually reads. |
 | M24-DOGFOOD-08 | Open | UI polish / frontend candidate-menu layout | The playground has no control for horizontal versus vertical candidate menu layout. Users familiar with RIME expect a menu style choice, but this web setting should be clearly grouped as a frontend display preference rather than an engine/schema control. | Browser comment on `/web/` settings area: user requested a horizontal/vertical candidate list control and clearer grouping that distinguishes engine controls from web frontend controls. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/types.ts`, `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/source/src/CandidatePanel.tsx`, `third_party/typeduck-web/source/src/Candidate.tsx`, `third_party/typeduck-web/source/src/index.css`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` | Settings expose a Cantonese-first `候選排版 Candidate Menu Layout` segmented control with horizontal and vertical choices under a clearly frontend/display group; switching layout changes only the web candidate panel presentation, not engine output, page size, ranking, or ABI behavior; browser screenshots prove both layouts are readable. |
+| M24-DOGFOOD-09 | Open | UI polish / engine status strip explanation | The status strip under the schema switcher shows raw badges such as `jyut6ping3_mobile`, `enabled`, `not traditional`, and `Chinese` with no hint explaining what the strip is or what each value means. | Browser comment on `/web/` status strip: selected `jyut6ping3_mobile enabled not traditional Chinese`; user requested a UI hint for what this is. | `third_party/typeduck-web/source/src/YuneStatusStrip.tsx`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`, `third_party/typeduck-web/source/src/index.css` | Status strip has a Cantonese-first label and one-line hint; badges use labeled, user-readable text instead of raw booleans; existing `data-yune-status-*` attributes remain for tests; before/after screenshots prove the hint is clear without crowding the toolbar/schema area. |
 
 ---
 
@@ -972,7 +973,115 @@ npx --prefix third_party/typeduck-web/source playwright test third_party/typeduc
 
 Expected: both screenshots render clearly, the candidate text order is identical across layouts, and no runtime/customize/persisted engine setting changes are required.
 
-## Task 10: M24 Regression Sweep And Closeout Discipline
+## Task 10: M24-DOGFOOD-09 Explain The Engine Status Strip
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/YuneStatusStrip.tsx`
+- Inspect first, then modify only if spacing needs adjustment: `third_party/typeduck-web/source/src/index.css`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+
+- [ ] **Step 1: Capture the current raw status strip**
+
+Add a browser characterization test that types once to make the strip appear and captures the current raw badges:
+
+```ts
+test("M24 engine status strip explains schema and mode badges", async ({ page }) => {
+  await page.goto(APP_URL, { timeout: TIMEOUT_MS, waitUntil: "domcontentloaded" });
+  await waitForAppReady(page);
+  await typeInputForStatus(page, "nei");
+
+  const status = page.locator("[data-yune-status]");
+  await expect(status).toBeVisible();
+  await saveM24Json("M24-DOGFOOD-09", "status-strip-before.json", await readYuneStatus(page));
+  await takeM24Screenshot(page, "M24-DOGFOOD-09", "status-strip-before");
+});
+```
+
+Expected before the fix: the strip contains raw text such as `jyut6ping3_mobile`, `enabled`, `not traditional`, and `Chinese` without a visible label or helper hint.
+
+- [ ] **Step 2: Add a label and hint inside `YuneStatusStrip`**
+
+Keep the component small and self-contained. Add a visible label and one-line explanation before the badges:
+
+```tsx
+const statusHint = "顯示目前輸入引擎狀態：方案、啟用狀態、繁化狀態同中英模式。";
+
+return <section className="my-3 text-sm" data-yune-status aria-label="輸入引擎狀態 Engine Status">
+  <div className="mb-1 font-semibold text-base-content">輸入引擎狀態 Engine Status</div>
+  <p className="mb-2 text-xs text-base-content-300">{statusHint}</p>
+  <div className="flex flex-wrap gap-2">
+    {/* badges stay here */}
+  </div>
+</section>;
+```
+
+This is UI explanation only. Do not change `YuneStatusSnapshot`, runtime status fields, or worker response parsing.
+
+- [ ] **Step 3: Replace raw badge text with labeled Cantonese-first text**
+
+Keep the existing `data-yune-status-*` attributes so current tests and future diagnostics still find the values, but make the visible text explain each badge:
+
+```tsx
+<span className="badge badge-outline" data-yune-status-schema>
+  方案 {status.schema_name || status.schema_id}
+</span>
+<span className="badge badge-outline" data-yune-status-disabled={status.is_disabled}>
+  狀態 {status.is_disabled ? "停用 Disabled" : "啟用 Enabled"}
+</span>
+<span className="badge badge-outline" data-yune-status-traditional={status.is_traditional}>
+  繁化 {status.is_traditional ? "開 On" : "關 Off"}
+</span>
+<span className="badge badge-outline" data-yune-status-ascii={status.is_ascii_mode}>
+  模式 {status.is_ascii_mode ? "英文 ASCII" : "中文 Chinese"}
+</span>
+```
+
+If `status.schema_name` is empty or unavailable for a schema, fall back to `status.schema_id` exactly as shown.
+
+- [ ] **Step 4: Add browser assertions for the clearer copy**
+
+Extend the M24 status test to assert the label, hint, and labeled badges:
+
+```ts
+await expect(page.getByText("輸入引擎狀態 Engine Status")).toBeVisible();
+await expect(page.getByText("顯示目前輸入引擎狀態：方案、啟用狀態、繁化狀態同中英模式。")).toBeVisible();
+await expect(page.locator("[data-yune-status-schema]")).toContainText(/方案/);
+await expect(page.locator("[data-yune-status-disabled]")).toContainText(/狀態/);
+await expect(page.locator("[data-yune-status-traditional]")).toContainText(/繁化/);
+await expect(page.locator("[data-yune-status-ascii]")).toContainText(/模式/);
+await takeM24Screenshot(page, "M24-DOGFOOD-09", "status-strip-after");
+```
+
+Keep the existing `readYuneStatus(...)` helper valid by preserving `data-yune-status-schema`, `data-yune-status-disabled`, `data-yune-status-traditional`, and `data-yune-status-ascii`.
+
+- [ ] **Step 5: Verify the strip updates after live option changes**
+
+Add a short assertion that the labels remain understandable after toggling live options:
+
+```ts
+await setPreferenceToggle(page, /ASCII mode|英文模式/, true);
+await typeInputForStatus(page, "abc");
+await expect(page.locator("[data-yune-status-ascii]")).toContainText("英文 ASCII");
+
+await setPreferenceToggle(page, /Traditionalization|繁化/, true);
+await typeInputForStatus(page, "nei");
+await expect(page.locator("[data-yune-status-traditional]")).toContainText("開 On");
+```
+
+If the label-localization task has already renamed the toggles, use the Cantonese-first labels in the regex and keep the English fallback in the same regex.
+
+- [ ] **Step 6: Run focused gates**
+
+Run:
+
+```powershell
+npm.cmd --prefix third_party/typeduck-web/source run build
+npx --prefix third_party/typeduck-web/source playwright test third_party/typeduck-web/e2e/yune-typeduck.spec.ts -g "M24 engine status strip"
+```
+
+Expected: the strip is labeled and explained, status badges still update from the runtime status object, and existing status tests continue to locate the same `data-yune-status-*` attributes.
+
+## Task 11: M24 Regression Sweep And Closeout Discipline
 
 **Files:**
 - Modify: this plan as issue rows close

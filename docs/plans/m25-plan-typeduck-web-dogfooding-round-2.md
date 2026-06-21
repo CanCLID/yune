@@ -89,6 +89,7 @@ M25 intake began on 2026-06-21 with user-reported browser dogfooding regressions
 | M25-DOGFOOD-06 | Open | UI polish / settings section order | The `顯示設定 Display controls` section is currently in the second-row right column. The user wants it in the top-row right column, meaning `顯示設定 Display controls` and `即時狀態 Live session controls` should exchange positions. | User-reported during manual dogfooding on 2026-06-21. Local verification found `Preferences.tsx` renders `即時狀態 Live session controls` before `顯示設定 Display controls`, causing Display controls to land below the top-right slot in the two-column settings grid. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-06/display-live-section-order-report.json`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when Display controls render before Live session controls in the settings grid, occupy the top-right column on desktop, and Live session controls move to the position Display controls previously occupied. Preserve all existing control labels, state bindings, and live-option behavior. Add Playwright desktop and narrow-viewport evidence for the section order and bounding boxes; regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` if source changed. |
 | M25-DOGFOOD-07 | Open | UI polish / binary control affordance | Binary settings are currently shown as rounded rectangle pill switches that fill blue when checked. The user finds this unintuitive and wants these binary toggles to be raw checkbox-style controls instead. | User-reported during manual dogfooding on 2026-06-21 with screenshot `codex-clipboard-da4df560-7b7a-49fd-814f-4cfe5cbd6968.png`. Local verification found `Toggle` renders `input type="checkbox"` with `className="yd-switch"` in `Inputs.tsx`, and `.yd-switch` applies the pill styling in `index.css`; `.yd-check` already exists as a square checkbox style. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-07/raw-checkbox-binary-controls-report.json`. | `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/index.css`, `third_party/typeduck-web/source/src/App.tsx`, `third_party/typeduck-web/source/src/ThemeSwitcher.tsx`, `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when binary dogfood controls render as checkbox-style controls rather than pill switches, checked/unchecked states remain clear and keyboard-accessible, and no settings-panel binary control uses the blue rounded-pill affordance. Decide explicitly whether the app theme toggle remains a specialized icon switch or also moves to checkbox styling. Add Playwright evidence for checked and unchecked states across engine/session/display/frontend settings plus the inspector toggle; regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` if source changed. |
 | M25-DOGFOOD-08 | Open | Browser integration / reverse lookup schema trigger | Jyutping Mandarin reverse lookup currently appears to require `` `p``. The user says this is a mistake and the luna_pinyin reverse-lookup trigger should be the single grave accent `` ` ``. While trying reverse lookup, the app is also slow and can show `執行操作時發生錯誤。如輸入法不能正常運作，請重新載入頁面。 / An error occurred while performing the operation...`; treat that performance/error symptom as related to `M25-DOGFOOD-01`/`M25-DOGFOOD-03` unless a fresh repro proves a distinct reverse-lookup crash. | User-reported during manual dogfooding on 2026-06-21. Local verification found `third_party/typeduck-web/source/schema/jyut6ping3.schema.yaml` and `jyut6ping3_mobile.schema.yaml` set `luna_pinyin` prefix to `` `p`` and alphabet regex ``^`p[a-z']*;?$``; the TypeDuck v1.1.2 captured schema also has `` `p``, so this is a new M25 web dogfood correction request rather than a continuation of the M24 assumption. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-08/reverse-lookup-bare-grave-trigger-report.json`. | `third_party/typeduck-web/source/schema/jyut6ping3.schema.yaml`, `third_party/typeduck-web/source/schema/jyut6ping3_mobile.schema.yaml`, `third_party/typeduck-web/source/src/consts.ts`, `crates/yune-rime-api/src/schema_install.rs`, `crates/yune-rime-api/tests/typeduck_web.rs`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when the web Jyutping schema uses bare `` ` `` for luna_pinyin reverse lookup, the visible hint changes from `` `pzhe`` to a bare-grave example such as `` `zhe``, browser evidence shows typing `` `zhe`` reaches luna_pinyin reverse lookup without needing `p`, and `` `p...`` is either still handled intentionally or documented as no longer required. Add or update native/schema coverage for the affix translator trigger, capture browser JSON/screenshot evidence, and regenerate plus reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` if source changed. |
+| M25-DOGFOOD-09 | Open | UI polish / control affordance | The `候選排版 Candidate Menu Layout` setting currently uses a segmented control. The user wants it changed to a radio selection. | User-reported during manual dogfooding on 2026-06-21. Local verification found `Preferences.tsx` maps `CANDIDATE_MENU_LAYOUT_LABELS` into `Segment` controls for `prefs.candidateMenuLayout`; `Inputs.tsx` already provides a `Radio` component. Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-09/candidate-layout-radio-report.json`. | `third_party/typeduck-web/source/src/Preferences.tsx`, `third_party/typeduck-web/source/src/Inputs.tsx`, `third_party/typeduck-web/source/src/consts.ts`, `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`. | Close when Candidate Menu Layout renders as radio choices, not a segmented group; both horizontal and vertical options remain labeled, keyboard-accessible, and bound to `candidateMenuLayout`; switching options still changes the candidate panel layout. Add Playwright evidence for selecting both options and capturing the resulting panel layout; regenerate and reverse/forward check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` if source changed. |
 
 ## Accepted Review Corrections
 
@@ -436,6 +437,39 @@ M25 intake began on 2026-06-21 with user-reported browser dogfooding regressions
   Run the native/schema test and browser test. Save JSON evidence with the typed input, active schema id, reverse-lookup tag/source if available, first candidates, whether the operation-error toast appeared, and per-key timing if available. If reverse lookup remains slow after the trigger fix, leave or cross-link the latency to `M25-DOGFOOD-01`/`M25-DOGFOOD-03`; open a new row only if the trigger fix exposes a distinct crash.
 
 - [ ] **Step 7: Regenerate the TypeDuck-Web patch if source changed**
+
+  If any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from `source/`, and forward-check it on a clean source checkout.
+
+### Task 10: M25-DOGFOOD-09 Candidate Layout Radio Selection
+
+**Files:**
+- Modify: `third_party/typeduck-web/source/src/Preferences.tsx`
+- Modify if radio markup/styling needs adjustment: `third_party/typeduck-web/source/src/Inputs.tsx`
+- Modify if labels need copy changes: `third_party/typeduck-web/source/src/consts.ts`
+- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Evidence: `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-09/`
+
+- [ ] **Step 1: Preserve the control baseline**
+
+  Keep `candidate-layout-radio-report.json` as the issue baseline. Current `Preferences.tsx` renders `候選排版 Candidate Menu Layout` as `Segment` options backed by `prefs.candidateMenuLayout`; `Inputs.tsx` already exposes `Radio`.
+
+- [ ] **Step 2: Add failing browser coverage**
+
+  Add a Playwright test that finds the Candidate Menu Layout field and asserts it contains radio inputs for horizontal/vertical instead of `.yd-segment` labels. Assert the accessible names include the existing labels from `CANDIDATE_MENU_LAYOUT_LABELS`.
+
+- [ ] **Step 3: Replace the segmented control with radios**
+
+  In `Preferences.tsx`, replace the `Segment` mapping for `candidateMenuLayout` with `Radio` components using the same `name`, labels, `prefs.candidateMenuLayout`, and `prefs.setCandidateMenuLayout`. Do not change `Segment` globally because schema, Cangjie version, and other controls may still need segmented styling.
+
+- [ ] **Step 4: Prove layout behavior remains intact**
+
+  In Playwright, select horizontal and vertical radio options and type a short input such as `hai`. Assert the selected radio state changes and the candidate panel uses the expected horizontal/vertical layout class or DOM shape for each option.
+
+- [ ] **Step 5: Capture evidence**
+
+  Save desktop and narrow-viewport screenshots plus JSON under `M25-DOGFOOD-09`. Include radio labels, selected value before/after, and candidate panel layout evidence.
+
+- [ ] **Step 6: Regenerate the TypeDuck-Web patch if source changed**
 
   If any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from `source/`, and forward-check it on a clean source checkout.
 

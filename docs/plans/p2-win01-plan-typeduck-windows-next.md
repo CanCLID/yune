@@ -25,6 +25,8 @@ This plan is deliberately **not** a Yune core-engine milestone.
 
 - Yune M10 proved that stock TypeDuck-Windows can load packaged Yune, create a session, process `ngohaig`, and return `status.schema_id=jyut6ping3` with candidate/context data through IPC.
 - M10 did **not** prove interactive TSF typing into a real application or visible candidate-window rendering. The first Phase 2 smoke should close that gap before any large rewrite.
+- TypeDuck-Windows Phase 0A was attempted on `dev` in commit `03d3608` (`Document Yune Windows Phase 0 audit`): the Yune-backed IPC console smoke passed, setup/deployer registration passed, but the real Notepad TSF smoke hung/crashed in `TypeDuckServer.exe` while consuming/rendering candidates.
+- Treat the Phase 0A crash as a **Yune/frontend boundary** issue until PageHeap/Application Verifier, `RimeCandidate` layout checks, and candidate/comment byte parity against the TypeDuck `librime` fork oracle rule that out.
 - M24 produced a Cantonese-first TypeDuck-Web dogfood UI on Vite + React + Tailwind + local components, including settings, status, typeface, candidate-layout, and dictionary/detail surfaces. Treat it as a reuse candidate for Windows settings/dictionary UI through WebView2, not as a candidate-window rendering engine.
 - The local TypeDuck-Windows checkout is at `C:\Users\laubonghaudoi\Documents\GitHub\TypeDuck-Windows` on `dev`, with untracked planning/workflow artifacts already present. Do not sweep those into unrelated commits.
 - Existing TypeDuck-Windows modules worth auditing:
@@ -128,7 +130,32 @@ the process model and repo strategy were chosen, which old modules are allowed
 to survive, how Yune is loaded, and how the first dogfoodable Windows IME smoke
 will be reached.
 
+### Phase 0C - Boundary Crash Diagnosis
+
+**Goal:** Localize the interactive Notepad crash before any rewrite or product
+spike hides the real compatibility problem.
+
+**Why now:** The IPC console path proves Yune can generate candidates through
+the server path. It does not prove the TypeDuck-Windows UI consumes Yune's
+candidate structs, ownership model, or rich comment bytes correctly.
+
+**Checklist:**
+- [ ] Run `TypeDuckServer.exe` under PageHeap/Application Verifier, for example `gflags /p /enable TypeDuckServer.exe /full`, and capture the first corrupting allocation/free stack.
+- [ ] Confirm the frontend strides and owns the candidate array according to the exact `RimeCandidate` layout exported by the packaged Yune headers.
+- [ ] Compare Yune's `ngohaig` candidate text/comment bytes against stock TypeDuck-Windows backed by the TypeDuck `librime` fork oracle for the same input.
+- [ ] Pay special attention to rich dictionary-panel comments using control-byte payloads, because they are rendered only in the interactive candidate path.
+- [ ] If Yune output differs in a renderer-incompatible way, file the issue as a Yune TypeDuck-profile compatibility or host-contract bug.
+- [ ] If candidate layout and comment bytes are proven compatible, classify the remaining crash as WeaselUI/DirectWrite debt and decide whether to patch or bypass the old renderer.
+- [ ] Save curated crash and diff evidence under `docs/evidence/` in the Windows repo.
+- [ ] Re-run the Notepad TSF smoke after the fix or isolation and commit the result.
+
+**Acceptance gate:** A reviewer can tell whether the crash was caused by Yune
+candidate/comment compatibility, the frontend renderer, or an explicitly
+isolated platform-shell issue.
+
 ### Phase 1 - Yune Host Contract Spike
+
+**Do not start this phase until Phase 0C is reviewed.**
 
 **Goal:** Build the smallest Windows executable that loads packaged Yune and drives a real session without old frontend UI.
 
@@ -258,6 +285,19 @@ decision-gated repo strategy, but required five plan changes before handoff:
 - Add Phase 0A interactive Notepad typing with the existing build before any
   repo rewrite or extraction commitment.
 
+The second external review of the Phase 0A/0B deliverables endorsed the process
+model, repo decision, evidence discipline, and privacy/AI/WebView2 boundaries,
+but corrected one important attribution risk:
+
+- Do not call the Notepad crash "frontend-only" yet. IPC success proves Yune
+  candidate generation, but not native consumption/rendering of Yune candidate
+  structs and rich comment bytes.
+- Add Phase 0C before YuneHost/WebView2 implementation: PageHeap/Application
+  Verifier, `RimeCandidate` layout validation, and Yune-vs-TypeDuck-fork
+  candidate/comment byte parity for `ngohaig`.
+- Re-evaluate the repo decision immediately after the first passing Notepad
+  interactive smoke, before temporary work in the old repo becomes permanent.
+
 ## Open Questions For Review
 
 - Exactly how much of the existing server/IPC wire protocol should survive unchanged versus be narrowed for a Yune-only host?
@@ -277,4 +317,5 @@ decision-gated repo strategy, but required five plan changes before handoff:
 - Password or secure TSF contexts suppress learning, AI staging, and typed-content logging.
 - The inline candidate window starts native; WebView2 is for settings/dictionary UI unless a separate candidate-window spike proves it safe.
 - Candidate/output behavior changes require oracle or dogfood evidence, not visual guesswork.
+- Interactive TSF crashes are boundary problems until `RimeCandidate` layout and candidate/comment byte compatibility are ruled out.
 - The old TypeDuck-Windows repo is useful evidence, but the product goal is a better Windows IME, not a Weasel clone.

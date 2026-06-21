@@ -557,6 +557,19 @@ schema/menu/comment behavior** and keeps uncaptured option, completion, correcti
 schema-menu, and userdb-pronunciation behaviors as explicit ignored tests until
 dedicated oracle fixtures are captured.
 
+2026-06-21 update: M10 resume supersedes the "script is parked" part of D-21.
+`scripts/package-typeduck-windows.ps1` now builds the current Windows package
+with upstream-shaped default headers plus `rime_typeduck_profile_api.h`, rejects
+fork-shaped default headers, and smoke-checks the packaged DLL through
+`rime_get_typeduck_profile_api()`. That reaches T2. T1/T3 remain blocked until
+the TypeDuck-Windows checkout can build/link and run real frontend smoke against
+the Yune package.
+
+2026-06-21 update: M14-M21 promoted the captured TypeDuck engine fixtures to
+active `cantonese_parity` tests, including options, completion, correction,
+prediction, and sentence/profile tuning. Schema-menu and userdb-pronunciation
+observations remain native/frontend T3 evidence limits, not default ABI changes.
+
 ### Web-first re-sequencing (project-wide D-23)
 
 **D-23 / SEQUENCING — Re-sequence to web-first.** Validate Yune in a real web browser
@@ -819,4 +832,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-21 - D-30 records M17 upstream `luna_pinyin` null-grammar poet completion and keeps learned `.gram`/octagram deferred; D-29 records M19 schema breadth and the named TypeDuck-profile ABI accessor; D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending package/header smoke and real frontend E2E against the profile surface.*
+*Last updated: 2026-06-21 - D-30 records M17 upstream `luna_pinyin` null-grammar poet completion and keeps learned `.gram`/octagram deferred; D-29 records M19 schema breadth and the named TypeDuck-profile ABI accessor; D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows now has current profile package/header smoke and packaged-DLL host-loader lifecycle coverage, but remains blocked on the real TypeDuck-Windows build/link and frontend smoke tiers because the local Windows build tools are unavailable.*

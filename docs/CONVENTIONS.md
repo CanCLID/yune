@@ -75,16 +75,18 @@ none reach into `yune-core` directly):
 3. **TypeDuck-Windows** - parked TypeDuck compatibility-profile work. The default
    `rime_get_api()` table follows upstream librime 1.17.0 and does not expose the
    fork-only `config_list_append_*` slots. M19 added a named, opt-in
-   `rime_get_typeduck_profile_api()` surface for those slots; a drop-in
-   `rime.dll` package still requires fresh package/header smoke and real frontend
-   E2E before the profile can resume (see [section 5](#5-c-abi-rules)).
+   `rime_get_typeduck_profile_api()` surface for those slots. The M10 resume
+   proved a current T2 native package/header smoke and packaged DLL lifecycle;
+   real TypeDuck-Windows build/link and frontend E2E remain blocked (see
+   [section 5](#5-c-abi-rules)).
 
 **Direction is upstream-oracle-first.** M9 browser validation is complete,
 M11's core/CLI AI layer is complete, and M12 closed the upstream oracle refresh
 plus the first expanded upstream behavioral parity gate. The current baseline is
 upstream `rime/librime 1.17.0` for default core behavior. M10 TypeDuck-Windows
-is parked as a TypeDuck compatibility profile; M19 names the ABI surface, while
-packaging and real frontend E2E remain separate parked work. See `docs/roadmap.md`, `docs/plans/archive/m12-plan-upstream-oracle-refresh.md`,
+is parked as a TypeDuck compatibility profile; M19 names the ABI surface, and
+M10 has current T2 package evidence while real build/frontend E2E remain
+blocked. See `docs/roadmap.md`, `docs/plans/archive/m12-plan-upstream-oracle-refresh.md`,
 and `docs/plans/archive/m12-plan-upstream-behavioral-parity-closeout.md`.
 
 **Behavior oracle.** The default compatibility oracle is upstream
@@ -186,13 +188,12 @@ class), `response.ts` (JSON decode), `keys.ts` (DOM `KeyboardEvent` → RIME key
 The exported-symbol contract is `scripts/typeduck-exports.txt` (the 14 `yune_typeduck_*`
 names — see [§4](#4-coding-conventions)).
 
-**Native packaging** - `scripts/package-typeduck-windows.ps1` is parked during
-M12 closeout and fails fast. The default `RimeApi` follows upstream
-`rime/librime 1.17.0`, so the previous TypeDuck fork-only
-`config_list_append_string` slot smoke is not valid against default
-`rime_get_api()`. Re-enable the script only after a named TypeDuck profile ABI
-surface exists and its slot smoke is re-derived from TypeDuck-HK/librime
-`v1.1.2` `rime_api.h`.
+**Native packaging** - `scripts/package-typeduck-windows.ps1` now builds the
+Windows package and runs the packaged TypeDuck-profile smoke. The default
+`RimeApi` follows upstream `rime/librime 1.17.0`, so the script packages an
+upstream-shaped `rime_api.h` plus `rime_typeduck_profile_api.h`; fork-only
+`config_list_append_*` slots are verified only through
+`rime_get_typeduck_profile_api()`.
 
 **Web surface terminology** — keep three similarly named surfaces distinct:
 `packages/yune-typeduck-runtime/` is the reusable Yune-owned TypeScript/WASM
@@ -537,9 +538,10 @@ rows come from engine snapshot data aligned to the rendered page, not from
 
 **weasel / TypeDuck-Windows native.** Parked TypeDuck-profile work. The old
 package path is retained as reference material, but `scripts/package-typeduck-windows.ps1`
-now fails fast because default `rime_get_api()` follows upstream `1.17.0`.
-Native packaging can resume only after a named TypeDuck profile ABI surface
-exists (see [section 5](#5-c-abi-rules)). Frontend-host integration tests:
+now runs current TypeDuck-profile package smoke while keeping default
+`rime_get_api()` upstream-shaped. Native packaging is T2-verified; the real
+TypeDuck-Windows build/link and frontend smoke remain blocked (see
+[section 5](#5-c-abi-rules)). Frontend-host integration tests:
 `tests/frontend_hosts/{native,native_frontends}.rs`.
 
 **OpenCC.** `SimplifierFilter` (`filter/mod.rs`) honors a focused subset of librime OpenCC
@@ -587,15 +589,17 @@ contextual translation remain deferred until a named target needs them.
 TypeDuck-derived fixtures remain profile-only unless separate upstream goldens
 prove the same behavior.
 
-**TypeDuck-Windows ABI/package work is parked and not yet proven as a current
-profile.** A pre-M12 package smoke built `rime.dll`/`rime.lib`/headers and
-checked a TypeDuck fork-only slot, but that smoke is archived evidence only and
-is not valid against the default upstream `rime_get_api()` table. M19 added the
-named `rime_get_typeduck_profile_api()` accessor for the list-append fork slots;
-fresh package/header smoke, `start_quick` if needed, and real
-TypeDuck-Windows/weasel frontend E2E remain separate work. The pinned fork
-checkout lacked the referenced integration-plan files, and local frontend build
-tools (`msbuild.exe`, `cmake.exe`, etc.) were not on PATH.
+**TypeDuck-Windows ABI/package work is parked at T2, not complete.** A pre-M12
+package smoke built `rime.dll`/`rime.lib`/headers and checked a TypeDuck
+fork-only slot, but that smoke is archived evidence only and is not valid
+against the default upstream `rime_get_api()` table. M19 added the named
+`rime_get_typeduck_profile_api()` accessor for the list-append fork slots, and
+the M10 resume produced a current package/header smoke plus packaged DLL
+dynamic-loader lifecycle against that profile accessor. The default table and
+`RimeCandidate` remain upstream-shaped. Real TypeDuck-Windows/weasel build/link
+and frontend E2E remain blocked because local frontend build tools
+(`msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, `nmake.exe`) were not on
+PATH.
 
 **TypeDuck `jyut6ping3` fork-parity arc is closed with explicit browser limits.** HR-6 added
 oracle coverage for the reverse-lookup `"; "` joiner (`comments.join("; ")` in
@@ -677,4 +681,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-21 - M17 upstream `luna_pinyin` null-grammar sentence/lattice parity, M19 breadth schemas, M18 deployment/processor depth, and M23 architecture hardening are complete: Yune now has upstream-captured sentence/lattice, `double_pinyin`, `cangjie5`, and `bopomofo` fixtures/tests, public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending package/header smoke and real frontend E2E against the M19 profile surface.*
+*Last reviewed: 2026-06-21 - M17 upstream `luna_pinyin` null-grammar sentence/lattice parity, M19 breadth schemas, M18 deployment/processor depth, and M23 architecture hardening are complete: Yune now has upstream-captured sentence/lattice, `double_pinyin`, `cangjie5`, and `bopomofo` fixtures/tests, public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0. TypeDuck-Windows ABI/package work has current profile package/header smoke and packaged-DLL host-loader lifecycle coverage, but remains blocked on real TypeDuck-Windows build/link and frontend smoke evidence.*

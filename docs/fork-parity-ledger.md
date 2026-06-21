@@ -139,6 +139,13 @@ copy the librime or fork implementation shape.
 | — | Mobile corrector keymap (iOS/Android) + no digit autocorrect | Cantoboard→TD | `ac4bddd5`→`8dc9e9c4` | `fork-engine-code` | no | **non-goal** ¹⁴ | non-goal |
 
 **Notes**
+- M10 note: explicit `common:/disable_completion` is now proven through Yune's
+  deploy path. The TypeDuck-style named external preset deploys to
+  `translator/enable_completion: false`, matching the TypeDuck-Windows
+  `DISABLE_COMPLETION_VALUE` setting path without changing default ABI structs.
+  The schema-default optional marker `common:/disable_completion?` remains
+  inactive unless a frontend explicitly selects the setting.
+
 1. ¹ The large-dictionary algebra filter was relaxed for the TypeDuck Cantonese profile, and a real-dictionary golden now covers the production `jyut6ping3` path. A follow-up fix also keeps generated one-letter abbreviation aliases from acting as interior sentence boundaries without suppressing normal one-letter dictionary codes in other schemas.
 2. ² Yune has no librime `SyllableGraph`; abbreviation spellings are flat penalized entries that coexist with normal ones by construction, so the C++ "perfect match disqualifies abbreviation" hazard cannot arise. Architecturally inapplicable.
 3. ³ Implemented through the TypeDuck profile's `preedit_format` wiring; partial letter-tone completion keeps raw preedit where the fork does.

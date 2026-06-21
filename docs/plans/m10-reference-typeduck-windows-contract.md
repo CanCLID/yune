@@ -1,6 +1,6 @@
 # Yune → TypeDuck-Windows: Concrete Implementation Plan
 
-> **Status:** Parked - **Milestone:** M10 (TypeDuck-Windows compatibility profile) - **Updated:** 2026-06-19 - **Type:** reference
+> **Status:** Parked - **Milestone:** M10 (TypeDuck-Windows compatibility profile) - **Updated:** 2026-06-21 - **Type:** reference
 
 > **Audience.** An autonomous coding agent (e.g. GPT) executing directly in the
 > `yune` repo. Every work item is independently committable, names exact files,
@@ -26,7 +26,7 @@ prove target verification. The remaining TypeDuck-profile work is:
 | Area | Authored | Verified-on-target | Current honest state |
 |---|---:|---:|---|
 | Item 4 comment shaping | [x] | [ ] | Current v1.1.2 fixture slices are byte-covered, including dictionary payloads, `"; "` joins, and schema prompt/preedit bytes; the real TypeDuck-Windows E2E has not run. |
-| Item 5 native package | [x] | archived | `scripts/package-typeduck-windows.ps1` ran on 2026-06-19 without `-NoBuild` or `-SkipSmoke`, but that was pre-M12 TypeDuck-slot smoke. Current packaging is parked and fails fast until a named TypeDuck profile ABI surface exists. |
+| Item 5 native package | [x] | T2 | The M10 resume package now uses upstream-shaped default headers plus `rime_typeduck_profile_api.h`, rejects `-SkipSmoke`, and smoke-loads the packaged DLL through `rime_get_typeduck_profile_api()`; real TypeDuck-Windows build/link and frontend smoke remain blocked by missing local Windows build tools. |
 | Item 6 Cantonese parity suite | [x] | [ ] | Four active golden-locked tests pass when verified; five fork-specific cases remain `#[ignore]`d pending genuine v1.1.2 goldens. |
 | TypeDuck-Windows E2E | [ ] | [ ] | Pinned checkout `f3ffcfe3b6a3018b1c3c9d256a6f0d587a2d2e27` exists under `target/`, but referenced integration-plan files were absent and native frontend build tools were missing from PATH. |
 
@@ -34,10 +34,11 @@ Do not mark E2E or missing oracle cases verified by pointing at authored scripts
 by running `package-typeduck-windows.ps1` with `-SkipSmoke` or `-NoBuild`, or by
 deriving new expected bytes from Yune itself.
 
-M12 note: older steps below that add `config_list_append_*` to the default
-`RimeApi` table are historical. After M12, the default table follows upstream
-`rime/librime 1.17.0`; TypeDuck fork-only slots require a named TypeDuck profile
-ABI surface and fresh fork-header slot evidence.
+M12/M19/M10-resume note: older steps below that add `config_list_append_*` to
+the default `RimeApi` table are historical. The default table follows upstream
+`rime/librime 1.17.0`; TypeDuck fork-only slots live behind the named TypeDuck
+profile ABI surface and the current M10 package ships a separate
+`rime_typeduck_profile_api.h` header.
 
 ## 0. What was verified before writing this plan
 
@@ -527,6 +528,6 @@ No engine or Windows C ABI change was required.
 - [x] **Item 2** - `config_list_append_{string,bool,int,double}` helper impl + direct tests retained as parked TypeDuck-profile work *(Contract #1)*
 - [x] **Item 3** — v1.1.2 goldens captured (or reproducible blocker) *(prereq)*
 - **Item 4** - authored [x] / verified-on-target [ ]: comment semantics for current v1.1.2 fixture slices are golden-tested, but the real TypeDuck-Windows E2E has not run.
-- **Item 5** - authored [x] / archived [x]: native `rime.dll`/`.lib`/headers packaging and package smoke passed pre-M12 on 2026-06-19; current script is parked until a named TypeDuck profile ABI exists.
+- **Item 5** - authored [x] / T2 verified [x]: native `rime.dll`/`.lib`/headers packaging now ships upstream-shaped default headers plus `rime_typeduck_profile_api.h`, rejects `-SkipSmoke`, and smoke-loads the packaged DLL through the named profile accessor. T1/T3 remain blocked by missing local TypeDuck-Windows build tools/frontend smoke.
 - **Item 6** - authored [x] / verified-on-target [ ]: Cantonese/Jyutping parity suite exists with documented ignored oracle gaps; full parity remains blocked by missing goldens.
 - [x] **Item 0** — untracked files committed, EOL policy recorded, planning state reconciled, Windows milestone tracked

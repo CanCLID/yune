@@ -478,20 +478,24 @@ The completed plan is archived at
 ### M10: TypeDuck-Windows native backend
 
 TypeDuck-Windows remains valuable, but it is no longer the active core-engine
-priority. Its work is parked as a TypeDuck compatibility profile. M19 now names
-the ABI surface for the fork-only list-append slots, but packaging and real
-frontend validation are still not resumed.
+priority. Its work is parked as a TypeDuck compatibility profile. M19 named the
+ABI surface for the fork-only list-append slots, and the M10 resume now has a
+current TypeDuck-profile package/header smoke plus packaged host-loader
+lifecycle evidence. The real TypeDuck-Windows build/link and frontend smoke are
+still blocked in this environment.
 
 Archived pre-M12 M10 evidence is preserved: Windows test trust, fork-only
 `config_list_append_*` helper behavior, current TypeDuck comment shaping
 fixtures, and a historical native `rime.dll`/`.lib`/headers package smoke. That
 package smoke is not an active or valid gate for the default upstream
-`rime_get_api()` table after M12. Remaining TypeDuck-Windows work is still
-blocked by fresh package/header smoke against `rime_get_typeduck_profile_api()`,
-any additionally required TypeDuck fork slots such as `start_quick`, and the
-real TypeDuck-Windows frontend E2E; the TypeDuck-Web Cantonese gaps are now
-fixture-backed under M14-M16 with engine coverage and explicit browser/userdb
-limits.
+`rime_get_api()` table after M12. Current package evidence uses an
+upstream-shaped default `rime_api.h` plus `rime_typeduck_profile_api.h`, loads
+the packaged DLL, resolves `rime_get_typeduck_profile_api()`, verifies the
+profile append slots, and runs the dynamic-loader lifecycle. Remaining
+TypeDuck-Windows work is blocked by T1/T3: `msbuild.exe`, `devenv.exe`,
+`cmake.exe`, `nuget.exe`, and `nmake.exe` are not on PATH, so the pinned
+TypeDuck-Windows checkout has not built/linked against the Yune package and no
+real frontend smoke has run.
 
 Detail: [`typeduck-windows-backend-requirements.md`](./typeduck-windows-backend-requirements.md),
 [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md),
@@ -506,7 +510,7 @@ In priority order:
 3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
 4. **Keep Track 2 complete and fixture-gated.** M17's upstream `luna_pinyin` null-grammar sentence/lattice path, M18's prism/deployment/processor depth, M19's breadth schemas, and M22's playground build-out are complete. Future upstream-depth work needs a named target and fresh oracle fixtures before implementation.
 5. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
-6. **Resume TypeDuck-Windows only with profile smoke and real E2E.** The M19 profile ABI accessor exists; return to TypeDuck-Windows packaging only after package/header smoke is re-derived against that accessor and the real frontend E2E path is available.
+6. **Finish TypeDuck-Windows only with a real build and frontend smoke.** The M10 resume reached T2 with a current TypeDuck-profile package/header smoke and packaged DLL lifecycle. M10 stays blocked until a Visual Studio build shell can build/link the pinned TypeDuck-Windows checkout against that package and a real frontend smoke records exact input/output evidence.
 7. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
 8. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
 

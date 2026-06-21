@@ -5,8 +5,10 @@
 > [`m09-findings-typeduck-web-integration.md`](./plans/archive/m09-findings-typeduck-web-integration.md), which covers the
 > *web* frontend. This M10 contract is parked as a TypeDuck compatibility
 > profile after M12 made upstream `rime/librime 1.17.0` the default core oracle.
-> The Windows frontend remains the downstream consumer when this profile is
-> explicitly resumed behind the named TypeDuck profile ABI surface added in M19.
+> The M10 resume reached T2 on 2026-06-21: Yune now has a current native
+> TypeDuck-profile package/header smoke and packaged DLL lifecycle gate. The
+> Windows frontend build/link and real frontend smoke remain blocked until the
+> TypeDuck-Windows checkout can be built from a Visual Studio toolchain shell.
 >
 > **Source of truth.** The local execution notes are
 > [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md)
@@ -59,6 +61,12 @@ The Windows deployer consumes a **fork-only** API that stock librime does **not*
 > *syntax* feature, **not** a C-API equivalent of `config_list_append_string`. There is no upstream
 > substitute — Yune must implement it.
 
+> Current Yune package note: Yune implements `config_list_append_*` through the
+> named, opt-in `rime_get_typeduck_profile_api()` table. The default
+> upstream-shaped `rime_get_api()` table intentionally does not contain these
+> fork-only slots, so TypeDuck-Windows must use the profile accessor when
+> linked to a Yune package.
+
 ### 2. Candidate **comment** data (the dictionary panel depends on this)
 The TypeDuck multi-hint dictionary panel renders the **`RimeCandidate.comment`** string, not a
 custom struct. Yune must emit comments **byte-compatible with the librime fork v1.1.2 output**:
@@ -84,7 +92,11 @@ Yune behavior unless upstream `rime/librime 1.17.0` also matches them:
 - completion + prediction (freq-threshold tuned) and the **`enable_completion`** option — note
   upstream librime renamed this to **`enable_word_completion`**; pick one name and keep the
   TypeDuck schema YAML + the deployer's `DISABLE_COMPLETION_VALUE` patch consistent, or the
-  toggle silently no-ops;
+  toggle silently no-ops. Yune now distinguishes the schema-default optional
+  marker `common:/disable_completion?` from the explicit TypeDuck-Windows
+  deployer patch `common:/disable_completion`: the optional marker stays
+  inactive, while the explicit patch deploys to
+  `translator/enable_completion: false`;
 - correction (minimal-distance, monosyllabic, `m`-abbreviation penalty);
 - reverse-lookup pronunciation formatting; schema-menu hiding (`hide lone schema`, `hide caret`);
 - per-entry user-dictionary pronunciations.
@@ -93,9 +105,9 @@ A Cantonese/Jyutping **regression suite** should snapshot goldens from the relea
 + pinned schema, then assert parity.
 
 Yune now has `crates/yune-core/tests/cantonese_parity.rs` locking the captured
-`jyut6ping3_mobile` menu/comment fixture. Full behavior parity remains unchecked until dedicated
-v1.1.2 goldens are captured for the suite's ignored option, completion, correction, schema-menu,
-and userdb-pronunciation cases.
+`jyut6ping3_mobile` menu/comment fixture plus the M14-M21 captured TypeDuck
+engine surfaces. Schema-menu and userdb-pronunciation observations remain
+native/frontend evidence topics for T3, not default ABI changes.
 
 ### 4. A native (non-WASM) Windows build
 The web path is Emscripten/WASM. Windows needs a **native** engine artifact:
@@ -115,16 +127,27 @@ The web path is Emscripten/WASM. Windows needs a **native** engine artifact:
 - [x] (2) `RimeCandidate.comment` emitted with current TypeDuck shaping
   - [x] dictionary lookup payload bytes from captured source rows
   - [x] reverse-lookup joiner and schema-name prompt parity captured against v1.1.2
-- [ ] (3) Cantonese behavior parity vs v1.1.2 (regression suite added; full parity still has documented ignored oracle gaps)
-- [x] (4) Native Windows engine artifact (`rime.dll`/`.lib`/headers) archived pre-M12 package smoke; current packaging still needs a fresh TypeDuck-profile package/header smoke against the M19 accessor before it can be resumed
+- [x] (3) Cantonese behavior parity vs v1.1.2 for captured engine fixtures is active in `cantonese_parity`; remaining schema-menu/userdb observations are frontend/T3 evidence limits.
+- [x] (4) Native Windows engine artifact (`rime.dll`/`.lib`/headers) current TypeDuck-profile package/header smoke passes through `rime_get_typeduck_profile_api()`.
+  - [x] T0 ABI/header decision: package uses upstream-shaped `RimeCandidate` and default `rime_get_api()`, plus `rime_typeduck_profile_api.h`.
+  - [x] T2 packaged host-loader lifecycle: packaged `dist/lib/rime.dll` loads, profile append slots round-trip, and the native lifecycle smoke passes.
+  - [ ] T1 TypeDuck-Windows build/link: blocked because `msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, and `nmake.exe` are missing from PATH.
+  - [ ] T3 real TypeDuck-Windows frontend smoke: blocked behind T1; no real frontend binary was built against the Yune package.
 
 The real TypeDuck-Windows frontend E2E is still **not** green: a pinned checkout
 was captured under `target/typeduck-windows-e2e/TypeDuck-Windows`, but the
 referenced integration-plan files were absent and the local shell did not expose
-`msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, or `nmake.exe`.
+`msbuild.exe`, `devenv.exe`, `cmake.exe`, `nuget.exe`, or `nmake.exe`. The M10
+resume attempted:
 
-When the remaining Cantonese parity gaps and real E2E pass against the M19
-profile accessor, revisit the current TypeDuck-Windows frontend lifecycle docs
-or harness: the engine swap behind that profile ABI is then a contained change,
+```powershell
+msbuild target\typeduck-windows-e2e\TypeDuck-Windows\weasel.sln /p:Configuration=Release /p:Platform=x64
+```
+
+and stopped at `CommandNotFoundException`.
+
+When the real build/link and frontend smoke pass against the M19 profile
+accessor, revisit the current TypeDuck-Windows frontend lifecycle docs or
+harness: the engine swap behind that profile ABI is then a contained change,
 and the engine-agnostic frontend modernization can proceed independently in the
 meantime.

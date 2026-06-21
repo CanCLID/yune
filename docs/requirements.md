@@ -158,7 +158,7 @@ blockers. These requirements target the native TypeDuck-Windows/weasel path and
 no longer define Yune's active core oracle milestone.
 
 - [x] **WIN-TEST-01**: Windows `cargo test --workspace` has a trustworthy green baseline, including portable signature timestamp shape and test-only poison-lock recovery.
-- [x] **WIN-ABI-01**: `config_list_append_{string,bool,int,double}` helper behavior is implemented and covered as parked TypeDuck-profile implementation code; the default upstream `rime_get_api()` no longer exposes these fork-only slots.
+- [x] **WIN-ABI-01**: `config_list_append_{string,bool,int,double}` helper behavior is implemented and exposed through the named, opt-in M19 TypeDuck-profile accessor; the default upstream `rime_get_api()` does not expose these fork-only slots.
 - [x] **WIN-ORACLE-01**: The TypeDuck-HK/librime v1.1.2 binary and pinned schema are captured as a reproducible oracle, or a precise blocker is documented.
 - [x] **WIN-COMMENT-01**: Candidate comment semantics match the v1.1.2 oracle for dictionary lookup payloads, reverse lookup joins, and prompt/schema identity. Dictionary lookup payload bytes, schema-prompt bytes, and reverse-lookup joiner coverage are oracle-backed.
 - [x] **WIN-BUILD-01**: Yune had a pre-M12 native Windows `rime.dll`, import `.lib`, and compatible header package smoke; current packaging is parked and fails fast until a named TypeDuck profile ABI surface exists.
@@ -400,7 +400,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPEDUCK-E2E-03 | Phase 10 / 17 | Complete - HR-5 real-assets browser matrix passes; rich comment byte parity is committed in `cantonese_parity` |
 | TYPEDUCK-E2E-04 | Phase 10 / 17 | Complete - HR-7 records GO WITH CONDITIONS |
 | WIN-TEST-01 | Phase 11 | Complete |
-| WIN-ABI-01 | Phase 12 | Complete - direct helper coverage retained as parked TypeDuck-profile implementation; not exposed by default upstream `rime_get_api()` |
+| WIN-ABI-01 | Phase 12 / M19 | Complete - helper coverage retained and exposed through named `rime_get_typeduck_profile_api()`; not exposed by default upstream `rime_get_api()` |
 | WIN-ORACLE-01 | Phase 13 | Complete |
 | WIN-COMMENT-01 | Phase 14 / 17 | Complete - dictionary payload, schema prompt, and joiner oracle covered |
 | WIN-BUILD-01 | Phase 15 | Complete - archived pre-M12 package smoke; current script is parked until a named TypeDuck profile ABI exists |
@@ -450,10 +450,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M20-DEMO-05 | M20 | Complete - browser honesty gate separates visible before/after controls from explicit browser-surface N/A for Input Memory off-state and current-schema Cangjie/show_full_code limits; Auto-correction `nri` now has real browser before/after evidence; `ascii_punct` still needs browser-visible evidence before becoming a working web toggle |
 | M20-DEMO-06 | M20 | Complete - internal TypeDuck-Web harness is documented as the canonical browser playground for supported engine features |
 | M20-DEMO-07 | M20 | Complete - documented demo-default `combine_candidates` active control plus current-schema `show_full_code`/Cangjie N/A evidence |
+| M19-BREADTH-01 | M19 | Complete - generalized upstream schema capture recipe and provenance guard added |
+| M19-BREADTH-02 | M19 | Complete - `double_pinyin` upstream 1.17.0 fixture and owning parity test added |
+| M19-BREADTH-03 | M19 | Complete - `cangjie5` upstream 1.17.0 fixture and owning parity test added |
+| M19-BREADTH-04 | M19 | Complete - `bopomofo` upstream 1.17.0 fixture and owning parity test added |
+| M19-ABI-01 | M19 | Complete - named TypeDuck-profile ABI accessor exposes list-append slots while default `rime_get_api()` remains upstream-shaped |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
 | M22-PLAY-03 | M22 Bucket 1 | Active - remaining honest browser controls still need before/after evidence or documented N/A |
-| M22-PLAY-04 | M22 Bucket 3 | Active - multi-schema playground and reverse lookup wait for M19 schema breadth output |
+| M22-PLAY-04 | M22 Bucket 3 | Active - multi-schema playground and reverse lookup can now build on M19 schema breadth output |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -465,10 +470,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M14–M16 TypeDuck-Web fork parity requirements: 7 total, 7 complete (M16 complete with explicit browser/userdb inspection limits)
 - Fork parity backlog (Cantonese engine-parity, vs upstream 1.17.0): 9 total, 9 complete; see [`fork-parity-ledger.md`](./fork-parity-ledger.md)
 - M20 web demo showcase controls requirements: 7 total, 7 complete
+- M19 schema breadth and TypeDuck-profile ABI requirements: 5 total, 5 complete
 - M22 web playground requirements: 4 total, 2 complete, 2 active
-- Mapped to phases: 102
+- Mapped to phases: 107
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-20 - M23 architecture hardening and M18 deployment/processor depth are complete; M22 Bucket 2 read-only inspector is complete with browser evidence while M22 honest controls and multi-schema buckets remain active; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile until M19 names the profile ABI surface*
+*Last updated: 2026-06-21 - M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; M22 Bucket 2 read-only inspector is complete with browser evidence while M22 honest controls and multi-schema buckets remain active; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows remains parked as a TypeDuck compatibility profile pending fresh package/header smoke and real frontend E2E against the M19 profile accessor*

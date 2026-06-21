@@ -26,6 +26,27 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
 - If a case cannot be captured, keep the Yune test ignored with a `panic!()` body
   and document the exact command that would unblock it.
 
+## Adding A New Upstream Schema
+
+1. Clone or update the schema-data repository under
+   `target/upstream-oracle/1.17.0/schema-src/` and record its Git commit in the
+   fixture.
+2. Capture through the generalized wrapper, for example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -OracleRoot target/upstream-oracle/1.17.0 -SchemaId double_pinyin -SchemaDataRepo rime/rime-double-pinyin -Output crates/yune-core/tests/fixtures/upstream-1.17.0/double-pinyin-basic.json
+```
+
+3. Keep the fixture provenance non-circular: `oracle.engine`,
+   `oracle.engine_tag`, `oracle.engine_commit`, `oracle.release_url`,
+   `oracle.capture_date`, `oracle.capture_command`, `capture.schema_data`,
+   `capture.schema_data_commit`, `capture.dependency_repositories`, and
+   `capture.source_row_policy` must all be present.
+4. Add a per-schema branch in `oracle_fixture_provenance.rs`, then add an owning
+   parity test that drives Yune's parser/algebra/translator/Engine path against
+   the captured bytes. Unsupported sentence/language-model cases stay as
+   ignored tests with `panic!()` bodies.
+
 ## Captured Fixtures
 
 ### `luna-pinyin-basic.json`
@@ -110,6 +131,33 @@ The active Yune check is:
 cargo test -p yune-core --test upstream_luna_pinyin_parity
 cargo test -p yune-core --test oracle_fixture_provenance
 ```
+
+### `double-pinyin-basic.json`
+
+- Schema: `double_pinyin`
+- Upstream schema data: `rime/rime-double-pinyin`
+- Schema-data dependencies: `rime/rime-prelude`, `rime/rime-essay`,
+  `rime/rime-luna-pinyin`, and `rime/rime-stroke`
+- Inputs: `ni`, `hk`, `vs`, `go`
+- Source-row policy: `m19_double_pinyin_curated_shuangpin_algebra`
+
+### `cangjie5-basic.json`
+
+- Schema: `cangjie5`
+- Upstream schema data: `rime/rime-cangjie`
+- Schema-data dependencies: `rime/rime-prelude`, `rime/rime-essay`, and
+  `rime/rime-luna-pinyin`
+- Inputs: `a`, `am`, `amd`
+- Source-row policy: `m19_cangjie5_curated_table_codes`
+
+### `bopomofo-basic.json`
+
+- Schema: `bopomofo`
+- Upstream schema data: `rime/rime-bopomofo`
+- Schema-data dependencies: `rime/rime-prelude`, `rime/rime-essay`,
+  `rime/rime-terra-pinyin`, and `rime/rime-stroke`
+- Inputs: `su3`, `cl3`, `j06`, `w/4`
+- Source-row policy: `m19_bopomofo_curated_zhuyin_algebra`
 
 ## Oracle Binary Evidence
 

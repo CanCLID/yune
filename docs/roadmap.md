@@ -298,7 +298,7 @@ behavior already proven by M9, M13, M14-M16, and the FORK-PARITY backlog. It is 
 **separate web/demo track**,
 not a reopened M13: M13 remains the completed default-off AI frontend exposure
 milestone, while M20 made the browser demo highly controllable, honest,
-inspectable, and useful for manual dogfooding before deeper M17-M19 work.
+inspectable, and useful for manual dogfooding before the remaining M22/M17 work.
 
 This is not the same surface as a separately cloned `TypeDuck-HK/TypeDuck-Web`
 product checkout. `packages/yune-typeduck-runtime/` remains the reusable Yune
@@ -435,6 +435,29 @@ implementation landed in `d548c9cf` (`Implement M22 Bucket 2 debug inspector`).
 M22 remains active for Bucket 1 honest browser controls and Bucket 3
 multi-schema/reverse-lookup playground work.
 
+### M19: Breadth schemas and TypeDuck-profile ABI surface
+
+M19 added three upstream `1.17.0` schema families to Yune's named compatibility
+set without widening the default TypeDuck profile. `double_pinyin`, `cangjie5`,
+and `bopomofo` now each have a provenance-stamped upstream oracle fixture, an
+owning parity test, and source-policy checks in `oracle_fixture_provenance.rs`.
+The active captured cases cover Shuangpin spelling-algebra folding, Cangjie
+exact-code table lookups, and Zhuyin keymap/tone algebra. Sentence/lattice
+behavior, broader Cangjie phrase/table-encoder interleave, and schema-speller
+digit/space key routing remain explicit ignored blockers instead of hidden
+claims.
+
+M19 also named the TypeDuck profile ABI surface for the parked Windows backend:
+`rime_get_typeduck_profile_api()` exposes the fork-only
+`config_list_append_{bool,int,double,string}` slots through a non-default
+profile table, while the default `rime_get_api()` table remains upstream
+`1.17.0` shaped. The new reference doc records the slot surface and explicitly
+keeps `start_quick`, Windows packaging, and real TypeDuck-Windows frontend E2E
+out of M19.
+
+The completed plan is archived at
+[`plans/archive/m19-plan-breadth-schemas.md`](./plans/archive/m19-plan-breadth-schemas.md).
+
 ---
 
 ## Parked
@@ -442,17 +465,20 @@ multi-schema/reverse-lookup playground work.
 ### M10: TypeDuck-Windows native backend
 
 TypeDuck-Windows remains valuable, but it is no longer the active core-engine
-priority. Its work is parked as a TypeDuck compatibility profile until Yune has
-a named TypeDuck profile ABI surface.
+priority. Its work is parked as a TypeDuck compatibility profile. M19 now names
+the ABI surface for the fork-only list-append slots, but packaging and real
+frontend validation are still not resumed.
 
 Archived pre-M12 M10 evidence is preserved: Windows test trust, fork-only
 `config_list_append_*` helper behavior, current TypeDuck comment shaping
 fixtures, and a historical native `rime.dll`/`.lib`/headers package smoke. That
 package smoke is not an active or valid gate for the default upstream
 `rime_get_api()` table after M12. Remaining TypeDuck-Windows work is still
-blocked by a named profile ABI surface and the real TypeDuck-Windows frontend
-E2E; the TypeDuck-Web Cantonese gaps are now fixture-backed under M14-M16 with
-engine coverage and explicit browser/userdb limits.
+blocked by fresh package/header smoke against `rime_get_typeduck_profile_api()`,
+any additionally required TypeDuck fork slots such as `start_quick`, and the
+real TypeDuck-Windows frontend E2E; the TypeDuck-Web Cantonese gaps are now
+fixture-backed under M14-M16 with engine coverage and explicit browser/userdb
+limits.
 
 Detail: [`typeduck-windows-backend-requirements.md`](./typeduck-windows-backend-requirements.md),
 [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md),
@@ -465,9 +491,9 @@ In priority order:
 1. **Preserve the upstream-first baseline.** Keep default `RimeApi` and core behavior aligned to upstream `1.17.0`; add new TypeDuck fork-only behavior only behind an explicit profile surface.
 2. **Keep M9/M13/M16/M20 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, default-off M13 AI scenarios, and M20 showcase-control honesty checks.
 3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
-4. **Advance Track 2 (M19/M22/M17) opportunistically.** M18's prism generation, deployment writers, rebuild executor, and punctuation processor depth are complete, and M22's read-only debug inspector bucket has landed. The remaining upstream-depth work is breadth schemas, M22's honest browser controls and multi-schema product surface, and the optional M17 language-model slice.
+4. **Advance the remaining Track 2 slices opportunistically.** M18's prism generation, deployment writers, rebuild executor, and punctuation processor depth are complete, M19's breadth schemas are complete, and M22's read-only debug inspector bucket has landed. The remaining upstream-depth work is M22's honest browser controls and multi-schema product surface plus the optional M17 language-model slice.
 5. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
-6. **Resume TypeDuck profile work only with a named surface.** Return to TypeDuck-Windows packaging after the profile ABI is defined and fork-header slot smoke is re-derived.
+6. **Resume TypeDuck-Windows only with profile smoke and real E2E.** The M19 profile ABI accessor exists; return to TypeDuck-Windows packaging only after package/header smoke is re-derived against that accessor and the real frontend E2E path is available.
 7. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
 8. **Add a future iOS keyboard-developer track before TypeDuck iOS work starts.** Treat the Cantoboard/TypeDuck iOS build repositories as platform-integration provenance, not as engine-parity code to port. The track should define Yune-native iOS packaging, Swift/Obj-C host bindings, resource bundling, sandboxed userdb/storage, keyboard-extension lifecycle limits, and mobile-specific configuration hooks.
 
@@ -477,26 +503,24 @@ In priority order:
 
 Priority is set by what a *named* (A)/(B) target needs, not by librime's feature
 list. **TypeDuck `jyut6ping3` reconciliation (M14-M16), the M20 browser
-playground, M23 architecture hardening, M18 deployment/processor depth, and M22
-Bucket 2 read-only inspector are complete** (see *Completed* above). The
-remaining engine-depth arc is **Track 2 (broad upstream depth):**
+playground, M23 architecture hardening, M18 deployment/processor depth, M19
+breadth schemas, and M22 Bucket 2 read-only inspector are complete** (see
+*Completed* above). The remaining engine-depth arc is **Track 2 (broad upstream
+depth):**
 
 ### Execution order — what to do next
 
 This is the **authoritative sequence**; the per-milestone detail bullets below
 are reference, not order. M18 has removed the precompiled-asset crutch for later
-breadth and multi-schema work. **M17 remains the heaviest and least
-product-critical slice** (not required by any current named target), and the
-TypeDuck profile-tuning leak was gated in M23 before M19 adds schemas through
-the same shared sentence path.
+breadth and multi-schema work, and M19 has now added the first breadth schemas.
+**M17 remains the heaviest and least product-critical slice** (not required by
+any current named target), and the TypeDuck profile-tuning leak was gated in M23
+before M19 added schemas through the same shared sentence path.
 
-1. **M19 — breadth schemas.** Now buildable *honestly* on M18's writers; produces
-   the real `cangjie5` / `luna_pinyin` artifacts M22 multi-schema needs, and names
-   the TypeDuck-profile ABI surface the parked M10 is waiting on.
-2. **M22 remaining playground buckets.** Finish honest browser controls (Bucket 1)
+1. **M22 remaining playground buckets.** Finish honest browser controls (Bucket 1)
    and multi-schema/reverse-lookup playground work (Bucket 3) on real M18 + M19
    output, not a precompiled workaround. Bucket 2 is already complete.
-3. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
+2. **M17 — upstream poet / language model (opportunistic, last).** Heaviest slice;
    not required by any current named target. Do it when a frontend actually ships
    `luna_pinyin` sentence input to users.
 
@@ -541,7 +565,7 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   and adds immediate-commit/confirm-unique/pair/list punctuation from upstream
   `punctuator.cc`, un-ignoring the two M12 blockers with fresh upstream fixtures.
   Detail: [`plans/archive/m18-plan-deployment-and-processor-depth.md`](./plans/archive/m18-plan-deployment-and-processor-depth.md).
-- **M19 — Breadth (toward B)** — onboards three common upstream schemas — Shuangpin
+- **M19 — Breadth (toward B, complete)** — onboards three common upstream schemas — Shuangpin
   (`double_pinyin`), Cangjie (`cangjie5`), Zhuyin (`bopomofo`) — into Yune's named
   compatibility set, each measured against the upstream `1.17.0` oracle through the
   existing M12 harness (`oracle-rime-probe.cs` capture → provenance-stamped
@@ -558,7 +582,7 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
   default upstream `1.17.0` ABI byte-for-byte unchanged — satisfying graduation-contract
   item (1) of `typeduck-windows-backend-requirements.md` without reopening Windows
   packaging.
-  Detail: [`plans/m19-plan-breadth-schemas.md`](./plans/m19-plan-breadth-schemas.md).
+  Detail: [`plans/archive/m19-plan-breadth-schemas.md`](./plans/archive/m19-plan-breadth-schemas.md).
 - **M22 — TypeDuck-Web playground feature-completeness + multi-schema + engine
   debug inspector** — the M20 successor (playground build-out, *not* M21's
   product-comparison protocol). Surfaces more of Yune's engine in the internal

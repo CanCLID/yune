@@ -1,0 +1,541 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "capture_date": "2026-06-21",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -OracleRoot target/upstream-oracle/1.17.0 -SchemaId cangjie5 -SchemaDataRepo rime/rime-cangjie -InputSequence a,am,amd"
+  },
+  "schema": "cangjie5",
+  "module_list": [
+    "default"
+  ],
+  "input_sequence": [
+    "a",
+    "am",
+    "amd"
+  ],
+  "capture": {
+    "schema_data": "rime/rime-cangjie",
+    "schema_data_commit": "52d90a1b1312e74042b38c1cbc8142defbc53171",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-luna-pinyin": "18a80335c37522311f7cff02886cd81cec3b460a"
+    },
+    "source_row_policy": "m19_cangjie5_curated_table_codes",
+    "schema_file": "rime-cangjie/cangjie5.schema.yaml",
+    "dictionary": "cangjie5.dict.yaml",
+    "vocabulary": "essay.txt",
+    "source_dictionary_file": "rime-cangjie/cangjie5.dict.yaml",
+    "essay_vocabulary_file": "rime-essay/essay.txt",
+    "source_dictionary_import_rows": {
+      "cangjie5.base.dict.yaml": [
+        "日\ta",
+        "曰\ta",
+        "星\tahqm",
+        "旦\tam",
+        "旴\tamd",
+        "是\tamyo",
+        "門\tan",
+        "最\tasje",
+        "曼\tawle",
+        "腌\tbklu",
+        "錒\tcnlr",
+        "相\tdbu",
+        "標\tdmwf",
+        "樣\tdtge",
+        "準\tegj",
+        "的\thapi",
+        "學\thbnd",
+        "一\tm",
+        "工\tmlm",
+        "阿\tnlmnr",
+        "彌\tnmfb",
+        "低\tohpm",
+        "低\tohvi",
+        "吖\trcl",
+        "吁\trmd",
+        "呵\trmnr",
+        "嗄\trmue",
+        "啊\trnlr",
+        "的\tx",
+        "曰\txa"
+      ],
+      "cangjie5.stem.dict.yaml": [
+        "工\tmlm\tm"
+      ],
+      "cangjie5.extended.dict.yaml": [
+        "𪰆\tam"
+      ]
+    },
+    "source_vocabulary_rows": [
+      "吁\t478",
+      "吖\t4107",
+      "呵\t4511",
+      "啊\t84662",
+      "嗄\t775",
+      "日\t71052",
+      "日工\t492",
+      "旦\t1150",
+      "旴\t337",
+      "星相\t594",
+      "星相學\t444",
+      "是一樣的\t8292",
+      "曰\t3017",
+      "最低標準\t476",
+      "腌\t774",
+      "錒\t802",
+      "阿\t16273",
+      "阿彌\t1195",
+      "阿曼\t1120",
+      "阿門\t956"
+    ],
+    "translator_comment_format": [
+      "xlit|abcdefghijklmnopqrstuvwxyz~|日月金木水火土竹戈十大中一弓人心手口尸廿山女田難卜符～|"
+    ],
+    "translator_preedit_format": [
+      "xform/^([a-z]*)$/$1\\t（\\U$1\\E）/",
+      "xlit|ABCDEFGHIJKLMNOPQRSTUVWXYZ|日月金木水火土竹戈十大中一弓人心手口尸廿山女田難卜符|"
+    ]
+  },
+  "cases": [
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "input": "a",
+      "rime_get_input": "a（日）",
+      "processed": [
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "a（日）",
+      "commit_text_preview": "日",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "日",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "曰",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "啊",
+          "comment": "口弓中口"
+        },
+        {
+          "index": 3,
+          "text": "阿",
+          "comment": "弓中一弓口"
+        },
+        {
+          "index": 4,
+          "text": "吖",
+          "comment": "口金中"
+        }
+      ]
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "input": "am",
+      "rime_get_input": "am（日一）",
+      "processed": [
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "am（日一）",
+      "commit_text_preview": "旦",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "旦",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "日工",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "阿彌",
+          "comment": "弓口弓一月"
+        },
+        {
+          "index": 3,
+          "text": "阿曼",
+          "comment": "弓口日田水"
+        },
+        {
+          "index": 4,
+          "text": "阿門",
+          "comment": "弓口日弓"
+        }
+      ]
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "input": "amd",
+      "rime_get_input": "amd（日一木）",
+      "processed": [
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "amd（日一木）",
+      "commit_text_preview": "旴",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "旴",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "是一樣的",
+          "comment": "～水戈"
+        },
+        {
+          "index": 2,
+          "text": "星相",
+          "comment": "～月山"
+        },
+        {
+          "index": 3,
+          "text": "最低標準",
+          "comment": "～火十"
+        },
+        {
+          "index": 4,
+          "text": "星相學",
+          "comment": "～山木"
+        }
+      ]
+    }
+  ],
+  "snapshots": [
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "scenario": "paging_first_input",
+      "label": "page_1",
+      "rime_get_input": "a（日）",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 10,
+      "cursor_pos": 1,
+      "preedit": "a（日）",
+      "commit_text_preview": "日",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "日",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "曰",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "啊",
+          "comment": "口弓中口"
+        },
+        {
+          "index": 3,
+          "text": "阿",
+          "comment": "弓中一弓口"
+        },
+        {
+          "index": 4,
+          "text": "吖",
+          "comment": "口金中"
+        }
+      ]
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "scenario": "paging_first_input",
+      "label": "page_2",
+      "rime_get_input": "a",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 1,
+      "cursor_pos": 1,
+      "preedit": "a",
+      "commit_text_preview": "錒",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 1,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "錒",
+          "comment": "金弓中口"
+        },
+        {
+          "index": 1,
+          "text": "嗄",
+          "comment": "口一山水"
+        },
+        {
+          "index": 2,
+          "text": "呵",
+          "comment": "口一弓口"
+        },
+        {
+          "index": 3,
+          "text": "腌",
+          "comment": "月大中山"
+        },
+        {
+          "index": 4,
+          "text": "吁",
+          "comment": "口一木"
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "scenario": "paging_first_input",
+      "label": "page_1_again",
+      "rime_get_input": "a（日）",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 10,
+      "cursor_pos": 1,
+      "preedit": "a（日）",
+      "commit_text_preview": "日",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "日",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "曰",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "啊",
+          "comment": "口弓中口"
+        },
+        {
+          "index": 3,
+          "text": "阿",
+          "comment": "弓中一弓口"
+        },
+        {
+          "index": 4,
+          "text": "吖",
+          "comment": "口金中"
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "scenario": "select_first_input_second",
+      "label": "before_select",
+      "rime_get_input": "a（日）",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 10,
+      "cursor_pos": 1,
+      "preedit": "a（日）",
+      "commit_text_preview": "日",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "日",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "曰",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "啊",
+          "comment": "口弓中口"
+        },
+        {
+          "index": 3,
+          "text": "阿",
+          "comment": "弓中一弓口"
+        },
+        {
+          "index": 4,
+          "text": "吖",
+          "comment": "口金中"
+        }
+      ]
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "scenario": "select_first_input_second",
+      "label": "after_select_2",
+      "rime_get_input": null,
+      "is_composing": false,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 0,
+      "cursor_pos": 0,
+      "preedit": null,
+      "commit_text_preview": null,
+      "commit_text": "曰",
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [],
+      "processed": 1
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "scenario": "commit_first_input_space",
+      "label": "before_space",
+      "rime_get_input": "a（日）",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 10,
+      "cursor_pos": 1,
+      "preedit": "a（日）",
+      "commit_text_preview": "日",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "日",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "曰",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "啊",
+          "comment": "口弓中口"
+        },
+        {
+          "index": 3,
+          "text": "阿",
+          "comment": "弓中一弓口"
+        },
+        {
+          "index": 4,
+          "text": "吖",
+          "comment": "口金中"
+        }
+      ]
+    },
+    {
+      "schema_id": "cangjie5",
+      "schema_name": "倉頡五代",
+      "scenario": "commit_first_input_space",
+      "label": "after_space",
+      "rime_get_input": null,
+      "is_composing": false,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 0,
+      "cursor_pos": 0,
+      "preedit": null,
+      "commit_text_preview": null,
+      "commit_text": "日",
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [],
+      "processed": 1
+    }
+  ]
+}

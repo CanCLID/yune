@@ -1,0 +1,780 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "capture_date": "2026-06-21",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -OracleRoot target/upstream-oracle/1.17.0 -SchemaId double_pinyin -SchemaDataRepo rime/rime-double-pinyin -InputSequence ni,hk,vs,go"
+  },
+  "schema": "double_pinyin",
+  "module_list": [
+    "default"
+  ],
+  "input_sequence": [
+    "ni",
+    "hk",
+    "vs",
+    "go"
+  ],
+  "capture": {
+    "schema_data": "rime/rime-double-pinyin",
+    "schema_data_commit": "01a13287cbd27819be1c34fa1ddc1b3643d5001b",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-luna-pinyin": "18a80335c37522311f7cff02886cd81cec3b460a",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    },
+    "source_row_policy": "m19_double_pinyin_curated_shuangpin_algebra",
+    "schema_file": "rime-double-pinyin/double_pinyin.schema.yaml",
+    "dictionary": "luna_pinyin.dict.yaml",
+    "vocabulary": "essay.txt",
+    "source_dictionary_file": "rime-luna-pinyin/luna_pinyin.dict.yaml",
+    "essay_vocabulary_file": "rime-essay/essay.txt",
+    "source_dictionary_rows": [
+      "中\tzhong",
+      "仲\tzhong",
+      "你\tni",
+      "倪\tni",
+      "呢\tne\t98.97%",
+      "呢\tni\t1.03%",
+      "國\tguo",
+      "好\thao",
+      "妮\tni",
+      "妳\tnai\t0%",
+      "妳\tni\t100%",
+      "尼\tni",
+      "擬\tni",
+      "果\tguo",
+      "泥\tni",
+      "浩\thao",
+      "種\tzhong",
+      "耗\thao",
+      "膩\tni",
+      "號\thao",
+      "衆\tzhong",
+      "豪\thao",
+      "逆\tni",
+      "過\tguo",
+      "郭\tguo",
+      "重\tchong\t41.55%",
+      "重\tzhong\t58.45%",
+      "鍋\tguo",
+      "㘈\tni",
+      "㞾\tni",
+      "㠜\tni",
+      "㥾\tni",
+      "㦐\tni",
+      "㩘\tni",
+      "㪒\tni",
+      "㮏\tni",
+      "㲻\tni",
+      "㵫\tni",
+      "㹸\tni",
+      "䁥\tni",
+      "䕥\tni",
+      "䘌\tni",
+      "䘦\tni",
+      "䘽\tni",
+      "䛏\tni",
+      "䝚\tni",
+      "䦧\tni",
+      "䦵\tni",
+      "䵑\tni",
+      "䵒\tni",
+      "伱\tni",
+      "伲\tni",
+      "儗\tni",
+      "児\tni",
+      "兒\tni\t0%",
+      "匿\tni",
+      "坭\tni",
+      "埿\tni",
+      "堄\tni",
+      "婗\tni",
+      "嫟\tni",
+      "嬺\tni",
+      "孨\tni",
+      "孴\tni",
+      "屔\tni",
+      "屰\tni",
+      "嶷\tni",
+      "怩\tni",
+      "惄\tni",
+      "愵\tni",
+      "慝\tni",
+      "懝\tni",
+      "抳\tni",
+      "拟\tni",
+      "掜\tni",
+      "掿\tni",
+      "搦\tni",
+      "搻\tni",
+      "旎\tni",
+      "昵\tni",
+      "暱\tni",
+      "柅\tni",
+      "棿\tni",
+      "檷\tni",
+      "氼\tni",
+      "淣\tni",
+      "溺\tni\t95%",
+      "狋\tni",
+      "狔\tni",
+      "猊\tni",
+      "痆\tni",
+      "睨\tni",
+      "祢\tni",
+      "禰\tni",
+      "秜\tni",
+      "籾\tni",
+      "糑\tni",
+      "縌\tni",
+      "聣\tni",
+      "聻\tni",
+      "胒\tni",
+      "腝\tni",
+      "腻\tni",
+      "臡\tni",
+      "苨\tni",
+      "薾\tni",
+      "薿\tni",
+      "蚭\tni",
+      "蜺\tni",
+      "衵\tni",
+      "袮\tni",
+      "觬\tni",
+      "譺\tni",
+      "貎\tni",
+      "跜\tni",
+      "輗\tni",
+      "迡\tni",
+      "郳\tni",
+      "鈮\tni",
+      "鉨\tni",
+      "鑈\tni",
+      "铌\tni",
+      "隬\tni",
+      "霓\tni",
+      "馜\tni",
+      "鬩\tni",
+      "鯢\tni",
+      "鲵\tni",
+      "鷊\tni",
+      "麑\tni",
+      "麛\tni",
+      "齯\tni",
+      "𠆵\tni",
+      "𠒰\tni",
+      "𠱘\tni",
+      "𠸺\tni",
+      "𠽬\tni",
+      "𡎳\tni",
+      "𡎿\tni",
+      "𡞭\tni",
+      "𡣁\tni",
+      "𡥦\tni",
+      "𡥨\tni",
+      "𡫸\tni",
+      "𡬗\tni",
+      "𢅟\tni",
+      "𢘝\tni",
+      "𢚮\tni",
+      "𢛜\tni",
+      "𢣚\tni",
+      "𢦱\tni",
+      "𣘗\tni",
+      "𣡋\tni",
+      "𣢞\tni",
+      "𣭙\tni",
+      "𣲷\tni",
+      "𤙌\tni",
+      "𤦤\tni",
+      "𥄽\tni",
+      "𥇄\tni",
+      "𥜦\tni",
+      "𥜬\tni",
+      "𥷄\tni",
+      "𥺜\tni",
+      "𦆦\tni",
+      "𦤽\tni",
+      "𦦃\tni",
+      "𦮾\tni",
+      "𦰫\tni",
+      "𧃩\tni",
+      "𧈞\tni",
+      "𧏾\tni",
+      "𧖷\tni",
+      "𧵼\tni",
+      "𧺰\tni",
+      "𨀀\tni",
+      "𨋗\tni",
+      "𨒫\tni",
+      "𨺙\tni",
+      "𨽦\tni",
+      "𩈢\tni",
+      "𩉹\tni",
+      "𩋪\tni",
+      "𩍦\tni",
+      "𩚮\tni",
+      "𩚯\tni",
+      "𩩢\tni",
+      "𩯨\tni",
+      "𩰞\tni",
+      "𩱄\tni",
+      "𩸦\tni",
+      "𩸧\tni",
+      "𩺝\tni",
+      "𩺱\tni",
+      "𩾆\tni",
+      "𪏵\tni",
+      "𪏸\tni",
+      "𪐌\tni",
+      "𪙛\tni",
+      "𫐐\tni"
+    ],
+    "source_vocabulary_rows": [
+      "中\t243870",
+      "仲\t4114",
+      "你\t972978",
+      "倪\t1660",
+      "呢\t242959",
+      "國\t11114",
+      "好\t378951",
+      "妮\t1922",
+      "妳\t2085",
+      "尼\t3288",
+      "擬\t3654",
+      "果\t5384",
+      "泥\t2738",
+      "浩\t2429",
+      "種\t12344",
+      "耗\t1832",
+      "膩\t1799",
+      "號\t71247",
+      "衆\t3955",
+      "豪\t2416",
+      "逆\t1737",
+      "過\t112999",
+      "郭\t5243",
+      "重\t11822",
+      "鍋\t2726"
+    ],
+    "speller_algebra_rules": [
+      "erase/^xx$/",
+      "derive/^([jqxy])u$/$1v/",
+      "derive/^([aoe])([ioun])$/$1$1$2/",
+      "xform/^([aoe])(ng)?$/$1$1$2/",
+      "xform/iu$/Q/",
+      "xform/[iu]a$/W/",
+      "xform/[uv]an$/R/",
+      "xform/[uv]e$/T/",
+      "xform/ing$|uai$/Y/",
+      "xform/^sh/U/",
+      "xform/^ch/I/",
+      "xform/^zh/V/",
+      "xform/uo$/O/",
+      "xform/[uv]n$/P/",
+      "xform/i?ong$/S/",
+      "xform/[iu]ang$/D/",
+      "xform/(.)en$/$1F/",
+      "xform/(.)eng$/$1G/",
+      "xform/(.)ang$/$1H/",
+      "xform/ian$/M/",
+      "xform/(.)an$/$1J/",
+      "xform/iao$/C/",
+      "xform/(.)ao$/$1K/",
+      "xform/(.)ai$/$1L/",
+      "xform/(.)ei$/$1Z/",
+      "xform/ie$/X/",
+      "xform/ui$/V/",
+      "xform/(.)ou$/$1B/",
+      "xform/in$/N/",
+      "xlit/QWRTYUIOPSDFGHMJCKLZXVBN/qwrtyuiopsdfghmjcklzxvbn/"
+    ]
+  },
+  "cases": [
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "input": "ni",
+      "rime_get_input": "ni",
+      "processed": [
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ni",
+      "commit_text_preview": "你",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "泥",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "呢",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "input": "hk",
+      "rime_get_input": "hao",
+      "processed": [
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "hao",
+      "commit_text_preview": "好",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "好",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "號",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "浩",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "豪",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "耗",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "input": "vs",
+      "rime_get_input": "zhong",
+      "processed": [
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "zhong",
+      "commit_text_preview": "中",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "中",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "種",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "重",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "仲",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "衆",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "input": "go",
+      "rime_get_input": "guo",
+      "processed": [
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "guo",
+      "commit_text_preview": "過",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "過",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "國",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "果",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "郭",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "鍋",
+          "comment": null
+        }
+      ]
+    }
+  ],
+  "snapshots": [
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "scenario": "paging_first_input",
+      "label": "page_1",
+      "rime_get_input": "ni",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 2,
+      "cursor_pos": 2,
+      "preedit": "ni",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "泥",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "呢",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "scenario": "paging_first_input",
+      "label": "page_2",
+      "rime_get_input": "ni",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 2,
+      "cursor_pos": 2,
+      "preedit": "ni",
+      "commit_text_preview": "妳",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 1,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "妳",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "妮",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "膩",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "逆",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "倪",
+          "comment": null
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "scenario": "paging_first_input",
+      "label": "page_1_again",
+      "rime_get_input": "ni",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 2,
+      "cursor_pos": 2,
+      "preedit": "ni",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "泥",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "呢",
+          "comment": null
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "scenario": "select_first_input_second",
+      "label": "before_select",
+      "rime_get_input": "ni",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 2,
+      "cursor_pos": 2,
+      "preedit": "ni",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "泥",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "呢",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "scenario": "select_first_input_second",
+      "label": "after_select_2",
+      "rime_get_input": null,
+      "is_composing": false,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 0,
+      "cursor_pos": 0,
+      "preedit": null,
+      "commit_text_preview": null,
+      "commit_text": "擬",
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [],
+      "processed": 1
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "scenario": "commit_first_input_space",
+      "label": "before_space",
+      "rime_get_input": "ni",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 2,
+      "cursor_pos": 2,
+      "preedit": "ni",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "泥",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "呢",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "double_pinyin",
+      "schema_name": "自然碼雙拼",
+      "scenario": "commit_first_input_space",
+      "label": "after_space",
+      "rime_get_input": null,
+      "is_composing": false,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 0,
+      "cursor_pos": 0,
+      "preedit": null,
+      "commit_text_preview": null,
+      "commit_text": "你",
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [],
+      "processed": 1
+    }
+  ]
+}

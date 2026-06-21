@@ -1,6 +1,6 @@
 use std::{
     ffi::CString,
-    os::raw::c_int,
+    os::raw::{c_char, c_int},
     sync::{Mutex, OnceLock},
 };
 
@@ -58,6 +58,39 @@ pub(crate) fn state_label_cache() -> &'static Mutex<Option<CString>> {
 fn api_entry() -> *mut RimeApi {
     static API: OnceLock<usize> = OnceLock::new();
     *API.get_or_init(|| Box::into_raw(Box::new(build_rime_api())) as usize) as *mut RimeApi
+}
+
+fn typeduck_profile_api_entry() -> *mut RimeTypeDuckProfileApi {
+    static API: OnceLock<usize> = OnceLock::new();
+    *API.get_or_init(|| Box::into_raw(Box::new(build_typeduck_profile_api())) as usize)
+        as *mut RimeTypeDuckProfileApi
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct RimeTypeDuckProfileApi {
+    pub upstream: RimeApi,
+    pub config_list_append_bool:
+        Option<unsafe extern "C" fn(*mut RimeConfig, *const c_char, Bool) -> Bool>,
+    pub config_list_append_int:
+        Option<unsafe extern "C" fn(*mut RimeConfig, *const c_char, c_int) -> Bool>,
+    pub config_list_append_double:
+        Option<unsafe extern "C" fn(*mut RimeConfig, *const c_char, f64) -> Bool>,
+    pub config_list_append_string:
+        Option<unsafe extern "C" fn(*mut RimeConfig, *const c_char, *const c_char) -> Bool>,
+}
+
+fn build_typeduck_profile_api() -> RimeTypeDuckProfileApi {
+    let mut upstream = build_rime_api();
+    upstream.data_size =
+        (std::mem::size_of::<RimeTypeDuckProfileApi>() - std::mem::size_of::<c_int>()) as c_int;
+    RimeTypeDuckProfileApi {
+        upstream,
+        config_list_append_bool: Some(RimeConfigListAppendBool),
+        config_list_append_int: Some(RimeConfigListAppendInt),
+        config_list_append_double: Some(RimeConfigListAppendDouble),
+        config_list_append_string: Some(RimeConfigListAppendString),
+    }
 }
 
 fn build_rime_api() -> RimeApi {
@@ -167,6 +200,11 @@ fn build_rime_api() -> RimeApi {
 #[no_mangle]
 pub extern "C" fn rime_get_api() -> *mut RimeApi {
     api_entry()
+}
+
+#[no_mangle]
+pub extern "C" fn rime_get_typeduck_profile_api() -> *mut RimeTypeDuckProfileApi {
+    typeduck_profile_api_entry()
 }
 
 #[no_mangle]

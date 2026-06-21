@@ -61,6 +61,85 @@ fn upstream_luna_pinyin_fixtures_have_non_circular_source_provenance() {
 }
 
 #[test]
+fn upstream_double_pinyin_fixture_has_non_circular_source_provenance() {
+    let root = fixture_root("upstream-1.17.0");
+    let path = root.join("double-pinyin-basic.json");
+    assert!(path.is_file(), "M19 should check in double_pinyin");
+    let fixture = read_json(&path);
+    assert_upstream_schema_fixture_header(
+        &path,
+        &fixture,
+        "double_pinyin",
+        "rime/rime-double-pinyin",
+    );
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_policy_specific_provenance(&path, &fixture);
+}
+
+#[test]
+fn upstream_cangjie5_fixture_has_non_circular_source_provenance() {
+    let root = fixture_root("upstream-1.17.0");
+    let path = root.join("cangjie5-basic.json");
+    assert!(path.is_file(), "M19 should check in cangjie5");
+    let fixture = read_json(&path);
+    assert_upstream_schema_fixture_header(&path, &fixture, "cangjie5", "rime/rime-cangjie");
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_policy_specific_provenance(&path, &fixture);
+}
+
+#[test]
+fn upstream_bopomofo_fixture_has_non_circular_source_provenance() {
+    let root = fixture_root("upstream-1.17.0");
+    let path = root.join("bopomofo-basic.json");
+    assert!(path.is_file(), "M19 should check in bopomofo");
+    let fixture = read_json(&path);
+    assert_upstream_schema_fixture_header(&path, &fixture, "bopomofo", "rime/rime-bopomofo");
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_policy_specific_provenance(&path, &fixture);
+}
+
+#[test]
+fn upstream_schema_breadth_fixture_families_are_all_present() {
+    let root = fixture_root("upstream-1.17.0");
+    for (fixture_name, schema, schema_data, generalized_capture) in [
+        (
+            "luna-pinyin-basic.json",
+            "luna_pinyin",
+            "rime/rime-luna-pinyin",
+            false,
+        ),
+        (
+            "double-pinyin-basic.json",
+            "double_pinyin",
+            "rime/rime-double-pinyin",
+            true,
+        ),
+        ("cangjie5-basic.json", "cangjie5", "rime/rime-cangjie", true),
+        (
+            "bopomofo-basic.json",
+            "bopomofo",
+            "rime/rime-bopomofo",
+            true,
+        ),
+    ] {
+        let path = root.join(fixture_name);
+        assert!(path.is_file(), "{fixture_name} should be checked in");
+        let fixture = read_json(&path);
+        if generalized_capture {
+            assert_upstream_schema_fixture_header(&path, &fixture, schema, schema_data);
+        } else {
+            assert_luna_fixture_header(&path, &fixture);
+        }
+        assert!(
+            fixture["capture"]["source_row_policy"]
+                .as_str()
+                .is_some_and(|policy| !policy.is_empty()),
+            "{path:?} should include a source row policy"
+        );
+    }
+}
+
+#[test]
 fn upstream_m18_prism_fixture_has_non_circular_source_provenance() {
     let root = fixture_root("upstream-1.17.0");
     let path = root.join("m18-luna-pinyin-prism.json");
@@ -650,6 +729,52 @@ fn assert_luna_fixture_header(path: &Path, fixture: &Value) {
     );
 }
 
+fn assert_upstream_schema_fixture_header(
+    path: &Path,
+    fixture: &Value,
+    schema: &str,
+    schema_data: &str,
+) {
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0", "{path:?}");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert!(!fixture["oracle"]["capture_date"]
+        .as_str()
+        .unwrap_or_default()
+        .is_empty());
+    assert!(
+        fixture["oracle"]["capture_command"]
+            .as_str()
+            .is_some_and(|command| command.contains("scripts/capture-upstream-schema.ps1")),
+        "{path:?} must include the generalized M19 capture command"
+    );
+    assert_eq!(fixture["schema"], schema, "{path:?}");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default"]),
+        "{path:?}"
+    );
+    assert_eq!(fixture["capture"]["schema_data"], schema_data, "{path:?}");
+    assert!(
+        fixture["capture"]["schema_data_commit"]
+            .as_str()
+            .is_some_and(|commit| commit.len() == 40),
+        "{path:?} must include the pinned schema data commit"
+    );
+    let dependencies = fixture["capture"]["dependency_repositories"]
+        .as_object()
+        .unwrap_or_else(|| panic!("{path:?} must include dependency repository commits"));
+    assert!(
+        dependencies
+            .values()
+            .all(|commit| commit.as_str().is_some_and(|commit| commit.len() == 40)),
+        "{path:?} dependency commits must be pinned"
+    );
+}
+
 fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
     match fixture["capture"]["source_row_policy"]
         .as_str()
@@ -828,6 +953,47 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
             assert_snapshot(path, fixture, "confirm_unique_bang", "bang_commit");
             assert_snapshot(path, fixture, "pair_parenthesis", "close_commit");
             assert_snapshot(path, fixture, "slash_candidates", "slash_next");
+        }
+        "m19_double_pinyin_curated_shuangpin_algebra" => {
+            assert_eq!(
+                fixture["capture"]["source_dictionary_file"],
+                "rime-luna-pinyin/luna_pinyin.dict.yaml",
+                "{path:?}"
+            );
+            assert_non_empty_array(path, fixture, &["capture", "source_dictionary_rows"]);
+            assert_non_empty_array(path, fixture, &["capture", "source_vocabulary_rows"]);
+            assert_non_empty_array(path, fixture, &["capture", "speller_algebra_rules"]);
+            assert_snapshot(path, fixture, "paging_first_input", "page_2");
+            assert_snapshot(path, fixture, "commit_first_input_space", "after_space");
+        }
+        "m19_cangjie5_curated_table_codes" => {
+            assert_eq!(
+                fixture["capture"]["source_dictionary_file"], "rime-cangjie/cangjie5.dict.yaml",
+                "{path:?}"
+            );
+            assert_non_empty_array(
+                path,
+                fixture,
+                &[
+                    "capture",
+                    "source_dictionary_import_rows",
+                    "cangjie5.base.dict.yaml",
+                ],
+            );
+            assert_non_empty_array(path, fixture, &["capture", "source_vocabulary_rows"]);
+            assert_non_empty_array(path, fixture, &["capture", "translator_comment_format"]);
+            assert_snapshot(path, fixture, "commit_first_input_space", "after_space");
+        }
+        "m19_bopomofo_curated_zhuyin_algebra" => {
+            assert_eq!(
+                fixture["capture"]["source_dictionary_file"],
+                "rime-terra-pinyin/terra_pinyin.dict.yaml",
+                "{path:?}"
+            );
+            assert_non_empty_array(path, fixture, &["capture", "source_dictionary_rows"]);
+            assert_non_empty_array(path, fixture, &["capture", "source_vocabulary_rows"]);
+            assert_non_empty_array(path, fixture, &["capture", "speller_algebra_rules"]);
+            assert_snapshot(path, fixture, "paging_first_input", "page_2");
         }
         policy => panic!("{path:?} has unknown source row policy {policy}"),
     }

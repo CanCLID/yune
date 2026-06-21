@@ -74,15 +74,17 @@ none reach into `yune-core` directly):
    `third_party/typeduck-web/yune-integration/adapter.ts`.
 3. **TypeDuck-Windows** - parked TypeDuck compatibility-profile work. The default
    `rime_get_api()` table follows upstream librime 1.17.0 and does not expose the
-   fork-only `config_list_append_*` slots. A drop-in `rime.dll` package requires
-   a named TypeDuck profile ABI surface first (see [section 5](#5-c-abi-rules)).
+   fork-only `config_list_append_*` slots. M19 added a named, opt-in
+   `rime_get_typeduck_profile_api()` surface for those slots; a drop-in
+   `rime.dll` package still requires fresh package/header smoke and real frontend
+   E2E before the profile can resume (see [section 5](#5-c-abi-rules)).
 
 **Direction is upstream-oracle-first.** M9 browser validation is complete,
 M11's core/CLI AI layer is complete, and M12 closed the upstream oracle refresh
 plus the first expanded upstream behavioral parity gate. The current baseline is
 upstream `rime/librime 1.17.0` for default core behavior. M10 TypeDuck-Windows
-is parked as a TypeDuck compatibility profile until an explicit profile surface
-exists. See `docs/roadmap.md`, `docs/plans/archive/m12-plan-upstream-oracle-refresh.md`,
+is parked as a TypeDuck compatibility profile; M19 names the ABI surface, while
+packaging and real frontend E2E remain separate parked work. See `docs/roadmap.md`, `docs/plans/archive/m12-plan-upstream-oracle-refresh.md`,
 and `docs/plans/archive/m12-plan-upstream-behavioral-parity-closeout.md`.
 
 **Behavior oracle.** The default compatibility oracle is upstream
@@ -379,9 +381,10 @@ misplaced field silently breaks every native frontend.
 - **Fork-only slots:** `config_list_append_bool` / `_int` / `_double` / `_string`
   do not exist in upstream librime and are not exposed by default
   `rime_get_api()`. Their helper implementations remain in `config_api.rs` with
-  direct TypeDuck-profile tests. If a named TypeDuck profile ABI surface is
-  added later, its slot order must be re-derived from the TypeDuck fork's
-  `rime_api.h`.
+  direct TypeDuck-profile tests. M19 exposes them only through the named
+  `rime_get_typeduck_profile_api()` accessor, whose appended slot order is
+  documented in `docs/plans/m19-reference-typeduck-profile-abi.md`. Future
+  TypeDuck-profile slots still require fresh fork-header evidence.
 - **Locks:** default slot positions are locked by `assert_api_slot!` tests in
   `crates/yune-rime-api/src/tests/abi.rs` against upstream `1.17.0`. Never
   reorder/insert without updating these locks and confirming against the
@@ -585,9 +588,10 @@ prove the same behavior.
 **TypeDuck-Windows ABI/package work is parked and not yet proven as a current
 profile.** A pre-M12 package smoke built `rime.dll`/`rime.lib`/headers and
 checked a TypeDuck fork-only slot, but that smoke is archived evidence only and
-is not valid against the default upstream `rime_get_api()` table. The script now
-fails fast until a named TypeDuck profile ABI surface exists. The real
-TypeDuck-Windows/weasel frontend E2E also remains blocked: the pinned fork
+is not valid against the default upstream `rime_get_api()` table. M19 added the
+named `rime_get_typeduck_profile_api()` accessor for the list-append fork slots;
+fresh package/header smoke, `start_quick` if needed, and real
+TypeDuck-Windows/weasel frontend E2E remain separate work. The pinned fork
 checkout lacked the referenced integration-plan files, and local frontend build
 tools (`msbuild.exe`, `cmake.exe`, etc.) were not on PATH.
 
@@ -671,4 +675,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-21 - M18 deployment/processor depth and M23 architecture hardening are complete: Yune now has public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending a named profile surface.*
+*Last reviewed: 2026-06-21 - M19 breadth schemas, M18 deployment/processor depth, and M23 architecture hardening are complete: Yune now has upstream-captured `double_pinyin`, `cangjie5`, and `bopomofo` fixtures/tests, public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0 and TypeDuck-Windows ABI/package work is parked pending package/header smoke and real frontend E2E against the M19 profile surface.*

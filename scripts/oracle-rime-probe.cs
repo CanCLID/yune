@@ -509,7 +509,7 @@ public static class RimeProbe {
         result["schema_id"] = S(status.schema_id);
         result["schema_name"] = S(status.schema_name);
         result["input"] = input;
-        result["rime_get_input"] = S(RimeGetInput(session));
+        result["rime_get_input"] = CurrentInput(session, ctx);
         result["processed"] = processed;
         result["is_composing"] = status.is_composing != 0;
         result["is_ascii_mode"] = status.is_ascii_mode != 0;

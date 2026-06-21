@@ -743,6 +743,27 @@ plan is archived at
 The processor extraction remains trigger-gated future work rather than a
 retroactive rewrite trigger.*
 
+### Breadth schemas and TypeDuck profile ABI (project-wide D-29)
+
+**D-29 / BREADTH-PROFILE-SURFACE - Add upstream schema breadth only through
+per-schema oracle fixtures, and expose TypeDuck fork-only ABI through a named
+non-default accessor.** M19 widens the upstream compatibility set to
+`double_pinyin`, `cangjie5`, and `bopomofo` by reusing the M12 capture harness
+against upstream `rime/librime 1.17.0`, with one provenance-stamped fixture and
+one owning parity test per schema family. The captured active cases cover
+Shuangpin algebra, Cangjie exact-code table behavior, and Zhuyin keymap/tone
+algebra; sentence/lattice, broader Cangjie phrase/table-encoder interleave, and
+schema-speller digit/space key routing remain explicit ignored blockers rather
+than hidden parity claims.
+
+M19 also names the parked TypeDuck-Windows ABI delta through
+`rime_get_typeduck_profile_api()`. The default `rime_get_api()` table remains the
+upstream `1.17.0` shape; the opt-in profile table exposes
+`config_list_append_{bool,int,double,string}` for TypeDuck-profile consumers.
+`start_quick`, TypeDuck-Windows packaging, and real TypeDuck-Windows frontend E2E
+remain out of surface until separately resumed. Extends D-24 (oracle precedence)
+and D-25 (target-driven scope). *Outcome: Good.*
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/archive/m00-analysis-founding.md`, `docs/roadmap.md`, and
@@ -776,4 +797,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-21 - D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending a named profile surface.*
+*Last updated: 2026-06-21 - D-29 records M19 schema breadth and the named TypeDuck-profile ABI accessor; D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows remains parked pending package/header smoke and real frontend E2E against the profile surface.*

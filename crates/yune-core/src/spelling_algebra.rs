@@ -189,7 +189,7 @@ impl SpellingAlgebraFormula {
                 prefix,
                 lookahead,
                 positive,
-                replacement: args[2].to_owned(),
+                replacement: normalize_regex_replacement(args[2]),
                 syllable_scoped: syllable_scope_anchor && args[1].starts_with('^'),
                 keep_original,
                 add_transformed,
@@ -199,7 +199,7 @@ impl SpellingAlgebraFormula {
         }
         Some(Self::Transform {
             pattern: Regex::new(args[1]).ok()?,
-            replacement: args[2].to_owned(),
+            replacement: normalize_regex_replacement(args[2]),
             syllable_scoped: syllable_scope_anchor && args[1].starts_with('^'),
             keep_original,
             add_transformed,
@@ -359,6 +359,34 @@ impl SpellingAlgebraFormula {
             }
         }
     }
+}
+
+fn normalize_regex_replacement(replacement: &str) -> String {
+    let mut output = String::with_capacity(replacement.len());
+    let mut chars = replacement.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch != '$' {
+            output.push(ch);
+            continue;
+        }
+        let mut digits = String::new();
+        while let Some(next) = chars.peek().copied() {
+            if next.is_ascii_digit() {
+                digits.push(next);
+                chars.next();
+            } else {
+                break;
+            }
+        }
+        if digits.is_empty() {
+            output.push('$');
+        } else {
+            output.push_str("${");
+            output.push_str(&digits);
+            output.push('}');
+        }
+    }
+    output
 }
 
 fn replace_by_syllable(

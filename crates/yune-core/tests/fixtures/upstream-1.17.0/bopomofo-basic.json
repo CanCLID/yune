@@ -1,0 +1,609 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "capture_date": "2026-06-21",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -OracleRoot target/upstream-oracle/1.17.0 -SchemaId bopomofo -SchemaDataRepo rime/rime-bopomofo -InputSequence su3,cl3,j06,w/4"
+  },
+  "schema": "bopomofo",
+  "module_list": [
+    "default"
+  ],
+  "input_sequence": [
+    "su3",
+    "cl3",
+    "j06",
+    "w/4"
+  ],
+  "capture": {
+    "schema_data": "rime/rime-bopomofo",
+    "schema_data_commit": "6085c9a38a4a728047862b33d67eee18aa86f3b9",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-terra-pinyin": "8ddd679e4485e1d2f411e90f104244eddf580382",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    },
+    "source_row_policy": "m19_bopomofo_curated_zhuyin_algebra",
+    "schema_file": "rime-bopomofo/bopomofo.schema.yaml",
+    "dictionary": "terra_pinyin.dict.yaml",
+    "vocabulary": "essay.txt",
+    "source_dictionary_file": "rime-terra-pinyin/terra_pinyin.dict.yaml",
+    "essay_vocabulary_file": "rime-essay/essay.txt",
+    "source_dictionary_rows": [
+      "丸\twan2",
+      "伱\tni3",
+      "你\tni3",
+      "儗\tni3",
+      "儞\tni3",
+      "好\thao3\t95%",
+      "好\thao4\t5%",
+      "妳\tni3",
+      "婗\tni2",
+      "婗\tni3",
+      "完\twan2",
+      "擬\tni3",
+      "旎\tni3",
+      "烷\twan2",
+      "玩\twan2",
+      "苨\tni3",
+      "郝\thao3",
+      "隬\tni3",
+      "霯\tteng4",
+      "頑\twan2",
+      "𡥆\thao3",
+      "𡥆\thao4",
+      "𤫧\thao3"
+    ],
+    "source_vocabulary_rows": [
+      "丸\t1817",
+      "伱\t807",
+      "你\t972978",
+      "你對\t10414",
+      "你得\t8226",
+      "你的\t159646",
+      "你都\t3966",
+      "儗\t408",
+      "儞\t443",
+      "好\t378951",
+      "妳\t2085",
+      "妳的\t2030",
+      "婗\t459",
+      "完\t24942",
+      "擬\t3654",
+      "旎\t619",
+      "烷\t745",
+      "玩\t67947",
+      "苨\t425",
+      "郝\t1783",
+      "隬\t452",
+      "霯\t233",
+      "頑\t743"
+    ],
+    "speller_algebra_rules": [
+      "xform/^m(\\d)$/mu$1/",
+      "xform/^r5$/er5/",
+      "xform/iu/iou/",
+      "xform/ui/uei/",
+      "xform/ong/ung/",
+      "xform/^yi?/i/",
+      "xform/^wu?/u/",
+      "xform/iu/v/",
+      "xform/^([jqx])u/$1v/",
+      "xform/([iuv])n/$1en/",
+      "xform/^zhi?/Z/",
+      "xform/^chi?/C/",
+      "xform/^shi?/S/",
+      "xform/^([zcsr])i/$1/",
+      "xform/ai/A/",
+      "xform/ei/I/",
+      "xform/ao/O/",
+      "xform/ou/U/",
+      "xform/ang/K/",
+      "xform/eng/G/",
+      "xform/an/M/",
+      "xform/en/N/",
+      "xform/er/R/",
+      "xform/eh/E/",
+      "xform/([iv])e/$1E/",
+      "derive/([bpmfdtnlgkhjqxZCSrzcs])([iuv])/$2$1/",
+      "derive/([iuv])([aoeEAIOUMNKGR])/$2$1/",
+      "derive/([bpmfdtnlgkhjqxZCSrzcs])([aoeEAIOUMNKGR])/$2$1/",
+      "derive/([bpmfdtnlgkhjqxZCSrzcs])([iuv])/$2$1/",
+      "abbrev/^([bpmfdtnlgkhjqxZCSrzcs]).+$/$1/",
+      "abbrev/^([A-Za-z]+)\\d$/$1/",
+      "abbrev/^([bpmfdtnlgkhjqxZCSrzcs]).+(\\d)$/$1$2/",
+      "xlit|bpmfdtnlgkhjqxZCSrzcsiuvaoeEAIOUMNKGR12345|1qaz2wsxedcrfv5tgbyhnujm8ik,9ol.0p;/- 6347|"
+    ]
+  },
+  "cases": [
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "input": "su3",
+      "rime_get_input": "ㄋㄧˇ",
+      "processed": [
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ㄋㄧˇ",
+      "commit_text_preview": "你",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "妳",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "伱",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "旎",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "input": "cl3",
+      "rime_get_input": "ㄏㄠˇ",
+      "processed": [
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ㄏㄠˇ",
+      "commit_text_preview": "好",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "好",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "郝",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "𡥆",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "𤫧",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "input": "j06",
+      "rime_get_input": "ㄨㄢˊ",
+      "processed": [
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ㄨㄢˊ",
+      "commit_text_preview": "玩",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "玩",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "完",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "丸",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "烷",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "頑",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "input": "w/4",
+      "rime_get_input": "ㄊㄥˋ",
+      "processed": [
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ㄊㄥˋ",
+      "commit_text_preview": "霯",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "霯",
+          "comment": null
+        }
+      ]
+    }
+  ],
+  "snapshots": [
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "paging_first_input",
+      "label": "page_1",
+      "rime_get_input": "ㄋㄧˇ",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 8,
+      "cursor_pos": 8,
+      "preedit": "ㄋㄧˇ",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "妳",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "伱",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "旎",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "paging_first_input",
+      "label": "page_2",
+      "rime_get_input": "ㄋㄧˇ",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 8,
+      "cursor_pos": 8,
+      "preedit": "ㄋㄧˇ",
+      "commit_text_preview": "婗",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 1,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "婗",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "隬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "儞",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "苨",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "儗",
+          "comment": null
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "paging_first_input",
+      "label": "page_1_again",
+      "rime_get_input": "ㄋㄧˇ",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 8,
+      "cursor_pos": 8,
+      "preedit": "ㄋㄧˇ",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "妳",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "伱",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "旎",
+          "comment": null
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "select_first_input_second",
+      "label": "before_select",
+      "rime_get_input": "ㄋㄧˇ",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 8,
+      "cursor_pos": 8,
+      "preedit": "ㄋㄧˇ",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "妳",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "伱",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "旎",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "select_first_input_second",
+      "label": "after_select_2",
+      "rime_get_input": "ㄋㄧˇ ㄉ",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 12,
+      "cursor_pos": 12,
+      "preedit": "ㄋㄧˇ ㄉ",
+      "commit_text_preview": "你的",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你的",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "你對",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "你得",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "你都",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "妳的",
+          "comment": null
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "commit_first_input_space",
+      "label": "before_space",
+      "rime_get_input": "ㄋㄧˇ",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 8,
+      "cursor_pos": 8,
+      "preedit": "ㄋㄧˇ",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "妳",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "伱",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "旎",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "commit_first_input_space",
+      "label": "after_space",
+      "rime_get_input": "你",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 3,
+      "cursor_pos": 3,
+      "preedit": "你",
+      "commit_text_preview": "你",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [],
+      "processed": 1
+    }
+  ]
+}

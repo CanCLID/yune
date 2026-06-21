@@ -160,15 +160,16 @@ copy the librime or fork implementation shape.
 
 | Behavior | Origin | Fork commit(s) | Category | In 1.17.0? | Yune status | Decision |
 |---|---|---|---|---|---|---|
-| `RimeConfigListAppend{Bool,Int,Double,String}` | TypeDuck | `2944f7d1`,`70b91220` | `fork-engine-code` | no | **done** (impl+tested, absent from default table by design) | preserve✓ |
+| `RimeConfigListAppend{Bool,Int,Double,String}` | TypeDuck | `2944f7d1`,`70b91220` | `fork-engine-code` | no | **done** (impl+tested, exposed through M19 `rime_get_typeduck_profile_api()`, absent from default table by design) | preserve✓ |
 | Individually-exported `rime_get_api` symbols | TypeDuck | `980074cb` | (convention) | yes (librime convention) | done (Yune dual-exports) | preserve✓ |
 | `start_quick` / `RimeStartQuick` slot | Cantoboard→TD | `a7b7148c`→`02627c08` | `fork-engine-code` | no | **non-goal** (excluded from default 1.17.0 table; profile-only if ever needed) | non-goal |
 | `RimeCandidate` + `double quality` field | TypeDuck | `93159863` | `fork-engine-code` | no | **non-goal** (Yune pins upstream 3-pointer ABI; `quality` is internal engine state) | non-goal |
 
 > Per the standing upstream-first rule (D-25), the default `rime_get_api()` table tracks
 > upstream 1.17.0; fork-only ABI slots are reserved for a *named TypeDuck profile ABI
-> surface* if one is ever built (see parked M10). `config_list_append_*` is already
-> implemented behind direct symbols against that future profile.
+> surface*. M19 added the opt-in `rime_get_typeduck_profile_api()` accessor for
+> `config_list_append_*`; Windows packaging and real frontend E2E remain separate
+> parked work.
 
 ---
 

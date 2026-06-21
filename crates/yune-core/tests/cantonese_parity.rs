@@ -3,6 +3,7 @@ use yune_core::{
     Candidate, CandidateFilter, CandidateSource, DictionaryLookupFilter, Engine,
     ReverseLookupTranslator, RimeCorrectionEntry, SchemaListTranslator, SimplifierFilter,
     StaticTableTranslator, Status, TableDictionary, Translator, UserDb,
+    TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 const ORACLE: &str = include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json");
@@ -1176,6 +1177,7 @@ fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
         .with_correction(enable_correction)
         .with_dynamic_correction_lookup(true)
         .with_sentence(true)
+        .with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY)
         .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
         .with_comment_format(&["xform/^/\u{000c}/".to_owned()])
         .with_combine_candidates(true)
@@ -1356,6 +1358,7 @@ fn m21_sentence_composition_matches_typeduck_v112_real_dictionary_goldens() {
     let translator = StaticTableTranslator::from_dictionary(translator_dictionary)
         .with_completion(true)
         .with_sentence(true)
+        .with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY)
         .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
         .with_comment_format(&["xform/^/\u{000c}/".to_owned()]);
 
@@ -1504,7 +1507,8 @@ fn options_combine_candidates_show_full_code_enable_sentence_parity() {
         .expect("M14 sentence source rows should parse");
     let sentence_translator = StaticTableTranslator::new([("ngo5hai6", "我係"), ("go3", "個")])
         .with_spelling_algebra(&jyutping_algebra)
-        .with_sentence(true);
+        .with_sentence(true)
+        .with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY);
     let mut sentence_candidates = sentence_translator.translate("ngohaigo");
     DictionaryLookupFilter::new(sentence_dictionary).apply(&mut sentence_candidates);
     assert_eq!(

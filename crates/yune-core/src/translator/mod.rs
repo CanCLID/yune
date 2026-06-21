@@ -12,8 +12,10 @@ use crate::{
 
 const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
 const TYPEDUCK_CORRECTION_MAX_DISTANCE: usize = 4;
-// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture; re-validate that fixture if changed.
-const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 21.0;
+const DEFAULT_SENTENCE_WORD_PENALTY: f32 = 0.0;
+/// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture;
+/// install only for the jyut6ping3 TypeDuck profile.
+pub const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 21.0;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct LookupCodeSpec {
@@ -72,8 +74,8 @@ impl PendingLookupCandidate {
     }
 }
 
-fn sentence_piece_quality(raw_quality: f32) -> f32 {
-    raw_quality.max(1.0).ln() - TYPEDUCK_SENTENCE_WORD_PENALTY
+fn sentence_piece_quality(raw_quality: f32, word_penalty: f32) -> f32 {
+    raw_quality.max(1.0).ln() - word_penalty
 }
 
 #[derive(Default)]
@@ -126,6 +128,7 @@ pub struct StaticTableTranslator {
     prediction_never_first: bool,
     prediction_candidate_limit: Option<usize>,
     prefix_fallback: bool,
+    sentence_word_penalty: f32,
 }
 
 impl StaticTableTranslator {
@@ -178,6 +181,7 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
+            sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
         }
     }
 
@@ -229,6 +233,7 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
+            sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
         }
     }
 
@@ -259,6 +264,12 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_sentence(mut self, enable_sentence: bool) -> Self {
         self.enable_sentence = enable_sentence;
+        self
+    }
+
+    #[must_use]
+    pub fn with_sentence_word_penalty(mut self, sentence_word_penalty: f32) -> Self {
+        self.sentence_word_penalty = sentence_word_penalty;
         self
     }
 
@@ -988,7 +999,8 @@ impl StaticTableTranslator {
                             continue;
                         }
                         let mut next_path = path.clone();
-                        next_path.quality += sentence_piece_quality(candidate.quality);
+                        next_path.quality +=
+                            sentence_piece_quality(candidate.quality, self.sentence_word_penalty);
                         next_path.raw_quality += candidate.quality;
                         next_path.pieces.push(candidate.text.clone());
                         if is_final_segment && next_path.pieces.len() <= 1 {

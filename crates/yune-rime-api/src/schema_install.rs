@@ -8,6 +8,7 @@ use yune_core::{
     CharsetFilter, DictionaryLookupFilter, EchoTranslator, HistoryTranslator, ReverseLookupFilter,
     ReverseLookupTranslator, SchemaListTranslator, SimplifierFilter, SingleCharFilter,
     StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter, UniquifierFilter,
+    TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 use crate::{
@@ -307,6 +308,9 @@ fn install_schema_dictionary_translator_from_config(
     }
     if let Some(limit) = prediction_candidate_limit {
         translator = translator.with_prediction_candidate_limit(limit);
+    }
+    if is_typeduck_jyut6ping3_profile {
+        translator = translator.with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY);
     }
     if prediction_never_first {
         session.engine.set_prediction_never_first(true);

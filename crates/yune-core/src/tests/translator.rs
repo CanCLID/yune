@@ -295,6 +295,60 @@ fn punctuation_translator_uses_librime_shape_comments() {
 }
 
 #[test]
+fn static_table_sentence_word_penalty_defaults_to_upstream_neutral() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: sentence_penalty
+version: "0.1"
+sort: by_weight
+...
+
+A	ab	1000
+B	cd	1000
+C	ef	1000
+X	abc	1
+Y	def	1
+"#,
+    )
+    .expect("sentence penalty dictionary should parse");
+
+    let translator = StaticTableTranslator::from_dictionary(dictionary).with_sentence(true);
+    let candidates = translator.translate("abcdef");
+
+    assert_eq!(candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(candidates[0].text, "ABC");
+}
+
+#[test]
+fn static_table_sentence_word_penalty_can_opt_into_typeduck_profile_value() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: sentence_penalty
+version: "0.1"
+sort: by_weight
+...
+
+A	ab	1000
+B	cd	1000
+C	ef	1000
+X	abc	1
+Y	def	1
+"#,
+    )
+    .expect("sentence penalty dictionary should parse");
+
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_sentence(true)
+        .with_sentence_word_penalty(21.0);
+    let candidates = translator.translate("abcdef");
+
+    assert_eq!(candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(candidates[0].text, "XY");
+}
+
+#[test]
 fn punctuation_translator_keeps_digit_separator_literal_for_punct_number() {
     let mut engine = Engine::new();
     engine.add_translator(

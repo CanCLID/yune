@@ -49,6 +49,7 @@ pub use state::{
 pub use translator::{
     EchoTranslator, FoldedSwitchOptions, HistoryTranslator, ReverseLookupTranslator,
     SchemaListTranslator, StaticTableTranslator, SwitchTranslator, SwitchTranslatorSwitch,
+    TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 pub use userdb::{
     BackdatedScanPolicy, UserDb, UserDbCommitMetadata, UserDbLearnedEntry, UserDbLearningUpdate,

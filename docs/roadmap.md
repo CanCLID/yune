@@ -25,6 +25,7 @@ AI-native behavior on top as a separate product milestone.
 - [`requirements.md`](./requirements.md) — requirement IDs and their status.
 - [`typeduck-windows-backend-requirements.md`](./typeduck-windows-backend-requirements.md) - the completed TypeDuck-Windows compatibility-profile contract.
 - [`fork-parity-ledger.md`](./fork-parity-ledger.md) — the single source of truth for *every* Cantoboard + TypeDuck fork improvement vs upstream `1.17.0`, with origin, category, and Yune status (done / todo / non-goal). Sourced from archived provenance notes under [`archive/fork-provenance/`](./archive/fork-provenance/).
+- [`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md) - active Phase 2 TypeDuck-Web dogfooding round-2 intake ledger.
 - [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md) - Phase 2 planning for a Yune-first TypeDuck-Windows product/frontend track.
 - [`plans/`](./plans/) — per-stage implementation plans, findings, build notes, and validation artifacts (finished ones under `plans/archive/`).
 
@@ -53,7 +54,9 @@ Phase 2 moves from engine construction to product/platform frontends and
 continuous maintenance: TypeDuck-Web dogfooding, a Yune-first Windows IME,
 future iOS/native tracks, AI-native frontend exposure where explicitly gated,
 and ongoing oracle fixture refresh when new real targets need deeper behavior.
-The first Phase 2 planning artifact is the TypeDuck-Windows next-product plan:
+The active TypeDuck-Web dogfooding intake ledger is
+[`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md).
+The first Phase 2 Windows planning artifact is
 [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md).
 
 ---
@@ -544,7 +547,7 @@ In priority order:
 2. **Keep M9/M13/M16/M20 web gates green on merge.** Preserve the reproducible Emscripten build, TypeScript runtime tests/build, TypeDuck-Web worker build, real-assets browser evidence, native `typeduck_web` fallback, default-off M13 AI scenarios, and M20 showcase-control honesty checks.
 3. **Keep TypeDuck profile behavior isolated after M21.** TypeDuck-tuned sentence, correction, prediction, or ranking constants must stay behind an explicit profile predicate or typed translator config, not read unconditionally by default `luna_pinyin`/upstream behavior. A `TYPEDUCK_*` constant in shared core is a merge blocker unless it is gated or renamed with upstream-oracle evidence.
 4. **Keep Track 2 complete and fixture-gated.** M17's upstream `luna_pinyin` null-grammar sentence/lattice path, M18's prism/deployment/processor depth, M19's breadth schemas, and M22's playground build-out are complete. Future upstream-depth work needs a named target and fresh oracle fixtures before implementation.
-5. **Keep the completed M24 TypeDuck-Web dogfood baseline green.** The first M24 demo-hardening batch is archived at [`plans/archive/m24-plan-typeduck-web-dogfooding.md`](./plans/archive/m24-plan-typeduck-web-dogfooding.md) with 13/13 rows closed. Future manual web-demo issues should start a new scoped dogfooding plan and classify each report as browser integration, UI polish, engine correctness, unsupported/N/A, or future product integration before changing code.
+5. **Keep the completed M24 TypeDuck-Web dogfood baseline green.** The first M24 demo-hardening batch is archived at [`plans/archive/m24-plan-typeduck-web-dogfooding.md`](./plans/archive/m24-plan-typeduck-web-dogfooding.md) with 13/13 rows closed. New round-2 manual web-demo issues belong in [`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md) and must classify each report as browser integration, UI polish, engine correctness, unsupported/N/A, future product integration, or needs triage before changing code.
 6. **Extend the M20 playground only with browser-safe supported features.** Add active controls or guided scenarios for new browser-safe engine behavior, and keep unsupported behavior absent or documented instead of partially exposed.
 7. **Start Phase 2 Windows work with a repo/architecture decision, not direct porting.** M10 completed with T1/T2 package/build evidence and a stock TypeDuck-Windows real-server IPC smoke. The Yune-side boundary is proven; the next Windows effort is a Yune-first product/frontend track. Use [`plans/p2-win01-plan-typeduck-windows-next.md`](./plans/p2-win01-plan-typeduck-windows-next.md) to decide whether to continue inside `TypeDuck-HK/TypeDuck-Windows`, start a fresh repo, or use a hybrid extraction path. None of those choices should widen Yune's default ABI.
 8. **Add a future TypeDuck-Web product-integration track before changing a separately cloned TypeDuck-Web product checkout.** Treat `TypeDuck-HK/TypeDuck-Web` as the dedicated web IME product, not as the M20 harness or the runtime bridge.
@@ -566,10 +569,10 @@ trigger-gated by named targets and fresh oracle fixtures.
 ### Execution order — what to do next
 
 This is the **authoritative sequence**; the per-milestone detail bullets below
-are reference, not order. M17, M18, M19, M22, M23, and M24 are complete. Future
-manual dogfooding/debug loops for the internal TypeDuck-Web playground should
-start as new scoped plans and must not reopen completed parity claims without
-oracle-backed evidence. New engine milestone work should start only after a plan
+are reference, not order. M17, M18, M19, M22, M23, and M24 are complete. M25 is
+the active intake ledger for the next manual dogfooding/debug loop for the
+internal TypeDuck-Web playground and must not reopen completed parity claims
+without oracle-backed evidence. New engine milestone work should start only after a plan
 names its target, oracle, fixtures, and front-end or schema need.
 
 **Trigger-gated, not scheduled:** the core/ABI **processor extraction** (move
@@ -584,6 +587,14 @@ processor semantics into `yune-core`) lands only when a real non-ABI consumer
 > The bullets below are reference detail. The **Execution order** above is the
 > authoritative sequence (note: M18 precedes M17, despite list position here).
 
+- **M25 - TypeDuck-Web dogfooding round 2 (intake)** - captures the next manual
+  play-testing batch for the internal `third_party/typeduck-web/` playground.
+  It starts as an active issue ledger rather than an implementation claim:
+  each feedback item should be classified before code changes, browser evidence
+  goes under `third_party/typeduck-web/e2e/results/m25-dogfooding/`, and any
+  engine-output/ranking change remains fixture-gated against TypeDuck `v1.1.2`
+  or upstream `1.17.0`. Detail:
+  [`plans/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/m25-plan-typeduck-web-dogfooding-round-2.md).
 - **M24 — TypeDuck-Web dogfooding and demo hardening (complete)** — closed the
   first manual play-testing, bug-triage, performance, and UI-polish batch for
   the internal `third_party/typeduck-web/` playground. The 13 closed

@@ -6,7 +6,8 @@ This records the current TypeDuck-Windows native package evidence after the M10
 resume. Yune now produces a Windows package and validates it through the named
 TypeDuck-profile ABI, but the real TypeDuck-Windows build and frontend smoke
 are still blocked by missing ATL/MFC components in the local Visual Studio
-installation.
+installation and by the remaining TypeDuck-Windows settings call sites that
+must switch fork-only append slots to the profile accessor.
 
 ## Tier Status
 
@@ -15,7 +16,9 @@ installation.
 - **T1 package/link:** blocked. An explicit Visual Studio 2022 MSBuild path can
   build the solution far enough to compile against the Yune package, but the
   selected TypeDuck-Windows projects require ATL/MFC headers that are not
-  installed locally (`atlbase.h`, `afxres.h`).
+  installed locally (`atlbase.h`, `afxres.h`). The updated package headers let
+  the rime-facing `RimeWithWeasel` static-library target compile when project
+  references are disabled; the full frontend build/link still does not pass.
 - **T2 packaged host-loader lifecycle:** complete. The package script loads the
   packaged `dist/lib/rime.dll`, resolves `rime_get_typeduck_profile_api()`,
   verifies profile append slots, and runs the dynamic-loader lifecycle smoke.
@@ -41,8 +44,8 @@ Yune keeps the default upstream ABI:
 - default `rime_get_api()`: upstream `rime/librime 1.17.0` table;
 - no `start_quick` and no list-append slots in the default table.
 
-The package therefore copies upstream-shaped `rime_api.h` /
-`rime_levers_api.h` from:
+The package therefore copies upstream-shaped `rime_api.h`,
+`rime_api_deprecated.h`, `rime_api_stdbool.h`, and `rime_levers_api.h` from:
 
 ```text
 target\upstream-oracle\1.17.0\extract\dist\include
@@ -62,6 +65,14 @@ Yune package. The pinned TypeDuck-Windows checkout does not directly read
 the settings code still calls `rime_get_api()->config_list_append_string(...)`
 today and needs the profile-accessor handshake before T1 can pass.
 
+TypeDuck v1.1.2 exposes deprecated direct-call declarations such as
+`RimeSetup` in `rime_api.h`. Upstream 1.17.0 keeps those declarations in
+`rime_api_deprecated.h`. The Yune TypeDuck-Windows package keeps the upstream
+struct/table layout but makes the packaged `rime_api.h` include the upstream
+deprecated header, because the pinned TypeDuck-Windows source includes
+`<rime_api.h>` while calling `RimeSetup`, `RimeInitialize`, and related direct
+symbols.
+
 ## Package Layout
 
 Current command from the repository root:
@@ -76,6 +87,8 @@ Default output:
 target\typeduck-windows-native\x86_64-pc-windows-msvc\dist
   include\
     rime_api.h
+    rime_api_deprecated.h
+    rime_api_stdbool.h
     rime_levers_api.h
     rime_typeduck_profile_api.h
   lib\
@@ -101,6 +114,9 @@ The test verifies:
 - `rime_get_api()` from the packaged DLL is upstream-sized;
 - `rime_get_typeduck_profile_api()` is exported and advertises the larger
   profile table;
+- the packaged DLL exports representative upstream-deprecated direct-call
+  symbols used by TypeDuck-Windows (`RimeSetup`, `RimeInitialize`,
+  `RimeFinalize`, `RimeGetContext`, `RimeConfigGetString`);
 - `config_list_append_{bool,int,double,string}` are present and round-trip
   through config accessors;
 - the native host lifecycle runs through the packaged profile table.
@@ -114,6 +130,8 @@ Packaged TypeDuck Windows native artifacts:
   C:\Users\laubonghaudoi\Documents\GitHub\yune\target\typeduck-windows-native\x86_64-pc-windows-msvc\dist\lib\rime.dll
   C:\Users\laubonghaudoi\Documents\GitHub\yune\target\typeduck-windows-native\x86_64-pc-windows-msvc\dist\lib\rime.lib
   C:\Users\laubonghaudoi\Documents\GitHub\yune\target\typeduck-windows-native\x86_64-pc-windows-msvc\dist\include\rime_api.h
+  C:\Users\laubonghaudoi\Documents\GitHub\yune\target\typeduck-windows-native\x86_64-pc-windows-msvc\dist\include\rime_api_deprecated.h
+  C:\Users\laubonghaudoi\Documents\GitHub\yune\target\typeduck-windows-native\x86_64-pc-windows-msvc\dist\include\rime_api_stdbool.h
   C:\Users\laubonghaudoi\Documents\GitHub\yune\target\typeduck-windows-native\x86_64-pc-windows-msvc\dist\include\rime_levers_api.h
   C:\Users\laubonghaudoi\Documents\GitHub\yune\target\typeduck-windows-native\x86_64-pc-windows-msvc\dist\include\rime_typeduck_profile_api.h
 ```
@@ -194,9 +212,26 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.3520
 C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\atlmfc\include\afxres.h
 ```
 
+After the package was updated to include upstream deprecated direct-call
+declarations, the smallest rime-facing static-library target compiled against
+the Yune package when project references were disabled:
+
+```powershell
+& 'C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe' target\typeduck-windows-e2e\TypeDuck-Windows\RimeWithWeasel\RimeWithWeasel.vcxproj /p:Configuration=Release /p:Platform=x64 /p:BuildProjectReferences=false /p:SolutionDir="target\typeduck-windows-e2e\TypeDuck-Windows\" /m /v:minimal
+```
+
+```text
+RimeWithWeasel.vcxproj -> ...\x64\Release\RimeWithTypeDuck.lib
+```
+
+This is not T1 completion: the full solution still requires ATL/MFC, and the
+deployer/settings path still needs the documented profile-accessor patch for
+`config_list_append_*` before a Yune package can be the real frontend engine.
+
 Because T1 still did not complete, T3 real TypeDuck-Windows frontend smoke also
 did not run. A future T1/T3 worker should install the Visual Studio ATL/MFC C++
-components, reuse the package above, patch the settings path to call
-`rime_get_typeduck_profile_api()` for `config_list_append_*`, build from a
+components, reuse the package above, patch the settings path to include
+`rime_typeduck_profile_api.h` and call `rime_get_typeduck_profile_api()` for
+`config_list_append_*`, build from a
 Visual Studio developer shell, then record real frontend input/output smoke
 against the Yune package.

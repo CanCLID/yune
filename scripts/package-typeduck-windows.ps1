@@ -56,9 +56,17 @@ if (-not (Test-Path $HeaderSource)) {
 }
 
 $ApiHeader = Join-Path $HeaderSource "rime_api.h"
+$DeprecatedApiHeader = Join-Path $HeaderSource "rime_api_deprecated.h"
+$StdBoolApiHeader = Join-Path $HeaderSource "rime_api_stdbool.h"
 $LeversHeader = Join-Path $HeaderSource "rime_levers_api.h"
 if (-not (Test-Path $ApiHeader)) {
     throw "missing rime_api.h in $HeaderSource"
+}
+if (-not (Test-Path $DeprecatedApiHeader)) {
+    throw "missing rime_api_deprecated.h in $HeaderSource"
+}
+if (-not (Test-Path $StdBoolApiHeader)) {
+    throw "missing rime_api_stdbool.h in $HeaderSource"
 }
 if (-not (Test-Path $LeversHeader)) {
     throw "missing rime_levers_api.h in $HeaderSource"
@@ -94,8 +102,19 @@ if (Test-Path $SourcePdb) {
     Copy-Item -LiteralPath $SourcePdb -Destination (Join-Path $DistLib "rime.pdb") -Force
 }
 Copy-Item -LiteralPath $ApiHeader -Destination (Join-Path $DistInclude "rime_api.h") -Force
+Copy-Item -LiteralPath $DeprecatedApiHeader -Destination (Join-Path $DistInclude "rime_api_deprecated.h") -Force
+Copy-Item -LiteralPath $StdBoolApiHeader -Destination (Join-Path $DistInclude "rime_api_stdbool.h") -Force
 Copy-Item -LiteralPath $LeversHeader -Destination (Join-Path $DistInclude "rime_levers_api.h") -Force
 Copy-Item -LiteralPath $ProfileHeader -Destination (Join-Path $DistInclude "rime_typeduck_profile_api.h") -Force
+
+$DistApiHeader = Join-Path $DistInclude "rime_api.h"
+if (-not (Select-String -Path $DistApiHeader -Pattern "rime_api_deprecated.h" -Quiet)) {
+    Add-Content -LiteralPath $DistApiHeader -Value @(
+        "",
+        "/* TypeDuck-Windows v1.1.2 includes <rime_api.h> while using upstream-deprecated direct-call symbols such as RimeSetup. Keep upstream-shaped structs and RimeApi table slots, and expose the declarations through upstream 1.17.0's deprecated header. */",
+        '#include "rime_api_deprecated.h"'
+    )
+}
 
 $PackagedDll = Join-Path $DistLib "rime.dll"
 $previousPackageDll = $env:YUNE_TYPEDUCK_PACKAGE_RIME_DLL
@@ -122,5 +141,7 @@ Write-Host "Packaged TypeDuck Windows native artifacts:"
 Write-Host "  $OutputDir\dist\lib\rime.dll"
 Write-Host "  $OutputDir\dist\lib\rime.lib"
 Write-Host "  $OutputDir\dist\include\rime_api.h"
+Write-Host "  $OutputDir\dist\include\rime_api_deprecated.h"
+Write-Host "  $OutputDir\dist\include\rime_api_stdbool.h"
 Write-Host "  $OutputDir\dist\include\rime_levers_api.h"
 Write-Host "  $OutputDir\dist\include\rime_typeduck_profile_api.h"

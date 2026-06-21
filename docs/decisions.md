@@ -560,13 +560,18 @@ dedicated oracle fixtures are captured.
 2026-06-21 update: M10 resume supersedes the "script is parked" part of D-21.
 `scripts/package-typeduck-windows.ps1` now builds the current Windows package
 with upstream-shaped default headers plus `rime_typeduck_profile_api.h`, rejects
-fork-shaped default headers, and smoke-checks the packaged DLL through
-`rime_get_typeduck_profile_api()`. That reaches T2. A later T1 probe found
-Visual Studio 2022 Community, built local Boost, and got the x64
-TypeDuck-Windows solution compiling against the Yune package, but it stops on
-missing ATL/MFC headers (`atlbase.h`, `afxres.h`). T1/T3 remain blocked until
-the TypeDuck-Windows checkout can build/link and run real frontend smoke against
-the Yune package.
+fork-shaped default headers, ships upstream-deprecated direct-call declarations
+for existing TypeDuck-Windows source compatibility, and smoke-checks the
+packaged DLL through `rime_get_typeduck_profile_api()`. That reaches T2. A later
+T1 probe found Visual Studio 2022 Community, built local Boost, and got the x64
+TypeDuck-Windows solution compiling against the Yune package. A follow-up header
+probe built `RimeWithWeasel.vcxproj` as a static library with project references
+disabled, proving the package covers `RimeSetup`-style direct-call declarations
+without widening the default ABI. Full T1/T3 remain blocked: the installed C++
+toolchain lacks ATL/MFC headers (`atlbase.h`, `afxres.h`), and
+`WeaselDeployer/TypeDuckSettings.cpp` still needs to route
+`config_list_append_*` through the named TypeDuck-profile accessor before the
+real frontend can link cleanly against Yune.
 
 2026-06-21 update: M14-M21 promoted the captured TypeDuck engine fixtures to
 active `cantonese_parity` tests, including options, completion, correction,
@@ -835,4 +840,4 @@ this is why the placeholder-echo WI-4 matrix was reopened (D-P10-9) and why HR-1
 committed the real-assets browser run rather than only describing it.
 
 ---
-*Last updated: 2026-06-21 - D-30 records M17 upstream `luna_pinyin` null-grammar poet completion and keeps learned `.gram`/octagram deferred; D-29 records M19 schema breadth and the named TypeDuck-profile ABI accessor; D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows now has current profile package/header smoke and packaged-DLL host-loader lifecycle coverage, but remains blocked on the real TypeDuck-Windows build/link and frontend smoke tiers because the local Windows build tools are unavailable.*
+*Last updated: 2026-06-21 - D-30 records M17 upstream `luna_pinyin` null-grammar poet completion and keeps learned `.gram`/octagram deferred; D-29 records M19 schema breadth and the named TypeDuck-profile ABI accessor; D-28 records M23 architecture hardening as finished and M18's narrow punctuation processor slice as landed while keeping full processor extraction trigger-gated; D-26 records M13 default-off two-pass TypeDuck-Web AI exposure; D-27 records M14-M16 TypeDuck-Web fork-parity closeout with explicit browser/userdb limits; M10 TypeDuck-Windows now has current profile package/header smoke, upstream-deprecated direct-call header coverage, partial `RimeWithWeasel` compile evidence, and packaged-DLL host-loader lifecycle coverage, but remains blocked on full TypeDuck-Windows build/link and frontend smoke tiers because ATL/MFC is absent and the settings path still needs the profile accessor for fork-only append slots.*

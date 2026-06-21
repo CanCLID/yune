@@ -198,6 +198,7 @@ fn dynamic_loader_harness_loads_packaged_typeduck_profile_dll() {
     // library is kept alive for the full duration of table use.
     let default_api = unsafe { &mut *default_api };
     assert_upstream_api_data_size(default_api, "packaged rime_get_api");
+    assert_packaged_direct_call_symbols(&library);
 
     // SAFETY: the harness resolves only the exported null-terminated profile accessor.
     let get_profile_api: libloading::Symbol<RimeGetTypeDuckProfileApi> =
@@ -230,6 +231,25 @@ fn dynamic_loader_harness_loads_packaged_typeduck_profile_dll() {
         trace.to_json(),
         frontend_hosts::BASELINE_TRACE_FIXTURE.replace("\r\n", "\n")
     );
+}
+
+fn assert_packaged_direct_call_symbols(library: &Library) {
+    const SYMBOLS: &[&[u8]] = &[
+        b"RimeSetup\0",
+        b"RimeInitialize\0",
+        b"RimeFinalize\0",
+        b"RimeGetContext\0",
+        b"RimeConfigGetString\0",
+    ];
+
+    for symbol in SYMBOLS {
+        // SAFETY: resolving a symbol does not call it; the placeholder function
+        // type is used only to prove the export exists for legacy frontend code.
+        unsafe { library.get::<unsafe extern "C" fn()>(symbol) }.unwrap_or_else(|error| {
+            let name = String::from_utf8_lossy(&symbol[..symbol.len() - 1]);
+            panic!("missing packaged direct-call symbol {name}: {error}");
+        });
+    }
 }
 
 fn assert_profile_append_slots_round_trip(profile_api: &mut RimeTypeDuckProfileApi) {

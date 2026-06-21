@@ -7,8 +7,12 @@
 > profile after M12 made upstream `rime/librime 1.17.0` the default core oracle.
 > The M10 resume reached T2 on 2026-06-21: Yune now has a current native
 > TypeDuck-profile package/header smoke and packaged DLL lifecycle gate. The
-> Windows frontend build/link and real frontend smoke remain blocked until the
-> TypeDuck-Windows checkout can be built from a Visual Studio toolchain shell.
+> package also exposes upstream-deprecated direct-call declarations for the
+> existing TypeDuck-Windows source without widening default ABI structs or the
+> default `rime_get_api()` table. The Windows frontend build/link and real
+> frontend smoke remain blocked until the TypeDuck-Windows checkout can be built
+> from a Visual Studio toolchain shell and its fork-only settings path is patched
+> to use the profile accessor.
 >
 > **Source of truth.** The local execution notes are
 > [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md)
@@ -65,7 +69,11 @@ The Windows deployer consumes a **fork-only** API that stock librime does **not*
 > named, opt-in `rime_get_typeduck_profile_api()` table. The default
 > upstream-shaped `rime_get_api()` table intentionally does not contain these
 > fork-only slots, so TypeDuck-Windows must use the profile accessor when
-> linked to a Yune package.
+> linked to a Yune package. The package keeps upstream-shaped
+> `RimeCandidate`/`RimeApi` layout while including upstream
+> `rime_api_deprecated.h` declarations from packaged `rime_api.h`, because the
+> pinned TypeDuck-Windows source calls deprecated direct symbols such as
+> `RimeSetup` after including `<rime_api.h>`.
 
 ### 2. Candidate **comment** data (the dictionary panel depends on this)
 The TypeDuck multi-hint dictionary panel renders the **`RimeCandidate.comment`** string, not a
@@ -131,7 +139,7 @@ The web path is Emscripten/WASM. Windows needs a **native** engine artifact:
 - [x] (4) Native Windows engine artifact (`rime.dll`/`.lib`/headers) current TypeDuck-profile package/header smoke passes through `rime_get_typeduck_profile_api()`.
   - [x] T0 ABI/header decision: package uses upstream-shaped `RimeCandidate` and default `rime_get_api()`, plus `rime_typeduck_profile_api.h`.
   - [x] T2 packaged host-loader lifecycle: packaged `dist/lib/rime.dll` loads, profile append slots round-trip, and the native lifecycle smoke passes.
-  - [ ] T1 TypeDuck-Windows build/link: blocked because the installed Visual Studio 2022 C++ toolchain lacks ATL/MFC headers (`atlbase.h`, `afxres.h`).
+  - [ ] T1 TypeDuck-Windows build/link: blocked because the installed Visual Studio 2022 C++ toolchain lacks ATL/MFC headers (`atlbase.h`, `afxres.h`). The updated package headers let `RimeWithWeasel.vcxproj` compile as a static library with project references disabled, but the full frontend build/link still does not pass.
   - [ ] T3 real TypeDuck-Windows frontend smoke: blocked behind T1; no real frontend binary was built against the Yune package.
 
 The real TypeDuck-Windows frontend E2E is still **not** green: a pinned checkout
@@ -151,6 +159,15 @@ and stops after `WeaselIPC` builds because ATL/MFC are missing:
 WeaselUI\stdafx.h(12,10): error C1083: Cannot open include file: 'atlbase.h': No such file or directory
 WeaselIME.rc(11): fatal error RC1015: cannot open include file 'afxres.h'.
 ```
+
+The post-header-fix probe also compiled the rime-facing
+`RimeWithWeasel.vcxproj` static library against the Yune package with project
+references disabled, producing `RimeWithTypeDuck.lib`. That confirms the
+packaged upstream-deprecated declarations cover the frontend's `RimeSetup` /
+`RimeInitialize` style direct calls. It does not complete T1 because the full
+solution still needs ATL/MFC and `WeaselDeployer/TypeDuckSettings.cpp` still
+uses `rime_get_api()->config_list_append_string(...)` instead of the named
+TypeDuck-profile accessor.
 
 When the real build/link and frontend smoke pass against the M19 profile
 accessor, revisit the current TypeDuck-Windows frontend lifecycle docs or

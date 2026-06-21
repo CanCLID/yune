@@ -193,7 +193,12 @@ Windows package and runs the packaged TypeDuck-profile smoke. The default
 `RimeApi` follows upstream `rime/librime 1.17.0`, so the script packages an
 upstream-shaped `rime_api.h` plus `rime_typeduck_profile_api.h`; fork-only
 `config_list_append_*` slots are verified only through
-`rime_get_typeduck_profile_api()`.
+`rime_get_typeduck_profile_api()`. The TypeDuck-Windows package also ships
+upstream `rime_api_deprecated.h` / `rime_api_stdbool.h` and has packaged
+`rime_api.h` include the deprecated declarations, because the pinned frontend
+source includes `<rime_api.h>` while calling `RimeSetup`-style direct symbols.
+This is a header-compatibility measure only; it must not widen default ABI
+structs or add TypeDuck fork slots to default `rime_get_api()`.
 
 **Web surface terminology** — keep three similarly named surfaces distinct:
 `packages/yune-typeduck-runtime/` is the reusable Yune-owned TypeScript/WASM
@@ -598,9 +603,12 @@ the M10 resume produced a current package/header smoke plus packaged DLL
 dynamic-loader lifecycle against that profile accessor. The default table and
 `RimeCandidate` remain upstream-shaped. A later T1 probe found Visual Studio
 2022 Community, built local Boost, and reached x64 TypeDuck-Windows compilation
-against the Yune package, but the installed C++ toolchain lacks ATL/MFC headers
-(`atlbase.h`, `afxres.h`). Real TypeDuck-Windows/weasel build/link and frontend
-E2E remain blocked.
+against the Yune package. The package now also covers upstream-deprecated
+direct-call declarations, and `RimeWithWeasel.vcxproj` compiles as a static
+library with project references disabled. The full frontend build still lacks
+ATL/MFC headers (`atlbase.h`, `afxres.h`) and the deployer settings path still
+needs the named TypeDuck-profile accessor for `config_list_append_*`. Real
+TypeDuck-Windows/weasel build/link and frontend E2E remain blocked.
 
 **TypeDuck `jyut6ping3` fork-parity arc is closed with explicit browser limits.** HR-6 added
 oracle coverage for the reverse-lookup `"; "` joiner (`comments.join("; ")` in
@@ -682,4 +690,4 @@ Planning, decisions, and conventions live under `docs/` — there is no external
 
 ---
 
-*Last reviewed: 2026-06-21 - M17 upstream `luna_pinyin` null-grammar sentence/lattice parity, M19 breadth schemas, M18 deployment/processor depth, and M23 architecture hardening are complete: Yune now has upstream-captured sentence/lattice, `double_pinyin`, `cangjie5`, and `bopomofo` fixtures/tests, public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0. TypeDuck-Windows ABI/package work has current profile package/header smoke and packaged-DLL host-loader lifecycle coverage, but remains blocked on real TypeDuck-Windows build/link and frontend smoke evidence.*
+*Last reviewed: 2026-06-21 - M17 upstream `luna_pinyin` null-grammar sentence/lattice parity, M19 breadth schemas, M18 deployment/processor depth, and M23 architecture hardening are complete: Yune now has upstream-captured sentence/lattice, `double_pinyin`, `cangjie5`, and `bopomofo` fixtures/tests, public binary dictionary writers, prism Darts support, rebuild execution, and upstream-captured punctuation processor parity while keeping profile-specific TypeDuck tuning gated by named profiles. M13 TypeDuck-Web AI exposure, M14 TypeDuck `jyut6ping3` v1.1.2 capture, M15 dictionary-driven engine parity, and M16 TypeDuck-Web browser validation remain complete; default RimeApi follows upstream 1.17.0. TypeDuck-Windows ABI/package work has current profile package/header smoke, upstream-deprecated direct-call header coverage, partial `RimeWithWeasel` static-library compile evidence, and packaged-DLL host-loader lifecycle coverage, but remains blocked on full TypeDuck-Windows build/link and frontend smoke evidence.*

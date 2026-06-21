@@ -489,15 +489,19 @@ Archived pre-M12 M10 evidence is preserved: Windows test trust, fork-only
 fixtures, and a historical native `rime.dll`/`.lib`/headers package smoke. That
 package smoke is not an active or valid gate for the default upstream
 `rime_get_api()` table after M12. Current package evidence uses an
-upstream-shaped default `rime_api.h` plus `rime_typeduck_profile_api.h`, loads
-the packaged DLL, resolves `rime_get_typeduck_profile_api()`, verifies the
-profile append slots, and runs the dynamic-loader lifecycle. Remaining
-TypeDuck-Windows work is blocked by T1/T3: Visual Studio 2022 Community and
-MSBuild are installed, and the pinned TypeDuck-Windows checkout now reaches x64
-compilation against the Yune package plus local Boost, but the installed C++
-toolchain lacks ATL/MFC headers (`atlbase.h`, `afxres.h`). The real
-TypeDuck-Windows binary therefore still has not built/linked against the Yune
-package and no real frontend smoke has run.
+upstream-shaped default `rime_api.h` plus `rime_typeduck_profile_api.h`,
+packages upstream-deprecated direct-call declarations for the existing
+TypeDuck-Windows source, loads the packaged DLL, resolves
+`rime_get_typeduck_profile_api()`, verifies the profile append slots, and runs
+the dynamic-loader lifecycle. Remaining TypeDuck-Windows work is blocked by
+T1/T3: Visual Studio 2022 Community and MSBuild are installed, and the pinned
+TypeDuck-Windows checkout now reaches x64 compilation against the Yune package
+plus local Boost. The rime-facing `RimeWithWeasel` static-library target
+compiles with project references disabled, but the full frontend build still
+requires missing ATL/MFC headers (`atlbase.h`, `afxres.h`) and the deployer
+settings path still needs to call the named profile accessor for
+`config_list_append_*`. The real TypeDuck-Windows binary therefore still has
+not built/linked against the Yune package and no real frontend smoke has run.
 
 Detail: [`typeduck-windows-backend-requirements.md`](./typeduck-windows-backend-requirements.md),
 [`plans/m10-reference-typeduck-windows-contract.md`](./plans/m10-reference-typeduck-windows-contract.md),

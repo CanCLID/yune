@@ -93,7 +93,10 @@ A\t1000
     assert_eq!(candidates[0].text, "AB");
     assert_eq!(
         candidates[0].source,
-        CandidateSource::PartialTable { consumed: 2 }
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: false,
+        }
     );
     assert_eq!(candidates[0].commit_text_for_input("abx"), "ABx");
     assert_eq!(candidates[1].text, "A");

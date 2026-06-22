@@ -15,9 +15,10 @@ use crate::{
 const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
 const TYPEDUCK_CORRECTION_MAX_DISTANCE: usize = 4;
 const DEFAULT_SENTENCE_WORD_PENALTY: f32 = 0.0;
-/// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture;
-/// install only for the jyut6ping3 TypeDuck profile.
-pub const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 21.0;
+/// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture
+/// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
+/// jyut6ping3 TypeDuck profile.
+pub const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 24.0;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct LookupCodeSpec {
@@ -832,12 +833,15 @@ impl StaticTableTranslator {
                     && original_code_allows_prefix_fallback(&candidate.comment, prefix)
                     && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
             }) {
+                let recompose_on_default = consumed_input_len > 1
+                    && !self.is_spelling_abbreviation_entry(prefix, candidate);
                 let mut candidate = self.candidate_for_lookup(prefix, candidate, prefix, None);
                 if !seen_texts.insert(candidate.text.clone()) {
                     continue;
                 }
                 candidate.source = CandidateSource::PartialTable {
                     consumed: consumed_input_len,
+                    recompose_on_default,
                 };
                 candidates.push(candidate);
             }

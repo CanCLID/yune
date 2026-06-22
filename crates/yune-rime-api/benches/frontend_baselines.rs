@@ -37,6 +37,7 @@ fn main() {
     validate_api_table(api);
 
     let mut results = vec![
+        run_m29_single_startup_memory(api, RealSchema::Jyut6ping3Mobile),
         run_session_lifecycle(api),
         run_simple_ascii_key(api),
         run_schema_loaded_key(api),
@@ -1018,6 +1019,53 @@ fn run_real_startup_runtime_ready(api: &yune_rime_api::RimeApi, schema: RealSche
     }
 }
 
+fn run_m29_single_startup_memory(api: &yune_rime_api::RimeApi, schema: RealSchema) -> BenchResult {
+    reset_runtime(api);
+    let fixture = RuntimeFixture::new(&format!("m29-single-startup-memory-{}", schema.schema_id()));
+    let before_assets = current_memory_sample();
+    let asset_metrics = write_real_schema_assets(&fixture);
+    let start = Instant::now();
+    setup_fixture(api, &fixture);
+    let session_id = create_and_select_real_schema(api, schema);
+    let after_ready = current_memory_sample();
+    let destroy_session = require("destroy_session", api.destroy_session);
+    assert_eq!(destroy_session(session_id), TRUE);
+    reset_runtime(api);
+    let after_finalize = current_memory_sample();
+    let elapsed = start.elapsed();
+    let peak = [
+        before_assets.peak_working_set_bytes,
+        after_ready.peak_working_set_bytes,
+        after_finalize.peak_working_set_bytes,
+    ]
+    .into_iter()
+    .flatten()
+    .max();
+
+    BenchResult {
+        name: format!("m29_single_startup_memory_{}", schema.schema_id()),
+        operations: 1,
+        fixture: "typeduck-web-real-assets",
+        schema_id: schema.schema_id(),
+        asset_set: schema.asset_set(),
+        data_size: format!(
+            "single_startup_memory_sample asset_files={} asset_bytes={}",
+            asset_metrics.files, asset_metrics.bytes
+        ),
+        total: elapsed,
+        stats: Some(BenchStats::from_samples(&[duration_micros(elapsed)], None)),
+        memory_notes: format!(
+            "before_bytes={} after_ready_bytes={} after_finalize_bytes={} peak_bytes={} ready_delta_bytes={} finalize_delta_bytes={}",
+            format_optional_u64(before_assets.working_set_bytes),
+            format_optional_u64(after_ready.working_set_bytes),
+            format_optional_u64(after_finalize.working_set_bytes),
+            format_optional_u64(peak),
+            delta_optional_i128(before_assets.working_set_bytes, after_ready.working_set_bytes),
+            delta_optional_i128(after_ready.working_set_bytes, after_finalize.working_set_bytes)
+        ),
+    }
+}
+
 fn run_real_deploy_cache_hit(api: &yune_rime_api::RimeApi, schema: RealSchema) -> BenchResult {
     let fixture = RuntimeFixture::new(&format!("deploy-cache-hit-{}", schema.schema_id()));
     let asset_metrics = write_real_schema_assets(&fixture);
@@ -1506,6 +1554,13 @@ fn max_optional(left: Option<u64>, right: Option<u64>) -> Option<u64> {
 
 fn format_optional_u64(value: Option<u64>) -> String {
     value.map_or_else(|| "unavailable".to_owned(), |value| value.to_string())
+}
+
+fn delta_optional_i128(before: Option<u64>, after: Option<u64>) -> String {
+    before.zip(after).map_or_else(
+        || "unavailable".to_owned(),
+        |(before, after)| (i128::from(after) - i128::from(before)).to_string(),
+    )
 }
 
 fn require<T>(name: &str, function: Option<T>) -> T {

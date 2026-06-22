@@ -1,0 +1,144 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "canonical_repository": "https://github.com/rime/librime",
+    "schema": "TypeDuck-HK/schema",
+    "schema_commit": "1bed1ae6a0ab48055f073774d7dfd152a171c548",
+    "capture_date": "2026-06-22",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-jyutping-composition.ps1 -OracleRoot target/upstream-oracle/1.17.0"
+  },
+  "schema": "jyut6ping3_mobile",
+  "module_list": [
+    "default"
+  ],
+  "scenarios": [
+    {
+      "name": "auto_composition_default_before_space",
+      "actions": [
+        {
+          "type": "input",
+          "text": "caksijathaacoenggeoizi"
+        },
+        {
+          "type": "snapshot",
+          "label": "before_space"
+        },
+        {
+          "type": "key",
+          "keycode": 32,
+          "mask": 0,
+          "label": "after_space"
+        }
+      ]
+    }
+  ],
+  "capture": {
+    "schema_data": "TypeDuck-HK/schema",
+    "schema_data_commit": "1bed1ae6a0ab48055f073774d7dfd152a171c548",
+    "source_row_policy": "m28_followup_upstream_librime_pinned_jyutping_yaml_composition",
+    "source_dictionary_file": "TypeDuck-HK/schema/jyut6ping3.dict.yaml",
+    "deployed_schema_file": "jyut6ping3_mobile.schema.yaml",
+    "target_input": "caksijathaacoenggeoizi",
+    "oracle_scope": "upstream librime 1.17.0 engine plus pinned TypeDuck-HK Jyutping source YAML; no TypeDuck fork ABI/plugin/comment oracle"
+  },
+  "oracle_scope": "composition_and_ranking_only_not_comment_payloads",
+  "ranking_contract": [
+    "sentence_candidate_first",
+    "longest_valid_fuzzy_phrase_prefix_before_single_character",
+    "single_character_after_phrase_prefix",
+    "invalid_fuzzy_missegmentation_ranked_low"
+  ],
+  "auto_composition_on": {
+    "candidate_rows": [
+      {
+        "index": 0,
+        "text": "測是日下場句子",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "測",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "惻",
+        "comment": null
+      }
+    ],
+    "space_commit": "測是日下場句子",
+    "remaining_input_after_space": null
+  },
+  "snapshots": [
+    {
+      "schema_id": "jyut6ping3_mobile",
+      "schema_name": "粵語拼音",
+      "scenario": "auto_composition_default_before_space",
+      "label": "before_space",
+      "rime_get_input": "cak si jat haa coeng geoi zi",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 28,
+      "cursor_pos": 28,
+      "preedit": "cak si jat haa coeng geoi zi",
+      "commit_text_preview": "測是日下場句子",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 6,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "測是日下場句子",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "測",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "惻",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "jyut6ping3_mobile",
+      "schema_name": "粵語拼音",
+      "scenario": "auto_composition_default_before_space",
+      "label": "after_space",
+      "rime_get_input": null,
+      "is_composing": false,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 0,
+      "cursor_pos": 0,
+      "preedit": null,
+      "commit_text_preview": null,
+      "commit_text": "測是日下場句子",
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [],
+      "processed": 1
+    }
+  ]
+}

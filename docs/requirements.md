@@ -267,6 +267,28 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - [x] **M28-PARTIAL-REQ-04**: TypeDuck-Web browser evidence proves selecting `測` does not commit raw `sijathaacoenggeoizi`, continues through the captured component flow, and records that the user-feel `測試一下長句子` target is not the TypeDuck v1.1.2 oracle flow. Evidence: `third_party/typeduck-web/e2e/results/m28-partial-selection/browser-partial-selection.json` and `third_party/typeduck-web/e2e/results/m28-partial-selection/browser-evidence.md`.
 - [x] **M28-PARTIAL-REQ-05**: Full compatibility gates remain green: `cargo fmt --check`, workspace clippy, upstream `luna_pinyin`, `cantonese_parity`, `typeduck_web`, workspace tests, frontend benchmarks, TypeScript runtime tests/build, TypeDuck-Web build/evidence, patch checks, and `git diff --check`. Evidence: `third_party/typeduck-web/e2e/results/m28-partial-selection/task-5-gates.md`.
 
+## M28 Follow-up Upstream Jyutping Composition Requirements
+
+**Status: complete.** This follow-up closes the post-M28 dogfood gaps for Space/default-confirm partial recomposition and upstream-style Jyutping long composition. Evidence: `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/`; plan: [`docs/plans/archive/m28-follow-up-plan-upstream-jyutping-composition.md`](./plans/archive/m28-follow-up-plan-upstream-jyutping-composition.md).
+
+- [x] **M28F-UPSTREAM-REQ-01**: Space/default-confirm for `caksijathaacoenggeoizi` commits only the consumed prefix candidate and keeps the remaining input composing; it never commits `測sijathaacoenggeoizi`.
+- [x] **M28F-UPSTREAM-REQ-02**: A checked-in hybrid upstream-librime-engine Jyutping fixture captures `caksijathaacoenggeoizi` composition/ranking with provenance: upstream engine repository/tag/commit, pinned Jyutping schema/dictionary source repository/commit, upstream deploy command, capture command, options, and candidate rows. The fixture contains no local absolute paths and lives outside the pure `upstream-1.17.0` fixture family.
+- [x] **M28F-UPSTREAM-REQ-03**: `docs/decisions.md` records a narrow decision that this Jyutping long-composition/ranking slice follows the captured-and-accepted hybrid fixture over TypeDuck v1.1.2 when they disagree, while TypeDuck v1.1.2 remains the compatibility oracle for profile ABI/comment surfaces and the hybrid fixture explicitly excludes dictionary-comment payloads.
+- [x] **M28F-UPSTREAM-REQ-04**: Native tests follow the accepted captured ordering for this case: sentence/lattice candidate first when enabled, fixture-captured fallback rows after it, and no invented phrase-prefix row when upstream did not capture one.
+- [x] **M28F-UPSTREAM-REQ-05**: TypeDuck-Web browser evidence covers auto-composition off plus Space/default-confirm, and auto-composition on plus first-page ranking, without raw-tail commits.
+- [x] **M28F-UPSTREAM-REQ-06**: Full compatibility gates remain green: Rust fmt/clippy/tests, upstream `luna_pinyin`, `cantonese_parity`, `typeduck_web`, TypeScript runtime tests/build, TypeDuck-Web build/evidence, patch checks if source changes, and `git diff --check`.
+
+## M29 Startup Memory And Typing Performance Requirements
+
+**Status: complete.** M29 refreshed post-M28-follow-up startup, memory, and typing evidence; classified the M27-style `1.79GB` peak as repeated-benchmark high-water with real single-startup ready pressure around `1.10GB`; reduced the measured `spelling_algebra_expand` startup owner by avoiding no-op regex replacement allocation; and kept typing as attribution evidence because the fresh owner profile was mixed and already much smaller than startup. Evidence: `third_party/typeduck-web/e2e/results/m29-performance/`; plan: [`docs/plans/archive/m29-plan-startup-memory-typing-performance.md`](./plans/archive/m29-plan-startup-memory-typing-performance.md).
+
+- [x] **M29-PERF-REQ-01**: Fresh M29 baselines re-run native startup benchmarks, browser startup evidence, and browser keydown-to-paint typing evidence on the current post-M28-follow-up code.
+- [x] **M29-PERF-REQ-02**: Memory evidence classifies the M27 `1.79GB` peak as per-startup pressure, benchmark cumulative high-water, or unresolved with a precise blocker and next measurement.
+- [x] **M29-PERF-REQ-03**: Startup attribution identifies the top remaining owner, expected to be `spelling_algebra_expand` unless fresh evidence proves otherwise, before any startup optimization is implemented.
+- [x] **M29-PERF-REQ-04**: Typing attribution identifies the top owner for normal and long-phrase keydown-to-paint latency across browser, worker, serialization, native/WASM processing, and render spans.
+- [x] **M29-PERF-REQ-05**: At least one startup or typing optimization lands with before/after native and browser evidence, or the chosen owner is closed with an evidence-backed reason it cannot be reduced safely in this milestone.
+- [x] **M29-PERF-REQ-06**: Full gates remain green: Rust fmt/clippy/tests, frontend benchmark, TypeScript runtime tests/build, TypeDuck-Web build, focused M29 Playwright evidence, patch checks if source changes, and `git diff --check`.
+
 **Follow-on (no requirement IDs):** [`M21`](./plans/archive/m21-plan-typeduck-web-product-comparison.md) is complete as a post-M20 _comparison protocol_ and hard-oracle closeout. It compared the Yune harness against the deployed `typeduck.hk/web` product as a behavior/feel target, but the `v1.1.2` fixtures remained the hard oracle. The final gap ledger has no remaining hard-oracle action rows: M21-GAP-01 is closed by `jyut6ping3-m21-sentence-composition.json`, M21-GAP-02 is closed by `jyut6ping3-m21-prediction-ranking.json` plus real `nri` browser before/after evidence, and `jyut6ping3-m21-closeout.json` locks the remaining baseline/fuzzy/sentence/`hk2s`/tone-letter/paging rows including the final `m` and `mgoi` fixes.
 
 ## Out of Scope
@@ -423,6 +445,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M28-PARTIAL-REQ-03 | M28 | Complete - native engine/API tests cover segment-aware partial commit and FORK-PARITY-03 learning preservation |
 | M28-PARTIAL-REQ-04 | M28 | Complete - TypeDuck-Web browser evidence covers continued selection and raw-tail guard |
 | M28-PARTIAL-REQ-05 | M28 | Complete - compatibility and integration gates remain green |
+| M28F-UPSTREAM-REQ-01 | M28 follow-up | Complete - Space/default-confirm uses scoped consumed-span recomposition |
+| M28F-UPSTREAM-REQ-02 | M28 follow-up | Complete - hybrid upstream-engine Jyutping fixture with pinned source-YAML provenance and no local paths |
+| M28F-UPSTREAM-REQ-03 | M28 follow-up | Complete - narrow decision for accepted hybrid fixture, live-site exclusion, and comment-scope exclusion |
+| M28F-UPSTREAM-REQ-04 | M28 follow-up | Complete - native ordering tests follow the accepted upstream-Jyutping fixture and preserve TypeDuck profile guards |
+| M28F-UPSTREAM-REQ-05 | M28 follow-up | Complete - TypeDuck-Web browser evidence for Space/default-confirm and ranking |
+| M28F-UPSTREAM-REQ-06 | M28 follow-up | Complete - full compatibility and integration gates |
+| M29-PERF-REQ-01 | M29 | Complete - fresh native startup, browser startup, and typing baselines |
+| M29-PERF-REQ-02 | M29 | Complete - `1.79GB` peak classified as repeated-benchmark high-water, with real single-startup ready pressure around `1.10GB` |
+| M29-PERF-REQ-03 | M29 | Complete - `spelling_algebra_expand` remained the top startup owner before optimization |
+| M29-PERF-REQ-04 | M29 | Complete - browser keydown-to-paint attribution recorded worker/native, response mapping, React update, and paint-proxy owners |
+| M29-PERF-REQ-05 | M29 | Complete - no-op spelling-algebra replacement allocation avoidance reduced the native startup owner with before/after evidence |
+| M29-PERF-REQ-06 | M29 | Complete - full compatibility and integration gates |
 
 **Coverage:**
 
@@ -442,9 +476,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M26 performance hardening requirements: 5 total, 5 complete
 - M27 TypeDuck-Web startup runtime init and control-classification requirements: 6 total, 6 complete
 - M28 TypeDuck partial candidate selection requirements: 5 total, 5 complete
-- Mapped to phases: 136
+- M28 follow-up upstream Jyutping composition requirements: 6 total, 6 complete, 0 draft
+- M29 startup memory and typing performance requirements: 6 total, 6 complete, 0 draft
+- Mapped to phases: 148
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-22 - M27 TypeDuck-Web startup/runtime init is complete with six attribution-first and control-classification requirements, hard Windows process-memory evidence, browser-paid startup path reconciliation, a measured spelling-algebra startup optimization, browser fresh/reload evidence, AI-control no-loading evidence, and regenerated TypeDuck-Web patch checks; M28 TypeDuck partial candidate selection is complete with capture-not-confirm TypeDuck v1.1.2 oracle fixture, native tests, FORK-PARITY-03 learning preservation, segment-aware commit/recomposition, browser evidence, and full closeout gates; M26 performance hardening is complete with five measurement-first requirements, native/browser before-after evidence, and regenerated TypeDuck-Web patch checks; M25 TypeDuck-Web dogfooding round 2 is complete with 10/10 rows closed, browser evidence, and regenerated TypeDuck-Web patch checks; M24 TypeDuck-Web dogfooding remains complete with 13/13 rows closed and browser evidence; M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows is complete as a TypeDuck compatibility profile with T1/T2 package/profile smoke, build/link evidence, and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke_
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-22 - M29 startup memory and typing performance is complete with six requirements closed: fresh native/browser startup and typing baselines, single-startup memory classification, startup and typing attribution, measured no-op spelling-algebra replacement allocation avoidance, TypeDuck-Web evidence, and full gates including patch checks. M28 follow-up upstream-style Jyutping composition is complete with six requirements closed: scoped Space/default-confirm recomposition, hybrid upstream-engine Jyutping fixture provenance, D-31 oracle decision, native/API ranking tests, TypeDuck-Web browser evidence, and full gates including regenerated patch checks. M28 remains complete for its archived TypeDuck partial-selection acceptance target; M27 TypeDuck-Web startup/runtime init is complete with six attribution-first and control-classification requirements, hard Windows process-memory evidence, browser-paid startup path reconciliation, a measured spelling-algebra startup optimization, browser fresh/reload evidence, AI-control no-loading evidence, and regenerated TypeDuck-Web patch checks; M26 performance hardening is complete with five measurement-first requirements, native/browser before-after evidence, and regenerated TypeDuck-Web patch checks; M25 TypeDuck-Web dogfooding round 2 is complete with 10/10 rows closed, browser evidence, and regenerated TypeDuck-Web patch checks; M24 TypeDuck-Web dogfooding remains complete with 13/13 rows closed and browser evidence; M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows is complete as a TypeDuck compatibility profile with T1/T2 package/profile smoke, build/link evidence, and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke_

@@ -1,0 +1,80 @@
+{
+  "label": "before",
+  "scenarioSummaries": {
+    "hai": {
+      "count": 3,
+      "totalKeydownToPaintMs": {
+        "median": 14,
+        "p95": 61,
+        "max": 61
+      },
+      "ownerP95Ms": {
+        "workerRoundtrip": 25,
+        "nativeOrWorkerProcess": 25,
+        "responseMapping": 1,
+        "reactUpdate": 34,
+        "paintProxy": 1
+      }
+    },
+    "longPhrase": {
+      "count": 13,
+      "totalKeydownToPaintMs": {
+        "median": 20,
+        "p95": 50,
+        "max": 50
+      },
+      "ownerP95Ms": {
+        "workerRoundtrip": 46,
+        "nativeOrWorkerProcess": 46,
+        "responseMapping": 0,
+        "reactUpdate": 4,
+        "paintProxy": 16
+      }
+    },
+    "longComposition": {
+      "count": 22,
+      "totalKeydownToPaintMs": {
+        "median": 26,
+        "p95": 39,
+        "max": 46
+      },
+      "ownerP95Ms": {
+        "workerRoundtrip": 33,
+        "nativeOrWorkerProcess": 33,
+        "responseMapping": 0,
+        "reactUpdate": 2,
+        "paintProxy": 14
+      }
+    },
+    "paging": {
+      "count": 1,
+      "totalKeydownToPaintMs": {
+        "median": 13,
+        "p95": 13,
+        "max": 13
+      },
+      "ownerP95Ms": {
+        "workerRoundtrip": 2,
+        "nativeOrWorkerProcess": 2,
+        "responseMapping": 0,
+        "reactUpdate": 1,
+        "paintProxy": 9
+      }
+    },
+    "reverseLookup": {
+      "count": 4,
+      "totalKeydownToPaintMs": {
+        "median": 6,
+        "p95": 16,
+        "max": 16
+      },
+      "ownerP95Ms": {
+        "workerRoundtrip": 7,
+        "nativeOrWorkerProcess": 7,
+        "responseMapping": 0,
+        "reactUpdate": 3,
+        "paintProxy": 7
+      }
+    }
+  }
+}

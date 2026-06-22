@@ -32,6 +32,7 @@ pub enum CandidateSource {
     Table,
     PartialTable {
         consumed: usize,
+        recompose_on_default: bool,
     },
     UserTable,
     Completion,
@@ -87,9 +88,20 @@ impl CandidateSource {
     #[must_use]
     pub const fn partial_consumed_len(&self) -> Option<usize> {
         match self {
-            Self::PartialTable { consumed } => Some(*consumed),
+            Self::PartialTable { consumed, .. } => Some(*consumed),
             _ => None,
         }
+    }
+
+    #[must_use]
+    pub const fn recomposes_on_default(&self) -> bool {
+        matches!(
+            self,
+            Self::PartialTable {
+                recompose_on_default: true,
+                ..
+            }
+        )
     }
 
     #[must_use]

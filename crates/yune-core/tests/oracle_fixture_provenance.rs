@@ -27,6 +27,14 @@ fn oracle_fixture_roots_have_machine_readable_provenance() {
         "74cb52b78fb2411137a7643f6c8bc6517acfde69",
         true,
     );
+    assert_manifest(
+        "upstream-jyutping",
+        "upstream-jyutping-hybrid",
+        "rime/librime",
+        "1.17.0",
+        "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        false,
+    );
 }
 
 #[test]
@@ -533,6 +541,46 @@ fn typeduck_v112_fork_parity_fixtures_have_non_circular_source_provenance() {
     );
 }
 
+#[test]
+fn upstream_jyutping_fixture_has_hybrid_provenance() {
+    let root = fixture_root("upstream-jyutping");
+    let path = root.join("jyutping-m28-followup-composition.json");
+    assert!(
+        path.is_file(),
+        "M28 follow-up should check in the upstream-librime Jyutping composition fixture"
+    );
+    let fixture = read_json(&path);
+    assert_upstream_jyutping_hybrid_fixture_header(&path, &fixture);
+    assert_no_local_absolute_paths(&path, &fixture);
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "m28_followup_upstream_librime_pinned_jyutping_yaml_composition",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["source_dictionary_file"], "TypeDuck-HK/schema/jyut6ping3.dict.yaml",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["oracle_scope"], "composition_and_ranking_only_not_comment_payloads",
+        "{path:?}"
+    );
+    assert_non_empty_array(&path, &fixture, &["ranking_contract"]);
+    assert_non_empty_array(&path, &fixture, &["auto_composition_on", "candidate_rows"]);
+    assert_snapshot(
+        &path,
+        &fixture,
+        "auto_composition_default_before_space",
+        "before_space",
+    );
+    assert_snapshot(
+        &path,
+        &fixture,
+        "auto_composition_default_before_space",
+        "after_space",
+    );
+}
+
 fn assert_manifest(
     fixture_dir: &str,
     expected_family: &str,
@@ -653,6 +701,55 @@ fn assert_typeduck_v112_fixture_header(path: &Path, fixture: &Value) {
     assert!(
         fixture.get("input_sequence").is_some() || fixture.get("scenarios").is_some(),
         "{path:?} must include input_sequence or scenarios"
+    );
+}
+
+fn assert_upstream_jyutping_hybrid_fixture_header(path: &Path, fixture: &Value) {
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0", "{path:?}");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert!(!fixture["oracle"]["capture_date"]
+        .as_str()
+        .unwrap_or_default()
+        .is_empty());
+    assert!(
+        fixture["oracle"]["capture_command"].as_str().is_some_and(
+            |command| command.contains("scripts/capture-upstream-jyutping-composition.ps1")
+        ),
+        "{path:?} must include the M28 follow-up upstream Jyutping capture command"
+    );
+    assert_eq!(
+        fixture["oracle"]["schema"], "TypeDuck-HK/schema",
+        "{path:?}"
+    );
+    assert!(
+        fixture["oracle"]["schema_commit"]
+            .as_str()
+            .is_some_and(|commit| commit.len() == 40),
+        "{path:?} must include the pinned TypeDuck schema commit"
+    );
+    assert_eq!(fixture["schema"], "jyut6ping3_mobile", "{path:?}");
+    assert_eq!(
+        fixture["module_list"],
+        serde_json::json!(["default"]),
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["schema_data"], "TypeDuck-HK/schema",
+        "{path:?}"
+    );
+    assert!(
+        fixture["capture"]["schema_data_commit"]
+            .as_str()
+            .is_some_and(|commit| commit.len() == 40),
+        "{path:?} must include the pinned schema data commit"
+    );
+    assert!(
+        fixture.get("scenarios").is_some() && fixture.get("snapshots").is_some(),
+        "{path:?} must include scenarios and snapshots"
     );
 }
 

@@ -1,0 +1,66 @@
+{
+  "input": "caksijathaacoenggeoizi",
+  "expectedTexts": [
+    "測是日下場句子",
+    "測",
+    "惻"
+  ],
+  "actualTexts": [
+    "測是日下場句子",
+    "測",
+    "惻"
+  ],
+  "beforeSpace": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "測是日下場句子",
+        "note": "(compound 詞組)",
+        "source": null,
+        "rowText": "1.caak1 cak1 si6 jat6 haa6 coeng4 geoi3 zi2測是日下場句子(compound 詞組)ⓘ"
+      },
+      {
+        "index": 1,
+        "text": "測",
+        "note": null,
+        "source": null,
+        "rowText": "2.cak1測"
+      },
+      {
+        "index": 2,
+        "text": "惻",
+        "note": null,
+        "source": null,
+        "rowText": "3.cak1惻"
+      },
+      {
+        "index": 3,
+        "text": "出",
+        "note": null,
+        "source": null,
+        "rowText": "4.ceot1出"
+      },
+      {
+        "index": 4,
+        "text": "前",
+        "note": null,
+        "source": null,
+        "rowText": "5.cin4前"
+      },
+      {
+        "index": 5,
+        "text": "場",
+        "note": null,
+        "source": null,
+        "rowText": "6.coeng4場"
+      }
+    ]
+  },
+  "action": "Space",
+  "expectedCommit": "測是日下場句子",
+  "valueAfterSpace": "測是日下場句子",
+  "remainingInputAfterSpace": null,
+  "consoleFailures": []
+}

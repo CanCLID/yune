@@ -27,8 +27,11 @@ const M25_EVIDENCE_DIR = "m25-dogfooding";
 const M26_EVIDENCE_DIR = "m26-performance";
 const M27_EVIDENCE_DIR = "m27-startup-runtime";
 const M28_EVIDENCE_DIR = "m28-partial-selection";
+const M28_FOLLOWUP_EVIDENCE_DIR = "m28-follow-up-upstream-jyutping";
+const M29_EVIDENCE_DIR = "m29-performance";
 const M26_EVIDENCE_LABEL = process.env.M26_EVIDENCE_LABEL || "latest";
 const M27_EVIDENCE_LABEL = process.env.M27_EVIDENCE_LABEL || "latest";
+const M29_EVIDENCE_LABEL = process.env.M29_EVIDENCE_LABEL || "latest";
 
 const ACTIVE_SHOWCASE_CONTROLS = [
   /Auto-completion/,
@@ -331,6 +334,19 @@ async function saveM27Json(filename: string, payload: unknown): Promise<void> {
   await fs.writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
 
+async function m29EvidencePath(filename: string): Promise<string> {
+  const path = await import("path");
+  return path.join(EVIDENCE_DIR, M29_EVIDENCE_DIR, filename);
+}
+
+async function saveM29Json(filename: string, payload: unknown): Promise<void> {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const jsonPath = await m29EvidencePath(filename);
+  await fs.mkdir(path.dirname(jsonPath), { recursive: true });
+  await fs.writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
 async function m28EvidencePath(filename: string): Promise<string> {
   const path = await import("path");
   return path.join(EVIDENCE_DIR, M28_EVIDENCE_DIR, filename);
@@ -340,6 +356,19 @@ async function saveM28Json(filename: string, payload: unknown): Promise<void> {
   const fs = await import("fs/promises");
   const path = await import("path");
   const jsonPath = await m28EvidencePath(filename);
+  await fs.mkdir(path.dirname(jsonPath), { recursive: true });
+  await fs.writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
+async function m28FollowupEvidencePath(filename: string): Promise<string> {
+  const path = await import("path");
+  return path.join(EVIDENCE_DIR, M28_FOLLOWUP_EVIDENCE_DIR, filename);
+}
+
+async function saveM28FollowupJson(filename: string, payload: unknown): Promise<void> {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const jsonPath = await m28FollowupEvidencePath(filename);
   await fs.mkdir(path.dirname(jsonPath), { recursive: true });
   await fs.writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
@@ -703,6 +732,43 @@ function expectNondecreasingTimeline(diagnostic: PerfDiagnosticSnapshot): void {
   for (let index = 1; index < fields.length; index += 1) {
     expect(fields[index]).toBeGreaterThanOrEqual(fields[index - 1] - 2);
   }
+}
+
+function percentileNumber(values: number[], percentile: number): number | null {
+  if (values.length === 0) {
+    return null;
+  }
+  const sorted = [...values].sort((left, right) => left - right);
+  const index = Math.ceil((sorted.length - 1) * percentile);
+  return sorted[Math.min(index, sorted.length - 1)];
+}
+
+function summarizePerfDiagnostics(diagnostics: PerfDiagnosticSnapshot[]) {
+  const totals = diagnostics.map((diagnostic) => diagnostic.totalKeydownToPaintMs);
+  const worker = diagnostics
+    .map((diagnostic) => diagnostic.workerRoundtripMs)
+    .filter((value): value is number => typeof value === "number");
+  const native = diagnostics
+    .map((diagnostic) => diagnostic.workerProcessMs)
+    .filter((value): value is number => typeof value === "number");
+  const react = diagnostics.map((diagnostic) => diagnostic.reactUpdateMs);
+  const paint = diagnostics.map((diagnostic) => diagnostic.paintProxyMs);
+  const responseMapping = diagnostics.map((diagnostic) => diagnostic.responseMappingMs);
+  return {
+    count: diagnostics.length,
+    totalKeydownToPaintMs: {
+      median: percentileNumber(totals, 0.5),
+      p95: percentileNumber(totals, 0.95),
+      max: percentileNumber(totals, 1.0),
+    },
+    ownerP95Ms: {
+      workerRoundtrip: percentileNumber(worker, 0.95),
+      nativeOrWorkerProcess: percentileNumber(native, 0.95),
+      responseMapping: percentileNumber(responseMapping, 0.95),
+      reactUpdate: percentileNumber(react, 0.95),
+      paintProxy: percentileNumber(paint, 0.95),
+    },
+  };
 }
 
 function markerPhases(diagnostics: PersistenceDiagnosticSnapshot[]): Set<string> {
@@ -1143,6 +1209,130 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
+  test("M29 PERF startup and typing attribution records owner spans", async ({ page }) => {
+    let startup: PersistenceDiagnosticSnapshot | undefined;
+    await expect.poll(async () => {
+      const diagnostics = await readPersistenceDiagnostics(page);
+      startup = diagnostics.find((diagnostic) => diagnostic.source === "yune-startup");
+      return startup?.marker.phase ?? "";
+    }, { timeout: TIMEOUT_MS }).toBe("startup:complete");
+    expect(startup).toBeDefined();
+    expectStartupMarkerOrder(startup as PersistenceDiagnosticSnapshot);
+
+    await page.reload({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+    await waitForAppReady(page);
+    const diagnosticsAfterReload = await readPersistenceDiagnostics(page);
+    const reloadStartup = diagnosticsAfterReload
+      .filter((diagnostic) => diagnostic.source === "yune-startup")
+      .at(-1);
+    expect(reloadStartup?.marker.phase).toBe("startup:complete");
+    expectStartupMarkerOrder(reloadStartup as PersistenceDiagnosticSnapshot);
+
+    await saveM29Json(`browser-startup-${M29_EVIDENCE_LABEL}.json`, {
+      label: M29_EVIDENCE_LABEL,
+      freshStartup: startup,
+      reloadStartup,
+      startupTotalsMs: {
+        fresh: startup?.marker.totalMs,
+        reload: reloadStartup?.marker.totalMs,
+      },
+    });
+
+    const inputField = page.locator("input[type='text'], textarea").first();
+    const scenarios: Record<string, unknown> = {};
+
+    async function recordTypingScenario(
+      name: string,
+      input: string,
+      expected: (state: CandidatePanelSnapshot) => boolean,
+    ): Promise<void> {
+      await clearComposition(page);
+      await resetM26PerfDiagnostics(page);
+      await inputField.focus();
+      await inputField.type(input, { delay: 40 });
+      await expect.poll(async () => {
+        const state = await readCandidatePanelSnapshot(page, false);
+        return expected(state);
+      }, { timeout: 15000 }).toBe(true);
+      await expect.poll(async () => readPerfDiagnostics(page), { timeout: 15000 })
+        .toHaveLength(input.length);
+      const perf = await readPerfDiagnostics(page);
+      for (const diagnostic of perf) {
+        expectNondecreasingTimeline(diagnostic);
+      }
+      scenarios[name] = {
+        input,
+        perf,
+        actions: await readActionDiagnostics(page),
+        summary: summarizePerfDiagnostics(perf),
+        state: await readCandidatePanelSnapshot(page, false),
+      };
+    }
+
+    await recordTypingScenario("hai", "hai", (state) => state.candidates.length > 0);
+    await recordTypingScenario(
+      "longPhrase",
+      M24_DOGFOOD_INPUT,
+      (state) => state.candidates[0]?.text === M24_DOGFOOD_TOP,
+    );
+    await recordTypingScenario(
+      "longComposition",
+      "caksijathaacoenggeoizi",
+      (state) => state.candidates.length > 0,
+    );
+
+    await resetM26PerfDiagnostics(page);
+    const longState = (scenarios.longPhrase as { state: CandidatePanelSnapshot }).state;
+    const firstPageFirst = longState.candidates[0]?.text;
+    await page.keyboard.press("PageDown");
+    await expect.poll(async () =>
+      (await readCandidatePanelSnapshot(page, false)).candidates[0]?.text ?? null,
+      { timeout: 5000 },
+    ).not.toBe(firstPageFirst ?? null);
+    await expect.poll(async () => readPerfDiagnostics(page), { timeout: 10000 })
+      .toHaveLength(1);
+    const pagingPerf = await readPerfDiagnostics(page);
+    scenarios.paging = {
+      perf: pagingPerf,
+      actions: await readActionDiagnostics(page),
+      summary: summarizePerfDiagnostics(pagingPerf),
+      state: await readCandidatePanelSnapshot(page, false),
+    };
+
+    await clearComposition(page);
+    await resetM26PerfDiagnostics(page);
+    await inputField.focus();
+    await inputField.type("`zhe", { delay: 40 });
+    await expect.poll(async () =>
+      (await readCandidatePanelSnapshot(page, false)).candidates.map((candidate) => candidate.text),
+      { timeout: 10000 },
+    ).toContain("這");
+    await expect.poll(async () => readPerfDiagnostics(page), { timeout: 10000 })
+      .toHaveLength(4);
+    const reversePerf = await readPerfDiagnostics(page);
+    scenarios.reverseLookup = {
+      input: "`zhe",
+      perf: reversePerf,
+      actions: await readActionDiagnostics(page),
+      summary: summarizePerfDiagnostics(reversePerf),
+      state: await readCandidatePanelSnapshot(page, false),
+    };
+
+    await saveM29Json(`typing-keydown-to-paint-${M29_EVIDENCE_LABEL}.json`, {
+      label: M29_EVIDENCE_LABEL,
+      scenarios,
+      loadingIndicatorCount: await page.locator("[data-yune-loading-indicator]").count(),
+    });
+    await saveM29Json(`typing-attribution-${M29_EVIDENCE_LABEL}.json`, {
+      label: M29_EVIDENCE_LABEL,
+      scenarioSummaries: Object.fromEntries(Object.entries(scenarios).map(([name, value]) => [
+        name,
+        (value as { summary?: unknown }).summary,
+      ])),
+    });
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
   test("M27 PERF controls classify loading boundaries", async ({ page }) => {
     const inputField = page.locator("input[type='text'], textarea").first();
     const resetDiagnostics = async () => {
@@ -1353,6 +1543,121 @@ test.describe("TypeDuck-Web Browser E2E", () => {
 
     expect(valueAfterFirstSelection).not.toBe(rawTailCommit);
     expect(finalValue).toBe(fixture.captured_final_flow.final_commit_text);
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M28 FOLLOW-UP Space default confirm recomposes partial candidate tail", async ({ page }) => {
+    const fixture = JSON.parse(await readRepoText(
+      "crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json",
+    )) as {
+      input: string;
+      selection_request: { requested_candidate_text: string };
+      captured_active_remaining_input_by_consumed_span: string;
+      captured_next_candidates: { text: string; comment?: string }[];
+    };
+    const input = fixture.input;
+    const selectedText = fixture.selection_request.requested_candidate_text;
+    const remainingInput = fixture.captured_active_remaining_input_by_consumed_span;
+    const rawTailCommit = `${selectedText}${remainingInput}`;
+    const continuationComponents = m28ContinuationComponents(fixture);
+    expect(continuationComponents.length).toBeGreaterThan(0);
+    const expectedContinuation = continuationComponents[0];
+    const oneRowOracleContinuation = fixture.captured_next_candidates[0]?.text ?? null;
+
+    await setPreferenceToggle(page, /Auto-composition/, false);
+
+    const inputField = page.locator("input[type='text'], textarea").first();
+    await clearComposition(page);
+    await inputField.focus();
+    await inputField.type(input, { delay: 50 });
+    await expect.poll(async () =>
+      (await readCandidatePanelSnapshot(page, false)).candidates[0]?.text,
+      { timeout: 10000 },
+    ).toBe(selectedText);
+    const beforeSpace = await readCandidatePanelSnapshot(page, false);
+
+    await page.keyboard.press("Space");
+    await expect(inputField).not.toHaveValue(rawTailCommit, { timeout: 5000 });
+    await expect(inputField).toHaveValue(selectedText, { timeout: 5000 });
+    await expect(page.locator(".candidate-panel .candidates tbody").first()).toBeVisible({ timeout: 10000 });
+    await expect.poll(async () =>
+      candidateTexts(await readCandidatePanelSnapshot(page, false)),
+      { timeout: 10000 },
+    ).toContain(expectedContinuation);
+    const afterSpace = await readCandidatePanelSnapshot(page, false);
+    const valueAfterSpace = await inputField.inputValue();
+
+    await saveM28FollowupJson("browser-space-default-confirm.json", {
+      input,
+      action: "Space",
+      committed: selectedText,
+      raw_tail_committed: valueAfterSpace === rawTailCommit,
+      rawTailCommit,
+      valueAfterSpace,
+      remaining_input_prefix: remainingInput.slice(0, 8),
+      expectedContinuation,
+      continuationComponents,
+      oneRowOracleContinuation,
+      expectedContinuationVisible: afterSpace.candidates.some((candidate) =>
+        candidate.text === expectedContinuation
+      ),
+      beforeSpace,
+      afterSpace,
+      consoleFailures: consoleFailures(consoleErrors),
+    });
+
+    expect(valueAfterSpace).toBe(selectedText);
+    expect(valueAfterSpace).not.toBe(rawTailCommit);
+    expect(afterSpace.candidates.some((candidate) => candidate.text === expectedContinuation)).toBe(true);
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M28 FOLLOW-UP auto-composition follows upstream Jyutping ranking fixture", async ({ page }) => {
+    const fixture = JSON.parse(await readRepoText(
+      "crates/yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json",
+    )) as {
+      capture: { target_input: string };
+      auto_composition_on: {
+        candidate_rows: { text: string }[];
+        space_commit: string;
+        remaining_input_after_space: string | null;
+      };
+    };
+    const input = fixture.capture.target_input;
+    const expectedTexts = fixture.auto_composition_on.candidate_rows.map((candidate) => candidate.text);
+    const expectedCommit = fixture.auto_composition_on.space_commit;
+
+    await setPreferenceToggle(page, /Auto-composition/, true);
+
+    const inputField = page.locator("input[type='text'], textarea").first();
+    await clearComposition(page);
+    await inputField.focus();
+    await inputField.type(input, { delay: 50 });
+    await expect.poll(async () =>
+      candidateTexts(await readCandidatePanelSnapshot(page, false)).slice(0, expectedTexts.length),
+      { timeout: 10000 },
+    ).toEqual(expectedTexts);
+    const beforeSpace = await readCandidatePanelSnapshot(page, false);
+
+    await page.keyboard.press("Space");
+    await expect(inputField).toHaveValue(expectedCommit, { timeout: 5000 });
+    await expect(page.locator(".candidate-panel")).toHaveCount(0, { timeout: 5000 });
+    const valueAfterSpace = await inputField.inputValue();
+
+    await saveM28FollowupJson("browser-upstream-ranking.json", {
+      input,
+      expectedTexts,
+      actualTexts: candidateTexts(beforeSpace).slice(0, expectedTexts.length),
+      beforeSpace,
+      action: "Space",
+      expectedCommit,
+      valueAfterSpace,
+      remainingInputAfterSpace: fixture.auto_composition_on.remaining_input_after_space,
+      consoleFailures: consoleFailures(consoleErrors),
+    });
+
+    expect(candidateTexts(beforeSpace).slice(0, expectedTexts.length)).toEqual(expectedTexts);
+    expect(valueAfterSpace).toBe(expectedCommit);
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 

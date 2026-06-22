@@ -729,7 +729,7 @@ index 0add9ac..1a5e419 100644
  	}
  
 diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
-index 298a42d..6b36128 100644
+index 298a42d..a5307fb 100644
 --- a/src/CandidatePanel.tsx
 +++ b/src/CandidatePanel.tsx
 @@ -1,4 +1,4 @@
@@ -942,9 +942,13 @@ index 298a42d..6b36128 100644
  
  	const parseKey = useCallback((event: KeyboardEvent) => {
  		const { code, key } = event;
-@@ -118,13 +249,19 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -117,15 +248,24 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 	}, [inputState, textArea]);
  
  	useEffect(() => {
++		function isModifierRelease(event: KeyboardEvent) {
++			return /^(Control|Meta|Alt|Shift)(Left|Right)$/.test(event.code);
++		}
  		function onKeyDown(event: KeyboardEvent) {
 +			if (selectCandidateFromDigitKey(event)) {
 +				return;
@@ -957,13 +961,15 @@ index 298a42d..6b36128 100644
  			}
  		}
  		function onKeyUp(event: KeyboardEvent) {
+-			if (inputState) {
 +			if (/^[0-9]$/.test(event.key) && inputStateRef.current) {
 +				return;
 +			}
- 			if (inputState) {
++			if (inputState && isModifierRelease(event)) {
  				const key = parseKey(event);
  				if (key) processKey(`{Release+${key}}`);
-@@ -136,13 +273,46 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 			}
+@@ -136,13 +276,46 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  			document.removeEventListener("keydown", onKeyDown);
  			document.removeEventListener("keyup", onKeyUp);
  		};
@@ -1011,7 +1017,7 @@ index 298a42d..6b36128 100644
  	const hideDictionaryOnLeaveCandidate = useCallback(() => {
  		function hideDictionaryOnLeaveDictionaryPanel() {
  			if (!candidateList.current?.matches(":hover")) {
-@@ -161,7 +331,8 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -161,7 +334,8 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  	}, [hideDictionary]);
  
  	const shouldShowDictionary = typeof showDictionaryIndex === "number";
@@ -1021,7 +1027,7 @@ index 298a42d..6b36128 100644
  		<div>
  			<div className="flex">
  				<div className="flex-1 text-[15pt]">
-@@ -169,17 +340,17 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -169,17 +343,17 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  					{inputState.inputBuffer.active && <span className="p-1 inline-block rounded-md bg-accent text-accent-content">{inputState.inputBuffer.active}</span>}
  					{inputState.inputBuffer.after && <span className="m-1 inline-block">{inputState.inputBuffer.after}</span>}
  				</div>
@@ -1043,7 +1049,7 @@ index 298a42d..6b36128 100644
  					<Candidate
  						key={index}
  						info={candidate}
-@@ -192,6 +363,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -192,6 +366,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				)}
  			</table>
  		</div>

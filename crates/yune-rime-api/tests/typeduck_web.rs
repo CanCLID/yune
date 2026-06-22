@@ -22,6 +22,9 @@ const TYPEDUCK_V112_COMMENTS: &str =
 const TYPEDUCK_V112_M28_PARTIAL_SELECTION: &str = include_str!(
     "../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json"
 );
+const M28_UPSTREAM_JYUTPING_COMPOSITION: &str = include_str!(
+    "../../yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json"
+);
 
 fn test_guard() -> MutexGuard<'static, ()> {
     static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -1340,6 +1343,123 @@ fn m28_partial_selection_real_assets_commits_only_consumed_span_and_recomposes()
     }
     assert_eq!(combined, final_commit);
     assert_eq!(current["context"]["input"], Value::String(String::new()));
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_m28_followup_space_partial_candidate_recomposes() {
+    let _guard = test_guard();
+    let runtime =
+        TypeDuckRuntime::create_with_schema("m28-followup-space-partial", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+    let key = CString::new("translator/enable_sentence").expect("custom key should be valid");
+    let value = CString::new("false").expect("custom value should be valid");
+    assert_eq!(
+        unsafe { yune_typeduck_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+
+    let composing = process_input(state, "caksijathaacoenggeoizi");
+    assert_eq!(
+        composing["context"]["candidates"][0]["text"],
+        Value::String("測".to_owned())
+    );
+
+    let space = response_json(unsafe { yune_typeduck_process_key(state, ' ' as i32, 0) });
+    assert_eq!(
+        space["commits"],
+        Value::Array(vec![Value::String("測".to_owned())])
+    );
+    assert_eq!(
+        space["context"]["input"],
+        Value::String("sijathaacoenggeoizi".to_owned())
+    );
+    assert_eq!(space["status"]["is_composing"], Value::Bool(true));
+    assert_ne!(
+        space["commits"],
+        Value::Array(vec![Value::String("測sijathaacoenggeoizi".to_owned())])
+    );
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn typeduck_adapter_m28_followup_upstream_style_phrase_prefix_ranking() {
+    let _guard = test_guard();
+    let fixture: Value = serde_json::from_str(M28_UPSTREAM_JYUTPING_COMPOSITION)
+        .expect("M28 follow-up upstream Jyutping fixture should parse");
+    let input = fixture["capture"]["target_input"]
+        .as_str()
+        .expect("fixture should capture target input");
+    let expected_rows = fixture["auto_composition_on"]["candidate_rows"]
+        .as_array()
+        .expect("fixture should capture candidate rows");
+    let expected_texts = expected_rows
+        .iter()
+        .map(|row| {
+            row["text"]
+                .as_str()
+                .expect("candidate text should be present")
+        })
+        .collect::<Vec<_>>();
+
+    let runtime =
+        TypeDuckRuntime::create_with_schema("m28-followup-upstream-ranking", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let response = process_input(state, input);
+    let candidates = response["context"]["candidates"]
+        .as_array()
+        .expect("candidates should be present");
+    let actual_texts = candidates
+        .iter()
+        .take(expected_texts.len())
+        .map(|row| {
+            row["text"]
+                .as_str()
+                .expect("candidate text should be present")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actual_texts, expected_texts,
+        "TypeDuck adapter ranking should follow the accepted upstream Jyutping fixture"
+    );
+
+    let space = response_json(unsafe { yune_typeduck_process_key(state, ' ' as i32, 0) });
+    assert_eq!(
+        space["commits"],
+        Value::Array(vec![Value::String(
+            fixture["auto_composition_on"]["space_commit"]
+                .as_str()
+                .expect("fixture should capture Space commit")
+                .to_owned()
+        )])
+    );
+    assert_eq!(space["context"]["input"], Value::String(String::new()));
 
     unsafe { yune_typeduck_cleanup(state) };
     runtime.remove();

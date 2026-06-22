@@ -327,20 +327,28 @@ impl SpellingAlgebraFormula {
             } => {
                 let transformed = if *syllable_scoped {
                     replace_by_syllable(value, |syllable| {
+                        if !pattern.is_match(syllable) {
+                            return None;
+                        }
                         let transformed = pattern
                             .replace_all(syllable, replacement.as_str())
                             .into_owned();
                         (transformed != syllable).then_some(transformed)
                     })
-                    .unwrap_or_else(|| value.clone())
+                } else if pattern.is_match(value) {
+                    Some(
+                        pattern
+                            .replace_all(value, replacement.as_str())
+                            .into_owned(),
+                    )
                 } else {
-                    pattern
-                        .replace_all(value, replacement.as_str())
-                        .into_owned()
+                    None
                 };
-                let modified = transformed != *value;
+                let modified = transformed
+                    .as_ref()
+                    .is_some_and(|transformed| transformed != value);
                 if modified && *add_transformed {
-                    *value = transformed;
+                    *value = transformed.expect("modified transform should have output");
                 }
                 modified
             }

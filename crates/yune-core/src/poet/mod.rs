@@ -221,7 +221,10 @@ impl UpstreamSentenceModel {
                     comment: String::new(),
                     preedit: None,
                     source: if end < input.len() {
-                        CandidateSource::PartialTable { consumed: end }
+                        CandidateSource::PartialTable {
+                            consumed: end,
+                            recompose_on_default: false,
+                        }
                     } else {
                         CandidateSource::Sentence
                     },

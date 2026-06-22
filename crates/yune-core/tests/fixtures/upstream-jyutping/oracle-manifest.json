@@ -1,0 +1,14 @@
+{
+  "fixture_family": "upstream-jyutping-hybrid",
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "canonical_repository": "https://github.com/rime/librime",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "schema": "TypeDuck-HK/schema"
+  },
+  "profile_only": false,
+  "hybrid_oracle": true,
+  "scope": "composition_and_ranking_only_not_comment_payloads"
+}

@@ -1,0 +1,114 @@
+{
+  "input": "caksijathaacoenggeoizi",
+  "action": "Space",
+  "committed": "測",
+  "raw_tail_committed": false,
+  "rawTailCommit": "測sijathaacoenggeoizi",
+  "valueAfterSpace": "測",
+  "remaining_input_prefix": "sijathaa",
+  "expectedContinuation": "是日",
+  "continuationComponents": [
+    "是日",
+    "下場",
+    "句子"
+  ],
+  "oneRowOracleContinuation": "是日下場句子",
+  "expectedContinuationVisible": true,
+  "beforeSpace": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "測",
+        "note": null,
+        "source": null,
+        "rowText": "1.cak1測"
+      },
+      {
+        "index": 1,
+        "text": "惻",
+        "note": null,
+        "source": null,
+        "rowText": "2.cak1惻"
+      },
+      {
+        "index": 2,
+        "text": "出",
+        "note": null,
+        "source": null,
+        "rowText": "3.ceot1出"
+      },
+      {
+        "index": 3,
+        "text": "前",
+        "note": null,
+        "source": null,
+        "rowText": "4.cin4前"
+      },
+      {
+        "index": 4,
+        "text": "場",
+        "note": null,
+        "source": null,
+        "rowText": "5.coeng4場"
+      },
+      {
+        "index": 5,
+        "text": "全",
+        "note": null,
+        "source": null,
+        "rowText": "6.cyun4全"
+      }
+    ]
+  },
+  "afterSpace": {
+    "aiEnabled": false,
+    "inputValue": "測",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "是日",
+        "note": null,
+        "source": null,
+        "rowText": "1.si6jat6是日"
+      },
+      {
+        "index": 1,
+        "text": "時日",
+        "note": null,
+        "source": null,
+        "rowText": "2.si4jat6時日"
+      },
+      {
+        "index": 2,
+        "text": "時",
+        "note": null,
+        "source": null,
+        "rowText": "3.si4時"
+      },
+      {
+        "index": 3,
+        "text": "是",
+        "note": null,
+        "source": null,
+        "rowText": "4.si6是"
+      },
+      {
+        "index": 4,
+        "text": "事",
+        "note": null,
+        "source": null,
+        "rowText": "5.si6事"
+      },
+      {
+        "index": 5,
+        "text": "市",
+        "note": null,
+        "source": null,
+        "rowText": "6.si5市"
+      }
+    ]
+  },
+  "consoleFailures": []
+}

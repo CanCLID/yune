@@ -513,7 +513,7 @@ fn static_table_translator_prefix_fallback_preserves_full_match() {
     assert_eq!(texts, ["full", "prefix"]);
     assert!(matches!(
         candidates[1].source,
-        CandidateSource::PartialTable { consumed: 1 }
+        CandidateSource::PartialTable { consumed: 1, .. }
     ));
 }
 

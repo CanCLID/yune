@@ -25,6 +25,8 @@ const M24_DOGFOODING_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m24-dogfooding.json");
 const M28_PARTIAL_SELECTION_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json");
+const M28_UPSTREAM_JYUTPING_COMPOSITION_ORACLE: &str =
+    include_str!("fixtures/upstream-jyutping/jyutping-m28-followup-composition.json");
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
 const FORK_PARITY_02_PREFER_USER_PHRASE_ORACLE: &str =
@@ -88,6 +90,11 @@ fn m24_dogfooding_fixture() -> Value {
 fn m28_partial_selection_fixture() -> Value {
     serde_json::from_str(M28_PARTIAL_SELECTION_ORACLE)
         .expect("TypeDuck v1.1.2 M28 partial-selection fixture should be valid JSON")
+}
+
+fn m28_upstream_jyutping_composition_fixture() -> Value {
+    serde_json::from_str(M28_UPSTREAM_JYUTPING_COMPOSITION_ORACLE)
+        .expect("M28 follow-up upstream Jyutping fixture should be valid JSON")
 }
 
 fn fork_parity_01_real_dictionary_fuzzy_fixture() -> Value {
@@ -1238,7 +1245,10 @@ fn typeduck_public_schema_asset(relative_path: &str) -> String {
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
 }
 
-fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
+fn typeduck_jyut6ping3_mobile_engine_with_sentence(
+    enable_correction: bool,
+    enable_sentence: bool,
+) -> Engine {
     let translator_dictionary = TableDictionary::parse_rime_dict_yaml(
         &typeduck_public_schema_asset("jyut6ping3.dict.yaml"),
     )
@@ -1251,7 +1261,7 @@ fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
         .with_completion(true)
         .with_correction(enable_correction)
         .with_dynamic_correction_lookup(true)
-        .with_sentence(true)
+        .with_sentence(enable_sentence)
         .with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY)
         .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
         .with_comment_format(&["xform/^/\u{000c}/".to_owned()])
@@ -1266,6 +1276,10 @@ fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
     engine.add_translator(translator);
     engine.add_filter(DictionaryLookupFilter::new(lookup_dictionary));
     engine
+}
+
+fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
+    typeduck_jyut6ping3_mobile_engine_with_sentence(enable_correction, true)
 }
 
 fn jyut6ping3_mobile_spelling_algebra() -> Vec<String> {
@@ -1409,6 +1423,35 @@ fn m28_partial_selection_commits_consumed_span_and_recomposes_remaining_input() 
 }
 
 #[test]
+fn m28_followup_default_confirm_partial_candidate_recomposes() {
+    let input = "caksijathaacoenggeoizi";
+    let remaining_input = "sijathaacoenggeoizi";
+    let mut engine = typeduck_jyut6ping3_mobile_engine_with_sentence(false, false);
+    engine.set_input(input);
+
+    let selected = engine.context().candidates[0].clone();
+    assert_eq!(selected.text, "測");
+    assert_eq!(engine.process_char(' ').as_deref(), Some("測"));
+
+    assert_eq!(engine.context().composition.input, remaining_input);
+    assert_eq!(engine.context().composition.preedit, remaining_input);
+    assert!(!engine
+        .context()
+        .last_commit
+        .as_deref()
+        .is_some_and(|commit| commit.contains(remaining_input)));
+
+    let event = engine
+        .take_pending_userdb_learning()
+        .expect("default partial selection should stage consumed-span userdb learning");
+    assert_eq!(event.input, "cak");
+    assert_eq!(event.selected_text, selected.text);
+    assert_eq!(event.segment_start, 0);
+    assert_eq!(event.segment_end, "cak".len());
+    assert_eq!(event.code, "cak1");
+}
+
+#[test]
 fn m28_whole_sentence_selection_keeps_full_primary_code_learning() {
     let fixture = m28_partial_selection_fixture();
     let input = fixture["input"]
@@ -1445,6 +1488,101 @@ fn m28_whole_sentence_selection_keeps_full_primary_code_learning() {
     assert_eq!(event.segment_start, 0);
     assert_eq!(event.segment_end, input.len());
     assert_eq!(event.code, expected_code);
+}
+
+#[test]
+fn m28_followup_default_confirm_whole_sentence_keeps_full_primary_code_learning() {
+    let fixture = m28_partial_selection_fixture();
+    let input = fixture["input"]
+        .as_str()
+        .expect("M28 fixture should capture input");
+
+    let mut engine = typeduck_jyut6ping3_mobile_engine(false);
+    engine.set_input(input);
+
+    let selected_sentence = engine.context().candidates[0].clone();
+    let expected_code = selected_sentence
+        .comment
+        .split('\r')
+        .filter_map(|record| {
+            let fields = record.strip_prefix("1,")?.split(',').collect::<Vec<_>>();
+            let is_composition = fields.get(7).is_some_and(|field| *field == "composition");
+            (!is_composition).then(|| fields.get(1).map(|code| (*code).to_owned()))?
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(
+        !expected_code.is_empty(),
+        "sentence candidate should carry primary component codes"
+    );
+    assert!(
+        selected_sentence.text.chars().count() > 1,
+        "test should exercise a whole-input sentence/composition candidate"
+    );
+
+    assert_eq!(
+        engine.process_char(' ').as_deref(),
+        Some(selected_sentence.text.as_str())
+    );
+    let event = engine
+        .take_pending_userdb_learning()
+        .expect("whole-sentence default confirm should stage userdb learning");
+    assert_eq!(event.input, input);
+    assert_eq!(event.selected_text, selected_sentence.text);
+    assert_eq!(event.segment_start, 0);
+    assert_eq!(event.segment_end, input.len());
+    assert_eq!(event.code, expected_code);
+
+    assert!(engine.context().composition.input.is_empty());
+}
+
+#[test]
+fn m28_followup_upstream_style_phrase_prefix_ranking() {
+    let fixture = m28_upstream_jyutping_composition_fixture();
+    let input = fixture["capture"]["target_input"]
+        .as_str()
+        .expect("fixture should capture target input");
+    let expected_rows = fixture["auto_composition_on"]["candidate_rows"]
+        .as_array()
+        .expect("fixture should capture candidate rows");
+    assert!(
+        !expected_rows.is_empty(),
+        "fixture should capture at least one candidate"
+    );
+
+    let mut engine = typeduck_jyut6ping3_mobile_engine(false);
+    engine.set_input(input);
+
+    let expected_texts = expected_rows
+        .iter()
+        .map(|row| {
+            row["text"]
+                .as_str()
+                .expect("candidate text should be present")
+        })
+        .collect::<Vec<_>>();
+    let actual_texts = engine
+        .context()
+        .candidates
+        .iter()
+        .take(expected_texts.len())
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actual_texts, expected_texts,
+        "Yune first-page ranking should follow the accepted upstream Jyutping fixture"
+    );
+
+    let expected_commit = fixture["auto_composition_on"]["space_commit"]
+        .as_str()
+        .expect("fixture should capture default Space commit");
+    assert_eq!(engine.process_char(' ').as_deref(), Some(expected_commit));
+    assert_eq!(
+        engine.context().composition.input,
+        fixture["auto_composition_on"]["remaining_input_after_space"]
+            .as_str()
+            .unwrap_or_default()
+    );
 }
 
 #[test]

@@ -99,15 +99,18 @@ fn compact_dictionary_lookup_code(comment: &str) -> Option<String> {
     (!code.is_empty() && !code.contains(',')).then(|| code.to_owned())
 }
 
-fn explicit_partial_consumed_len(
+fn partial_consumed_len_for_commit(
     input: &str,
     candidate: &Candidate,
     intent: CommitIntent,
 ) -> Option<usize> {
-    if intent != CommitIntent::ExplicitSelection {
-        return None;
-    }
-    let consumed = candidate.source.partial_consumed_len()?;
+    let consumed = match intent {
+        CommitIntent::ExplicitSelection => candidate.source.partial_consumed_len()?,
+        CommitIntent::DefaultConfirm if candidate.source.recomposes_on_default() => {
+            candidate.source.partial_consumed_len()?
+        }
+        CommitIntent::DefaultConfirm => return None,
+    };
     if consumed == 0 || consumed >= input.len() || !input.is_char_boundary(consumed) {
         return None;
     }
@@ -1072,7 +1075,7 @@ impl Engine {
         if intent == CommitIntent::DefaultConfirm && candidate_source.is_ai() {
             return None;
         }
-        let partial_consumed = explicit_partial_consumed_len(&input, &candidate, intent);
+        let partial_consumed = partial_consumed_len_for_commit(&input, &candidate, intent);
         let (text, learning_input, segment_end) = if let Some(consumed) = partial_consumed {
             (
                 candidate.text.clone(),

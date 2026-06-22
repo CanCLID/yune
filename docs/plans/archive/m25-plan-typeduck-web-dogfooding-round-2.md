@@ -1,6 +1,6 @@
 # M25 TypeDuck-Web Dogfooding Round 2 Implementation Plan
 
-> **Status:** Intake - **Milestone:** M25 (TypeDuck-Web dogfooding round 2) - **Created:** 2026-06-21 - **Type:** active issue ledger / future execution plan
+> **Status:** Complete - **Milestone:** M25 (TypeDuck-Web dogfooding round 2) - **Created:** 2026-06-21 - **Closed:** 2026-06-21 - **Type:** archived issue ledger / execution record
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
@@ -115,6 +115,25 @@ M25 intake began on 2026-06-21 with user-reported browser dogfooding regressions
 - `M25-DOGFOOD-01` startup work must address the two validated P0 suspects before broader micro-optimization: the browser WASM artifact is currently built from `target/wasm32-unknown-emscripten/debug`, and the TypeDuck-Web adapter forces deploy freshness by calling `invalidateDeployedSchema(...)` before `currentRuntime.deploy()`. The review evidence is tracked at `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-01/claude-review-p0-notes.json`.
 - Do not treat fast asset fetches as proof that startup is network-bound. The current reproduction showed assets loading in under 100 ms while `runtime:initialized` consumed about 47 seconds, so Task 2 must re-measure release WASM and deploy reuse before setting the final warm-reload budget.
 - `M25-DOGFOOD-08` follow-up review found that desktop `jyut6ping3`'s current bare-grave `reverse_lookup` tag has no translator/dictionary and is not a functional Jyutping lookup. The M25 decision is therefore: bare `` ` `` belongs to `luna_pinyin`; useful secondary lookups such as Loengfan/Cangjie should move to an explicit non-bare namespace, preferably `v`-prefixed triggers such as `` `vl`` and `` `vc`` to avoid shadowing normal pinyin initials; the web UI must show which trigger maps to which lookup.
+
+## Closeout Evidence
+
+All M25 rows closed on 2026-06-21. The intake rows above are preserved as the original report text; this closeout table is the authoritative status, owning-test, and evidence index for the completed ledger.
+
+| Row | Status | Owning tests | Evidence |
+| --- | --- | --- | --- |
+| M25-DOGFOOD-01 | Closed | `M25 DOGFOOD-01 startup uses release wasm and records deploy cache reuse`; `npm.cmd --prefix third_party/typeduck-web/source run build` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-01/startup-after.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-01/screenshot-startup-ready.png` |
+| M25-DOGFOOD-02 | Closed | `typeduck_adapter_real_assets_page_size_customize_limits_context_page`; `M25 DOGFOOD-02 page-size slider caps rows and preserves candidate paging` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-02/page-size-summary.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-02/screenshot-page-size-9-hai.png` |
+| M25-DOGFOOD-03 | Closed | `M25 DOGFOOD-03 typing stays out of global loading and records key latency` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-03/typing-latency-after.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-03/screenshot-typing-responsive.png` |
+| M25-DOGFOOD-04 | Closed | `M25 DOGFOOD-04 schema switcher shares the top control row` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-04/schema-switcher-toolbar-desktop.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-04/screenshot-schema-switcher-toolbar-desktop.png`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-04/screenshot-schema-switcher-toolbar-mobile.png` |
+| M25-DOGFOOD-05 | Closed | `M25 DOGFOOD-05 Cangjie version control lives in the top control band` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-05/cangjie-version-top-controls.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-05/screenshot-cangjie-version-top-controls.png` |
+| M25-DOGFOOD-06 | Closed | `M25 DOGFOOD-06 display controls precede live session controls` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-06/display-live-section-order-desktop.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-06/screenshot-display-live-section-order-desktop.png`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-06/screenshot-display-live-section-order-mobile.png` |
+| M25-DOGFOOD-07 | Closed | `M25 DOGFOOD-07 binary controls use checkbox affordance` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-07/checkbox-affordance-summary.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-07/screenshot-checkbox-affordance-desktop.png`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-07/screenshot-checkbox-affordance-mobile.png` |
+| M25-DOGFOOD-08 | Closed | `typeduck_adapter_browser_app_assets_load_jyutping_mandarin_pinyin_reverse_lookup`; `M25 DOGFOOD-08 Jyutping bare grave routes to Luna reverse lookup` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-08/reverse-lookup-summary.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-08/bare-grave-zhe-state.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-08/screenshot-bare-grave-zhe.png` |
+| M25-DOGFOOD-09 | Closed | `M25 DOGFOOD-09 candidate menu layout uses radio choices` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-09/candidate-layout-horizontal.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-09/candidate-layout-vertical.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-09/screenshot-candidate-layout-horizontal.png`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-09/screenshot-candidate-layout-vertical.png` |
+| M25-DOGFOOD-10 | Closed | `M25 DOGFOOD-10 IME settings align with the playground content edges` | `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-10/settings-alignment-desktop.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-10/settings-alignment-mobile.json`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-10/screenshot-settings-alignment-desktop.png`; `third_party/typeduck-web/e2e/results/m25-dogfooding/M25-DOGFOOD-10/screenshot-settings-alignment-mobile.png` |
+
+Patch discipline evidence: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` was regenerated from `third_party/typeduck-web/source/` and checked with both reverse and forward `git apply --check` paths after source changes.
 
 ## Intake Task
 

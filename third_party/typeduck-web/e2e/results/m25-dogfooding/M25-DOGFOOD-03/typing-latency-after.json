@@ -1,0 +1,83 @@
+{
+  "input": "hai",
+  "actionDiagnostics": [
+    {
+      "action": "processKey",
+      "queueWaitMs": 0,
+      "workerRoundtripMs": 25,
+      "workerMs": 25,
+      "totalMs": 25
+    },
+    {
+      "action": "processKey",
+      "queueWaitMs": 0,
+      "workerRoundtripMs": 1,
+      "workerMs": 0,
+      "totalMs": 1
+    },
+    {
+      "action": "processKey",
+      "queueWaitMs": 0,
+      "workerRoundtripMs": 10,
+      "workerMs": 10,
+      "totalMs": 10
+    },
+    {
+      "action": "processKey",
+      "queueWaitMs": 0,
+      "workerRoundtripMs": 0,
+      "workerMs": 0,
+      "totalMs": 0
+    },
+    {
+      "action": "processKey",
+      "queueWaitMs": 0,
+      "workerRoundtripMs": 11,
+      "workerMs": 8,
+      "totalMs": 11
+    },
+    {
+      "action": "processKey",
+      "queueWaitMs": 0,
+      "workerRoundtripMs": 0,
+      "workerMs": 0,
+      "totalMs": 0
+    }
+  ],
+  "typingDiagnostics": [
+    {
+      "action": "processKey",
+      "input": "h",
+      "totalMs": 62
+    },
+    {
+      "action": "processKey",
+      "input": "h",
+      "totalMs": 3
+    },
+    {
+      "action": "processKey",
+      "input": "ha",
+      "totalMs": 13
+    },
+    {
+      "action": "processKey",
+      "input": "ha",
+      "totalMs": 12
+    },
+    {
+      "action": "processKey",
+      "input": "hai",
+      "totalMs": 27
+    },
+    {
+      "action": "processKey",
+      "input": "hai",
+      "totalMs": 2
+    }
+  ],
+  "processKeyActionCount": 6,
+  "processKeyTypingCount": 6,
+  "p95": 62,
+  "loadingIndicatorCount": 0
+}

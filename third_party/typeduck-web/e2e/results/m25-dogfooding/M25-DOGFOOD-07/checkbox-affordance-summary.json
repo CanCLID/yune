@@ -1,0 +1,167 @@
+{
+  "note": "Theme switcher remains a specialized icon switch and uses yd-theme-switch; settings and inspector binary controls use yd-check.",
+  "preferenceControls": [
+    {
+      "label": "自動完成 Auto-completion允許未完成編碼出候選詞。",
+      "checked": true,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "自動校正 Auto-correction用 TypeDuck 校正路徑處理近似輸入。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "自動組詞 Auto-composition允許長輸入產生詞組候選。",
+      "checked": true,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "輸入記憶 Input Memory允許本機 userdb 學習已提交詞。",
+      "checked": true,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "AI 候選 AI Candidates本機第二輪候選，預設關閉，不改 classic 第一候選。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "合併同字候選 Combine same-text candidates把同文字典列合併成一個候選。",
+      "checked": true,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "預測不排第一 Prediction never first長預測候選不得壓過直接輸入候選。",
+      "checked": true,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "除詞 Dictionary exclude套用目前 schema 的示範除詞清單。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "英語 English",
+      "checked": true,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "印地語 Hindi",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "印尼語 Indonesian",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "尼泊爾語 Nepali",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "烏爾都語 Urdu",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "反查編碼 Reverse code display",
+      "checked": true,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "中英模式 ASCII mode切換中文輸入或直接輸入英文字母。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "全形 Full shape切換全形或半形字母及符號。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "簡化字 Simplification用 hk2s OpenCC 路徑轉簡體。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "繁體化 Traditionalization保留作狀態驗證；此 dogfood schema 預設繁體。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "擴展字 Extended charset允許 charset filter 顯示擴展字。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    },
+    {
+      "label": "停用輸入法 Disabled暫停 IME 處理，鍵盤直接輸入文字。",
+      "checked": false,
+      "className": "yd-check",
+      "borderRadius": "4px",
+      "width": "20px",
+      "height": "20px"
+    }
+  ],
+  "inspectorClass": "yd-check",
+  "themeClass": "yd-theme-switch row-start-1 col-start-1 col-span-2"
+}

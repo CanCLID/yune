@@ -1,0 +1,48 @@
+{
+  "boxes": {
+    "topControls": {
+      "x": 32,
+      "y": 105,
+      "width": 1216,
+      "height": 91.5,
+      "right": 1248,
+      "bottom": 196.5
+    },
+    "cangjieControl": {
+      "x": 568.59375,
+      "y": 105,
+      "width": 232,
+      "height": 58,
+      "right": 800.59375,
+      "bottom": 163
+    }
+  },
+  "version3": {
+    "menu/page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "false",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "translator/dictionary_exclude": "[]",
+    "cangjie/dictionary": "cangjie3",
+    "cangjie/tips": "【倉頡三代】"
+  },
+  "version5": {
+    "menu/page_size": "6",
+    "translator/enable_completion": "true",
+    "translator/enable_correction": "false",
+    "translator/enable_sentence": "true",
+    "translator/enable_user_dict": "true",
+    "translator/encode_commit_history": "true",
+    "translator/combine_candidates": "true",
+    "translator/prediction_never_first": "true",
+    "translator/prediction_weight_threshold": "0",
+    "translator/dictionary_exclude": "[]",
+    "cangjie/dictionary": "cangjie5",
+    "cangjie/tips": "【倉頡五代】"
+  }
+}

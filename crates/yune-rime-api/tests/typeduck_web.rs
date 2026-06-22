@@ -1384,6 +1384,33 @@ fn typeduck_adapter_browser_app_assets_load_m22_schemas_and_reverse_lookup() {
 #[test]
 fn typeduck_adapter_browser_app_assets_load_jyutping_mandarin_pinyin_reverse_lookup() {
     let _guard = test_guard();
+    let desktop_schema =
+        fs::read_to_string(browser_app_schema_root().join("jyut6ping3.schema.yaml"))
+            .expect("desktop Jyutping browser schema should be readable");
+    assert!(
+        !desktop_schema.contains("affix_segmentor@reverse_lookup"),
+        "desktop Jyutping schema should not keep the vestigial bare-grave reverse_lookup segmentor"
+    );
+    assert!(
+        !desktop_schema.contains("\nreverse_lookup:"),
+        "desktop Jyutping schema should remove the vestigial bare-grave reverse_lookup block"
+    );
+    assert!(desktop_schema.contains("prefix: \"`vl\""));
+    assert!(desktop_schema.contains("prefix: \"`vc\""));
+    let loengfan_segmentor = desktop_schema
+        .find("affix_segmentor@loengfan")
+        .expect("desktop schema should keep Loengfan lookup");
+    let cangjie_segmentor = desktop_schema
+        .find("affix_segmentor@cangjie")
+        .expect("desktop schema should keep Cangjie lookup");
+    let luna_segmentor = desktop_schema
+        .find("affix_segmentor@luna_pinyin")
+        .expect("desktop schema should keep Luna lookup");
+    assert!(
+        loengfan_segmentor < luna_segmentor && cangjie_segmentor < luna_segmentor,
+        "specific `vl/`vc segmentors should run before the bare-grave Luna catch-all"
+    );
+
     let runtime = TypeDuckRuntime::create_with_schema(
         "browser-app-jyutping-pinyin-reverse",
         "jyut6ping3_mobile",
@@ -1404,7 +1431,7 @@ fn typeduck_adapter_browser_app_assets_load_jyutping_mandarin_pinyin_reverse_loo
 
     assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
 
-    let reverse = process_input(state, "`pzhe");
+    let reverse = process_input(state, "`zhe");
     let reverse_texts = reverse["context"]["candidates"]
         .as_array()
         .expect("reverse lookup candidates should be an array")
@@ -1413,12 +1440,26 @@ fn typeduck_adapter_browser_app_assets_load_jyutping_mandarin_pinyin_reverse_loo
         .collect::<Vec<_>>();
     assert!(
         reverse_texts.contains(&"\u{9019}"),
-        "jyut6ping3_mobile reverse lookup should expose \u{9019} for `pzhe, got {reverse_texts:?}"
+        "jyut6ping3_mobile reverse lookup should expose \u{9019} for bare `zhe, got {reverse_texts:?}"
     );
 
     drop(response_json(unsafe {
         yune_typeduck_process_key(state, 0xff1b, 0)
     }));
+    for input in ["`lai", "`ci", "`xi", "`re"] {
+        let reverse = process_input(state, input);
+        let candidates = reverse["context"]["candidates"]
+            .as_array()
+            .expect("reverse lookup overlap candidates should be an array");
+        assert!(
+            !candidates.is_empty(),
+            "{input} should route to bare-grave luna_pinyin instead of being stolen by secondary lookup prefixes"
+        );
+        drop(response_json(unsafe {
+            yune_typeduck_process_key(state, 0xff1b, 0)
+        }));
+    }
+
     let normal = process_input(state, "nei");
     assert_eq!(
         normal["context"]["candidates"][0]["text"],
@@ -1526,40 +1567,58 @@ fn typeduck_adapter_deploys_browser_real_assets_after_customize() {
 #[test]
 fn typeduck_adapter_real_assets_page_size_customize_limits_context_page() {
     let _guard = test_guard();
-    let runtime =
-        TypeDuckRuntime::create_with_schema("browser-real-page-size", "jyut6ping3_mobile");
-    runtime.write_browser_real_assets();
+    for page_size in [3, 9] {
+        let runtime = TypeDuckRuntime::create_with_schema(
+            &format!("browser-real-page-size-{page_size}"),
+            "jyut6ping3_mobile",
+        );
+        runtime.write_browser_real_assets();
 
-    let state = unsafe {
-        yune_typeduck_init(
-            runtime.shared_c.as_ptr(),
-            runtime.user_c.as_ptr(),
-            runtime.schema_id_c.as_ptr(),
-        )
-    };
-    assert!(!state.is_null());
+        let state = unsafe {
+            yune_typeduck_init(
+                runtime.shared_c.as_ptr(),
+                runtime.user_c.as_ptr(),
+                runtime.schema_id_c.as_ptr(),
+            )
+        };
+        assert!(!state.is_null());
 
-    let config_id = CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
-    let key = CString::new("menu/page_size").expect("custom key should be valid");
-    let value = CString::new("4").expect("custom value should be valid");
-    assert_eq!(
-        unsafe { yune_typeduck_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr()) },
-        TRUE
-    );
-    assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
+        let config_id =
+            CString::new("jyut6ping3_mobile.schema").expect("config id should be valid");
+        let key = CString::new("menu/page_size").expect("custom key should be valid");
+        let value = CString::new(page_size.to_string()).expect("custom value should be valid");
+        assert_eq!(
+            unsafe {
+                yune_typeduck_customize(state, config_id.as_ptr(), key.as_ptr(), value.as_ptr())
+            },
+            TRUE
+        );
+        assert_eq!(unsafe { yune_typeduck_deploy(state) }, TRUE);
 
-    let composing = process_input(state, "jigaajiusihaa");
-    let candidates = composing["context"]["candidates"]
-        .as_array()
-        .expect("candidate page should be an array");
-    assert_eq!(composing["context"]["page_size"], Value::from(4));
-    assert!(
-        candidates.len() <= 4,
-        "browser adapter should not expose more candidates than menu/page_size"
-    );
+        let composing = process_input(state, "hai");
+        let candidates = composing["context"]["candidates"]
+            .as_array()
+            .expect("candidate page should be an array");
+        assert_eq!(composing["context"]["page_size"], Value::from(page_size));
+        assert_eq!(
+            candidates.len(),
+            page_size,
+            "browser adapter should expose exactly menu/page_size rows for high-candidate input"
+        );
 
-    unsafe { yune_typeduck_cleanup(state) };
-    runtime.remove();
+        let next_page = response_json(unsafe { yune_typeduck_flip_page(state, FALSE) });
+        let next_candidates = next_page["context"]["candidates"]
+            .as_array()
+            .expect("next candidate page should be an array");
+        assert_eq!(next_page["context"]["page_size"], Value::from(page_size));
+        assert!(
+            next_candidates.len() <= page_size,
+            "next page must not exceed menu/page_size"
+        );
+
+        unsafe { yune_typeduck_cleanup(state) };
+        runtime.remove();
+    }
 }
 
 #[test]

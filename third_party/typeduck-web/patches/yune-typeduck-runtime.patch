@@ -36,11 +36,193 @@ index cbe61db..746158d 100644
  		"esbuild": "^0.21.4",
  		"eslint": "^8.57.0",
  		"eslint-plugin-import": "^2.29.1",
+Submodule schema contains modified content
+diff --git a/schema/default.custom.yaml b/schema/default.custom.yaml
+index c83ac82..98079e8 100644
+--- a/schema/default.custom.yaml
++++ b/schema/default.custom.yaml
+@@ -13,4 +13,4 @@ patch:
+     - schema: cangjie3
+     - schema: cangjie5
+   menu:
+-    page_size: 50
++    page_size: 6
+diff --git a/schema/jyut6ping3.schema.yaml b/schema/jyut6ping3.schema.yaml
+index cb2146e..7e0ed75 100644
+--- a/schema/jyut6ping3.schema.yaml
++++ b/schema/jyut6ping3.schema.yaml
+@@ -17,10 +17,9 @@ engine:
+   segmentors:
+     - ascii_segmentor
+     - matcher
+-    - affix_segmentor@luna_pinyin
+     - affix_segmentor@loengfan
+     - affix_segmentor@cangjie
+-    - affix_segmentor@reverse_lookup
++    - affix_segmentor@luna_pinyin
+     - abc_segmentor
+     - punct_segmentor
+     - fallback_segmentor
+@@ -34,12 +33,6 @@ engine:
+ translator:
+   __patch: include:/letter_to_tone
+ 
+-reverse_lookup:
+-  tag: reverse_lookup
+-  prefix: "`"
+-  suffix: ";"
+-  tips: 〔反查〕
+-
+ luna_pinyin:
+   tag: luna_pinyin
+   dictionary: luna_pinyin
+@@ -47,7 +40,7 @@ luna_pinyin:
+   enable_user_dict: false
+   encode_commit_history: false
+   always_show_comments: true
+-  prefix: "`p"
++  prefix: "`"
+   suffix: ";"
+   tips: 〔普通話〕
+   preedit_format:
+@@ -64,7 +57,7 @@ loengfan:
+   enable_user_dict: false
+   encode_commit_history: false
+   always_show_comments: true
+-  prefix: "`l"
++  prefix: "`vl"
+   suffix: ";"
+   tips: 〔粵語兩分〕
+   __patch: include:/letter_to_tone
+@@ -77,7 +70,7 @@ cangjie:
+   enable_sentence: false
+   enable_user_dict: false
+   encode_commit_history: false
+-  prefix: "`c"
++  prefix: "`vc"
+   suffix: ";"
+   tips: 〔倉頡五代〕
+   comment_format:
+@@ -90,10 +83,9 @@ cangjie:
+ 
+ recognizer:
+   patterns:
+-    luna_pinyin: "^`p[a-z']*;?$"
+-    loengfan: "^`l[a-z']*;?$"
+-    cangjie: "^`c[a-z']*;?$"
+-    reverse_lookup: "^`[a-z']*;?$"
++    loengfan: "^`vl[a-z']*;?$"
++    cangjie: "^`vc[a-z']*;?$"
++    luna_pinyin: "^`[a-z']*;?$"
+ 
+ __patch:
+   - common:/disable_completion?
+diff --git a/schema/jyut6ping3_mobile.schema.yaml b/schema/jyut6ping3_mobile.schema.yaml
+index 31a7c80..b1c985d 100644
+--- a/schema/jyut6ping3_mobile.schema.yaml
++++ b/schema/jyut6ping3_mobile.schema.yaml
+@@ -6,6 +6,33 @@ __include: template:/
+ schema:
+   schema_id: jyut6ping3_mobile
+   name: 粵語拼音
++  dependencies:
++    - luna_pinyin
++
++engine:
++  processors:
++    - ascii_composer
++    - recognizer
++    - key_binder
++    - speller
++    - punctuator
++    - selector
++    - navigator
++    - express_editor
++  segmentors:
++    - ascii_segmentor
++    - matcher
++    - affix_segmentor@luna_pinyin
++    - abc_segmentor
++    - punct_segmentor
++    - fallback_segmentor
++  translators:
++    - punct_translator
++    - script_translator
++    - script_translator@luna_pinyin
++  filters:
++    - dictionary_lookup_filter
++    - simplifier
+ 
+ menu:
+   __patch: include:/no_candidate_selection
+@@ -13,6 +40,30 @@ menu:
+ translator:
+   prism: jyut6ping3_mobile
+   __patch: include:/letter_to_tone
++  prediction_candidate_limit: 1
++  prefix_fallback: true
++
++luna_pinyin:
++  tag: luna_pinyin
++  dictionary: luna_pinyin_yune_reverse
++  enable_sentence: false
++  enable_user_dict: false
++  encode_commit_history: false
++  always_show_comments: true
++  prefix: "`"
++  suffix: ";"
++  tips: 〔普通話〕
++  preedit_format:
++    - xform/([nl])v/$1ü/
++    - xform/([nl])ue/$1üe/
++    - xform/([jqxy])v/$1u/
++  comment_format:
++    - xform/^/\v/
++
++recognizer:
++  import_preset: default
++  patterns:
++    luna_pinyin: "^`[a-z']*;?$"
+ 
+ __patch:
+   - common:/disable_completion?
+diff --git a/schema/luna_pinyin.schema.yaml b/schema/luna_pinyin.schema.yaml
+index b12be76..d3e508a 100644
+--- a/schema/luna_pinyin.schema.yaml
++++ b/schema/luna_pinyin.schema.yaml
+@@ -5,7 +5,7 @@ __include: template:/
+ 
+ schema:
+   schema_id: luna_pinyin
+-  name: 普通話
++  name: 朙月拼音
+   author:
+     - 佛振 <chen.sst@gmail.com>
+   description: |
+diff --git a/schema/luna_pinyin_yune_reverse.dict.yaml b/schema/luna_pinyin_yune_reverse.dict.yaml
+new file mode 100644
+index 0000000..74bc863
+--- /dev/null
++++ b/schema/luna_pinyin_yune_reverse.dict.yaml
+@@ -0,0 +1,13 @@
++# Rime dictionary
++# encoding: utf-8
++
++---
++name: luna_pinyin_yune_reverse
++version: "2026.06.21"
++sort: by_weight
++import_tables:
++  - luna_pinyin
++...
++
++這	zhe	100000
++这	zhe	99999
 diff --git a/src/App.tsx b/src/App.tsx
-index c43ccbc..2c261b2 100644
+index c43ccbc..f979747 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -1,20 +1,30 @@
+@@ -1,20 +1,29 @@
 -import { useEffect, useReducer, useState } from "react";
 +import { useEffect, useReducer, useRef, useState } from "react";
  
@@ -52,7 +234,6 @@ index c43ccbc..2c261b2 100644
  import { useLoading, usePreferences } from "./hooks";
  import Preferences from "./Preferences";
  import Rime, { subscribe } from "./rime";
-+import SchemaSwitcher from "./SchemaSwitcher";
  import ThemeSwitcher from "./ThemeSwitcher";
  import Toolbar from "./Toolbar";
  import { notify } from "./utils";
@@ -73,7 +254,7 @@ index c43ccbc..2c261b2 100644
  	useEffect(() => {
  		const { resolve } = startAsyncTask();
  		return subscribe("initialized", success => {
-@@ -26,32 +36,115 @@ export default function App() {
+@@ -26,32 +35,115 @@ export default function App() {
  	}, [startAsyncTask]);
  
  	useEffect(() => {
@@ -196,7 +377,7 @@ index c43ccbc..2c261b2 100644
  				if (!(await Rime.deploy() && success)) {
  					type = "warning";
  				}
-@@ -63,26 +156,113 @@ export default function App() {
+@@ -63,26 +155,116 @@ export default function App() {
  				notify(type, "套用設定", "applying the settings");
  			}
  			updateDeployStatus();
@@ -272,6 +453,7 @@ index c43ccbc..2c261b2 100644
 -			<Toolbar loading={loading} deployStatus={deployStatus} />
 -			<textarea className={`block w-full min-h-64 my-6 textarea textarea-bordered text-lg px-3 ${isHeiTypeface ? "font-hei" : "font-sung"}`} ref={setTextArea} {...NO_AUTO_FILL} />
 -			{textArea && <CandidatePanel runAsyncTask={runAsyncTask} textArea={textArea} prefs={preferences} deployStatus={deployStatus} />}
++			<section data-yune-playground-content>
 +			<Toolbar
 +				loading={loading}
 +				isAsciiMode={preferences.isAsciiMode}
@@ -279,10 +461,11 @@ index c43ccbc..2c261b2 100644
 +				isSimplification={preferences.isSimplification}
 +				setIsSimplification={preferences.setIsSimplification}
 +				isFullShape={preferences.isFullShape}
-+				setIsFullShape={preferences.setIsFullShape} />
-+			<SchemaSwitcher
++				setIsFullShape={preferences.setIsFullShape}
 +				activeSchema={preferences.activeSchema}
-+				setActiveSchema={preferences.setActiveSchema} />
++				setActiveSchema={preferences.setActiveSchema}
++				isCangjie5={preferences.isCangjie5}
++				setIsCangjie5={preferences.setIsCangjie5} />
 +			<YuneStatusStrip status={engineStatus} />
 +			<textarea
 +				className={`yd-input-area my-6 min-h-64 px-3 py-2 text-lg ${chineseTypefaceClass}`}
@@ -293,7 +476,7 @@ index c43ccbc..2c261b2 100644
 +			<label className="my-4 flex w-fit items-center gap-3 text-sm" data-yune-inspector-toggle>
 +				<input
 +					type="checkbox"
-+					className="yd-switch"
++					className="yd-check"
 +					checked={isInspectorEnabled}
 +					aria-label="Yune inspector"
 +					onChange={event => setIsInspectorEnabled(event.currentTarget.checked)} />
@@ -308,6 +491,7 @@ index c43ccbc..2c261b2 100644
 +				aiStatus={aiStatus}
 +				onInspectorDebug={setInspectorDebug}
 +				onStatus={setEngineStatus} />}
++			</section>
  			<Preferences {...preferences} />
  		</main>
 -		<footer className="footer footer-center p-6 bg-secondary text-secondary-content">
@@ -537,7 +721,7 @@ index 0add9ac..1a5e419 100644
  	}
  
 diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
-index 298a42d..60f7dee 100644
+index 298a42d..610990c 100644
 --- a/src/CandidatePanel.tsx
 +++ b/src/CandidatePanel.tsx
 @@ -1,4 +1,4 @@
@@ -546,7 +730,7 @@ index 298a42d..60f7dee 100644
  
  import Candidate from "./Candidate";
  import CandidateInfo from "./CandidateInfo";
-@@ -8,15 +8,19 @@ import DictionaryPanel from "./DictionaryPanel";
+@@ -8,15 +8,30 @@ import DictionaryPanel from "./DictionaryPanel";
  import Rime from "./rime";
  import { isPrintable, notify } from "./utils";
  
@@ -554,7 +738,18 @@ index 298a42d..60f7dee 100644
 +import type { InputState, Preferences, RimeResult, YuneInspectorDebug, YuneStatusSnapshot } from "./types";
  
 -export default function CandidatePanel({ runAsyncTask, textArea, prefs, deployStatus }: {
-+export default function CandidatePanel({ runAsyncTask, textArea, prefs, deployStatus, aiStatus, onInspectorDebug, onStatus }: {
++function appendTypingDiagnostic(diagnostic: {
++	action: "processKey";
++	input?: string;
++	totalMs: number;
++}) {
++	const existing = document.documentElement.dataset.yuneTypingDiagnostics;
++	const diagnostics = existing ? JSON.parse(existing) as typeof diagnostic[] : [];
++	diagnostics.push(diagnostic);
++	document.documentElement.dataset.yuneTypingDiagnostics = JSON.stringify(diagnostics.slice(-100));
++}
++
++export default function CandidatePanel({ textArea, prefs, deployStatus, aiStatus, onInspectorDebug, onStatus }: {
  	runAsyncTask(asyncTask: () => Promise<void>): void;
  	textArea: HTMLTextAreaElement;
 -	prefs: InterfacePreferences;
@@ -569,7 +764,14 @@ index 298a42d..60f7dee 100644
  	const [showDictionaryIndex, setShowDictionaryIndex] = useState<number | undefined>();
  	const candidateList = useRef<HTMLTableElement>(null);
  	const dictionaryPanel = useRef<HTMLDivElement>(null);
-@@ -36,6 +40,8 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -32,10 +47,14 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 	}, [textArea]);
+ 
+ 	const handleRimeResult = useCallback((promise: Promise<RimeResult>, key?: string) =>
+-		runAsyncTask(async () => {
++		{
++			const startedAt = performance.now();
++			void (async () => {
  			let type: "warning" | "error" | undefined;
  			try {
  				const result = await promise;
@@ -578,7 +780,7 @@ index 298a42d..60f7dee 100644
  				if (!result.success) {
  					type = "warning";
  				}
-@@ -44,12 +50,12 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -44,12 +63,12 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  						inputBuffer: result.inputBuffer,
  						highlightedIndex: result.highlightedIndex,
  						candidates: result.candidates.map(
@@ -593,12 +795,27 @@ index 298a42d..60f7dee 100644
  				if (result.committed) {
  					insert(result.committed);
  				}
-@@ -66,12 +72,35 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -57,6 +76,13 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 					insert(key);
+ 				}
+ 				setInputState(result.isComposing ? state : undefined);
++				requestAnimationFrame(() => {
++					appendTypingDiagnostic({
++						action: "processKey",
++						input: result.isComposing ? result.inputBuffer.active || result.inputBuffer.before : undefined,
++						totalMs: Math.round(performance.now() - startedAt),
++					});
++				});
+ 				hideDictionary();
+ 			}
+ 			catch {
+@@ -66,12 +92,36 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				notify(type, "執行操作", "performing the operation");
  			}
  			textArea.focus();
 -		}), [hideDictionary, inputState, insert, runAsyncTask, textArea]);
-+		}), [hideDictionary, insert, onInspectorDebug, onStatus, runAsyncTask, textArea]);
++		})();
++		}, [hideDictionary, insert, onInspectorDebug, onStatus, textArea]);
  
 -	const processKey = useCallback((input: string, key?: string) => handleRimeResult(Rime.processKey(input), key), [handleRimeResult]);
 +	const processKey = useCallback((input: string, key?: string) => {
@@ -621,17 +838,17 @@ index 298a42d..60f7dee 100644
 +			return false;
 +		}
 +		const index = event.key === "0" ? 9 : Number(event.key) - 1;
-+		if (index >= state.candidates.length) {
++		if (index >= Math.min(state.candidates.length, prefs.pageSize)) {
 +			return false;
 +		}
 +		event.preventDefault();
 +		selectCandidate(index);
 +		return true;
-+	}, [selectCandidate]);
++	}, [prefs.pageSize, selectCandidate]);
  
  	const parseKey = useCallback((event: KeyboardEvent) => {
  		const { code, key } = event;
-@@ -118,6 +147,9 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -118,6 +168,9 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  
  	useEffect(() => {
  		function onKeyDown(event: KeyboardEvent) {
@@ -641,7 +858,7 @@ index 298a42d..60f7dee 100644
  			const key = parseKey(event);
  			if (key) {
  				event.preventDefault();
-@@ -125,6 +157,9 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -125,6 +178,9 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  			}
  		}
  		function onKeyUp(event: KeyboardEvent) {
@@ -651,7 +868,7 @@ index 298a42d..60f7dee 100644
  			if (inputState) {
  				const key = parseKey(event);
  				if (key) processKey(`{Release+${key}}`);
-@@ -136,13 +171,23 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -136,13 +192,23 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  			document.removeEventListener("keydown", onKeyDown);
  			document.removeEventListener("keyup", onKeyUp);
  		};
@@ -676,16 +893,17 @@ index 298a42d..60f7dee 100644
  	const hideDictionaryOnLeaveCandidate = useCallback(() => {
  		function hideDictionaryOnLeaveDictionaryPanel() {
  			if (!candidateList.current?.matches(":hover")) {
-@@ -161,7 +206,7 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -161,7 +227,8 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  	}, [hideDictionary]);
  
  	const shouldShowDictionary = typeof showDictionaryIndex === "number";
 -	return inputState && <CaretFollower textArea={textArea} className="candidate-panel">
++	const visibleCandidates = inputState?.candidates.slice(0, prefs.pageSize) ?? [];
 +	return inputState && <CaretFollower textArea={textArea} className={`candidate-panel candidate-panel--${prefs.candidateMenuLayout}`}>
  		<div>
  			<div className="flex">
  				<div className="flex-1 text-[15pt]">
-@@ -169,11 +214,11 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -169,17 +236,17 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  					{inputState.inputBuffer.active && <span className="p-1 inline-block rounded-md bg-accent text-accent-content">{inputState.inputBuffer.active}</span>}
  					{inputState.inputBuffer.after && <span className="m-1 inline-block">{inputState.inputBuffer.after}</span>}
  				</div>
@@ -700,6 +918,21 @@ index 298a42d..60f7dee 100644
  						<span className="relative bottom-1">›</span>
  					</button>
  				</div>
+ 			</div>
+ 			<table ref={candidateList} className="candidates">
+-				{inputState.candidates.map((candidate, index) =>
++				{visibleCandidates.map((candidate, index) =>
+ 					<Candidate
+ 						key={index}
+ 						info={candidate}
+@@ -192,6 +259,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+ 				)}
+ 			</table>
+ 		</div>
+-		{shouldShowDictionary && <DictionaryPanel info={inputState.candidates[showDictionaryIndex]} prefs={prefs} ref={dictionaryPanel} />}
++		{shouldShowDictionary && <DictionaryPanel info={visibleCandidates[showDictionaryIndex]} prefs={prefs} ref={dictionaryPanel} />}
+ 	</CaretFollower>;
+ }
 diff --git a/src/DictionaryPanel.tsx b/src/DictionaryPanel.tsx
 index d58fbab..b6cf889 100644
 --- a/src/DictionaryPanel.tsx
@@ -775,7 +1008,7 @@ index d58fbab..b6cf889 100644
  						)}
  					</div>,
 diff --git a/src/Inputs.tsx b/src/Inputs.tsx
-index d5451b8..bac1dbb 100644
+index d5451b8..3d4fe92 100644
 --- a/src/Inputs.tsx
 +++ b/src/Inputs.tsx
 @@ -1,76 +1,119 @@
@@ -815,8 +1048,8 @@ index d5451b8..bac1dbb 100644
 +	description?: ReactNode;
 +}
 +
-+export function Section({ title, description, children }: { title: ReactNode; description?: ReactNode; children: ReactNode }) {
-+	return <section className="yd-section">
++export function Section({ title, description, children, sectionId }: { title: ReactNode; description?: ReactNode; children: ReactNode; sectionId?: string }) {
++	return <section className="yd-section" data-yune-section={sectionId}>
 +		<header>
 +			<h4 className="yd-section-title">{title}</h4>
 +			{description && <p className="yd-section-description">{description}</p>}
@@ -834,7 +1067,7 @@ index d5451b8..bac1dbb 100644
  		<input
  			type="checkbox"
 -			className="toggle toggle-primary"
-+			className="yd-switch"
++			className="yd-check"
  			{...NO_AUTO_FILL}
  			checked={checked}
  			onChange={event => setChecked(event.target.checked)} />
@@ -931,10 +1164,10 @@ index d5451b8..bac1dbb 100644
 +	</label>;
  }
 diff --git a/src/Preferences.tsx b/src/Preferences.tsx
-index 820a2e0..35c5340 100644
+index 820a2e0..e7d4a14 100644
 --- a/src/Preferences.tsx
 +++ b/src/Preferences.tsx
-@@ -1,109 +1,138 @@
+@@ -1,109 +1,130 @@
 -import { LANGUAGE_LABELS, SHOW_ROMANIZATION_LABELS, Language, ShowRomanization } from "./consts";
 -import { Radio, RadioCheckbox, Segment, Toggle } from "./Inputs";
 +import {
@@ -945,7 +1178,7 @@ index 820a2e0..35c5340 100644
 +	Language,
 +	ShowRomanization,
 +} from "./consts";
-+import { Checkbox, Radio, Range, Section, Segment, Toggle } from "./Inputs";
++import { Checkbox, Radio, Range, Section, Toggle } from "./Inputs";
  
  import type { PreferencesWithSetter } from "./types";
  
@@ -1021,10 +1254,11 @@ index 820a2e0..35c5340 100644
 -						<span className="tick after:content-['9']">|</span>
 -						<span className="tick after:content-['10']">|</span>
 +
-+	return <section className="mx-auto max-w-6xl">
++	return <section className="mt-8" data-yune-preferences>
 +		<h3 className="mb-4 text-2xl font-semibold">輸入法設定 IME Settings</h3>
 +		<div className="grid gap-4 lg:grid-cols-2">
 +			<Section
++				sectionId="active"
 +				title="引擎設定 Active engine controls"
 +				description="會重新部署 schema，影響候選詞、排序、記憶同除詞。">
 +				<Toggle label="自動完成 Auto-completion" description="允許未完成編碼出候選詞。" checked={prefs.enableCompletion} setChecked={prefs.setEnableCompletion} />
@@ -1038,18 +1272,7 @@ index 820a2e0..35c5340 100644
 +				<Toggle label="除詞 Dictionary exclude" description="套用目前 schema 的示範除詞清單。" checked={prefs.dictionaryExclude.length > 0} setChecked={checked => prefs.setDictionaryExclude(checked ? [...DICTIONARY_EXCLUDE_BY_SCHEMA[prefs.activeSchema]] : [])} />
 +			</Section>
 +
-+			<Section
-+				title="即時狀態 Live session controls"
-+				description="只改目前 session 狀態，不改候選引擎設定。">
-+				<Toggle label="中英模式 ASCII mode" description="切換中文輸入或直接輸入英文字母。" checked={prefs.isAsciiMode} setChecked={prefs.setIsAsciiMode} />
-+				<Toggle label="全形 Full shape" description="切換全形或半形字母及符號。" checked={prefs.isFullShape} setChecked={prefs.setIsFullShape} />
-+				<Toggle label="簡化字 Simplification" description="用 hk2s OpenCC 路徑轉簡體。" checked={prefs.isSimplification} setChecked={prefs.setIsSimplification} />
-+				<Toggle label="繁體化 Traditionalization" description="保留作狀態驗證；此 dogfood schema 預設繁體。" checked={prefs.isTraditionalization} setChecked={prefs.setIsTraditionalization} />
-+				<Toggle label="擴展字 Extended charset" description="允許 charset filter 顯示擴展字。" checked={prefs.isExtendedCharset} setChecked={prefs.setIsExtendedCharset} />
-+				<Toggle label="停用輸入法 Disabled" description="暫停 IME 處理，鍵盤直接輸入文字。" checked={prefs.isDisabled} setChecked={prefs.setIsDisabled} />
-+			</Section>
-+
-+			<Section title="顯示設定 Display controls">
++			<Section sectionId="display" title="顯示設定 Display controls">
 +				<div className="yd-field">
 +					<div className="yd-field-label">顯示語言 Display languages</div>
 +					<div className="grid gap-1 sm:grid-cols-2">
@@ -1062,12 +1285,12 @@ index 820a2e0..35c5340 100644
 +						)}
 +					</div>
 +				</div>
-+				<Range label="每頁候選詞數量 No. of Candidates Per Page" min={4} max={10} step={1} value={prefs.pageSize} setValue={prefs.setPageSize} />
++				<Range label="每頁候選詞數量 No. of Candidates Per Page" min={3} max={10} step={1} value={prefs.pageSize} setValue={prefs.setPageSize} />
 +				<div className="yd-field">
 +					<div className="yd-field-label">候選排版 Candidate Menu Layout</div>
-+					<div className="yd-segment-group">
++					<div className="grid gap-1">
 +						{(Object.entries(CANDIDATE_MENU_LAYOUT_LABELS) as [typeof prefs.candidateMenuLayout, string][]).map(([value, label]) =>
-+							<Segment
++							<Radio
 +								key={value}
 +								name="candidateMenuLayout"
 +								label={label}
@@ -1135,6 +1358,8 @@ index 820a2e0..35c5340 100644
 -				<div className="label gap-2">
 -					<span className="text-lg text-base-content-200">倉頡版本 Cangjie Version</span>
 -					<div className="join">
+-						<Segment name="cangjieVersion" label="三代 Version 3" state={prefs.isCangjie5} setState={prefs.setIsCangjie5} value={false} />
+-						<Segment name="cangjieVersion" label="五代 Version 5" state={prefs.isCangjie5} setState={prefs.setIsCangjie5} value={true} />
 +				<div className="yd-field">
 +					<div className="yd-field-label">候選粵拼 Candidate Jyutping</div>
 +					<div className="grid gap-1">
@@ -1147,31 +1372,33 @@ index 820a2e0..35c5340 100644
 +								setState={prefs.setShowRomanization}
 +								value={value} />
 +						)}
-+					</div>
-+				</div>
-+				<Toggle label="反查編碼 Reverse code display" checked={prefs.showReverseCode} setChecked={prefs.setShowReverseCode} />
-+			</Section>
-+
-+			<Section title="網頁前端 Web Frontend Controls">
-+				<div className="yd-field">
-+					<div className="yd-field-label">倉頡版本 Cangjie version</div>
-+					<div className="yd-segment-group">
- 						<Segment name="cangjieVersion" label="三代 Version 3" state={prefs.isCangjie5} setState={prefs.setIsCangjie5} value={false} />
- 						<Segment name="cangjieVersion" label="五代 Version 5" state={prefs.isCangjie5} setState={prefs.setIsCangjie5} value={true} />
  					</div>
  				</div>
 -			</li>
 -		</ul>
++				<Toggle label="反查編碼 Reverse code display" checked={prefs.showReverseCode} setChecked={prefs.setShowReverseCode} />
++			</Section>
++
++			<Section
++				sectionId="live"
++				title="即時狀態 Live session controls"
++				description="只改目前 session 狀態，不改候選引擎設定。">
++				<Toggle label="中英模式 ASCII mode" description="切換中文輸入或直接輸入英文字母。" checked={prefs.isAsciiMode} setChecked={prefs.setIsAsciiMode} />
++				<Toggle label="全形 Full shape" description="切換全形或半形字母及符號。" checked={prefs.isFullShape} setChecked={prefs.setIsFullShape} />
++				<Toggle label="簡化字 Simplification" description="用 hk2s OpenCC 路徑轉簡體。" checked={prefs.isSimplification} setChecked={prefs.setIsSimplification} />
++				<Toggle label="繁體化 Traditionalization" description="保留作狀態驗證；此 dogfood schema 預設繁體。" checked={prefs.isTraditionalization} setChecked={prefs.setIsTraditionalization} />
++				<Toggle label="擴展字 Extended charset" description="允許 charset filter 顯示擴展字。" checked={prefs.isExtendedCharset} setChecked={prefs.setIsExtendedCharset} />
++				<Toggle label="停用輸入法 Disabled" description="暫停 IME 處理，鍵盤直接輸入文字。" checked={prefs.isDisabled} setChecked={prefs.setIsDisabled} />
 +			</Section>
 +		</div>
  	</section>;
  }
 diff --git a/src/SchemaSwitcher.tsx b/src/SchemaSwitcher.tsx
 new file mode 100644
-index 0000000..f72a669
+index 0000000..27f5f00
 --- /dev/null
 +++ b/src/SchemaSwitcher.tsx
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,36 @@
 +import { SCHEMA_OPTIONS } from "./consts";
 +import { Segment } from "./Inputs";
 +
@@ -1181,12 +1408,14 @@ index 0000000..f72a669
 +export default function SchemaSwitcher({
 +	activeSchema,
 +	setActiveSchema,
++	compact = false,
 +}: {
 +	activeSchema: RimeSchemaId;
 +	setActiveSchema: Dispatch<SetStateAction<RimeSchemaId>>;
++	compact?: boolean;
 +}) {
-+	return <fieldset className="my-4" data-yune-schema-switcher>
-+		<legend className="mb-2 font-semibold">方案 Schema</legend>
++	return <fieldset className={compact ? "yd-top-field" : "my-4"} data-yune-schema-switcher>
++		<legend className={compact ? "yd-top-label" : "mb-2 font-semibold"}>方案 Schema</legend>
 +		<div className="yd-segment-group flex-wrap">
 +			{SCHEMA_OPTIONS.map(schema =>
 +				<Segment
@@ -1201,13 +1430,13 @@ index 0000000..f72a669
 +					value={schema.id} />
 +			)}
 +		</div>
-+		<p className="mt-2 text-sm text-base-content-300">
++		<p className={compact ? "mt-1 text-xs text-base-content-300" : "mt-2 text-sm text-base-content-300"}>
 +			{SCHEMA_OPTIONS.find(schema => schema.id === activeSchema)?.reverseLookup}
 +		</p>
 +	</fieldset>;
 +}
 diff --git a/src/ThemeSwitcher.tsx b/src/ThemeSwitcher.tsx
-index 28fe97b..a96c9b4 100644
+index 28fe97b..2ec146b 100644
 --- a/src/ThemeSwitcher.tsx
 +++ b/src/ThemeSwitcher.tsx
 @@ -17,13 +17,12 @@ export default function ThemeSwitcher() {
@@ -1221,21 +1450,25 @@ index 28fe97b..a96c9b4 100644
  			checked={theme === "dark"}
  			onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
 -			className="toggle bg-base-content row-start-1 col-start-1 col-span-2" />
-+			className="yd-switch row-start-1 col-start-1 col-span-2" />
++			className="yd-theme-switch row-start-1 col-start-1 col-span-2" />
  		<span className="sr-only">Theme Switcher</span>
  		<svg
  			className="col-start-1 row-start-1 stroke-base-100 fill-base-100 size-3.5"
 diff --git a/src/Toolbar.tsx b/src/Toolbar.tsx
-index ff262af..752d808 100644
+index ff262af..47c000b 100644
 --- a/src/Toolbar.tsx
 +++ b/src/Toolbar.tsx
-@@ -1,8 +1,24 @@
+@@ -1,8 +1,36 @@
  import { useEffect, useRef, useState } from "react";
  
 -import { useRimeOption } from "./hooks";
-+import type { Dispatch, SetStateAction } from "react";
++import { Segment } from "./Inputs";
++import SchemaSwitcher from "./SchemaSwitcher";
  
 -export default function Toolbar({ loading, deployStatus }: { loading: boolean; deployStatus: number }) {
++import type { RimeSchemaId } from "./types";
++import type { Dispatch, SetStateAction } from "react";
++
 +export default function Toolbar({
 +	loading,
 +	isAsciiMode,
@@ -1244,6 +1477,10 @@ index ff262af..752d808 100644
 +	setIsSimplification,
 +	isFullShape,
 +	setIsFullShape,
++	activeSchema,
++	setActiveSchema,
++	isCangjie5,
++	setIsCangjie5,
 +}: {
 +	loading: boolean;
 +	isAsciiMode: boolean;
@@ -1252,12 +1489,24 @@ index ff262af..752d808 100644
 +	setIsSimplification: Dispatch<SetStateAction<boolean>>;
 +	isFullShape: boolean;
 +	setIsFullShape: Dispatch<SetStateAction<boolean>>;
++	activeSchema: RimeSchemaId;
++	setActiveSchema: Dispatch<SetStateAction<RimeSchemaId>>;
++	isCangjie5: boolean;
++	setIsCangjie5: Dispatch<SetStateAction<boolean>>;
 +}) {
  	const [debouncedLoading, setDebouncedLoading] = useState(loading);
  	const timeout = useRef<ReturnType<typeof setTimeout>>();
  	useEffect(() => {
-@@ -22,28 +38,20 @@ export default function Toolbar({ loading, deployStatus }: { loading: boolean; d
+@@ -16,34 +44,37 @@ export default function Toolbar({ loading, deployStatus }: { loading: boolean; d
+ 			timeout.current = setTimeout(() => setDebouncedLoading(true), 200);
+ 			return clear;
  		}
+-		else {
+-			setDebouncedLoading(false);
+-			return clear();
+-		}
++		setDebouncedLoading(false);
++		return clear();
  	}, [loading]);
  
 -	useRimeOption("soft_cursor", true, deployStatus); // Not modifiable by user
@@ -1265,27 +1514,43 @@ index ff262af..752d808 100644
 -	const [isSimplified, toggleIsSimplified] = useRimeOption("simplification", false, deployStatus);
 -	const [isFullwidthLettersAndSymbols, toggleIsFullwidthLettersAndSymbols] = useRimeOption("full_shape", false, deployStatus, "isFullwidthLettersAndSymbols");
 -	const [isHalfwidthPunctuation, toggleIsHalfwidthPunctuation] = useRimeOption("ascii_punct", false, deployStatus, "isHalfwidthPunctuation");
- 	return <div>
+-	return <div>
 -		<div className="join align-middle">
 -			<div className="tooltip" data-tip={"中文／英文字母\nChinese / Alphabet"}>
 -				<button className="btn-toolbar join-item" onClick={toggleIsASCIIMode}>{isASCIIMode ? "En" : "中"}</button>
-+		<div className="flex flex-wrap gap-2 align-middle">
-+			<div className="yd-tip" data-tip={"中文／英文字母\nChinese / Alphabet"}>
-+				<button className="yd-icon-button" aria-label="ASCII mode" onClick={() => setIsAsciiMode(value => !value)}>{isAsciiMode ? "En" : "中"}</button>
- 			</div>
+-			</div>
 -			<div className="tooltip" data-tip={"繁體字／簡體字\nTraditional / Simplified"}>
 -				<button className="btn-toolbar join-item" onClick={toggleIsSimplified}>{isSimplified ? "简" : "繁"}</button>
-+			<div className="yd-tip" data-tip={"繁體字／簡體字\nTraditional / Simplified"}>
-+				<button className="yd-icon-button" aria-label="Simplification" onClick={() => setIsSimplification(value => !value)}>{isSimplification ? "简" : "繁"}</button>
- 			</div>
+-			</div>
 -			<div className="tooltip" data-tip={"半形／全形字母及符號\nHalfwidth / Fullwidth Letters & Symbols"}>
 -				<button className="btn-toolbar join-item" onClick={toggleIsFullwidthLettersAndSymbols}>{isFullwidthLettersAndSymbols ? "全" : "半"}</button>
 -			</div>
 -			<div className="tooltip" data-tip={"半形／全形標點符號\nHalfwidth / Fullwidth Punctuations"}>
 -				<button className="btn-toolbar join-item" onClick={toggleIsHalfwidthPunctuation}>{isHalfwidthPunctuation ? "." : "。"}</button>
-+			<div className="yd-tip" data-tip={"半形／全形字母及符號\nHalfwidth / Fullwidth Letters & Symbols"}>
-+				<button className="yd-icon-button" aria-label="Full shape" onClick={() => setIsFullShape(value => !value)}>{isFullShape ? "全" : "半"}</button>
++	return <div className="space-y-2" data-yune-top-controls>
++		<div className="flex flex-wrap items-start gap-3 align-middle">
++			<div className="flex flex-wrap gap-2" data-yune-control="mode-buttons">
++				<div className="yd-tip" data-tip={"中文／英文字母\nChinese / Alphabet"}>
++					<button className="yd-icon-button" aria-label="ASCII mode" onClick={() => setIsAsciiMode(value => !value)}>{isAsciiMode ? "En" : "中"}</button>
++				</div>
++				<div className="yd-tip" data-tip={"繁體字／簡體字\nTraditional / Simplified"}>
++					<button className="yd-icon-button" aria-label="Simplification" onClick={() => setIsSimplification(value => !value)}>{isSimplification ? "简" : "繁"}</button>
++				</div>
++				<div className="yd-tip" data-tip={"半形／全形字母及符號\nHalfwidth / Fullwidth Letters & Symbols"}>
++					<button className="yd-icon-button" aria-label="Full shape" onClick={() => setIsFullShape(value => !value)}>{isFullShape ? "全" : "半"}</button>
++				</div>
  			</div>
++			<SchemaSwitcher
++				activeSchema={activeSchema}
++				setActiveSchema={setActiveSchema}
++				compact />
++			<fieldset className="yd-top-field" data-yune-control="cangjie-version">
++				<legend className="yd-top-label">倉頡版本 Cangjie version</legend>
++				<div className="yd-segment-group flex-wrap">
++					<Segment name="cangjieVersion" label="三代 Version 3" state={isCangjie5} setState={setIsCangjie5} value={false} />
++					<Segment name="cangjieVersion" label="五代 Version 5" state={isCangjie5} setState={setIsCangjie5} value={true} />
++				</div>
++			</fieldset>
  		</div>
 -		{debouncedLoading && <span className="text-base-content-200">
 -			<div className="mx-3 align-middle loading loading-spinner loading-lg" />載入中 Loading…
@@ -1296,7 +1561,7 @@ index ff262af..752d808 100644
  }
 diff --git a/src/YuneFeatureShowcase.tsx b/src/YuneFeatureShowcase.tsx
 new file mode 100644
-index 0000000..d10b372
+index 0000000..02b7d01
 --- /dev/null
 +++ b/src/YuneFeatureShowcase.tsx
 @@ -0,0 +1,71 @@
@@ -1312,7 +1577,7 @@ index 0000000..d10b372
 +	{ label: "m", input: "m" },
 +	{ label: "mgoi", input: "mgoi" },
 +	{ label: "tone letters", input: "seov" },
-+	{ label: "反查 `pzhe", input: "`pzhe" },
++	{ label: "反查 `zhe", input: "`zhe" },
 +	{ label: "AI trigger", input: "nei" },
 +];
 +
@@ -1485,7 +1750,7 @@ index 0000000..b30c292
 +	</section>;
 +}
 diff --git a/src/consts.ts b/src/consts.ts
-index 25ec3bf..7fcdab2 100644
+index 25ec3bf..427907e 100644
 --- a/src/consts.ts
 +++ b/src/consts.ts
 @@ -1,5 +1,5 @@
@@ -1513,7 +1778,7 @@ index 25ec3bf..7fcdab2 100644
 +		label: "粵語拼音 Jyutping",
 +		schemaName: "粵語拼音",
 +		secondaryLabel: "Jyutping",
-+		reverseLookup: "`pzhe -> 這（普通話反查）",
++		reverseLookup: "`zhe -> 這（普通話 / luna_pinyin 反查）; `vl... -> 粵語兩分; `vc... -> 倉頡",
 +	},
 +	{
 +		id: "cangjie5",
@@ -1524,8 +1789,8 @@ index 25ec3bf..7fcdab2 100644
 +	},
 +	{
 +		id: "luna_pinyin",
-+		label: "普通話 Luna Pinyin",
-+		schemaName: "普通話",
++		label: "朙月拼音 Luna Pinyin",
++		schemaName: "朙月拼音",
 +		secondaryLabel: "Luna Pinyin",
 +		reverseLookup: "`a; -> 日（倉頡反查）",
 +	},
@@ -1712,7 +1977,7 @@ index ef2a4f3..dd5645f 100644
 +	return defaultValue;
 +}
 diff --git a/src/index.css b/src/index.css
-index 9dc742c..a0e5a98 100644
+index 9dc742c..9c1974b 100644
 --- a/src/index.css
 +++ b/src/index.css
 @@ -1,3 +1,5 @@
@@ -1792,7 +2057,7 @@ index 9dc742c..a0e5a98 100644
  	}
  	:lang(en) {
  		@apply font-sans text-[12pt];
-@@ -55,19 +106,106 @@
+@@ -55,19 +106,112 @@
  		@apply font-arabic text-[10pt];
  	}
  }
@@ -1813,6 +2078,12 @@ index 9dc742c..a0e5a98 100644
 +	}
 +	.yd-icon-button {
 +		@apply inline-flex size-10 items-center justify-center rounded border border-base-300 bg-base-300 text-xl text-base-content transition-colors hover:border-base-400 hover:bg-base-400 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-base-100;
++	}
++	.yd-top-field {
++		@apply m-0 min-w-0 max-w-full;
++	}
++	.yd-top-label {
++		@apply mb-1 text-sm font-semibold text-base-content-200;
 +	}
 +	.yd-section {
 +		@apply rounded border border-base-300 bg-base-100 p-4;
@@ -1850,7 +2121,7 @@ index 9dc742c..a0e5a98 100644
 +	.yd-segment-active {
 +		@apply bg-primary text-primary-content hover:bg-primary;
 +	}
-+	.yd-switch {
++	.yd-theme-switch {
 +		@apply h-5 w-9 cursor-pointer appearance-none rounded-full border border-base-500 bg-base-300 transition-colors checked:border-primary checked:bg-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-base-100;
 +	}
 +	.yd-choice {
@@ -1908,7 +2179,7 @@ index 9dc742c..a0e5a98 100644
  }
  .candidates td {
  	@apply p-1 align-bottom text-left empty:p-0;
-@@ -77,23 +215,27 @@
+@@ -77,23 +221,27 @@
  		}
  	}
  }
@@ -1950,7 +2221,7 @@ index 9dc742c..a0e5a98 100644
  @supports selector(:has(*)) {
  	.candidate-panel:has(.dictionary-panel) .candidates .highlighted tr {
  		@apply relative;
-@@ -112,7 +254,7 @@
+@@ -112,7 +260,7 @@
  	}
  }
  .dictionary-panel {
@@ -1959,7 +2230,7 @@ index 9dc742c..a0e5a98 100644
  }
  .dictionary-panel > *:not(:last-child) {
  	@apply mb-3.5;
-@@ -125,10 +267,10 @@
+@@ -125,10 +273,10 @@
  	@apply ml-4;
  }
  .pos {
@@ -1972,7 +2243,7 @@ index 9dc742c..a0e5a98 100644
  }
  .pos + .pos,
  .lbl + .lbl {
-@@ -136,15 +278,9 @@
+@@ -136,15 +284,9 @@
  }
  .dictionary-panel {
  	th {
@@ -1991,11 +2262,20 @@ index 9dc742c..a0e5a98 100644
  	}
  }
 diff --git a/src/rime.ts b/src/rime.ts
-index 4393a9e..7945c99 100644
+index 4393a9e..388e9a5 100644
 --- a/src/rime.ts
 +++ b/src/rime.ts
-@@ -18,7 +18,13 @@ interface ErrorPayload {
+@@ -11,14 +11,22 @@ type ListenerPayload = {
+ interface SuccessPayload {
+ 	type: "success";
+ 	result: ReturnType<Actions[keyof Actions]>;
++	elapsedMs?: number;
+ }
+ 
+ interface ErrorPayload {
+ 	type: "error";
  	error: unknown;
++	elapsedMs?: number;
  }
  
 -type Payload = ListenerPayload | SuccessPayload | ErrorPayload;
@@ -2009,7 +2289,7 @@ index 4393a9e..7945c99 100644
  
  type Listeners = { [K in keyof ListenerArgsMap]: (this: Worker, ...args: ListenerArgsMap[K]) => void };
  
-@@ -36,13 +42,37 @@ const listeners = {} as { [K in keyof Listeners]: Listeners[K][] };
+@@ -36,13 +44,37 @@ const listeners = {} as { [K in keyof Listeners]: Listeners[K][] };
  for (const type of allListenerTypes) {
  	listeners[type] = [];
  }
@@ -2049,12 +2329,28 @@ index 4393a9e..7945c99 100644
  		for (const listener of listeners[name]) {
  			// @ts-expect-error Unactionable
  			listener.apply(worker, args);
-@@ -67,14 +97,27 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
+@@ -50,6 +82,14 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
+ 	}
+ 	else if (running) {
+ 		const { resolve, reject } = running;
++		const receivedAt = performance.now();
++		appendActionDiagnostic({
++			action: running.name,
++			queueWaitMs: Math.round(((running.sentAt ?? receivedAt) - (running.enqueuedAt ?? receivedAt))),
++			workerRoundtripMs: Math.round(receivedAt - (running.sentAt ?? receivedAt)),
++			workerMs: data.elapsedMs,
++			totalMs: Math.round(receivedAt - (running.enqueuedAt ?? receivedAt)),
++		});
+ 		const nextMessage = queue.shift();
+ 		if (nextMessage) {
+ 			postMessage(nextMessage);
+@@ -67,14 +107,41 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
  });
  
  function postMessage(message: Message) {
 -	if (process.env.NODE_ENV !== "production" || location.search === "?debug") console.log("post", message);
 +	if (shouldLogDebugMessages()) console.log("post", JSON.stringify({ name: message.name, args: message.args }));
++	message.sentAt = performance.now();
  	const { name, args } = running = message;
  	worker.postMessage({ name, args });
  }
@@ -2070,6 +2366,19 @@ index 4393a9e..7945c99 100644
 +	document.documentElement.dataset.yunePersistenceDiagnostics = JSON.stringify(diagnostics);
 +}
 +
++function appendActionDiagnostic(diagnostic: {
++	action: keyof Actions;
++	queueWaitMs: number;
++	workerRoundtripMs: number;
++	workerMs?: number;
++	totalMs: number;
++}) {
++	const existing = document.documentElement.dataset.yuneActionDiagnostics;
++	const diagnostics = existing ? JSON.parse(existing) as typeof diagnostic[] : [];
++	diagnostics.push(diagnostic);
++	document.documentElement.dataset.yuneActionDiagnostics = JSON.stringify(diagnostics.slice(-100));
++}
++
  const allActions: (keyof Actions)[] = [
  	"setOption",
 +	"selectSchema",
@@ -2078,7 +2387,16 @@ index 4393a9e..7945c99 100644
  	"selectCandidate",
  	"deleteCandidate",
  	"flipPage",
-@@ -104,6 +147,14 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
+@@ -92,7 +159,7 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
+ 	// @ts-expect-error Unactionable
+ 	return (...args: Parameters<Actions[K]>) =>
+ 		new Promise((resolve, reject) => {
+-			const message: Message = { name, args, resolve, reject };
++			const message: Message = { name, args, resolve, reject, enqueuedAt: performance.now() };
+ 			if (running) {
+ 				queue.push(message);
+ 			}
+@@ -104,6 +171,14 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
  
  export function subscribe<K extends keyof Listeners>(type: K, callback: Listeners[K]) {
  	listeners[type].push(callback);
@@ -2094,7 +2412,7 @@ index 4393a9e..7945c99 100644
  		listeners[type] = listeners[type].filter(listener => listener !== callback) as never;
  	};
 diff --git a/src/types.ts b/src/types.ts
-index 5d47525..ec50750 100644
+index 5d47525..45547e5 100644
 --- a/src/types.ts
 +++ b/src/types.ts
 @@ -1,6 +1,7 @@
@@ -2148,7 +2466,16 @@ index 5d47525..ec50750 100644
  
  export type RimeDeployStatus = "start" | "success" | "failure";
  
-@@ -91,13 +103,26 @@ export interface RimePreferences {
+@@ -73,6 +85,8 @@ interface NamedMessage<K extends keyof Actions> {
+ 	args: Parameters<Actions[K]>;
+ 	resolve: (value: ReturnType<Actions[K]>) => void;
+ 	reject: (reason: unknown) => void;
++	enqueuedAt?: number;
++	sentAt?: number;
+ }
+ 
+ export type Message = NamedMessage<keyof Actions>;
+@@ -91,13 +105,26 @@ export interface RimePreferences {
  	enableCorrection: boolean;
  	enableSentence: boolean;
  	enableLearning: boolean;
@@ -2177,10 +2504,10 @@ index 5d47525..ec50750 100644
  	showReverseCode: boolean;
  }
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..901ca14 100644
+index 92b9a90..9e1fcbb 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
-@@ -1,137 +1,374 @@
+@@ -1,137 +1,378 @@
 -import type { Actions, ListenerArgsMap, Message, RimeResult, RimeAPI, RimeNotification, RimeDeployStatus } from "./types";
 -
 -type TypeToString<T> = T extends number ? "number"
@@ -2451,7 +2778,8 @@ index 92b9a90..901ca14 100644
 -	importScripts("rime.js");
 -});
 +const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3_mobile";
-+const YUNE_TYPEDUCK_ASSET_VERSION = "m24-dogfood-v3";
++const YUNE_TYPEDUCK_ASSET_VERSION = "m25-dogfood-v1";
++const YUNE_TYPEDUCK_WASM_BUILD_PROFILE = "release";
 +const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
 +  jyut6ping3_mobile: {
 +    id: "jyut6ping3_mobile",
@@ -2561,6 +2889,7 @@ index 92b9a90..901ca14 100644
 +        markers: startupMarkers,
 +        assetVersion: YUNE_TYPEDUCK_ASSET_VERSION,
 +        schema: DEFAULT_SCHEMA_ID,
++        wasmBuildProfile: YUNE_TYPEDUCK_WASM_BUILD_PROFILE,
 +        wasmGlue: "yune-typeduck.js",
 +        wasmBinary: "yune-typeduck.wasm",
 +        loadedSharedAssets: loadedExtraSharedAssets.map((asset) => asset.path),
@@ -2640,6 +2969,7 @@ index 92b9a90..901ca14 100644
 +    schema.dictionaryId,
 +    loadedExtraSharedAssets,
 +    preserveDeployedAssets,
++    YUNE_TYPEDUCK_ASSET_VERSION,
 +  );
 +  activeSchemaId = schema.id;
 +  dispatch("schemaChanged", schema.id, schema.name);
@@ -2656,13 +2986,14 @@ index 92b9a90..901ca14 100644
 -		postMessage({ type: "error", error });
 -	}
 +  if (loading) await loadRime;
++  const actionStartedAt = performance.now();
 +  try {
 +    // @ts-expect-error Unactionable
 +    const result = await actions[name](...args);
-+    postMessage({ type: "success", result });
++    postMessage({ type: "success", result, elapsedMs: Math.round(performance.now() - actionStartedAt) });
 +  }
 +  catch (error) {
-+    postMessage({ type: "error", error });
++    postMessage({ type: "error", error, elapsedMs: Math.round(performance.now() - actionStartedAt) });
 +  }
 +});
 +
@@ -2918,10 +3249,10 @@ index 0000000..f943e18
 +**Status**: Integration layer created, pending patch application and build gates
 diff --git a/src/yune-integration/adapter.ts b/src/yune-integration/adapter.ts
 new file mode 100644
-index 0000000..45a88e6
+index 0000000..d2d974c
 --- /dev/null
 +++ b/src/yune-integration/adapter.ts
-@@ -0,0 +1,748 @@
+@@ -0,0 +1,962 @@
 +/**
 + * Yune seam adapter for TypeDuck-Web
 + *
@@ -3006,6 +3337,7 @@ index 0000000..45a88e6
 +let currentSchemaId: string | null = null;
 +let currentPrepareOptions: PrepareTypeDuckFilesystemOptions | null = null;
 +let currentExtraSharedAssets: TypeDuckExtraSharedAsset[] = [];
++let currentAssetVersion = "unstamped";
 +let lastKeyResult: RimeResult = { isComposing: false, success: true };
 +const neutralKeyResult: RimeResult = { isComposing: false, success: true };
 +const passThroughModifierKeys = new Set([
@@ -3060,6 +3392,8 @@ index 0000000..45a88e6
 +  | "deploy";
 +
 +type PersistenceDiagnosticPhase =
++  | "deploy:cache-hit"
++  | "deploy:cache-miss"
 +  | "syncFromPersistenceBeforeInit:start"
 +  | "syncFromPersistenceBeforeInit:pass"
 +  | "syncToPersistenceAfterMutation:start"
@@ -3087,6 +3421,7 @@ index 0000000..45a88e6
 +  "translator/prediction_weight_threshold",
 +  "translator/dictionary_exclude",
 +  "cangjie/dictionary",
++  "cangjie/tips",
 +] as const;
 +
 +export interface YunePersistenceDiagnostic {
@@ -3095,8 +3430,18 @@ index 0000000..45a88e6
 +  schemaId: string;
 +  userDataDir: string;
 +  timestamp: string;
++  assetVersion: string;
 +  persistedConfig: PersistedConfigSnapshot;
 +  deployedConfig: PersistedConfigSnapshot;
++}
++
++interface DeployStamp {
++  version: 1;
++  assetVersion: string;
++  schemaId: string;
++  dictionaryId: string;
++  assetSignature: string;
++  customConfigSignature: string;
 +}
 +
 +/**
@@ -3112,6 +3457,7 @@ index 0000000..45a88e6
 +  dictionaryId: string,
 +  extraSharedAssets: TypeDuckExtraSharedAsset[] = [],
 +  preserveDeployedAssets = false,
++  assetVersion = "unstamped",
 +): Promise<void> {
 +  // Cleanup previous runtime if exists (one-active-runtime constraint)
 +  if (currentRuntime !== null) {
@@ -3122,6 +3468,7 @@ index 0000000..45a88e6
 +  currentModule = module;
 +  currentFs = fs;
 +  currentSchemaId = options.schemaId;
++  currentAssetVersion = assetVersion;
 +  lastKeyResult = { isComposing: false, success: true };
 +
 +  // Prepare filesystem with explicit assets per D-06
@@ -3140,10 +3487,20 @@ index 0000000..45a88e6
 +  await syncFromPersistenceBeforeInit(fs);
 +  emitPersistenceDiagnostic(fs, prepareOptions, "syncFromPersistenceBeforeInit:pass", "before-init");
 +
-+  if (preserveDeployedAssets) {
++  const deployCacheFresh = isDeployCacheFresh(
++    fs,
++    prepareOptions,
++    extraSharedAssets,
++    currentAssetVersion,
++  );
++  if (preserveDeployedAssets || deployCacheFresh) {
 +    prepareTypeDuckDeployFilesystem(fs, prepareOptions);
++    if (deployCacheFresh) {
++      emitPersistenceDiagnostic(fs, prepareOptions, "deploy:cache-hit", "before-init");
++    }
 +  } else {
 +    prepareTypeDuckFilesystem(fs, prepareOptions);
++    emitPersistenceDiagnostic(fs, prepareOptions, "deploy:cache-miss", "before-init");
 +  }
 +  for (const asset of extraSharedAssets) {
 +    writeExtraSharedAsset(fs, options.sharedDataDir, asset);
@@ -3172,6 +3529,7 @@ index 0000000..45a88e6
 +  currentSchemaId = null;
 +  currentPrepareOptions = null;
 +  currentExtraSharedAssets = [];
++  currentAssetVersion = "unstamped";
 +  lastKeyResult = { isComposing: false, success: true };
 +}
 +
@@ -3350,8 +3708,17 @@ index 0000000..45a88e6
 +    writeExtraSharedAsset(currentFs, currentPrepareOptions.sharedDataDir, asset);
 +  }
 +
++  if (isDeployCacheFresh(currentFs, currentPrepareOptions, currentExtraSharedAssets, currentAssetVersion)) {
++    emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "deploy:cache-hit", "deploy");
++    return true;
++  }
++
++  emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "deploy:cache-miss", "deploy");
 +  invalidateDeployedSchema(currentFs, currentPrepareOptions);
 +  const deployed = currentRuntime.deploy();
++  if (deployed) {
++    writeDeployStamp(currentFs, currentPrepareOptions, currentExtraSharedAssets, currentAssetVersion);
++  }
 +  await syncCurrentStateToPersistence("deploy");
 +  return deployed;
 +}
@@ -3366,20 +3733,28 @@ index 0000000..45a88e6
 + * This adapter maps preferences to Yune customize calls.
 + */
 +export async function customize(preferences: RimePreferences): Promise<boolean> {
-+  if (currentRuntime === null || currentFs === null || currentSchemaId === null) {
++  if (currentRuntime === null || currentFs === null || currentSchemaId === null || currentPrepareOptions === null) {
 +    throw new Error("Yune runtime not initialized");
 +  }
++
++  const runtime = currentRuntime;
++  const fs = currentFs;
++  const prepareOptions = currentPrepareOptions;
++  const schemaId = currentSchemaId;
 +
 +  // Map preferences to Yune customize calls
 +  let success = true;
 +  let customizedAny = false;
 +
 +  if (preferences.enableAI !== undefined) {
-+    success = currentRuntime.setAiEnabled(preferences.enableAI) && success;
++    success = runtime.setAiEnabled(preferences.enableAI) && success;
 +  }
 +
 +  const customizeSetting = (key: string, value: string): void => {
-+    const customized = currentRuntime.customize(`${currentSchemaId}.schema`, key, value);
++    if (persistedCustomizationMatches(fs, prepareOptions, key, value)) {
++      return;
++    }
++    const customized = runtime.customize(`${schemaId}.schema`, key, value);
 +    success = success && customized;
 +    customizedAny = true;
 +  };
@@ -3505,6 +3880,175 @@ index 0000000..45a88e6
 +  );
 +}
 +
++function deployStampPath(options: PrepareTypeDuckFilesystemOptions): string {
++  return joinTypeDuckVirtualPath(options.userDataDir, "build", ".yune-deploy-stamp.json");
++}
++
++function isDeployCacheFresh(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++  extraSharedAssets: TypeDuckExtraSharedAsset[],
++  assetVersion: string,
++): boolean {
++  const expected = expectedDeployStamp(fs, options, extraSharedAssets, assetVersion);
++  const actual = readDeployStamp(fs, options);
++  return actual !== null
++    && actual.version === expected.version
++    && actual.assetVersion === expected.assetVersion
++    && actual.schemaId === expected.schemaId
++    && actual.dictionaryId === expected.dictionaryId
++    && actual.assetSignature === expected.assetSignature
++    && actual.customConfigSignature === expected.customConfigSignature
++    && deployedSchemaExists(fs, options);
++}
++
++function readDeployStamp(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++): DeployStamp | null {
++  const path = deployStampPath(options);
++  if (!fs.analyzePath(path).exists) {
++    return null;
++  }
++  try {
++    const raw = fs.readFile(path, { encoding: "utf8" });
++    const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
++    const parsed = JSON.parse(text) as Partial<DeployStamp>;
++    if (
++      parsed.version === 1
++      && typeof parsed.assetVersion === "string"
++      && typeof parsed.schemaId === "string"
++      && typeof parsed.dictionaryId === "string"
++      && typeof parsed.assetSignature === "string"
++      && typeof parsed.customConfigSignature === "string"
++    ) {
++      return parsed as DeployStamp;
++    }
++  } catch {
++    return null;
++  }
++  return null;
++}
++
++function writeDeployStamp(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++  extraSharedAssets: TypeDuckExtraSharedAsset[],
++  assetVersion: string,
++): void {
++  const path = deployStampPath(options);
++  ensureVirtualDirectory(fs, path.split("/").slice(0, -1).join("/"));
++  fs.writeFile(
++    path,
++    `${JSON.stringify(expectedDeployStamp(fs, options, extraSharedAssets, assetVersion), null, 2)}\n`,
++    { flags: "w" },
++  );
++}
++
++function expectedDeployStamp(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++  extraSharedAssets: TypeDuckExtraSharedAsset[],
++  assetVersion: string,
++): DeployStamp {
++  return {
++    version: 1,
++    assetVersion,
++    schemaId: options.schemaId,
++    dictionaryId: options.dictionaryId,
++    assetSignature: assetSignature(options, extraSharedAssets, assetVersion),
++    customConfigSignature: customConfigSignature(fs, options),
++  };
++}
++
++function deployedSchemaExists(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++): boolean {
++  return fs.analyzePath(
++    joinTypeDuckVirtualPath(options.userDataDir, "build", `${options.schemaId}.schema.yaml`),
++  ).exists;
++}
++
++function customConfigSignature(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++): string {
++  const path = joinTypeDuckVirtualPath(options.userDataDir, `${options.schemaId}.custom.yaml`);
++  if (!fs.analyzePath(path).exists) {
++    return "missing";
++  }
++  try {
++    const raw = fs.readFile(path, { encoding: "utf8" });
++    return contentSignature(typeof raw === "string" ? raw : raw);
++  } catch (error) {
++    return `error:${error instanceof Error ? error.message : String(error)}`;
++  }
++}
++
++function persistedCustomizationMatches(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++  key: string,
++  value: string,
++): boolean {
++  const persistedValue = snapshotPersistedCustomConfig(fs, options).settings?.[key];
++  return persistedValue === value;
++}
++
++function assetSignature(
++  options: PrepareTypeDuckFilesystemOptions,
++  extraSharedAssets: TypeDuckExtraSharedAsset[],
++  assetVersion: string,
++): string {
++  const parts = [
++    `assetVersion:${assetVersion}`,
++    `schema:${options.schemaId}`,
++    `dictionary:${options.dictionaryId}`,
++    `default:${contentSignature(options.assets.defaultYaml)}`,
++    `schemaYaml:${contentSignature(options.assets.schemaYaml)}`,
++    `dictionaryYaml:${contentSignature(options.assets.dictionaryYaml)}`,
++    `deployedDefault:${contentSignature(options.assets.deployedDefaultYaml ?? options.assets.defaultYaml)}`,
++    `deployedSchema:${contentSignature(options.assets.deployedSchemaYaml ?? options.assets.schemaYaml)}`,
++    ...extraSharedAssets
++      .slice()
++      .sort((left, right) => left.path.localeCompare(right.path))
++      .map((asset) => `extra:${asset.path}:${contentSignature(asset.content)}`),
++  ];
++  return fnv1a(parts.join("\n"));
++}
++
++function contentSignature(content: string | Uint8Array): string {
++  if (typeof content === "string") {
++    return `${content.length}:${fnv1a(content)}`;
++  }
++  const sample = content.length <= 256
++    ? content
++    : new Uint8Array([
++      ...content.slice(0, 128),
++      ...content.slice(Math.max(0, content.length - 128)),
++    ]);
++  return `${content.length}:${fnv1aBytes(sample)}`;
++}
++
++function fnv1a(text: string): string {
++  let hash = 0x811c9dc5;
++  for (let index = 0; index < text.length; index += 1) {
++    hash ^= text.charCodeAt(index);
++    hash = Math.imul(hash, 0x01000193);
++  }
++  return (hash >>> 0).toString(16).padStart(8, "0");
++}
++
++function fnv1aBytes(bytes: Uint8Array): string {
++  let hash = 0x811c9dc5;
++  for (const byte of bytes) {
++    hash ^= byte;
++    hash = Math.imul(hash, 0x01000193);
++  }
++  return (hash >>> 0).toString(16).padStart(8, "0");
++}
++
 +function ensureVirtualDirectory(fs: TypeDuckFilesystem, path: string): void {
 +  if (fs.analyzePath(path).exists) {
 +    return;
@@ -3555,6 +4099,7 @@ index 0000000..45a88e6
 +    schemaId: prepareOptions.schemaId,
 +    userDataDir: prepareOptions.userDataDir,
 +    timestamp: new Date().toISOString(),
++    assetVersion: currentAssetVersion,
 +    persistedConfig: snapshotPersistedCustomConfig(fs, prepareOptions),
 +    deployedConfig: snapshotDeployedSchemaConfig(fs, prepareOptions),
 +  };
@@ -4178,93 +4723,3 @@ index 801c076..2c5cea0 100644
 -	} satisfies DaisyUIConfig,
 +	plugins: [],
  } satisfies Config;
-
-Submodule schema contains modified content
-diff --git a/schema/jyut6ping3_mobile.schema.yaml b/schema/jyut6ping3_mobile.schema.yaml
-index 31a7c80..1479006 100644
---- a/schema/jyut6ping3_mobile.schema.yaml
-+++ b/schema/jyut6ping3_mobile.schema.yaml
-@@ -6,6 +6,33 @@ __include: template:/
- schema:
-   schema_id: jyut6ping3_mobile
-   name: 粵語拼音
-+  dependencies:
-+    - luna_pinyin
-+
-+engine:
-+  processors:
-+    - ascii_composer
-+    - recognizer
-+    - key_binder
-+    - speller
-+    - punctuator
-+    - selector
-+    - navigator
-+    - express_editor
-+  segmentors:
-+    - ascii_segmentor
-+    - matcher
-+    - affix_segmentor@luna_pinyin
-+    - abc_segmentor
-+    - punct_segmentor
-+    - fallback_segmentor
-+  translators:
-+    - punct_translator
-+    - script_translator
-+    - script_translator@luna_pinyin
-+  filters:
-+    - dictionary_lookup_filter
-+    - simplifier
- 
- menu:
-   __patch: include:/no_candidate_selection
-@@ -13,6 +40,30 @@ menu:
- translator:
-   prism: jyut6ping3_mobile
-   __patch: include:/letter_to_tone
-+  prediction_candidate_limit: 1
-+  prefix_fallback: true
-+
-+luna_pinyin:
-+  tag: luna_pinyin
-+  dictionary: luna_pinyin_yune_reverse
-+  enable_sentence: false
-+  enable_user_dict: false
-+  encode_commit_history: false
-+  always_show_comments: true
-+  prefix: "`p"
-+  suffix: ";"
-+  tips: 〔普通話〕
-+  preedit_format:
-+    - xform/([nl])v/$1ü/
-+    - xform/([nl])ue/$1üe/
-+    - xform/([jqxy])v/$1u/
-+  comment_format:
-+    - xform/^/\v/
-+
-+recognizer:
-+  import_preset: default
-+  patterns:
-+    luna_pinyin: "^`p[a-z']*;?$"
- 
- __patch:
-   - common:/disable_completion?
-diff --git a/schema/luna_pinyin_yune_reverse.dict.yaml b/schema/luna_pinyin_yune_reverse.dict.yaml
-new file mode 100644
-index 0000000..74bc863
---- /dev/null
-+++ b/schema/luna_pinyin_yune_reverse.dict.yaml
-@@ -0,0 +1,13 @@
-+# Rime dictionary
-+# encoding: utf-8
-+
-+---
-+name: luna_pinyin_yune_reverse
-+version: "2026.06.21"
-+sort: by_weight
-+import_tables:
-+  - luna_pinyin
-+...
-+
-+這	zhe	100000
-+这	zhe	99999

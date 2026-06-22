@@ -1,0 +1,48 @@
+{
+  "aiEnabled": false,
+  "inputValue": "",
+  "candidates": [
+    {
+      "index": 0,
+      "text": "這",
+      "note": null,
+      "source": null,
+      "rowText": "1.ze2這ⓘ"
+    },
+    {
+      "index": 1,
+      "text": "这",
+      "note": "~i",
+      "source": null,
+      "rowText": "2.这~i"
+    },
+    {
+      "index": 2,
+      "text": "㖽",
+      "note": null,
+      "source": null,
+      "rowText": "3.㖽"
+    },
+    {
+      "index": 3,
+      "text": "㚖",
+      "note": null,
+      "source": null,
+      "rowText": "4.㚖"
+    },
+    {
+      "index": 4,
+      "text": "㟙",
+      "note": null,
+      "source": null,
+      "rowText": "5.㟙"
+    },
+    {
+      "index": 5,
+      "text": "㣱",
+      "note": null,
+      "source": null,
+      "rowText": "6.㣱"
+    }
+  ]
+}

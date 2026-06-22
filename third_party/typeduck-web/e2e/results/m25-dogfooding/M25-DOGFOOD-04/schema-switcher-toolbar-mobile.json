@@ -1,0 +1,18 @@
+{
+  "topControls": {
+    "x": 24,
+    "y": 79,
+    "width": 342,
+    "height": 122.125,
+    "right": 366,
+    "bottom": 201.125
+  },
+  "schemaSwitcher": {
+    "x": 135,
+    "y": 79,
+    "width": 189.125,
+    "height": 69.125,
+    "right": 324.125,
+    "bottom": 148.125
+  }
+}

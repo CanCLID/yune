@@ -13,7 +13,7 @@
  * 6. Playwright installed (standalone spec framework)
  */
 
-import { test, expect, type Page, type BrowserContext, type TestInfo, type WorkerInfo } from "@playwright/test";
+import { test, expect, type Page, type BrowserContext, type Locator, type TestInfo, type WorkerInfo } from "@playwright/test";
 
 // Test configuration
 const APP_URL = process.env.TYPEDUCK_APP_URL || "http://localhost:5173";
@@ -23,6 +23,7 @@ const TIMEOUT_MS = 300000; // WASM load and runtime init may be slow
 const EVIDENCE_DIR = process.env.TYPEDUCK_EVIDENCE_DIR || "../e2e/results";
 let currentEvidenceScope = "unscoped";
 const M24_EVIDENCE_DIR = "m24-dogfooding";
+const M25_EVIDENCE_DIR = "m25-dogfooding";
 
 const ACTIVE_SHOWCASE_CONTROLS = [
   /Auto-completion/,
@@ -164,12 +165,44 @@ interface PersistenceDiagnosticSnapshot {
   marker: {
     phase?: string;
     reason?: string;
+    action?: string;
+    totalMs?: number;
+    queueWaitMs?: number;
+    workerRoundtripMs?: number;
+    workerMs?: number;
+    renderMs?: number;
+    input?: string;
+    assetVersion?: string;
+    wasmBuildProfile?: string;
     wasmBinary?: string;
+    markers?: { phase: string; ms: number }[];
     loadedSharedAssets?: string[];
     persistedConfig?: {
       exists?: boolean;
       settings?: Record<string, string | null>;
     };
+  };
+}
+
+interface ElementBoxSnapshot {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  right: number;
+  bottom: number;
+}
+
+async function elementBox(locator: Locator): Promise<ElementBoxSnapshot> {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  return {
+    x: box?.x ?? 0,
+    y: box?.y ?? 0,
+    width: box?.width ?? 0,
+    height: box?.height ?? 0,
+    right: (box?.x ?? 0) + (box?.width ?? 0),
+    bottom: (box?.y ?? 0) + (box?.height ?? 0),
   };
 }
 
@@ -202,6 +235,27 @@ async function takeM24Screenshot(page: Page, issueId: string, filename: string):
   const fs = await import("fs/promises");
   const path = await import("path");
   const screenshotPath = await m24EvidencePath(issueId, `screenshot-${filename}.png`);
+  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+  await page.screenshot({ path: screenshotPath, fullPage: false });
+}
+
+async function m25EvidencePath(issueId: string, filename: string): Promise<string> {
+  const path = await import("path");
+  return path.join(EVIDENCE_DIR, M25_EVIDENCE_DIR, issueId, filename);
+}
+
+async function saveM25Json(issueId: string, filename: string, payload: unknown): Promise<void> {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const jsonPath = await m25EvidencePath(issueId, filename);
+  await fs.mkdir(path.dirname(jsonPath), { recursive: true });
+  await fs.writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
+async function takeM25Screenshot(page: Page, issueId: string, filename: string): Promise<void> {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const screenshotPath = await m25EvidencePath(issueId, `screenshot-${filename}.png`);
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
   await page.screenshot({ path: screenshotPath, fullPage: false });
 }
@@ -329,6 +383,18 @@ async function typeCompositionAndWaitForTopCandidate(page: Page, input: string, 
     const state = await readCandidatePanelSnapshot(page, false);
     return state.candidates[0]?.text ?? null;
   }, { timeout: 10000 }).toBe(expectedText);
+  return readCandidatePanelSnapshot(page, false);
+}
+
+async function typeCompositionAndWaitForRowCount(page: Page, input: string, expectedRows: number): Promise<CandidatePanelSnapshot> {
+  const inputField = page.locator("input[type='text'], textarea").first();
+  await clearComposition(page);
+  await inputField.focus();
+  await inputField.type(input, { delay: 80 });
+  await expect.poll(async () =>
+    page.locator(".candidate-panel .candidates tbody").count(),
+    { timeout: 10000 },
+  ).toBe(expectedRows);
   return readCandidatePanelSnapshot(page, false);
 }
 
@@ -705,6 +771,381 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(startup?.marker.phase).toBe("startup:complete");
   });
 
+  test("M25 DOGFOOD-01 startup uses release wasm and records deploy cache reuse", async ({ page }) => {
+    let startup: PersistenceDiagnosticSnapshot | undefined;
+    await expect.poll(async () => {
+      const diagnostics = await readPersistenceDiagnostics(page);
+      startup = diagnostics.find((diagnostic) => diagnostic.source === "yune-startup");
+      return startup?.marker.phase ?? "";
+    }, { timeout: TIMEOUT_MS }).toBe("startup:complete");
+
+    const firstReadyAt = Date.now();
+    await setPreferenceRange(page, /No\. of Candidates Per Page|æ¯é å€™é¸è©žæ•¸é‡/, 7);
+    await waitForDeployedSettings(page, { "menu/page_size": "7" });
+    await page.reload({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+    await waitForAppReady(page);
+    const warmReloadElapsedMs = Date.now() - firstReadyAt;
+
+    const diagnostics = await readPersistenceDiagnostics(page);
+    const startupAfterReload = diagnostics
+      .slice()
+      .reverse()
+      .find((diagnostic) => diagnostic.source === "yune-startup");
+    const deployCache = diagnostics
+      .slice()
+      .reverse()
+      .find((diagnostic) =>
+        diagnostic.source === "yune-persistence"
+        && diagnostic.marker.reason === "deploy"
+        && /^deploy:cache-/.test(diagnostic.marker.phase ?? "")
+      );
+    const resources = await page.evaluate(() =>
+      performance.getEntriesByType("resource")
+        .filter(entry => /yune-typeduck|schema|\.bin|\.ocd2/.test(entry.name))
+        .map(entry => ({
+          name: entry.name,
+          duration: entry.duration,
+          transferSize: "transferSize" in entry ? (entry as PerformanceResourceTiming).transferSize : 0,
+        })),
+    );
+
+    await saveM25Json("M25-DOGFOOD-01", "startup-after.json", {
+      startup,
+      startupAfterReload,
+      deployCache,
+      warmReloadElapsedMs,
+      resources,
+    });
+    await takeM25Screenshot(page, "M25-DOGFOOD-01", "startup-ready");
+
+    expect(startup?.marker.wasmBuildProfile).toBe("release");
+    expect(startupAfterReload?.marker.wasmBuildProfile).toBe("release");
+    expect(deployCache?.marker.phase).toBe("deploy:cache-hit");
+    expect(startupAfterReload?.marker.totalMs ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(15000);
+  });
+
+  test("M25 DOGFOOD-03 typing stays out of global loading and records key latency", async ({ page }) => {
+    await page.evaluate(() => {
+      document.documentElement.dataset.yuneActionDiagnostics = "[]";
+      document.documentElement.dataset.yuneTypingDiagnostics = "[]";
+    });
+
+    const inputField = page.locator("input[type='text'], textarea").first();
+    await clearComposition(page);
+    await expect(page.locator("[data-yune-loading-indicator]")).toHaveCount(0, { timeout: 1000 });
+    await inputField.focus();
+    await inputField.type("hai", { delay: 40 });
+    await expect(page.locator(".candidate-panel .candidates tbody").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("[data-yune-loading-indicator]")).toHaveCount(0, { timeout: 1000 });
+
+    const actionDiagnostics = await page.evaluate(() =>
+      JSON.parse(document.documentElement.dataset.yuneActionDiagnostics ?? "[]") as unknown[],
+    );
+    const typingDiagnostics = await page.evaluate(() =>
+      JSON.parse(document.documentElement.dataset.yuneTypingDiagnostics ?? "[]") as { action?: string; totalMs?: number; renderMs?: number; input?: string }[],
+    );
+    const processKeyActions = actionDiagnostics.filter((diagnostic) =>
+      typeof diagnostic === "object"
+      && diagnostic !== null
+      && (diagnostic as { action?: string }).action === "processKey"
+    );
+    const processKeyTyping = typingDiagnostics.filter((diagnostic) => diagnostic.action === "processKey");
+    const p95 = processKeyTyping
+      .map((diagnostic) => diagnostic.totalMs ?? Number.POSITIVE_INFINITY)
+      .sort((left, right) => left - right)[Math.max(0, Math.ceil(processKeyTyping.length * 0.95) - 1)];
+
+    await saveM25Json("M25-DOGFOOD-03", "typing-latency-after.json", {
+      input: "hai",
+      actionDiagnostics,
+      typingDiagnostics,
+      processKeyActionCount: processKeyActions.length,
+      processKeyTypingCount: processKeyTyping.length,
+      p95,
+      loadingIndicatorCount: await page.locator("[data-yune-loading-indicator]").count(),
+    });
+    await takeM25Screenshot(page, "M25-DOGFOOD-03", "typing-responsive");
+
+    expect(processKeyActions.length).toBeGreaterThanOrEqual(3);
+    expect(processKeyTyping.length).toBeGreaterThanOrEqual(3);
+    expect(p95).toBeLessThanOrEqual(750);
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M25 DOGFOOD-02 page-size slider caps rows and preserves candidate paging", async ({ page }) => {
+    const pageSizeControl = page.getByLabel(/No\. of Candidates Per Page|Candidates Per Page/).last();
+    await expect(pageSizeControl).toHaveAttribute("min", "3");
+    await expect(pageSizeControl).toHaveAttribute("max", "10");
+
+    const evidence: Record<string, unknown> = {};
+    for (const pageSize of [3, 9, 10] as const) {
+      await setPreferenceRange(page, /No\. of Candidates Per Page|Candidates Per Page/, pageSize);
+      await waitForPersistedSettings(page, { "menu/page_size": String(pageSize) });
+      const state = await typeCompositionAndWaitForRowCount(page, "hai", pageSize);
+      expect(state.candidates).toHaveLength(pageSize);
+      evidence[`pageSize${pageSize}`] = state;
+      await saveM25Json("M25-DOGFOOD-02", `page-size-${pageSize}-hai-state.json`, state);
+      await takeM25Screenshot(page, "M25-DOGFOOD-02", `page-size-${pageSize}-hai`);
+
+      if (pageSize === 3) {
+        const firstPageFirst = state.candidates[0]?.text;
+        await page.locator(".candidate-panel .page-nav").last().click();
+        await expect.poll(async () =>
+          (await readCandidatePanelSnapshot(page, false)).candidates[0]?.text ?? null,
+          { timeout: 5000 },
+        ).not.toBe(firstPageFirst ?? null);
+        const nextPage = await readCandidatePanelSnapshot(page, false);
+        expect(nextPage.candidates.length).toBeLessThanOrEqual(pageSize);
+        evidence.pageSize3NextPage = nextPage;
+        await page.locator(".candidate-panel .page-nav").first().click();
+        await expect.poll(async () =>
+          (await readCandidatePanelSnapshot(page, false)).candidates[0]?.text ?? null,
+          { timeout: 5000 },
+        ).toBe(firstPageFirst ?? null);
+      }
+
+      if (pageSize === 9 || pageSize === 10) {
+        const key = pageSize === 9 ? "9" : "0";
+        const selectedText = state.candidates[pageSize - 1]?.text;
+        expect(selectedText).toBeTruthy();
+        await page.keyboard.press(key);
+        await expect(page.locator("input[type='text'], textarea").first()).toHaveValue(selectedText ?? "", { timeout: 5000 });
+        await expect(page.locator(".candidate-panel")).toHaveCount(0, { timeout: 5000 });
+      }
+    }
+
+    await saveM25Json("M25-DOGFOOD-02", "page-size-summary.json", {
+      control: {
+        min: await pageSizeControl.getAttribute("min"),
+        max: await pageSizeControl.getAttribute("max"),
+        value: await pageSizeControl.inputValue(),
+      },
+      evidence,
+    });
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M25 DOGFOOD-08 Jyutping bare grave routes to Luna reverse lookup", async ({ page }) => {
+    await selectSchema(page, /Jyutping/);
+    const schemaSwitcher = page.locator("[data-yune-schema-switcher]");
+    await expect(schemaSwitcher).toContainText(/`zhe/);
+    await expect(schemaSwitcher).toContainText(/`vl/);
+    await expect(schemaSwitcher).toContainText(/`vc/);
+
+    const bareLuna = await typeCompositionAndWaitForCandidate(page, "`zhe", "這");
+    expect(candidateTexts(bareLuna)).toContain("這");
+    await saveM25Json("M25-DOGFOOD-08", "bare-grave-zhe-state.json", bareLuna);
+    await takeM25Screenshot(page, "M25-DOGFOOD-08", "bare-grave-zhe");
+
+    const overlap: Record<string, CandidatePanelSnapshot> = {};
+    for (const input of ["`lai", "`ci", "`xi", "`re"] as const) {
+      await clearComposition(page);
+      const inputField = page.locator("input[type='text'], textarea").first();
+      await inputField.focus();
+      await inputField.type(input, { delay: 80 });
+      await expect(page.locator(".candidate-panel .candidates tbody").first()).toBeVisible({ timeout: 10000 });
+      const state = await readCandidatePanelSnapshot(page, false);
+      expect(state.candidates.length).toBeGreaterThan(0);
+      overlap[input] = state;
+    }
+
+    const triggerCopy = await schemaSwitcher.textContent();
+    await saveM25Json("M25-DOGFOOD-08", "reverse-lookup-summary.json", {
+      note: "M25 intentionally diverges from TypeDuck v1.1.2's historical `p trigger: bare ` belongs to luna_pinyin; retained side lookups use explicit `vl and `vc triggers.",
+      activeSchema: await page.evaluate(() => document.documentElement.dataset.yuneActiveSchema ?? null),
+      triggerCopy,
+      bareLuna,
+      overlap,
+      operationErrorToastCount: await page.locator(".Toastify__toast").count(),
+    });
+    await takeM25Screenshot(page, "M25-DOGFOOD-08", "reverse-lookup-overlap");
+
+    await expect(page.locator(".Toastify__toast")).toHaveCount(0, { timeout: 1000 });
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M25 DOGFOOD-04 schema switcher shares the top control row", async ({ page }) => {
+    const topControls = page.locator("[data-yune-top-controls]");
+    await expect(topControls).toBeVisible();
+    const schemaSwitcher = topControls.locator("[data-yune-schema-switcher]");
+    await expect(schemaSwitcher).toBeVisible();
+    await expect(schemaSwitcher.getByText("朙月拼音", { exact: true })).toBeVisible();
+
+    const desktopBoxes = {
+      topControls: await elementBox(topControls),
+      asciiButton: await elementBox(topControls.getByRole("button", { name: /ASCII mode/ })),
+      schemaSwitcher: await elementBox(schemaSwitcher),
+    };
+    expect(Math.abs(desktopBoxes.schemaSwitcher.y - desktopBoxes.asciiButton.y)).toBeLessThanOrEqual(80);
+
+    await selectSchema(page, /Luna Pinyin/);
+    await typeInputForStatus(page, "hao");
+    await expect(page.locator("[data-yune-status-schema]")).toContainText("朙月拼音");
+    await saveM25Json("M25-DOGFOOD-04", "schema-switcher-toolbar-desktop.json", desktopBoxes);
+    await takeM25Screenshot(page, "M25-DOGFOOD-04", "schema-switcher-toolbar-desktop");
+
+    await page.setViewportSize({ width: 390, height: 900 });
+    const mobileBoxes = {
+      topControls: await elementBox(topControls),
+      schemaSwitcher: await elementBox(schemaSwitcher),
+    };
+    await saveM25Json("M25-DOGFOOD-04", "schema-switcher-toolbar-mobile.json", mobileBoxes);
+    await takeM25Screenshot(page, "M25-DOGFOOD-04", "schema-switcher-toolbar-mobile");
+  });
+
+  test("M25 DOGFOOD-05 Cangjie version control lives in the top control band", async ({ page }) => {
+    await selectSchema(page, /Jyutping/);
+    const topControls = page.locator("[data-yune-top-controls]");
+    await expect(topControls).toBeVisible();
+    const cangjieControl = topControls.locator("[data-yune-control='cangjie-version']");
+    await expect(cangjieControl).toBeVisible();
+    await expect(page.getByText(/Web Frontend Controls/)).toHaveCount(0);
+
+    await cangjieControl.getByText(/Version 3/).click();
+    await expect(cangjieControl.getByLabel(/Version 3/)).toBeChecked();
+    await waitForAppReady(page);
+    const version3 = await waitForPersistedSettings(page, { "cangjie/dictionary": "cangjie3" });
+    await cangjieControl.getByText(/Version 5/).click();
+    await expect(cangjieControl.getByLabel(/Version 5/)).toBeChecked();
+    await waitForAppReady(page);
+    const version5 = await waitForPersistedSettings(page, { "cangjie/dictionary": "cangjie5" });
+
+    await saveM25Json("M25-DOGFOOD-05", "cangjie-version-top-controls.json", {
+      boxes: {
+        topControls: await elementBox(topControls),
+        cangjieControl: await elementBox(cangjieControl),
+      },
+      version3,
+      version5,
+    });
+    await takeM25Screenshot(page, "M25-DOGFOOD-05", "cangjie-version-top-controls");
+  });
+
+  test("M25 DOGFOOD-06 display controls precede live session controls", async ({ page }) => {
+    const preferences = page.locator("[data-yune-preferences]");
+    await expect(preferences).toBeVisible();
+    const active = preferences.locator("[data-yune-section='active']");
+    const display = preferences.locator("[data-yune-section='display']");
+    const live = preferences.locator("[data-yune-section='live']");
+    await expect(active).toBeVisible();
+    await expect(display).toBeVisible();
+    await expect(live).toBeVisible();
+
+    const desktopBoxes = {
+      active: await elementBox(active),
+      display: await elementBox(display),
+      live: await elementBox(live),
+    };
+    expect(Math.abs(desktopBoxes.display.y - desktopBoxes.active.y)).toBeLessThanOrEqual(24);
+    expect(desktopBoxes.live.y).toBeGreaterThan(desktopBoxes.display.y + 24);
+    await saveM25Json("M25-DOGFOOD-06", "display-live-section-order-desktop.json", desktopBoxes);
+    await takeM25Screenshot(page, "M25-DOGFOOD-06", "display-live-section-order-desktop");
+
+    await page.setViewportSize({ width: 390, height: 900 });
+    const mobileBoxes = {
+      active: await elementBox(active),
+      display: await elementBox(display),
+      live: await elementBox(live),
+    };
+    expect(mobileBoxes.active.y).toBeLessThan(mobileBoxes.display.y);
+    expect(mobileBoxes.display.y).toBeLessThan(mobileBoxes.live.y);
+    await saveM25Json("M25-DOGFOOD-06", "display-live-section-order-mobile.json", mobileBoxes);
+    await takeM25Screenshot(page, "M25-DOGFOOD-06", "display-live-section-order-mobile");
+  });
+
+  test("M25 DOGFOOD-10 IME settings align with the playground content edges", async ({ page }) => {
+    const playground = page.locator("[data-yune-playground-content]");
+    const preferences = page.locator("[data-yune-preferences]");
+    await expect(playground).toBeVisible();
+    await expect(preferences).toBeVisible();
+
+    const desktop = {
+      playground: await elementBox(playground),
+      preferences: await elementBox(preferences),
+    };
+    expect(Math.abs(desktop.playground.x - desktop.preferences.x)).toBeLessThanOrEqual(2);
+    expect(Math.abs(desktop.playground.right - desktop.preferences.right)).toBeLessThanOrEqual(2);
+    await saveM25Json("M25-DOGFOOD-10", "settings-alignment-desktop.json", desktop);
+    await takeM25Screenshot(page, "M25-DOGFOOD-10", "settings-alignment-desktop");
+
+    await page.setViewportSize({ width: 390, height: 900 });
+    const mobile = {
+      playground: await elementBox(playground),
+      preferences: await elementBox(preferences),
+    };
+    expect(Math.abs(mobile.playground.x - mobile.preferences.x)).toBeLessThanOrEqual(2);
+    expect(Math.abs(mobile.playground.right - mobile.preferences.right)).toBeLessThanOrEqual(2);
+    await saveM25Json("M25-DOGFOOD-10", "settings-alignment-mobile.json", mobile);
+    await takeM25Screenshot(page, "M25-DOGFOOD-10", "settings-alignment-mobile");
+  });
+
+  test("M25 DOGFOOD-07 binary controls use checkbox affordance", async ({ page }) => {
+    const preferences = page.locator("[data-yune-preferences]");
+    const preferenceChecks = preferences.locator("input[type='checkbox']");
+    await expect(preferenceChecks.first()).toBeVisible();
+    const preferenceControls = await preferenceChecks.evaluateAll((inputs) =>
+      inputs.map((input) => {
+        const element = input as HTMLInputElement;
+        const style = getComputedStyle(element);
+        return {
+          label: element.labels?.[0]?.textContent?.replace(/\s+/g, " ").trim() ?? element.getAttribute("aria-label"),
+          checked: element.checked,
+          className: element.className,
+          borderRadius: style.borderRadius,
+          width: style.width,
+          height: style.height,
+        };
+      }),
+    );
+    expect(preferenceControls.length).toBeGreaterThan(10);
+    expect(preferenceControls.every(control => String(control.className).includes("yd-check"))).toBe(true);
+    expect(preferenceControls.every(control => !String(control.className).includes("yd-switch"))).toBe(true);
+
+    const inspector = page.locator("[data-yune-inspector-toggle] input[type='checkbox']");
+    await expect(inspector).toHaveClass(/yd-check/);
+    await expect(inspector).not.toHaveClass(/yd-switch/);
+
+    const themeToggle = page.getByLabel(/Theme Switcher/);
+    await expect(themeToggle).toHaveClass(/yd-theme-switch/);
+    await saveM25Json("M25-DOGFOOD-07", "checkbox-affordance-summary.json", {
+      note: "Theme switcher remains a specialized icon switch and uses yd-theme-switch; settings and inspector binary controls use yd-check.",
+      preferenceControls,
+      inspectorClass: await inspector.getAttribute("class"),
+      themeClass: await themeToggle.getAttribute("class"),
+    });
+    await takeM25Screenshot(page, "M25-DOGFOOD-07", "checkbox-affordance-desktop");
+    await page.setViewportSize({ width: 390, height: 900 });
+    await takeM25Screenshot(page, "M25-DOGFOOD-07", "checkbox-affordance-mobile");
+  });
+
+  test("M25 DOGFOOD-09 candidate menu layout uses radio choices", async ({ page }) => {
+    const field = page.locator("[data-yune-preferences] .yd-field").filter({ hasText: /Candidate Menu Layout/ });
+    await expect(field).toBeVisible();
+    await expect(field.locator(".yd-segment")).toHaveCount(0);
+    const radios = field.locator("input[type='radio'].yd-choice");
+    await expect(radios).toHaveCount(2);
+    await expect(field.getByLabel(/Horizontal/)).toBeChecked();
+    await expect(field.getByLabel(/Vertical/)).not.toBeChecked();
+
+    let horizontal = await typeCompositionAndWaitForTopCandidate(page, "nei", "你");
+    await expect(page.locator(".candidate-panel")).toHaveClass(/candidate-panel--horizontal/);
+    await saveM25Json("M25-DOGFOOD-09", "candidate-layout-horizontal.json", horizontal);
+    await takeM25Screenshot(page, "M25-DOGFOOD-09", "candidate-layout-horizontal");
+
+    await clearComposition(page);
+    await field.getByLabel(/Vertical/).check({ force: true });
+    await expect(field.getByLabel(/Vertical/)).toBeChecked();
+    const vertical = await typeCompositionAndWaitForTopCandidate(page, "nei", "你");
+    await expect(page.locator(".candidate-panel")).toHaveClass(/candidate-panel--vertical/);
+    await saveM25Json("M25-DOGFOOD-09", "candidate-layout-vertical.json", {
+      before: horizontal,
+      after: vertical,
+      radioLabels: await field.locator("label").evaluateAll(labels => labels.map(label => label.textContent?.replace(/\s+/g, " ").trim())),
+    });
+    await takeM25Screenshot(page, "M25-DOGFOOD-09", "candidate-layout-vertical");
+    horizontal = vertical;
+    expect(horizontal.candidates.length).toBeGreaterThan(0);
+  });
+
   test("M24 phrase comments render without raw control markers", async ({ page }) => {
     const state = await captureM24Phrase(page, "M24-DOGFOOD-02", M24_DOGFOOD_INPUT, M24_DOGFOOD_TOP);
     const visibleRows = state.candidates.map(candidate => candidate.rowText).join("\n");
@@ -739,11 +1180,11 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(actualTexts.slice(0, compareCount)).toEqual(expectedTexts.slice(0, compareCount));
   });
 
-  test("M24 settings labels are Cantonese-first and grouped by engine, session, display, and frontend", async ({ page }) => {
+  test("M24/M25 settings labels are Cantonese-first and grouped by engine, display, and session", async ({ page }) => {
     await expect(page.getByText(/引擎設定 Active engine controls/)).toBeVisible();
-    await expect(page.getByText(/即時狀態 Live session controls/)).toBeVisible();
     await expect(page.getByText(/顯示設定 Display controls/)).toBeVisible();
-    await expect(page.getByText(/網頁前端 Web Frontend Controls/)).toBeVisible();
+    await expect(page.getByText(/即時狀態 Live session controls/)).toBeVisible();
+    await expect(page.getByText(/Web Frontend Controls/)).toHaveCount(0);
     await expect(page.getByText(/會重新部署 schema/)).toBeVisible();
     await expect(page.getByText(/只改目前 session/)).toBeVisible();
     await takeM24Screenshot(page, "M24-DOGFOOD-05", "settings-labels-desktop");
@@ -800,18 +1241,18 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     const schemaSwitcher = page.locator("[data-yune-schema-switcher]");
     await expect(schemaSwitcher.getByText("粵語拼音")).toBeVisible();
     await expect(schemaSwitcher.getByText("倉頡五代")).toBeVisible();
-    await expect(schemaSwitcher.getByText("普通話", { exact: true })).toBeVisible();
+    await expect(schemaSwitcher.getByText("朙月拼音", { exact: true })).toBeVisible();
     await selectSchema(page, /Cangjie 5/);
     await typeInputForStatus(page, "a");
     await expect(page.locator("[data-yune-status-schema]")).toContainText("倉頡五代");
     await takeM24Screenshot(page, "M24-DOGFOOD-10", "schema-switcher-real-names");
   });
 
-  test("M24 Jyutping reverse lookup accepts Mandarin pinyin affix input", async ({ page }) => {
+  test("M24/M25 Jyutping reverse lookup accepts current Mandarin pinyin affix input", async ({ page }) => {
     await selectSchema(page, /Jyutping/);
-    const state = await typeCompositionAndWaitForCandidate(page, "`pzhe", "這");
-    await saveM24Json("M24-DOGFOOD-11", "jyutping-reverse-lookup-pzhe.json", state);
-    await takeM24Screenshot(page, "M24-DOGFOOD-11", "jyutping-reverse-lookup-pzhe");
+    const state = await typeCompositionAndWaitForCandidate(page, "`zhe", "這");
+    await saveM25Json("M25-DOGFOOD-08", "legacy-reverse-lookup-bare-zhe.json", state);
+    await takeM25Screenshot(page, "M25-DOGFOOD-08", "legacy-reverse-lookup-bare-zhe");
     expect(candidateTexts(state)).toContain("這");
 
     await clearComposition(page);

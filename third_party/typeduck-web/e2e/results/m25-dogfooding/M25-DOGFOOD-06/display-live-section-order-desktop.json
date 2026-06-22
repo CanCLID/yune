@@ -1,0 +1,26 @@
+{
+  "active": {
+    "x": 32,
+    "y": 650.5,
+    "width": 600,
+    "height": 770,
+    "right": 632,
+    "bottom": 1420.5
+  },
+  "display": {
+    "x": 648,
+    "y": 650.5,
+    "width": 600,
+    "height": 770,
+    "right": 1248,
+    "bottom": 1420.5
+  },
+  "live": {
+    "x": 32,
+    "y": 1436.5,
+    "width": 600,
+    "height": 462,
+    "right": 632,
+    "bottom": 1898.5
+  }
+}

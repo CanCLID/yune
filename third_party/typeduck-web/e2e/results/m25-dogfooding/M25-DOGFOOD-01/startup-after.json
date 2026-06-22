@@ -1,0 +1,212 @@
+{
+  "startup": {
+    "type": "diagnostic",
+    "source": "yune-startup",
+    "marker": {
+      "phase": "startup:complete",
+      "totalMs": 10165,
+      "markers": [
+        {
+          "phase": "worker:start",
+          "ms": 0
+        },
+        {
+          "phase": "wasm-glue:loaded",
+          "ms": 5
+        },
+        {
+          "phase": "module:created",
+          "ms": 16
+        },
+        {
+          "phase": "persistence:mounted",
+          "ms": 16
+        },
+        {
+          "phase": "assets:loaded",
+          "ms": 129
+        },
+        {
+          "phase": "runtime:initialized",
+          "ms": 10165
+        }
+      ],
+      "assetVersion": "m25-dogfood-v1",
+      "schema": "jyut6ping3_mobile",
+      "wasmBuildProfile": "release",
+      "wasmGlue": "yune-typeduck.js",
+      "wasmBinary": "yune-typeduck.wasm",
+      "loadedSharedAssets": [
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "jyut6ping3.schema.yaml",
+        "jyut6ping3_mobile_longpress.schema.yaml",
+        "jyut6ping3_mobile_10keys.schema.yaml",
+        "jyut6ping3_scolar.schema.yaml",
+        "jyut6ping3_scolar.dict.yaml",
+        "luna_pinyin.schema.yaml",
+        "luna_pinyin.dict.yaml",
+        "luna_pinyin_yune_reverse.dict.yaml",
+        "loengfan.schema.yaml",
+        "loengfan.dict.yaml",
+        "loengfan_longpress.schema.yaml",
+        "cangjie3.schema.yaml",
+        "cangjie3.dict.yaml",
+        "cangjie5.schema.yaml",
+        "cangjie5.dict.yaml",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+        "jyut6ping3.table.bin",
+        "jyut6ping3.reverse.bin",
+        "jyut6ping3_mobile.prism.bin",
+        "jyut6ping3_scolar.table.bin",
+        "jyut6ping3_scolar.reverse.bin",
+        "jyut6ping3_scolar.prism.bin",
+        "cangjie5.table.bin",
+        "cangjie5.reverse.bin",
+        "cangjie5.prism.bin",
+        "luna_pinyin.table.bin",
+        "luna_pinyin.reverse.bin",
+        "luna_pinyin.prism.bin"
+      ]
+    }
+  },
+  "startupAfterReload": {
+    "type": "diagnostic",
+    "source": "yune-startup",
+    "marker": {
+      "phase": "startup:complete",
+      "totalMs": 10433,
+      "markers": [
+        {
+          "phase": "worker:start",
+          "ms": 0
+        },
+        {
+          "phase": "wasm-glue:loaded",
+          "ms": 4
+        },
+        {
+          "phase": "module:created",
+          "ms": 15
+        },
+        {
+          "phase": "persistence:mounted",
+          "ms": 15
+        },
+        {
+          "phase": "assets:loaded",
+          "ms": 91
+        },
+        {
+          "phase": "runtime:initialized",
+          "ms": 10433
+        }
+      ],
+      "assetVersion": "m25-dogfood-v1",
+      "schema": "jyut6ping3_mobile",
+      "wasmBuildProfile": "release",
+      "wasmGlue": "yune-typeduck.js",
+      "wasmBinary": "yune-typeduck.wasm",
+      "loadedSharedAssets": [
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "jyut6ping3.schema.yaml",
+        "jyut6ping3_mobile_longpress.schema.yaml",
+        "jyut6ping3_mobile_10keys.schema.yaml",
+        "jyut6ping3_scolar.schema.yaml",
+        "jyut6ping3_scolar.dict.yaml",
+        "luna_pinyin.schema.yaml",
+        "luna_pinyin.dict.yaml",
+        "luna_pinyin_yune_reverse.dict.yaml",
+        "loengfan.schema.yaml",
+        "loengfan.dict.yaml",
+        "loengfan_longpress.schema.yaml",
+        "cangjie3.schema.yaml",
+        "cangjie3.dict.yaml",
+        "cangjie5.schema.yaml",
+        "cangjie5.dict.yaml",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+        "jyut6ping3.table.bin",
+        "jyut6ping3.reverse.bin",
+        "jyut6ping3_mobile.prism.bin",
+        "jyut6ping3_scolar.table.bin",
+        "jyut6ping3_scolar.reverse.bin",
+        "jyut6ping3_scolar.prism.bin",
+        "cangjie5.table.bin",
+        "cangjie5.reverse.bin",
+        "cangjie5.prism.bin",
+        "luna_pinyin.table.bin",
+        "luna_pinyin.reverse.bin",
+        "luna_pinyin.prism.bin"
+      ]
+    }
+  },
+  "deployCache": {
+    "type": "diagnostic",
+    "source": "yune-persistence",
+    "marker": {
+      "phase": "deploy:cache-hit",
+      "reason": "deploy",
+      "schemaId": "jyut6ping3_mobile",
+      "userDataDir": "/rime",
+      "timestamp": "2026-06-21T23:54:37.781Z",
+      "assetVersion": "m25-dogfood-v1",
+      "persistedConfig": {
+        "path": "/rime/jyut6ping3_mobile.custom.yaml",
+        "exists": true,
+        "pageSize": "7",
+        "settings": {
+          "menu/page_size": "7",
+          "translator/enable_completion": "true",
+          "translator/enable_correction": "false",
+          "translator/enable_sentence": "true",
+          "translator/enable_user_dict": "true",
+          "translator/encode_commit_history": "true",
+          "translator/combine_candidates": "true",
+          "translator/prediction_never_first": "true",
+          "translator/prediction_weight_threshold": "0",
+          "translator/dictionary_exclude": "[]",
+          "cangjie/dictionary": "cangjie5",
+          "cangjie/tips": "【倉頡五代】"
+        },
+        "bytes": 621
+      },
+      "deployedConfig": {
+        "path": "/rime/build/jyut6ping3_mobile.schema.yaml",
+        "exists": true,
+        "pageSize": "7",
+        "settings": {
+          "menu/page_size": "7",
+          "translator/enable_completion": "false",
+          "translator/enable_correction": "true",
+          "translator/enable_sentence": "false",
+          "translator/enable_user_dict": "false",
+          "translator/encode_commit_history": "false",
+          "translator/combine_candidates": "false",
+          "translator/prediction_never_first": "true",
+          "translator/prediction_weight_threshold": "0",
+          "translator/dictionary_exclude": "[]",
+          "cangjie/dictionary": "cangjie5",
+          "cangjie/tips": "【倉頡五代】"
+        },
+        "bytes": 10028
+      }
+    }
+  },
+  "warmReloadElapsedMs": 41407,
+  "resources": []
+}

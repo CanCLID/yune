@@ -1,0 +1,27 @@
+{
+  "aiEnabled": false,
+  "inputValue": "",
+  "candidates": [
+    {
+      "index": 0,
+      "text": "係",
+      "note": null,
+      "source": null,
+      "rowText": "1.hai6係ⓘ"
+    },
+    {
+      "index": 1,
+      "text": "喺",
+      "note": null,
+      "source": null,
+      "rowText": "2.hai2喺ⓘ"
+    },
+    {
+      "index": 2,
+      "text": "系",
+      "note": null,
+      "source": null,
+      "rowText": "3.hai6系ⓘ"
+    }
+  ]
+}

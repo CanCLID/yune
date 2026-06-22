@@ -1,0 +1,76 @@
+{
+  "aiEnabled": false,
+  "inputValue": "",
+  "candidates": [
+    {
+      "index": 0,
+      "text": "係",
+      "note": null,
+      "source": null,
+      "rowText": "1.hai6係ⓘ"
+    },
+    {
+      "index": 1,
+      "text": "喺",
+      "note": null,
+      "source": null,
+      "rowText": "2.hai2喺ⓘ"
+    },
+    {
+      "index": 2,
+      "text": "系",
+      "note": null,
+      "source": null,
+      "rowText": "3.hai6系ⓘ"
+    },
+    {
+      "index": 3,
+      "text": "繫",
+      "note": null,
+      "source": null,
+      "rowText": "4.hai6繫ⓘ"
+    },
+    {
+      "index": 4,
+      "text": "谿",
+      "note": "hai4",
+      "source": null,
+      "rowText": "5.谿hai4"
+    },
+    {
+      "index": 5,
+      "text": "奚",
+      "note": null,
+      "source": null,
+      "rowText": "6.hai4奚ⓘ"
+    },
+    {
+      "index": 6,
+      "text": "兮",
+      "note": null,
+      "source": null,
+      "rowText": "7.hai4兮ⓘ"
+    },
+    {
+      "index": 7,
+      "text": "蹊",
+      "note": null,
+      "source": null,
+      "rowText": "8.hai4蹊ⓘ"
+    },
+    {
+      "index": 8,
+      "text": "閪",
+      "note": null,
+      "source": null,
+      "rowText": "9.hai1閪ⓘ"
+    },
+    {
+      "index": 9,
+      "text": "谿",
+      "note": null,
+      "source": null,
+      "rowText": "0.hai4谿ⓘ"
+    }
+  ]
+}

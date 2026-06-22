@@ -5,6 +5,8 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 EXPORT_LIST="$REPO_ROOT/scripts/typeduck-exports.txt"
 FALLBACK_TEST="cargo test -p yune-rime-api --test typeduck_web"
+WASM_BUILD_PROFILE="release"
+WASM_ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/$WASM_BUILD_PROFILE"
 
 if [ ! -f "$EXPORT_LIST" ]; then
   echo "TypeDuck WASM build failed: missing export list at scripts/typeduck-exports.txt" >&2
@@ -126,7 +128,7 @@ configure_emscripten_linker() {
 
 find_first_artifact() {
   EXT=$1
-  ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/debug"
+  ARTIFACT_DIR="$WASM_ARTIFACT_DIR"
   if [ ! -d "$ARTIFACT_DIR" ]; then
     return 1
   fi
@@ -135,7 +137,7 @@ find_first_artifact() {
 
 find_named_artifact() {
   ARTIFACT_NAME=$1
-  ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/debug"
+  ARTIFACT_DIR="$WASM_ARTIFACT_DIR"
   if [ ! -d "$ARTIFACT_DIR" ]; then
     return 1
   fi
@@ -169,14 +171,19 @@ verify_wasm_exports() {
   fi
 
   if LLVM_NM=$(find_tool llvm-nm); then
-    WASM_SYMBOLS=$("$LLVM_NM" "$WASM_ARTIFACT")
-    for symbol in $EXPORTS; do
-      if ! printf '%s\n' "$WASM_SYMBOLS" | grep -Eq "(^|[[:space:]])_?${symbol}($|[[:space:]])"; then
-        echo "TypeDuck WASM build failed: llvm-nm did not find export $symbol" >&2
-        exit 1
+    if WASM_SYMBOLS=$("$LLVM_NM" "$WASM_ARTIFACT" 2>/dev/null); then
+      FOUND_ALL=1
+      for symbol in $EXPORTS; do
+        if ! printf '%s\n' "$WASM_SYMBOLS" | grep -Eq "(^|[[:space:]])_?${symbol}($|[[:space:]])"; then
+          FOUND_ALL=0
+          break
+        fi
+      done
+      if [ "$FOUND_ALL" -eq 1 ]; then
+        return 0
       fi
-    done
-    return 0
+    fi
+    echo "TypeDuck WASM export verification falling back to JS glue scan after llvm-nm could not prove all exports."
   fi
 
   if [ ! -f "$JS_ARTIFACT" ]; then
@@ -289,29 +296,30 @@ configure_emscripten_linker
 
 EXPORTED_FUNCTIONS=$(join_exported_functions)
 RUNTIME_METHODS="ccall,cwrap,UTF8ToString,FS,IDBFS"
-EXTRA_RUSTFLAGS="-C link-arg=-sEXPORTED_FUNCTIONS=$EXPORTED_FUNCTIONS -C link-arg=-sEXPORTED_RUNTIME_METHODS=$RUNTIME_METHODS -C link-arg=-sMODULARIZE=1 -C link-arg=-sEXPORT_NAME=createYuneTypeduckModule -C link-arg=-sENVIRONMENT=web,worker,node -C link-arg=-sFORCE_FILESYSTEM=1 -C link-arg=-sALLOW_MEMORY_GROWTH=1 -C link-arg=-sINITIAL_MEMORY=134217728 -C link-arg=-sSTACK_SIZE=8388608 -C link-arg=-lidbfs.js"
+EXTRA_RUSTFLAGS="-C link-arg=-O3 -C link-arg=-sEXPORTED_FUNCTIONS=$EXPORTED_FUNCTIONS -C link-arg=-sEXPORTED_RUNTIME_METHODS=$RUNTIME_METHODS -C link-arg=-sMODULARIZE=1 -C link-arg=-sEXPORT_NAME=createYuneTypeduckModule -C link-arg=-sENVIRONMENT=web,worker,node -C link-arg=-sFORCE_FILESYSTEM=1 -C link-arg=-sALLOW_MEMORY_GROWTH=1 -C link-arg=-sINITIAL_MEMORY=134217728 -C link-arg=-sSTACK_SIZE=8388608 -C link-arg=-lidbfs.js"
 if [ "${RUSTFLAGS+x}" = x ] && [ -n "$RUSTFLAGS" ]; then
   export RUSTFLAGS="$RUSTFLAGS $EXTRA_RUSTFLAGS"
 else
   export RUSTFLAGS="$EXTRA_RUSTFLAGS"
 fi
 
-ARTIFACT_DIR="$REPO_ROOT/target/wasm32-unknown-emscripten/debug"
+ARTIFACT_DIR="$WASM_ARTIFACT_DIR"
 rm -f \
   "$ARTIFACT_DIR/typeduck_web_module.js" \
   "$ARTIFACT_DIR/typeduck_web_module.wasm" \
   "$ARTIFACT_DIR/deps/typeduck_web_module.js" \
   "$ARTIFACT_DIR/deps/typeduck_web_module.wasm" \
   "$ARTIFACT_DIR/yune-typeduck.js" \
-  "$ARTIFACT_DIR/yune-typeduck.wasm"
+  "$ARTIFACT_DIR/yune-typeduck.wasm" \
+  "$ARTIFACT_DIR/yune-typeduck.wasm.optimized"
 
-(cd "$REPO_ROOT" && cargo build -p yune-rime-api --target wasm32-unknown-emscripten --bin typeduck_web_module)
+(cd "$REPO_ROOT" && cargo build -p yune-rime-api --target wasm32-unknown-emscripten --bin typeduck_web_module --release)
 BROWSER_JS_ARTIFACT=$(find_named_artifact typeduck_web_module.js) || {
-  echo "TypeDuck WASM build failed: no Emscripten JS glue artifact found under target/wasm32-unknown-emscripten/debug" >&2
+  echo "TypeDuck WASM build failed: no Emscripten JS glue artifact found under target/wasm32-unknown-emscripten/$WASM_BUILD_PROFILE" >&2
   exit 1
 }
 BROWSER_WASM_ARTIFACT=$(find_named_artifact typeduck_web_module.wasm) || {
-  echo "TypeDuck WASM build failed: no Emscripten browser .wasm artifact found under target/wasm32-unknown-emscripten/debug" >&2
+  echo "TypeDuck WASM build failed: no Emscripten browser .wasm artifact found under target/wasm32-unknown-emscripten/$WASM_BUILD_PROFILE" >&2
   exit 1
 }
 
@@ -320,8 +328,21 @@ WASM_ARTIFACT="$ARTIFACT_DIR/yune-typeduck.wasm"
 cp "$BROWSER_JS_ARTIFACT" "$JS_ARTIFACT"
 cp "$BROWSER_WASM_ARTIFACT" "$WASM_ARTIFACT"
 
+if WASM_OPT=$(find_tool wasm-opt); then
+  if "$WASM_OPT" -O3 --enable-bulk-memory --enable-exception-handling "$WASM_ARTIFACT" -o "$WASM_ARTIFACT.optimized" >/dev/null 2>&1; then
+    mv "$WASM_ARTIFACT.optimized" "$WASM_ARTIFACT"
+    echo "TypeDuck browser WASM post-optimized with wasm-opt -O3"
+  else
+    rm -f "$WASM_ARTIFACT.optimized"
+    echo "TypeDuck browser WASM post-optimization skipped: wasm-opt could not validate this Emscripten module"
+  fi
+else
+  echo "TypeDuck browser WASM post-optimization skipped: wasm-opt not available"
+fi
+
 verify_wasm_exports "$WASM_ARTIFACT" "$JS_ARTIFACT"
 verify_loadable_module "$JS_ARTIFACT"
 
 echo "TypeDuck browser WASM verified: $WASM_ARTIFACT"
 echo "TypeDuck Emscripten JS glue verified: $JS_ARTIFACT"
+echo "TypeDuck browser WASM build profile: $WASM_BUILD_PROFILE"

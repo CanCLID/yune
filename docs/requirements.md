@@ -357,7 +357,9 @@ with browser evidence under
 - [x] **M24-DOGFOOD-REQ-03**: Browser/runtime correctness fixes remain
   fixture-backed where engine output is involved: `jigaajiusihaa` ordering is
   locked to TypeDuck `v1.1.2`, page-size customization writes `menu/page_size`,
-  and Jyutping `` `pzhe `` reverse lookup uses packaged browser assets.
+  and the historical M24 Jyutping reverse lookup path uses packaged browser
+  assets; M25 updates the current web profile to bare `` `zhe `` for
+  `luna_pinyin`.
 - [x] **M24-DOGFOOD-REQ-04**: The TypeDuck-Web playground settings are
   Cantonese-first and grouped by engine/session/display/frontend purpose, with
   checklist display languages, real schema names, labeled engine status, and full
@@ -365,6 +367,39 @@ with browser evidence under
 - [x] **M24-DOGFOOD-REQ-05**: The dogfood UI stack is Vite + React + Tailwind CSS
   plus small local components only; DaisyUI is removed from package metadata,
   Tailwind config, and local component class usage.
+
+## M25 TypeDuck-Web Dogfooding Round 2 Requirements
+
+**Status: complete.** M25 closed the second manual dogfooding round for the
+internal TypeDuck-Web playground. The archived ledger and closeout evidence
+index live in
+[`plans/archive/m25-plan-typeduck-web-dogfooding-round-2.md`](./plans/archive/m25-plan-typeduck-web-dogfooding-round-2.md),
+with browser evidence under
+`third_party/typeduck-web/e2e/results/m25-dogfooding/`.
+
+- [x] **M25-DOGFOOD-REQ-01**: Every closed M25 row has issue-scoped browser
+  JSON/screenshot evidence, an owning Playwright or native test listed in the
+  ledger closeout table, and TypeDuck-Web source changes regenerated into
+  `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` with
+  reverse/forward patch checks.
+- [x] **M25-DOGFOOD-REQ-02**: Browser startup uses the release-mode WASM build,
+  records phase timing evidence, reuses fresh deploy state instead of forcing
+  schema invalidation, and normal typing no longer shows the global loading
+  state.
+- [x] **M25-DOGFOOD-REQ-03**: Page size is an obvious 3-10 setting wired to
+  `menu/page_size`; native and browser tests prove the candidate panel cap and
+  page navigation at 3, 9, and 10 visible rows.
+- [x] **M25-DOGFOOD-REQ-04**: The current Jyutping web profile uses bare
+  `` ` `` for `luna_pinyin` reverse lookup, removes the vestigial bare
+  `reverse_lookup` slot, keeps retained Loengfan/Cangjie secondary lookups on
+  explicit non-bare triggers such as `` `vl`` / `` `vc``, and shows the trigger
+  map in the web UI.
+- [x] **M25-DOGFOOD-REQ-05**: The schema selector, Luna visible name, Cangjie
+  version control, Display/Live settings order, and IME Settings alignment are
+  browser-evidenced across desktop and narrow viewports.
+- [x] **M25-DOGFOOD-REQ-06**: Binary dogfood controls use checkbox-style
+  affordances, Candidate Menu Layout uses radio choices, and the UI stack
+  remains Vite + React + Tailwind CSS plus small local components only.
 
 **Follow-on (no requirement IDs):** [`M21`](./plans/archive/m21-plan-typeduck-web-product-comparison.md) is complete as a post-M20 *comparison protocol* and hard-oracle closeout. It compared the Yune harness against the deployed `typeduck.hk/web` product as a behavior/feel target, but the `v1.1.2` fixtures remained the hard oracle. The final gap ledger has no remaining hard-oracle action rows: M21-GAP-01 is closed by `jyut6ping3-m21-sentence-composition.json`, M21-GAP-02 is closed by `jyut6ping3-m21-prediction-ranking.json` plus real `nri` browser before/after evidence, and `jyut6ping3-m21-closeout.json` locks the remaining baseline/fuzzy/sentence/`hk2s`/tone-letter/paging rows including the final `m` and `mgoi` fixes.
 
@@ -500,6 +535,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M24-DOGFOOD-REQ-03 | M24 | Complete - ordering, page-size, and Jyutping reverse lookup are fixture/native/browser guarded |
 | M24-DOGFOOD-REQ-04 | M24 | Complete - Cantonese-first grouped settings, schema names, status labels, and typeface picker are browser-evidenced |
 | M24-DOGFOOD-REQ-05 | M24 | Complete - DaisyUI removed; local Tailwind components build and pass browser evidence |
+| M25-DOGFOOD-REQ-01 | M25 | Complete - issue-scoped M25 browser evidence, owning tests, and regenerated patch checks are recorded |
+| M25-DOGFOOD-REQ-02 | M25 | Complete - release browser WASM, deploy reuse, phase timing, and typing/loading separation are browser-evidenced |
+| M25-DOGFOOD-REQ-03 | M25 | Complete - 3-10 page-size customization and candidate caps are native/browser tested |
+| M25-DOGFOOD-REQ-04 | M25 | Complete - bare-grave Luna reverse lookup and explicit `vl`/`vc` side lookup triggers are native/browser tested |
+| M25-DOGFOOD-REQ-05 | M25 | Complete - top-control layout, settings order, and alignment are browser-evidenced |
+| M25-DOGFOOD-REQ-06 | M25 | Complete - checkbox and radio affordances preserve the local Tailwind component stack |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -514,9 +555,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M19 schema breadth and TypeDuck-profile ABI requirements: 5 total, 5 complete
 - M22 web playground requirements: 4 total, 4 complete
 - M24 TypeDuck-Web dogfooding requirements: 5 total, 5 complete
-- Mapped to phases: 114
+- M25 TypeDuck-Web dogfooding round 2 requirements: 6 total, 6 complete
+- Mapped to phases: 120
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-06-21 - M24 TypeDuck-Web dogfooding is complete with 13/13 rows closed and browser evidence; M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows is complete as a TypeDuck compatibility profile with T1/T2 package/profile smoke, build/link evidence, and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke*
+*Last updated: 2026-06-21 - M25 TypeDuck-Web dogfooding round 2 is complete with 10/10 rows closed, browser evidence, and regenerated TypeDuck-Web patch checks; M24 TypeDuck-Web dogfooding remains complete with 13/13 rows closed and browser evidence; M19 schema breadth and the named TypeDuck-profile ABI accessor are complete; M23 architecture hardening and M18 deployment/processor depth are complete; all M22 TypeDuck-Web playground buckets are complete with browser evidence; M21 TypeDuck-Web product comparison is complete as a hard-oracle closeout; M20 Web Demo Showcase Controls remain complete as a separate internal web/demo track; M10 TypeDuck-Windows is complete as a TypeDuck compatibility profile with T1/T2 package/profile smoke, build/link evidence, and stock T3 TypeDuckServer/TestTypeDuckIPC real-server IPC smoke*

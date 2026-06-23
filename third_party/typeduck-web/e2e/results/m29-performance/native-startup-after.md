@@ -37,17 +37,17 @@ Optimization: `crates/yune-core/src/spelling_algebra.rs` now skips no-op regex r
 
 | Scenario | Before | After | Finding |
 | --- | ---: | ---: | --- |
-| Fresh startup | `5,299ms` | `5,286ms` | Flat; browser startup did not materially move. |
-| Reload startup | `5,211ms` | `5,203ms` | Flat; browser startup did not materially move. |
+| Fresh startup | `5,299ms` | `5,378ms` | Flat/mixed; browser startup did not materially move. |
+| Reload startup | `5,211ms` | `5,245ms` | Flat/mixed; browser startup did not materially move. |
 
 ## Typing Before/After
 
 | Scenario | Before p95 keydown-to-paint | After p95 keydown-to-paint | Main owner note |
 | --- | ---: | ---: | --- |
-| `hai` | `61ms` | `62ms` | Worker/native stayed `25ms`; React stayed about `35ms`. |
-| Long phrase | `50ms` | `57ms` | Worker/native stayed roughly flat (`46ms` -> `45ms`); total moved with browser variance. |
-| Long composition | `39ms` | `38ms` | Worker/native `33ms` -> `36ms`; paint proxy improved. |
-| Paging | `13ms` | `6ms` | Single-sample UI path; not a startup optimization target. |
-| Reverse lookup | `16ms` | `14ms` | Worker/native stayed `7ms`. |
+| `hai` | `61ms` | `62ms` | Worker/native stayed roughly flat (`25ms` -> `26ms`); React stayed about `35ms`. |
+| Long phrase | `50ms` | `59ms` | Worker/native stayed flat (`46ms` -> `46ms`); total moved with browser variance. |
+| Long composition | `39ms` | `44ms` | Worker/native moved `33ms` -> `35ms`; total moved with browser variance. |
+| Paging | `13ms` | `16ms` | Single-sample UI path; not a startup optimization target. |
+| Reverse lookup | `16ms` | `29ms` | Worker/native stayed `7ms`; total moved with paint-proxy variance. |
 
 Finding: the M29 code change materially reduces the measured native startup owner by about `208ms` median and `262ms` p95, while browser startup and typing are flat/mixed. Candidate behavior, ranking, comments, and ABI surfaces are unchanged by this performance slice.

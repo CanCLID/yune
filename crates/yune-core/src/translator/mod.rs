@@ -104,7 +104,7 @@ impl Translator for EchoTranslator {
 }
 
 pub struct StaticTableTranslator {
-    entries: Vec<(String, Candidate)>,
+    source_entries: Option<Vec<(String, Candidate)>>,
     entries_by_code: BTreeMap<String, Vec<Candidate>>,
     spelling_abbreviation_entries: HashSet<(String, String, String)>,
     normal_codes: HashSet<String>,
@@ -160,7 +160,7 @@ impl StaticTableTranslator {
         let entries_by_code = entries_by_code(&entries);
         let normal_codes = normal_codes(&entries);
         Self {
-            entries,
+            source_entries: Some(entries),
             entries_by_code,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
@@ -216,7 +216,7 @@ impl StaticTableTranslator {
         let entries_by_code = entries_by_code(&entries);
         let normal_codes = normal_codes(&entries);
         Self {
-            entries,
+            source_entries: Some(entries),
             entries_by_code,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
@@ -382,11 +382,21 @@ impl StaticTableTranslator {
 
     #[must_use]
     pub fn with_upstream_sentence_model(mut self, max_candidates: usize) -> Self {
-        let entries = self
-            .entries
-            .iter()
-            .map(|(code, candidate)| TableEntry::new(code, &candidate.text, candidate.quality))
-            .collect::<Vec<_>>();
+        let entries = if let Some(entries) = self.source_entries.take() {
+            entries
+                .iter()
+                .map(|(code, candidate)| TableEntry::new(code, &candidate.text, candidate.quality))
+                .collect::<Vec<_>>()
+        } else {
+            self.entries_by_code
+                .iter()
+                .flat_map(|(code, candidates)| {
+                    candidates.iter().map(move |candidate| {
+                        TableEntry::new(code, &candidate.text, candidate.quality)
+                    })
+                })
+                .collect::<Vec<_>>()
+        };
         self.upstream_sentence_model = Some(UpstreamSentenceModel::from_entries(
             &entries,
             &self.preset_vocabulary,
@@ -417,18 +427,22 @@ impl StaticTableTranslator {
     pub fn with_spelling_algebra(mut self, formulas: &[String]) -> Self {
         self.spelling_algebra_formulas = formulas.to_vec();
         let algebra = SpellingAlgebra::parse(formulas);
+        let source_entries = self.source_entries.take().unwrap_or_else(|| {
+            entries_from_entries_by_code(std::mem::take(&mut self.entries_by_code))
+        });
         if !algebra.is_empty() {
             let (entries, normal_codes, has_single_letter_abbreviations) =
-                algebra.expand_entries_with_normal_codes(self.entries);
+                algebra.expand_entries_with_normal_codes(source_entries);
             self.spelling_abbreviation_entries = spelling_abbreviation_entries(&entries);
             let entries = entries
                 .into_iter()
                 .map(|entry| (entry.code, entry.candidate))
                 .collect::<Vec<_>>();
-            self.entries = entries;
-            self.entries_by_code = entries_by_code(&self.entries);
+            self.entries_by_code = entries_by_code_from_entries(entries);
             self.normal_codes = normal_codes;
             self.single_letter_sentence_guard_enabled = has_single_letter_abbreviations;
+        } else if self.entries_by_code.is_empty() {
+            self.entries_by_code = entries_by_code_from_entries(source_entries);
         }
         self
     }
@@ -1149,6 +1163,29 @@ fn entries_by_code(entries: &[(String, Candidate)]) -> BTreeMap<String, Vec<Cand
             .push(candidate.clone());
     }
     indexed
+}
+
+fn entries_by_code_from_entries(
+    entries: impl IntoIterator<Item = (String, Candidate)>,
+) -> BTreeMap<String, Vec<Candidate>> {
+    let mut indexed = BTreeMap::<String, Vec<Candidate>>::new();
+    for (code, candidate) in entries {
+        indexed.entry(code).or_default().push(candidate);
+    }
+    indexed
+}
+
+fn entries_from_entries_by_code(
+    entries_by_code: BTreeMap<String, Vec<Candidate>>,
+) -> Vec<(String, Candidate)> {
+    entries_by_code
+        .into_iter()
+        .flat_map(|(code, candidates)| {
+            candidates
+                .into_iter()
+                .map(move |candidate| (code.clone(), candidate))
+        })
+        .collect()
 }
 
 fn spelling_abbreviation_entries(

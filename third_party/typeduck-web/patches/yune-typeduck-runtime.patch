@@ -2,15 +2,26 @@ diff --git a/index.html b/index.html
 index 5803fa4..6fa66f8 100644
 --- a/index.html
 +++ b/index.html
-@@ -4,8 +4,6 @@
+@@ -3,16 +3,14 @@
+ 	<head>
  		<meta charset="UTF-8" />
  		<meta name="viewport" content="width=device-width, initial-scale=1" />
- 		<title>TypeDuck 網頁版</title>
+-		<title>TypeDuck 網頁版</title>
 -		<link rel="icon" type="image/png" href="/images/favicon.png" />
 -		<link rel="preload" type="image/png" href="/images/logo.png" as="image" />
++		<title>粵韻輸入法引擎</title>
  		<meta name="description" content="設有少數族裔語言提示粵拼輸入法 Cantonese input keyboard with minority language prompts" />
- 		<meta property="og:title" content="TypeDuck 網頁版" />
+-		<meta property="og:title" content="TypeDuck 網頁版" />
++		<meta property="og:title" content="粵韻輸入法引擎" />
  		<meta property="og:description" content="設有少數族裔語言提示粵拼輸入法 Cantonese input keyboard with minority language prompts" />
+ 		<meta property="og:type" content="website" />
+ 		<meta property="og:url" content="https://typeduck.hk/web/" />
+ 		<meta property="og:image" content="https://typeduck.hk/images/og-image.png" />
+-		<meta name="twitter:title" content="TypeDuck 網頁版" />
++		<meta name="twitter:title" content="粵韻輸入法引擎" />
+ 		<meta name="twitter:description" content="設有少數族裔語言提示粵拼輸入法 Cantonese input keyboard with minority language prompts" />
+ 		<meta name="twitter:card" content="summary_large_image" />
+ 		<meta name="twitter:image" content="https://typeduck.hk/images/og-image.png" />
 diff --git a/package.json b/package.json
 index cbe61db..746158d 100644
 --- a/package.json
@@ -219,7 +230,7 @@ index 0000000..74bc863
 +這	zhe	100000
 +这	zhe	99999
 diff --git a/src/App.tsx b/src/App.tsx
-index c43ccbc..4004f32 100644
+index c43ccbc..5fdfa4e 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
 @@ -1,20 +1,29 @@
@@ -376,7 +387,7 @@ index c43ccbc..4004f32 100644
  				if (!(await Rime.deploy() && success)) {
  					type = "warning";
  				}
-@@ -63,26 +154,124 @@ export default function App() {
+@@ -63,26 +154,125 @@ export default function App() {
  				notify(type, "套用設定", "applying the settings");
  			}
  			updateDeployStatus();
@@ -449,12 +460,16 @@ index c43ccbc..4004f32 100644
 -		<header className="p-8 border-b border-base-300 flex items-center">
 -			<a className="mr-4 w-48" href="/">
 -				<img src="/images/logo.png" alt="TypeDuck Logo" />
-+		<header className="flex items-center border-b border-base-300 px-6 py-5">
-+			<a className="yd-anchor mr-4 w-48 text-xl font-bold" href="/">
-+				TypeDuck
- 			</a>
- 			<h1 className="flex-1 text-2xl">TypeDuck 網頁版</h1>
- 			<ThemeSwitcher />
+-			</a>
+-			<h1 className="flex-1 text-2xl">TypeDuck 網頁版</h1>
+-			<ThemeSwitcher />
++		<header className="border-b border-base-300 py-5">
++			<div className="mx-auto flex w-full max-w-7xl items-center px-8">
++				<a className="yd-anchor flex-1 text-xl font-bold" href="/">
++					粵韻輸入法引擎
++				</a>
++				<ThemeSwitcher />
++			</div>
  		</header>
  		<main className="m-auto p-8 max-w-7xl">
 -			<Toolbar loading={loading} deployStatus={deployStatus} />
@@ -1307,7 +1322,7 @@ diff --git a/src/Preferences.tsx b/src/Preferences.tsx
 index 820a2e0..6f8b4d0 100644
 --- a/src/Preferences.tsx
 +++ b/src/Preferences.tsx
-@@ -1,109 +1,161 @@
+@@ -1,109 +1,181 @@
 -import { LANGUAGE_LABELS, SHOW_ROMANIZATION_LABELS, Language, ShowRomanization } from "./consts";
 -import { Radio, RadioCheckbox, Segment, Toggle } from "./Inputs";
 +import {
@@ -1410,9 +1425,29 @@ index 820a2e0..6f8b4d0 100644
 +				sectionId="active"
 +				title="引擎設定 Active engine controls"
 +				description="會重新部署 schema，影響候選詞、排序、記憶同除詞。">
-+				<Toggle label="自動完成 Auto-completion" description="允許未完成編碼出候選詞。" checked={prefs.enableCompletion} setChecked={prefs.setEnableCompletion} />
-+				<Toggle label="自動校正 Auto-correction" description="用 TypeDuck 校正路徑處理近似輸入。" checked={prefs.enableCorrection} setChecked={prefs.setEnableCorrection} />
-+				<Toggle label="自動組詞 Auto-composition" description="允許長輸入產生詞組候選。" checked={prefs.enableSentence} setChecked={prefs.setEnableSentence} />
++				<Toggle
++					label="自動完成 Auto-completion"
++					description={<>
++						<span className="block">例：santai → 身體健康（第二候選）</span>
++					</>}
++					checked={prefs.enableCompletion}
++					setChecked={prefs.setEnableCompletion} />
++				<Toggle
++					label="自動校正 Auto-correction"
++					description={<>
++						<span className="block">例：nri → 你</span>
++					</>}
++					checked={prefs.enableCorrection}
++					setChecked={prefs.setEnableCorrection} />
++				<Toggle
++					label="自動組句 Auto-composition"
++					description={<>
++						例：zidungzouhapgeoizi
++						<span className="block">開 → 自動組合句子（第一候選）</span>
++						<span className="block">關 → 自動zouhapgeoizi（第一候選）</span>
++					</>}
++					checked={prefs.enableSentence}
++					setChecked={prefs.setEnableSentence} />
 +				<Toggle label="輸入記憶 Input Memory" description="允許本機 userdb 學習已提交詞。" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
 +				<Toggle label="AI 候選 AI Candidates" description="本機第二輪候選，預設關閉，不改 classic 第一候選。" checked={prefs.enableAI} setChecked={prefs.setEnableAI} />
 +				<Toggle label="合併同字候選 Combine same-text candidates" description="把同文字典列合併成一個候選。" checked={prefs.combineCandidates} setChecked={prefs.setCombineCandidates} />

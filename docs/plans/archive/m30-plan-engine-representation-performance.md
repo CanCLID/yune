@@ -16,7 +16,7 @@
 
 ## Status
 
-Draft. Windows frontend/product work is intentionally deferred while this engine performance pass is active.
+Completed. Windows frontend/product work was intentionally deferred while this engine performance pass was active; with M30 closed, P2-WIN-02 resumes as the next Windows unblocker.
 
 ## Scope
 
@@ -47,7 +47,7 @@ Out of scope:
   - `crates/yune-core/src/translator/mod.rs:109` stores `spelling_abbreviation_entries` as cloned `(code, text, comment)` triples.
   - `crates/yune-core/src/spelling_algebra.rs:572-596` deduplicates with cloned `(code, text, comment)` tuple keys.
 - The long-input typing hot path includes `path.clone()` in `crates/yune-core/src/translator/mod.rs:1052`.
-- The correction stress path scans `self.entries_by_code.keys()` in `crates/yune-core/src/translator/mod.rs:487-519`; it is mostly outside normal TypeDuck typing because correction is off by default, but it remains useful stress coverage.
+- The correction stress path scans `self.entries_by_code.keys()` in `crates/yune-core/src/translator/mod.rs:487-519`. TypeDuck dynamic correction can still run on normal m-initial typing via `dynamic_correction_lookup`; M30 kept the correction row as stress coverage and deferred correction-stress indexing because M26 had already pruned impossible lengths and M30's post-Lever-A correction rows stayed flat/noisy.
 
 ## Acceptance Gates
 

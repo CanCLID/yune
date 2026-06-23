@@ -1987,6 +1987,53 @@ fn typeduck_adapter_real_assets_emit_oracle_dictionary_panel_comments() {
     runtime.remove();
 }
 
+#[test]
+fn typeduck_adapter_browser_app_assets_enrich_visible_lookup_candidates() {
+    let _guard = test_guard();
+    let runtime = TypeDuckRuntime::create_with_schema(
+        "browser-app-visible-lookup-candidates",
+        "jyut6ping3_mobile",
+    );
+    runtime.write_browser_app_assets();
+
+    let state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let composing = process_input(state, "zouhapci");
+    let candidates = composing["context"]["candidates"]
+        .as_array()
+        .expect("candidate page should be an array");
+
+    for (text, code) in [
+        ("\u{7d44}\u{5408}", "zou2hap6"),
+        ("\u{505a}", "zou6"),
+        ("\u{65e9}", "zou2"),
+        ("\u{7d44}", "zou2"),
+        ("\u{79df}", "zou1"),
+    ] {
+        let candidate = candidates
+            .iter()
+            .find(|candidate| candidate["text"] == Value::String(text.to_owned()))
+            .unwrap_or_else(|| panic!("{text} should be visible for zouhapci: {candidates:?}"));
+        let comment = candidate["comment"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{text} should have a string comment: {candidate:?}"));
+        assert!(
+            comment.contains(&format!("\u{000c}\r1,{text},{code},")),
+            "{text} should carry rich dictionary lookup bytes; got {comment:?}"
+        );
+    }
+
+    unsafe { yune_typeduck_cleanup(state) };
+    runtime.remove();
+}
+
 fn typeduck_oracle_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/typeduck-oracle/v1.1.2")
 }

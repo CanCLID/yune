@@ -12,38 +12,38 @@
       },
       {
         "index": 1,
-        "text": "你",
-        "note": null,
-        "source": null,
-        "rowText": "2.nei5你ⓘ"
-      },
-      {
-        "index": 2,
         "text": "呢",
         "note": null,
         "source": null,
-        "rowText": "3.ne1呢ⓘ"
+        "rowText": "2.ne1呢ⓘ"
       },
       {
-        "index": 3,
+        "index": 2,
         "text": "尼",
         "note": null,
         "source": null,
-        "rowText": "4.nei4尼ⓘ"
+        "rowText": "3.nei4尼ⓘ"
       },
       {
-        "index": 4,
+        "index": 3,
         "text": "妮",
         "note": null,
         "source": null,
-        "rowText": "5.nei4妮ⓘ"
+        "rowText": "4.nei4妮ⓘ"
       },
       {
-        "index": 5,
+        "index": 4,
         "text": "彌",
         "note": null,
         "source": null,
-        "rowText": "6.nei4彌ⓘ"
+        "rowText": "5.nei4彌ⓘ"
+      },
+      {
+        "index": 5,
+        "text": "妳",
+        "note": null,
+        "source": null,
+        "rowText": "6.nei5妳ⓘ"
       }
     ]
   },
@@ -60,40 +60,84 @@
       },
       {
         "index": 1,
-        "text": "你",
-        "note": null,
-        "source": null,
-        "rowText": "2.nei5你ⓘ"
-      },
-      {
-        "index": 2,
         "text": "呢",
         "note": null,
         "source": null,
-        "rowText": "3.ne1呢ⓘ"
+        "rowText": "2.ne1呢ⓘ"
       },
       {
-        "index": 3,
+        "index": 2,
         "text": "尼",
         "note": null,
         "source": null,
-        "rowText": "4.nei4尼ⓘ"
+        "rowText": "3.nei4尼ⓘ"
       },
       {
-        "index": 4,
+        "index": 3,
         "text": "妮",
         "note": null,
         "source": null,
-        "rowText": "5.nei4妮ⓘ"
+        "rowText": "4.nei4妮ⓘ"
       },
       {
-        "index": 5,
+        "index": 4,
         "text": "彌",
         "note": null,
         "source": null,
-        "rowText": "6.nei4彌ⓘ"
+        "rowText": "5.nei4彌ⓘ"
+      },
+      {
+        "index": 5,
+        "text": "妳",
+        "note": null,
+        "source": null,
+        "rowText": "6.nei5妳ⓘ"
       }
     ]
+  },
+  "horizontalBoxes": {
+    "first": {
+      "x": 48,
+      "y": 407.5,
+      "width": 76.671875,
+      "height": 50.125,
+      "right": 124.671875,
+      "bottom": 457.625
+    },
+    "second": {
+      "x": 124.671875,
+      "y": 407.5,
+      "width": 74.265625,
+      "height": 50.125,
+      "right": 198.9375,
+      "bottom": 457.625
+    }
+  },
+  "horizontalDictionary": {
+    "x": 48,
+    "y": 457.625,
+    "width": 457.625,
+    "height": 124.671875,
+    "right": 505.625,
+    "bottom": 582.296875
+  },
+  "verticalBoxes": {
+    "first": {
+      "x": 48,
+      "y": 407.5,
+      "width": 96.9375,
+      "height": 50.125,
+      "right": 144.9375,
+      "bottom": 457.625
+    },
+    "second": {
+      "x": 48,
+      "y": 457.625,
+      "width": 96.9375,
+      "height": 50.125,
+      "right": 144.9375,
+      "bottom": 507.75
+    }
   },
   "radioLabels": [
     "橫排 Horizontal",

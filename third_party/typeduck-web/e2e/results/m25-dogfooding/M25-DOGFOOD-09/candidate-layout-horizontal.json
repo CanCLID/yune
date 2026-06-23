@@ -11,38 +11,38 @@
     },
     {
       "index": 1,
-      "text": "你",
-      "note": null,
-      "source": null,
-      "rowText": "2.nei5你ⓘ"
-    },
-    {
-      "index": 2,
       "text": "呢",
       "note": null,
       "source": null,
-      "rowText": "3.ne1呢ⓘ"
+      "rowText": "2.ne1呢ⓘ"
     },
     {
-      "index": 3,
+      "index": 2,
       "text": "尼",
       "note": null,
       "source": null,
-      "rowText": "4.nei4尼ⓘ"
+      "rowText": "3.nei4尼ⓘ"
     },
     {
-      "index": 4,
+      "index": 3,
       "text": "妮",
       "note": null,
       "source": null,
-      "rowText": "5.nei4妮ⓘ"
+      "rowText": "4.nei4妮ⓘ"
     },
     {
-      "index": 5,
+      "index": 4,
       "text": "彌",
       "note": null,
       "source": null,
-      "rowText": "6.nei4彌ⓘ"
+      "rowText": "5.nei4彌ⓘ"
+    },
+    {
+      "index": 5,
+      "text": "妳",
+      "note": null,
+      "source": null,
+      "rowText": "6.nei5妳ⓘ"
     }
   ]
 }

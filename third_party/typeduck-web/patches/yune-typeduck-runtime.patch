@@ -1,5 +1,5 @@
 diff --git a/index.html b/index.html
-index 5803fa4..6fa66f8 100644
+index 5803fa4..35e77f9 100644
 --- a/index.html
 +++ b/index.html
 @@ -3,16 +3,14 @@
@@ -15,7 +15,8 @@ index 5803fa4..6fa66f8 100644
 +		<meta property="og:title" content="粵韻輸入法引擎" />
  		<meta property="og:description" content="設有少數族裔語言提示粵拼輸入法 Cantonese input keyboard with minority language prompts" />
  		<meta property="og:type" content="website" />
- 		<meta property="og:url" content="https://typeduck.hk/web/" />
+-		<meta property="og:url" content="https://typeduck.hk/web/" />
++		<meta property="og:url" content="https://typeduck.hk/" />
  		<meta property="og:image" content="https://typeduck.hk/images/og-image.png" />
 -		<meta name="twitter:title" content="TypeDuck 網頁版" />
 +		<meta name="twitter:title" content="粵韻輸入法引擎" />
@@ -230,18 +231,18 @@ index 0000000..74bc863
 +這	zhe	100000
 +这	zhe	99999
 diff --git a/src/App.tsx b/src/App.tsx
-index c43ccbc..5fdfa4e 100644
+index c43ccbc..89bc736 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
 @@ -1,20 +1,29 @@
 -import { useEffect, useReducer, useState } from "react";
-+import { useEffect, useReducer, useRef, useState } from "react";
++import { useCallback, useEffect, useReducer, useRef, useState } from "react";
  
  import { ToastContainer } from "react-toastify";
  
  import CandidatePanel from "./CandidatePanel";
 -import { NO_AUTO_FILL } from "./consts";
-+import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, NO_AUTO_FILL } from "./consts";
++import { CHINESE_TYPEFACE_BY_ID, NO_AUTO_FILL } from "./consts";
  import { useLoading, usePreferences } from "./hooks";
  import Preferences from "./Preferences";
  import Rime, { subscribe } from "./rime";
@@ -252,7 +253,7 @@ index c43ccbc..5fdfa4e 100644
 +import YuneInspector from "./YuneInspector";
 +import YuneStatusStrip from "./YuneStatusStrip";
 +
-+import type { YuneInspectorDebug, YuneStatusSnapshot } from "./types";
++import type { TypeDuckUserdbSnapshot, YuneInspectorDebug, YuneStatusSnapshot } from "./types";
  
  export default function App() {
  	const [textArea, setTextArea] = useState<HTMLTextAreaElement | null>(null);
@@ -265,7 +266,7 @@ index c43ccbc..5fdfa4e 100644
  	useEffect(() => {
  		const { resolve } = startAsyncTask();
  		return subscribe("initialized", success => {
-@@ -26,32 +35,114 @@ export default function App() {
+@@ -26,32 +35,99 @@ export default function App() {
  	}, [startAsyncTask]);
  
  	useEffect(() => {
@@ -299,6 +300,10 @@ index c43ccbc..5fdfa4e 100644
 +	const [isInspectorEnabled, setIsInspectorEnabled] = useState(false);
 +	const [inspectorDebug, setInspectorDebug] = useState<YuneInspectorDebug | undefined>();
 +	const [engineStatus, setEngineStatus] = useState<YuneStatusSnapshot | undefined>();
++	const [userdbRefreshStatus, refreshUserdbAfterCommit] = useReducer((n: number) => n + 1, 0);
++	const [userdbSnapshot, setUserdbSnapshot] = useState<TypeDuckUserdbSnapshot | undefined>();
++	const [isUserdbLoading, setIsUserdbLoading] = useState(false);
++	const [userdbError, setUserdbError] = useState<string | undefined>();
  	const preferences = usePreferences();
 -	const { pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, isHeiTypeface } = preferences;
 +	const {
@@ -323,28 +328,17 @@ index c43ccbc..5fdfa4e 100644
 +	} = preferences;
 +	const chineseTypefaceClass = CHINESE_TYPEFACE_BY_ID[chineseTypeface].className;
 +	const didRunSchemaEffect = useRef(false);
-+	const didRunCustomizeEffect = useRef(false);
-+	const customizePreferencesMatchDefaults =
-+		pageSize === DEFAULT_PREFERENCES.pageSize
-+		&& enableCompletion === DEFAULT_PREFERENCES.enableCompletion
-+		&& enableCorrection === DEFAULT_PREFERENCES.enableCorrection
-+		&& enableSentence === DEFAULT_PREFERENCES.enableSentence
-+		&& enableLearning === DEFAULT_PREFERENCES.enableLearning
-+		&& combineCandidates === DEFAULT_PREFERENCES.combineCandidates
-+		&& predictionNeverFirst === DEFAULT_PREFERENCES.predictionNeverFirst
-+		&& predictionThreshold === DEFAULT_PREFERENCES.predictionThreshold
-+		&& dictionaryExclude.length === 0
-+		&& isCangjie5 === DEFAULT_PREFERENCES.isCangjie5;
-+	useEffect(() =>
-+		runAsyncTask(async () => {
+ 	useEffect(() =>
+ 		runAsyncTask(async () => {
 +			if (!didRunSchemaEffect.current) {
 +				didRunSchemaEffect.current = true;
 +				if (activeSchema === "jyut6ping3_mobile") {
 +					return;
 +				}
 +			}
-+			let type: "warning" | "error" | undefined;
-+			try {
+ 			let type: "warning" | "error" | undefined;
+ 			try {
+-				const success = await Rime.customize({ pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5 });
 +				if (!(await Rime.selectSchema(activeSchema))) {
 +					type = "warning";
 +				}
@@ -360,18 +354,10 @@ index c43ccbc..5fdfa4e 100644
 +			}
 +		}), [activeSchema, runAsyncTask]);
 +
- 	useEffect(() =>
- 		runAsyncTask(async () => {
-+			if (!didRunCustomizeEffect.current) {
-+				didRunCustomizeEffect.current = true;
-+				if (customizePreferencesMatchDefaults) {
-+					updateDeployStatus();
-+					return;
-+				}
-+			}
- 			let type: "warning" | "error" | undefined;
- 			try {
--				const success = await Rime.customize({ pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5 });
++	useEffect(() =>
++		runAsyncTask(async () => {
++			let type: "warning" | "error" | undefined;
++			try {
 +				const success = await Rime.customize({
 +					pageSize,
 +					enableCompletion,
@@ -387,12 +373,12 @@ index c43ccbc..5fdfa4e 100644
  				if (!(await Rime.deploy() && success)) {
  					type = "warning";
  				}
-@@ -63,26 +154,125 @@ export default function App() {
+@@ -63,27 +139,155 @@ export default function App() {
  				notify(type, "套用設定", "applying the settings");
  			}
  			updateDeployStatus();
 -		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, updateDeployStatus, runAsyncTask]);
-+		}), [activeSchema, pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, combineCandidates, predictionNeverFirst, predictionThreshold, dictionaryExclude, isCangjie5, customizePreferencesMatchDefaults, updateDeployStatus, runAsyncTask]);
++		}), [activeSchema, pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, combineCandidates, predictionNeverFirst, predictionThreshold, dictionaryExclude, isCangjie5, updateDeployStatus, runAsyncTask]);
 +
 +	useEffect(() =>
 +		runAsyncTask(async () => {
@@ -455,6 +441,29 @@ index c43ccbc..5fdfa4e 100644
 +			cancelled = true;
 +		};
 +	}, [enableAI, updateAiStatus]);
++
++	const refreshUserdbSnapshot = useCallback(async () => {
++		setIsUserdbLoading(true);
++		setUserdbError(undefined);
++		try {
++			setUserdbSnapshot(await Rime.getUserdbSnapshot());
++		}
++		catch (error) {
++			setUserdbError(error instanceof Error ? `${error.name}: ${error.message}` : String(error));
++		}
++		finally {
++			setIsUserdbLoading(false);
++		}
++	}, []);
++
++	useEffect(() => {
++		if (!isInspectorEnabled) {
++			setUserdbSnapshot(undefined);
++			setUserdbError(undefined);
++			return;
++		}
++		void refreshUserdbSnapshot();
++	}, [isInspectorEnabled, activeSchema, deployStatus, userdbRefreshStatus, refreshUserdbSnapshot]);
  
  	return <>
 -		<header className="p-8 border-b border-base-300 flex items-center">
@@ -464,17 +473,18 @@ index c43ccbc..5fdfa4e 100644
 -			<h1 className="flex-1 text-2xl">TypeDuck 網頁版</h1>
 -			<ThemeSwitcher />
 +		<header className="border-b border-base-300 py-5">
-+			<div className="mx-auto flex w-full max-w-7xl items-center px-8">
++			<div className="mx-auto flex w-full max-w-[84rem] items-center px-8">
 +				<a className="yd-anchor flex-1 text-xl font-bold" href="/">
 +					粵韻輸入法引擎
 +				</a>
 +				<ThemeSwitcher />
 +			</div>
  		</header>
- 		<main className="m-auto p-8 max-w-7xl">
+-		<main className="m-auto p-8 max-w-7xl">
 -			<Toolbar loading={loading} deployStatus={deployStatus} />
 -			<textarea className={`block w-full min-h-64 my-6 textarea textarea-bordered text-lg px-3 ${isHeiTypeface ? "font-hei" : "font-sung"}`} ref={setTextArea} {...NO_AUTO_FILL} />
 -			{textArea && <CandidatePanel runAsyncTask={runAsyncTask} textArea={textArea} prefs={preferences} deployStatus={deployStatus} />}
++		<main className="m-auto max-w-[84rem] p-8">
 +			<section data-yune-playground-content>
 +			<Toolbar
 +				loading={loading}
@@ -504,7 +514,12 @@ index c43ccbc..5fdfa4e 100644
 +					onChange={event => setIsInspectorEnabled(event.currentTarget.checked)} />
 +				<span>引擎檢視 Yune inspector</span>
 +			</label>
-+			{isInspectorEnabled && <YuneInspector debug={inspectorDebug} />}
++			{isInspectorEnabled && <YuneInspector
++				debug={inspectorDebug}
++				userdbSnapshot={userdbSnapshot}
++				isUserdbLoading={isUserdbLoading}
++				userdbError={userdbError}
++				onRefreshUserdb={refreshUserdbSnapshot} />}
 +			{textArea && <CandidatePanel
 +				runAsyncTask={runAsyncTask}
 +				textArea={textArea}
@@ -512,20 +527,24 @@ index c43ccbc..5fdfa4e 100644
 +				deployStatus={deployStatus}
 +				aiStatus={aiStatus}
 +				onInspectorDebug={setInspectorDebug}
-+				onStatus={setEngineStatus} />}
++				onStatus={setEngineStatus}
++				onUserdbChange={refreshUserdbAfterCommit} />}
 +			</section>
  			<Preferences {...preferences} />
  		</main>
 -		<footer className="footer footer-center p-6 bg-secondary text-secondary-content">
 -			<aside>
+-				© Copyright 2024 TypeDuck Team. All rights reserved.
+-				<a href="https://github.com/TypeDuck-HK/TypeDuck-Web" target="_blank" rel="noreferrer">
+-					Source Code
 +		<footer className="mt-8 bg-secondary p-6 text-center text-sm text-secondary-content">
 +			<aside className="flex flex-wrap items-center justify-center gap-2">
- 				© Copyright 2024 TypeDuck Team. All rights reserved.
--				<a href="https://github.com/TypeDuck-HK/TypeDuck-Web" target="_blank" rel="noreferrer">
-+				<a className="yd-anchor" href="https://github.com/TypeDuck-HK/TypeDuck-Web" target="_blank" rel="noreferrer">
- 					Source Code
++				© Copyright 2024 CanCLID. Licensed under the MIT License.
++				<a className="yd-anchor" href="https://github.com/canclid" target="_blank" rel="noreferrer">
++					CanCLID GitHub
  				</a>
  			</aside>
+ 		</footer>
 diff --git a/src/Candidate.tsx b/src/Candidate.tsx
 index f0c2b50..d7287bf 100644
 --- a/src/Candidate.tsx
@@ -743,7 +762,7 @@ index 0add9ac..1a5e419 100644
  	}
  
 diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
-index 298a42d..cf446e4 100644
+index 298a42d..cf43462 100644
 --- a/src/CandidatePanel.tsx
 +++ b/src/CandidatePanel.tsx
 @@ -1,4 +1,4 @@
@@ -752,7 +771,7 @@ index 298a42d..cf446e4 100644
  
  import Candidate from "./Candidate";
  import CandidateInfo from "./CandidateInfo";
-@@ -8,18 +8,93 @@ import DictionaryPanel from "./DictionaryPanel";
+@@ -8,18 +8,94 @@ import DictionaryPanel from "./DictionaryPanel";
  import Rime from "./rime";
  import { isPrintable, notify } from "./utils";
  
@@ -830,7 +849,7 @@ index 298a42d..cf446e4 100644
 +	document.documentElement.dataset.yunePerfDiagnostics = JSON.stringify(diagnostics.slice(-100));
 +}
 +
-+export default function CandidatePanel({ textArea, prefs, deployStatus, aiStatus, onInspectorDebug, onStatus }: {
++export default function CandidatePanel({ textArea, prefs, deployStatus, aiStatus, onInspectorDebug, onStatus, onUserdbChange }: {
  	runAsyncTask(asyncTask: () => Promise<void>): void;
  	textArea: HTMLTextAreaElement;
 -	prefs: InterfacePreferences;
@@ -839,6 +858,7 @@ index 298a42d..cf446e4 100644
 +	aiStatus: number;
 +	onInspectorDebug?(debug: YuneInspectorDebug | undefined): void;
 +	onStatus?(status: YuneStatusSnapshot | undefined): void;
++	onUserdbChange?(): void;
  }) {
  	const [inputState, setInputState] = useState<InputState | undefined>();
 +	const inputStateRef = useRef<InputState | undefined>();
@@ -849,7 +869,7 @@ index 298a42d..cf446e4 100644
  
  	const hideDictionary = useCallback(() => {
  		setShowDictionaryIndex(undefined);
-@@ -31,11 +106,17 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -31,11 +107,17 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  		textArea.selectionStart = textArea.selectionEnd = selectionStart + newText.length;
  	}, [textArea]);
  
@@ -869,7 +889,7 @@ index 298a42d..cf446e4 100644
  				if (!result.success) {
  					type = "warning";
  				}
-@@ -44,19 +125,45 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -44,19 +126,46 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  						inputBuffer: result.inputBuffer,
  						highlightedIndex: result.highlightedIndex,
  						candidates: result.candidates.map(
@@ -884,6 +904,7 @@ index 298a42d..cf446e4 100644
 +				const responseMappingFinishedAt = nowMs();
  				if (result.committed) {
  					insert(result.committed);
++					onUserdbChange?.();
  				}
  				else if (!state && key && isPrintable(key)) {
  					insert(key);
@@ -917,13 +938,13 @@ index 298a42d..cf446e4 100644
  				hideDictionary();
  			}
  			catch {
-@@ -66,12 +173,36 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -66,12 +175,36 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				notify(type, "執行操作", "performing the operation");
  			}
  			textArea.focus();
 -		}), [hideDictionary, inputState, insert, runAsyncTask, textArea]);
 +		})();
-+		}, [hideDictionary, insert, onInspectorDebug, onStatus, textArea]);
++		}, [hideDictionary, insert, onInspectorDebug, onStatus, onUserdbChange, textArea]);
  
 -	const processKey = useCallback((input: string, key?: string) => handleRimeResult(Rime.processKey(input), key), [handleRimeResult]);
 +	const processKey = useCallback((input: string, key?: string, keydownAt?: number) => {
@@ -956,7 +977,7 @@ index 298a42d..cf446e4 100644
  
  	const parseKey = useCallback((event: KeyboardEvent) => {
  		const { code, key } = event;
-@@ -117,15 +248,24 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -117,15 +250,24 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  	}, [inputState, textArea]);
  
  	useEffect(() => {
@@ -983,7 +1004,7 @@ index 298a42d..cf446e4 100644
  				const key = parseKey(event);
  				if (key) processKey(`{Release+${key}}`);
  			}
-@@ -136,13 +276,46 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -136,13 +278,46 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  			document.removeEventListener("keydown", onKeyDown);
  			document.removeEventListener("keyup", onKeyUp);
  		};
@@ -1031,7 +1052,7 @@ index 298a42d..cf446e4 100644
  	const hideDictionaryOnLeaveCandidate = useCallback(() => {
  		function hideDictionaryOnLeaveDictionaryPanel() {
  			if (!candidateList.current?.matches(":hover")) {
-@@ -160,8 +333,19 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -160,8 +335,19 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  		}
  	}, [hideDictionary]);
  
@@ -1053,7 +1074,7 @@ index 298a42d..cf446e4 100644
  		<div>
  			<div className="flex">
  				<div className="flex-1 text-[15pt]">
-@@ -169,21 +353,21 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -169,21 +355,21 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  					{inputState.inputBuffer.active && <span className="p-1 inline-block rounded-md bg-accent text-accent-content">{inputState.inputBuffer.active}</span>}
  					{inputState.inputBuffer.after && <span className="m-1 inline-block">{inputState.inputBuffer.after}</span>}
  				</div>
@@ -1080,7 +1101,7 @@ index 298a42d..cf446e4 100644
  						selectCandidate={() => selectCandidate(index)}
  						deleteCandidate={() => deleteCandidate(index)}
  						showDictionary={() => setShowDictionaryIndex(index)}
-@@ -192,6 +376,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -192,6 +378,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				)}
  			</table>
  		</div>
@@ -1319,7 +1340,7 @@ index d5451b8..3d4fe92 100644
 +	</label>;
  }
 diff --git a/src/Preferences.tsx b/src/Preferences.tsx
-index 820a2e0..6f8b4d0 100644
+index 820a2e0..0f439e5 100644
 --- a/src/Preferences.tsx
 +++ b/src/Preferences.tsx
 @@ -1,109 +1,181 @@
@@ -1426,7 +1447,7 @@ index 820a2e0..6f8b4d0 100644
 +				title="引擎設定 Active engine controls"
 +				description="會重新部署 schema，影響候選詞、排序、記憶同除詞。">
 +				<Toggle
-+					label="自動完成 Auto-completion"
++					label="自動補詞 Auto-completion"
 +					description={<>
 +						<span className="block">例：santai → 身體健康（第二候選）</span>
 +					</>}
@@ -1448,7 +1469,7 @@ index 820a2e0..6f8b4d0 100644
 +					</>}
 +					checked={prefs.enableSentence}
 +					setChecked={prefs.setEnableSentence} />
-+				<Toggle label="輸入記憶 Input Memory" description="允許本機 userdb 學習已提交詞。" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
++				<Toggle label="用户詞庫 User Dictionary" description="允許本機 userdb 學習已提交詞。" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
 +				<Toggle label="AI 候選 AI Candidates" description="本機第二輪候選，預設關閉，不改 classic 第一候選。" checked={prefs.enableAI} setChecked={prefs.setEnableAI} />
 +				<Toggle label="合併同字候選 Combine same-text candidates" description="把同文字典列合併成一個候選。" checked={prefs.combineCandidates} setChecked={prefs.setCombineCandidates} />
 +				<Toggle label="預測不排第一 Prediction never first" description="長預測候選不得壓過直接輸入候選。" checked={prefs.predictionNeverFirst} setChecked={prefs.setPredictionNeverFirst} />
@@ -1851,11 +1872,14 @@ index 0000000..02b7d01
 +}
 diff --git a/src/YuneInspector.tsx b/src/YuneInspector.tsx
 new file mode 100644
-index 0000000..6b0ebb6
+index 0000000..21eb797
 --- /dev/null
 +++ b/src/YuneInspector.tsx
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,104 @@
 +import type { YuneInspectorDebug } from "./types";
++import type { TypeDuckUserdbSnapshot } from "./types";
++
++import YuneUserdbViewer from "./YuneUserdbViewer";
 +
 +function formatScore(value: number | null | undefined) {
 +	if (value === null || value === undefined) {
@@ -1864,7 +1888,19 @@ index 0000000..6b0ebb6
 +	return Number.isInteger(value) ? String(value) : value.toFixed(3);
 +}
 +
-+export default function YuneInspector({ debug }: { debug?: YuneInspectorDebug }) {
++export default function YuneInspector({
++	debug,
++	userdbSnapshot,
++	isUserdbLoading,
++	userdbError,
++	onRefreshUserdb,
++}: {
++	debug?: YuneInspectorDebug;
++	userdbSnapshot?: TypeDuckUserdbSnapshot;
++	isUserdbLoading: boolean;
++	userdbError?: string;
++	onRefreshUserdb(): Promise<void> | void;
++}) {
 +	return <section className="my-6 rounded-md border border-base-300 bg-base-100 p-4 text-sm" data-yune-inspector="panel">
 +		<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
 +			<h2 className="text-base font-semibold">引擎檢視 Yune inspector</h2>
@@ -1937,6 +1973,11 @@ index 0000000..6b0ebb6
 +				</div>
 +			</div>
 +			: <div className="text-base-content-300" data-yune-inspector-empty>未有檢視資料 No inspector data</div>}
++		<YuneUserdbViewer
++			snapshot={userdbSnapshot}
++			isLoading={isUserdbLoading}
++			error={userdbError}
++			onRefresh={onRefreshUserdb} />
 +	</section>;
 +}
 diff --git a/src/YuneStatusStrip.tsx b/src/YuneStatusStrip.tsx
@@ -1999,6 +2040,133 @@ index 0000000..83f74fc
 +				<span>{boolStatus(status.is_ascii_punct, "ASCII punct", "Chinese punct")}</span>
 +			</span>
 +		</div>
++	</section>;
++}
+diff --git a/src/YuneUserdbViewer.tsx b/src/YuneUserdbViewer.tsx
+new file mode 100644
+index 0000000..9fe4af7
+--- /dev/null
++++ b/src/YuneUserdbViewer.tsx
+@@ -0,0 +1,121 @@
++import type { TypeDuckUserdbSnapshot } from "./types";
++
++function formatMetric(value: number | null) {
++	if (value === null) {
++		return "-";
++	}
++	return Number.isInteger(value) ? String(value) : value.toFixed(3);
++}
++
++function formatBytes(bytes: number) {
++	if (bytes < 1024) {
++		return `${bytes} B`;
++	}
++	return `${(bytes / 1024).toFixed(1)} KB`;
++}
++
++export default function YuneUserdbViewer({
++	snapshot,
++	isLoading,
++	error,
++	onRefresh,
++}: {
++	snapshot?: TypeDuckUserdbSnapshot;
++	isLoading: boolean;
++	error?: string;
++	onRefresh(): Promise<void> | void;
++}) {
++	return <section className="mt-5 border-t border-base-300 pt-4" data-yune-userdb-viewer>
++		<div className="mb-3 flex flex-wrap items-start justify-between gap-3">
++			<div>
++				<h3 className="font-semibold">用户詞庫 User Dictionary</h3>
++				<p className="mt-1 text-xs text-base-content-300">Read-only snapshot of the active schema user dictionary file.</p>
++			</div>
++			<button
++				type="button"
++				className="yd-button"
++				data-yune-userdb-refresh
++				disabled={isLoading}
++				onClick={() => void onRefresh()}>
++				{isLoading ? "Refreshing" : "Refresh"}
++			</button>
++		</div>
++
++		{error && <p className="mb-3 rounded border border-error px-3 py-2 text-sm text-error" data-yune-userdb-error>{error}</p>}
++
++		{snapshot
++			? <>
++				<div className="mb-3 flex flex-wrap gap-2 text-xs">
++					<span className="yd-tag gap-1.5" data-yune-userdb-schema>
++						<span className="font-mono">schema</span>
++						<span>{snapshot.schemaId}</span>
++					</span>
++					<span className="yd-tag gap-1.5" data-yune-userdb-dictionary>
++						<span className="font-mono">dictionary</span>
++						<span>{snapshot.dictionaryId}</span>
++					</span>
++					<span className="yd-tag gap-1.5" data-yune-userdb-path>
++						<span className="font-mono">path</span>
++						<span>{snapshot.path}</span>
++					</span>
++					<span className="yd-tag gap-1.5" data-yune-userdb-bytes>
++						<span className="font-mono">bytes</span>
++						<span>{formatBytes(snapshot.bytes)}</span>
++					</span>
++					<span className="yd-tag gap-1.5" data-yune-userdb-row-count>
++						<span className="font-mono">rows</span>
++						<span>{snapshot.rows.length}</span>
++					</span>
++				</div>
++
++				{snapshot.exists
++					? <>
++						<div className="overflow-x-auto rounded border border-base-300" data-yune-userdb-table>
++							<table className="w-full min-w-[42rem] text-left text-xs">
++								<thead className="bg-base-200">
++									<tr>
++										<th className="px-2 py-1">文字 Text</th>
++										<th className="px-2 py-1">編碼 Code</th>
++										<th className="px-2 py-1">c</th>
++										<th className="px-2 py-1">d</th>
++										<th className="px-2 py-1">t</th>
++									</tr>
++								</thead>
++								<tbody>
++									{snapshot.rows.length
++										? snapshot.rows.map((row, index) =>
++											<tr key={`${row.raw}-${index}`} className="border-t border-base-300" data-yune-userdb-row>
++												<td className="px-2 py-1 text-base">{row.text}</td>
++												<td className="px-2 py-1 font-mono">{row.code}</td>
++												<td className="px-2 py-1 font-mono">{formatMetric(row.commits)}</td>
++												<td className="px-2 py-1 font-mono">{formatMetric(row.dee)}</td>
++												<td className="px-2 py-1 font-mono">{formatMetric(row.tick)}</td>
++											</tr>)
++										: <tr>
++											<td className="px-2 py-3 text-base-content-300" colSpan={5}>No learned rows in this file.</td>
++										</tr>}
++								</tbody>
++							</table>
++						</div>
++						{snapshot.parseErrors.length > 0 && <div className="mt-3 rounded border border-warning px-3 py-2 text-xs text-warning" data-yune-userdb-parse-errors>
++							<div className="font-semibold">Parse notes</div>
++							<ul className="mt-1 list-inside list-disc">
++								{snapshot.parseErrors.map(error =>
++									<li key={`${error.line}-${error.reason}`}>line {error.line}: {error.reason}</li>
++								)}
++							</ul>
++						</div>}
++						<details className="mt-3" data-yune-userdb-raw>
++							<summary className="cursor-pointer text-sm font-semibold">Raw file</summary>
++							<pre className="mt-2 max-h-64 overflow-auto rounded border border-base-300 bg-base-200 p-3 text-xs">{snapshot.rawText}</pre>
++						</details>
++					</>
++					: <p className="rounded border border-base-300 px-3 py-2 text-sm text-base-content-300" data-yune-userdb-empty>
++						No active user dictionary file yet. Commit a learned phrase with User Dictionary on to create one.
++					</p>}
++			</>
++			: <p className="rounded border border-base-300 px-3 py-2 text-sm text-base-content-300" data-yune-userdb-loading>
++				{isLoading ? "Loading user dictionary snapshot..." : "No user dictionary snapshot loaded."}
++			</p>}
 +	</section>;
 +}
 diff --git a/src/consts.ts b/src/consts.ts
@@ -2239,7 +2407,7 @@ index ef2a4f3..dd5645f 100644
 +	return defaultValue;
 +}
 diff --git a/src/index.css b/src/index.css
-index 9dc742c..b806d65 100644
+index 9dc742c..6530db4 100644
 --- a/src/index.css
 +++ b/src/index.css
 @@ -1,3 +1,5 @@
@@ -2319,7 +2487,7 @@ index 9dc742c..b806d65 100644
  	}
  	:lang(en) {
  		@apply font-sans text-[12pt];
-@@ -55,19 +106,130 @@
+@@ -55,19 +106,142 @@
  		@apply font-arabic text-[10pt];
  	}
  }
@@ -2436,7 +2604,19 @@ index 9dc742c..b806d65 100644
 +	@apply absolute z-50 flex w-max max-w-none overflow-visible rounded-[0.5625rem] border-[0.1875rem] border-base-400 bg-base-200 leading-snug shadow-lg;
 +}
 +.candidate-panel--horizontal {
-+	@apply whitespace-nowrap;
++	@apply flex-col whitespace-nowrap;
++}
++.candidate-panel--horizontal .candidates {
++	@apply flex w-max items-stretch;
++}
++.candidate-panel--horizontal .candidate-row {
++	@apply block;
++}
++.candidate-panel--horizontal .candidate-row tr {
++	@apply grid h-full grid-cols-[max-content_max-content_max-content_max-content] items-end;
++}
++.candidate-panel--horizontal .dictionary-panel {
++	@apply w-full;
 +}
 +.candidate-panel--vertical {
 +	@apply whitespace-normal;
@@ -2459,7 +2639,7 @@ index 9dc742c..b806d65 100644
  }
  .candidates td {
  	@apply p-1 align-bottom text-left empty:p-0;
-@@ -77,23 +239,27 @@
+@@ -77,23 +251,27 @@
  		}
  	}
  }
@@ -2501,7 +2681,7 @@ index 9dc742c..b806d65 100644
  @supports selector(:has(*)) {
  	.candidate-panel:has(.dictionary-panel) .candidates .highlighted tr {
  		@apply relative;
-@@ -112,7 +278,7 @@
+@@ -112,7 +290,7 @@
  	}
  }
  .dictionary-panel {
@@ -2510,7 +2690,7 @@ index 9dc742c..b806d65 100644
  }
  .dictionary-panel > *:not(:last-child) {
  	@apply mb-3.5;
-@@ -125,10 +291,10 @@
+@@ -125,10 +303,10 @@
  	@apply ml-4;
  }
  .pos {
@@ -2523,7 +2703,7 @@ index 9dc742c..b806d65 100644
  }
  .pos + .pos,
  .lbl + .lbl {
-@@ -136,15 +302,9 @@
+@@ -136,15 +314,9 @@
  }
  .dictionary-panel {
  	th {
@@ -2542,7 +2722,7 @@ index 9dc742c..b806d65 100644
  	}
  }
 diff --git a/src/rime.ts b/src/rime.ts
-index 4393a9e..391be9a 100644
+index 4393a9e..3301ee7 100644
 --- a/src/rime.ts
 +++ b/src/rime.ts
 @@ -11,14 +11,26 @@ type ListenerPayload = {
@@ -2634,7 +2814,7 @@ index 4393a9e..391be9a 100644
  		const nextMessage = queue.shift();
  		if (nextMessage) {
  			postMessage(nextMessage);
-@@ -66,15 +116,52 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
+@@ -66,15 +116,53 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
  	}
  });
  
@@ -2683,12 +2863,13 @@ index 4393a9e..391be9a 100644
  const allActions: (keyof Actions)[] = [
  	"setOption",
 +	"selectSchema",
++	"getUserdbSnapshot",
  	"processKey",
 +	"stageAi",
  	"selectCandidate",
  	"deleteCandidate",
  	"flipPage",
-@@ -92,7 +179,7 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
+@@ -92,7 +180,7 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
  	// @ts-expect-error Unactionable
  	return (...args: Parameters<Actions[K]>) =>
  		new Promise((resolve, reject) => {
@@ -2697,7 +2878,7 @@ index 4393a9e..391be9a 100644
  			if (running) {
  				queue.push(message);
  			}
-@@ -104,6 +191,14 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
+@@ -104,6 +192,14 @@ function registerAction<K extends keyof Actions>(name: K): Actions[K] {
  
  export function subscribe<K extends keyof Listeners>(type: K, callback: Listeners[K]) {
  	listeners[type].push(callback);
@@ -2713,7 +2894,7 @@ index 4393a9e..391be9a 100644
  		listeners[type] = listeners[type].filter(listener => listener !== callback) as never;
  	};
 diff --git a/src/types.ts b/src/types.ts
-index 5d47525..37a95ca 100644
+index 5d47525..0d1c3ae 100644
 --- a/src/types.ts
 +++ b/src/types.ts
 @@ -1,6 +1,7 @@
@@ -2725,11 +2906,41 @@ index 5d47525..37a95ca 100644
  
  export interface RimeAPI {
  	init(): boolean;
-@@ -15,11 +16,13 @@ export interface RimeAPI {
+@@ -13,13 +14,43 @@ export interface RimeAPI {
+ 	deploy(): boolean;
+ }
  
++export interface TypeDuckUserdbRow {
++	text: string;
++	code: string;
++	commits: number | null;
++	dee: number | null;
++	tick: number | null;
++	raw: string;
++}
++
++export interface TypeDuckUserdbParseError {
++	line: number;
++	raw: string;
++	reason: string;
++}
++
++export interface TypeDuckUserdbSnapshot {
++	schemaId: RimeSchemaId;
++	dictionaryId: string;
++	path: string;
++	exists: boolean;
++	bytes: number;
++	updatedAt: string | null;
++	rows: TypeDuckUserdbRow[];
++	rawText: string;
++	parseErrors: TypeDuckUserdbParseError[];
++}
++
  export interface Actions {
  	setOption(option: string, value: boolean): Promise<void>;
 +	selectSchema(schemaId: RimeSchemaId): Promise<boolean>;
++	getUserdbSnapshot(): Promise<TypeDuckUserdbSnapshot>;
  	processKey(input: string): Promise<RimeResult>;
 +	stageAi(): Promise<RimeResult>;
  	selectCandidate(index: number): Promise<RimeResult>;
@@ -2740,7 +2951,7 @@ index 5d47525..37a95ca 100644
  	deploy(): Promise<boolean>;
  }
  
-@@ -39,7 +42,12 @@ interface RimeComposing {
+@@ -39,7 +70,12 @@ interface RimeComposing {
  		label?: string;
  		text: string;
  		comment?: string;
@@ -2753,7 +2964,7 @@ index 5d47525..37a95ca 100644
  }
  
  interface RimeNotComposing {
-@@ -49,9 +57,13 @@ interface RimeNotComposing {
+@@ -49,9 +85,13 @@ interface RimeNotComposing {
  interface RimePayload {
  	success: boolean;
  	committed?: string;
@@ -2767,7 +2978,7 @@ index 5d47525..37a95ca 100644
  
  export type RimeDeployStatus = "start" | "success" | "failure";
  
-@@ -73,6 +85,8 @@ interface NamedMessage<K extends keyof Actions> {
+@@ -73,6 +113,8 @@ interface NamedMessage<K extends keyof Actions> {
  	args: Parameters<Actions[K]>;
  	resolve: (value: ReturnType<Actions[K]>) => void;
  	reject: (reason: unknown) => void;
@@ -2776,7 +2987,7 @@ index 5d47525..37a95ca 100644
  }
  
  export type Message = NamedMessage<keyof Actions>;
-@@ -91,13 +105,26 @@ export interface RimePreferences {
+@@ -91,13 +133,26 @@ export interface RimePreferences {
  	enableCorrection: boolean;
  	enableSentence: boolean;
  	enableLearning: boolean;
@@ -2805,10 +3016,10 @@ index 5d47525..37a95ca 100644
  	showReverseCode: boolean;
  }
 diff --git a/src/worker.ts b/src/worker.ts
-index 92b9a90..6eb060f 100644
+index 92b9a90..977d54d 100644
 --- a/src/worker.ts
 +++ b/src/worker.ts
-@@ -1,137 +1,396 @@
+@@ -1,137 +1,530 @@
 -import type { Actions, ListenerArgsMap, Message, RimeResult, RimeAPI, RimeNotification, RimeDeployStatus } from "./types";
 -
 -type TypeToString<T> = T extends number ? "number"
@@ -2836,7 +3047,7 @@ index 92b9a90..6eb060f 100644
 + * and message handling logic.
 + */
 +
-+import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences, RimeNotification, RimeDeployStatus, RimeSchemaId } from "./types";
++import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences, RimeNotification, RimeDeployStatus, RimeSchemaId, TypeDuckUserdbParseError, TypeDuckUserdbRow, TypeDuckUserdbSnapshot } from "./types";
 +
 +// Yune integration imports
 +import {
@@ -2862,6 +3073,7 @@ index 92b9a90..6eb060f 100644
 +} from "./yune-integration/assets.js";
 +
 +import {
++  joinTypeDuckVirtualPath,
 +  mountTypeDuckPersistence,
 +  type EmscriptenTypeDuckModule,
 +  type TypeDuckFilesystem,
@@ -2876,24 +3088,34 @@ index 92b9a90..6eb060f 100644
 +  printErr: (message: string) => void;
 +  locateFile: (path: string, prefix: string) => string;
 +  noInitialRun?: boolean;
- }
- 
--declare const Module: Module;
++}
++
 +interface PlaygroundSchema {
 +  id: RimeSchemaId;
 +  name: string;
 +  dictionaryId: string;
+ }
+ 
+-declare const Module: Module;
++interface StartupMarker {
++  phase: string;
++  ms: number;
 +}
  
 -interface PredefinedModule {
 -	printErr: (message: string) => void;
 -	onRuntimeInitialized: () => void;
 -	locateFile: (path: string, prefix: string) => string;
-+interface StartupMarker {
-+  phase: string;
-+  ms: number;
++interface TypeDuckFilesystemStat {
++  size?: number;
++  mtime?: Date | number | string;
++  mtimeMs?: number;
  }
  
++type TypeDuckFilesystemWithStat = TypeDuckFilesystem & {
++  stat?(path: string): TypeDuckFilesystemStat;
++};
++
  declare const globalThis: {
 -	onRimeNotification<T extends keyof RimeNotification>(type: T, value: RimeNotification[T]): void;
 -	Module: PredefinedModule;
@@ -3005,6 +3227,9 @@ index 92b9a90..6eb060f 100644
 +      throw error;
 +    }
 +  },
++  async getUserdbSnapshot() {
++    return activeUserdbSnapshot();
++  },
 +  async processKey(input) {
 +    const result = await processKey(input);
 +    // Persistence sync handled by adapter
@@ -3046,6 +3271,126 @@ index 92b9a90..6eb060f 100644
 +  },
  };
  
++function activeUserdbSnapshot(): TypeDuckUserdbSnapshot {
++  const module = yuneModule;
++  if (module === null) {
++    throw new Error("Yune module is not loaded");
++  }
++  const schema = PLAYGROUND_SCHEMAS[activeSchemaId];
++  const dictionaryId = schema.dictionaryId;
++  const path = joinTypeDuckVirtualPath(RIME_USER_DIR, `${dictionaryId}.userdb`);
++  const base = {
++    schemaId: activeSchemaId,
++    dictionaryId,
++    path,
++  };
++  if (!module.FS.analyzePath(path).exists) {
++    return {
++      ...base,
++      exists: false,
++      bytes: 0,
++      updatedAt: null,
++      rows: [],
++      rawText: "",
++      parseErrors: [],
++    };
++  }
++
++  const raw = module.FS.readFile(path, { encoding: "utf8" });
++  const rawText = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
++  const { rows, parseErrors } = parseUserdbRows(rawText);
++  return {
++    ...base,
++    exists: true,
++    bytes: new TextEncoder().encode(rawText).byteLength,
++    updatedAt: userdbUpdatedAt(module.FS, path),
++    rows,
++    rawText,
++    parseErrors,
++  };
++}
++
++function userdbUpdatedAt(fs: TypeDuckFilesystem, path: string): string | null {
++  const stat = (fs as TypeDuckFilesystemWithStat).stat?.(path);
++  const raw = stat?.mtime ?? stat?.mtimeMs;
++  if (raw === undefined || raw === null) {
++    return null;
++  }
++  const date = raw instanceof Date ? raw : new Date(raw);
++  return Number.isNaN(date.getTime()) ? null : date.toISOString();
++}
++
++function parseUserdbRows(rawText: string): { rows: TypeDuckUserdbRow[]; parseErrors: TypeDuckUserdbParseError[] } {
++  const rows: TypeDuckUserdbRow[] = [];
++  const parseErrors: TypeDuckUserdbParseError[] = [];
++  rawText.split(/\r?\n/).forEach((line, index) => {
++    const lineNumber = index + 1;
++    const trimmed = line.trim();
++    if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("/")) {
++      return;
++    }
++    const columns = line.split("\t");
++    if (columns.length < 2 || !columns[0] || !columns[1]) {
++      parseErrors.push({ line: lineNumber, raw: line, reason: "expected code<TAB>text<TAB>metadata" });
++      return;
++    }
++    const value = parseUserdbValue(columns.slice(2).join("\t"));
++    rows.push({
++      code: columns[0].trimEnd(),
++      text: columns[1],
++      commits: value.commits,
++      dee: value.dee,
++      tick: value.tick,
++      raw: line,
++    });
++    if (value.error !== undefined) {
++      parseErrors.push({ line: lineNumber, raw: line, reason: value.error });
++    }
++  });
++  return { rows, parseErrors };
++}
++
++function parseUserdbValue(value: string): {
++  commits: number | null;
++  dee: number | null;
++  tick: number | null;
++  error?: string;
++} {
++  const trimmed = value.trim();
++  if (!trimmed) {
++    return { commits: null, dee: null, tick: null };
++  }
++  const packed = Object.fromEntries(
++    trimmed
++      .split(/\s+/)
++      .map(field => field.split("=", 2))
++      .filter((pair): pair is [string, string] => pair.length === 2 && pair[0].length > 0),
++  );
++  if (Object.keys(packed).length > 0) {
++    return {
++      commits: parseNullableNumber(packed.c),
++      dee: parseNullableNumber(packed.d),
++      tick: parseNullableNumber(packed.t),
++      error: packed.c === undefined && packed.d === undefined && packed.t === undefined
++        ? "metadata has no c/d/t fields"
++        : undefined,
++    };
++  }
++  const commits = Number(trimmed);
++  if (Number.isFinite(commits)) {
++    return { commits, dee: Math.abs(commits), tick: 1 };
++  }
++  return { commits: null, dee: null, tick: null, error: "metadata is not parseable" };
++}
++
++function parseNullableNumber(value: string | undefined): number | null {
++  if (value === undefined) {
++    return null;
++  }
++  const parsed = Number(value);
++  return Number.isFinite(parsed) ? parsed : null;
++}
++
  let loading = true;
 +const RIME_SHARED_DIR = "/usr/share/rime-data";
  const RIME_USER_DIR = "/rime";
@@ -3079,7 +3424,7 @@ index 92b9a90..6eb060f 100644
 -	importScripts("rime.js");
 -});
 +const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3_mobile";
-+const YUNE_TYPEDUCK_ASSET_VERSION = "m27-startup-v1";
++const YUNE_TYPEDUCK_ASSET_VERSION = "m27-startup-v2";
 +const YUNE_TYPEDUCK_WASM_BUILD_PROFILE = "release";
 +const YUNE_TYPEDUCK_M27_EVIDENCE_VERSION = "m27-startup-v1";
 +const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
@@ -3568,10 +3913,10 @@ index 0000000..f943e18
 +**Status**: Integration layer created, pending patch application and build gates
 diff --git a/src/yune-integration/adapter.ts b/src/yune-integration/adapter.ts
 new file mode 100644
-index 0000000..6e1aa43
+index 0000000..39a3f97
 --- /dev/null
 +++ b/src/yune-integration/adapter.ts
-@@ -0,0 +1,978 @@
+@@ -0,0 +1,1079 @@
 +/**
 + * Yune seam adapter for TypeDuck-Web
 + *
@@ -3767,6 +4112,11 @@ index 0000000..6e1aa43
 +  dictionaryId: string;
 +  assetSignature: string;
 +  customConfigSignature: string;
++}
++
++interface CustomPatchEntry {
++  key: string;
++  value: boolean | number | string | string[];
 +}
 +
 +/**
@@ -4080,12 +4430,18 @@ index 0000000..6e1aa43
 +  // Map preferences to Yune customize calls
 +  let success = true;
 +  let customizedAny = false;
++  const customPatchEntries: CustomPatchEntry[] = [];
 +
 +  if (preferences.enableAI !== undefined) {
 +    success = runtime.setAiEnabled(preferences.enableAI) && success;
 +  }
 +
-+  const customizeSetting = (key: string, value: string): void => {
++  const customizeSetting = (
++    key: string,
++    value: string,
++    patchValue: CustomPatchEntry["value"] = value,
++  ): void => {
++    customPatchEntries.push({ key, value: patchValue });
 +    if (persistedCustomizationMatches(fs, prepareOptions, key, value)) {
 +      return;
 +    }
@@ -4095,7 +4451,7 @@ index 0000000..6e1aa43
 +  };
 +
 +  if (preferences.pageSize !== undefined) {
-+    customizeSetting("menu/page_size", String(preferences.pageSize));
++    customizeSetting("menu/page_size", String(preferences.pageSize), preferences.pageSize);
 +  }
 +
 +  for (const { preference, keys } of BOOLEAN_CUSTOMIZATION_KEYS) {
@@ -4104,7 +4460,7 @@ index 0000000..6e1aa43
 +      continue;
 +    }
 +    for (const key of keys) {
-+      customizeSetting(key, value ? "true" : "false");
++      customizeSetting(key, value ? "true" : "false", value);
 +    }
 +  }
 +
@@ -4112,6 +4468,7 @@ index 0000000..6e1aa43
 +    customizeSetting(
 +      "translator/combine_candidates",
 +      preferences.combineCandidates ? "true" : "false",
++      preferences.combineCandidates,
 +    );
 +  }
 +
@@ -4119,6 +4476,7 @@ index 0000000..6e1aa43
 +    customizeSetting(
 +      "translator/prediction_never_first",
 +      preferences.predictionNeverFirst ? "true" : "false",
++      preferences.predictionNeverFirst,
 +    );
 +  }
 +
@@ -4126,6 +4484,7 @@ index 0000000..6e1aa43
 +    customizeSetting(
 +      "translator/prediction_weight_threshold",
 +      String(preferences.predictionThreshold),
++      preferences.predictionThreshold,
 +    );
 +  }
 +
@@ -4133,6 +4492,7 @@ index 0000000..6e1aa43
 +    customizeSetting(
 +      "translator/dictionary_exclude",
 +      JSON.stringify(preferences.dictionaryExclude),
++      preferences.dictionaryExclude,
 +    );
 +  }
 +
@@ -4147,11 +4507,75 @@ index 0000000..6e1aa43
 +    );
 +  }
 +
++  if (writeHarnessCustomConfig(fs, prepareOptions, customPatchEntries)) {
++    customizedAny = true;
++  }
++
 +  if (customizedAny) {
 +    await syncCurrentStateToPersistence("customize");
 +  }
 +
 +  return success;
++}
++
++function writeHarnessCustomConfig(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++  entries: CustomPatchEntry[],
++): boolean {
++  if (entries.length === 0) {
++    return false;
++  }
++  const path = joinTypeDuckVirtualPath(options.userDataDir, `${options.schemaId}.custom.yaml`);
++  const lines = [
++    "# Rime custom settings",
++    "# encoding: utf-8",
++    "",
++    "patch:",
++    ...entries.flatMap(entry => yamlPatchEntryLines(entry)),
++    "customization:",
++    "  generator: typeduck-web",
++    `  modified_time: ${Math.floor(Date.now() / 1000)}`,
++    "",
++  ];
++  const text = lines.join("\n");
++  const existing = fs.analyzePath(path).exists
++    ? fs.readFile(path, { encoding: "utf8" })
++    : null;
++  const existingText = typeof existing === "string"
++    ? existing
++    : existing instanceof Uint8Array
++    ? new TextDecoder().decode(existing)
++    : null;
++  if (existingText === text) {
++    return false;
++  }
++  ensureVirtualDirectory(fs, path.split("/").slice(0, -1).join("/"));
++  fs.writeFile(path, text, { flags: "w" });
++  return true;
++}
++
++function yamlPatchEntryLines(entry: CustomPatchEntry): string[] {
++  if (Array.isArray(entry.value)) {
++    if (entry.value.length === 0) {
++      return [`  ${entry.key}: []`];
++    }
++    return [
++      `  ${entry.key}:`,
++      ...entry.value.map(item => `    - ${yamlScalar(item)}`),
++    ];
++  }
++  return [`  ${entry.key}: ${yamlScalar(entry.value)}`];
++}
++
++function yamlScalar(value: boolean | number | string): string {
++  if (typeof value === "boolean") {
++    return value ? "true" : "false";
++  }
++  if (typeof value === "number") {
++    return String(value);
++  }
++  return JSON.stringify(value);
 +}
 +
 +export async function setOption(option: string, value: boolean): Promise<void> {
@@ -4227,6 +4651,9 @@ index 0000000..6e1aa43
 +): boolean {
 +  const expected = expectedDeployStamp(fs, options, extraSharedAssets, assetVersion);
 +  const actual = readDeployStamp(fs, options);
++  if (snapshotPersistedCustomConfig(fs, options).exists) {
++    return false;
++  }
 +  return actual !== null
 +    && actual.version === expected.version
 +    && actual.assetVersion === expected.assetVersion
@@ -4234,7 +4661,26 @@ index 0000000..6e1aa43
 +    && actual.dictionaryId === expected.dictionaryId
 +    && actual.assetSignature === expected.assetSignature
 +    && actual.customConfigSignature === expected.customConfigSignature
-+    && deployedSchemaExists(fs, options);
++    && deployedSchemaExists(fs, options)
++    && deployedCustomSettingsMatch(fs, options);
++}
++
++function deployedCustomSettingsMatch(
++  fs: TypeDuckFilesystem,
++  options: PrepareTypeDuckFilesystemOptions,
++): boolean {
++  const persisted = snapshotPersistedCustomConfig(fs, options).settings;
++  if (persisted === undefined) {
++    return true;
++  }
++  const deployed = snapshotDeployedSchemaConfig(fs, options).settings;
++  if (deployed === undefined) {
++    return false;
++  }
++  return PERSISTED_CUSTOM_CONFIG_KEYS.every((key) => {
++    const persistedValue = persisted[key];
++    return persistedValue === null || deployed[key] === persistedValue;
++  });
 +}
 +
 +function readDeployStamp(
@@ -5060,3 +5506,15 @@ index 801c076..e5eaade 100644
 -	} satisfies DaisyUIConfig,
 +	plugins: [],
  } satisfies Config;
+diff --git a/vite.config.ts b/vite.config.ts
+index 694391b..0482afd 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -7,7 +7,6 @@ import tailwindcssNesting from "tailwindcss/nesting";
+ import type { UserConfig } from "vite";
+ 
+ export default {
+-	base: "/web/",
+ 	plugins: [react()],
+ 	css: {
+ 		postcss: {

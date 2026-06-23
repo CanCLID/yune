@@ -37,7 +37,7 @@ const ACTIVE_SHOWCASE_CONTROLS = [
   /Auto-completion/,
   /Auto-correction/,
   /Auto-composition/,
-  /Input Memory/,
+  /User Dictionary/,
   /AI Candidates/,
   /Combine same-text candidates/,
   /Prediction never first/,
@@ -252,6 +252,15 @@ async function elementBox(locator: Locator): Promise<ElementBoxSnapshot> {
     right: (box?.x ?? 0) + (box?.width ?? 0),
     bottom: (box?.y ?? 0) + (box?.height ?? 0),
   };
+}
+
+async function firstTwoCandidateRowBoxes(page: Page): Promise<[ElementBoxSnapshot, ElementBoxSnapshot]> {
+  const rows = page.locator(".candidate-panel .candidate-row");
+  await expect.poll(async () => rows.count(), { timeout: 5000 }).toBeGreaterThanOrEqual(2);
+  return [
+    await elementBox(rows.nth(0)),
+    await elementBox(rows.nth(1)),
+  ];
 }
 
 async function writeEvidence(filename: string, content: string): Promise<void> {
@@ -1424,7 +1433,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
         "Auto-completion",
         "Auto-correction",
         "Auto-composition",
-        "Input Memory",
+        "User Dictionary",
         "No. of Candidates Per Page",
         "Combine same-text candidates",
         "Prediction never first",
@@ -2015,6 +2024,12 @@ test.describe("TypeDuck-Web Browser E2E", () => {
 
     let horizontal = await typeCompositionAndWaitForTopCandidate(page, "nei", "你");
     await expect(page.locator(".candidate-panel")).toHaveClass(/candidate-panel--horizontal/);
+    const [firstHorizontal, secondHorizontal] = await firstTwoCandidateRowBoxes(page);
+    const horizontalDictionary = await elementBox(page.locator(".candidate-panel .dictionary-panel"));
+    expect(secondHorizontal.x).toBeGreaterThanOrEqual(firstHorizontal.right - 1);
+    expect(Math.abs(secondHorizontal.y - firstHorizontal.y)).toBeLessThanOrEqual(2);
+    expect(horizontalDictionary.y).toBeGreaterThanOrEqual(firstHorizontal.bottom - 1);
+    expect(horizontalDictionary.x).toBeLessThanOrEqual(firstHorizontal.x + 2);
     await saveM25Json("M25-DOGFOOD-09", "candidate-layout-horizontal.json", horizontal);
     await takeM25Screenshot(page, "M25-DOGFOOD-09", "candidate-layout-horizontal");
 
@@ -2023,9 +2038,15 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await expect(field.getByLabel(/Vertical/)).toBeChecked();
     const vertical = await typeCompositionAndWaitForTopCandidate(page, "nei", "你");
     await expect(page.locator(".candidate-panel")).toHaveClass(/candidate-panel--vertical/);
+    const [firstVertical, secondVertical] = await firstTwoCandidateRowBoxes(page);
+    expect(secondVertical.y).toBeGreaterThanOrEqual(firstVertical.bottom - 1);
+    expect(Math.abs(secondVertical.x - firstVertical.x)).toBeLessThanOrEqual(2);
     await saveM25Json("M25-DOGFOOD-09", "candidate-layout-vertical.json", {
       before: horizontal,
       after: vertical,
+      horizontalBoxes: { first: firstHorizontal, second: secondHorizontal },
+      horizontalDictionary,
+      verticalBoxes: { first: firstVertical, second: secondVertical },
       radioLabels: await field.locator("label").evaluateAll(labels => labels.map(label => label.textContent?.replace(/\s+/g, " ").trim())),
     });
     await takeM25Screenshot(page, "M25-DOGFOOD-09", "candidate-layout-vertical");
@@ -2045,6 +2066,40 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     await page.locator(`.candidate-panel .candidates tbody[data-candidate-text="${M24_DOGFOOD_TOP}"]`).hover();
     await expect(page.locator(".dictionary-panel")).toContainText(/think; ponder|want; need|now/, { timeout: 5000 });
     await takeM24Screenshot(page, "M24-DOGFOOD-03", "dictionary-detail-panel");
+  });
+
+  test("M25 DOGFOOD-11 visible lookup candidates expose dictionary details", async ({ page }) => {
+    const state = await typeCompositionAndWaitForTopCandidate(page, "zouhapci", "組合次");
+    const expectedLookupRows = [
+      { text: "組合", definition: /combine/ },
+      { text: "做", definition: /do/ },
+      { text: "早", definition: /early/ },
+      { text: "組", definition: /group/ },
+      { text: "租", definition: /rent/ },
+    ];
+    const visibleLookupRows = await page.locator(".candidate-panel .candidates tbody").evaluateAll((rows) =>
+      rows.slice(0, 8).map((row) => ({
+        text: row.getAttribute("data-candidate-text"),
+        rowText: row.textContent?.replace(/\s+/g, " ").trim() ?? "",
+        hasDictionaryIcon: Boolean(row.querySelector('[aria-label="dictionary details"]')),
+      }))
+    );
+
+    for (const { text, definition } of expectedLookupRows) {
+      const row = visibleLookupRows.find(candidate => candidate.text === text);
+      expect(row, `${text} should be visible for zouhapci`).toBeTruthy();
+      expect(row?.hasDictionaryIcon, `${text} should expose dictionary detail affordance`).toBe(true);
+      const locator = page.locator(`.candidate-panel .candidates tbody[data-candidate-text="${text}"]`);
+      await expect(locator).toHaveCount(1);
+      await locator.hover();
+      await expect(page.locator(".dictionary-panel")).toContainText(definition, { timeout: 5000 });
+    }
+
+    await saveM25Json("M25-DOGFOOD-11", "visible-lookup-dictionary-comments.json", {
+      state,
+      visibleLookupRows,
+    });
+    await takeM25Screenshot(page, "M25-DOGFOOD-11", "visible-lookup-dictionary-comments");
   });
 
   test("M24 jigaajiusihaa order is recorded against the current pinned expectation", async ({ page }) => {
@@ -2561,13 +2616,34 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
-  test("M20 Input Memory persists schema customization", async ({ page }) => {
-    const learningOn = await waitForPersistedSettings(page, {
+  test("M20 User Dictionary persists schema customization", async ({ page }) => {
+    const inputMemoryToggle = page.getByLabel(/User Dictionary/).last();
+    if (await inputMemoryToggle.isChecked()) {
+      await setPreferenceToggleAndWaitForSettings(page, /User Dictionary/, false, {
+        "translator/enable_user_dict": "false",
+        "translator/encode_commit_history": "false",
+      });
+    }
+    const learningOn = await setPreferenceToggleAndWaitForSettings(page, /User Dictionary/, true, {
       "translator/enable_user_dict": "true",
       "translator/encode_commit_history": "true",
     });
 
+    await page.getByLabel("Yune inspector").check();
+    const userdbViewer = page.locator("[data-yune-userdb-viewer]");
+    await expect(userdbViewer).toBeVisible();
+    await expect(userdbViewer.locator("[data-yune-userdb-path]")).toContainText("/rime/jyut6ping3.userdb");
+    await expect(userdbViewer.getByRole("button", { name: /Clear|Reset/i })).toHaveCount(0);
+
     const learnedCommit = await learnPhraseThroughBrowser(page);
+    await expect.poll(async () => userdbViewer.locator("[data-yune-userdb-row]").count(), {
+      timeout: 10000,
+    }).toBeGreaterThan(0);
+    await expect(userdbViewer).toContainText(LEARNED_PHRASE_TEXT);
+    await userdbViewer.locator("summary").click();
+    await expect(userdbViewer.locator("[data-yune-userdb-raw]")).toContainText(LEARNED_PHRASE_TEXT);
+    const userdbRowCount = await userdbViewer.locator("[data-yune-userdb-row]").count();
+
     const learnedWithMemory = await typeCompositionAndWaitForCandidate(
       page,
       LEARNED_PREFIX_INPUT,
@@ -2575,7 +2651,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
     );
     expect(candidateTexts(learnedWithMemory)).toContain(LEARNED_PHRASE_TEXT);
 
-    const learningOff = await setPreferenceToggleAndWaitForSettings(page, /Input Memory/, false, {
+    const learningOff = await setPreferenceToggleAndWaitForSettings(page, /User Dictionary/, false, {
       "translator/enable_user_dict": "false",
       "translator/encode_commit_history": "false",
     });
@@ -2593,6 +2669,12 @@ test.describe("TypeDuck-Web Browser E2E", () => {
         learnedCommit,
         learnedWithMemory,
       },
+      userdbViewer: {
+        path: "/rime/jyut6ping3.userdb",
+        rowCount: userdbRowCount,
+        rawContainsLearnedPhrase: true,
+        resetControlExposed: false,
+      },
       browserSurface: {
         status: "explicit browser-surface N/A for the memory-off candidate-output delta",
         observedAfterDisablingMemory: learnedWithMemoryOff,
@@ -2600,7 +2682,7 @@ test.describe("TypeDuck-Web Browser E2E", () => {
         engineCoverage: "Userdb learning and per-entry pronunciation behavior remain engine-proven in cantonese_parity and frontend_client userdb tests; this M20 follow-up does not change crates/ or add a yune_typeduck_* export.",
         evidencePolicy: "The learned prediction on-state is visible browser behavior; the off-state is not counted as candidate-output proof.",
       },
-      proof: "Input Memory remains an honest deploy-time schema customization in the browser. The learned-prediction on-state is visible after a real browser commit; the memory-off candidate-output delta is explicitly N/A on this surface.",
+      proof: "User Dictionary remains an honest deploy-time schema customization in the browser. The learned-prediction on-state is visible after a real browser commit; the memory-off candidate-output delta is explicitly N/A on this surface.",
     });
     await takeEvidenceScreenshot(page, "m20-input-memory-persistence");
     expect(consoleFailures(consoleErrors)).toEqual([]);

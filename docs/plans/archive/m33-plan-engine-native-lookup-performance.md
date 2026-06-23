@@ -1,6 +1,6 @@
 # M33 Engine Native Lookup Performance Plan
 
-> **Status:** Planned (draft) - **Milestone:** M33 (engine native lookup performance vs upstream librime) - **Opened:** 2026-06-22 at user request - **Type:** active execution plan
+> **Status:** Complete - **Milestone:** M33 (engine native lookup performance vs upstream librime) - **Opened:** 2026-06-22 at user request - **Closed:** 2026-06-23 - **Type:** archived execution record
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: use the repo's executing-plans / subagent-driven-development workflow to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Each lever has a measured stop/accept gate — do not proceed to the next lever without recording before/after evidence.**
 
@@ -12,12 +12,59 @@
 
 **Tech Stack:** Rust (`yune-core`, `yune-rime-api`), the existing compiled-format parsers and `DartsDoubleArray` in `crates/yune-core/src/dictionary/`, Criterion `frontend_baselines`, the `yune-vs-librime` C# harness (`scripts/yune-vs-librime-benchmark.cs`), oracle fixtures for upstream `1.17.0` and TypeDuck `v1.1.2`, and the TypeDuck-Web patch workflow.
 
+## Closeout - 2026-06-23
+
+M33 closed as a bounded native fairness/cache win. It did not reopen P2-WIN-02,
+M30, M31, or M32, and it did not widen the default `RimeApi`, change
+`RimeCandidate`, or alter TypeDuck-profile semantics.
+
+Implemented:
+
+- Build-once sharing for immutable dictionary translators, keyed by schema and
+  resolved source/compiled asset signatures, with invalidation coverage.
+- Lazy `stroke` reverse-lookup dictionary loading, so no-reverse `luna_pinyin`
+  startup/session rows no longer compare a luna-plus-stroke Yune load against a
+  luna-only librime load.
+- Focused regression tests for cache reuse/invalidation, first-use reverse
+  lookup loading, and the lazy-prism spike boundary.
+
+Measured result:
+
+| Row | Yune before | Yune after | librime after |
+| --- | ---: | ---: | ---: |
+| Startup/runtime-ready median | `2,881,852.7 us` | `47,788.2 us` | `27,628.3 us` |
+| Session create/select/destroy median | `2,985,364.0 us` | `47,813.7 us` | `25,765.9 us` |
+| Startup ready working-set delta | `218,873,856 bytes` | `24,576 bytes` | `847,872 bytes` |
+| Key `ni` median | `5,579.8 us` | `6,064.5 us` | `28.5 us` |
+| Key `hao` median | `11,043.8 us` | `12,463.4 us` | `34.5 us` |
+| Key `zhongguo` median | `34,024.0 us` | `37,572.3 us` | `1,479.8 us` |
+
+Deferred:
+
+- Lazy spelling-algebra/prism lookup: no-go for M33. The checked-in upstream
+  prism fixture maps spellings to descriptors but does not contain candidate
+  text/comment/order payloads. A byte-identical rewrite needs a broader
+  table-payload/index design.
+- mmap compiled artifacts: deferred. The low-risk slice moved startup/session
+  into the same order of magnitude as librime, while the remaining measured gap
+  is per-key lookup representation.
+
+Evidence and reports:
+
+- [`../../reports/evidence/m33-2026-06-23/`](../../reports/evidence/m33-2026-06-23/)
+- [`../../reports/yune-vs-librime-performance.md`](../../reports/yune-vs-librime-performance.md)
+- [`../../reports/yune-vs-librime-root-cause-analysis.md`](../../reports/yune-vs-librime-root-cause-analysis.md)
+
+Public claim status: safe to show as an honest startup/session fairness win;
+unsafe to claim typing-speed, browser-startup, browser-typing, or overall
+"faster than librime" wins.
+
 ---
 
 ## Background and root cause
 
-Full diagnosis: [`docs/reports/yune-vs-librime-root-cause-analysis.md`](../reports/yune-vs-librime-root-cause-analysis.md).
-Measurement: [`docs/reports/yune-vs-librime-performance.md`](../reports/yune-vs-librime-performance.md).
+Full diagnosis: [`docs/reports/yune-vs-librime-root-cause-analysis.md`](../../reports/yune-vs-librime-root-cause-analysis.md).
+Measurement: [`docs/reports/yune-vs-librime-performance.md`](../../reports/yune-vs-librime-performance.md).
 
 Current 2026-06-23 medians on `luna_pinyin` through the librime-shaped C ABI:
 
@@ -51,7 +98,10 @@ This does **not** flip the result (luna_pinyin alone — heap parse + spelling-a
 
 ## Status
 
-Planned. Not started. No baseline re-captured under this plan yet (Task 0).
+Complete. Fresh baselines and after-runs are committed under
+[`../../reports/evidence/m33-2026-06-23/`](../../reports/evidence/m33-2026-06-23/).
+The accepted slice is build-once dictionary translator sharing plus lazy reverse
+lookup. Lazy prism lookup and mmap are deferred by the closeout gate above.
 
 ## Scope
 
@@ -171,7 +221,7 @@ Paste into a new session:
 Read AGENTS.md, docs/CONVENTIONS.md, docs/roadmap.md, docs/requirements.md,
 docs/reports/yune-vs-librime-performance.md,
 docs/reports/yune-vs-librime-root-cause-analysis.md,
-docs/plans/m33-plan-engine-native-lookup-performance.md, and the archived M27/M29/M30 plans first.
+docs/plans/archive/m33-plan-engine-native-lookup-performance.md, and the archived M27/M29/M30 plans first.
 
 This is engine-only performance work measured by scripts/benchmark-yune-vs-librime.ps1 and
 crates/yune-rime-api/benches/frontend_baselines.rs. Start only after P2-WIN-02 is complete.

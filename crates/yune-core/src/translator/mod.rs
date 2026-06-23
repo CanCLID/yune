@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::Mutex;
 
 use crate::comment_format::CommentFormat;
 use crate::dictionary::normalize_table_code;
@@ -1505,9 +1506,21 @@ impl Translator for StaticTableTranslator {
     }
 }
 
-pub struct ReverseLookupTranslator {
+struct ReverseLookupData {
     entries: Vec<TableEntry>,
     reverse_comments: HashMap<String, Vec<String>>,
+}
+
+enum ReverseLookupStorage {
+    Ready(ReverseLookupData),
+    Lazy {
+        loaded: Mutex<Option<ReverseLookupData>>,
+        loader: Box<dyn Fn() -> Option<(TableDictionary, Option<TableDictionary>)> + Send + Sync>,
+    },
+}
+
+pub struct ReverseLookupTranslator {
+    storage: ReverseLookupStorage,
     prefix: String,
     suffix: String,
     tag: String,
@@ -1523,27 +1536,30 @@ impl ReverseLookupTranslator {
         prefix: impl Into<String>,
         suffix: impl Into<String>,
     ) -> Self {
-        let mut reverse_comments: HashMap<String, Vec<String>> = HashMap::new();
-        if let Some(reverse_dictionary) = reverse_dictionary {
-            let comment_format = reverse_dictionary
-                .dict_settings()
-                .get("comment_format")
-                .cloned();
-            for entry in &reverse_dictionary.entries {
-                let comment = comment_format.as_ref().map_or_else(
-                    || entry.code.clone(),
-                    |format| format.replace("$comment", &entry.code),
-                );
-                reverse_comments
-                    .entry(entry.text.clone())
-                    .or_default()
-                    .push(comment);
-            }
-        }
-
         Self {
-            entries: dictionary.entries,
-            reverse_comments,
+            storage: ReverseLookupStorage::Ready(ReverseLookupData::from_dictionaries(
+                dictionary,
+                reverse_dictionary,
+            )),
+            prefix: prefix.into(),
+            suffix: suffix.into(),
+            tag: "reverse_lookup".to_owned(),
+            enable_completion: false,
+            comment_format: CommentFormat::default(),
+        }
+    }
+
+    #[must_use]
+    pub fn new_lazy(
+        loader: impl Fn() -> Option<(TableDictionary, Option<TableDictionary>)> + Send + Sync + 'static,
+        prefix: impl Into<String>,
+        suffix: impl Into<String>,
+    ) -> Self {
+        Self {
+            storage: ReverseLookupStorage::Lazy {
+                loaded: Mutex::new(None),
+                loader: Box::new(loader),
+            },
             prefix: prefix.into(),
             suffix: suffix.into(),
             tag: "reverse_lookup".to_owned(),
@@ -1575,6 +1591,56 @@ impl ReverseLookupTranslator {
             .iter()
             .any(|segment_tag| segment_tag == &self.tag)
     }
+
+    fn with_data<T>(&self, f: impl FnOnce(&ReverseLookupData) -> T) -> Option<T> {
+        match &self.storage {
+            ReverseLookupStorage::Ready(data) => Some(f(data)),
+            ReverseLookupStorage::Lazy { loaded, loader } => {
+                let mut loaded = loaded
+                    .lock()
+                    .expect("reverse lookup lazy data should not be poisoned");
+                if loaded.is_none() {
+                    if let Some((dictionary, reverse_dictionary)) = loader() {
+                        *loaded = Some(ReverseLookupData::from_dictionaries(
+                            dictionary,
+                            reverse_dictionary,
+                        ));
+                    }
+                }
+                loaded.as_ref().map(f)
+            }
+        }
+    }
+}
+
+impl ReverseLookupData {
+    fn from_dictionaries(
+        dictionary: TableDictionary,
+        reverse_dictionary: Option<TableDictionary>,
+    ) -> Self {
+        let mut reverse_comments: HashMap<String, Vec<String>> = HashMap::new();
+        if let Some(reverse_dictionary) = reverse_dictionary {
+            let comment_format = reverse_dictionary
+                .dict_settings()
+                .get("comment_format")
+                .cloned();
+            for entry in &reverse_dictionary.entries {
+                let comment = comment_format.as_ref().map_or_else(
+                    || entry.code.clone(),
+                    |format| format.replace("$comment", &entry.code),
+                );
+                reverse_comments
+                    .entry(entry.text.clone())
+                    .or_default()
+                    .push(comment);
+            }
+        }
+
+        Self {
+            entries: dictionary.entries,
+            reverse_comments,
+        }
+    }
 }
 
 impl Translator for ReverseLookupTranslator {
@@ -1602,36 +1668,39 @@ impl Translator for ReverseLookupTranslator {
             return Vec::new();
         }
 
-        self.entries
-            .iter()
-            .filter(|entry| {
-                if self.enable_completion {
-                    entry.code.starts_with(&code)
-                } else {
-                    entry.code == code
-                }
-            })
-            .map(|entry| {
-                let comment = self
-                    .reverse_comments
-                    .get(&entry.text)
-                    .filter(|comments| !comments.is_empty())
-                    .map(|comments| self.comment_format.apply(&comments.join("; ")))
-                    .unwrap_or_else(|| entry.code.clone());
-                let quality = if self.enable_completion && has_prefix && entry.code == code {
-                    entry.weight + 1_000_000.0
-                } else {
-                    entry.weight
-                };
-                Candidate {
-                    text: entry.text.clone(),
-                    comment,
-                    preedit: None,
-                    source: CandidateSource::ReverseLookup,
-                    quality,
-                }
-            })
-            .collect()
+        self.with_data(|data| {
+            data.entries
+                .iter()
+                .filter(|entry| {
+                    if self.enable_completion {
+                        entry.code.starts_with(&code)
+                    } else {
+                        entry.code == code
+                    }
+                })
+                .map(|entry| {
+                    let comment = data
+                        .reverse_comments
+                        .get(&entry.text)
+                        .filter(|comments| !comments.is_empty())
+                        .map(|comments| self.comment_format.apply(&comments.join("; ")))
+                        .unwrap_or_else(|| entry.code.clone());
+                    let quality = if self.enable_completion && has_prefix && entry.code == code {
+                        entry.weight + 1_000_000.0
+                    } else {
+                        entry.weight
+                    };
+                    Candidate {
+                        text: entry.text.clone(),
+                        comment,
+                        preedit: None,
+                        source: CandidateSource::ReverseLookup,
+                        quality,
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default()
     }
 
     fn translate_with_context(

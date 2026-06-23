@@ -1,5 +1,6 @@
 use super::*;
 use crate::remaining_gear_deferrals_snapshot;
+use crate::{begin_startup_trace, finish_startup_trace};
 use serde_json::Value;
 
 const TYPEDUCK_V112_REVERSE_LOOKUP_PROMPT: &str =

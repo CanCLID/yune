@@ -2,155 +2,148 @@
 
 Date: 2026-06-23
 
-Evidence: [`evidence/yune-vs-librime-2026-06-23/`](./evidence/yune-vs-librime-2026-06-23/)
+Evidence:
+
+- M33 before: [`evidence/m33-2026-06-23/before-yune-vs-librime/`](./evidence/m33-2026-06-23/before-yune-vs-librime/)
+- M33 after low-risk slice: [`evidence/m33-2026-06-23/after-low-risk-yune-vs-librime/`](./evidence/m33-2026-06-23/after-low-risk-yune-vs-librime/)
+- Native Criterion logs: [`evidence/m33-2026-06-23/frontend-baselines-before.txt`](./evidence/m33-2026-06-23/frontend-baselines-before.txt) and [`evidence/m33-2026-06-23/frontend-baselines-after-low-risk.txt`](./evidence/m33-2026-06-23/frontend-baselines-after-low-risk.txt)
 
 ## Public summary
 
-This benchmark compares Yune's current Rust `yune-rime-api` release DLL against upstream `rime/librime` `1.17.0` on the shared upstream `luna_pinyin` surface: startup/schema selection, session create/select/destroy, and key processing through the C API. It does not measure browser, WASM, React, TypeDuck-Web UI latency, or TypeDuck-only `jyut6ping3` behavior.
+M33 corrects the earlier unfair `luna_pinyin` comparison. Yune now lazy-loads the
+`stroke` reverse-lookup dictionary, matching upstream librime's behavior for the
+timed no-reverse-lookup rows. The final public comparison can safely show the
+startup/session improvement, but it must also show that per-key lookup still
+trails librime by a wide margin.
 
-On this shared workload, Yune is not faster than upstream librime in any measured row. Upstream librime is substantially faster and uses far less resident memory for `luna_pinyin`:
+Final M33 result on the shared upstream `luna_pinyin` C-ABI workload:
 
-- Startup/runtime-ready median: Yune `2.722s`; upstream librime `0.029s` (`94.6x` faster for librime).
-- Startup resident working-set delta: Yune `208.6 MiB`; upstream librime `0.9 MiB`.
-- Session create/select/destroy median: Yune `2.761s`; upstream librime `0.024s` (`115.1x` faster for librime).
-- Key-sequence median latency: librime is `23.0x` to `312.9x` faster across `ni`, `hao`, and `zhongguo`.
+- Startup/runtime-ready median: Yune `47,788.2 us`; librime `27,628.3 us`; Yune is `1.7x` slower.
+- Session create/select/destroy median: Yune `47,813.7 us`; librime `25,765.9 us`; Yune is `1.9x` slower.
+- Startup ready working-set delta: Yune `24,576 bytes`; librime `847,872 bytes`.
+- Key processing still trails: `ni` `212.8x`, `hao` `361.3x`, and `zhongguo` `25.4x` slower than librime.
 
-Fairness note (added 2026-06-22): the startup, session, and resident-memory rows are partly inflated by Yune eager-loading the `stroke` reverse-lookup dictionary (~9.5 MiB) that upstream librime lazy-skips for these inputs (see Caveats). The per-key rows are unaffected. A like-for-like rerun is tracked as M30's successor in [`../plans/m33-plan-engine-native-lookup-performance.md`](../plans/m33-plan-engine-native-lookup-performance.md) (gate `M33-PERF-08`).
+Against the M33 before run, Yune startup dropped from `2,881,852.7 us` to
+`47,788.2 us` (`-98.3%`) and session create/select/destroy dropped from
+`2,985,364.0 us` to `47,813.7 us` (`-98.4%`). Per-key Yune rows regressed in
+this run: `ni` `+8.7%`, `hao` `+12.9%`, and `zhongguo` `+10.4%`. Those
+regressions are small relative to the startup win but are not a win claim.
 
-What should not be claimed from this benchmark:
-
-- No TypeDuck-Web browser startup or typing win is shown here.
-- No TypeDuck `jyut6ping3` result is shown here.
-- No cold deploy/build timing is shown here; both engines use already-built `luna_pinyin` assets.
-- No pure engine-internal comparison is shown here; both engines are measured through the librime-shaped C API.
-
-The practical recommendation is to proceed to P2-WIN-02 first, then use M33 for the named benchmark-driven engine task exposed here: upstream-`luna_pinyin` schema/session setup, reverse-lookup load fairness, and key processing through the ABI. M30 should stay closed as an engine-representation memory win for the TypeDuck-expanded-table workload, not as a browser typing-latency win.
+No browser startup, browser typing, WASM, React, or TypeDuck-Web UI result is
+claimed from this benchmark. No chart SVG was regenerated for M33; a chart is
+safe to publish only if it shows both the startup/session win and the unresolved
+per-key gap.
 
 ## Methodology
 
-### Versions and source identity
+Both engines were measured through the same librime-shaped C API harness:
+[`../../scripts/yune-vs-librime-benchmark.cs`](../../scripts/yune-vs-librime-benchmark.cs),
+driven by [`../../scripts/benchmark-yune-vs-librime.ps1`](../../scripts/benchmark-yune-vs-librime.ps1).
 
-Yune:
-
-- Repository: `C:\Users\laubonghaudoi\Documents\GitHub\yune`
-- Source head recorded by the benchmark: `7112e485674e71a4922ce4707ed35824ca6d268a`
-- Build command: `cargo build --release -p yune-rime-api`
-- DLL under test: `target\release\yune_rime_api.dll`, copied as `rime.dll` into a transient per-engine run directory.
-- DLL SHA-256: `81DB4277CA2A3BF4A1681E4644A21BE488665C3771533E516486B5FA83B3D569`.
-- No Rust engine source file was changed for this report; the dirty status recorded in the evidence comes from docs/scripts/report work plus unrelated local plan edits.
-
-Upstream librime:
-
-- Local checkout verified at `C:\Users\laubonghaudoi\Documents\GitHub\librime`.
-- Local checkout origin: `https://github.com/rime/librime.git`.
-- Local checkout head at verification time: `d71168e9e8c8392ed219dca011dbc76b80727d6c`.
-- Tag `1.17.0` resolves to `33e78140250125871856cdc5b42ddc6a5fcd3cd4`.
-- Benchmark target binary: the existing upstream-oracle `1.17.0` Windows release asset under `target\upstream-oracle\1.17.0\extract\dist\lib\rime.dll`, not the newer local checkout head and not the TypeDuck fork.
-- DLL SHA-256: `86B4C7357D4C6D293CE5589B234D8859CA2AC30923A03BEDFA3926EEAF97FB0B`.
-
-### Machine
-
-The benchmark ran on:
-
-- OS: Microsoft Windows 11 Pro, version `10.0.26200`, build `26200`.
-- CPU: AMD Ryzen 9 9950X3D 16-Core Processor, `16` cores / `16` logical processors.
-- Memory: `63,762,190,336` bytes physical RAM.
-- Machine: Micro-Star International Co., Ltd. `MS-7E84`.
-
-### Schema assets and warm/cold setup
-
-Both engines used the same upstream `luna_pinyin` assets from:
-
-- Shared data: `target\upstream-oracle\1.17.0\rime-shared`
-- User/build data: `target\upstream-oracle\1.17.0\rime-user\build`
-- Schema: `luna_pinyin`
-- Module list: `default`
-
-This is a warm/no-deploy comparison against shared upstream assets. It does not run the deployer or rebuild dictionaries during timing. It is not a strict "both engines consume identical compiled binaries" comparison: upstream librime consumes its native `1.17.0` build artifacts, while Yune receives the same shared and build directories and may fall back to source YAML for upstream compiled sections it does not currently consume. That fallback is part of Yune's current C API path for these assets and is included in the timing.
-
-The harness copies runtime DLLs and schema assets into transient directories under `target\yune-vs-librime-benchmark\yune-vs-librime-2026-06-23\`. The committed evidence folder keeps only logs, metadata, `samples.csv`, and `summary.csv`.
-
-### Harness and workloads
-
-The benchmark harness is [`../../scripts/yune-vs-librime-benchmark.cs`](../../scripts/yune-vs-librime-benchmark.cs), driven by [`../../scripts/benchmark-yune-vs-librime.ps1`](../../scripts/benchmark-yune-vs-librime.ps1).
-
-The runner calls the same librime-shaped C API entry points for both DLLs: setup, initialize, create session, select schema, status/context reads, key processing, clear composition, destroy session, and finalize.
-
-Workloads:
-
-- `startup_warm_shared_assets_runtime_ready`: `RimeSetup` + `RimeInitialize` + `RimeCreateSession` + `RimeSelectSchema("luna_pinyin")` + `RimeGetStatus`, followed by destroy/finalize after timing.
-- `session_create_select_destroy`: service already initialized, then create/select/destroy one session.
-- `key_sequence_process_with_context`: service and session already initialized, then clear composition, process each character in the input, and read/free context. Inputs: `ni`, `hao`, `zhongguo`.
-
-Iteration counts:
-
-- Startup: `9`
-- Session lifecycle: `9`
-- Key sequences: `25` per input
-
-The summary uses median and nearest-rank p95 from the raw samples. With only 9 startup/session samples, p95 is best read as a small-sample slow-end value, not a robust production tail estimate.
-
-Memory is measured with Windows `GetProcessMemoryInfo` resident working-set counters from the benchmark process. Absolute resident-set values include the managed C# host and loaded DLLs. Deltas are more useful than absolutes, but they are still process-level, not allocator-level.
-
-Rerun command:
+Command used for both M33 cross-engine runs:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-yune-vs-librime.ps1 -OutputRoot docs\reports\evidence\yune-vs-librime-2026-06-23 -Iterations 9 -SessionIterations 9 -KeyIterations 25
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-yune-vs-librime.ps1 -OutputRoot <evidence-dir> -Iterations 9 -SessionIterations 9 -KeyIterations 25
 ```
+
+Native benchmark command:
+
+```powershell
+cmd /c "cargo bench -p yune-rime-api --bench frontend_baselines > target\m33-frontend-baselines-*.txt 2>&1"
+```
+
+The cross-engine rows use the same upstream `luna_pinyin` schema id, the same
+shared/user data roots, and the same `default` module list. The timed key rows
+are `ni`, `hao`, and `zhongguo`; none triggers reverse lookup. After M33, Yune
+does not load `stroke` during schema select for those rows, so the former
+luna-plus-stroke Yune vs luna-only librime startup/session mismatch is gone.
+
+This is a warm/no-deploy comparison. It does not measure dictionary deployment,
+web asset loading, browser paint, or TypeDuck `jyut6ping3` profile behavior.
+Memory counters are Windows process working-set counters from the benchmark
+host; deltas are more useful than absolute resident values.
 
 ## Results
 
-### Startup and resident memory
+### Cross-engine summary
 
-Workload: `startup_warm_shared_assets_runtime_ready`
+| Workload | Engine | Median | p95 | Ready delta |
+| --- | --- | ---: | ---: | ---: |
+| Startup/runtime-ready | Yune before | `2,881,852.7 us` | `3,141,449.8 us` | `218,873,856 bytes` |
+| Startup/runtime-ready | Yune after | `47,788.2 us` | `909,375.4 us` | `24,576 bytes` |
+| Startup/runtime-ready | librime after | `27,628.3 us` | `80,260.8 us` | `847,872 bytes` |
+| Session create/select/destroy | Yune before | `2,985,364.0 us` | `3,027,234.7 us` | `5,283,840 bytes` |
+| Session create/select/destroy | Yune after | `47,813.7 us` | `55,848.1 us` | `0 bytes` |
+| Session create/select/destroy | librime after | `25,765.9 us` | `30,130.8 us` | `147,456 bytes` |
 
-| Engine | Median | p95 | Min | Max | Ready working set | Ready delta | Peak working set |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Yune | `2,722,088.1 us` | `3,122,121.3 us` | `2,676,537.8 us` | `3,122,121.3 us` | `228.7 MiB` | `208.6 MiB` | `249.0 MiB` |
-| librime 1.17.0 | `28,763.3 us` | `82,572.0 us` | `23,840.0 us` | `82,572.0 us` | `18.9 MiB` | `0.9 MiB` | `21.2 MiB` |
-
-Median startup ratio: Yune is `94.6x` slower than upstream librime on this warm/no-deploy `luna_pinyin` C API path. The upstream p95 has one visible slow sample (`82.6ms`), but it remains much faster than the fastest Yune startup sample.
-
-### Session lifecycle
-
-Workload: `session_create_select_destroy`
-
-| Engine | Median | p95 | Min | Max | Ready working set | Ready delta | Peak working set |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Yune | `2,761,003.8 us` | `2,784,791.6 us` | `2,736,506.7 us` | `2,784,791.6 us` | `76.4 MiB` | `4.2 MiB` | `249.5 MiB` |
-| librime 1.17.0 | `23,996.7 us` | `26,479.8 us` | `22,497.6 us` | `26,479.8 us` | `18.2 MiB` | `0.1 MiB` | `21.3 MiB` |
-
-Median session lifecycle ratio: Yune is `115.1x` slower than upstream librime. The peak column is process high-water and carries prior service initialization; use the ready working-set and delta columns for this per-session row.
+The after-run startup p95 includes a visible slow sample (`909.4 ms`) even
+though the median is now in the same order of magnitude as librime. The median
+session row is the cleanest accepted win from the build-once cache.
 
 ### Key processing
 
-Workload: `key_sequence_process_with_context`
+| Input | Yune before | Yune after | librime after | After ratio |
+| --- | ---: | ---: | ---: | ---: |
+| `ni` | `5,579.8 us` | `6,064.5 us` | `28.5 us` | `212.8x` |
+| `hao` | `11,043.8 us` | `12,463.4 us` | `34.5 us` | `361.3x` |
+| `zhongguo` | `34,024.0 us` | `37,572.3 us` | `1,479.8 us` | `25.4x` |
 
-| Input | Ops | Yune median | Yune p95 | Yune median/op | librime median | librime p95 | librime median/op | Median ratio |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `ni` | `2` | `5,612.2 us` | `5,734.3 us` | `2,806.1 us` | `29.1 us` | `29.9 us` | `14.6 us` | `192.9x` |
-| `hao` | `3` | `11,045.6 us` | `11,568.1 us` | `3,681.9 us` | `35.3 us` | `60.7 us` | `11.8 us` | `312.9x` |
-| `zhongguo` | `8` | `31,641.8 us` | `34,107.2 us` | `3,955.2 us` | `1,374.1 us` | `1,444.6 us` | `171.8 us` | `23.0x` |
+These rows remain the main unresolved native lookup gap. M33 did not rewrite the
+table/prism lookup model, so it should not be described as a per-key latency win.
 
-Yune key-processing rows are stable within this run but much slower than upstream librime on the same C API path. The smaller ratio for `zhongguo` likely reflects upstream's higher cost once the longer input reaches richer candidate/context work, but upstream still remains faster by more than an order of magnitude.
+### Native watched rows
+
+The in-repo `frontend_baselines` benchmark confirms the same shape:
+
+| Row | Before median | After median | Change |
+| --- | ---: | ---: | ---: |
+| `startup_trace_luna_pinyin_select_schema_total` | `261,245 us` | `223,858 us` | `-14.3%` |
+| `startup_trace_luna_pinyin_translator_install` | `194,531 us` | `171,438 us` | `-11.9%` |
+| `startup_trace_luna_pinyin_spelling_algebra_expand` | `104,343 us` | `107,597 us` | `+3.1%` |
+| `startup_trace_luna_pinyin_translator_index_build` | `8,132 us` | `11,283 us` | `+38.8%` |
+| `per_key_real_jyut6ping3_mobile_hai_full_abi` | `20,557.833 us` | `20,979.133 us` | `+2.0%` |
+| `per_key_real_jyut6ping3_mobile_jigaajiusihaa_full_abi` | `29,935.692 us` | `31,033.692 us` | `+3.7%` |
+| `per_key_real_luna_pinyin_ni_full_abi` | `1,429.950 us` | `1,913.350 us` | `+33.8%` |
+| `per_key_real_luna_pinyin_zhongguo_full_abi` | `12,064.550 us` | `12,705.675 us` | `+5.3%` |
+
+The native startup trace is useful for owner attribution, but the cross-engine
+harness is the public comparison because it isolates the shared C-ABI surface.
 
 ## Interpretation
 
-M26 made the TypeDuck performance problem measurable across native and browser paths, separated browser keydown-to-paint from engine work, and pruned impossible dynamic-correction lengths. M27 then attributed and reduced the TypeDuck-Web startup/runtime-init owner, including hard Windows process-memory evidence. M29 classified the large repeated-benchmark high-water behavior and landed a small no-op regex allocation win. M30's Lever A removed duplicate steady-state expanded-entry storage for spelling-algebra-backed TypeDuck tables and produced a real resident-memory win, while browser startup and typing stayed flat/noisy after a fresh WASM rebuild.
+M33 landed two low-risk changes:
 
-This report is separate from those TypeDuck-specific measurements. It asks how Yune's current Rust C API surface compares to upstream librime on an upstream-supported `luna_pinyin` path. The answer is clear: upstream librime remains dramatically faster and lower-memory for this shared surface.
+- Process-wide sharing of immutable built dictionary translators keyed by schema
+  and resolved asset signatures, with deploy/source invalidation coverage.
+- Lazy reverse-lookup dictionary loading, so `stroke` is loaded on first reverse
+  lookup rather than during `luna_pinyin` schema select.
 
-That result does not invalidate M30. M30's acceptance was about an engine-representation memory slice under the TypeDuck-expanded-table workload; it did not claim a browser typing win and should not be reopened to chase a generic upstream-luna benchmark. It does, however, name a concrete future owner if a named target needs it: `luna_pinyin` schema/session setup and translator/key-processing cost through the ABI.
+The lazy spelling-algebra/prism rewrite was not accepted in M33. The checked-in
+upstream prism fixture proves the current prism can map spellings such as `ni`
+to syllable descriptors, but it does not contain the candidate text/comment/order
+payload needed to preserve current byte-identical output without the table-backed
+translator state. That rewrite needs a broader representation plan and should
+not block M31.
 
-## Caveats
+Memory-mapping was also deferred. With the low-risk slice already reducing
+startup/session medians into the same order of magnitude as librime, and with the
+remaining gap now dominated by per-key lookup representation rather than reverse
+dictionary loading, mmap alone was not justified as an M33 follow-on.
 
-- Yune is target-driven and uses librime as a compatibility floor, not as a bit-for-bit feature or implementation checklist.
-- The benchmark covers only comparable upstream-supported `luna_pinyin` workloads. It does not cover TypeDuck-only `jyut6ping3`, Windows IME integration, browser/WASM runtime behavior, or AI-native paths.
-- Both engines use the same C# host and C ABI calls, but memory counters are process-level and include host overhead.
-- The run uses a warm/no-deploy shared asset setup. Cold deployment and dictionary rebuild are intentionally out of scope, but Yune may still parse source YAML as part of its current fallback path when it cannot consume an upstream compiled section.
-- Reverse-lookup load asymmetry (not yet controlled). `luna_pinyin` configures a `stroke` reverse lookup. Yune eager-loads `stroke` (~9.5 MiB: `stroke.table.bin` 4.55 MiB + `stroke.prism.bin` 3.50 MiB + `stroke.reverse.bin` 1.50 MiB) into the heap at schema-select, while upstream librime lazy-loads the reverse dictionary only on first reverse-lookup query (`src/rime/gear/reverse_lookup_translator.cc:147`), which the `ni`/`hao`/`zhongguo` workloads never trigger. The startup, session, and resident-memory rows therefore include `stroke` for Yune but not for librime. Both engines select the same schema (`luna_pinyin`) over identical copied assets, and the test directory contains no `cangjie`/`jyut6ping3` data; this asymmetry inflates the gap but does not create it (luna_pinyin alone keeps Yune slower). A corrected like-for-like rerun is tracked by gate `M33-PERF-08` in [`../plans/m33-plan-engine-native-lookup-performance.md`](../plans/m33-plan-engine-native-lookup-performance.md).
-- The upstream binary is the pinned `1.17.0` oracle asset. The local upstream checkout was verified only to confirm provenance and the tag commit; the newer local checkout head was not benchmarked.
+## Safe public claim
 
-## Recommendation
+It is safe to say:
 
-Proceed to P2-WIN-02 first. After that, M33 is the named follow-up for the concrete owners exposed here: upstream-`luna_pinyin` schema/session setup, reverse-lookup load fairness, translator installation, and key-processing cost through the ABI. Keep M30 closed and avoid generic, unmeasured startup work outside the M33 gates.
+> After M33, Yune's fair upstream `luna_pinyin` startup/session comparison is no
+> longer distorted by eager `stroke` reverse-lookup loading. The low-risk native
+> cache/lazy-reverse slice cut Yune startup and session medians by about 98%,
+> bringing those rows into the same order of magnitude as upstream librime.
+
+It is not safe to say:
+
+> Yune is faster than librime, Yune typing is faster, or browser typing/startup
+> improved.
+
+The remaining before-M31 recommendation is to use this fair report for public
+copy, avoid a one-sided chart, and keep per-key native lookup optimization as a
+future representation milestone if product evidence justifies it.

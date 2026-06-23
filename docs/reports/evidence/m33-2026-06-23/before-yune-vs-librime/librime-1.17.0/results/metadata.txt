@@ -1,0 +1,10 @@
+engine=librime-1.17.0
+schema=luna_pinyin
+shared=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\yune-vs-librime-benchmark\before-yune-vs-librime\librime-1.17.0\shared
+user=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\yune-vs-librime-benchmark\before-yune-vs-librime\librime-1.17.0\user
+build=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\yune-vs-librime-benchmark\before-yune-vs-librime\librime-1.17.0\user\build
+startup_iterations=9
+session_iterations=9
+key_iterations=25
+runner_process=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\yune-vs-librime-benchmark\before-yune-vs-librime\librime-1.17.0\YuneVsLibrimeBenchmark.exe
+timestamp_utc=2026-06-23T07:15:40.8599103Z

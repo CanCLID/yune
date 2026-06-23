@@ -1,0 +1,6 @@
+engine,workload,input,iterations,operation_count_per_sample,median_us,p95_us,min_us,max_us,median_us_per_operation,p95_us_per_operation,median_after_ready_working_set_bytes,median_ready_delta_bytes,median_peak_working_set_bytes
+librime-1.17.0,key_sequence_process_with_context,hao,25,3,34.500,35.000,34.100,35.600,11.500,11.667,20541440,0,22708224
+librime-1.17.0,key_sequence_process_with_context,ni,25,2,28.500,29.100,27.900,29.100,14.250,14.550,20520960,0,22597632
+librime-1.17.0,key_sequence_process_with_context,zhongguo,25,8,1479.800,1576.900,1399.500,1590.900,184.975,197.113,21630976,12288,22724608
+librime-1.17.0,session_create_select_destroy,,9,1,25765.900,30130.800,22623.400,30130.800,25765.900,30130.800,19623936,32768,22585344
+librime-1.17.0,startup_warm_shared_assets_runtime_ready,,9,1,27628.300,80260.800,24101.200,80260.800,27628.300,80260.800,20082688,847872,22495232

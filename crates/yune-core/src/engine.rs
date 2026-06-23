@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::punctuation::{
     punctuation_candidate_comment, PunctuationProcessor, PunctuationProcessorResult,
@@ -18,7 +19,7 @@ pub struct Engine {
     status: Status,
     options: HashMap<String, bool>,
     properties: HashMap<String, String>,
-    translators: Vec<Box<dyn Translator>>,
+    translators: Vec<Arc<dyn Translator>>,
     punctuation_processor: Option<PunctuationProcessor>,
     filters: Vec<Box<dyn CandidateFilter>>,
     last_filter_audit: Vec<FilterAuditRecord>,
@@ -156,7 +157,7 @@ impl Default for Engine {
             status: Status::default(),
             options: HashMap::new(),
             properties: HashMap::new(),
-            translators: vec![Box::new(EchoTranslator)],
+            translators: vec![Arc::new(EchoTranslator)],
             punctuation_processor: None,
             filters: Vec::new(),
             last_filter_audit: Vec::new(),
@@ -178,12 +179,16 @@ impl Engine {
     }
 
     pub fn add_translator(&mut self, translator: impl Translator + 'static) {
+        self.add_shared_translator(Arc::new(translator));
+    }
+
+    pub fn add_shared_translator(&mut self, translator: Arc<dyn Translator>) {
         let insert_at = self
             .translators
             .iter()
             .position(|existing| existing.name() == "echo_translator")
             .unwrap_or(self.translators.len());
-        self.translators.insert(insert_at, Box::new(translator));
+        self.translators.insert(insert_at, translator);
         self.refresh_candidates();
     }
 
@@ -192,7 +197,7 @@ impl Engine {
     }
 
     pub fn reset_translators(&mut self) {
-        self.translators = vec![Box::new(EchoTranslator)];
+        self.translators = vec![Arc::new(EchoTranslator)];
         self.refresh_candidates();
     }
 

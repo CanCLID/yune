@@ -1282,3 +1282,104 @@ sort: original
     unsafe { RimeSetup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
+
+#[test]
+fn reverse_lookup_translator_loads_lookup_dictionary_on_first_use() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-reverse-lookup-lazy-load");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna.schema.yaml"),
+        "\
+schema:
+  schema_id: luna
+  name: Luna
+engine:
+  segmentors:
+    - abc_segmentor
+  translators:
+    - reverse_lookup_translator
+    - table_translator
+    - echo_translator
+abc_segmentor:
+  extra_tags: [reverse_lookup]
+translator:
+  dictionary: luna
+reverse_lookup:
+  dictionary: stroke
+  prefix: \"`\"
+  comment_format:
+    - xlit/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/
+    - xform/^/[/
+    - xform/$/]/
+",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("luna.dict.yaml"),
+        "\
+---
+name: luna
+version: '0.1'
+sort: original
+...
+
+FIRE\tho
+FIRE\thuo
+",
+    )
+    .expect("target dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("luna").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+
+    fs::write(
+        shared.join("stroke.dict.yaml"),
+        "\
+---
+name: stroke
+version: '0.1'
+sort: original
+...
+
+FIRE\thuo
+",
+    )
+    .expect("reverse lookup dictionary should be written before first use");
+
+    for ch in "`huo".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+
+    assert_eq!(
+        current_candidate_pairs(session_id),
+        [
+            ("FIRE".to_owned(), "[HO; HUO]".to_owned()),
+            ("`huo".to_owned(), "echo".to_owned())
+        ]
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}

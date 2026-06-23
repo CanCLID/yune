@@ -1,0 +1,6 @@
+engine,workload,input,iterations,operation_count_per_sample,median_us,p95_us,min_us,max_us,median_us_per_operation,p95_us_per_operation,median_after_ready_working_set_bytes,median_ready_delta_bytes,median_peak_working_set_bytes
+yune,key_sequence_process_with_context,hao,25,3,11043.800,13519.500,10840.900,14491.600,3681.267,4506.500,242229248,0,262602752
+yune,key_sequence_process_with_context,ni,25,2,5579.800,5673.300,5534.300,6434.300,2789.900,2836.650,241582080,0,262516736
+yune,key_sequence_process_with_context,zhongguo,25,8,34024.000,36946.800,32690.300,39903.100,4253.000,4618.350,242184192,0,262602752
+yune,session_create_select_destroy,,9,1,2985364.000,3027234.700,2942778.800,3027234.700,2985364.000,3027234.700,79904768,5283840,262225920
+yune,startup_warm_shared_assets_runtime_ready,,9,1,2881852.700,3141449.800,2836972.900,3141449.800,2881852.700,3141449.800,239931392,218873856,260935680

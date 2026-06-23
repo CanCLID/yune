@@ -78,20 +78,21 @@ The Phase 2 Windows plan is the next platform/product planning artifact.
 ## Performance
 
 Yune treats librime as a *behavioral* oracle, not a performance oracle. The
-current upstream-`luna_pinyin` comparison shows a real native-engine gap to
-close, but that baseline also has a known reverse-lookup load asymmetry:
-Yune currently eager-loads the `stroke` reverse dictionary while upstream
-librime lazy-loads it only on first reverse lookup. The public headline numbers
-should therefore wait for the M33 fairness-controlled rerun.
+current upstream-`luna_pinyin` comparison is fair after M33: Yune now lazy-loads
+the `stroke` reverse dictionary and shares built dictionary translators across
+session selects. Startup and session medians improved by about 98% versus the
+fresh M33 baseline, bringing those native C-ABI rows into the same order of
+magnitude as upstream librime. Per-key lookup still trails librime by a wide
+margin, so no typing-speed or browser-speed win is claimed.
 
 Current analysis and evidence:
 
 - [docs/reports/yune-vs-librime-performance.md](docs/reports/yune-vs-librime-performance.md)
   records the current measurement and caveats.
 - [docs/reports/yune-vs-librime-root-cause-analysis.md](docs/reports/yune-vs-librime-root-cause-analysis.md)
-  explains the root causes and M33 optimization owners.
-- [docs/plans/m33-plan-engine-native-lookup-performance.md](docs/plans/m33-plan-engine-native-lookup-performance.md)
-  owns the next fairness/performance pass.
+  explains the remaining root cause after M33.
+- [docs/plans/archive/m33-plan-engine-native-lookup-performance.md](docs/plans/archive/m33-plan-engine-native-lookup-performance.md)
+  records the completed fairness/cache pass.
 
 ## AI-Native Layer
 

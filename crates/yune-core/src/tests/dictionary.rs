@@ -280,6 +280,39 @@ fn upstream_luna_pinyin_prism_fixture_parses_real_darts_double_array() {
     }
 }
 
+#[test]
+fn upstream_luna_pinyin_prism_fixture_does_not_contain_candidate_payloads() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join("upstream-1.17.0");
+    let bytes = fs::read(root.join("m18-luna-pinyin-prism.bin"))
+        .expect("upstream prism binary should be readable");
+
+    let payload = parse_rime_prism_bin_payload(&bytes).expect("upstream prism should parse");
+    let double_array = payload
+        .double_array
+        .as_ref()
+        .expect("upstream prism should include Darts units");
+    let spelling_index = double_array
+        .exact_match("ni")
+        .expect("ni spelling should be indexed") as usize;
+    assert!(
+        !payload.spelling_map[spelling_index].is_empty(),
+        "the prism maps spellings to syllable descriptors"
+    );
+
+    // A lazy prism walk still needs the table payload for candidate text/comment/order.
+    for candidate_text in ["\u{4f60}", "\u{597d}", "\u{4e2d}\u{56fd}"] {
+        assert!(
+            !bytes
+                .windows(candidate_text.len())
+                .any(|window| window == candidate_text.as_bytes()),
+            "candidate text {candidate_text:?} should not be stored in the prism"
+        );
+    }
+}
+
 fn code_text_pairs(entries: &[TableEntry]) -> Vec<(&str, &str)> {
     entries
         .iter()

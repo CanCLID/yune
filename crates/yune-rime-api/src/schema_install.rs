@@ -1,4 +1,12 @@
-use std::{collections::HashSet, fs, os::raw::c_int};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    io::Read,
+    os::raw::c_int,
+    path::Path,
+    sync::{Arc, Mutex, OnceLock},
+    time::UNIX_EPOCH,
+};
 
 use regex::Regex;
 use serde_yaml::{Mapping, Value};
@@ -7,8 +15,8 @@ use yune_core::{
     parse_rime_table_bin_dictionary, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
     CharsetFilter, DictionaryLookupFilter, EchoTranslator, HistoryTranslator, ReverseLookupFilter,
     ReverseLookupTranslator, SchemaListTranslator, SimplifierFilter, SingleCharFilter,
-    StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter, UniquifierFilter,
-    TYPEDUCK_SENTENCE_WORD_PENALTY,
+    StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter, Translator,
+    UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 use crate::{
@@ -132,6 +140,17 @@ pub(crate) fn schema_component_prescription(component: &str) -> (&str, Option<&s
     }
 }
 
+type SharedTranslator = Arc<dyn Translator>;
+const FULL_CONTENT_CACHE_HASH_LIMIT: u64 = 64 * 1024;
+const HEADER_CACHE_READ_LIMIT: usize = 16 * 1024;
+
+static DICTIONARY_TRANSLATOR_CACHE: OnceLock<Mutex<HashMap<String, SharedTranslator>>> =
+    OnceLock::new();
+
+fn dictionary_translator_cache() -> &'static Mutex<HashMap<String, SharedTranslator>> {
+    DICTIONARY_TRANSLATOR_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 fn install_schema_dictionary_translator_from_config(
     session: &mut SessionState,
     schema_config: &Value,
@@ -145,23 +164,8 @@ fn install_schema_dictionary_translator_from_config(
         is_typeduck_jyut6ping3_profile(schema_config, user_dict_name.as_deref());
     let is_upstream_luna_pinyin_profile =
         is_upstream_luna_pinyin_profile(schema_config, user_dict_name.as_deref(), component_name);
-    let dictionary = match load_schema_table_dictionary(schema_config, name_space) {
-        DictionaryLoadOutcome::Compiled(dictionary) => dictionary,
-        DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
-            record_dictionary_source_fallback(session, reason);
-            dictionary
-        }
-        DictionaryLoadOutcome::NoUsablePath {
-            dictionary_id,
-            reason,
-        } => {
-            record_dictionary_load_failure(session, dictionary_id, reason);
-            return;
-        }
-    };
-    if let Some(user_dict_name) = user_dict_name {
-        session.set_user_dict_name(user_dict_name);
-    }
+    let cache_key =
+        schema_dictionary_translator_cache_key(schema_config, component_name, name_space);
     let enable_charset_filter = find_config_value(
         schema_config,
         &format!("{name_space}/enable_charset_filter"),
@@ -288,6 +292,34 @@ fn install_schema_dictionary_translator_from_config(
     let dictionary_exclude =
         schema_string_list(schema_config, &format!("{name_space}/dictionary_exclude"));
     let spelling_algebra = spelling_algebra_for_dictionary(schema_config);
+    if let Some(user_dict_name) = &user_dict_name {
+        session.set_user_dict_name(user_dict_name.clone());
+    }
+    if prediction_never_first {
+        session.engine.set_prediction_never_first(true);
+    }
+    if let Some(translator) = cache_key
+        .as_ref()
+        .and_then(|key| cached_dictionary_translator(key))
+    {
+        session.engine.add_shared_translator(translator);
+        return;
+    }
+
+    let dictionary = match load_schema_table_dictionary(schema_config, name_space) {
+        DictionaryLoadOutcome::Compiled(dictionary) => dictionary,
+        DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
+            record_dictionary_source_fallback(session, reason);
+            dictionary
+        }
+        DictionaryLoadOutcome::NoUsablePath {
+            dictionary_id,
+            reason,
+        } => {
+            record_dictionary_load_failure(session, dictionary_id, reason);
+            return;
+        }
+    };
     let mut translator = {
         let _trace = startup_trace::span("translator_index_build");
         StaticTableTranslator::from_dictionary(dictionary)
@@ -325,10 +357,267 @@ fn install_schema_dictionary_translator_from_config(
     if is_typeduck_jyut6ping3_profile {
         translator = translator.with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY);
     }
-    if prediction_never_first {
-        session.engine.set_prediction_never_first(true);
+    let translator: SharedTranslator = Arc::new(translator);
+    if let Some(cache_key) = cache_key {
+        dictionary_translator_cache()
+            .lock()
+            .expect("dictionary translator cache should not be poisoned")
+            .insert(cache_key, Arc::clone(&translator));
     }
-    session.engine.add_translator(translator);
+    session.engine.add_shared_translator(translator);
+}
+
+fn cached_dictionary_translator(cache_key: &str) -> Option<SharedTranslator> {
+    dictionary_translator_cache()
+        .lock()
+        .expect("dictionary translator cache should not be poisoned")
+        .get(cache_key)
+        .map(Arc::clone)
+}
+
+fn schema_dictionary_translator_cache_key(
+    schema_config: &Value,
+    component_name: &str,
+    name_space: &str,
+) -> Option<String> {
+    let raw_dictionary_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    let dictionary_name = validate_data_resource_id(&raw_dictionary_name)?;
+    let prism_name = find_config_value(schema_config, &format!("{name_space}/prism"))
+        .and_then(config_scalar_string)
+        .and_then(|name| validate_data_resource_id(&name))
+        .unwrap_or_else(|| dictionary_name.clone());
+    let schema_fingerprint = serde_yaml::to_string(schema_config)
+        .ok()
+        .map(|schema| stable_hash_bytes(schema.as_bytes()))
+        .unwrap_or_default();
+    let mut parts = vec![
+        format!("component={component_name}"),
+        format!("namespace={name_space}"),
+        format!("schema={schema_fingerprint:016x}"),
+        format!("dictionary={dictionary_name}"),
+        format!("prism={prism_name}"),
+    ];
+    let mut visited_sources = HashSet::new();
+    append_source_dictionary_cache_signature(&mut parts, &dictionary_name, &mut visited_sources);
+    for pack in schema_dictionary_packs(schema_config, name_space) {
+        append_source_dictionary_cache_signature(&mut parts, &pack, &mut visited_sources);
+    }
+    append_runtime_file_metadata_signature(
+        &mut parts,
+        "table",
+        &format!("{dictionary_name}.table.bin"),
+    );
+    append_runtime_file_metadata_signature(&mut parts, "prism", &format!("{prism_name}.prism.bin"));
+    append_runtime_file_metadata_signature(
+        &mut parts,
+        "reverse",
+        &format!("{dictionary_name}.reverse.bin"),
+    );
+    Some(parts.join("\n"))
+}
+
+fn append_source_dictionary_cache_signature(
+    parts: &mut Vec<String>,
+    dictionary_name: &str,
+    visited: &mut HashSet<String>,
+) {
+    let Some(dictionary_name) = validate_data_resource_id(dictionary_name) else {
+        parts.push(format!("source:{dictionary_name}:invalid"));
+        return;
+    };
+    if !visited.insert(dictionary_name.clone()) {
+        return;
+    }
+    let resource_id = format!("{dictionary_name}.dict.yaml");
+    let Some((path, len, modified, bytes)) =
+        read_runtime_data_file_signature(&resource_id, HEADER_CACHE_READ_LIMIT)
+    else {
+        parts.push(format!("source:{resource_id}:missing"));
+        return;
+    };
+    parts.push(format!(
+        "source:{}:{len}:{modified}:{:016x}",
+        path.display(),
+        stable_hash_bytes(&bytes)
+    ));
+    let yaml = String::from_utf8_lossy(&bytes);
+    let (imports, vocabularies) = source_dictionary_header_dependencies(&yaml);
+    for import in imports {
+        append_source_dictionary_cache_signature(parts, &import, visited);
+    }
+    for vocabulary in vocabularies {
+        let Some(vocabulary) = validate_data_resource_id(&vocabulary) else {
+            parts.push(format!("vocabulary:{vocabulary}:invalid"));
+            continue;
+        };
+        append_runtime_file_content_signature(parts, "vocabulary", &format!("{vocabulary}.txt"));
+    }
+}
+
+fn append_runtime_file_content_signature(parts: &mut Vec<String>, role: &str, resource_id: &str) {
+    let Some((path, len, modified, bytes)) =
+        read_runtime_data_file_signature(resource_id, HEADER_CACHE_READ_LIMIT)
+    else {
+        parts.push(format!("{role}:{resource_id}:missing"));
+        return;
+    };
+    parts.push(format!(
+        "{role}:{}:{len}:{modified}:{:016x}",
+        path.display(),
+        stable_hash_bytes(&bytes)
+    ));
+}
+
+fn append_runtime_file_metadata_signature(parts: &mut Vec<String>, role: &str, resource_id: &str) {
+    let Some(resource_id) = validate_data_resource_id(resource_id) else {
+        parts.push(format!("{role}:{resource_id}:invalid"));
+        return;
+    };
+    let Some(path) = selected_runtime_data_path(&resource_id) else {
+        parts.push(format!("{role}:{resource_id}:missing"));
+        return;
+    };
+    let Ok(metadata) = fs::metadata(&path) else {
+        parts.push(format!("{role}:{}:metadata-unavailable", path.display()));
+        return;
+    };
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
+        .map_or(0, |duration| duration.as_nanos());
+    let prefix_hash = file_prefix_hash(&path, 96).unwrap_or_default();
+    parts.push(format!(
+        "{role}:{}:{}:{modified}:{prefix_hash:016x}",
+        path.display(),
+        metadata.len()
+    ));
+}
+
+fn read_runtime_data_file_signature(
+    resource_id: &str,
+    prefix_limit: usize,
+) -> Option<(std::path::PathBuf, u64, u128, Vec<u8>)> {
+    let resource_id = validate_data_resource_id(resource_id)?;
+    let path = selected_runtime_data_path(&resource_id)?;
+    let metadata = fs::metadata(&path).ok()?;
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
+        .map_or(0, |duration| duration.as_nanos());
+    let len = metadata.len();
+    let read_limit = if len <= FULL_CONTENT_CACHE_HASH_LIMIT {
+        usize::try_from(len).ok()?
+    } else {
+        prefix_limit
+    };
+    let mut file = fs::File::open(&path).ok()?;
+    let mut bytes = vec![0; read_limit];
+    let read = file.read(&mut bytes).ok()?;
+    bytes.truncate(read);
+    Some((path, len, modified, bytes))
+}
+
+fn file_prefix_hash(path: &Path, limit: usize) -> Option<u64> {
+    let mut file = fs::File::open(path).ok()?;
+    let mut bytes = vec![0; limit];
+    let read = file.read(&mut bytes).ok()?;
+    Some(stable_hash_bytes(&bytes[..read]))
+}
+
+fn source_dictionary_header_dependencies(input: &str) -> (Vec<String>, Vec<String>) {
+    let mut imports = Vec::new();
+    let mut vocabularies = Vec::new();
+    let mut active_list: Option<&str> = None;
+    for raw_line in input.lines() {
+        let trimmed = raw_line.trim();
+        if trimmed == "..." {
+            break;
+        }
+        if trimmed.is_empty() || trimmed.starts_with('#') || trimmed == "---" {
+            continue;
+        }
+        if !raw_line.chars().next().is_some_and(char::is_whitespace) {
+            active_list = None;
+        }
+        if let Some(value) = header_value(trimmed, "import_tables") {
+            collect_yaml_values(value, &mut imports);
+            if value.trim().is_empty() {
+                active_list = Some("import_tables");
+            }
+            continue;
+        }
+        if let Some(value) = header_value(trimmed, "vocabulary") {
+            collect_yaml_values(value, &mut vocabularies);
+            continue;
+        }
+        if let Some(value) = header_value(trimmed, "use_preset_vocabulary") {
+            if yaml_bool(value) == Some(true) {
+                vocabularies.push("essay".to_owned());
+            }
+            continue;
+        }
+        if let Some(target) = active_list {
+            if let Some(value) = trimmed.strip_prefix('-') {
+                if target == "import_tables" {
+                    collect_yaml_values(value, &mut imports);
+                }
+            }
+        }
+    }
+    imports.sort();
+    imports.dedup();
+    vocabularies.sort();
+    vocabularies.dedup();
+    (imports, vocabularies)
+}
+
+fn header_value<'a>(line: &'a str, key: &str) -> Option<&'a str> {
+    line.strip_prefix(key)?.strip_prefix(':')
+}
+
+fn collect_yaml_values(value: &str, output: &mut Vec<String>) {
+    let value = value.trim();
+    if value.is_empty() {
+        return;
+    }
+    if let Some(list) = value
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+    {
+        for item in list.split(',') {
+            if let Some(value) = yaml_scalar(item) {
+                output.push(value);
+            }
+        }
+    } else if let Some(value) = yaml_scalar(value) {
+        output.push(value);
+    }
+}
+
+fn yaml_scalar(value: &str) -> Option<String> {
+    let value = value.trim().trim_matches('"').trim_matches('\'').trim();
+    (!value.is_empty()).then(|| value.to_owned())
+}
+
+fn yaml_bool(value: &str) -> Option<bool> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "true" | "yes" | "on" => Some(true),
+        "false" | "no" | "off" => Some(false),
+        _ => None,
+    }
+}
+
+fn stable_hash_bytes(bytes: &[u8]) -> u64 {
+    let mut hash = 0xcbf2_9ce4_8422_2325u64;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
 }
 
 fn is_typeduck_jyut6ping3_profile(schema_config: &Value, dictionary_name: Option<&str>) -> bool {
@@ -362,45 +651,21 @@ fn install_schema_reverse_lookup_translator_from_config(
     schema_config: &Value,
     name_space: &str,
 ) {
-    let dictionary = match load_schema_table_dictionary(schema_config, name_space) {
-        DictionaryLoadOutcome::Compiled(dictionary) => dictionary,
-        DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
-            record_dictionary_source_fallback(session, reason);
-            dictionary
-        }
-        DictionaryLoadOutcome::NoUsablePath {
-            dictionary_id,
-            reason,
-        } => {
-            record_dictionary_load_failure(session, dictionary_id, reason);
-            return;
-        }
-    };
+    let raw_dictionary_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
+        .and_then(config_scalar_string)
+        .unwrap_or_default();
+    if validate_data_resource_id(&raw_dictionary_name).is_none() {
+        record_dictionary_load_failure(
+            session,
+            raw_dictionary_name,
+            DictionaryLoadFailure::InvalidResourceId,
+        );
+        return;
+    }
     let target_namespace = find_config_value(schema_config, &format!("{name_space}/target"))
         .and_then(config_scalar_string)
         .filter(|target| !target.is_empty())
         .unwrap_or_else(|| "translator".to_owned());
-    let reverse_dictionary = match load_schema_reverse_dictionary(schema_config, &target_namespace)
-        .or_else(|| {
-            Some(load_schema_table_dictionary(
-                schema_config,
-                &target_namespace,
-            ))
-        }) {
-        Some(DictionaryLoadOutcome::Compiled(dictionary)) => Some(dictionary),
-        Some(DictionaryLoadOutcome::SourceFallback { dictionary, reason }) => {
-            record_dictionary_source_fallback(session, reason);
-            Some(dictionary)
-        }
-        Some(DictionaryLoadOutcome::NoUsablePath {
-            dictionary_id,
-            reason,
-        }) => {
-            record_dictionary_load_failure(session, dictionary_id, reason);
-            None
-        }
-        None => None,
-    };
     let prefix = find_config_value(schema_config, &format!("{name_space}/prefix"))
         .and_then(config_scalar_string)
         .unwrap_or_default();
@@ -415,13 +680,43 @@ fn install_schema_reverse_lookup_translator_from_config(
             .and_then(config_scalar_bool)
             .unwrap_or(false);
     let comment_format = schema_comment_format(schema_config, name_space);
+    let lazy_schema_config = schema_config.clone();
+    let lazy_name_space = name_space.to_owned();
+    let lazy_target_namespace = target_namespace;
 
     session.engine.add_translator(
-        ReverseLookupTranslator::new(dictionary, reverse_dictionary, prefix, suffix)
-            .with_tag(tag)
-            .with_completion(enable_completion)
-            .with_comment_format(&comment_format),
+        ReverseLookupTranslator::new_lazy(
+            move || {
+                let dictionary = dictionary_from_lazy_outcome(load_schema_table_dictionary(
+                    &lazy_schema_config,
+                    &lazy_name_space,
+                ))?;
+                let reverse_dictionary =
+                    load_schema_reverse_dictionary(&lazy_schema_config, &lazy_target_namespace)
+                        .or_else(|| {
+                            Some(load_schema_table_dictionary(
+                                &lazy_schema_config,
+                                &lazy_target_namespace,
+                            ))
+                        })
+                        .and_then(dictionary_from_lazy_outcome);
+                Some((dictionary, reverse_dictionary))
+            },
+            prefix,
+            suffix,
+        )
+        .with_tag(tag)
+        .with_completion(enable_completion)
+        .with_comment_format(&comment_format),
     );
+}
+
+fn dictionary_from_lazy_outcome(outcome: DictionaryLoadOutcome) -> Option<TableDictionary> {
+    match outcome {
+        DictionaryLoadOutcome::Compiled(dictionary)
+        | DictionaryLoadOutcome::SourceFallback { dictionary, .. } => Some(dictionary),
+        DictionaryLoadOutcome::NoUsablePath { .. } => None,
+    }
 }
 
 fn install_schema_history_translator_from_config(

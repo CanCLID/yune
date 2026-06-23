@@ -649,3 +649,129 @@ ni\t你
     unsafe { RimeSetup(&reset_traits) };
     fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
+
+#[test]
+fn select_schema_reuses_built_table_translator_until_dictionary_changes() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-translator-cache");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("cache.schema.yaml"),
+        "\
+schema:
+  schema_id: cache
+  name: Cache
+engine:
+  translators:
+    - table_translator
+    - echo_translator
+translator:
+  dictionary: cache
+",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("cache.dict.yaml"),
+        "\
+---
+name: cache
+version: '0.1'
+sort: original
+columns: [code, text, weight]
+...
+
+alpha\tONE\t10
+",
+    )
+    .expect("dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("cache").expect("schema id should be valid");
+    begin_startup_trace(None);
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    let first_events = finish_startup_trace();
+    assert!(
+        first_events
+            .iter()
+            .any(|event| event.name == "translator_index_build"),
+        "first select should build the table translator"
+    );
+
+    RimeClearComposition(session_id);
+    for ch in "alpha".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+    assert_eq!(current_candidate_pairs(session_id)[0].0, "ONE");
+
+    begin_startup_trace(None);
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    let second_events = finish_startup_trace();
+    assert!(
+        !second_events
+            .iter()
+            .any(|event| event.name == "translator_index_build"),
+        "second unchanged select should reuse the cached table translator"
+    );
+
+    fs::write(
+        shared.join("cache.dict.yaml"),
+        "\
+---
+name: cache
+version: '0.1'
+sort: original
+columns: [code, text, weight]
+...
+
+alpha\tTWO\t10
+",
+    )
+    .expect("dictionary should be updated");
+
+    begin_startup_trace(None);
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    let third_events = finish_startup_trace();
+    assert!(
+        third_events
+            .iter()
+            .any(|event| event.name == "translator_index_build"),
+        "changed dictionary should miss the cache and rebuild"
+    );
+
+    RimeClearComposition(session_id);
+    for ch in "alpha".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+    assert_eq!(current_candidate_pairs(session_id)[0].0, "TWO");
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}

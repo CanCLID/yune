@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">M34 peak working set gap</title>
+  <desc id="desc">Peak working set comparison between Yune and librime in the final fair M34 after-run.</desc>
+  <style>
+    .bg { fill: #fbfaf7; }
+    .title { font: 700 26px system-ui, -apple-system, Segoe UI, sans-serif; fill: #152026; }
+    .subtitle { font: 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #51606a; }
+    .label { font: 700 16px system-ui, -apple-system, Segoe UI, sans-serif; fill: #22313a; }
+    .value { font: 700 20px system-ui, -apple-system, Segoe UI, sans-serif; fill: #152026; }
+    .note { font: 14px system-ui, -apple-system, Segoe UI, sans-serif; fill: #51606a; }
+    .yune { fill: #0b6e6b; }
+    .librime { fill: #c05a2b; }
+    .axis { stroke: #d6d0c6; stroke-width: 1; }
+  </style>
+  <rect width="900" height="420" class="bg"/>
+  <text x="32" y="48" class="title">Memory is still the biggest visible debt</text>
+  <text x="32" y="76" class="subtitle">Maximum peak working set across final fair M34 after-run rows.</text>
+  <line x1="220" y1="142" x2="780" y2="142" class="axis"/>
+  <text x="32" y="150" class="label">Yune after M34</text>
+  <rect x="220" y="118" width="500.0" height="48" rx="5" class="yune"/>
+  <text x="738.0" y="149" class="value">182.3 MB</text>
+  <line x1="220" y1="242" x2="780" y2="242" class="axis"/>
+  <text x="32" y="250" class="label">librime 1.17.0</text>
+  <rect x="220" y="218" width="61.9" height="48" rx="5" class="librime"/>
+  <text x="299.9" y="249" class="value">22.6 MB</text>
+  <text x="32" y="336" class="note">Yune peaks at about 8.1x librime in this harness. M34 did not land compiled storage, prism lookup, or mmap.</text>
+</svg>

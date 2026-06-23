@@ -13,6 +13,9 @@ runtime change, or public-demo delivery work.
 - `after-yune-vs-librime/` - final fair cross-engine M34 after-run.
 - `frontend-baselines-before.txt` - native `frontend_baselines` before log.
 - `frontend-baselines-after-final.txt` - final native `frontend_baselines` log.
+- `m34-cross-engine-gap.svg` - final fair Yune/librime latency gap chart.
+- `m34-native-improvement.svg` - native before/after watched-row chart.
+- `m34-working-set-gap.svg` - final fair peak working-set gap chart.
 - `baseline.md` - commands and core before/after numbers.
 - `hot-path-attribution.md` - owner split and lever decision.
 - `hot-path-attribution-diagnostic.txt` - temporary test-only `ni`/`hao`

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" role="img" aria-labelledby="title desc">
+  <title id="title">M34 fair Yune versus librime median latency gap</title>
+  <desc id="desc">Log-scale lollipop chart comparing final M34 Yune and librime median latency across key sequence, session, and startup workloads.</desc>
+  <style>
+    .bg { fill: #fbfaf7; }
+    .title { font: 700 28px system-ui, -apple-system, Segoe UI, sans-serif; fill: #152026; }
+    .subtitle { font: 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #51606a; }
+    .label { font: 600 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #22313a; }
+    .small, .tick { font: 12px system-ui, -apple-system, Segoe UI, sans-serif; fill: #5a6770; }
+    .ratio { font: 700 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #2f3c44; }
+    .grid { stroke: #d6d0c6; stroke-width: 1; }
+    .gap { stroke: #b9c1c2; stroke-width: 3; stroke-linecap: round; }
+    .yune { fill: #0b6e6b; stroke: #064c4a; stroke-width: 1.5; }
+    .librime { fill: #c05a2b; stroke: #8d3c1b; stroke-width: 1.5; }
+    .yuneText { fill: #0b5d5a; }
+    .librimeText { fill: #9b431f; }
+    .legend { font: 700 13px system-ui, -apple-system, Segoe UI, sans-serif; fill: #2f3c44; }
+    .note { font: 13px system-ui, -apple-system, Segoe UI, sans-serif; fill: #51606a; }
+  </style>
+  <rect width="1120" height="620" class="bg"/>
+  <text x="32" y="46" class="title">M34 final fair comparison: Yune still trails librime</text>
+  <text x="32" y="75" class="subtitle">Median latency through the same librime-shaped C API harness, log scale, lower is faster.</text>
+  <circle cx="32" cy="105" r="7" class="yune"/><text x="47" y="110" class="legend">Yune after M34</text>
+  <circle cx="180" cy="105" r="7" class="librime"/><text x="195" y="110" class="legend">librime 1.17.0</text>
+  <line x1="300.0" y1="106" x2="300.0" y2="496" class="grid"/><text x="300.0" y="524" class="tick" text-anchor="middle">10 us</text>
+<line x1="455.0" y1="106" x2="455.0" y2="496" class="grid"/><text x="455.0" y="524" class="tick" text-anchor="middle">100 us</text>
+<line x1="610.0" y1="106" x2="610.0" y2="496" class="grid"/><text x="610.0" y="524" class="tick" text-anchor="middle">1 ms</text>
+<line x1="765.0" y1="106" x2="765.0" y2="496" class="grid"/><text x="765.0" y="524" class="tick" text-anchor="middle">10 ms</text>
+<line x1="920.0" y1="106" x2="920.0" y2="496" class="grid"/><text x="920.0" y="524" class="tick" text-anchor="middle">100 ms</text>
+  <text x="32" y="140" class="label">hao key sequence</text>
+  <line x1="384.5" y1="135" x2="778.5" y2="135" class="gap"/>
+  <circle cx="384.5" cy="135" r="7" class="librime"/>
+  <circle cx="778.5" cy="135" r="8" class="yune"/>
+  <text x="396.5" y="123" class="small librimeText">35.1 us</text>
+  <text x="790.5" y="158" class="small yuneText">12.22 ms</text>
+  <text x="950" y="140" class="ratio">348.1x slower</text>
+  <text x="32" y="222" class="label">ni key sequence</text>
+  <line x1="371.0" y1="217" x2="727.1" y2="217" class="gap"/>
+  <circle cx="371.0" cy="217" r="7" class="librime"/>
+  <circle cx="727.1" cy="217" r="8" class="yune"/>
+  <text x="383.0" y="205" class="small librimeText">28.7 us</text>
+  <text x="739.1" y="240" class="small yuneText">5.69 ms</text>
+  <text x="950" y="222" class="ratio">198.4x slower</text>
+  <text x="32" y="304" class="label">zhongguo key sequence</text>
+  <line x1="631.7" y1="299" x2="851.1" y2="299" class="gap"/>
+  <circle cx="631.7" cy="299" r="7" class="librime"/>
+  <circle cx="851.1" cy="299" r="8" class="yune"/>
+  <text x="643.7" y="287" class="small librimeText">1.38 ms</text>
+  <text x="863.1" y="322" class="small yuneText">35.91 ms</text>
+  <text x="950" y="304" class="ratio">26.0x slower</text>
+  <text x="32" y="386" class="label">session create/select/destroy</text>
+  <line x1="834.6" y1="381" x2="868.8" y2="381" class="gap"/>
+  <circle cx="834.6" cy="381" r="7" class="librime"/>
+  <circle cx="868.8" cy="381" r="8" class="yune"/>
+  <text x="840.0" y="369" class="small librimeText">28.12 ms</text>
+  <text x="880.8" y="404" class="small yuneText">46.74 ms</text>
+  <text x="950" y="386" class="ratio">1.7x slower</text>
+  <text x="32" y="468" class="label">startup/runtime-ready</text>
+  <line x1="839.7" y1="463" x2="869.4" y2="463" class="gap"/>
+  <circle cx="839.7" cy="463" r="7" class="librime"/>
+  <circle cx="869.4" cy="463" r="8" class="yune"/>
+  <text x="840.0" y="451" class="small librimeText">30.32 ms</text>
+  <text x="881.4" y="486" class="small yuneText">47.13 ms</text>
+  <text x="950" y="468" class="ratio">1.6x slower</text>
+  <text x="32" y="580" class="note">Per-key rows remain the main gap: hao 348.1x slower, ni 198.4x slower, zhongguo 26.0x slower.</text>
+</svg>

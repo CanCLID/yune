@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700" role="img" aria-labelledby="title desc">
+  <title id="title">M34 native benchmark before and after movement</title>
+  <desc id="desc">Percentage movement for selected native watched rows. Negative values are faster after M34; positive values are slower.</desc>
+  <style>
+    .bg { fill: #fbfaf7; }
+    .title { font: 700 28px system-ui, -apple-system, Segoe UI, sans-serif; fill: #152026; }
+    .subtitle { font: 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #51606a; }
+    .label { font: 600 15px system-ui, -apple-system, Segoe UI, sans-serif; fill: #22313a; }
+    .small, .tick { font: 12px system-ui, -apple-system, Segoe UI, sans-serif; fill: #5a6770; }
+    .pct { font: 700 14px system-ui, -apple-system, Segoe UI, sans-serif; }
+    .grid { stroke: #d6d0c6; stroke-width: 1; }
+    .zero { stroke: #34464f; stroke-width: 2; }
+    .improve { fill: #0b6e6b; }
+    .regress { fill: #c9852e; }
+    .improveText { fill: #0b5d5a; }
+    .regressText { fill: #9a5c11; }
+    .note { font: 13px system-ui, -apple-system, Segoe UI, sans-serif; fill: #51606a; }
+  </style>
+  <rect width="1120" height="700" class="bg"/>
+  <text x="32" y="46" class="title">M34 achievements: bounded native wins, one watched regression</text>
+  <text x="32" y="75" class="subtitle">Selected native medians from frontend_baselines; negative means faster after M34.</text>
+  <text x="460" y="103" class="small">faster</text>
+  <text x="818" y="103" class="small">slower</text>
+  <line x1="222.0" y1="110" x2="222.0" y2="628" class="grid"/><text x="222.0" y="656" class="tick" text-anchor="middle">-40%</text>
+<line x1="314.0" y1="110" x2="314.0" y2="628" class="grid"/><text x="314.0" y="656" class="tick" text-anchor="middle">-30%</text>
+<line x1="406.0" y1="110" x2="406.0" y2="628" class="grid"/><text x="406.0" y="656" class="tick" text-anchor="middle">-20%</text>
+<line x1="498.0" y1="110" x2="498.0" y2="628" class="grid"/><text x="498.0" y="656" class="tick" text-anchor="middle">-10%</text>
+<line x1="590.0" y1="110" x2="590.0" y2="628" class="grid"/><text x="590.0" y="656" class="tick" text-anchor="middle">0%</text>
+<line x1="682.0" y1="110" x2="682.0" y2="628" class="grid"/><text x="682.0" y="656" class="tick" text-anchor="middle">10%</text>
+  <line x1="590.0" y1="104" x2="590.0" y2="628" class="zero"/>
+  <text x="32" y="147" class="label">ni full ABI</text>
+  <rect x="262.1" y="129" width="327.9" height="26" rx="4" class="improve"/>
+  <text x="254.13975287601198" y="147" text-anchor="end" class="pct improveText">-35.6%</text>
+  <text x="870" y="147" class="small">1.76 ms -> 1.13 ms</text>
+  <text x="32" y="201" class="label">zhongguo full ABI</text>
+  <rect x="548.1" y="183" width="41.9" height="26" rx="4" class="improve"/>
+  <text x="540.0786888860888" y="201" text-anchor="end" class="pct improveText">-4.6%</text>
+  <text x="870" y="201" class="small">12.70 ms -> 12.12 ms</text>
+  <text x="32" y="255" class="label">TypeDuck hai</text>
+  <rect x="590.0" y="237" width="52.9" height="26" rx="4" class="regress"/>
+  <text x="650.8749806887787" y="255" text-anchor="start" class="pct regressText">+5.7%</text>
+  <text x="870" y="255" class="small">18.39 ms -> 19.45 ms</text>
+  <text x="32" y="309" class="label">TypeDuck jigaajiusihaa</text>
+  <rect x="535.2" y="291" width="54.8" height="26" rx="4" class="improve"/>
+  <text x="527.2325187671751" y="309" text-anchor="end" class="pct improveText">-6.0%</text>
+  <text x="870" y="309" class="small">29.94 ms -> 28.16 ms</text>
+  <text x="32" y="363" class="label">TypeDuck correction</text>
+  <rect x="539.8" y="345" width="50.2" height="26" rx="4" class="improve"/>
+  <text x="531.8490607452909" y="363" text-anchor="end" class="pct improveText">-5.5%</text>
+  <text x="870" y="363" class="small">29.65 ms -> 28.03 ms</text>
+  <text x="32" y="417" class="label">select schema total</text>
+  <rect x="543.3" y="399" width="46.7" height="26" rx="4" class="improve"/>
+  <text x="535.2784659341758" y="417" text-anchor="end" class="pct improveText">-5.1%</text>
+  <text x="870" y="417" class="small">240 ms -> 228 ms</text>
+  <text x="32" y="471" class="label">translator install</text>
+  <rect x="533.3" y="453" width="56.7" height="26" rx="4" class="improve"/>
+  <text x="525.272754293964" y="471" text-anchor="end" class="pct improveText">-6.2%</text>
+  <text x="870" y="471" class="small">188 ms -> 177 ms</text>
+  <text x="32" y="525" class="label">spelling expand</text>
+  <rect x="520.9" y="507" width="69.1" height="26" rx="4" class="improve"/>
+  <text x="512.8991933162841" y="525" text-anchor="end" class="pct improveText">-7.5%</text>
+  <text x="870" y="525" class="small">122 ms -> 112 ms</text>
+  <text x="32" y="579" class="label">index build</text>
+  <rect x="561.0" y="561" width="29.0" height="26" rx="4" class="improve"/>
+  <text x="552.9565068199365" y="579" text-anchor="end" class="pct improveText">-3.2%</text>
+  <text x="870" y="579" class="small">11.66 ms -> 11.29 ms</text>
+  <text x="32" y="686" class="note">The strongest landed win is ni full ABI: 1.760 ms -> 1.133 ms (-35.6%). TypeDuck hai is recorded as a +5.7% regression to keep the public claim honest.</text>
+</svg>

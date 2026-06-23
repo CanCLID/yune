@@ -8,6 +8,7 @@ Evidence:
 - M34 before cross-engine rerun: [`evidence/m34-queryable-table-prism/baseline-yune-vs-librime/`](./evidence/m34-queryable-table-prism/baseline-yune-vs-librime/)
 - M34 after cross-engine rerun: [`evidence/m34-queryable-table-prism/after-yune-vs-librime/`](./evidence/m34-queryable-table-prism/after-yune-vs-librime/)
 - M34 native logs: [`evidence/m34-queryable-table-prism/frontend-baselines-before.txt`](./evidence/m34-queryable-table-prism/frontend-baselines-before.txt) and [`evidence/m34-queryable-table-prism/frontend-baselines-after-final.txt`](./evidence/m34-queryable-table-prism/frontend-baselines-after-final.txt)
+- M34 visualizations: [`m34-cross-engine-gap.svg`](./evidence/m34-queryable-table-prism/m34-cross-engine-gap.svg), [`m34-native-improvement.svg`](./evidence/m34-queryable-table-prism/m34-native-improvement.svg), and [`m34-working-set-gap.svg`](./evidence/m34-queryable-table-prism/m34-working-set-gap.svg)
 
 ## Public summary
 
@@ -35,6 +36,31 @@ Final fair M34 cross-engine after-run:
 - Session create/select/destroy: Yune `46,743.400 us`, librime `28,121.800 us`; Yune is `1.7x` slower.
 - Warm startup/runtime-ready: Yune `47,126.800 us`, librime `30,315.200 us`; Yune is `1.6x` slower.
 - Peak working set: Yune `182,333,440 bytes`, librime `22,585,344 bytes`; Yune peaks at about `8.1x` librime.
+
+## Visual summary
+
+These charts are generated from the final M34 evidence bundle, not from a
+browser/runtime run. They support the native engine-performance claim only.
+
+![M34 final fair Yune versus librime median latency gap](./evidence/m34-queryable-table-prism/m34-cross-engine-gap.svg)
+
+The fair cross-engine chart is intentionally log-scale. It shows that M34 made
+the comparison honest and kept the public per-key gap visible: Yune remains
+`348.1x` slower on `hao`, `198.4x` slower on `ni`, and `26.0x` slower on
+`zhongguo`.
+
+![M34 native benchmark before and after movement](./evidence/m34-queryable-table-prism/m34-native-improvement.svg)
+
+The native watched-row chart is the achievement view. M34's clearest landed win
+is the bounded first-page `ni` full-ABI path, from `1,760.250 us` to
+`1,132.950 us` (`-35.6%`). It also records the TypeDuck `hai` regression
+(`+5.7%`) rather than hiding it.
+
+![M34 peak working set gap](./evidence/m34-queryable-table-prism/m34-working-set-gap.svg)
+
+The memory chart is the main unresolved gap: Yune peaks at about `8.1x` librime
+in the fair harness. M34 did not land compiled storage, prism lookup, or mmap,
+so this chart should remain visible in public material.
 
 ## Methodology
 

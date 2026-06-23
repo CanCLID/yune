@@ -15,6 +15,8 @@ On this shared workload, Yune is not faster than upstream librime in any measure
 - Session create/select/destroy median: Yune `2.761s`; upstream librime `0.024s` (`115.1x` faster for librime).
 - Key-sequence median latency: librime is `23.0x` to `312.9x` faster across `ni`, `hao`, and `zhongguo`.
 
+Fairness note (added 2026-06-22): the startup, session, and resident-memory rows are partly inflated by Yune eager-loading the `stroke` reverse-lookup dictionary (~9.5 MiB) that upstream librime lazy-skips for these inputs (see Caveats). The per-key rows are unaffected. A like-for-like rerun is tracked as M30's successor in [`../plans/m33-plan-engine-native-lookup-performance.md`](../plans/m33-plan-engine-native-lookup-performance.md) (gate `M33-PERF-08`).
+
 What should not be claimed from this benchmark:
 
 - No TypeDuck-Web browser startup or typing win is shown here.
@@ -22,7 +24,7 @@ What should not be claimed from this benchmark:
 - No cold deploy/build timing is shown here; both engines use already-built `luna_pinyin` assets.
 - No pure engine-internal comparison is shown here; both engines are measured through the librime-shaped C API.
 
-The practical recommendation is to proceed to P2-WIN-02. M30 should stay closed as an engine-representation memory win for the TypeDuck-expanded-table workload, not as a browser typing-latency win. If a future benchmark-driven engine task is opened, the concrete owner exposed here is upstream-`luna_pinyin` schema/session setup and key processing through the ABI, not the already-closed M30 storage slice.
+The practical recommendation is to proceed to P2-WIN-02 first, then use M33 for the named benchmark-driven engine task exposed here: upstream-`luna_pinyin` schema/session setup, reverse-lookup load fairness, and key processing through the ABI. M30 should stay closed as an engine-representation memory win for the TypeDuck-expanded-table workload, not as a browser typing-latency win.
 
 ## Methodology
 
@@ -146,8 +148,9 @@ That result does not invalidate M30. M30's acceptance was about an engine-repres
 - The benchmark covers only comparable upstream-supported `luna_pinyin` workloads. It does not cover TypeDuck-only `jyut6ping3`, Windows IME integration, browser/WASM runtime behavior, or AI-native paths.
 - Both engines use the same C# host and C ABI calls, but memory counters are process-level and include host overhead.
 - The run uses a warm/no-deploy shared asset setup. Cold deployment and dictionary rebuild are intentionally out of scope, but Yune may still parse source YAML as part of its current fallback path when it cannot consume an upstream compiled section.
+- Reverse-lookup load asymmetry (not yet controlled). `luna_pinyin` configures a `stroke` reverse lookup. Yune eager-loads `stroke` (~9.5 MiB: `stroke.table.bin` 4.55 MiB + `stroke.prism.bin` 3.50 MiB + `stroke.reverse.bin` 1.50 MiB) into the heap at schema-select, while upstream librime lazy-loads the reverse dictionary only on first reverse-lookup query (`src/rime/gear/reverse_lookup_translator.cc:147`), which the `ni`/`hao`/`zhongguo` workloads never trigger. The startup, session, and resident-memory rows therefore include `stroke` for Yune but not for librime. Both engines select the same schema (`luna_pinyin`) over identical copied assets, and the test directory contains no `cangjie`/`jyut6ping3` data; this asymmetry inflates the gap but does not create it (luna_pinyin alone keeps Yune slower). A corrected like-for-like rerun is tracked by gate `M33-PERF-08` in [`../plans/m33-plan-engine-native-lookup-performance.md`](../plans/m33-plan-engine-native-lookup-performance.md).
 - The upstream binary is the pinned `1.17.0` oracle asset. The local upstream checkout was verified only to confirm provenance and the tag commit; the newer local checkout head was not benchmarked.
 
 ## Recommendation
 
-Proceed to P2-WIN-02. Do not schedule more generic engine-startup optimization solely because this report exists. Open a new engine-performance plan only if a named target needs it and the plan names the concrete owner exposed here: upstream-`luna_pinyin` schema/session setup, translator installation, or key-processing cost through the ABI.
+Proceed to P2-WIN-02 first. After that, M33 is the named follow-up for the concrete owners exposed here: upstream-`luna_pinyin` schema/session setup, reverse-lookup load fairness, translator installation, and key-processing cost through the ABI. Keep M30 closed and avoid generic, unmeasured startup work outside the M33 gates.

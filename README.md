@@ -75,6 +75,24 @@ The Phase 2 Windows plan is the next platform/product planning artifact.
 - TypeDuck-Windows: packaged Yune DLL/header smoke, build/link evidence, and
   stock TypeDuck server/client IPC smoke through the TypeDuck profile ABI.
 
+## Performance
+
+Yune treats librime as a *behavioral* oracle, not a performance oracle. The
+current upstream-`luna_pinyin` comparison shows a real native-engine gap to
+close, but that baseline also has a known reverse-lookup load asymmetry:
+Yune currently eager-loads the `stroke` reverse dictionary while upstream
+librime lazy-loads it only on first reverse lookup. The public headline numbers
+should therefore wait for the M33 fairness-controlled rerun.
+
+Current analysis and evidence:
+
+- [docs/reports/yune-vs-librime-performance.md](docs/reports/yune-vs-librime-performance.md)
+  records the current measurement and caveats.
+- [docs/reports/yune-vs-librime-root-cause-analysis.md](docs/reports/yune-vs-librime-root-cause-analysis.md)
+  explains the root causes and M33 optimization owners.
+- [docs/plans/m33-plan-engine-native-lookup-performance.md](docs/plans/m33-plan-engine-native-lookup-performance.md)
+  owns the next fairness/performance pass.
+
 ## AI-Native Layer
 
 The AI foundation is already present, but intentionally conservative:

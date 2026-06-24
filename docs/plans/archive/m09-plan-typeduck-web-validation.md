@@ -23,7 +23,7 @@ Verified present on `main`:
 | Rust C/WASM adapter | `crates/yune-rime-api/src/typeduck_web.rs` | Exports `yune_typeduck_*`; emits JSON `{highlighted, candidates:[{text,comment}], …}`. Native contract tests pass. |
 | TypeScript runtime | `packages/yune-typeduck-runtime/src/` (`response.ts`, `keys.ts`) | Parses per-candidate `comment`; `TypeDuckContext` exposes `highlighted` + `candidates`; key/mask mapping (incl. the recent `BackSpace` alias). |
 | WASM build script | `scripts/typeduck-wasm-build.sh` | Emscripten / `wasm32-unknown-emscripten`; export list in `scripts/typeduck-exports.txt`. |
-| Upstream app seam | tracked source: `third_party/typeduck-web/yune-integration/adapter.ts`; patch: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`; ignored checkout: `third_party/typeduck-web/source/src/yune-integration/adapter.ts` | Wires TypeDuck-Web's input engine to the Yune bridge. The tracked source/patch are the versions to fix in WI-2; the ignored checkout may be hot-patched locally but will not land in git. |
+| Upstream app seam | tracked source: `apps/yune-web/yune-integration/adapter.ts`; patch: `apps/yune-web/patches/yune-web-runtime.patch`; ignored checkout: `apps/yune-web/source/src/yune-integration/adapter.ts` | Wires TypeDuck-Web's input engine to the Yune bridge. The tracked source/patch are the versions to fix in WI-2; the ignored checkout may be hot-patched locally but will not land in git. |
 | Findings + blockers | [`m09-findings-typeduck-web-integration.md`](./m09-findings-typeduck-web-integration.md) | HR-5 real-assets browser matrix records PASS evidence for composition, paging, selection, deletion, deploy, persistence, reload, and dictionary-comment rendering. |
 | HR-7 recommendation | [`archive/m09-record-ai-native-frontend-readiness.md`](./m09-record-ai-native-frontend-readiness.md) | The evidence-based GO WITH CONDITIONS record that supersedes the tooling-blocked Phase 10 NO-GO. |
 
@@ -54,7 +54,7 @@ The single thing that blocked Phase 10 was **no Emscripten toolchain** → no WA
 Claude review found that the WI-4 browser matrix exercised Yune's placeholder echo schema instead of the real TypeDuck `jyut6ping3_mobile` dictionary. Treat the original WI-4 matrix as partial evidence until the rows below land, one commit per item:
 
 - [x] **HR-1 real assets** — preload real TypeDuck `jyut6ping3_mobile` source schema/dictionary plus deployed build YAML, fix the NUL `alternative_select_keys` context export blocker, and prove real browser candidates render (`nei` -> `你`, `呢`, `尼`).
-- [x] **HR-1b committed browser evidence** — refresh `third_party/typeduck-web/e2e/results/` with real-assets console, DOM, log, and screenshot evidence so the saved artifacts match the HR-1 claim.
+- [x] **HR-1b committed browser evidence** — refresh `apps/yune-web/e2e/results/` with real-assets console, DOM, log, and screenshot evidence so the saved artifacts match the HR-1 claim.
 - [x] **HR-2 setOption** — add the `yune_typeduck_*` set-option export, TypeScript wrapper method, adapter wiring, and native/runtime tests.
 - [x] **HR-3 deploy=true** — browser `deploy()` now returns true with real assets; root cause was the worker preload list missing `jyut6ping3.schema.yaml`, which TypeDuck's real workspace deployment reaches through `default.custom.yaml`.
 - [x] **HR-4 live persistence** — prove before-init and after-mutation IDBFS sync in the live worker path, including reload survival.
@@ -95,7 +95,7 @@ Claude review found that the WI-4 browser matrix exercised Yune's placeholder ec
 
 ## Work Item 2 — Fix and reapply the TypeDuck-Web adapter shape mismatches
 
-The upstream seam reads a shape the runtime does not emit. Fix the tracked source `third_party/typeduck-web/yune-integration/adapter.ts` (re-grep; ~lines 177-184), then regenerate/apply the TypeDuck-Web patch so the ignored checkout receives the same change before browser E2E:
+The upstream seam reads a shape the runtime does not emit. Fix the tracked source `apps/yune-web/yune-integration/adapter.ts` (re-grep; ~lines 177-184), then regenerate/apply the TypeDuck-Web patch so the ignored checkout receives the same change before browser E2E:
 
 | Bug | Current | Correct |
 | --- | --- | --- |

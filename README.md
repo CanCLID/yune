@@ -15,7 +15,7 @@ the named target set:
   compatibility;
 - TypeDuck-HK/librime `v1.1.2` for the TypeDuck `jyut6ping3` compatibility
   profile;
-- TypeDuck-Web browser integration, including the default-off local AI second
+- `yune-web` browser integration, including the default-off local AI second
   pass;
 - TypeDuck-Windows backend compatibility smoke through the named TypeDuck
   profile ABI.
@@ -26,8 +26,9 @@ frontend/product development, ongoing dogfooding, AI productization, and
 additional compatibility targets when a real frontend or schema needs them.
 
 Read [docs/roadmap.md](docs/roadmap.md) for the live milestone state. The first
-TypeDuck-Web dogfooding batch, M24, is complete and archived; future web
-dogfood reports should start a new scoped plan rather than reopening Phase 1.
+historical TypeDuck-Web-derived dogfooding batch, M24, is complete and
+archived; future `yune-web` dogfood reports should start a new scoped plan
+rather than reopening Phase 1.
 The Phase 2 Windows plan is the next platform/product planning artifact.
 
 ## Compatibility Model
@@ -47,10 +48,10 @@ The Phase 2 Windows plan is the next platform/product planning artifact.
 | Path | Purpose |
 |---|---|
 | `crates/yune-core` | Deterministic Rust engine: schema-driven processors, translators, filters, candidates, UserDB, OpenCC subset, dictionary parsing/writing, spelling algebra, AI staging, and ranking hooks. |
-| `crates/yune-rime-api` | Librime-shaped C ABI: session lifecycle, config/deploy/schema APIs, function tables, TypeDuck profile ABI, native frontend tests, and the TypeDuck-Web WASM-facing API. |
+| `crates/yune-rime-api` | Librime-shaped C ABI: session lifecycle, config/deploy/schema APIs, function tables, TypeDuck profile ABI, native frontend tests, and the `yune-web` WASM-facing API. |
 | `crates/yune-cli` | CLI surrogate for driving core or ABI paths and comparing checked-in fixtures. |
-| `packages/yune-typeduck-runtime` | TypeScript wrapper around the TypeDuck-Web WASM API. |
-| `third_party/typeduck-web` | Internal TypeDuck-Web dogfood playground integration, patch, adapter, browser tests, and evidence. |
+| `packages/yune-typeduck-runtime` | TypeScript wrapper around the `yune-web` WASM API. |
+| `apps/yune-web` | Canonical `yune-web` browser harness: upstream-derived shell, Yune patch, adapter, browser tests, public-demo package, and evidence. |
 | `docs` | Roadmap, decisions, requirements, conventions, fork-parity ledger, and execution plans. |
 
 ## What Works
@@ -70,7 +71,7 @@ The Phase 2 Windows plan is the next platform/product planning artifact.
 - C ABI compatibility: upstream-shaped default `RimeApi`, `RimeLeversApi`,
   config/context/candidate/session/deploy APIs, dynamic-loader tests, and
   frontend-shaped lifecycle tests.
-- TypeDuck-Web: Vite/React/Tailwind dogfood app, Yune runtime adapter, browser
+- yune-web: Vite/React/Tailwind upstream-derived app, Yune runtime adapter, browser
   evidence, multi-schema playground behavior, and default-off local AI rows.
 - TypeDuck-Windows: packaged Yune DLL/header smoke, build/link evidence, and
   stock TypeDuck server/client IPC smoke through the TypeDuck profile ABI.
@@ -102,7 +103,7 @@ The AI foundation is already present, but intentionally conservative:
 - M11 added the core/CLI AI layer: provider trait, local/mock providers,
   staged input-keyed results, privacy classification, separate AI memory, and
   no classic-path auto-commit.
-- M13 exposes that layer in TypeDuck-Web as a default-off, local-only,
+- M13 exposes that layer in the web harness now canonical as `yune-web`: default-off, local-only,
   second-pass `stage_ai` flow. Classic candidates render first; AI rows are
   source-labeled and never become the default commit.
 - Remote providers, richer contextual translation, native frontend AI exposure,
@@ -136,8 +137,8 @@ cargo run -p yune-cli -- frontend `
   --sequence "nihao "
 ```
 
-For TypeDuck-Web browser work, read
-[third_party/typeduck-web/e2e/yune-browser-smoke.md](third_party/typeduck-web/e2e/yune-browser-smoke.md)
+For `yune-web` browser work, read
+[apps/yune-web/e2e/yune-browser-smoke.md](apps/yune-web/e2e/yune-browser-smoke.md)
 and the current plan or archived M24 baseline under `docs/plans/`.
 
 ## Key Documentation
@@ -161,7 +162,7 @@ and the current plan or archived M24 baseline under `docs/plans/`.
 - Remote AI providers without explicit privacy/product gates.
 - Native frontend AI exposure before a named platform track proves the UX and
   safety model.
-- Treating TypeDuck-Web, TypeDuck-Windows, iOS, or other frontend repos as
+- Treating the TypeDuck-Web product repo, TypeDuck-Windows, iOS, or other frontend repos as
   engine semantics. They are product/platform tracks that consume Yune.
 
 ## License

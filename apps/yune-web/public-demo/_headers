@@ -1,0 +1,11 @@
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/schema/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/schema-asset-manifest.json
+  Cache-Control: public, max-age=300
+
+/*
+  Cache-Control: public, max-age=0, must-revalidate

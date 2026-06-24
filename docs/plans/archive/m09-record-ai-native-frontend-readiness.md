@@ -22,13 +22,13 @@ The shared comment path is also covered: HR-6 adds a TypeDuck-HK/librime v1.1.2 
 
 - AI-native behavior remains disabled by default in real frontends until the separate M11 provider, ranking, privacy, and fallback contracts are proven through the CLI slice and explicitly enabled.
 - The five broader Cantonese/Jyutping parity cases remain explicit ignored tests pending dedicated TypeDuck v1.1.2 oracle captures. They do not block the TypeDuck-Web browser matrix, but they do block claiming full Cantonese parity.
-- Future browser claims still require committed real-browser, real-asset artifacts under `third_party/typeduck-web/e2e/results/`.
+- Future browser claims still require committed real-browser, real-asset artifacts under `apps/yune-web/e2e/results/`.
 
 ## Evidence
 
-- `third_party/typeduck-web/e2e/results/hr5-real-assets-matrix.json`
-- `third_party/typeduck-web/e2e/results/screenshot-hr5-dictionary-panel.png`
-- `third_party/typeduck-web/e2e/results/screenshot-hr5-after-delete.png`
+- `apps/yune-web/e2e/results/hr5-real-assets-matrix.json`
+- `apps/yune-web/e2e/results/screenshot-hr5-dictionary-panel.png`
+- `apps/yune-web/e2e/results/screenshot-hr5-after-delete.png`
 - `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json`
 - `crates/yune-core/tests/fixtures/typeduck-v1.1.2/reverse-lookup-prompt.json`
 - `docs/plans/archive/m09-findings-typeduck-web-integration.md`

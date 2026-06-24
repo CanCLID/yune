@@ -65,9 +65,9 @@ Out of scope:
 - `crates/yune-core/tests/fixtures/upstream-jyutping/`: new hybrid upstream-engine plus Jyutping source-assets fixture family.
 - `crates/yune-rime-api/tests/typeduck_web.rs`: TypeDuck-Web/native API regression tests.
 - `scripts/`: capture script for local upstream librime + Jyutping assets if no existing script can be reused.
-- `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`: browser evidence.
-- `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/`: evidence folder.
-- `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`: regenerate only if TypeDuck-Web source changes.
+- `apps/yune-web/e2e/yune-typeduck.spec.ts`: browser evidence.
+- `apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/`: evidence folder.
+- `apps/yune-web/patches/yune-web-runtime.patch`: regenerate only if TypeDuck-Web source changes.
 
 ## Implementation Tasks
 
@@ -76,7 +76,7 @@ Out of scope:
 **Files:**
 
 - Modify: `docs/decisions.md`
-- Create: `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/target-decision.md`
+- Create: `apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/target-decision.md`
 
 - [x] Step 0.1: Add the decision text before code changes.
 
@@ -365,7 +365,7 @@ Expected:
 - Create: `crates/yune-core/tests/fixtures/upstream-jyutping/oracle-manifest.json`
 - Create when capture succeeds: `crates/yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json`
 - Modify: `crates/yune-core/tests/oracle_fixture_provenance.rs`
-- Create: `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/oracle-capture.md`
+- Create: `apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/oracle-capture.md`
 
 - [x] Step 2.1: Stage upstream 1.17.0 release assets if missing.
 
@@ -415,7 +415,7 @@ Expected:
 
 - At least one source-YAML directory is found.
 - The chosen directory contains `jyut6ping3_mobile.schema.yaml`, `jyut6ping3.schema.yaml`, and `jyut6ping3.dict.yaml`.
-- Do not use `third_party/typeduck-web/source/public/schema` for this spike; that tree contains browser/deployed compiled assets, not the source YAML upstream deployer consumes.
+- Do not use `apps/yune-web/source/public/schema` for this spike; that tree contains browser/deployed compiled assets, not the source YAML upstream deployer consumes.
 
 If no directory is found, prepare the source under the upstream oracle cache and stop after recording the missing-input blocker in `oracle-capture.md`:
 
@@ -436,7 +436,7 @@ param(
   [string]$JyutpingSchemaSource,
   [string[]]$DependencySource = @(),
   [string]$Output = "crates\yune-core\tests\fixtures\upstream-jyutping\jyutping-m28-followup-composition.json",
-  [string]$Evidence = "third_party\typeduck-web\e2e\results\m28-follow-up-upstream-jyutping\oracle-capture.md"
+  [string]$Evidence = "apps\yune-web\e2e\results\m28-follow-up-upstream-jyutping\oracle-capture.md"
 )
 
 $ErrorActionPreference = "Stop"
@@ -773,7 +773,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\capture-upstream-jyu
 Then review:
 
 - `crates/yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json`
-- `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/oracle-capture.md`
+- `apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/oracle-capture.md`
 
 Acceptance:
 
@@ -888,7 +888,7 @@ Add temporary debug output only inside a local test or evidence helper, not prod
 Record the result in:
 
 ```text
-third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/phrase-prefix-diagnosis.md
+apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/phrase-prefix-diagnosis.md
 ```
 
 Expected:
@@ -945,10 +945,10 @@ Expected:
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Modify if source changed: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`
-- Create: `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/browser-space-default-confirm.json`
-- Create: `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/browser-upstream-ranking.json`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Modify if source changed: `apps/yune-web/patches/yune-web-runtime.patch`
+- Create: `apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/browser-space-default-confirm.json`
+- Create: `apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/browser-upstream-ranking.json`
 
 - [x] Step 5.1: Add Space/default-confirm browser smoke.
 
@@ -989,7 +989,7 @@ Save `browser-upstream-ranking.json` with candidate rows and option state.
 Run:
 
 ```powershell
-$env:TYPEDUCK_APP_URL='http://localhost:5173/web/'; npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M28 FOLLOW-UP" --workers=1
+$env:YUNE_WEB_APP_URL='http://localhost:5173/web/'; npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M28 FOLLOW-UP" --workers=1
 ```
 
 Expected:
@@ -1004,7 +1004,7 @@ Expected:
 - Modify: `docs/roadmap.md`
 - Modify: `docs/requirements.md`
 - Archive when complete: `docs/plans/archive/m28-follow-up-plan-upstream-jyutping-composition.md`
-- Create: `third_party/typeduck-web/e2e/results/m28-follow-up-upstream-jyutping/task-6-gates.md`
+- Create: `apps/yune-web/e2e/results/m28-follow-up-upstream-jyutping/task-6-gates.md`
 
 - [x] Step 6.1: Run full verification.
 
@@ -1019,8 +1019,8 @@ cargo test -p yune-rime-api --test typeduck_web
 cargo test --workspace
 npm.cmd --prefix packages/yune-typeduck-runtime test
 npm.cmd --prefix packages/yune-typeduck-runtime run build
-npm.cmd --prefix third_party/typeduck-web/source run build
-$env:TYPEDUCK_APP_URL='http://localhost:5173/web/'; npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M28 FOLLOW-UP" --workers=1
+npm.cmd --prefix apps/yune-web/source run build
+$env:YUNE_WEB_APP_URL='http://localhost:5173/web/'; npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M28 FOLLOW-UP" --workers=1
 git diff --check
 ```
 
@@ -1042,7 +1042,7 @@ Please execute the M28 follow-up plan in C:\Users\laubonghaudoi\Documents\GitHub
 
 Read AGENTS.md, docs/CONVENTIONS.md, docs/roadmap.md, docs/requirements.md, docs/plans/m28-follow-up-plan-upstream-jyutping-composition.md, and the archived M28 plan/evidence first.
 
-Goal: fix Space/default-confirm raw-tail partial commits, then run the hybrid upstream-engine Jyutping oracle spike for caksijathaacoenggeoizi before any ranking implementation. Use the existing upstream oracle pattern: upstream rime.dll/rime_deployer.exe from target/upstream-oracle/1.17.0, source Jyutping YAML, and scripts/oracle-rime-probe.cs. Do not use third_party/typeduck-web/source/public/schema compiled browser assets, and do not create a standalone probe executable. TypeDuck v1.1.2 remains the existing compatibility oracle for ABI/comment/profile surfaces, but this follow-up may prefer an accepted hybrid upstream-engine fixture for this named ranking case.
+Goal: fix Space/default-confirm raw-tail partial commits, then run the hybrid upstream-engine Jyutping oracle spike for caksijathaacoenggeoizi before any ranking implementation. Use the existing upstream oracle pattern: upstream rime.dll/rime_deployer.exe from target/upstream-oracle/1.17.0, source Jyutping YAML, and scripts/oracle-rime-probe.cs. Do not use apps/yune-web/source/public/schema compiled browser assets, and do not create a standalone probe executable. TypeDuck v1.1.2 remains the existing compatibility oracle for ABI/comment/profile surfaces, but this follow-up may prefer an accepted hybrid upstream-engine fixture for this named ranking case.
 
 Do the Space/default-confirm fix first with failing native/API tests, including the sentence-on whole-input guard. Then run Task 2 as a blocking de-risking spike. Do not implement ranking before the hybrid fixture is captured and accepted, or before the user explicitly signs off on a Yune-authored ranking spec fallback. Preserve default upstream ABI and TypeDuck profile ABI. If TypeDuck-Web source changes, regenerate and reverse/forward-check the patch. Stage only intended files and push directly to origin/main when all gates pass.
 ```

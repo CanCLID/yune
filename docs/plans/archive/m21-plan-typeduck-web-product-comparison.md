@@ -6,12 +6,12 @@
 
 **Goal:** Systematically compare the **core IME behavior** (candidate set, ranking, auto-composition, fuzzy/容錯, simplification, reverse-lookup, paging) of:
 
-- **Yune harness** — `third_party/typeduck-web/` driven by the Yune engine (the internal playground M20 builds), and
+- **Yune harness** — `apps/yune-web/` driven by the Yune engine (the internal playground M20 builds), and
 - **the real product** — `https://github.com/TypeDuck-HK/TypeDuck-Web`, deployed at `https://www.typeduck.hk/web/`,
 
 so we know **which differences are real engine gaps, which are expected-by-design, and which are pending M17–M19** — without chasing noise.
 
-> **Surface reminder** (see `docs/CONVENTIONS.md` → "Web surface terminology"): `packages/yune-typeduck-runtime/` is the runtime bridge; `third_party/typeduck-web/` is the internal harness compared _here_; the deployed `typeduck.hk/web` is the real product. These are three different things.
+> **Surface reminder** (see `docs/CONVENTIONS.md` → "Web surface terminology"): `packages/yune-typeduck-runtime/` is the runtime bridge; `apps/yune-web/` is the internal harness compared _here_; the deployed `typeduck.hk/web` is the real product. These are three different things.
 
 ## Current status
 
@@ -90,7 +90,7 @@ Label every difference. This is the fork-parity ledger applied to a live diff:
 
 - **Deployed product:** **manual / one-time capture only.** Do **not** build an automated Playwright scraper against `typeduck.hk` (third-party site: fragile DOM, ToS). Capture screenshots + transcribed candidate lists + JSON notes; stamp: browser, date, deployed URL, observed engine/dict version, settings, fresh-userdb confirmation.
 - **Yune harness:** the M20 playground via Playwright or manual; stamp: Yune commit, M20 branch/commit, schema/config state, settings.
-- Store under `third_party/typeduck-web/e2e/results/m21-product-comparison/` with a dated reference snapshot.
+- Store under `apps/yune-web/e2e/results/m21-product-comparison/` with a dated reference snapshot.
 
 **Settings profile snapshot (record per run, both sides).** Capture the exact control states up front so any divergence is attributable to a setting, not an unrecorded difference (this operationalizes the Section 0 "matched settings" confounder):
 
@@ -119,7 +119,7 @@ Disposition ∈ { real bug → capture a `v1.1.2` golden + fix against it · `pe
 
 ## Section 5b — M21-GAP-01: multi-syllable dictionary-composition divergence (fixed)
 
-> **Status:** classified and fixed on 2026-06-20 · `unexpected-composition-gap` confirmed by `v1.1.2` oracle capture. Evidence: `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-sentence-composition.json` and `third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0748Z-m21-gap-01-sentence-composition/`.
+> **Status:** classified and fixed on 2026-06-20 · `unexpected-composition-gap` confirmed by `v1.1.2` oracle capture. Evidence: `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-sentence-composition.json` and `apps/yune-web/e2e/results/m21-product-comparison/2026-06-20T0748Z-m21-gap-01-sentence-composition/`.
 
 **Observation (manual, harness).** Toneless multi-syllable inputs whose target is a _dictionary-phrase_ sentence return a chaotic candidate list instead of the composed sentence, while `typeduck.hk/web` composes them:
 
@@ -156,7 +156,7 @@ Disposition ∈ { real bug → capture a `v1.1.2` golden + fix against it · `pe
 
 ## Section 5d — M21 closeout fixture and final ledger (complete)
 
-> **Status:** classified and fixed on 2026-06-20 · remaining rows locked by `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-closeout.json` and recorded in `third_party/typeduck-web/e2e/results/m21-product-comparison/2026-06-20T0849Z-yune-cdb7bd52-product-manual/gap-ledger.md`.
+> **Status:** classified and fixed on 2026-06-20 · remaining rows locked by `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m21-closeout.json` and recorded in `apps/yune-web/e2e/results/m21-product-comparison/2026-06-20T0849Z-yune-cdb7bd52-product-manual/gap-ledger.md`.
 
 The closeout fixture captures the remaining product-comparison rows against the hard v1.1.2 oracle: baseline `nei`/`ngo`, standalone `m`, `mgoi`, `ngohaigo`, `hou`, tone-letter `neivv`, and `ngohaigo` with `hk2s` simplification enabled. The final ledger contains no product-capture-pending rows: each row is now one of `match`, `oracle-backed-fixed`, `expected-by-design`, or `browser-surface-N/A`.
 

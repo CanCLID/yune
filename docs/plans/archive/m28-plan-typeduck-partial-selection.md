@@ -10,7 +10,7 @@
 
 **Tech Stack:** Rust (`yune-core` Engine/candidate state, `cantonese_parity`, `yune-rime-api` typeduck_web tests), TypeDuck v1.1.2 oracle fixture capture, TypeDuck-Web Playwright smoke only as final surface evidence.
 
-**Closeout:** Completed on 2026-06-22. M28 classified the issue as missing support, captured TypeDuck-HK/librime `v1.1.2` oracle behavior, implemented segment-aware partial commit/recomposition, preserved FORK-PARITY-03 learning behavior, added native/API/browser evidence, and left one-row sentence continuation/ranking as a separate future oracle-backed scope. Evidence lives under `third_party/typeduck-web/e2e/results/m28-partial-selection/`, with the fixture at `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json`.
+**Closeout:** Completed on 2026-06-22. M28 classified the issue as missing support, captured TypeDuck-HK/librime `v1.1.2` oracle behavior, implemented segment-aware partial commit/recomposition, preserved FORK-PARITY-03 learning behavior, added native/API/browser evidence, and left one-row sentence continuation/ranking as a separate future oracle-backed scope. Evidence lives under `apps/yune-web/e2e/results/m28-partial-selection/`, with the fixture at `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json`.
 
 ---
 
@@ -63,8 +63,8 @@ Out of scope:
 - `crates/yune-core/tests/cantonese_parity.rs`: fixture-backed TypeDuck oracle assertion.
 - `crates/yune-core/tests/fixtures/typeduck-v1.1.2/`: new M28 oracle fixture.
 - `crates/yune-rime-api/tests/typeduck_web.rs` or focused module under `crates/yune-rime-api/tests/typeduck_web/`: frontend-shaped regression test.
-- `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`: final browser smoke only after native tests pass.
-- `third_party/typeduck-web/e2e/results/m28-partial-selection/`: evidence folder.
+- `apps/yune-web/e2e/yune-typeduck.spec.ts`: final browser smoke only after native tests pass.
+- `apps/yune-web/e2e/results/m28-partial-selection/`: evidence folder.
 
 ## Implementation Tasks
 
@@ -74,7 +74,7 @@ Out of scope:
 
 - Read: `crates/yune-core/src/engine.rs`
 - Read: `crates/yune-core/src/state.rs`
-- Create: `third_party/typeduck-web/e2e/results/m28-partial-selection/history-classification.md`
+- Create: `apps/yune-web/e2e/results/m28-partial-selection/history-classification.md`
 
 - [x] Step 0.1: Inspect history.
 
@@ -96,7 +96,7 @@ Expected:
 **Files:**
 
 - Create: `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json`
-- Create: `third_party/typeduck-web/e2e/results/m28-partial-selection/oracle-capture.md`
+- Create: `apps/yune-web/e2e/results/m28-partial-selection/oracle-capture.md`
 
 - [x] Step 1.1: Capture the partial-selection flow from TypeDuck v1.1.2.
 
@@ -219,9 +219,9 @@ Expected:
 
 **Files:**
 
-- Modify if needed: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Patch if source changed: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`
-- Evidence: `third_party/typeduck-web/e2e/results/m28-partial-selection/browser-partial-selection.json`
+- Modify if needed: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Patch if source changed: `apps/yune-web/patches/yune-web-runtime.patch`
+- Evidence: `apps/yune-web/e2e/results/m28-partial-selection/browser-partial-selection.json`
 
 - [x] Step 4.1: Add a browser smoke.
 
@@ -237,13 +237,13 @@ The browser test must:
 Run:
 
 ```powershell
-npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M28 PARTIAL" --workers=1
+npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M28 PARTIAL" --workers=1
 ```
 
 Expected:
 
 - Browser evidence passes only after native tests pass.
-- If TypeDuck-Web source changed, regenerate and reverse/forward-check `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`.
+- If TypeDuck-Web source changed, regenerate and reverse/forward-check `apps/yune-web/patches/yune-web-runtime.patch`.
 
 ### Task 5 - Close With Full Gates And Docs
 
@@ -265,8 +265,8 @@ cargo test -p yune-rime-api --test typeduck_web
 cargo test --workspace
 npm.cmd --prefix packages/yune-typeduck-runtime test
 npm.cmd --prefix packages/yune-typeduck-runtime run build
-npm.cmd --prefix third_party/typeduck-web/source run build
-npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M28 PARTIAL" --workers=1
+npm.cmd --prefix apps/yune-web/source run build
+npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M28 PARTIAL" --workers=1
 git diff --check
 ```
 

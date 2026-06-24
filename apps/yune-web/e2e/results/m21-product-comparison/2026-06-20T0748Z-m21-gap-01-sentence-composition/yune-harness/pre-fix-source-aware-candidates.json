@@ -1,0 +1,294 @@
+{
+  "capture": {
+    "asset_root": "apps/yune-web/source/public/schema",
+    "candidate_source": "session_candidates_snapshot after RimeGetContext on the real RimeApi path",
+    "dictionary": "jyut6ping3.dict.yaml",
+    "lookup_dictionary": "jyut6ping3_scolar.dict.yaml",
+    "notes": [
+      "fallback_gate=fired_returned_sentence when a sentence source row is present under the default sentence-only-as-fallback path",
+      "fallback_gate=not_fired_base_candidates_nonempty when non-sentence candidates prevent sentence fallback",
+      "correction rows are not separately encoded in CandidateSource; this corpus is not a typo/correction probe"
+    ],
+    "pinned_yune_commit": "b4a59d3bc5ed24986101e846549d62eaa33c634d",
+    "scenario": "M21-GAP-01 Yune real-assets sentence-composition probe",
+    "schema": "jyut6ping3_mobile"
+  },
+  "cases": [
+    {
+      "candidate_count": 1,
+      "commit_text_preview": "𦧲五官前次我",
+      "highlighted_candidate_index": 0,
+      "input": "loengnincin",
+      "is_last_page": true,
+      "page_no": 0,
+      "page_size": 50,
+      "preedit": "loengnincin",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sentence_row_position": 0,
+      "source_counts": {
+        "sentence": 1
+      },
+      "source_path_diagnostics": {
+        "completion_seen": false,
+        "correction_note": "CandidateSource does not distinguish correction rows; this corpus contains dictionary-composition inputs rather than typo probes.",
+        "correction_seen": false,
+        "fallback_gate": "fired_returned_sentence",
+        "sentence_seen": true,
+        "userdb_seen": false
+      },
+      "top_candidates": [
+        {
+          "candidate_preedit": null,
+          "comment": "\f\r1,𦧲五官前次我,loe1loe2ng5gun1cin4ci3ngo5,1,0,,,,composition,,,,,,,,,\r1,𦧲,loe1,1,0,,v,ver,,,吐,,,spit out,,,,\r1,𦧲,loe2,2,0,,v,ver,,,求,,,persist in asking for sth,,,,\r1,五官,ng5gun1,1,0,,n,,,,,,,facial features,,,,fitur wajah\r1,前,cin4,1,0,,n adj,,,,,,,front; former,پہلے,अगाडी,आगे,depan\r1,次,ci3,1,0,,n,,,,,,,times; next,بار,पटक,बार,kali\r1,我,ngo5,1,0,,n,,,,,,,\"I, me\",میں,म हो,मैं,saya",
+          "index": 0,
+          "is_sentence": true,
+          "quality": null,
+          "source": "sentence",
+          "text": "𦧲五官前次我"
+        }
+      ]
+    },
+    {
+      "candidate_count": 1,
+      "commit_text_preview": "呢在次如中",
+      "highlighted_candidate_index": 0,
+      "input": "leoicijyu",
+      "is_last_page": true,
+      "page_no": 0,
+      "page_size": 50,
+      "preedit": "leoicijyu",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sentence_row_position": 0,
+      "source_counts": {
+        "sentence": 1
+      },
+      "source_path_diagnostics": {
+        "completion_seen": false,
+        "correction_note": "CandidateSource does not distinguish correction rows; this corpus contains dictionary-composition inputs rather than typo probes.",
+        "correction_seen": false,
+        "fallback_gate": "fired_returned_sentence",
+        "sentence_seen": true,
+        "userdb_seen": false
+      },
+      "top_candidates": [
+        {
+          "candidate_preedit": null,
+          "comment": "\f\r1,呢在次如中,ne1nei1ni1zoi6ci3jyu4zung1zung3,1,0,,,,composition,,,,,,,,,\r1,呢,ne1,1,0,,part,,,,,,,(how about),(particle),,(particle),(imbuhan kata)\r1,呢,nei1,2,0,,oth,ver,,,這,,,this,,,,\r1,呢,ni1,2,0,,oth,ver,,,這,,,this,,,,\r1,在,zoi6,1,0,,oth,wri,,,,喺,,at,پر,मा,में,di\r1,次,ci3,1,0,,n,,,,,,,times; next,بار,पटक,बार,kali\r1,如,jyu4,1,0,,oth,,,,,,,if,,,,jika\r1,中,zung1,1,0,,morph,,,,,,,middle; in; during,بیچ,केन्द्र,केंद्र,tengah\r1,中,zung3,2,0,,v,,,,,,,hit,مارو,हान्नु,मारो,mengenai",
+          "index": 0,
+          "is_sentence": true,
+          "quality": null,
+          "source": "sentence",
+          "text": "呢在次如中"
+        }
+      ]
+    },
+    {
+      "candidate_count": 1,
+      "commit_text_preview": "我係個",
+      "highlighted_candidate_index": 0,
+      "input": "ngohaigo",
+      "is_last_page": true,
+      "page_no": 0,
+      "page_size": 50,
+      "preedit": "ngohaigo",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sentence_row_position": 0,
+      "source_counts": {
+        "sentence": 1
+      },
+      "source_path_diagnostics": {
+        "completion_seen": false,
+        "correction_note": "CandidateSource does not distinguish correction rows; this corpus contains dictionary-composition inputs rather than typo probes.",
+        "correction_seen": false,
+        "fallback_gate": "fired_returned_sentence",
+        "sentence_seen": true,
+        "userdb_seen": false
+      },
+      "top_candidates": [
+        {
+          "candidate_preedit": null,
+          "comment": "\f\r1,我係個,ngo5hai6go3,1,0,,,,composition,,,,,,,,,\r1,我係,ngo5hai6,1,0,,oth,ver,,,我是,,,I am,,,,\r1,個,go3,1,0,,mw,,,,,,個人，個案，個性,item of,(measure),,(measure),(satuan benda)",
+          "index": 0,
+          "is_sentence": true,
+          "quality": null,
+          "source": "sentence",
+          "text": "我係個"
+        }
+      ]
+    },
+    {
+      "candidate_count": 1,
+      "commit_text_preview": "兩一後",
+      "highlighted_candidate_index": 0,
+      "input": "loengjathau",
+      "is_last_page": true,
+      "page_no": 0,
+      "page_size": 50,
+      "preedit": "loengjathau",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sentence_row_position": 0,
+      "source_counts": {
+        "sentence": 1
+      },
+      "source_path_diagnostics": {
+        "completion_seen": false,
+        "correction_note": "CandidateSource does not distinguish correction rows; this corpus contains dictionary-composition inputs rather than typo probes.",
+        "correction_seen": false,
+        "fallback_gate": "fired_returned_sentence",
+        "sentence_seen": true,
+        "userdb_seen": false
+      },
+      "top_candidates": [
+        {
+          "candidate_preedit": null,
+          "comment": "\f\r1,兩一後,loeng5jat1hau6,1,0,,,,composition,,,,,,,,,\r1,兩,loeng5,1,0,,n,,,,,,,two,دو,दुई,दो,dua\r1,一,jat1,1,0,,n,,,,,,,one,ایک,एक,एक,satu\r1,後,hau6,1,0,,adv adj,,,,,,,after; behind; rear,پیچھے,पछाडी,पीछे की ओर,Belakang",
+          "index": 0,
+          "is_sentence": true,
+          "quality": null,
+          "source": "sentence",
+          "text": "兩一後"
+        }
+      ]
+    },
+    {
+      "candidate_count": 1,
+      "commit_text_preview": "機一次我",
+      "highlighted_candidate_index": 0,
+      "input": "geijatcin",
+      "is_last_page": true,
+      "page_no": 0,
+      "page_size": 50,
+      "preedit": "geijatcin",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sentence_row_position": 0,
+      "source_counts": {
+        "sentence": 1
+      },
+      "source_path_diagnostics": {
+        "completion_seen": false,
+        "correction_note": "CandidateSource does not distinguish correction rows; this corpus contains dictionary-composition inputs rather than typo probes.",
+        "correction_seen": false,
+        "fallback_gate": "fired_returned_sentence",
+        "sentence_seen": true,
+        "userdb_seen": false
+      },
+      "top_candidates": [
+        {
+          "candidate_preedit": null,
+          "comment": "\f\r1,機一次我,gei1jat1ci3ngo5,1,0,,,,composition,,,,,,,,,\r1,機,gei1,1,0,,n,ver,,,機會，機器,,,machine; chance,آلہ,मेशीन,मशीन,mesin\r1,一次,jat1ci3,1,0,,mw,,,,,,,one-time,,,,satu kali\r1,我,ngo5,1,0,,n,,,,,,,\"I, me\",میں,म हो,मैं,saya",
+          "index": 0,
+          "is_sentence": true,
+          "quality": null,
+          "source": "sentence",
+          "text": "機一次我"
+        }
+      ]
+    },
+    {
+      "candidate_count": 1,
+      "commit_text_preview": "今一靴時",
+      "highlighted_candidate_index": 0,
+      "input": "gamjatheoi",
+      "is_last_page": true,
+      "page_no": 0,
+      "page_size": 50,
+      "preedit": "gamjatheoi",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sentence_row_position": 0,
+      "source_counts": {
+        "sentence": 1
+      },
+      "source_path_diagnostics": {
+        "completion_seen": false,
+        "correction_note": "CandidateSource does not distinguish correction rows; this corpus contains dictionary-composition inputs rather than typo probes.",
+        "correction_seen": false,
+        "fallback_gate": "fired_returned_sentence",
+        "sentence_seen": true,
+        "userdb_seen": false
+      },
+      "top_candidates": [
+        {
+          "candidate_preedit": null,
+          "comment": "\f\r1,今一靴時,gam1jat1hoe1si4,1,0,,,,composition,,,,,,,,,\r1,今,gam1,1,0,,adv,,,,,,,now,,,,\r1,一,jat1,1,0,,n,,,,,,,one,ایک,एक,एक,satu\r1,靴,hoe1,1,0,,n,,,,,,,boots,,,,sepatu bot\r1,時,si4,1,0,,n,,,,,,,time; hour,بجے,समय,बजे,jam",
+          "index": 0,
+          "is_sentence": true,
+          "quality": null,
+          "source": "sentence",
+          "text": "今一靴時"
+        }
+      ]
+    }
+  ],
+  "inputs": [
+    "loengnincin",
+    "leoicijyu",
+    "ngohaigo",
+    "loengjathau",
+    "geijatcin",
+    "gamjatheoi"
+  ]
+}

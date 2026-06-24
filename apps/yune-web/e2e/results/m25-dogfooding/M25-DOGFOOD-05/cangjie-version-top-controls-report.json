@@ -1,0 +1,25 @@
+{
+  "captured_at": "2026-06-21T22:15:31Z",
+  "source": "manual dogfooding feedback from http://localhost:5173/web/",
+  "user_report": {
+    "control": "\u5009\u9821\u7248\u672c Cangjie version",
+    "requested_layout": "Move the Cangjie version control to the top next to the schema selection. It should not remain as a separate lower settings section."
+  },
+  "local_verification": {
+    "current_control_file": "apps/yune-web/source/src/Preferences.tsx",
+    "current_location": "The control is rendered inside the lower Web Frontend Controls section.",
+    "current_state_key": "isCangjie5",
+    "current_options": [
+      {
+        "value": false,
+        "label": "\u4e09\u4ee3 Version 3"
+      },
+      {
+        "value": true,
+        "label": "\u4e94\u4ee3 Version 5"
+      }
+    ],
+    "related_top_control_work": "M25-DOGFOOD-04 moves the schema switcher into the top toolbar/control band."
+  },
+  "plan_change": "Track as M25-DOGFOOD-05. The implementation should place Cangjie version beside the schema selector in the top controls, remove the separate lower Web Frontend Controls section when it becomes empty, preserve the isCangjie5 customize path, and capture desktop/mobile layout evidence."
+}

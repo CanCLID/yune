@@ -146,7 +146,7 @@ Stale deployed config recovery is local-first and deterministic. Recover by sync
 
 ## WASM build/export contract
 
-The intended browser build target is `wasm32-unknown-emscripten`. Phase 7 keeps the adapter in `crates/yune-rime-api`; the crate already builds as `rlib`/`cdylib`, and `src/lib.rs` should remain facade wiring for `typeduck_web` rather than owned browser-build logic. This reference owns the Yune adapter/export contract; the real TypeDuck-Web patch and browser E2E now live under `third_party/typeduck-web/` as regression gates, not future prerequisites.
+The intended browser build target is `wasm32-unknown-emscripten`. Phase 7 keeps the adapter in `crates/yune-rime-api`; the crate already builds as `rlib`/`cdylib`, and `src/lib.rs` should remain facade wiring for `typeduck_web` rather than owned browser-build logic. This reference owns the Yune adapter/export contract; the real TypeDuck-Web patch and browser E2E now live under `apps/yune-web/` as regression gates, not future prerequisites.
 
 Use one repository command path for the browser build/export check:
 

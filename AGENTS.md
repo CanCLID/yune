@@ -4,8 +4,8 @@
 oracle** while building toward an AI-native input engine librime cannot provide.
 It has a deterministic core (`yune-core`), a librime-shaped C ABI
 (`yune-rime-api`), a CLI surrogate (`yune-cli`), a TypeScript browser runtime
-(`packages/yune-typeduck-runtime`), and an internal TypeDuck-Web dogfood
-playground under `third_party/typeduck-web/`.
+(`packages/yune-typeduck-runtime`), and the `yune-web` browser harness under
+`apps/yune-web/`.
 
 **Core value:** existing RIME schemas and frontends should behave predictably
 through Yune, with every compatibility difference measured against the relevant
@@ -23,15 +23,16 @@ See `decisions.md` D-24 (oracle precedence) and D-25 (target-driven scope).
 
 - **Phase 1 engine/basic oracle parity is complete for the named target set.**
   M0-M24 are complete, including M10 TypeDuck-Windows backend compatibility
-  smoke through the named TypeDuck profile ABI and the M24 TypeDuck-Web
-  dogfooding/demo-hardening batch. Future TypeDuck-Web dogfood reports should
-  start a new scoped plan rather than reopening Phase 1.
+  smoke through the named TypeDuck profile ABI and the M24 historical
+  TypeDuck-Web-derived dogfooding/demo-hardening batch. Future `yune-web`
+  dogfood reports should start a new scoped plan rather than reopening Phase 1.
 - **Phase 2 is product/platform work.** The first Phase 2 planning artifact is
   `docs/plans/p2-win01-plan-typeduck-windows-next.md`, for a Yune-first
   TypeDuck-Windows product/frontend. Phase 2 work must not widen Yune's default
   upstream ABI.
 - **AI foundation exists.** M11 completed the core/CLI AI layer. M13 exposed it
-  in TypeDuck-Web as a default-off, local-only, second-pass `stage_ai` flow.
+  in the web harness now canonical as `yune-web`: default-off, local-only,
+  second-pass `stage_ai` flow.
   Remote providers, richer contextual translation, and native frontend AI UX
   remain future product tracks.
 
@@ -72,9 +73,9 @@ See `decisions.md` D-24 (oracle precedence) and D-25 (target-driven scope).
   silent gaps.
 - **Security:** runtime resource identifiers are logical IDs, not arbitrary
   filesystem paths.
-- **TypeDuck-Web:** `third_party/typeduck-web/source/` is a local upstream app
-  checkout. The committed Yune-owned state is the patch under
-  `third_party/typeduck-web/patches/`, the `yune-integration/` bridge, E2E
+- **yune-web / TypeDuck-Web provenance:** `apps/yune-web/source/` is the local
+  upstream-derived app checkout. The committed Yune-owned state is the patch under
+  `apps/yune-web/patches/`, the `yune-integration/` bridge, E2E
   tests, and recorded evidence. Browser-visible claims require Playwright or
   equivalent real-browser evidence.
 - **TypeDuck-Windows:** M10 proves Yune can satisfy the existing native backend
@@ -125,8 +126,8 @@ npm --prefix packages/yune-typeduck-runtime test
 npm --prefix packages/yune-typeduck-runtime run build
 ```
 
-TypeDuck-Web browser work must also follow the current plan or archived M24
-baseline and `third_party/typeduck-web/e2e/yune-browser-smoke.md`; preserve the
+yune-web browser work must also follow the current plan or archived M24
+baseline and `apps/yune-web/e2e/yune-browser-smoke.md`; preserve the
 real-browser evidence gate for user-visible claims.
 
 The GSD planning system has been retired. Planning, decisions, conventions, and

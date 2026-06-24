@@ -1205,6 +1205,55 @@ fn typeduck_adapter_deploys_browser_real_assets_after_init() {
 }
 
 #[test]
+fn m31_typeduck_web_hk2s_option_changes_real_asset_candidates() {
+    let _guard = test_guard();
+    let runtime = TypeDuckRuntime::create_with_schema("m31-browser-real-hk2s", "jyut6ping3_mobile");
+    runtime.write_browser_real_assets();
+
+    let traditional_state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!traditional_state.is_null());
+    let traditional = process_input(traditional_state, "ngohaigo");
+    assert_eq!(
+        traditional["context"]["candidates"][0]["text"],
+        Value::String("\u{6211}\u{4fc2}\u{500b}".to_owned())
+    );
+    unsafe { yune_typeduck_cleanup(traditional_state) };
+
+    let simplified_state = unsafe {
+        yune_typeduck_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!simplified_state.is_null());
+    let simplification =
+        CString::new("simplification").expect("option name should be a valid C string");
+    assert_eq!(
+        unsafe { yune_typeduck_set_option(simplified_state, simplification.as_ptr(), TRUE) },
+        TRUE
+    );
+    let simplified = process_input(simplified_state, "ngohaigo");
+    assert_eq!(
+        simplified["context"]["candidates"][0]["text"],
+        Value::String("\u{6211}\u{7cfb}\u{4e2a}".to_owned())
+    );
+    assert_ne!(
+        simplified["context"]["candidates"][0]["text"],
+        traditional["context"]["candidates"][0]["text"]
+    );
+
+    unsafe { yune_typeduck_cleanup(simplified_state) };
+    runtime.remove();
+}
+
+#[test]
 fn typeduck_adapter_real_assets_prefix_fallback_commits_consumed_span() {
     let _guard = test_guard();
     let runtime =
@@ -2039,8 +2088,7 @@ fn typeduck_oracle_root() -> PathBuf {
 }
 
 fn browser_app_schema_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../third_party/typeduck-web/source/public/schema")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/source/public/schema")
 }
 
 fn rich_dictionary_comment_oracle_build_status() -> Result<PathBuf, String> {

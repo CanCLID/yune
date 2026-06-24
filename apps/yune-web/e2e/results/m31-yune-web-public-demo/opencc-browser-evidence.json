@@ -1,0 +1,30 @@
+{
+  "supportedOutputStandards": {
+    "hkTraditional": {
+      "index": 0,
+      "text": "我係個",
+      "note": "(compound 詞組)",
+      "source": null,
+      "rowText": "1.ngo5 hai6 go3我係個(compound 詞組)ⓘ"
+    },
+    "hk2sSimplified": {
+      "index": 0,
+      "text": "我系个",
+      "note": "(compound 詞組)",
+      "source": null,
+      "rowText": "1.ngo5 hai6 go3我係個(compound 詞組)ⓘ"
+    },
+    "hkTraditionalAfterRoundTrip": {
+      "index": 0,
+      "text": "我係個",
+      "note": "(compound 詞組)",
+      "source": null,
+      "rowText": "1.ngo5 hai6 go3我係個(compound 詞組)ⓘ"
+    }
+  },
+  "unsupportedStandardsExposed": false,
+  "aiPosture": {
+    "default": "off",
+    "remoteCalls": []
+  }
+}

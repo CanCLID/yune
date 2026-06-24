@@ -2,7 +2,7 @@
 
 > **Status:** Complete - **Milestone:** M27 (TypeDuck-Web startup/runtime init) - **Updated:** 2026-06-22 - **Type:** archived execution plan
 >
-> **Closeout:** M27 is complete. Evidence is recorded under `third_party/typeduck-web/e2e/results/m27-startup-runtime/`, including native startup owner spans, Windows working-set metrics, browser fresh/reload evidence, control classification evidence, TypeDuck-Web patch checks, and `task-5-gates.md`.
+> **Closeout:** M27 is complete. Evidence is recorded under `apps/yune-web/e2e/results/m27-startup-runtime/`, including native startup owner spans, Windows working-set metrics, browser fresh/reload evidence, control classification evidence, TypeDuck-Web patch checks, and `task-5-gates.md`.
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -50,7 +50,7 @@ In scope:
 - Browser startup markers and Playwright evidence before and after optimization.
 - Browser evidence for live-vs-deploy engine controls, including AI candidates, auto-correction, and auto-completion.
 - Measured startup optimization against the evidenced bottleneck. M27 cannot close by deferring the top owner and landing only a smaller unrelated slice; any split into a successor milestone requires an explicit user decision after the Task 3 evidence review.
-- TypeDuck-Web patch regeneration and reverse/forward checks if `third_party/typeduck-web/source/` changes.
+- TypeDuck-Web patch regeneration and reverse/forward checks if `apps/yune-web/source/` changes.
 
 Out of scope:
 
@@ -65,10 +65,10 @@ Out of scope:
 
 Use these M26 files as the baseline:
 
-- `third_party/typeduck-web/e2e/results/m26-performance/native-after.md`
-- `third_party/typeduck-web/e2e/results/m26-performance/startup-attribution-after.json`
-- `third_party/typeduck-web/e2e/results/m26-performance/optimization-choice.md`
-- `third_party/typeduck-web/e2e/results/m26-performance/task-5-gates.md`
+- `apps/yune-web/e2e/results/m26-performance/native-after.md`
+- `apps/yune-web/e2e/results/m26-performance/startup-attribution-after.json`
+- `apps/yune-web/e2e/results/m26-performance/optimization-choice.md`
+- `apps/yune-web/e2e/results/m26-performance/task-5-gates.md`
 
 Important M26 numbers:
 
@@ -96,7 +96,7 @@ M27 is complete only when all of these are true:
   - `cargo bench -p yune-rime-api --bench frontend_baselines`
   - `npm.cmd --prefix packages/yune-typeduck-runtime test`
   - `npm.cmd --prefix packages/yune-typeduck-runtime run build`
-  - `npm.cmd --prefix third_party/typeduck-web/source run build`
+  - `npm.cmd --prefix apps/yune-web/source run build`
   - focused Playwright startup evidence
   - focused Playwright control-classification evidence
   - TypeDuck-Web patch reverse/forward checks if source changed
@@ -110,13 +110,13 @@ M27 is complete only when all of these are true:
 - `crates/yune-rime-api/src/schema_install.rs`: expected owner for zero-cost internal timing hooks and possible optimization owner for translator/filter/dictionary install, only after attribution.
 - `crates/yune-core/src/dictionary/*`: possible optimization owner for dictionary parse/load or compiled-data use, only after attribution.
 - `crates/yune-core/src/translator/mod.rs`: possible optimization owner for `entries` + `entries_by_code` storage/index build, only after attribution.
-- `third_party/typeduck-web/source/src/worker.ts`: browser startup markers if needed.
-- `third_party/typeduck-web/source/src/yune-integration/adapter.ts`: TypeDuckRuntime startup markers if needed.
-- `third_party/typeduck-web/source/src/Preferences.tsx`: likely owner for live engine-control toggle behavior.
-- `third_party/typeduck-web/source/src/hooks.ts`: likely owner for removing full-page/global loading from live option toggles.
-- `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`: focused M27 Playwright startup evidence.
-- `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`: regenerated if TypeDuck-Web source changes.
-- `third_party/typeduck-web/e2e/results/m27-startup-runtime/`: new M27 evidence folder.
+- `apps/yune-web/source/src/worker.ts`: browser startup markers if needed.
+- `apps/yune-web/source/src/yune-integration/adapter.ts`: TypeDuckRuntime startup markers if needed.
+- `apps/yune-web/source/src/Preferences.tsx`: likely owner for live engine-control toggle behavior.
+- `apps/yune-web/source/src/hooks.ts`: likely owner for removing full-page/global loading from live option toggles.
+- `apps/yune-web/e2e/yune-typeduck.spec.ts`: focused M27 Playwright startup evidence.
+- `apps/yune-web/patches/yune-web-runtime.patch`: regenerated if TypeDuck-Web source changes.
+- `apps/yune-web/e2e/results/m27-startup-runtime/`: new M27 evidence folder.
 
 ## Implementation Tasks
 
@@ -128,8 +128,8 @@ M27 is complete only when all of these are true:
 - Read: `docs/roadmap.md`
 - Read: `docs/requirements.md`
 - Read: `docs/CONVENTIONS.md`
-- Read: `third_party/typeduck-web/e2e/results/m26-performance/native-after.md`
-- Read: `third_party/typeduck-web/e2e/results/m26-performance/startup-attribution-after.json`
+- Read: `apps/yune-web/e2e/results/m26-performance/native-after.md`
+- Read: `apps/yune-web/e2e/results/m26-performance/startup-attribution-after.json`
 
 - [ ] Step 0.1: Confirm the branch and worktree.
 
@@ -151,7 +151,7 @@ Expected:
 
 - [ ] Step 0.2: Copy M26 baseline numbers into M27 evidence.
 
-Create `third_party/typeduck-web/e2e/results/m27-startup-runtime/m27-baseline.md` with:
+Create `apps/yune-web/e2e/results/m27-startup-runtime/m27-baseline.md` with:
 
 ```markdown
 # M27 Baseline
@@ -182,8 +182,8 @@ Acceptance:
 - Modify: `crates/yune-rime-api/benches/frontend_baselines.rs`
 - Modify if needed: `crates/yune-rime-api/src/schema_selection.rs`
 - Modify if needed: `crates/yune-rime-api/src/schema_install.rs`
-- Evidence: `third_party/typeduck-web/e2e/results/m27-startup-runtime/startup-path-reconciliation.md`
-- Evidence: `third_party/typeduck-web/e2e/results/m27-startup-runtime/native-startup-before.md`
+- Evidence: `apps/yune-web/e2e/results/m27-startup-runtime/startup-path-reconciliation.md`
+- Evidence: `apps/yune-web/e2e/results/m27-startup-runtime/native-startup-before.md`
 
 - [ ] Step 1.0: Reconcile cold-build vs browser-paid startup path.
 
@@ -368,7 +368,7 @@ cargo bench -p yune-rime-api --bench frontend_baselines
 Save a summarized table to:
 
 ```text
-third_party/typeduck-web/e2e/results/m27-startup-runtime/native-startup-before.md
+apps/yune-web/e2e/results/m27-startup-runtime/native-startup-before.md
 ```
 
 Required summary columns:
@@ -391,14 +391,14 @@ Expected:
 
 **Files:**
 
-- Modify if needed: `third_party/typeduck-web/source/src/worker.ts`
-- Modify if needed: `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
-- Modify if needed: `third_party/typeduck-web/source/src/Preferences.tsx`
-- Modify if needed: `third_party/typeduck-web/source/src/hooks.ts`
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Patch if source changed: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`
-- Evidence: `third_party/typeduck-web/e2e/results/m27-startup-runtime/browser-startup-before.json`
-- Evidence: `third_party/typeduck-web/e2e/results/m27-startup-runtime/control-classification-before.json`
+- Modify if needed: `apps/yune-web/source/src/worker.ts`
+- Modify if needed: `apps/yune-web/source/src/yune-integration/adapter.ts`
+- Modify if needed: `apps/yune-web/source/src/Preferences.tsx`
+- Modify if needed: `apps/yune-web/source/src/hooks.ts`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Patch if source changed: `apps/yune-web/patches/yune-web-runtime.patch`
+- Evidence: `apps/yune-web/e2e/results/m27-startup-runtime/browser-startup-before.json`
+- Evidence: `apps/yune-web/e2e/results/m27-startup-runtime/control-classification-before.json`
 
 - [ ] Step 2.1: Preserve M26 markers and add M27 label.
 
@@ -446,13 +446,13 @@ The test must:
 Evidence path:
 
 ```text
-third_party/typeduck-web/e2e/results/m27-startup-runtime/browser-startup-before.json
+apps/yune-web/e2e/results/m27-startup-runtime/browser-startup-before.json
 ```
 
 Run:
 
 ```powershell
-$env:M27_EVIDENCE_LABEL='before'; npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M27 STARTUP" --workers=1
+$env:M27_EVIDENCE_LABEL='before'; npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M27 STARTUP" --workers=1
 ```
 
 Expected:
@@ -462,7 +462,7 @@ Expected:
 
 - [ ] Step 2.3: Add focused control-classification browser evidence.
 
-Add this Playwright test to `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`:
+Add this Playwright test to `apps/yune-web/e2e/yune-typeduck.spec.ts`:
 
 ```text
 M27 CONTROLS classify live versus deploy-time toggles
@@ -500,18 +500,18 @@ Acceptance:
 
 - [ ] Step 2.4: Regenerate patch if source changed.
 
-If any file under `third_party/typeduck-web/source/` changed:
+If any file under `apps/yune-web/source/` changed:
 
-1. Regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` from the patched source checkout.
-2. Reverse-check it from `third_party/typeduck-web/source/`:
+1. Regenerate `apps/yune-web/patches/yune-web-runtime.patch` from the patched source checkout.
+2. Reverse-check it from `apps/yune-web/source/`:
 
 ```powershell
-Push-Location third_party/typeduck-web/source
-git apply --reverse --check ..\patches\yune-typeduck-runtime.patch
+Push-Location apps/yune-web/source
+git apply --reverse --check ..\patches\yune-web-runtime.patch
 Pop-Location
 ```
 
-3. Forward-check it on a clean TypeDuck-Web source checkout at the revision in `third_party/typeduck-web/typeduck-web.lock.json`.
+3. Forward-check it on a clean TypeDuck-Web source checkout at the revision in `apps/yune-web/yune-web.lock.json`.
 
 Expected:
 
@@ -522,11 +522,11 @@ Expected:
 
 **Files:**
 
-- Create: `third_party/typeduck-web/e2e/results/m27-startup-runtime/optimization-choice.md`
-- Read: `third_party/typeduck-web/e2e/results/m27-startup-runtime/startup-path-reconciliation.md`
-- Read: `third_party/typeduck-web/e2e/results/m27-startup-runtime/native-startup-before.md`
-- Read: `third_party/typeduck-web/e2e/results/m27-startup-runtime/browser-startup-before.json`
-- Read: `third_party/typeduck-web/e2e/results/m27-startup-runtime/control-classification-before.json`
+- Create: `apps/yune-web/e2e/results/m27-startup-runtime/optimization-choice.md`
+- Read: `apps/yune-web/e2e/results/m27-startup-runtime/startup-path-reconciliation.md`
+- Read: `apps/yune-web/e2e/results/m27-startup-runtime/native-startup-before.md`
+- Read: `apps/yune-web/e2e/results/m27-startup-runtime/browser-startup-before.json`
+- Read: `apps/yune-web/e2e/results/m27-startup-runtime/control-classification-before.json`
 
 - [ ] Step 3.1: Name the top owner.
 
@@ -615,11 +615,11 @@ Chosen by Task 3. Likely owners:
 - `crates/yune-core/src/dictionary/compiled_prism.rs`
 - `crates/yune-core/src/translator/mod.rs`
 - `packages/yune-typeduck-runtime/src/typeduck.ts`
-- `third_party/typeduck-web/source/src/worker.ts`
-- `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
-- `third_party/typeduck-web/source/src/hooks.ts`
-- `third_party/typeduck-web/source/src/Preferences.tsx`
-- `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- `apps/yune-web/source/src/worker.ts`
+- `apps/yune-web/source/src/yune-integration/adapter.ts`
+- `apps/yune-web/source/src/hooks.ts`
+- `apps/yune-web/source/src/Preferences.tsx`
+- `apps/yune-web/e2e/yune-typeduck.spec.ts`
 
 - [ ] Step 4.1: Run behavior gates before editing the owner.
 
@@ -629,7 +629,7 @@ Run:
 cargo test -p yune-core --test cantonese_parity
 cargo test -p yune-core --test upstream_luna_pinyin_parity
 cargo test -p yune-rime-api --test typeduck_web
-$env:M27_EVIDENCE_LABEL='before'; npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M27 CONTROLS" --workers=1
+$env:M27_EVIDENCE_LABEL='before'; npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M27 CONTROLS" --workers=1
 ```
 
 Expected:
@@ -648,10 +648,10 @@ Expected implementation direction:
 
 Likely files:
 
-- `third_party/typeduck-web/source/src/hooks.ts`
-- `third_party/typeduck-web/source/src/Preferences.tsx`
-- `third_party/typeduck-web/source/src/worker.ts`
-- `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
+- `apps/yune-web/source/src/hooks.ts`
+- `apps/yune-web/source/src/Preferences.tsx`
+- `apps/yune-web/source/src/worker.ts`
+- `apps/yune-web/source/src/yune-integration/adapter.ts`
 
 Acceptance:
 
@@ -681,15 +681,15 @@ Run:
 
 ```powershell
 cargo bench -p yune-rime-api --bench frontend_baselines
-$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M27 STARTUP" --workers=1
-$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M27 CONTROLS" --workers=1
+$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M27 STARTUP" --workers=1
+$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M27 CONTROLS" --workers=1
 ```
 
 Save:
 
-- `third_party/typeduck-web/e2e/results/m27-startup-runtime/native-startup-after.md`
-- `third_party/typeduck-web/e2e/results/m27-startup-runtime/browser-startup-after.json`
-- `third_party/typeduck-web/e2e/results/m27-startup-runtime/control-classification-after.json`
+- `apps/yune-web/e2e/results/m27-startup-runtime/native-startup-after.md`
+- `apps/yune-web/e2e/results/m27-startup-runtime/browser-startup-after.json`
+- `apps/yune-web/e2e/results/m27-startup-runtime/control-classification-after.json`
 
 Required comparison:
 
@@ -707,7 +707,7 @@ Required comparison:
 - Modify: `docs/requirements.md`
 - Modify if needed: `docs/CONVENTIONS.md`
 - Archive when complete: `docs/plans/archive/m27-plan-typeduck-web-startup-runtime-init.md`
-- Evidence: `third_party/typeduck-web/e2e/results/m27-startup-runtime/task-5-gates.md`
+- Evidence: `apps/yune-web/e2e/results/m27-startup-runtime/task-5-gates.md`
 
 - [ ] Step 5.1: Run full verification.
 
@@ -723,9 +723,9 @@ cargo test --workspace
 cargo bench -p yune-rime-api --bench frontend_baselines
 npm.cmd --prefix packages/yune-typeduck-runtime test
 npm.cmd --prefix packages/yune-typeduck-runtime run build
-npm.cmd --prefix third_party/typeduck-web/source run build
-$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M27 STARTUP" --workers=1
-$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M27 CONTROLS" --workers=1
+npm.cmd --prefix apps/yune-web/source run build
+$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M27 STARTUP" --workers=1
+$env:M27_EVIDENCE_LABEL='after'; npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M27 CONTROLS" --workers=1
 git diff --check
 ```
 
@@ -779,8 +779,8 @@ Read first:
 - `docs/roadmap.md`
 - `docs/requirements.md`
 - `docs/CONVENTIONS.md`
-- `third_party/typeduck-web/e2e/results/m26-performance/native-after.md`
-- `third_party/typeduck-web/e2e/results/m26-performance/startup-attribution-after.json`
+- `apps/yune-web/e2e/results/m26-performance/native-after.md`
+- `apps/yune-web/e2e/results/m26-performance/startup-attribution-after.json`
 
 Goal:
 Fix the TypeDuck-Web startup/schema-selection/runtime-init owner identified by M26, and classify/fix the TypeDuck-Web engine-control update behavior. AI candidates must not reload the runtime. Deploy-time controls such as auto-correction and auto-completion must be measured and improved through the M27 startup/deploy work rather than incorrectly forced through live `setOption`.
@@ -795,8 +795,8 @@ Hard constraints:
 - M27 cannot close unless control behavior is classified as live, browser-only, or deploy-time with browser marker evidence.
 - Do not implement segment-aware partial candidate commit in M27. The `caksijathaacoenggeoizi` partial-selection issue is M28 engine/oracle scope.
 - Preserve oracle-visible candidate text, order, comments, paging, and commit behavior.
-- If TypeDuck-Web source files change, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` and run reverse/forward patch checks.
-- Save evidence under `third_party/typeduck-web/e2e/results/m27-startup-runtime/`.
+- If TypeDuck-Web source files change, regenerate `apps/yune-web/patches/yune-web-runtime.patch` and run reverse/forward patch checks.
+- Save evidence under `apps/yune-web/e2e/results/m27-startup-runtime/`.
 
 Execution:
 Follow the M27 plan task-by-task. After Task 3, report the measured top owner and chosen optimization before starting Task 4.

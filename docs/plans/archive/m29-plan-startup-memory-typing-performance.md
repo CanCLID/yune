@@ -65,11 +65,11 @@ Out of scope:
 - `crates/yune-rime-api/src/schema_install.rs`: translator installation and deployment boundary where precomputed expansion data may be loaded.
 - `crates/yune-rime-api/src/schema_selection.rs`: schema selection timing owner if new instrumentation is needed.
 - `packages/yune-typeduck-runtime/src/`: runtime wrapper timing around process-key and response parsing if typing attribution points there.
-- `third_party/typeduck-web/source/src/worker.ts`: browser worker timing markers.
-- `third_party/typeduck-web/source/src/CandidatePanel.tsx` and related UI files: render timing only if attribution proves React rendering dominates.
-- `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`: focused M29 startup and typing evidence.
-- `third_party/typeduck-web/e2e/results/m29-performance/`: evidence folder.
-- `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`: regenerate only if TypeDuck-Web source changes.
+- `apps/yune-web/source/src/worker.ts`: browser worker timing markers.
+- `apps/yune-web/source/src/CandidatePanel.tsx` and related UI files: render timing only if attribution proves React rendering dominates.
+- `apps/yune-web/e2e/yune-typeduck.spec.ts`: focused M29 startup and typing evidence.
+- `apps/yune-web/e2e/results/m29-performance/`: evidence folder.
+- `apps/yune-web/patches/yune-web-runtime.patch`: regenerate only if TypeDuck-Web source changes.
 
 ## Implementation Tasks
 
@@ -77,10 +77,10 @@ Out of scope:
 
 **Files:**
 
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/m29-baseline.md`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/native-startup-before.md`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/browser-startup-before.json`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/typing-keydown-to-paint-before.json`
+- Create: `apps/yune-web/e2e/results/m29-performance/m29-baseline.md`
+- Create: `apps/yune-web/e2e/results/m29-performance/native-startup-before.md`
+- Create: `apps/yune-web/e2e/results/m29-performance/browser-startup-before.json`
+- Create: `apps/yune-web/e2e/results/m29-performance/typing-keydown-to-paint-before.json`
 
 - [x] Step 0.1: Record the inherited baseline.
 
@@ -145,7 +145,7 @@ Expected:
 Run:
 
 ```powershell
-$env:TYPEDUCK_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='before'; npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
+$env:YUNE_WEB_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='before'; npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
 ```
 
 If no `M29 PERF` test exists yet, add it in Task 2 before this step and then run the command.
@@ -160,7 +160,7 @@ Expected:
 **Files:**
 
 - Modify: `crates/yune-rime-api/benches/frontend_baselines.rs`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/memory-classification.md`
+- Create: `apps/yune-web/e2e/results/m29-performance/memory-classification.md`
 
 - [x] Step 1.1: Add a single-startup memory probe.
 
@@ -222,10 +222,10 @@ Expected:
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Modify if needed: `third_party/typeduck-web/source/src/worker.ts`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Modify if needed: `apps/yune-web/source/src/worker.ts`
 - Modify if needed: `packages/yune-typeduck-runtime/src/`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/typing-attribution-before.json`
+- Create: `apps/yune-web/e2e/results/m29-performance/typing-attribution-before.json`
 
 - [x] Step 2.1: Add marker fields for each key.
 
@@ -261,7 +261,7 @@ Add a test named `M29 PERF typing attribution records owner spans` that measures
 Run:
 
 ```powershell
-$env:TYPEDUCK_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='before'; npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M29 PERF typing attribution" --workers=1
+$env:YUNE_WEB_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='before'; npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M29 PERF typing attribution" --workers=1
 ```
 
 Expected:
@@ -273,7 +273,7 @@ Expected:
 
 **Files:**
 
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/optimization-choice.md`
+- Create: `apps/yune-web/e2e/results/m29-performance/optimization-choice.md`
 
 - [x] Step 3.1: Record the chosen startup target.
 
@@ -321,7 +321,7 @@ Expected:
 - Modify if needed: `crates/yune-core/src/dictionary/`
 - Modify if needed: `crates/yune-rime-api/src/schema_install.rs`
 - Modify: `crates/yune-rime-api/benches/frontend_baselines.rs`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/native-startup-after.md`
+- Create: `apps/yune-web/e2e/results/m29-performance/native-startup-after.md`
 
 - [x] Step 4.1: Move deterministic spelling expansion out of repeated runtime work.
 
@@ -359,9 +359,9 @@ Expected:
 
 **Files:**
 
-- Modify based on Task 3: `crates/yune-core/src/*`, `crates/yune-rime-api/src/typeduck_web.rs`, `packages/yune-typeduck-runtime/src/*`, or `third_party/typeduck-web/source/src/*`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/typing-keydown-to-paint-after.json`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/typing-attribution-after.json`
+- Modify based on Task 3: `crates/yune-core/src/*`, `crates/yune-rime-api/src/typeduck_web.rs`, `packages/yune-typeduck-runtime/src/*`, or `apps/yune-web/source/src/*`
+- Create: `apps/yune-web/e2e/results/m29-performance/typing-keydown-to-paint-after.json`
+- Create: `apps/yune-web/e2e/results/m29-performance/typing-attribution-after.json`
 
 - [x] Step 5.1: Implement only the measured typing optimization.
 
@@ -385,7 +385,7 @@ Acceptance:
 Run:
 
 ```powershell
-$env:TYPEDUCK_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='after'; npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M29 PERF typing attribution" --workers=1
+$env:YUNE_WEB_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='after'; npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M29 PERF typing attribution" --workers=1
 ```
 
 Expected:
@@ -400,7 +400,7 @@ Expected:
 - Modify: `docs/roadmap.md`
 - Modify: `docs/requirements.md`
 - Archive when complete: `docs/plans/archive/m29-plan-startup-memory-typing-performance.md`
-- Create: `third_party/typeduck-web/e2e/results/m29-performance/task-6-gates.md`
+- Create: `apps/yune-web/e2e/results/m29-performance/task-6-gates.md`
 
 - [x] Step 6.1: Run verification.
 
@@ -416,8 +416,8 @@ cargo test --workspace
 cmd /c "cargo bench -p yune-rime-api --bench frontend_baselines > target\m29-frontend-baselines-final.txt 2>&1"
 npm.cmd --prefix packages/yune-typeduck-runtime test
 npm.cmd --prefix packages/yune-typeduck-runtime run build
-npm.cmd --prefix third_party/typeduck-web/source run build
-$env:TYPEDUCK_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='after'; npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
+npm.cmd --prefix apps/yune-web/source run build
+$env:YUNE_WEB_APP_URL='http://localhost:5173/web/'; $env:M29_EVIDENCE_LABEL='after'; npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
 git diff --check
 ```
 
@@ -441,5 +441,5 @@ Read AGENTS.md, docs/CONVENTIONS.md, docs/roadmap.md, docs/requirements.md, docs
 
 Goal: reduce remaining startup cost and establish fresh typing-latency optimization without changing candidate behavior. Start with fresh M29 baselines, classify whether the M27 1.79GB memory peak is per-startup pressure or benchmark high-water noise, then choose and implement only the measured top startup/typing owners. Keep M28 follow-up correctness separate; do not change candidate ordering, comments, commit behavior, or ABI surfaces in M29.
 
-If TypeDuck-Web source changes, regenerate and reverse/forward-check third_party/typeduck-web/patches/yune-typeduck-runtime.patch. Stage only intended files and push directly to origin/main when all gates pass.
+If TypeDuck-Web source changes, regenerate and reverse/forward-check apps/yune-web/patches/yune-web-runtime.patch. Stage only intended files and push directly to origin/main when all gates pass.
 ```

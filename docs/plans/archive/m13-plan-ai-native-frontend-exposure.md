@@ -31,7 +31,7 @@
 - **The provider is synchronous.** `LocalModelProvider::provide` ([local_model.rs:98](../../../crates/yune-core/src/ai/local_model.rs)) runs without threads; **do not** use `AiWorker::spawn` (threads don't port to Emscripten).
 - **Source is dropped at the C ABI.** `RimeCandidate` ([abi.rs:52](../../../crates/yune-rime-api/src/abi.rs)) is only `{text, comment, reserved}`, and `RimeGetContext` ([context_api.rs:193](../../../crates/yune-rime-api/src/context_api.rs)) discards `CandidateSource`. So source labels **cannot** be read in `copy_candidate()` — they must come from `engine.snapshot()` (Task 2).
 - **The provider's default rules are Mandarin pinyin.** `LocalModelProvider::sample()` ([local_model.rs:106](../../../crates/yune-core/src/ai/local_model.rs)) keys on `nihao`/`hao`; the proven TypeDuck-Web real-assets path is `jyut6ping3_mobile`, so M13 must supply a deterministic rule that fires on a chosen jyutping input (Task 1/5).
-- **The frontend is GO-WITH-CONDITIONS** (M9 / D-P10-13). Per-key seam: worker → `adapter.ts processKey` → `translateResponse` → `CandidatePanel`. Browser E2E harness: `third_party/typeduck-web/e2e/` (`playwright.config.ts`, `yune-typeduck.spec.ts`, run steps in `yune-browser-smoke.md`).
+- **The frontend is GO-WITH-CONDITIONS** (M9 / D-P10-13). Per-key seam: worker → `adapter.ts processKey` → `translateResponse` → `CandidatePanel`. Browser E2E harness: `apps/yune-web/e2e/` (`playwright.config.ts`, `yune-typeduck.spec.ts`, run steps in `yune-browser-smoke.md`).
 
 ## Non-goals (explicitly deferred)
 
@@ -47,9 +47,9 @@
 - Modify [`crates/yune-rime-api/src/bin/typeduck_web_module.rs`](../../../crates/yune-rime-api/src/bin/typeduck_web_module.rs) and [`scripts/typeduck-exports.txt`](../../../scripts/typeduck-exports.txt) — register the two new exports.
 - Modify [`crates/yune-rime-api/tests/typeduck_web.rs`](../../../crates/yune-rime-api/tests/typeduck_web.rs) — native contract tests (the deterministic fallback gate).
 - Modify `packages/yune-typeduck-runtime/src/response.ts` (+ wrapper) — optional `source` on the candidate; `setAiEnabled()` + `stageAi()` bindings.
-- Modify `third_party/typeduck-web/yune-integration/{adapter.ts,response.ts}` — `RimePreferences.enableAI`, `customize()` → `setAiEnabled`, propagate `source`, and the worker's classic-then-AI pipelining.
-- Modify `third_party/typeduck-web/source/src/{types.ts,hooks.ts,App.tsx,Preferences.tsx,Candidate.tsx,worker.ts,rime.ts}` — default-off toggle, the new `stageAi` serialized action, classic-first then second-pass AI render, distinct AI-row rendering.
-- Modify `third_party/typeduck-web/e2e/yune-typeduck.spec.ts` — AI safety scenarios.
+- Modify `apps/yune-web/yune-integration/{adapter.ts,response.ts}` — `RimePreferences.enableAI`, `customize()` → `setAiEnabled`, propagate `source`, and the worker's classic-then-AI pipelining.
+- Modify `apps/yune-web/source/src/{types.ts,hooks.ts,App.tsx,Preferences.tsx,Candidate.tsx,worker.ts,rime.ts}` — default-off toggle, the new `stageAi` serialized action, classic-first then second-pass AI render, distinct AI-row rendering.
+- Modify `apps/yune-web/e2e/yune-typeduck.spec.ts` — AI safety scenarios.
 - Modify `docs/{roadmap.md,requirements.md,decisions.md,CONVENTIONS.md}` — close M13 once evidence lands.
 
 ---
@@ -85,7 +85,7 @@
 **Steps:**
 
 - [x] In `yune_typeduck_stage_ai`'s response builder, after staging, read `engine.snapshot()` ([engine.rs:750](../../../crates/yune-core/src/engine.rs)) to get the engine `Candidate`s (which carry `CandidateSource`). **Align them to the current page** (`page_no * page_size + index` against the `RimeContext` candidates already in the JSON) and attach an explicit `source` field per row (`"ai:local"` for `Ai`, omitted/`null` for classic). **Do not** modify `RimeCandidate` or `copy_candidate`, and do **not** encode the label in `comment`.
-- [x] Extend `TypeDuckCandidate` (`packages/yune-typeduck-runtime/src/response.ts:3`) with optional `source?: string`; propagate through `translateResponse` (`third_party/typeduck-web/yune-integration/response.ts:39`) into `RimeResult.candidates`.
+- [x] Extend `TypeDuckCandidate` (`packages/yune-typeduck-runtime/src/response.ts:3`) with optional `source?: string`; propagate through `translateResponse` (`apps/yune-web/yune-integration/response.ts:39`) into `RimeResult.candidates`.
 - [x] Render AI rows distinctly in `Candidate.tsx`; handle missing `source` (classic rows) gracefully.
 
 **Acceptance:** AI candidates carry `source: "ai:local"` end-to-end aligned to the right page row and render with a visible marker; classic rows are unchanged; the `RimeCandidate` ABI and `process_key` are untouched.
@@ -101,7 +101,7 @@
 - [x] Add `enableAI: boolean` to `RimePreferences`; **default `false`** in `usePreferences()` (`hooks.ts:69`).
 - [x] Add `setAiEnabled(enabled)` + `stageAi()` to the runtime wrapper, calling the two new exports.
 - [x] In `customize()` (`adapter.ts:405`), map `enableAI` → `runtime.setAiEnabled(...)` (a runtime flag, **not** a deployed `customize` config key).
-- [x] **Deliver the second pass as a separate serialized worker action** (the worker protocol resolves one result per action). Register a new `stageAi` action in `rime.ts` `allActions` and the `worker.ts` `actions` map ([rime.ts:72](../../../third_party/typeduck-web/source/src/rime.ts), [worker.ts:256](../../../third_party/typeduck-web/source/src/worker.ts)); it returns a `RimeResult` rendered through the **existing `handleRimeResult` path**. Per keystroke the worker calls `processKey` (render classic), then **only if `enableAI`** calls `stageAi` (render the AI-augmented update). The existing request/response **serialization** guarantees ordering — a `processKey` for the next key cannot interleave — and the engine's `matches_input` check makes a late pass safe (silently dropped if input moved on). _(A push `aiResultUpdated` listener — the worker already supports `type: "listener"` messages — is an acceptable alternative; the serialized second action is simpler.)_
+- [x] **Deliver the second pass as a separate serialized worker action** (the worker protocol resolves one result per action). Register a new `stageAi` action in `rime.ts` `allActions` and the `worker.ts` `actions` map ([rime.ts:72](../../../apps/yune-web/source/src/rime.ts), [worker.ts:256](../../../apps/yune-web/source/src/worker.ts)); it returns a `RimeResult` rendered through the **existing `handleRimeResult` path**. Per keystroke the worker calls `processKey` (render classic), then **only if `enableAI`** calls `stageAi` (render the AI-augmented update). The existing request/response **serialization** guarantees ordering — a `processKey` for the next key cannot interleave — and the engine's `matches_input` check makes a late pass safe (silently dropped if input moved on). _(A push `aiResultUpdated` listener — the worker already supports `type: "listener"` messages — is an acceptable alternative; the serialized second action is simpler.)_
 - [x] Add the toggle to `Preferences.tsx` and the `App.tsx` customize effect.
 
 **Acceptance:** fresh load shows AI off and output identical to today; toggling on makes AI rows appear as a second-pass update without a redeploy; toggling off calls `set_ai_enabled(false)`, which **clears any staged AI for the current input**, so the current composition _and_ the next `process_key` are byte-identical classic and the second pass stops.
@@ -128,9 +128,9 @@
 
 **Purpose:** Prove the gates in a **real browser**, reusing the HR-5 Playwright harness, with an input that actually yields AI rows on `jyut6ping3_mobile`.
 
-**Files:** `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`.
+**Files:** `apps/yune-web/e2e/yune-typeduck.spec.ts`.
 
-**Steps (add scenarios to the existing `test.describe` suite, [spec:95](../../../third_party/typeduck-web/e2e/yune-typeduck.spec.ts)):**
+**Steps (add scenarios to the existing `test.describe` suite, [spec:95](../../../apps/yune-web/e2e/yune-typeduck.spec.ts)):**
 
 - [x] Use the Task 1 jyutping input that triggers the deterministic AI rule, and confirm the AI row lands on a **visible, selectable page**.
 - [x] **AI-off byte-identity:** with AI off, drive the input; assert the candidate panel state equals the HR-5 baseline for that input.
@@ -162,12 +162,12 @@ npm --prefix packages/yune-typeduck-runtime run build
 git diff --check
 ```
 
-- [x] **Run the browser E2E (the core M13 proof — not optional):** follow `third_party/typeduck-web/e2e/yune-browser-smoke.md` to install deps, build/serve the patched app and worker, then run Playwright against the AI scenarios, e.g.:
+- [x] **Run the browser E2E (the core M13 proof — not optional):** follow `apps/yune-web/e2e/yune-browser-smoke.md` to install deps, build/serve the patched app and worker, then run Playwright against the AI scenarios, e.g.:
 
 ```powershell
-npm --prefix third_party/typeduck-web/e2e install
+npm --prefix apps/yune-web/e2e install
 # build + serve the patched TypeDuck-Web app + worker per yune-browser-smoke.md, then:
-npx --prefix third_party/typeduck-web/e2e playwright test yune-typeduck.spec.ts
+npx --prefix apps/yune-web/e2e playwright test yune-typeduck.spec.ts
 ```
 
 Completion **requires** committed real-browser evidence (screenshots + state JSON + `browser-run.log`) for the AI scenarios; a green written gate without this does not close M13.

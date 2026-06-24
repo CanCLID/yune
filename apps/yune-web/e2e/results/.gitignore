@@ -1,0 +1,12 @@
+/worker-*/
+/worker-*-*/
+/browser-console.log
+/*screenshot-candidate-*.png
+/screenshot-candidates.png
+/screenshot-composition.png
+/screenshot-deletion.png
+/screenshot-deploy.png
+/screenshot-persistence-after-reload.png
+/*-vite-*.log
+/*dev-server-*.log
+/*devserver-*.log

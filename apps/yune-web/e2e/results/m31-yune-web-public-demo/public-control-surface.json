@@ -1,0 +1,14 @@
+{
+  "title": "yune-web",
+  "publicDemo": true,
+  "exposedOutputStandards": [
+    "hk_traditional",
+    "hk2s_simplified"
+  ],
+  "hiddenUnsupportedControls": [
+    "schema switcher",
+    "cangjie lookup",
+    "unsupported OpenCC standards"
+  ],
+  "aiDefault": "off"
+}

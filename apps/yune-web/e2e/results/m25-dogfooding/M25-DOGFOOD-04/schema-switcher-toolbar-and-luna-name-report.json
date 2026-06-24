@@ -1,0 +1,32 @@
+{
+  "captured_at": "2026-06-21T22:13:04Z",
+  "source": "manual dogfooding feedback from http://localhost:5173/web/",
+  "user_report": {
+    "schema_switcher_layout": "Move the schema list to the top control row with the three mode buttons to avoid wasting vertical space.",
+    "luna_pinyin_name": "The user expects the luna_pinyin schema to be labeled \u6719\u6708\u62fc\u97f3 rather than \u666e\u901a\u8a71."
+  },
+  "local_verification": {
+    "current_web_option": {
+      "file": "apps/yune-web/source/src/consts.ts",
+      "schema_id": "luna_pinyin",
+      "schema_name": "\u666e\u901a\u8a71",
+      "label": "\u666e\u901a\u8a71 Luna Pinyin"
+    },
+    "current_web_schema_asset": {
+      "file": "apps/yune-web/source/schema/luna_pinyin.schema.yaml",
+      "schema_id": "luna_pinyin",
+      "schema_name": "\u666e\u901a\u8a71"
+    },
+    "upstream_1_17_0_schema": {
+      "file": "target/upstream-oracle/1.17.0/schema-src/rime-luna-pinyin/luna_pinyin.schema.yaml",
+      "schema_id": "luna_pinyin",
+      "schema_name": "\u6719\u6708\u62fc\u97f3"
+    },
+    "typeduck_v1_1_2_schema": {
+      "file": "target/typeduck-oracle/v1.1.2/schema-src/schema-1bed1ae6a0ab48055f073774d7dfd152a171c548/luna_pinyin.schema.yaml",
+      "schema_id": "luna_pinyin",
+      "schema_name": "\u666e\u901a\u8a71"
+    }
+  },
+  "plan_change": "Track as M25-DOGFOOD-04. The implementation should place the schema switcher in the top toolbar row with the three mode buttons and make the luna_pinyin user-facing label follow the requested upstream/common schema name \u6719\u6708\u62fc\u97f3 unless the row is explicitly revised with TypeDuck-v1.1.2-specific rationale."
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@yune-ime/yune-web-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test --config playwright.config.ts",
+    "test:e2e:smoke": "playwright test --config playwright.config.ts --grep @smoke"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.0"
+  }
+}

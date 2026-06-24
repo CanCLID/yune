@@ -1332,7 +1332,7 @@ fn dictionary_yaml_from_oracle_comments(name: &str, comments: &[&str]) -> String
 
 fn typeduck_public_schema_asset(relative_path: &str) -> String {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../third_party/typeduck-web/source/public/schema")
+        .join("../../apps/yune-web/source/public/schema")
         .join(relative_path);
     std::fs::read_to_string(&path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))

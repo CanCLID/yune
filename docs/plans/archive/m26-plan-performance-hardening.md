@@ -8,7 +8,7 @@
 
 **Architecture:** M26 is measurement-first and oracle-invariant. Separate native engine cost from browser/WASM/worker/React/render cost, attribute the current ~10.5s `runtime:initialized` startup path, then optimize only the measured owner. Do not compare the browser dogfood surface directly to native librime; compare native Yune against native Yune baselines, and compare the browser surface against its own keydown-to-paint and startup budgets.
 
-**Tech Stack:** Rust (`yune-core`, `yune-rime-api`), existing `frontend_baselines` bench harness, TypeDuck real assets under `third_party/typeduck-web/source/public/schema/`, TypeDuck-Web React/TypeScript, Web Worker diagnostics, Playwright browser evidence, optional Windows packaging smoke only if native ABI behavior changes.
+**Tech Stack:** Rust (`yune-core`, `yune-rime-api`), existing `frontend_baselines` bench harness, TypeDuck real assets under `apps/yune-web/source/public/schema/`, TypeDuck-Web React/TypeScript, Web Worker diagnostics, Playwright browser evidence, optional Windows packaging smoke only if native ABI behavior changes.
 
 ---
 
@@ -33,7 +33,7 @@ In scope:
 - Add nested startup phase markers under `runtime:initialized` so dictionary load, schema deploy, runtime init, table parsing, translator/index build, and persistence are attributable.
 - Implement the first optimization proven by those measurements. Candidate owners include reducing candidate/index double-storage, materializing only the visible candidate page, caching reusable lookup material, or replacing selected dynamic-correction/prefix work with a trie/prism-backed or purpose-built prefix index.
 - Preserve oracle-visible candidate text, order, comments, paging, commit behavior, and ABI layout.
-- Record before/after evidence under `third_party/typeduck-web/e2e/results/m26-performance/` and, for native-only data, under a checked-in JSON or Markdown summary in the same folder.
+- Record before/after evidence under `apps/yune-web/e2e/results/m26-performance/` and, for native-only data, under a checked-in JSON or Markdown summary in the same folder.
 
 Out of scope:
 
@@ -79,9 +79,9 @@ M26 is complete only when all of these are true:
   - `cargo bench -p yune-rime-api --bench frontend_baselines`
   - `npm --prefix packages/yune-typeduck-runtime test`
   - `npm --prefix packages/yune-typeduck-runtime run build`
-  - `npm --prefix third_party/typeduck-web/source run build`
+  - `npm --prefix apps/yune-web/source run build`
   - focused Playwright M26 browser evidence tests.
-  - if any file under `third_party/typeduck-web/source/` changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` and run the TypeDuck-Web patch reverse/forward checks.
+  - if any file under `apps/yune-web/source/` changed, regenerate `apps/yune-web/patches/yune-web-runtime.patch` and run the TypeDuck-Web patch reverse/forward checks.
 
 ## Implementation Tasks
 
@@ -94,7 +94,7 @@ M26 is complete only when all of these are true:
 - Read: `docs/requirements.md`
 - Read: `docs/plans/m26-plan-performance-hardening.md`
 - Inspect: `crates/yune-rime-api/benches/frontend_baselines.rs`
-- Inspect: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Inspect: `apps/yune-web/e2e/yune-typeduck.spec.ts`
 
 - [x] Step 0.1: Confirm branch and worktree state.
 
@@ -120,7 +120,7 @@ Run:
 
 ```powershell
 cargo bench -p yune-rime-api --bench frontend_baselines
-npm --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M25 DOGFOOD-03" --workers=1
+npm --prefix apps/yune-web/e2e run test:e2e -- --grep "M25 DOGFOOD-03" --workers=1
 ```
 
 Expected:
@@ -135,7 +135,7 @@ Expected:
 
 - Modify: `crates/yune-rime-api/benches/frontend_baselines.rs`
 - Reuse fixture patterns from: `crates/yune-rime-api/tests/typeduck_web.rs`
-- Read assets from: `third_party/typeduck-web/source/public/schema/`
+- Read assets from: `apps/yune-web/source/public/schema/`
 
 - [x] Step 1.1: Add a real-asset fixture helper.
 
@@ -192,11 +192,11 @@ Acceptance:
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/source/src/CandidatePanel.tsx`
-- Modify: `third_party/typeduck-web/source/src/rime.ts`
-- Modify: `third_party/typeduck-web/source/src/worker.ts`
-- Modify as needed: `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
-- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Modify: `apps/yune-web/source/src/CandidatePanel.tsx`
+- Modify: `apps/yune-web/source/src/rime.ts`
+- Modify: `apps/yune-web/source/src/worker.ts`
+- Modify as needed: `apps/yune-web/source/src/yune-integration/adapter.ts`
+- Test: `apps/yune-web/e2e/yune-typeduck.spec.ts`
 
 - [x] Step 2.1: Add a diagnostic event shape.
 
@@ -228,26 +228,26 @@ Preferred implementation:
 Acceptance:
 
 ```powershell
-npm --prefix third_party/typeduck-web/source run build
-npm --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M26 PERF" --workers=1
+npm --prefix apps/yune-web/source run build
+npm --prefix apps/yune-web/e2e run test:e2e -- --grep "M26 PERF" --workers=1
 ```
 
 Expected:
 
 - The M26 browser test can parse `yunePerfDiagnostics`.
 - Each event has nondecreasing timestamps.
-- The test saves JSON evidence under `third_party/typeduck-web/e2e/results/m26-performance/`.
-- If any `third_party/typeduck-web/source/...` file changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from the patched source checkout, and forward-check it on a clean source checkout reset to `third_party/typeduck-web/typeduck-web.lock.json`. Ignored `source/` edits alone are not a valid deliverable.
+- The test saves JSON evidence under `apps/yune-web/e2e/results/m26-performance/`.
+- If any `apps/yune-web/source/...` file changed, regenerate `apps/yune-web/patches/yune-web-runtime.patch`, reverse-check it from the patched source checkout, and forward-check it on a clean source checkout reset to `apps/yune-web/yune-web.lock.json`. Ignored `source/` edits alone are not a valid deliverable.
 
 ### Task 3 - Attribute Startup Below `runtime:initialized`
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/source/src/worker.ts`
-- Modify: `third_party/typeduck-web/source/src/yune-integration/adapter.ts`
+- Modify: `apps/yune-web/source/src/worker.ts`
+- Modify: `apps/yune-web/source/src/yune-integration/adapter.ts`
 - Modify if needed: `packages/yune-typeduck-runtime/src/typeduck.ts`
 - Modify if needed: `packages/yune-typeduck-runtime/src/module.ts`
-- Test: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Test: `apps/yune-web/e2e/yune-typeduck.spec.ts`
 
 - [x] Step 3.1: Add nested startup markers.
 
@@ -273,7 +273,7 @@ Acceptance:
 - Existing `startup:complete` remains backward compatible.
 - New markers identify which nested phase owns the remaining ~10.5s startup cost.
 - Browser evidence records both fresh load and reload/cache-hit paths.
-- If any `third_party/typeduck-web/source/...` file changed, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`, reverse-check it from the patched source checkout, and forward-check it on a clean source checkout reset to `third_party/typeduck-web/typeduck-web.lock.json`.
+- If any `apps/yune-web/source/...` file changed, regenerate `apps/yune-web/patches/yune-web-runtime.patch`, reverse-check it from the patched source checkout, and forward-check it on a clean source checkout reset to `apps/yune-web/yune-web.lock.json`.
 
 - [x] Step 3.2: Add a startup evidence test.
 
@@ -301,7 +301,7 @@ The test must:
 - `crates/yune-core/src/dictionary/double_array.rs`
 - `crates/yune-rime-api/src/schema_install.rs`
 - `crates/yune-rime-api/src/typeduck_web.rs`
-- `third_party/typeduck-web/source/src/CandidatePanel.tsx`
+- `apps/yune-web/source/src/CandidatePanel.tsx`
 
 - [x] Step 4.1: Pick exactly one first optimization target.
 
@@ -312,7 +312,7 @@ Choose the target by evidence:
 - If browser p95 is dominated by serialization/rendering after worker completion, optimize the TypeDuck-Web response and candidate rendering path.
 - If worker queue wait dominates, optimize action scheduling and avoid settings/deploy work on typing.
 
-Record the evidenced top owner and chosen target in `third_party/typeduck-web/e2e/results/m26-performance/optimization-choice.md`. If the chosen target is not the top owner, the file must name the top owner, explain why it is deferred, and link to the follow-up plan created for it.
+Record the evidenced top owner and chosen target in `apps/yune-web/e2e/results/m26-performance/optimization-choice.md`. If the chosen target is not the top owner, the file must name the top owner, explain why it is deferred, and link to the follow-up plan created for it.
 
 - [x] Step 4.2: Preserve oracle-visible behavior before optimization.
 
@@ -352,7 +352,7 @@ Required commands:
 
 ```powershell
 cargo bench -p yune-rime-api --bench frontend_baselines
-npm --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M26 PERF" --workers=1
+npm --prefix apps/yune-web/e2e run test:e2e -- --grep "M26 PERF" --workers=1
 ```
 
 Required evidence:
@@ -364,7 +364,7 @@ Required evidence:
 - `typing-keydown-to-paint-before.json`
 - `typing-keydown-to-paint-after.json`
 - `optimization-choice.md`
-- regenerated `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` plus reverse/forward patch-check notes, if TypeDuck-Web source changed.
+- regenerated `apps/yune-web/patches/yune-web-runtime.patch` plus reverse/forward patch-check notes, if TypeDuck-Web source changed.
 
 ### Task 5 - Close With Compatibility Gates And Updated Docs
 
@@ -389,25 +389,25 @@ cargo test --workspace
 cargo bench -p yune-rime-api --bench frontend_baselines
 npm --prefix packages/yune-typeduck-runtime test
 npm --prefix packages/yune-typeduck-runtime run build
-npm --prefix third_party/typeduck-web/source run build
-npm --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M26 PERF" --workers=1
+npm --prefix apps/yune-web/source run build
+npm --prefix apps/yune-web/e2e run test:e2e -- --grep "M26 PERF" --workers=1
 git diff --check
 ```
 
-If any file under `third_party/typeduck-web/source/` changed, also run the M24/M25 patch workflow before `git diff --check`:
+If any file under `apps/yune-web/source/` changed, also run the M24/M25 patch workflow before `git diff --check`:
 
 ```powershell
-# First regenerate third_party/typeduck-web/patches/yune-typeduck-runtime.patch from the patched source checkout.
+# First regenerate apps/yune-web/patches/yune-web-runtime.patch from the patched source checkout.
 
 # Reverse-check from the patched source checkout.
-Push-Location third_party/typeduck-web/source
-git apply --reverse --check ..\patches\yune-typeduck-runtime.patch
+Push-Location apps/yune-web/source
+git apply --reverse --check ..\patches\yune-web-runtime.patch
 Pop-Location
 
 # Then forward-check the regenerated patch on a separate clean source checkout reset to
-# third_party/typeduck-web/typeduck-web.lock.json.
+# apps/yune-web/yune-web.lock.json.
 Push-Location <clean-typeduck-web-source-checkout>
-git apply --check <path-to-yune>\third_party\typeduck-web\patches\yune-typeduck-runtime.patch
+git apply --check <path-to-yune>\apps\yune-web\patches\yune-web-runtime.patch
 Pop-Location
 ```
 
@@ -424,7 +424,7 @@ Required updates:
 - `docs/roadmap.md`: mark M26 complete, summarize measured before/after numbers, and preserve the distinction between native engine speed and browser dogfood latency.
 - `docs/requirements.md`: mark M26 requirements complete with evidence paths.
 - `docs/CONVENTIONS.md`: update the performance-risk sentence to describe the remaining measured risk accurately.
-- `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`: regenerated and checked if any TypeDuck-Web source files changed.
+- `apps/yune-web/patches/yune-web-runtime.patch`: regenerated and checked if any TypeDuck-Web source files changed.
 - Move this plan to `docs/plans/archive/m26-plan-performance-hardening.md` only after evidence and gates pass.
 
 ## Review Checkpoint For Claude
@@ -454,8 +454,8 @@ Important constraints:
 - Benchmark the bounded dynamic-correction scan separately; `jigaajiusihaa` or a documented equivalent should exercise the `entries_by_code.keys()` correction branch.
 - Preserve oracle-visible candidate text, order, comments, paging, and commit behavior.
 - If Task 4 touches candidate/comment materialization, sequence it after or explicitly rebase it on P2-WIN-02.
-- If TypeDuck-Web source files change, regenerate `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` and run reverse/forward patch checks before closeout.
-- Save M26 evidence under `third_party/typeduck-web/e2e/results/m26-performance/`.
+- If TypeDuck-Web source files change, regenerate `apps/yune-web/patches/yune-web-runtime.patch` and run reverse/forward patch checks before closeout.
+- Save M26 evidence under `apps/yune-web/e2e/results/m26-performance/`.
 - Ask for review after startup/key typing attribution and before choosing the optimization target.
 
 Verification target: the M26 plan's Task 5 command list.

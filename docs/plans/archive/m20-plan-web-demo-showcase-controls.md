@@ -18,7 +18,7 @@ M20 is a web/demo milestone, parallel to Track 2 (M17-M19). It may run before M1
 
 For Yune development, this TypeDuck-Web build is the go-to playground. It should let maintainers quickly toggle options, trigger edge cases, compare before/after candidate behavior, capture browser evidence, and stress new engine features with real assets. When a new engine feature becomes browser-safe, the default expectation is to add either an active control or a guided scenario here; when a feature is not browser-safe or not implemented, document the deferral instead of leaving a confusing partial UI.
 
-Terminology guard: M20 targets only this repo's patched internal harness under `third_party/typeduck-web/` plus the reusable runtime bridge in `packages/yune-typeduck-runtime/`. A separately cloned `TypeDuck-HK/TypeDuck-Web` checkout is the real dedicated web IME product and belongs to a future named product-integration milestone. Do not touch, import from, or re-pull that product checkout for M20, and do not treat `packages/yune-typeduck-runtime/` as a UI app.
+Terminology guard: M20 targets only this repo's patched internal harness under `apps/yune-web/` plus the reusable runtime bridge in `packages/yune-typeduck-runtime/`. A separately cloned `TypeDuck-HK/TypeDuck-Web` checkout is the real dedicated web IME product and belongs to a future named product-integration milestone. Do not touch, import from, or re-pull that product checkout for M20, and do not treat `packages/yune-typeduck-runtime/` as a UI app.
 
 For M20, **browser-safe** means the behavior can be exercised through the TypeDuck-Web worker with real checked-in browser assets, without changing the upstream `RimeApi` table, widening `RimeCandidate`, requiring a native platform-only frontend, requiring a remote provider, or collecting security-sensitive host context. A browser-safe feature also needs deterministic before/after evidence in Playwright or the manual smoke record.
 
@@ -92,18 +92,18 @@ These are feature-launch buttons or compact scenario rows, not toggles:
 
 Implementation should touch only these paths unless a task explicitly discovers a blocker:
 
-- Create `third_party/typeduck-web/AGENTS.md`: patch discipline, browser evidence, honest-control rules.
+- Create `apps/yune-web/AGENTS.md`: patch discipline, browser evidence, honest-control rules.
 - Create `packages/yune-typeduck-runtime/AGENTS.md`: runtime wrapper/ABI safety rules.
-- Modify `third_party/typeduck-web/source/src/types.ts`: extend preference types for new controls.
-- Modify `third_party/typeduck-web/source/src/consts.ts`: add defaults, especially `predictionNeverFirst: true`.
-- Modify `third_party/typeduck-web/source/src/App.tsx`: route new schema controls to `customize()`/`deploy()` and session controls to `setOption()`.
-- Modify `third_party/typeduck-web/source/src/Preferences.tsx`: render controls in compact groups without exposing `ascii_punct`.
-- Modify `third_party/typeduck-web/source/src/Inputs.tsx`: add a small fine-grained numeric/range input or discrete selector only if existing controls cannot express the measured prediction-threshold scale cleanly.
-- Modify `third_party/typeduck-web/yune-integration/adapter.ts`: map new preferences to schema keys.
-- Modify `third_party/typeduck-web/yune-integration/adapter-filesystem.test.ts`: cover new customize mappings.
-- Modify `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`: add control honesty and guided scenario evidence.
-- Modify `third_party/typeduck-web/e2e/yune-browser-smoke.md`: update the manual smoke path for M20.
-- Modify `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`: regenerate the maintained TypeDuck-Web source patch after source changes.
+- Modify `apps/yune-web/source/src/types.ts`: extend preference types for new controls.
+- Modify `apps/yune-web/source/src/consts.ts`: add defaults, especially `predictionNeverFirst: true`.
+- Modify `apps/yune-web/source/src/App.tsx`: route new schema controls to `customize()`/`deploy()` and session controls to `setOption()`.
+- Modify `apps/yune-web/source/src/Preferences.tsx`: render controls in compact groups without exposing `ascii_punct`.
+- Modify `apps/yune-web/source/src/Inputs.tsx`: add a small fine-grained numeric/range input or discrete selector only if existing controls cannot express the measured prediction-threshold scale cleanly.
+- Modify `apps/yune-web/yune-integration/adapter.ts`: map new preferences to schema keys.
+- Modify `apps/yune-web/yune-integration/adapter-filesystem.test.ts`: cover new customize mappings.
+- Modify `apps/yune-web/e2e/yune-typeduck.spec.ts`: add control honesty and guided scenario evidence.
+- Modify `apps/yune-web/e2e/yune-browser-smoke.md`: update the manual smoke path for M20.
+- Modify `apps/yune-web/patches/yune-web-runtime.patch`: regenerate the maintained TypeDuck-Web source patch after source changes.
 - Modify docs only if execution finds a real scope correction.
 
 Do not touch `crates/yune-rime-api/src/abi.rs`, the `RimeApi` table layout, or `RimeCandidate`.
@@ -114,17 +114,17 @@ Do not touch `crates/yune-rime-api/src/abi.rs`, the `RimeApi` table layout, or `
 
 **Files:**
 
-- Create: `third_party/typeduck-web/AGENTS.md`
+- Create: `apps/yune-web/AGENTS.md`
 - Create: `packages/yune-typeduck-runtime/AGENTS.md`
 
 - [ ] **Step 1: Create TypeDuck-Web instructions**
 
-Create `third_party/typeduck-web/AGENTS.md`:
+Create `apps/yune-web/AGENTS.md`:
 
 ```markdown
 # TypeDuck-Web Yune Integration Guide
 
-This subtree is the internal browser demo/integration harness for Yune. The canonical source is the maintained patch in `patches/yune-typeduck-runtime.patch` plus the checked-out upstream app under `source/`.
+This subtree is the internal browser demo/integration harness for Yune. The canonical source is the maintained patch in `patches/yune-web-runtime.patch` plus the checked-out upstream app under `source/`.
 
 It is not the shipping `TypeDuck-HK/TypeDuck-Web` product checkout, and it is not the reusable runtime package in `packages/yune-typeduck-runtime/`. Future product work may target a separate TypeDuck-Web clone, but M20 changes stay inside this harness and the Yune runtime bridge.
 
@@ -132,7 +132,7 @@ It is not the shipping `TypeDuck-HK/TypeDuck-Web` product checkout, and it is no
 
 - Keep TypeDuck-Web changes in the upstream app patch unless a file is intentionally Yune-owned (`yune-integration/`, `e2e/`, `README.yune-source.md`).
 - Do not import from, re-pull, or edit a separately cloned `TypeDuck-HK/TypeDuck-Web` product checkout as part of this harness work.
-- After editing `source/`, regenerate and reverse-check `patches/yune-typeduck-runtime.patch`.
+- After editing `source/`, regenerate and reverse-check `patches/yune-web-runtime.patch`.
 - Preserve the native TypeDuck-Web fallback shape expected by the app: `Actions.processKey`, `stageAi`, candidate action methods, `customize`, `deploy`, and `setOption`.
 - Use `customize()` for schema/deploy-time keys and `setOption()` for live session options. Do not add a new WASM export when the existing transport works.
 - Every visible engine control must change candidate output, committed output, status output, or persisted config; display controls must change visible rendering. Do not expose `ascii_punct` as a working toggle until M18 implements the processor behavior.
@@ -172,7 +172,7 @@ Expected: only the two new `AGENTS.md` files are changed for this task.
 - [ ] **Step 4: Commit**
 
 ```powershell
-git add third_party/typeduck-web/AGENTS.md packages/yune-typeduck-runtime/AGENTS.md
+git add apps/yune-web/AGENTS.md packages/yune-typeduck-runtime/AGENTS.md
 git commit -m "docs: add TypeDuck-Web agent guides"
 ```
 
@@ -182,14 +182,14 @@ git commit -m "docs: add TypeDuck-Web agent guides"
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/source/src/types.ts`
-- Modify: `third_party/typeduck-web/source/src/consts.ts`
-- Modify: `third_party/typeduck-web/yune-integration/adapter.ts`
-- Modify: `third_party/typeduck-web/yune-integration/adapter-filesystem.test.ts`
+- Modify: `apps/yune-web/source/src/types.ts`
+- Modify: `apps/yune-web/source/src/consts.ts`
+- Modify: `apps/yune-web/yune-integration/adapter.ts`
+- Modify: `apps/yune-web/yune-integration/adapter-filesystem.test.ts`
 
 - [ ] **Step 1: Extend preference types**
 
-In `third_party/typeduck-web/source/src/types.ts`, extend `RimePreferences`:
+In `apps/yune-web/source/src/types.ts`, extend `RimePreferences`:
 
 ```ts
 export interface RimePreferences {
@@ -211,7 +211,7 @@ export interface RimePreferences {
 
 - [ ] **Step 2: Add defaults**
 
-In `third_party/typeduck-web/source/src/consts.ts`, update `DEFAULT_PREFERENCES`:
+In `apps/yune-web/source/src/consts.ts`, update `DEFAULT_PREFERENCES`:
 
 ```ts
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -242,7 +242,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
 - [ ] **Step 3: Extend adapter preference type**
 
-In `third_party/typeduck-web/yune-integration/adapter.ts`, extend `RimePreferences`:
+In `apps/yune-web/yune-integration/adapter.ts`, extend `RimePreferences`:
 
 ```ts
 export interface RimePreferences {
@@ -292,7 +292,7 @@ Do not add a separate `prediction_frequency_threshold` UI mapping; that key is a
 
 - [ ] **Step 5: Add adapter test coverage**
 
-In `third_party/typeduck-web/yune-integration/adapter-filesystem.test.ts`, extend the existing customize-call test so the fake runtime receives these additional calls:
+In `apps/yune-web/yune-integration/adapter-filesystem.test.ts`, extend the existing customize-call test so the fake runtime receives these additional calls:
 
 ```ts
 await customize({
@@ -332,7 +332,7 @@ Expected: PASS. The TypeDuck-Web source checkout has build scripts but no packag
 - [ ] **Step 7: Commit**
 
 ```powershell
-git add third_party/typeduck-web/source/src/types.ts third_party/typeduck-web/source/src/consts.ts third_party/typeduck-web/yune-integration/adapter.ts third_party/typeduck-web/yune-integration/adapter-filesystem.test.ts
+git add apps/yune-web/source/src/types.ts apps/yune-web/source/src/consts.ts apps/yune-web/yune-integration/adapter.ts apps/yune-web/yune-integration/adapter-filesystem.test.ts
 git commit -m "feat: wire TypeDuck-Web demo preferences"
 ```
 
@@ -342,9 +342,9 @@ git commit -m "feat: wire TypeDuck-Web demo preferences"
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/source/src/App.tsx`
-- Modify: `third_party/typeduck-web/source/src/Preferences.tsx`
-- Modify: `third_party/typeduck-web/source/src/Inputs.tsx` if needed
+- Modify: `apps/yune-web/source/src/App.tsx`
+- Modify: `apps/yune-web/source/src/Preferences.tsx`
+- Modify: `apps/yune-web/source/src/Inputs.tsx` if needed
 
 - [ ] **Step 1: Add a compact range helper if needed**
 
@@ -465,7 +465,7 @@ Keep `ascii_punct` absent from the active controls. If the UI mentions it, the t
 
 - [ ] **Step 5: Build the app**
 
-From `third_party/typeduck-web/source`, run the app's normal build command used by the current checkout:
+From `apps/yune-web/source`, run the app's normal build command used by the current checkout:
 
 ```powershell
 npm run build
@@ -482,7 +482,7 @@ Expected: TypeScript/build PASS. If the command is absent, record the exact pack
 - [ ] **Step 6: Commit**
 
 ```powershell
-git add third_party/typeduck-web/source/src/App.tsx third_party/typeduck-web/source/src/Preferences.tsx third_party/typeduck-web/source/src/Inputs.tsx
+git add apps/yune-web/source/src/App.tsx apps/yune-web/source/src/Preferences.tsx apps/yune-web/source/src/Inputs.tsx
 git commit -m "feat: add TypeDuck-Web showcase controls"
 ```
 
@@ -492,9 +492,9 @@ git commit -m "feat: add TypeDuck-Web showcase controls"
 
 **Files:**
 
-- Create or modify: `third_party/typeduck-web/source/src/YuneFeatureShowcase.tsx`
-- Modify: `third_party/typeduck-web/source/src/App.tsx`
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+- Create or modify: `apps/yune-web/source/src/YuneFeatureShowcase.tsx`
+- Modify: `apps/yune-web/source/src/App.tsx`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
 
 - [ ] **Step 1: Create scenario data**
 
@@ -577,7 +577,7 @@ await expect(page.locator(".candidate-panel")).toContainText("唔該");
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add third_party/typeduck-web/source/src/YuneFeatureShowcase.tsx third_party/typeduck-web/source/src/App.tsx third_party/typeduck-web/e2e/yune-typeduck.spec.ts
+git add apps/yune-web/source/src/YuneFeatureShowcase.tsx apps/yune-web/source/src/App.tsx apps/yune-web/e2e/yune-typeduck.spec.ts
 git commit -m "feat: add TypeDuck-Web guided scenarios"
 ```
 
@@ -587,8 +587,8 @@ git commit -m "feat: add TypeDuck-Web guided scenarios"
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Modify: `third_party/typeduck-web/e2e/yune-browser-smoke.md`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Modify: `apps/yune-web/e2e/yune-browser-smoke.md`
 
 - [ ] **Step 1: Add an explicit list of active controls in the E2E**
 
@@ -665,7 +665,7 @@ In `yune-browser-smoke.md`, add an M20 section:
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add third_party/typeduck-web/e2e/yune-typeduck.spec.ts third_party/typeduck-web/e2e/yune-browser-smoke.md
+git add apps/yune-web/e2e/yune-typeduck.spec.ts apps/yune-web/e2e/yune-browser-smoke.md
 git commit -m "test: prove TypeDuck-Web showcase controls"
 ```
 
@@ -675,20 +675,20 @@ git commit -m "test: prove TypeDuck-Web showcase controls"
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`
+- Modify: `apps/yune-web/patches/yune-web-runtime.patch`
 
 - [ ] **Step 1: Regenerate the maintained patch**
 
-From the repository root, regenerate the TypeDuck-Web source patch using the same patch discipline already used in this subtree. If the exact local helper is not present, use a clean upstream source checkout in `third_party/typeduck-web/source` and produce a patch that includes the changed `source/src/*` files.
+From the repository root, regenerate the TypeDuck-Web source patch using the same patch discipline already used in this subtree. If the exact local helper is not present, use a clean upstream source checkout in `apps/yune-web/source` and produce a patch that includes the changed `source/src/*` files.
 
-Expected: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch` includes the M20 source changes and keeps the existing Yune integration edits.
+Expected: `apps/yune-web/patches/yune-web-runtime.patch` includes the M20 source changes and keeps the existing Yune integration edits.
 
 - [ ] **Step 2: Reverse-check the patch**
 
-Run from `third_party/typeduck-web/source`:
+Run from `apps/yune-web/source`:
 
 ```powershell
-git apply --reverse --check ..\patches\yune-typeduck-runtime.patch
+git apply --reverse --check ..\patches\yune-web-runtime.patch
 ```
 
 Expected: command exits 0.
@@ -698,7 +698,7 @@ Expected: command exits 0.
 After resetting or recreating the source checkout to the recorded upstream state, run:
 
 ```powershell
-git apply --check ..\patches\yune-typeduck-runtime.patch
+git apply --check ..\patches\yune-web-runtime.patch
 ```
 
 Expected: command exits 0.
@@ -706,7 +706,7 @@ Expected: command exits 0.
 - [ ] **Step 4: Commit**
 
 ```powershell
-git add third_party/typeduck-web/patches/yune-typeduck-runtime.patch
+git add apps/yune-web/patches/yune-web-runtime.patch
 git commit -m "chore: refresh TypeDuck-Web showcase patch"
 ```
 
@@ -716,7 +716,7 @@ git commit -m "chore: refresh TypeDuck-Web showcase patch"
 
 **Files:**
 
-- Modify only evidence files under `third_party/typeduck-web/e2e/results/m20-showcase-controls/` if browser evidence is captured.
+- Modify only evidence files under `apps/yune-web/e2e/results/m20-showcase-controls/` if browser evidence is captured.
 
 - [ ] **Step 1: Format**
 
@@ -768,12 +768,12 @@ Expected: PASS.
 
 - [ ] **Step 7: Real TypeDuck-Web Playwright E2E**
 
-Run the procedure in `third_party/typeduck-web/e2e/yune-browser-smoke.md`, including the M20 showcase controls and the existing M13/M16 scenarios.
+Run the procedure in `apps/yune-web/e2e/yune-browser-smoke.md`, including the M20 showcase controls and the existing M13/M16 scenarios.
 
 Expected evidence directory:
 
 ```text
-third_party/typeduck-web/e2e/results/m20-showcase-controls/
+apps/yune-web/e2e/results/m20-showcase-controls/
 ```
 
 Required evidence:
@@ -803,7 +803,7 @@ Expected: no whitespace errors.
 - [ ] **Step 10: Commit browser evidence and any remaining checked files**
 
 ```powershell
-git add third_party/typeduck-web/e2e/results/m20-showcase-controls
+git add apps/yune-web/e2e/results/m20-showcase-controls
 git add docs/plans/archive/m20-plan-web-demo-showcase-controls.md docs/roadmap.md docs/requirements.md
 git commit -m "test: record TypeDuck-Web showcase evidence"
 ```

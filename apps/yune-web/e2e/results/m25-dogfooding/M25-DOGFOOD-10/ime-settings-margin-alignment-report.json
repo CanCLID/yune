@@ -1,0 +1,15 @@
+{
+  "captured_at": "2026-06-21T22:28:38Z",
+  "source": "manual dogfooding feedback from http://localhost:5173/web/",
+  "user_report": {
+    "section": "輸入法設定 IME Settings",
+    "requested_change": "Align the section's horizontal margin with the section above it."
+  },
+  "local_verification": {
+    "app_container": "apps/yune-web/source/src/App.tsx renders the playground inside <main className=\"m-auto p-8 max-w-7xl\">.",
+    "above_content": "Toolbar, schema switcher, status strip, textarea, inspector, and candidate panel render directly in the main container.",
+    "settings_container": "apps/yune-web/source/src/Preferences.tsx wraps IME Settings in <section className=\"mx-auto max-w-6xl\">.",
+    "likely_cause": "The nested centered max-w-6xl settings wrapper is narrower than the max-w-7xl main content, causing different left/right margins from the preceding playground section."
+  },
+  "plan_change": "Track as M25-DOGFOOD-10. The implementation should remove or replace the nested preferences width constraint so IME Settings aligns with the content above it while preserving the settings grid and responsive behavior."
+}

@@ -1,0 +1,217 @@
+{
+  "version": "m31-yune-web-public-demo-v1",
+  "generatedFor": "yune-web",
+  "sourceRoot": "apps/yune-web/source/public/schema",
+  "assets": [
+    {
+      "path": "default.yaml",
+      "sha256": "64c59f2d37e763d6184b016c6ad5f957fc3c406b6e48f8e5af3855ec68955eac",
+      "bytes": 6978,
+      "tier": "explicit",
+      "required": true
+    },
+    {
+      "path": "default.custom.yaml",
+      "sha256": "d07f5cc38cc07f9e2d8a5d046bb5f96bee42ed3d92111fc3ec7f0a46ebe1099f",
+      "bytes": 394,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "common.yaml",
+      "sha256": "b464b0f9a551ca01209b3279c40fc75194001baa0043367e84debe28774f22f0",
+      "bytes": 957,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "common.custom.yaml",
+      "sha256": "6be99391e80c7f08df10cfaa4324b05058d8c6d3c64642ebbc08749d90456116",
+      "bytes": 333,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "include.yaml",
+      "sha256": "7e2f65ae18e04d1895401da8e33120789bff23e897a78f662378283e800aed26",
+      "bytes": 2838,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "template.yaml",
+      "sha256": "760eddefd5143d89f1f6f5fddd1c406ecfc85bd973ce990cb9b5d7c5f7bce197",
+      "bytes": 1896,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3.schema.yaml",
+      "sha256": "bde19377014fe525f7461e5817411fdb8ba86b9667804252e404f5122605a0ba",
+      "bytes": 2129,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3_mobile.schema.yaml",
+      "sha256": "7794ddd50708c79cc853c433033832a1999105a0eb34515c72784adc41df6afd",
+      "bytes": 1427,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3.dict.yaml",
+      "sha256": "f29d65de035229847e72e90d308c3363b16f130bc9adcd874b1cce89cec94628",
+      "bytes": 3594190,
+      "tier": "explicit",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3_scolar.schema.yaml",
+      "sha256": "677dabff37f7fabc46f21e782ffc08b570adb0837b2b4840986a744ebc3fd575",
+      "bytes": 421,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3_scolar.dict.yaml",
+      "sha256": "75f735e9cc3645fedb471932b1b56f3aecf18d0855572576b8a2f5e46a2a5ab3",
+      "bytes": 7254777,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin.schema.yaml",
+      "sha256": "8fd07c42a47664a5472400fd34b5f75c25d23e6d3bdab55321aaf0ac733ee232",
+      "bytes": 1682,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin.dict.yaml",
+      "sha256": "dd05b0c44b6c0528aceb7e63382ee78cf9466d23bc94047f1517f935c46c5624",
+      "bytes": 471319,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin_yune_reverse.dict.yaml",
+      "sha256": "b7d0f4a43714744877ee9277b65b1402aa261c499e9a1e892643dbe405cad49e",
+      "bytes": 175,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/hk2s.json",
+      "sha256": "2e796ccc70df15aaa6f6a52098ade1dbb0143ba0ad7d07a8f11a2cceef8ee77e",
+      "bytes": 677,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/HKVariantsRev.ocd2",
+      "sha256": "4cf112374ada4ab0e3bc21625bf97b9db75a62ec211eea9c77a25fe93b2f40aa",
+      "bytes": 4923,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/HKVariantsRevPhrases.ocd2",
+      "sha256": "3594f5562797ffc2d32762e5dde2b90695192f7d1ce8a8fda032e1b05e7ad116",
+      "bytes": 7030,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/TSCharacters.ocd2",
+      "sha256": "d6dc5d82837b631899f5e3be9c02162018b440c6f01e27190fd595c78ac0c32d",
+      "bytes": 46132,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/TSPhrases.ocd2",
+      "sha256": "5a50521f8c831a436ea6cd297cba88fbe27f25d9b8e616ecf844cb1ab315c85b",
+      "bytes": 9776,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3.table.bin",
+      "sha256": "5f686227e2ec3461c8b2bd6d6a19903a851f3f2354260e5da4ddb5f3d1e2177a",
+      "bytes": 4306860,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3.reverse.bin",
+      "sha256": "23c7946c39e76894022d9319c639fc19bba5f5099f772c91fe435bebcb0114c7",
+      "bytes": 70012,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3_mobile.prism.bin",
+      "sha256": "63408a1efe90aa66ebf891658cf06fd6b235eb17c072224e8f6ca736dc452eaf",
+      "bytes": 242728,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3_scolar.table.bin",
+      "sha256": "9e09a610ce5bcb59c8784d48ab5698172d72d74ad7a2b5fec34f95b6d4bdfeba",
+      "bytes": 6115656,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3_scolar.reverse.bin",
+      "sha256": "3191705dc4615274a1ff7dde3acb87828935d60980ef4788558af189e4f75174",
+      "bytes": 3568716,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "jyut6ping3_scolar.prism.bin",
+      "sha256": "d28a9fe4469a78c9783c1a8d8fd40910481a92c445ad2373190e83d7ad325f78",
+      "bytes": 2343228,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin.table.bin",
+      "sha256": "26601971bd7845c8e84eb8f8440b14633c815578fe0560c6b81fa62b69af278d",
+      "bytes": 613855,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin.reverse.bin",
+      "sha256": "b41098f7b24f7f936e1e28e2fc135cfd982e4c056cc4f3ef61c617b508485f13",
+      "bytes": 704357,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin.prism.bin",
+      "sha256": "ff26c58bf4c9677b79d00656b03b62d619b1fd29be132715371be07b6f260c33",
+      "bytes": 23465,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "build/default.yaml",
+      "sha256": "e078b77f10d89af546dba7874886e772b708dc4208e1be90cd609fe9d736784c",
+      "bytes": 7573,
+      "tier": "explicit",
+      "required": true
+    },
+    {
+      "path": "build/jyut6ping3_mobile.schema.yaml",
+      "sha256": "507f6f2842c6b959aae29bebb64bbaebb002920edde2addd90c297ff058bedd3",
+      "bytes": 9653,
+      "tier": "explicit",
+      "required": true
+    }
+  ]
+}

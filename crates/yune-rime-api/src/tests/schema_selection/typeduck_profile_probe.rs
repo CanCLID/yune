@@ -49,7 +49,7 @@ fn m21_gap_01_sentence_composition_probe() {
             "scenario": "M21-GAP-01 Yune real-assets sentence-composition probe",
             "schema": "jyut6ping3_mobile",
             "candidate_source": "session_candidates_snapshot after RimeGetContext on the real RimeApi path",
-            "asset_root": "third_party/typeduck-web/source/public/schema",
+            "asset_root": "apps/yune-web/source/public/schema",
             "dictionary": "jyut6ping3.dict.yaml",
             "lookup_dictionary": "jyut6ping3_scolar.dict.yaml",
             "pinned_yune_commit": std::env::var("YUNE_M21_GAP_01_COMMIT").unwrap_or_else(|_| "unknown".to_owned()),

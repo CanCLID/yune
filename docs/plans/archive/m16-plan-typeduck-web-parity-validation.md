@@ -6,7 +6,7 @@
 
 **Goal:** Prove in a real browser that TypeDuck-Web, driven by Yune, is **fork-like for captured target behaviors exposed by the current app** plus the M13 AI layer — with deploy-only, UI-only, and userdb-inspection gaps explicitly listed.
 
-**Architecture:** Extend the existing HR-5 Playwright harness ([e2e/yune-typeduck.spec.ts](../../third_party/typeduck-web/e2e/yune-typeduck.spec.ts)) with parity scenarios; assert behavior against the M14 v1.1.2 goldens where applicable. Reuse the M12/M13 oracle-measured, non-circular discipline.
+**Architecture:** Extend the existing HR-5 Playwright harness ([e2e/yune-typeduck.spec.ts](../../apps/yune-web/e2e/yune-typeduck.spec.ts)) with parity scenarios; assert behavior against the M14 v1.1.2 goldens where applicable. Reuse the M12/M13 oracle-measured, non-circular discipline.
 
 **Tech stack:** Playwright browser E2E, the patched TypeDuck-Web app + worker, `cargo`/`npm` gates.
 
@@ -55,7 +55,7 @@ npm --prefix packages/yune-typeduck-runtime run build
 git diff --check
 ```
 
-- [x] Run the browser E2E (the core M16 proof) following `third_party/typeduck-web/e2e/yune-browser-smoke.md` (install deps, build/serve the patched app + worker). Run Playwright from the e2e directory, which owns `playwright.config.ts`: `npm --prefix third_party/typeduck-web/e2e install`, then `npx --prefix third_party/typeduck-web/e2e playwright test yune-typeduck.spec.ts`. Commit screenshots + state JSON + `browser-run.log`.
+- [x] Run the browser E2E (the core M16 proof) following `apps/yune-web/e2e/yune-browser-smoke.md` (install deps, build/serve the patched app + worker). Run Playwright from the e2e directory, which owns `playwright.config.ts`: `npm --prefix apps/yune-web/e2e install`, then `npx --prefix apps/yune-web/e2e playwright test yune-typeduck.spec.ts`. Commit screenshots + state JSON + `browser-run.log`.
 - **Acceptance:** all gates pass; real-browser parity evidence committed.
 
 ## Completion criteria

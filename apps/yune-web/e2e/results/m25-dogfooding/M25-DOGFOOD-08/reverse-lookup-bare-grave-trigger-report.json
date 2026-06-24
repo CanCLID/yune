@@ -1,0 +1,33 @@
+{
+  "captured_at": "2026-06-21T22:21:50Z",
+  "source": "manual dogfooding feedback from http://localhost:5173/web/",
+  "user_report": {
+    "issue": "The Jyutping schema appears to use `p rather than the single grave accent ` as the Mandarin luna_pinyin reverse-lookup trigger.",
+    "requested_change": "Use the single grave accent as the trigger for luna_pinyin reverse lookup.",
+    "observed_error": "When typing in reverse lookup, the app is very slow and shows: 執行操作時發生錯誤。如輸入法不能正常運作，請重新載入頁面。 / An error occurred while performing the operation. If the input method does not work properly, please reload the page.",
+    "performance_note": "The user suspects the slowness/error may share the same root cause as the M25 startup/typing performance issues."
+  },
+  "local_verification": {
+    "current_web_schema_files": [
+      {
+        "file": "apps/yune-web/source/schema/jyut6ping3.schema.yaml",
+        "prefix": "`p",
+        "alphabet_line": "luna_pinyin: \"^`p[a-z']*;?$\""
+      },
+      {
+        "file": "apps/yune-web/source/schema/jyut6ping3_mobile.schema.yaml",
+        "prefix": "`p",
+        "alphabet_line": "luna_pinyin: \"^`p[a-z']*;?$\""
+      }
+    ],
+    "current_hint_file": {
+      "file": "apps/yune-web/source/src/consts.ts",
+      "jyutping_reverse_lookup_hint": "`pzhe -> 這（普通話反查）"
+    },
+    "typeduck_v1_1_2_note": "The captured TypeDuck v1.1.2 jyut6ping3 schema copy also uses prefix `p for luna_pinyin. M25-DOGFOOD-08 is therefore a new web dogfooding correction request, not a silent continuation of the M24 `p... assumption.",
+    "current_bare_reverse_lookup_note": "Follow-up review found the desktop reverse_lookup tag owns bare ` but has no translator/dictionary, so it is a vestigial empty slot rather than a functional Jyutping lookup.",
+    "functional_secondary_lookup_note": "The functional secondary lookup paths are currently luna_pinyin on `p, loengfan on `l, and cangjie on `c. Bare ` should become luna_pinyin; retained secondary lookups should move to explicit non-bare triggers, preferably a v-prefixed namespace such as `vl and `vc to avoid normal pinyin initial shadowing.",
+    "user_clarification": "The intended M25 behavior is that bare ` typed inside the jyut6ping3 schema triggers luna_pinyin reverse lookup. The web UI should explicitly show which trigger maps to which lookup/schema."
+  },
+  "plan_change": "Track as M25-DOGFOOD-08. The implementation should change the TypeDuck-Web Jyutping luna_pinyin reverse-lookup trigger to bare `, remove the vestigial bare-grave reverse_lookup tag unless a real consumer is proven, move retained secondary lookups to explicit triggers such as `vl and `vc, update visible per-schema trigger hints, capture browser evidence for `zhe and secondary triggers if retained, and keep the slow/error symptom linked to M25-DOGFOOD-01/M25-DOGFOOD-03 unless repro proves a distinct reverse-lookup failure."
+}

@@ -65,9 +65,9 @@ Out of scope:
 - `crates/yune-rime-api/src/typeduck_web.rs`: owns browser/WASM AI exports and response source labels.
 - `crates/yune-rime-api/tests/typeduck_web.rs`: owns native browser-runtime AI contract tests.
 - `packages/yune-typeduck-runtime/`: owns TypeScript AI control bindings.
-- `third_party/typeduck-web/yune-integration/`: owns bridge-level AI wiring.
-- `third_party/typeduck-web/source/`: owns public-demo AI UI.
-- `third_party/typeduck-web/e2e/`: owns browser evidence.
+- `apps/yune-web/yune-integration/`: owns bridge-level AI wiring.
+- `apps/yune-web/source/`: owns public-demo AI UI.
+- `apps/yune-web/e2e/`: owns browser evidence.
 - `docs/roadmap.md`, `docs/requirements.md`, `docs/decisions.md`: own milestone status, requirements, and any remote-provider decision.
 
 ---
@@ -80,8 +80,8 @@ Out of scope:
 - Read: `docs/plans/p2-win01-plan-typeduck-windows-next.md`
 - Read: `docs/plans/m11-design-ai-native.md`
 - Read: `docs/plans/archive/m13-plan-ai-native-frontend-exposure.md`
-- Create: `third_party/typeduck-web/e2e/results/m32-ai-product/product-priority-decision.md`
-- Create: `third_party/typeduck-web/e2e/results/m32-ai-product/m11-m13-invariant-audit.md`
+- Create: `apps/yune-web/e2e/results/m32-ai-product/product-priority-decision.md`
+- Create: `apps/yune-web/e2e/results/m32-ai-product/m11-m13-invariant-audit.md`
 
 - [ ] **Step 0.1: Record the product-priority decision**
 
@@ -190,7 +190,7 @@ Expected default:
 
 - Modify: `crates/yune-rime-api/tests/typeduck_web.rs`
 - Modify only if needed: `crates/yune-core/src/ai/`
-- Create evidence: `third_party/typeduck-web/e2e/results/m32-ai-product/native-ai-gates.md`
+- Create evidence: `apps/yune-web/e2e/results/m32-ai-product/native-ai-gates.md`
 
 - [ ] **Step 2.1: Add native tests for the M32 product surface**
 
@@ -235,11 +235,11 @@ Expected before UI/product changes:
 **Files:**
 
 - Modify: `packages/yune-typeduck-runtime/src/`
-- Modify: `third_party/typeduck-web/yune-integration/`
-- Modify: `third_party/typeduck-web/source/src/`
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Regenerate: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`
-- Create evidence: `third_party/typeduck-web/e2e/results/m32-ai-product/browser-ai-ux.md`
+- Modify: `apps/yune-web/yune-integration/`
+- Modify: `apps/yune-web/source/src/`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Regenerate: `apps/yune-web/patches/yune-web-runtime.patch`
+- Create evidence: `apps/yune-web/e2e/results/m32-ai-product/browser-ai-ux.md`
 
 If Task 0 records `defer_until_native_frontend`, stop before this task and close M32 as deferred-with-policy rather than adding web AI UX. If Task 0 records `hidden_developer_only`, keep controls behind a developer flag and do not expose them in the public default build.
 
@@ -271,13 +271,13 @@ Run:
 ```powershell
 npm.cmd --prefix packages\yune-typeduck-runtime test
 npm.cmd --prefix packages\yune-typeduck-runtime run build
-npm.cmd --prefix third_party\typeduck-web\source run build
-npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
+npm.cmd --prefix apps\yune-web\source run build
+npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
 ```
 
 Expected:
 
-- Browser evidence under `third_party/typeduck-web/e2e/results/m32-ai-product/` shows AI-off, AI-on, explicit AI selection, and no default AI auto-commit.
+- Browser evidence under `apps/yune-web/e2e/results/m32-ai-product/` shows AI-off, AI-on, explicit AI selection, and no default AI auto-commit.
 
 ## Task 4 - Privacy And Memory Controls
 
@@ -285,9 +285,9 @@ Expected:
 
 - Modify: `crates/yune-core/src/ai/`
 - Modify: `crates/yune-rime-api/src/typeduck_web.rs`
-- Modify: `third_party/typeduck-web/source/src/`
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Create evidence: `third_party/typeduck-web/e2e/results/m32-ai-product/privacy-memory.md`
+- Modify: `apps/yune-web/source/src/`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Create evidence: `apps/yune-web/e2e/results/m32-ai-product/privacy-memory.md`
 
 - [ ] **Step 4.1: Expose memory controls only if native support is present**
 
@@ -326,16 +326,16 @@ Expected:
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
-- Create evidence: `third_party/typeduck-web/e2e/results/m32-ai-product/public-demo-ai.md`
+- Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`
+- Create evidence: `apps/yune-web/e2e/results/m32-ai-product/public-demo-ai.md`
 
 - [ ] **Step 5.1: Run local public-demo smoke**
 
 Run against the M31 public-demo build:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File third_party\typeduck-web\public-demo\build.ps1
-npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
+powershell -NoProfile -ExecutionPolicy Bypass -File apps\yune-web\public-demo\build.ps1
+npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
 ```
 
 Expected:
@@ -351,9 +351,9 @@ Expected:
 Read the deployed URL from the M31 evidence file, then run:
 
 ```powershell
-$DeployedUrl = Get-Content third_party\typeduck-web\e2e\results\m31-public-demo\deployed-url.txt -Raw
-$env:TYPEDUCK_APP_URL = ($DeployedUrl.TrimEnd("/") + "/web/")
-npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
+$DeployedUrl = Get-Content apps\yune-web\e2e\results\m31-yune-web-public-demo\deployed-url.txt -Raw
+$env:YUNE_WEB_APP_URL = ($DeployedUrl.TrimEnd("/") + "/web/")
+npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
 ```
 
 Expected:
@@ -383,8 +383,8 @@ cargo test -p yune-rime-api --test typeduck_web m32_ai -- --nocapture
 cargo test --workspace
 npm.cmd --prefix packages\yune-typeduck-runtime test
 npm.cmd --prefix packages\yune-typeduck-runtime run build
-npm.cmd --prefix third_party\typeduck-web\source run build
-npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
+npm.cmd --prefix apps\yune-web\source run build
+npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M32 AI" --workers=1
 git diff --check
 ```
 
@@ -410,12 +410,12 @@ Stage only M32 files:
 
 ```powershell
 git status --short
-git add -- docs\roadmap.md docs\requirements.md docs\decisions.md docs\plans\m32-plan-ai-native-public-demo-product-layer.md docs\plans\m32-ai-product-policy.md crates packages third_party\typeduck-web
+git add -- docs\roadmap.md docs\requirements.md docs\decisions.md docs\plans\m32-plan-ai-native-public-demo-product-layer.md docs\plans\m32-ai-product-policy.md crates packages apps\yune-web
 git commit -m "Expand AI-native public demo layer"
 git push origin main
 ```
 
-Only include `docs\decisions.md`, `crates`, `packages`, or `third_party\typeduck-web` paths if they actually changed.
+Only include `docs\decisions.md`, `crates`, `packages`, or `apps\yune-web` paths if they actually changed.
 
 ## Review Questions
 

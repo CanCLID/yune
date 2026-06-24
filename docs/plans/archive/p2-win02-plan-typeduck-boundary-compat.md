@@ -493,7 +493,7 @@ Also rerun the focused web-comment gates:
 
 ```powershell
 cargo test -p yune-rime-api --test typeduck_web typeduck_adapter_real_assets_emit_oracle_dictionary_panel_comments
-npm.cmd --prefix third_party/typeduck-web/e2e run test:e2e -- --grep "M24 phrase comments render without raw control markers"
+npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M24 phrase comments render without raw control markers"
 ```
 
 Expected:

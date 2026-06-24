@@ -1,0 +1,5 @@
+{
+  "name": "yune-web",
+  "compatibility_date": "2026-06-24",
+  "pages_build_output_dir": "./dist"
+}

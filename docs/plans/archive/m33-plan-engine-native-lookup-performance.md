@@ -129,7 +129,7 @@ Out of scope (do not change as part of M33):
 ## Current Evidence to reuse
 
 - Cross-engine harness: `scripts/benchmark-yune-vs-librime.ps1` + `scripts/yune-vs-librime-benchmark.cs`. Committed baseline evidence: `docs/reports/evidence/yune-vs-librime-2026-06-23/`.
-- Native bench: `crates/yune-rime-api/benches/frontend_baselines.rs` (startup, single-startup memory, per-key rows). M30 baseline context under `third_party/typeduck-web/e2e/results/m30-engine-performance/`.
+- Native bench: `crates/yune-rime-api/benches/frontend_baselines.rs` (startup, single-startup memory, per-key rows). M30 baseline context under `apps/yune-web/e2e/results/m30-engine-performance/`.
 - Behavior oracles that must stay green: `crates/yune-core/tests/upstream_luna_pinyin_parity.rs`, `crates/yune-core/tests/cantonese_parity.rs`, `crates/yune-rime-api/tests/typeduck_web.rs`.
 
 ## Acceptance Gates

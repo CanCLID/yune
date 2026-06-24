@@ -25,7 +25,7 @@ This document records findings from integrating Yune with the upstream TypeDuck-
 - Direct Node/Emscripten artifact instantiation with real assets returns `schema: "jyut6ping3_mobile"`, `input: "nei"`, `preedit: "nei"`, `select_keys: null`, and candidates beginning `你`, `呢`, `尼`.
 - Live browser at `http://127.0.0.1:5173/web/?debug&realAssets=1` renders the candidate panel for `nei` with `1.你`, `2.呢`, `3.尼`, followed by real TypeDuck dictionary candidates.
 - Browser logs record `initialized: true` and a `{i}` `processKey` success with `isComposing: true`, `inputBuffer.before: "nei"`, and candidates beginning `你`, `呢`, `尼`.
-- HR-1b committed the browser proof under `third_party/typeduck-web/e2e/results/`: `browser-run.log`, `browser-console.json`, `dom-snapshot-candidates.txt`, `blocker.md`, and `screenshot-real-assets-nei.png`. These artifacts supersede the old echo-backed WI-4 results for the real-assets candidate gate.
+- HR-1b committed the browser proof under `apps/yune-web/e2e/results/`: `browser-run.log`, `browser-console.json`, `dom-snapshot-candidates.txt`, `blocker.md`, and `screenshot-real-assets-nei.png`. These artifacts supersede the old echo-backed WI-4 results for the real-assets candidate gate.
 
 **Still open after HR-1**:
 
@@ -50,8 +50,8 @@ This document records findings from integrating Yune with the upstream TypeDuck-
 
 - `cargo test -p yune-rime-api --test typeduck_web` includes `typeduck_adapter_set_option_updates_session_status`.
 - `npm --prefix packages/yune-typeduck-runtime test` covers binding/runtime forwarding.
-- `vitest run third_party/typeduck-web/yune-integration` covers adapter forwarding.
-- `third_party/typeduck-web/e2e/results/set-option-browser.log` records a live browser reload where startup `setOption` posts receive success responses, no option-error toast is visible, and no browser error logs are emitted.
+- `vitest run apps/yune-web/yune-integration` covers adapter forwarding.
+- `apps/yune-web/e2e/results/set-option-browser.log` records a live browser reload where startup `setOption` posts receive success responses, no option-error toast is visible, and no browser error logs are emitted.
 
 ---
 
@@ -67,7 +67,7 @@ This document records findings from integrating Yune with the upstream TypeDuck-
 **Proof**:
 
 - Node replay with the exact Emscripten artifact returned `deploy: 0` when the curated preload list omitted `jyut6ping3.schema.yaml`, and `deploy: 1` after adding it.
-- `third_party/typeduck-web/e2e/results/deploy-browser.log` records a live browser run at `http://127.0.0.1:5173/web/?debug&realAssets=1` with `initialized: true`, `customize` result `true`, `deploy` posted, and `deploy` result `true`.
+- `apps/yune-web/e2e/results/deploy-browser.log` records a live browser run at `http://127.0.0.1:5173/web/?debug&realAssets=1` with `initialized: true`, `customize` result `true`, `deploy` posted, and `deploy` result `true`.
 - `cargo test -p yune-rime-api --test typeduck_web` passes 10 tests, including deploy-after-init and deploy-after-customize with the browser-shaped real asset set.
 
 **Still open after HR-3**:
@@ -89,7 +89,7 @@ This document records findings from integrating Yune with the upstream TypeDuck-
 
 **Proof**:
 
-- `third_party/typeduck-web/e2e/results/persistence-sync.log` records a fresh browser origin where first load starts with no persisted `/rime/jyut6ping3_mobile.custom.yaml`, then startup `customize` writes `page_size: '6'`, and `deploy` syncs it to persistence.
+- `apps/yune-web/e2e/results/persistence-sync.log` records a fresh browser origin where first load starts with no persisted `/rime/jyut6ping3_mobile.custom.yaml`, then startup `customize` writes `page_size: '6'`, and `deploy` syncs it to persistence.
 - The same log records a real page reload where `syncFromPersistenceBeforeInit:pass` sees the persisted custom config with `pageSize: "'6'"` before `runtime:init`.
 - The log's assertions are all PASS: before-init sync precedes runtime init, customize syncs after mutation, deploy syncs after mutation, and reload restores persisted state before re-init.
 
@@ -111,9 +111,9 @@ This document records findings from integrating Yune with the upstream TypeDuck-
 
 **Proof**:
 
-- `third_party/typeduck-web/e2e/results/hr5-real-assets-matrix.json` records PASS for composition, candidate list, paging, selection, Space commit, long-press candidate deletion, deploy, customize, persistence sync, reload, and dictionary-panel comments, with zero browser warning/error console entries in the final capture.
+- `apps/yune-web/e2e/results/hr5-real-assets-matrix.json` records PASS for composition, candidate list, paging, selection, Space commit, long-press candidate deletion, deploy, customize, persistence sync, reload, and dictionary-panel comments, with zero browser warning/error console entries in the final capture.
 - Post-review delete/backspace recaptures replaced the stale banner-bearing artifacts. `hr5-final-delete-state.json` now records the root cause: the page sent `{Control_L}` immediately before `{Control+Delete}`; the adapter now treats pure modifier keydowns as pass-through, so the first `ngo` candidate is removed without a visible runtime-error banner. `hr5-final-backspace-state.json` also records `ngo` mutating to `ng` with no banner.
-- Screenshot evidence was captured as `third_party/typeduck-web/e2e/results/screenshot-hr5-dictionary-panel.png` and `third_party/typeduck-web/e2e/results/screenshot-hr5-after-delete.png`.
+- Screenshot evidence was captured as `apps/yune-web/e2e/results/screenshot-hr5-dictionary-panel.png` and `apps/yune-web/e2e/results/screenshot-hr5-after-delete.png`.
 - `cargo test -p yune-rime-api --test typeduck_web typeduck_adapter_real_assets_emit_oracle_dictionary_panel_comments` asserts the first `nei` candidate comment against the v1.1.2 fixture when the local `target/typeduck-oracle/v1.1.2/rime-user/build` assets are present. If those ignored local oracle-build assets are absent, the test emits an explicit skip reason instead of passing against the degraded fallback. The committed clean-checkout byte-parity guarantee is `cargo test -p yune-core --test cantonese_parity`, which uses `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json`.
 - The matrix artifact's reload row proves a real reload restored `/rime/jyut6ping3_mobile.custom.yaml` with `pageSize: "'6'"` before runtime init.
 
@@ -451,7 +451,7 @@ Minimal patch touches two files only per D-03:
 
 ### Yune Integration Layer
 
-Created `third_party/typeduck-web/yune-integration/` directory with:
+Created `apps/yune-web/yune-integration/` directory with:
 
 1. **adapter.ts** — Yune seam adapter
    - Imports TypeDuckRuntime, keyEventToRimeKey, filesystem helpers per D-04
@@ -503,13 +503,13 @@ Created `third_party/typeduck-web/yune-integration/` directory with:
 
 ### Patch Generation
 
-Patch file: `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`
+Patch file: `apps/yune-web/patches/yune-web-runtime.patch`
 
 Generated via:
 
 ```bash
-cd third_party/typeduck-web/source
-git diff src/worker.ts package.json > ../patches/yune-typeduck-runtime.patch
+cd apps/yune-web/source
+git diff src/worker.ts package.json > ../patches/yune-web-runtime.patch
 ```
 
 Patch contents:
@@ -578,9 +578,9 @@ The following remain deferred and are NOT part of this plan:
 ### Patch Verification
 
 ```bash
-test -s third_party/typeduck-web/patches/yune-typeduck-runtime.patch
-grep -Eq "@yune-ime/typeduck-runtime|yune-integration|TypeDuckRuntime" third_party/typeduck-web/patches/yune-typeduck-runtime.patch
-! grep -E "^diff --git a/(node_modules|dist|build|\.next|coverage)/" third_party/typeduck-web/patches/yune-typeduck-runtime.patch
+test -s apps/yune-web/patches/yune-web-runtime.patch
+grep -Eq "@yune-ime/typeduck-runtime|yune-integration|TypeDuckRuntime" apps/yune-web/patches/yune-web-runtime.patch
+! grep -E "^diff --git a/(node_modules|dist|build|\.next|coverage)/" apps/yune-web/patches/yune-web-runtime.patch
 ```
 
 Expected: All checks pass.
@@ -612,7 +612,7 @@ Task 3 will:
 
 ### Upstream Package Install
 
-**Command**: `bun install` (from `third_party/typeduck-web/source`)
+**Command**: `bun install` (from `apps/yune-web/source`)
 
 **Result**: PASSED
 
@@ -726,7 +726,7 @@ No deferred items implemented in build gates. AI-native behavior, new frontend, 
 
 ### Browser E2E Scaffolding (Task 1)
 
-Created `third_party/typeduck-web/e2e/` with explicit asset/result instructions:
+Created `apps/yune-web/e2e/` with explicit asset/result instructions:
 
 #### Assets README (D-06 enforcement)
 
@@ -772,7 +772,7 @@ Created `third_party/typeduck-web/e2e/` with explicit asset/result instructions:
 
 **Manual browser smoke steps**:
 
-1. Apply patch (git apply patches/yune-typeduck-runtime.patch)
+1. Apply patch (git apply patches/yune-web-runtime.patch)
 2. Install/build upstream (bun install, bun run worker)
 3. Start dev server (bun run start)
 4. Load explicit assets (per e2e/assets/README.md)
@@ -801,11 +801,11 @@ Created `third_party/typeduck-web/e2e/` with explicit asset/result instructions:
 - NO spec/test files found in upstream source
 - Scripts are build-only (start, build, worker, wasm)
 
-**Impact per Task 2 action**: Create standalone Playwright-compatible spec under `third_party/typeduck-web/e2e/` (not upstream source)
+**Impact per Task 2 action**: Create standalone Playwright-compatible spec under `apps/yune-web/e2e/` (not upstream source)
 
 ### Browser E2E Spec Created (Task 2)
 
-**File**: `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`
+**File**: `apps/yune-web/e2e/yune-typeduck.spec.ts`
 
 **Spec coverage (per D-08/TYPEDUCK-E2E-03)**:
 
@@ -1049,7 +1049,7 @@ Error: cargo: command not found
 
 - `bun install` — PASSED (Bun 1.3.11 available)
 - `cp yune-integration/* source/src/yune-integration/` — PASSED (integration files copied)
-- `git apply patches/yune-typeduck-runtime.patch` — PASSED (patch applied)
+- `git apply patches/yune-web-runtime.patch` — PASSED (patch applied)
 - `npm --prefix packages/yune-typeduck-runtime install typescript` — PASSED
 - `npm --prefix packages/yune-typeduck-runtime run build` — PASSED (JS artifacts built)
 
@@ -1083,7 +1083,7 @@ _Updated: 2026-05-05T00:30:00Z_
 
 ### Upstream Source and Seam
 
-**Repository**: <https://github.com/TypeDuck-HK/TypeDuck-Web.git> **Revision**: 03f9afd2cf6ca75653197f2193f24d1cd0adbd83 (main branch) **Clone path**: third_party/typeduck-web/source **Setup command**: bun install
+**Repository**: <https://github.com/TypeDuck-HK/TypeDuck-Web.git> **Revision**: 03f9afd2cf6ca75653197f2193f24d1cd0adbd83 (main branch) **Clone path**: apps/yune-web/source **Setup command**: bun install
 
 **Seam files identified** (from 10-01):
 
@@ -1104,7 +1104,7 @@ RIME session → JSON result → Worker parse → Main thread render
 
 ### Yune Seam Patch Summary
 
-**Patch file**: third_party/typeduck-web/patches/yune-typeduck-runtime.patch
+**Patch file**: apps/yune-web/patches/yune-web-runtime.patch
 
 **Minimal scope** (per D-03):
 
@@ -1128,7 +1128,7 @@ RIME session → JSON result → Worker parse → Main thread render
 
 ### E2E Behavior Matrix
 
-**Browser E2E spec**: third_party/typeduck-web/e2e/yune-typeduck.spec.ts
+**Browser E2E spec**: apps/yune-web/e2e/yune-typeduck.spec.ts
 
 **Coverage** (per D-08/TYPEDUCK-E2E-03):
 
@@ -1167,33 +1167,33 @@ HR-5 also records phrase-commit regressions from the `ngohaigo` browser bug and 
 
 **Evidence captured**:
 
-- `third_party/typeduck-web/e2e/results/hr5-real-assets-matrix.log`
-- `third_party/typeduck-web/e2e/results/hr5-final-nei-state.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-nei.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-paging-state.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-paging-before.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-paging-after.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-selection-space-state.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-selection-space-before.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-selection-space-after.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-phrase-state.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-phrase-before.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-phrase-after.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-delete-state.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-delete-before.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-delete-after.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-backspace-state.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-backspace.png`
-- `third_party/typeduck-web/e2e/results/hr5-final-diagnostics-before-reload.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-reload-state.json`
-- `third_party/typeduck-web/e2e/results/hr5-final-reload.png`
-- `third_party/typeduck-web/e2e/results/browser-run.log`
-- `third_party/typeduck-web/e2e/results/browser-console.json`
-- `third_party/typeduck-web/e2e/results/dom-snapshot-candidates.txt`
-- `third_party/typeduck-web/e2e/results/screenshot-real-assets-nei.png`
-- `third_party/typeduck-web/e2e/results/persistence-sync.log`
-- `third_party/typeduck-web/e2e/results/deploy-browser.log`
-- `third_party/typeduck-web/e2e/results/blocker.md`
+- `apps/yune-web/e2e/results/hr5-real-assets-matrix.log`
+- `apps/yune-web/e2e/results/hr5-final-nei-state.json`
+- `apps/yune-web/e2e/results/hr5-final-nei.png`
+- `apps/yune-web/e2e/results/hr5-final-paging-state.json`
+- `apps/yune-web/e2e/results/hr5-final-paging-before.png`
+- `apps/yune-web/e2e/results/hr5-final-paging-after.png`
+- `apps/yune-web/e2e/results/hr5-final-selection-space-state.json`
+- `apps/yune-web/e2e/results/hr5-final-selection-space-before.png`
+- `apps/yune-web/e2e/results/hr5-final-selection-space-after.png`
+- `apps/yune-web/e2e/results/hr5-final-phrase-state.json`
+- `apps/yune-web/e2e/results/hr5-final-phrase-before.png`
+- `apps/yune-web/e2e/results/hr5-final-phrase-after.png`
+- `apps/yune-web/e2e/results/hr5-final-delete-state.json`
+- `apps/yune-web/e2e/results/hr5-final-delete-before.png`
+- `apps/yune-web/e2e/results/hr5-final-delete-after.png`
+- `apps/yune-web/e2e/results/hr5-final-backspace-state.json`
+- `apps/yune-web/e2e/results/hr5-final-backspace.png`
+- `apps/yune-web/e2e/results/hr5-final-diagnostics-before-reload.json`
+- `apps/yune-web/e2e/results/hr5-final-reload-state.json`
+- `apps/yune-web/e2e/results/hr5-final-reload.png`
+- `apps/yune-web/e2e/results/browser-run.log`
+- `apps/yune-web/e2e/results/browser-console.json`
+- `apps/yune-web/e2e/results/dom-snapshot-candidates.txt`
+- `apps/yune-web/e2e/results/screenshot-real-assets-nei.png`
+- `apps/yune-web/e2e/results/persistence-sync.log`
+- `apps/yune-web/e2e/results/deploy-browser.log`
+- `apps/yune-web/e2e/results/blocker.md`
 
 ---
 

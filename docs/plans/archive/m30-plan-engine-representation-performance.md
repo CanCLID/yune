@@ -4,7 +4,7 @@
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Closeout:** M30 is complete. Lever A removed duplicate steady-state expanded-entry storage for spelling-algebra-backed translators, preserved TypeDuck row order with a builder-only source stream, and reduced single-startup after-ready bytes from `1,103,331,328` to `838,209,536` in the Lever A run and `839,217,152` in the final gate. Browser startup/typing stayed flat/noisy after a fresh release WASM rebuild, so no browser latency win is claimed. Evidence is under `third_party/typeduck-web/e2e/results/m30-engine-performance/`; B/C shared payloads, sentence-DP backpointers, and correction-stress indexing are deferred because post-Lever-A rows did not justify those broader rewrites in this slice.
+> **Closeout:** M30 is complete. Lever A removed duplicate steady-state expanded-entry storage for spelling-algebra-backed translators, preserved TypeDuck row order with a builder-only source stream, and reduced single-startup after-ready bytes from `1,103,331,328` to `838,209,536` in the Lever A run and `839,217,152` in the final gate. Browser startup/typing stayed flat/noisy after a fresh release WASM rebuild, so no browser latency win is claimed. Evidence is under `apps/yune-web/e2e/results/m30-engine-performance/`; B/C shared payloads, sentence-DP backpointers, and correction-stress indexing are deferred because post-Lever-A rows did not justify those broader rewrites in this slice.
 
 **Goal:** Reduce Yune engine startup memory and startup time from the expanded TypeDuck dictionary representation, then address measured long-input typing hot paths without changing candidate behavior.
 
@@ -39,7 +39,7 @@ Out of scope:
 
 - M29 classified the old `1.79GB` peak as repeated-benchmark high-water and recorded real single-startup ready pressure around `1.10GB`.
 - M29's startup optimization reduced `startup_trace_jyut6ping3_mobile_spelling_algebra_expand` only modestly: median `5,253,577us` to `5,045,837us`.
-- `third_party/typeduck-web/e2e/results/m29-performance/native-startup-after.md` is the baseline evidence for M30.
+- `apps/yune-web/e2e/results/m29-performance/native-startup-after.md` is the baseline evidence for M30.
 - The remaining startup owner is representation/materialization-heavy:
   - `crates/yune-core/src/translator/mod.rs:107` stores `entries: Vec<(String, Candidate)>`.
   - `crates/yune-core/src/translator/mod.rs:108` stores `entries_by_code: BTreeMap<String, Vec<Candidate>>`.
@@ -67,9 +67,9 @@ Out of scope:
 - `crates/yune-core/tests/cantonese_parity.rs`: owns TypeDuck profile behavior parity.
 - `crates/yune-core/tests/upstream_luna_pinyin_parity.rs`: owns upstream core behavior parity.
 - `crates/yune-rime-api/tests/typeduck_web.rs`: owns browser ABI/runtime adapter contract.
-- `third_party/typeduck-web/e2e/yune-typeduck.spec.ts`: owns real-browser evidence.
-- `third_party/typeduck-web/e2e/results/m30-engine-performance/`: new evidence folder for M30.
-- `third_party/typeduck-web/patches/yune-typeduck-runtime.patch`: regenerate only if TypeDuck-Web source changes.
+- `apps/yune-web/e2e/yune-typeduck.spec.ts`: owns real-browser evidence.
+- `apps/yune-web/e2e/results/m30-engine-performance/`: new evidence folder for M30.
+- `apps/yune-web/patches/yune-web-runtime.patch`: regenerate only if TypeDuck-Web source changes.
 
 ---
 
@@ -77,9 +77,9 @@ Out of scope:
 
 **Files:**
 
-- Modify: `third_party/typeduck-web/e2e/results/m29-performance/native-startup-after.md`
-- Read: `third_party/typeduck-web/e2e/results/m29-performance/browser-startup-after.json`
-- Read: `third_party/typeduck-web/e2e/results/m29-performance/typing-attribution-after.json`
+- Modify: `apps/yune-web/e2e/results/m29-performance/native-startup-after.md`
+- Read: `apps/yune-web/e2e/results/m29-performance/browser-startup-after.json`
+- Read: `apps/yune-web/e2e/results/m29-performance/typing-attribution-after.json`
 
 - [x] **Step 0.1: Verify browser table values against JSON**
 
@@ -88,10 +88,10 @@ Before relying on any property path, inspect the committed JSON keys and confirm
 Run:
 
 ```powershell
-$beforeStartup = Get-Content third_party\typeduck-web\e2e\results\m29-performance\browser-startup-before.json -Raw | ConvertFrom-Json
-$afterStartup = Get-Content third_party\typeduck-web\e2e\results\m29-performance\browser-startup-after.json -Raw | ConvertFrom-Json
-$beforeTyping = Get-Content third_party\typeduck-web\e2e\results\m29-performance\typing-attribution-before.json -Raw | ConvertFrom-Json
-$afterTyping = Get-Content third_party\typeduck-web\e2e\results\m29-performance\typing-attribution-after.json -Raw | ConvertFrom-Json
+$beforeStartup = Get-Content apps\yune-web\e2e\results\m29-performance\browser-startup-before.json -Raw | ConvertFrom-Json
+$afterStartup = Get-Content apps\yune-web\e2e\results\m29-performance\browser-startup-after.json -Raw | ConvertFrom-Json
+$beforeTyping = Get-Content apps\yune-web\e2e\results\m29-performance\typing-attribution-before.json -Raw | ConvertFrom-Json
+$afterTyping = Get-Content apps\yune-web\e2e\results\m29-performance\typing-attribution-after.json -Raw | ConvertFrom-Json
 "startup before keys=$($beforeStartup.PSObject.Properties.Name -join ',')"
 "startup after keys=$($afterStartup.PSObject.Properties.Name -join ',')"
 "startup before fresh=$($beforeStartup.freshStartup.marker.totalMs) reload=$($beforeStartup.reloadStartup.marker.totalMs)"
@@ -123,9 +123,9 @@ Expected values:
 
 **Files:**
 
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/m30-baseline.md`
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/native-before.md`
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/browser-before.json`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/m30-baseline.md`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/native-before.md`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/browser-before.json`
 
 - [x] **Step 1.1: Capture native baseline**
 
@@ -151,16 +151,16 @@ Expected:
 Run the focused M29 performance browser test as the M30 before run:
 
 ```powershell
-$env:TYPEDUCK_APP_URL = "http://localhost:5173/web/"
+$env:YUNE_WEB_APP_URL = "http://localhost:5173/web/"
 $env:M29_EVIDENCE_LABEL = "m30-before"
-npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
+npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
 ```
 
 Expected:
 
 - The browser app is running from fresh built assets.
 - The test writes startup and typing attribution JSON.
-- Copy or rename the resulting files into `third_party/typeduck-web/e2e/results/m30-engine-performance/` with `before` in the filename.
+- Copy or rename the resulting files into `apps/yune-web/e2e/results/m30-engine-performance/` with `before` in the filename.
 
 - [x] **Step 1.3: Record baseline summary**
 
@@ -178,7 +178,7 @@ Create `m30-baseline.md` with:
 
 - Modify: `crates/yune-core/src/translator/mod.rs`
 - Modify if needed: `crates/yune-rime-api/benches/frontend_baselines.rs`
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/lever-a.md`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/lever-a.md`
 
 - [x] **Step 2.1: Add a behavior guard before representation changes**
 
@@ -256,7 +256,7 @@ Expected:
 
 - Modify: `crates/yune-core/src/translator/mod.rs`
 - Modify: `crates/yune-core/src/spelling_algebra.rs`
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/lever-bc.md`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/lever-bc.md`
 
 - [ ] **Step 3.1: Introduce an internal indexed candidate payload**
 
@@ -341,7 +341,7 @@ Expected:
 **Files:**
 
 - Modify: `crates/yune-core/src/translator/mod.rs`
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/sentence-dp.md`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/sentence-dp.md`
 
 - [ ] **Step 4.1: Add a focused long-input benchmark row if missing**
 
@@ -397,7 +397,7 @@ Expected:
 **Files:**
 
 - Modify: `crates/yune-core/src/translator/mod.rs`
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/correction-stress.md`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/correction-stress.md`
 
 - [ ] **Step 5.1: Confirm correction-on stress remains isolated**
 
@@ -446,8 +446,8 @@ Expected:
 
 **Files:**
 
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/browser-after.json`
-- Create: `third_party/typeduck-web/e2e/results/m30-engine-performance/task-6-gates.md`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/browser-after.json`
+- Create: `apps/yune-web/e2e/results/m30-engine-performance/task-6-gates.md`
 - Modify: `docs/roadmap.md`
 - Modify: `docs/requirements.md`
 - Archive when complete: `docs/plans/archive/m30-plan-engine-representation-performance.md`
@@ -457,9 +457,9 @@ Expected:
 Run:
 
 ```powershell
-$env:TYPEDUCK_APP_URL = "http://localhost:5173/web/"
+$env:YUNE_WEB_APP_URL = "http://localhost:5173/web/"
 $env:M29_EVIDENCE_LABEL = "m30-after"
-npm.cmd --prefix third_party\typeduck-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
+npm.cmd --prefix apps\yune-web\e2e run test:e2e -- --grep "M29 PERF" --workers=1
 ```
 
 Expected:
@@ -482,18 +482,18 @@ cargo test --workspace
 cmd /c "cargo bench -p yune-rime-api --bench frontend_baselines > target\m30-frontend-baselines-final.txt 2>&1"
 npm.cmd --prefix packages/yune-typeduck-runtime test
 npm.cmd --prefix packages/yune-typeduck-runtime run build
-npm.cmd --prefix third_party\typeduck-web\source run build
+npm.cmd --prefix apps\yune-web\source run build
 git diff --check
 ```
 
 If TypeDuck-Web source changes:
 
 ```powershell
-git -C third_party\typeduck-web\source diff --binary --submodule=diff > third_party\typeduck-web\patches\yune-typeduck-runtime.patch
-git -C third_party\typeduck-web\source apply --reverse --check ..\patches\yune-typeduck-runtime.patch
+git -C apps\yune-web\source diff --binary --submodule=diff > apps\yune-web\patches\yune-web-runtime.patch
+git -C apps\yune-web\source apply --reverse --check ..\patches\yune-web-runtime.patch
 ```
 
-Also forward-check the patch in a clean detached worktree at `third_party/typeduck-web/typeduck-web.lock.json`.
+Also forward-check the patch in a clean detached worktree at `apps/yune-web/yune-web.lock.json`.
 
 - [x] **Step 6.3: Close docs**
 

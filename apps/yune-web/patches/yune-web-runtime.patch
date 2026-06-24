@@ -1,8 +1,8 @@
 diff --git a/index.html b/index.html
-index 5803fa4..548dac2 100644
+index 5803fa4..a1be7dd 100644
 --- a/index.html
 +++ b/index.html
-@@ -1,31 +1,45 @@
+@@ -1,31 +1,29 @@
  <!doctype html>
  <html lang="zh-HK">
 -	<head>
@@ -54,22 +54,6 @@ index 5803fa4..548dac2 100644
 +            content="Public browser demo for the Yune input-method engine."
 +        />
 +        <meta name="twitter:card" content="summary_large_image" />
-+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-+        <link
-+            rel="stylesheet"
-+            href="https://cdn.jsdelivr.net/npm/chiron-sung-hk-webfont/css/vf.min.css"
-+        />
-+        <link
-+            rel="stylesheet"
-+            href="https://cdn.jsdelivr.net/npm/chiron-hei-hk-webfont/css/vf.min.css"
-+        />
-+        <link rel="preconnect" href="https://fonts.googleapis.com" />
-+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-+        <link
-+            rel="stylesheet"
-+            href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap"
-+        />
 +    </head>
 +    <body>
 +        <div id="root"></div>
@@ -111,193 +95,17 @@ index cbe61db..c59642e 100644
  		"esbuild": "^0.21.4",
  		"eslint": "^8.57.0",
  		"eslint-plugin-import": "^2.29.1",
-Submodule schema contains modified content
-diff --git a/schema/default.custom.yaml b/schema/default.custom.yaml
-index c83ac82..98079e8 100644
---- a/schema/default.custom.yaml
-+++ b/schema/default.custom.yaml
-@@ -13,4 +13,4 @@ patch:
-     - schema: cangjie3
-     - schema: cangjie5
-   menu:
--    page_size: 50
-+    page_size: 6
-diff --git a/schema/jyut6ping3.schema.yaml b/schema/jyut6ping3.schema.yaml
-index cb2146e..7e0ed75 100644
---- a/schema/jyut6ping3.schema.yaml
-+++ b/schema/jyut6ping3.schema.yaml
-@@ -17,10 +17,9 @@ engine:
-   segmentors:
-     - ascii_segmentor
-     - matcher
--    - affix_segmentor@luna_pinyin
-     - affix_segmentor@loengfan
-     - affix_segmentor@cangjie
--    - affix_segmentor@reverse_lookup
-+    - affix_segmentor@luna_pinyin
-     - abc_segmentor
-     - punct_segmentor
-     - fallback_segmentor
-@@ -34,12 +33,6 @@ engine:
- translator:
-   __patch: include:/letter_to_tone
- 
--reverse_lookup:
--  tag: reverse_lookup
--  prefix: "`"
--  suffix: ";"
--  tips: 〔反查〕
--
- luna_pinyin:
-   tag: luna_pinyin
-   dictionary: luna_pinyin
-@@ -47,7 +40,7 @@ luna_pinyin:
-   enable_user_dict: false
-   encode_commit_history: false
-   always_show_comments: true
--  prefix: "`p"
-+  prefix: "`"
-   suffix: ";"
-   tips: 〔普通話〕
-   preedit_format:
-@@ -64,7 +57,7 @@ loengfan:
-   enable_user_dict: false
-   encode_commit_history: false
-   always_show_comments: true
--  prefix: "`l"
-+  prefix: "`vl"
-   suffix: ";"
-   tips: 〔粵語兩分〕
-   __patch: include:/letter_to_tone
-@@ -77,7 +70,7 @@ cangjie:
-   enable_sentence: false
-   enable_user_dict: false
-   encode_commit_history: false
--  prefix: "`c"
-+  prefix: "`vc"
-   suffix: ";"
-   tips: 〔倉頡五代〕
-   comment_format:
-@@ -90,10 +83,9 @@ cangjie:
- 
- recognizer:
-   patterns:
--    luna_pinyin: "^`p[a-z']*;?$"
--    loengfan: "^`l[a-z']*;?$"
--    cangjie: "^`c[a-z']*;?$"
--    reverse_lookup: "^`[a-z']*;?$"
-+    loengfan: "^`vl[a-z']*;?$"
-+    cangjie: "^`vc[a-z']*;?$"
-+    luna_pinyin: "^`[a-z']*;?$"
- 
- __patch:
-   - common:/disable_completion?
-diff --git a/schema/jyut6ping3_mobile.schema.yaml b/schema/jyut6ping3_mobile.schema.yaml
-index 31a7c80..b1c985d 100644
---- a/schema/jyut6ping3_mobile.schema.yaml
-+++ b/schema/jyut6ping3_mobile.schema.yaml
-@@ -6,6 +6,33 @@ __include: template:/
- schema:
-   schema_id: jyut6ping3_mobile
-   name: 粵語拼音
-+  dependencies:
-+    - luna_pinyin
-+
-+engine:
-+  processors:
-+    - ascii_composer
-+    - recognizer
-+    - key_binder
-+    - speller
-+    - punctuator
-+    - selector
-+    - navigator
-+    - express_editor
-+  segmentors:
-+    - ascii_segmentor
-+    - matcher
-+    - affix_segmentor@luna_pinyin
-+    - abc_segmentor
-+    - punct_segmentor
-+    - fallback_segmentor
-+  translators:
-+    - punct_translator
-+    - script_translator
-+    - script_translator@luna_pinyin
-+  filters:
-+    - dictionary_lookup_filter
-+    - simplifier
- 
- menu:
-   __patch: include:/no_candidate_selection
-@@ -13,6 +40,30 @@ menu:
- translator:
-   prism: jyut6ping3_mobile
-   __patch: include:/letter_to_tone
-+  prediction_candidate_limit: 1
-+  prefix_fallback: true
-+
-+luna_pinyin:
-+  tag: luna_pinyin
-+  dictionary: luna_pinyin_yune_reverse
-+  enable_sentence: false
-+  enable_user_dict: false
-+  encode_commit_history: false
-+  always_show_comments: true
-+  prefix: "`"
-+  suffix: ";"
-+  tips: 〔普通話〕
-+  preedit_format:
-+    - xform/([nl])v/$1ü/
-+    - xform/([nl])ue/$1üe/
-+    - xform/([jqxy])v/$1u/
-+  comment_format:
-+    - xform/^/\v/
-+
-+recognizer:
-+  import_preset: default
-+  patterns:
-+    luna_pinyin: "^`[a-z']*;?$"
- 
- __patch:
-   - common:/disable_completion?
-diff --git a/schema/luna_pinyin.schema.yaml b/schema/luna_pinyin.schema.yaml
-index b12be76..d3e508a 100644
---- a/schema/luna_pinyin.schema.yaml
-+++ b/schema/luna_pinyin.schema.yaml
-@@ -5,7 +5,7 @@ __include: template:/
- 
- schema:
-   schema_id: luna_pinyin
--  name: 普通話
-+  name: 朙月拼音
-   author:
-     - 佛振 <chen.sst@gmail.com>
-   description: |
-diff --git a/schema/luna_pinyin_yune_reverse.dict.yaml b/schema/luna_pinyin_yune_reverse.dict.yaml
-new file mode 100644
-index 0000000..74bc863
---- /dev/null
-+++ b/schema/luna_pinyin_yune_reverse.dict.yaml
-@@ -0,0 +1,13 @@
-+# Rime dictionary
-+# encoding: utf-8
-+
-+---
-+name: luna_pinyin_yune_reverse
-+version: "2026.06.21"
-+sort: by_weight
-+import_tables:
-+  - luna_pinyin
-+...
-+
-+這	zhe	100000
-+这	zhe	99999
+diff --git a/schema b/schema
+--- a/schema
++++ b/schema
+@@ -1 +1 @@
+-Subproject commit 1bed1ae6a0ab48055f073774d7dfd152a171c548
++Subproject commit 1bed1ae6a0ab48055f073774d7dfd152a171c548-dirty
 diff --git a/src/App.tsx b/src/App.tsx
-index c43ccbc..1874a68 100644
+index c43ccbc..58dfac7 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -1,92 +1,375 @@
+@@ -1,92 +1,463 @@
 -import { useEffect, useReducer, useState } from "react";
 +import { useCallback, useEffect, useReducer, useRef, useState } from "react";
  
@@ -312,328 +120,333 @@ index c43ccbc..1874a68 100644
  import ThemeSwitcher from "./ThemeSwitcher";
  import Toolbar from "./Toolbar";
  import { notify } from "./utils";
-+import YuneFeatureShowcase from "./YuneFeatureShowcase";
 +import YuneInspector from "./YuneInspector";
 +import YuneStatusStrip from "./YuneStatusStrip";
++import YuneUserdbViewer from "./YuneUserdbViewer";
 +
 +import type {
-+  TypeDuckUserdbSnapshot,
-+  YuneInspectorDebug,
-+  YuneStatusSnapshot,
++	TypeDuckUserdbSnapshot,
++	YuneInspectorDebug,
++	YuneStatusSnapshot,
 +} from "./types";
++
++interface YuneMetrics {
++	lookupMs?: number;
++	aiMs?: number;
++	candidateCount?: number;
++	totalCandidateCount?: number;
++	latestInput?: string;
++}
++
++function metricValue(value: number | undefined, unit: string) {
++	if (value === undefined) {
++		return <span className="yd-metric-empty">N/A</span>;
++	}
++	return <>
++		{value.toFixed(value < 10 ? 1 : 0)}
++		<span>{unit}</span>
++	</>;
++}
++
++function YuneMetricsStrip({
++	metrics,
++	userdbSnapshot,
++}: {
++	metrics: YuneMetrics;
++	userdbSnapshot?: TypeDuckUserdbSnapshot;
++}) {
++	return <section className="yd-metrics" aria-label="Live engine metrics" data-yune-metrics>
++		<div className="yd-metric">
++			<div className="yd-metric-label">LOOKUP</div>
++			<div className="yd-metric-value" data-yune-metric-lookup>{metricValue(metrics.lookupMs, "ms")}</div>
++		</div>
++		<div className="yd-metric">
++			<div className="yd-metric-label">AI RERANK</div>
++			<div className="yd-metric-value yd-metric-accent" data-yune-metric-ai>
++				{metrics.aiMs === undefined ? "off" : metricValue(metrics.aiMs, "ms")}
++			</div>
++		</div>
++		<div className="yd-metric">
++			<div className="yd-metric-label">CANDIDATES</div>
++			<div className="yd-metric-value" data-yune-metric-candidates>
++				{metrics.candidateCount === undefined
++					? <span className="yd-metric-empty">N/A</span>
++					: <>
++						{metrics.candidateCount}
++						<span>/{metrics.totalCandidateCount ?? metrics.candidateCount}</span>
++					</>}
++			</div>
++		</div>
++		<div className="yd-metric">
++			<div className="yd-metric-label">USERDB</div>
++			<div className="yd-metric-value" data-yune-metric-userdb>
++				{userdbSnapshot
++					? <>
++						{userdbSnapshot.rows.length}
++						<span> rows</span>
++					</>
++					: <span className="yd-metric-empty">N/A</span>}
++			</div>
++		</div>
++	</section>;
++}
  
  export default function App() {
--	const [textArea, setTextArea] = useState<HTMLTextAreaElement | null>(null);
--	const [loading, runAsyncTask, startAsyncTask] = useLoading();
-+  const [textArea, setTextArea] = useState<HTMLTextAreaElement | null>(null);
-+  const [loading, runAsyncTask, startAsyncTask] = useLoading();
+ 	const [textArea, setTextArea] = useState<HTMLTextAreaElement | null>(null);
+ 	const [loading, runAsyncTask, startAsyncTask] = useLoading();
++	const [isEngineReady, setIsEngineReady] = useState(false);
 +
-+  useEffect(() => {
-+    document.documentElement.dataset.yuneLoading = String(loading);
-+  }, [loading]);
-+
-+  useEffect(() => {
-+    const { resolve } = startAsyncTask();
-+    return subscribe("initialized", (success) => {
-+      if (!success) {
-+        notify(
-+          "error",
-+          "啟動輸入法引擎",
-+          "initializing the input method engine",
-+        );
-+      }
-+      resolve();
-+    });
-+  }, [startAsyncTask]);
-+
-+  useEffect(() => {
-+    let pending: PromiseWithResolvers<void> | undefined;
-+    return subscribe("deployStatusChanged", (status) => {
-+      switch (status) {
-+        case "start":
-+          pending?.resolve();
-+          pending = startAsyncTask();
-+          break;
-+        case "success":
-+          pending?.resolve();
-+          pending = undefined;
-+          break;
-+        case "failure":
-+          notify("warning", "重新整理", "refreshing");
-+          pending?.reject();
-+          pending = undefined;
-+          break;
-+      }
-+    });
-+  }, [startAsyncTask]);
-+
-+  const [deployStatus, updateDeployStatus] = useReducer(
-+    (n: number) => n + 1,
-+    0,
-+  );
-+  const [aiStatus, updateAiStatus] = useReducer((n: number) => n + 1, 0);
-+  const [isInspectorEnabled, setIsInspectorEnabled] = useState(false);
-+  const [inspectorDebug, setInspectorDebug] = useState<
-+    YuneInspectorDebug | undefined
-+  >();
-+  const [engineStatus, setEngineStatus] = useState<
-+    YuneStatusSnapshot | undefined
-+  >();
-+  const [userdbRefreshStatus, refreshUserdbAfterCommit] = useReducer(
-+    (n: number) => n + 1,
-+    0,
-+  );
-+  const [userdbSnapshot, setUserdbSnapshot] = useState<
-+    TypeDuckUserdbSnapshot | undefined
-+  >();
-+  const [isUserdbLoading, setIsUserdbLoading] = useState(false);
-+  const [userdbError, setUserdbError] = useState<string | undefined>();
-+  const preferences = usePreferences();
-+  const {
-+    pageSize,
-+    enableCompletion,
-+    enableCorrection,
-+    enableSentence,
-+    enableLearning,
-+    enableAI,
-+    combineCandidates,
-+    predictionNeverFirst,
-+    predictionThreshold,
-+    activeSchema,
-+    isExtendedCharset,
-+    isDisabled,
-+    dictionaryExclude,
-+    isAsciiMode,
-+    isFullShape,
-+    isSimplification,
-+    isCangjie5,
-+    chineseTypeface,
-+  } = preferences;
-+  const chineseTypefaceClass =
-+    CHINESE_TYPEFACE_BY_ID[chineseTypeface].className;
-+  const didRunSchemaEffect = useRef(false);
-+  useEffect(
-+    () =>
-+      runAsyncTask(async () => {
-+        if (!didRunSchemaEffect.current) {
-+          didRunSchemaEffect.current = true;
-+          if (activeSchema === "jyut6ping3_mobile") {
-+            return;
-+          }
-+        }
-+        let type: "warning" | "error" | undefined;
-+        try {
-+          if (!(await Rime.selectSchema(activeSchema))) {
-+            type = "warning";
-+          }
-+          setInspectorDebug(undefined);
-+          setEngineStatus(undefined);
-+          updateDeployStatus();
-+        } catch {
-+          type = "error";
-+        }
-+        if (type) {
-+          notify(type, "Switch schema", "switching the schema");
-+        }
-+      }),
-+    [activeSchema, runAsyncTask],
-+  );
-+
-+  useEffect(
-+    () =>
-+      runAsyncTask(async () => {
-+        let type: "warning" | "error" | undefined;
-+        try {
-+          const success = await Rime.customize({
-+            pageSize,
-+            enableCompletion,
-+            enableCorrection,
-+            enableSentence,
-+            enableLearning,
-+            combineCandidates,
-+            predictionNeverFirst,
-+            predictionThreshold,
-+            dictionaryExclude,
-+            isCangjie5,
-+          });
-+          if (!((await Rime.deploy()) && success)) {
-+            type = "warning";
-+          }
-+        } catch {
-+          type = "error";
-+        }
-+        if (type) {
-+          notify(type, "套用設定", "applying the settings");
-+        }
-+        updateDeployStatus();
-+      }),
-+    [
-+      activeSchema,
-+      pageSize,
-+      enableCompletion,
-+      enableCorrection,
-+      enableSentence,
-+      enableLearning,
-+      combineCandidates,
-+      predictionNeverFirst,
-+      predictionThreshold,
-+      dictionaryExclude,
-+      isCangjie5,
-+      updateDeployStatus,
-+      runAsyncTask,
-+    ],
-+  );
-+
-+  useEffect(
-+    () =>
-+      runAsyncTask(async () => {
-+        let type: "warning" | "error" | undefined;
-+        try {
-+          await Rime.setOption("soft_cursor", true);
-+          await Rime.setOption("ascii_mode", isAsciiMode);
-+          await Rime.setOption("full_shape", isFullShape);
-+          await Rime.setOption("simplification", isSimplification);
-+          await Rime.setOption("traditionalization", false);
-+          await Rime.setOption("extended_charset", isExtendedCharset);
-+          await Rime.setOption("disabled", isDisabled);
-+        } catch {
-+          type = "error";
-+        }
-+        if (type) {
-+          notify(type, "Apply live options", "applying the live options");
-+        }
-+      }),
-+    [
-+      activeSchema,
-+      isAsciiMode,
-+      isFullShape,
-+      isSimplification,
-+      isExtendedCharset,
-+      isDisabled,
-+      runAsyncTask,
-+    ],
-+  );
-+
-+  useEffect(
-+    () =>
-+      runAsyncTask(async () => {
-+        let type: "error" | undefined;
-+        try {
-+          await Rime.setOption("yune_inspector", isInspectorEnabled);
-+          if (!isInspectorEnabled) {
-+            setInspectorDebug(undefined);
-+          }
-+        } catch {
-+          type = "error";
-+        }
-+        if (type) {
-+          notify(type, "Apply inspector", "applying the inspector setting");
-+        }
-+      }),
-+    [isInspectorEnabled, runAsyncTask],
-+  );
++	useEffect(() => {
++		document.documentElement.dataset.yuneLoading = String(loading);
++	}, [loading]);
  
--	useEffect(() => {
--		const { resolve } = startAsyncTask();
+ 	useEffect(() => {
+ 		const { resolve } = startAsyncTask();
 -		return subscribe("initialized", success => {
--			if (!success) {
++		return subscribe("initialized", (success) => {
++			setIsEngineReady(success);
+ 			if (!success) {
 -				notify("error", "啟動輸入法引擎", "initializing the input method engine");
--			}
--			resolve();
--		});
--	}, [startAsyncTask]);
-+  useEffect(() => {
-+    let cancelled = false;
-+    async function applyAiSettings() {
-+      let type: "warning" | "error" | undefined;
-+      try {
-+        if (!(await Rime.customize({ enableAI }))) {
-+          type = "warning";
-+        }
-+      } catch {
-+        type = "error";
-+      }
-+      if (type) {
-+        notify(type, "Apply AI settings", "applying the AI settings");
-+      }
-+      if (!cancelled) {
-+        updateAiStatus();
-+      }
-+    }
-+    void applyAiSettings();
-+    return () => {
-+      cancelled = true;
-+    };
-+  }, [enableAI, updateAiStatus]);
++				notify(
++					"error",
++					"啟動輸入法引擎",
++					"initializing the input method engine",
++				);
+ 			}
+ 			resolve();
+ 		});
+ 	}, [startAsyncTask]);
  
--	useEffect(() => {
+ 	useEffect(() => {
 -		let resolve!: () => void;
 -		let reject!: () => void;
 -		return subscribe("deployStatusChanged", status => {
--			switch (status) {
--				case "start":
++		let pending: PromiseWithResolvers<void> | undefined;
++		return subscribe("deployStatusChanged", (status) => {
+ 			switch (status) {
+ 				case "start":
 -					({ resolve, reject } = startAsyncTask());
--					break;
--				case "success":
++					pending?.resolve();
++					pending = startAsyncTask();
+ 					break;
+ 				case "success":
 -					resolve();
--					break;
--				case "failure":
--					notify("warning", "重新整理", "refreshing");
++					pending?.resolve();
++					pending = undefined;
+ 					break;
+ 				case "failure":
+ 					notify("warning", "重新整理", "refreshing");
 -					reject();
--					break;
--			}
--		});
--	}, [startAsyncTask]);
-+  const refreshUserdbSnapshot = useCallback(async () => {
-+    setIsUserdbLoading(true);
-+    setUserdbError(undefined);
-+    try {
-+      setUserdbSnapshot(await Rime.getUserdbSnapshot());
-+    } catch (error) {
-+      setUserdbError(
-+        error instanceof Error
-+          ? `${error.name}: ${error.message}`
-+          : String(error),
-+      );
-+    } finally {
-+      setIsUserdbLoading(false);
-+    }
-+  }, []);
++					pending?.reject();
++					pending = undefined;
+ 					break;
+ 			}
+ 		});
+ 	}, [startAsyncTask]);
  
 -	const [deployStatus, updateDeployStatus] = useReducer((n: number) => n + 1, 0);
--	const preferences = usePreferences();
++	const [deployStatus, updateDeployStatus] = useReducer(
++		(n: number) => n + 1,
++		0,
++	);
++	const [aiStatus, updateAiStatus] = useReducer((n: number) => n + 1, 0);
++	const [isInspectorEnabled, setIsInspectorEnabled] = useState(false);
++	const [isInspectorCollapsed, setIsInspectorCollapsed] = useState(false);
++	const [inspectorDebug, setInspectorDebug] = useState<
++		YuneInspectorDebug | undefined
++	>();
++	const [engineStatus, setEngineStatus] = useState<
++		YuneStatusSnapshot | undefined
++	>();
++	const [metrics, setMetrics] = useState<YuneMetrics>({});
++	const [userdbRefreshStatus, refreshUserdbAfterCommit] = useReducer(
++		(n: number) => n + 1,
++		0,
++	);
++	const [userdbSnapshot, setUserdbSnapshot] = useState<
++		TypeDuckUserdbSnapshot | undefined
++	>();
++	const [isUserdbLoading, setIsUserdbLoading] = useState(false);
++	const [userdbError, setUserdbError] = useState<string | undefined>();
+ 	const preferences = usePreferences();
 -	const { pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, isHeiTypeface } = preferences;
 -	useEffect(() =>
 -		runAsyncTask(async () => {
--			let type: "warning" | "error" | undefined;
--			try {
++	const {
++		pageSize,
++		enableCompletion,
++		enableCorrection,
++		enableSentence,
++		enableLearning,
++		enableAI,
++		combineCandidates,
++		predictionNeverFirst,
++		predictionThreshold,
++		activeSchema,
++		isExtendedCharset,
++		isDisabled,
++		dictionaryExclude,
++		isAsciiMode,
++		isFullShape,
++		isSimplification,
++		isCangjie5,
++		chineseTypeface,
++	} = preferences;
++	const chineseTypefaceClass =
++		CHINESE_TYPEFACE_BY_ID[chineseTypeface].className;
++	const didRunSchemaEffect = useRef(false);
++	useEffect(
++		() =>
++			runAsyncTask(async () => {
++				if (!didRunSchemaEffect.current) {
++					didRunSchemaEffect.current = true;
++					if (activeSchema === "jyut6ping3_mobile") {
++						return;
++					}
++				}
++				let type: "warning" | "error" | undefined;
++				try {
++					if (!(await Rime.selectSchema(activeSchema))) {
++						type = "warning";
++					}
++					setInspectorDebug(undefined);
++					setEngineStatus(undefined);
++					setMetrics({});
++					updateDeployStatus();
++				} catch {
++					type = "error";
++				}
++				if (type) {
++					notify(type, "Switch schema", "switching the schema");
++				}
++			}),
++		[activeSchema, runAsyncTask],
++	);
++
++	useEffect(
++		() =>
++			runAsyncTask(async () => {
++				let type: "warning" | "error" | undefined;
++				try {
++					const success = await Rime.customize({
++						pageSize,
++						enableCompletion,
++						enableCorrection,
++						enableSentence,
++						enableLearning,
++						combineCandidates,
++						predictionNeverFirst,
++						predictionThreshold,
++						dictionaryExclude,
++						isCangjie5,
++					});
++					if (!((await Rime.deploy()) && success)) {
++						type = "warning";
++					}
++				} catch {
++					type = "error";
++				}
++				if (type) {
++					notify(type, "套用設定", "applying the settings");
++				}
++				updateDeployStatus();
++			}),
++		[
++			activeSchema,
++			pageSize,
++			enableCompletion,
++			enableCorrection,
++			enableSentence,
++			enableLearning,
++			combineCandidates,
++			predictionNeverFirst,
++			predictionThreshold,
++			dictionaryExclude,
++			isCangjie5,
++			updateDeployStatus,
++			runAsyncTask,
++		],
++	);
++
++	useEffect(
++		() =>
++			runAsyncTask(async () => {
++				let type: "warning" | "error" | undefined;
++				try {
++					await Rime.setOption("soft_cursor", true);
++					await Rime.setOption("ascii_mode", isAsciiMode);
++					await Rime.setOption("full_shape", isFullShape);
++					await Rime.setOption("simplification", isSimplification);
++					await Rime.setOption("traditionalization", false);
++					await Rime.setOption("extended_charset", isExtendedCharset);
++					await Rime.setOption("disabled", isDisabled);
++				} catch {
++					type = "error";
++				}
++				if (type) {
++					notify(type, "Apply live options", "applying the live options");
++				}
++			}),
++		[
++			activeSchema,
++			isAsciiMode,
++			isFullShape,
++			isSimplification,
++			isExtendedCharset,
++			isDisabled,
++			runAsyncTask,
++		],
++	);
++
++	useEffect(
++		() =>
++			runAsyncTask(async () => {
++				let type: "error" | undefined;
++				try {
++					await Rime.setOption("yune_inspector", isInspectorEnabled);
++					if (!isInspectorEnabled) {
++						setInspectorDebug(undefined);
++					}
++				} catch {
++					type = "error";
++				}
++				if (type) {
++					notify(type, "Apply inspector", "applying the inspector setting");
++				}
++			}),
++		[isInspectorEnabled, runAsyncTask],
++	);
++
++	useEffect(() => {
++		let cancelled = false;
++		async function applyAiSettings() {
+ 			let type: "warning" | "error" | undefined;
+ 			try {
 -				const success = await Rime.customize({ pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5 });
 -				if (!(await Rime.deploy() && success)) {
--					type = "warning";
--				}
++				if (!(await Rime.customize({ enableAI }))) {
+ 					type = "warning";
+ 				}
 -			}
 -			catch {
--				type = "error";
--			}
--			if (type) {
++			} catch {
+ 				type = "error";
+ 			}
+ 			if (type) {
 -				notify(type, "套用設定", "applying the settings");
--			}
++				notify(type, "Apply AI settings", "applying the AI settings");
++			}
++			if (!cancelled) {
++				updateAiStatus();
+ 			}
 -			updateDeployStatus();
 -		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, updateDeployStatus, runAsyncTask]);
-+  useEffect(() => {
-+    if (!isInspectorEnabled) {
-+      setUserdbSnapshot(undefined);
-+      setUserdbError(undefined);
-+      return;
-+    }
-+    void refreshUserdbSnapshot();
-+  }, [
-+    isInspectorEnabled,
-+    activeSchema,
-+    deployStatus,
-+    userdbRefreshStatus,
-+    refreshUserdbSnapshot,
-+  ]);
++		}
++		void applyAiSettings();
++		return () => {
++			cancelled = true;
++		};
++	}, [enableAI, updateAiStatus]);
  
 -	return <>
 -		<header className="p-8 border-b border-base-300 flex items-center">
@@ -654,102 +467,154 @@ index c43ccbc..1874a68 100644
 -				© Copyright 2024 TypeDuck Team. All rights reserved.
 -				<a href="https://github.com/TypeDuck-HK/TypeDuck-Web" target="_blank" rel="noreferrer">
 -					Source Code
--				</a>
++	const refreshUserdbSnapshot = useCallback(async () => {
++		setIsUserdbLoading(true);
++		setUserdbError(undefined);
++		try {
++			setUserdbSnapshot(await Rime.getUserdbSnapshot());
++		} catch (error) {
++			setUserdbError(
++				error instanceof Error
++					? `${error.name}: ${error.message}`
++					: String(error),
++			);
++		} finally {
++			setIsUserdbLoading(false);
++		}
++	}, []);
++
++	useEffect(() => {
++		if (!isEngineReady || loading) {
++			return;
++		}
++		void refreshUserdbSnapshot();
++	}, [
++		isEngineReady,
++		loading,
++		activeSchema,
++		deployStatus,
++		userdbRefreshStatus,
++		refreshUserdbSnapshot,
++	]);
++
++	return (
++		<div className="yd-app-shell">
++			<header className="yd-app-header">
++				<a className="yd-brand" href="/" aria-label="yune-web home">
++					<span className="yd-brand-mark">韻</span>
++					<span className="yd-brand-copy">
++						<span className="yd-brand-title">新韻輸入法引擎 <span>yune-web</span></span>
++						<span className="yd-brand-subtitle">AI-NATIVE INPUT ENGINE · PUBLIC WEB HARNESS</span>
++					</span>
+ 				</a>
 -			</aside>
 -		</footer>
 -		<ToastContainer className="whitespace-pre-line" />
 -	</>;
-+  return (
-+    <>
-+      <header className="border-b border-base-300 py-5">
-+        <div className="mx-auto flex w-full max-w-[84rem] items-center px-8">
-+          <a className="yd-anchor flex-1 text-xl font-bold" href="/">
-+            yune-web
-+          </a>
-+          <ThemeSwitcher />
-+        </div>
-+      </header>
-+      <main className="m-auto max-w-[84rem] p-8">
-+        <section data-yune-playground-content>
-+          <Toolbar
-+            loading={loading}
-+            isAsciiMode={preferences.isAsciiMode}
-+            setIsAsciiMode={preferences.setIsAsciiMode}
-+            isSimplification={preferences.isSimplification}
-+            setIsSimplification={preferences.setIsSimplification}
-+            isFullShape={preferences.isFullShape}
-+            setIsFullShape={preferences.setIsFullShape}
-+            activeSchema={preferences.activeSchema}
-+            setActiveSchema={preferences.setActiveSchema}
-+            isCangjie5={preferences.isCangjie5}
-+            setIsCangjie5={preferences.setIsCangjie5}
-+          />
-+          <YuneStatusStrip status={engineStatus} />
-+          <textarea
-+            className={`yd-input-area my-6 min-h-64 px-3 py-2 text-lg ${chineseTypefaceClass}`}
-+            data-chinese-typeface={chineseTypeface}
-+            ref={setTextArea}
-+            {...NO_AUTO_FILL}
-+          />
-+          {textArea && <YuneFeatureShowcase textArea={textArea} />}
-+          <label
-+            className="my-4 flex w-fit items-center gap-3 text-sm"
-+            data-yune-inspector-toggle
-+          >
-+            <input
-+              type="checkbox"
-+              className="yd-check"
-+              checked={isInspectorEnabled}
-+              aria-label="Yune inspector"
-+              onChange={(event) =>
-+                setIsInspectorEnabled(event.currentTarget.checked)
-+              }
-+            />
-+            <span>引擎檢視 Yune inspector</span>
-+          </label>
-+          {isInspectorEnabled && (
-+            <YuneInspector
-+              debug={inspectorDebug}
-+              userdbSnapshot={userdbSnapshot}
-+              isUserdbLoading={isUserdbLoading}
-+              userdbError={userdbError}
-+              onRefreshUserdb={refreshUserdbSnapshot}
-+            />
-+          )}
-+          {textArea && (
-+            <CandidatePanel
-+              runAsyncTask={runAsyncTask}
-+              textArea={textArea}
-+              prefs={preferences}
-+              deployStatus={deployStatus}
-+              aiStatus={aiStatus}
-+              onInspectorDebug={setInspectorDebug}
-+              onStatus={setEngineStatus}
-+              onUserdbChange={refreshUserdbAfterCommit}
-+            />
-+          )}
-+        </section>
-+        <Preferences {...preferences} />
-+      </main>
-+      <footer className="mt-8 bg-secondary p-6 text-center text-sm text-secondary-content">
-+        <aside className="flex flex-wrap items-center justify-center gap-2">
-+          yune-web public demo. Yune and upstream-derived assets are licensed under their upstream terms.
-+          <a
-+            className="yd-anchor"
-+            href="/PROVENANCE.md"
-+            target="_blank"
-+            rel="noreferrer"
-+          >
-+            Provenance
-+          </a>
-+        </aside>
-+      </footer>
-+      <ToastContainer className="whitespace-pre-line" />
-+    </>
-+  );
++				<div className="yd-header-status">
++					<span className="yd-version-chip"><span />PUBLIC</span>
++					<span className="yd-ai-chip" data-enabled={enableAI}>AI 重排 {enableAI ? "ON" : "OFF"}</span>
++					<ThemeSwitcher />
++				</div>
++			</header>
++			<main className="yd-app-main">
++				<section data-yune-playground-content className="yd-playground">
++					<Toolbar
++						loading={loading}
++						isAsciiMode={preferences.isAsciiMode}
++						setIsAsciiMode={preferences.setIsAsciiMode}
++						isSimplification={preferences.isSimplification}
++						setIsSimplification={preferences.setIsSimplification}
++						isFullShape={preferences.isFullShape}
++						setIsFullShape={preferences.setIsFullShape}
++						activeSchema={preferences.activeSchema}
++						setActiveSchema={preferences.setActiveSchema}
++						isCangjie5={preferences.isCangjie5}
++						setIsCangjie5={preferences.setIsCangjie5}
++					/>
++					<div className="yd-playground-grid">
++						<section className="yd-compose-panel" aria-label="IME playground">
++							<div className="yd-panel-heading">
++								<span>輸入測試</span>
++								<span>COMPOSE</span>
++							</div>
++							<textarea
++								className={`yd-input-area ${chineseTypefaceClass}`}
++								data-chinese-typeface={chineseTypeface}
++								ref={setTextArea}
++								aria-label="yune-web composing input"
++								placeholder="粵語拼音"
++								{...NO_AUTO_FILL}
++							/>
++							{textArea && (
++								<CandidatePanel
++									runAsyncTask={runAsyncTask}
++									textArea={textArea}
++									prefs={preferences}
++									deployStatus={deployStatus}
++									aiStatus={aiStatus}
++									onInspectorDebug={setInspectorDebug}
++									onStatus={setEngineStatus}
++									onUserdbChange={refreshUserdbAfterCommit}
++									onMetrics={next => setMetrics(current => ({ ...current, ...next }))}
++								/>
++							)}
++						</section>
++						<YuneUserdbViewer
++							snapshot={userdbSnapshot}
++							isLoading={isUserdbLoading}
++							error={userdbError}
++							onRefresh={refreshUserdbSnapshot} />
++					</div>
++					<YuneMetricsStrip metrics={metrics} userdbSnapshot={userdbSnapshot} />
++					<YuneStatusStrip status={engineStatus} />
++					<section className="yd-inspector-gate">
++						<div className="yd-inspector-gate-header">
++							<div>
++								<span>引擎檢視</span>
++								<span>Yune inspector</span>
++							</div>
++							<label className="yd-inspector-enable" data-yune-inspector-toggle>
++								<input
++									type="checkbox"
++									className="yd-check"
++									checked={isInspectorEnabled}
++									aria-label="Yune inspector"
++									onChange={(event) =>
++										setIsInspectorEnabled(event.currentTarget.checked)
++									}
++								/>
++								<span>{isInspectorEnabled ? "TRACE ON" : "TRACE OFF"}</span>
++							</label>
++						</div>
++						{isInspectorEnabled && (
++							<YuneInspector
++								debug={inspectorDebug}
++								isCollapsed={isInspectorCollapsed}
++								setIsCollapsed={setIsInspectorCollapsed}
++							/>
++						)}
++					</section>
++				</section>
++				<Preferences {...preferences} />
++			</main>
++			<footer className="yd-app-footer">
++				<span>yune-web public demo. Yune and upstream-derived assets are licensed under their upstream terms.</span>
++				<a
++					className="yd-anchor"
++					href="/PROVENANCE.md"
++					target="_blank"
++					rel="noreferrer"
++				>
++					Provenance
++				</a>
++			</footer>
++			<ToastContainer className="whitespace-pre-line" />
++		</div>
++	);
  }
 diff --git a/src/Candidate.tsx b/src/Candidate.tsx
-index f0c2b50..d7287bf 100644
+index f0c2b50..6209d42 100644
 --- a/src/Candidate.tsx
 +++ b/src/Candidate.tsx
 @@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
@@ -761,7 +626,7 @@ index f0c2b50..d7287bf 100644
  
  import type { InterfacePreferences } from "./types";
  import type { MouseEvent } from "react";
-@@ -37,60 +37,57 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
+@@ -37,60 +37,55 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
  		}
  	}
  	function _showDictionary(event: MouseEvent) {
@@ -824,11 +689,9 @@ index f0c2b50..d7287bf 100644
 -			</tr>}
 -		</button>
 +	const chineseTypefaceClass = CHINESE_TYPEFACE_BY_ID[prefs.chineseTypeface].className;
-+	const rowTone = isHighlighted ? "bg-primary text-primary-content" : "text-base-content";
-+	const mutedTone = isHighlighted ? "text-primary-content-300" : "text-base-content-300";
 +	const labels = info.matchedEntries?.flatMap(entry => entry.formattedLabels ?? []) ?? [];
 +	const firstEntry = info.matchedEntries?.[0] ?? info.entries[0];
-+	const sourceBadge = info.isAi && <span className={`ai-source rounded px-1 text-[8pt] ${isHighlighted ? "bg-primary-content text-primary" : "bg-accent text-accent-content"}`} data-ai-source={info.source}>AI</span>;
++	const sourceBadge = info.isAi && <span className="ai-source" data-ai-source={info.source}>AI</span>;
 +	const detailText = [
 +		(!info.isReverseLookup || prefs.showReverseCode) ? info.note : "",
 +		...labels.slice(0, 2),
@@ -850,20 +713,20 @@ index f0c2b50..d7287bf 100644
 +		onTouchMove={showDictionary}
 +		onTouchEnd={_hideDictionary}
 +		onTouchCancel={_hideDictionary}>
-+		<tr className={rowTone}>
-+			<td className={`font-geometric text-[11pt] ${mutedTone}`}>{info.label}</td>
-+			<td className={isHighlighted ? "bg-primary" : ""}>
-+				{showJyutping && firstEntry?.jyutping && <div className={`text-[10pt] ${mutedTone}`}>{firstEntry.jyutping}</div>}
++		<tr>
++			<td className="candidate-index">{info.label}</td>
++			<td className="candidate-main">
++				{showJyutping && firstEntry?.jyutping && <div className="candidate-reading">{firstEntry.jyutping}</div>}
 +				<div
-+					className={`${chineseTypefaceClass} text-[13pt]${showJyutping ? " tracking-[0.3em]" : ""}`}
++					className={`${chineseTypefaceClass} candidate-text${showJyutping ? " candidate-text-spaced" : ""}`}
 +					data-chinese-typeface={prefs.chineseTypeface}>
 +					{firstEntry?.honzi || info.text}
 +				</div>
 +			</td>
-+			<td className={`candidate-note ${mutedTone}`}>{detailText}</td>
-+			<td className={`font-geometric text-[11pt] ${mutedTone} align-middle text-right`}>
++			<td className="candidate-note">{detailText}</td>
++			<td className="candidate-info">
 +				{sourceBadge}
-+				{info.hasDictionaryEntry(prefs) && <span className="ml-1" aria-label="dictionary details">ⓘ</span>}
++				{info.hasDictionaryEntry(prefs) && <span aria-label="dictionary details">ⓘ</span>}
 +			</td>
 +		</tr>
  	</tbody>;
@@ -965,16 +828,18 @@ index 0add9ac..1a5e419 100644
  	}
  
 diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
-index 298a42d..cf43462 100644
+index 298a42d..bcd3b58 100644
 --- a/src/CandidatePanel.tsx
 +++ b/src/CandidatePanel.tsx
-@@ -1,4 +1,4 @@
+@@ -1,25 +1,119 @@
 -import { useState, useEffect, useRef, useCallback } from "react";
 +import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
  
  import Candidate from "./Candidate";
  import CandidateInfo from "./CandidateInfo";
-@@ -8,18 +8,94 @@ import DictionaryPanel from "./DictionaryPanel";
+-import CaretFollower from "./CaretFollower";
+ import { RIME_KEY_MAP } from "./consts";
+ import DictionaryPanel from "./DictionaryPanel";
  import Rime from "./rime";
  import { isPrintable, notify } from "./utils";
  
@@ -1010,6 +875,14 @@ index 298a42d..cf43462 100644
 +	workerRoundtripMs?: number;
 +	responseMappingMs: number;
 +	totalWorkerActionMs?: number;
++}
++
++interface MetricUpdate {
++	lookupMs?: number;
++	aiMs?: number;
++	candidateCount?: number;
++	totalCandidateCount?: number;
++	latestInput?: string;
 +}
 +
 +function nowMs() {
@@ -1052,7 +925,16 @@ index 298a42d..cf43462 100644
 +	document.documentElement.dataset.yunePerfDiagnostics = JSON.stringify(diagnostics.slice(-100));
 +}
 +
-+export default function CandidatePanel({ textArea, prefs, deployStatus, aiStatus, onInspectorDebug, onStatus, onUserdbChange }: {
++export default function CandidatePanel({
++	textArea,
++	prefs,
++	deployStatus,
++	aiStatus,
++	onInspectorDebug,
++	onStatus,
++	onUserdbChange,
++	onMetrics,
++}: {
  	runAsyncTask(asyncTask: () => Promise<void>): void;
  	textArea: HTMLTextAreaElement;
 -	prefs: InterfacePreferences;
@@ -1062,6 +944,7 @@ index 298a42d..cf43462 100644
 +	onInspectorDebug?(debug: YuneInspectorDebug | undefined): void;
 +	onStatus?(status: YuneStatusSnapshot | undefined): void;
 +	onUserdbChange?(): void;
++	onMetrics?(metrics: MetricUpdate): void;
  }) {
  	const [inputState, setInputState] = useState<InputState | undefined>();
 +	const inputStateRef = useRef<InputState | undefined>();
@@ -1069,19 +952,19 @@ index 298a42d..cf43462 100644
  	const candidateList = useRef<HTMLTableElement>(null);
  	const dictionaryPanel = useRef<HTMLDivElement>(null);
 +	const pendingPerfDiagnostics = useRef<PendingPerfDiagnostic[]>([]);
++	const lastClassicStateRef = useRef<InputState | undefined>();
  
  	const hideDictionary = useCallback(() => {
  		setShowDictionaryIndex(undefined);
-@@ -31,11 +107,17 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -31,11 +125,16 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  		textArea.selectionStart = textArea.selectionEnd = selectionStart + newText.length;
  	}, [textArea]);
  
 -	const handleRimeResult = useCallback((promise: Promise<RimeResult>, key?: string) =>
 -		runAsyncTask(async () => {
-+	const handleRimeResult = useCallback((promise: Promise<RimeResult>, key?: string, keydownContext?: { input: string; key?: string; keydownAt: number }) =>
-+		{
-+			const startedAt = performance.now();
-+			void (async () => {
++	const handleRimeResult = useCallback((promise: Promise<RimeResult>, key?: string, keydownContext?: { input: string; key?: string; keydownAt: number }, metricKind?: "lookup" | "ai") => {
++		const startedAt = performance.now();
++		void (async () => {
  			let type: "warning" | "error" | undefined;
  			try {
  				const result = await promise;
@@ -1092,7 +975,7 @@ index 298a42d..cf43462 100644
  				if (!result.success) {
  					type = "warning";
  				}
-@@ -44,19 +126,46 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -44,19 +143,58 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  						inputBuffer: result.inputBuffer,
  						highlightedIndex: result.highlightedIndex,
  						candidates: result.candidates.map(
@@ -1130,6 +1013,18 @@ index 298a42d..cf43462 100644
 +						totalWorkerActionMs: actionDiagnostic?.totalMs,
 +					});
 +				}
++				const candidateCount = result.isComposing ? Math.min(result.candidates.length, prefs.pageSize) : undefined;
++				const totalCandidateCount = result.isComposing ? result.candidates.length : undefined;
++				if (metricKind !== "ai") {
++					lastClassicStateRef.current = result.isComposing ? state : undefined;
++				}
++				onMetrics?.({
++					latestInput: result.isComposing ? result.inputBuffer.active || result.inputBuffer.before : undefined,
++					candidateCount,
++					totalCandidateCount,
++					...(metricKind === "lookup" ? { lookupMs: Math.round(performance.now() - startedAt) } : {}),
++					...(metricKind === "ai" ? { aiMs: Math.round(performance.now() - startedAt) } : {}),
++				});
  				setInputState(result.isComposing ? state : undefined);
 +				requestAnimationFrame(() => {
 +					appendTypingDiagnostic({
@@ -1141,22 +1036,22 @@ index 298a42d..cf43462 100644
  				hideDictionary();
  			}
  			catch {
-@@ -66,12 +175,36 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -66,12 +204,36 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				notify(type, "執行操作", "performing the operation");
  			}
  			textArea.focus();
 -		}), [hideDictionary, inputState, insert, runAsyncTask, textArea]);
 +		})();
-+		}, [hideDictionary, insert, onInspectorDebug, onStatus, onUserdbChange, textArea]);
++	}, [hideDictionary, insert, onInspectorDebug, onMetrics, onStatus, onUserdbChange, prefs.pageSize, textArea]);
  
 -	const processKey = useCallback((input: string, key?: string) => handleRimeResult(Rime.processKey(input), key), [handleRimeResult]);
 +	const processKey = useCallback((input: string, key?: string, keydownAt?: number) => {
 +		const classicResult = Rime.processKey(input);
-+		handleRimeResult(classicResult, key, keydownAt === undefined ? undefined : { input, key, keydownAt });
++		handleRimeResult(classicResult, key, keydownAt === undefined ? undefined : { input, key, keydownAt }, "lookup");
 +		if (prefs.enableAI) {
 +			void classicResult.then(result => {
 +				if (result.isComposing) {
-+					handleRimeResult(Rime.stageAi());
++					handleRimeResult(Rime.stageAi(), undefined, undefined, "ai");
 +				}
 +			}).catch(() => undefined);
 +		}
@@ -1180,7 +1075,7 @@ index 298a42d..cf43462 100644
  
  	const parseKey = useCallback((event: KeyboardEvent) => {
  		const { code, key } = event;
-@@ -117,15 +250,24 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -117,15 +279,24 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  	}, [inputState, textArea]);
  
  	useEffect(() => {
@@ -1207,7 +1102,7 @@ index 298a42d..cf43462 100644
  				const key = parseKey(event);
  				if (key) processKey(`{Release+${key}}`);
  			}
-@@ -136,13 +278,46 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -136,13 +307,56 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  			document.removeEventListener("keydown", onKeyDown);
  			document.removeEventListener("keyup", onKeyUp);
  		};
@@ -1215,6 +1110,7 @@ index 298a42d..cf43462 100644
 +	}, [inputState, parseKey, processKey, selectCandidateFromDigitKey]);
  
  	useEffect(() => {
++		lastClassicStateRef.current = undefined;
  		setInputState(undefined);
  		hideDictionary();
  	}, [deployStatus, setInputState, hideDictionary]);
@@ -1247,22 +1143,40 @@ index 298a42d..cf43462 100644
 +	}, [inputState, prefs.pageSize]);
 +
 +	useEffect(() => {
-+		if (inputStateRef.current) {
-+			handleRimeResult(Rime.stageAi());
++		if (!prefs.enableAI) {
++			onMetrics?.({ aiMs: undefined });
++			if (lastClassicStateRef.current && inputStateRef.current !== lastClassicStateRef.current) {
++				inputStateRef.current = lastClassicStateRef.current;
++				setInputState(lastClassicStateRef.current);
++				hideDictionary();
++			}
++			return;
 +		}
-+	}, [aiStatus, handleRimeResult]);
++		if (inputStateRef.current) {
++			handleRimeResult(Rime.stageAi(), undefined, undefined, "ai");
++		}
++	}, [aiStatus, handleRimeResult, hideDictionary, onMetrics, prefs.enableAI]);
 +
  	const hideDictionaryOnLeaveCandidate = useCallback(() => {
  		function hideDictionaryOnLeaveDictionaryPanel() {
  			if (!candidateList.current?.matches(":hover")) {
-@@ -160,8 +335,19 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -160,30 +374,45 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  		}
  	}, [hideDictionary]);
  
 -	const shouldShowDictionary = typeof showDictionaryIndex === "number";
 -	return inputState && <CaretFollower textArea={textArea} className="candidate-panel">
+-		<div>
+-			<div className="flex">
+-				<div className="flex-1 text-[15pt]">
+-					{inputState.inputBuffer.before && <span className="m-1 inline-block">{inputState.inputBuffer.before}</span>}
+-					{inputState.inputBuffer.active && <span className="p-1 inline-block rounded-md bg-accent text-accent-content">{inputState.inputBuffer.active}</span>}
+-					{inputState.inputBuffer.after && <span className="m-1 inline-block">{inputState.inputBuffer.after}</span>}
 +	if (!inputState) {
-+		return null;
++		return <div className="candidate-panel-empty" data-yune-candidate-empty>
++			<div>候選待命 Candidate idle</div>
++			<p>N/A until composition begins.</p>
++		</div>;
 +	}
 +
 +	const visibleCandidates = inputState?.candidates.slice(0, prefs.pageSize) ?? [];
@@ -1273,23 +1187,26 @@ index 298a42d..cf43462 100644
 +		? inputState.highlightedIndex
 +		: undefined;
 +	const dictionaryCandidate = typeof dictionaryIndex === "number" ? visibleCandidates[dictionaryIndex] : undefined;
-+	return <CaretFollower textArea={textArea} className={`candidate-panel candidate-panel--${prefs.candidateMenuLayout}`}>
- 		<div>
- 			<div className="flex">
- 				<div className="flex-1 text-[15pt]">
-@@ -169,21 +355,21 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
- 					{inputState.inputBuffer.active && <span className="p-1 inline-block rounded-md bg-accent text-accent-content">{inputState.inputBuffer.active}</span>}
- 					{inputState.inputBuffer.after && <span className="m-1 inline-block">{inputState.inputBuffer.after}</span>}
++	return <div className={`candidate-panel candidate-panel--${prefs.candidateMenuLayout}`}>
++		<div className="candidate-list-pane">
++			<div className="candidate-panel-header">
++				<div className="candidate-preedit">
++					{inputState.inputBuffer.before && <span>{inputState.inputBuffer.before}</span>}
++					{inputState.inputBuffer.active && <span className="candidate-preedit-active">{inputState.inputBuffer.active}</span>}
++					{inputState.inputBuffer.after && <span>{inputState.inputBuffer.after}</span>}
++					<span className="candidate-caret" aria-hidden="true" />
  				</div>
 -				<div className="join">
 -					<button className="page-nav join-item" disabled={inputState.isPrevDisabled} onClick={() => flipPage(true)}>
-+				<div className="flex gap-1">
+-						<span className="relative bottom-1">‹</span>
++				<div className="candidate-nav">
 +					<button className="page-nav" disabled={inputState.isPrevDisabled} onClick={() => flipPage(true)}>
- 						<span className="relative bottom-1">‹</span>
++						<span>‹</span>
  					</button>
 -					<button className="page-nav join-item" disabled={inputState.isNextDisabled} onClick={() => flipPage(false)}>
+-						<span className="relative bottom-1">›</span>
 +					<button className="page-nav" disabled={inputState.isNextDisabled} onClick={() => flipPage(false)}>
- 						<span className="relative bottom-1">›</span>
++						<span>›</span>
  					</button>
  				</div>
  			</div>
@@ -1304,19 +1221,20 @@ index 298a42d..cf43462 100644
  						selectCandidate={() => selectCandidate(index)}
  						deleteCandidate={() => deleteCandidate(index)}
  						showDictionary={() => setShowDictionaryIndex(index)}
-@@ -192,6 +378,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -192,6 +421,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				)}
  			</table>
  		</div>
 -		{shouldShowDictionary && <DictionaryPanel info={inputState.candidates[showDictionaryIndex]} prefs={prefs} ref={dictionaryPanel} />}
+-	</CaretFollower>;
 +		{dictionaryCandidate && <DictionaryPanel info={dictionaryCandidate} prefs={prefs} ref={dictionaryPanel} />}
- 	</CaretFollower>;
++	</div>;
  }
 diff --git a/src/DictionaryPanel.tsx b/src/DictionaryPanel.tsx
-index d58fbab..b6cf889 100644
+index d58fbab..423fb7d 100644
 --- a/src/DictionaryPanel.tsx
 +++ b/src/DictionaryPanel.tsx
-@@ -1,12 +1,13 @@
+@@ -1,13 +1,15 @@
  import { forwardRef } from "react";
  
 -import { LANGUAGE_CODES } from "./consts";
@@ -1329,9 +1247,11 @@ index d58fbab..b6cf889 100644
  const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs: InterfacePreferences }>(function DictionaryPanel({ info, prefs }, ref) {
 +	const chineseTypefaceClass = CHINESE_TYPEFACE_BY_ID[prefs.chineseTypeface].className;
  	return info.hasDictionaryEntry(prefs) && <div className="dictionary-panel" ref={ref}>
++		<div className="dictionary-panel-kicker">字典詳情 DICTIONARY</div>
  		{info.entries.flatMap((entry, index) =>
  			entry.isDictionaryEntry(prefs)
-@@ -16,7 +17,7 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+ 				? [
+@@ -16,7 +18,7 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
  							[entry.honzi, entry.jyutping, entry.pronunciationType],
  							(honzi, jyutping, pronunciationType) =>
  								<div className="entry-head">
@@ -1340,7 +1260,7 @@ index d58fbab..b6cf889 100644
  									{jyutping && <span className="text-[15pt] text-primary-content-300 whitespace-nowrap">{jyutping}</span>}
  									{pronunciationType && <span className="text-primary-content-300 whitespace-nowrap">{pronunciationType}</span>}
  								</div>,
-@@ -35,14 +36,16 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+@@ -35,14 +37,16 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
  							[entry.otherData],
  							otherData =>
  								<table>
@@ -1365,7 +1285,7 @@ index d58fbab..b6cf889 100644
  								</table>,
  						)}
  						{letSome(
-@@ -50,12 +53,14 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+@@ -50,12 +54,14 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
  							otherDefinitions =>
  								<table>
  									<caption className="font-medium text-[13pt] pb-1 text-left whitespace-nowrap">More Languages</caption>
@@ -1387,7 +1307,7 @@ index d58fbab..b6cf889 100644
  						)}
  					</div>,
 diff --git a/src/Inputs.tsx b/src/Inputs.tsx
-index d5451b8..3d4fe92 100644
+index d5451b8..5afbc92 100644
 --- a/src/Inputs.tsx
 +++ b/src/Inputs.tsx
 @@ -1,76 +1,119 @@
@@ -1446,7 +1366,7 @@ index d5451b8..3d4fe92 100644
  		<input
  			type="checkbox"
 -			className="toggle toggle-primary"
-+			className="yd-check"
++			className="yd-check yd-toggle"
  			{...NO_AUTO_FILL}
  			checked={checked}
  			onChange={event => setChecked(event.target.checked)} />
@@ -1543,7 +1463,7 @@ index d5451b8..3d4fe92 100644
 +	</label>;
  }
 diff --git a/src/Preferences.tsx b/src/Preferences.tsx
-index 820a2e0..0f439e5 100644
+index 820a2e0..891535b 100644
 --- a/src/Preferences.tsx
 +++ b/src/Preferences.tsx
 @@ -1,109 +1,181 @@
@@ -1642,12 +1562,12 @@ index 820a2e0..0f439e5 100644
 -						<span className="tick after:content-['9']">|</span>
 -						<span className="tick after:content-['10']">|</span>
 +
-+	return <section className="mt-8" data-yune-preferences>
-+		<h3 className="mb-4 text-2xl font-semibold">輸入法設定 IME Settings</h3>
-+		<div className="grid items-start gap-3 lg:grid-cols-3">
++	return <section className="yd-preferences" data-yune-preferences>
++		<h3 className="yd-preferences-title">輸入法設定 <span>IME Settings</span></h3>
++		<div className="yd-settings-grid">
 +			<Section
 +				sectionId="active"
-+				title="引擎設定 Active engine controls"
++				title={<>引擎設定 <span>ENGINE</span></>}
 +				description="會重新部署 schema，影響候選詞、排序、記憶同除詞。">
 +				<Toggle
 +					label="自動補詞 Auto-completion"
@@ -1673,14 +1593,14 @@ index 820a2e0..0f439e5 100644
 +					checked={prefs.enableSentence}
 +					setChecked={prefs.setEnableSentence} />
 +				<Toggle label="用户詞庫 User Dictionary" description="允許本機 userdb 學習已提交詞。" checked={prefs.enableLearning} setChecked={prefs.setEnableLearning} />
-+				<Toggle label="AI 候選 AI Candidates" description="本機第二輪候選，預設關閉，不改 classic 第一候選。" checked={prefs.enableAI} setChecked={prefs.setEnableAI} />
++				<Toggle label="AI 候選重排 AI Candidates" description="本機第二輪候選，預設關閉，不改 classic 第一候選。" checked={prefs.enableAI} setChecked={prefs.setEnableAI} />
 +				<Toggle label="合併同字候選 Combine same-text candidates" description="把同文字典列合併成一個候選。" checked={prefs.combineCandidates} setChecked={prefs.setCombineCandidates} />
 +				<Toggle label="預測不排第一 Prediction never first" description="長預測候選不得壓過直接輸入候選。" checked={prefs.predictionNeverFirst} setChecked={prefs.setPredictionNeverFirst} />
 +				<Range label="預測門檻 Prediction threshold" description="提高門檻會隱藏較弱預測候選。" min={thresholdRange.min} max={thresholdRange.max} step={thresholdRange.step} value={prefs.predictionThreshold} setValue={prefs.setPredictionThreshold} />
 +				<Toggle label="除詞 Dictionary exclude" description="套用目前 schema 的示範除詞清單。" checked={prefs.dictionaryExclude.length > 0} setChecked={checked => prefs.setDictionaryExclude(checked ? [...DICTIONARY_EXCLUDE_BY_SCHEMA[prefs.activeSchema]] : [])} />
 +			</Section>
 +
-+			<Section sectionId="display" title="顯示設定 Display controls">
++			<Section sectionId="display" title={<>顯示設定 <span>DISPLAY</span></>} description="只改候選顯示，不影響引擎輸出。">
 +				<div className="yd-field">
 +					<div className="yd-field-label">顯示語言 Display languages</div>
 +					<div className="grid gap-1 sm:grid-cols-2">
@@ -1797,7 +1717,7 @@ index 820a2e0..0f439e5 100644
 +
 +			<Section
 +				sectionId="live"
-+				title="即時狀態 Live session controls"
++				title={<>即時狀態 <span>SESSION</span></>}
 +				description="只改目前 session 狀態，不改候選引擎設定。">
 +				<Toggle label="中英模式 ASCII mode" description="切換中文輸入或直接輸入英文字母。" checked={prefs.isAsciiMode} setChecked={prefs.setIsAsciiMode} />
 +				<Toggle label="全形 Full shape" description="切換全形或半形字母及符號。" checked={prefs.isFullShape} setChecked={prefs.setIsFullShape} />
@@ -1825,12 +1745,11 @@ index 820a2e0..0f439e5 100644
  }
 diff --git a/src/SchemaSwitcher.tsx b/src/SchemaSwitcher.tsx
 new file mode 100644
-index 0000000..50a91cd
+index 0000000..7603a51
 --- /dev/null
 +++ b/src/SchemaSwitcher.tsx
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,49 @@
 +import { PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS, YUNE_PUBLIC_DEMO } from "./consts";
-+import { Segment } from "./Inputs";
 +
 +import type { RimeSchemaId } from "./types";
 +import type { Dispatch, SetStateAction } from "react";
@@ -1848,59 +1767,86 @@ index 0000000..50a91cd
 +	if (YUNE_PUBLIC_DEMO && schemaOptions.length <= 1) {
 +		return null;
 +	}
-+	const controls = <div className="yd-segment-group flex-wrap" role="radiogroup" aria-label="方案 Schema">
-+		{schemaOptions.map(schema =>
-+			<Segment
-+				key={schema.id}
-+				name="yuneSchema"
-+				label={schema.schemaName}
-+				state={activeSchema}
-+				setState={setActiveSchema}
-+				value={schema.id} />
-+		)}
++	const active = schemaOptions.find(schema => schema.id === activeSchema) ?? schemaOptions[0];
++
++	return <div className={`yd-schema-dropdown${compact ? " yd-schema-dropdown-compact" : ""}`} data-yune-schema-switcher>
++		<label className="yd-top-label" htmlFor="yune-schema-select">方案 Schema</label>
++		<select
++			id="yune-schema-select"
++			className="yd-schema-select"
++			aria-label="方案 Schema"
++			value={active.id}
++			onChange={event => setActiveSchema(event.currentTarget.value as RimeSchemaId)}>
++			{schemaOptions.map(schema =>
++				<option key={schema.id} value={schema.id}>
++					{schema.schemaName} · {schema.secondaryLabel}
++				</option>
++			)}
++		</select>
++		<div className="sr-only" role="radiogroup" aria-label="方案 Schema compatibility choices">
++			{schemaOptions.map(schema =>
++				<label key={schema.id}>
++					<input
++						type="radio"
++						name="yuneSchema"
++						checked={activeSchema === schema.id}
++						onChange={() => setActiveSchema(schema.id)} />
++					{schema.schemaName} {schema.secondaryLabel}
++				</label>
++			)}
++		</div>
++		<p className="yd-schema-hint">{active.reverseLookup}</p>
 +	</div>;
-+	const reverseLookup = <p className={compact ? "mt-1 text-xs text-base-content-300" : "mt-2 text-sm text-base-content-300"}>
-+		{schemaOptions.find(schema => schema.id === activeSchema)?.reverseLookup}
-+	</p>;
-+
-+	if (compact) {
-+		return <div className="yd-top-field yd-schema-switcher-compact" data-yune-schema-switcher>
-+			<span className="yd-top-label">方案 Schema</span>
-+			{controls}
-+			{reverseLookup}
-+		</div>;
-+	}
-+
-+	return <fieldset className="my-4" data-yune-schema-switcher>
-+		<legend className="mb-2 font-semibold">方案 Schema</legend>
-+		{controls}
-+		{reverseLookup}
-+	</fieldset>;
 +}
 diff --git a/src/ThemeSwitcher.tsx b/src/ThemeSwitcher.tsx
-index 28fe97b..2ec146b 100644
+index 28fe97b..d70e821 100644
 --- a/src/ThemeSwitcher.tsx
 +++ b/src/ThemeSwitcher.tsx
-@@ -17,13 +17,12 @@ export default function ThemeSwitcher() {
+@@ -17,36 +17,13 @@ export default function ThemeSwitcher() {
  		document.documentElement.dataset["theme"] = theme;
  	}, [theme]);
  
 -	// From https://daisyui.com/components/theme-controller/#theme-controller-using-a-toggle-with-icons-inside
- 	return <label className="cursor-pointer grid place-items-center">
+-	return <label className="cursor-pointer grid place-items-center">
++	return <label className="yd-theme-button">
  		<input
  			type="checkbox"
  			checked={theme === "dark"}
  			onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
 -			className="toggle bg-base-content row-start-1 col-start-1 col-span-2" />
-+			className="yd-theme-switch row-start-1 col-start-1 col-span-2" />
++			className="yd-theme-switch sr-only" />
  		<span className="sr-only">Theme Switcher</span>
- 		<svg
- 			className="col-start-1 row-start-1 stroke-base-100 fill-base-100 size-3.5"
+-		<svg
+-			className="col-start-1 row-start-1 stroke-base-100 fill-base-100 size-3.5"
+-			xmlns="http://www.w3.org/2000/svg"
+-			viewBox="0 0 24 24"
+-			fill="none"
+-			stroke="currentColor"
+-			strokeWidth="2"
+-			strokeLinecap="round"
+-			strokeLinejoin="round">
+-			<circle cx="12" cy="12" r="5" />
+-			<path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+-		</svg>
+-		<svg
+-			className="col-start-2 row-start-1 stroke-base-100 fill-base-100 size-3.5"
+-			xmlns="http://www.w3.org/2000/svg"
+-			viewBox="0 0 24 24"
+-			fill="none"
+-			stroke="currentColor"
+-			strokeWidth="2"
+-			strokeLinecap="round"
+-			strokeLinejoin="round">
+-			<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+-		</svg>
++		<span aria-hidden="true">{theme === "dark" ? "○" : "●"} THEME</span>
+ 	</label>;
+ }
 diff --git a/src/Toolbar.tsx b/src/Toolbar.tsx
-index ff262af..027aa9c 100644
+index ff262af..3eb9a20 100644
 --- a/src/Toolbar.tsx
 +++ b/src/Toolbar.tsx
-@@ -1,8 +1,37 @@
+@@ -1,8 +1,65 @@
  import { useEffect, useRef, useState } from "react";
  
 -import { useRimeOption } from "./hooks";
@@ -1911,6 +1857,34 @@ index ff262af..027aa9c 100644
 -export default function Toolbar({ loading, deployStatus }: { loading: boolean; deployStatus: number }) {
 +import type { RimeSchemaId } from "./types";
 +import type { Dispatch, SetStateAction } from "react";
++
++function ModeButton({
++	ariaLabel,
++	active,
++	activeGlyph,
++	inactiveGlyph,
++	activeLabel,
++	inactiveLabel,
++	onClick,
++}: {
++	ariaLabel: string;
++	active: boolean;
++	activeGlyph: string;
++	inactiveGlyph: string;
++	activeLabel: string;
++	inactiveLabel: string;
++	onClick(): void;
++}) {
++	return <button
++		type="button"
++		className="yd-mode-button"
++		aria-label={ariaLabel}
++		data-active={active}
++		onClick={onClick}>
++		<span className="yd-mode-glyph">{active ? activeGlyph : inactiveGlyph}</span>
++		<span className="yd-mode-label">{active ? activeLabel : inactiveLabel}</span>
++	</button>;
++}
 +
 +export default function Toolbar({
 +	loading,
@@ -1940,7 +1914,7 @@ index ff262af..027aa9c 100644
  	const [debouncedLoading, setDebouncedLoading] = useState(loading);
  	const timeout = useRef<ReturnType<typeof setTimeout>>();
  	useEffect(() => {
-@@ -16,34 +45,37 @@ export default function Toolbar({ loading, deployStatus }: { loading: boolean; d
+@@ -16,34 +73,50 @@ export default function Toolbar({ loading, deployStatus }: { loading: boolean; d
  			timeout.current = setTimeout(() => setDebouncedLoading(true), 200);
  			return clear;
  		}
@@ -1970,33 +1944,47 @@ index ff262af..027aa9c 100644
 -			</div>
 -			<div className="tooltip" data-tip={"半形／全形標點符號\nHalfwidth / Fullwidth Punctuations"}>
 -				<button className="btn-toolbar join-item" onClick={toggleIsHalfwidthPunctuation}>{isHalfwidthPunctuation ? "." : "。"}</button>
-+	return <div className="space-y-2" data-yune-top-controls>
-+		<div className="flex flex-wrap items-start gap-3 align-middle">
-+			<div className="flex flex-wrap gap-2" data-yune-control="mode-buttons">
-+				<div className="yd-tip" data-tip={"中文／英文字母\nChinese / Alphabet"}>
-+					<button className="yd-icon-button" aria-label="ASCII mode" onClick={() => setIsAsciiMode(value => !value)}>{isAsciiMode ? "En" : "中"}</button>
-+				</div>
-+				<div className="yd-tip" data-tip={"香港繁體／簡化字\nHong Kong Traditional / Simplified"}>
-+					<button className="yd-icon-button" aria-label="Output standard" onClick={() => setIsSimplification(value => !value)}>{isSimplification ? "简" : "繁"}</button>
-+				</div>
-+				<div className="yd-tip" data-tip={"半形／全形字母及符號\nHalfwidth / Fullwidth Letters & Symbols"}>
-+					<button className="yd-icon-button" aria-label="Full shape" onClick={() => setIsFullShape(value => !value)}>{isFullShape ? "全" : "半"}</button>
-+				</div>
- 			</div>
-+			<SchemaSwitcher
-+				activeSchema={activeSchema}
-+				setActiveSchema={setActiveSchema}
-+				compact />
-+			{!YUNE_PUBLIC_DEMO && <div className="yd-top-field yd-top-inline-field" data-yune-control="cangjie-version">
-+				<span className="yd-top-label">倉頡反查字典 Cangjie lookup</span>
-+				<div className="yd-segment-group flex-wrap" role="radiogroup" aria-label="倉頡反查字典 Cangjie lookup">
-+					<Segment name="cangjieVersion" label="三代" state={isCangjie5} setState={setIsCangjie5} value={false} />
-+					<Segment name="cangjieVersion" label="五代" state={isCangjie5} setState={setIsCangjie5} value={true} />
-+				</div>
-+			</div>}
+-			</div>
++	return <div className="yd-toolbar" data-yune-top-controls>
++		<SchemaSwitcher
++			activeSchema={activeSchema}
++			setActiveSchema={setActiveSchema}
++			compact />
++		<div className="yd-mode-row" data-yune-control="mode-buttons">
++			<ModeButton
++				ariaLabel="ASCII mode"
++				active={!isAsciiMode}
++				activeGlyph="中"
++				inactiveGlyph="英"
++				activeLabel="中文"
++				inactiveLabel="英文 ASCII"
++				onClick={() => setIsAsciiMode(value => !value)} />
++			<ModeButton
++				ariaLabel="Output standard"
++				active={!isSimplification}
++				activeGlyph="繁"
++				inactiveGlyph="简"
++				activeLabel="繁體 HK"
++				inactiveLabel="簡體 hk2s"
++				onClick={() => setIsSimplification(value => !value)} />
++			<ModeButton
++				ariaLabel="Full shape"
++				active={!isFullShape}
++				activeGlyph="半"
++				inactiveGlyph="全"
++				activeLabel="半形"
++				inactiveLabel="全形"
++				onClick={() => setIsFullShape(value => !value)} />
  		</div>
 -		{debouncedLoading && <span className="text-base-content-200">
 -			<div className="mx-3 align-middle loading loading-spinner loading-lg" />載入中 Loading…
++		{!YUNE_PUBLIC_DEMO && <div className="yd-top-field yd-cangjie-choice" data-yune-control="cangjie-version">
++			<span className="yd-top-label">倉頡反查 Cangjie lookup</span>
++			<div className="yd-segment-group" role="radiogroup" aria-label="倉頡反查 Cangjie lookup">
++				<Segment name="cangjieVersion" label="三代" state={isCangjie5} setState={setIsCangjie5} value={false} />
++				<Segment name="cangjieVersion" label="五代" state={isCangjie5} setState={setIsCangjie5} value={true} />
++			</div>
++		</div>}
 +		{debouncedLoading && <span className="yd-busy" data-yune-loading-indicator>
 +			<span className="yd-spinner" />載入中 Loading...
  		</span>}
@@ -2081,14 +2069,12 @@ index 0000000..02b7d01
 +}
 diff --git a/src/YuneInspector.tsx b/src/YuneInspector.tsx
 new file mode 100644
-index 0000000..21eb797
+index 0000000..a6042bc
 --- /dev/null
 +++ b/src/YuneInspector.tsx
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,119 @@
++import type { Dispatch, SetStateAction } from "react";
 +import type { YuneInspectorDebug } from "./types";
-+import type { TypeDuckUserdbSnapshot } from "./types";
-+
-+import YuneUserdbViewer from "./YuneUserdbViewer";
 +
 +function formatScore(value: number | null | undefined) {
 +	if (value === null || value === undefined) {
@@ -2097,108 +2083,125 @@ index 0000000..21eb797
 +	return Number.isInteger(value) ? String(value) : value.toFixed(3);
 +}
 +
++function summary(debug?: YuneInspectorDebug) {
++	const firstAudit = debug?.filter_audit[0];
++	const lastAudit = debug?.filter_audit[debug.filter_audit.length - 1];
++	const input = debug?.ai_staging.for_input
++		?? debug?.spelling_algebra.find(algebra => algebra.input)?.input
++		?? "-";
++	return {
++		input,
++		segments: debug?.segments.length || debug?.segment_tags.length || 0,
++		raw: firstAudit?.before_count ?? "-",
++		filtered: lastAudit?.after_count ?? "-",
++		candidates: debug?.prediction.candidates.length ?? 0,
++		ai: debug?.ai_staging.state ?? "off",
++	};
++}
++
 +export default function YuneInspector({
 +	debug,
-+	userdbSnapshot,
-+	isUserdbLoading,
-+	userdbError,
-+	onRefreshUserdb,
++	isCollapsed,
++	setIsCollapsed,
 +}: {
 +	debug?: YuneInspectorDebug;
-+	userdbSnapshot?: TypeDuckUserdbSnapshot;
-+	isUserdbLoading: boolean;
-+	userdbError?: string;
-+	onRefreshUserdb(): Promise<void> | void;
++	isCollapsed: boolean;
++	setIsCollapsed: Dispatch<SetStateAction<boolean>>;
 +}) {
-+	return <section className="my-6 rounded-md border border-base-300 bg-base-100 p-4 text-sm" data-yune-inspector="panel">
-+		<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-+			<h2 className="text-base font-semibold">引擎檢視 Yune inspector</h2>
-+			<span className="rounded border border-base-300 px-2 py-1 font-geometric text-xs" data-yune-inspector-ai-state>
-+				AI {debug?.ai_staging.state ?? "off"}
-+			</span>
++	const values = summary(debug);
++	return <section className="yd-inspector-panel" data-yune-inspector="panel">
++		<div className="yd-inspector-panel-header">
++			<div className="yd-inspector-title">
++				<span>引擎檢視</span>
++				<span>Yune inspector</span>
++			</div>
++			<div className="yd-inspector-actions">
++				<span className="yd-inspector-ai" data-yune-inspector-ai-state>AI {values.ai}</span>
++				<button type="button" className="yd-small-button" onClick={() => setIsCollapsed(value => !value)}>
++					{isCollapsed ? "▸ 展開 SHOW" : "▾ 收起 HIDE"}
++				</button>
++			</div>
 +		</div>
-+		{debug
-+			? <div className="grid gap-4 lg:grid-cols-2">
-+				<div>
-+					<h3 className="mb-2 font-semibold">分段 Segments</h3>
-+					<div className="flex flex-wrap gap-2" data-yune-inspector-segments>
-+						{debug.segments.length
-+							? debug.segments.map((segment, index) =>
-+								<span key={`${segment.tag}-${index}`} className="rounded border border-base-300 px-2 py-1 font-geometric text-xs">
-+									{segment.tag} {segment.start}-{segment.end}
-+								</span>)
-+							: debug.segment_tags.map(tag =>
-+								<span key={tag} className="rounded border border-base-300 px-2 py-1 font-geometric text-xs">{tag}</span>)}
++		{!isCollapsed && <>
++			<div className="yd-inspector-summary">
++				<span><b>INPUT</b> {values.input}</span>
++				<span><b>SEG</b> {values.segments}</span>
++				<span><b>RAW</b> {values.raw}</span>
++				<span><b>FILTERED</b> {values.filtered}</span>
++				<span><b>CANDS</b> {values.candidates}</span>
++				<span><b>AI</b> {values.ai}</span>
++			</div>
++			{debug
++				? <div className="yd-inspector-grid">
++					<div className="yd-inspector-column">
++						<h3>分段 <span>SEGMENTS</span></h3>
++						<div className="yd-chip-row" data-yune-inspector-segments>
++							{debug.segments.length
++								? debug.segments.map((segment, index) =>
++									<span key={`${segment.tag}-${index}`} className="yd-square-chip">
++										{segment.tag} {segment.start}-{segment.end}
++									</span>)
++								: debug.segment_tags.map(tag =>
++									<span key={tag} className="yd-square-chip">{tag}</span>)}
++						</div>
++						<h3>拼寫代數 <span>Spelling algebra</span></h3>
++						<div className="yd-inspector-list">
++							{debug.spelling_algebra.map(algebra =>
++								<div key={`${algebra.translator}-${algebra.input}`} className="yd-inspector-list-row" data-yune-inspector-algebra>
++									<span>{algebra.translator}</span>
++									<span>{algebra.expanded_codes.slice(0, 3).join(" · ") || algebra.lookup_code || "-"}</span>
++								</div>)}
++						</div>
 +					</div>
-+				</div>
-+				<div>
-+					<h3 className="mb-2 font-semibold">過濾 Filters</h3>
-+					<table className="w-full text-left text-xs" data-yune-inspector-filters>
-+						<tbody>
++					<div className="yd-inspector-column">
++						<h3>過濾 <span>FILTERS</span></h3>
++						<div className="yd-inspector-list" data-yune-inspector-filters>
 +							{debug.filter_audit.length
 +								? debug.filter_audit.map(record =>
-+									<tr key={record.name}>
-+										<td className="py-1 pr-2">{record.name}</td>
-+										<td className="py-1 font-geometric">{`${record.before_count} -> ${record.after_count}`}</td>
-+									</tr>)
++									<div key={record.name} className="yd-inspector-list-row">
++										<span>{record.name}</span>
++										<span>{`${record.before_count} → ${record.after_count}`}</span>
++									</div>)
 +								: debug.filter_pipeline.map(name =>
-+									<tr key={name}>
-+										<td className="py-1 pr-2">{name}</td>
-+										<td className="py-1 font-geometric">-</td>
++									<div key={name} className="yd-inspector-list-row">
++										<span>{name}</span>
++										<span>-</span>
++									</div>)}
++						</div>
++						<h3>預測 <span>Prediction</span></h3>
++						<table className="yd-inspector-table" data-yune-inspector-prediction>
++							<thead>
++								<tr>
++									<th>來源 SOURCE</th>
++									<th>文字 TEXT</th>
++									<th>分數 QUALITY</th>
++								</tr>
++							</thead>
++							<tbody>
++								{debug.prediction.candidates.slice(0, 8).map(candidate =>
++									<tr key={`${candidate.index}-${candidate.text}`}>
++										<td data-yune-inspector-source>{candidate.source}</td>
++										<td>{candidate.text}</td>
++										<td>{formatScore(candidate.quality)}</td>
 +									</tr>)}
-+						</tbody>
-+					</table>
++							</tbody>
++						</table>
++					</div>
 +				</div>
-+				<div>
-+					<h3 className="mb-2 font-semibold">拼寫代數 Spelling algebra</h3>
-+					{debug.spelling_algebra.map(algebra =>
-+						<div key={`${algebra.translator}-${algebra.input}`} className="mb-3" data-yune-inspector-algebra>
-+							<div className="font-geometric text-xs">{algebra.translator}</div>
-+							<div className="mt-1 flex flex-wrap gap-1">
-+								{algebra.expanded_codes.slice(0, 10).map(code =>
-+									<span key={code} className="rounded bg-base-200 px-2 py-1 font-geometric text-xs">{code}</span>)}
-+							</div>
-+						</div>)}
-+				</div>
-+				<div>
-+					<h3 className="mb-2 font-semibold">預測 Prediction</h3>
-+					<table className="w-full text-left text-xs" data-yune-inspector-prediction>
-+						<thead>
-+							<tr>
-+								<th className="py-1 pr-2">來源 Source</th>
-+								<th className="py-1 pr-2">文字 Text</th>
-+								<th className="py-1">分數 Quality</th>
-+							</tr>
-+						</thead>
-+						<tbody>
-+							{debug.prediction.candidates.slice(0, 8).map(candidate =>
-+								<tr key={`${candidate.index}-${candidate.text}`}>
-+									<td className="py-1 pr-2" data-yune-inspector-source>{candidate.source}</td>
-+									<td className="py-1 pr-2">{candidate.text}</td>
-+									<td className="py-1 font-geometric">{formatScore(candidate.quality)}</td>
-+								</tr>)}
-+						</tbody>
-+					</table>
-+				</div>
-+			</div>
-+			: <div className="text-base-content-300" data-yune-inspector-empty>未有檢視資料 No inspector data</div>}
-+		<YuneUserdbViewer
-+			snapshot={userdbSnapshot}
-+			isLoading={isUserdbLoading}
-+			error={userdbError}
-+			onRefresh={onRefreshUserdb} />
++				: <div className="yd-inspector-empty" data-yune-inspector-empty>未有檢視資料 No inspector data yet. Type while trace is on.</div>}
++		</>}
 +	</section>;
 +}
 diff --git a/src/YuneStatusStrip.tsx b/src/YuneStatusStrip.tsx
 new file mode 100644
-index 0000000..83f74fc
+index 0000000..06664a5
 --- /dev/null
 +++ b/src/YuneStatusStrip.tsx
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,43 @@
 +import type { YuneStatusSnapshot } from "./types";
 +
 +function boolStatus(value: boolean, enabled: string, disabled: string) {
-+	return `${value ? "true" : "false"} (${value ? enabled : disabled})`;
++	return `${value ? enabled : disabled}`;
 +}
 +
 +export default function YuneStatusStrip({ status }: { status?: YuneStatusSnapshot }) {
@@ -2208,55 +2211,42 @@ index 0000000..83f74fc
 +
 +	const outputStandard = status.is_simplified ? "simplified" : "hk_traditional";
 +
-+	return <section className="my-3 rounded border border-base-300 bg-base-100 p-3 text-sm" data-yune-status>
-+		<div className="mb-2 font-medium">引擎狀態 Engine status</div>
-+		<p className="mb-2 text-base-content-300">顯示 runtime 回傳嘅完整 status 欄位。</p>
-+		<div className="flex flex-wrap gap-2">
-+			<span className="yd-tag gap-1.5" data-yune-status-schema-id-field>
-+				<span className="font-mono">schema_id</span>
-+				<span>{status.schema_id}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-schema data-yune-status-schema-id={status.schema_id} data-yune-status-schema-name={status.schema_name}>
-+				<span className="font-mono">schema_name</span>
-+				<span>{status.schema_name || "(empty)"}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-disabled={status.is_disabled}>
-+				<span className="font-mono">is_disabled</span>
-+				<span>{boolStatus(status.is_disabled, "disabled", "enabled")}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-composing={status.is_composing}>
-+				<span className="font-mono">is_composing</span>
-+				<span>{boolStatus(status.is_composing, "composing", "idle")}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-ascii={status.is_ascii_mode} data-yune-status-ascii-mode={status.is_ascii_mode}>
-+				<span className="font-mono">is_ascii_mode</span>
-+				<span>{boolStatus(status.is_ascii_mode, "ASCII", "Chinese")}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-full-shape={status.is_full_shape}>
-+				<span className="font-mono">is_full_shape</span>
-+				<span>{boolStatus(status.is_full_shape, "full shape", "half shape")}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-simplified={status.is_simplified} data-yune-status-output-standard={outputStandard}>
-+				<span className="font-mono">is_simplified</span>
-+				<span>{boolStatus(status.is_simplified, "simplified", "not simplified")}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-traditional={status.is_traditional}>
-+				<span className="font-mono">is_traditional</span>
-+				<span>{boolStatus(status.is_traditional, "traditional", "off")}</span>
-+			</span>
-+			<span className="yd-tag gap-1.5" data-yune-status-ascii-punct={status.is_ascii_punct}>
-+				<span className="font-mono">is_ascii_punct</span>
-+				<span>{boolStatus(status.is_ascii_punct, "ASCII punct", "Chinese punct")}</span>
-+			</span>
-+		</div>
++	return <section className="yd-status-strip" data-yune-status>
++		<span className="yd-square-chip" data-yune-status-schema-id-field>
++			<b>schema_id</b> {status.schema_id}
++		</span>
++		<span className="yd-square-chip" data-yune-status-schema data-yune-status-schema-id={status.schema_id} data-yune-status-schema-name={status.schema_name}>
++			<b>schema_name</b> {status.schema_name || "(empty)"}
++		</span>
++		<span className="yd-square-chip" data-yune-status-disabled={status.is_disabled}>
++			<b>disabled</b> {boolStatus(status.is_disabled, "disabled", "enabled")}
++		</span>
++		<span className="yd-square-chip" data-yune-status-composing={status.is_composing}>
++			<b>composing</b> {boolStatus(status.is_composing, "yes", "idle")}
++		</span>
++		<span className="yd-square-chip" data-yune-status-ascii={status.is_ascii_mode} data-yune-status-ascii-mode={status.is_ascii_mode}>
++			<b>mode</b> {boolStatus(status.is_ascii_mode, "ASCII", "Chinese")}
++		</span>
++		<span className="yd-square-chip" data-yune-status-full-shape={status.is_full_shape}>
++			<b>width</b> {boolStatus(status.is_full_shape, "full", "half")}
++		</span>
++		<span className="yd-square-chip" data-yune-status-simplified={status.is_simplified} data-yune-status-output-standard={outputStandard}>
++			<b>output</b> {boolStatus(status.is_simplified, "simplified", "HK traditional")}
++		</span>
++		<span className="yd-square-chip" data-yune-status-traditional={status.is_traditional}>
++			<b>traditional</b> {boolStatus(status.is_traditional, "on", "off")}
++		</span>
++		<span className="yd-square-chip" data-yune-status-ascii-punct={status.is_ascii_punct}>
++			<b>punct</b> {boolStatus(status.is_ascii_punct, "ASCII", "Chinese")}
++		</span>
 +	</section>;
 +}
 diff --git a/src/YuneUserdbViewer.tsx b/src/YuneUserdbViewer.tsx
 new file mode 100644
-index 0000000..9fe4af7
+index 0000000..ddbfd6c
 --- /dev/null
 +++ b/src/YuneUserdbViewer.tsx
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,113 @@
 +import type { TypeDuckUserdbSnapshot } from "./types";
 +
 +function formatMetric(value: number | null) {
@@ -2284,96 +2274,88 @@ index 0000000..9fe4af7
 +	error?: string;
 +	onRefresh(): Promise<void> | void;
 +}) {
-+	return <section className="mt-5 border-t border-base-300 pt-4" data-yune-userdb-viewer>
-+		<div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-+			<div>
-+				<h3 className="font-semibold">用户詞庫 User Dictionary</h3>
-+				<p className="mt-1 text-xs text-base-content-300">Read-only snapshot of the active schema user dictionary file.</p>
-+			</div>
++	return <section className="yd-userdb-panel" data-yune-userdb-viewer>
++		<div className="yd-panel-heading yd-panel-heading-split">
++			<span>用戶詞庫 <span>User Dictionary</span></span>
 +			<button
 +				type="button"
-+				className="yd-button"
++				className="yd-small-button"
 +				data-yune-userdb-refresh
 +				disabled={isLoading}
 +				onClick={() => void onRefresh()}>
-+				{isLoading ? "Refreshing" : "Refresh"}
++				{isLoading ? "Refreshing" : "↻ 刷新"}
 +			</button>
 +		</div>
 +
-+		{error && <p className="mb-3 rounded border border-error px-3 py-2 text-sm text-error" data-yune-userdb-error>{error}</p>}
++		{error && <p className="yd-error" data-yune-userdb-error>{error}</p>}
 +
 +		{snapshot
 +			? <>
-+				<div className="mb-3 flex flex-wrap gap-2 text-xs">
-+					<span className="yd-tag gap-1.5" data-yune-userdb-schema>
-+						<span className="font-mono">schema</span>
-+						<span>{snapshot.schemaId}</span>
++				<div className="yd-meta-strip">
++					<span className="yd-square-chip" data-yune-userdb-schema>
++						<b>schema</b> {snapshot.schemaId}
 +					</span>
-+					<span className="yd-tag gap-1.5" data-yune-userdb-dictionary>
-+						<span className="font-mono">dictionary</span>
-+						<span>{snapshot.dictionaryId}</span>
++					<span className="yd-square-chip" data-yune-userdb-dictionary>
++						<b>dictionary</b> {snapshot.dictionaryId}
 +					</span>
-+					<span className="yd-tag gap-1.5" data-yune-userdb-path>
-+						<span className="font-mono">path</span>
-+						<span>{snapshot.path}</span>
++					<span className="yd-square-chip" data-yune-userdb-path>
++						<b>path</b> {snapshot.path}
 +					</span>
-+					<span className="yd-tag gap-1.5" data-yune-userdb-bytes>
-+						<span className="font-mono">bytes</span>
-+						<span>{formatBytes(snapshot.bytes)}</span>
++					<span className="yd-square-chip" data-yune-userdb-bytes>
++						<b>bytes</b> {formatBytes(snapshot.bytes)}
 +					</span>
-+					<span className="yd-tag gap-1.5" data-yune-userdb-row-count>
-+						<span className="font-mono">rows</span>
-+						<span>{snapshot.rows.length}</span>
++					<span className="yd-square-chip" data-yune-userdb-row-count>
++						<b>rows</b> {snapshot.rows.length}
 +					</span>
 +				</div>
 +
 +				{snapshot.exists
 +					? <>
-+						<div className="overflow-x-auto rounded border border-base-300" data-yune-userdb-table>
-+							<table className="w-full min-w-[42rem] text-left text-xs">
-+								<thead className="bg-base-200">
++						<div className="yd-table-wrap" data-yune-userdb-table>
++							<table className="yd-userdb-table">
++								<thead>
 +									<tr>
-+										<th className="px-2 py-1">文字 Text</th>
-+										<th className="px-2 py-1">編碼 Code</th>
-+										<th className="px-2 py-1">c</th>
-+										<th className="px-2 py-1">d</th>
-+										<th className="px-2 py-1">t</th>
++										<th>文字 TEXT</th>
++										<th>編碼 CODE</th>
++										<th>c</th>
++										<th>d</th>
++										<th>t</th>
 +									</tr>
 +								</thead>
 +								<tbody>
 +									{snapshot.rows.length
 +										? snapshot.rows.map((row, index) =>
-+											<tr key={`${row.raw}-${index}`} className="border-t border-base-300" data-yune-userdb-row>
-+												<td className="px-2 py-1 text-base">{row.text}</td>
-+												<td className="px-2 py-1 font-mono">{row.code}</td>
-+												<td className="px-2 py-1 font-mono">{formatMetric(row.commits)}</td>
-+												<td className="px-2 py-1 font-mono">{formatMetric(row.dee)}</td>
-+												<td className="px-2 py-1 font-mono">{formatMetric(row.tick)}</td>
++											<tr key={`${row.raw}-${index}`} data-yune-userdb-row>
++												<td>{row.text}</td>
++												<td>{row.code}</td>
++												<td>{formatMetric(row.commits)}</td>
++												<td>{formatMetric(row.dee)}</td>
++												<td>{formatMetric(row.tick)}</td>
 +											</tr>)
 +										: <tr>
-+											<td className="px-2 py-3 text-base-content-300" colSpan={5}>No learned rows in this file.</td>
++											<td className="yd-muted-cell" colSpan={5}>No learned rows in this file.</td>
 +										</tr>}
 +								</tbody>
 +							</table>
 +						</div>
-+						{snapshot.parseErrors.length > 0 && <div className="mt-3 rounded border border-warning px-3 py-2 text-xs text-warning" data-yune-userdb-parse-errors>
-+							<div className="font-semibold">Parse notes</div>
-+							<ul className="mt-1 list-inside list-disc">
++						{snapshot.parseErrors.length > 0 && <div className="yd-warning" data-yune-userdb-parse-errors>
++							<div>Parse notes</div>
++							<ul>
 +								{snapshot.parseErrors.map(error =>
 +									<li key={`${error.line}-${error.reason}`}>line {error.line}: {error.reason}</li>
 +								)}
 +							</ul>
 +						</div>}
-+						<details className="mt-3" data-yune-userdb-raw>
-+							<summary className="cursor-pointer text-sm font-semibold">Raw file</summary>
-+							<pre className="mt-2 max-h-64 overflow-auto rounded border border-base-300 bg-base-200 p-3 text-xs">{snapshot.rawText}</pre>
++						<details className="yd-raw-block" data-yune-userdb-raw>
++							<summary>▸ Raw file</summary>
++							<pre>{snapshot.rawText}</pre>
 +						</details>
 +					</>
-+					: <p className="rounded border border-base-300 px-3 py-2 text-sm text-base-content-300" data-yune-userdb-empty>
-+						No active user dictionary file yet. Commit a learned phrase with User Dictionary on to create one.
++					: <p className="yd-empty-panel" data-yune-userdb-empty>
++						No active user dictionary file yet.
 +					</p>}
 +			</>
-+			: <p className="rounded border border-base-300 px-3 py-2 text-sm text-base-content-300" data-yune-userdb-loading>
++			: <p className="yd-empty-panel" data-yune-userdb-loading>
 +				{isLoading ? "Loading user dictionary snapshot..." : "No user dictionary snapshot loaded."}
 +			</p>}
 +	</section>;
@@ -2622,262 +2604,561 @@ index ef2a4f3..dd5645f 100644
 +	return defaultValue;
 +}
 diff --git a/src/index.css b/src/index.css
-index 9dc742c..6530db4 100644
+index 9dc742c..b0ea150 100644
 --- a/src/index.css
 +++ b/src/index.css
-@@ -1,3 +1,5 @@
-+@import url("https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&family=Chiron+GoRound+TC&family=Chiron+Hei+HK&family=Chiron+Sung+HK&display=swap");
-+
- @tailwind base;
- @tailwind components;
+@@ -3,148 +3,1273 @@
  @tailwind utilities;
-@@ -20,8 +22,9 @@
- 		src: local("Noto Nastaliq Urdu");
- 		descent-override: 70%;
- 	}
--	:root {
--		--btn-text-case: none;
+ 
+ @layer base {
 +	:root,
 +	:root[data-theme="light"] {
 +		color-scheme: light;
- 		--toastify-toast-width: auto;
- 		--toastify-font-family: var(--font-sans), var(--font-emoji);
- 		/* prettier-ignore */
-@@ -37,9 +40,57 @@
- 		--font-devanagari: "Nirmala UI", "Mangal";
- 		--font-arabic: "Urdu Typesetting", "Noto Nastaliq Urdu", "Tahoma";
- 		--font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-+		--primary: 10 130 250;
-+		--primary-content: 248 251 255;
-+		--primary-content-200: 229 240 255;
-+		--primary-content-300: 212 230 255;
-+		--primary-content-400: 202 225 255;
-+		--primary-content-500: 135 195 255;
-+		--secondary: 234 244 255;
-+		--secondary-content: 6 76 142;
-+		--accent: 222 239 255;
-+		--accent-content: 5 65 125;
-+		--neutral: 229 235 241;
-+		--neutral-content: 33 67 97;
++		--bg: #ffffff;
++		--ink: #0a0a0a;
++		--ink2: #44474e;
++		--ink3: #a3a3a3;
++		--line: #111111;
++		--line2: #e6e6e6;
++		--surface2: #fafafa;
++		--accent: #5d77d4;
++		--accent-fg: #ffffff;
++		--accent-soft: #eef1fb;
++		--accent-dim: #dfe6fa;
++		--font-sans: "JetBrains Mono", "Noto Sans TC", monospace;
++		--font-serif: "Noto Sans TC", "MingLiU_HKSCS", serif;
++		--font-geometric: "JetBrains Mono", "Noto Sans TC", monospace;
++		--font-sung: "Noto Sans TC", "Chiron Sung HK", serif;
++		--font-hei: "Noto Sans TC", "Chiron Hei HK", sans-serif;
++		--font-kai: "Noto Sans TC", "BiauKaiHK", serif;
++		--font-devanagari: "Noto Sans Devanagari", "Nirmala UI", sans-serif;
++		--font-arabic: "Noto Nastaliq Urdu", "Tahoma", sans-serif;
++		--font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
++		--primary: 93 119 212;
++		--primary-content: 255 255 255;
++		--primary-content-200: 238 241 251;
++		--primary-content-300: 223 230 250;
++		--primary-content-400: 210 220 248;
++		--primary-content-500: 185 198 238;
++		--secondary: 250 250 250;
++		--secondary-content: 68 71 78;
++		--accent-content: 255 255 255;
++		--neutral: 17 17 17;
++		--neutral-content: 255 255 255;
 +		--base-100: 255 255 255;
-+		--base-200: 249 250 251;
-+		--base-300: 236 238 241;
-+		--base-400: 222 225 227;
-+		--base-500: 181 183 185;
-+		--base-content: 0 22 53;
-+		--base-content-200: 75 88 105;
-+		--base-content-300: 67 89 117;
-+		--base-content-400: 47 82 120;
++		--base-200: 250 250 250;
++		--base-300: 230 230 230;
++		--base-400: 163 163 163;
++		--base-500: 120 124 132;
++		--base-content: 10 10 10;
++		--base-content-200: 68 71 78;
++		--base-content-300: 120 124 132;
++		--base-content-400: 163 163 163;
++		--toastify-font-family: var(--font-sans);
 +	}
++
 +	:root[data-theme="dark"] {
 +		color-scheme: dark;
-+		--primary: 69 141 213;
-+		--primary-content: 248 251 255;
-+		--primary-content-200: 229 240 255;
-+		--primary-content-300: 212 230 255;
-+		--primary-content-400: 202 225 255;
-+		--primary-content-500: 69 141 213;
-+		--secondary: 26 45 64;
-+		--secondary-content: 211 224 236;
-+		--accent: 29 58 88;
-+		--accent-content: 221 236 255;
-+		--neutral: 38 50 62;
-+		--neutral-content: 197 207 211;
-+		--base-100: 11 18 31;
-+		--base-200: 28 35 42;
-+		--base-300: 52 58 68;
-+		--base-400: 70 77 87;
-+		--base-500: 116 122 129;
-+		--base-content: 255 255 255;
-+		--base-content-200: 214 224 235;
-+		--base-content-300: 207 219 232;
-+		--base-content-400: 197 212 228;
++		--bg: #0c0e13;
++		--ink: #e9eaee;
++		--ink2: #c4c7cf;
++		--ink3: #878b97;
++		--line: #d6d9e0;
++		--line2: #22262f;
++		--surface2: #15171e;
++		--accent: #6e8ae6;
++		--accent-fg: #ffffff;
++		--accent-soft: rgba(110, 138, 230, 0.16);
++		--accent-dim: #e2e8fb;
++		--primary: 110 138 230;
++		--primary-content: 255 255 255;
++		--primary-content-200: 238 242 255;
++		--primary-content-300: 226 232 251;
++		--primary-content-400: 202 212 244;
++		--primary-content-500: 110 138 230;
++		--secondary: 21 23 30;
++		--secondary-content: 196 199 207;
++		--accent-content: 255 255 255;
++		--neutral: 214 217 224;
++		--neutral-content: 12 14 19;
++		--base-100: 12 14 19;
++		--base-200: 21 23 30;
++		--base-300: 34 38 47;
++		--base-400: 93 99 113;
++		--base-500: 135 139 151;
++		--base-content: 233 234 238;
++		--base-content-200: 196 199 207;
++		--base-content-300: 135 139 151;
++		--base-content-400: 101 107 122;
 +	}
-+	body {
-+		@apply bg-base-100 text-base-content font-sans;
++
+ 	html {
+-		font-size: 12px;
+-		@screen sm {
+-			font-size: 16px;
+-		}
+-	}
+-	@font-face {
+-		font-family: "Urdu Typesetting";
+-		src: local("Urdu Typesetting");
+-		size-adjust: 140%;
+-		descent-override: 70%;
+-	}
+-	@font-face {
+-		font-family: "Noto Nastaliq Urdu";
+-		src: local("Noto Nastaliq Urdu");
+-		descent-override: 70%;
+-	}
+-	:root {
+-		--btn-text-case: none;
+-		--toastify-toast-width: auto;
+-		--toastify-font-family: var(--font-sans), var(--font-emoji);
+-		/* prettier-ignore */
+-		--font-sans: "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Ubuntu", "Helvetica Neue", "Noto Sans", "Liberation Sans", "Arial",
+-					 "Microsoft JhengHei", "Microsoft JhengHei UI", "Noto Sans HK", "Noto Sans CJK HK", "sans-serif";
+-		/* prettier-ignore */
+-		--font-serif: "Times New Roman", "Times", "Georgia", "Cambria", "Noto Serif",
+-					  "MingLiU_HKSCS", "MingLiU_HKSCS-ExtB", "MingLiU", "MingLiU-ExtB", "PMingLiU", "PMingLiU-ExtB", "Noto Serif HK", "Noto Serif CJK HK", "serif";
+-		--font-geometric: "Century Gothic", "Avenir Next", "Avenir", "Futura";
+-		--font-sung: "Chiron Sung HK", "Chiron Sung HK WS";
+-		--font-hei: "Chiron Hei HK", "Chiron Hei HK WS";
+-		--font-kai: "DFHKStdKai-B5", "BiauKaiHK", "BiauKai", "DFKai-SB", "KaiU", "Kaiti TC";
+-		--font-devanagari: "Nirmala UI", "Mangal";
+-		--font-arabic: "Urdu Typesetting", "Noto Nastaliq Urdu", "Tahoma";
+-		--font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
++		background: var(--bg);
++		font-family: var(--font-sans);
++		font-size: 16px;
++		letter-spacing: 0;
  	}
- 	a {
+-	a {
 -		@apply link link-primary no-underline transition-colors;
-+		@apply text-primary no-underline transition-colors hover:underline;
++
++	body {
++		margin: 0;
++		background: var(--bg);
++		color: var(--ink);
++		font-family: var(--font-sans);
  	}
- 	:lang(en) {
- 		@apply font-sans text-[12pt];
-@@ -55,19 +106,142 @@
- 		@apply font-arabic text-[10pt];
+-	:lang(en) {
+-		@apply font-sans text-[12pt];
++
++	* {
++		box-sizing: border-box;
+ 	}
+-	:lang(id) {
+-		@apply font-serif text-[12pt];
++
++	button,
++	input,
++	select,
++	textarea {
++		font: inherit;
+ 	}
+-	:lang(hi),
+-	:lang(ne) {
+-		@apply font-devanagari text-[11pt];
++
++	a {
++		color: inherit;
+ 	}
+-	:lang(ur) {
+-		@apply font-arabic text-[10pt];
++}
++
++.yd-app-shell {
++	min-height: 100vh;
++	background: var(--bg);
++	color: var(--ink);
++}
++
++.yd-app-header {
++	display: flex;
++	align-items: center;
++	justify-content: space-between;
++	gap: 24px;
++	border-bottom: 1px solid var(--line);
++	padding: 16px 24px;
++}
++
++.yd-brand {
++	display: inline-flex;
++	align-items: center;
++	gap: 14px;
++	color: var(--ink);
++	text-decoration: none;
++	min-width: 0;
++}
++
++.yd-brand-mark {
++	display: grid;
++	place-items: center;
++	width: 46px;
++	height: 46px;
++	background: var(--accent);
++	color: var(--accent-fg);
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 25px;
++	font-weight: 900;
++	line-height: 1;
++	flex: 0 0 auto;
++}
++
++.yd-brand-copy {
++	display: grid;
++	gap: 3px;
++	min-width: 0;
++}
++
++.yd-brand-title {
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: clamp(18px, 2.2vw, 27px);
++	font-weight: 900;
++	line-height: 1.05;
++	white-space: nowrap;
++}
++
++.yd-brand-title span {
++	font-family: var(--font-sans);
++	font-size: 0.72em;
++	font-weight: 600;
++	color: var(--ink2);
++}
++
++.yd-brand-subtitle {
++	color: var(--ink2);
++	font-size: 11px;
++	font-weight: 600;
++	letter-spacing: 0.08em;
++	text-transform: uppercase;
++}
++
++.yd-header-status {
++	display: flex;
++	align-items: center;
++	justify-content: flex-end;
++	gap: 10px;
++	flex-wrap: wrap;
++}
++
++.yd-version-chip,
++.yd-ai-chip,
++.yd-theme-button,
++.yd-small-button,
++.yd-button {
++	border: 1px solid var(--line);
++	background: transparent;
++	color: var(--ink);
++	display: inline-flex;
++	align-items: center;
++	justify-content: center;
++	gap: 8px;
++	min-height: 34px;
++	padding: 7px 11px;
++	font-size: 12px;
++	font-weight: 600;
++	line-height: 1;
++	text-decoration: none;
++	cursor: pointer;
++	white-space: nowrap;
++}
++
++.yd-version-chip span {
++	width: 8px;
++	height: 8px;
++	background: var(--accent);
++	display: inline-block;
++}
++
++.yd-ai-chip[data-enabled="true"] {
++	background: var(--accent);
++	color: var(--accent-fg);
++	border-color: var(--accent);
++}
++
++.yd-ai-chip[data-enabled="false"] {
++	color: var(--ink2);
++}
++
++.yd-theme-button {
++	user-select: none;
++}
++
++.yd-app-main {
++	width: min(1340px, calc(100% - 48px));
++	margin: 0 auto;
++	padding: 24px 0 36px;
++}
++
++.yd-playground {
++	display: grid;
++	gap: 24px;
++}
++
++.yd-toolbar {
++	display: flex;
++	align-items: flex-start;
++	gap: 12px;
++	flex-wrap: wrap;
++}
++
++.yd-schema-dropdown,
++.yd-top-field {
++	display: grid;
++	gap: 6px;
++	min-width: min(100%, 310px);
++}
++
++.yd-top-label {
++	color: var(--ink3);
++	font-size: 11px;
++	font-weight: 700;
++	letter-spacing: 0.08em;
++	text-transform: uppercase;
++}
++
++.yd-schema-select {
++	width: 100%;
++	min-height: 44px;
++	border: 1px solid var(--line);
++	background: var(--bg);
++	color: var(--ink);
++	border-radius: 0;
++	padding: 0 38px 0 13px;
++	font-weight: 600;
++	appearance: auto;
++}
++
++.yd-schema-hint {
++	margin: 0;
++	color: var(--ink3);
++	font-size: 11px;
++	line-height: 1.45;
++	max-width: 52ch;
++}
++
++.yd-mode-row {
++	display: flex;
++	gap: 8px;
++	flex-wrap: wrap;
++}
++
++.yd-mode-button {
++	display: inline-flex;
++	align-items: center;
++	gap: 9px;
++	min-height: 44px;
++	border: 1px solid var(--line);
++	background: var(--bg);
++	color: var(--ink);
++	border-radius: 0;
++	padding: 7px 12px 7px 7px;
++	cursor: pointer;
++}
++
++.yd-mode-glyph {
++	display: grid;
++	place-items: center;
++	width: 28px;
++	height: 28px;
++	background: var(--accent);
++	color: var(--accent-fg);
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 16px;
++	font-weight: 900;
++	line-height: 1;
++}
++
++.yd-mode-button[data-active="false"] .yd-mode-glyph {
++	background: var(--ink2);
++}
++
++.yd-mode-label {
++	font-size: 13px;
++	font-weight: 600;
++	white-space: nowrap;
++}
++
++.yd-cangjie-choice {
++	min-width: 0;
++}
++
++.yd-busy {
++	display: inline-flex;
++	align-items: center;
++	min-height: 44px;
++	color: var(--ink2);
++	font-size: 13px;
++}
++
++.yd-spinner {
++	width: 15px;
++	height: 15px;
++	border: 2px solid var(--line2);
++	border-top-color: var(--accent);
++	display: inline-block;
++	margin-right: 8px;
++	animation: yd-spin 0.8s linear infinite;
++}
++
++@keyframes yd-spin {
++	to {
++		transform: rotate(360deg);
  	}
  }
 -.tooltip {
 -	@apply before:whitespace-pre-line;
 -	--tooltip-tail: 0.375rem;
 -	--tooltip-offset: calc(100% + var(--tooltip-tail));
--}
++
++.yd-playground-grid {
++	display: grid;
++	grid-template-columns: minmax(0, 1fr) minmax(360px, 0.86fr);
++	gap: 24px;
++	align-items: stretch;
++}
++
++.yd-compose-panel,
++.yd-userdb-panel,
++.yd-section,
++.yd-inspector-gate,
++.yd-inspector-panel {
++	border: 1px solid var(--line);
++	background: var(--bg);
++	border-radius: 0;
++}
++
++.yd-compose-panel {
++	display: grid;
++	grid-template-rows: auto minmax(220px, auto) auto;
++	min-width: 0;
++}
++
++.yd-panel-heading,
++.yd-inspector-gate-header,
++.yd-inspector-panel-header {
++	display: flex;
++	align-items: center;
++	justify-content: space-between;
++	gap: 12px;
++	padding: 15px 18px;
++	border-bottom: 1px solid var(--line2);
++}
++
++.yd-panel-heading {
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 17px;
++	font-weight: 800;
++}
++
++.yd-panel-heading > span,
++.yd-panel-heading-split > span {
++	display: inline-flex;
++	align-items: baseline;
++	gap: 8px;
++	flex-wrap: wrap;
++}
++
++.yd-panel-heading span span,
++.yd-preferences-title span,
++.yd-section-title span,
++.yd-inspector-title span:last-child,
++.yd-inspector-column h3 span {
++	font-family: var(--font-sans);
++	color: var(--ink2);
++	font-size: 0.72em;
++	font-weight: 600;
++	letter-spacing: 0.04em;
++}
++
++.yd-input-area {
++	width: calc(100% - 36px);
++	min-height: 220px;
++	margin: 18px;
++	resize: vertical;
++	border: 1px solid var(--line);
++	border-radius: 0;
++	background: var(--bg);
++	color: var(--ink);
++	padding: 14px;
++	font-size: 20px;
++	line-height: 1.65;
++	outline: none;
++	box-shadow: none;
++}
++
++.yd-input-area:focus {
++	border-color: var(--accent);
++	box-shadow: inset 0 -3px 0 var(--accent);
++}
++
++.yd-input-area::placeholder {
++	color: var(--ink3);
+ }
 -.btn-toolbar {
 -	@apply btn btn-square text-xl bg-base-300 border-base-300 hover:bg-base-400 hover:border-base-400;
 +
-+@layer components {
-+	.yd-anchor {
-+		@apply text-primary no-underline transition-colors hover:underline;
-+	}
-+	.yd-button {
-+		@apply inline-flex items-center justify-center rounded border border-primary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-base-100 disabled:pointer-events-none disabled:opacity-50;
-+	}
-+	.yd-icon-button {
-+		@apply inline-flex size-10 items-center justify-center rounded border border-base-300 bg-base-300 text-xl text-base-content transition-colors hover:border-base-400 hover:bg-base-400 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-base-100;
-+	}
-+	.yd-top-field {
-+		@apply m-0 min-w-0 max-w-full;
-+	}
-+	.yd-top-label {
-+		@apply mb-1 text-sm font-semibold text-base-content-200;
-+	}
-+	.yd-schema-switcher-compact {
-+		@apply flex flex-wrap items-center gap-x-2 gap-y-1;
-+	}
-+	.yd-top-inline-field {
-+		@apply flex flex-wrap items-center gap-x-2 gap-y-1;
-+	}
-+	.yd-schema-switcher-compact .yd-top-label {
-+		@apply mb-0;
-+	}
-+	.yd-top-inline-field .yd-top-label {
-+		@apply mb-0;
-+	}
-+	.yd-schema-switcher-compact p {
-+		@apply basis-full;
-+	}
-+	.yd-section {
-+		@apply rounded border border-base-300 bg-base-100 p-4;
-+	}
-+	.yd-section-title {
-+		@apply text-lg font-semibold text-base-content;
-+	}
-+	.yd-section-description {
-+		@apply mt-1 text-sm text-base-content-300;
-+	}
-+	.yd-section-body {
-+		@apply mt-3 grid gap-2;
-+	}
-+	.yd-field {
-+		@apply grid gap-2 rounded px-1 py-1;
-+	}
-+	.yd-field-row {
-+		@apply flex cursor-pointer items-center gap-3;
-+	}
-+	.yd-field-copy {
-+		@apply grid flex-1 gap-0.5;
-+	}
-+	.yd-field-label {
-+		@apply text-base text-base-content-200;
-+	}
-+	.yd-field-description {
-+		@apply text-sm text-base-content-300;
-+	}
-+	.yd-segment-group {
-+		@apply inline-flex overflow-hidden rounded border border-primary;
-+	}
-+	.yd-segment {
-+		@apply inline-flex cursor-pointer items-center justify-center border-r border-primary px-3 py-1.5 text-sm font-medium text-primary last:border-r-0 hover:bg-accent focus-within:outline focus-within:outline-2 focus-within:outline-primary;
-+	}
-+	.yd-segment-active {
-+		@apply bg-primary text-primary-content hover:bg-primary;
-+	}
-+	.yd-theme-switch {
-+		@apply h-5 w-9 cursor-pointer appearance-none rounded-full border border-base-500 bg-base-300 transition-colors checked:border-primary checked:bg-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-base-100;
-+	}
-+	.yd-choice {
-+		@apply size-5 cursor-pointer appearance-none rounded-full border border-primary bg-transparent checked:border-[0.35rem] checked:bg-base-100 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-base-100;
-+	}
-+	.yd-check {
-+		@apply size-5 cursor-pointer appearance-none rounded border border-primary bg-transparent checked:bg-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-base-100;
-+	}
-+	.yd-slider {
-+		@apply h-2 w-full cursor-pointer appearance-none rounded-full bg-base-300 accent-primary;
-+	}
-+	.yd-input-area {
-+		@apply block w-full rounded border border-base-300 bg-base-100 text-base-content shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary;
-+	}
-+	.yd-tag {
-+		@apply inline-flex min-w-6 items-center justify-center rounded-full border border-base-400 px-2 py-0.5 text-xs text-base-content;
-+	}
-+	.yd-tip {
-+		@apply relative;
-+	}
-+	.yd-tip:hover::after {
-+		@apply absolute left-0 top-full z-50 mt-2 whitespace-pre-line rounded bg-neutral px-3 py-2 text-xs text-neutral-content shadow;
-+		content: attr(data-tip);
-+	}
-+	.yd-busy {
-+		@apply mt-3 inline-flex items-center text-sm text-base-content-200;
-+	}
-+	.yd-spinner {
-+		@apply mx-3 inline-block size-5 animate-spin rounded-full border-2 border-base-300 border-t-primary align-middle;
-+	}
++.candidate-panel-empty {
++	margin: 0 18px 18px;
++	border: 1px solid var(--line2);
++	background: var(--surface2);
++	padding: 18px;
++	color: var(--ink2);
++}
++
++.candidate-panel-empty div {
++	color: var(--ink);
++	font-weight: 700;
++}
++
++.candidate-panel-empty p {
++	margin: 6px 0 0;
++	font-size: 13px;
  }
 +
  .candidate-panel {
 -	@apply flex absolute shadow-lg border-[0.1875rem] border-base-400 bg-base-200 rounded-[0.5625rem] z-50 overflow-hidden leading-snug whitespace-nowrap;
-+	@apply absolute z-50 flex w-max max-w-none overflow-visible rounded-[0.5625rem] border-[0.1875rem] border-base-400 bg-base-200 leading-snug shadow-lg;
-+}
-+.candidate-panel--horizontal {
-+	@apply flex-col whitespace-nowrap;
-+}
-+.candidate-panel--horizontal .candidates {
-+	@apply flex w-max items-stretch;
-+}
-+.candidate-panel--horizontal .candidate-row {
-+	@apply block;
-+}
-+.candidate-panel--horizontal .candidate-row tr {
-+	@apply grid h-full grid-cols-[max-content_max-content_max-content_max-content] items-end;
-+}
-+.candidate-panel--horizontal .dictionary-panel {
-+	@apply w-full;
-+}
-+.candidate-panel--vertical {
-+	@apply whitespace-normal;
-+}
-+.candidate-panel--vertical .candidates {
-+	@apply block w-max;
-+}
-+.candidate-panel--vertical .candidate-row {
-+	@apply block w-full;
-+}
-+.candidate-panel--vertical .candidate-row tr {
-+	@apply grid grid-cols-[2rem_max-content_max-content_2rem] items-end;
-+}
-+.candidate-panel--vertical .candidate-row td:nth-child(2) {
-+	@apply whitespace-nowrap;
++	display: grid;
++	grid-template-columns: minmax(0, 1fr) minmax(240px, 0.64fr);
++	margin: 0 18px 18px;
++	border: 1px solid var(--line);
++	background: var(--bg);
++	border-radius: 0;
++	box-shadow: none;
++	overflow: hidden;
++	position: static;
++	z-index: auto;
++	width: auto;
++	max-width: none;
  }
- .page-nav {
+-.page-nav {
 -	@apply btn btn-ghost text-primary text-4xl h-[unset] min-h-[unset] leading-[1.875rem] px-2 rounded-md hover:bg-base-400 hover:border-base-400 disabled:bg-transparent disabled:text-base-500;
-+	@apply inline-flex min-h-8 min-w-8 items-center justify-center rounded text-4xl leading-[1.875rem] text-primary transition-colors hover:bg-base-400 disabled:bg-transparent disabled:text-base-500;
++
++.candidate-panel--vertical {
++	grid-template-columns: minmax(0, 1fr);
  }
- .candidates td {
- 	@apply p-1 align-bottom text-left empty:p-0;
-@@ -77,23 +251,27 @@
- 		}
- 	}
+-.candidates td {
+-	@apply p-1 align-bottom text-left empty:p-0;
+-	@supports selector(:has(*)) {
+-		&:has(*):not(:has(:not(:empty))) {
+-			@apply p-0;
+-		}
+-	}
++
++.candidate-list-pane {
++	min-width: 0;
  }
-+.candidate-row {
-+	@apply cursor-pointer rounded-md;
-+}
-+.candidate-row tr:first-child td:first-child {
-+	@apply rounded-ss-md min-w-1.5;
-+}
-+.candidate-row tr:first-child td:last-child {
-+	@apply rounded-se-md min-w-1.5;
-+}
-+.candidate-row tr:last-child td:first-child {
-+	@apply rounded-es-md min-w-1.5;
-+}
-+.candidate-row tr:last-child td:last-child {
-+	@apply rounded-ee-md min-w-1.5;
-+}
-+.candidate-note {
-+	@apply whitespace-nowrap text-[11pt];
-+}
- .candidates :lang(ur) {
- 	@apply text-right;
+-.candidates :lang(ur) {
+-	@apply text-right;
++
++.candidate-panel-header {
++	display: flex;
++	align-items: center;
++	justify-content: space-between;
++	gap: 12px;
++	border-bottom: 1px solid var(--line2);
++	background: var(--surface2);
++	padding: 10px 12px;
  }
 -.candidates button {
 -	tr:first-child td:first-child {
@@ -2892,48 +3173,824 @@ index 9dc742c..6530db4 100644
 -	tr:last-child td:last-child {
 -		@apply rounded-ee-md min-w-1.5;
 -	}
--}
- @supports selector(:has(*)) {
- 	.candidate-panel:has(.dictionary-panel) .candidates .highlighted tr {
- 		@apply relative;
-@@ -112,7 +290,7 @@
++
++.candidate-preedit {
++	display: inline-flex;
++	align-items: center;
++	gap: 4px;
++	min-height: 28px;
++	color: var(--ink);
++	font-size: 17px;
++	font-weight: 700;
++}
++
++.candidate-preedit-active {
++	border-bottom: 3px solid var(--accent);
++	padding-bottom: 1px;
+ }
+-@supports selector(:has(*)) {
+-	.candidate-panel:has(.dictionary-panel) .candidates .highlighted tr {
+-		@apply relative;
+-		&::after {
+-			@apply content-[""] absolute block w-4 -top-2 -right-2;
+-			height: calc(100% + 1rem);
+-			background-size: 1rem 1rem;
+-			background-position:
+-				top left,
+-				bottom left;
+-			background-repeat: no-repeat;
+-			/* prettier-ignore */
+-			background-image: radial-gradient(circle at top left, transparent 0.5rem, theme(colors.primary) calc(0.5rem + 1px)),
+-							  radial-gradient(circle at bottom left, transparent 0.5rem, theme(colors.primary) calc(0.5rem + 1px));
+-		}
++
++.candidate-caret {
++	width: 9px;
++	height: 20px;
++	background: var(--accent);
++	display: inline-block;
++	animation: yd-blink 1s steps(2, start) infinite;
++}
++
++@keyframes yd-blink {
++	50% {
++		opacity: 0;
  	}
  }
++
++.candidate-nav {
++	display: inline-flex;
++	gap: 6px;
++}
++
++.page-nav {
++	display: inline-grid;
++	place-items: center;
++	width: 30px;
++	height: 30px;
++	border: 1px solid var(--line);
++	background: var(--bg);
++	color: var(--ink);
++	border-radius: 0;
++	font-size: 22px;
++	line-height: 1;
++	cursor: pointer;
++}
++
++.page-nav:disabled {
++	border-color: var(--line2);
++	color: var(--ink3);
++	cursor: default;
++}
++
++.candidates {
++	width: 100%;
++	border-collapse: collapse;
++}
++
++.candidate-row {
++	display: table-row-group;
++	cursor: pointer;
++}
++
++.candidate-row tr {
++	display: grid;
++	grid-template-columns: 42px minmax(132px, 1fr) minmax(70px, 0.65fr) 42px;
++	align-items: center;
++	gap: 10px;
++	padding: 10px 12px;
++}
++
++.candidate-row.highlighted tr {
++	background: var(--accent);
++	color: var(--accent-fg);
++}
++
++.candidate-index,
++.candidate-reading,
++.candidate-note,
++.candidate-info {
++	color: var(--ink2);
++}
++
++.candidate-row.highlighted .candidate-index,
++.candidate-row.highlighted .candidate-reading,
++.candidate-row.highlighted .candidate-note {
++	color: var(--accent-dim);
++}
++
++.candidate-row.highlighted .candidate-info,
++.candidate-row.highlighted .candidate-text {
++	color: var(--accent-fg);
++}
++
++.candidate-index {
++	font-size: 13px;
++	font-weight: 700;
++}
++
++.candidate-main {
++	min-width: 0;
++}
++
++.candidate-reading {
++	font-size: 12px;
++	font-weight: 600;
++	line-height: 1.2;
++}
++
++.candidate-text {
++	color: var(--ink);
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 21px;
++	font-weight: 700;
++	line-height: 1.15;
++}
++
++.candidate-text-spaced {
++	letter-spacing: 0.18em;
++}
++
++.candidate-note {
++	font-size: 12px;
++	font-style: italic;
++	overflow: hidden;
++	text-overflow: ellipsis;
++	white-space: nowrap;
++}
++
++.candidate-info {
++	display: inline-flex;
++	align-items: center;
++	justify-content: flex-end;
++	gap: 6px;
++	font-size: 13px;
++}
++
++.ai-source {
++	border: 1px solid currentColor;
++	padding: 1px 4px;
++	font-size: 10px;
++	font-style: normal;
++}
++
  .dictionary-panel {
 -	@apply px-5 pt-3 pb-4 rounded-md bg-primary text-primary-content text-[12pt] whitespace-normal min-w-48;
-+	@apply min-w-48 whitespace-normal rounded-md bg-primary px-5 pb-4 pt-3 text-[12pt] text-primary-content;
++	background: var(--accent);
++	color: var(--accent-fg);
++	padding: 18px;
++	min-width: 0;
++	white-space: normal;
++}
++
++.candidate-panel--vertical .dictionary-panel {
++	border-top: 1px solid color-mix(in srgb, var(--accent-fg) 35%, transparent);
++}
++
++.dictionary-panel-kicker {
++	font-size: 11px;
++	font-weight: 700;
++	letter-spacing: 0.08em;
++	margin-bottom: 12px;
++	opacity: 0.82;
  }
- .dictionary-panel > *:not(:last-child) {
- 	@apply mb-3.5;
-@@ -125,10 +303,10 @@
- 	@apply ml-4;
+-.dictionary-panel > *:not(:last-child) {
+-	@apply mb-3.5;
++
++.dictionary-entry > * + * {
++	margin-top: 12px;
  }
+-.dictionary-entry > *:not(:last-child) {
+-	@apply mb-2.5;
++
++.entry-head {
++	display: flex;
++	align-items: baseline;
++	gap: 14px;
++	flex-wrap: wrap;
+ }
+-.entry-head > *:not(:first-child),
+-.entry-body > *:not(:first-child) {
+-	@apply ml-4;
++
++.entry-body {
++	display: flex;
++	align-items: baseline;
++	gap: 9px;
++	flex-wrap: wrap;
++	line-height: 1.45;
+ }
++
  .pos {
 -	@apply font-light text-[10pt] leading-7 text-primary-content-300 border border-primary-content-500 rounded p-0.5 whitespace-nowrap;
-+	@apply whitespace-nowrap rounded border border-primary-content-500 p-0.5 text-[10pt] font-light leading-7 text-primary-content-300;
++	border: 1px solid color-mix(in srgb, var(--accent-fg) 55%, transparent);
++	padding: 2px 6px;
++	font-size: 11px;
++	white-space: nowrap;
  }
++
  .lbl {
 -	@apply text-primary-content-300 whitespace-nowrap;
-+	@apply whitespace-nowrap text-primary-content-300;
++	opacity: 0.84;
++	white-space: nowrap;
  }
- .pos + .pos,
- .lbl + .lbl {
-@@ -136,15 +314,9 @@
+-.pos + .pos,
+-.lbl + .lbl {
+-	@apply ml-1;
++
++.definition {
++	display: block;
++	flex-basis: 100%;
++	font-size: 15px;
  }
- .dictionary-panel {
- 	th {
+-.dictionary-panel {
+-	th {
 -		@apply text-right text-primary-content-300 align-baseline font-normal whitespace-nowrap;
-+		@apply whitespace-nowrap align-baseline text-right font-normal text-primary-content-300;
++
++.dictionary-panel table {
++	width: 100%;
++	border-collapse: collapse;
++	font-size: 12px;
++}
++
++.dictionary-panel th,
++.dictionary-panel td {
++	border-top: 1px solid color-mix(in srgb, var(--accent-fg) 32%, transparent);
++	padding: 6px 0;
++	text-align: left;
++	vertical-align: top;
++}
++
++.dictionary-panel th {
++	width: 40%;
++	padding-right: 12px;
++	font-weight: 600;
++	opacity: 0.75;
++}
++
++.yd-userdb-panel {
++	padding-bottom: 16px;
++	min-width: 0;
++	overflow: hidden;
++}
++
++.yd-meta-strip,
++.yd-chip-row,
++.yd-status-strip {
++	display: flex;
++	gap: 8px;
++	flex-wrap: wrap;
++}
++
++.yd-meta-strip {
++	padding: 14px 18px;
++}
++
++.yd-square-chip,
++.yd-tag {
++	display: inline-flex;
++	align-items: center;
++	gap: 6px;
++	min-height: 26px;
++	border: 1px solid var(--line2);
++	background: transparent;
++	color: var(--ink2);
++	border-radius: 0;
++	padding: 4px 8px;
++	font-size: 12px;
++	line-height: 1.2;
++	max-width: 100%;
++}
++
++.yd-square-chip b,
++.yd-tag b {
++	color: var(--ink3);
++	font-weight: 700;
++}
++
++.yd-table-wrap {
++	margin: 0 18px;
++	overflow: auto;
++	border: 1px solid var(--line);
++}
++
++.yd-userdb-table,
++.yd-inspector-table {
++	width: 100%;
++	border-collapse: collapse;
++	min-width: 520px;
++}
++
++.yd-userdb-table th,
++.yd-userdb-table td,
++.yd-inspector-table th,
++.yd-inspector-table td {
++	border-bottom: 1px solid var(--line2);
++	padding: 8px 10px;
++	text-align: left;
++	font-size: 12px;
++	vertical-align: top;
++}
++
++.yd-userdb-table th,
++.yd-inspector-table th {
++	background: var(--surface2);
++	color: var(--ink2);
++	font-size: 11px;
++	font-weight: 700;
++	letter-spacing: 0.06em;
++	text-transform: uppercase;
++}
++
++.yd-userdb-table td:nth-child(n + 2),
++.yd-inspector-table td:last-child {
++	font-family: var(--font-sans);
++	color: var(--ink2);
++}
++
++.yd-muted-cell,
++.yd-empty-panel {
++	color: var(--ink3);
++}
++
++.yd-empty-panel,
++.yd-error,
++.yd-warning,
++.yd-raw-block {
++	margin: 14px 18px 0;
++}
++
++.yd-empty-panel,
++.yd-error,
++.yd-warning {
++	border: 1px solid var(--line2);
++	padding: 12px;
++	font-size: 13px;
++}
++
++.yd-error {
++	border-color: #d24f4f;
++	color: #d24f4f;
++}
++
++.yd-warning {
++	border-color: #c48a2a;
++	color: #c48a2a;
++}
++
++.yd-raw-block summary {
++	cursor: pointer;
++	color: var(--ink2);
++	font-size: 13px;
++	font-weight: 700;
++}
++
++.yd-raw-block pre {
++	max-height: 220px;
++	overflow: auto;
++	border: 1px solid var(--line2);
++	background: var(--surface2);
++	color: var(--ink);
++	padding: 12px;
++	font-size: 12px;
++	white-space: pre-wrap;
++}
++
++.yd-metrics {
++	display: grid;
++	grid-template-columns: repeat(4, minmax(0, 1fr));
++	gap: 24px;
++}
++
++.yd-metric {
++	padding: 14px 0;
++}
++
++.yd-metric-label {
++	color: var(--ink3);
++	font-size: 10px;
++	font-weight: 700;
++	letter-spacing: 0.1em;
++}
++
++.yd-metric-value {
++	margin-top: 5px;
++	color: var(--ink);
++	font-size: 19px;
++	font-weight: 700;
++	line-height: 1.1;
++}
++
++.yd-metric-value span {
++	margin-left: 2px;
++	color: var(--ink3);
++	font-size: 11px;
++}
++
++.yd-metric-accent {
++	color: var(--accent);
++}
++
++.yd-metric-empty {
++	color: var(--ink3);
++	font-size: 15px;
++}
++
++.yd-status-strip {
++	border: 1px solid var(--line2);
++	padding: 12px;
++}
++
++.yd-inspector-gate {
++	overflow: hidden;
++}
++
++.yd-inspector-gate-header > div:first-child,
++.yd-inspector-title {
++	display: inline-flex;
++	align-items: baseline;
++	gap: 8px;
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 18px;
++	font-weight: 800;
++}
++
++.yd-inspector-enable {
++	display: inline-flex;
++	align-items: center;
++	gap: 9px;
++	cursor: pointer;
++	color: var(--ink2);
++	font-size: 12px;
++	font-weight: 700;
++}
++
++.yd-inspector-panel {
++	border-width: 1px 0 0;
++}
++
++.yd-inspector-actions {
++	display: inline-flex;
++	align-items: center;
++	gap: 10px;
++}
++
++.yd-inspector-ai {
++	border: 1px solid var(--line2);
++	color: var(--ink2);
++	padding: 7px 10px;
++	font-size: 12px;
++	font-weight: 700;
++}
++
++.yd-inspector-summary {
++	display: flex;
++	flex-wrap: wrap;
++	border-bottom: 1px solid var(--line2);
++}
++
++.yd-inspector-summary span {
++	border-right: 1px solid var(--line2);
++	padding: 9px 16px;
++	color: var(--ink2);
++	font-size: 13px;
++}
++
++.yd-inspector-summary b {
++	color: var(--ink3);
++	font-weight: 700;
++	letter-spacing: 0.06em;
++}
++
++.yd-inspector-grid {
++	display: grid;
++	grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
++}
++
++.yd-inspector-column {
++	padding: 16px 18px;
++	min-width: 0;
++}
++
++.yd-inspector-column:first-child {
++	border-right: 1px solid var(--line2);
++}
++
++.yd-inspector-column h3 {
++	margin: 0 0 10px;
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 15px;
++	font-weight: 800;
++}
++
++.yd-inspector-column h3:not(:first-child) {
++	margin-top: 22px;
++}
++
++.yd-inspector-list {
++	display: grid;
++	gap: 9px;
++}
++
++.yd-inspector-list-row {
++	display: flex;
++	align-items: center;
++	justify-content: space-between;
++	gap: 12px;
++	font-size: 13px;
++}
++
++.yd-inspector-list-row span:first-child {
++	color: var(--ink2);
++	overflow: hidden;
++	text-overflow: ellipsis;
++}
++
++.yd-inspector-list-row span:last-child {
++	color: var(--ink);
++	text-align: right;
++}
++
++.yd-inspector-empty {
++	padding: 18px;
++	color: var(--ink3);
++}
++
++.yd-preferences {
++	margin-top: 28px;
++}
++
++.yd-preferences-title {
++	margin: 0 0 16px;
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 26px;
++	font-weight: 900;
++	line-height: 1.2;
++}
++
++.yd-settings-grid {
++	display: grid;
++	grid-template-columns: repeat(3, minmax(0, 1fr));
++	gap: 16px;
++	align-items: start;
++}
++
++.yd-section {
++	padding: 18px;
++}
++
++.yd-section-title {
++	margin: 0;
++	font-family: "Noto Sans TC", sans-serif;
++	font-size: 16px;
++	font-weight: 900;
++	line-height: 1.2;
++}
++
++.yd-section-description {
++	margin: 6px 0 0;
++	color: var(--ink2);
++	font-size: 13px;
++	line-height: 1.55;
++}
++
++.yd-section-body {
++	display: grid;
++	gap: 13px;
++	margin-top: 16px;
++}
++
++.yd-field {
++	display: grid;
++	gap: 7px;
++	border-radius: 0;
++}
++
++.yd-field-row {
++	display: flex;
++	align-items: center;
++	justify-content: space-between;
++	gap: 12px;
++	cursor: pointer;
++}
++
++.yd-field-copy {
++	display: grid;
++	gap: 4px;
++	min-width: 0;
++}
++
++.yd-field-label {
++	color: var(--ink);
++	font-size: 14px;
++	line-height: 1.35;
++}
++
++.yd-field-description {
++	color: var(--ink2);
++	font-size: 12px;
++	line-height: 1.45;
++}
++
++.yd-check {
++	appearance: none;
++	width: 18px;
++	height: 18px;
++	flex: 0 0 auto;
++	border: 1px solid var(--line);
++	background: transparent;
++	border-radius: 0;
++	display: inline-grid;
++	place-items: center;
++	cursor: pointer;
++}
++
++.yd-check:checked {
++	background: var(--accent);
++	border-color: var(--accent);
++}
++
++.yd-check:checked::after {
++	content: "";
++	width: 8px;
++	height: 8px;
++	background: var(--accent-fg);
++	display: block;
++}
++
++.yd-toggle {
++	width: 42px;
++	height: 22px;
++	padding: 3px;
++	display: inline-flex;
++	align-items: center;
++	justify-content: flex-start;
++}
++
++.yd-toggle::after {
++	content: "";
++	width: 14px;
++	height: 14px;
++	background: var(--ink3);
++	display: block;
++}
++
++.yd-toggle:checked {
++	justify-content: flex-end;
++}
++
++.yd-toggle:checked::after {
++	width: 14px;
++	height: 14px;
++	background: var(--accent-fg);
++}
++
++.yd-choice {
++	appearance: none;
++	width: 18px;
++	height: 18px;
++	flex: 0 0 auto;
++	border: 1px solid var(--line);
++	background: transparent;
++	border-radius: 0;
++	cursor: pointer;
++}
++
++.yd-choice:checked {
++	background: var(--accent);
++	border-color: var(--accent);
++	box-shadow: inset 0 0 0 4px var(--bg);
++}
++
++.yd-slider {
++	appearance: none;
++	width: 100%;
++	height: 4px;
++	background: var(--line2);
++	accent-color: var(--accent);
++	border-radius: 0;
++}
++
++.yd-slider::-webkit-slider-thumb {
++	appearance: none;
++	width: 10px;
++	height: 18px;
++	background: var(--accent);
++	border-radius: 0;
++}
++
++.yd-segment-group {
++	display: inline-flex;
++	border: 1px solid var(--line);
++	border-radius: 0;
++	overflow: hidden;
++}
++
++.yd-segment {
++	display: inline-flex;
++	align-items: center;
++	justify-content: center;
++	min-height: 30px;
++	padding: 5px 12px;
++	border-right: 1px solid var(--line);
++	color: var(--ink2);
++	font-size: 13px;
++	cursor: pointer;
++}
++
++.yd-segment:last-child {
++	border-right: 0;
++}
++
++.yd-segment-active {
++	background: var(--accent);
++	color: var(--accent-fg);
++}
++
++.yd-anchor {
++	color: var(--accent);
++	text-decoration: none;
++}
++
++.yd-anchor:hover {
++	text-decoration: underline;
++}
++
++.yd-app-footer {
++	display: flex;
++	align-items: center;
++	justify-content: center;
++	gap: 12px;
++	flex-wrap: wrap;
++	border-top: 1px solid var(--line2);
++	padding: 18px 24px;
++	color: var(--ink2);
++	font-size: 12px;
++	text-align: center;
++}
++
++.Toastify__toast {
++	border-radius: 0 !important;
++	font-family: var(--font-sans) !important;
++}
++
++@media (max-width: 980px) {
++	.yd-playground-grid,
++	.yd-settings-grid,
++	.yd-metrics,
++	.yd-inspector-grid {
++		grid-template-columns: 1fr;
++	}
++
++	.yd-inspector-column:first-child {
++		border-right: 0;
++		border-bottom: 1px solid var(--line2);
  	}
- 	td {
+-	td {
 -		@apply align-baseline pl-3;
--	}
--}
++
++	.candidate-panel {
++		grid-template-columns: 1fr;
+ 	}
+ }
 -.tick {
 -	@apply relative;
 -	&::after {
 -		@apply absolute top-full left-1/2 -translate-x-1/2 text-sm leading-6;
-+		@apply pl-3 align-baseline;
++
++@media (max-width: 640px) {
++	.yd-app-header {
++		align-items: flex-start;
++		flex-direction: column;
++	}
++
++	.yd-app-main {
++		width: min(100% - 24px, 1340px);
++		padding-top: 16px;
++	}
++
++	.yd-toolbar,
++	.yd-mode-row,
++	.yd-header-status {
++		width: 100%;
++	}
++
++	.yd-schema-dropdown,
++	.yd-top-field,
++	.yd-mode-button {
++		width: 100%;
++	}
++
++	.yd-mode-button {
++		justify-content: flex-start;
++	}
++
++	.candidate-row tr {
++		grid-template-columns: 32px minmax(0, 1fr) 32px;
++	}
++
++	.candidate-note {
++		display: none;
  	}
  }
 diff --git a/src/rime.ts b/src/rime.ts

@@ -30,6 +30,7 @@ const M28_EVIDENCE_DIR = "m28-partial-selection";
 const M28_FOLLOWUP_EVIDENCE_DIR = "m28-follow-up-upstream-jyutping";
 const M29_EVIDENCE_DIR = "m29-performance";
 const M31_EVIDENCE_DIR = "m31-yune-web-public-demo";
+const M31_UX_EVIDENCE_DIR = "yune-web-ux-redesign-2026-06-24";
 const M26_EVIDENCE_LABEL = process.env.M26_EVIDENCE_LABEL || "latest";
 const M27_EVIDENCE_LABEL = process.env.M27_EVIDENCE_LABEL || "latest";
 const M29_EVIDENCE_LABEL = process.env.M29_EVIDENCE_LABEL || "latest";
@@ -384,6 +385,31 @@ async function takeM31Screenshot(page: Page, filename: string): Promise<void> {
   const screenshotPath = await m31EvidencePath(`screenshot-${filename}.png`);
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
   await page.screenshot({ path: screenshotPath, fullPage: false });
+}
+
+async function m31UxEvidencePath(filename: string): Promise<string> {
+  const path = await import("path");
+  return path.join(EVIDENCE_DIR, M31_UX_EVIDENCE_DIR, filename);
+}
+
+async function writeM31UxEvidence(filename: string, content: string): Promise<void> {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const targetPath = await m31UxEvidencePath(filename);
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.writeFile(targetPath, content, "utf8");
+}
+
+async function saveM31UxJson(filename: string, payload: unknown): Promise<void> {
+  await writeM31UxEvidence(filename, `${JSON.stringify(payload, null, 2)}\n`);
+}
+
+async function takeM31UxScreenshot(page: Page, filename: string): Promise<void> {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const screenshotPath = await m31UxEvidencePath(`screenshot-${filename}.png`);
+  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+  await page.screenshot({ path: screenshotPath, fullPage: true });
 }
 
 async function m28EvidencePath(filename: string): Promise<string> {
@@ -1038,7 +1064,7 @@ test.describe("yune-web Browser E2E", () => {
     }
   });
 
-  test("M31 PUBLIC yune-web exposes only supported public controls @smoke", async ({ page }) => {
+  test("M31 PUBLIC yune-web exposes only supported public controls @smoke @public-smoke", async ({ page }) => {
     test.skip(!RUN_M31_PUBLIC_E2E, "M31 public smoke requires YUNE_PUBLIC_DEMO_E2E=1");
 
     await expect(page).toHaveTitle(/yune-web/i);
@@ -1062,7 +1088,7 @@ test.describe("yune-web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
-  test("M31 PUBLIC startup uses pruned public assets and warm cache @smoke", async ({ page }) => {
+  test("M31 PUBLIC startup uses pruned public assets and warm cache @smoke @public-smoke", async ({ page }) => {
     test.skip(!RUN_M31_PUBLIC_E2E, "M31 public smoke requires YUNE_PUBLIC_DEMO_E2E=1");
 
     let startup: PersistenceDiagnosticSnapshot | undefined;
@@ -1109,7 +1135,7 @@ test.describe("yune-web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
-  test("M31 PUBLIC hk2s output standard is browser-visible and AI stays default-off @smoke", async ({ page }) => {
+  test("M31 PUBLIC hk2s output standard is browser-visible and AI stays default-off @smoke @public-smoke", async ({ page }) => {
     test.skip(!RUN_M31_PUBLIC_E2E, "M31 public smoke requires YUNE_PUBLIC_DEMO_E2E=1");
 
     const traditional = await typeCompositionAndWaitForTopCandidate(page, "ngohaigo", "\u6211\u4fc2\u500b");
@@ -1140,6 +1166,107 @@ test.describe("yune-web Browser E2E", () => {
       },
     });
     await takeM31Screenshot(page, "opencc-browser-evidence");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("M31 UX yune-web redesign renders live public harness @smoke @public-smoke", async ({ page }) => {
+    test.skip(!RUN_M31_PUBLIC_E2E, "M31 UX smoke requires YUNE_PUBLIC_DEMO_E2E=1");
+
+    const banner = page.getByRole("banner");
+    await expect(banner).toContainText("新韻輸入法引擎");
+    await expect(banner).toContainText(/yune-web/i);
+    await expect(banner.locator(".yd-ai-chip")).toContainText(/OFF/);
+
+    const themeToggle = page.getByLabel(/Theme Switcher/);
+    const themeBefore = await page.evaluate(() => document.documentElement.dataset.theme ?? "");
+    await expect(themeToggle).toHaveCount(1);
+    await page.locator(".yd-theme-button").click();
+    await expect.poll(async () =>
+      page.evaluate(() => document.documentElement.dataset.theme ?? ""),
+    { timeout: 5000 }).not.toBe(themeBefore);
+
+    await expect(page.getByRole("button", { name: /ASCII mode/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Output standard/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Full shape/ })).toBeVisible();
+    await expect(page.locator("[data-yune-schema-switcher]")).toHaveCount(0);
+    await expect(page.getByText(/Cangjie lookup/)).toHaveCount(0);
+    await expect(page.getByLabel(/Taiwan|t2tw|s2tw|tw2s|tw2t|s2t/i)).toHaveCount(0);
+    await expect(page.getByLabel(/AI Candidates/).last()).not.toBeChecked();
+
+    const inputField = page.locator("input[type='text'], textarea").first();
+    await clearComposition(page);
+    await inputField.focus();
+    await inputField.type("nei", { delay: 80 });
+    await expect(page.locator(".candidate-panel .candidates tbody").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(".candidate-panel .candidate-list-pane")).toBeVisible();
+    await expect(page.locator(".candidate-panel .dictionary-panel")).toBeVisible();
+    await expect(page.locator("[data-yune-metric-ai]")).toContainText(/off/i);
+    await expect(page.locator("[data-yune-metric-candidates]")).not.toContainText(/N\/A/);
+
+    const inputBox = await elementBox(inputField);
+    const candidateBox = await elementBox(page.locator(".candidate-panel"));
+    const listBox = await elementBox(page.locator(".candidate-panel .candidate-list-pane"));
+    const dictionaryBox = await elementBox(page.locator(".candidate-panel .dictionary-panel"));
+    expect(candidateBox.y).toBeGreaterThan(inputBox.y);
+    expect(dictionaryBox.x).toBeGreaterThan(listBox.x);
+
+    const userdbPanel = page.locator("[data-yune-userdb-viewer]");
+    await expect(userdbPanel).toBeVisible();
+    await expect(page.locator("[data-yune-userdb-row-count], [data-yune-userdb-empty], [data-yune-userdb-loading]").first()).toBeVisible({ timeout: 10000 });
+
+    await page.getByLabel("Yune inspector").check();
+    await clearComposition(page);
+    await inputField.focus();
+    await inputField.type("nei", { delay: 80 });
+    const inspector = page.locator("[data-yune-inspector='panel']");
+    await expect(inspector).toBeVisible();
+    await expect(page.locator("[data-yune-inspector-segments], [data-yune-inspector-empty]").first()).toBeVisible({ timeout: 10000 });
+    await page.getByRole("button", { name: /HIDE/ }).click();
+    await expect(page.locator(".yd-inspector-summary")).toHaveCount(0);
+    await page.getByRole("button", { name: /SHOW/ }).click();
+    await expect(page.locator(".yd-inspector-summary")).toBeVisible();
+
+    const resources = await page.evaluate(() =>
+      performance.getEntriesByType("resource").map(entry => entry.name),
+    );
+    const unexpectedRemoteCalls = resources.filter((name) =>
+      /cdn\.jsdelivr|fonts\.googleapis|fonts\.gstatic|openai|anthropic|telemetry|analytics|segment|sentry/i.test(name)
+    );
+    expect(unexpectedRemoteCalls).toEqual([]);
+
+    await saveM31UxJson("ux-redesign-smoke.json", {
+      url: APP_URL,
+      title: await page.title(),
+      header: await banner.innerText(),
+      themeBefore,
+      themeAfter: await page.evaluate(() => document.documentElement.dataset.theme ?? ""),
+      publicControls: {
+        schemaSwitcherVisible: await page.locator("[data-yune-schema-switcher]").count(),
+        unsupportedOpenccVisible: await page.getByLabel(/Taiwan|t2tw|s2tw|tw2s|tw2t|s2t/i).count(),
+        aiDefaultChecked: await page.getByLabel(/AI Candidates/).last().isChecked(),
+      },
+      layout: {
+        input: inputBox,
+        candidatePanel: candidateBox,
+        candidateListPane: listBox,
+        dictionaryPane: dictionaryBox,
+      },
+      metrics: {
+        lookup: await page.locator("[data-yune-metric-lookup]").innerText(),
+        ai: await page.locator("[data-yune-metric-ai]").innerText(),
+        candidates: await page.locator("[data-yune-metric-candidates]").innerText(),
+        userdb: await page.locator("[data-yune-metric-userdb]").innerText(),
+      },
+      userdb: {
+        rowCountText: await page.locator("[data-yune-userdb-row-count], [data-yune-userdb-empty], [data-yune-userdb-loading]").first().innerText(),
+      },
+      inspector: {
+        collapsedVerified: true,
+        hasSegmentsOrEmptyState: await page.locator("[data-yune-inspector-segments], [data-yune-inspector-empty]").count() > 0,
+      },
+      blockedRemoteCalls: unexpectedRemoteCalls,
+    });
+    await takeM31UxScreenshot(page, "ux-redesign-smoke");
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 

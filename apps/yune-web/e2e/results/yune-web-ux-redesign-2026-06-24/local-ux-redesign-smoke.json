@@ -1,0 +1,60 @@
+{
+  "url": "http://127.0.0.1:8788",
+  "title": "yune-web",
+  "header": "韻\n新韻輸入法引擎 yune-web\nAI-NATIVE INPUT ENGINE · PUBLIC WEB HARNESS\nPUBLIC\nAI 重排 OFF\nTheme Switcher\n○ THEME",
+  "themeBefore": "light",
+  "themeAfter": "dark",
+  "publicControls": {
+    "schemaSwitcherVisible": 0,
+    "unsupportedOpenccVisible": 0,
+    "aiDefaultChecked": false
+  },
+  "layout": {
+    "input": {
+      "x": 43,
+      "y": 248.34375,
+      "width": 611.453125,
+      "height": 220,
+      "right": 654.453125,
+      "bottom": 468.34375
+    },
+    "candidatePanel": {
+      "x": 43,
+      "y": 486.34375,
+      "width": 611.453125,
+      "height": 416.1875,
+      "right": 654.453125,
+      "bottom": 902.53125
+    },
+    "candidateListPane": {
+      "x": 44,
+      "y": 487.34375,
+      "width": 369.453125,
+      "height": 414.1875,
+      "right": 413.453125,
+      "bottom": 901.53125
+    },
+    "dictionaryPane": {
+      "x": 413.453125,
+      "y": 487.34375,
+      "width": 240,
+      "height": 414.1875,
+      "right": 653.453125,
+      "bottom": 901.53125
+    }
+  },
+  "metrics": {
+    "lookup": "27ms",
+    "ai": "off",
+    "candidates": "6/6",
+    "userdb": "0 rows"
+  },
+  "userdb": {
+    "rowCountText": "rows\n0"
+  },
+  "inspector": {
+    "collapsedVerified": true,
+    "hasSegmentsOrEmptyState": true
+  },
+  "blockedRemoteCalls": []
+}

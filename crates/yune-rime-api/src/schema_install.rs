@@ -306,24 +306,26 @@ fn install_schema_dictionary_translator_from_config(
         return;
     }
 
-    let (dictionary, prism_payload) = match load_schema_table_dictionary(schema_config, name_space)
-    {
-        DictionaryLoadOutcome::Compiled(compiled) => (compiled.dictionary, compiled.prism_payload),
-        DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
-            record_dictionary_source_fallback(session, reason);
-            (dictionary, None)
-        }
-        DictionaryLoadOutcome::NoUsablePath {
-            dictionary_id,
-            reason,
-        } => {
-            record_dictionary_load_failure(session, dictionary_id, reason);
-            return;
-        }
-    };
-    let use_compact_storage = is_upstream_luna_pinyin_profile
-        && !is_typeduck_jyut6ping3_profile
-        && prism_payload.is_some();
+    let (dictionary, prism_payload, loaded_from_compiled) =
+        match load_schema_table_dictionary(schema_config, name_space) {
+            DictionaryLoadOutcome::Compiled(compiled) => {
+                (compiled.dictionary, compiled.prism_payload, true)
+            }
+            DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
+                record_dictionary_source_fallback(session, reason);
+                (dictionary, None, false)
+            }
+            DictionaryLoadOutcome::NoUsablePath {
+                dictionary_id,
+                reason,
+            } => {
+                record_dictionary_load_failure(session, dictionary_id, reason);
+                return;
+            }
+        };
+    let use_compact_storage = prism_payload.is_some()
+        && (is_upstream_luna_pinyin_profile
+            || (is_typeduck_jyut6ping3_profile && loaded_from_compiled));
     let mut translator = {
         let _trace = startup_trace::span("translator_index_build");
         if use_compact_storage {

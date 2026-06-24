@@ -1,0 +1,11 @@
+﻿date_utc=2026-06-24T07:45:12.9745148Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=99fc6d6739214193e720f68350ab805243249e14
+yune_git_status_short= M crates/yune-core/src/dictionary/rebuild_executor.rs |  M crates/yune-core/src/tests/dictionary.rs |  M crates/yune-rime-api/Cargo.toml |  M crates/yune-rime-api/src/deployment.rs |  M crates/yune-rime-api/src/schema_install.rs |  M crates/yune-rime-api/src/tests/deployment.rs | ?? crates/yune-rime-api/benches/native_inprocess_benchmark.rs | ?? docs/reports/evidence/m36-product-path/ | ?? scripts/benchmark-native-rime-inprocess.ps1
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-0-baseline
+managed_runtime=false
+deploy_product_before_benchmark=False
+iterations=5
+session_iterations=20
+key_iterations=20

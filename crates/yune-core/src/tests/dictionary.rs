@@ -355,6 +355,7 @@ fn rebuild_plan_executor_writes_only_requested_artifacts() {
     };
     let sources = RimeDictRebuildSources {
         artifact_stem: "sample",
+        prism_artifact_stem: "sample",
         table_dictionary: &dictionary,
         reverse_dictionary: &dictionary,
         syllabary: &syllabary,
@@ -367,6 +368,48 @@ fn rebuild_plan_executor_writes_only_requested_artifacts() {
     assert!(root.join("sample.table.bin").is_file());
     assert!(!root.join("sample.prism.bin").exists());
     assert!(root.join("sample.reverse.bin").is_file());
+
+    fs::remove_dir_all(&root).expect("temp dir should be removed");
+}
+
+#[test]
+fn rebuild_plan_executor_writes_prism_to_configured_stem() {
+    let root = std::env::temp_dir().join(format!("yune-m36-prism-stem-{}", std::process::id()));
+    if root.exists() {
+        fs::remove_dir_all(&root).expect("old temp dir should be removable");
+    }
+    fs::create_dir_all(&root).expect("temp dir should be created");
+
+    let dictionary = sample_dictionary();
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let plan = RimeDictRebuildPlan {
+        dict_file_checksum: 0x4444_4444,
+        rebuild_table: false,
+        rebuild_prism: true,
+        rebuild_reverse: false,
+        report: RimeDictRebuildExecutionReport {
+            table: RimeDictArtifactStatus::ReusedFresh,
+            prism: RimeDictArtifactStatus::Rebuilt,
+            reverse: RimeDictArtifactStatus::ReusedFresh,
+        },
+    };
+    let sources = RimeDictRebuildSources {
+        artifact_stem: "sample",
+        prism_artifact_stem: "sample_mobile",
+        table_dictionary: &dictionary,
+        reverse_dictionary: &dictionary,
+        syllabary: &syllabary,
+        algebra_formulas: &[],
+        schema_file_checksum: 0x5555_5555,
+    };
+
+    execute_rebuild_plan(&plan, &sources, &root).expect("plan should execute");
+    assert!(!root.join("sample.prism.bin").exists());
+    assert!(root.join("sample_mobile.prism.bin").is_file());
 
     fs::remove_dir_all(&root).expect("temp dir should be removed");
 }

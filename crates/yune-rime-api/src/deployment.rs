@@ -158,6 +158,13 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
     if task_name == "workspace_update" {
         return bool_from(workspace_update());
     }
+    if let Some(schema_id) = task_name.strip_prefix("workspace_update:") {
+        let Some(schema_id) = validate_data_resource_id(schema_id) else {
+            return FALSE;
+        };
+        let mut built = HashSet::new();
+        return bool_from(workspace_update_schema(&schema_id, false, &mut built));
+    }
     if task_name == "user_dict_upgrade" {
         return bool_from(user_dict_upgrade());
     }
@@ -700,6 +707,7 @@ fn workspace_update_dictionary_artifacts(schema_id: &str, schema_config: &Value)
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct DictionaryArtifactRequest {
     dictionary_id: String,
+    prism_id: String,
     packs: Vec<String>,
     force_rebuild_table: bool,
     force_rebuild_prism: bool,
@@ -759,6 +767,7 @@ fn schema_dictionary_artifact_requests(schema_config: &Value) -> Vec<DictionaryA
         let Some(dictionary_id) = validate_data_resource_id(raw_dictionary_id) else {
             requests.push(DictionaryArtifactRequest {
                 dictionary_id: raw_dictionary_id.to_owned(),
+                prism_id: raw_dictionary_id.to_owned(),
                 packs: Vec::new(),
                 force_rebuild_table: false,
                 force_rebuild_prism: false,
@@ -766,11 +775,16 @@ fn schema_dictionary_artifact_requests(schema_config: &Value) -> Vec<DictionaryA
             });
             continue;
         };
+        let prism_id = find_config_value(schema_config, &format!("{namespace}/prism"))
+            .and_then(Value::as_str)
+            .and_then(validate_data_resource_id)
+            .unwrap_or_else(|| dictionary_id.clone());
         if !seen.insert(dictionary_id.clone()) {
             continue;
         }
         requests.push(DictionaryArtifactRequest {
             dictionary_id,
+            prism_id,
             packs: schema_dictionary_packs(schema_config, &namespace),
             force_rebuild_table: config_bool_value(
                 schema_config,
@@ -817,10 +831,10 @@ fn workspace_update_dictionary_artifact(
         .unwrap_or(0);
 
     let table_path = staging_dir.join(format!("{dictionary_id}.table.bin"));
-    let prism_path = staging_dir.join(format!("{dictionary_id}.prism.bin"));
+    let prism_path = staging_dir.join(format!("{}.prism.bin", request.prism_id));
     let reverse_path = staging_dir.join(format!("{dictionary_id}.reverse.bin"));
     let prebuilt_table_path = prebuilt_data_dir.join(format!("{dictionary_id}.table.bin"));
-    let prebuilt_prism_path = prebuilt_data_dir.join(format!("{dictionary_id}.prism.bin"));
+    let prebuilt_prism_path = prebuilt_data_dir.join(format!("{}.prism.bin", request.prism_id));
     let prebuilt_reverse_path = prebuilt_data_dir.join(format!("{dictionary_id}.reverse.bin"));
 
     let table_metadata = fs::read(&table_path)
@@ -901,6 +915,7 @@ fn workspace_update_dictionary_artifact(
         let algebra_formulas = schema_speller_algebra(schema_config);
         let sources = RimeDictRebuildSources {
             artifact_stem: &dictionary_id,
+            prism_artifact_stem: &request.prism_id,
             table_dictionary: dictionary,
             reverse_dictionary: dictionary,
             syllabary: &syllabary,

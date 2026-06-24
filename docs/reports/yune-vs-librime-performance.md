@@ -13,6 +13,9 @@ Evidence:
 - M35 fair cross-engine before/after reruns: [`evidence/m35-compact-table-prism-storage/baseline-yune-vs-librime/`](./evidence/m35-compact-table-prism-storage/baseline-yune-vs-librime/) and [`evidence/m35-compact-table-prism-storage/after-yune-vs-librime/`](./evidence/m35-compact-table-prism-storage/after-yune-vs-librime/)
 - M35 visualizations: [`m35-native-improvement.svg`](./evidence/m35-compact-table-prism-storage/m35-native-improvement.svg), [`m35-cross-engine-gap.svg`](./evidence/m35-compact-table-prism-storage/m35-cross-engine-gap.svg), and [`m35-memory-story.svg`](./evidence/m35-compact-table-prism-storage/m35-memory-story.svg)
 - M35 task evidence: [`evidence/m35-compact-table-prism-storage/`](./evidence/m35-compact-table-prism-storage/)
+- M36 product-path evidence: [`evidence/m36-product-path/`](./evidence/m36-product-path/)
+- M36 final native in-process rerun: [`evidence/m36-product-path/phase-4-final/`](./evidence/m36-product-path/phase-4-final/)
+- M36 visualizations: [`m36-product-latency-before-after.svg`](./evidence/m36-product-path/m36-product-latency-before-after.svg), [`m36-product-memory-before-after.svg`](./evidence/m36-product-path/m36-product-memory-before-after.svg), [`m36-track-a-latency-gap.svg`](./evidence/m36-product-path/m36-track-a-latency-gap.svg), and [`m36-track-a-working-set-gap.svg`](./evidence/m36-product-path/m36-track-a-working-set-gap.svg)
 
 ## Public summary
 
@@ -20,35 +23,73 @@ M33 corrected the unfair `luna_pinyin` comparison by lazy-loading the `stroke`
 reverse lookup and sharing built dictionary translators across compatible schema
 selects. M34 then landed a narrower first-page candidate-pipeline optimization.
 M35 replaced the upstream `luna_pinyin` heap-expanded spelling-algebra storage
-hot path with compact table storage plus prism canonical-code lookup.
+hot path with compact table storage plus prism canonical-code lookup. M36 then
+separated fair upstream comparison from the shipped TypeDuck product path and
+made `jyut6ping3_mobile` run from rebuilt Yune-readable compiled table/prism
+assets instead of the stale unsupported shipped marisa blobs.
 
 The safe public claim is still conservative:
 
 - Yune is no longer measuring luna-plus-stroke startup against luna-only librime.
-- M35 improves native upstream `luna_pinyin` watched rows materially:
-  `zhongguo_full_abi` `14,759.755 us` -> `1,527.055 us`, `ni_engine_only`
-  `891.791 us` -> `697.044 us`, and `hao_engine_only` `1,092.879 us` ->
-  `750.517 us`.
-- The upstream `luna_pinyin` `spelling_algebra_expand` startup owner drops from
-  `148,570.200 us` / `17,784,832 bytes` to `122.200 us` / `0 bytes`.
-- Yune still trails librime widely on fair cross-engine per-key rows and
-  whole-process peak memory.
+- M35 materially improved the upstream `luna_pinyin` compact-storage path.
+- M36 is the TypeDuck product-path result: `jyut6ping3_mobile` final rows run
+  from fresh compiled Yune table/prism/reverse artifacts with `compiled_ready =
+  true`, not `SourceFallback`.
+- Track B product typing rows improve materially: `ngohaig` `14,943.043 us` ->
+  `3,465.057 us` (`-76.8%`), `loengjathau` `16,309.045 us` -> `3,754.855 us`
+  (`-77.0%`), and `jigaajiusihaa` `27,633.869 us` -> `5,065.308 us`
+  (`-81.7%`).
+- Track B product median working set drops by about `80-83 MB` on the measured
+  rows; max peak working set drops from `1000.4 MB` to `885.3 MB`.
+- Track A upstream `luna_pinyin` still trails librime widely on fair per-key
+  comparison rows and working-set gap. These ratios are not the TypeDuck product
+  typing headline.
 - No browser startup, browser typing, WASM, React, Cloudflare, or TypeDuck-Web
-  delivery win is claimed from M35.
+  delivery win is claimed from M36 because runtime/browser-visible files did not
+  change.
 
-Final fair M35 cross-engine after-run:
+Final M36 Track A fair upstream comparison:
 
-- `hao`: Yune `12,547.200 us`, librime `35.400 us`; Yune is `354.4x` slower.
-- `ni`: Yune `5,678.500 us`, librime `28.700 us`; Yune is `197.9x` slower.
-- `zhongguo`: Yune `35,848.500 us`, librime `1,452.800 us`; Yune is `24.7x` slower.
-- Session create/select/destroy: Yune `47,806.600 us`, librime `30,977.000 us`; Yune is `1.5x` slower.
-- Warm startup/runtime-ready: Yune `46,516.200 us`, librime `31,052.200 us`; Yune is `1.5x` slower.
-- Peak working set: Yune `182,444,032 bytes`, librime `22,437,888 bytes`; Yune peaks at about `8.1x` librime.
+- `hao`: Yune `4,072.000 us`, librime `11.700 us`; Yune is `348.03x` slower.
+- `ni`: Yune `2,977.300 us`, librime `14.450 us`; Yune is `206.04x` slower.
+- `zhongguo`: Yune `4,403.738 us`, librime `178.600 us`; Yune is `24.66x` slower.
+- Session create/select/destroy: Yune `47,112.900 us`, librime `22,852.100 us`; Yune is `2.06x` slower.
+- Warm startup/runtime-ready: Yune `48,144.900 us`, librime `22,105.300 us`; Yune is `2.18x` slower.
+- Median working set: Yune `158-161 MB` on the Track A rows, librime about
+  `10-13 MB`; Yune max peak is `171.8 MB` versus librime about `14.1 MB`.
 
-M35's memory win is dictionary-specific, not whole-process peak. Native startup
-trace deltas show `translator_install` memory for compact-active upstream
-`luna_pinyin` dropping from `37,556,224` to `9,822,208` bytes, while the fair
-harness process high-water remains about `182 MB`.
+M35's memory win was dictionary-specific, not whole-process peak. M36's product
+path reduces TypeDuck product working set, but Track A still shows a large
+whole-process gap versus librime.
+
+## M36 Product-Path Results
+
+Track B `jyut6ping3_mobile` product before/after medians:
+
+| Row | Baseline median | M36 final median | Change | Baseline working set | Final working set | Working-set change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| startup ready | `201,811.100 us` | `175,424.800 us` | `-13.1%` | `818.7 MB` | `738.8 MB` | `-79.9 MB` |
+| session create/select/destroy | `243,946.900 us` | `219,919.200 us` | `-9.8%` | `806.7 MB` | `726.6 MB` | `-80.2 MB` |
+| `hai` key sequence | `21,541.967 us` | `15,241.000 us` | `-29.2%` | `822.9 MB` | `741.5 MB` | `-81.4 MB` |
+| `ngohaig` key sequence | `14,943.043 us` | `3,465.057 us` | `-76.8%` | `823.2 MB` | `741.5 MB` | `-81.7 MB` |
+| `loengjathau` key sequence | `16,309.045 us` | `3,754.855 us` | `-77.0%` | `823.7 MB` | `741.5 MB` | `-82.2 MB` |
+| `jigaajiusihaa` key sequence | `27,633.869 us` | `5,065.308 us` | `-81.7%` | `824.8 MB` | `741.5 MB` | `-83.2 MB` |
+
+Product path status changed from stale/unsupported shipped blobs to fresh
+Yune-readable compiled assets:
+
+| Dictionary | Baseline status | M36 final status |
+| --- | --- | --- |
+| `jyut6ping3` with prism `jyut6ping3_mobile` | stale product `.table.bin`, unsupported `marisa string_table`, unsupported prism/reverse, `compiled_ready=false` | fresh rebuilt table, `jyut6ping3_mobile.prism.bin`, reverse, all parse `ok`, `compiled_ready=true` |
+| `jyut6ping3_scolar` | stale product `.table.bin`, unsupported `marisa string_table`, unsupported prism/reverse, `compiled_ready=false` | fresh rebuilt table, prism, reverse, all parse `ok`, `compiled_ready=true` |
+
+The selected M36 product strategy is the no-marisa re-emitted asset fallback.
+The `rsmarisa` strategy stays closed by measured no-go because the actual
+product blobs must preserve table, reverse, and prism semantics together; using
+the original unsupported marisa table alone does not give Yune a byte-identical
+runtime path. Native mmap/borrowed storage and browser byte-backed loading stay
+future work because compact owned product storage is now active and the remaining
+browser/delivery claims need their own real-browser evidence.
 
 ## M35 Compact-Storage Results
 
@@ -90,42 +131,56 @@ movement evidence.
 
 ## Visual summary
 
-These charts are generated from the final M35 evidence bundle, not from a
-browser/runtime run. They support native engine-performance and fair
-cross-engine claims only.
+These charts are generated from the final M36 native in-process evidence bundle,
+not from a browser/runtime run. They support native engine-performance,
+product-path, and fair cross-engine comparison claims only.
 
-![M35 native luna_pinyin watched rows](./evidence/m35-compact-table-prism-storage/m35-native-improvement.svg)
+![M36 TypeDuck product latency before and after](./evidence/m36-product-path/m36-product-latency-before-after.svg)
 
-The native watched-row chart is the achievement view. M35's clearest landed win
-is upstream `luna_pinyin` compact storage: `zhongguo_full_abi` drops from
-`14,759.755 us` to `1,527.055 us` (`-89.7%`), while the short engine-only rows
-also improve (`hao_engine_only` `-31.3%`, `ni_engine_only` `-21.8%`).
+The product latency chart is the M36 achievement view. The shipped
+`jyut6ping3_mobile` path no longer depends on the unsupported stale product
+marisa blobs at runtime after schema-scoped deploy rebuilds fresh Yune-readable
+compiled assets. The strongest typing rows improve by `-76.8%` to `-81.7%`.
 
-![M35 final fair Yune versus librime median latency gap](./evidence/m35-compact-table-prism-storage/m35-cross-engine-gap.svg)
+![M36 TypeDuck product memory before and after](./evidence/m36-product-path/m36-product-memory-before-after.svg)
 
-The fair cross-engine chart is intentionally log-scale. It keeps the unresolved
-public gap visible after M35: Yune remains `354.4x` slower on `hao`, `197.9x`
-slower on `ni`, and `24.7x` slower on `zhongguo`, while startup/session rows
-are much closer at about `1.5x`.
+The product memory chart is the native product-path footprint view. Median
+working set drops by roughly `80-83 MB` on measured Track B rows, and max peak
+working set drops by `115.0 MB`.
 
-![M35 memory story](./evidence/m35-compact-table-prism-storage/m35-memory-story.svg)
+![M36 final Track A fair Yune versus librime median latency gap](./evidence/m36-product-path/m36-track-a-latency-gap.svg)
 
-The memory chart is the caveat view. M35 removes the expanded spelling-algebra
-owner and cuts `translator_install` dictionary delta from `37,556,224` to
-`9,822,208` bytes, but the fair whole-process peak remains about `8.1x`
-librime. That is why mmap/borrowed storage remains a future design, not an M35
-victory claim.
+The Track A latency chart keeps the unresolved upstream comparison gap visible.
+Yune is still `348.03x` slower on `hao`, `206.04x` slower on `ni`, and `24.66x`
+slower on `zhongguo` in the fair `luna_pinyin` comparison.
+
+![M36 final Track A working-set gap](./evidence/m36-product-path/m36-track-a-working-set-gap.svg)
+
+The Track A working-set chart is the caveat view. M36 records a product-path
+working-set reduction, but it does not solve the fair upstream whole-process
+memory gap versus librime.
 
 ## Methodology
 
-Both engines were measured through the same librime-shaped C API harness:
+M33-M35 cross-engine evidence used the same librime-shaped C API harness:
 [`../../scripts/yune-vs-librime-benchmark.cs`](../../scripts/yune-vs-librime-benchmark.cs),
 driven by [`../../scripts/benchmark-yune-vs-librime.ps1`](../../scripts/benchmark-yune-vs-librime.ps1).
+M36 adds a native Rust in-process harness to remove managed/PInvoke overhead
+from the product before/after evidence:
+[`../../crates/yune-rime-api/benches/native_inprocess_benchmark.rs`](../../crates/yune-rime-api/benches/native_inprocess_benchmark.rs),
+driven by
+[`../../scripts/benchmark-native-rime-inprocess.ps1`](../../scripts/benchmark-native-rime-inprocess.ps1).
 
 Cross-engine command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\benchmark-yune-vs-librime.ps1 -OutputRoot <evidence-dir> -Iterations 9 -SessionIterations 9 -KeyIterations 25
+```
+
+M36 native in-process command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m36-product-path\phase-4-final -Iterations 5 -SessionIterations 20 -KeyIterations 20 -DeployProductBeforeBenchmark
 ```
 
 Native benchmark command:
@@ -135,8 +190,10 @@ cmd /c "cargo bench -p yune-rime-api --bench frontend_baselines > target\m35-fro
 ```
 
 The cross-engine rows use the same upstream `luna_pinyin` schema id, the same
-shared/user data roots, and the same default module list. This is a no-deploy
-comparison. It does not measure TypeDuck-Web delivery, browser paint, Cloudflare
+shared/user data roots, and the same default module list. M36 Track A keeps that
+comparison-only shape. M36 Track B measures Yune before/after for the shipped
+TypeDuck `jyut6ping3_mobile` product path and records product asset status. None
+of these native rows measure TypeDuck-Web delivery, browser paint, Cloudflare
 cache behavior, or public-demo startup.
 
 ## Results
@@ -222,16 +279,17 @@ The remaining performance gap is now better split:
 
 It is safe to say:
 
-> Yune's fair upstream `luna_pinyin` comparison now separates native engine
-> work from browser delivery. After M35, compact table+prism storage removes the
-> upstream `luna_pinyin` heap-expanded spelling-algebra startup owner and
-> improves native watched rows, most clearly `zhongguo_full_abi` from about
-> `14.76 ms` to `1.53 ms`. Yune still trails librime by roughly `25x` to
-> `354x` on the fair per-key rows and about `8x` on whole-process peak working
-> set.
+> Yune's performance reports now separate native engine work from browser
+> delivery, fair upstream comparison from TypeDuck product evidence, and memory
+> footprint from latency. M35 removed the upstream `luna_pinyin` heap-expanded
+> spelling-algebra owner. M36 makes the shipped TypeDuck `jyut6ping3_mobile`
+> path run from fresh Yune-readable compiled table/prism assets and improves the
+> measured product typing rows by up to `81.7%`, with median product working set
+> down by about `80-83 MB`. Yune still trails librime widely on fair Track A
+> `luna_pinyin` per-key comparison rows and working set.
 
 It is not safe to say:
 
 > Yune is faster than librime, Yune uses less memory than librime, Yune browser
-> startup or browser typing improved, or the whole-process memory-footprint gap
-> is solved.
+> startup or browser typing improved, or the Track A whole-process memory gap is
+> solved.

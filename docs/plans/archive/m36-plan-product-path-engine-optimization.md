@@ -1,10 +1,12 @@
 # M36 Product-Path Engine Optimization (Profile-Led) Plan
 
-> **Status:** Draft - **Milestone:** M36 (profile-led product-path memory + latency) - **Created:** 2026-06-24 - **Type:** engine-performance plan
+> **Status:** Complete / archived - **Milestone:** M36 (profile-led product-path memory + latency) - **Created:** 2026-06-24 - **Closed:** 2026-06-24 - **Type:** engine-performance plan
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax. This plan is ONE roadmap milestone composed of independently-shippable, byte-parity-gated, stop-gated phases. It is explicitly NOT a big-bang: phases may land separately. But per the maintainer's intent this is the **maximal optimization milestone**, so **M36 is complete only when every phase is done OR each remaining strategy has a documented, measured no-go** — shipping only the early phases does not close it.
 
 **Goal:** Materially narrow (not close) the librime gap on the schema users actually run — TypeDuck `jyut6ping3` — by profiling first, then fixing the verified product-path waste in safe Rust. Lead with measurement; concentrate effort on the few dominant cost owners; keep `my_rime`/librime as references, never oracles or code sources; keep public ABI and TypeDuck profile behavior byte-identical.
+
+**Closeout:** M36 landed the native in-process Track A/Track B benchmark harness, recorded the shipped TypeDuck product blobs as stale/unsupported for Yune (`marisa string_table`, unsupported prism, unsupported reverse), closed `rsmarisa` by measured no-go for this milestone, and selected schema-scoped no-marisa re-emitted compiled assets as the passing product path. Deployment now writes configured product prism stems such as `jyut6ping3_mobile`, and product compact storage is enabled only when compiled artifacts load. Track B `jyut6ping3_mobile` final rows run with `compiled_ready=true`, product typing rows improve up to `81.7%`, and product max peak working set drops from `1000.4 MB` to `885.3 MB`. Track A `luna_pinyin` remains comparison-only and still trails librime widely. Browser/runtime/Cloudflare/OpenCC delivery work remains M31.
 
 **Why this milestone is framed differently from M33–M35:** M33–M35 each moved the needle only slightly because they optimized the **comparison path (`luna_pinyin`)**, while the **product path (`jyut6ping3`)** never engaged the new machinery. Verified in-tree:
 

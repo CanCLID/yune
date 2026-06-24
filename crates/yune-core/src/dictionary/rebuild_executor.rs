@@ -7,6 +7,7 @@ use std::{
 
 pub struct RimeDictRebuildSources<'a> {
     pub artifact_stem: &'a str,
+    pub prism_artifact_stem: &'a str,
     pub table_dictionary: &'a TableDictionary,
     pub reverse_dictionary: &'a TableDictionary,
     pub syllabary: &'a [String],
@@ -31,10 +32,8 @@ pub fn execute_rebuild_plan(
     sources: &RimeDictRebuildSources<'_>,
     out_dir: impl AsRef<Path>,
 ) -> Result<RimeDictRebuildExecutionReport, RimeDictRebuildExecuteError> {
-    if sources.artifact_stem.is_empty()
-        || sources.artifact_stem.contains('/')
-        || sources.artifact_stem.contains('\\')
-        || sources.artifact_stem.contains(':')
+    if !is_valid_artifact_stem(sources.artifact_stem)
+        || !is_valid_artifact_stem(sources.prism_artifact_stem)
     {
         return Err(RimeDictRebuildExecuteError::InvalidArtifactStem);
     }
@@ -49,7 +48,7 @@ pub fn execute_rebuild_plan(
     }
     if plan.rebuild_prism {
         fs::write(
-            artifact_path(out_dir, sources.artifact_stem, "prism.bin"),
+            artifact_path(out_dir, sources.prism_artifact_stem, "prism.bin"),
             build_prism_bin(
                 sources.syllabary,
                 sources.algebra_formulas,
@@ -65,6 +64,10 @@ pub fn execute_rebuild_plan(
         )?;
     }
     Ok(plan.report)
+}
+
+fn is_valid_artifact_stem(stem: &str) -> bool {
+    !stem.is_empty() && !stem.contains('/') && !stem.contains('\\') && !stem.contains(':')
 }
 
 fn artifact_path(out_dir: &Path, stem: &str, suffix: &str) -> PathBuf {

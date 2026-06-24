@@ -1,0 +1,13 @@
+engine=yune
+track=track-b-product
+schema=jyut6ping3_mobile
+dll=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-2-product-deploy-smoke\track-b-yune-product\rime.dll
+shared=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-2-product-deploy-smoke\track-b-yune-product\shared
+user=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-2-product-deploy-smoke\track-b-yune-product\user
+build=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-2-product-deploy-smoke\track-b-yune-product\user\build
+inputs=hai,ngohaig,jigaajiusihaa,loengjathau
+iterations=1
+session_iterations=1
+key_iterations=1
+deploy_before_benchmark=true
+managed_runtime=false

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="502" viewBox="0 0 980 502">
+<rect width="100%" height="100%" fill="#fbfaf7"/>
+<text x="34" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#202124">M36 Track B product working set</text>
+<text x="34" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#5f6368">jyut6ping3_mobile median working set and peak context from native full-ABI runs</text>
+<rect x="190" y="84" width="14" height="14" fill="#2f6f73"/><text x="210" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#3c4043">Phase 0 baseline</text>
+<rect x="360" y="84" width="14" height="14" fill="#b65f43"/><text x="380" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#3c4043">M36 final</text>
+<text x="34" y="120" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">startup</text>
+<rect x="190" y="102" width="635" height="16" rx="3" fill="#2f6f73"/>
+<text x="833" y="115" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">818.7 MB</text>
+<rect x="190" y="125" width="573" height="16" rx="3" fill="#b65f43"/>
+<text x="771" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">738.8 MB</text>
+<line x1="190" x2="830" y1="149" y2="149" stroke="#e4e1dc"/>
+<text x="34" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">session</text>
+<rect x="190" y="160" width="625" height="16" rx="3" fill="#2f6f73"/>
+<text x="823" y="173" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">806.7 MB</text>
+<rect x="190" y="183" width="563" height="16" rx="3" fill="#b65f43"/>
+<text x="761" y="196" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">726.6 MB</text>
+<line x1="190" x2="830" y1="207" y2="207" stroke="#e4e1dc"/>
+<text x="34" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">hai</text>
+<rect x="190" y="218" width="638" height="16" rx="3" fill="#2f6f73"/>
+<text x="836" y="231" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">822.9 MB</text>
+<rect x="190" y="241" width="575" height="16" rx="3" fill="#b65f43"/>
+<text x="773" y="254" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">741.5 MB</text>
+<line x1="190" x2="830" y1="265" y2="265" stroke="#e4e1dc"/>
+<text x="34" y="294" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">ngohaig</text>
+<rect x="190" y="276" width="638" height="16" rx="3" fill="#2f6f73"/>
+<text x="836" y="289" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">823.2 MB</text>
+<rect x="190" y="299" width="575" height="16" rx="3" fill="#b65f43"/>
+<text x="773" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">741.5 MB</text>
+<line x1="190" x2="830" y1="323" y2="323" stroke="#e4e1dc"/>
+<text x="34" y="352" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">loengjathau</text>
+<rect x="190" y="334" width="639" height="16" rx="3" fill="#2f6f73"/>
+<text x="837" y="347" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">823.7 MB</text>
+<rect x="190" y="357" width="575" height="16" rx="3" fill="#b65f43"/>
+<text x="773" y="370" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">741.5 MB</text>
+<line x1="190" x2="830" y1="381" y2="381" stroke="#e4e1dc"/>
+<text x="34" y="410" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">jigaajiusihaa</text>
+<rect x="190" y="392" width="640" height="16" rx="3" fill="#2f6f73"/>
+<text x="838" y="405" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">824.8 MB</text>
+<rect x="190" y="415" width="575" height="16" rx="3" fill="#b65f43"/>
+<text x="773" y="428" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">741.5 MB</text>
+<line x1="190" x2="830" y1="439" y2="439" stroke="#e4e1dc"/>
+</svg>

@@ -1,0 +1,10 @@
+﻿date_utc=2026-06-24T07:19:59.5157815Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=99fc6d6739214193e720f68350ab805243249e14
+yune_git_status_short= M crates/yune-rime-api/Cargo.toml | ?? crates/yune-rime-api/benches/native_inprocess_benchmark.rs | ?? docs/reports/evidence/m36-product-path/ | ?? scripts/benchmark-native-rime-inprocess.ps1
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-0-native-inprocess-smoke
+managed_runtime=false
+iterations=1
+session_iterations=1
+key_iterations=1

@@ -1,0 +1,6 @@
+engine,track,schema_id,workload,input,samples,operations,median_us,p95_us,p99_us,max_us,median_working_set_bytes,max_peak_working_set_bytes
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,1,3,11.633,11.633,11.633,11.633,11948032,14139392
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,1,2,18.050,18.050,18.050,18.050,11776000,13930496
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,1,8,186.525,186.525,186.525,186.525,12955648,14196736
+librime-1.17.0,track-a-comparison,luna_pinyin,session_create_select_destroy,,1,1,27935.600,27935.600,27935.600,27935.600,10735616,13881344
+librime-1.17.0,track-a-comparison,luna_pinyin,startup_warm_shared_assets_runtime_ready,,1,1,45379.200,45379.200,45379.200,45379.200,11104256,12177408

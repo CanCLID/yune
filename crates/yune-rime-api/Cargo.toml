@@ -73,3 +73,7 @@ zero_sized_map_values = "allow"
 [[bench]]
 name = "frontend_baselines"
 harness = false
+
+[[bench]]
+name = "native_inprocess_benchmark"
+harness = false

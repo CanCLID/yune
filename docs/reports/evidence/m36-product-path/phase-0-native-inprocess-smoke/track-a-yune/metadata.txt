@@ -1,0 +1,12 @@
+engine=yune
+track=track-a-comparison
+schema=luna_pinyin
+dll=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-0-native-inprocess-smoke\track-a-yune\rime.dll
+shared=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-0-native-inprocess-smoke\track-a-yune\shared
+user=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-0-native-inprocess-smoke\track-a-yune\user
+build=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\m36-native-inprocess\phase-0-native-inprocess-smoke\track-a-yune\user\build
+inputs=ni,hao,zhongguo
+iterations=1
+session_iterations=1
+key_iterations=1
+managed_runtime=false

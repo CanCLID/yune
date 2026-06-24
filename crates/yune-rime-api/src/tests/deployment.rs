@@ -2152,6 +2152,58 @@ schema:\n  schema_id: jyut\n  name: Jyut\nengine:\n  translators:\n    - table_t
 }
 
 #[test]
+fn workspace_update_writes_configured_translator_prism_stem() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("workspace-translator-prism-stem");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::write(
+        shared.join("default.yaml"),
+        "config_version: '1.0'\nschema_list:\n  - schema: jyut_mobile\n",
+    )
+    .expect("default config should be written");
+    fs::write(
+        shared.join("jyut_mobile.schema.yaml"),
+        "\
+schema:\n  schema_id: jyut_mobile\n  name: Jyut Mobile\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: jyut\n  prism: jyut_mobile\n",
+    )
+    .expect("schema should be written");
+    fs::write(
+        shared.join("jyut.dict.yaml"),
+        "\
+---\nname: jyut\nversion: '1'\nsort: by_weight\n...\n\nhai\t係\t1\n",
+    )
+    .expect("dictionary should be written");
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let workspace_task =
+        CString::new("workspace_update:jyut_mobile").expect("task should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+
+    let build = user.join("build");
+    assert!(build.join("jyut.table.bin").is_file());
+    assert!(build.join("jyut.reverse.bin").is_file());
+    assert!(build.join("jyut_mobile.prism.bin").is_file());
+    assert!(
+        !build.join("jyut.prism.bin").exists(),
+        "deployment should not write the mobile prism under the dictionary stem"
+    );
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn workspace_update_rebuilds_after_pack_changes_and_honors_force_flags() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

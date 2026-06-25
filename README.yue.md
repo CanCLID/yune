@@ -48,7 +48,8 @@ Yune 讀嘅字典同設定檔，同 [RIME](https://rime.im) 係一樣嘅——RI
 - TypeDuck profile 行為：經 `rime_get_typeduck_profile_api()` 曝露 fork-only ABI
   接口、豐富粵拼字典註釋，同埋 TypeDuck-Web/Windows 兼容性證據。
 - 瀏覽器 runtime：`@yune-ime/yune-web-runtime`、`yune-web` Vite app、多 schema
-  瀏覽器測試框架、公開 demo、Playwright 證據。
+  瀏覽器測試框架（jyut6ping3、cangjie5、luna_pinyin 等）、UI 語言切換、輸出標準
+  選擇、公開 demo、Playwright 證據。
 - AI 基礎：provider trait、本地/mock provider、staged AI rows、私隱政策、獨立 AI
   記憶體、瀏覽器端預設關閉。
 

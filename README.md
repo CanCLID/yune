@@ -53,7 +53,9 @@ dictionaries that the community has built over the years.
   `rime_get_typeduck_profile_api()`, rich Cantonese dictionary comments, and
   TypeDuck-Web/Windows compatibility evidence.
 - Browser runtime: `@yune-ime/yune-web-runtime`, the `yune-web` Vite app,
-  multi-schema browser harness, public demo, and Playwright evidence.
+  multi-schema browser harness (jyut6ping3, cangjie5, luna_pinyin, and more),
+  UI language switching, output standard selection, public demo, and Playwright
+  evidence.
 - AI foundation: provider trait, local/mock providers, staged AI rows, privacy
   policy, separate AI memory, and default-off browser exposure.
 

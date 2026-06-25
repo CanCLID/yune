@@ -1,14 +1,14 @@
-# M37 Engine Hyper-Optimization Plan
+﻿# M37 Engine Hyper-Optimization Plan
 
 > **Status:** Planned - **Milestone:** M37 (engine hyper-optimization) - **Created:** 2026-06-24 - **Type:** engine-performance plan
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the post-M36 engine path meaningfully closer to librime by landing a working native mmap-backed `rsmarisa` table path and fixing candidate materialization/context export for the TypeDuck product path, with `hai` as the first residual row to explain and move.
+**Goal:** Make the post-M36 engine path meaningfully closer to librime by landing byte-backed or interned product storage, fixing candidate materialization/context export for the TypeDuck product path, and treating `hai` as the first residual row to explain and move. `rsmarisa` is the strongly preferred storage route, not the milestone's only acceptable implementation mechanism.
 
-**Architecture:** M37 is not another narrow storage no-go milestone. It has three hard closeout gates: (1) `rsmarisa` must be integrated into the real product compiled-table path, (2) native product tables must use an mmap-backed `rsmarisa` loading mode with evidence, and (3) the candidate materialization/context path must become page-bounded for the measured TypeDuck product rows instead of eagerly materializing and cloning the whole candidate list. The implementation remains oracle-driven and ABI-stable: default `RimeApi`/`RimeCandidate` layouts do not change, TypeDuck profile behavior stays byte-identical, and full-list readers keep an explicit eager expansion path when they truly need one.
+**Architecture:** M37 is not another narrow storage no-go milestone. It has four hard closeout gates: (1) the product table path must use byte-backed or interned storage with no `SourceFallback`, no M36-style owned no-marisa fallback, no parallel heap mirror, and measured memory movement; (2) the native product path must prove mmap/file-backed loading for the selected hot storage bytes, with `mapping_mode=mmap` when the selected route uses `rsmarisa`; (3) the candidate materialization/context path must become page-bounded for the measured TypeDuck product rows instead of eagerly materializing and cloning the whole candidate list; and (4) `hai` must be explained and materially moved. The implementation remains oracle-driven and ABI-stable: default `RimeApi`/`RimeCandidate` layouts do not change, TypeDuck profile behavior stays byte-identical, and full-list readers keep an explicit eager expansion path when they truly need one.
 
-**Tech Stack:** Rust (`yune-core`, `yune-rime-api`), `rsmarisa`, `StaticTableTranslator`, `TableLookup`, `CompactTableStore`, `Engine`, `CandidateRequest`/`TranslationResult`, `RimeGetContext`, `schema_install`, `table_writer`, `compiled_table`, `compiled_prism`, `native_inprocess_benchmark`, upstream `luna_pinyin` fixtures, TypeDuck `jyut6ping3` fixtures, and TypeDuck-Web runtime/browser gates only when runtime-visible files change.
+**Tech Stack:** Rust (`yune-core`, `yune-rime-api`), `rsmarisa` where it works, native mmap/file-backed loading, byte-backed/interned re-emitted storage where it is the safer outcome, `StaticTableTranslator`, `TableLookup`, `CompactTableStore`, `Engine`, `CandidateRequest`/`TranslationResult`, `RimeGetContext`, `schema_install`, `table_writer`, `compiled_table`, `compiled_prism`, `native_inprocess_benchmark`, working-set and heap attribution evidence, upstream `luna_pinyin` fixtures, TypeDuck `jyut6ping3` fixtures, and TypeDuck-Web runtime/browser gates only when runtime-visible files change.
 
 ---
 
@@ -16,27 +16,31 @@
 
 M33-M36 removed real costs, but the M36 diagnosis still leaves two unacceptable gaps for a hyper-optimized engine:
 
-- **`rsmarisa` is not landed, and native mmap is still unproven.** M36 proved that the shipped TypeDuck product blobs use a marisa string table, then closed `rsmarisa` by no-go for that milestone and shipped a no-marisa Yune-readable re-emitted fallback. That was a useful product unblock, but it is not the final data path. M37 must make `rsmarisa` work on real TypeDuck product table data and must prove the native path loads the marisa payload through mmap mode. This does not assume `rsmarisa` or mmap is the top `hai` latency owner; it makes the final storage shape non-negotiable.
+- **The product storage outcome is still not librime-shaped.** M36 proved that the shipped TypeDuck product blobs use a marisa string table, then closed `rsmarisa` by no-go for that milestone and shipped a no-marisa Yune-readable re-emitted fallback. That was a useful product unblock, but it is not the final data path. M37 should make `rsmarisa` work on real TypeDuck product table data first; if the external crate or its platform story blocks safe native/WASM use, M37 must still land the same storage outcome through a reviewed byte-backed or interned re-emit path. This does not assume storage is the top `hai` latency owner.
+- **Native mmap is still not enforced as a closeout result.** A byte-backed table that is immediately copied into owned heap state would repeat the M35/M36 memory pattern. M37 must make native product storage use mmap/file-backed bytes for the hot query path, or keep working on a patch, fork, owner-backed adapter, or native mapped fallback until it does.
 - **Candidate materialization is still eager for the product.** The final M36 `hai` row is the clearest clue: it is the shortest product input, barely improved (`-29.2%`), and remains about `3x` slower than the other final TypeDuck rows. That points to completion/homophone explosion, full-list sort/filter/userdb merge, owned candidate construction, context snapshot clone, and ABI C-string export, not long-sentence DP.
+- **Memory is still too weakly explained.** M36 moved product peak memory from about `1000.4 MB` to `885.3 MB`, but it did not produce the owner-level memory table needed to tell whether table storage, candidates/context, userdb, reverse lookup, ABI buffers, or allocator high-water is now dominant. M37 cannot close by moving latency while leaving the memory gap unattributed.
 
-M37 therefore turns the M36 follow-up strategy into a closeable implementation milestone. It starts with attribution, but attribution alone cannot close it. The milestone remains open until `rsmarisa` is active, native product rows prove mmap-mode marisa loading, and the measured product key rows prove page-bounded materialization.
+M37 therefore turns the M36 follow-up strategy into a closeable implementation milestone. It starts with attribution, but attribution alone cannot close it. The milestone remains open until byte-backed or interned product storage is active, native mmap/file-backed loading is proven, product memory moves with owner evidence, and the measured product key rows prove page-bounded materialization.
 
 Sequencing rule: the hard gates are not a ranking. Phase 0 decides the
 implementation order. If `hai` is dominated by context export or candidate
 materialization, execute Task 2/Task 3 before broad storage work while keeping
-Task 1 open as a non-waivable storage/data-path closeout gate.
+Task 1 open as a non-waivable storage/data-path closeout gate. If memory
+attribution names storage or candidate/context ownership as the largest product
+memory owner, that owner must be fixed before M37 closes.
 
 ## Scope
 
 In scope:
 
 - Fresh M37 baseline and per-owner attribution for Track A (`luna_pinyin` Yune vs librime) and Track B (`jyut6ping3_mobile` Yune before/after), starting with Track B `hai`.
-- A real native mmap-backed `rsmarisa` product table path for TypeDuck `jyut6ping3` and `jyut6ping3_scolar`.
+- A byte-backed or interned product table path for TypeDuck `jyut6ping3` and `jyut6ping3_scolar`, with `rsmarisa` as the first route to try.
 - Reading real marisa string-table payloads from actual TypeDuck product `.table.bin` files.
-- Emitting or rebuilding fresh product table artifacts that use `rsmarisa` for the string table while still carrying every Yune/TypeDuck payload needed for rich comments, lookup records, correction/tolerance, and source checksum freshness.
-- Native `rsmarisa::Trie::mmap()` product-path loading with evidence. If upstream `rsmarisa`, the current file layout, or lifetime ownership blocks direct mmap, M37 continues with a reviewed local patch, fork, or owner-backed mmap adapter; it does not close by no-go.
-- Browser/WASM byte-backed loading using `Trie::map()` or an owned safe adapter if `map()`'s static-lifetime API is insufficient. Browser/WASM does not require OS mmap, but it must not force the native path back to owned no-marisa storage.
+- Emitting or rebuilding fresh product table artifacts that use `rsmarisa` for the string table where safe, or a reviewed interned/byte-backed Yune product table where `rsmarisa` cannot safely satisfy native/WASM/runtime ownership constraints. Either path must still carry every Yune/TypeDuck payload needed for rich comments, lookup records, correction/tolerance, and source checksum freshness.
+- Native mmap/file-backed loading for the selected hot product storage path. For the preferred `rsmarisa` route this means `Trie::mmap()` or a reviewed owner-backed mmap adapter reporting `mapping_mode=mmap`; for an interned/byte-backed fallback this means the native query path borrows from mapped deployed bytes instead of rebuilding an owned heap table. Browser/WASM uses `Trie::map()` or the safest byte-backed equivalent because OS mmap is not available there.
 - Removing full-list candidate materialization from page-only product reads: translator output, engine merge/sort/filter/userdb/ranker work, context snapshot, and ABI export must be bounded to the visible page plus measured surplus where semantics allow it.
+- Owner-level memory attribution and measured memory movement, not just latency movement.
 - Eager fallback for behaviors that truly require full-list semantics, but not for the default measured product `hai`, `ngohaig`, `loengjathau`, and `jigaajiusihaa` rows.
 - Conservative report updates that keep Track A, Track B, native, browser, latency, and memory claims separate.
 
@@ -51,29 +55,30 @@ Out of scope:
 
 ## Non-Negotiable Closeout Gates
 
-- `M37-ENGINE-01` (attribution): The Phase 0 evidence must split Track B `hai` across process-key, translator lookup, completion enumeration, candidate materialization, global sort/top-K, filters, userdb merge, context snapshot, ABI allocation/free, and working-set owners. If `hai` is not explained, implementation continues.
-- `M37-ENGINE-02` (`rsmarisa` hard gate): `rsmarisa` must be a real dependency or a reviewed in-repo patched/forked equivalent, selected by the product table path, and proven against actual `jyut6ping3` and `jyut6ping3_scolar` table data. A second "measured no-go" for `rsmarisa` does not close M37.
-- `M37-ENGINE-03` (fresh product compiled path): The final product status must show fresh table/prism/reverse artifacts, no `SourceFallback`, and a table parse/status that proves the `rsmarisa` path is active rather than silently using the M36 no-marisa fallback.
-- `M37-ENGINE-10` (native mmap hard gate): The final native product path must report mmap-mode `rsmarisa` loading for the marisa string-table payload. If direct `Trie::mmap()` cannot own the required lifetime or file slice safely, M37 must land a reviewed local patch/fork or owner-backed mmap adapter before closeout. A native owned-buffer, no-marisa, or "mmap no-go" result keeps M37 open.
+- `M37-ENGINE-01` (latency and memory attribution): The Phase 0 evidence must split Track B `hai` across process-key, translator lookup, completion enumeration, candidate materialization, global sort/top-K, filters, userdb merge, context snapshot, ABI allocation/free, and working-set owners. It must also produce a product memory-owner table covering table bytes, parsed storage, candidates/context, userdb, reverse lookup, ABI buffers, and allocator high-water. If `hai` or product memory is not explained, implementation continues.
+- `M37-ENGINE-02` (byte-backed/interned storage hard gate): The final product storage path must be byte-backed, mapped, or interned enough to remove the M36-style owned no-marisa heap mirror and move memory. `rsmarisa` is the preferred implementation and must be tried against actual `jyut6ping3` and `jyut6ping3_scolar` table data; if a verified crate/platform blocker prevents safe use, a reviewed interned/byte-backed re-emit or owner-backed adapter can satisfy the gate only if it meets the same no-`SourceFallback`, no-heap-mirror, byte-parity, and memory-movement evidence.
+- `M37-ENGINE-03` (fresh product compiled path): The final product status must show fresh table/prism/reverse artifacts, no `SourceFallback`, and a table parse/status that proves the selected byte-backed or interned product path is active rather than silently using the M36 no-marisa owned fallback.
 - `M37-ENGINE-04` (candidate materialization hard gate): For the default Track B product rows, instrumentation must prove Yune materializes only the current page plus bounded surplus during ordinary `RimeProcessKey` + `RimeGetContext` reads. Full-list materialization is allowed only when an explicit full-list API, paging beyond the retained window, debug inspection, or a proven full-list-only feature asks for it.
 - `M37-ENGINE-05` (context export): `RimeGetContext` must no longer require `Engine::snapshot()` to clone the full candidate list for page-only reads. It should read a page snapshot or page view and allocate C strings only for the exported page.
 - `M37-ENGINE-06` (behavior): `upstream_luna_pinyin_parity`, `cantonese_parity`, `typeduck_web`, M28 long-composition/default-confirm coverage, paging, deletion, numbered selection, click selection, userdb learning, correction, prediction, and rich dictionary comments remain byte-identical for their target fixtures.
 - `M37-ENGINE-07` (measured product movement): Track B `hai` must move materially from the M36 final `15,241.000 us` median and may not remain the unexplained worst row by about `3x`. If the first materialization fix does not move it, continue with the next measured owner before closing.
-- `M37-ENGINE-08` (honest public claims): Native wins are not browser wins without rebuilt release WASM and real browser evidence. Track A ratios remain comparison caveats unless they independently improve.
-- `M37-ENGINE-09` (quality gates): `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, focused upstream and TypeDuck parity tests, `cargo test --workspace`, final native benchmarks, report/docs checks, and `git diff --check` pass. Runtime/browser/patch gates run when runtime-visible files change.
+- `M37-ENGINE-08` (memory movement): Track B product median working set and peak working set must move materially from the M36 final `~741.5 MB` median row / `885.3 MB` peak baseline, and Track A working-set attribution must be refreshed. If memory does not move, M37 stays open to the named memory owner unless the maintainer explicitly splits a follow-up milestone before closeout.
+- `M37-ENGINE-09` (native mmap hard gate): The final native product path must report mmap/file-backed loading for the selected hot storage bytes. If `rsmarisa` is selected, native evidence must report `mapping_mode=mmap` for the marisa string-table payload. If direct `Trie::mmap()` cannot safely own the required file slice or lifetime, M37 lands a reviewed local patch, fork, or owner-backed mmap adapter before closeout; an owned-buffer, no-marisa, or mmap-no-go result keeps M37 open.
+- `M37-ENGINE-10` (honest public claims): Native wins are not browser wins without rebuilt release WASM and real browser evidence. Track A ratios remain comparison caveats unless they independently improve.
+- `M37-ENGINE-11` (quality gates): `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, focused upstream and TypeDuck parity tests, `cargo test --workspace`, final native benchmarks, report/docs checks, and `git diff --check` pass. Runtime/browser/patch gates run when runtime-visible files change.
 
 ## File Responsibilities
 
-- `Cargo.toml`, `Cargo.lock`, and crate manifests: own the `rsmarisa` dependency choice, version pin, feature flags, license note, MSRV check, and any local patch/fork override.
-- `crates/yune-core/src/dictionary/compiled_table.rs`: owns marisa string-table detection, mmap-backed `rsmarisa` parsing, string-id resolution, compact entry construction, structured parse errors, and status labels.
-- `crates/yune-core/src/dictionary/table_writer.rs`: owns writing fresh product tables, including the final rsmarisa-backed table form.
+- `Cargo.toml`, `Cargo.lock`, and crate manifests: own the `rsmarisa` dependency choice, version pin, feature flags, license note, MSRV check, any local patch/fork override, and any fallback storage crate choices.
+- `crates/yune-core/src/dictionary/compiled_table.rs`: owns marisa string-table detection, `rsmarisa` parsing where selected, interned/byte-backed string-id resolution, compact entry construction, structured parse errors, and status labels.
+- `crates/yune-core/src/dictionary/table_writer.rs`: owns writing fresh product tables, including the final rsmarisa-backed or interned/byte-backed table form.
 - `crates/yune-core/src/dictionary/query_table.rs`: owns lookup candidate views and any new page-oriented or string-id-backed candidate view contracts.
 - `crates/yune-core/src/translator/mod.rs`: owns `StaticTableTranslator` storage selection, bounded/eager decision logic, `TableStorage` iterator shape, rich comment formatting, correction/tolerance lookup, prefix fallback, sentence/completion interplay, and materialization.
 - `crates/yune-core/src/engine.rs`: owns refresh, bounded request selection, sort/top-K, filter/ranker/userdb/AI merge behavior, candidate window state, full-list expansion, selection, commit, and learning.
 - `crates/yune-core/src/state.rs`: owns public engine candidate/context/snapshot structs. Any new page snapshot type must remain internal or behavior-compatible.
 - `crates/yune-rime-api/src/context_api.rs`: owns `RimeGetContext` page export and C-string allocation/free behavior.
 - `crates/yune-rime-api/src/schema_install.rs`: owns deployed artifact selection, product path activation, runtime fallback prevention, and profile guardrails.
-- `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`: owns Track A/Track B benchmark rows, product path status, mmap-mode status, and new per-owner instrumentation output.
+- `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`: owns Track A/Track B benchmark rows, product path status, mmap/mapping-mode status, memory rows, and new per-owner instrumentation output.
 - `docs/reports/evidence/m37-engine-hyper-optimization/`: owns all M37 evidence.
 - `docs/reports/yune-vs-librime-performance.md`, `docs/reports/yune-vs-librime-root-cause-analysis.md`, `docs/roadmap.md`, and `docs/requirements.md`: own public claims and closeout status.
 
@@ -89,6 +94,7 @@ Out of scope:
 - Modify: `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/phase-0-baseline/`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/phase-0-baseline/hai-attribution.md`
+- Create: `docs/reports/evidence/m37-engine-hyper-optimization/phase-0-baseline/memory-attribution.md`
 
 - [ ] **Step 0.1: Confirm repo state**
 
@@ -155,11 +161,39 @@ Expected:
 - The baseline proves whether `hai` creates a large completion/homophone set even though it is only three keys.
 - The final M37 run can prove materialization reduction with counts, not only latency.
 
-## Task 1 - Land `rsmarisa` For The Real Product Table Path
+- [ ] **Step 0.5: Add memory attribution**
+
+Produce an owner table for the M37 baseline. Use the native harness working-set
+and peak rows plus a heap profiler where available. If a profiler such as
+`dhat`, massif, or an equivalent platform tool cannot run in the current
+environment, record the blocker and use the best available owner-level fallback
+instead of skipping memory attribution.
+
+The owner table must separate:
+
+- mapped/file bytes
+- parsed table/prism/reverse storage
+- candidate/context storage
+- userdb and learning state
+- sentence model and reverse lookup state
+- ABI buffers and C-string allocations
+- allocator high-water and fragmentation
+
+Expected:
+
+- `memory-attribution.md` names the top Track B product memory owners and the
+  Track A working-set owners that keep Yune `12-14x` above librime.
+- Task 1 and Task 2/3 ordering accounts for both `hai` latency and memory owner
+  ranking.
+
+## Task 1 - Land Byte-Backed Or Interned Product Storage
 
 Task numbering is not a command to optimize storage before the measured top
 owner. After Task 0, run this task before or after Task 2/Task 3 according to
-the `hai` attribution. It remains a hard M37 closeout gate either way.
+the `hai` attribution and memory attribution. It remains a hard M37 closeout
+gate either way. `rsmarisa` is the first route to try; the storage closeout
+condition is the storage outcome, not the external crate name. Native mmap or
+file-backed loading is a separate hard gate for the selected native route.
 
 **Files:**
 
@@ -174,6 +208,7 @@ the `hai` attribution. It remains a hard M37 closeout gate either way.
 - Test: `crates/yune-core/src/tests/facade_tests/compiled_payloads.rs`
 - Test: `crates/yune-core/src/tests/dictionary.rs`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/rsmarisa-path.md`
+- Create: `docs/reports/evidence/m37-engine-hyper-optimization/storage-path.md`
 
 - [ ] **Step 1.1: Pin and verify `rsmarisa`**
 
@@ -181,8 +216,8 @@ Check the current `rsmarisa` crate, then pin a version that satisfies the repo's
 
 Expected:
 
-- `rsmarisa-path.md` records crate version, license, MSRV result, feature flags, Windows/native result, and WASM result.
-- If upstream `rsmarisa` has a bug or lifetime blocker, M37 continues by using a reviewed local patch/fork or small owner-backed mmap adapter. Do not close M37 by declaring `rsmarisa` or mmap no-go.
+- `rsmarisa-path.md` records crate version, license, MSRV result, feature flags, Windows/native result, WASM result, real product blob result, and whether `rsmarisa` can safely own or borrow runtime-loaded bytes.
+- If upstream `rsmarisa` has a crate, lifetime, nested/multi-trie, or WASM blocker, M37 records the exact blocker and continues with either a reviewed local patch/fork, a small owner-backed adapter, or the interned/byte-backed re-emit path below. Do not close M37 by declaring `rsmarisa` no-go.
 
 - [ ] **Step 1.2: Add a marisa string-table adapter**
 
@@ -214,17 +249,45 @@ Expected:
 - New tests prove the real product table can parse candidate text through `rsmarisa`.
 - Unsupported multi-level index, advanced payload, correction/tolerance, and lookup-record gaps remain structured errors unless the selected fresh product build supplies those payloads separately.
 
-- [ ] **Step 1.4: Emit fresh rsmarisa-backed product tables**
+- [ ] **Step 1.4: Select the storage route**
 
-Update the table writer or product deploy path so `workspace_update:<schema>` can create fresh product tables whose string table is rsmarisa-backed and whose checksum matches source. Preserve the M36 lesson: the final passing path must be a coherent table/prism/reverse set, not an isolated table shortcut.
+After Step 1.1-Step 1.3, make an explicit storage-route decision in
+`storage-path.md`.
+
+Preferred route:
+
+- real product marisa string tables parse safely through `rsmarisa`
+- runtime product loads can use `rsmarisa` without leaking buffers or relying on
+  invalid lifetimes
+- native and WASM ownership/mapping are both described
+
+Fallback route, only after a verified preferred-route blocker:
+
+- emit a Yune-owned product table format that stores text/code/comment payloads
+  as offsets, ids, or interned arena entries
+- avoid rebuilding the M36 owned `String` heap mirror
+- keep source checksum freshness, TypeDuck rich comments, lookup records,
+  correction/tolerance, and prism/reverse compatibility intact
 
 Expected:
 
-- Fresh `jyut6ping3.table.bin` and `jyut6ping3_scolar.table.bin` have nonzero marisa string-table fields.
-- `product_path_status.csv` reports fresh checksum, table parse through `rsmarisa`, native `mapping_mode=mmap`, prism parse ok, reverse parse ok, and `compiled_ready=true`.
-- Final runtime path does not use source-YAML fallback or the M36 no-marisa final fallback.
+- `storage-path.md` records the selected route and why it satisfies the same
+  storage outcome.
+- A crate-level or WASM-level `rsmarisa` blocker does not strand M37 if the
+  interned/byte-backed route satisfies the storage outcome gate and the native
+  mmap/file-backed gate.
 
-- [ ] **Step 1.5: Prove behavior byte parity**
+- [ ] **Step 1.5: Emit fresh storage-backed product tables**
+
+Update the table writer or product deploy path so `workspace_update:<schema>` can create fresh product tables whose text storage follows the selected route and whose checksum matches source. Preserve the M36 lesson: the final passing path must be a coherent table/prism/reverse set, not an isolated table shortcut.
+
+Expected:
+
+- Fresh `jyut6ping3.table.bin` and `jyut6ping3_scolar.table.bin` use the selected byte-backed/interned storage route. For the preferred route, they have nonzero marisa string-table fields.
+- `product_path_status.csv` reports fresh checksum, selected storage route, native mapping mode, table parse ok, prism parse ok, reverse parse ok, and `compiled_ready=true`.
+- Final runtime path does not use source-YAML fallback or the M36 owned no-marisa final fallback.
+
+- [ ] **Step 1.6: Prove behavior byte parity**
 
 Run focused gates:
 
@@ -237,7 +300,20 @@ cargo test -p yune-core compiled_payloads -- --nocapture
 Expected:
 
 - TypeDuck rich comments, lookup records, correction/tolerance, long composition, partial selection, default-confirm recomposition, and userdb learning stay byte-identical.
-- `rsmarisa-path.md` records mmap-mode evidence and any crate patch/fork/adapter with why it remains safe.
+- `storage-path.md` records any crate patch/fork/fallback and why it remains safe.
+
+- [ ] **Step 1.7: Prove storage memory movement**
+
+Rerun the native memory rows and the memory-attribution table after storage
+changes, even if latency work has not started.
+
+Expected:
+
+- Track B product median and peak working-set rows move in the expected
+  direction beyond benchmark noise, or the evidence names the next memory owner
+  and M37 continues.
+- The selected product table path does not retain a parallel owned heap mirror
+  of table strings/candidates.
 
 ## Task 2 - Remove Full Snapshot Cloning From Page-Only Context Reads
 
@@ -416,7 +492,7 @@ git diff --check
 Expected:
 
 - All gates pass or any missing external/browser gate is explicitly justified.
-- Final evidence includes rsmarisa status, native mmap-mode status, materialization counters, Track A comparison rows, Track B before/after rows, memory rows, and `hai` attribution before/after.
+- Final evidence includes selected storage route, `rsmarisa` outcome if tried, native mmap/mapping-mode status, materialization counters, Track A comparison rows, Track B before/after rows, memory-owner tables, memory movement rows, and `hai` attribution before/after.
 
 - [ ] **Step 5.2: Run runtime/browser gates if runtime-visible files changed**
 
@@ -431,10 +507,13 @@ Expected:
 
 Update the performance and root-cause reports with:
 
-- exact `rsmarisa` outcome, native mmap-mode evidence, and active path evidence
+- exact storage-route outcome, including `rsmarisa` result or verified fallback reason
+- exact native mmap/file-backed loading outcome, including `mapping_mode=mmap`
+  when `rsmarisa` is selected
 - exact candidate materialization before/after counters
 - Track B `hai` before/after movement
 - Track B product row before/after medians and working set
+- memory-owner attribution and memory movement versus the M36 final baseline
 - Track A final ratios versus librime
 - native versus browser caveats
 - any full-list-only eager fallback that remains by design
@@ -448,14 +527,16 @@ Expected:
 
 M37 may close only when:
 
-- `rsmarisa` is active on the real product compiled-table path
-- native product rows prove mmap-mode marisa loading, or M37 remains open for a patch/fork/adapter
+- the selected byte-backed or interned product storage path is active on real product table data, with `rsmarisa` active or a documented verified fallback that satisfies the same no-heap-mirror outcome
+- native product rows prove mmap/file-backed loading for the selected hot
+  storage path, with `mapping_mode=mmap` when `rsmarisa` is selected
 - product key rows no longer take the old full-list materialization/context clone path for page reads
 - `hai` is explained and materially moved
+- memory owners are attributed and Track B product memory moves materially from the M36 final baseline, or a maintainer-approved split to M38 is recorded before closeout
 - final evidence and reports are checked in
 - roadmap and requirements statuses match reality
 
-If any hard gate is still open, keep the plan active and continue with the next measured owner. Do not archive M37 as "closed by no-go" for `rsmarisa`, native mmap, or candidate materialization.
+If any hard gate is still open, keep the plan active and continue with the next measured owner. Do not archive M37 as "closed by no-go" for `rsmarisa`, storage outcome, native mmap/file-backed loading, candidate materialization, context export, or memory attribution/movement.
 
 ## Execution Handoff
 

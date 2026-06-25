@@ -110,7 +110,7 @@ flowchart LR
     context --> snapshot["RimeGetContext snapshot<br/>full context clone today<br/>frontends read one visible page"]
     snapshot --> abi["ABI page export<br/>C strings for visible page<br/>page-sized output after full snapshot"]
 
-    storage["compiled storage<br/>fresh but owned compact<br/>rsmarisa still missing<br/>Track B peak: 1000.4 -> 885.3 MB"] -. feeds .-> lookup
+    storage["compiled storage<br/>fresh but owned compact<br/>byte-backed route still missing<br/>Track B peak: 1000.4 -> 885.3 MB"] -. feeds .-> lookup
     full_list["whole-list TypeDuck features<br/>correction, prediction, prefix fallback, sentence<br/>block naive truncation"] -. force eager .-> merge
     memory["memory gap<br/>Track A median rows: Yune 158-161 MB<br/>librime 10-13 MB"] -. retained by .-> context
 
@@ -142,7 +142,7 @@ Current evidence-backed bottleneck read:
 | --- | --- | --- | --- |
 | Candidate materialization and context export | Strongly suspected, not yet percentage-attributed | Track B `hai` is the shortest measured input but remains the slowest final key row; `RimeGetContext` currently asks for a full engine snapshot before exporting one page | Count candidates enumerated, owned candidates built, candidates cloned by snapshot, and C strings exported per key |
 | Full-list sort/filter/userdb/ranker work | Strongly suspected for product rows | Outside the narrow `luna_pinyin` bounded gate, `Engine::refresh_candidates` still collects and sorts a full `Vec<Candidate>`, then merges predictive userdb rows and filters/rankers | Split `hai` time across lookup, materialization, sort/top-K, filters, userdb merge, and rankers |
-| `rsmarisa` / byte-backed product storage | Confirmed missing capability | M36 made the product compiled-active by re-emitting no-marisa Yune-readable assets, but the real product marisa string-table path is still not active | Prove `rsmarisa` parses real `jyut6ping3` / `jyut6ping3_scolar` table data and is selected by runtime product loads |
+| Byte-backed or interned product storage | Confirmed missing capability | M36 made the product compiled-active by re-emitting no-marisa Yune-readable assets, but the runtime still has an owned product-storage shape rather than a librime-like mapped/borrowed shape | Prove the selected route is active for real `jyut6ping3` / `jyut6ping3_scolar` product loads: `rsmarisa` where safe, or a verified interned/byte-backed fallback with no heap mirror |
 | Owned compact storage and whole-process memory | Measured remaining gap | Track A working set remains about `12-14x` librime even after compact storage; current stores still own strings and candidate payloads | Attribute working set by table bytes, parsed storage, candidates/context, userdb, reverse lookup, ABI buffers, and allocator high-water |
 | Browser delivery | Not measured by M36 | Native engine changes do not automatically reduce WASM startup, asset fetch, worker serialization, React paint, or Cloudflare cache behavior | M31/M37 browser-specific evidence only after rebuilt release WASM and real browser runs |
 
@@ -160,15 +160,17 @@ Residual-row heat map:
 Target bottleneck shape after M37:
 
 This is an expected post-fix shape, not a post-fix measurement. It separates
-two M37 gates: the expected `hai` latency win comes from page-bounded
-candidate/context export, while `rsmarisa` is a hard storage/data-path gate
-needed to match librime's byte-backed shape. Do not treat `rsmarisa` as the
-measured `hai` owner unless Phase 0 attribution proves it.
+four M37 gates: the expected `hai` latency win comes from page-bounded
+candidate/context export; the storage gate is the outcome of byte-backed or
+interned product storage with measured memory movement; native product storage
+must prove mmap/file-backed loading; and `rsmarisa` is the strongly preferred
+route to that storage outcome, not the only acceptable mechanism. Do not treat
+`rsmarisa` as the measured `hai` owner unless Phase 0 attribution proves it.
 
 ```mermaid
 flowchart LR
     key2["RimeProcessKey + RimeGetContext<br/>Track B hai target:<br/>no longer a 15.241 ms outlier"] --> window2["page-bounded request plan<br/>visible page + bounded surplus<br/>candidate counts recorded"]
-    window2 --> lookup2["lookup over active compiled storage<br/>rsmarisa product table hard gate<br/>compiled_ready=true stays true"]
+    window2 --> lookup2["lookup over active compiled storage<br/>rsmarisa preferred<br/>native mmap/file-backed gate"]
     lookup2 --> topk2["bounded merge / stable top-K<br/>avoid whole-list sort for default product rows"]
     topk2 --> context2["page-shaped context state<br/>retain enough for paging and selection<br/>not full eager Vec by default"]
     context2 --> snapshot2["RimeGetContext page snapshot<br/>clone/export visible page first"]
@@ -177,7 +179,7 @@ flowchart LR
     residual_lookup["residual owner: true lookup/index cost<br/>measured, not assumed"] -. may dominate .-> lookup2
     residual_features["residual owner: full-list-only features<br/>correction, prediction, sentence, learning"] -. opt in to eager .-> topk2
     residual_browser["separate owner: browser delivery<br/>WASM load, worker serialization, paint"] -. separate evidence .-> key2
-    memory2["storage target<br/>rsmarisa/byte-backed views<br/>Track A 158-161 MB gap should shrink"] -. feeds .-> lookup2
+    memory2["memory target<br/>no owned heap mirror<br/>Track B 885.3 MB peak must move"] -. feeds .-> lookup2
 
     classDef fixed fill:#dcfce7,stroke:#15803d,color:#14532d;
     classDef residual fill:#fef3c7,stroke:#b45309,color:#78350f;
@@ -228,7 +230,7 @@ M37 target versus librime:
 
 | Pipeline property | Librime shape | M37 target shape | Match status after M37 |
 | --- | --- | --- | --- |
-| Deployed dictionary storage | `Table` and `Prism` point into read-only mapped deployed files with compact table indexes and a string table. | `rsmarisa`-backed product table plus byte-backed/native-mapped storage where the platform permits it. | Should match the important storage property if `rsmarisa` is active and Yune stops rebuilding owned heap maps. |
+| Deployed dictionary storage | `Table` and `Prism` point into read-only mapped deployed files with compact table indexes and a string table. | `rsmarisa`-backed product table where safe, or an interned/byte-backed re-emitted product table that avoids owned heap mirrors. | Should match the important storage property if Yune directly queries byte-backed/interned storage and stops rebuilding owned heap maps. |
 | Lookup result form | Translators return lazy `Translation` streams; table/userdict rows are advanced by `Peek`/`Next`. | Translator returns a candidate view/window or equivalent stream, not an eagerly owned full `Vec<Candidate>` for page reads. | Should match if Task 3 lands page-bounded materialization. |
 | Completion handling | `LazyTableTranslation` starts with a small lookup limit and expands only when more candidates are requested. | Product completion should enumerate visible page plus bounded surplus, then grow on paging/full-list demand. | Should match for ordinary page reads; full-list-only TypeDuck features stay explicit eager paths. |
 | Merge/filter/menu | `Menu::Prepare(requested)` pulls enough candidates through merged translations and filters for the requested page or index. | Engine merge/sort/filter/userdb/ranker work should be stable top-K/page-window based for the default path. | Should match in shape, even if Yune keeps different Rust internals and TypeDuck-specific filters. |
@@ -240,20 +242,23 @@ schema-scoped deploy rebuilding stale unsupported product marisa blobs into
 fresh Yune-readable no-marisa compiled artifacts. It did not prove that missing
 `rsmarisa` is the current `hai` latency owner. The post-M36 `hai` anomaly points
 more directly at eager completion-set materialization, full-list merge/sort,
-context snapshot, and ABI export. M37 keeps `rsmarisa` as a hard closeout gate
-because matching librime's storage shape still requires real marisa/byte-backed
-product data, but Phase 0 decides whether storage or output owns the next
-latency win.
+context snapshot, and ABI export. M37 should try `rsmarisa` first because it is
+closest to librime's product storage shape, but the non-waivable gate is the
+storage outcome: no `SourceFallback`, no owned no-marisa heap mirror, byte
+parity, and measured memory movement. Phase 0 decides whether storage or output
+owns the next latency win.
 
 Expected M37 before/after interpretation:
 
 | Area | Current measured anchor | Expected M37 state | Closeout proof |
 | --- | --- | --- | --- |
-| Product lookup storage | Phase-0 product blobs failed with unsupported marisa sections; M36 re-emitted fresh Yune-readable no-marisa assets | Real product `marisa string_table` data parses through `rsmarisa`, and runtime product loads select it | Product status rows show fresh checksums, `compiled_ready=true`, and successful marisa parse/selection for `jyut6ping3` and `jyut6ping3_scolar`. |
+| Product lookup storage | Phase-0 product blobs failed with unsupported marisa sections; M36 re-emitted fresh Yune-readable no-marisa assets | Runtime product loads use byte-backed or interned storage, preferably through real product `marisa string_table` data parsed by `rsmarisa` | Product status rows show fresh checksums, `compiled_ready=true`, selected storage route, no `SourceFallback`, no owned heap mirror, and byte-parity for `jyut6ping3` and `jyut6ping3_scolar`. |
+| Native mmap/file-backed loading | M36 final product storage is compiled-active but still owned compact storage | Native product rows query mapped or file-backed storage bytes directly; for `rsmarisa`, final evidence reports `mapping_mode=mmap` | Product status and benchmark evidence show mmap/file-backed loading for the selected native route; owned-buffer, no-marisa, or mmap-no-go results keep M37 open. |
 | Candidate materialization | `hai` remains `15.241 ms` while peers are `3.465-5.065 ms` | Default product key rows materialize only a visible page plus bounded surplus unless a whole-list feature explicitly requires more | Owner spans report candidates enumerated, owned candidates built, clones, exported strings, and elapsed time per key. |
 | Context export | Current `RimeGetContext` path clones a full owned context before exporting one page | Page snapshot/export happens before full-list cloning for default frontend reads | Owner spans show `RimeGetContext` candidate clones and ABI allocations scale with page size, not total completion-set size. |
 | `hai` anomaly | Shortest product row, worst final row, only `-29.2%` after M36 | No longer the unexplained worst row; if still slow, the top owner is named with per-stage counters | M37 closeout includes a dedicated `hai` attribution table before and after fixes. |
-| Residual work | Track A still has `206-348x` short-key latency gaps and `12-14x` median working-set gaps | Remaining hot boxes are true lookup/index cost, full-list-only correctness features, lifecycle work, or browser delivery | Residual owners are measured separately; browser claims require rebuilt release WASM and real browser evidence. |
+| Memory gap | Track B product peak remains `885.3 MB`; Track A median rows remain `12-14x` librime | Product memory owner table exists and memory moves from the M36 final baseline | Final evidence attributes table bytes, parsed storage, candidates/context, userdb, reverse lookup, ABI buffers, and allocator high-water; M37 does not close with memory still unattributed. |
+| Residual work | Track A still has `206-348x` short-key latency gaps and `12-14x` median working-set gaps | Remaining hot boxes are true lookup/index cost, full-list-only correctness features, lifecycle work, memory owners, or browser delivery | Residual owners are measured separately; browser claims require rebuilt release WASM and real browser evidence. |
 
 ### What Is Already Solved
 
@@ -367,6 +372,8 @@ close with either a measured win or a measured no-go.
 - Add memory attribution that separates mapped/file bytes, parsed table storage,
   candidate/context storage, userdb, sentence model, reverse lookup, ABI
   buffers, and allocator high-water.
+- Treat memory as a closeout gate: M37 cannot repeat M36 by moving latency while
+  leaving product memory unattributed or unmoved.
 - Keep Track A (`luna_pinyin` Yune vs librime) and Track B (`jyut6ping3_mobile`
   Yune before/after) separate in every chart and public claim.
 
@@ -398,11 +405,14 @@ and measured improvement on the owner that justified the phase.
   carry ids or offsets, not owned `String` copies.
 - Keep public `Candidate` owned at the boundary, but materialize it only for the
   selected page or for explicit full-list APIs.
-- Revisit native mmap only after the hot query path can actually borrow from the
-  mapped bytes. Mapping bytes and then rebuilding owned heap tables is not a
-  win.
+- Make native mmap/file-backed loading a closeout gate only when the hot query
+  path can actually borrow from the mapped bytes. Mapping bytes and then
+  rebuilding owned heap tables is not a win.
 - Revisit `rsmarisa` only as a complete table/reverse/prism product strategy,
   not as a table-only shortcut that loses byte-identical TypeDuck semantics.
+- If `rsmarisa` is blocked by crate, lifetime, nested/multi-trie, or WASM
+  ownership constraints, use an interned/byte-backed re-emitted product table
+  only if it satisfies the same no-heap-mirror and memory-movement gate.
 
 Exit gate: compact-active schemas must not retain a parallel heap table; memory
 evidence must show dictionary/process working-set movement; deploy/rebuild file
@@ -463,8 +473,10 @@ highest-leverage order is:
    with the Track B `hai` row.
 2. If context export or candidate ownership dominates short keys, make the
    current-page export path page-bounded before changing storage again.
-3. If dictionary storage still dominates memory, build byte-backed Yune-native
-   table/prism storage with offsets/ids and no retained heap mirror.
+3. If dictionary storage still dominates memory, build byte-backed or interned
+   Yune-native table/prism storage with offsets/ids and no retained heap mirror;
+   `rsmarisa` is preferred, the storage outcome is the gate, and native
+   mmap/file-backed loading must be proven for the selected native route.
 4. If TypeDuck long-input or correction rows dominate, add correction/sentence
    indexes before generalizing bounded TypeDuck candidate windows.
 5. Only after native product rows move should M31-style browser delivery work

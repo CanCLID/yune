@@ -40,6 +40,11 @@ Cloudflare project settings:
 - Build output directory: `apps/yune-web/public-demo/dist`
 - Root directory: repository root
 
+GitHub Actions deploys require repository secrets:
+
+- `CLOUDFLARE_ACCOUNT_ID`: Cloudflare account id that owns the `yune-web` Pages project.
+- `CLOUDFLARE_API_TOKEN`: Cloudflare API token with Pages edit access for that account.
+
 No Cloudflare account id, token, or secret belongs in this directory.
 
 M31 deployed the public demo to:

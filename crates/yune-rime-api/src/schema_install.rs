@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs,
+    fmt, fs,
     io::Read,
     os::raw::c_int,
     path::Path,
@@ -8,21 +8,21 @@ use std::{
     time::UNIX_EPOCH,
 };
 
-#[cfg(not(target_arch = "wasm32"))]
-use std::fmt;
-
 use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
     parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
     parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
-    CharsetFilter, CompactMarisaStringTable, CompactTableByteSource, CompactTableStore,
-    DictionaryLookupFilter, EchoTranslator, HistoryTranslator, ReverseLookupFilter,
-    ReverseLookupTranslator, RimePrismBinPayload, RimeTableBinParseError, SchemaListTranslator,
-    SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary,
-    TaggedFilter, Translator, UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
+    CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
+    EchoTranslator, HistoryTranslator, ReverseLookupFilter, ReverseLookupTranslator,
+    RimePrismBinPayload, SchemaListTranslator, SimplifierFilter, SingleCharFilter,
+    StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter, Translator,
+    UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use yune_core::{CompactMarisaStringTable, RimeTableBinParseError};
 
 use crate::{
     config_scalar_bool, config_scalar_double, config_scalar_int, config_scalar_string,

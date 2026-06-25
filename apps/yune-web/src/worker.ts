@@ -317,10 +317,10 @@ let loading = true;
 const RIME_SHARED_DIR = "/usr/share/rime-data";
 const RIME_USER_DIR = "/rime";
 const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3";
-const YUNE_WEB_ASSET_VERSION = "m27-startup-v2";
+const YUNE_WEB_ASSET_VERSION = "m31-opencc-output-v10";
 const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
-const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v2";
+const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v3";
 const YUNE_PUBLIC_DEMO = typeof YUNE_PUBLIC_DEMO_BUILD !== "undefined" && YUNE_PUBLIC_DEMO_BUILD === true;
 const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
   "default.custom.yaml",

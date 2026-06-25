@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language, SCHEMA_OPTIONS } from "./consts";
+import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language, normalizeOutputStandard, SCHEMA_OPTIONS } from "./consts";
 import Rime, { subscribe } from "./rime";
 import { notify } from "./toast";
+import { isUiLanguage } from "./uiText";
 
-import type { ChineseTypefaceId } from "./consts";
+import type { ChineseTypefaceId, OutputStandard } from "./consts";
 import type { Preferences, PreferencesWithSetter, RimeSchemaId } from "./types";
+import type { UiLanguage } from "./uiText";
 import type { Dispatch, DispatchWithoutAction, MouseEvent, SetStateAction, TouchEvent } from "react";
 
 interface LocalStorageSerializer<T> {
@@ -107,6 +109,16 @@ export function usePreferences() {
 						? {
 							stringify: String,
 							parse: value => parseActiveSchema(value, defaultValue as RimeSchemaId),
+						}
+						: key === "outputStandard"
+						? {
+							stringify: String,
+							parse: value => parseOutputStandard(value, defaultValue as OutputStandard),
+						}
+						: key === "uiLanguage"
+						? {
+							stringify: String,
+							parse: value => parseUiLanguage(value, defaultValue as UiLanguage),
 						}
 						: typeof defaultValue === "string"
 						? {
@@ -232,6 +244,14 @@ function parseActiveSchema(value: string, defaultValue: RimeSchemaId): RimeSchem
 		return "jyut6ping3";
 	}
 	return SCHEMA_OPTIONS.some(option => option.id === value) ? value as RimeSchemaId : defaultValue;
+}
+
+function parseOutputStandard(value: string, defaultValue: OutputStandard): OutputStandard {
+	return normalizeOutputStandard(value, defaultValue);
+}
+
+function parseUiLanguage(value: string, defaultValue: UiLanguage): UiLanguage {
+	return isUiLanguage(value) ? value : defaultValue;
 }
 
 function legacyChineseTypefaceDefault(defaultValue: ChineseTypefaceId): ChineseTypefaceId {

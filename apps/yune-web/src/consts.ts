@@ -54,6 +54,93 @@ export const CANDIDATE_MENU_LAYOUT_LABELS: Record<CandidateMenuLayout, string> =
 	vertical: "直排 Vertical",
 };
 
+export type OutputStandard =
+	| "hk_traditional"
+	| "traditional"
+	| "taiwan_traditional"
+	| "simplified";
+
+export interface OutputStandardOption {
+	id: OutputStandard;
+	label: string;
+	shortLabel: string;
+	glyph: string;
+}
+
+export const OUTPUT_STANDARD_OPTIONS: readonly OutputStandardOption[] = [
+	{
+		id: "hk_traditional",
+		label: "香港繁體 Hong Kong Traditional",
+		shortLabel: "繁體 HK",
+		glyph: "繁",
+	},
+	{
+		id: "traditional",
+		label: "繁體中文 Traditional Chinese",
+		shortLabel: "繁體",
+		glyph: "繁",
+	},
+	{
+		id: "taiwan_traditional",
+		label: "台灣正體 Taiwan Traditional",
+		shortLabel: "正體 TW",
+		glyph: "臺",
+	},
+	{
+		id: "simplified",
+		label: "簡體中文 Simplified Chinese",
+		shortLabel: "簡體",
+		glyph: "简",
+	},
+];
+
+export const OUTPUT_STANDARD_BY_ID = Object.fromEntries(
+	OUTPUT_STANDARD_OPTIONS.map(option => [option.id, option]),
+) as Record<OutputStandard, OutputStandardOption>;
+
+export const OUTPUT_STANDARD_ENGINE_OPTIONS = [
+	"output_hk2s",
+	"output_t2s",
+	"output_s2t",
+	"output_t2tw",
+	"output_s2tw",
+	"output_tw2s",
+	"output_tw2t",
+] as const;
+
+export function outputOptionForStandard(outputStandard: OutputStandard, schemaId: RimeSchemaId): typeof OUTPUT_STANDARD_ENGINE_OPTIONS[number] | undefined {
+	switch (outputStandard) {
+		case "hk_traditional":
+			return schemaId === "luna_pinyin" ? "output_s2t" : undefined;
+		case "traditional":
+			return schemaId === "luna_pinyin" ? "output_s2t" : undefined;
+		case "taiwan_traditional":
+			return schemaId === "luna_pinyin" ? "output_s2tw" : "output_t2tw";
+		case "simplified":
+			return "output_hk2s";
+	}
+}
+
+export function normalizeOutputStandard(value: string, defaultValue: OutputStandard): OutputStandard {
+	if (value in OUTPUT_STANDARD_BY_ID) {
+		return value as OutputStandard;
+	}
+	switch (value) {
+		case "hk2s":
+		case "t2s":
+		case "tw2s":
+			return "simplified";
+		case "s2t":
+		case "tw2t":
+			return "traditional";
+		case "t2tw":
+		case "s2tw":
+			return "taiwan_traditional";
+		default:
+			return defaultValue;
+	}
+}
+
 export const CHINESE_TYPEFACE_OPTIONS = [
 	{
 		id: "chiron-hei-hk",
@@ -144,6 +231,7 @@ export const SHOW_ROMANIZATION_LABELS: Record<ShowRomanization, string> = {
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
+	uiLanguage: "yue",
 	displayLanguages: new Set([Language.Eng]),
 	mainLanguage: Language.Eng,
 	pageSize: 6,
@@ -167,7 +255,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	dictionaryExclude: [],
 	isAsciiMode: false,
 	isFullShape: false,
-	isSimplification: false,
+	outputStandard: "hk_traditional",
 	showReverseCode: true,
 	isCangjie5: true,
 };

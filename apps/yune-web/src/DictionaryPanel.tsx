@@ -1,20 +1,22 @@
 import { forwardRef } from "react";
 
 import { LANGUAGE_CODES } from "./consts";
+import { uiText } from "./uiText";
 import { letSome } from "./utils";
 
 import type CandidateInfo from "./CandidateInfo";
 import type { InterfacePreferences } from "./types";
 
 const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs: InterfacePreferences }>(function DictionaryPanel({ info, prefs }, ref) {
+	const text = uiText[prefs.uiLanguage].dictionary;
 	return info.hasDictionaryEntry(prefs) && <div className="dictionary-panel" ref={ref}>
-		<div className="dictionary-panel-kicker">字典詳情 DICTIONARY</div>
+		<div className="dictionary-panel-kicker">{text.kicker}</div>
 		{info.entries.flatMap((entry, index) =>
 			entry.isDictionaryEntry(prefs)
 				? [
 					<div key={index} className="dictionary-entry">
 						{letSome(
-							[entry.honzi, entry.jyutping, entry.pronunciationType],
+							[entry.honzi, entry.jyutping, entry.pronunciationType(prefs)],
 							(honzi, jyutping, pronunciationType) =>
 								<div className="entry-head">
 									{honzi && <span className="dictionary-headword text-[32pt] whitespace-nowrap" data-chinese-typeface={prefs.chineseTypeface}>{honzi}</span>}
@@ -23,7 +25,7 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
 								</div>,
 						)}
 						{letSome(
-							[entry.formattedPartsOfSpeech, entry.formattedRegister, entry.formattedLabels, entry.properties.definition[prefs.mainLanguage]],
+							[entry.formattedPartsOfSpeech(prefs), entry.formattedRegister(prefs), entry.formattedLabels(prefs), entry.properties.definition[prefs.mainLanguage]],
 							(partsOfSpeech, register, labels, mainDefinition) =>
 								<div className="entry-body">
 									{partsOfSpeech?.map((partOfSpeech, i) => <span key={i} className="pos">{partOfSpeech}</span>)}
@@ -33,7 +35,7 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
 								</div>,
 						)}
 						{letSome(
-							[entry.otherData],
+							[entry.otherData(prefs)],
 							otherData =>
 								<table>
 									<tbody>
@@ -52,7 +54,7 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
 							[entry.otherLanguages(prefs)],
 							otherDefinitions =>
 								<table>
-									<caption className="font-medium text-[13pt] pb-1 text-left whitespace-nowrap">More Languages</caption>
+									<caption className="font-medium text-[13pt] pb-1 text-left whitespace-nowrap">{text.moreLanguages}</caption>
 									<tbody>
 										{otherDefinitions?.map(([lang, name, value]) =>
 											<tr key={lang}>

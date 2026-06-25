@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import CandidateInfo from "./CandidateInfo";
 import { ShowRomanization } from "./consts";
 import { useLongPress } from "./hooks";
+import { uiText } from "./uiText";
 
 import type { InterfacePreferences } from "./types";
 import type { MouseEvent } from "react";
@@ -51,10 +52,11 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
 		hideDictionary();
 	}
 	const showJyutping = prefs.showRomanization === ShowRomanization.Always || prefs.showRomanization === ShowRomanization.ReverseOnly && info.isReverseLookup;
-	const labels = info.matchedEntries?.flatMap(entry => entry.formattedLabels ?? []) ?? [];
+	const labels = info.matchedEntries?.flatMap(entry => entry.formattedLabels(prefs) ?? []) ?? [];
 	const firstEntry = info.matchedEntries?.[0] ?? info.entries[0];
 	const sourceBadge = info.isAi && <span className="ai-source" data-ai-source={info.source}>AI</span>;
 	const inlineDefinitions = info.inlineDefinitions(prefs);
+	const text = uiText[prefs.uiLanguage].dictionary;
 	const detailTags = [
 		(!info.isReverseLookup || prefs.showReverseCode) ? info.note : "",
 		...labels.slice(0, 2),
@@ -87,7 +89,7 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
 				<div
 					className={`candidate-text${showJyutping ? " candidate-text-spaced" : ""}`}
 					data-chinese-typeface={prefs.chineseTypeface}>
-					{firstEntry?.honzi || info.text}
+					{info.text}
 				</div>
 			</td>
 			<td className="candidate-note">
@@ -104,7 +106,7 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
 			</td>
 			<td className="candidate-info">
 				{sourceBadge}
-				{info.hasDictionaryEntry(prefs) && <span aria-label="dictionary details">ⓘ</span>}
+				{info.hasDictionaryEntry(prefs) && <span aria-label={text.detailsAria}>ⓘ</span>}
 			</td>
 		</tr>
 	</tbody>;

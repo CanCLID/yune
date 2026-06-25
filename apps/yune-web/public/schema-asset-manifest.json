@@ -1,5 +1,5 @@
 {
-  "version": "m31-yune-web-public-demo-v2",
+  "version": "m31-yune-web-public-demo-v3",
   "generatedFor": "yune-web",
   "sourceRoot": "apps/yune-web/public/schema",
   "assets": [
@@ -40,22 +40,22 @@
     },
     {
       "path": "template.yaml",
-      "sha256": "cc13bd8340953804fae651e5dd7da748aecd7fdf56bea3454a9f9f1ec002f2aa",
-      "bytes": 1814,
+      "sha256": "2ab0231fb9d52e489ac2b7625f96f0f3fb1dcb8a499c95f9e08b1f389c799c22",
+      "bytes": 2428,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3.schema.yaml",
-      "sha256": "578d60ecbb6e1b7856f8e3f4366b97feffc44a8976f017e5ad62f24c20b0027f",
-      "bytes": 2073,
+      "sha256": "a3449ec61316d7d335f74b6e33120ec47026170460e02608a8473579d31e90d4",
+      "bytes": 2786,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_mobile.schema.yaml",
-      "sha256": "bd5de9189accdd04e12c782a286b9a292ed55dcc88da419aa2721f6abdd82a72",
-      "bytes": 1418,
+      "sha256": "e0aca59015edc0b43a8f029a0436053d90a7629237753ffe62b8c7597eda0ce4",
+      "bytes": 2072,
       "tier": "shared",
       "required": true
     },
@@ -82,8 +82,8 @@
     },
     {
       "path": "luna_pinyin.schema.yaml",
-      "sha256": "e4a1503370c7142bec7bb9f812bec264d823dab51f3599706b2ce3d597162f34",
-      "bytes": 1649,
+      "sha256": "bbe5ce430bfbbbf2a6421130296cd8772d65e8d48833986dfc4eef8a016609ee",
+      "bytes": 2570,
       "tier": "shared",
       "required": true
     },
@@ -208,8 +208,8 @@
     },
     {
       "path": "build/jyut6ping3_mobile.schema.yaml",
-      "sha256": "affa20fb589ae27036b1831ffff834fffac4a7e70b516a99faa3b0f77bb2cf93",
-      "bytes": 9423,
+      "sha256": "ad9f999f1f09cfd7b43190c183f78071c6cc4ffc0189e507d5941d343942a078",
+      "bytes": 10031,
       "tier": "explicit",
       "required": true
     },
@@ -243,8 +243,8 @@
     },
     {
       "path": "cangjie5.schema.yaml",
-      "sha256": "ead315d98ff06403d70aafec2e44ba6e4d1f479dfe7e9aa0ed2add0456edcee0",
-      "bytes": 1659,
+      "sha256": "300b294fabbc8906ed5b110cfa1551b07d6a07c49f20705b20134894217e7af6",
+      "bytes": 2399,
       "tier": "shared",
       "required": true
     },

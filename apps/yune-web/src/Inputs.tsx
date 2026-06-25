@@ -95,6 +95,7 @@ export function Radio<T>({ name, label, state, setState, value, description }: R
 			name={name}
 			className="yd-choice"
 			{...NO_AUTO_FILL}
+			value={String(value)}
 			checked={state === value}
 			onChange={() => setState(value)} />
 		<span className="yd-field-copy">
@@ -112,6 +113,7 @@ export function Segment<T>({ name, label, state, setState, value }: RadioProps<T
 			className="sr-only"
 			name={name}
 			{...NO_AUTO_FILL}
+			value={String(value)}
 			checked={state === value}
 			onChange={() => setState(value)} />
 		{label}

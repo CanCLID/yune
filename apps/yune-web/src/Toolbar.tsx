@@ -1,7 +1,11 @@
+import { OUTPUT_STANDARD_BY_ID, OUTPUT_STANDARD_OPTIONS, normalizeOutputStandard } from "./consts";
 import { Segment } from "./Inputs";
 import SchemaSwitcher from "./SchemaSwitcher";
+import { outputStandardText, uiText } from "./uiText";
 
+import type { OutputStandard } from "./consts";
 import type { RimeSchemaId } from "./types";
+import type { UiLanguage } from "./uiText";
 import type { Dispatch, SetStateAction } from "react";
 
 function ModeButton({
@@ -35,65 +39,80 @@ function ModeButton({
 export default function Toolbar({
 	isAsciiMode,
 	setIsAsciiMode,
-	isSimplification,
-	setIsSimplification,
+	outputStandard,
+	setOutputStandard,
 	isFullShape,
 	setIsFullShape,
 	activeSchema,
 	setActiveSchema,
 	isCangjie5,
 	setIsCangjie5,
+	uiLanguage,
 }: {
 	isAsciiMode: boolean;
 	setIsAsciiMode: Dispatch<SetStateAction<boolean>>;
-	isSimplification: boolean;
-	setIsSimplification: Dispatch<SetStateAction<boolean>>;
+	outputStandard: OutputStandard;
+	setOutputStandard: Dispatch<SetStateAction<OutputStandard>>;
 	isFullShape: boolean;
 	setIsFullShape: Dispatch<SetStateAction<boolean>>;
 	activeSchema: RimeSchemaId;
 	setActiveSchema: Dispatch<SetStateAction<RimeSchemaId>>;
 	isCangjie5: boolean;
 	setIsCangjie5: Dispatch<SetStateAction<boolean>>;
+	uiLanguage: UiLanguage;
 }) {
+	const outputStandardValue = normalizeOutputStandard(outputStandard, "hk_traditional");
+	const currentOutputStandard = OUTPUT_STANDARD_BY_ID[outputStandardValue];
+	const text = uiText[uiLanguage].toolbar;
+	const outputText = outputStandardText[uiLanguage][outputStandardValue];
+	function cycleOutputStandard() {
+		setOutputStandard(currentValue => {
+			const normalizedCurrentValue = normalizeOutputStandard(currentValue, "hk_traditional");
+			const currentIndex = OUTPUT_STANDARD_OPTIONS.findIndex(option => option.id === normalizedCurrentValue);
+			return OUTPUT_STANDARD_OPTIONS[(currentIndex + 1) % OUTPUT_STANDARD_OPTIONS.length].id;
+		});
+	}
+
 	return <div className="yd-toolbar" data-yune-top-controls>
 		<SchemaSwitcher
 			activeSchema={activeSchema}
 			setActiveSchema={setActiveSchema}
+			uiLanguage={uiLanguage}
 			compact />
 		<div className="yd-top-field yd-mode-choice" data-yune-control="mode-buttons">
-			<span className="yd-top-label yd-top-label-spacer" aria-hidden="true">&nbsp;</span>
+			<span className="yd-top-label yd-top-label-spacer" aria-hidden="true">{text.modeSpacer}</span>
 			<div className="yd-mode-row">
 				<ModeButton
-					ariaLabel="ASCII mode"
+					ariaLabel={text.asciiMode}
 					active={!isAsciiMode}
 					activeGlyph="中"
 					inactiveGlyph="英"
-					activeLabel="中文"
-					inactiveLabel="英文 ASCII"
+					activeLabel={text.chinese}
+					inactiveLabel={text.ascii}
 					onClick={() => setIsAsciiMode(value => !value)} />
 				<ModeButton
-					ariaLabel="Output standard"
-					active={!isSimplification}
-					activeGlyph="繁"
-					inactiveGlyph="简"
-					activeLabel="繁體 HK"
-					inactiveLabel="簡體 hk2s"
-					onClick={() => setIsSimplification(value => !value)} />
+					ariaLabel={text.outputStandard}
+					active={outputStandardValue === "hk_traditional"}
+					activeGlyph={currentOutputStandard.glyph}
+					inactiveGlyph={currentOutputStandard.glyph}
+					activeLabel={outputText.shortLabel}
+					inactiveLabel={outputText.shortLabel}
+					onClick={cycleOutputStandard} />
 				<ModeButton
-					ariaLabel="Full shape"
+					ariaLabel={text.fullShape}
 					active={!isFullShape}
 					activeGlyph="半"
 					inactiveGlyph="全"
-					activeLabel="半形"
-					inactiveLabel="全形"
+					activeLabel={text.halfShape}
+					inactiveLabel={text.fullShapeValue}
 					onClick={() => setIsFullShape(value => !value)} />
 			</div>
 		</div>
 		<div className="yd-top-field yd-cangjie-choice" data-yune-control="cangjie-version">
-			<span className="yd-top-label">倉頡反查 Cangjie lookup</span>
-			<div className="yd-segment-group" role="radiogroup" aria-label="倉頡反查 Cangjie lookup">
-				<Segment name="cangjieVersion" label="三代" state={isCangjie5} setState={setIsCangjie5} value={false} />
-				<Segment name="cangjieVersion" label="五代" state={isCangjie5} setState={setIsCangjie5} value={true} />
+			<span className="yd-top-label">{text.cangjieLookup}</span>
+			<div className="yd-segment-group" role="radiogroup" aria-label={text.cangjieLookup}>
+				<Segment name="cangjieVersion" label={text.cangjie3} state={isCangjie5} setState={setIsCangjie5} value={false} />
+				<Segment name="cangjieVersion" label={text.cangjie5} state={isCangjie5} setState={setIsCangjie5} value={true} />
 			</div>
 		</div>
 	</div>;

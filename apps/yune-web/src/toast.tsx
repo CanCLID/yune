@@ -1,20 +1,37 @@
 import { useEffect, useState } from "react";
 
+import { DEFAULT_UI_LANGUAGE } from "./uiText";
+
+import type { UiLanguage } from "./uiText";
+
 export type ToastType = "info" | "success" | "warning" | "error" | "default";
 
 interface ToastMessage {
 	id: number;
 	type: ToastType;
-	body: string;
+	enBody: string;
+	yueBody: string;
 }
 
 const listeners = new Set<(message: ToastMessage | undefined) => void>();
 let currentMessage: ToastMessage | undefined;
 let nextToastId = 1;
+let currentUiLanguage: UiLanguage = DEFAULT_UI_LANGUAGE;
+
+export function setToastLanguage(uiLanguage: UiLanguage) {
+	currentUiLanguage = uiLanguage;
+	if (currentMessage) {
+		publishToast({ ...currentMessage });
+	}
+}
 
 export function notify(type: ToastType, zh: string, en: string) {
-	const body = `${zh}時發生錯誤。如輸入法不能正常運作，請重新載入頁面。\nAn error occurred while ${en}. If the input method does not work properly, please reload the page.`;
-	publishToast({ id: nextToastId++, type, body });
+	publishToast({
+		id: nextToastId++,
+		type,
+		yueBody: `${zh}時發生錯誤。如輸入法不能正常運作，請重新載入頁面。`,
+		enBody: `An error occurred while ${en}. If the input method does not work properly, please reload the page.`,
+	});
 }
 
 export function ToastViewport() {
@@ -48,11 +65,11 @@ export function ToastViewport() {
 			<button
 				type="button"
 				className="yd-toast-close"
-				aria-label="Dismiss notification"
+				aria-label={currentUiLanguage === "yue" ? "關閉通知" : "Dismiss notification"}
 				onClick={() => publishToast(undefined)}>
 				×
 			</button>
-			{message.body}
+			{currentUiLanguage === "yue" ? message.yueBody : message.enBody}
 		</div>
 	);
 }

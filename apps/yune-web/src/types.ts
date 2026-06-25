@@ -1,5 +1,6 @@
 import type CandidateInfo from "./CandidateInfo";
-import type { CandidateMenuLayout, ChineseTypefaceId, Language, ShowRomanization } from "./consts";
+import type { CandidateMenuLayout, ChineseTypefaceId, Language, OutputStandard, ShowRomanization } from "./consts";
+import type { UiLanguage } from "./uiText";
 import type { Dispatch, SetStateAction } from "react";
 import type { YuneWebInspectorDebug, YuneWebStatus } from "@yune-ime/yune-web-runtime";
 
@@ -143,11 +144,12 @@ export interface RimePreferences {
 	dictionaryExclude: string[];
 	isAsciiMode: boolean;
 	isFullShape: boolean;
-	isSimplification: boolean;
+	outputStandard: OutputStandard;
 	isCangjie5: boolean;
 }
 
 export interface InterfacePreferences {
+	uiLanguage: UiLanguage;
 	displayLanguages: Set<Language>;
 	mainLanguage: Language;
 	chineseTypeface: ChineseTypefaceId;

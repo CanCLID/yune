@@ -52,7 +52,13 @@ engine:
     - script_translator
   filters:
     - dictionary_lookup_filter
-    - simplifier
+    - simplifier@output_hk2s
+    - simplifier@output_t2s
+    - simplifier@output_s2t
+    - simplifier@output_t2tw
+    - simplifier@output_s2tw
+    - simplifier@output_tw2s
+    - simplifier@output_tw2t
 
 dictionary_lookup_filter:
   dictionary: jyut6ping3_scolar
@@ -74,8 +80,33 @@ translator:
   comment_format:
     - xform/^/\f/
 
-simplifier:
+output_hk2s:
+  option_name: output_hk2s
   opencc_config: hk2s.json
+
+output_t2s:
+  option_name: output_t2s
+  opencc_config: t2s.json
+
+output_s2t:
+  option_name: output_s2t
+  opencc_config: s2t.json
+
+output_t2tw:
+  option_name: output_t2tw
+  opencc_config: t2tw.json
+
+output_s2tw:
+  option_name: output_s2tw
+  opencc_config: s2tw.json
+
+output_tw2s:
+  option_name: output_tw2s
+  opencc_config: tw2s.json
+
+output_tw2t:
+  option_name: output_tw2t
+  opencc_config: tw2t.json
 
 punctuator:
   import_preset: default

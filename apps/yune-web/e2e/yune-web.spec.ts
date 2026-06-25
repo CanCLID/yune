@@ -1049,6 +1049,26 @@ test.describe("yune-web Browser E2E", () => {
     await openApp(page);
   });
 
+  test("UI language switcher localizes labels and persists @bilingual", async ({ page }) => {
+    await expect(page.getByText("輸入法設定", { exact: true })).toBeVisible();
+    await expect(page.getByText("IME Settings", { exact: true })).toHaveCount(0);
+    await expect(page.locator("[data-yune-schema-switcher] .yd-top-label")).toHaveText("方案");
+    await expect(page.locator("[data-yune-schema-switcher] .yd-top-label")).not.toHaveText("Schema");
+
+    await page.locator('[data-yune-ui-language-switcher] input[value="en"]').check({ force: true });
+    await expect(page.getByText("IME Settings", { exact: true })).toBeVisible();
+    await expect(page.getByText("輸入法設定", { exact: true })).toHaveCount(0);
+    await expect(page.locator("[data-yune-schema-switcher] .yd-top-label")).toHaveText("Schema");
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForAppReady(page);
+    await expect(page.getByText("IME Settings", { exact: true })).toBeVisible();
+    await expect(page.locator('[data-yune-ui-language-switcher] input[value="en"]')).toBeChecked();
+
+    const state = await typeCompositionAndWaitForTopCandidate(page, "nei", "你");
+    expect(candidateTexts(state)).toContain("你");
+  });
+
   test.afterEach(async ({ page }, testInfo) => {
     setEvidenceScope(testInfo);
     // Append test result to evidence log

@@ -1,4 +1,7 @@
+import { uiText } from "./uiText";
+
 import type { YuneWebUserdbSnapshot } from "./types";
+import type { UiLanguage } from "./uiText";
 
 function formatMetric(value: number | null) {
 	if (value === null) {
@@ -19,22 +22,25 @@ export default function YuneUserdbViewer({
 	isLoading,
 	error,
 	onRefresh,
+	uiLanguage,
 }: {
 	snapshot?: YuneWebUserdbSnapshot;
 	isLoading: boolean;
 	error?: string;
 	onRefresh(): Promise<void> | void;
+	uiLanguage: UiLanguage;
 }) {
+	const text = uiText[uiLanguage].userdb;
 	return <section className="yd-userdb-panel" data-yune-userdb-viewer>
 		<div className="yd-panel-heading yd-panel-heading-split">
-			<span>用戶詞庫 <span>User Dictionary</span></span>
+			<span>{text.title}</span>
 			<button
 				type="button"
 				className="yd-small-button"
 				data-yune-userdb-refresh
 				disabled={isLoading}
 				onClick={() => void onRefresh()}>
-				{isLoading ? "Refreshing" : "↻ 刷新"}
+				{isLoading ? text.refreshing : `↻ ${text.refresh}`}
 			</button>
 		</div>
 
@@ -44,19 +50,19 @@ export default function YuneUserdbViewer({
 			? <>
 				<div className="yd-meta-strip">
 					<span className="yd-square-chip" data-yune-userdb-schema>
-						<b>schema</b> {snapshot.schemaId}
+						<b>{text.schema}</b> {snapshot.schemaId}
 					</span>
 					<span className="yd-square-chip" data-yune-userdb-dictionary>
-						<b>dictionary</b> {snapshot.dictionaryId}
+						<b>{text.dictionary}</b> {snapshot.dictionaryId}
 					</span>
 					<span className="yd-square-chip" data-yune-userdb-path>
-						<b>path</b> {snapshot.path}
+						<b>{text.path}</b> {snapshot.path}
 					</span>
 					<span className="yd-square-chip" data-yune-userdb-bytes>
-						<b>bytes</b> {formatBytes(snapshot.bytes)}
+						<b>{text.bytes}</b> {formatBytes(snapshot.bytes)}
 					</span>
 					<span className="yd-square-chip" data-yune-userdb-row-count>
-						<b>rows</b> {snapshot.rows.length}
+						<b>{text.rows}</b> {snapshot.rows.length}
 					</span>
 				</div>
 
@@ -66,8 +72,8 @@ export default function YuneUserdbViewer({
 							<table className="yd-userdb-table">
 								<thead>
 									<tr>
-										<th>文字 TEXT</th>
-										<th>編碼 CODE</th>
+										<th>{text.text}</th>
+										<th>{text.code}</th>
 										<th>c</th>
 										<th>d</th>
 										<th>t</th>
@@ -84,30 +90,30 @@ export default function YuneUserdbViewer({
 												<td>{formatMetric(row.tick)}</td>
 											</tr>)
 										: <tr>
-											<td className="yd-muted-cell" colSpan={5}>No learned rows in this file.</td>
+											<td className="yd-muted-cell" colSpan={5}>{text.noRows}</td>
 										</tr>}
 								</tbody>
 							</table>
 						</div>
 						{snapshot.parseErrors.length > 0 && <div className="yd-warning" data-yune-userdb-parse-errors>
-							<div>Parse notes</div>
+							<div>{text.parseNotes}</div>
 							<ul>
 								{snapshot.parseErrors.map(error =>
-									<li key={`${error.line}-${error.reason}`}>line {error.line}: {error.reason}</li>
+									<li key={`${error.line}-${error.reason}`}>{text.line} {error.line}: {error.reason}</li>
 								)}
 							</ul>
 						</div>}
 						<details className="yd-raw-block" data-yune-userdb-raw>
-							<summary>▸ Raw file</summary>
+							<summary>▸ {text.rawFile}</summary>
 							<pre>{snapshot.rawText}</pre>
 						</details>
 					</>
 					: <p className="yd-empty-panel" data-yune-userdb-empty>
-						No active user dictionary file yet.
+						{text.noActiveFile}
 					</p>}
 			</>
 			: <p className="yd-empty-panel" data-yune-userdb-loading>
-				{isLoading ? "Loading user dictionary snapshot..." : "No user dictionary snapshot loaded."}
+				{isLoading ? text.loadingSnapshot : text.noSnapshot}
 			</p>}
 	</section>;
 }

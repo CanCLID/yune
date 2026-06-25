@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 
 import { useLocalStorageValue, useMediaQuery } from "./hooks";
+import { uiText } from "./uiText";
 
-export default function ThemeSwitcher() {
+import type { UiLanguage } from "./uiText";
+
+export default function ThemeSwitcher({ uiLanguage }: { uiLanguage: UiLanguage }) {
 	const systemTheme = useMediaQuery("(prefers-color-scheme: dark)") ? "dark" : "light";
 	const [storedTheme, setTheme] = useLocalStorageValue<"light" | "dark" | undefined>("theme", {
 		defaultValue: undefined,
@@ -18,7 +21,7 @@ export default function ThemeSwitcher() {
 	}, [theme]);
 
 	const nextTheme = theme === "dark" ? "light" : "dark";
-	const label = nextTheme === "dark" ? "Switch to dark theme" : "Switch to light theme";
+	const label = nextTheme === "dark" ? uiText[uiLanguage].theme.switchToDark : uiText[uiLanguage].theme.switchToLight;
 
 	return <button
 		type="button"

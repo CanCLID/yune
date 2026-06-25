@@ -1,4 +1,5 @@
-import { LANGUAGE_CODES, LANGUAGE_NAMES, Language, checkColumns, labels, litColReadings, otherData, partsOfSpeech, registers } from "./consts";
+import { LANGUAGE_CODES, Language, checkColumns } from "./consts";
+import { definitionLanguageNameText, dictionaryMetaText } from "./uiText";
 import { ConsumedString, nonEmptyArrayOrUndefined, parseCSV } from "./utils";
 
 import type { InterfacePreferences } from "./types";
@@ -122,45 +123,54 @@ export class CandidateEntry {
 		};
 	}
 
-	get pronunciationType() {
+	pronunciationType(preferences: InterfacePreferences) {
+		const text = dictionaryMetaText[preferences.uiLanguage];
 		const types: string[] = [];
-		if (this.sandhi === "1") types.push("changed tone 變音");
-		if (this.litColReading! in litColReadings) types.push(litColReadings[this.litColReading!]!);
+		if (this.sandhi === "1") types.push(text.changedTone);
+		if (this.litColReading! in text.litColReadings) types.push(text.litColReadings[this.litColReading as keyof typeof text.litColReadings]!);
 		return types.length ? `(${types.join(", ")})` : undefined;
 	}
 
-	get formattedPartsOfSpeech() {
+	formattedPartsOfSpeech(preferences: InterfacePreferences) {
+		const text = dictionaryMetaText[preferences.uiLanguage];
 		return nonEmptyArrayOrUndefined([
 			...new Set(
 				this.properties.partOfSpeech?.split(" ").map(
-					partOfSpeech => partsOfSpeech[partOfSpeech] || partOfSpeech,
+					partOfSpeech => text.partsOfSpeech[partOfSpeech as keyof typeof text.partsOfSpeech] || partOfSpeech,
 				),
 			),
 		]);
 	}
 
-	get formattedRegister() {
-		return registers[this.properties.register!];
+	formattedRegister(preferences: InterfacePreferences) {
+		const text = dictionaryMetaText[preferences.uiLanguage];
+		return text.registers[this.properties.register as keyof typeof text.registers];
 	}
 
-	get formattedLabels() {
+	formattedLabels(preferences: InterfacePreferences) {
+		const text = dictionaryMetaText[preferences.uiLanguage];
 		return nonEmptyArrayOrUndefined([
 			...new Set(
 				this.properties.label?.split(" ").flatMap(word => {
-					for (const part of word.split("_")) if (labels[part]) return [`(${labels[part]})`];
+					for (const part of word.split("_")) {
+						const label = text.labels[part as keyof typeof text.labels];
+						if (label) return [`(${label})`];
+					}
 					return [];
 				}),
 			),
 		]);
 	}
 
-	get otherData() {
+	otherData(preferences: InterfacePreferences) {
+		const text = dictionaryMetaText[preferences.uiLanguage];
 		return nonEmptyArrayOrUndefined<KeyNameValue>(
-			Object.entries(otherData).flatMap(([name, key]) =>
-				this.properties[key]
-					? [[key, name, this.properties[key]!]]
+			Object.entries(text.otherData).flatMap(([key, name]) => {
+				const propertyKey = key as Exclude<keyof CandidateEntry["properties"], "definition">;
+				return this.properties[propertyKey]
+					? [[key, name, this.properties[propertyKey]!]]
 					: []
-			),
+			}),
 		);
 	}
 
@@ -168,7 +178,7 @@ export class CandidateEntry {
 		return nonEmptyArrayOrUndefined<KeyNameValue>(
 			[...preferences.displayLanguages].flatMap(language =>
 				language !== preferences.mainLanguage && this.properties.definition[language]
-					? [[LANGUAGE_CODES[language], LANGUAGE_NAMES[language], this.properties.definition[language]!]]
+					? [[LANGUAGE_CODES[language], definitionLanguageNameText[preferences.uiLanguage][language], this.properties.definition[language]!]]
 					: []
 			),
 		);
@@ -182,7 +192,7 @@ export class CandidateEntry {
 		return nonEmptyArrayOrUndefined<KeyNameValue>(
 			languages.flatMap(language =>
 				this.properties.definition[language]
-					? [[LANGUAGE_CODES[language], LANGUAGE_NAMES[language], this.properties.definition[language]!]]
+					? [[LANGUAGE_CODES[language], definitionLanguageNameText[preferences.uiLanguage][language], this.properties.definition[language]!]]
 					: []
 			),
 		);

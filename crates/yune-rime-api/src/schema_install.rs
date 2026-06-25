@@ -1,12 +1,15 @@
 use std::{
     collections::{HashMap, HashSet},
-    fmt, fs,
+    fs,
     io::Read,
     os::raw::c_int,
     path::Path,
     sync::{Arc, Mutex, OnceLock},
     time::UNIX_EPOCH,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::fmt;
 
 use regex::Regex;
 use serde_yaml::{Mapping, Value};
@@ -808,79 +811,80 @@ pub(crate) fn install_schema_filter_chain(session: &mut SessionState, schema_id:
         let _trace = startup_trace::span("schema_config_load");
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed)
     };
-    let Some(Value::Sequence(filters)) = find_config_value(&schema_config, "engine/filters") else {
-        return;
-    };
-    for filter in filters.iter().filter_map(Value::as_str) {
-        let (filter_name, name_space) = schema_component_prescription(filter);
-        match filter_name {
-            "reverse_lookup_filter" => install_schema_reverse_lookup_filter_from_config(
-                session,
-                &schema_config,
-                match name_space {
-                    Some("filter") | None => "reverse_lookup",
-                    Some(name_space) => name_space,
-                },
-            ),
-            "dictionary_lookup_filter" => install_schema_dictionary_lookup_filter_from_config(
-                session,
-                &schema_config,
-                name_space.unwrap_or("dictionary_lookup_filter"),
-            ),
-            "simplifier" => install_schema_simplifier_filter_from_config(
-                session,
-                &schema_config,
-                match name_space {
-                    Some("filter") | None => "simplifier",
-                    Some(name_space) => name_space,
-                },
-            ),
-            "uniquifier" => session.engine.add_filter(UniquifierFilter),
-            "single_char_filter" => session.engine.add_filter(SingleCharFilter),
-            "charset_filter" | "cjk_minifier" => {
-                let tags = schema_filter_tags(&schema_config, name_space.unwrap_or(filter_name));
-                session
-                    .engine
-                    .add_filter(TaggedFilter::new(CharsetFilter, tags));
+    if let Some(Value::Sequence(filters)) = find_config_value(&schema_config, "engine/filters") {
+        for filter in filters.iter().filter_map(Value::as_str) {
+            let (filter_name, name_space) = schema_component_prescription(filter);
+            match filter_name {
+                "reverse_lookup_filter" => install_schema_reverse_lookup_filter_from_config(
+                    session,
+                    &schema_config,
+                    match name_space {
+                        Some("filter") | None => "reverse_lookup",
+                        Some(name_space) => name_space,
+                    },
+                ),
+                "dictionary_lookup_filter" => install_schema_dictionary_lookup_filter_from_config(
+                    session,
+                    &schema_config,
+                    name_space.unwrap_or("dictionary_lookup_filter"),
+                ),
+                "simplifier" => install_schema_simplifier_filter_from_config(
+                    session,
+                    &schema_config,
+                    match name_space {
+                        Some("filter") | None => "simplifier",
+                        Some(name_space) => name_space,
+                    },
+                ),
+                "uniquifier" => session.engine.add_filter(UniquifierFilter),
+                "single_char_filter" => session.engine.add_filter(SingleCharFilter),
+                "charset_filter" | "cjk_minifier" => {
+                    let tags =
+                        schema_filter_tags(&schema_config, name_space.unwrap_or(filter_name));
+                    session
+                        .engine
+                        .add_filter(TaggedFilter::new(CharsetFilter, tags));
+                }
+                "memory" => record_remaining_gear_deferral(
+                    session,
+                    "memory",
+                    "user dictionary memory and learning",
+                    "deferred because LevelDB/userdb learning is outside Phase 3",
+                    "05-userdb-and-learning",
+                ),
+                "poet" => record_remaining_gear_deferral(
+                    session,
+                    "poet",
+                    "grammar/model-assisted candidate scoring",
+                    "deferred because plugin/model behavior is outside Phase 3",
+                    "04-compiled-dictionary-data",
+                ),
+                "grammar" => record_remaining_gear_deferral(
+                    session,
+                    "grammar",
+                    "grammar/model-assisted candidate scoring",
+                    "deferred because plugin/model behavior is outside Phase 3",
+                    "04-compiled-dictionary-data",
+                ),
+                "contextual_translation" => record_remaining_gear_deferral(
+                    session,
+                    "contextual_translation",
+                    "context-aware translation using reverse/context data",
+                    "deferred because compiled reverse/context data is outside Phase 3",
+                    "04-compiled-dictionary-data",
+                ),
+                "unity_table_encoder" => record_remaining_gear_deferral(
+                    session,
+                    "unity_table_encoder",
+                    "encodes phrases into UniTE table data",
+                    "deferred because compiled UniTE/table payload support is outside Phase 3",
+                    "04-compiled-dictionary-data",
+                ),
+                _ => {}
             }
-            "memory" => record_remaining_gear_deferral(
-                session,
-                "memory",
-                "user dictionary memory and learning",
-                "deferred because LevelDB/userdb learning is outside Phase 3",
-                "05-userdb-and-learning",
-            ),
-            "poet" => record_remaining_gear_deferral(
-                session,
-                "poet",
-                "grammar/model-assisted candidate scoring",
-                "deferred because plugin/model behavior is outside Phase 3",
-                "04-compiled-dictionary-data",
-            ),
-            "grammar" => record_remaining_gear_deferral(
-                session,
-                "grammar",
-                "grammar/model-assisted candidate scoring",
-                "deferred because plugin/model behavior is outside Phase 3",
-                "04-compiled-dictionary-data",
-            ),
-            "contextual_translation" => record_remaining_gear_deferral(
-                session,
-                "contextual_translation",
-                "context-aware translation using reverse/context data",
-                "deferred because compiled reverse/context data is outside Phase 3",
-                "04-compiled-dictionary-data",
-            ),
-            "unity_table_encoder" => record_remaining_gear_deferral(
-                session,
-                "unity_table_encoder",
-                "encodes phrases into UniTE table data",
-                "deferred because compiled UniTE/table payload support is outside Phase 3",
-                "04-compiled-dictionary-data",
-            ),
-            _ => {}
         }
     }
+    install_yune_output_standard_filters(session, &schema_config);
 }
 
 fn record_remaining_gear_deferral(
@@ -1086,14 +1090,14 @@ fn install_schema_simplifier_filter_from_config(
     let option_name = find_config_value(schema_config, &format!("{name_space}/option_name"))
         .and_then(config_scalar_string)
         .filter(|option_name| !option_name.is_empty())
-        .unwrap_or_else(|| "simplification".to_owned());
+        .unwrap_or_else(|| default_simplifier_option_name(name_space));
     let tips = find_config_value(schema_config, &format!("{name_space}/tips"))
         .or_else(|| find_config_value(schema_config, &format!("{name_space}/tip")))
         .and_then(config_scalar_string)
         .unwrap_or_default();
     let opencc_config = find_config_value(schema_config, &format!("{name_space}/opencc_config"))
         .and_then(config_scalar_string)
-        .unwrap_or_default();
+        .unwrap_or_else(|| default_simplifier_opencc_config(name_space));
     let show_in_comment =
         find_config_value(schema_config, &format!("{name_space}/show_in_comment"))
             .and_then(config_scalar_bool)
@@ -1117,6 +1121,56 @@ fn install_schema_simplifier_filter_from_config(
             .with_excluded_types(excluded_types),
         tags,
     ));
+}
+
+fn install_yune_output_standard_filters(session: &mut SessionState, schema_config: &Value) {
+    const YUNE_OUTPUT_STANDARDS: &[(&str, &str)] = &[
+        ("output_hk2s", "hk2s.json"),
+        ("output_t2s", "t2s.json"),
+        ("output_s2t", "s2t.json"),
+        ("output_t2tw", "t2tw.json"),
+        ("output_s2tw", "s2tw.json"),
+        ("output_tw2s", "tw2s.json"),
+        ("output_tw2t", "tw2t.json"),
+    ];
+
+    if !YUNE_OUTPUT_STANDARDS
+        .iter()
+        .any(|(option_name, _)| find_config_value(schema_config, option_name).is_some())
+    {
+        return;
+    }
+
+    for (option_name, opencc_config) in YUNE_OUTPUT_STANDARDS {
+        session.engine.add_filter(
+            SimplifierFilter::new()
+                .with_option_name(*option_name)
+                .with_opencc_config(opencc_config),
+        );
+    }
+    session.engine.add_filter(
+        SimplifierFilter::new()
+            .with_option_name("simplification")
+            .with_opencc_config("hk2s.json"),
+    );
+}
+
+fn default_simplifier_option_name(name_space: &str) -> String {
+    if name_space == "simplifier" {
+        "simplification".to_owned()
+    } else {
+        name_space.to_owned()
+    }
+}
+
+fn default_simplifier_opencc_config(name_space: &str) -> String {
+    let config_stem = name_space.strip_prefix("output_").unwrap_or(name_space);
+    match config_stem {
+        "hk2s" | "t2s" | "s2t" | "t2tw" | "s2tw" | "tw2s" | "tw2t" => {
+            format!("{config_stem}.json")
+        }
+        _ => String::new(),
+    }
 }
 
 #[derive(Clone, Debug)]

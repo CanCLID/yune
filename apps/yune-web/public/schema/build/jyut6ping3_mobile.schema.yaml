@@ -15,7 +15,13 @@ dictionary_lookup_filter:
 engine:
   filters:
     - dictionary_lookup_filter
-    - simplifier
+    - simplifier@output_hk2s
+    - simplifier@output_t2s
+    - simplifier@output_s2t
+    - simplifier@output_t2tw
+    - simplifier@output_s2tw
+    - simplifier@output_tw2s
+    - simplifier@output_tw2t
   processors:
     - ascii_composer
     - recognizer
@@ -220,8 +226,27 @@ schema:
   name: "粵語拼音"
   schema_id: jyut6ping3_mobile
   version: 2023.11.03
-simplifier:
+output_hk2s:
+  option_name: output_hk2s
   opencc_config: hk2s.json
+output_t2s:
+  option_name: output_t2s
+  opencc_config: t2s.json
+output_s2t:
+  option_name: output_s2t
+  opencc_config: s2t.json
+output_t2tw:
+  option_name: output_t2tw
+  opencc_config: t2tw.json
+output_s2tw:
+  option_name: output_s2tw
+  opencc_config: s2tw.json
+output_tw2s:
+  option_name: output_tw2s
+  opencc_config: tw2s.json
+output_tw2t:
+  option_name: output_tw2t
+  opencc_config: tw2t.json
 speller:
   algebra:
     - "derive/^ng(?=[aeiou])//"

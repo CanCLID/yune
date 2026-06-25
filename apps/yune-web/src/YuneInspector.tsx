@@ -1,4 +1,7 @@
+import { uiText } from "./uiText";
+
 import type { YuneInspectorDebug } from "./types";
+import type { UiLanguage } from "./uiText";
 
 function formatScore(value: number | null | undefined) {
 	if (value === null || value === undefined) {
@@ -25,23 +28,26 @@ function summary(debug?: YuneInspectorDebug) {
 
 export default function YuneInspector({
 	debug,
+	uiLanguage,
 }: {
 	debug?: YuneInspectorDebug;
+	uiLanguage: UiLanguage;
 }) {
 	const values = summary(debug);
+	const text = uiText[uiLanguage].inspector;
 	return <section className="yd-inspector-panel" data-yune-inspector="panel">
 		<div className="yd-inspector-summary">
-			<span><b>INPUT</b> {values.input}</span>
-			<span><b>SEG</b> {values.segments}</span>
-			<span><b>RAW</b> {values.raw}</span>
-			<span><b>FILTERED</b> {values.filtered}</span>
-			<span><b>CANDS</b> {values.candidates}</span>
-			<span><b>AI</b> {values.ai}</span>
+			<span><b>{text.input}</b> {values.input}</span>
+			<span><b>{text.segmentsShort}</b> {values.segments}</span>
+			<span><b>{text.raw}</b> {values.raw}</span>
+			<span><b>{text.filtered}</b> {values.filtered}</span>
+			<span><b>{text.candidatesShort}</b> {values.candidates}</span>
+			<span><b>{text.ai}</b> {values.ai}</span>
 		</div>
 		{debug
 			? <div className="yd-inspector-grid">
 					<div className="yd-inspector-column">
-						<h3>分段 <span>SEGMENTS</span></h3>
+						<h3>{text.segments}</h3>
 						<div className="yd-chip-row" data-yune-inspector-segments>
 							{debug.segments.length
 								? debug.segments.map((segment, index) =>
@@ -51,7 +57,7 @@ export default function YuneInspector({
 								: debug.segment_tags.map(tag =>
 									<span key={tag} className="yd-square-chip">{tag}</span>)}
 						</div>
-						<h3>拼寫代數 <span>Spelling algebra</span></h3>
+						<h3>{text.spellingAlgebra}</h3>
 						<div className="yd-inspector-list">
 							{debug.spelling_algebra.map(algebra =>
 								<div key={`${algebra.translator}-${algebra.input}`} className="yd-inspector-list-row" data-yune-inspector-algebra>
@@ -61,7 +67,7 @@ export default function YuneInspector({
 						</div>
 					</div>
 					<div className="yd-inspector-column">
-						<h3>過濾 <span>FILTERS</span></h3>
+						<h3>{text.filters}</h3>
 						<div className="yd-inspector-list" data-yune-inspector-filters>
 							{debug.filter_audit.length
 								? debug.filter_audit.map(record =>
@@ -75,13 +81,13 @@ export default function YuneInspector({
 										<span>-</span>
 									</div>)}
 						</div>
-						<h3>預測 <span>Prediction</span></h3>
+						<h3>{text.prediction}</h3>
 						<table className="yd-inspector-table" data-yune-inspector-prediction>
 							<thead>
 								<tr>
-									<th>來源 SOURCE</th>
-									<th>文字 TEXT</th>
-									<th>分數 QUALITY</th>
+									<th>{text.source}</th>
+									<th>{text.text}</th>
+									<th>{text.quality}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -95,6 +101,6 @@ export default function YuneInspector({
 						</table>
 					</div>
 				</div>
-			: <div className="yd-inspector-empty" data-yune-inspector-empty>未有檢視資料 No inspector data yet. Type while trace is on.</div>}
+			: <div className="yd-inspector-empty" data-yune-inspector-empty>{text.empty}</div>}
 	</section>;
 }

@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import CandidatePanel from "./CandidatePanel";
-import { NO_AUTO_FILL } from "./consts";
+import { NO_AUTO_FILL, OUTPUT_STANDARD_ENGINE_OPTIONS, normalizeOutputStandard, outputOptionForStandard } from "./consts";
 import { useLoading, usePreferences } from "./hooks";
 import Preferences from "./Preferences";
 import Rime, { subscribe } from "./rime";
 import ThemeSwitcher from "./ThemeSwitcher";
 import Toolbar from "./Toolbar";
-import { notify, ToastViewport } from "./toast";
+import { notify, setToastLanguage, ToastViewport } from "./toast";
+import UiLanguageSwitcher from "./UiLanguageSwitcher";
+import { uiText } from "./uiText";
 import YuneInspector from "./YuneInspector";
 import YuneStatusStrip from "./YuneStatusStrip";
 import YuneUserdbViewer from "./YuneUserdbViewer";
@@ -17,6 +19,7 @@ import type {
 	YuneInspectorDebug,
 	YuneStatusSnapshot,
 } from "./types";
+import type { UiLanguage } from "./uiText";
 
 interface YuneMetrics {
 	lookupMs?: number;
@@ -28,9 +31,9 @@ interface YuneMetrics {
 
 type EngineStartupState = "starting" | "ready" | "failed";
 
-function metricValue(value: number | undefined, unit: string) {
+function metricValue(value: number | undefined, unit: string, emptyLabel: string) {
 	if (value === undefined) {
-		return <span className="yd-metric-empty">N/A</span>;
+		return <span className="yd-metric-empty">{emptyLabel}</span>;
 	}
 	return <>
 		{value.toFixed(value < 10 ? 1 : 0)}
@@ -41,26 +44,29 @@ function metricValue(value: number | undefined, unit: string) {
 function YuneInspectorMetrics({
 	metrics,
 	userdbSnapshot,
+	uiLanguage,
 }: {
 	metrics: YuneMetrics;
 	userdbSnapshot?: YuneWebUserdbSnapshot;
+	uiLanguage: UiLanguage;
 }) {
-	return <div className="yd-inspector-metrics" aria-label="Live engine metrics" data-yune-metrics>
+	const text = uiText[uiLanguage].metrics;
+	return <div className="yd-inspector-metrics" aria-label={text.aria} data-yune-metrics>
 		<div className="yd-metric">
-			<div className="yd-metric-label">LOOKUP</div>
-			<div className="yd-metric-value" data-yune-metric-lookup>{metricValue(metrics.lookupMs, "ms")}</div>
+			<div className="yd-metric-label">{text.lookup}</div>
+			<div className="yd-metric-value" data-yune-metric-lookup>{metricValue(metrics.lookupMs, "ms", text.na)}</div>
 		</div>
 		<div className="yd-metric">
-			<div className="yd-metric-label">AI RERANK</div>
+			<div className="yd-metric-label">{text.aiRerank}</div>
 			<div className="yd-metric-value yd-metric-accent" data-yune-metric-ai>
-				{metrics.aiMs === undefined ? "off" : metricValue(metrics.aiMs, "ms")}
+				{metrics.aiMs === undefined ? text.off : metricValue(metrics.aiMs, "ms", text.na)}
 			</div>
 		</div>
 		<div className="yd-metric">
-			<div className="yd-metric-label">CANDIDATES</div>
+			<div className="yd-metric-label">{text.candidates}</div>
 			<div className="yd-metric-value" data-yune-metric-candidates>
 				{metrics.candidateCount === undefined
-					? <span className="yd-metric-empty">N/A</span>
+					? <span className="yd-metric-empty">{text.na}</span>
 					: <>
 						{metrics.candidateCount}
 						<span>/{metrics.totalCandidateCount ?? metrics.candidateCount}</span>
@@ -68,14 +74,14 @@ function YuneInspectorMetrics({
 			</div>
 		</div>
 		<div className="yd-metric">
-			<div className="yd-metric-label">USERDB</div>
+			<div className="yd-metric-label">{text.userdb}</div>
 			<div className="yd-metric-value" data-yune-metric-userdb>
 				{userdbSnapshot
 					? <>
 						{userdbSnapshot.rows.length}
-						<span> rows</span>
+						<span> {text.rows}</span>
 					</>
-					: <span className="yd-metric-empty">N/A</span>}
+					: <span className="yd-metric-empty">{text.na}</span>}
 			</div>
 		</div>
 	</div>;
@@ -180,6 +186,7 @@ export default function App() {
 	const [userdbError, setUserdbError] = useState<string | undefined>();
 	const preferences = usePreferences();
 	const {
+		uiLanguage,
 		pageSize,
 		enableCompletion,
 		enableCorrection,
@@ -195,11 +202,19 @@ export default function App() {
 		dictionaryExclude,
 		isAsciiMode,
 		isFullShape,
-		isSimplification,
+		outputStandard,
 		isCangjie5,
 		chineseTypeface,
 	} = preferences;
+	const text = uiText[uiLanguage];
+	const outputStandardValue = normalizeOutputStandard(outputStandard, "hk_traditional");
 	const didRunSchemaEffect = useRef(false);
+
+	useEffect(() => {
+		document.documentElement.lang = uiLanguage === "yue" ? "zh-HK" : "en";
+		setToastLanguage(uiLanguage);
+	}, [uiLanguage]);
+
 	useEffect(() => {
 		if (!isEngineReady) {
 			return;
@@ -224,7 +239,7 @@ export default function App() {
 				type = "error";
 			}
 			if (type) {
-				notify(type, "Switch schema", "switching the schema");
+				notify(type, "切換方案", "switching the schema");
 			}
 		});
 	}, [activeSchema, isEngineReady, runAsyncTask]);
@@ -286,22 +301,31 @@ export default function App() {
 				await Rime.setOption("soft_cursor", true);
 				await Rime.setOption("ascii_mode", isAsciiMode);
 				await Rime.setOption("full_shape", isFullShape);
-				await Rime.setOption("simplification", isSimplification);
+				await Rime.setOption("simplification", outputStandardValue === "simplified");
 				await Rime.setOption("traditionalization", false);
+				const activeOutputOption = outputOptionForStandard(outputStandardValue, activeSchema);
+				document.documentElement.dataset["yuneActiveOutputOption"] = activeOutputOption ?? "none";
+				const appliedOutputOptions: string[] = [];
+				for (const optionName of OUTPUT_STANDARD_ENGINE_OPTIONS) {
+					await Rime.setOption(optionName, optionName === activeOutputOption);
+					appliedOutputOptions.push(`${optionName}:${optionName === activeOutputOption}`);
+				}
+				document.documentElement.dataset["yuneAppliedOutputOptions"] = appliedOutputOptions.join(",");
 				await Rime.setOption("extended_charset", isExtendedCharset);
 				await Rime.setOption("disabled", isDisabled);
 			} catch {
 				type = "error";
 			}
 			if (type) {
-				notify(type, "Apply live options", "applying the live options");
+				notify(type, "套用即時選項", "applying the live options");
 			}
 		});
 	}, [
 		activeSchema,
+		deployStatus,
 		isAsciiMode,
 		isFullShape,
-		isSimplification,
+		outputStandardValue,
 		isExtendedCharset,
 		isDisabled,
 		isEngineReady,
@@ -323,7 +347,7 @@ export default function App() {
 				type = "error";
 			}
 			if (type) {
-				notify(type, "Apply inspector", "applying the inspector setting");
+				notify(type, "套用檢視設定", "applying the inspector setting");
 			}
 		});
 	}, [isEngineReady, isInspectorEnabled, runAsyncTask]);
@@ -343,7 +367,7 @@ export default function App() {
 				type = "error";
 			}
 			if (type) {
-				notify(type, "Apply AI settings", "applying the AI settings");
+				notify(type, "套用智能設定", "applying the AI settings");
 			}
 			if (!cancelled) {
 				updateAiStatus();
@@ -388,21 +412,31 @@ export default function App() {
 	const isInputDisabled = loading || !isEngineReady;
 	const showInputOverlay = debouncedLoading || engineStartupState !== "ready";
 	const inputOverlayMessage = engineStartupState === "failed"
-		? "引擎啟動失敗 Startup failed. Please reload the page."
-		: "載入中 Loading...";
+		? text.compose.startupFailed
+		: text.compose.loading;
 
 	return (
-		<div className="yd-app-shell" data-chinese-typeface={chineseTypeface}>
+		<div
+			className="yd-app-shell"
+			lang={uiLanguage === "yue" ? "zh-HK" : "en"}
+			data-yune-ui-language={uiLanguage}
+			data-chinese-typeface={chineseTypeface}
+			data-yune-output-standard={outputStandardValue}
+			data-yune-output-option-count={OUTPUT_STANDARD_ENGINE_OPTIONS.length}>
 			<header className="yd-app-header">
 				<div className="yd-app-header-inner">
-					<a className="yd-brand" href="/" aria-label="yune-web home">
+					<a className="yd-brand" href="/" aria-label={text.header.home}>
 						<span className="yd-brand-mark">韻</span>
 						<span className="yd-brand-copy">
-							<span className="yd-brand-title">新韻輸入法引擎 <span>yune-web</span></span>
+							<span className="yd-brand-title">{text.header.title} <span>yune-web</span></span>
 						</span>
 					</a>
 					<div className="yd-header-status">
-						<ThemeSwitcher />
+						<UiLanguageSwitcher
+							uiLanguage={uiLanguage}
+							setUiLanguage={preferences.setUiLanguage}
+						/>
+						<ThemeSwitcher uiLanguage={uiLanguage} />
 					</div>
 				</div>
 			</header>
@@ -411,28 +445,29 @@ export default function App() {
 					<Toolbar
 						isAsciiMode={preferences.isAsciiMode}
 						setIsAsciiMode={preferences.setIsAsciiMode}
-						isSimplification={preferences.isSimplification}
-						setIsSimplification={preferences.setIsSimplification}
+						outputStandard={outputStandardValue}
+						setOutputStandard={preferences.setOutputStandard}
 						isFullShape={preferences.isFullShape}
 						setIsFullShape={preferences.setIsFullShape}
 						activeSchema={preferences.activeSchema}
 						setActiveSchema={preferences.setActiveSchema}
 						isCangjie5={preferences.isCangjie5}
 						setIsCangjie5={preferences.setIsCangjie5}
+						uiLanguage={uiLanguage}
 					/>
 					<div className="yd-playground-grid">
-						<section className="yd-compose-panel" aria-label="IME playground">
+						<section className="yd-compose-panel" aria-label={text.compose.panelAria}>
 							<div className="yd-panel-heading">
-								<span>輸入測試</span>
+								<span>{text.compose.title}</span>
 								<label className="yd-compose-panel-toggle">
-									<span>固定浮窗</span>
+									<span>{text.compose.fixedFloating}</span>
 									<input
 										type="checkbox"
 										className="yd-check yd-toggle"
 										{...NO_AUTO_FILL}
 										checked={preferences.isCandidatePanelFixed}
 										onChange={event => preferences.setIsCandidatePanelFixed(event.target.checked)}
-										aria-label="固定浮窗" />
+										aria-label={text.compose.fixedFloating} />
 								</label>
 							</div>
 							<div className="yd-input-frame" aria-busy={isInputDisabled} data-yune-input-frame>
@@ -440,8 +475,8 @@ export default function App() {
 									className="yd-input-area"
 									data-chinese-typeface={chineseTypeface}
 									ref={setTextArea}
-									aria-label="yune-web composing input"
-									placeholder="粵語拼音"
+									aria-label={text.compose.inputAria}
+									placeholder={text.compose.placeholder}
 									disabled={isInputDisabled}
 									{...NO_AUTO_FILL}
 								/>
@@ -468,32 +503,33 @@ export default function App() {
 							snapshot={userdbSnapshot}
 							isLoading={isUserdbLoading}
 							error={userdbError}
-							onRefresh={refreshUserdbSnapshot} />
+							onRefresh={refreshUserdbSnapshot}
+							uiLanguage={uiLanguage} />
 					</div>
-					<YuneStatusStrip status={engineStatus} />
+					<YuneStatusStrip status={engineStatus} outputStandard={outputStandardValue} uiLanguage={uiLanguage} />
 					<section className="yd-inspector-gate">
 						<div className="yd-inspector-gate-header">
 							<div>
-								<span>引擎檢視</span>
-								<span>Engine Inspector</span>
+								<span>{text.inspector.gateTitle}</span>
 							</div>
-							<YuneInspectorMetrics metrics={metrics} userdbSnapshot={userdbSnapshot} />
+							<YuneInspectorMetrics metrics={metrics} userdbSnapshot={userdbSnapshot} uiLanguage={uiLanguage} />
 							<label className="yd-inspector-enable" data-yune-inspector-toggle>
 								<input
 									type="checkbox"
 									className="yd-check yd-toggle"
 									checked={isInspectorEnabled}
-									aria-label="Engine Inspector"
+									aria-label={text.inspector.traceAria}
 									onChange={(event) =>
 										setIsInspectorEnabled(event.currentTarget.checked)
 									}
 								/>
-								<span>{isInspectorEnabled ? "TRACE ON" : "TRACE OFF"}</span>
+								<span>{isInspectorEnabled ? text.inspector.traceOn : text.inspector.traceOff}</span>
 							</label>
 						</div>
 						{isInspectorEnabled && (
 							<YuneInspector
 								debug={inspectorDebug}
+								uiLanguage={uiLanguage}
 							/>
 						)}
 					</section>
@@ -501,14 +537,14 @@ export default function App() {
 				<Preferences {...preferences} />
 			</main>
 			<footer className="yd-app-footer">
-				<span>yune-web public demo. Yune and upstream-derived assets are licensed under their upstream terms.</span>
+				<span>{text.header.footer}</span>
 				<a
 					className="yd-anchor"
 					href="/PROVENANCE.md"
 					target="_blank"
 					rel="noreferrer"
 				>
-					Provenance
+					{text.header.provenance}
 				</a>
 			</footer>
 			<ToastViewport />

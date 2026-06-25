@@ -6,6 +6,7 @@ param(
     [int]$SessionIterations = 60,
     [int]$KeyIterations = 80,
     [string]$TrackAInputs = "ni,hao,zhongguo",
+    [string]$TrackBInputs = "hai,ngohaig,jigaajiusihaa,loengjathau",
     [switch]$DeployProductBeforeBenchmark
 )
 
@@ -177,7 +178,7 @@ $TrackBProductRun = Prepare-ProductRun "track-b-yune-product" $YuneDll
 
 $Commands = @(
     "cargo build --release -p yune-rime-api",
-    "powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot $OutputRoot -Iterations $Iterations -SessionIterations $SessionIterations -KeyIterations $KeyIterations -TrackAInputs $TrackAInputs$(if ($DeployProductBeforeBenchmark) { ' -DeployProductBeforeBenchmark' } else { '' })"
+    "powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot $OutputRoot -Iterations $Iterations -SessionIterations $SessionIterations -KeyIterations $KeyIterations -TrackAInputs $TrackAInputs -TrackBInputs $TrackBInputs$(if ($DeployProductBeforeBenchmark) { ' -DeployProductBeforeBenchmark' } else { '' })"
 )
 $Commands | Set-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
 
@@ -193,6 +194,7 @@ $Identity = @(
     "managed_runtime=false",
     "deploy_product_before_benchmark=$($DeployProductBeforeBenchmark.IsPresent)",
     "track_a_inputs=$TrackAInputs",
+    "track_b_inputs=$TrackBInputs",
     "iterations=$Iterations",
     "session_iterations=$SessionIterations",
     "key_iterations=$KeyIterations"
@@ -201,7 +203,7 @@ $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -
 
 Run-NativeBench "yune" "track-a-comparison" "luna_pinyin" $TrackAYuneRun $UpstreamDistLib $TrackAInputs "track-a-yune"
 Run-NativeBench "librime-1.17.0" "track-a-comparison" "luna_pinyin" $TrackALibrimeRun (($UpstreamDistLib, $UpstreamBin, $UpstreamDistBin) -join ";") $TrackAInputs "track-a-librime-1.17.0"
-Run-NativeBench "yune" "track-b-product" "jyut6ping3_mobile" $TrackBProductRun $RepoRoot "hai,ngohaig,jigaajiusihaa,loengjathau" "track-b-yune-product" -DeployBeforeBenchmark:$DeployProductBeforeBenchmark.IsPresent
+Run-NativeBench "yune" "track-b-product" "jyut6ping3_mobile" $TrackBProductRun $RepoRoot $TrackBInputs "track-b-yune-product" -DeployBeforeBenchmark:$DeployProductBeforeBenchmark.IsPresent
 
 $CombinedSummary = @()
 $CombinedSamples = @()
@@ -240,6 +242,7 @@ $CombinedRawLookupMicrobench | Export-Csv -LiteralPath (Join-Path $OutputRoot "r
 This run uses the Rust `native_inprocess_benchmark` bench and loads each engine DLL directly in the measured process. It does not use the historical managed `.NET`/PInvoke benchmark host.
 
 - Track A: `luna_pinyin`, Yune versus librime `1.17.0`.
-- Track B: `jyut6ping3_mobile`, Yune product path before/after.
+- Track B: `jyut6ping3_mobile`, Yune Cantonese profile/product path.
 - Track A inputs: `$TrackAInputs`.
+- Track B inputs: `$TrackBInputs`.
 "@ | Set-Content -LiteralPath (Join-Path $OutputRoot "README.md") -Encoding UTF8

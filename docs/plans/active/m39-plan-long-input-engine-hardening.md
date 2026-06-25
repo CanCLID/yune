@@ -9,16 +9,19 @@
 > checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Bring uninterrupted long-input latency into the same native
-Yune-versus-librime performance gate as the M38 short/medium rows while
-preserving startup/session, short-input latency, mmap/`rsmarisa` activation,
-bounded output, memory, and behavior.
+Yune-versus-librime performance gate as the M38 short/medium rows, and prove
+whether the Cantonese `jyut6ping3_mobile` profile shares the same long-input
+owner, while preserving startup/session, short-input latency,
+mmap/`rsmarisa` activation, bounded output, memory, and behavior.
 
-**Architecture:** M39 treats the 37-character and 59-character rows as primary
-engine requirements, not stress curiosities. The milestone starts by splitting
-the unsplit translator bucket into sentence/composition owners, then replaces
-unbounded long-composition fallback with a measured bounded or pruned sentence
-path. Every change is checked against the whole engine shape so a long-input win
-cannot regress startup, short keys, memory, or the deployed-data hot path.
+**Architecture:** M39 treats the 37-character and 59-character Track A rows and
+a 50+ character Cantonese profile row as primary engine requirements, not
+stress curiosities. The milestone starts by splitting the unsplit translator
+bucket into sentence/composition/profile owners, then replaces unbounded
+long-composition fallback with a measured bounded or pruned path only after
+proving which path each profile uses. Every change is checked against the whole
+engine shape so a long-input win cannot regress startup, short keys, memory, or
+the deployed-data hot path.
 
 **Tech Stack:** Rust (`yune-core`, `yune-rime-api`), `StaticTableTranslator`,
 `TableStorage`, `CompactTableStore`, `rsmarisa`, mmap-backed deployed
@@ -56,10 +59,24 @@ Key current rows:
 | `ceshiyixiachangjushuruxingnengzenyang` | `412,192.727 us` | `294.151 us` | `1,401.296x` | fix |
 | `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `1,202,404.588 us` | `702.212 us` | `1,712.310x` | fix |
 
-The long rows have active `rsmarisa`, mmap-backed table/prism bytes, tiny raw
-lookup/context export times, and translator time near all of process-key time.
-The current owner is therefore long-composition translator internals, not raw
-table lookup, not context export, and not marisa activation.
+The Track A long rows have active `rsmarisa`, mmap-backed table/prism bytes,
+tiny raw lookup/context export times, and translator time near all of
+process-key time. The current Track A owner is therefore long-composition
+translator internals, not raw table lookup, not context export, and not marisa
+activation.
+
+Blocking scope gap before implementation: the Cantonese `jyut6ping3_mobile`
+profile has not yet been measured on a 50+ character uninterrupted row. M39
+must add at least this profile row to Track B:
+
+```text
+neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+```
+
+This row is a Cantonese/Jyutping-style counterpart to the current 59-character
+Mandarin stress sentence ("this engine should support very long sentence input
+before it is usable"). It is a native engine profile row, not a browser,
+frontend, packaging, or delivery claim.
 
 ## Non-Negotiable Closeout Gates
 
@@ -67,23 +84,26 @@ table lookup, not context export, and not marisa activation.
   session, `hao`, `ni`, `zhongguo`,
   `ceshiyixiachangjushuruxingnengzenyang`, and
   `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` in the same
-  native Yune/librime run.
+  native Yune/librime run, plus the `jyut6ping3_mobile` Track B row
+  `neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung`.
 - `M39-ENGINE-02` (startup/session no regression): startup and session remain
   within `1.25x` of same-run librime and do not regress by more than `10%` from
   the post-M38 baseline unless a measured librime-side shift explains the ratio.
 - `M39-ENGINE-03` (short/medium no regression): `hao`, `ni`, and `zhongguo`
   remain within `5x` of same-run librime and do not regress by more than `10%`
   from the post-M38 baseline.
-- `M39-ENGINE-04` (long-input parity): both required long rows finish within
-  `5x` of same-run librime. If one remains outside the gate, M39 stays open
-  unless the user explicitly accepts a measured no-go.
+- `M39-ENGINE-04` (long-input parity): both required Track A long rows finish
+  within `5x` of same-run librime. The required `jyut6ping3_mobile` Track B
+  long row must be measured, attributed, and either brought inside the
+  Task 0-agreed native profile target or closed by an explicit measured no-go
+  before M39 can close.
 - `M39-ENGINE-05` (storage hot path): final Track A status preserves
   `selected_storage=rsmarisa_byte_backed`, table/prism `mmap`, positive
   `rsmarisa` exact/prefix counters, zero ordinary no-marisa fallback for target
   rows, and zero selected table/prism heap mirror bytes.
 - `M39-ENGINE-06` (bounded output): final target rows use bounded first-page
   candidate requests; any full-list fallback is named and justified by inner
-  sentence/composition metrics.
+  sentence/composition/profile metrics.
 - `M39-ENGINE-07` (memory no regression and attribution): final median working
   set and max peak do not exceed the post-M38 baseline by more than `5%`, and
   final evidence includes heap-owner attribution. If a top heap owner is safe to
@@ -113,8 +133,8 @@ table lookup, not context export, and not marisa activation.
 - `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`: owns input
   rows, owner CSV fields, raw lookup rows, length-curve output, working set, and
   final same-run comparison evidence.
-- `scripts/benchmark-native-rime-inprocess.ps1`: owns benchmark input
-  parameterization and evidence root orchestration.
+- `scripts/benchmark-native-rime-inprocess.ps1`: owns Track A and Track B
+  benchmark input parameterization and evidence root orchestration.
 - `docs/reports/evidence/m39-long-input-engine-hardening/`: owns M39 evidence.
 - `docs/reports/yune-vs-librime-performance.md`,
   `docs/reports/yune-vs-librime-root-cause-analysis.md`, `docs/roadmap.md`, and
@@ -152,7 +172,7 @@ Expected:
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-0-baseline -Iterations 5 -SessionIterations 20 -KeyIterations 20 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -DeployProductBeforeBenchmark
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-0-baseline -Iterations 5 -SessionIterations 20 -KeyIterations 20 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -TrackBInputs "hai,ngohaig,jigaajiusihaa,loengjathau,caksijathaacoenggeoizi,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung" -DeployProductBeforeBenchmark
 ```
 
 Expected:
@@ -161,20 +181,51 @@ Expected:
   `raw_lookup_microbench.csv`, `startup_session_trace.csv`, and
   `product_path_status.csv` are present.
 - The run may be slow before fixes, but it must produce a complete baseline.
+- The Track B `jyut6ping3_mobile` row is present in `summary.csv`,
+  `samples.csv`, and `m37_metrics.csv`; M39 cannot proceed to Task 2 if this
+  profile row is absent.
 
-- [ ] **Step 0.3: Add a controlled length-curve mode if needed**
+- [ ] **Step 0.3: Set the Cantonese profile closeout target**
 
-If Step 0.2 is too slow for repeated iteration, add a benchmark option that
-accepts a separate low-sample length-curve input list while preserving the final
-same-run run above.
+After Step 0.2, record a short `phase-0-baseline/cantonese-profile-gate.md`
+summary with:
 
-Required length-curve rows:
+- the 50+ character `jyut6ping3_mobile` row median, p95, full-input sample cost,
+  working set, peak working set, and top owner counters;
+- whether the profile row appears to share the Track A long-composition owner;
+- the native profile target for M39, or an explicit statement that a comparable
+  TypeDuck-HK/librime oracle row must be added before a numeric ratio can be
+  claimed.
+
+Expected:
+
+- The product/profile row is a hard closeout gate before Task 2 begins.
+- The plan is updated if the profile row's owner is not the same as the Track A
+  long-composition owner.
+
+- [ ] **Step 0.4: Add a controlled length-curve mode if needed**
+
+If Step 0.2 is too slow for repeated iteration, add benchmark options that
+accept separate low-sample Track A and Track B length-curve input lists while
+preserving the final same-run run above.
+
+Required Track A length-curve rows:
 
 ```text
 ni
 zhongguo
 ceshiyixiachangjushuruxingnengzenyang
 zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong
+```
+
+Required Track B `jyut6ping3_mobile` length-curve rows:
+
+```text
+hai
+ngohaig
+jigaajiusihaa
+caksijathaacoenggeoizi
+neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
 ```
 
 Expected:
@@ -213,6 +264,13 @@ sentence_path_replacements
 sentence_paths_pruned
 sentence_max_live_paths
 sentence_result_candidates
+upstream_sentence_model_calls
+upstream_sentence_model_ns
+upstream_sentence_model_candidates
+prefix_fallback_calls
+prefix_fallback_ns
+prefix_fallback_views_visited
+prefix_fallback_candidates
 ```
 
 Expected:
@@ -236,15 +294,43 @@ In `crates/yune-core/src/translator/mod.rs`, record:
 
 Expected:
 
-- The 37-character and 59-character rows identify the inner owner before any
-  optimization is attempted.
+- The 37-character and 59-character Track A rows identify the inner owner before
+  any optimization is attempted.
+- The `jyut6ping3_mobile` Track B long row identifies whether it uses the same
+  `sentence_candidate` owner, the upstream sentence model owner, prefix
+  fallback, dynamic correction, or another profile-specific owner.
 
-- [ ] **Step 1.3: Capture attribution evidence**
+- [ ] **Step 1.3: Confirm path sharing before fixing**
+
+Use the phase-1 counters to compare:
+
+- Track A `luna_pinyin` long rows;
+- Track B `jyut6ping3_mobile`
+  `neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung`;
+- the current schema-install flags in
+  `crates/yune-rime-api/src/schema_install.rs`.
+
+Current code expectation before implementation:
+
+- upstream `luna_pinyin` installs `with_upstream_sentence_model(100)`;
+- `jyut6ping3_mobile` installs the TypeDuck sentence word penalty but does not
+  automatically prove it shares Track A's long-row owner;
+- the counters, not code inspection alone, decide whether Task 2 fixes one
+  shared owner or needs a profile-specific path.
+
+Expected:
+
+- If the `jyut6ping3_mobile` row is not dominated by the same owner as the
+  Track A rows, update Task 2 before coding.
+- M39 does not optimize the `luna_pinyin` row first and assume transfer to the
+  Cantonese profile.
+
+- [ ] **Step 1.4: Capture attribution evidence**
 
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-1-attribution -Iterations 1 -SessionIterations 5 -KeyIterations 1 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -DeployProductBeforeBenchmark
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-1-attribution -Iterations 1 -SessionIterations 5 -KeyIterations 1 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -TrackBInputs "hai,ngohaig,jigaajiusihaa,loengjathau,caksijathaacoenggeoizi,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung" -DeployProductBeforeBenchmark
 ```
 
 Expected:
@@ -332,13 +418,15 @@ Expected:
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-2-bounded-sentence -Iterations 3 -SessionIterations 10 -KeyIterations 5 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -DeployProductBeforeBenchmark
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-2-bounded-sentence -Iterations 3 -SessionIterations 10 -KeyIterations 5 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -TrackBInputs "hai,ngohaig,jigaajiusihaa,loengjathau,caksijathaacoenggeoizi,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung" -DeployProductBeforeBenchmark
 ```
 
 Expected:
 
-- Both long rows are within `5x` of same-run librime or the remaining owner is
-  still inside named sentence/composition counters.
+- Both Track A long rows are within `5x` of same-run librime or the remaining
+  owner is still inside named sentence/composition counters.
+- The `jyut6ping3_mobile` long row moves according to the Task 0 native profile
+  target or remains blocked by a named measured owner.
 - Startup/session and short rows remain inside no-regression gates.
 
 ## Task 3 - Memory Owner Attribution And No-Regression
@@ -401,13 +489,17 @@ Expected:
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-4-final-native -Iterations 9 -SessionIterations 20 -KeyIterations 20 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -DeployProductBeforeBenchmark
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m39-long-input-engine-hardening\phase-4-final-native -Iterations 9 -SessionIterations 20 -KeyIterations 20 -TrackAInputs "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" -TrackBInputs "hai,ngohaig,jigaajiusihaa,loengjathau,caksijathaacoenggeoizi,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung" -DeployProductBeforeBenchmark
 ```
 
 Expected:
 
-- Same-run Yune/librime ratios are recorded for all target rows.
+- Same-run Yune/librime ratios are recorded for all Track A target rows, and
+  the Track B profile row records the matching Yune owner/status/memory fields.
 - Owner counters prove the long-input owner moved.
+- The `jyut6ping3_mobile` 50+ character profile row is present, attributed, and
+  either inside the Task 0 native profile target or explicitly closed by
+  measured no-go.
 - Storage, memory, and no-regression gates are visible in CSVs and markdown.
 
 - [ ] **Step 4.2: Run behavior and quality gates**
@@ -441,6 +533,9 @@ Update final docs with:
 - startup/session before and after;
 - short-row before and after;
 - 37-character and 59-character before and after;
+- `jyut6ping3_mobile` 50+ character profile row before and after;
+- path-sharing verdict: whether the Track A and Track B long rows used the same
+  owner or required separate fixes/no-goes;
 - long-row inner owner table;
 - mmap/`rsmarisa` status;
 - bounded-output counters;
@@ -457,6 +552,10 @@ Expected:
 - Do not optimize by disabling sentence behavior unless upstream behavior
   evidence proves that is correct for the target row.
 - Do not hide the problem by dropping long rows from the benchmark.
+- Do not hide the Cantonese profile problem by benchmarking only
+  `luna_pinyin`; the `jyut6ping3_mobile` 50+ character row is a closeout gate.
+- Do not assume a `luna_pinyin` long-input fix transfers to
+  `jyut6ping3_mobile`; Task 1 must prove or disprove path sharing first.
 - Do not trade a long-input win for startup/session, short-input, memory, or
   storage-backend regression.
 - Do not close with only a broad `translator_ns` improvement. Final evidence

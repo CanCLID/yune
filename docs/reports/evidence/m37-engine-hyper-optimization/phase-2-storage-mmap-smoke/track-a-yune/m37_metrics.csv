@@ -1,0 +1,16 @@
+engine,track,schema_id,workload,input,sample_index,operation_count,process_key_calls,process_key_ns,translator_calls,translator_ns,lookup_views_visited,owned_candidates_materialized,candidates_sorted,candidate_sort_ns,userdb_merge_ns,filter_pipeline_ns,ranker_pipeline_ns,ai_merge_ns,candidates_stored,context_full_snapshot_candidates_cloned,context_page_snapshot_candidates_cloned,abi_get_context_calls,abi_get_context_ns,abi_candidates_exported,abi_free_context_calls,abi_free_context_ns
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,0,2,2,4695200,6,3090400,9004,5260,2333,34100,800,127200,0,34400,2333,0,5,1,1365600,5,1,500
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,1,2,2,4696900,6,3046400,9004,5260,2333,33900,900,128000,100,35000,2333,0,5,1,1353400,5,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,2,2,2,4630900,6,3004300,9004,5260,2333,34000,1000,136500,0,36900,2333,0,5,1,1342700,5,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,3,2,2,4774100,6,3092700,9004,5260,2333,34500,1000,127400,0,38200,2333,0,5,1,1469300,5,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,4,2,2,4908700,6,3231400,9004,5260,2333,34600,1300,132100,100,36200,2333,0,5,1,1362000,5,1,200
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,0,3,3,11576100,9,8056800,18870,11240,4852,84800,3200,291100,100,112800,4852,0,5,1,1368600,5,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,1,3,3,11542100,9,8130800,18870,11240,4852,81600,2300,278200,0,105600,4852,0,5,1,1364300,5,1,200
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,2,3,3,11022100,9,7597800,18870,11240,4852,81900,2200,276500,0,104000,4852,0,5,1,1381200,5,1,200
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,3,3,3,11775800,9,8186300,18870,11240,4852,81900,2400,282000,100,154300,4852,0,5,1,1388200,5,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,4,3,3,11247800,9,7783500,18870,11240,4852,83400,1900,279100,100,115600,4852,0,5,1,1354100,5,1,200
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,0,8,8,34804000,24,23067400,52945,31611,11037,186800,4500,746500,100,551900,11037,0,4,1,1333500,4,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,1,8,8,36042200,24,24461000,52945,31611,11037,197100,7200,692000,300,412900,11037,0,4,1,1352100,4,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,2,8,8,36908200,24,25048700,52945,31611,11037,186200,6400,730000,100,610500,11037,0,4,1,1327200,4,1,200
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,3,8,8,37746400,24,25653700,52945,31611,11037,194800,9100,709300,100,609500,11037,0,4,1,1402300,4,1,300
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,4,8,8,40560900,24,28412500,52945,31611,11037,200700,9600,793300,300,721600,11037,0,4,1,1349900,4,1,300

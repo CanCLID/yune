@@ -10,10 +10,10 @@ Yune is a Rust input-method engine that uses **librime as a compatibility oracle
 - [`ledgers/milestone-history.md`](./ledgers/milestone-history.md) - historical milestone ledger split out of this roadmap.
 - [`conventions.md`](./conventions.md) - architecture, stack, structure, coding/testing conventions, integrations, current risks, and planning-doc rules.
 - [`decisions.md`](./decisions.md) - standing principles plus project-wide decision log.
-- [`requirements.md`](./requirements.md) - requirement IDs and status, including M37's open implementation gates.
+- [`requirements.md`](./requirements.md) - requirement IDs and status, including the closed M37 engine gates.
 - [`ledgers/fork-parity-ledger.md`](./ledgers/fork-parity-ledger.md) - source of truth for Cantoboard/TypeDuck fork improvements versus upstream `1.17.0`.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md) and [`reports/yune-vs-librime-root-cause-analysis.md`](./reports/yune-vs-librime-root-cause-analysis.md) - current performance comparison and diagnosis.
-- [`plans/active/m37-plan-engine-hyper-optimization.md`](./plans/active/m37-plan-engine-hyper-optimization.md) - next engine hyper-optimization milestone.
+- [`plans/completed/m37-plan-engine-hyper-optimization.md`](./plans/completed/m37-plan-engine-hyper-optimization.md) - completed engine hyper-optimization milestone.
 - [`plans/active/p2-win01-plan-typeduck-windows-next.md`](./plans/active/p2-win01-plan-typeduck-windows-next.md) - Phase 2 Windows product/frontend plan.
 - [`plans/active/m32-plan-ai-native-public-demo-product-layer.md`](./plans/active/m32-plan-ai-native-public-demo-product-layer.md) - later AI-native product/demo expansion.
 - [`plans/`](./plans) - active, reference, and completed plans, findings, contracts, and validation artifacts; finished plans live under [`plans/completed/`](./plans/completed).
@@ -25,23 +25,22 @@ Yune is a Rust input-method engine that uses **librime as a compatibility oracle
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target baseline is complete: upstream `luna_pinyin` / common schemas track upstream `1.17.0`; TypeDuck `jyut6ping3` tracks TypeDuck-HK/librime `v1.1.2` through explicit profile surfaces | Preserve upstream-first defaults and TypeDuck-profile isolation on every new change |
-| Engine performance | M33-M36 closed fairness, bounded upstream candidate work, compact upstream storage, and compiled-active TypeDuck product storage | Run **M37** before treating the engine path as ready for the next product push |
-| Windows product | M10 backend/profile smoke and P2-WIN-02 Yune boundary compatibility are complete; the remaining Notepad raw-ASCII issue is classified as TSF input-delivery/frontend-shell work | Resume **P2-WIN-01** after M37 unless the user explicitly chooses Windows momentum first |
+| Engine performance | M33-M37 closed fairness, bounded upstream candidate work, compact upstream storage, compiled-active TypeDuck product storage, page-bounded product materialization, and native mapped product table storage | Keep Track A comparison caveats visible; target future engine work only from fresh owner evidence |
+| Windows product | M10 backend/profile smoke and P2-WIN-02 Yune boundary compatibility are complete; the remaining Notepad raw-ASCII issue is classified as TSF input-delivery/frontend-shell work | Resume **P2-WIN-01** unless the user explicitly chooses another track |
 | Public web demo | M31 published `yune-web` at <https://yune-web.pages.dev> with scoped output-standard evidence, Cloudflare Pages deployment, cache evidence, and no browser speed claim | Future public-demo changes need a new scoped plan and fresh browser evidence |
 | AI-native product | M11 core/CLI AI and M13 default-off local web exposure are complete | **M32** remains later; it should not run ahead of Windows by default |
 | Future platform work | TypeDuck-Web product integration and iOS keyboard support remain future product/platform tracks | Start a named track before touching those product repositories or platform contracts |
 
 ## Authoritative Sequence
 
-1. **M37 engine hyper-optimization** - active next milestone.
-2. **P2-WIN-01 TypeDuck-Windows product/frontend** - primary product track after the shared Yune engine path is ready.
-3. **M32 AI-native public demo/product expansion** - later, unless deliberately reprioritized.
+1. **P2-WIN-01 TypeDuck-Windows product/frontend** - primary product track after the M37 engine closeout.
+2. **M32 AI-native public demo/product expansion** - later, unless deliberately reprioritized.
 
 Trigger-gated, not scheduled: extracting the full processor pipeline from `yune-rime-api` into `yune-core` lands only when a real non-ABI consumer such as an iOS package or Yune-native frontend needs the full input path. Do not milestone that extraction speculatively.
 
-## M37 Readiness Gate
+## M37 Closeout
 
-M37 is the next big implementation because M36 proved useful product-path wins while leaving the most important engine-path risks unresolved.
+M37 is complete. It closed the M36 residual engine gates for the native product path without making browser claims.
 
 **Starting evidence:**
 
@@ -51,24 +50,21 @@ M37 is the next big implementation because M36 proved useful product-path wins w
 - Track B `hai` remains the sharp residual product clue at `15,241.000us`, the shortest and worst final product row.
 - Browser delivery was not touched by M36; native engine wins are not browser wins.
 
-**M37 closes only when all of this is true:**
+**Closeout evidence:**
 
-- Phase 0 attributes both the `hai` latency owner and the product memory owners. It cannot close with docs-only attribution, unexplained `hai`, or unexplained product memory.
-- The selected product storage route is byte-backed, mapped, or interned enough to remove the M36-style owned no-marisa heap mirror and move memory. `rsmarisa` is the preferred implementation and must be tried against real `jyut6ping3` and `jyut6ping3_scolar` data, but a reviewed interned/byte-backed fallback can satisfy the gate only after a verified crate/platform blocker and only with the same no-`SourceFallback`, no-heap-mirror, byte-parity, and memory-movement evidence.
-- Native product rows prove mmap/file-backed loading for the selected hot storage bytes. If `rsmarisa` is selected, evidence must report `mapping_mode=mmap`; if direct `Trie::mmap()` is blocked, M37 stays open for a reviewed patch, fork, or owner-backed mmap adapter.
-- Fresh product table/prism/reverse artifacts load without `SourceFallback`, and status/evidence proves the active path is not silently using the M36 owned no-marisa fallback.
-- Ordinary `RimeProcessKey` + `RimeGetContext` product reads materialize only the current page plus bounded surplus where semantics allow it.
-- `RimeGetContext` no longer needs a full `Engine::snapshot()` candidate-list clone for page-only reads.
-- `hai` is explained by owner spans and materially moved from the M36 final `15,241.000us` median. If the first fix does not move it, continue with the next measured owner.
-- Product memory moves materially from the M36 final `~741.5 MB` median row / `885.3 MB` peak baseline, and Track A working-set attribution is refreshed.
-- Upstream and TypeDuck behavior stays byte-identical under the focused parity, ABI, browser-runtime, selection, paging, correction, prediction, learning, and rich-comment gates named in the M37 plan.
-- Public claims stay honest: Track A remains comparison evidence, Track B remains product before/after evidence, and browser speed claims require rebuilt release WASM plus real browser evidence.
+- Phase 0 attributed `hai` to full candidate materialization/filtering: 19,918 lookup views, 19,918 owned candidates, 11,289 sorted/stored rows, and only 5 ABI-exported candidates.
+- Final product rows are page-bounded: final `hai` still visits 19,918 lookup views but builds 52 owned candidates, sorts/stores 48, page-clones 5, and exports 5.
+- Selected product storage is byte-backed and native-mapped: `selected_storage=byte_backed`, `table_format=yune_no_marisa_compact`, `mapping_mode=mmap`, `source_fallback=false`.
+- `rsmarisa 0.4.2` was tried against real TypeDuck `jyut6ping3` and `jyut6ping3_scolar` marisa string-table payloads; both mmaped successfully. It was not selected as the hot route because full query replacement still needs a multi-level phrase-index adapter.
+- `hai` moved from the M36 final `15,241.000us` to `8,336.800us` (`-45.3%`).
+- Track B product median working set moved from the M36 final about `777 MB` row plateau to about `365-369 MB`; peak moved from `928,350,208 B` to `504,377,344 B`.
+- Track A remains comparison evidence and still trails librime widely; no browser startup/typing claim is made because M37 did not rebuild release WASM or run real browser proof.
 
 ## Track Map
 
 | Track | Scope | Current source of truth |
 | --- | --- | --- |
-| Engine performance | Native full-ABI and engine data-path optimization; Track A fair comparison and Track B TypeDuck product rows stay separate | [`plans/active/m37-plan-engine-hyper-optimization.md`](./plans/active/m37-plan-engine-hyper-optimization.md), performance reports, and `docs/reports/evidence/` |
+| Engine performance | Native full-ABI and engine data-path optimization; Track A fair comparison and Track B TypeDuck product rows stay separate | [`plans/completed/m37-plan-engine-hyper-optimization.md`](./plans/completed/m37-plan-engine-hyper-optimization.md), performance reports, and `docs/reports/evidence/` |
 | Windows product/frontend | Yune-first TypeDuck-Windows product shell, TSF input delivery, candidate UI, packaging, and interactive smoke | [`plans/active/p2-win01-plan-typeduck-windows-next.md`](./plans/active/p2-win01-plan-typeduck-windows-next.md) |
 | Public web/demo delivery | `yune-web` packaging, Cloudflare deployment, payload/cache strategy, browser smoke, and browser-only UX | [`plans/completed/m31-plan-yune-web-public-demo-readiness.md`](./plans/completed/m31-plan-yune-web-public-demo-readiness.md) |
 | AI-native product | Local-first AI UX, memory/privacy controls, public-demo posture, and any explicit remote-provider decision | [`plans/active/m32-plan-ai-native-public-demo-product-layer.md`](./plans/active/m32-plan-ai-native-public-demo-product-layer.md) |
@@ -83,9 +79,8 @@ M37 is the next big implementation because M36 proved useful product-path wins w
 | M25-M30 | Complete | TypeDuck-Web dogfooding and early performance follow-ups are closed; future web dogfood needs a new scoped ledger. |
 | P2-WIN-02 | Complete | Yune-side TypeDuck Windows raw-comment/session boundary is fixed; remaining interactive issue is TSF/frontend-shell work. |
 | M31 | Complete | `yune-web` public demo is deployed; no browser startup/typing win is claimed. |
-| M33-M36 | Complete | Recent engine-performance baseline is closed through product compiled-active storage; remaining risks are M37. |
-| M37 | Planned / next | Must land byte-backed or interned product storage (`rsmarisa` preferred), native mmap/file-backed loading, page-bounded materialization/context export, `hai` movement, and product memory movement. |
-| P2-WIN-01 | Draft / next product track | Resume after M37 unless deliberately prioritized earlier. |
+| M33-M37 | Complete | Recent engine-performance work is closed through product compiled-active storage, page-bounded materialization/context export, native mapped product table storage, `hai` movement, and product memory movement. |
+| P2-WIN-01 | Draft / next product track | Resume unless deliberately prioritized later. |
 | M32 | Planned / later | AI-native product/demo expansion; do not let it delay Windows by default. |
 
 ## Scope Ledger
@@ -105,7 +100,7 @@ A living map so "parity" always names a target. Deferred rows move into scope on
 
 - **librime C++ plugin ABI** (Lua, octagram, predict, proto): deferred until a concrete frontend or distribution requires it; prefer Yune-native extension points first.
 - **AI-native input layer beyond M13:** M32 owns richer local-first AI UX, privacy/memory controls, public-demo evidence, and any explicit remote-provider decision. Until then, proven web AI remains default-off/local-only.
-- **Queryable table+prism storage after M36:** M37 promotes the remaining product storage work from deferred to active. The real product query path must use byte-backed or interned data without rebuilding owned heap maps, with `rsmarisa` preferred where it works and an interned/byte-backed re-emit acceptable only if it proves the same memory outcome. Native mmap/file-backed loading is a hard M37 gate and may count only if the query path directly uses mapped or borrowed data; browser byte-backed loading must use the closest WASM-safe equivalent.
+- **Queryable table+prism storage after M37:** the native product path now uses byte-backed mapped Yune product tables. Future storage work should target full `rsmarisa` hot-path selection only after a multi-level phrase-index adapter proves byte identity across table, reverse, prism, prediction, correction, paging, learning, and rich-comment gates. Browser byte-backed loading still needs separate WASM and real-browser evidence before public delivery claims.
 - **Post-M31 `yune-web` follow-ups:** future public-demo changes need a new scoped plan, browser evidence, no telemetry/secrets, and clear separation between delivery/cache claims and Rust engine latency claims.
 - **OpenCC output-standard breadth:** M31 exposes only browser-honest Hong Kong Traditional and `hk2s` Simplified controls. Broader standards need named engine/runtime/browser evidence.
 - **TypeDuck-Web product integration:** use a new product-integration track before changing a separately cloned `TypeDuck-HK/TypeDuck-Web` checkout. The internal `apps/yune-web/` harness is not the shipping TypeDuck product.

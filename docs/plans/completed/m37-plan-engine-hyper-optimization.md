@@ -1,8 +1,20 @@
-﻿# M37 Engine Hyper-Optimization Plan
+# M37 Engine Hyper-Optimization Plan
 
-> **Status:** Planned - **Milestone:** M37 (engine hyper-optimization) - **Created:** 2026-06-24 - **Type:** engine-performance plan
+> **Status:** Complete - **Milestone:** M37 (engine hyper-optimization) - **Created:** 2026-06-24 - **Completed:** 2026-06-24 - **Type:** engine-performance plan
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+## Closeout Summary
+
+M37 closed the native product-path engine hyper-optimization gates with tracked evidence under
+[`docs/reports/evidence/m37-engine-hyper-optimization/`](../../reports/evidence/m37-engine-hyper-optimization/).
+
+- Phase 0 attributed `hai` to full candidate materialization/filtering and named product storage as the top memory owner.
+- Ordinary Track B product rows now use page-bounded materialization and page snapshots for context export.
+- The selected native product storage path is byte-backed and mapped: final product status records `selected_storage=byte_backed`, `table_format=yune_no_marisa_compact`, `mapping_mode=mmap`, `source_fallback=false`, fresh checksums, and parse-ok table/prism/reverse artifacts for both product dictionaries.
+- `rsmarisa 0.4.2` was tried against real `jyut6ping3` and `jyut6ping3_scolar` marisa string-table payloads. Both mmaped successfully; the final hot route stays on mapped Yune-readable product tables because full `rsmarisa` selection still needs a multi-level phrase-index adapter.
+- Track B `hai` moved from the M36 final `15,241.000us` median to `8,336.800us`; product peak working set moved from `928,350,208 B` to `504,377,344 B`.
+- Track A remains comparison evidence and still trails librime widely. No browser startup/typing claim is made because M37 did not rebuild release WASM or run real-browser evidence.
 
 **Goal:** Make the post-M36 engine path meaningfully closer to librime by landing byte-backed or interned product storage, fixing candidate materialization/context export for the TypeDuck product path, and treating `hai` as the first residual row to explain and move. `rsmarisa` is the strongly preferred storage route, not the milestone's only acceptable implementation mechanism.
 
@@ -60,7 +72,7 @@ Out of scope:
 - `M37-ENGINE-03` (fresh product compiled path): The final product status must show fresh table/prism/reverse artifacts, no `SourceFallback`, and a table parse/status that proves the selected byte-backed or interned product path is active rather than silently using the M36 no-marisa owned fallback.
 - `M37-ENGINE-04` (candidate materialization hard gate): For the default Track B product rows, instrumentation must prove Yune materializes only the current page plus bounded surplus during ordinary `RimeProcessKey` + `RimeGetContext` reads. Full-list materialization is allowed only when an explicit full-list API, paging beyond the retained window, debug inspection, or a proven full-list-only feature asks for it.
 - `M37-ENGINE-05` (context export): `RimeGetContext` must no longer require `Engine::snapshot()` to clone the full candidate list for page-only reads. It should read a page snapshot or page view and allocate C strings only for the exported page.
-- `M37-ENGINE-06` (behavior): `upstream_luna_pinyin_parity`, `cantonese_parity`, `typeduck_web`, M28 long-composition/default-confirm coverage, paging, deletion, numbered selection, click selection, userdb learning, correction, prediction, and rich dictionary comments remain byte-identical for their target fixtures.
+- `M37-ENGINE-06` (behavior): `upstream_luna_pinyin_parity`, `cantonese_parity`, `yune_web`, M28 long-composition/default-confirm coverage, paging, deletion, numbered selection, click selection, userdb learning, correction, prediction, and rich dictionary comments remain byte-identical for their target fixtures.
 - `M37-ENGINE-07` (measured product movement): Track B `hai` must move materially from the M36 final `15,241.000 us` median and may not remain the unexplained worst row by about `3x`. If the first materialization fix does not move it, continue with the next measured owner before closing.
 - `M37-ENGINE-08` (memory movement): Track B product median working set and peak working set must move materially from the M36 final `~741.5 MB` median row / `885.3 MB` peak baseline, and Track A working-set attribution must be refreshed. If memory does not move, M37 stays open to the named memory owner unless the maintainer explicitly splits a follow-up milestone before closeout.
 - `M37-ENGINE-09` (native mmap hard gate): The final native product path must report mmap/file-backed loading for the selected hot storage bytes. If `rsmarisa` is selected, native evidence must report `mapping_mode=mmap` for the marisa string-table payload. If direct `Trie::mmap()` cannot safely own the required file slice or lifetime, M37 lands a reviewed local patch, fork, or owner-backed mmap adapter before closeout; an owned-buffer, no-marisa, or mmap-no-go result keeps M37 open.
@@ -96,7 +108,7 @@ Out of scope:
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/phase-0-baseline/hai-attribution.md`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/phase-0-baseline/memory-attribution.md`
 
-- [ ] **Step 0.1: Confirm repo state**
+- [x] **Step 0.1: Confirm repo state**
 
 Run:
 
@@ -111,7 +123,7 @@ Expected:
 - Worktree is clean or unrelated active changes are listed before editing.
 - The current branch includes the M36 closeout and the post-M36 performance diagnosis commit.
 
-- [ ] **Step 0.2: Capture fresh M37 baseline**
+- [x] **Step 0.2: Capture fresh M37 baseline**
 
 Run the M36 native in-process benchmark with the same Track A/Track B split:
 
@@ -124,7 +136,7 @@ Expected:
 - Baseline CSVs include Track A `ni`, `hao`, `zhongguo`, startup, session, and Track B `hai`, `ngohaig`, `loengjathau`, `jigaajiusihaa`.
 - Any drift from M36 final is recorded before optimizing.
 
-- [ ] **Step 0.3: Add owner spans for the key path**
+- [x] **Step 0.3: Add owner spans for the key path**
 
 Instrument the native harness or an internal feature-gated timing path so each product key sample can report:
 
@@ -144,7 +156,7 @@ Expected:
 - `hai-attribution.md` names the top owner for `hai`.
 - If `hai` is dominated by context export rather than lookup, Task 2 is prioritized before broader materialization/storage work.
 
-- [ ] **Step 0.4: Add materialization counters**
+- [x] **Step 0.4: Add materialization counters**
 
 Record, per key row:
 
@@ -161,7 +173,7 @@ Expected:
 - The baseline proves whether `hai` creates a large completion/homophone set even though it is only three keys.
 - The final M37 run can prove materialization reduction with counts, not only latency.
 
-- [ ] **Step 0.5: Add memory attribution**
+- [x] **Step 0.5: Add memory attribution**
 
 Produce an owner table for the M37 baseline. Use the native harness working-set
 and peak rows plus a heap profiler where available. If a profiler such as
@@ -210,7 +222,7 @@ file-backed loading is a separate hard gate for the selected native route.
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/rsmarisa-path.md`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/storage-path.md`
 
-- [ ] **Step 1.1: Pin and verify `rsmarisa`**
+- [x] **Step 1.1: Pin and verify `rsmarisa`**
 
 Check the current `rsmarisa` crate, then pin a version that satisfies the repo's MSRV, license, Windows, Linux, and WASM requirements. The currently documented API includes `Trie::mmap`, `Trie::map`, `Trie::reverse_lookup`, `Trie::predictive_search`, `Trie::num_tries`, and `Trie::num_keys`; verify those names at execution time before coding. Treat native mmap support as a required capability, not a nice-to-have benchmark variant.
 
@@ -219,7 +231,7 @@ Expected:
 - `rsmarisa-path.md` records crate version, license, MSRV result, feature flags, Windows/native result, WASM result, real product blob result, and whether `rsmarisa` can safely own or borrow runtime-loaded bytes.
 - If upstream `rsmarisa` has a crate, lifetime, nested/multi-trie, or WASM blocker, M37 records the exact blocker and continues with either a reviewed local patch/fork, a small owner-backed adapter, or the interned/byte-backed re-emit path below. Do not close M37 by declaring `rsmarisa` no-go.
 
-- [ ] **Step 1.2: Add a marisa string-table adapter**
+- [x] **Step 1.2: Add a marisa string-table adapter**
 
 Implement a narrow adapter that can:
 
@@ -236,7 +248,7 @@ Expected:
 - If `Trie::mmap()` cannot map an interior payload slice directly, the implementation adds a safe owner-backed mmap adapter, local patch, or fork rather than copying the payload into a normal owned buffer or falling back to no-marisa.
 - If `Trie::map(&'static [u8])` is too restrictive for runtime-loaded WASM bytes, the implementation adds a safe owner-backed solution rather than leaking per-load buffers or falling back to no-marisa.
 
-- [ ] **Step 1.3: Teach `compiled_table.rs` to parse marisa-backed table entries**
+- [x] **Step 1.3: Teach `compiled_table.rs` to parse marisa-backed table entries**
 
 Replace the hard rejection of `marisa string_table` with a dual resolver:
 
@@ -249,7 +261,7 @@ Expected:
 - New tests prove the real product table can parse candidate text through `rsmarisa`.
 - Unsupported multi-level index, advanced payload, correction/tolerance, and lookup-record gaps remain structured errors unless the selected fresh product build supplies those payloads separately.
 
-- [ ] **Step 1.4: Select the storage route**
+- [x] **Step 1.4: Select the storage route**
 
 After Step 1.1-Step 1.3, make an explicit storage-route decision in
 `storage-path.md`.
@@ -277,7 +289,7 @@ Expected:
   interned/byte-backed route satisfies the storage outcome gate and the native
   mmap/file-backed gate.
 
-- [ ] **Step 1.5: Emit fresh storage-backed product tables**
+- [x] **Step 1.5: Emit fresh storage-backed product tables**
 
 Update the table writer or product deploy path so `workspace_update:<schema>` can create fresh product tables whose text storage follows the selected route and whose checksum matches source. Preserve the M36 lesson: the final passing path must be a coherent table/prism/reverse set, not an isolated table shortcut.
 
@@ -287,13 +299,13 @@ Expected:
 - `product_path_status.csv` reports fresh checksum, selected storage route, native mapping mode, table parse ok, prism parse ok, reverse parse ok, and `compiled_ready=true`.
 - Final runtime path does not use source-YAML fallback or the M36 owned no-marisa final fallback.
 
-- [ ] **Step 1.6: Prove behavior byte parity**
+- [x] **Step 1.6: Prove behavior byte parity**
 
 Run focused gates:
 
 ```powershell
 cargo test -p yune-core --test cantonese_parity -- --nocapture
-cargo test -p yune-rime-api --test typeduck_web -- --nocapture
+cargo test -p yune-rime-api --test yune_web -- --nocapture
 cargo test -p yune-core compiled_payloads -- --nocapture
 ```
 
@@ -302,7 +314,7 @@ Expected:
 - TypeDuck rich comments, lookup records, correction/tolerance, long composition, partial selection, default-confirm recomposition, and userdb learning stay byte-identical.
 - `storage-path.md` records any crate patch/fork/fallback and why it remains safe.
 
-- [ ] **Step 1.7: Prove storage memory movement**
+- [x] **Step 1.7: Prove storage memory movement**
 
 Rerun the native memory rows and the memory-attribution table after storage
 changes, even if latency work has not started.
@@ -326,7 +338,7 @@ Expected:
 - Test: `crates/yune-rime-api/tests/frontend_hosts/`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/context-page-export.md`
 
-- [ ] **Step 2.1: Add a page snapshot API**
+- [x] **Step 2.1: Add a page snapshot API**
 
 Add an internal engine API for page-only reads, shaped around the current menu page size and highlighted index. It should clone only:
 
@@ -339,7 +351,7 @@ Expected:
 - `Engine::snapshot()` remains available for full snapshot callers.
 - `RimeGetContext` can use the page snapshot without cloning the entire `Vec<Candidate>`.
 
-- [ ] **Step 2.2: Route `RimeGetContext` through page export**
+- [x] **Step 2.2: Route `RimeGetContext` through page export**
 
 Update `context_api.rs` so ordinary context reads export only the page view. Preserve hidden-candidate mode, select labels, select keys, commit text preview, chord prompt, affix prompt, `is_last_page`, and highlighted index behavior.
 
@@ -348,7 +360,7 @@ Expected:
 - Existing frontend-client and frontend-host tests pass.
 - The materialization counters show full candidate-list clone count drops to zero for ordinary page reads.
 
-- [ ] **Step 2.3: Keep full-list readers explicit**
+- [x] **Step 2.3: Keep full-list readers explicit**
 
 Audit callers that require a full candidate list and route them through `ensure_complete_candidate_list()` or `Engine::snapshot()` intentionally.
 
@@ -369,7 +381,7 @@ Expected:
 - Test: `crates/yune-core/tests/cantonese_parity.rs`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/materialization-gate.md`
 
-- [ ] **Step 3.1: Replace boxed table iterators on the hot path**
+- [x] **Step 3.1: Replace boxed table iterators on the hot path**
 
 If Phase 0 shows iterator dispatch is measurable, replace `TableStorage`'s boxed iterator returns with concrete enum iterators for heap, compact, and rsmarisa-backed stores.
 
@@ -378,7 +390,7 @@ Expected:
 - No behavior change.
 - This step is skipped only if Phase 0 proves it is not measurable; skipping it does not waive the materialization hard gate.
 
-- [ ] **Step 3.2: Make TypeDuck product rows eligible for bounded requests**
+- [x] **Step 3.2: Make TypeDuck product rows eligible for bounded requests**
 
 Generalize the M34 bounded refresh gate past `luna_pinyin` only after proving the default TypeDuck product rows are safe. The first target set is:
 
@@ -392,7 +404,7 @@ Expected:
 - These rows use bounded materialization under the default product options measured by the native harness.
 - Full-list-sensitive settings keep eager fallback with explicit evidence.
 
-- [ ] **Step 3.3: Bound sort and merge work**
+- [x] **Step 3.3: Bound sort and merge work**
 
 Replace full-list `sort_by` with a stable page-sized top-K or k-way merge where the request is bounded. Keep tie behavior deterministic and byte-identical for the first page.
 
@@ -401,7 +413,7 @@ Expected:
 - First page, paging, selection, and default confirm are unchanged.
 - Materialization counters prove only page plus surplus is sorted/materialized for default product rows.
 
-- [ ] **Step 3.4: Classify filters, userdb, rankers, and prediction**
+- [x] **Step 3.4: Classify filters, userdb, rankers, and prediction**
 
 For each product feature, classify it as:
 
@@ -416,7 +428,7 @@ Expected:
 - Page-safe and surplus-safe features use bounded work.
 - Full-list-only features force explicit eager fallback and are named in `materialization-gate.md`.
 
-- [ ] **Step 3.5: Prove the `hai` hard gate**
+- [x] **Step 3.5: Prove the `hai` hard gate**
 
 Run the native product key row repeatedly after the materialization change.
 
@@ -434,10 +446,10 @@ Expected:
 - Modify: `crates/yune-core/src/dictionary/compiled_prism.rs`
 - Modify: `crates/yune-core/src/engine.rs`
 - Test: `crates/yune-core/tests/cantonese_parity.rs`
-- Test: `crates/yune-rime-api/tests/typeduck_web.rs`
+- Test: `crates/yune-rime-api/tests/yune_web.rs`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/full-list-owner-indexes.md`
 
-- [ ] **Step 4.1: Remove dynamic-correction all-code scans where measured**
+- [x] **Step 4.1: Remove dynamic-correction all-code scans where measured**
 
 If Phase 0 or Task 3 identifies correction scans as a top owner, add length/syllable buckets and reusable restricted-distance scratch space so `dynamic_correction_lookup` no longer requires scanning every code for ordinary product rows.
 
@@ -446,7 +458,7 @@ Expected:
 - Correction-on TypeDuck rows improve or the evidence proves correction is not the current top owner.
 - Default non-correction rows do not regress.
 
-- [ ] **Step 4.2: Index prefix fallback and prediction-limit metadata**
+- [x] **Step 4.2: Index prefix fallback and prediction-limit metadata**
 
 If prefix fallback or prediction limits block bounding for product rows, add enough metadata to decide the first page without materializing the whole candidate list.
 
@@ -454,7 +466,7 @@ Expected:
 
 - `prediction_never_first`, `assign_ordered_candidate_qualities`, and sentence-over-completion remain explicit stop gates. If one requires a full list, that ring stays eager and documented.
 
-- [ ] **Step 4.3: Replace sentence path cloning only if measured**
+- [x] **Step 4.3: Replace sentence path cloning only if measured**
 
 If sentence/path DP appears as a top owner after materialization is bounded, replace `Vec<String>` path cloning with backpointers or piece ids.
 
@@ -470,11 +482,11 @@ Expected:
 - Modify: `docs/reports/yune-vs-librime-root-cause-analysis.md`
 - Modify: `docs/roadmap.md`
 - Modify: `docs/requirements.md`
-- Move on closeout: `docs/plans/active/m37-plan-engine-hyper-optimization.md` to `docs/plans/completed/m37-plan-engine-hyper-optimization.md`
-- Create: `docs/reports/evidence/m37-engine-hyper-optimization/final/`
+- Move on closeout: `docs/plans/completed/m37-plan-engine-hyper-optimization.md`
+- Create: `docs/reports/evidence/m37-engine-hyper-optimization/phase-3-final-native/`
 - Create: `docs/reports/evidence/m37-engine-hyper-optimization/final-gates.md`
 
-- [ ] **Step 5.1: Run final native evidence**
+- [x] **Step 5.1: Run final native evidence**
 
 Run:
 
@@ -483,9 +495,9 @@ cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test -p yune-core --test upstream_luna_pinyin_parity
 cargo test -p yune-core --test cantonese_parity
-cargo test -p yune-rime-api --test typeduck_web
+cargo test -p yune-rime-api --test yune_web
 cargo test --workspace
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m37-engine-hyper-optimization\final -Iterations 5 -SessionIterations 20 -KeyIterations 20 -DeployProductBeforeBenchmark
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m37-engine-hyper-optimization\phase-3-final-native -Iterations 5 -SessionIterations 20 -KeyIterations 20 -DeployProductBeforeBenchmark
 git diff --check
 ```
 
@@ -494,7 +506,7 @@ Expected:
 - All gates pass or any missing external/browser gate is explicitly justified.
 - Final evidence includes selected storage route, `rsmarisa` outcome if tried, native mmap/mapping-mode status, materialization counters, Track A comparison rows, Track B before/after rows, memory-owner tables, memory movement rows, and `hai` attribution before/after.
 
-- [ ] **Step 5.2: Run runtime/browser gates if runtime-visible files changed**
+- [x] **Step 5.2: Run runtime/browser gates if runtime-visible files changed**
 
 If M37 changes the WASM/runtime-visible engine path, rebuild the TypeDuck-Web WASM assets and run focused real-browser evidence before any browser claim.
 
@@ -503,7 +515,7 @@ Expected:
 - Native engine wins remain native-only unless this evidence exists.
 - M31 public-demo delivery/cache claims remain separate.
 
-- [ ] **Step 5.3: Update public reports**
+- [x] **Step 5.3: Update public reports**
 
 Update the performance and root-cause reports with:
 
@@ -523,7 +535,7 @@ Expected:
 - No "faster than librime" claim unless Track A fair evidence proves it.
 - No browser startup/typing claim unless browser evidence exists.
 
-- [ ] **Step 5.4: Close the milestone honestly**
+- [x] **Step 5.4: Close the milestone honestly**
 
 M37 may close only when:
 

@@ -2,6 +2,7 @@ use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_int},
     ptr,
+    time::Instant,
 };
 
 use crate::{
@@ -9,6 +10,20 @@ use crate::{
     RimeSchemaList, RimeSchemaListItem, RimeStatus, RimeStringSlice, RimeUserDictIterator,
     UserDictListState, FALSE, TRUE,
 };
+
+struct M37FreeContextTimer(Instant);
+
+impl M37FreeContextTimer {
+    fn start() -> Self {
+        Self(Instant::now())
+    }
+}
+
+impl Drop for M37FreeContextTimer {
+    fn drop(&mut self) {
+        yune_core::m37_record_abi_free_context(self.0.elapsed());
+    }
+}
 
 pub(crate) fn non_empty_cstring_ptr(value: &CString) -> Option<*const c_char> {
     if value.as_bytes().is_empty() {
@@ -296,6 +311,7 @@ pub(crate) fn copy_c_string_with_strncpy_semantics(
 /// `RimeGetContext`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeFreeContext(context: *mut RimeContext) -> Bool {
+    let _m37_timer = M37FreeContextTimer::start();
     if context.is_null() {
         return FALSE;
     }

@@ -19,6 +19,7 @@ impl<'a> LookupCandidate<'a> {
         raw_quality: f32,
         source_hint: CandidateSource,
     ) -> Self {
+        crate::m37_record_lookup_view();
         Self {
             text,
             raw_comment,
@@ -59,6 +60,7 @@ impl<'a> LookupCandidate<'a> {
 
     #[must_use]
     pub(crate) fn to_candidate(&self) -> Candidate {
+        crate::m37_record_owned_candidate_materialized();
         Candidate {
             text: self.text.to_owned(),
             comment: self.raw_comment.to_owned(),

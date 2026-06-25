@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs,
+    fmt, fs,
     io::Read,
     os::raw::c_int,
     path::Path,
@@ -12,8 +12,9 @@ use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
     parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
-    parse_rime_table_bin_dictionary, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
-    CharsetFilter, DictionaryLookupFilter, EchoTranslator, HistoryTranslator, ReverseLookupFilter,
+    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary, rime_dict_source_checksum,
+    rime_table_bin_dict_file_checksum, CharsetFilter, CompactTableByteSource, CompactTableStore,
+    DictionaryLookupFilter, EchoTranslator, HistoryTranslator, ReverseLookupFilter,
     ReverseLookupTranslator, RimePrismBinPayload, SchemaListTranslator, SimplifierFilter,
     SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter,
     Translator, UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
@@ -306,14 +307,22 @@ fn install_schema_dictionary_translator_from_config(
         return;
     }
 
-    let (dictionary, prism_payload, loaded_from_compiled) =
-        match load_schema_table_dictionary(schema_config, name_space) {
-            DictionaryLoadOutcome::Compiled(compiled) => {
-                (compiled.dictionary, compiled.prism_payload, true)
-            }
+    let prefer_compact_storage = is_upstream_luna_pinyin_profile || is_typeduck_jyut6ping3_profile;
+    let (dictionary, compact_store, prism_payload, loaded_from_compiled) =
+        match load_schema_table_dictionary_with_compact_preference(
+            schema_config,
+            name_space,
+            prefer_compact_storage,
+        ) {
+            DictionaryLoadOutcome::Compiled(compiled) => (
+                compiled.dictionary,
+                compiled.compact_store,
+                compiled.prism_payload,
+                true,
+            ),
             DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
                 record_dictionary_source_fallback(session, reason);
-                (dictionary, None, false)
+                (Some(*dictionary), None, None, false)
             }
             DictionaryLoadOutcome::NoUsablePath {
                 dictionary_id,
@@ -328,10 +337,24 @@ fn install_schema_dictionary_translator_from_config(
             || (is_typeduck_jyut6ping3_profile && loaded_from_compiled));
     let mut translator = {
         let _trace = startup_trace::span("translator_index_build");
-        if use_compact_storage {
-            StaticTableTranslator::from_compact_dictionary(dictionary, prism_payload)
-        } else {
-            StaticTableTranslator::from_dictionary(dictionary)
+        match (use_compact_storage, compact_store, dictionary) {
+            (true, Some(store), _) => {
+                StaticTableTranslator::from_compact_table_store(store, prism_payload)
+            }
+            (true, None, Some(dictionary)) => {
+                StaticTableTranslator::from_compact_dictionary(dictionary, prism_payload)
+            }
+            (false, _, Some(dictionary)) => StaticTableTranslator::from_dictionary(dictionary),
+            (_, _, None) => {
+                record_dictionary_load_failure(
+                    session,
+                    user_dict_name.unwrap_or_else(|| "<unknown>".to_owned()),
+                    DictionaryLoadFailure::CompiledRejected(CompiledRejectReason::Invalid(
+                        "compiled dictionary did not expose a usable table path".to_owned(),
+                    )),
+                );
+                return;
+            }
         }
     }
     .with_completion(enable_completion)
@@ -723,8 +746,15 @@ fn install_schema_reverse_lookup_translator_from_config(
 
 fn dictionary_from_lazy_outcome(outcome: DictionaryLoadOutcome) -> Option<TableDictionary> {
     match outcome {
-        DictionaryLoadOutcome::Compiled(compiled) => Some(compiled.dictionary),
-        DictionaryLoadOutcome::SourceFallback { dictionary, .. } => Some(dictionary),
+        DictionaryLoadOutcome::Compiled(compiled) => {
+            let CompiledDictionary {
+                dictionary,
+                compact_store,
+                ..
+            } = *compiled;
+            dictionary.or_else(|| compact_store.map(|store| store.to_table_dictionary()))
+        }
+        DictionaryLoadOutcome::SourceFallback { dictionary, .. } => Some(*dictionary),
         DictionaryLoadOutcome::NoUsablePath { .. } => None,
     }
 }
@@ -934,10 +964,22 @@ fn install_schema_reverse_lookup_filter_from_config(
     let reverse_dictionary = match load_schema_reverse_dictionary(schema_config, name_space)
         .or_else(|| Some(load_schema_table_dictionary(schema_config, name_space)))
     {
-        Some(DictionaryLoadOutcome::Compiled(compiled)) => compiled.dictionary,
+        Some(DictionaryLoadOutcome::Compiled(compiled)) => {
+            let Some(dictionary) = compiled.dictionary else {
+                record_dictionary_load_failure(
+                    session,
+                    "<reverse_lookup>".to_owned(),
+                    DictionaryLoadFailure::CompiledRejected(CompiledRejectReason::Invalid(
+                        "compiled reverse lookup path did not expose a dictionary".to_owned(),
+                    )),
+                );
+                return;
+            };
+            dictionary
+        }
         Some(DictionaryLoadOutcome::SourceFallback { dictionary, reason }) => {
             record_dictionary_source_fallback(session, reason);
-            dictionary
+            *dictionary
         }
         Some(DictionaryLoadOutcome::NoUsablePath {
             dictionary_id,
@@ -1004,11 +1046,24 @@ fn install_schema_dictionary_lookup_filter_from_config(
             name_space,
             dictionary_name.clone(),
             false,
+            false,
         ) {
-            DictionaryLoadOutcome::Compiled(compiled) => compiled.dictionary,
+            DictionaryLoadOutcome::Compiled(compiled) => {
+                let Some(dictionary) = compiled.dictionary else {
+                    record_dictionary_load_failure(
+                        session,
+                        dictionary_name,
+                        DictionaryLoadFailure::CompiledRejected(CompiledRejectReason::Invalid(
+                            "compiled lookup filter path did not expose a dictionary".to_owned(),
+                        )),
+                    );
+                    return;
+                };
+                dictionary
+            }
             DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
                 record_dictionary_source_fallback(session, reason);
-                dictionary
+                *dictionary
             }
             DictionaryLoadOutcome::NoUsablePath { reason, .. } => {
                 record_dictionary_load_failure(session, dictionary_name, reason);
@@ -1066,15 +1121,68 @@ fn install_schema_simplifier_filter_from_config(
 
 #[derive(Clone, Debug)]
 struct CompiledDictionary {
-    dictionary: TableDictionary,
+    dictionary: Option<TableDictionary>,
+    compact_store: Option<CompactTableStore>,
     prism_payload: Option<RimePrismBinPayload>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+struct MappedCompiledTableBytes {
+    mmap: memmap2::Mmap,
+}
+
+#[cfg(target_arch = "wasm32")]
+#[derive(Debug)]
+struct OwnedCompiledTableBytes {
+    bytes: Arc<[u8]>,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl CompactTableByteSource for OwnedCompiledTableBytes {
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "owned_bytes"
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl fmt::Debug for MappedCompiledTableBytes {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("MappedCompiledTableBytes")
+            .field("len", &self.mmap.len())
+            .field("mapping_mode", &"mmap")
+            .finish()
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl CompactTableByteSource for MappedCompiledTableBytes {
+    fn bytes(&self) -> &[u8] {
+        &self.mmap
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "mmap"
+    }
 }
 
 #[derive(Clone, Debug)]
 enum DictionaryLoadOutcome {
-    Compiled(CompiledDictionary),
+    Compiled(Box<CompiledDictionary>),
     SourceFallback {
-        dictionary: TableDictionary,
+        dictionary: Box<TableDictionary>,
         reason: CompiledRejectReason,
     },
     NoUsablePath {
@@ -1100,10 +1208,24 @@ enum DictionaryLoadFailure {
 }
 
 fn load_schema_table_dictionary(schema_config: &Value, name_space: &str) -> DictionaryLoadOutcome {
+    load_schema_table_dictionary_with_compact_preference(schema_config, name_space, false)
+}
+
+fn load_schema_table_dictionary_with_compact_preference(
+    schema_config: &Value,
+    name_space: &str,
+    prefer_compact: bool,
+) -> DictionaryLoadOutcome {
     let raw_dictionary_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
         .and_then(config_scalar_string)
         .unwrap_or_default();
-    load_schema_dictionary_by_name(schema_config, name_space, raw_dictionary_name, true)
+    load_schema_dictionary_by_name(
+        schema_config,
+        name_space,
+        raw_dictionary_name,
+        true,
+        prefer_compact,
+    )
 }
 
 fn load_schema_reverse_dictionary(
@@ -1119,6 +1241,7 @@ fn load_schema_reverse_dictionary(
         name_space,
         reverse_name,
         false,
+        false,
     ))
 }
 
@@ -1127,6 +1250,7 @@ fn load_schema_dictionary_by_name(
     name_space: &str,
     raw_dictionary_name: String,
     require_prism: bool,
+    prefer_compact: bool,
 ) -> DictionaryLoadOutcome {
     let Some(dictionary_name) = validate_data_resource_id(&raw_dictionary_name) else {
         return DictionaryLoadOutcome::NoUsablePath {
@@ -1145,9 +1269,10 @@ fn load_schema_dictionary_by_name(
         &prism_name,
         source_yaml.as_ref(),
         require_prism,
+        prefer_compact,
     );
     match compiled {
-        Ok(compiled) => DictionaryLoadOutcome::Compiled(compiled),
+        Ok(compiled) => DictionaryLoadOutcome::Compiled(Box::new(compiled)),
         Err(reason) => match source_yaml {
             Some(dictionary_yaml) => {
                 let parsed = {
@@ -1155,7 +1280,10 @@ fn load_schema_dictionary_by_name(
                     parse_schema_source_dictionary(schema_config, name_space, &dictionary_yaml)
                 };
                 match parsed {
-                    Ok(dictionary) => DictionaryLoadOutcome::SourceFallback { dictionary, reason },
+                    Ok(dictionary) => DictionaryLoadOutcome::SourceFallback {
+                        dictionary: Box::new(dictionary),
+                        reason,
+                    },
                     Err(_) => DictionaryLoadOutcome::NoUsablePath {
                         dictionary_id: dictionary_name,
                         reason: DictionaryLoadFailure::SourceInvalid,
@@ -1182,6 +1310,7 @@ fn load_schema_compiled_dictionary(
     prism_name: &str,
     source_yaml: Option<&String>,
     require_prism: bool,
+    prefer_compact: bool,
 ) -> Result<CompiledDictionary, CompiledRejectReason> {
     let table_name = validate_data_resource_id(&format!("{dictionary_name}.table.bin"))
         .ok_or_else(|| CompiledRejectReason::Invalid("invalid table resource id".to_owned()))?;
@@ -1199,10 +1328,9 @@ fn load_schema_compiled_dictionary(
     let Some(reverse_path) = selected_runtime_data_path(&reverse_name) else {
         return Err(CompiledRejectReason::Missing);
     };
-    let table_bytes = {
+    let table_source = {
         let _trace = startup_trace::span("compiled_table_load");
-        fs::read(table_path)
-            .map_err(|error| CompiledRejectReason::Invalid(format!("table read failed: {error}")))?
+        load_compiled_table_byte_source(&table_path)?
     };
     let prism_bytes = {
         let _trace = startup_trace::span("compiled_prism_load");
@@ -1220,7 +1348,7 @@ fn load_schema_compiled_dictionary(
 
     if let Some(source_yaml) = source_yaml {
         let source_checksum = rime_dict_source_checksum(0, [source_yaml.as_bytes()], None);
-        if rime_table_bin_dict_file_checksum(&table_bytes) != Some(source_checksum) {
+        if rime_table_bin_dict_file_checksum(table_source.bytes()) != Some(source_checksum) {
             return Err(CompiledRejectReason::Stale);
         }
     }
@@ -1247,34 +1375,100 @@ fn load_schema_compiled_dictionary(
             other => CompiledRejectReason::Invalid(format!("reverse parse failed: {other:?}")),
         })?
     };
-    {
-        let _trace = startup_trace::span("compiled_table_load");
-        parse_rime_table_bin_dictionary(&table_bytes)
+
+    let mut advanced_dictionary = TableDictionary::with_advanced_data(
+        Vec::new(),
+        yune_core::TableDictionaryAdvancedData::default(),
+    )
+    .with_merged_advanced_data_from(&reverse_dictionary);
+    if let Some(prism_payload) = prism_payload.as_ref() {
+        advanced_dictionary = advanced_dictionary.with_merged_advanced_data_from(
+            &TableDictionary::with_advanced_data(
+                Vec::new(),
+                yune_core::TableDictionaryAdvancedData {
+                    corrections: prism_payload.corrections.clone(),
+                    tolerance_rules: prism_payload.tolerance_rules.clone(),
+                    ..yune_core::TableDictionaryAdvancedData::default()
+                },
+            ),
+        );
     }
-    .map(|dictionary| {
-        let mut dictionary = dictionary.with_merged_advanced_data_from(&reverse_dictionary);
-        if let Some(prism_payload) = prism_payload.as_ref() {
-            dictionary =
-                dictionary.with_merged_advanced_data_from(&TableDictionary::with_advanced_data(
-                    Vec::new(),
-                    yune_core::TableDictionaryAdvancedData {
-                        corrections: prism_payload.corrections.clone(),
-                        tolerance_rules: prism_payload.tolerance_rules.clone(),
-                        ..yune_core::TableDictionaryAdvancedData::default()
-                    },
-                ));
+
+    let (dictionary, compact_store) = if prefer_compact {
+        let table_advanced = {
+            let _trace = startup_trace::span("compiled_table_dictionary_parse");
+            parse_rime_table_bin_advanced_data(table_source.bytes())
         }
-        CompiledDictionary {
-            dictionary,
-            prism_payload,
+        .map_err(|error| match error {
+            yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
+                CompiledRejectReason::Unsupported(role)
+            }
+            other => CompiledRejectReason::Invalid(format!("table parse failed: {other:?}")),
+        })?;
+        advanced_dictionary = TableDictionary::with_advanced_data(Vec::new(), table_advanced)
+            .with_merged_advanced_data_from(&advanced_dictionary);
+        let compact_store = {
+            let _trace = startup_trace::span("compiled_table_compact_parse");
+            CompactTableStore::from_table_bin_byte_source(
+                Arc::clone(&table_source),
+                advanced_dictionary.advanced_data(),
+            )
         }
+        .map_err(|error| match error {
+            yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
+                CompiledRejectReason::Unsupported(role)
+            }
+            other => CompiledRejectReason::Invalid(format!("table parse failed: {other:?}")),
+        })?;
+        (None, Some(compact_store))
+    } else {
+        let dictionary = {
+            let _trace = startup_trace::span("compiled_table_dictionary_parse");
+            parse_rime_table_bin_dictionary(table_source.bytes())
+        }
+        .map_err(|error| match error {
+            yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
+                CompiledRejectReason::Unsupported(role)
+            }
+            other => CompiledRejectReason::Invalid(format!("table parse failed: {other:?}")),
+        })?;
+        (
+            Some(dictionary.with_merged_advanced_data_from(&advanced_dictionary)),
+            None,
+        )
+    };
+
+    Ok(CompiledDictionary {
+        dictionary,
+        compact_store,
+        prism_payload,
     })
-    .map_err(|error| match error {
-        yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
-            CompiledRejectReason::Unsupported(role)
-        }
-        other => CompiledRejectReason::Invalid(format!("table parse failed: {other:?}")),
-    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn load_compiled_table_byte_source(
+    path: &Path,
+) -> Result<Arc<dyn CompactTableByteSource>, CompiledRejectReason> {
+    let file = fs::File::open(path)
+        .map_err(|error| CompiledRejectReason::Invalid(format!("table open failed: {error}")))?;
+    let mmap = {
+        // SAFETY: runtime data artifacts are immutable for the lifetime of a selected session.
+        // Deploy writes build artifacts before selection, and Yune never mutates a selected table.
+        unsafe { memmap2::MmapOptions::new().map(&file) }
+    }
+    .map_err(|error| CompiledRejectReason::Invalid(format!("table mmap failed: {error}")))?;
+    Ok(Arc::new(MappedCompiledTableBytes { mmap }))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn load_compiled_table_byte_source(
+    path: &Path,
+) -> Result<Arc<dyn CompactTableByteSource>, CompiledRejectReason> {
+    let bytes = fs::read(path)
+        .map_err(|error| CompiledRejectReason::Invalid(format!("table read failed: {error}")))?;
+    Ok(Arc::new(OwnedCompiledTableBytes {
+        bytes: Arc::<[u8]>::from(bytes),
+    }))
 }
 
 fn load_schema_source_dictionary_yaml(dictionary_name: &str) -> Option<String> {

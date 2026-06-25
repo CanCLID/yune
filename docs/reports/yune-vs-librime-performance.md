@@ -16,6 +16,9 @@ Evidence:
 - M36 product-path evidence: [`evidence/m36-product-path/`](./evidence/m36-product-path)
 - M36 final native in-process rerun: [`evidence/m36-product-path/phase-4-final/`](./evidence/m36-product-path/phase-4-final)
 - M36 visualizations: [`m36-product-latency-before-after.svg`](./evidence/m36-product-path/m36-product-latency-before-after.svg), [`m36-product-memory-before-after.svg`](./evidence/m36-product-path/m36-product-memory-before-after.svg), [`m36-track-a-latency-gap.svg`](./evidence/m36-product-path/m36-track-a-latency-gap.svg), and [`m36-track-a-working-set-gap.svg`](./evidence/m36-product-path/m36-track-a-working-set-gap.svg)
+- M37 engine hyper-optimization evidence: [`evidence/m37-engine-hyper-optimization/`](./evidence/m37-engine-hyper-optimization)
+- M37 final native in-process rerun: [`evidence/m37-engine-hyper-optimization/phase-3-final-native/`](./evidence/m37-engine-hyper-optimization/phase-3-final-native)
+- M37 visualizations: [`m37-product-latency-before-after.svg`](./evidence/m37-engine-hyper-optimization/m37-product-latency-before-after.svg), [`m37-product-memory-before-after.svg`](./evidence/m37-engine-hyper-optimization/m37-product-memory-before-after.svg), [`m37-track-a-latency-gap.svg`](./evidence/m37-engine-hyper-optimization/m37-track-a-latency-gap.svg), and [`m37-track-a-working-set-gap.svg`](./evidence/m37-engine-hyper-optimization/m37-track-a-working-set-gap.svg)
 - Upstream librime `1.17.0` source references: [`MappedFile`](https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/dict/mapped_file.cc), [`Table`](https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/dict/table.cc), [`Prism`](https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/dict/prism.cc), [`Dictionary`](https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/dict/dictionary.cc), [`TableTranslator`](https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/gear/table_translator.cc), and [`ReverseLookupTranslator`](https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/gear/reverse_lookup_translator.cc)
 
 ## Public summary
@@ -28,6 +31,9 @@ hot path with compact table storage plus prism canonical-code lookup. M36 then
 separated fair upstream comparison from the shipped TypeDuck product path and
 made `jyut6ping3_mobile` run from rebuilt Yune-readable compiled table/prism
 assets instead of the stale unsupported shipped marisa blobs.
+M37 made the ordinary product row path page-bounded and moved the selected native
+product table storage to byte-backed mapped bytes, while keeping the comparison
+and product tracks separate.
 
 The safe public claim is still conservative:
 
@@ -36,18 +42,36 @@ The safe public claim is still conservative:
 - M36 is the TypeDuck product-path result: `jyut6ping3_mobile` final rows run
   from fresh compiled Yune table/prism/reverse artifacts with `compiled_ready =
   true`, not `SourceFallback`.
-- Track B product typing rows improve materially: `ngohaig` `14,943.043 us` ->
-  `3,465.057 us` (`-76.8%`), `loengjathau` `16,309.045 us` -> `3,754.855 us`
-  (`-77.0%`), and `jigaajiusihaa` `27,633.869 us` -> `5,065.308 us`
-  (`-81.7%`).
-- Track B product median working set drops by about `80-83 MB` on the measured
-  rows; max peak working set drops from `1000.4 MB` to `885.3 MB`.
+- M37 is the TypeDuck product hyper-optimization result: `hai` moved from the
+  M36 final `15,241.000 us` to `8,336.800 us` (`-45.3%`), while `ngohaig`,
+  `loengjathau`, and `jigaajiusihaa` moved to `1,861.586 us`, `2,164.609 us`,
+  and `3,189.085 us`.
+- Track B product median working set moved from the M36 final about `777 MB`
+  row plateau to about `365-369 MB`; max peak moved from `928,350,208 B` to
+  `504,377,344 B`.
+- M37 final product status records `selected_storage=byte_backed`,
+  `mapping_mode=mmap`, `source_fallback=false`, and fresh table/prism/reverse
+  artifacts for both `jyut6ping3` and `jyut6ping3_scolar`.
+- `rsmarisa 0.4.2` was tried against real TypeDuck `jyut6ping3` and
+  `jyut6ping3_scolar` marisa string-table payloads and mmaped both successfully;
+  it was not selected as the hot route because the real product `.table.bin`
+  still needs a separate multi-level phrase-index adapter.
 - Track A upstream `luna_pinyin` still trails librime widely on fair per-key
   comparison rows and working-set gap. These ratios are not the TypeDuck product
   typing headline.
-- No browser startup, browser typing, WASM, React, Cloudflare, or TypeDuck-Web
-  delivery win is claimed from M36 because runtime/browser-visible files did not
-  change.
+- No browser startup, browser typing, WASM, React, Cloudflare, or product
+  delivery win is claimed from M37 because release WASM and real-browser
+  evidence were not rebuilt for this milestone.
+
+Final M37 Track B product result:
+
+| Row | M36 final median | M37 final median | Delta | M37 median working set |
+| --- | ---: | ---: | ---: | ---: |
+| `hai` | `15,241.000 us` | `8,336.800 us` | `-45.3%` | `367,271,936 B` |
+| `ngohaig` | `3,465.057 us` | `1,861.586 us` | `-46.3%` | `367,931,392 B` |
+| `loengjathau` | `3,754.855 us` | `2,164.609 us` | `-42.4%` | `364,859,392 B` |
+| `jigaajiusihaa` | `5,065.308 us` | `3,189.085 us` | `-37.0%` | `369,405,952 B` |
+| Product peak | `928,350,208 B` | `504,377,344 B` | `-45.7%` | n/a |
 
 Final M36 Track A fair upstream comparison:
 
@@ -59,9 +83,32 @@ Final M36 Track A fair upstream comparison:
 - Median working set: Yune `158-161 MB` on the Track A rows, librime about
   `10-13 MB`; Yune max peak is `171.8 MB` versus librime about `14.1 MB`.
 
-M35's memory win was dictionary-specific, not whole-process peak. M36's product
-path reduces TypeDuck product working set, but Track A still shows a large
+M35's memory win was dictionary-specific, not whole-process peak. M36 and M37
+reduce TypeDuck product working set materially, but Track A still shows a large
 whole-process gap versus librime.
+
+M37 final Track A fair upstream comparison:
+
+- `hao`: Yune `4,145.500 us`, librime `11.900 us`; Yune is `348.36x` slower.
+- `ni`: Yune `3,171.050 us`, librime `14.600 us`; Yune is `217.20x` slower.
+- `zhongguo`: Yune `4,801.675 us`, librime `185.300 us`; Yune is `25.91x` slower.
+- Session create/select/destroy: Yune `48,233.200 us`, librime `29,940.000 us`; Yune is `1.61x` slower.
+- Warm startup/runtime-ready: Yune `50,415.700 us`, librime `29,163.700 us`; Yune is `1.73x` slower.
+- Median working set: Yune `159-161 MB` on the Track A rows, librime about
+  `11-13 MB`. This remains comparison evidence, not a product headline.
+
+## Diagnosis After M37
+
+M37 changed the main Track B owner story. Phase 0 showed `hai` was dominated by
+full candidate materialization and filtering: 19,918 lookup views became 19,918
+owned candidates, 11,289 sorted candidates, and 11,289 stored context rows while
+only 5 candidates were exported through the ABI. The final M37 run keeps the
+same 19,918 lookup views but materializes 52 owned candidates, sorts 48, stores
+48, page-clones 5, and exports 5.
+
+The remaining `hai` owner is now lookup-view scanning over the active product
+table, not full-list materialization or ABI export. That is a narrower future
+optimization target than the M36 state.
 
 ## Diagnosis After M36
 
@@ -560,9 +607,38 @@ movement evidence.
 
 ## Visual summary
 
-These charts are generated from the final M36 native in-process evidence bundle,
-not from a browser/runtime run. They support native engine-performance,
-product-path, and fair cross-engine comparison claims only.
+These charts are generated from the final M37 native in-process evidence bundle,
+not from a browser/runtime run. The M37 product charts are Track B before/after
+evidence against the M36 final product rows. The M37 Track A charts are fair
+upstream `luna_pinyin` comparison caveats only.
+
+![M37 TypeDuck product latency before and after](./evidence/m37-engine-hyper-optimization/m37-product-latency-before-after.svg)
+
+The M37 product latency chart is the current Track B achievement view. It shows
+the page-bounded product row path after `hai` moved from `15.241 ms` to
+`8.337 ms` and the peer rows moved into the `1.862-3.189 ms` range.
+
+![M37 TypeDuck product memory before and after](./evidence/m37-engine-hyper-optimization/m37-product-memory-before-after.svg)
+
+The M37 product memory chart is the current native product footprint view. The
+selected product table path is byte-backed and mapped; median row working set
+moved from the M36 `741.5 MiB` plateau to about `348.0-352.3 MiB`, and product
+peak moved from `885.3 MiB` to `481.0 MiB`.
+
+![M37 final Track A fair Yune versus librime median latency gap](./evidence/m37-engine-hyper-optimization/m37-track-a-latency-gap.svg)
+
+The M37 Track A latency chart keeps the unresolved upstream comparison gap
+visible. Yune still trails librime widely on the fair `luna_pinyin` per-key
+rows, so these ratios are not the TypeDuck product typing headline.
+
+![M37 final Track A working-set gap](./evidence/m37-engine-hyper-optimization/m37-track-a-working-set-gap.svg)
+
+The M37 Track A working-set chart is the comparison caveat view. Track B product
+memory moved materially, but the fair upstream whole-process memory gap versus
+librime remains open.
+
+The M36 charts below remain historical context from the previous product-path
+closeout.
 
 ![M36 TypeDuck product latency before and after](./evidence/m36-product-path/m36-product-latency-before-after.svg)
 

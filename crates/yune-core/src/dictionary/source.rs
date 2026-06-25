@@ -300,7 +300,7 @@ impl TableDictionary {
     }
 
     #[must_use]
-    pub(crate) fn advanced_data(&self) -> TableDictionaryAdvancedData {
+    pub fn advanced_data(&self) -> TableDictionaryAdvancedData {
         TableDictionaryAdvancedData {
             stems: self.stems.clone(),
             dict_settings: self.dict_settings.clone(),

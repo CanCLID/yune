@@ -5,6 +5,7 @@ use std::{
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     ptr,
+    time::Instant,
 };
 
 use regex::Regex;
@@ -328,6 +329,72 @@ pub const fn bool_from(value: bool) -> Bool {
     }
 }
 
+struct M37ProcessKeyTimer(Instant);
+
+impl M37ProcessKeyTimer {
+    fn start() -> Self {
+        Self(Instant::now())
+    }
+}
+
+impl Drop for M37ProcessKeyTimer {
+    fn drop(&mut self) {
+        yune_core::m37_record_process_key(self.0.elapsed());
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn yune_m37_metrics_enable(enabled: Bool) {
+    yune_core::m37_metrics_enable(enabled != FALSE);
+}
+
+#[no_mangle]
+pub extern "C" fn yune_m37_metrics_reset() {
+    yune_core::m37_metrics_reset();
+}
+
+#[no_mangle]
+pub extern "C" fn yune_m37_metrics_snapshot_json() -> *mut c_char {
+    let metrics = yune_core::m37_metrics_snapshot();
+    let json = serde_json::json!({
+        "process_key_calls": metrics.process_key_calls,
+        "process_key_ns": metrics.process_key_ns,
+        "translator_calls": metrics.translator_calls,
+        "translator_ns": metrics.translator_ns,
+        "lookup_views_visited": metrics.lookup_views_visited,
+        "owned_candidates_materialized": metrics.owned_candidates_materialized,
+        "candidates_sorted": metrics.candidates_sorted,
+        "candidate_sort_ns": metrics.candidate_sort_ns,
+        "userdb_merge_ns": metrics.userdb_merge_ns,
+        "filter_pipeline_ns": metrics.filter_pipeline_ns,
+        "ranker_pipeline_ns": metrics.ranker_pipeline_ns,
+        "ai_merge_ns": metrics.ai_merge_ns,
+        "candidates_stored": metrics.candidates_stored,
+        "context_full_snapshot_candidates_cloned": metrics.context_full_snapshot_candidates_cloned,
+        "context_page_snapshot_candidates_cloned": metrics.context_page_snapshot_candidates_cloned,
+        "abi_get_context_calls": metrics.abi_get_context_calls,
+        "abi_get_context_ns": metrics.abi_get_context_ns,
+        "abi_candidates_exported": metrics.abi_candidates_exported,
+        "abi_free_context_calls": metrics.abi_free_context_calls,
+        "abi_free_context_ns": metrics.abi_free_context_ns,
+    });
+    CString::new(json.to_string()).map_or(ptr::null_mut(), CString::into_raw)
+}
+
+/// Releases strings returned by `yune_m37_metrics_snapshot_json`.
+///
+/// # Safety
+///
+/// `value` must be null or a pointer returned by
+/// `yune_m37_metrics_snapshot_json` that has not already been freed.
+#[no_mangle]
+pub unsafe extern "C" fn yune_m37_metrics_free_string(value: *mut c_char) {
+    if !value.is_null() {
+        // SAFETY: callers pass a pointer returned by `CString::into_raw` above.
+        unsafe { drop(CString::from_raw(value)) };
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn RimeGetVersion() -> *const c_char {
     RIME_VERSION_BYTES.as_ptr().cast::<c_char>()
@@ -335,6 +402,7 @@ pub extern "C" fn RimeGetVersion() -> *const c_char {
 
 #[no_mangle]
 pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask: c_int) -> Bool {
+    let _m37_timer = M37ProcessKeyTimer::start();
     if session_id == 0
         || (mask != 0
             && !((mask == K_CONTROL_MASK

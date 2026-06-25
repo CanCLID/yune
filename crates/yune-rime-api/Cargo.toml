@@ -16,8 +16,12 @@ serde_json = "1"
 serde_yaml = "0.9"
 yune-core = { path = "../yune-core" }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+memmap2 = "0.9"
+
 [dev-dependencies]
 libloading = "0.8"
+rsmarisa = "0.4.2"
 
 [lints.rust]
 unsafe_code = "allow"

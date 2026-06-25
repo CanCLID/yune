@@ -23,7 +23,7 @@ if ([string]::IsNullOrWhiteSpace($YuneDll)) {
 
 $OutputRoot = [System.IO.Path]::GetFullPath($OutputRoot)
 $EvidenceRoot = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot "docs\reports\evidence"))
-$WorkRoot = Join-Path $RepoRoot ("target\m36-native-inprocess\" + (Split-Path -Leaf $OutputRoot))
+$WorkRoot = Join-Path $RepoRoot ("target\native-inprocess\" + (Split-Path -Leaf $OutputRoot))
 $UpstreamOracleRoot = [System.IO.Path]::GetFullPath($UpstreamOracleRoot)
 $YuneDll = [System.IO.Path]::GetFullPath($YuneDll)
 $SharedSource = Join-Path $UpstreamOracleRoot "rime-shared"
@@ -32,7 +32,7 @@ $UpstreamDll = Join-Path $UpstreamOracleRoot "extract\dist\lib\rime.dll"
 $UpstreamDistLib = Join-Path $UpstreamOracleRoot "extract\dist\lib"
 $UpstreamBin = Join-Path $UpstreamOracleRoot "extract\bin"
 $UpstreamDistBin = Join-Path $UpstreamOracleRoot "extract\dist\bin"
-$ProductSchemaRoot = Join-Path $RepoRoot "third_party\typeduck-web\source\public\schema"
+$ProductSchemaRoot = Join-Path $RepoRoot "apps\yune-web\source\public\schema"
 
 function Assert-Path($Path, $Label) {
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -154,7 +154,7 @@ function Run-NativeBench(
 }
 
 Clear-DirectoryUnder $EvidenceRoot $OutputRoot
-Clear-DirectoryUnder (Join-Path $RepoRoot "target\m36-native-inprocess") $WorkRoot
+Clear-DirectoryUnder (Join-Path $RepoRoot "target\native-inprocess") $WorkRoot
 
 Assert-Path $UpstreamOracleRoot "upstream oracle root"
 Assert-Path $SharedSource "upstream shared data"
@@ -203,6 +203,7 @@ Run-NativeBench "yune" "track-b-product" "jyut6ping3_mobile" $TrackBProductRun $
 
 $CombinedSummary = @()
 $CombinedSamples = @()
+$CombinedM37Metrics = @()
 $CombinedProductPathStatus = @()
 foreach ($Summary in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter summary.csv) {
     $CombinedSummary += Import-Csv -LiteralPath $Summary.FullName
@@ -210,15 +211,19 @@ foreach ($Summary in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter sum
 foreach ($Samples in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter samples.csv) {
     $CombinedSamples += Import-Csv -LiteralPath $Samples.FullName
 }
+foreach ($Metrics in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter m37_metrics.csv) {
+    $CombinedM37Metrics += Import-Csv -LiteralPath $Metrics.FullName
+}
 foreach ($Status in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter product_path_status.csv) {
     $CombinedProductPathStatus += Import-Csv -LiteralPath $Status.FullName
 }
 $CombinedSummary | Export-Csv -LiteralPath (Join-Path $OutputRoot "summary.csv") -NoTypeInformation -Encoding UTF8
 $CombinedSamples | Export-Csv -LiteralPath (Join-Path $OutputRoot "samples.csv") -NoTypeInformation -Encoding UTF8
+$CombinedM37Metrics | Export-Csv -LiteralPath (Join-Path $OutputRoot "m37_metrics.csv") -NoTypeInformation -Encoding UTF8
 $CombinedProductPathStatus | Export-Csv -LiteralPath (Join-Path $OutputRoot "product_path_status.csv") -NoTypeInformation -Encoding UTF8
 
 @"
-# M36 Native In-Process Benchmark
+# Native In-Process Benchmark
 
 This run uses the Rust `native_inprocess_benchmark` bench and loads each engine DLL directly in the measured process. It does not use the historical managed `.NET`/PInvoke benchmark host.
 

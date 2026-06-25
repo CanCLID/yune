@@ -1,0 +1,11 @@
+﻿date_utc=2026-06-25T03:39:22.5406762Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=46b4acf18c5825fca504a060b82e020f20065b06
+yune_git_status_short= M Cargo.lock |  M crates/yune-core/src/dictionary/compiled_table.rs |  M crates/yune-core/src/dictionary/mod.rs |  M crates/yune-core/src/dictionary/query_table.rs |  M crates/yune-core/src/dictionary/source.rs |  M crates/yune-core/src/engine.rs |  M crates/yune-core/src/lib.rs |  M crates/yune-core/src/state.rs |  M crates/yune-core/src/tests/engine.rs |  M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-rime-api/Cargo.toml |  M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M crates/yune-rime-api/src/context_api.rs |  M crates/yune-rime-api/src/ffi_memory.rs |  M crates/yune-rime-api/src/lib.rs |  M crates/yune-rime-api/src/schema_install.rs |  M crates/yune-rime-api/src/tests/session_api.rs | M  docs/reports/evidence/m33-2026-06-23/frontend-baselines-after-low-risk.txt | M  docs/reports/evidence/m33-2026-06-23/frontend-baselines-before.txt | M  docs/reports/evidence/m34-queryable-table-prism/frontend-baselines-after-final.txt | M  docs/reports/evidence/m34-queryable-table-prism/frontend-baselines-before.txt | M  docs/reports/evidence/m35-compact-table-prism-storage/after-yune-vs-librime/environment.txt | M  docs/reports/evidence/m35-compact-table-prism-storage/frontend-baselines-after.txt | M  docs/reports/evidence/m35-compact-table-prism-storage/frontend-baselines-before.txt | M  docs/reports/evidence/m36-product-path/rsmarisa-gate.md | M  docs/reports/evidence/p2-win02-boundary-compat-2026-06-22/README.md | M  docs/reports/evidence/yune-vs-librime-2026-06-23/environment.txt |  M scripts/benchmark-native-rime-inprocess.ps1 | ?? crates/yune-core/src/m37_metrics.rs | ?? docs/reports/evidence/m37-engine-hyper-optimization/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-3-final-native
+managed_runtime=false
+deploy_product_before_benchmark=True
+iterations=5
+session_iterations=20
+key_iterations=20

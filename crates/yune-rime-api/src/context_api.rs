@@ -1,4 +1,4 @@
-use std::{ffi::CString, os::raw::c_int, ptr};
+use std::{ffi::CString, os::raw::c_int, ptr, time::Instant};
 
 use crate::{
     apply_visible_switch_radio_defaults, bool_from, clear_commit, clear_context, clear_status,
@@ -6,6 +6,20 @@ use crate::{
     free_rime_candidates, sessions, Bool, RimeCandidate, RimeCommit, RimeContext, RimeSessionId,
     RimeStatus, FALSE, TRUE,
 };
+
+struct M37GetContextTimer(Instant);
+
+impl M37GetContextTimer {
+    fn start() -> Self {
+        Self(Instant::now())
+    }
+}
+
+impl Drop for M37GetContextTimer {
+    fn drop(&mut self) {
+        yune_core::m37_record_abi_get_context(self.0.elapsed());
+    }
+}
 
 /// Copies the unread commit text for a session into a caller-provided commit.
 ///
@@ -55,6 +69,7 @@ pub unsafe extern "C" fn RimeGetContext(
     session_id: RimeSessionId,
     context: *mut RimeContext,
 ) -> Bool {
+    let _m37_timer = M37GetContextTimer::start();
     if context.is_null() {
         return FALSE;
     }
@@ -65,7 +80,7 @@ pub unsafe extern "C" fn RimeGetContext(
 
     clear_context(context);
 
-    let (snapshot, hide_candidate, chord_prompt, affix_prompt_preedit) = {
+    let (snapshot, menu_settings, hide_candidate, chord_prompt, affix_prompt_preedit) = {
         let mut registry = sessions()
             .lock()
             .expect("session registry should not be poisoned");
@@ -74,8 +89,11 @@ pub unsafe extern "C" fn RimeGetContext(
         };
         apply_visible_switch_radio_defaults(session);
         let composition_input = session.engine.context().composition.input.clone();
+        let status = session.engine.status();
+        let menu_settings = context_menu_settings(&status.schema_id);
         (
-            session.engine.snapshot(),
+            session.engine.page_snapshot(menu_settings.page_size),
+            menu_settings,
             session.engine.get_option("_hide_candidate"),
             session
                 .chord_composer
@@ -87,7 +105,6 @@ pub unsafe extern "C" fn RimeGetContext(
                 .find_map(|segmentor| segmentor.prompt_preedit(&composition_input)),
         )
     };
-    let menu_settings = context_menu_settings(&snapshot.status.schema_id);
     let select_keys = match menu_settings.select_keys.as_deref() {
         Some(select_keys) if !select_keys.as_bytes().contains(&0) => {
             match CString::new(select_keys) {
@@ -161,12 +178,10 @@ pub unsafe extern "C" fn RimeGetContext(
 
     let candidates = snapshot.context.candidates;
     if !candidates.is_empty() {
-        let highlighted = snapshot.context.highlighted;
-        let page_size = menu_settings.page_size;
-        let page_no = highlighted / page_size;
-        let page_start = page_no * page_size;
-        let page_end = (page_start + page_size).min(candidates.len());
-        let page_candidates = &candidates[page_start..page_end];
+        let page_size = snapshot.page_size;
+        let page_no = snapshot.page_no;
+        let page_end = snapshot.page_start + candidates.len();
+        let page_candidates = &candidates;
 
         if hide_candidate {
             // SAFETY: `context` is non-null and points to caller-owned writable
@@ -175,9 +190,13 @@ pub unsafe extern "C" fn RimeGetContext(
                 (*context).menu.page_size =
                     c_int::try_from(page_size).expect("menu page size should fit in c_int");
                 (*context).menu.page_no = page_no as c_int;
-                (*context).menu.is_last_page =
-                    bool_from(snapshot.candidate_list_complete && page_end == candidates.len());
-                (*context).menu.highlighted_candidate_index = (highlighted - page_start)
+                (*context).menu.is_last_page = bool_from(
+                    snapshot.candidate_list_complete
+                        && page_end == snapshot.retained_candidate_count,
+                );
+                (*context).menu.highlighted_candidate_index = snapshot
+                    .context
+                    .highlighted
                     .min(page_candidates.len().saturating_sub(1))
                     as c_int;
                 (*context).menu.num_candidates = 0;
@@ -229,6 +248,7 @@ pub unsafe extern "C" fn RimeGetContext(
             None
         };
         let num_candidates = rime_candidates.len();
+        yune_core::m37_record_abi_candidates_exported(num_candidates);
         let candidates_ptr = rime_candidates.as_mut_ptr();
         std::mem::forget(rime_candidates);
 
@@ -238,10 +258,14 @@ pub unsafe extern "C" fn RimeGetContext(
             (*context).menu.page_size =
                 c_int::try_from(page_size).expect("menu page size should fit in c_int");
             (*context).menu.page_no = page_no as c_int;
-            (*context).menu.is_last_page =
-                bool_from(snapshot.candidate_list_complete && page_end == candidates.len());
-            (*context).menu.highlighted_candidate_index =
-                (highlighted - page_start).min(num_candidates.saturating_sub(1)) as c_int;
+            (*context).menu.is_last_page = bool_from(
+                snapshot.candidate_list_complete && page_end == snapshot.retained_candidate_count,
+            );
+            (*context).menu.highlighted_candidate_index = snapshot
+                .context
+                .highlighted
+                .min(num_candidates.saturating_sub(1))
+                as c_int;
             (*context).menu.num_candidates = num_candidates as c_int;
             (*context).menu.candidates = candidates_ptr;
             if let Some(select_keys) = select_keys {

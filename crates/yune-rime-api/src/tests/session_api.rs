@@ -317,6 +317,69 @@ fn gets_and_sets_input_and_caret_position() {
 }
 
 #[test]
+fn get_context_uses_page_snapshot_without_full_candidate_clone() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    yune_core::m37_metrics_enable(true);
+    yune_core::m37_metrics_reset();
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session.engine.clear_translators();
+        session.engine.add_translator(StaticTableTranslator::new([
+            ("ba", "candidate-00"),
+            ("ba", "candidate-01"),
+            ("ba", "candidate-02"),
+            ("ba", "candidate-03"),
+            ("ba", "candidate-04"),
+            ("ba", "candidate-05"),
+            ("ba", "candidate-06"),
+        ]));
+    }
+    let mut context = empty_context();
+
+    assert_eq!(RimeProcessKey(session_id, 'b' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'a' as i32, 0), TRUE);
+    // SAFETY: `context` points to writable storage initialized with a positive data_size.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.menu.num_candidates, 5);
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+
+    let metrics = yune_core::m37_metrics_snapshot();
+    yune_core::m37_metrics_enable(false);
+    assert_eq!(metrics.context_full_snapshot_candidates_cloned, 0);
+    assert_eq!(metrics.context_page_snapshot_candidates_cloned, 5);
+    assert_eq!(metrics.abi_candidates_exported, 5);
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn m37_metrics_exports_snapshot_json_for_loaded_benchmarks() {
+    crate::yune_m37_metrics_enable(TRUE);
+    crate::yune_m37_metrics_reset();
+    yune_core::m37_record_abi_candidates_exported(3);
+
+    let json = crate::yune_m37_metrics_snapshot_json();
+    assert!(!json.is_null());
+    // SAFETY: the snapshot export returns a valid NUL-terminated string.
+    let json_text = unsafe { CStr::from_ptr(json) }
+        .to_str()
+        .expect("snapshot JSON should be UTF-8");
+    assert!(json_text.contains("\"abi_candidates_exported\":3"));
+    // SAFETY: `json` is owned by the metrics export.
+    unsafe { crate::yune_m37_metrics_free_string(json) };
+    crate::yune_m37_metrics_enable(FALSE);
+}
+
+#[test]
 fn cleanup_stale_sessions_matches_librime_activity_lifespan() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::punctuation::{
     punctuation_candidate_comment, PunctuationProcessor, PunctuationProcessorResult,
@@ -10,8 +11,9 @@ use crate::{
     parse_key_sequence, AiDecision, AiResult, Candidate, CandidateFilter, CandidateRanker,
     CandidateRequest, CandidateSource, CommitRecord, Composition, Context, EchoTranslator,
     EngineInspectorSnapshot, FilterAuditRecord, KeyCode, KeyEvent, KeyModifiers,
-    KeySequenceParseError, MemoryStore, RerankResult, SegmentDebug, Snapshot, StagedAiCandidates,
-    Status, Translator, UserDb, UserDbCommitMetadata, UserDbLookupRequest, UserDbLookupResult,
+    KeySequenceParseError, MemoryStore, PageSnapshot, RerankResult, SegmentDebug, Snapshot,
+    StagedAiCandidates, Status, Translator, UserDb, UserDbCommitMetadata, UserDbLookupRequest,
+    UserDbLookupResult,
 };
 
 pub struct Engine {
@@ -960,10 +962,43 @@ impl Engine {
 
     #[must_use]
     pub fn snapshot(&self) -> Snapshot {
+        crate::m37_record_context_full_snapshot_clone(self.context.candidates.len());
         Snapshot {
             context: self.context.clone(),
             status: self.status(),
             candidate_list_complete: self.candidate_list_complete,
+        }
+    }
+
+    #[must_use]
+    pub fn page_snapshot(&self, page_size: usize) -> PageSnapshot {
+        let page_size = page_size.max(1);
+        let highlighted = self.context.highlighted;
+        let page_no = highlighted / page_size;
+        let page_start = page_no * page_size;
+        let page_end = (page_start + page_size).min(self.context.candidates.len());
+        let page_candidates = self.context.candidates[page_start..page_end].to_vec();
+        crate::m37_record_context_page_snapshot_clone(page_candidates.len());
+        let page_highlighted = highlighted
+            .saturating_sub(page_start)
+            .min(page_candidates.len().saturating_sub(1));
+        let context = Context {
+            composition: self.context.composition.clone(),
+            segment_tags: self.context.segment_tags.clone(),
+            candidates: page_candidates,
+            highlighted: page_highlighted,
+            last_commit: self.context.last_commit.clone(),
+            commit_history: self.context.commit_history.clone(),
+            ai_context: self.context.ai_context.clone(),
+        };
+        PageSnapshot {
+            context,
+            status: self.status(),
+            candidate_list_complete: self.candidate_list_complete,
+            page_size,
+            page_no,
+            page_start,
+            retained_candidate_count: self.context.candidates.len(),
         }
     }
 
@@ -1227,14 +1262,20 @@ impl Engine {
     }
 
     fn can_use_bounded_refresh(&self) -> bool {
-        self.status.schema_id == "luna_pinyin"
-            && self.context.composition.input.chars().count() <= 2
+        let schema_allows_bounded = if self.status.schema_id == "luna_pinyin" {
+            self.context.composition.input.chars().count() <= 2
+        } else {
+            self.status.schema_id.starts_with("jyut6ping3")
+        };
+        schema_allows_bounded
             && self.rankers.is_empty()
             && self.userdb.entries().is_empty()
-            && self
-                .filters
-                .iter()
-                .all(|filter| filter.name() == "charset_filter")
+            && self.filters.iter().all(|filter| {
+                matches!(
+                    filter.name(),
+                    "charset_filter" | "dictionary_lookup_filter" | "simplifier"
+                )
+            })
     }
 
     fn refresh_candidates_with_request(&mut self, request: CandidateRequest) {
@@ -1243,6 +1284,7 @@ impl Engine {
             let mut candidates = Vec::new();
             let mut candidate_list_complete = true;
             for translator in &self.translators {
+                let translator_start = Instant::now();
                 let result = translator.translate_with_context_and_request(
                     &input,
                     &self.status,
@@ -1250,6 +1292,7 @@ impl Engine {
                     &self.context,
                     request,
                 );
+                crate::m37_record_translator(translator_start.elapsed());
                 candidate_list_complete &= result.is_complete;
                 candidates.extend(result.candidates);
             }
@@ -1259,23 +1302,30 @@ impl Engine {
                 self.translators
                     .iter()
                     .flat_map(|translator| {
-                        translator.translate_with_context(
+                        let translator_start = Instant::now();
+                        let candidates = translator.translate_with_context(
                             &input,
                             &self.status,
                             &self.options,
                             &self.context,
-                        )
+                        );
+                        crate::m37_record_translator(translator_start.elapsed());
+                        candidates
                     })
                     .collect::<Vec<_>>(),
                 true,
             )
         };
+        let sort_start = Instant::now();
         candidates.sort_by(|left, right| {
             right
                 .quality
                 .partial_cmp(&left.quality)
                 .unwrap_or(Ordering::Equal)
         });
+        crate::m37_record_candidates_sorted(candidates.len());
+        crate::m37_record_candidate_sort(sort_start.elapsed());
+        let userdb_start = Instant::now();
         merge_userdb_candidates(
             &input,
             &mut candidates,
@@ -1283,6 +1333,8 @@ impl Engine {
                 .lookup(&UserDbLookupRequest::new(input.as_str()).with_predictive(true)),
             self.prediction_never_first,
         );
+        crate::m37_record_userdb_merge(userdb_start.elapsed());
+        let filter_start = Instant::now();
         let mut filter_audit = Vec::with_capacity(self.filters.len());
         for filter in &self.filters {
             let before_count = candidates.len();
@@ -1293,14 +1345,20 @@ impl Engine {
                 after_count: candidates.len(),
             });
         }
+        crate::m37_record_filter_pipeline(filter_start.elapsed());
         self.last_filter_audit = filter_audit;
+        let ranker_start = Instant::now();
         for ranker in &self.rankers {
             if let RerankResult::Ready(ranked) = ranker.try_rerank(&self.context, &candidates) {
                 candidates = ranked;
             }
         }
+        crate::m37_record_ranker_pipeline(ranker_start.elapsed());
+        let ai_start = Instant::now();
         self.context.candidates =
             merge_classic_and_staged_ai(&input, candidates, self.staged_ai_result.as_ref());
+        crate::m37_record_ai_merge(ai_start.elapsed());
+        crate::m37_record_candidates_stored(self.context.candidates.len());
         self.context.highlighted = 0;
         self.candidate_list_complete = candidate_list_complete;
     }

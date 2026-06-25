@@ -1,8 +1,8 @@
 use std::{
     collections::BTreeMap,
-    ffi::CString,
+    ffi::{CStr, CString},
     fs, mem,
-    os::raw::c_int,
+    os::raw::{c_char, c_int, c_void},
     path::{Path, PathBuf},
     ptr,
     time::{Duration, Instant},
@@ -14,15 +14,42 @@ use yune_core::{
     parse_rime_table_bin_dictionary, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
 };
 use yune_rime_api::{
-    RimeApi, RimeComposition, RimeContext, RimeMenu, RimeSessionId, RimeStatus, RimeTraits, TRUE,
+    Bool, RimeApi, RimeComposition, RimeContext, RimeMenu, RimeSessionId, RimeStatus, RimeTraits,
+    FALSE, TRUE,
 };
 
 type RimeGetApi = unsafe extern "C" fn() -> *mut RimeApi;
+type YuneM37MetricsEnable = unsafe extern "C" fn(Bool);
+type YuneM37MetricsReset = unsafe extern "C" fn();
+type YuneM37MetricsSnapshotJson = unsafe extern "C" fn() -> *mut c_char;
+type YuneM37MetricsFreeString = unsafe extern "C" fn(*mut c_char);
 
 const DEFAULT_ITERATIONS: usize = 9;
 const DEFAULT_SESSION_ITERATIONS: usize = 60;
 const DEFAULT_KEY_ITERATIONS: usize = 80;
 const KEY_WARMUPS: usize = 5;
+const M37_METRIC_FIELDS: [&str; 20] = [
+    "process_key_calls",
+    "process_key_ns",
+    "translator_calls",
+    "translator_ns",
+    "lookup_views_visited",
+    "owned_candidates_materialized",
+    "candidates_sorted",
+    "candidate_sort_ns",
+    "userdb_merge_ns",
+    "filter_pipeline_ns",
+    "ranker_pipeline_ns",
+    "ai_merge_ns",
+    "candidates_stored",
+    "context_full_snapshot_candidates_cloned",
+    "context_page_snapshot_candidates_cloned",
+    "abi_get_context_calls",
+    "abi_get_context_ns",
+    "abi_candidates_exported",
+    "abi_free_context_calls",
+    "abi_free_context_ns",
+];
 
 fn main() {
     let options = Options::parse();
@@ -35,6 +62,14 @@ fn main() {
     let samples = run_benchmark(&engine, &options);
     write_samples(&options.output.join("samples.csv"), &samples);
     write_summary(&options.output.join("summary.csv"), &samples);
+    write_m37_metrics(
+        &options.output.join("m37_metrics.csv"),
+        &samples
+            .iter()
+            .filter_map(|sample| sample.m37_metrics.as_ref())
+            .cloned()
+            .collect::<Vec<_>>(),
+    );
     write_product_path_status(&options.output.join("product_path_status.csv"), &options);
     write_metadata(&options.output.join("metadata.txt"), &options);
     println!("engine={}", options.engine);
@@ -141,7 +176,7 @@ trait Tap: Sized {
 impl<T> Tap for T {}
 
 struct LoadedRime {
-    _library: Library,
+    library: Library,
     api: *mut RimeApi,
 }
 
@@ -155,14 +190,65 @@ impl LoadedRime {
         if api.is_null() {
             return Err("rime_get_api returned null".to_owned());
         }
-        Ok(Self {
-            _library: library,
-            api,
-        })
+        Ok(Self { library, api })
     }
 
     fn api(&self) -> &RimeApi {
         unsafe { &*self.api }
+    }
+
+    fn m37_metrics(&self) -> Option<M37MetricsExports> {
+        unsafe {
+            Some(M37MetricsExports {
+                enable: *self.library.get(b"yune_m37_metrics_enable\0").ok()?,
+                reset: *self.library.get(b"yune_m37_metrics_reset\0").ok()?,
+                snapshot_json: *self.library.get(b"yune_m37_metrics_snapshot_json\0").ok()?,
+                free_string: *self.library.get(b"yune_m37_metrics_free_string\0").ok()?,
+            })
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct M37MetricsExports {
+    enable: YuneM37MetricsEnable,
+    reset: YuneM37MetricsReset,
+    snapshot_json: YuneM37MetricsSnapshotJson,
+    free_string: YuneM37MetricsFreeString,
+}
+
+impl M37MetricsExports {
+    fn reset_and_enable(self) {
+        unsafe {
+            (self.reset)();
+            (self.enable)(TRUE);
+        }
+    }
+
+    fn disable_and_snapshot(self) -> BTreeMap<String, u64> {
+        unsafe {
+            (self.enable)(FALSE);
+            let value = (self.snapshot_json)();
+            if value.is_null() {
+                return BTreeMap::new();
+            }
+            let text = CStr::from_ptr(value).to_string_lossy().into_owned();
+            (self.free_string)(value);
+            let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) else {
+                return BTreeMap::new();
+            };
+            M37_METRIC_FIELDS
+                .iter()
+                .map(|field| {
+                    (
+                        (*field).to_owned(),
+                        json.get(field)
+                            .and_then(serde_json::Value::as_u64)
+                            .unwrap_or(0),
+                    )
+                })
+                .collect()
+        }
     }
 }
 
@@ -181,6 +267,19 @@ struct Sample {
     after_ready_working_set_bytes: Option<u64>,
     after_finalize_working_set_bytes: Option<u64>,
     peak_working_set_bytes: Option<u64>,
+    m37_metrics: Option<M37MetricSample>,
+}
+
+#[derive(Clone, Debug)]
+struct M37MetricSample {
+    engine: String,
+    track: String,
+    schema: String,
+    workload: &'static str,
+    input: String,
+    index: usize,
+    operation_count: usize,
+    metrics: BTreeMap<String, u64>,
 }
 
 fn run_benchmark(engine: &LoadedRime, options: &Options) -> Vec<Sample> {
@@ -266,6 +365,7 @@ fn run_key_workload(
     samples: &mut Vec<Sample>,
 ) {
     with_service(engine, options, |api| {
+        let m37_metrics = engine.m37_metrics();
         let session_id = require("create_session", api.create_session)();
         assert_ne!(session_id, 0, "create_session returned 0");
         select_schema(api, session_id, &options.schema);
@@ -275,11 +375,15 @@ fn run_key_workload(
         }
         for index in 0..options.key_iterations {
             let before = current_memory_sample();
+            if let Some(metrics) = m37_metrics {
+                metrics.reset_and_enable();
+            }
             let start = Instant::now();
             process_input_with_context(api, session_id, input);
             let elapsed = start.elapsed();
+            let metrics = m37_metrics.map(M37MetricsExports::disable_and_snapshot);
             let after = current_memory_sample();
-            samples.push(Sample::new(
+            let mut sample = Sample::new(
                 options,
                 "key_sequence_process_with_context",
                 input,
@@ -289,7 +393,20 @@ fn run_key_workload(
                 before,
                 after,
                 None,
-            ));
+            );
+            if let Some(metrics) = metrics {
+                sample.m37_metrics = Some(M37MetricSample {
+                    engine: options.engine.clone(),
+                    track: options.track.clone(),
+                    schema: options.schema.clone(),
+                    workload: "key_sequence_process_with_context",
+                    input: input.to_owned(),
+                    index,
+                    operation_count: input.chars().count(),
+                    metrics,
+                });
+            }
+            samples.push(sample);
         }
         assert_eq!(
             require("destroy_session", api.destroy_session)(session_id),
@@ -506,6 +623,7 @@ impl Sample {
                 after_ready.peak_working_set_bytes,
                 after_finalize.and_then(|sample| sample.peak_working_set_bytes),
             ),
+            m37_metrics: None,
         }
     }
 }
@@ -658,6 +776,42 @@ fn write_summary(path: &PathBuf, samples: &[Sample]) {
     fs::write(path, output).expect("summary CSV should be written");
 }
 
+fn write_m37_metrics(path: &PathBuf, samples: &[M37MetricSample]) {
+    let mut header =
+        String::from("engine,track,schema_id,workload,input,sample_index,operation_count");
+    for field in M37_METRIC_FIELDS {
+        header.push(',');
+        header.push_str(field);
+    }
+    header.push('\n');
+    let mut output = header;
+    for sample in samples {
+        output.push_str(&format!(
+            "{},{},{},{},{},{},{}",
+            csv(&sample.engine),
+            csv(&sample.track),
+            csv(&sample.schema),
+            csv(sample.workload),
+            csv(&sample.input),
+            sample.index,
+            sample.operation_count,
+        ));
+        for field in M37_METRIC_FIELDS {
+            output.push(',');
+            output.push_str(
+                &sample
+                    .metrics
+                    .get(field)
+                    .copied()
+                    .unwrap_or_default()
+                    .to_string(),
+            );
+        }
+        output.push('\n');
+    }
+    fs::write(path, output).expect("M37 metrics CSV should be written");
+}
+
 fn write_metadata(path: &PathBuf, options: &Options) {
     let metadata = [
         format!("engine={}", options.engine),
@@ -682,12 +836,12 @@ fn write_metadata(path: &PathBuf, options: &Options) {
 }
 
 fn write_product_path_status(path: &PathBuf, options: &Options) {
-    let mut output = String::from("engine,track,schema_id,dictionary_id,prism_id,source_path,table_path,prism_path,reverse_path,source_checksum,table_checksum,checksum_status,table_parse,prism_parse,reverse_parse,compiled_ready\n");
+    let mut output = String::from("engine,track,schema_id,dictionary_id,prism_id,source_path,table_path,prism_path,reverse_path,source_checksum,table_checksum,checksum_status,table_parse,prism_parse,reverse_parse,compiled_ready,selected_storage,table_format,mapping_mode,source_fallback,byte_source_len,stored_entries,rsmarisa_probe_path,rsmarisa_status,rsmarisa_mapping_mode,rsmarisa_num_tries,rsmarisa_num_keys,rsmarisa_sample_key\n");
     if options.track == "track-b-product" {
         for (dictionary_id, prism_id) in product_dictionary_requests(&options.schema) {
             let status = ProductPathStatus::inspect(options, dictionary_id, prism_id);
             output.push_str(&format!(
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
                 csv(&options.engine),
                 csv(&options.track),
                 csv(&options.schema),
@@ -709,7 +863,21 @@ fn write_product_path_status(path: &PathBuf, options: &Options) {
                 csv(&status.table_parse),
                 csv(&status.prism_parse),
                 csv(&status.reverse_parse),
-                status.compiled_ready
+                status.compiled_ready,
+                csv(&status.selected_storage),
+                csv(&status.table_format),
+                csv(&status.mapping_mode),
+                status.source_fallback,
+                status.byte_source_len,
+                status.stored_entries,
+                csv(&display_optional_path(status.rsmarisa_probe_path.as_ref())),
+                csv(&status.rsmarisa_status),
+                csv(&status.rsmarisa_mapping_mode),
+                status.rsmarisa_num_tries
+                    .map_or_else(|| "unavailable".to_owned(), |value| value.to_string()),
+                status.rsmarisa_num_keys
+                    .map_or_else(|| "unavailable".to_owned(), |value| value.to_string()),
+                csv(&status.rsmarisa_sample_key)
             ));
         }
     }
@@ -741,6 +909,18 @@ struct ProductPathStatus<'a> {
     prism_parse: String,
     reverse_parse: String,
     compiled_ready: bool,
+    selected_storage: String,
+    table_format: String,
+    mapping_mode: String,
+    source_fallback: bool,
+    byte_source_len: usize,
+    stored_entries: usize,
+    rsmarisa_probe_path: Option<PathBuf>,
+    rsmarisa_status: String,
+    rsmarisa_mapping_mode: String,
+    rsmarisa_num_tries: Option<usize>,
+    rsmarisa_num_keys: Option<usize>,
+    rsmarisa_sample_key: String,
 }
 
 impl<'a> ProductPathStatus<'a> {
@@ -774,6 +954,9 @@ impl<'a> ProductPathStatus<'a> {
             .as_ref()
             .map(|bytes| parse_status(parse_rime_table_bin_dictionary(bytes)))
             .unwrap_or_else(|| "missing".to_owned());
+        let table_format = table_bytes
+            .as_ref()
+            .map_or_else(|| "missing".to_owned(), |bytes| table_format_status(bytes));
         let prism_parse = prism_bytes
             .as_ref()
             .map(|bytes| parse_status(parse_rime_prism_bin_payload(bytes)))
@@ -786,6 +969,19 @@ impl<'a> ProductPathStatus<'a> {
             && table_parse == "ok"
             && prism_parse == "ok"
             && reverse_parse == "ok";
+        let (selected_storage, mapping_mode, byte_source_len, stored_entries) = if compiled_ready {
+            (
+                "byte_backed".to_owned(),
+                "mmap".to_owned(),
+                table_bytes.as_ref().map_or(0, Vec::len),
+                table_bytes
+                    .as_ref()
+                    .map_or(0, |bytes| table_entry_count(bytes).unwrap_or(0)),
+            )
+        } else {
+            ("unavailable".to_owned(), "unavailable".to_owned(), 0, 0)
+        };
+        let rsmarisa = inspect_rsmarisa_string_table(options, dictionary_id);
 
         Self {
             dictionary_id,
@@ -801,8 +997,154 @@ impl<'a> ProductPathStatus<'a> {
             prism_parse,
             reverse_parse,
             compiled_ready,
+            selected_storage,
+            table_format,
+            mapping_mode,
+            source_fallback: !compiled_ready,
+            byte_source_len,
+            stored_entries,
+            rsmarisa_probe_path: rsmarisa.payload_path,
+            rsmarisa_status: rsmarisa.status,
+            rsmarisa_mapping_mode: rsmarisa.mapping_mode,
+            rsmarisa_num_tries: rsmarisa.num_tries,
+            rsmarisa_num_keys: rsmarisa.num_keys,
+            rsmarisa_sample_key: rsmarisa.sample_key,
         }
     }
+}
+
+struct RsmarisaProbeStatus {
+    payload_path: Option<PathBuf>,
+    status: String,
+    mapping_mode: String,
+    num_tries: Option<usize>,
+    num_keys: Option<usize>,
+    sample_key: String,
+}
+
+fn inspect_rsmarisa_string_table(options: &Options, dictionary_id: &str) -> RsmarisaProbeStatus {
+    let table_path = options.shared.join(format!("{dictionary_id}.table.bin"));
+    let Some(table_bytes) = table_path
+        .is_file()
+        .then(|| fs::read(&table_path).ok())
+        .flatten()
+    else {
+        return RsmarisaProbeStatus {
+            payload_path: None,
+            status: "missing_shared_table".to_owned(),
+            mapping_mode: "unavailable".to_owned(),
+            num_tries: None,
+            num_keys: None,
+            sample_key: String::new(),
+        };
+    };
+    let Some((offset, size)) = string_table_range(&table_bytes) else {
+        return RsmarisaProbeStatus {
+            payload_path: None,
+            status: "missing_string_table".to_owned(),
+            mapping_mode: "unavailable".to_owned(),
+            num_tries: None,
+            num_keys: None,
+            sample_key: String::new(),
+        };
+    };
+    let Some(payload) = table_bytes.get(offset..offset + size) else {
+        return RsmarisaProbeStatus {
+            payload_path: None,
+            status: "string_table_out_of_bounds".to_owned(),
+            mapping_mode: "unavailable".to_owned(),
+            num_tries: None,
+            num_keys: None,
+            sample_key: String::new(),
+        };
+    };
+
+    let payload_path = options
+        .output
+        .join(format!("rsmarisa-{dictionary_id}-string-table.marisa"));
+    if let Err(error) = fs::write(&payload_path, payload) {
+        return RsmarisaProbeStatus {
+            payload_path: Some(payload_path),
+            status: format!("payload_write_failed:{error}"),
+            mapping_mode: "unavailable".to_owned(),
+            num_tries: None,
+            num_keys: None,
+            sample_key: String::new(),
+        };
+    }
+    let Some(payload_path_str) = payload_path.to_str() else {
+        return RsmarisaProbeStatus {
+            payload_path: Some(payload_path),
+            status: "payload_path_not_utf8".to_owned(),
+            mapping_mode: "unavailable".to_owned(),
+            num_tries: None,
+            num_keys: None,
+            sample_key: String::new(),
+        };
+    };
+    let mut trie = rsmarisa::Trie::new();
+    if let Err(error) = trie.mmap(payload_path_str) {
+        return RsmarisaProbeStatus {
+            payload_path: Some(payload_path),
+            status: format!("mmap_failed:{error}"),
+            mapping_mode: "mmap_failed".to_owned(),
+            num_tries: None,
+            num_keys: None,
+            sample_key: String::new(),
+        };
+    }
+    let num_tries = trie.num_tries();
+    let num_keys = trie.num_keys();
+    let sample_key = if num_keys == 0 {
+        String::new()
+    } else {
+        let mut agent = rsmarisa::Agent::new();
+        agent.set_query_id(0);
+        trie.reverse_lookup(&mut agent);
+        agent.key().as_str().to_owned()
+    };
+    RsmarisaProbeStatus {
+        payload_path: Some(payload_path),
+        status: "ok".to_owned(),
+        mapping_mode: "mmap".to_owned(),
+        num_tries: Some(num_tries),
+        num_keys: Some(num_keys),
+        sample_key,
+    }
+}
+
+fn table_format_status(bytes: &[u8]) -> String {
+    match string_table_range(bytes) {
+        Some((_, size)) => format!("rime_marisa_string_table:{size}"),
+        None if parse_rime_table_bin_dictionary(bytes).is_ok() => {
+            "yune_no_marisa_compact".to_owned()
+        }
+        None => "unknown".to_owned(),
+    }
+}
+
+fn table_entry_count(bytes: &[u8]) -> Option<usize> {
+    read_u32_at(bytes, 40).and_then(|value| usize::try_from(value).ok())
+}
+
+fn string_table_range(bytes: &[u8]) -> Option<(usize, usize)> {
+    let offset = read_offset_ptr_at(bytes, 60)?;
+    let size = usize::try_from(read_u32_at(bytes, 64)?).ok()?;
+    (size != 0).then_some((offset, size))
+}
+
+fn read_offset_ptr_at(bytes: &[u8], field_offset: usize) -> Option<usize> {
+    let raw = i32::from_le_bytes(bytes.get(field_offset..field_offset + 4)?.try_into().ok()?);
+    if raw == 0 {
+        return None;
+    }
+    field_offset.checked_add_signed(raw as isize)
+}
+
+fn read_u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
+    Some(u32::from_le_bytes(
+        bytes.get(offset..offset + 4)?.try_into().ok()?,
+    ))
 }
 
 fn selected_data_path(options: &Options, file_name: &str) -> Option<PathBuf> {

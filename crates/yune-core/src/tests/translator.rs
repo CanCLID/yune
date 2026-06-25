@@ -106,6 +106,68 @@ fifth	ne	5
 }
 
 #[test]
+fn bounded_static_table_request_matches_typeduck_prediction_prefix_top_candidates() {
+    let translator = StaticTableTranslator::parse_rime_dict_yaml(
+        r#"
+---
+name: sample
+version: "0.1"
+sort: by_weight
+...
+
+exact-a	hai	100
+exact-b	hai	99
+exact-c	hai	98
+exact-d	hai	97
+exact-e	hai	96
+prefix	h	90
+prediction-a	hai6aa1	80
+prediction-b	hai6bb1	79
+ordinary-a	haia	70
+ordinary-b	haib	69
+ordinary-c	haic	68
+ordinary-d	haid	67
+ordinary-e	haie	66
+"#,
+    )
+    .expect("dictionary should parse")
+    .with_completion(true)
+    .with_sentence(false)
+    .with_prediction_candidate_limit(1)
+    .with_prefix_fallback(true);
+    let mut eager = translator.translate("hai");
+    eager.sort_by(|left, right| {
+        right
+            .quality
+            .partial_cmp(&left.quality)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    let bounded = translator.translate_with_context_and_request(
+        "hai",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(4).with_debug_full_count(true),
+    );
+
+    assert_eq!(
+        bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        eager
+            .iter()
+            .take(4)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(bounded.full_count, Some(eager.len()));
+    assert!(!bounded.is_complete);
+}
+
+#[test]
 fn reverse_lookup_translator_completion_is_opt_in() {
     let lookup_dictionary = TableDictionary::parse_rime_dict_yaml(
         r#"

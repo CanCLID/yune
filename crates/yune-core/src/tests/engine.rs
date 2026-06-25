@@ -239,6 +239,68 @@ fn bounded_refresh_expands_to_full_list_when_paging_past_window() {
 }
 
 #[test]
+fn page_snapshot_clones_only_visible_candidates_for_page_reads() {
+    let dictionary = bounded_refresh_dictionary();
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false),
+    );
+
+    engine.set_input("n");
+
+    let retained_len = engine.context().candidates.len();
+    assert!(retained_len > 5, "test needs a retained surplus window");
+
+    let page = engine.page_snapshot(5);
+
+    assert_eq!(page.context.candidates.len(), 5);
+    assert_eq!(page.context.candidates[0].text, "candidate-00");
+    assert_eq!(page.context.highlighted, 0);
+    assert!(!page.candidate_list_complete);
+    assert_eq!(
+        engine.context().candidates.len(),
+        retained_len,
+        "page snapshot must not force full-list expansion"
+    );
+}
+
+#[test]
+fn typeduck_product_refresh_keeps_ordinary_rows_bounded_until_full_access() {
+    let dictionary = bounded_refresh_dictionary();
+    let mut engine = Engine::new();
+    engine.set_schema("jyut6ping3_mobile", "Jyutping");
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false)
+            .with_prediction_candidate_limit(1)
+            .with_prefix_fallback(true),
+    );
+
+    engine.set_input("n");
+
+    let bounded_len = engine.context().candidates.len();
+    assert!(
+        bounded_len < 31,
+        "product refresh should retain a bounded ordinary window"
+    );
+    assert!(!engine.snapshot().candidate_list_complete);
+    assert_eq!(engine.context().candidates[0].text, "candidate-00");
+
+    assert!(engine.highlight_candidate(25));
+    assert!(
+        engine.context().candidates.len() > bounded_len,
+        "out-of-window product access should force a complete refresh"
+    );
+    assert!(engine.snapshot().candidate_list_complete);
+}
+
+#[test]
 fn bounded_refresh_completes_before_candidate_deletion() {
     let dictionary = bounded_refresh_dictionary();
     let mut engine = Engine::new();
@@ -285,8 +347,10 @@ sort: by_weight
 "#,
     );
     for index in 0..30 {
+        let first = char::from(b'a' + (index / 26) as u8);
+        let second = char::from(b'a' + (index % 26) as u8);
         dictionary.push_str(&format!(
-            "candidate-{index:02}\tn{index:02}\t{}\n",
+            "candidate-{index:02}\tn{first}{second}\t{}\n",
             100.0 - index as f32
         ));
     }

@@ -8,7 +8,9 @@ use crate::dictionary::compiled::{
 use crate::dictionary::query_table::{LookupCandidate, LookupCandidateEntry, TableLookup};
 use crate::CandidateSource;
 use std::collections::HashMap;
+use std::fmt;
 use std::ops::Range;
+use std::sync::Arc;
 
 const MAX_CORRECTION_COUNT: usize = 4096;
 const MAX_TOLERANCE_RULE_COUNT: usize = 4096;
@@ -30,12 +32,59 @@ pub enum RimeTableBinParseError {
     UnsupportedSection { role: String },
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) struct CompactTableStore {
+pub trait CompactTableByteSource: fmt::Debug + Send + Sync {
+    fn bytes(&self) -> &[u8];
+
+    fn storage_label(&self) -> &'static str;
+
+    fn mapping_mode(&self) -> &'static str;
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct OwnedCompactTableBytes {
+    bytes: Arc<[u8]>,
+}
+
+impl OwnedCompactTableBytes {
+    fn new(bytes: impl Into<Arc<[u8]>>) -> Self {
+        Self {
+            bytes: bytes.into(),
+        }
+    }
+}
+
+impl CompactTableByteSource for OwnedCompactTableBytes {
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "owned_bytes"
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct CompactTableStore {
     syllabary_codes: Vec<String>,
-    code_groups: Vec<CompactCodeGroup>,
-    entries: Vec<CompactTableEntry>,
+    storage: CompactTableStorage,
     advanced: TableDictionaryAdvancedData,
+}
+
+#[derive(Clone, Debug)]
+enum CompactTableStorage {
+    Owned {
+        code_groups: Vec<CompactCodeGroup>,
+        entries: Vec<CompactTableEntry>,
+    },
+    ByteBacked {
+        source: Arc<dyn CompactTableByteSource>,
+        code_groups: Vec<ByteBackedCodeGroup>,
+        entries: Vec<ByteBackedTableEntry>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -47,6 +96,31 @@ struct CompactCodeGroup {
 #[derive(Clone, Debug, PartialEq)]
 struct CompactTableEntry {
     text: String,
+    weight: f32,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct ByteStringRef {
+    offset: usize,
+    len: usize,
+}
+
+impl ByteStringRef {
+    fn as_str(self, bytes: &[u8]) -> &str {
+        std::str::from_utf8(&bytes[self.offset..self.offset + self.len])
+            .expect("compiled table string refs are validated during parse")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ByteBackedCodeGroup {
+    code: ByteStringRef,
+    entries: Range<usize>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ByteBackedTableEntry {
+    text: ByteStringRef,
     weight: f32,
 }
 
@@ -106,15 +180,85 @@ impl CompactTableStore {
 
         Self {
             syllabary_codes,
-            code_groups,
-            entries: compact_entries,
+            storage: CompactTableStorage::Owned {
+                code_groups,
+                entries: compact_entries,
+            },
             advanced,
         }
+    }
+
+    pub fn from_table_bin_bytes(
+        bytes: impl Into<Arc<[u8]>>,
+        advanced: TableDictionaryAdvancedData,
+    ) -> Result<Self, RimeTableBinParseError> {
+        Self::from_table_bin_byte_source(Arc::new(OwnedCompactTableBytes::new(bytes)), advanced)
+    }
+
+    pub fn from_table_bin_byte_source(
+        source: Arc<dyn CompactTableByteSource>,
+        advanced: TableDictionaryAdvancedData,
+    ) -> Result<Self, RimeTableBinParseError> {
+        let bytes = source.bytes();
+        ensure_len(bytes, 68)?;
+        let version = parse_rime_format_version_for_payload(bytes, b"Rime::Table/")
+            .map_err(map_metadata_error)?;
+        if version < 4.0 - f64::EPSILON {
+            return Err(RimeTableBinParseError::UnsupportedVersion);
+        }
+
+        let syllabary_offset =
+            read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+        let index_offset =
+            read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+        let string_table_offset = read_offset_ptr(bytes, 60)?;
+        let string_table_size = read_u32_le(bytes, 64).map_err(map_metadata_error)?;
+        if string_table_offset.is_some() || string_table_size != 0 {
+            return Err(RimeTableBinParseError::UnsupportedSection {
+                role: "marisa string_table".to_owned(),
+            });
+        }
+
+        let syllable_refs = read_syllabary_refs(bytes, syllabary_offset)?;
+        let syllabary_codes = syllable_refs
+            .iter()
+            .map(|reference| reference.as_str(bytes).to_owned())
+            .collect::<Vec<_>>();
+        let (code_groups, entries) =
+            read_byte_backed_head_index_entries(bytes, index_offset, &syllable_refs)?;
+
+        Ok(Self {
+            syllabary_codes,
+            storage: CompactTableStorage::ByteBacked {
+                source,
+                code_groups,
+                entries,
+            },
+            advanced,
+        })
     }
 
     #[must_use]
     pub(crate) fn syllabary_codes(&self) -> &[String] {
         &self.syllabary_codes
+    }
+
+    #[must_use]
+    pub fn advanced_data(&self) -> TableDictionaryAdvancedData {
+        self.advanced.clone()
+    }
+
+    #[must_use]
+    pub fn to_table_dictionary(&self) -> TableDictionary {
+        let entries = self
+            .all_codes()
+            .flat_map(|code| {
+                self.exact_candidates(code).map(move |candidate| {
+                    TableEntry::new(code, candidate.text(), candidate.raw_quality())
+                })
+            })
+            .collect::<Vec<_>>();
+        TableDictionary::with_advanced_data(entries, self.advanced.clone())
     }
 
     #[must_use]
@@ -130,14 +274,85 @@ impl CompactTableStore {
     }
 
     fn group_index(&self, code: &str) -> Result<usize, usize> {
-        self.code_groups
-            .binary_search_by(|group| group.code.as_str().cmp(code))
+        match &self.storage {
+            CompactTableStorage::Owned { code_groups, .. } => {
+                code_groups.binary_search_by(|group| group.code.as_str().cmp(code))
+            }
+            CompactTableStorage::ByteBacked {
+                source,
+                code_groups,
+                ..
+            } => {
+                let bytes = source.bytes();
+                code_groups.binary_search_by(|group| group.code.as_str(bytes).cmp(code))
+            }
+        }
     }
 
     fn exact_entries(&self, code: &str) -> Option<(&str, &[CompactTableEntry])> {
+        let CompactTableStorage::Owned {
+            code_groups,
+            entries,
+        } = &self.storage
+        else {
+            return None;
+        };
         let index = self.group_index(code).ok()?;
-        let group = &self.code_groups[index];
-        Some((&group.code, &self.entries[group.entries.clone()]))
+        let group = &code_groups[index];
+        Some((&group.code, &entries[group.entries.clone()]))
+    }
+
+    fn byte_backed_exact_entries(
+        &self,
+        code: &str,
+    ) -> Option<(
+        &dyn CompactTableByteSource,
+        &ByteBackedCodeGroup,
+        &[ByteBackedTableEntry],
+    )> {
+        let CompactTableStorage::ByteBacked {
+            source,
+            code_groups,
+            entries,
+        } = &self.storage
+        else {
+            return None;
+        };
+        let index = self.group_index(code).ok()?;
+        let group = &code_groups[index];
+        Some((source.as_ref(), group, &entries[group.entries.clone()]))
+    }
+
+    #[must_use]
+    pub fn storage_label(&self) -> &'static str {
+        match &self.storage {
+            CompactTableStorage::Owned { .. } => "owned_heap",
+            CompactTableStorage::ByteBacked { source, .. } => source.storage_label(),
+        }
+    }
+
+    #[must_use]
+    pub fn mapping_mode(&self) -> &'static str {
+        match &self.storage {
+            CompactTableStorage::Owned { .. } => "owned_heap",
+            CompactTableStorage::ByteBacked { source, .. } => source.mapping_mode(),
+        }
+    }
+
+    #[must_use]
+    pub fn stored_entry_count(&self) -> usize {
+        match &self.storage {
+            CompactTableStorage::Owned { entries, .. } => entries.len(),
+            CompactTableStorage::ByteBacked { entries, .. } => entries.len(),
+        }
+    }
+
+    #[must_use]
+    pub fn byte_source_len(&self) -> usize {
+        match &self.storage {
+            CompactTableStorage::Owned { .. } => 0,
+            CompactTableStorage::ByteBacked { source, .. } => source.bytes().len(),
+        }
     }
 }
 
@@ -145,23 +360,49 @@ impl CompactTableStore {
 pub(crate) fn parse_compact_table_bin_lookup(
     bytes: impl AsRef<[u8]>,
 ) -> Result<CompactTableStore, RimeTableBinParseError> {
-    let dictionary = parse_rime_table_bin_dictionary(bytes)?;
-    Ok(CompactTableStore::from_dictionary(dictionary))
+    let bytes = Arc::<[u8]>::from(bytes.as_ref());
+    let advanced = parse_rime_table_bin_advanced_data(bytes.as_ref())?;
+    CompactTableStore::from_table_bin_bytes(bytes, advanced)
 }
 
 pub(crate) struct CompactExactCandidates<'a> {
-    code: Option<&'a str>,
-    inner: Option<std::slice::Iter<'a, CompactTableEntry>>,
+    inner: CompactExactCandidatesInner<'a>,
+}
+
+enum CompactExactCandidatesInner<'a> {
+    Empty,
+    Owned {
+        code: &'a str,
+        inner: std::slice::Iter<'a, CompactTableEntry>,
+    },
+    ByteBacked {
+        bytes: &'a [u8],
+        code: ByteStringRef,
+        inner: std::slice::Iter<'a, ByteBackedTableEntry>,
+    },
 }
 
 impl<'a> Iterator for CompactExactCandidates<'a> {
     type Item = LookupCandidate<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let code = self.code?;
-        self.inner.as_mut().and_then(Iterator::next).map(|entry| {
-            LookupCandidate::new(&entry.text, code, entry.weight, CandidateSource::Table)
-        })
+        match &mut self.inner {
+            CompactExactCandidatesInner::Empty => None,
+            CompactExactCandidatesInner::Owned { code, inner } => inner.next().map(|entry| {
+                LookupCandidate::new(&entry.text, code, entry.weight, CandidateSource::Table)
+            }),
+            CompactExactCandidatesInner::ByteBacked { bytes, code, inner } => {
+                let code = code.as_str(bytes);
+                inner.next().map(|entry| {
+                    LookupCandidate::new(
+                        entry.text.as_str(bytes),
+                        code,
+                        entry.weight,
+                        CandidateSource::Table,
+                    )
+                })
+            }
+        }
     }
 }
 
@@ -169,9 +410,21 @@ pub(crate) struct CompactPrefixCandidates<'a> {
     prefix: &'a str,
     store: &'a CompactTableStore,
     group_index: usize,
-    current_code: Option<&'a str>,
-    current_entries: Option<std::slice::Iter<'a, CompactTableEntry>>,
+    current: CompactPrefixCurrent<'a>,
     done: bool,
+}
+
+enum CompactPrefixCurrent<'a> {
+    None,
+    Owned {
+        code: &'a str,
+        entries: std::slice::Iter<'a, CompactTableEntry>,
+    },
+    ByteBacked {
+        bytes: &'a [u8],
+        code: ByteStringRef,
+        entries: std::slice::Iter<'a, ByteBackedTableEntry>,
+    },
 }
 
 impl<'a> Iterator for CompactPrefixCandidates<'a> {
@@ -179,47 +432,110 @@ impl<'a> Iterator for CompactPrefixCandidates<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let (Some(code), Some(entries)) = (self.current_code, self.current_entries.as_mut())
-            {
-                if let Some(entry) = entries.next() {
-                    return Some(LookupCandidateEntry::new(
-                        code,
-                        LookupCandidate::new(
-                            &entry.text,
+            match &mut self.current {
+                CompactPrefixCurrent::None => {}
+                CompactPrefixCurrent::Owned { code, entries } => {
+                    if let Some(entry) = entries.next() {
+                        return Some(LookupCandidateEntry::new(
                             code,
-                            entry.weight,
-                            CandidateSource::Table,
-                        ),
-                    ));
+                            LookupCandidate::new(
+                                &entry.text,
+                                code,
+                                entry.weight,
+                                CandidateSource::Table,
+                            ),
+                        ));
+                    }
+                    self.current = CompactPrefixCurrent::None;
                 }
-                self.current_code = None;
-                self.current_entries = None;
+                CompactPrefixCurrent::ByteBacked {
+                    bytes,
+                    code,
+                    entries,
+                } => {
+                    let code = code.as_str(bytes);
+                    if let Some(entry) = entries.next() {
+                        return Some(LookupCandidateEntry::new(
+                            code,
+                            LookupCandidate::new(
+                                entry.text.as_str(bytes),
+                                code,
+                                entry.weight,
+                                CandidateSource::Table,
+                            ),
+                        ));
+                    }
+                    self.current = CompactPrefixCurrent::None;
+                }
             }
 
-            if self.done || self.group_index >= self.store.code_groups.len() {
-                return None;
+            match &self.store.storage {
+                CompactTableStorage::Owned {
+                    code_groups,
+                    entries,
+                } => {
+                    if self.done || self.group_index >= code_groups.len() {
+                        return None;
+                    }
+                    let group = &code_groups[self.group_index];
+                    self.group_index += 1;
+                    if !group.code.starts_with(self.prefix) {
+                        self.done = true;
+                        return None;
+                    }
+                    self.current = CompactPrefixCurrent::Owned {
+                        code: &group.code,
+                        entries: entries[group.entries.clone()].iter(),
+                    };
+                }
+                CompactTableStorage::ByteBacked {
+                    source,
+                    code_groups,
+                    entries,
+                } => {
+                    if self.done || self.group_index >= code_groups.len() {
+                        return None;
+                    }
+                    let bytes = source.bytes();
+                    let group = &code_groups[self.group_index];
+                    self.group_index += 1;
+                    if !group.code.as_str(bytes).starts_with(self.prefix) {
+                        self.done = true;
+                        return None;
+                    }
+                    self.current = CompactPrefixCurrent::ByteBacked {
+                        bytes,
+                        code: group.code,
+                        entries: entries[group.entries.clone()].iter(),
+                    };
+                }
             }
-            let group = &self.store.code_groups[self.group_index];
-            self.group_index += 1;
-            if !group.code.starts_with(self.prefix) {
-                self.done = true;
-                return None;
-            }
-            self.current_code = Some(&group.code);
-            self.current_entries = Some(self.store.entries[group.entries.clone()].iter());
         }
     }
 }
 
 pub(crate) struct CompactAllCodes<'a> {
-    inner: std::slice::Iter<'a, CompactCodeGroup>,
+    inner: CompactAllCodesInner<'a>,
+}
+
+enum CompactAllCodesInner<'a> {
+    Owned(std::slice::Iter<'a, CompactCodeGroup>),
+    ByteBacked {
+        bytes: &'a [u8],
+        inner: std::slice::Iter<'a, ByteBackedCodeGroup>,
+    },
 }
 
 impl<'a> Iterator for CompactAllCodes<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|group| group.code.as_str())
+        match &mut self.inner {
+            CompactAllCodesInner::Owned(inner) => inner.next().map(|group| group.code.as_str()),
+            CompactAllCodesInner::ByteBacked { bytes, inner } => {
+                inner.next().map(|group| group.code.as_str(bytes))
+            }
+        }
     }
 }
 
@@ -233,15 +549,21 @@ impl TableLookup for CompactTableStore {
     }
 
     fn exact_candidates<'a>(&'a self, code: &'a str) -> Self::ExactCandidates<'a> {
-        let (code, entries) = self
-            .exact_entries(code)
-            .map_or((None, None), |(code, entries)| {
-                (Some(code), Some(entries.iter()))
-            });
-        CompactExactCandidates {
-            code,
-            inner: entries,
-        }
+        let inner = if let Some((code, entries)) = self.exact_entries(code) {
+            CompactExactCandidatesInner::Owned {
+                code,
+                inner: entries.iter(),
+            }
+        } else if let Some((source, group, entries)) = self.byte_backed_exact_entries(code) {
+            CompactExactCandidatesInner::ByteBacked {
+                bytes: source.bytes(),
+                code: group.code,
+                inner: entries.iter(),
+            }
+        } else {
+            CompactExactCandidatesInner::Empty
+        };
+        CompactExactCandidates { inner }
     }
 
     fn prefix_candidates<'a>(&'a self, prefix: &'a str) -> Self::PrefixCandidates<'a> {
@@ -249,17 +571,193 @@ impl TableLookup for CompactTableStore {
             prefix,
             store: self,
             group_index: self.group_index(prefix).unwrap_or_else(|index| index),
-            current_code: None,
-            current_entries: None,
+            current: CompactPrefixCurrent::None,
             done: false,
         }
     }
 
     fn all_codes(&self) -> Self::AllCodes<'_> {
-        CompactAllCodes {
-            inner: self.code_groups.iter(),
-        }
+        let inner = match &self.storage {
+            CompactTableStorage::Owned { code_groups, .. } => {
+                CompactAllCodesInner::Owned(code_groups.iter())
+            }
+            CompactTableStorage::ByteBacked {
+                source,
+                code_groups,
+                ..
+            } => CompactAllCodesInner::ByteBacked {
+                bytes: source.bytes(),
+                inner: code_groups.iter(),
+            },
+        };
+        CompactAllCodes { inner }
     }
+}
+
+pub fn parse_rime_table_bin_advanced_data(
+    bytes: impl AsRef<[u8]>,
+) -> Result<TableDictionaryAdvancedData, RimeTableBinParseError> {
+    let bytes = bytes.as_ref();
+    ensure_len(bytes, 68)?;
+    let index_offset =
+        read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+    let advanced = read_yune_table_advanced_payload(bytes, total_index_end(bytes, index_offset)?)?;
+    if !advanced.entries.is_empty() {
+        return Err(RimeTableBinParseError::UnsupportedSection {
+            role: "byte-backed advanced table entries".to_owned(),
+        });
+    }
+    Ok(advanced.data)
+}
+
+fn read_syllabary_refs(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<Vec<ByteStringRef>, RimeTableBinParseError> {
+    let count = read_count(bytes, offset)?;
+    let start = offset
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let total = count
+        .checked_mul(4)
+        .and_then(|len| start.checked_add(len))
+        .ok_or(RimeTableBinParseError::InvalidCount)?;
+    if total > bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+
+    let mut syllables = Vec::with_capacity(count);
+    for index in 0..count {
+        let field_offset = start
+            .checked_add(
+                index
+                    .checked_mul(4)
+                    .ok_or(RimeTableBinParseError::InvalidCount)?,
+            )
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        syllables.push(read_string_ref_type(bytes, field_offset)?);
+    }
+    Ok(syllables)
+}
+
+fn read_byte_backed_head_index_entries(
+    bytes: &[u8],
+    offset: usize,
+    syllables: &[ByteStringRef],
+) -> Result<(Vec<ByteBackedCodeGroup>, Vec<ByteBackedTableEntry>), RimeTableBinParseError> {
+    let count = read_count(bytes, offset)?;
+    let start = offset
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let node_size = 16usize;
+    let total = count
+        .checked_mul(node_size)
+        .and_then(|len| start.checked_add(len))
+        .ok_or(RimeTableBinParseError::InvalidCount)?;
+    if total > bytes.len() {
+        return Err(RimeTableBinParseError::InvalidCount);
+    }
+    if count > syllables.len() {
+        return Err(RimeTableBinParseError::InvalidCount);
+    }
+
+    let mut grouped = Vec::<(ByteStringRef, Vec<ByteBackedTableEntry>)>::new();
+    for (index, syllable) in syllables.iter().copied().enumerate().take(count) {
+        let node_offset = start
+            .checked_add(
+                index
+                    .checked_mul(node_size)
+                    .ok_or(RimeTableBinParseError::InvalidCount)?,
+            )
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let entry_count = read_count(bytes, node_offset)?;
+        let entries_offset = read_offset_ptr(bytes, node_offset + 4)?;
+        let next_level = read_offset_ptr(bytes, node_offset + 8)?;
+        if next_level.is_some() {
+            return Err(RimeTableBinParseError::UnsupportedSection {
+                role: "multi-level phrase index".to_owned(),
+            });
+        }
+        let Some(entries_offset) = entries_offset else {
+            if entry_count == 0 {
+                continue;
+            }
+            return Err(RimeTableBinParseError::MissingRequiredSection);
+        };
+        grouped.push((
+            syllable,
+            read_byte_backed_entry_list(bytes, entries_offset, entry_count)?,
+        ));
+    }
+
+    grouped.sort_by(|left, right| left.0.as_str(bytes).cmp(right.0.as_str(bytes)));
+    let mut code_groups = Vec::with_capacity(grouped.len());
+    let mut entries = Vec::new();
+    for (code, group_entries) in grouped {
+        let start = entries.len();
+        entries.extend(group_entries);
+        let end = entries.len();
+        code_groups.push(ByteBackedCodeGroup {
+            code,
+            entries: start..end,
+        });
+    }
+    Ok((code_groups, entries))
+}
+
+fn read_byte_backed_entry_list(
+    bytes: &[u8],
+    offset: usize,
+    count: usize,
+) -> Result<Vec<ByteBackedTableEntry>, RimeTableBinParseError> {
+    let entry_size = 8usize;
+    let total = count
+        .checked_mul(entry_size)
+        .and_then(|len| offset.checked_add(len))
+        .ok_or(RimeTableBinParseError::InvalidCount)?;
+    if total > bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+
+    let mut entries = Vec::with_capacity(count);
+    for index in 0..count {
+        let entry_offset = offset
+            .checked_add(
+                index
+                    .checked_mul(entry_size)
+                    .ok_or(RimeTableBinParseError::InvalidCount)?,
+            )
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let text = read_string_ref_type(bytes, entry_offset)?;
+        let weight = read_f32_le(bytes, entry_offset + 4).map_err(map_metadata_error)?;
+        entries.push(ByteBackedTableEntry { text, weight });
+    }
+    Ok(entries)
+}
+
+fn read_string_ref_type(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<ByteStringRef, RimeTableBinParseError> {
+    let string_offset =
+        read_offset_ptr(bytes, offset)?.ok_or(RimeTableBinParseError::OutOfBounds)?;
+    read_c_string_ref(bytes, string_offset)
+}
+
+fn read_c_string_ref(bytes: &[u8], offset: usize) -> Result<ByteStringRef, RimeTableBinParseError> {
+    if offset >= bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+    let end = bytes[offset..]
+        .iter()
+        .position(|byte| *byte == 0)
+        .map(|position| offset + position)
+        .ok_or(RimeTableBinParseError::InvalidLength)?;
+    std::str::from_utf8(&bytes[offset..end]).map_err(|_| RimeTableBinParseError::InvalidUtf8)?;
+    Ok(ByteStringRef {
+        offset,
+        len: end - offset,
+    })
 }
 
 #[must_use]

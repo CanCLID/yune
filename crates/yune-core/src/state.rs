@@ -330,3 +330,14 @@ pub struct Snapshot {
     pub status: Status,
     pub candidate_list_complete: bool,
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PageSnapshot {
+    pub context: Context,
+    pub status: Status,
+    pub candidate_list_complete: bool,
+    pub page_size: usize,
+    pub page_no: usize,
+    pub page_start: usize,
+    pub retained_candidate_count: usize,
+}

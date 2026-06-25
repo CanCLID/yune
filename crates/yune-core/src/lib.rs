@@ -6,6 +6,7 @@ mod dictionary;
 mod engine;
 mod filter;
 mod key;
+mod m37_metrics;
 mod poet;
 mod punctuation;
 mod spelling_algebra;
@@ -26,18 +27,18 @@ use comment_format::CommentFormat;
 pub use dictionary::{
     build_prism_bin, build_reverse_bin, build_table_bin, execute_rebuild_plan,
     parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
-    parse_rime_reverse_bin_metadata, parse_rime_table_bin_dictionary,
-    parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
-    rime_dict_source_checksum, rime_table_bin_dict_file_checksum, CodeCoords, DartsDoubleArray,
-    DartsDoubleArrayError, DartsMatch, DictionaryLookupRecord, PresetVocabularyEntry,
-    RimeChecksumComputer, RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus,
-    RimeDictRebuildError, RimeDictRebuildExecuteError, RimeDictRebuildExecutionReport,
-    RimeDictRebuildInput, RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismBinMetadata,
-    RimePrismBinParseError, RimePrismBinPayload, RimePrismChecksumMetadata,
-    RimePrismSpellingDescriptor, RimeReverseBinMetadata, RimeReverseBinParseError,
-    RimeTableBinMetadata, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
-    TableDictionaryAdvancedData, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
-    TableEncodingRule, TableEntry,
+    parse_rime_reverse_bin_metadata, parse_rime_table_bin_advanced_data,
+    parse_rime_table_bin_dictionary, parse_rime_table_bin_metadata, rime_checksum_bytes,
+    rime_dict_rebuild_plan, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
+    CodeCoords, CompactTableByteSource, CompactTableStore, DartsDoubleArray, DartsDoubleArrayError,
+    DartsMatch, DictionaryLookupRecord, PresetVocabularyEntry, RimeChecksumComputer,
+    RimeCompiledMetadataError, RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildError,
+    RimeDictRebuildExecuteError, RimeDictRebuildExecutionReport, RimeDictRebuildInput,
+    RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismBinMetadata, RimePrismBinParseError,
+    RimePrismBinPayload, RimePrismChecksumMetadata, RimePrismSpellingDescriptor,
+    RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError,
+    RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData, TableDictionaryParseError,
+    TableEncoder, TableEncoderFormulaError, TableEncodingRule, TableEntry,
 };
 pub use engine::Engine;
 pub use filter::{
@@ -45,6 +46,15 @@ pub use filter::{
     TaggedFilter, UniquifierFilter,
 };
 pub use key::{parse_key_sequence, KeyCode, KeyEvent, KeyModifiers, KeySequenceParseError};
+pub use m37_metrics::{
+    m37_metrics_enable, m37_metrics_enabled, m37_metrics_reset, m37_metrics_snapshot,
+    m37_record_abi_candidates_exported, m37_record_abi_free_context, m37_record_abi_get_context,
+    m37_record_ai_merge, m37_record_candidate_sort, m37_record_candidates_sorted,
+    m37_record_candidates_stored, m37_record_context_full_snapshot_clone,
+    m37_record_context_page_snapshot_clone, m37_record_filter_pipeline, m37_record_lookup_view,
+    m37_record_owned_candidate_materialized, m37_record_process_key, m37_record_ranker_pipeline,
+    m37_record_translator, m37_record_userdb_merge, M37MetricsSnapshot,
+};
 pub use poet::{
     make_sentence, make_sentences, null_grammar_score, Grammar, NullGrammar, SentencePath,
     UpstreamSentenceModel, WordGraph, WordGraphEntry, UPSTREAM_NO_GRAMMAR_PENALTY,
@@ -52,8 +62,8 @@ pub use poet::{
 pub use punctuation::{PunctuationDefinition, PunctuationProcessor, PunctuationTranslator};
 pub use state::{
     AiConfidence, AiContext, AiStagingDebug, Candidate, CandidateSource, CommitRecord, Composition,
-    Context, EngineInspectorSnapshot, FilterAuditRecord, PrivacyClass, SegmentDebug, Snapshot,
-    SpellingAlgebraDebug, Status,
+    Context, EngineInspectorSnapshot, FilterAuditRecord, PageSnapshot, PrivacyClass, SegmentDebug,
+    Snapshot, SpellingAlgebraDebug, Status,
 };
 pub use translator::{
     EchoTranslator, FoldedSwitchOptions, HistoryTranslator, ReverseLookupTranslator,

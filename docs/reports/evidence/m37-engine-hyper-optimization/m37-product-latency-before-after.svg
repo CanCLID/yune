@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="386" viewBox="0 0 980 386" role="img" aria-labelledby="title desc">
+<title id="title">M37 Track B product latency</title>
+<desc id="desc">Bar chart comparing M36 final and M37 final TypeDuck product typing-row median latency.</desc>
+<rect width="100%" height="100%" fill="#fbfaf7"/>
+<text x="34" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#202124">M37 Track B product latency</text>
+<text x="34" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#5f6368">jyut6ping3_mobile median native full-ABI typing rows, M36 final versus M37 page-bounded mapped-storage path</text>
+<rect x="190" y="84" width="14" height="14" fill="#b65f43"/><text x="210" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#3c4043">M36 final</text>
+<rect x="360" y="84" width="14" height="14" fill="#2f6f73"/><text x="380" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#3c4043">M37 final</text>
+<text x="34" y="120" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">hai</text>
+<rect x="190" y="102" width="640" height="16" rx="3" fill="#b65f43"/>
+<text x="838" y="115" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">15.241 ms</text>
+<rect x="190" y="125" width="350" height="16" rx="3" fill="#2f6f73"/>
+<text x="548" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">8.337 ms</text>
+<line x1="190" x2="830" y1="149" y2="149" stroke="#e4e1dc"/>
+<text x="34" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">ngohaig</text>
+<rect x="190" y="160" width="146" height="16" rx="3" fill="#b65f43"/>
+<text x="344" y="173" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">3.465 ms</text>
+<rect x="190" y="183" width="78" height="16" rx="3" fill="#2f6f73"/>
+<text x="276" y="196" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">1.862 ms</text>
+<line x1="190" x2="830" y1="207" y2="207" stroke="#e4e1dc"/>
+<text x="34" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">loengjathau</text>
+<rect x="190" y="218" width="158" height="16" rx="3" fill="#b65f43"/>
+<text x="356" y="231" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">3.755 ms</text>
+<rect x="190" y="241" width="91" height="16" rx="3" fill="#2f6f73"/>
+<text x="289" y="254" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">2.165 ms</text>
+<line x1="190" x2="830" y1="265" y2="265" stroke="#e4e1dc"/>
+<text x="34" y="294" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">jigaajiusihaa</text>
+<rect x="190" y="276" width="213" height="16" rx="3" fill="#b65f43"/>
+<text x="411" y="289" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">5.065 ms</text>
+<rect x="190" y="299" width="134" height="16" rx="3" fill="#2f6f73"/>
+<text x="332" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">3.189 ms</text>
+<line x1="190" x2="830" y1="323" y2="323" stroke="#e4e1dc"/>
+<text x="190" y="354" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#5f6368">Source: M36 phase-4-final and M37 phase-3-final-native summary.csv. Native engine evidence only; no browser claim.</text>
+</svg>

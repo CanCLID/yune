@@ -102,7 +102,19 @@ struct PendingLookupCandidateRef<'a> {
     lookup_code: &'a str,
     candidate: LookupCandidate<'a>,
     correction_distance: Option<usize>,
+    spelling_abbreviation: bool,
+    limited_prediction: bool,
     emission_order: usize,
+}
+
+struct BoundedLookupRequest<'a> {
+    input: &'a str,
+    lookup_code: &'a str,
+    lookup_specs: &'a [LookupCodeSpec],
+    filter_by_charset: bool,
+    segment_tags: Option<&'a [String]>,
+    limit: usize,
+    include_full_count: bool,
 }
 
 fn sentence_piece_quality(raw_quality: f32, word_penalty: f32) -> f32 {
@@ -398,6 +410,55 @@ impl StaticTableTranslator {
             storage: TableStorage::Compact(Box::new(CompactTableStore::from_dictionary(
                 dictionary,
             ))),
+            prism_payload,
+            spelling_abbreviation_entries: HashSet::new(),
+            normal_codes,
+            enable_completion: false,
+            enable_correction: false,
+            dynamic_correction_lookup: false,
+            enable_charset_filter: false,
+            enable_sentence: false,
+            sentence_over_completion: false,
+            tags: vec!["abc".to_owned()],
+            delimiters: " ".to_owned(),
+            initial_quality: 0.0,
+            comment_format: CommentFormat::default(),
+            preedit_format: CommentFormat::default(),
+            dictionary_exclude: HashSet::new(),
+            corrections,
+            tolerance_rules,
+            combine_candidates: false,
+            prefix: String::new(),
+            suffix: String::new(),
+            show_full_code: true,
+            single_letter_sentence_guard_enabled: false,
+            prediction_weight_threshold: None,
+            prediction_never_first: false,
+            prediction_candidate_limit: None,
+            prefix_fallback: false,
+            sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
+            spelling_algebra_formulas: Vec::new(),
+            preset_vocabulary,
+            upstream_sentence_model: None,
+        }
+    }
+
+    #[must_use]
+    pub fn from_compact_table_store(
+        store: CompactTableStore,
+        prism_payload: Option<RimePrismBinPayload>,
+    ) -> Self {
+        let advanced = store.advanced_data();
+        let preset_vocabulary = advanced.preset_vocabulary.clone();
+        let corrections = advanced.corrections.clone();
+        let tolerance_rules = advanced.tolerance_rules.clone();
+        let normal_codes = store
+            .all_codes()
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<_>>();
+        Self {
+            source_entries: None,
+            storage: TableStorage::Compact(Box::new(store)),
             prism_payload,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
@@ -942,19 +1003,49 @@ impl StaticTableTranslator {
 
     fn bounded_request_supported(&self, lookup_specs: &[LookupCodeSpec]) -> bool {
         !self.enable_correction
-            && !self.dynamic_correction_lookup
-            && self.corrections.is_empty()
-            && self.tolerance_rules.is_empty()
-            && !self.combine_candidates
-            && !self.prediction_never_first
-            && self.prediction_candidate_limit.is_none()
-            && !self.prefix_fallback
-            && !self.enable_sentence
+            && (!self.prediction_never_first
+                || self.prediction_candidate_limit.is_some()
+                || self.prefix_fallback)
             && !self.sentence_over_completion
             && self.upstream_sentence_model.is_none()
             && lookup_specs.iter().all(|spec| {
                 spec.correction_distance.is_none() && spec.required_syllable_count.is_none()
             })
+    }
+
+    fn lookup_candidate_ref_raw_quality(&self, candidate: &PendingLookupCandidateRef<'_>) -> f32 {
+        let mut raw_quality = candidate.candidate.raw_quality();
+        if let Some(distance) = candidate.correction_distance {
+            raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
+        }
+        raw_quality
+    }
+
+    fn lookup_candidate_ref_category(&self, candidate: &PendingLookupCandidateRef<'_>) -> u8 {
+        if candidate.spelling_abbreviation {
+            1
+        } else if candidate.entry_code != candidate.lookup_code && !candidate.limited_prediction {
+            2
+        } else {
+            0
+        }
+    }
+
+    fn lookup_candidate_ref_order(
+        &self,
+        left: &PendingLookupCandidateRef<'_>,
+        right: &PendingLookupCandidateRef<'_>,
+    ) -> Ordering {
+        self.lookup_candidate_ref_category(left)
+            .cmp(&self.lookup_candidate_ref_category(right))
+            .then_with(|| {
+                self.lookup_candidate_ref_raw_quality(right)
+                    .partial_cmp(&self.lookup_candidate_ref_raw_quality(left))
+                    .unwrap_or(Ordering::Equal)
+            })
+            .then_with(|| left.entry_code.cmp(right.entry_code))
+            .then_with(|| left.candidate.text().cmp(right.candidate.text()))
+            .then_with(|| left.emission_order.cmp(&right.emission_order))
     }
 
     fn materialized_quality(
@@ -1018,19 +1109,53 @@ impl StaticTableTranslator {
         }
     }
 
+    fn push_bounded_pending_by_lookup_order<'a>(
+        &self,
+        selected: &mut Vec<PendingLookupCandidateRef<'a>>,
+        candidate: PendingLookupCandidateRef<'a>,
+        limit: usize,
+    ) {
+        if selected.len() < limit {
+            selected.push(candidate);
+            return;
+        }
+        let Some((worst_index, worst)) = selected
+            .iter()
+            .enumerate()
+            .max_by(|(_, left), (_, right)| self.lookup_candidate_ref_order(left, right))
+        else {
+            return;
+        };
+        if self.lookup_candidate_ref_order(&candidate, worst) == Ordering::Less {
+            selected[worst_index] = candidate;
+        }
+    }
+
     fn bounded_candidates_for_lookup_codes(
         &self,
-        lookup_specs: &[LookupCodeSpec],
-        filter_by_charset: bool,
-        limit: usize,
-        include_full_count: bool,
+        request: BoundedLookupRequest<'_>,
     ) -> TranslationResult {
+        let BoundedLookupRequest {
+            input,
+            lookup_code,
+            lookup_specs,
+            filter_by_charset,
+            segment_tags,
+            limit,
+            include_full_count,
+        } = request;
+        let ordered_mode = self.prediction_candidate_limit.is_some() || self.prefix_fallback;
         let mut selected = Vec::new();
+        let mut limited_predictions = Vec::new();
         let mut emission_order = 0;
         let mut full_count = 0;
+        let mut has_full_exact_candidate = false;
+        let has_correction_lookup = lookup_specs
+            .iter()
+            .any(|spec| spec.correction_distance.is_some());
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
-            let lookup_code = lookup_spec.lookup_code.as_str();
+            let spec_lookup_code = lookup_spec.lookup_code.as_str();
             let lookup_has_exact_candidates = self.storage.has_code(fetch_code);
             for candidate in self
                 .storage
@@ -1045,31 +1170,37 @@ impl StaticTableTranslator {
                 })
             {
                 full_count += 1;
-                self.push_bounded_pending(
-                    &mut selected,
-                    PendingLookupCandidateRef {
-                        entry_code: lookup_code,
-                        lookup_code,
-                        candidate,
-                        correction_distance: lookup_spec.correction_distance,
-                        emission_order,
-                    },
-                    limit,
-                );
+                has_full_exact_candidate = true;
+                let spelling_abbreviation =
+                    self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
+                let pending = PendingLookupCandidateRef {
+                    entry_code: spec_lookup_code,
+                    lookup_code: spec_lookup_code,
+                    candidate,
+                    correction_distance: lookup_spec.correction_distance,
+                    spelling_abbreviation,
+                    limited_prediction: false,
+                    emission_order,
+                };
+                if ordered_mode {
+                    self.push_bounded_pending_by_lookup_order(&mut selected, pending, limit);
+                } else {
+                    self.push_bounded_pending(&mut selected, pending, limit);
+                }
                 emission_order += 1;
             }
             if lookup_spec.correction_distance.is_none()
                 && self.enable_completion
-                && !lookup_code.is_empty()
-                && fetch_code == lookup_code
+                && !spec_lookup_code.is_empty()
+                && fetch_code == spec_lookup_code
             {
-                for entry in self.storage.prefix_candidates(lookup_code) {
+                for entry in self.storage.prefix_candidates(spec_lookup_code) {
                     let (entry_code, candidate) = entry.into_parts();
-                    if entry_code == lookup_code {
+                    if entry_code == spec_lookup_code {
                         continue;
                     }
                     let limited_prediction =
-                        self.is_limited_prediction_view(lookup_code, &candidate);
+                        self.is_limited_prediction_view(spec_lookup_code, &candidate);
                     if self.is_dictionary_text_allowed(candidate.text())
                         && self.is_completion_candidate_view_allowed(
                             lookup_has_exact_candidates,
@@ -1078,25 +1209,58 @@ impl StaticTableTranslator {
                         )
                         && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                     {
-                        full_count += 1;
-                        self.push_bounded_pending(
-                            &mut selected,
-                            PendingLookupCandidateRef {
-                                entry_code,
-                                lookup_code,
-                                candidate,
-                                correction_distance: lookup_spec.correction_distance,
-                                emission_order,
-                            },
-                            limit,
-                        );
+                        let spelling_abbreviation =
+                            self.is_spelling_abbreviation_view(entry_code, &candidate);
+                        let pending = PendingLookupCandidateRef {
+                            entry_code,
+                            lookup_code: spec_lookup_code,
+                            candidate,
+                            correction_distance: lookup_spec.correction_distance,
+                            spelling_abbreviation,
+                            limited_prediction,
+                            emission_order,
+                        };
+                        if ordered_mode {
+                            if limited_prediction {
+                                self.push_bounded_pending_by_lookup_order(
+                                    &mut limited_predictions,
+                                    pending,
+                                    self.prediction_candidate_limit.unwrap_or(limit),
+                                );
+                            } else {
+                                self.push_bounded_pending_by_lookup_order(
+                                    &mut selected,
+                                    pending,
+                                    limit,
+                                );
+                                full_count += 1;
+                            }
+                        } else {
+                            self.push_bounded_pending(&mut selected, pending, limit);
+                            full_count += 1;
+                        }
                         emission_order += 1;
                     }
                 }
             }
         }
-        selected.sort_by(|left, right| self.bounded_candidate_order(left, right));
-        let candidates = selected
+        full_count += limited_predictions.len();
+        for candidate in limited_predictions {
+            self.push_bounded_pending_by_lookup_order(&mut selected, candidate, limit);
+        }
+        if selected.is_empty() && self.enable_sentence {
+            return TranslationResult::complete(self.translated_candidates_for_segment(
+                input,
+                filter_by_charset,
+                segment_tags,
+            ));
+        }
+        if ordered_mode {
+            selected.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
+        } else {
+            selected.sort_by(|left, right| self.bounded_candidate_order(left, right));
+        }
+        let mut candidates = selected
             .into_iter()
             .map(|candidate| {
                 self.candidate_for_lookup_view(
@@ -1107,6 +1271,32 @@ impl StaticTableTranslator {
                 )
             })
             .collect::<Vec<_>>();
+        if self.combine_candidates {
+            candidates = combine_duplicate_text_candidates(candidates);
+        }
+        let prefix_fallback_applies = self.prefix_fallback
+            && !has_correction_lookup
+            && (candidates.is_empty() || has_full_exact_candidate);
+        if prefix_fallback_applies {
+            if candidates.len() < limit {
+                let mut prefix_candidates = self.prefix_fallback_candidates(
+                    input,
+                    lookup_code,
+                    filter_by_charset,
+                    &candidates,
+                );
+                full_count += prefix_candidates.len();
+                prefix_candidates.truncate(limit - candidates.len());
+                candidates.extend(prefix_candidates);
+            } else if include_full_count || full_count <= candidates.len() {
+                full_count += self
+                    .prefix_fallback_candidates(input, lookup_code, filter_by_charset, &candidates)
+                    .len();
+            }
+        }
+        if ordered_mode {
+            Self::assign_ordered_candidate_qualities(&mut candidates);
+        }
         TranslationResult::bounded(candidates, full_count, include_full_count)
     }
 
@@ -1405,12 +1595,15 @@ impl StaticTableTranslator {
                 segment_tags,
             ));
         }
-        self.bounded_candidates_for_lookup_codes(
-            &expanded_lookup_codes,
+        self.bounded_candidates_for_lookup_codes(BoundedLookupRequest {
+            input,
+            lookup_code,
+            lookup_specs: &expanded_lookup_codes,
             filter_by_charset,
+            segment_tags,
             limit,
-            request.include_debug_full_count,
-        )
+            include_full_count: request.include_debug_full_count,
+        })
     }
 
     fn sentence_candidate(

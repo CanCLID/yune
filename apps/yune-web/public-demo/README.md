@@ -27,10 +27,24 @@ Deploy with Wrangler Pages after the local preview and M31 evidence gates pass:
 npx.cmd wrangler pages deploy apps\yune-web\public-demo\dist --project-name yune-web --branch main
 ```
 
+Cloudflare Pages Git integration uses the repository build script:
+
+```bash
+sh apps/yune-web/public-demo/cloudflare-pages-build.sh
+```
+
+Cloudflare project settings:
+
+- Production branch: `main`
+- Build command: `sh apps/yune-web/public-demo/cloudflare-pages-build.sh`
+- Build output directory: `apps/yune-web/public-demo/dist`
+- Root directory: repository root
+
 No Cloudflare account id, token, or secret belongs in this directory.
 
 M31 deployed the public demo to:
 
 <https://yune-web.pages.dev>
 
-Deployments are direct Cloudflare Pages uploads through Wrangler.
+Production deploys are triggered automatically by pushes to `main`. Manual
+Wrangler direct uploads are retained only as an emergency fallback.

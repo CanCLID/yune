@@ -39,7 +39,7 @@ export function Section({ title, description, children, sectionId }: { title: Re
 }
 
 export function Toggle({ label, checked, setChecked, description }: CheckboxProps) {
-	return <label className="yd-field yd-field-row">
+	return <label className="yd-field yd-field-row yd-field-row--split">
 		<span className="yd-field-copy">
 			<span className="yd-field-label">{label}</span>
 			{description && <span className="yd-field-description">{description}</span>}
@@ -54,7 +54,7 @@ export function Toggle({ label, checked, setChecked, description }: CheckboxProp
 }
 
 export function Checkbox({ label, checked, setChecked, description }: CheckboxProps) {
-	return <label className="yd-field yd-field-row">
+	return <label className="yd-field yd-field-row yd-field-row--inline">
 		<input
 			type="checkbox"
 			className="yd-check"
@@ -89,7 +89,7 @@ export function Range({ label, min, max, step, value, setValue, description }: R
 }
 
 export function Radio<T>({ name, label, state, setState, value, description }: RadioProps<T>) {
-	return <label className="yd-field yd-field-row">
+	return <label className="yd-field yd-field-row yd-field-row--inline">
 		<input
 			type="radio"
 			name={name}

@@ -317,7 +317,7 @@ let loading = true;
 const RIME_SHARED_DIR = "/usr/share/rime-data";
 const RIME_USER_DIR = "/rime";
 const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3";
-const YUNE_WEB_ASSET_VERSION = "m31-opencc-output-v10";
+const YUNE_WEB_ASSET_VERSION = "m31-opencc-output-v11";
 const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
 const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v3";
@@ -340,6 +340,8 @@ const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
   "luna_pinyin.schema.yaml",
   "luna_pinyin.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
+  "opencc/t2hkf.json",
+  "opencc/HKVariantsFull.txt",
   "opencc/hk2s.json",
   "opencc/HKVariantsRev.ocd2",
   "opencc/HKVariantsRevPhrases.ocd2",
@@ -450,6 +452,8 @@ const loadRime = (async () => {
         "cangjie3.dict.yaml",
         "cangjie5.schema.yaml",
         "cangjie5.dict.yaml",
+        "opencc/t2hkf.json",
+        "opencc/HKVariantsFull.txt",
         "opencc/hk2s.json",
         "opencc/HKVariantsRev.ocd2",
         "opencc/HKVariantsRevPhrases.ocd2",

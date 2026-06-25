@@ -1093,21 +1093,27 @@ test.describe("yune-web Browser E2E", () => {
 
     await expect(page).toHaveTitle(/yune-web/i);
     await expect(page.getByRole("banner")).toContainText(/yune-web/i);
-    await expect(page.getByText(/Output standard/).last()).toBeVisible();
-    await expect(page.getByLabel(/Hong Kong Traditional/).last()).toBeVisible();
-    await expect(page.getByLabel(/Simplified Chinese/).last()).toBeVisible();
+    await expect(page.getByText(/輸出字形|Output standard/).last()).toBeVisible();
+    await expect(page.getByLabel(/香港字形|Hong Kong Traditional/).last()).toBeVisible();
+    await expect(page.getByLabel(/傳統漢字|OpenCC Traditional/).last()).toBeVisible();
+    await expect(page.getByLabel(/台灣字型|Taiwan Traditional/).last()).toBeVisible();
+    await expect(page.getByLabel(/大陆简化字|Mainland Simplified/).last()).toBeVisible();
     await expect(page.getByLabel(/AI Candidates/).last()).not.toBeChecked();
     await expect(page.locator("[data-yune-schema-switcher]")).toBeVisible();
-    await expect(page.getByLabel(/方案 Schema/)).toContainText(/粵語拼音|Jyutping/);
-    await expect(page.getByText(/Cangjie lookup/)).toBeVisible();
-    await expect(page.getByLabel(/Taiwan|t2tw|s2tw|tw2s|tw2t|s2t/i)).toHaveCount(0);
+    await expect(page.getByLabel(/方案|Schema/)).toContainText(/粵語拼音|Jyutping/);
+    await expect(page.getByText(/倉頡反查|Cangjie lookup/)).toBeVisible();
 
     await saveM31Json("public-control-surface.json", {
       title: await page.title(),
       publicDemo: true,
-      exposedOutputStandards: ["hk_traditional", "hk2s_simplified"],
+      exposedOutputStandards: [
+        "opencc_traditional",
+        "hong_kong_traditional",
+        "taiwan_traditional",
+        "mainland_simplified",
+      ],
       exposedSchemaControls: ["schema switcher", "cangjie lookup"],
-      hiddenUnsupportedControls: ["unsupported OpenCC standards"],
+      hiddenUnsupportedControls: [],
       aiDefault: "off",
     });
     await takeM31Screenshot(page, "public-control-surface");
@@ -1130,6 +1136,8 @@ test.describe("yune-web Browser E2E", () => {
     expect(loadedSharedAssets).toContain("jyut6ping3.schema.yaml");
     expect(loadedSharedAssets).toContain("cangjie5.schema.yaml");
     expect(loadedSharedAssets).toContain("luna_pinyin.schema.yaml");
+    expect(loadedSharedAssets).toContain("opencc/t2hkf.json");
+    expect(loadedSharedAssets).toContain("opencc/HKVariantsFull.txt");
     expect(loadedSharedAssets).toContain("opencc/hk2s.json");
     expect(loadedSharedAssets.some((asset) => /10keys|longpress/.test(asset))).toBe(false);
 
@@ -1163,15 +1171,15 @@ test.describe("yune-web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
-  test("M31 PUBLIC hk2s output standard is browser-visible and AI stays default-off @smoke @public-smoke", async ({ page }) => {
+  test("M31 PUBLIC output standards are browser-visible and AI stays default-off @smoke @public-smoke", async ({ page }) => {
     test.skip(!RUN_M31_PUBLIC_E2E, "M31 public smoke requires YUNE_PUBLIC_DEMO_E2E=1");
 
     const traditional = await typeCompositionAndWaitForTopCandidate(page, "ngohaigo", "\u6211\u4fc2\u500b");
     await clearComposition(page);
-    await setPreferenceRadio(page, /Simplified Chinese/);
+    await setPreferenceRadio(page, /大陆简化字|Mainland Simplified/);
     const simplified = await typeCompositionAndWaitForTopCandidate(page, "ngohaigo", "\u6211\u7cfb\u4e2a");
     await clearComposition(page);
-    await setPreferenceRadio(page, /Hong Kong Traditional/);
+    await setPreferenceRadio(page, /香港字形|Hong Kong Traditional/);
     const traditionalAgain = await typeCompositionAndWaitForTopCandidate(page, "ngohaigo", "\u6211\u4fc2\u500b");
 
     await expect(page.getByLabel(/AI Candidates/).last()).not.toBeChecked();
@@ -1183,9 +1191,9 @@ test.describe("yune-web Browser E2E", () => {
 
     await saveM31Json("opencc-browser-evidence.json", {
       supportedOutputStandards: {
-        hkTraditional: traditional.candidates[0],
-        hk2sSimplified: simplified.candidates[0],
-        hkTraditionalAfterRoundTrip: traditionalAgain.candidates[0],
+        hongKongTraditional: traditional.candidates[0],
+        mainlandSimplified: simplified.candidates[0],
+        hongKongTraditionalAfterRoundTrip: traditionalAgain.candidates[0],
       },
       unsupportedStandardsExposed: false,
       aiPosture: {
@@ -3318,8 +3326,7 @@ test.describe("yune-web Browser E2E", () => {
     );
 
     await clearComposition(page);
-    await page.getByRole("button", { name: /Output standard/ }).click();
-    await page.waitForTimeout(500);
+    await setPreferenceRadio(page, /大陆简化字|Mainland Simplified/);
     await focusInputAndType(page, "ngohaigo");
     const simplified = await captureM16Scenario(
       page,

@@ -31,13 +31,9 @@ engine:
     - table_translator@cangjie
   filters:
     - dictionary_lookup_filter
-    - simplifier@output_hk2s
-    - simplifier@output_t2s
-    - simplifier@output_s2t
-    - simplifier@output_t2tw
-    - simplifier@output_s2tw
-    - simplifier@output_tw2s
-    - simplifier@output_tw2t
+    - simplifier
+    - simplifier@variants_hk
+    - simplifier@trad_tw
 
 translator:
   dictionary: jyut6ping3
@@ -45,33 +41,17 @@ translator:
   prediction_candidate_limit: 1
   prefix_fallback: true
 
-output_hk2s:
-  option_name: output_hk2s
-  opencc_config: hk2s.json
-
-output_t2s:
-  option_name: output_t2s
+simplifier:
+  option_name: simplification
   opencc_config: t2s.json
 
-output_s2t:
-  option_name: output_s2t
-  opencc_config: s2t.json
+variants_hk:
+  option_name: variants_hk
+  opencc_config: t2hkf.json
 
-output_t2tw:
-  option_name: output_t2tw
+trad_tw:
+  option_name: trad_tw
   opencc_config: t2tw.json
-
-output_s2tw:
-  option_name: output_s2tw
-  opencc_config: s2tw.json
-
-output_tw2s:
-  option_name: output_tw2s
-  opencc_config: tw2s.json
-
-output_tw2t:
-  option_name: output_tw2t
-  opencc_config: tw2t.json
 
 luna_pinyin:
   tag: luna_pinyin

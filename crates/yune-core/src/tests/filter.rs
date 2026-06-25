@@ -1353,6 +1353,24 @@ fn simplifier_filter_uses_opencc_hk2s_source_data() {
 }
 
 #[test]
+fn simplifier_filter_uses_opencc_t2hkf_source_data() {
+    let mut engine = Engine::new();
+    engine.add_translator(StaticTableTranslator::new([("hk", "檯溫兌說")]));
+    engine.add_filter(
+        SimplifierFilter::new()
+            .with_option_name("variants_hk")
+            .with_opencc_config("t2hkf.json"),
+    );
+
+    engine
+        .process_key_sequence("hk")
+        .expect("keys should parse");
+    engine.set_option("variants_hk", true);
+
+    assert_eq!(engine.context().candidates[0].text, "枱温兑説");
+}
+
+#[test]
 fn simplifier_filter_shows_librime_tip_comments() {
     let mut engine = Engine::new();
     engine.add_translator(StaticTableTranslator::new([("tw", "臺"), ("tw", "臺灣")]));

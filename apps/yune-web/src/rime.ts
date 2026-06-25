@@ -34,6 +34,47 @@ type Payload = ListenerPayload | SuccessPayload | ErrorPayload | DiagnosticPaylo
 
 type Listeners = { [K in keyof ListenerArgsMap]: (this: Worker, ...args: ListenerArgsMap[K]) => void };
 
+interface ActionDiagnostic {
+	action: keyof Actions;
+	input?: string;
+	enqueuedAt?: number;
+	sentAt?: number;
+	receivedAt: number;
+	workerStartedAt?: number;
+	workerFinishedAt?: number;
+	queueWaitMs: number;
+	workerRoundtripMs: number;
+	workerMs?: number;
+	totalMs: number;
+}
+
+interface SerializedError {
+	name?: string;
+	message?: string;
+	stack?: string;
+	value?: string;
+}
+
+interface ActionErrorDiagnostic extends ActionDiagnostic {
+	args: unknown[];
+	error: SerializedError;
+}
+
+interface YuneWebDebugApi {
+	resetStorage(): Promise<void>;
+	actionDiagnostics(): ActionDiagnostic[];
+	actionErrors(): ActionErrorDiagnostic[];
+	persistenceDiagnostics(): DiagnosticPayload[];
+}
+
+type DebugWindow = typeof window & {
+	__YUNE_RIME_VERSION__?: string;
+	__YUNE_WEB_DEBUG__?: YuneWebDebugApi;
+	__YUNE_ACTION_DIAGNOSTICS__?: ActionDiagnostic[];
+	__YUNE_ACTION_ERRORS__?: ActionErrorDiagnostic[];
+	__YUNE_PERSISTENCE_DIAGNOSTICS__?: DiagnosticPayload[];
+};
+
 let running: Message | null = null;
 const queue: Message[] = [];
 
@@ -51,16 +92,14 @@ for (const type of allListenerTypes) {
 const lastListenerArgs = {} as Partial<{ [K in keyof ListenerArgsMap]: ListenerArgsMap[K] }>;
 
 const YUNE_WEB_WORKER_VERSION = "m27-startup-runtime-v1";
-const debugWindow = window as typeof window & { __YUNE_RIME_VERSION__?: string };
+const debugWindow = window as DebugWindow;
 debugWindow.__YUNE_RIME_VERSION__ = YUNE_WEB_WORKER_VERSION;
 document.documentElement.dataset["yuneRimeVersion"] = YUNE_WEB_WORKER_VERSION;
+installDebugHelpers();
 const worker = new Worker(`./worker.js?v=${YUNE_WEB_WORKER_VERSION}`);
 worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 	if (data.type === "diagnostic") {
-		const diagnosticWindow = window as typeof window & {
-			__YUNE_PERSISTENCE_DIAGNOSTICS__?: DiagnosticPayload[];
-		};
-		(diagnosticWindow.__YUNE_PERSISTENCE_DIAGNOSTICS__ ??= []).push(data);
+		(debugWindow.__YUNE_PERSISTENCE_DIAGNOSTICS__ ??= []).push(data);
 		appendPersistenceDiagnostic(data);
 		if (shouldLogDebugMessages()) {
 			console.info("diagnostic", JSON.stringify(data));
@@ -85,21 +124,23 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 		}
 	}
 	else if (running) {
-		const { resolve, reject } = running;
+		const currentMessage = running;
+		const { resolve, reject } = currentMessage;
 		const receivedAt = nowMs();
-		appendActionDiagnostic({
-			action: running.name,
-			input: typeof running.args[0] === "string" ? running.args[0] : undefined,
-			enqueuedAt: running.enqueuedAt,
-			sentAt: running.sentAt,
+		const diagnostic = {
+			action: currentMessage.name,
+			input: typeof currentMessage.args[0] === "string" ? currentMessage.args[0] : undefined,
+			enqueuedAt: currentMessage.enqueuedAt,
+			sentAt: currentMessage.sentAt,
 			receivedAt,
 			workerStartedAt: data.workerStartedAt,
 			workerFinishedAt: data.workerFinishedAt,
-			queueWaitMs: Math.round(((running.sentAt ?? receivedAt) - (running.enqueuedAt ?? receivedAt))),
-			workerRoundtripMs: Math.round(receivedAt - (running.sentAt ?? receivedAt)),
+			queueWaitMs: Math.round(((currentMessage.sentAt ?? receivedAt) - (currentMessage.enqueuedAt ?? receivedAt))),
+			workerRoundtripMs: Math.round(receivedAt - (currentMessage.sentAt ?? receivedAt)),
 			workerMs: data.elapsedMs,
-			totalMs: Math.round(receivedAt - (running.enqueuedAt ?? receivedAt)),
-		});
+			totalMs: Math.round(receivedAt - (currentMessage.enqueuedAt ?? receivedAt)),
+		} satisfies ActionDiagnostic;
+		appendActionDiagnostic(diagnostic);
 		const nextMessage = queue.shift();
 		if (nextMessage) {
 			postMessage(nextMessage);
@@ -111,6 +152,11 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 			resolve(data.result);
 		}
 		else {
+			appendActionErrorDiagnostic({
+				...diagnostic,
+				args: currentMessage.args,
+				error: serializeError(data.error),
+			});
 			reject(data.error);
 		}
 	}
@@ -138,23 +184,115 @@ function appendPersistenceDiagnostic(data: DiagnosticPayload) {
 	document.documentElement.dataset["yunePersistenceDiagnostics"] = JSON.stringify(diagnostics);
 }
 
-function appendActionDiagnostic(diagnostic: {
-	action: keyof Actions;
-	input?: string;
-	enqueuedAt?: number;
-	sentAt?: number;
-	receivedAt: number;
-	workerStartedAt?: number;
-	workerFinishedAt?: number;
-	queueWaitMs: number;
-	workerRoundtripMs: number;
-	workerMs?: number;
-	totalMs: number;
-}) {
+function appendActionDiagnostic(diagnostic: ActionDiagnostic) {
 	const existing = document.documentElement.dataset["yuneActionDiagnostics"];
-	const diagnostics = existing ? JSON.parse(existing) as typeof diagnostic[] : [];
+	const diagnostics = existing ? JSON.parse(existing) as ActionDiagnostic[] : [];
 	diagnostics.push(diagnostic);
-	document.documentElement.dataset["yuneActionDiagnostics"] = JSON.stringify(diagnostics.slice(-100));
+	const latest = diagnostics.slice(-100);
+	debugWindow.__YUNE_ACTION_DIAGNOSTICS__ = latest;
+	document.documentElement.dataset["yuneActionDiagnostics"] = JSON.stringify(latest);
+}
+
+function appendActionErrorDiagnostic(diagnostic: ActionErrorDiagnostic) {
+	const existing = document.documentElement.dataset["yuneActionErrors"];
+	const diagnostics = existing ? JSON.parse(existing) as ActionErrorDiagnostic[] : [];
+	diagnostics.push(diagnostic);
+	const latest = diagnostics.slice(-25);
+	debugWindow.__YUNE_ACTION_ERRORS__ = latest;
+	document.documentElement.dataset["yuneLastActionError"] = JSON.stringify(diagnostic);
+	document.documentElement.dataset["yuneActionErrors"] = JSON.stringify(latest);
+	console.error("YUNE_WORKER_ACTION_ERROR", diagnostic);
+}
+
+function serializeError(error: unknown): SerializedError {
+	if (error instanceof Error) {
+		return {
+			name: error.name,
+			message: error.message,
+			stack: error.stack,
+		};
+	}
+	if (error && typeof error === "object") {
+		const record = error as Record<string, unknown>;
+		return {
+			name: typeof record["name"] === "string" ? record["name"] : undefined,
+			message: typeof record["message"] === "string" ? record["message"] : undefined,
+			stack: typeof record["stack"] === "string" ? record["stack"] : undefined,
+			value: stringifyUnknown(error),
+		};
+	}
+	return { value: String(error) };
+}
+
+function stringifyUnknown(value: unknown) {
+	try {
+		return JSON.stringify(value);
+	}
+	catch {
+		return String(value);
+	}
+}
+
+function installDebugHelpers() {
+	debugWindow.__YUNE_WEB_DEBUG__ = {
+		resetStorage: resetYuneWebStorage,
+		actionDiagnostics: () => parseDatasetJson<ActionDiagnostic[]>("yuneActionDiagnostics", []),
+		actionErrors: () => parseDatasetJson<ActionErrorDiagnostic[]>("yuneActionErrors", []),
+		persistenceDiagnostics: () => parseDatasetJson<DiagnosticPayload[]>("yunePersistenceDiagnostics", []),
+	};
+}
+
+function parseDatasetJson<T>(key: string, fallback: T): T {
+	const raw = document.documentElement.dataset[key];
+	if (!raw) {
+		return fallback;
+	}
+	try {
+		return JSON.parse(raw) as T;
+	}
+	catch {
+		return fallback;
+	}
+}
+
+export async function resetYuneWebStorage() {
+	window.localStorage?.clear();
+	window.sessionStorage?.clear();
+
+	if ("caches" in window) {
+		const cacheNames = await window.caches.keys();
+		await Promise.all(cacheNames.map(cacheName => window.caches.delete(cacheName)));
+	}
+
+	const indexedDb = window.indexedDB as (IDBFactory & {
+		databases?: () => Promise<Array<{ name?: string | null }>>;
+	}) | undefined;
+	if (indexedDb) {
+		const databaseNames = new Set<string>(["/rime"]);
+		if (indexedDb.databases) {
+			for (const database of await indexedDb.databases()) {
+				if (database.name) {
+					databaseNames.add(database.name);
+				}
+			}
+		}
+		await Promise.all([...databaseNames].map(name => deleteIndexedDbDatabase(indexedDb, name)));
+	}
+
+	console.info("Yune web storage reset; reloading page.");
+	window.location.reload();
+}
+
+function deleteIndexedDbDatabase(indexedDb: IDBFactory, name: string) {
+	return new Promise<void>((resolve, reject) => {
+		const request = indexedDb.deleteDatabase(name);
+		request.onsuccess = () => resolve();
+		request.onerror = () => reject(request.error);
+		request.onblocked = () => {
+			console.warn(`Yune web storage reset blocked while deleting IndexedDB database "${name}". Close other tabs for this origin if reset does not complete.`);
+			resolve();
+		};
+	});
 }
 
 const allActions: (keyof Actions)[] = [

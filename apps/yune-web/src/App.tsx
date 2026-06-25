@@ -207,7 +207,7 @@ export default function App() {
 		chineseTypeface,
 	} = preferences;
 	const text = uiText[uiLanguage];
-	const outputStandardValue = normalizeOutputStandard(outputStandard, "hk_traditional");
+	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
 	const didRunSchemaEffect = useRef(false);
 
 	useEffect(() => {
@@ -301,9 +301,8 @@ export default function App() {
 				await Rime.setOption("soft_cursor", true);
 				await Rime.setOption("ascii_mode", isAsciiMode);
 				await Rime.setOption("full_shape", isFullShape);
-				await Rime.setOption("simplification", outputStandardValue === "simplified");
 				await Rime.setOption("traditionalization", false);
-				const activeOutputOption = outputOptionForStandard(outputStandardValue, activeSchema);
+				const activeOutputOption = outputOptionForStandard(outputStandardValue);
 				document.documentElement.dataset["yuneActiveOutputOption"] = activeOutputOption ?? "none";
 				const appliedOutputOptions: string[] = [];
 				for (const optionName of OUTPUT_STANDARD_ENGINE_OPTIONS) {

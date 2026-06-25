@@ -1,0 +1,87 @@
+# Rime schema template
+# encoding: utf-8
+
+schema:
+  version: "2023.11.03"
+  author:
+    - Ayaka Mikazuki <ayaka@mail.shn.hk>
+    - LeiMaau <leimaau@qq.com>
+    - chaaklau <chaakming@gmail.com>
+    - laubonghaudoi <laubonghaudoi@icloud.com>
+    - tanxpyox <tanxpyox@gmail.com>
+    - William915 <William915@gmail.com>
+    - szc126 (@szc126)
+    - Bing Jeung <bing@ososo.io>
+    - graphemecluster <graphemecluster@gmail.com>
+  description: |-
+    採用香港語言學學會粵語拼音方案
+    https://www.lshk.org/jyutping
+    支援聲調顯示同輸入
+    Telegram 用户交流組 https://t.me/rime_cantonese
+
+switches:
+  - name: ascii_mode
+    reset: 0
+    states: [ 中文, 英文 ]
+  - name: full_shape
+    states: [ 半形, 全形 ]
+  - name: simplification
+    states: [ 繁體, 简体 ]
+    reset: 0
+  - name: ascii_punct
+    states: [ 。，, ．， ]
+
+engine:
+  processors:
+    - ascii_composer
+    - recognizer
+    - key_binder
+    - speller
+    - punctuator
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - ascii_segmentor
+    - matcher
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+  translators:
+    - punct_translator
+    - script_translator
+  filters:
+    - dictionary_lookup_filter
+    - simplifier
+
+dictionary_lookup_filter:
+  dictionary: jyut6ping3_scolar
+
+speller:
+  alphabet: zyxwvutsrqponmlkjihgfedcba
+  delimiter: " '"
+  algebra:
+    __patch:
+      - include:/fuzzy
+      - include:/tone_ignore
+      - include:/abbreviation
+      - include:/tone_to_letter
+
+translator:
+  dictionary: jyut6ping3
+  prediction_never_first: true
+  always_show_comments: true
+  comment_format:
+    - xform/^/\f/
+
+simplifier:
+  opencc_config: hk2s.json
+
+punctuator:
+  import_preset: default
+
+key_binder:
+  import_preset: default
+
+recognizer:
+  import_preset: default

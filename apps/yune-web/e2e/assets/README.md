@@ -18,7 +18,8 @@ Before running browser E2E, provide these assets:
 
 Assets MUST come from TypeDuck-Web or its documented upstream source:
 
-- TypeDuck-Web repository: `apps/yune-web/source/` asset paths
+- Tracked yune-web schema assets: `apps/yune-web/public/schema/`
+- Historical TypeDuck-Web reference checkout when present locally
 - TypeDuck-Web CDN URLs documented in upstream README
 - Upstream RIME project asset repositories
 - User-provided real schema/dictionary YAML files
@@ -46,20 +47,19 @@ Validation rejects:
 
 ### Copy/Reference Instructions
 
-**Option 1: Copy from upstream checkout**
+**Option 1: Copy from tracked yune-web assets**
 
 ```bash
-# From TypeDuck-Web source
-cp apps/yune-web/source/public/default.yaml apps/yune-web/e2e/assets/
-cp apps/yune-web/source/public/*.schema.yaml apps/yune-web/e2e/assets/
-cp apps/yune-web/source/public/*.dict.yaml apps/yune-web/e2e/assets/
+cp apps/yune-web/public/schema/default.yaml apps/yune-web/e2e/assets/
+cp apps/yune-web/public/schema/*.schema.yaml apps/yune-web/e2e/assets/
+cp apps/yune-web/public/schema/*.dict.yaml apps/yune-web/e2e/assets/
 ```
 
 **Option 2: Reference in test configuration**
 
 ```typescript
 // In E2E test setup
-const assetsPath = path.resolve("../source/public");
+const assetsPath = path.resolve("../public/schema");
 const defaultYaml = fs.readFileSync(path.join(assetsPath, "default.yaml"), "utf8");
 const schemaYaml = fs.readFileSync(path.join(assetsPath, "luna_pinyin.schema.yaml"), "utf8");
 const dictionaryYaml = fs.readFileSync(path.join(assetsPath, "luna_pinyin.dict.yaml"), "utf8");

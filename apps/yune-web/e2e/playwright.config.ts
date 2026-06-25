@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "yune-typeduck.spec.ts",
+  testMatch: "yune-web.spec.ts",
   fullyParallel: true,
   workers: process.env.CI ? 2 : 4,
   reporter: "line",

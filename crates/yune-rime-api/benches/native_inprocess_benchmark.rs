@@ -2,7 +2,7 @@ use std::{
     collections::BTreeMap,
     ffi::CString,
     fs, mem,
-    os::raw::{c_int, c_void},
+    os::raw::c_int,
     path::{Path, PathBuf},
     ptr,
     time::{Duration, Instant},

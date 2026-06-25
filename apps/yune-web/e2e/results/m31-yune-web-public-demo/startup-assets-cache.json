@@ -4,7 +4,7 @@
     "source": "yune-startup",
     "marker": {
       "phase": "startup:complete",
-      "totalMs": 7735,
+      "totalMs": 7027,
       "markers": [
         {
           "phase": "runtime:init:start",
@@ -16,59 +16,59 @@
         },
         {
           "phase": "wasm-glue:loaded",
-          "ms": 34
+          "ms": 35
         },
         {
           "phase": "wasm:module:create:start",
-          "ms": 34
+          "ms": 35
         },
         {
           "phase": "wasm:module:create:finish",
-          "ms": 221
+          "ms": 270
         },
         {
           "phase": "module:created",
-          "ms": 221
+          "ms": 270
         },
         {
           "phase": "filesystem:mount:start",
-          "ms": 221
+          "ms": 270
         },
         {
           "phase": "filesystem:mount:finish",
-          "ms": 222
+          "ms": 270
         },
         {
           "phase": "persistence:mounted",
-          "ms": 222
+          "ms": 270
         },
         {
           "phase": "assets:load:start",
-          "ms": 222
+          "ms": 270
         },
         {
           "phase": "assets:load:finish",
-          "ms": 1461
+          "ms": 988
         },
         {
           "phase": "assets:loaded",
-          "ms": 1461
+          "ms": 988
         },
         {
           "phase": "schema:select:start",
-          "ms": 1461
+          "ms": 988
         },
         {
           "phase": "schema:select:finish",
-          "ms": 7735
+          "ms": 7027
         },
         {
           "phase": "runtime:init:finish",
-          "ms": 7735
+          "ms": 7027
         },
         {
           "phase": "runtime:initialized",
-          "ms": 7735
+          "ms": 7027
         }
       ],
       "m27EvidenceVersion": "m27-startup-v1",
@@ -77,8 +77,8 @@
       "assetVersion": "m27-startup-v2",
       "schema": "jyut6ping3_mobile",
       "wasmBuildProfile": "release",
-      "wasmGlue": "yune-typeduck.js",
-      "wasmBinary": "yune-typeduck.wasm",
+      "wasmGlue": "yune-web.js",
+      "wasmBinary": "yune-web.wasm",
       "assetCache": {
         "hits": 1,
         "misses": 30,
@@ -119,7 +119,7 @@
     "source": "yune-startup",
     "marker": {
       "phase": "startup:complete",
-      "totalMs": 5932,
+      "totalMs": 5906,
       "markers": [
         {
           "phase": "runtime:init:start",
@@ -131,59 +131,59 @@
         },
         {
           "phase": "wasm-glue:loaded",
-          "ms": 16
+          "ms": 24
         },
         {
           "phase": "wasm:module:create:start",
-          "ms": 16
+          "ms": 24
         },
         {
           "phase": "wasm:module:create:finish",
-          "ms": 49
+          "ms": 58
         },
         {
           "phase": "module:created",
-          "ms": 49
+          "ms": 58
         },
         {
           "phase": "filesystem:mount:start",
-          "ms": 49
+          "ms": 58
         },
         {
           "phase": "filesystem:mount:finish",
-          "ms": 49
+          "ms": 58
         },
         {
           "phase": "persistence:mounted",
-          "ms": 49
+          "ms": 58
         },
         {
           "phase": "assets:load:start",
-          "ms": 49
+          "ms": 58
         },
         {
           "phase": "assets:load:finish",
-          "ms": 443
+          "ms": 492
         },
         {
           "phase": "assets:loaded",
-          "ms": 443
+          "ms": 492
         },
         {
           "phase": "schema:select:start",
-          "ms": 443
+          "ms": 492
         },
         {
           "phase": "schema:select:finish",
-          "ms": 5932
+          "ms": 5906
         },
         {
           "phase": "runtime:init:finish",
-          "ms": 5932
+          "ms": 5906
         },
         {
           "phase": "runtime:initialized",
-          "ms": 5932
+          "ms": 5906
         }
       ],
       "m27EvidenceVersion": "m27-startup-v1",
@@ -192,8 +192,8 @@
       "assetVersion": "m27-startup-v2",
       "schema": "jyut6ping3_mobile",
       "wasmBuildProfile": "release",
-      "wasmGlue": "yune-typeduck.js",
-      "wasmBinary": "yune-typeduck.wasm",
+      "wasmGlue": "yune-web.js",
+      "wasmBinary": "yune-web.wasm",
       "assetCache": {
         "hits": 31,
         "misses": 0,
@@ -229,6 +229,22 @@
       ]
     }
   },
-  "resources": [],
+  "resources": [
+    {
+      "name": "https://yune-web.pages.dev/assets/index-DbhKRVJj.js",
+      "duration": 0,
+      "transferSize": 0
+    },
+    {
+      "name": "https://yune-web.pages.dev/assets/index-aXgoWwUe.css",
+      "duration": 0,
+      "transferSize": 0
+    },
+    {
+      "name": "https://yune-web.pages.dev/worker.js?v=m27-startup-runtime-v1",
+      "duration": -5.199999988079071,
+      "transferSize": 300
+    }
+  ],
   "claimBoundary": "delivery cache and asset pruning only; not a browser startup speedup claim"
 }

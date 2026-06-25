@@ -38,9 +38,9 @@ mod schema_install;
 mod schema_selection;
 mod session;
 mod startup_trace;
-mod typeduck_web;
 #[path = "userdb.rs"]
 mod userdb;
+mod web_runtime;
 pub use abi::*;
 use api_table::state_label_cache;
 pub use api_table::{
@@ -74,8 +74,8 @@ pub use session::*;
 pub use startup_trace::{
     begin_startup_trace, finish_startup_trace, StartupTraceEvent, StartupTraceMemorySample,
 };
-pub use typeduck_web::*;
 pub use userdb::*;
+pub use web_runtime::*;
 
 const XK_BACKSPACE: c_int = 0xff08;
 const XK_ESCAPE: c_int = 0xff1b;

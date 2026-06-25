@@ -6,76 +6,76 @@
       {
         "index": 0,
         "text": "組合次",
-        "note": "(compound 詞組)",
+        "note": "combine(compound 詞組)",
         "source": null,
-        "rowText": "1.zou2 hap6 ci3組合次(compound 詞組)ⓘ"
+        "rowText": "1.zou2 hap6 ci3組合次combine(compound 詞組)ⓘ"
       },
       {
         "index": 1,
         "text": "組合",
-        "note": null,
+        "note": "combine",
         "source": null,
-        "rowText": "2.zou2 hap6組合ⓘ"
+        "rowText": "2.zou2 hap6組合combineⓘ"
       },
       {
         "index": 2,
         "text": "做",
-        "note": null,
+        "note": "do",
         "source": null,
-        "rowText": "3.zou6做ⓘ"
+        "rowText": "3.zou6做doⓘ"
       },
       {
         "index": 3,
         "text": "早",
-        "note": null,
+        "note": "early",
         "source": null,
-        "rowText": "4.zou2早ⓘ"
+        "rowText": "4.zou2早earlyⓘ"
       },
       {
         "index": 4,
         "text": "組",
-        "note": null,
+        "note": "group",
         "source": null,
-        "rowText": "5.zou2組ⓘ"
+        "rowText": "5.zou2組groupⓘ"
       },
       {
         "index": 5,
         "text": "租",
-        "note": null,
+        "note": "rent",
         "source": null,
-        "rowText": "6.zou1租ⓘ"
+        "rowText": "6.zou1租rentⓘ"
       }
     ]
   },
   "visibleLookupRows": [
     {
       "text": "組合次",
-      "rowText": "1.zou2 hap6 ci3組合次(compound 詞組)ⓘ",
+      "rowText": "1.zou2 hap6 ci3組合次combine(compound 詞組)ⓘ",
       "hasDictionaryIcon": true
     },
     {
       "text": "組合",
-      "rowText": "2.zou2 hap6組合ⓘ",
+      "rowText": "2.zou2 hap6組合combineⓘ",
       "hasDictionaryIcon": true
     },
     {
       "text": "做",
-      "rowText": "3.zou6做ⓘ",
+      "rowText": "3.zou6做doⓘ",
       "hasDictionaryIcon": true
     },
     {
       "text": "早",
-      "rowText": "4.zou2早ⓘ",
+      "rowText": "4.zou2早earlyⓘ",
       "hasDictionaryIcon": true
     },
     {
       "text": "組",
-      "rowText": "5.zou2組ⓘ",
+      "rowText": "5.zou2組groupⓘ",
       "hasDictionaryIcon": true
     },
     {
       "text": "租",
-      "rowText": "6.zou1租ⓘ",
+      "rowText": "6.zou1租rentⓘ",
       "hasDictionaryIcon": true
     }
   ]

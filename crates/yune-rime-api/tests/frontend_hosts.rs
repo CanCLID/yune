@@ -18,16 +18,16 @@ fn frontend_host_trace_fixture_contract_is_sanitized() {
 }
 
 #[test]
-fn typeduck_web_wrapper_lifecycle_is_validated_through_yune_abi() {
+fn yune_web_wrapper_lifecycle_is_validated_through_yune_abi() {
     let _guard = frontend_hosts_test_guard();
-    frontend_hosts::typeduck_web::typeduck_web_wrapper_lifecycle_is_validated_through_yune_abi();
+    frontend_hosts::yune_web::yune_web_wrapper_lifecycle_is_validated_through_yune_abi();
 }
 
 #[test]
-fn typeduck_web_basic_fixture_is_sanitized_and_matches_trace_contract() {
+fn yune_web_basic_fixture_is_sanitized_and_matches_trace_contract() {
     let _guard = frontend_hosts_test_guard();
-    let fixture = include_str!("../../../fixtures/frontend-traces/typeduck-web-basic.json");
-    frontend_hosts::typeduck_web::assert_typeduck_web_fixture_contract(fixture);
+    let fixture = include_str!("../../../fixtures/frontend-traces/yune-web-basic.json");
+    frontend_hosts::yune_web::assert_yune_web_fixture_contract(fixture);
 }
 
 #[test]

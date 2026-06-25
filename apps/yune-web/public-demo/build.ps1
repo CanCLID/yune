@@ -7,8 +7,8 @@ $ErrorActionPreference = "Stop"
 
 $PublicRoot = $PSScriptRoot
 $RepoRoot = Resolve-Path (Join-Path $PublicRoot "..\..\..")
-$SourceRoot = Join-Path $RepoRoot "apps\yune-web\source"
-$RuntimeRoot = Join-Path $RepoRoot "packages\yune-typeduck-runtime"
+$AppRoot = Join-Path $RepoRoot "apps\yune-web"
+$RuntimeRoot = Join-Path $RepoRoot "packages\yune-web-runtime"
 $ManifestPath = Join-Path $PublicRoot "schema-asset-manifest.json"
 $DefaultOutput = Join-Path $PublicRoot "dist"
 if ([string]::IsNullOrWhiteSpace($OutputDir)) {
@@ -25,23 +25,25 @@ if (-not $ResolvedOutputParent.StartsWith($ResolvedPublicRoot, [System.StringCom
     throw "OutputDir must stay under $ResolvedPublicRoot"
 }
 
-$Esbuild = Join-Path $SourceRoot "node_modules\.bin\esbuild.cmd"
-$Vite = Join-Path $SourceRoot "node_modules\.bin\vite.cmd"
+$BinSuffix = if ($IsWindows) { ".cmd" } else { "" }
+$Npm = if ($IsWindows) { "npm.cmd" } else { "npm" }
+$Esbuild = Join-Path $AppRoot "node_modules\.bin\esbuild$BinSuffix"
+$Vite = Join-Path $AppRoot "node_modules\.bin\vite$BinSuffix"
 if (-not (Test-Path $Esbuild)) {
-    throw "Missing esbuild at $Esbuild. Run the yune-web source dependency install first."
+    throw "Missing esbuild at $Esbuild. Run the yune-web dependency install first."
 }
 if (-not (Test-Path $Vite)) {
-    throw "Missing Vite at $Vite. Run the yune-web source dependency install first."
+    throw "Missing Vite at $Vite. Run the yune-web dependency install first."
 }
 
-Write-Host "Building @yune-ime/typeduck-runtime"
-& npm.cmd --prefix $RuntimeRoot run build
+Write-Host "Building @yune-ime/yune-web-runtime"
+& $Npm --prefix $RuntimeRoot run build
 if ($LASTEXITCODE -ne 0) {
     throw "Runtime build failed"
 }
 
 Write-Host "Bundling yune-web worker"
-Push-Location $SourceRoot
+Push-Location $AppRoot
 try {
     & $Esbuild "src/worker.ts" "--bundle" "--format=iife" "--outdir=public" "--define:YUNE_PUBLIC_DEMO_BUILD=true" "--minify"
     if ($LASTEXITCODE -ne 0) {
@@ -55,7 +57,7 @@ Write-Host "Building yune-web app"
 $previousPublicDemo = $env:VITE_YUNE_PUBLIC_DEMO
 $env:VITE_YUNE_PUBLIC_DEMO = "1"
 try {
-    Push-Location $SourceRoot
+    Push-Location $AppRoot
     try {
         & $Vite "build" "--mode" "public"
         if ($LASTEXITCODE -ne 0) {
@@ -72,7 +74,7 @@ try {
     }
 }
 
-$SourceDist = Join-Path $SourceRoot "dist"
+$SourceDist = Join-Path $AppRoot "dist"
 if (Test-Path $OutputDir) {
     $ResolvedOutput = (Resolve-Path $OutputDir).Path
     if (-not $ResolvedOutput.StartsWith($ResolvedPublicRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -94,7 +96,7 @@ if ($Manifest.generatedFor -ne "yune-web" -or $Manifest.version -ne "m31-yune-we
     throw "Unexpected schema asset manifest metadata"
 }
 
-$SourceSchema = Join-Path $SourceRoot "public\schema"
+$SourceSchema = Join-Path $AppRoot "public\schema"
 foreach ($asset in $Manifest.assets) {
     $relative = [string]$asset.path
     $source = Join-Path $SourceSchema ($relative -replace '/', '\')

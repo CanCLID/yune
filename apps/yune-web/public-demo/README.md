@@ -1,16 +1,22 @@
 # yune-web Public Demo
 
-`yune-web` is the public Yune browser demo built from the canonical
-`apps/yune-web/source/` upstream-derived harness. Public UI, deployment config,
-evidence, docs, and the repo-owned app path use `yune-web`.
+`yune-web` is the public Yune browser demo built from the canonical tracked app
+under `apps/yune-web/`. Public UI, deployment config, evidence, docs, and the
+repo-owned app path use `yune-web`.
 
 Build the deployable static artifact from checked-in Yune state:
+
+```bash
+npm --prefix apps/yune-web run build:public
+```
+
+The Windows-compatible wrapper runs the same build flow:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File apps\yune-web\public-demo\build.ps1
 ```
 
-The script rebuilds `@yune-ime/typeduck-runtime`, bundles the worker with the
+The script rebuilds `@yune-ime/yune-web-runtime`, bundles the worker with the
 public-demo flag, runs the Vite public build, copies only the pinned public
 schema assets listed in `schema-asset-manifest.json`, validates every SHA-256,
 and writes `apps/yune-web/public-demo/dist/`.
@@ -27,6 +33,4 @@ M31 deployed the public demo to:
 
 <https://yune-web.pages.dev>
 
-Local Wrangler was unauthenticated during closeout, so the production deploy was
-performed through the installed Cloudflare connector plus a short-lived Pages
-upload token using the same Pages Direct Upload manifest shape as Wrangler.
+Deployments are direct Cloudflare Pages uploads through Wrangler.

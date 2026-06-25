@@ -3,8 +3,7 @@
   "branch": "main",
   "revision": "03f9afd2cf6ca75653197f2193f24d1cd0adbd83",
   "commitTimestamp": "2024-11-17T10:48:01+08:00",
-  "clonePath": "apps/yune-web/source",
-  "setupCommand": "bun install",
+  "historicalReferencePath": "apps/yune-web/source",
   "checkedAt": "2026-05-05T15:03:00Z",
   "gitStatus": "clean",
   "seamFiles": [

@@ -1,12 +1,12 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import type { TypeDuckFilesystem } from "../../../packages/yune-typeduck-runtime/src/filesystem.js";
+import type { YuneWebFilesystem } from "../../../packages/yune-web-runtime/src/filesystem.js";
 
-import { FakeTypeDuckFilesystem } from "../../../packages/yune-typeduck-runtime/test/fake-filesystem.js";
-import { FakeTypeDuckModule } from "../../../packages/yune-typeduck-runtime/test/fake-module.js";
+import { FakeYuneWebFilesystem } from "../../../packages/yune-web-runtime/test/fake-filesystem.js";
+import { FakeYuneWebModule } from "../../../packages/yune-web-runtime/test/fake-module.js";
 
-vi.mock("@yune-ime/typeduck-runtime", async () => {
-  return await import("../../../packages/yune-typeduck-runtime/src/index.ts");
+vi.mock("@yune-ime/yune-web-runtime", async () => {
+  return await import("../../../packages/yune-web-runtime/src/index.ts");
 });
 
 let cleanupYuneRuntime: typeof import("./adapter.js").cleanupYuneRuntime;
@@ -28,7 +28,7 @@ const initOptions = {
   schemaId: "luna_pinyin",
 };
 
-function recordingFs(fs: FakeTypeDuckFilesystem, order: string[]): TypeDuckFilesystem {
+function recordingFs(fs: FakeYuneWebFilesystem, order: string[]): YuneWebFilesystem {
   return new Proxy(fs, {
     get(target, property, receiver) {
       if (property === "writeFile") {
@@ -67,8 +67,8 @@ describe("initYuneRuntime browser filesystem ordering", () => {
 
   it("loads persisted state before preloading schema assets and flushes after init", async () => {
     const order: string[] = [];
-    const fs = recordingFs(new FakeTypeDuckFilesystem(), order);
-    const module = new FakeTypeDuckModule();
+    const fs = recordingFs(new FakeYuneWebFilesystem(), order);
+    const module = new FakeYuneWebModule();
 
     await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin", [
       { path: "opencc/hk2s.json", content: "{}" },
@@ -84,7 +84,7 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       "write:/usr/share/rime-data/opencc/hk2s.json",
       "syncfs(false)",
     ]);
-    expect(module.calls("yune_typeduck_init")).toEqual([
+    expect(module.calls("yune_web_init")).toEqual([
       ["/usr/share/rime-data", "/rime", "luna_pinyin"],
     ]);
   });
@@ -98,10 +98,10 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     (globalThis as { onYunePersistenceDiagnostic?: (marker: (typeof markers)[number]) => void })
       .onYunePersistenceDiagnostic = (marker) => markers.push(marker);
 
-    const fs = new FakeTypeDuckFilesystem();
+    const fs = new FakeYuneWebFilesystem();
     fs.mkdirTree("/rime");
     fs.writeFile("/rime/luna_pinyin.custom.yaml", "page_size: 6\n", { flags: "w" });
-    const module = new FakeTypeDuckModule();
+    const module = new FakeYuneWebModule();
 
     await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
     await customize({ pageSize: 6 });
@@ -129,22 +129,22 @@ describe("initYuneRuntime browser filesystem ordering", () => {
   });
 
   it("fails visibly before asset writes or runtime init when before-init sync fails", async () => {
-    const fs = new FakeTypeDuckFilesystem();
+    const fs = new FakeYuneWebFilesystem();
     fs.syncError = "IDBFS unavailable";
-    const module = new FakeTypeDuckModule();
+    const module = new FakeYuneWebModule();
 
     await expect(initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin")).rejects.toMatchObject({
-      name: "TypeDuckFilesystemError",
+      name: "YuneWebFilesystemError",
       direction: "fromPersistence",
     });
 
     expect(fs.calls("writeFile")).toEqual([]);
-    expect(module.calls("yune_typeduck_init")).toEqual([]);
+    expect(module.calls("yune_web_init")).toEqual([]);
   });
 
   it("preserves the last composing result for upstream-style key release events", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
     module.processKeyResult = module.response({
       handled: true,
       commits: [],
@@ -169,12 +169,12 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     const release = await processKey("{Release+b}");
 
     expect(release).toEqual(composing);
-    expect(module.calls("yune_typeduck_process_key")).toHaveLength(1);
+    expect(module.calls("yune_web_process_key")).toHaveLength(1);
   });
 
   it("does not replay a commit on upstream-style key release events", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
     module.processKeyResult = module.response({
       handled: true,
       commits: ["我係個"],
@@ -193,12 +193,12 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       isComposing: false,
       success: true,
     });
-    expect(module.calls("yune_typeduck_process_key")).toHaveLength(1);
+    expect(module.calls("yune_web_process_key")).toHaveLength(1);
   });
 
   it("ignores pure modifier keydowns before yune-web sends the modified key chord", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
     module.processKeyResult = module.response({
       handled: true,
       commits: [],
@@ -226,15 +226,15 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       success: true,
     });
 
-    expect(module.calls("yune_typeduck_process_key")).toEqual([
+    expect(module.calls("yune_web_process_key")).toEqual([
       [1, "n".charCodeAt(0), 0],
       [1, 0xffff, 1 << 2],
     ]);
   });
 
   it("accepts upstream-style underscore page-key spellings", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
     module.processKeyResult = module.response({
       handled: true,
       commits: [],
@@ -258,12 +258,12 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     await expect(processKey("{Page_Down}")).resolves.toMatchObject({ isComposing: true });
     await expect(processKey("{Page_Up}")).resolves.toMatchObject({ isComposing: true });
 
-    expect(module.calls("yune_typeduck_process_key")).toHaveLength(2);
+    expect(module.calls("yune_web_process_key")).toHaveLength(2);
   });
 
   it("accepts upstream-style lowercase space key spelling", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
     module.processKeyResult = module.response({
       handled: true,
       commits: ["你"],
@@ -279,12 +279,12 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       success: true,
     });
 
-    expect(module.calls("yune_typeduck_process_key")).toEqual([[1, 0x20, 0]]);
+    expect(module.calls("yune_web_process_key")).toEqual([[1, 0x20, 0]]);
   });
 
   it("maps upstream-style modifier key chords to RIME masks", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
     module.processKeyResult = module.response({
       handled: true,
       commits: [],
@@ -314,15 +314,15 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       success: true,
     });
 
-    expect(module.calls("yune_typeduck_process_key")).toEqual([
+    expect(module.calls("yune_web_process_key")).toEqual([
       [1, 0xffff, 1 << 2],
       [1, 0xffff, 1],
     ]);
   });
 
-  it("forwards TypeDuck IME preference toggles into schema customizations", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+  it("forwards YuneWeb IME preference toggles into schema customizations", async () => {
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
 
     await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
 
@@ -339,7 +339,7 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       dictionaryExclude: ["你"],
     })).resolves.toBe(true);
 
-    expect(module.calls("yune_typeduck_customize")).toEqual([
+    expect(module.calls("yune_web_customize")).toEqual([
       [1, "luna_pinyin.schema", "page_size", "6"],
       [1, "luna_pinyin.schema", "translator/enable_completion", "true"],
       [1, "luna_pinyin.schema", "translator/enable_correction", "false"],
@@ -356,8 +356,8 @@ describe("initYuneRuntime browser filesystem ordering", () => {
   });
 
   it("forwards upstream setOption calls into the Yune runtime", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
 
     await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
 
@@ -367,7 +367,7 @@ describe("initYuneRuntime browser filesystem ordering", () => {
     await expect(setOption("extended_charset", true)).resolves.toBeUndefined();
     await expect(setOption("disabled", true)).resolves.toBeUndefined();
 
-    expect(module.calls("yune_typeduck_set_option")).toEqual([
+    expect(module.calls("yune_web_set_option")).toEqual([
       [1, "ascii_mode", 0],
       [1, "soft_cursor", 1],
       [1, "traditionalization", 1],
@@ -377,8 +377,8 @@ describe("initYuneRuntime browser filesystem ordering", () => {
   });
 
   it("cleans up the active runtime before initializing another schema", async () => {
-    const fs = new FakeTypeDuckFilesystem();
-    const module = new FakeTypeDuckModule();
+    const fs = new FakeYuneWebFilesystem();
+    const module = new FakeYuneWebModule();
 
     await initYuneRuntime(module, fs, initOptions, assets, "luna_pinyin");
     await initYuneRuntime(
@@ -393,8 +393,8 @@ describe("initYuneRuntime browser filesystem ordering", () => {
       "cangjie5",
     );
 
-    expect(module.calls("yune_typeduck_cleanup")).toEqual([[1]]);
-    expect(module.calls("yune_typeduck_init")).toEqual([
+    expect(module.calls("yune_web_cleanup")).toEqual([[1]]);
+    expect(module.calls("yune_web_init")).toEqual([
       ["/usr/share/rime-data", "/rime", "luna_pinyin"],
       ["/usr/share/rime-data", "/rime", "cangjie5"],
     ]);

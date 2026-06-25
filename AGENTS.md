@@ -4,7 +4,7 @@
 oracle** while building toward an AI-native input engine librime cannot provide.
 It has a deterministic core (`yune-core`), a librime-shaped C ABI
 (`yune-rime-api`), a CLI surrogate (`yune-cli`), a TypeScript browser runtime
-(`packages/yune-typeduck-runtime`), and the `yune-web` browser harness under
+(`packages/yune-web-runtime`), and the `yune-web` browser harness under
 `apps/yune-web/`.
 
 **Core value:** existing RIME schemas and frontends should behave predictably
@@ -133,8 +133,8 @@ cargo test --workspace
 TypeScript runtime:
 
 ```powershell
-npm --prefix packages/yune-typeduck-runtime test
-npm --prefix packages/yune-typeduck-runtime run build
+npm --prefix packages/yune-web-runtime test
+npm --prefix packages/yune-web-runtime run build
 ```
 
 yune-web browser work must also follow the current plan or archived M24

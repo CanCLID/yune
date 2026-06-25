@@ -1,0 +1,16 @@
+# Rime custom settings (for mobile only)
+# encoding: utf-8
+
+patch:
+  schema_list:
+    - schema: jyut6ping3_mobile
+    - schema: jyut6ping3_mobile_longpress
+    - schema: jyut6ping3_mobile_10keys
+    - schema: jyut6ping3_scolar
+    - schema: luna_pinyin
+    - schema: loengfan
+    - schema: loengfan_longpress
+    - schema: cangjie3
+    - schema: cangjie5
+  menu:
+    page_size: 6

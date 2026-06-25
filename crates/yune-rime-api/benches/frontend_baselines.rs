@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    ffi::{c_void, CString},
+    ffi::CString,
     fs, mem,
     os::raw::c_int,
     path::{Path, PathBuf},

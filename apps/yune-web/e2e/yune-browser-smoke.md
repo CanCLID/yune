@@ -4,15 +4,15 @@ Fallback procedure for real browser validation when automated browser runner una
 
 ## Purpose
 
-Manual real-browser smoke test for the patched `yune-web` app and Yune runtime seam. This procedure is ONLY for browser/tooling blockers — it MUST still use a real browser, NOT package-local fake tests.
+Manual real-browser smoke test for the tracked `yune-web` app and Yune runtime seam. This procedure is ONLY for browser/tooling blockers — it MUST still use a real browser, NOT package-local fake tests.
 
 ## Prerequisites
 
-1. Patched `yune-web` source (apply `patches/yune-web-runtime.patch`)
-2. Yune WASM artifact with `yune_typeduck_*` exports
-3. Built `@yune-ime/typeduck-runtime` package
-4. Explicit TypeDuck-Web provenance YAML assets (per `e2e/assets/README.md`)
-5. Bun installed (or npm fallback)
+1. Tracked `apps/yune-web/` Vite app
+2. Yune WASM artifact with `yune_web_*` exports
+3. Built `@yune-ime/yune-web-runtime` package
+4. Explicit tracked schema assets under `apps/yune-web/public/schema/`
+5. Node.js and npm
 6. Modern browser (Chrome/Firefox/Safari)
 
 ## Procedure
@@ -39,41 +39,30 @@ prediction-never-first control, M16 sentence composition parity, and M13 AI-off
 identity/source-label safety. Passing smoke is useful during development, but it
 does not replace the full 28-test gate.
 
-### Step 1: Apply Patch
+### Step 1: Install Dependencies
 
 ```bash
-cd apps/yune-web/source
-git apply ../patches/yune-web-runtime.patch
-git status  # Verify patch applied
+npm --prefix packages/yune-web-runtime run build
+npm --prefix apps/yune-web install
 ```
 
-Record in `blocker.md` if patch fails.
+Record in `blocker.md` if install fails.
 
-### Step 2: Install/Build Upstream
+### Step 2: Build Worker
 
 ```bash
-cd apps/yune-web/source
-
-# Prefer Bun (upstream uses Bun)
-bun install
-
-# Fallback if Bun unavailable
-npm install
-
-# Build worker
-bun run worker  # or npm run worker
+npm --prefix apps/yune-web run worker
 ```
 
 Record in `blocker.md`:
 
-- Command: `bun install` or `npm install`
-- Missing: `bun` executable (if npm fallback used)
-- Install hint: <https://bun.sh>
+- Command: `npm --prefix apps/yune-web run worker`
+- Missing: generated WASM pair or dependency install
 
 ### Step 3: Start Dev Server
 
 ```bash
-bun run start  # or npm run start
+npm --prefix apps/yune-web run start
 ```
 
 Open browser to dev server URL (e.g., `http://localhost:5173`).
@@ -223,19 +212,19 @@ For ANY blocked flow, record in `e2e/results/blocker.md`:
 ````markdown
 # Browser E2E Blocker
 
-**Category**: yune-web app/source | Yune adapter/runtime | environment/tooling
+**Category**: yune-web app | Yune adapter/runtime | environment/tooling
 
 **Command Attempted**:
 ```bash
-bun install
-bun run start
+npm --prefix apps/yune-web install
+npm --prefix apps/yune-web run start
 ```
 
 **Missing Dependency**:
-bun executable (npm fallback used)
+node/npm, generated WASM pair, or browser automation dependency
 
 **Install Hint**:
-https://bun.sh
+Record exact tool/version gap from the command output.
 
 **Fallback Evidence**:
 npm install succeeded, npm run start succeeded, manual browser smoke executed

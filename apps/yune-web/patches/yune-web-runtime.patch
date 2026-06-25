@@ -95,28 +95,17 @@ index cbe61db..c59642e 100644
  		"esbuild": "^0.21.4",
  		"eslint": "^8.57.0",
  		"eslint-plugin-import": "^2.29.1",
-diff --git a/schema b/schema
---- a/schema
-+++ b/schema
-@@ -1 +1 @@
--Subproject commit 1bed1ae6a0ab48055f073774d7dfd152a171c548
-+Subproject commit 1bed1ae6a0ab48055f073774d7dfd152a171c548-dirty
 diff --git a/src/App.tsx b/src/App.tsx
-index c43ccbc..58dfac7 100644
+index c43ccbc..bc13101 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -1,92 +1,463 @@
+@@ -1,4 +1,4 @@
 -import { useEffect, useReducer, useState } from "react";
 +import { useCallback, useEffect, useReducer, useRef, useState } from "react";
  
  import { ToastContainer } from "react-toastify";
  
- import CandidatePanel from "./CandidatePanel";
--import { NO_AUTO_FILL } from "./consts";
-+import { CHINESE_TYPEFACE_BY_ID, NO_AUTO_FILL } from "./consts";
- import { useLoading, usePreferences } from "./hooks";
- import Preferences from "./Preferences";
- import Rime, { subscribe } from "./rime";
+@@ -10,83 +10,493 @@ import Rime, { subscribe } from "./rime";
  import ThemeSwitcher from "./ThemeSwitcher";
  import Toolbar from "./Toolbar";
  import { notify } from "./utils";
@@ -194,10 +183,27 @@ index c43ccbc..58dfac7 100644
  export default function App() {
  	const [textArea, setTextArea] = useState<HTMLTextAreaElement | null>(null);
  	const [loading, runAsyncTask, startAsyncTask] = useLoading();
++	const [debouncedLoading, setDebouncedLoading] = useState(loading);
++	const loadingIndicatorTimeout = useRef<ReturnType<typeof setTimeout>>();
 +	const [isEngineReady, setIsEngineReady] = useState(false);
 +
 +	useEffect(() => {
 +		document.documentElement.dataset.yuneLoading = String(loading);
++	}, [loading]);
++
++	useEffect(() => {
++		function clear() {
++			if (typeof loadingIndicatorTimeout.current !== "undefined") {
++				clearTimeout(loadingIndicatorTimeout.current);
++				loadingIndicatorTimeout.current = undefined;
++			}
++		}
++		if (loading) {
++			loadingIndicatorTimeout.current = setTimeout(() => setDebouncedLoading(true), 200);
++			return clear;
++		}
++		setDebouncedLoading(false);
++		return clear();
 +	}, [loading]);
  
  	useEffect(() => {
@@ -251,7 +257,6 @@ index c43ccbc..58dfac7 100644
 +	);
 +	const [aiStatus, updateAiStatus] = useReducer((n: number) => n + 1, 0);
 +	const [isInspectorEnabled, setIsInspectorEnabled] = useState(false);
-+	const [isInspectorCollapsed, setIsInspectorCollapsed] = useState(false);
 +	const [inspectorDebug, setInspectorDebug] = useState<
 +		YuneInspectorDebug | undefined
 +	>();
@@ -259,6 +264,18 @@ index c43ccbc..58dfac7 100644
 +		YuneStatusSnapshot | undefined
 +	>();
 +	const [metrics, setMetrics] = useState<YuneMetrics>({});
++	const updateMetrics = useCallback((next: YuneMetrics) => {
++		setMetrics(current => {
++			const merged = { ...current, ...next };
++			return current.lookupMs === merged.lookupMs
++				&& current.aiMs === merged.aiMs
++				&& current.candidateCount === merged.candidateCount
++				&& current.totalCandidateCount === merged.totalCandidateCount
++				&& current.latestInput === merged.latestInput
++				? current
++				: merged;
++		});
++	}, []);
 +	const [userdbRefreshStatus, refreshUserdbAfterCommit] = useReducer(
 +		(n: number) => n + 1,
 +		0,
@@ -292,8 +309,6 @@ index c43ccbc..58dfac7 100644
 +		isCangjie5,
 +		chineseTypeface,
 +	} = preferences;
-+	const chineseTypefaceClass =
-+		CHINESE_TYPEFACE_BY_ID[chineseTypeface].className;
 +	const didRunSchemaEffect = useRef(false);
 +	useEffect(
 +		() =>
@@ -435,12 +450,12 @@ index c43ccbc..58dfac7 100644
  			if (type) {
 -				notify(type, "套用設定", "applying the settings");
 +				notify(type, "Apply AI settings", "applying the AI settings");
-+			}
-+			if (!cancelled) {
-+				updateAiStatus();
  			}
 -			updateDeployStatus();
 -		}), [pageSize, enableCompletion, enableCorrection, enableSentence, enableLearning, isCangjie5, updateDeployStatus, runAsyncTask]);
++			if (!cancelled) {
++				updateAiStatus();
++			}
 +		}
 +		void applyAiSettings();
 +		return () => {
@@ -498,29 +513,24 @@ index c43ccbc..58dfac7 100644
 +	]);
 +
 +	return (
-+		<div className="yd-app-shell">
++		<div className="yd-app-shell" data-chinese-typeface={chineseTypeface}>
 +			<header className="yd-app-header">
-+				<a className="yd-brand" href="/" aria-label="yune-web home">
-+					<span className="yd-brand-mark">韻</span>
-+					<span className="yd-brand-copy">
-+						<span className="yd-brand-title">新韻輸入法引擎 <span>yune-web</span></span>
-+						<span className="yd-brand-subtitle">AI-NATIVE INPUT ENGINE · PUBLIC WEB HARNESS</span>
-+					</span>
- 				</a>
--			</aside>
--		</footer>
--		<ToastContainer className="whitespace-pre-line" />
--	</>;
-+				<div className="yd-header-status">
-+					<span className="yd-version-chip"><span />PUBLIC</span>
-+					<span className="yd-ai-chip" data-enabled={enableAI}>AI 重排 {enableAI ? "ON" : "OFF"}</span>
-+					<ThemeSwitcher />
++				<div className="yd-app-header-inner">
++					<a className="yd-brand" href="/" aria-label="yune-web home">
++						<span className="yd-brand-mark">韻</span>
++						<span className="yd-brand-copy">
++							<span className="yd-brand-title">新韻輸入法引擎 <span>yune-web</span></span>
++						</span>
++					</a>
++					<div className="yd-header-status">
++						<span className="yd-version-chip"><span />PUBLIC</span>
++						<ThemeSwitcher />
++					</div>
 +				</div>
 +			</header>
 +			<main className="yd-app-main">
 +				<section data-yune-playground-content className="yd-playground">
 +					<Toolbar
-+						loading={loading}
 +						isAsciiMode={preferences.isAsciiMode}
 +						setIsAsciiMode={preferences.setIsAsciiMode}
 +						isSimplification={preferences.isSimplification}
@@ -536,16 +546,32 @@ index c43ccbc..58dfac7 100644
 +						<section className="yd-compose-panel" aria-label="IME playground">
 +							<div className="yd-panel-heading">
 +								<span>輸入測試</span>
-+								<span>COMPOSE</span>
++								<label className="yd-compose-panel-toggle">
++									<span>固定浮窗</span>
++									<input
++										type="checkbox"
++										className="yd-check yd-toggle"
++										{...NO_AUTO_FILL}
++										checked={preferences.isCandidatePanelFixed}
++										onChange={event => preferences.setIsCandidatePanelFixed(event.target.checked)}
++										aria-label="固定浮窗" />
++								</label>
 +							</div>
-+							<textarea
-+								className={`yd-input-area ${chineseTypefaceClass}`}
-+								data-chinese-typeface={chineseTypeface}
-+								ref={setTextArea}
-+								aria-label="yune-web composing input"
-+								placeholder="粵語拼音"
-+								{...NO_AUTO_FILL}
-+							/>
++							<div className="yd-input-frame" aria-busy={loading} data-yune-input-frame>
++								<textarea
++									className="yd-input-area"
++									data-chinese-typeface={chineseTypeface}
++									ref={setTextArea}
++									aria-label="yune-web composing input"
++									placeholder="粵語拼音"
++									disabled={loading}
++									{...NO_AUTO_FILL}
++								/>
++								{debouncedLoading && <div className="yd-input-loading" data-yune-loading-indicator role="status" aria-live="polite">
++									<span className="yd-spinner" aria-hidden="true" />
++									<span>載入中 Loading...</span>
++								</div>}
++							</div>
 +							{textArea && (
 +								<CandidatePanel
 +									runAsyncTask={runAsyncTask}
@@ -556,7 +582,7 @@ index c43ccbc..58dfac7 100644
 +									onInspectorDebug={setInspectorDebug}
 +									onStatus={setEngineStatus}
 +									onUserdbChange={refreshUserdbAfterCommit}
-+									onMetrics={next => setMetrics(current => ({ ...current, ...next }))}
++									onMetrics={updateMetrics}
 +								/>
 +							)}
 +						</section>
@@ -577,7 +603,7 @@ index c43ccbc..58dfac7 100644
 +							<label className="yd-inspector-enable" data-yune-inspector-toggle>
 +								<input
 +									type="checkbox"
-+									className="yd-check"
++									className="yd-check yd-toggle"
 +									checked={isInspectorEnabled}
 +									aria-label="Yune inspector"
 +									onChange={(event) =>
@@ -590,8 +616,6 @@ index c43ccbc..58dfac7 100644
 +						{isInspectorEnabled && (
 +							<YuneInspector
 +								debug={inspectorDebug}
-+								isCollapsed={isInspectorCollapsed}
-+								setIsCollapsed={setIsInspectorCollapsed}
 +							/>
 +						)}
 +					</section>
@@ -607,14 +631,18 @@ index c43ccbc..58dfac7 100644
 +					rel="noreferrer"
 +				>
 +					Provenance
-+				</a>
+ 				</a>
+-			</aside>
+-		</footer>
+-		<ToastContainer className="whitespace-pre-line" />
+-	</>;
 +			</footer>
 +			<ToastContainer className="whitespace-pre-line" />
 +		</div>
 +	);
  }
 diff --git a/src/Candidate.tsx b/src/Candidate.tsx
-index f0c2b50..6209d42 100644
+index f0c2b50..871651a 100644
 --- a/src/Candidate.tsx
 +++ b/src/Candidate.tsx
 @@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
@@ -622,11 +650,11 @@ index f0c2b50..6209d42 100644
  
  import CandidateInfo from "./CandidateInfo";
 -import { LANGUAGE_CODES, ShowRomanization, definitionLayout } from "./consts";
-+import { CHINESE_TYPEFACE_BY_ID, ShowRomanization } from "./consts";
++import { ShowRomanization } from "./consts";
  
  import type { InterfacePreferences } from "./types";
  import type { MouseEvent } from "react";
-@@ -37,60 +37,55 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
+@@ -37,60 +37,54 @@ export default function Candidate({ isHighlighted, info, selectCandidate, delete
  		}
  	}
  	function _showDictionary(event: MouseEvent) {
@@ -688,7 +716,6 @@ index f0c2b50..6209d42 100644
 -				<td className={`${commentStyle400} w-full`} colSpan={labelColSpan + 2}>{(!info.isReverseLookup || prefs.showReverseCode) && info.note}</td>
 -			</tr>}
 -		</button>
-+	const chineseTypefaceClass = CHINESE_TYPEFACE_BY_ID[prefs.chineseTypeface].className;
 +	const labels = info.matchedEntries?.flatMap(entry => entry.formattedLabels ?? []) ?? [];
 +	const firstEntry = info.matchedEntries?.[0] ?? info.entries[0];
 +	const sourceBadge = info.isAi && <span className="ai-source" data-ai-source={info.source}>AI</span>;
@@ -718,7 +745,7 @@ index f0c2b50..6209d42 100644
 +			<td className="candidate-main">
 +				{showJyutping && firstEntry?.jyutping && <div className="candidate-reading">{firstEntry.jyutping}</div>}
 +				<div
-+					className={`${chineseTypefaceClass} candidate-text${showJyutping ? " candidate-text-spaced" : ""}`}
++					className={`candidate-text${showJyutping ? " candidate-text-spaced" : ""}`}
 +					data-chinese-typeface={prefs.chineseTypeface}>
 +					{firstEntry?.honzi || info.text}
 +				</div>
@@ -828,18 +855,16 @@ index 0add9ac..1a5e419 100644
  	}
  
 diff --git a/src/CandidatePanel.tsx b/src/CandidatePanel.tsx
-index 298a42d..bcd3b58 100644
+index 298a42d..9e3b220 100644
 --- a/src/CandidatePanel.tsx
 +++ b/src/CandidatePanel.tsx
-@@ -1,25 +1,119 @@
+@@ -1,4 +1,4 @@
 -import { useState, useEffect, useRef, useCallback } from "react";
 +import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
  
  import Candidate from "./Candidate";
  import CandidateInfo from "./CandidateInfo";
--import CaretFollower from "./CaretFollower";
- import { RIME_KEY_MAP } from "./consts";
- import DictionaryPanel from "./DictionaryPanel";
+@@ -8,18 +8,113 @@ import DictionaryPanel from "./DictionaryPanel";
  import Rime from "./rime";
  import { isPrintable, notify } from "./utils";
  
@@ -956,7 +981,7 @@ index 298a42d..bcd3b58 100644
  
  	const hideDictionary = useCallback(() => {
  		setShowDictionaryIndex(undefined);
-@@ -31,11 +125,16 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -31,11 +126,16 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  		textArea.selectionStart = textArea.selectionEnd = selectionStart + newText.length;
  	}, [textArea]);
  
@@ -975,7 +1000,7 @@ index 298a42d..bcd3b58 100644
  				if (!result.success) {
  					type = "warning";
  				}
-@@ -44,19 +143,58 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -44,19 +144,58 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  						inputBuffer: result.inputBuffer,
  						highlightedIndex: result.highlightedIndex,
  						candidates: result.candidates.map(
@@ -1036,7 +1061,7 @@ index 298a42d..bcd3b58 100644
  				hideDictionary();
  			}
  			catch {
-@@ -66,12 +204,36 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -66,12 +205,36 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				notify(type, "執行操作", "performing the operation");
  			}
  			textArea.focus();
@@ -1075,7 +1100,7 @@ index 298a42d..bcd3b58 100644
  
  	const parseKey = useCallback((event: KeyboardEvent) => {
  		const { code, key } = event;
-@@ -117,15 +279,24 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -117,15 +280,24 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  	}, [inputState, textArea]);
  
  	useEffect(() => {
@@ -1102,7 +1127,7 @@ index 298a42d..bcd3b58 100644
  				const key = parseKey(event);
  				if (key) processKey(`{Release+${key}}`);
  			}
-@@ -136,13 +307,56 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -136,13 +308,56 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  			document.removeEventListener("keydown", onKeyDown);
  			document.removeEventListener("keyup", onKeyUp);
  		};
@@ -1160,7 +1185,7 @@ index 298a42d..bcd3b58 100644
  	const hideDictionaryOnLeaveCandidate = useCallback(() => {
  		function hideDictionaryOnLeaveDictionaryPanel() {
  			if (!candidateList.current?.matches(":hover")) {
-@@ -160,30 +374,45 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -160,30 +375,40 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  		}
  	}, [hideDictionary]);
  
@@ -1172,12 +1197,7 @@ index 298a42d..bcd3b58 100644
 -					{inputState.inputBuffer.before && <span className="m-1 inline-block">{inputState.inputBuffer.before}</span>}
 -					{inputState.inputBuffer.active && <span className="p-1 inline-block rounded-md bg-accent text-accent-content">{inputState.inputBuffer.active}</span>}
 -					{inputState.inputBuffer.after && <span className="m-1 inline-block">{inputState.inputBuffer.after}</span>}
-+	if (!inputState) {
-+		return <div className="candidate-panel-empty" data-yune-candidate-empty>
-+			<div>候選待命 Candidate idle</div>
-+			<p>N/A until composition begins.</p>
-+		</div>;
-+	}
++	if (!inputState) return null;
 +
 +	const visibleCandidates = inputState?.candidates.slice(0, prefs.pageSize) ?? [];
 +	const activeCandidateIndex = typeof showDictionaryIndex === "number" ? showDictionaryIndex : inputState.highlightedIndex;
@@ -1187,7 +1207,7 @@ index 298a42d..bcd3b58 100644
 +		? inputState.highlightedIndex
 +		: undefined;
 +	const dictionaryCandidate = typeof dictionaryIndex === "number" ? visibleCandidates[dictionaryIndex] : undefined;
-+	return <div className={`candidate-panel candidate-panel--${prefs.candidateMenuLayout}`}>
++	const panelContent = <>
 +		<div className="candidate-list-pane">
 +			<div className="candidate-panel-header">
 +				<div className="candidate-preedit">
@@ -1221,46 +1241,42 @@ index 298a42d..bcd3b58 100644
  						selectCandidate={() => selectCandidate(index)}
  						deleteCandidate={() => deleteCandidate(index)}
  						showDictionary={() => setShowDictionaryIndex(index)}
-@@ -192,6 +421,6 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
+@@ -192,6 +417,11 @@ export default function CandidatePanel({ runAsyncTask, textArea, prefs, deploySt
  				)}
  			</table>
  		</div>
 -		{shouldShowDictionary && <DictionaryPanel info={inputState.candidates[showDictionaryIndex]} prefs={prefs} ref={dictionaryPanel} />}
 -	</CaretFollower>;
 +		{dictionaryCandidate && <DictionaryPanel info={dictionaryCandidate} prefs={prefs} ref={dictionaryPanel} />}
-+	</div>;
++	</>;
++	const panelClassName = `candidate-panel candidate-panel--${prefs.candidateMenuLayout}${prefs.isCandidatePanelFixed ? " candidate-panel--fixed" : ""}`;
++	if (prefs.isCandidatePanelFixed) {
++		return <div className={panelClassName}>{panelContent}</div>;
++	}
++	return <CaretFollower textArea={textArea} className={panelClassName}>{panelContent}</CaretFollower>;
  }
 diff --git a/src/DictionaryPanel.tsx b/src/DictionaryPanel.tsx
-index d58fbab..423fb7d 100644
+index d58fbab..96fa006 100644
 --- a/src/DictionaryPanel.tsx
 +++ b/src/DictionaryPanel.tsx
-@@ -1,13 +1,15 @@
- import { forwardRef } from "react";
- 
--import { LANGUAGE_CODES } from "./consts";
-+import { CHINESE_TYPEFACE_BY_ID, LANGUAGE_CODES } from "./consts";
- import { letSome } from "./utils";
- 
- import type CandidateInfo from "./CandidateInfo";
- import type { InterfacePreferences } from "./types";
+@@ -8,6 +8,7 @@ import type { InterfacePreferences } from "./types";
  
  const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs: InterfacePreferences }>(function DictionaryPanel({ info, prefs }, ref) {
-+	const chineseTypefaceClass = CHINESE_TYPEFACE_BY_ID[prefs.chineseTypeface].className;
  	return info.hasDictionaryEntry(prefs) && <div className="dictionary-panel" ref={ref}>
 +		<div className="dictionary-panel-kicker">字典詳情 DICTIONARY</div>
  		{info.entries.flatMap((entry, index) =>
  			entry.isDictionaryEntry(prefs)
  				? [
-@@ -16,7 +18,7 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+@@ -16,7 +17,7 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
  							[entry.honzi, entry.jyutping, entry.pronunciationType],
  							(honzi, jyutping, pronunciationType) =>
  								<div className="entry-head">
 -									{honzi && <span className={`${prefs.isHeiTypeface ? "font-kai-fallback-hei" : "font-kai-fallback-sung"} text-[32pt] whitespace-nowrap`}>{honzi}</span>}
-+									{honzi && <span className={`${chineseTypefaceClass} text-[32pt] whitespace-nowrap`} data-chinese-typeface={prefs.chineseTypeface}>{honzi}</span>}
++									{honzi && <span className="dictionary-headword text-[32pt] whitespace-nowrap" data-chinese-typeface={prefs.chineseTypeface}>{honzi}</span>}
  									{jyutping && <span className="text-[15pt] text-primary-content-300 whitespace-nowrap">{jyutping}</span>}
  									{pronunciationType && <span className="text-primary-content-300 whitespace-nowrap">{pronunciationType}</span>}
  								</div>,
-@@ -35,14 +37,16 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+@@ -35,14 +36,16 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
  							[entry.otherData],
  							otherData =>
  								<table>
@@ -1276,7 +1292,7 @@ index d58fbab..423fb7d 100644
 +										{otherData?.map(([key, name, value]) =>
 +											<tr key={key}>
 +												<th>{name}</th>
-+												<td className={chineseTypefaceClass} data-chinese-typeface={prefs.chineseTypeface}>
++												<td className="dictionary-chinese-value" data-chinese-typeface={prefs.chineseTypeface}>
 +													{value.split("\u{ff0c}").map((line, i) => <div key={i}>{line}</div>)}
 +												</td>
 +											</tr>
@@ -1285,7 +1301,7 @@ index d58fbab..423fb7d 100644
  								</table>,
  						)}
  						{letSome(
-@@ -50,12 +54,14 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
+@@ -50,12 +53,14 @@ const DictionaryPanel = forwardRef<HTMLDivElement, { info: CandidateInfo; prefs:
  							otherDefinitions =>
  								<table>
  									<caption className="font-medium text-[13pt] pb-1 text-left whitespace-nowrap">More Languages</caption>
@@ -1843,21 +1859,38 @@ index 28fe97b..d70e821 100644
  	</label>;
  }
 diff --git a/src/Toolbar.tsx b/src/Toolbar.tsx
-index ff262af..3eb9a20 100644
+index ff262af..17b4ad4 100644
 --- a/src/Toolbar.tsx
 +++ b/src/Toolbar.tsx
-@@ -1,8 +1,65 @@
- import { useEffect, useRef, useState } from "react";
- 
--import { useRimeOption } from "./hooks";
+@@ -1,49 +1,101 @@
+-import { useEffect, useRef, useState } from "react";
 +import { YUNE_PUBLIC_DEMO } from "./consts";
 +import { Segment } from "./Inputs";
 +import SchemaSwitcher from "./SchemaSwitcher";
  
--export default function Toolbar({ loading, deployStatus }: { loading: boolean; deployStatus: number }) {
+-import { useRimeOption } from "./hooks";
 +import type { RimeSchemaId } from "./types";
 +import type { Dispatch, SetStateAction } from "react";
-+
+ 
+-export default function Toolbar({ loading, deployStatus }: { loading: boolean; deployStatus: number }) {
+-	const [debouncedLoading, setDebouncedLoading] = useState(loading);
+-	const timeout = useRef<ReturnType<typeof setTimeout>>();
+-	useEffect(() => {
+-		function clear() {
+-			if (typeof timeout.current !== "undefined") {
+-				clearTimeout(timeout.current);
+-				timeout.current = undefined;
+-			}
+-		}
+-		if (loading) {
+-			timeout.current = setTimeout(() => setDebouncedLoading(true), 200);
+-			return clear;
+-		}
+-		else {
+-			setDebouncedLoading(false);
+-			return clear();
+-		}
+-	}, [loading]);
 +function ModeButton({
 +	ariaLabel,
 +	active,
@@ -1885,46 +1918,6 @@ index ff262af..3eb9a20 100644
 +		<span className="yd-mode-label">{active ? activeLabel : inactiveLabel}</span>
 +	</button>;
 +}
-+
-+export default function Toolbar({
-+	loading,
-+	isAsciiMode,
-+	setIsAsciiMode,
-+	isSimplification,
-+	setIsSimplification,
-+	isFullShape,
-+	setIsFullShape,
-+	activeSchema,
-+	setActiveSchema,
-+	isCangjie5,
-+	setIsCangjie5,
-+}: {
-+	loading: boolean;
-+	isAsciiMode: boolean;
-+	setIsAsciiMode: Dispatch<SetStateAction<boolean>>;
-+	isSimplification: boolean;
-+	setIsSimplification: Dispatch<SetStateAction<boolean>>;
-+	isFullShape: boolean;
-+	setIsFullShape: Dispatch<SetStateAction<boolean>>;
-+	activeSchema: RimeSchemaId;
-+	setActiveSchema: Dispatch<SetStateAction<RimeSchemaId>>;
-+	isCangjie5: boolean;
-+	setIsCangjie5: Dispatch<SetStateAction<boolean>>;
-+}) {
- 	const [debouncedLoading, setDebouncedLoading] = useState(loading);
- 	const timeout = useRef<ReturnType<typeof setTimeout>>();
- 	useEffect(() => {
-@@ -16,34 +73,50 @@ export default function Toolbar({ loading, deployStatus }: { loading: boolean; d
- 			timeout.current = setTimeout(() => setDebouncedLoading(true), 200);
- 			return clear;
- 		}
--		else {
--			setDebouncedLoading(false);
--			return clear();
--		}
-+		setDebouncedLoading(false);
-+		return clear();
- 	}, [loading]);
  
 -	useRimeOption("soft_cursor", true, deployStatus); // Not modifiable by user
 -	const [isASCIIMode, toggleIsASCIIMode] = useRimeOption("ascii_mode", false, deployStatus);
@@ -1944,40 +1937,66 @@ index ff262af..3eb9a20 100644
 -			</div>
 -			<div className="tooltip" data-tip={"半形／全形標點符號\nHalfwidth / Fullwidth Punctuations"}>
 -				<button className="btn-toolbar join-item" onClick={toggleIsHalfwidthPunctuation}>{isHalfwidthPunctuation ? "." : "。"}</button>
--			</div>
++export default function Toolbar({
++	isAsciiMode,
++	setIsAsciiMode,
++	isSimplification,
++	setIsSimplification,
++	isFullShape,
++	setIsFullShape,
++	activeSchema,
++	setActiveSchema,
++	isCangjie5,
++	setIsCangjie5,
++}: {
++	isAsciiMode: boolean;
++	setIsAsciiMode: Dispatch<SetStateAction<boolean>>;
++	isSimplification: boolean;
++	setIsSimplification: Dispatch<SetStateAction<boolean>>;
++	isFullShape: boolean;
++	setIsFullShape: Dispatch<SetStateAction<boolean>>;
++	activeSchema: RimeSchemaId;
++	setActiveSchema: Dispatch<SetStateAction<RimeSchemaId>>;
++	isCangjie5: boolean;
++	setIsCangjie5: Dispatch<SetStateAction<boolean>>;
++}) {
 +	return <div className="yd-toolbar" data-yune-top-controls>
 +		<SchemaSwitcher
 +			activeSchema={activeSchema}
 +			setActiveSchema={setActiveSchema}
 +			compact />
-+		<div className="yd-mode-row" data-yune-control="mode-buttons">
-+			<ModeButton
-+				ariaLabel="ASCII mode"
-+				active={!isAsciiMode}
-+				activeGlyph="中"
-+				inactiveGlyph="英"
-+				activeLabel="中文"
-+				inactiveLabel="英文 ASCII"
-+				onClick={() => setIsAsciiMode(value => !value)} />
-+			<ModeButton
-+				ariaLabel="Output standard"
-+				active={!isSimplification}
-+				activeGlyph="繁"
-+				inactiveGlyph="简"
-+				activeLabel="繁體 HK"
-+				inactiveLabel="簡體 hk2s"
-+				onClick={() => setIsSimplification(value => !value)} />
-+			<ModeButton
-+				ariaLabel="Full shape"
-+				active={!isFullShape}
-+				activeGlyph="半"
-+				inactiveGlyph="全"
-+				activeLabel="半形"
-+				inactiveLabel="全形"
-+				onClick={() => setIsFullShape(value => !value)} />
++		<div className="yd-top-field yd-mode-choice" data-yune-control="mode-buttons">
++			<span className="yd-top-label yd-top-label-spacer" aria-hidden="true">&nbsp;</span>
++			<div className="yd-mode-row">
++				<ModeButton
++					ariaLabel="ASCII mode"
++					active={!isAsciiMode}
++					activeGlyph="中"
++					inactiveGlyph="英"
++					activeLabel="中文"
++					inactiveLabel="英文 ASCII"
++					onClick={() => setIsAsciiMode(value => !value)} />
++				<ModeButton
++					ariaLabel="Output standard"
++					active={!isSimplification}
++					activeGlyph="繁"
++					inactiveGlyph="简"
++					activeLabel="繁體 HK"
++					inactiveLabel="簡體 hk2s"
++					onClick={() => setIsSimplification(value => !value)} />
++				<ModeButton
++					ariaLabel="Full shape"
++					active={!isFullShape}
++					activeGlyph="半"
++					inactiveGlyph="全"
++					activeLabel="半形"
++					inactiveLabel="全形"
++					onClick={() => setIsFullShape(value => !value)} />
+ 			</div>
  		</div>
 -		{debouncedLoading && <span className="text-base-content-200">
 -			<div className="mx-3 align-middle loading loading-spinner loading-lg" />載入中 Loading…
+-		</span>}
 +		{!YUNE_PUBLIC_DEMO && <div className="yd-top-field yd-cangjie-choice" data-yune-control="cangjie-version">
 +			<span className="yd-top-label">倉頡反查 Cangjie lookup</span>
 +			<div className="yd-segment-group" role="radiogroup" aria-label="倉頡反查 Cangjie lookup">
@@ -1985,9 +2004,6 @@ index ff262af..3eb9a20 100644
 +				<Segment name="cangjieVersion" label="五代" state={isCangjie5} setState={setIsCangjie5} value={true} />
 +			</div>
 +		</div>}
-+		{debouncedLoading && <span className="yd-busy" data-yune-loading-indicator>
-+			<span className="yd-spinner" />載入中 Loading...
- 		</span>}
  	</div>;
  }
 diff --git a/src/YuneFeatureShowcase.tsx b/src/YuneFeatureShowcase.tsx
@@ -2069,11 +2085,10 @@ index 0000000..02b7d01
 +}
 diff --git a/src/YuneInspector.tsx b/src/YuneInspector.tsx
 new file mode 100644
-index 0000000..a6042bc
+index 0000000..fb0b9de
 --- /dev/null
 +++ b/src/YuneInspector.tsx
-@@ -0,0 +1,119 @@
-+import type { Dispatch, SetStateAction } from "react";
+@@ -0,0 +1,100 @@
 +import type { YuneInspectorDebug } from "./types";
 +
 +function formatScore(value: number | null | undefined) {
@@ -2101,38 +2116,21 @@ index 0000000..a6042bc
 +
 +export default function YuneInspector({
 +	debug,
-+	isCollapsed,
-+	setIsCollapsed,
 +}: {
 +	debug?: YuneInspectorDebug;
-+	isCollapsed: boolean;
-+	setIsCollapsed: Dispatch<SetStateAction<boolean>>;
 +}) {
 +	const values = summary(debug);
 +	return <section className="yd-inspector-panel" data-yune-inspector="panel">
-+		<div className="yd-inspector-panel-header">
-+			<div className="yd-inspector-title">
-+				<span>引擎檢視</span>
-+				<span>Yune inspector</span>
-+			</div>
-+			<div className="yd-inspector-actions">
-+				<span className="yd-inspector-ai" data-yune-inspector-ai-state>AI {values.ai}</span>
-+				<button type="button" className="yd-small-button" onClick={() => setIsCollapsed(value => !value)}>
-+					{isCollapsed ? "▸ 展開 SHOW" : "▾ 收起 HIDE"}
-+				</button>
-+			</div>
++		<div className="yd-inspector-summary">
++			<span><b>INPUT</b> {values.input}</span>
++			<span><b>SEG</b> {values.segments}</span>
++			<span><b>RAW</b> {values.raw}</span>
++			<span><b>FILTERED</b> {values.filtered}</span>
++			<span><b>CANDS</b> {values.candidates}</span>
++			<span><b>AI</b> {values.ai}</span>
 +		</div>
-+		{!isCollapsed && <>
-+			<div className="yd-inspector-summary">
-+				<span><b>INPUT</b> {values.input}</span>
-+				<span><b>SEG</b> {values.segments}</span>
-+				<span><b>RAW</b> {values.raw}</span>
-+				<span><b>FILTERED</b> {values.filtered}</span>
-+				<span><b>CANDS</b> {values.candidates}</span>
-+				<span><b>AI</b> {values.ai}</span>
-+			</div>
-+			{debug
-+				? <div className="yd-inspector-grid">
++		{debug
++			? <div className="yd-inspector-grid">
 +					<div className="yd-inspector-column">
 +						<h3>分段 <span>SEGMENTS</span></h3>
 +						<div className="yd-chip-row" data-yune-inspector-segments>
@@ -2188,8 +2186,7 @@ index 0000000..a6042bc
 +						</table>
 +					</div>
 +				</div>
-+				: <div className="yd-inspector-empty" data-yune-inspector-empty>未有檢視資料 No inspector data yet. Type while trace is on.</div>}
-+		</>}
++			: <div className="yd-inspector-empty" data-yune-inspector-empty>未有檢視資料 No inspector data yet. Type while trace is on.</div>}
 +	</section>;
 +}
 diff --git a/src/YuneStatusStrip.tsx b/src/YuneStatusStrip.tsx
@@ -2361,7 +2358,7 @@ index 0000000..ddbfd6c
 +	</section>;
 +}
 diff --git a/src/consts.ts b/src/consts.ts
-index 25ec3bf..3ff1fb7 100644
+index 25ec3bf..b327420 100644
 --- a/src/consts.ts
 +++ b/src/consts.ts
 @@ -1,5 +1,5 @@
@@ -2482,13 +2479,14 @@ index 25ec3bf..3ff1fb7 100644
  export const LANGUAGE_CODES: Record<Language, string> = {
  	[Language.Eng]: "en",
  	[Language.Hin]: "hi",
-@@ -49,12 +153,26 @@ export const DEFAULT_PREFERENCES: Preferences = {
+@@ -49,12 +153,27 @@ export const DEFAULT_PREFERENCES: Preferences = {
  	displayLanguages: new Set([Language.Eng]),
  	mainLanguage: Language.Eng,
  	pageSize: 6,
 -	isHeiTypeface: false,
 +	chineseTypeface: "chiron-sung-hk",
 +	candidateMenuLayout: "horizontal",
++	isCandidatePanelFixed: false,
 +	showDictionaryByDefault: true,
  	showRomanization: ShowRomanization.Always,
  	enableCompletion: true,
@@ -2604,10 +2602,10 @@ index ef2a4f3..dd5645f 100644
 +	return defaultValue;
 +}
 diff --git a/src/index.css b/src/index.css
-index 9dc742c..b0ea150 100644
+index 9dc742c..6435173 100644
 --- a/src/index.css
 +++ b/src/index.css
-@@ -3,148 +3,1273 @@
+@@ -3,148 +3,1399 @@
  @tailwind utilities;
  
  @layer base {
@@ -2770,15 +2768,61 @@ index 9dc742c..b0ea150 100644
 +	min-height: 100vh;
 +	background: var(--bg);
 +	color: var(--ink);
++	--active-chinese-font: "Chiron Hei HK", "PingFang HK", "Noto Sans TC", sans-serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="chiron-hei-hk"] {
++	--active-chinese-font: "Chiron Hei HK", "PingFang HK", "Noto Sans TC", sans-serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="chiron-sung-hk"] {
++	--active-chinese-font: "Chiron Sung HK", "Songti TC", "MingLiU_HKSCS", "Noto Serif TC", serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="chiron-goround-tc"] {
++	--active-chinese-font: "Chiron GoRound TC", "Hiragino Maru Gothic ProN", "PingFang HK", "Noto Sans TC", sans-serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="chocolate-classical-sans"] {
++	--active-chinese-font: "Chocolate Classical Sans", "PingFang HK", "Noto Sans TC", sans-serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="lxgw-wenkai-tc"] {
++	--active-chinese-font: "LXGW WenKai TC", "BiauKaiHK", "Kaiti TC", "Noto Serif TC", serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="lxgw-wenkai-mono-tc"] {
++	--active-chinese-font: "LXGW WenKai Mono TC", "BiauKaiHK", "Kaiti TC", "Noto Serif TC", monospace, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="iansui"] {
++	--active-chinese-font: "Iansui", "BiauKaiHK", "Kaiti TC", "Noto Serif TC", serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="huninn"] {
++	--active-chinese-font: "Huninn", "PingFang HK", "Noto Sans TC", sans-serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="bpmf-huninn"] {
++	--active-chinese-font: "Bpmf Huninn", "Huninn", "PingFang HK", "Noto Sans TC", sans-serif, var(--font-emoji);
++}
++
++.yd-app-shell[data-chinese-typeface="wdxl-lubrifont-tc"] {
++	--active-chinese-font: "WDXL Lubrifont TC", "PingFang HK", "Noto Sans TC", sans-serif, var(--font-emoji);
 +}
 +
 +.yd-app-header {
++	border-bottom: 1px solid var(--line);
++}
++
++.yd-app-header-inner {
 +	display: flex;
 +	align-items: center;
 +	justify-content: space-between;
 +	gap: 24px;
-+	border-bottom: 1px solid var(--line);
-+	padding: 16px 24px;
++	width: min(1340px, calc(100% - 48px));
++	margin: 0 auto;
++	padding: 16px 0;
 +}
 +
 +.yd-brand {
@@ -2825,14 +2869,6 @@ index 9dc742c..b0ea150 100644
 +	color: var(--ink2);
 +}
 +
-+.yd-brand-subtitle {
-+	color: var(--ink2);
-+	font-size: 11px;
-+	font-weight: 600;
-+	letter-spacing: 0.08em;
-+	text-transform: uppercase;
-+}
-+
 +.yd-header-status {
 +	display: flex;
 +	align-items: center;
@@ -2842,7 +2878,6 @@ index 9dc742c..b0ea150 100644
 +}
 +
 +.yd-version-chip,
-+.yd-ai-chip,
 +.yd-theme-button,
 +.yd-small-button,
 +.yd-button {
@@ -2868,16 +2903,6 @@ index 9dc742c..b0ea150 100644
 +	height: 8px;
 +	background: var(--accent);
 +	display: inline-block;
-+}
-+
-+.yd-ai-chip[data-enabled="true"] {
-+	background: var(--accent);
-+	color: var(--accent-fg);
-+	border-color: var(--accent);
-+}
-+
-+.yd-ai-chip[data-enabled="false"] {
-+	color: var(--ink2);
 +}
 +
 +.yd-theme-button {
@@ -2911,9 +2936,10 @@ index 9dc742c..b0ea150 100644
 +
 +.yd-top-label {
 +	color: var(--ink3);
-+	font-size: 11px;
++	font-size: 15px;
 +	font-weight: 700;
-+	letter-spacing: 0.08em;
++	letter-spacing: 0.04em;
++	line-height: 1.2;
 +	text-transform: uppercase;
 +}
 +
@@ -2939,8 +2965,17 @@ index 9dc742c..b0ea150 100644
 +
 +.yd-mode-row {
 +	display: flex;
++	align-items: center;
 +	gap: 8px;
 +	flex-wrap: wrap;
++}
++
++.yd-mode-choice {
++	min-width: 0;
++}
++
++.yd-top-label-spacer {
++	visibility: hidden;
 +}
 +
 +.yd-mode-button {
@@ -2983,12 +3018,16 @@ index 9dc742c..b0ea150 100644
 +	min-width: 0;
 +}
 +
-+.yd-busy {
-+	display: inline-flex;
-+	align-items: center;
++.yd-cangjie-choice .yd-segment-group {
++	justify-self: start;
++	width: fit-content;
++	max-width: 100%;
 +	min-height: 44px;
-+	color: var(--ink2);
-+	font-size: 13px;
++}
++
++.yd-cangjie-choice .yd-segment {
++	min-height: 42px;
++	padding-inline: 14px;
 +}
 +
 +.yd-spinner {
@@ -3016,7 +3055,9 @@ index 9dc742c..b0ea150 100644
 +	grid-template-columns: minmax(0, 1fr) minmax(360px, 0.86fr);
 +	gap: 24px;
 +	align-items: stretch;
-+}
+ }
+-.btn-toolbar {
+-	@apply btn btn-square text-xl bg-base-300 border-base-300 hover:bg-base-400 hover:border-base-400;
 +
 +.yd-compose-panel,
 +.yd-userdb-panel,
@@ -3026,17 +3067,29 @@ index 9dc742c..b0ea150 100644
 +	border: 1px solid var(--line);
 +	background: var(--bg);
 +	border-radius: 0;
-+}
+ }
 +
 +.yd-compose-panel {
 +	display: grid;
-+	grid-template-rows: auto minmax(220px, auto) auto;
++	gap: 12px;
++	grid-template-rows: auto minmax(220px, auto);
 +	min-width: 0;
++	overflow: visible;
++	position: relative;
++}
++
++.yd-compose-panel {
++	border: 0;
++	background: transparent;
++}
++
++.yd-compose-panel .yd-panel-heading {
++	border-bottom: 0;
++	padding: 0;
 +}
 +
 +.yd-panel-heading,
-+.yd-inspector-gate-header,
-+.yd-inspector-panel-header {
++.yd-inspector-gate-header {
 +	display: flex;
 +	align-items: center;
 +	justify-content: space-between;
@@ -3051,6 +3104,19 @@ index 9dc742c..b0ea150 100644
 +	font-weight: 800;
 +}
 +
++.yd-compose-panel-toggle {
++	display: inline-flex;
++	align-items: center;
++	gap: 9px;
++	color: var(--ink2);
++	font-family: var(--font-sans);
++	font-size: 12px;
++	font-weight: 700;
++	letter-spacing: 0.04em;
++	white-space: nowrap;
++	cursor: pointer;
++}
++
 +.yd-panel-heading > span,
 +.yd-panel-heading-split > span {
 +	display: inline-flex;
@@ -3062,7 +3128,6 @@ index 9dc742c..b0ea150 100644
 +.yd-panel-heading span span,
 +.yd-preferences-title span,
 +.yd-section-title span,
-+.yd-inspector-title span:last-child,
 +.yd-inspector-column h3 span {
 +	font-family: var(--font-sans);
 +	color: var(--ink2);
@@ -3072,6 +3137,7 @@ index 9dc742c..b0ea150 100644
 +}
 +
 +.yd-input-area {
++	display: block;
 +	width: calc(100% - 36px);
 +	min-height: 220px;
 +	margin: 18px;
@@ -3080,11 +3146,58 @@ index 9dc742c..b0ea150 100644
 +	border-radius: 0;
 +	background: var(--bg);
 +	color: var(--ink);
++	font-family: var(--active-chinese-font);
 +	padding: 14px;
 +	font-size: 20px;
 +	line-height: 1.65;
 +	outline: none;
 +	box-shadow: none;
++}
++
++.yd-input-frame {
++	position: relative;
++	min-width: 0;
++}
++
++.yd-compose-panel .yd-input-area {
++	width: 100%;
++	margin: 0;
++}
++
++.yd-input-area:disabled {
++	background: color-mix(in srgb, var(--accent-soft) 46%, var(--bg));
++	color: var(--ink2);
++	cursor: wait;
++	opacity: 1;
++	-webkit-text-fill-color: var(--ink2);
++}
++
++.yd-input-frame[aria-busy="true"] .yd-input-area {
++	border-color: var(--accent);
++	box-shadow: inset 0 -3px 0 var(--accent);
++}
++
++.yd-input-loading {
++	position: absolute;
++	inset: 0;
++	z-index: 2;
++	display: flex;
++	align-items: center;
++	justify-content: center;
++	gap: 12px;
++	border: 2px solid var(--accent);
++	background: color-mix(in srgb, var(--bg) 82%, var(--accent-soft));
++	color: var(--ink);
++	font-size: 18px;
++	font-weight: 800;
++	pointer-events: none;
++}
++
++.yd-input-loading .yd-spinner {
++	width: 24px;
++	height: 24px;
++	margin-right: 0;
++	border-width: 3px;
 +}
 +
 +.yd-input-area:focus {
@@ -3094,9 +3207,7 @@ index 9dc742c..b0ea150 100644
 +
 +.yd-input-area::placeholder {
 +	color: var(--ink3);
- }
--.btn-toolbar {
--	@apply btn btn-square text-xl bg-base-300 border-base-300 hover:bg-base-400 hover:border-base-400;
++}
 +
 +.candidate-panel-empty {
 +	margin: 0 18px 18px;
@@ -3104,6 +3215,10 @@ index 9dc742c..b0ea150 100644
 +	background: var(--surface2);
 +	padding: 18px;
 +	color: var(--ink2);
++}
++
++.yd-compose-panel .candidate-panel-empty {
++	margin: 0;
 +}
 +
 +.candidate-panel-empty div {
@@ -3114,22 +3229,22 @@ index 9dc742c..b0ea150 100644
 +.candidate-panel-empty p {
 +	margin: 6px 0 0;
 +	font-size: 13px;
- }
++}
 +
  .candidate-panel {
 -	@apply flex absolute shadow-lg border-[0.1875rem] border-base-400 bg-base-200 rounded-[0.5625rem] z-50 overflow-hidden leading-snug whitespace-nowrap;
 +	display: grid;
-+	grid-template-columns: minmax(0, 1fr) minmax(240px, 0.64fr);
-+	margin: 0 18px 18px;
++	grid-template-columns: minmax(0, 1fr) minmax(220px, 0.58fr);
++	margin: 0;
 +	border: 1px solid var(--line);
 +	background: var(--bg);
 +	border-radius: 0;
 +	box-shadow: none;
 +	overflow: hidden;
-+	position: static;
-+	z-index: auto;
-+	width: auto;
-+	max-width: none;
++	position: absolute;
++	z-index: 50;
++	width: min(640px, calc(100vw - 32px));
++	max-width: calc(100vw - 32px);
  }
 -.page-nav {
 -	@apply btn btn-ghost text-primary text-4xl h-[unset] min-h-[unset] leading-[1.875rem] px-2 rounded-md hover:bg-base-400 hover:border-base-400 disabled:bg-transparent disabled:text-base-500;
@@ -3145,20 +3260,22 @@ index 9dc742c..b0ea150 100644
 -		}
 -	}
 +
-+.candidate-list-pane {
-+	min-width: 0;
++.candidate-panel--fixed {
++	margin: 0 18px 18px;
++	position: static;
++	z-index: auto;
++	width: auto;
++	max-width: none;
++}
++
++.candidate-panel--fixed:not(.candidate-panel--vertical) {
++	grid-template-columns: minmax(0, 1fr) minmax(240px, 0.64fr);
  }
 -.candidates :lang(ur) {
 -	@apply text-right;
 +
-+.candidate-panel-header {
-+	display: flex;
-+	align-items: center;
-+	justify-content: space-between;
-+	gap: 12px;
-+	border-bottom: 1px solid var(--line2);
-+	background: var(--surface2);
-+	padding: 10px 12px;
++.candidate-list-pane {
++	min-width: 0;
  }
 -.candidates button {
 -	tr:first-child td:first-child {
@@ -3174,6 +3291,16 @@ index 9dc742c..b0ea150 100644
 -		@apply rounded-ee-md min-w-1.5;
 -	}
 +
++.candidate-panel-header {
++	display: flex;
++	align-items: center;
++	justify-content: space-between;
++	gap: 12px;
++	border-bottom: 1px solid var(--line2);
++	background: var(--surface2);
++	padding: 10px 12px;
++}
++
 +.candidate-preedit {
 +	display: inline-flex;
 +	align-items: center;
@@ -3187,6 +3314,14 @@ index 9dc742c..b0ea150 100644
 +.candidate-preedit-active {
 +	border-bottom: 3px solid var(--accent);
 +	padding-bottom: 1px;
++}
++
++.candidate-caret {
++	width: 9px;
++	height: 20px;
++	background: var(--accent);
++	display: inline-block;
++	animation: yd-blink 1s steps(2, start) infinite;
  }
 -@supports selector(:has(*)) {
 -	.candidate-panel:has(.dictionary-panel) .candidates .highlighted tr {
@@ -3203,14 +3338,6 @@ index 9dc742c..b0ea150 100644
 -			background-image: radial-gradient(circle at top left, transparent 0.5rem, theme(colors.primary) calc(0.5rem + 1px)),
 -							  radial-gradient(circle at bottom left, transparent 0.5rem, theme(colors.primary) calc(0.5rem + 1px));
 -		}
-+
-+.candidate-caret {
-+	width: 9px;
-+	height: 20px;
-+	background: var(--accent);
-+	display: inline-block;
-+	animation: yd-blink 1s steps(2, start) infinite;
-+}
 +
 +@keyframes yd-blink {
 +	50% {
@@ -3301,7 +3428,7 @@ index 9dc742c..b0ea150 100644
 +
 +.candidate-text {
 +	color: var(--ink);
-+	font-family: "Noto Sans TC", sans-serif;
++	font-family: var(--active-chinese-font);
 +	font-size: 21px;
 +	font-weight: 700;
 +	line-height: 1.15;
@@ -3314,9 +3441,9 @@ index 9dc742c..b0ea150 100644
 +.candidate-note {
 +	font-size: 12px;
 +	font-style: italic;
-+	overflow: hidden;
-+	text-overflow: ellipsis;
-+	white-space: nowrap;
++	overflow: visible;
++	overflow-wrap: anywhere;
++	white-space: normal;
 +}
 +
 +.candidate-info {
@@ -3356,6 +3483,11 @@ index 9dc742c..b0ea150 100644
  }
 -.dictionary-panel > *:not(:last-child) {
 -	@apply mb-3.5;
++
++.dictionary-headword,
++.dictionary-chinese-value {
++	font-family: var(--active-chinese-font);
++}
 +
 +.dictionary-entry > * + * {
 +	margin-top: 12px;
@@ -3563,37 +3695,38 @@ index 9dc742c..b0ea150 100644
 +}
 +
 +.yd-metric {
-+	padding: 14px 0;
++	padding: 18px 0;
 +}
 +
 +.yd-metric-label {
 +	color: var(--ink3);
-+	font-size: 10px;
++	font-size: 15px;
 +	font-weight: 700;
-+	letter-spacing: 0.1em;
++	letter-spacing: 0.04em;
++	line-height: 1.2;
 +}
 +
 +.yd-metric-value {
-+	margin-top: 5px;
++	margin-top: 7px;
 +	color: var(--ink);
-+	font-size: 19px;
++	font-size: 28px;
 +	font-weight: 700;
 +	line-height: 1.1;
 +}
 +
 +.yd-metric-value span {
-+	margin-left: 2px;
++	margin-left: 4px;
 +	color: var(--ink3);
-+	font-size: 11px;
++	font-size: 16px;
 +}
 +
 +.yd-metric-accent {
 +	color: var(--accent);
 +}
 +
-+.yd-metric-empty {
++.yd-metric-value .yd-metric-empty {
 +	color: var(--ink3);
-+	font-size: 15px;
++	font-size: 22px;
 +}
 +
 +.yd-status-strip {
@@ -3605,8 +3738,12 @@ index 9dc742c..b0ea150 100644
 +	overflow: hidden;
 +}
 +
-+.yd-inspector-gate-header > div:first-child,
-+.yd-inspector-title {
++.yd-inspector-gate-header {
++	justify-content: flex-start;
++	flex-wrap: wrap;
++}
++
++.yd-inspector-gate-header > div:first-child {
 +	display: inline-flex;
 +	align-items: baseline;
 +	gap: 8px;
@@ -3627,20 +3764,6 @@ index 9dc742c..b0ea150 100644
 +
 +.yd-inspector-panel {
 +	border-width: 1px 0 0;
-+}
-+
-+.yd-inspector-actions {
-+	display: inline-flex;
-+	align-items: center;
-+	gap: 10px;
-+}
-+
-+.yd-inspector-ai {
-+	border: 1px solid var(--line2);
-+	color: var(--ink2);
-+	padding: 7px 10px;
-+	font-size: 12px;
-+	font-weight: 700;
 +}
 +
 +.yd-inspector-summary {
@@ -3736,28 +3859,28 @@ index 9dc742c..b0ea150 100644
 +}
 +
 +.yd-section {
-+	padding: 18px;
++	padding: 20px;
 +}
 +
 +.yd-section-title {
 +	margin: 0;
 +	font-family: "Noto Sans TC", sans-serif;
-+	font-size: 16px;
++	font-size: 18px;
 +	font-weight: 900;
 +	line-height: 1.2;
 +}
 +
 +.yd-section-description {
-+	margin: 6px 0 0;
-+	color: var(--ink2);
-+	font-size: 13px;
-+	line-height: 1.55;
++	margin: 8px 0 0;
++	color: color-mix(in srgb, var(--ink2) 72%, var(--ink3));
++	font-size: 16px;
++	line-height: 1.45;
 +}
 +
 +.yd-section-body {
 +	display: grid;
-+	gap: 13px;
-+	margin-top: 16px;
++	gap: 16px;
++	margin-top: 18px;
 +}
 +
 +.yd-field {
@@ -3776,20 +3899,20 @@ index 9dc742c..b0ea150 100644
 +
 +.yd-field-copy {
 +	display: grid;
-+	gap: 4px;
++	gap: 5px;
 +	min-width: 0;
 +}
 +
 +.yd-field-label {
 +	color: var(--ink);
-+	font-size: 14px;
-+	line-height: 1.35;
++	font-size: 16px;
++	line-height: 1.38;
 +}
 +
 +.yd-field-description {
-+	color: var(--ink2);
-+	font-size: 12px;
-+	line-height: 1.45;
++	color: color-mix(in srgb, var(--ink2) 72%, var(--ink3));
++	font-size: 16px;
++	line-height: 1.38;
 +}
 +
 +.yd-check {
@@ -3959,9 +4082,10 @@ index 9dc742c..b0ea150 100644
 -		@apply absolute top-full left-1/2 -translate-x-1/2 text-sm leading-6;
 +
 +@media (max-width: 640px) {
-+	.yd-app-header {
++	.yd-app-header-inner {
 +		align-items: flex-start;
 +		flex-direction: column;
++		width: min(100% - 24px, 1340px);
 +	}
 +
 +	.yd-app-main {
@@ -4166,7 +4290,7 @@ index 4393a9e..3301ee7 100644
  		listeners[type] = listeners[type].filter(listener => listener !== callback) as never;
  	};
 diff --git a/src/types.ts b/src/types.ts
-index 5d47525..0d1c3ae 100644
+index 5d47525..19c9205 100644
 --- a/src/types.ts
 +++ b/src/types.ts
 @@ -1,6 +1,7 @@
@@ -4259,7 +4383,7 @@ index 5d47525..0d1c3ae 100644
  }
  
  export type Message = NamedMessage<keyof Actions>;
-@@ -91,13 +133,26 @@ export interface RimePreferences {
+@@ -91,13 +133,27 @@ export interface RimePreferences {
  	enableCorrection: boolean;
  	enableSentence: boolean;
  	enableLearning: boolean;
@@ -4283,6 +4407,7 @@ index 5d47525..0d1c3ae 100644
 -	isHeiTypeface: boolean;
 +	chineseTypeface: ChineseTypefaceId;
 +	candidateMenuLayout: CandidateMenuLayout;
++	isCandidatePanelFixed: boolean;
 +	showDictionaryByDefault: boolean;
  	showRomanization: ShowRomanization;
  	showReverseCode: boolean;

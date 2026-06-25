@@ -1,0 +1,117 @@
+# Rime configuration
+# encoding: utf-8
+
+fuzzy:
+  __append:
+    __patch: lv2
+
+fuzzy_with_shortcuts:
+  __append:
+    __patch: lv2_with_shortcuts
+
+# ---------------------------------------------------------
+
+lv1:
+  __append:
+    __patch:
+      - lv1_laanjam
+
+lv1_with_shortcuts:
+  __append:
+    __patch:
+      - lv1_laanjam
+      - shortcuts
+
+lv2:
+  __append:
+    __patch:
+      - lv1_laanjam
+      - lv2_upper
+      - lv2_lower
+
+lv2_with_shortcuts:
+  __append:
+    __patch:
+      - lv1_laanjam
+      - lv2_upper
+      - shortcuts
+      - lv2_lower
+
+# ---------------------------------------------------------
+
+lv1_laanjam:
+  __append:
+    - derive/^ng(?=[aeiou])//
+    - derive/^(?=[aeiou])/ng/
+    - derive/^n(?!g)/l/
+    - derive/^ng(?=\d)/m/
+
+lv2_upper:
+  __append:
+    - derive/^(g|k)w(?=o)/$1/
+    - derive/^jy?(?=[aeiou])/y/   # 容錯 je -> ye, jyu -> yu
+    - derive/^jyu/ju/             # 容錯 jyu -> ju
+    - derive/yu(?!ng|k)/y/        # 容錯 yu -> y
+    - derive/(g|k)u(?!ng|k)/$1wu/ # 輔音圓唇
+    - derive/^([zcs])/$1h/        # 聲母容錯
+    - derive/eoi(?=\d)/eoy/       # 容錯
+
+shortcuts:
+  __append:
+    - derive/aa/r/                # 韻母簡拼
+    - derive/oe|eo/v/             # 韻母簡拼
+    - derive/ng/x/                # 韻母簡拼
+
+lv2_lower:
+  __append:
+    - derive/eo/oe/               # 容錯 eo/oe 不分
+    - derive/oe/eo/               # 容錯 eo/oe 不分
+    - derive/aa(?=\d)/a/          # 容錯
+
+# ---------------------------------------------------------
+
+tone_ignore:
+  __append:
+    - derive/\d//                 # 忽略聲調
+
+tone_removal:
+  __append:
+    - xform/\d//                  # 移除聲調
+
+abbreviation:
+  __append:
+    - abbrev/^([a-z]).+$/$1/      # 首字母簡拼
+
+tone_to_letter:
+  __append:
+    - xform/1/v/                  # 陰平
+    - xform/4/vv/                 # 陽平
+    - xform/2/x/                  # 陰上
+    - xform/5/xx/                 # 陽上
+    - xform/3/q/                  # 陰去
+    - xform/6/qq/                 # 陽去
+
+letter_to_10keys:
+  __append:
+    - derive/[a-c]/A/
+    - derive/[d-f]/D/
+    - derive/[g-i]/G/
+    - derive/[j-l]/J/
+    - derive/[m-o]/M/
+    - derive/[p-s]/P/
+    - derive/[t-v]/T/
+    - derive/[w-z]/W/
+
+# ---------------------------------------------------------
+
+no_candidate_selection:
+  alternative_select_keys: "\0"     # Change select key to arbitrary control character to allow us to type number keys for tone input.
+
+letter_to_tone:
+  preedit_format:
+    - xform/([aeiouymngptk])vv/${1}4/
+    - xform/([aeiouymngptk])xx/${1}5/
+    - xform/([aeiouymngptk])qq/${1}6/
+    - xform/([aeiouymngptk])v/${1}1/
+    - xform/([aeiouymngptk])x/${1}2/
+    - xform/([aeiouymngptk])q/${1}3/

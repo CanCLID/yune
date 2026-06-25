@@ -1,2 +1,13 @@
 # Upstream TypeDuck-Web source checkout (not vendored in Yune repository)
 source/
+
+# Local dependency installs and generated Vite output
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+
+# Generated browser runtime artifacts
+public/worker.js
+public/worker.js.map
+public/yune-web.js
+public/yune-web.wasm

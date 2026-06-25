@@ -1,0 +1,278 @@
+__build_info:
+  rime_version: 1.1.2
+  timestamps:
+    common: 1731663570
+    common.custom: 1731663570
+    default: 1731663570
+    default.custom: 1731663570
+    include: 1731663570
+    include.custom: 0
+    jyut6ping3_mobile.schema: 1731663569
+    template: 1731663570
+    template.custom: 0
+dictionary_lookup_filter:
+  dictionary: jyut6ping3_scolar
+engine:
+  filters:
+    - dictionary_lookup_filter
+    - simplifier
+  processors:
+    - ascii_composer
+    - recognizer
+    - key_binder
+    - speller
+    - punctuator
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - ascii_segmentor
+    - matcher
+    - affix_segmentor@luna_pinyin
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+  translators:
+    - punct_translator
+    - script_translator
+    - script_translator@luna_pinyin
+key_binder:
+  bindings:
+    - {accept: "Control+p", send: Up, when: composing}
+    - {accept: "Control+n", send: Down, when: composing}
+    - {accept: "Control+b", send: Left, when: composing}
+    - {accept: "Control+f", send: Right, when: composing}
+    - {accept: "Control+a", send: Home, when: composing}
+    - {accept: "Control+e", send: End, when: composing}
+    - {accept: "Control+d", send: Delete, when: composing}
+    - {accept: "Control+k", send: "Shift+Delete", when: composing}
+    - {accept: "Control+h", send: BackSpace, when: composing}
+    - {accept: "Control+g", send: Escape, when: composing}
+    - {accept: "Control+bracketleft", send: Escape, when: composing}
+    - {accept: "Control+y", send: Page_Up, when: composing}
+    - {accept: "Alt+v", send: Page_Up, when: composing}
+    - {accept: "Control+v", send: Page_Down, when: composing}
+    - {accept: ISO_Left_Tab, send: "Shift+Left", when: composing}
+    - {accept: "Shift+Tab", send: "Shift+Left", when: composing}
+    - {accept: Tab, send: "Shift+Right", when: composing}
+    - {accept: minus, send: Page_Up, when: paging}
+    - {accept: equal, send: Page_Down, when: has_menu}
+    - {accept: comma, send: Page_Up, when: paging}
+    - {accept: period, send: Page_Down, when: has_menu}
+    - {accept: bracketleft, send: Page_Up, when: paging}
+    - {accept: bracketright, send: Page_Down, when: has_menu}
+    - {accept: "Control+Shift+1", select: .next, when: always}
+    - {accept: "Control+Shift+2", toggle: ascii_mode, when: always}
+    - {accept: "Control+Shift+3", toggle: full_shape, when: always}
+    - {accept: "Control+Shift+exclam", select: .next, when: always}
+    - {accept: "Control+Shift+at", toggle: ascii_mode, when: always}
+    - {accept: "Control+Shift+numbersign", toggle: full_shape, when: always}
+    - {accept: "Control+Shift+space", select: .next, when: always}
+    - {accept: "Control+comma", toggle: full_shape, when: always}
+    - {accept: "Control+period", toggle: ascii_punct, when: always}
+  import_preset: default
+luna_pinyin:
+  always_show_comments: true
+  comment_format:
+    - "xform/^/\\v/"
+  dictionary: luna_pinyin_yune_reverse
+  enable_sentence: false
+  enable_user_dict: false
+  encode_commit_history: false
+  prefix: "`"
+  preedit_format:
+    - "xform/([nl])v/$1ü/"
+    - "xform/([nl])ue/$1üe/"
+    - "xform/([jqxy])v/$1u/"
+  suffix: ";"
+  tag: luna_pinyin
+  tips: "〔普通話〕"
+menu:
+  alternative_select_keys: "\x00"
+  page_size: 6
+punctuator:
+  ascii_style:
+    "!": {commit: "!"}
+    "\"": "\""
+    "#": "#"
+    "$": "$"
+    "%": "%"
+    "&": "&"
+    "'": "'"
+    "(": "("
+    ")": ")"
+    "*": "*"
+    "+": "+"
+    ",": {commit: ","}
+    "-": "-"
+    .: {commit: .}
+    "/": "/"
+    ":": {commit: ":"}
+    ";": {commit: ";"}
+    "<": "<"
+    "=": "="
+    ">": ">"
+    "?": {commit: "?"}
+    "@": "@"
+    "[": "["
+    "\\": "\\"
+    "]": "]"
+    "^": "^"
+    _: _
+    "`": "`"
+    "{": "{"
+    "|": "|"
+    "}": "}"
+    "~": "~"
+  full_shape:
+    " ": {commit: "　"}
+    "!": {commit: "！"}
+    "\"": ["＂", "\"", "“", "”", "„", "‟", "″", "〃", "〝", "〞", "〟"]
+    "#": ["＃", "#", "№", "⌘", "⌥", "⌃"]
+    "$": ["＄", "$", "￥", "¥", "￦", "₩", "￡", "£", "￠", "¢", "€", "₽", "¤"]
+    "%": ["％", "%", "‰", "‱", "℃", "℉"]
+    "&": ["＆", "&", "¶", "§"]
+    "'": ["＇", "'", "‘", "’", "‛", "′", "↑", "↓"]
+    "(": {commit: "（"}
+    ")": {commit: "）"}
+    "*": ["＊", "*", "×", "※", "✓", "✗"]
+    "+": ["＋", "+", "±", "∓"]
+    ",": {commit: "，"}
+    "-": ["－", "-", "‒", "―", "–", "—", "＿", _, "￣", "‾"]
+    .: {commit: "。"}
+    "/": ["／", "/", "＼", "\\", "､", "÷", "∕", "√"]
+    ":": {commit: "："}
+    ";": {commit: "；"}
+    "<": ["《", "〈", "＜", "<", "«", "‹", "⟨", "←", "⇐", "↔", "⇔", "≤", "⩽", "≦", "⫹"]
+    "=": ["＝", "=", "≡", "≈", "≠", "≒", "≅"]
+    ">": ["》", "〉", "＞", ">", "»", "›", "⟩", "→", "⇒", "↔", "⇔", "≥", "⩾", "≧", "⫺"]
+    "?": {commit: "？"}
+    "@": ["＠", "@", "©", "®", "℗", "™", "℠", "∅"]
+    "[": ["「", "｢", "【", "〔", "［", "[", "〚", "〘"]
+    "\\": {commit: "、"}
+    "]": ["」", "｣", "】", "〕", "］", "]", "〛", "〙"]
+    "^": {commit: "……"}
+    _: {commit: "——"}
+    "`": ["｀", "`", "·", "•", "‣", "°", "○", "◌", "◦"]
+    "{": ["『", "〖", "｛", "{", "⦅", "⸨", "｟"]
+    "|": ["｜", "|", "＼", "\\", "¦"]
+    "}": ["』", "〗", "｝", "}", "⦆", "⸩", "｠"]
+    "~": ["～", "~", "﹏", "﹋"]
+  half_shape:
+    "!": {commit: "！"}
+    "\"": ["\"", "＂", "“", "”", "„", "‟", "″", "〃", "〝", "〞", "〟"]
+    "#": ["#", "＃", "№", "⌘", "⌥", "⌃"]
+    "$": ["$", "＄", "¥", "￥", "₩", "￦", "£", "￡", "¢", "￠", "€", "₽", "¤"]
+    "%": ["％", "%", "‰", "‱", "℃", "℉"]
+    "&": ["＆", "&", "¶", "§"]
+    "'": ["'", "＇", "‘", "’", "‛", "′", "↑", "↓"]
+    "(": {commit: "（"}
+    ")": {commit: "）"}
+    "*": ["＊", "*", "×", "※", "✓", "✗"]
+    "+": ["+", "＋", "±", "∓"]
+    ",": {commit: "，"}
+    "-": ["-", "－", "‒", "―", "–", "—", _, "＿", "‾", "￣"]
+    .: {commit: "。"}
+    "/": ["/", "／", "\\", "＼", "､", "÷", "∕", "√"]
+    ":": {commit: "："}
+    ";": {commit: "；"}
+    "<": ["《", "〈", "<", "＜", "«", "‹", "⟨", "←", "⇐", "↔", "⇔", "≤", "⩽", "≦", "⫹"]
+    "=": ["=", "＝", "≡", "≈", "≠", "≒", "≅"]
+    ">": ["》", "〉", ">", "＞", "»", "›", "⟩", "→", "⇒", "↔", "⇔", "≥", "⩾", "≧", "⫺"]
+    "?": {commit: "？"}
+    "@": ["@", "＠", "©", "®", "℗", "™", "℠", "∅"]
+    "[": ["「", "｢", "【", "〔", "［", "[", "〚", "〘"]
+    "\\": {commit: "、"}
+    "]": ["」", "｣", "】", "〕", "］", "]", "〛", "〙"]
+    "^": {commit: "……"}
+    _: {commit: "——"}
+    "`": ["`", "｀", "·", "•", "‣", "°", "○", "◌", "◦"]
+    "{": ["『", "〖", "｛", "{", "⦅", "⸨", "｟"]
+    "|": ["|", "｜", "＼", "\\", "¦"]
+    "}": ["』", "〗", "｝", "}", "⦆", "⸩", "｠"]
+    "~": ["~", "～", "﹏", "﹋"]
+  import_preset: default
+recognizer:
+  import_preset: default
+  patterns:
+    email: "^[A-Za-z][-_.0-9A-Za-z]*@.*$"
+    luna_pinyin: "^`[a-z']*;?$"
+    uppercase: "[A-Z][-_+.'0-9A-Za-z]*$"
+    url: "^(www[.]|https?:|ftp[.:]|mailto:|file:).*$|^[a-z]+[.].+$"
+schema:
+  author:
+    - "Ayaka Mikazuki <ayaka@mail.shn.hk>"
+    - "LeiMaau <leimaau@qq.com>"
+    - "chaaklau <chaakming@gmail.com>"
+    - "laubonghaudoi <laubonghaudoi@icloud.com>"
+    - "tanxpyox <tanxpyox@gmail.com>"
+    - "William915 <William915@gmail.com>"
+    - "szc126 (@szc126)"
+    - "Bing Jeung <bing@ososo.io>"
+    - "graphemecluster <graphemecluster@gmail.com>"
+  dependencies:
+    - luna_pinyin
+  description: |
+    採用香港語言學學會粵語拼音方案
+    https://www.lshk.org/jyutping
+    支援聲調顯示同輸入
+    Telegram 用户交流組 https://t.me/rime_cantonese
+  name: "粵語拼音"
+  schema_id: jyut6ping3_mobile
+  version: 2023.11.03
+simplifier:
+  opencc_config: hk2s.json
+speller:
+  algebra:
+    - "derive/^ng(?=[aeiou])//"
+    - "derive/^(?=[aeiou])/ng/"
+    - "derive/^n(?!g)/l/"
+    - "derive/^ng(?=\\d)/m/"
+    - "derive/^(g|k)w(?=o)/$1/"
+    - "derive/^jy?(?=[aeiou])/y/"
+    - "derive/^jyu/ju/"
+    - "derive/yu(?!ng|k)/y/"
+    - "derive/(g|k)u(?!ng|k)/$1wu/"
+    - "derive/^([zcs])/$1h/"
+    - "derive/eoi(?=\\d)/eoy/"
+    - "derive/eo/oe/"
+    - "derive/oe/eo/"
+    - "derive/aa(?=\\d)/a/"
+    - "derive/\\d//"
+    - "abbrev/^([a-z]).+$/$1/"
+    - "xform/1/v/"
+    - "xform/4/vv/"
+    - "xform/2/x/"
+    - "xform/5/xx/"
+    - "xform/3/q/"
+    - "xform/6/qq/"
+  alphabet: zyxwvutsrqponmlkjihgfedcba
+  delimiter: " '"
+switches:
+  - name: ascii_mode
+    reset: 0
+    states: ["中文", "英文"]
+  - name: full_shape
+    states: ["半形", "全形"]
+  - name: simplification
+    reset: 0
+    states: ["繁體", "简体"]
+  - name: ascii_punct
+    states: ["。，", "．，"]
+translator:
+  always_show_comments: true
+  combine_candidates: false
+  comment_format:
+    - "xform/^/\\f/"
+  dictionary: jyut6ping3
+  prediction_candidate_limit: 1
+  prediction_never_first: true
+  prefix_fallback: true
+  preedit_format:
+    - "xform/([aeiouymngptk])vv/${1}4/"
+    - "xform/([aeiouymngptk])xx/${1}5/"
+    - "xform/([aeiouymngptk])qq/${1}6/"
+    - "xform/([aeiouymngptk])v/${1}1/"
+    - "xform/([aeiouymngptk])x/${1}2/"
+    - "xform/([aeiouymngptk])q/${1}3/"
+  prism: jyut6ping3_mobile

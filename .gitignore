@@ -6,6 +6,7 @@
 node_modules/
 packages/*/dist/
 test-results/
+.wrangler/
 
 # E2E test artifacts (keep README.md and blocker.md tracked)
 third_party/typeduck-web/e2e/results/*.log

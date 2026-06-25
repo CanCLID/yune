@@ -1,0 +1,96 @@
+# Rime schema
+# encoding: utf-8
+
+__include: template:/
+
+schema:
+  schema_id: jyut6ping3
+  name: 粵語拼音
+  dependencies:
+    - jyut6ping3_scolar
+    - luna_pinyin
+    - loengfan
+    - cangjie3
+    - cangjie5
+
+engine:
+  segmentors:
+    - ascii_segmentor
+    - matcher
+    - affix_segmentor@loengfan
+    - affix_segmentor@cangjie
+    - affix_segmentor@luna_pinyin
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+  translators:
+    - punct_translator
+    - script_translator
+    - script_translator@luna_pinyin
+    - script_translator@loengfan
+    - table_translator@cangjie
+
+translator:
+  __patch: include:/letter_to_tone
+  prediction_candidate_limit: 1
+  prefix_fallback: true
+
+luna_pinyin:
+  tag: luna_pinyin
+  dictionary: luna_pinyin
+  enable_sentence: false
+  enable_user_dict: false
+  encode_commit_history: false
+  always_show_comments: true
+  prefix: "`"
+  suffix: ";"
+  tips: 〔普通話〕
+  preedit_format:
+    - xform/([nl])v/$1ü/
+    - xform/([nl])ue/$1üe/
+    - xform/([jqxy])v/$1u/
+  comment_format:
+    - xform/^/\v/
+
+loengfan:
+  tag: loengfan
+  dictionary: loengfan
+  enable_sentence: false
+  enable_user_dict: false
+  encode_commit_history: false
+  always_show_comments: true
+  prefix: "`vl"
+  suffix: ";"
+  tips: 〔粵語兩分〕
+  __patch: include:/letter_to_tone
+  comment_format:
+    - xform/^/\v/
+
+cangjie:
+  tag: cangjie
+  dictionary: cangjie5
+  enable_sentence: false
+  enable_user_dict: false
+  encode_commit_history: false
+  prefix: "`vc"
+  suffix: ";"
+  tips: 〔倉頡五代〕
+  comment_format:
+    - 'xform/^/\v/'
+    - "xlit|abcdefghijklmnopqrstuvwxyz~|日月金木水火土竹戈十大中一弓人心手口尸廿山女田難卜符～|"
+  __patch:
+    - common:/use_cangjie3?
+    - common:/show_cangjie_roots?
+    - common:/show_full_code?
+
+recognizer:
+  patterns:
+    loengfan: "^`vl[a-z']*;?$"
+    cangjie: "^`vc[a-z']*;?$"
+    luna_pinyin: "^`[a-z']*;?$"
+
+__patch:
+  - common:/disable_completion?
+  - common:/enable_correction?
+  - common:/disable_sentence?
+  - common:/disable_learning?

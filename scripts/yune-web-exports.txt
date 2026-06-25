@@ -1,0 +1,14 @@
+yune_web_init
+yune_web_process_key
+yune_web_select_candidate
+yune_web_delete_candidate
+yune_web_flip_page
+yune_web_deploy
+yune_web_customize
+yune_web_set_option
+yune_web_set_ai_enabled
+yune_web_stage_ai
+yune_web_cleanup
+yune_web_response_json
+yune_web_response_handled
+yune_web_free_response

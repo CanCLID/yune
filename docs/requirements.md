@@ -390,6 +390,13 @@ broader typing parity.
   latency, mmap/`rsmarisa` activation, bounded output, working set, peak memory,
   and upstream-observable behavior must all be reported and must not regress
   outside the milestone's explicit gates.
+- [ ] **POST-M38-PERF-08**: The next closeout report includes a single
+  optimization-strategy gate table that shows every required method is still
+  active or explicitly closed by measured no-go: same-run native benchmark,
+  mmap/file-backed selected bytes, real `rsmarisa` runtime lookup,
+  lazy/page-bounded candidate production, page-sized context export,
+  startup/session lifecycle fast paths, owner counters, heap-owner attribution,
+  memory baselines, and behavior tests.
 
 ## Out of Scope
 
@@ -660,6 +667,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POST-M38-PERF-05 | Post-M38 | Draft - memory follow-up must use the post-M38 working-set/peak baseline and add heap-owner attribution |
 | POST-M38-PERF-06 | Post-M38 | Draft - long uninterrupted 50+ character input is a primary engine requirement and must be covered by a length-curve benchmark plus an explicit parity/no-go gate |
 | POST-M38-PERF-07 | Post-M38 | Draft - next engine-performance milestone must report and block regressions across startup/session, short input, long input, mmap/rsmarisa, bounded output, memory, and behavior |
+| POST-M38-PERF-08 | Post-M38 | Draft - next closeout report must include a strategy gate table proving same-run benchmark, mmap/rsmarisa, bounded output/context export, lifecycle fast paths, owner counters, memory attribution, and behavior tests are active or explicitly no-goed |
 
 **Coverage:**
 
@@ -690,10 +698,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M36 product-path engine optimization requirements: 10 total, 7 complete, 3 closed by no-go, 0 draft
 - M37 engine hyper-optimization requirements: 11 total, 11 complete, 0 planned
 - M38 engine performance parity requirements: 13 total, 13 complete, 0 active
-- Post-M38 engine performance follow-up requirements: 7 total, 0 complete, 7 draft
-- Mapped to phases: 251
+- Post-M38 engine performance follow-up requirements: 8 total, 0 complete, 8 draft
+- Mapped to phases: 252
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-25 - M38 engine performance parity is complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. The post-M38 long-input baseline adds `ceshiyixiachangjushuruxingnengzenyang` and shows broader typing parity is not closed (`412,192.727us` Yune versus `294.151us` librime); the 59-character stress run adds `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` and records `1,202,404.588us` Yune versus `702.212us` librime. Draft follow-up requirements now require keeping both long rows, treating 50+ uninterrupted input as a primary engine requirement, splitting the long-composition translator owner, adding a length-curve benchmark, blocking cross-dimension regressions, and adding heap-owner attribution before a memory reduction claim. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-25 - M38 engine performance parity is complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. The post-M38 long-input baseline adds `ceshiyixiachangjushuruxingnengzenyang` and shows broader typing parity is not closed (`412,192.727us` Yune versus `294.151us` librime); the 59-character stress run adds `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` and records `1,202,404.588us` Yune versus `702.212us` librime. Draft follow-up requirements now require keeping both long rows, treating 50+ uninterrupted input as a primary engine requirement, splitting the long-composition translator owner, adding a length-curve benchmark, blocking cross-dimension regressions, adding heap-owner attribution before a memory reduction claim, and publishing a closeout strategy gate table that proves every optimization method is still active or explicitly no-goed. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._

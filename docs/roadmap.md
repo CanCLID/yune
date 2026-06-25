@@ -49,7 +49,7 @@ future target-driven engine or product work.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior is complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. | Preserve upstream-observable behavior on every engine change. |
-| Engine performance | M38 closed the pure upstream `luna_pinyin` native parity gates for startup/session and the short/medium rows `hao`/`ni`/`zhongguo`. The post-M38 long-input baseline shows broader typing parity is not closed: `ceshiyixiachangjushuruxingnengzenyang` is Yune `412,192.727us` versus librime `294.151us` (`1,401.296x`), and the 59-character `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` stress row is Yune `1,202,404.588us` versus librime `702.212us` (`1,712.310x`). Memory also remains above librime: Track A median working set is `107,839,488-114,728,960 B` versus librime `11,091,968-15,884,288 B` (`7.22-9.72x`). | Draft M39 plan: keep the M38 startup/session and short-row wins, keep both long rows, add finer long-composition translator spans and length-curve counters, fix the measured latency owner, preserve mmap/`rsmarisa`, and run heap-owner profiling before memory optimization claims. |
+| Engine performance | M38 closed the pure upstream `luna_pinyin` native parity gates for startup/session and the short/medium rows `hao`/`ni`/`zhongguo`. The post-M38 long-input baseline shows broader typing parity is not closed: `ceshiyixiachangjushuruxingnengzenyang` is Yune `412,192.727us` versus librime `294.151us` (`1,401.296x`), and the 59-character `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` stress row is Yune `1,202,404.588us` versus librime `702.212us` (`1,712.310x`). Memory also remains above librime: Track A median working set is `107,839,488-114,728,960 B` versus librime `11,091,968-15,884,288 B` (`7.22-9.72x`). | Draft M39 plan: keep the M38 startup/session and short-row wins, keep both long rows, add finer long-composition translator spans and length-curve counters, fix the measured latency owner, preserve mmap/`rsmarisa`, run heap-owner profiling before memory optimization claims, and close only if the full startup/typing/memory/behavior dashboard has no unaccepted regression. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific frontends and application shells are outside this roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
@@ -65,6 +65,33 @@ future target-driven engine or product work.
 Trigger-gated, not scheduled: extracting the full processor pipeline from
 `yune-rime-api` into `yune-core` lands only when a real non-ABI consumer needs
 the full input path. Do not milestone that extraction speculatively.
+
+## M39 Guardrails
+
+M39 is not a single-row speedup milestone. It is the first post-M38
+whole-engine regression gate, so it must keep the complete optimization bundle
+visible in every final claim:
+
+- same-run native Yune-versus-librime benchmarking for startup, session,
+  short-input, medium-input, long-input, memory, and owner counters;
+- mmap/file-backed selected table and prism bytes with zero selected
+  table/prism heap mirror bytes;
+- real runtime `rsmarisa` hot-path lookup for deployed marisa table data, with
+  positive exact/prefix counters and zero ordinary no-marisa fallback on the
+  upstream Track A rows;
+- lazy/page-bounded first-page candidate production and page-sized context
+  export, with any full-list fallback counted and explained;
+- long-composition attribution that splits the current translator bucket before
+  optimizing it;
+- working-set and peak-memory comparison plus heap-owner attribution before any
+  memory-reduction claim;
+- focused behavior tests so performance work does not alter upstream-observable
+  schema behavior.
+
+M39 cannot close by improving `ceshiyixiachangjushuruxingnengzenyang` or
+`zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` alone. Startup,
+session, `hao`, `ni`, `zhongguo`, mmap/`rsmarisa` activation, bounded output,
+memory, and behavior all remain closeout gates.
 
 ## M37 Closeout
 

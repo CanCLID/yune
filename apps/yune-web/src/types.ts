@@ -91,7 +91,7 @@ interface RimePayload {
 export type RimeResult = (RimeComposing | RimeNotComposing) & RimePayload;
 export type YuneInspectorDebug = YuneWebInspectorDebug;
 export type YuneStatusSnapshot = YuneWebStatus;
-export type RimeSchemaId = "jyut6ping3_mobile" | "cangjie5" | "luna_pinyin";
+export type RimeSchemaId = "jyut6ping3" | "cangjie5" | "luna_pinyin";
 
 export type RimeDeployStatus = "start" | "success" | "failure";
 

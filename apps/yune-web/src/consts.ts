@@ -15,8 +15,6 @@ export enum ShowRomanization {
 	Never = "never",
 }
 
-export const YUNE_PUBLIC_DEMO = import.meta.env.VITE_YUNE_PUBLIC_DEMO === "1";
-
 export interface SchemaOption {
 	id: RimeSchemaId;
 	label: string;
@@ -27,7 +25,7 @@ export interface SchemaOption {
 
 export const SCHEMA_OPTIONS: readonly SchemaOption[] = [
 	{
-		id: "jyut6ping3_mobile",
+		id: "jyut6ping3",
 		label: "粵語拼音 Jyutping",
 		schemaName: "粵語拼音",
 		secondaryLabel: "Jyutping",
@@ -48,10 +46,6 @@ export const SCHEMA_OPTIONS: readonly SchemaOption[] = [
 		reverseLookup: "`a; -> 日（倉頡反查）",
 	},
 ];
-
-export const PUBLIC_SCHEMA_OPTIONS: readonly SchemaOption[] = SCHEMA_OPTIONS.filter(
-	option => option.id === "jyut6ping3_mobile",
-);
 
 export type CandidateMenuLayout = "horizontal" | "vertical";
 
@@ -167,7 +161,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	combineCandidates: true,
 	predictionNeverFirst: true,
 	predictionThreshold: 0,
-	activeSchema: "jyut6ping3_mobile",
+	activeSchema: "jyut6ping3",
 	isExtendedCharset: false,
 	isDisabled: false,
 	dictionaryExclude: [],

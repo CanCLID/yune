@@ -1,4 +1,3 @@
-import { YUNE_PUBLIC_DEMO } from "./consts";
 import { Segment } from "./Inputs";
 import SchemaSwitcher from "./SchemaSwitcher";
 
@@ -90,12 +89,12 @@ export default function Toolbar({
 					onClick={() => setIsFullShape(value => !value)} />
 			</div>
 		</div>
-		{!YUNE_PUBLIC_DEMO && <div className="yd-top-field yd-cangjie-choice" data-yune-control="cangjie-version">
+		<div className="yd-top-field yd-cangjie-choice" data-yune-control="cangjie-version">
 			<span className="yd-top-label">倉頡反查 Cangjie lookup</span>
 			<div className="yd-segment-group" role="radiogroup" aria-label="倉頡反查 Cangjie lookup">
 				<Segment name="cangjieVersion" label="三代" state={isCangjie5} setState={setIsCangjie5} value={false} />
 				<Segment name="cangjieVersion" label="五代" state={isCangjie5} setState={setIsCangjie5} value={true} />
 			</div>
-		</div>}
+		</div>
 	</div>;
 }

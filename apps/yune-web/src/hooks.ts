@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language } from "./consts";
+import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language, SCHEMA_OPTIONS } from "./consts";
 import Rime, { subscribe } from "./rime";
 import { notify } from "./toast";
 
 import type { ChineseTypefaceId } from "./consts";
-import type { Preferences, PreferencesWithSetter } from "./types";
+import type { Preferences, PreferencesWithSetter, RimeSchemaId } from "./types";
 import type { Dispatch, DispatchWithoutAction, MouseEvent, SetStateAction, TouchEvent } from "react";
 
 interface LocalStorageSerializer<T> {
@@ -102,6 +102,11 @@ export function usePreferences() {
 						? {
 							stringify: String,
 							parse: value => parseChineseTypeface(value, defaultValue as ChineseTypefaceId),
+						}
+						: key === "activeSchema"
+						? {
+							stringify: String,
+							parse: value => parseActiveSchema(value, defaultValue as RimeSchemaId),
 						}
 						: typeof defaultValue === "string"
 						? {
@@ -220,6 +225,13 @@ function parseChineseTypeface(value: string, defaultValue: ChineseTypefaceId): C
 		}
 	}
 	return legacyChineseTypefaceDefault(defaultValue);
+}
+
+function parseActiveSchema(value: string, defaultValue: RimeSchemaId): RimeSchemaId {
+	if (value === "jyut6ping3_mobile") {
+		return "jyut6ping3";
+	}
+	return SCHEMA_OPTIONS.some(option => option.id === value) ? value as RimeSchemaId : defaultValue;
 }
 
 function legacyChineseTypefaceDefault(defaultValue: ChineseTypefaceId): ChineseTypefaceId {

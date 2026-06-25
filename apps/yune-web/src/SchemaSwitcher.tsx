@@ -1,4 +1,4 @@
-import { PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS, YUNE_PUBLIC_DEMO } from "./consts";
+import { SCHEMA_OPTIONS } from "./consts";
 
 import type { RimeSchemaId } from "./types";
 import type { Dispatch, SetStateAction } from "react";
@@ -12,10 +12,7 @@ export default function SchemaSwitcher({
 	setActiveSchema: Dispatch<SetStateAction<RimeSchemaId>>;
 	compact?: boolean;
 }) {
-	const schemaOptions = YUNE_PUBLIC_DEMO ? PUBLIC_SCHEMA_OPTIONS : SCHEMA_OPTIONS;
-	if (YUNE_PUBLIC_DEMO && schemaOptions.length <= 1) {
-		return null;
-	}
+	const schemaOptions = SCHEMA_OPTIONS;
 	const active = schemaOptions.find(schema => schema.id === activeSchema) ?? schemaOptions[0];
 
 	return <div className={`yd-schema-dropdown${compact ? " yd-schema-dropdown-compact" : ""}`} data-yune-schema-switcher>

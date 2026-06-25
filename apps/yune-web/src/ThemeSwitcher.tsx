@@ -17,13 +17,30 @@ export default function ThemeSwitcher() {
 		document.documentElement.dataset["theme"] = theme;
 	}, [theme]);
 
-	return <label className="yd-theme-button">
-		<input
-			type="checkbox"
-			checked={theme === "dark"}
-			onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-			className="yd-theme-switch sr-only" />
-		<span className="sr-only">Theme Switcher</span>
-		<span aria-hidden="true">{theme === "dark" ? "○" : "●"} THEME</span>
-	</label>;
+	const nextTheme = theme === "dark" ? "light" : "dark";
+	const label = nextTheme === "dark" ? "Switch to dark theme" : "Switch to light theme";
+
+	return <button
+		type="button"
+		className="yd-theme-button yd-theme-button--icon"
+		aria-label={label}
+		aria-pressed={theme === "dark"}
+		title={label}
+		onClick={() => setTheme(nextTheme)}>
+		{theme === "dark"
+			? <svg aria-hidden="true" viewBox="0 0 24 24">
+				<circle cx="12" cy="12" r="4" />
+				<path d="M12 2v2" />
+				<path d="M12 20v2" />
+				<path d="M4.93 4.93l1.41 1.41" />
+				<path d="M17.66 17.66l1.41 1.41" />
+				<path d="M2 12h2" />
+				<path d="M20 12h2" />
+				<path d="M4.93 19.07l1.41-1.41" />
+				<path d="M17.66 6.34l1.41-1.41" />
+			</svg>
+			: <svg aria-hidden="true" viewBox="0 0 24 24">
+				<path d="M20.99 12.79A8.5 8.5 0 1 1 11.21 3a6.5 6.5 0 0 0 9.78 9.79Z" />
+			</svg>}
+	</button>;
 }

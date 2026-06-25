@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,11 +20,11 @@
 		--accent-soft: #eef1fb;
 		--accent-dim: #dfe6fa;
 		--font-sans: "JetBrains Mono", "Noto Sans TC", monospace;
-		--font-serif: "Noto Sans TC", "MingLiU_HKSCS", serif;
+		--font-serif: "Chiron Sung HK", "Noto Sans TC", "MingLiU_HKSCS", serif;
 		--font-geometric: "JetBrains Mono", "Noto Sans TC", monospace;
-		--font-sung: "Noto Sans TC", "Chiron Sung HK", serif;
-		--font-hei: "Noto Sans TC", "Chiron Hei HK", sans-serif;
-		--font-kai: "Noto Sans TC", "BiauKaiHK", serif;
+		--font-sung: "Chiron Sung HK", "Noto Sans TC", serif;
+		--font-hei: "Chiron Hei HK", "Noto Sans TC", sans-serif;
+		--font-kai: "LXGW WenKai TC", "BiauKaiHK", "Noto Sans TC", serif;
 		--font-devanagari: "Noto Sans Devanagari", "Nirmala UI", sans-serif;
 		--font-arabic: "Noto Nastaliq Urdu", "Tahoma", sans-serif;
 		--font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
@@ -226,7 +228,6 @@
 	flex-wrap: wrap;
 }
 
-.yd-version-chip,
 .yd-theme-button,
 .yd-small-button,
 .yd-button {
@@ -247,15 +248,24 @@
 	white-space: nowrap;
 }
 
-.yd-version-chip span {
-	width: 8px;
-	height: 8px;
-	background: var(--accent);
-	display: inline-block;
-}
-
 .yd-theme-button {
 	user-select: none;
+}
+
+.yd-theme-button--icon {
+	width: 34px;
+	min-width: 34px;
+	padding: 0;
+}
+
+.yd-theme-button--icon svg {
+	width: 18px;
+	height: 18px;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 2;
 }
 
 .yd-app-main {
@@ -537,10 +547,14 @@
 }
 
 .yd-input-loading .yd-spinner {
-	width: 24px;
-	height: 24px;
+	width: 26px;
+	height: 26px;
 	margin-right: 0;
 	border-width: 3px;
+	border-style: solid;
+	border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+	border-top-color: var(--accent);
+	border-radius: 50%;
 }
 
 .yd-input-area:focus {
@@ -1006,47 +1020,6 @@
 	white-space: pre-wrap;
 }
 
-.yd-metrics {
-	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
-	gap: 24px;
-}
-
-.yd-metric {
-	padding: 18px 0;
-}
-
-.yd-metric-label {
-	color: var(--ink3);
-	font-size: 15px;
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	line-height: 1.2;
-}
-
-.yd-metric-value {
-	margin-top: 7px;
-	color: var(--ink);
-	font-size: 28px;
-	font-weight: 700;
-	line-height: 1.1;
-}
-
-.yd-metric-value span {
-	margin-left: 4px;
-	color: var(--ink3);
-	font-size: 16px;
-}
-
-.yd-metric-accent {
-	color: var(--accent);
-}
-
-.yd-metric-value .yd-metric-empty {
-	color: var(--ink3);
-	font-size: 22px;
-}
-
 .yd-status-strip {
 	border: 1px solid var(--line2);
 	padding: 12px;
@@ -1068,6 +1041,50 @@
 	font-family: "Noto Sans TC", sans-serif;
 	font-size: 18px;
 	font-weight: 800;
+}
+
+.yd-inspector-metrics {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 14px 20px;
+	margin-left: auto;
+}
+
+.yd-metric {
+	min-width: 86px;
+	padding: 0;
+}
+
+.yd-metric-label {
+	color: var(--ink3);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	line-height: 1.2;
+}
+
+.yd-metric-value {
+	margin-top: 3px;
+	color: var(--ink);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.yd-metric-value span {
+	margin-left: 4px;
+	color: var(--ink3);
+	font-size: 12px;
+}
+
+.yd-metric-accent {
+	color: var(--accent);
+}
+
+.yd-metric-value .yd-metric-empty {
+	color: var(--ink3);
+	font-size: 16px;
 }
 
 .yd-inspector-enable {
@@ -1411,9 +1428,15 @@
 @media (max-width: 980px) {
 	.yd-playground-grid,
 	.yd-settings-grid,
-	.yd-metrics,
 	.yd-inspector-grid {
 		grid-template-columns: 1fr;
+	}
+
+	.yd-inspector-metrics {
+		width: 100%;
+		margin-left: 0;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
 	.yd-inspector-column:first-child {

@@ -913,7 +913,7 @@ function expectedSchemaIdForLabel(label: string | RegExp): string | null {
     return "luna_pinyin";
   }
   if (/Jyutping/i.test(text)) {
-    return "jyut6ping3_mobile";
+    return "jyut6ping3";
   }
   return null;
 }
@@ -1077,15 +1077,17 @@ test.describe("yune-web Browser E2E", () => {
     await expect(page.getByLabel(/Hong Kong Traditional/).last()).toBeVisible();
     await expect(page.getByLabel(/Simplified Chinese/).last()).toBeVisible();
     await expect(page.getByLabel(/AI Candidates/).last()).not.toBeChecked();
-    await expect(page.locator("[data-yune-schema-switcher]")).toHaveCount(0);
-    await expect(page.getByText(/Cangjie lookup/)).toHaveCount(0);
+    await expect(page.locator("[data-yune-schema-switcher]")).toBeVisible();
+    await expect(page.getByLabel(/方案 Schema/)).toContainText(/粵語拼音|Jyutping/);
+    await expect(page.getByText(/Cangjie lookup/)).toBeVisible();
     await expect(page.getByLabel(/Taiwan|t2tw|s2tw|tw2s|tw2t|s2t/i)).toHaveCount(0);
 
     await saveM31Json("public-control-surface.json", {
       title: await page.title(),
       publicDemo: true,
       exposedOutputStandards: ["hk_traditional", "hk2s_simplified"],
-      hiddenUnsupportedControls: ["schema switcher", "cangjie lookup", "unsupported OpenCC standards"],
+      exposedSchemaControls: ["schema switcher", "cangjie lookup"],
+      hiddenUnsupportedControls: ["unsupported OpenCC standards"],
       aiDefault: "off",
     });
     await takeM31Screenshot(page, "public-control-surface");
@@ -1103,11 +1105,13 @@ test.describe("yune-web Browser E2E", () => {
     }, { timeout: TIMEOUT_MS }).toBe("startup:complete");
 
     const loadedSharedAssets = startup?.marker.loadedSharedAssets ?? [];
-    expect(startup?.marker.m31EvidenceVersion).toBe("m31-yune-web-public-demo-v1");
+    expect(startup?.marker.m31EvidenceVersion).toBe("m31-yune-web-public-demo-v2");
     expect(startup?.marker.publicDemo).toBe(true);
-    expect(loadedSharedAssets).toContain("jyut6ping3_mobile.schema.yaml");
+    expect(loadedSharedAssets).toContain("jyut6ping3.schema.yaml");
+    expect(loadedSharedAssets).toContain("cangjie5.schema.yaml");
+    expect(loadedSharedAssets).toContain("luna_pinyin.schema.yaml");
     expect(loadedSharedAssets).toContain("opencc/hk2s.json");
-    expect(loadedSharedAssets.some((asset) => /cangjie|loengfan|10keys|longpress/.test(asset))).toBe(false);
+    expect(loadedSharedAssets.some((asset) => /10keys|longpress/.test(asset))).toBe(false);
 
     await page.reload({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
     await waitForAppReady(page);
@@ -1192,8 +1196,8 @@ test.describe("yune-web Browser E2E", () => {
     await expect(page.getByRole("button", { name: /ASCII mode/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /Output standard/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /Full shape/ })).toBeVisible();
-    await expect(page.locator("[data-yune-schema-switcher]")).toHaveCount(0);
-    await expect(page.getByText(/Cangjie lookup/)).toHaveCount(0);
+    await expect(page.locator("[data-yune-schema-switcher]")).toBeVisible();
+    await expect(page.getByText(/Cangjie lookup/)).toBeVisible();
     await expect(page.getByLabel(/Taiwan|t2tw|s2tw|tw2s|tw2t|s2t/i)).toHaveCount(0);
     await expect(page.getByLabel(/AI Candidates/).last()).not.toBeChecked();
 
@@ -2763,7 +2767,7 @@ test.describe("yune-web Browser E2E", () => {
     await selectSchema(page, /Jyutping/);
     const jyutping = await typeCompositionAndWaitForTopCandidate(page, "nei", "\u4f60");
     const jyutpingStatus = await readYuneStatus(page);
-    expect(jyutpingStatus.schema).toBe("jyut6ping3_mobile");
+    expect(jyutpingStatus.schema).toBe("jyut6ping3");
 
     await saveJsonEvidence("m22-bucket3-schema-switch-state.json", {
       cangjie,
@@ -3146,9 +3150,9 @@ test.describe("yune-web Browser E2E", () => {
 
     await expect(page.getByLabel(/Reverse code display/).last()).toBeVisible();
     await expect(page.getByText(/Cangjie lookup/)).toBeVisible();
-    const mobileSchema = await readRepoText("apps/yune-web/public/schema/jyut6ping3_mobile.schema.yaml");
-    expect(mobileSchema).not.toContain("cangjie");
-    expect(mobileSchema).not.toContain("show_full_code");
+    const jyutpingSchema = await readRepoText("apps/yune-web/public/schema/jyut6ping3.schema.yaml");
+    expect(jyutpingSchema).toContain("cangjie");
+    expect(jyutpingSchema).toContain("show_full_code");
     const visibleSchemaControls = await page.locator(
       "[data-yune-schema-switcher], [data-schema], [data-schema-selector], .schema-selector, select[name='schema']",
     ).count();
@@ -3163,9 +3167,9 @@ test.describe("yune-web Browser E2E", () => {
         hindiVisible: hindiVisible.candidates[0],
       },
       reverseCodeAndCangjie: {
-        status: "Covered by M22 schema switch and reverse-lookup tests",
-        activeBrowserSchema: "jyut6ping3_mobile",
-        reason: "This M20 display test keeps the jyut6ping3_mobile display assertions; M22 tests switch to cangjie5 and luna_pinyin for schema/reverse-lookup browser evidence.",
+        status: "Covered by the Jyutping schema and M22 schema switch/reverse-lookup tests",
+        activeBrowserSchema: "jyut6ping3",
+        reason: "The default browser schema now includes the Cangjie reverse-lookup namespace; M22 tests still switch to cangjie5 and luna_pinyin for schema/reverse-lookup browser evidence.",
         visibleSchemaControls,
       },
     });
@@ -3316,7 +3320,7 @@ test.describe("yune-web Browser E2E", () => {
     expect(visibleSchemaControls).toBeGreaterThan(0);
     await saveJsonEvidence("m16-documented-gaps-state.json", {
       deployOnlyVariants: {
-        browserSurface: "M22 adds a real browser schema switcher for jyut6ping3_mobile, cangjie5, and luna_pinyin; deploy-variant controls for common:/separate_candidates and common:/show_full_code remain engine/doc scoped.",
+        browserSurface: "The browser schema switcher exposes jyut6ping3, cangjie5, and luna_pinyin; deploy-variant controls for common:/separate_candidates and common:/show_full_code remain engine/doc scoped.",
         engineCoverage: "cargo test -p yune-core --test cantonese_parity covers combine_candidates and show_full_code against the M14 v1.1.2 goldens.",
         oracleSurface: optionsFixture["capture"],
       },

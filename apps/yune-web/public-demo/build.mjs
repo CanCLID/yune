@@ -90,7 +90,7 @@ await mkdir(outputDir, { recursive: true });
 await cp(path.join(appRoot, "dist"), outputDir, { recursive: true, force: true });
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-if (manifest.generatedFor !== "yune-web" || manifest.version !== "m31-yune-web-public-demo-v1") {
+if (manifest.generatedFor !== "yune-web" || manifest.version !== "m31-yune-web-public-demo-v2") {
 	throw new Error("Unexpected schema asset manifest metadata");
 }
 

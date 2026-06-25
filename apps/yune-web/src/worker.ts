@@ -316,11 +316,11 @@ function parseNullableNumber(value: string | undefined): number | null {
 let loading = true;
 const RIME_SHARED_DIR = "/usr/share/rime-data";
 const RIME_USER_DIR = "/rime";
-const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3_mobile";
+const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3";
 const YUNE_WEB_ASSET_VERSION = "m27-startup-v2";
 const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
-const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v1";
+const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v2";
 const YUNE_PUBLIC_DEMO = typeof YUNE_PUBLIC_DEMO_BUILD !== "undefined" && YUNE_PUBLIC_DEMO_BUILD === true;
 const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
   "default.custom.yaml",
@@ -329,9 +329,14 @@ const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
   "include.yaml",
   "template.yaml",
   "jyut6ping3.schema.yaml",
-  "jyut6ping3_mobile.schema.yaml",
   "jyut6ping3_scolar.schema.yaml",
   "jyut6ping3_scolar.dict.yaml",
+  "loengfan.schema.yaml",
+  "loengfan.dict.yaml",
+  "cangjie3.schema.yaml",
+  "cangjie3.dict.yaml",
+  "cangjie5.schema.yaml",
+  "cangjie5.dict.yaml",
   "luna_pinyin.schema.yaml",
   "luna_pinyin.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
@@ -342,7 +347,6 @@ const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
   "opencc/TSPhrases.ocd2",
   "jyut6ping3.table.bin",
   "jyut6ping3.reverse.bin",
-  "jyut6ping3_mobile.prism.bin",
   "jyut6ping3_scolar.table.bin",
   "jyut6ping3_scolar.reverse.bin",
   "jyut6ping3_scolar.prism.bin",
@@ -351,8 +355,8 @@ const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
   "luna_pinyin.prism.bin",
 ] as const;
 const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
-  jyut6ping3_mobile: {
-    id: "jyut6ping3_mobile",
+  jyut6ping3: {
+    id: "jyut6ping3",
     name: "Jyutping",
     dictionaryId: "jyut6ping3",
   },
@@ -435,8 +439,6 @@ const loadRime = (async () => {
         "include.yaml",
         "template.yaml",
         "jyut6ping3.schema.yaml",
-        "jyut6ping3_mobile_longpress.schema.yaml",
-        "jyut6ping3_mobile_10keys.schema.yaml",
         "jyut6ping3_scolar.schema.yaml",
         "jyut6ping3_scolar.dict.yaml",
         "luna_pinyin.schema.yaml",
@@ -444,7 +446,6 @@ const loadRime = (async () => {
         "luna_pinyin_yune_reverse.dict.yaml",
         "loengfan.schema.yaml",
         "loengfan.dict.yaml",
-        "loengfan_longpress.schema.yaml",
         "cangjie3.schema.yaml",
         "cangjie3.dict.yaml",
         "cangjie5.schema.yaml",
@@ -579,9 +580,10 @@ async function loadPublicSchemaAsset(path: string): Promise<string | Uint8Array>
     return responseAssetContent(cached, path);
   }
 
-  const response = await fetch(sourceUrl, { cache: "force-cache" });
+  const versionedSourceUrl = cacheUrl.toString();
+  const response = await fetch(versionedSourceUrl, { cache: "force-cache" });
   if (!response.ok) {
-    throw new Error(`Asset URL loading failed: ${sourceUrl} (${response.status})`);
+    throw new Error(`Asset URL loading failed: ${versionedSourceUrl} (${response.status})`);
   }
   await cache.put(cacheRequest, response.clone());
   publicAssetCacheStats.misses += 1;
@@ -624,9 +626,6 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
   if (module === null) {
     throw new Error("Yune module is not loaded");
   }
-  if (YUNE_PUBLIC_DEMO && schemaId !== DEFAULT_SCHEMA_ID) {
-    throw new Error(`yune-web public demo does not expose schema: ${schemaId}`);
-  }
   const schema = PLAYGROUND_SCHEMAS[schemaId];
   if (schema === undefined) {
     throw new Error(`Unknown Yune schema: ${schemaId}`);
@@ -635,8 +634,6 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
     defaultYaml: await schemaAssetSource("default.yaml"),
     schemaYaml: await schemaAssetSource(`${schema.id}.schema.yaml`),
     dictionaryYaml: await schemaAssetSource(`${schema.dictionaryId}.dict.yaml`),
-    deployedDefaultYaml: await schemaAssetSource("build/default.yaml"),
-    deployedSchemaYaml: await schemaAssetSource(`build/${schema.id}.schema.yaml`),
   };
   const assets = await loadExplicitAssets(assetsConfig);
   validateExplicitAssets(assets);

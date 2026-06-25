@@ -4,9 +4,9 @@
 TypeDuck-Web-derived browser harness. The harness and Cantonese dictionary
 assets are used with project-owner approval from the TypeDuck author.
 
-M31 public scope is intentionally narrow:
+Public scope:
 
-- Public schema: `jyut6ping3_mobile`.
+- Public schemas: `jyut6ping3`, `cangjie5`, and `luna_pinyin`.
 - Public output standards: Hong Kong Traditional and Simplified Chinese through
   the `hk2s` OpenCC chain.
 - AI posture: default-off, local-only second-pass candidate logic; no remote AI

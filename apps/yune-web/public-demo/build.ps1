@@ -92,7 +92,7 @@ if (Test-Path $OutputSchema) {
 New-Item -ItemType Directory -Path $OutputSchema | Out-Null
 
 $Manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
-if ($Manifest.generatedFor -ne "yune-web" -or $Manifest.version -ne "m31-yune-web-public-demo-v1") {
+if ($Manifest.generatedFor -ne "yune-web" -or $Manifest.version -ne "m31-yune-web-public-demo-v2") {
     throw "Unexpected schema asset manifest metadata"
 }
 

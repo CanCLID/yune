@@ -6,7 +6,7 @@ query-string versioning.
 - `schema-asset-manifest.json` pins every deployed schema/OpenCC/WASM-adjacent
   schema payload by SHA-256 and byte count.
 - The public worker opens Cache Storage bucket
-  `yune-web-assets-m31-yune-web-public-demo-v1`.
+  `yune-web-assets-m31-yune-web-public-demo-v2`.
 - Each schema asset is cached under `schema/<path>?sha256=<manifest hash>`.
 - A warm visit can reuse unchanged schema payloads while a changed hash creates
   a new cache key.

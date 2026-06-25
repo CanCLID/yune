@@ -26,6 +26,8 @@ interface YuneMetrics {
 	latestInput?: string;
 }
 
+type EngineStartupState = "starting" | "ready" | "failed";
+
 function metricValue(value: number | undefined, unit: string) {
 	if (value === undefined) {
 		return <span className="yd-metric-empty">N/A</span>;
@@ -36,14 +38,14 @@ function metricValue(value: number | undefined, unit: string) {
 	</>;
 }
 
-function YuneMetricsStrip({
+function YuneInspectorMetrics({
 	metrics,
 	userdbSnapshot,
 }: {
 	metrics: YuneMetrics;
 	userdbSnapshot?: YuneWebUserdbSnapshot;
 }) {
-	return <section className="yd-metrics" aria-label="Live engine metrics" data-yune-metrics>
+	return <div className="yd-inspector-metrics" aria-label="Live engine metrics" data-yune-metrics>
 		<div className="yd-metric">
 			<div className="yd-metric-label">LOOKUP</div>
 			<div className="yd-metric-value" data-yune-metric-lookup>{metricValue(metrics.lookupMs, "ms")}</div>
@@ -76,7 +78,7 @@ function YuneMetricsStrip({
 					: <span className="yd-metric-empty">N/A</span>}
 			</div>
 		</div>
-	</section>;
+	</div>;
 }
 
 export default function App() {
@@ -84,7 +86,8 @@ export default function App() {
 	const [loading, runAsyncTask, startAsyncTask] = useLoading();
 	const [debouncedLoading, setDebouncedLoading] = useState(loading);
 	const loadingIndicatorTimeout = useRef<ReturnType<typeof setTimeout>>();
-	const [isEngineReady, setIsEngineReady] = useState(false);
+	const [engineStartupState, setEngineStartupState] = useState<EngineStartupState>("starting");
+	const isEngineReady = engineStartupState === "ready";
 
 	useEffect(() => {
 		document.documentElement.dataset["yuneLoading"] = String(loading);
@@ -108,7 +111,7 @@ export default function App() {
 	useEffect(() => {
 		const { resolve } = startAsyncTask();
 		return subscribe("initialized", (success) => {
-			setIsEngineReady(success);
+			setEngineStartupState(success ? "ready" : "failed");
 			if (!success) {
 				notify(
 					"error",
@@ -197,129 +200,138 @@ export default function App() {
 		chineseTypeface,
 	} = preferences;
 	const didRunSchemaEffect = useRef(false);
-	useEffect(
-		() =>
-			runAsyncTask(async () => {
-				if (!didRunSchemaEffect.current) {
-					didRunSchemaEffect.current = true;
-					if (activeSchema === "jyut6ping3_mobile") {
-						return;
-					}
+	useEffect(() => {
+		if (!isEngineReady) {
+			return;
+		}
+		runAsyncTask(async () => {
+			if (!didRunSchemaEffect.current) {
+				didRunSchemaEffect.current = true;
+				if (activeSchema === "jyut6ping3") {
+					return;
 				}
-				let type: "warning" | "error" | undefined;
-				try {
-					if (!(await Rime.selectSchema(activeSchema))) {
-						type = "warning";
-					}
-					setInspectorDebug(undefined);
-					setEngineStatus(undefined);
-					setMetrics({});
-					updateDeployStatus();
-				} catch {
-					type = "error";
+			}
+			let type: "warning" | "error" | undefined;
+			try {
+				if (!(await Rime.selectSchema(activeSchema))) {
+					type = "warning";
 				}
-				if (type) {
-					notify(type, "Switch schema", "switching the schema");
-				}
-			}),
-		[activeSchema, runAsyncTask],
-	);
-
-	useEffect(
-		() =>
-			runAsyncTask(async () => {
-				let type: "warning" | "error" | undefined;
-				try {
-					const success = await Rime.customize({
-						pageSize,
-						enableCompletion,
-						enableCorrection,
-						enableSentence,
-						enableLearning,
-						combineCandidates,
-						predictionNeverFirst,
-						predictionThreshold,
-						dictionaryExclude,
-						isCangjie5,
-					});
-					if (!((await Rime.deploy()) && success)) {
-						type = "warning";
-					}
-				} catch {
-					type = "error";
-				}
-				if (type) {
-					notify(type, "套用設定", "applying the settings");
-				}
+				setInspectorDebug(undefined);
+				setEngineStatus(undefined);
+				setMetrics({});
 				updateDeployStatus();
-			}),
-		[
-			activeSchema,
-			pageSize,
-			enableCompletion,
-			enableCorrection,
-			enableSentence,
-			enableLearning,
-			combineCandidates,
-			predictionNeverFirst,
-			predictionThreshold,
-			dictionaryExclude,
-			isCangjie5,
-			updateDeployStatus,
-			runAsyncTask,
-		],
-	);
-
-	useEffect(
-		() =>
-			runAsyncTask(async () => {
-				let type: "warning" | "error" | undefined;
-				try {
-					await Rime.setOption("soft_cursor", true);
-					await Rime.setOption("ascii_mode", isAsciiMode);
-					await Rime.setOption("full_shape", isFullShape);
-					await Rime.setOption("simplification", isSimplification);
-					await Rime.setOption("traditionalization", false);
-					await Rime.setOption("extended_charset", isExtendedCharset);
-					await Rime.setOption("disabled", isDisabled);
-				} catch {
-					type = "error";
-				}
-				if (type) {
-					notify(type, "Apply live options", "applying the live options");
-				}
-			}),
-		[
-			activeSchema,
-			isAsciiMode,
-			isFullShape,
-			isSimplification,
-			isExtendedCharset,
-			isDisabled,
-			runAsyncTask,
-		],
-	);
-
-	useEffect(
-		() =>
-			runAsyncTask(async () => {
-				let type: "error" | undefined;
-				try {
-					await Rime.setOption("yune_inspector", isInspectorEnabled);
-					if (!isInspectorEnabled) {
-						setInspectorDebug(undefined);
-					}
-				} catch {
-					type = "error";
-				}
-				if (type) {
-					notify(type, "Apply inspector", "applying the inspector setting");
-				}
-			}),
-		[isInspectorEnabled, runAsyncTask],
-	);
+			} catch {
+				type = "error";
+			}
+			if (type) {
+				notify(type, "Switch schema", "switching the schema");
+			}
+		});
+	}, [activeSchema, isEngineReady, runAsyncTask]);
 
 	useEffect(() => {
+		if (!isEngineReady) {
+			return;
+		}
+		runAsyncTask(async () => {
+			let type: "warning" | "error" | undefined;
+			try {
+				const success = await Rime.customize({
+					pageSize,
+					enableCompletion,
+					enableCorrection,
+					enableSentence,
+					enableLearning,
+					combineCandidates,
+					predictionNeverFirst,
+					predictionThreshold,
+					dictionaryExclude,
+					isCangjie5,
+				});
+				if (!((await Rime.deploy()) && success)) {
+					type = "warning";
+				}
+			} catch {
+				type = "error";
+			}
+			if (type) {
+				notify(type, "套用設定", "applying the settings");
+			}
+			updateDeployStatus();
+		});
+	}, [
+		activeSchema,
+		pageSize,
+		enableCompletion,
+		enableCorrection,
+		enableSentence,
+		enableLearning,
+		combineCandidates,
+		predictionNeverFirst,
+		predictionThreshold,
+		dictionaryExclude,
+		isCangjie5,
+		isEngineReady,
+		updateDeployStatus,
+		runAsyncTask,
+	]);
+
+	useEffect(() => {
+		if (!isEngineReady) {
+			return;
+		}
+		runAsyncTask(async () => {
+			let type: "warning" | "error" | undefined;
+			try {
+				await Rime.setOption("soft_cursor", true);
+				await Rime.setOption("ascii_mode", isAsciiMode);
+				await Rime.setOption("full_shape", isFullShape);
+				await Rime.setOption("simplification", isSimplification);
+				await Rime.setOption("traditionalization", false);
+				await Rime.setOption("extended_charset", isExtendedCharset);
+				await Rime.setOption("disabled", isDisabled);
+			} catch {
+				type = "error";
+			}
+			if (type) {
+				notify(type, "Apply live options", "applying the live options");
+			}
+		});
+	}, [
+		activeSchema,
+		isAsciiMode,
+		isFullShape,
+		isSimplification,
+		isExtendedCharset,
+		isDisabled,
+		isEngineReady,
+		runAsyncTask,
+	]);
+
+	useEffect(() => {
+		if (!isEngineReady) {
+			return;
+		}
+		runAsyncTask(async () => {
+			let type: "error" | undefined;
+			try {
+				await Rime.setOption("yune_inspector", isInspectorEnabled);
+				if (!isInspectorEnabled) {
+					setInspectorDebug(undefined);
+				}
+			} catch {
+				type = "error";
+			}
+			if (type) {
+				notify(type, "Apply inspector", "applying the inspector setting");
+			}
+		});
+	}, [isEngineReady, isInspectorEnabled, runAsyncTask]);
+
+	useEffect(() => {
+		if (!isEngineReady) {
+			return;
+		}
 		let cancelled = false;
 		async function applyAiSettings() {
 			let type: "warning" | "error" | undefined;
@@ -341,7 +353,7 @@ export default function App() {
 		return () => {
 			cancelled = true;
 		};
-	}, [enableAI, updateAiStatus]);
+	}, [enableAI, isEngineReady, updateAiStatus]);
 
 	const refreshUserdbSnapshot = useCallback(async () => {
 		setIsUserdbLoading(true);
@@ -373,6 +385,12 @@ export default function App() {
 		refreshUserdbSnapshot,
 	]);
 
+	const isInputDisabled = loading || !isEngineReady;
+	const showInputOverlay = debouncedLoading || engineStartupState !== "ready";
+	const inputOverlayMessage = engineStartupState === "failed"
+		? "引擎啟動失敗 Startup failed. Please reload the page."
+		: "載入中 Loading...";
+
 	return (
 		<div className="yd-app-shell" data-chinese-typeface={chineseTypeface}>
 			<header className="yd-app-header">
@@ -384,7 +402,6 @@ export default function App() {
 						</span>
 					</a>
 					<div className="yd-header-status">
-						<span className="yd-version-chip"><span />PUBLIC</span>
 						<ThemeSwitcher />
 					</div>
 				</div>
@@ -418,22 +435,22 @@ export default function App() {
 										aria-label="固定浮窗" />
 								</label>
 							</div>
-							<div className="yd-input-frame" aria-busy={loading} data-yune-input-frame>
+							<div className="yd-input-frame" aria-busy={isInputDisabled} data-yune-input-frame>
 								<textarea
 									className="yd-input-area"
 									data-chinese-typeface={chineseTypeface}
 									ref={setTextArea}
 									aria-label="yune-web composing input"
 									placeholder="粵語拼音"
-									disabled={loading}
+									disabled={isInputDisabled}
 									{...NO_AUTO_FILL}
 								/>
-								{debouncedLoading && <div className="yd-input-loading" data-yune-loading-indicator role="status" aria-live="polite">
-									<span className="yd-spinner" aria-hidden="true" />
-									<span>載入中 Loading...</span>
+								{showInputOverlay && <div className="yd-input-loading" data-yune-loading-indicator role="status" aria-live="polite">
+									{engineStartupState !== "failed" && <span className="yd-spinner" aria-hidden="true" />}
+									<span>{inputOverlayMessage}</span>
 								</div>}
 							</div>
-							{textArea && (
+							{textArea && isEngineReady && (
 								<CandidatePanel
 									runAsyncTask={runAsyncTask}
 									textArea={textArea}
@@ -453,20 +470,20 @@ export default function App() {
 							error={userdbError}
 							onRefresh={refreshUserdbSnapshot} />
 					</div>
-					<YuneMetricsStrip metrics={metrics} userdbSnapshot={userdbSnapshot} />
 					<YuneStatusStrip status={engineStatus} />
 					<section className="yd-inspector-gate">
 						<div className="yd-inspector-gate-header">
 							<div>
 								<span>引擎檢視</span>
-								<span>Yune inspector</span>
+								<span>Engine Inspector</span>
 							</div>
+							<YuneInspectorMetrics metrics={metrics} userdbSnapshot={userdbSnapshot} />
 							<label className="yd-inspector-enable" data-yune-inspector-toggle>
 								<input
 									type="checkbox"
 									className="yd-check yd-toggle"
 									checked={isInspectorEnabled}
-									aria-label="Yune inspector"
+									aria-label="Engine Inspector"
 									onChange={(event) =>
 										setIsInspectorEnabled(event.currentTarget.checked)
 									}

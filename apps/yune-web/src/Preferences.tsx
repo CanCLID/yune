@@ -11,7 +11,7 @@ import { Checkbox, Radio, Range, Section, Toggle } from "./Inputs";
 import type { PreferencesWithSetter } from "./types";
 
 const DICTIONARY_EXCLUDE_BY_SCHEMA = {
-	jyut6ping3_mobile: ["你"],
+	jyut6ping3: ["你"],
 	cangjie5: ["日"],
 	luna_pinyin: ["侴"],
 } as const;

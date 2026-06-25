@@ -1,0 +1,31 @@
+# Rime schema
+# encoding: utf-8
+
+__include: template:/
+
+schema:
+  schema_id: loengfan
+  name: 粵語兩分
+  author:
+    - TianHeng <2417647441@qq.com>
+    - Ayaka Mikazuki <ayaka@mail.shn.hk>
+  description: |-
+    The Cantonese version of Liang Fen (兩分) input method.
+
+menu:
+  __patch: include:/no_candidate_selection
+
+translator:
+  dictionary: loengfan
+  prism: loengfan
+  enable_sentence: false
+  enable_user_dict: false
+  encode_commit_history: false
+  __patch: include:/letter_to_tone
+  comment_format:
+    - xform/^/\v/
+
+__patch:
+  - common:/disable_completion?
+  - common:/enable_correction?
+  - common:/separate_candidates?

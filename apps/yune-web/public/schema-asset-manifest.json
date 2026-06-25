@@ -1,5 +1,5 @@
 {
-  "version": "m31-yune-web-public-demo-v1",
+  "version": "m31-yune-web-public-demo-v2",
   "generatedFor": "yune-web",
   "sourceRoot": "apps/yune-web/public/schema",
   "assets": [
@@ -12,8 +12,8 @@
     },
     {
       "path": "default.custom.yaml",
-      "sha256": "52d7247a58422abf1396fb25baad8b853014a1078b52e22a4962ba5f8e732ef8",
-      "bytes": 380,
+      "sha256": "815f5e7f1f3254ad637520937dcaecb3c446c55a25d9f2f44c7582bf77aa4780",
+      "bytes": 181,
       "tier": "shared",
       "required": true
     },
@@ -47,8 +47,8 @@
     },
     {
       "path": "jyut6ping3.schema.yaml",
-      "sha256": "43fa0780fb15e9fd3cd68f9fa5ec0b755a19cc5aeeefaa5ed2c203af8a2db859",
-      "bytes": 2048,
+      "sha256": "578d60ecbb6e1b7856f8e3f4366b97feffc44a8976f017e5ad62f24c20b0027f",
+      "bytes": 2073,
       "tier": "shared",
       "required": true
     },
@@ -210,6 +210,48 @@
       "path": "build/jyut6ping3_mobile.schema.yaml",
       "sha256": "affa20fb589ae27036b1831ffff834fffac4a7e70b516a99faa3b0f77bb2cf93",
       "bytes": 9423,
+      "tier": "explicit",
+      "required": true
+    },
+    {
+      "path": "loengfan.schema.yaml",
+      "sha256": "9297d11effa423ca2ec977aa86ffbd5fc28ee3ffb4e6fc7d82c4b7777c78fe59",
+      "bytes": 636,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "loengfan.dict.yaml",
+      "sha256": "0727c128f7b9a54ba576cf700daf9ca4a95dab0659dd4259d70cbdac25f9ad0b",
+      "bytes": 1780170,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie3.schema.yaml",
+      "sha256": "c8361ddc97d1cee95bba5125e559da3167406572c70e1d70aba9eae71794952d",
+      "bytes": 168,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie3.dict.yaml",
+      "sha256": "8ea67632d3580c8a5b2a0d1dbb423ad9bd746fd01b843aa21d0bff4c4f782bac",
+      "bytes": 383470,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie5.schema.yaml",
+      "sha256": "ead315d98ff06403d70aafec2e44ba6e4d1f479dfe7e9aa0ed2add0456edcee0",
+      "bytes": 1659,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie5.dict.yaml",
+      "sha256": "d7edeff4e80d262e75a0f6988d94a1eed489f5d8ebdfc4c089b0da819429fbba",
+      "bytes": 406681,
       "tier": "explicit",
       "required": true
     }

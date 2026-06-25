@@ -5,92 +5,92 @@
   "assets": [
     {
       "path": "default.yaml",
-      "sha256": "64c59f2d37e763d6184b016c6ad5f957fc3c406b6e48f8e5af3855ec68955eac",
-      "bytes": 6978,
+      "sha256": "31e321168824e1e5cbd5f1cca1dfa32a9daa951925e7d35ef6425dd6dd4bc9fa",
+      "bytes": 6799,
       "tier": "explicit",
       "required": true
     },
     {
       "path": "default.custom.yaml",
-      "sha256": "d07f5cc38cc07f9e2d8a5d046bb5f96bee42ed3d92111fc3ec7f0a46ebe1099f",
-      "bytes": 394,
+      "sha256": "52d7247a58422abf1396fb25baad8b853014a1078b52e22a4962ba5f8e732ef8",
+      "bytes": 380,
       "tier": "shared",
       "required": true
     },
     {
       "path": "common.yaml",
-      "sha256": "b464b0f9a551ca01209b3279c40fc75194001baa0043367e84debe28774f22f0",
-      "bytes": 957,
+      "sha256": "a56667b090ec94ff942a20eee3d8f1e00df68eb224142ddca4a340496d645db7",
+      "bytes": 915,
       "tier": "shared",
       "required": true
     },
     {
       "path": "common.custom.yaml",
-      "sha256": "6be99391e80c7f08df10cfaa4324b05058d8c6d3c64642ebbc08749d90456116",
-      "bytes": 333,
+      "sha256": "86567a9f822c358bb3ce4401d4e4ec3dc627b7fe35844feca9106671e952079e",
+      "bytes": 320,
       "tier": "shared",
       "required": true
     },
     {
       "path": "include.yaml",
-      "sha256": "7e2f65ae18e04d1895401da8e33120789bff23e897a78f662378283e800aed26",
-      "bytes": 2838,
+      "sha256": "f1fbe2312bcd15b551b00752eddf8e78347088ca100fedbed05c99a2faff0c95",
+      "bytes": 2721,
       "tier": "shared",
       "required": true
     },
     {
       "path": "template.yaml",
-      "sha256": "760eddefd5143d89f1f6f5fddd1c406ecfc85bd973ce990cb9b5d7c5f7bce197",
-      "bytes": 1896,
+      "sha256": "cc13bd8340953804fae651e5dd7da748aecd7fdf56bea3454a9f9f1ec002f2aa",
+      "bytes": 1814,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3.schema.yaml",
-      "sha256": "bde19377014fe525f7461e5817411fdb8ba86b9667804252e404f5122605a0ba",
-      "bytes": 2129,
+      "sha256": "43fa0780fb15e9fd3cd68f9fa5ec0b755a19cc5aeeefaa5ed2c203af8a2db859",
+      "bytes": 2048,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_mobile.schema.yaml",
-      "sha256": "7794ddd50708c79cc853c433033832a1999105a0eb34515c72784adc41df6afd",
-      "bytes": 1427,
+      "sha256": "bd5de9189accdd04e12c782a286b9a292ed55dcc88da419aa2721f6abdd82a72",
+      "bytes": 1418,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3.dict.yaml",
-      "sha256": "f29d65de035229847e72e90d308c3363b16f130bc9adcd874b1cce89cec94628",
-      "bytes": 3594190,
+      "sha256": "b0abf4fbcbf18b8cf05f4689ea05a12be6cf301f29a7316699e2b1ab9c24d172",
+      "bytes": 3467039,
       "tier": "explicit",
       "required": true
     },
     {
       "path": "jyut6ping3_scolar.schema.yaml",
-      "sha256": "677dabff37f7fabc46f21e782ffc08b570adb0837b2b4840986a744ebc3fd575",
-      "bytes": 421,
+      "sha256": "d07b006be7d24d53ab8aebb8a6fc0ae5e6a0e7f7ec72348f0dc0ebf072d9447b",
+      "bytes": 395,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_scolar.dict.yaml",
-      "sha256": "75f735e9cc3645fedb471932b1b56f3aecf18d0855572576b8a2f5e46a2a5ab3",
-      "bytes": 7254777,
+      "sha256": "9e394642c099303972d4823aeb161a9ad089a881699a58712192e9890d3a7b09",
+      "bytes": 7127626,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.schema.yaml",
-      "sha256": "8fd07c42a47664a5472400fd34b5f75c25d23e6d3bdab55321aaf0ac733ee232",
-      "bytes": 1682,
+      "sha256": "e4a1503370c7142bec7bb9f812bec264d823dab51f3599706b2ce3d597162f34",
+      "bytes": 1649,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.dict.yaml",
-      "sha256": "dd05b0c44b6c0528aceb7e63382ee78cf9466d23bc94047f1517f935c46c5624",
-      "bytes": 471319,
+      "sha256": "dee37dbc2cfe8c04b23f428b9afa23607be2d22a8daf8446f14f8882c801459f",
+      "bytes": 422312,
       "tier": "shared",
       "required": true
     },
@@ -103,8 +103,8 @@
     },
     {
       "path": "opencc/hk2s.json",
-      "sha256": "2e796ccc70df15aaa6f6a52098ade1dbb0143ba0ad7d07a8f11a2cceef8ee77e",
-      "bytes": 677,
+      "sha256": "71d5f687e1ca78d3af0e64850e84000555848744e41a09f98d33849a7f126be3",
+      "bytes": 643,
       "tier": "shared",
       "required": true
     },
@@ -208,8 +208,8 @@
     },
     {
       "path": "build/jyut6ping3_mobile.schema.yaml",
-      "sha256": "507f6f2842c6b959aae29bebb64bbaebb002920edde2addd90c297ff058bedd3",
-      "bytes": 9653,
+      "sha256": "affa20fb589ae27036b1831ffff834fffac4a7e70b516a99faa3b0f77bb2cf93",
+      "bytes": 9423,
       "tier": "explicit",
       "required": true
     }

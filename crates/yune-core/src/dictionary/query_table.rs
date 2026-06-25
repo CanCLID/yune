@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{btree_map, BTreeMap};
 use std::slice;
 
@@ -5,8 +6,8 @@ use crate::{Candidate, CandidateSource};
 
 #[derive(Clone)]
 pub(crate) struct LookupCandidate<'a> {
-    text: &'a str,
-    raw_comment: &'a str,
+    text: Cow<'a, str>,
+    raw_comment: Cow<'a, str>,
     raw_quality: f32,
     source_hint: CandidateSource,
 }
@@ -14,15 +15,15 @@ pub(crate) struct LookupCandidate<'a> {
 impl<'a> LookupCandidate<'a> {
     #[must_use]
     pub(crate) fn new(
-        text: &'a str,
-        raw_comment: &'a str,
+        text: impl Into<Cow<'a, str>>,
+        raw_comment: impl Into<Cow<'a, str>>,
         raw_quality: f32,
         source_hint: CandidateSource,
     ) -> Self {
         crate::m37_record_lookup_view();
         Self {
-            text,
-            raw_comment,
+            text: text.into(),
+            raw_comment: raw_comment.into(),
             raw_quality,
             source_hint,
         }
@@ -39,13 +40,13 @@ impl<'a> LookupCandidate<'a> {
     }
 
     #[must_use]
-    pub(crate) fn text(&self) -> &'a str {
-        self.text
+    pub(crate) fn text(&self) -> &str {
+        &self.text
     }
 
     #[must_use]
-    pub(crate) fn raw_comment(&self) -> &'a str {
-        self.raw_comment
+    pub(crate) fn raw_comment(&self) -> &str {
+        &self.raw_comment
     }
 
     #[must_use]
@@ -62,8 +63,8 @@ impl<'a> LookupCandidate<'a> {
     pub(crate) fn to_candidate(&self) -> Candidate {
         crate::m37_record_owned_candidate_materialized();
         Candidate {
-            text: self.text.to_owned(),
-            comment: self.raw_comment.to_owned(),
+            text: self.text.to_string(),
+            comment: self.raw_comment.to_string(),
             preedit: None,
             source: self.source_hint(),
             quality: self.raw_quality,
@@ -72,18 +73,21 @@ impl<'a> LookupCandidate<'a> {
 }
 
 pub(crate) struct LookupCandidateEntry<'a> {
-    code: &'a str,
+    code: Cow<'a, str>,
     candidate: LookupCandidate<'a>,
 }
 
 impl<'a> LookupCandidateEntry<'a> {
     #[must_use]
-    pub(crate) fn new(code: &'a str, candidate: LookupCandidate<'a>) -> Self {
-        Self { code, candidate }
+    pub(crate) fn new(code: impl Into<Cow<'a, str>>, candidate: LookupCandidate<'a>) -> Self {
+        Self {
+            code: code.into(),
+            candidate,
+        }
     }
 
     #[must_use]
-    pub(crate) fn into_parts(self) -> (&'a str, LookupCandidate<'a>) {
+    pub(crate) fn into_parts(self) -> (Cow<'a, str>, LookupCandidate<'a>) {
         (self.code, self.candidate)
     }
 }
@@ -95,7 +99,7 @@ pub(crate) trait TableLookup {
     type PrefixCandidates<'a>: Iterator<Item = LookupCandidateEntry<'a>>
     where
         Self: 'a;
-    type AllCodes<'a>: Iterator<Item = &'a str>
+    type AllCodes<'a>: Iterator<Item = Cow<'a, str>>
     where
         Self: 'a;
 
@@ -172,10 +176,10 @@ pub(crate) struct HeapAllCodes<'a> {
 }
 
 impl<'a> Iterator for HeapAllCodes<'a> {
-    type Item = &'a str;
+    type Item = Cow<'a, str>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(String::as_str)
+        self.inner.next().map(|code| Cow::Borrowed(code.as_str()))
     }
 }
 

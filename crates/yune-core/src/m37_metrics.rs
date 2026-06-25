@@ -26,6 +26,30 @@ pub struct M37MetricsSnapshot {
     pub abi_candidates_exported: u64,
     pub abi_free_context_calls: u64,
     pub abi_free_context_ns: u64,
+    pub candidate_request_bounded_calls: u64,
+    pub candidate_request_unbounded_calls: u64,
+    pub candidate_request_page_limit_total: u64,
+    pub candidate_request_surplus_total: u64,
+    pub bounded_iterator_calls: u64,
+    pub bounded_iterator_limit_total: u64,
+    pub bounded_iterator_selected_total: u64,
+    pub bounded_iterator_full_count_total: u64,
+    pub full_list_translation_calls: u64,
+    pub full_list_fallback_count: u64,
+    pub exact_lookup_calls: u64,
+    pub exact_lookup_ns: u64,
+    pub exact_lookup_candidates: u64,
+    pub prefix_lookup_calls: u64,
+    pub prefix_lookup_ns: u64,
+    pub prefix_lookup_candidates: u64,
+    pub heap_exact_lookup_calls: u64,
+    pub heap_prefix_lookup_calls: u64,
+    pub no_marisa_compact_exact_lookup_calls: u64,
+    pub no_marisa_compact_prefix_lookup_calls: u64,
+    pub rsmarisa_exact_lookup_calls: u64,
+    pub rsmarisa_prefix_lookup_calls: u64,
+    pub abi_c_string_allocations: u64,
+    pub abi_c_string_bytes: u64,
 }
 
 #[derive(Default)]
@@ -51,6 +75,30 @@ struct M37Metrics {
     abi_candidates_exported: AtomicU64,
     abi_free_context_calls: AtomicU64,
     abi_free_context_ns: AtomicU64,
+    candidate_request_bounded_calls: AtomicU64,
+    candidate_request_unbounded_calls: AtomicU64,
+    candidate_request_page_limit_total: AtomicU64,
+    candidate_request_surplus_total: AtomicU64,
+    bounded_iterator_calls: AtomicU64,
+    bounded_iterator_limit_total: AtomicU64,
+    bounded_iterator_selected_total: AtomicU64,
+    bounded_iterator_full_count_total: AtomicU64,
+    full_list_translation_calls: AtomicU64,
+    full_list_fallback_count: AtomicU64,
+    exact_lookup_calls: AtomicU64,
+    exact_lookup_ns: AtomicU64,
+    exact_lookup_candidates: AtomicU64,
+    prefix_lookup_calls: AtomicU64,
+    prefix_lookup_ns: AtomicU64,
+    prefix_lookup_candidates: AtomicU64,
+    heap_exact_lookup_calls: AtomicU64,
+    heap_prefix_lookup_calls: AtomicU64,
+    no_marisa_compact_exact_lookup_calls: AtomicU64,
+    no_marisa_compact_prefix_lookup_calls: AtomicU64,
+    rsmarisa_exact_lookup_calls: AtomicU64,
+    rsmarisa_prefix_lookup_calls: AtomicU64,
+    abi_c_string_allocations: AtomicU64,
+    abi_c_string_bytes: AtomicU64,
 }
 
 fn metrics() -> &'static M37Metrics {
@@ -95,6 +143,54 @@ pub fn m37_metrics_reset() {
     metrics.abi_candidates_exported.store(0, Ordering::Relaxed);
     metrics.abi_free_context_calls.store(0, Ordering::Relaxed);
     metrics.abi_free_context_ns.store(0, Ordering::Relaxed);
+    metrics
+        .candidate_request_bounded_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .candidate_request_unbounded_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .candidate_request_page_limit_total
+        .store(0, Ordering::Relaxed);
+    metrics
+        .candidate_request_surplus_total
+        .store(0, Ordering::Relaxed);
+    metrics.bounded_iterator_calls.store(0, Ordering::Relaxed);
+    metrics
+        .bounded_iterator_limit_total
+        .store(0, Ordering::Relaxed);
+    metrics
+        .bounded_iterator_selected_total
+        .store(0, Ordering::Relaxed);
+    metrics
+        .bounded_iterator_full_count_total
+        .store(0, Ordering::Relaxed);
+    metrics
+        .full_list_translation_calls
+        .store(0, Ordering::Relaxed);
+    metrics.full_list_fallback_count.store(0, Ordering::Relaxed);
+    metrics.exact_lookup_calls.store(0, Ordering::Relaxed);
+    metrics.exact_lookup_ns.store(0, Ordering::Relaxed);
+    metrics.exact_lookup_candidates.store(0, Ordering::Relaxed);
+    metrics.prefix_lookup_calls.store(0, Ordering::Relaxed);
+    metrics.prefix_lookup_ns.store(0, Ordering::Relaxed);
+    metrics.prefix_lookup_candidates.store(0, Ordering::Relaxed);
+    metrics.heap_exact_lookup_calls.store(0, Ordering::Relaxed);
+    metrics.heap_prefix_lookup_calls.store(0, Ordering::Relaxed);
+    metrics
+        .no_marisa_compact_exact_lookup_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .no_marisa_compact_prefix_lookup_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .rsmarisa_exact_lookup_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .rsmarisa_prefix_lookup_calls
+        .store(0, Ordering::Relaxed);
+    metrics.abi_c_string_allocations.store(0, Ordering::Relaxed);
+    metrics.abi_c_string_bytes.store(0, Ordering::Relaxed);
 }
 
 #[must_use]
@@ -127,6 +223,46 @@ pub fn m37_metrics_snapshot() -> M37MetricsSnapshot {
         abi_candidates_exported: metrics.abi_candidates_exported.load(Ordering::Relaxed),
         abi_free_context_calls: metrics.abi_free_context_calls.load(Ordering::Relaxed),
         abi_free_context_ns: metrics.abi_free_context_ns.load(Ordering::Relaxed),
+        candidate_request_bounded_calls: metrics
+            .candidate_request_bounded_calls
+            .load(Ordering::Relaxed),
+        candidate_request_unbounded_calls: metrics
+            .candidate_request_unbounded_calls
+            .load(Ordering::Relaxed),
+        candidate_request_page_limit_total: metrics
+            .candidate_request_page_limit_total
+            .load(Ordering::Relaxed),
+        candidate_request_surplus_total: metrics
+            .candidate_request_surplus_total
+            .load(Ordering::Relaxed),
+        bounded_iterator_calls: metrics.bounded_iterator_calls.load(Ordering::Relaxed),
+        bounded_iterator_limit_total: metrics.bounded_iterator_limit_total.load(Ordering::Relaxed),
+        bounded_iterator_selected_total: metrics
+            .bounded_iterator_selected_total
+            .load(Ordering::Relaxed),
+        bounded_iterator_full_count_total: metrics
+            .bounded_iterator_full_count_total
+            .load(Ordering::Relaxed),
+        full_list_translation_calls: metrics.full_list_translation_calls.load(Ordering::Relaxed),
+        full_list_fallback_count: metrics.full_list_fallback_count.load(Ordering::Relaxed),
+        exact_lookup_calls: metrics.exact_lookup_calls.load(Ordering::Relaxed),
+        exact_lookup_ns: metrics.exact_lookup_ns.load(Ordering::Relaxed),
+        exact_lookup_candidates: metrics.exact_lookup_candidates.load(Ordering::Relaxed),
+        prefix_lookup_calls: metrics.prefix_lookup_calls.load(Ordering::Relaxed),
+        prefix_lookup_ns: metrics.prefix_lookup_ns.load(Ordering::Relaxed),
+        prefix_lookup_candidates: metrics.prefix_lookup_candidates.load(Ordering::Relaxed),
+        heap_exact_lookup_calls: metrics.heap_exact_lookup_calls.load(Ordering::Relaxed),
+        heap_prefix_lookup_calls: metrics.heap_prefix_lookup_calls.load(Ordering::Relaxed),
+        no_marisa_compact_exact_lookup_calls: metrics
+            .no_marisa_compact_exact_lookup_calls
+            .load(Ordering::Relaxed),
+        no_marisa_compact_prefix_lookup_calls: metrics
+            .no_marisa_compact_prefix_lookup_calls
+            .load(Ordering::Relaxed),
+        rsmarisa_exact_lookup_calls: metrics.rsmarisa_exact_lookup_calls.load(Ordering::Relaxed),
+        rsmarisa_prefix_lookup_calls: metrics.rsmarisa_prefix_lookup_calls.load(Ordering::Relaxed),
+        abi_c_string_allocations: metrics.abi_c_string_allocations.load(Ordering::Relaxed),
+        abi_c_string_bytes: metrics.abi_c_string_bytes.load(Ordering::Relaxed),
     }
 }
 
@@ -226,5 +362,108 @@ pub fn m37_record_abi_free_context(duration: Duration) {
             .abi_free_context_calls
             .fetch_add(1, Ordering::Relaxed);
         add_duration(&metrics().abi_free_context_ns, duration);
+    }
+}
+
+pub fn m37_record_candidate_request_bounded(page_limit: usize, surplus: usize) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .candidate_request_bounded_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add(
+            &metrics.candidate_request_page_limit_total,
+            page_limit as u64,
+        );
+        add(&metrics.candidate_request_surplus_total, surplus as u64);
+    }
+}
+
+pub fn m37_record_candidate_request_unbounded() {
+    if m37_metrics_enabled() {
+        metrics()
+            .candidate_request_unbounded_calls
+            .fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+pub fn m37_record_bounded_iterator(limit: usize, selected: usize, full_count: usize) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .bounded_iterator_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add(&metrics.bounded_iterator_limit_total, limit as u64);
+        add(&metrics.bounded_iterator_selected_total, selected as u64);
+        add(
+            &metrics.bounded_iterator_full_count_total,
+            full_count as u64,
+        );
+    }
+}
+
+pub fn m37_record_full_list_translation() {
+    add(&metrics().full_list_translation_calls, 1);
+}
+
+pub fn m37_record_full_list_fallback() {
+    add(&metrics().full_list_fallback_count, 1);
+}
+
+fn record_exact_lookup(duration: Duration, candidates: usize) {
+    let metrics = metrics();
+    if m37_metrics_enabled() {
+        metrics.exact_lookup_calls.fetch_add(1, Ordering::Relaxed);
+        add_duration(&metrics.exact_lookup_ns, duration);
+        add(&metrics.exact_lookup_candidates, candidates as u64);
+    }
+}
+
+fn record_prefix_lookup(duration: Duration, candidates: usize) {
+    let metrics = metrics();
+    if m37_metrics_enabled() {
+        metrics.prefix_lookup_calls.fetch_add(1, Ordering::Relaxed);
+        add_duration(&metrics.prefix_lookup_ns, duration);
+        add(&metrics.prefix_lookup_candidates, candidates as u64);
+    }
+}
+
+pub fn m37_record_heap_exact_lookup(duration: Duration, candidates: usize) {
+    record_exact_lookup(duration, candidates);
+    add(&metrics().heap_exact_lookup_calls, 1);
+}
+
+pub fn m37_record_heap_prefix_lookup(duration: Duration, candidates: usize) {
+    record_prefix_lookup(duration, candidates);
+    add(&metrics().heap_prefix_lookup_calls, 1);
+}
+
+pub fn m37_record_no_marisa_compact_exact_lookup(duration: Duration, candidates: usize) {
+    record_exact_lookup(duration, candidates);
+    add(&metrics().no_marisa_compact_exact_lookup_calls, 1);
+}
+
+pub fn m37_record_no_marisa_compact_prefix_lookup(duration: Duration, candidates: usize) {
+    record_prefix_lookup(duration, candidates);
+    add(&metrics().no_marisa_compact_prefix_lookup_calls, 1);
+}
+
+pub fn m37_record_rsmarisa_exact_lookup(duration: Duration, candidates: usize) {
+    record_exact_lookup(duration, candidates);
+    add(&metrics().rsmarisa_exact_lookup_calls, 1);
+}
+
+pub fn m37_record_rsmarisa_prefix_lookup(duration: Duration, candidates: usize) {
+    record_prefix_lookup(duration, candidates);
+    add(&metrics().rsmarisa_prefix_lookup_calls, 1);
+}
+
+pub fn m37_record_abi_c_string_allocation(bytes: usize) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .abi_c_string_allocations
+            .fetch_add(1, Ordering::Relaxed);
+        add(&metrics.abi_c_string_bytes, bytes as u64);
     }
 }

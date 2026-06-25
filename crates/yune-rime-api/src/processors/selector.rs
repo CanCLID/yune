@@ -4,7 +4,7 @@ use serde_yaml::Value;
 use yune_core::{KeyCode, KeyEvent};
 
 use crate::{
-    config_scalar_string, context_menu_settings, find_config_value, load_runtime_config_root,
+    config_scalar_string, find_config_value, load_runtime_config_root,
     parse_single_key_binding_event, session_menu_page_size, ConfigOpenKind, SelectorBindingAction,
     SelectorLayoutAction, SessionState, XK_DOWN, XK_KP_DOWN, XK_KP_LEFT, XK_KP_PAGE_DOWN,
     XK_KP_PAGE_UP, XK_KP_RIGHT, XK_KP_UP, XK_LEFT, XK_PAGE_DOWN, XK_PAGE_UP, XK_RIGHT, XK_UP,
@@ -270,7 +270,7 @@ pub(crate) fn process_alternative_select_key(
         return None;
     }
 
-    let menu_settings = context_menu_settings(&session.engine.status().schema_id);
+    let menu_settings = &session.menu_settings;
     let select_keys = menu_settings.select_keys.as_deref()?;
     let Some(index) = select_keys
         .bytes()

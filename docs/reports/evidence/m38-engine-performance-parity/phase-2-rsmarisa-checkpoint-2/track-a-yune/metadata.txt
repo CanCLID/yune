@@ -1,0 +1,13 @@
+engine=yune
+track=track-a-comparison
+schema=luna_pinyin
+dll=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-2-rsmarisa-checkpoint-2\track-a-yune\rime.dll
+shared=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-2-rsmarisa-checkpoint-2\track-a-yune\shared
+user=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-2-rsmarisa-checkpoint-2\track-a-yune\user
+build=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-2-rsmarisa-checkpoint-2\track-a-yune\user\build
+inputs=ni,hao,zhongguo
+iterations=5
+session_iterations=10
+key_iterations=20
+deploy_before_benchmark=false
+managed_runtime=false

@@ -199,6 +199,7 @@ pub(crate) fn runtime_paths() -> &'static Mutex<RuntimePaths> {
 /// NUL-terminated C strings.
 #[no_mangle]
 pub unsafe extern "C" fn RimeSetup(traits: *const RimeTraits) {
+    let _trace = crate::startup_trace::span("runtime_setup");
     if let Some(paths) = unsafe { RuntimePaths::from_traits(traits) } {
         *runtime_paths()
             .lock()

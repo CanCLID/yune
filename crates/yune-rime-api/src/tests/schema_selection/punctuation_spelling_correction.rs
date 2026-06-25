@@ -269,6 +269,157 @@ gone	删	0
     fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
 
+// Owner: schema_install.rs; namespaced translators should not inherit global
+// speller/algebra unless the namespace explicitly declares its own algebra.
+#[test]
+fn schema_namespaced_translator_spelling_algebra_is_explicit() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-namespaced-translator-spelling-algebra");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("global-only.schema.yaml"),
+        "\
+schema:
+  schema_id: global-only
+  name: Global Only
+engine:
+  translators:
+    - table_translator
+    - table_translator@lookup
+    - echo_translator
+speller:
+  algebra:
+    - xform/^aa$/bb/
+translator:
+  dictionary: primary
+  enable_completion: false
+  enable_sentence: false
+lookup:
+  dictionary: secondary
+  enable_completion: false
+  enable_sentence: false
+",
+    )
+    .expect("global-only schema config should be written");
+    fs::write(
+        staging.join("namespaced.schema.yaml"),
+        "\
+schema:
+  schema_id: namespaced
+  name: Namespaced
+engine:
+  translators:
+    - table_translator
+    - table_translator@lookup
+    - echo_translator
+speller:
+  algebra:
+    - xform/^aa$/bb/
+translator:
+  dictionary: primary
+  enable_completion: false
+  enable_sentence: false
+lookup:
+  dictionary: secondary
+  enable_completion: false
+  enable_sentence: false
+  speller:
+    algebra:
+      - xform/^aa$/bb/
+",
+    )
+    .expect("namespaced schema config should be written");
+    fs::write(
+        shared.join("primary.dict.yaml"),
+        "\
+---
+name: primary
+version: '0.1'
+sort: original
+columns: [code, text, weight]
+...
+
+aa	PRIMARY	10
+",
+    )
+    .expect("primary dictionary should be written");
+    fs::write(
+        shared.join("secondary.dict.yaml"),
+        "\
+---
+name: secondary
+version: '0.1'
+sort: original
+columns: [code, text, weight]
+...
+
+aa	SECONDARY	9
+",
+    )
+    .expect("secondary dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let candidate_texts_for = |schema_id: &str| {
+        let session_id = RimeCreateSession();
+        let schema_id = CString::new(schema_id).expect("schema id should be valid");
+        // SAFETY: schema id is a valid NUL-terminated string.
+        assert_eq!(
+            unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+            TRUE
+        );
+        for ch in "bb".chars() {
+            assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+        }
+        let mut context = empty_context();
+        // SAFETY: context points to writable storage initialized with positive `data_size`.
+        assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+        let candidates = unsafe {
+            std::slice::from_raw_parts(
+                context.menu.candidates,
+                context.menu.num_candidates as usize,
+            )
+        };
+        let texts = candidates
+            .iter()
+            .map(|candidate| {
+                unsafe { CStr::from_ptr(candidate.text) }
+                    .to_str()
+                    .expect("candidate text should be valid UTF-8")
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+        // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+        assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+        texts
+    };
+
+    let global_only = candidate_texts_for("global-only");
+    assert!(global_only.contains(&"PRIMARY".to_owned()));
+    assert!(!global_only.contains(&"SECONDARY".to_owned()));
+
+    let namespaced = candidate_texts_for("namespaced");
+    assert!(namespaced.contains(&"PRIMARY".to_owned()));
+    assert!(namespaced.contains(&"SECONDARY".to_owned()));
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
 // Owner: schema_install.rs and yune-core spelling_algebra.rs; fork oracle:
 // TypeDuck v1.1.2 jyut6ping3_mobile with the real 127k-row jyut6ping3_scolar
 // dictionary keeps Cantonese ng->m fuzzy algebra for single-letter `m`.

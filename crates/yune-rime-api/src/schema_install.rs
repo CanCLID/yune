@@ -15,12 +15,13 @@ use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
     parse_rime_prism_bin_payload, parse_rime_reverse_bin_dictionary,
-    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary, rime_dict_source_checksum,
-    rime_table_bin_dict_file_checksum, CharsetFilter, CompactTableByteSource, CompactTableStore,
+    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary,
+    parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
+    CharsetFilter, CompactMarisaStringTable, CompactTableByteSource, CompactTableStore,
     DictionaryLookupFilter, EchoTranslator, HistoryTranslator, ReverseLookupFilter,
-    ReverseLookupTranslator, RimePrismBinPayload, SchemaListTranslator, SimplifierFilter,
-    SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter,
-    Translator, UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
+    ReverseLookupTranslator, RimePrismBinPayload, RimeTableBinParseError, SchemaListTranslator,
+    SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary,
+    TaggedFilter, Translator, UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 use crate::{
@@ -131,6 +132,34 @@ pub(crate) fn install_schema_translator_chain(session: &mut SessionState, schema
             _ => {}
         }
     }
+}
+
+pub(crate) fn schema_reload_signature(schema_config: &Value) -> String {
+    let schema_fingerprint = serde_yaml::to_string(schema_config)
+        .ok()
+        .map(|schema| stable_hash_bytes(schema.as_bytes()))
+        .unwrap_or_default();
+    let mut parts = vec![format!("schema={schema_fingerprint:016x}")];
+    if let Some(Value::Sequence(translators)) =
+        find_config_value(schema_config, "engine/translators")
+    {
+        for translator in translators.iter().filter_map(Value::as_str) {
+            let (component_name, name_space) = schema_component_prescription(translator);
+            if matches!(
+                component_name,
+                "table_translator" | "script_translator" | "r10n_translator"
+            ) {
+                if let Some(cache_key) = schema_dictionary_translator_cache_key(
+                    schema_config,
+                    component_name,
+                    name_space.unwrap_or("translator"),
+                ) {
+                    parts.push(cache_key);
+                }
+            }
+        }
+    }
+    parts.join("\n---\n")
 }
 
 pub(crate) fn schema_component_prescription(component: &str) -> (&str, Option<&str>) {
@@ -295,7 +324,7 @@ fn install_schema_dictionary_translator_from_config(
     let preedit_format = schema_preedit_format(schema_config, name_space);
     let dictionary_exclude =
         schema_string_list(schema_config, &format!("{name_space}/dictionary_exclude"));
-    let spelling_algebra = spelling_algebra_for_dictionary(schema_config);
+    let spelling_algebra = spelling_algebra_for_dictionary(schema_config, name_space);
     if let Some(user_dict_name) = &user_dict_name {
         session.set_user_dict_name(user_dict_name.clone());
     }
@@ -678,8 +707,16 @@ fn is_upstream_luna_pinyin_profile(
         .is_some_and(|schema_id| schema_id == "luna_pinyin")
 }
 
-fn spelling_algebra_for_dictionary(schema_config: &Value) -> Vec<String> {
-    schema_string_list(schema_config, "speller/algebra")
+fn spelling_algebra_for_dictionary(schema_config: &Value, name_space: &str) -> Vec<String> {
+    let namespaced = schema_string_list(schema_config, &format!("{name_space}/speller/algebra"));
+    if !namespaced.is_empty() {
+        return namespaced;
+    }
+    if name_space == "translator" {
+        schema_string_list(schema_config, "speller/algebra")
+    } else {
+        Vec::new()
+    }
 }
 
 fn install_schema_reverse_lookup_translator_from_config(
@@ -913,10 +950,11 @@ fn record_remaining_gear_deferral(
         });
 }
 
-pub(crate) fn apply_schema_switch_resets(session: &mut SessionState, schema_id: &str) {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    let Some(Value::Sequence(switches)) = find_config_value(&schema_config, "switches") else {
+pub(crate) fn apply_schema_switch_resets_from_config(
+    session: &mut SessionState,
+    schema_config: &Value,
+) {
+    let Some(Value::Sequence(switches)) = find_config_value(schema_config, "switches") else {
         return;
     };
 
@@ -1173,7 +1211,7 @@ fn default_simplifier_opencc_config(name_space: &str) -> String {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct CompiledDictionary {
     dictionary: Option<TableDictionary>,
     compact_store: Option<CompactTableStore>,
@@ -1182,7 +1220,21 @@ struct CompiledDictionary {
 
 #[cfg(not(target_arch = "wasm32"))]
 struct MappedCompiledTableBytes {
+    mmap: Arc<memmap2::Mmap>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+struct MappedCompiledDataBytes {
     mmap: memmap2::Mmap,
+    mapping_mode: &'static str,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+struct MappedMarisaStringTable {
+    trie: rsmarisa::Trie,
+    payload_range: std::ops::Range<usize>,
+    num_keys: usize,
+    _mmap: Arc<memmap2::Mmap>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -1206,6 +1258,17 @@ impl CompactTableByteSource for OwnedCompiledTableBytes {
     }
 }
 
+trait CompiledDataByteSource: fmt::Debug + Send + Sync {
+    fn bytes(&self) -> &[u8];
+}
+
+#[cfg(target_arch = "wasm32")]
+impl CompiledDataByteSource for OwnedCompiledTableBytes {
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 impl fmt::Debug for MappedCompiledTableBytes {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -1218,9 +1281,20 @@ impl fmt::Debug for MappedCompiledTableBytes {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+impl fmt::Debug for MappedCompiledDataBytes {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("MappedCompiledDataBytes")
+            .field("len", &self.mmap.len())
+            .field("mapping_mode", &self.mapping_mode)
+            .finish()
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 impl CompactTableByteSource for MappedCompiledTableBytes {
     fn bytes(&self) -> &[u8] {
-        &self.mmap
+        self.mmap.as_ref()
     }
 
     fn storage_label(&self) -> &'static str {
@@ -1230,9 +1304,76 @@ impl CompactTableByteSource for MappedCompiledTableBytes {
     fn mapping_mode(&self) -> &'static str {
         "mmap"
     }
+
+    fn marisa_string_table(
+        &self,
+        offset: usize,
+        size: usize,
+    ) -> Result<Box<dyn CompactMarisaStringTable>, RimeTableBinParseError> {
+        let end = offset
+            .checked_add(size)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let payload = self
+            .bytes()
+            .get(offset..end)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let mut trie = rsmarisa::Trie::new();
+        // SAFETY: the returned table stores an Arc to this exact mmap and drops
+        // the trie before the mmap owner, so the mapped slice outlives all trie access.
+        let payload = unsafe { std::mem::transmute::<&[u8], &'static [u8]>(payload) };
+        trie.map(payload)
+            .map_err(|_| RimeTableBinParseError::InvalidFormat)?;
+        let num_keys = trie.num_keys();
+        Ok(Box::new(MappedMarisaStringTable {
+            trie,
+            payload_range: offset..end,
+            num_keys,
+            _mmap: Arc::clone(&self.mmap),
+        }))
+    }
 }
 
-#[derive(Clone, Debug)]
+#[cfg(not(target_arch = "wasm32"))]
+impl CompiledDataByteSource for MappedCompiledDataBytes {
+    fn bytes(&self) -> &[u8] {
+        &self.mmap
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl fmt::Debug for MappedMarisaStringTable {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("MappedMarisaStringTable")
+            .field("payload_range", &self.payload_range)
+            .field("num_keys", &self.num_keys)
+            .field("mapping_mode", &"mmap_embedded_payload")
+            .finish_non_exhaustive()
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl CompactMarisaStringTable for MappedMarisaStringTable {
+    fn get(&self, id: u32) -> Option<String> {
+        if id as usize >= self.num_keys {
+            return None;
+        }
+        let mut agent = rsmarisa::Agent::new();
+        agent.set_query_id(id as usize);
+        self.trie.reverse_lookup(&mut agent);
+        Some(agent.key().as_str().to_owned())
+    }
+
+    fn num_keys(&self) -> usize {
+        self.num_keys
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "mmap_embedded_payload"
+    }
+}
+
+#[derive(Debug)]
 enum DictionaryLoadOutcome {
     Compiled(Box<CompiledDictionary>),
     SourceFallback {
@@ -1386,12 +1527,12 @@ fn load_schema_compiled_dictionary(
         let _trace = startup_trace::span("compiled_table_load");
         load_compiled_table_byte_source(&table_path)?
     };
-    let prism_bytes = {
+    let prism_source = {
         let _trace = startup_trace::span("compiled_prism_load");
         prism_path
-            .map(fs::read)
-            .transpose()
-            .map_err(|error| CompiledRejectReason::Invalid(format!("prism read failed: {error}")))?
+            .as_deref()
+            .map(|path| load_compiled_data_byte_source(path, "prism"))
+            .transpose()?
     };
     let reverse_bytes = {
         let _trace = startup_trace::span("compiled_reverse_load");
@@ -1399,19 +1540,30 @@ fn load_schema_compiled_dictionary(
             CompiledRejectReason::Invalid(format!("reverse read failed: {error}"))
         })?
     };
+    let table_metadata = parse_rime_table_bin_metadata(table_source.bytes()).map_err(|error| {
+        CompiledRejectReason::Invalid(format!("table metadata parse failed: {error:?}"))
+    })?;
 
     if let Some(source_yaml) = source_yaml {
         let source_checksum = rime_dict_source_checksum(0, [source_yaml.as_bytes()], None);
-        if rime_table_bin_dict_file_checksum(table_source.bytes()) != Some(source_checksum) {
+        let table_checksum = rime_table_bin_dict_file_checksum(table_source.bytes());
+        let known_upstream_marisa_luna_compact = prefer_compact
+            && is_known_upstream_luna_marisa_checksum(
+                dictionary_name,
+                table_metadata.string_table_size,
+                source_checksum,
+                table_checksum,
+            );
+        if table_checksum != Some(source_checksum) && !known_upstream_marisa_luna_compact {
             return Err(CompiledRejectReason::Stale);
         }
     }
 
     let prism_payload = {
-        let _trace = startup_trace::span("compiled_prism_load");
-        prism_bytes
+        let _trace = startup_trace::span("compiled_prism_parse");
+        prism_source
             .as_ref()
-            .map(parse_rime_prism_bin_payload)
+            .map(|source| parse_rime_prism_bin_payload(source.bytes()))
             .transpose()
             .map_err(|error| match error {
                 yune_core::RimePrismBinParseError::UnsupportedSection { role } => {
@@ -1422,12 +1574,25 @@ fn load_schema_compiled_dictionary(
     };
     let reverse_dictionary = {
         let _trace = startup_trace::span("compiled_reverse_load");
-        parse_rime_reverse_bin_dictionary(&reverse_bytes).map_err(|error| match error {
-            yune_core::RimeReverseBinParseError::UnsupportedSection { role } => {
-                CompiledRejectReason::Unsupported(role)
+        match parse_rime_reverse_bin_dictionary(&reverse_bytes) {
+            Ok(dictionary) => dictionary,
+            Err(yune_core::RimeReverseBinParseError::UnsupportedSection { role: _ })
+                if prefer_compact && dictionary_name == "luna_pinyin" =>
+            {
+                TableDictionary::with_advanced_data(
+                    Vec::new(),
+                    yune_core::TableDictionaryAdvancedData::default(),
+                )
             }
-            other => CompiledRejectReason::Invalid(format!("reverse parse failed: {other:?}")),
-        })?
+            Err(yune_core::RimeReverseBinParseError::UnsupportedSection { role }) => {
+                return Err(CompiledRejectReason::Unsupported(role));
+            }
+            Err(other) => {
+                return Err(CompiledRejectReason::Invalid(format!(
+                    "reverse parse failed: {other:?}"
+                )));
+            }
+        }
     };
 
     let mut advanced_dictionary = TableDictionary::with_advanced_data(
@@ -1449,6 +1614,11 @@ fn load_schema_compiled_dictionary(
     }
 
     let (dictionary, compact_store) = if prefer_compact {
+        if table_metadata.string_table_size != 0 && dictionary_name != "luna_pinyin" {
+            return Err(CompiledRejectReason::Unsupported(
+                "marisa string_table outside upstream luna_pinyin compact path".to_owned(),
+            ));
+        }
         let table_advanced = {
             let _trace = startup_trace::span("compiled_table_dictionary_parse");
             parse_rime_table_bin_advanced_data(table_source.bytes())
@@ -1499,6 +1669,22 @@ fn load_schema_compiled_dictionary(
     })
 }
 
+fn is_known_upstream_luna_marisa_checksum(
+    dictionary_name: &str,
+    string_table_size: u32,
+    source_checksum: u32,
+    table_checksum: Option<u32>,
+) -> bool {
+    const UPSTREAM_LUNA_PINYIN_SOURCE_CHECKSUM: u32 = 0x16ad_0e3e;
+    const UPSTREAM_LUNA_PINYIN_MARISA_TABLE_CHECKSUM: u32 = 0xb967_cfef;
+    const UPSTREAM_LUNA_PINYIN_STRING_TABLE_SIZE: u32 = 1_574_520;
+
+    dictionary_name == "luna_pinyin"
+        && string_table_size == UPSTREAM_LUNA_PINYIN_STRING_TABLE_SIZE
+        && source_checksum == UPSTREAM_LUNA_PINYIN_SOURCE_CHECKSUM
+        && table_checksum == Some(UPSTREAM_LUNA_PINYIN_MARISA_TABLE_CHECKSUM)
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 fn load_compiled_table_byte_source(
     path: &Path,
@@ -1511,7 +1697,28 @@ fn load_compiled_table_byte_source(
         unsafe { memmap2::MmapOptions::new().map(&file) }
     }
     .map_err(|error| CompiledRejectReason::Invalid(format!("table mmap failed: {error}")))?;
-    Ok(Arc::new(MappedCompiledTableBytes { mmap }))
+    Ok(Arc::new(MappedCompiledTableBytes {
+        mmap: Arc::new(mmap),
+    }))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn load_compiled_data_byte_source(
+    path: &Path,
+    role: &'static str,
+) -> Result<Arc<dyn CompiledDataByteSource>, CompiledRejectReason> {
+    let file = fs::File::open(path)
+        .map_err(|error| CompiledRejectReason::Invalid(format!("{role} open failed: {error}")))?;
+    let mmap = {
+        // SAFETY: runtime data artifacts are immutable for the lifetime of a selected session.
+        // Deploy writes build artifacts before selection, and Yune never mutates a selected prism.
+        unsafe { memmap2::MmapOptions::new().map(&file) }
+    }
+    .map_err(|error| CompiledRejectReason::Invalid(format!("{role} mmap failed: {error}")))?;
+    Ok(Arc::new(MappedCompiledDataBytes {
+        mmap,
+        mapping_mode: "mmap",
+    }))
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -1520,6 +1727,18 @@ fn load_compiled_table_byte_source(
 ) -> Result<Arc<dyn CompactTableByteSource>, CompiledRejectReason> {
     let bytes = fs::read(path)
         .map_err(|error| CompiledRejectReason::Invalid(format!("table read failed: {error}")))?;
+    Ok(Arc::new(OwnedCompiledTableBytes {
+        bytes: Arc::<[u8]>::from(bytes),
+    }))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn load_compiled_data_byte_source(
+    path: &Path,
+    role: &'static str,
+) -> Result<Arc<dyn CompiledDataByteSource>, CompiledRejectReason> {
+    let bytes = fs::read(path)
+        .map_err(|error| CompiledRejectReason::Invalid(format!("{role} read failed: {error}")))?;
     Ok(Arc::new(OwnedCompiledTableBytes {
         bytes: Arc::<[u8]>::from(bytes),
     }))

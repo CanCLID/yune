@@ -63,10 +63,10 @@ pub(crate) use processors::*;
 pub use runtime::*;
 pub use schema_api::*;
 pub(crate) use schema_install::{
-    apply_schema_switch_resets, install_schema_filter_chain, install_schema_segment_tags,
-    install_schema_translator_chain, load_schema_recognizer_patterns, recognizer_patterns_match,
-    schema_component_prescription, schema_string_list, switch_reset_value,
-    update_session_segment_tags,
+    apply_schema_switch_resets_from_config, install_schema_filter_chain,
+    install_schema_segment_tags, install_schema_translator_chain, load_schema_recognizer_patterns,
+    recognizer_patterns_match, schema_component_prescription, schema_reload_signature,
+    schema_string_list, switch_reset_value, update_session_segment_tags,
 };
 pub(crate) use schema_selection::apply_schema_to_session;
 pub use schema_selection::{RimeGetCurrentSchema, RimeSelectSchema};
@@ -308,10 +308,21 @@ struct StateLabel {
     length: usize,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct ContextMenuSettings {
     pub(crate) page_size: usize,
     pub(crate) select_keys: Option<String>,
     pub(crate) select_labels: Vec<String>,
+}
+
+impl Default for ContextMenuSettings {
+    fn default() -> Self {
+        Self {
+            page_size: DEFAULT_PAGE_SIZE,
+            select_keys: None,
+            select_labels: Vec::new(),
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -356,28 +367,127 @@ pub extern "C" fn yune_m37_metrics_reset() {
 #[no_mangle]
 pub extern "C" fn yune_m37_metrics_snapshot_json() -> *mut c_char {
     let metrics = yune_core::m37_metrics_snapshot();
-    let json = serde_json::json!({
-        "process_key_calls": metrics.process_key_calls,
-        "process_key_ns": metrics.process_key_ns,
-        "translator_calls": metrics.translator_calls,
-        "translator_ns": metrics.translator_ns,
-        "lookup_views_visited": metrics.lookup_views_visited,
-        "owned_candidates_materialized": metrics.owned_candidates_materialized,
-        "candidates_sorted": metrics.candidates_sorted,
-        "candidate_sort_ns": metrics.candidate_sort_ns,
-        "userdb_merge_ns": metrics.userdb_merge_ns,
-        "filter_pipeline_ns": metrics.filter_pipeline_ns,
-        "ranker_pipeline_ns": metrics.ranker_pipeline_ns,
-        "ai_merge_ns": metrics.ai_merge_ns,
-        "candidates_stored": metrics.candidates_stored,
-        "context_full_snapshot_candidates_cloned": metrics.context_full_snapshot_candidates_cloned,
-        "context_page_snapshot_candidates_cloned": metrics.context_page_snapshot_candidates_cloned,
-        "abi_get_context_calls": metrics.abi_get_context_calls,
-        "abi_get_context_ns": metrics.abi_get_context_ns,
-        "abi_candidates_exported": metrics.abi_candidates_exported,
-        "abi_free_context_calls": metrics.abi_free_context_calls,
-        "abi_free_context_ns": metrics.abi_free_context_ns,
-    });
+    let mut json = serde_json::Map::new();
+    macro_rules! metric {
+        ($name:literal, $value:expr) => {
+            json.insert($name.to_owned(), serde_json::Value::from($value));
+        };
+    }
+    metric!("process_key_calls", metrics.process_key_calls);
+    metric!("process_key_ns", metrics.process_key_ns);
+    metric!("translator_calls", metrics.translator_calls);
+    metric!("translator_ns", metrics.translator_ns);
+    metric!("lookup_views_visited", metrics.lookup_views_visited);
+    metric!(
+        "owned_candidates_materialized",
+        metrics.owned_candidates_materialized
+    );
+    metric!("candidates_sorted", metrics.candidates_sorted);
+    metric!("candidate_sort_ns", metrics.candidate_sort_ns);
+    metric!("userdb_merge_ns", metrics.userdb_merge_ns);
+    metric!("filter_pipeline_ns", metrics.filter_pipeline_ns);
+    metric!("ranker_pipeline_ns", metrics.ranker_pipeline_ns);
+    metric!("ai_merge_ns", metrics.ai_merge_ns);
+    metric!("candidates_stored", metrics.candidates_stored);
+    metric!(
+        "context_full_snapshot_candidates_cloned",
+        metrics.context_full_snapshot_candidates_cloned
+    );
+    metric!(
+        "context_page_snapshot_candidates_cloned",
+        metrics.context_page_snapshot_candidates_cloned
+    );
+    metric!("abi_get_context_calls", metrics.abi_get_context_calls);
+    metric!("abi_get_context_ns", metrics.abi_get_context_ns);
+    metric!("abi_candidates_exported", metrics.abi_candidates_exported);
+    metric!("abi_free_context_calls", metrics.abi_free_context_calls);
+    metric!("abi_free_context_ns", metrics.abi_free_context_ns);
+    metric!(
+        "candidate_request_bounded_calls",
+        metrics.candidate_request_bounded_calls
+    );
+    metric!(
+        "candidate_request_unbounded_calls",
+        metrics.candidate_request_unbounded_calls
+    );
+    metric!(
+        "candidate_request_page_limit_total",
+        metrics.candidate_request_page_limit_total
+    );
+    metric!(
+        "candidate_request_surplus_total",
+        metrics.candidate_request_surplus_total
+    );
+    metric!("bounded_iterator_calls", metrics.bounded_iterator_calls);
+    metric!(
+        "bounded_iterator_limit_total",
+        metrics.bounded_iterator_limit_total
+    );
+    metric!(
+        "bounded_iterator_selected_total",
+        metrics.bounded_iterator_selected_total
+    );
+    metric!(
+        "bounded_iterator_full_count_total",
+        metrics.bounded_iterator_full_count_total
+    );
+    metric!(
+        "full_list_translation_calls",
+        metrics.full_list_translation_calls
+    );
+    metric!("full_list_fallback_count", metrics.full_list_fallback_count);
+    metric!("exact_lookup_calls", metrics.exact_lookup_calls);
+    metric!("exact_lookup_ns", metrics.exact_lookup_ns);
+    metric!("exact_lookup_candidates", metrics.exact_lookup_candidates);
+    metric!("prefix_lookup_calls", metrics.prefix_lookup_calls);
+    metric!("prefix_lookup_ns", metrics.prefix_lookup_ns);
+    metric!("prefix_lookup_candidates", metrics.prefix_lookup_candidates);
+    metric!("heap_exact_lookup_calls", metrics.heap_exact_lookup_calls);
+    metric!("heap_prefix_lookup_calls", metrics.heap_prefix_lookup_calls);
+    metric!(
+        "no_marisa_compact_exact_lookup_calls",
+        metrics.no_marisa_compact_exact_lookup_calls
+    );
+    metric!(
+        "no_marisa_compact_prefix_lookup_calls",
+        metrics.no_marisa_compact_prefix_lookup_calls
+    );
+    metric!(
+        "rsmarisa_exact_lookup_calls",
+        metrics.rsmarisa_exact_lookup_calls
+    );
+    metric!(
+        "rsmarisa_prefix_lookup_calls",
+        metrics.rsmarisa_prefix_lookup_calls
+    );
+    metric!("abi_c_string_allocations", metrics.abi_c_string_allocations);
+    metric!("abi_c_string_bytes", metrics.abi_c_string_bytes);
+    let json = serde_json::Value::Object(json);
+    CString::new(json.to_string()).map_or(ptr::null_mut(), CString::into_raw)
+}
+
+#[no_mangle]
+pub extern "C" fn yune_startup_trace_begin() {
+    startup_trace::begin_startup_trace(None);
+}
+
+#[no_mangle]
+pub extern "C" fn yune_startup_trace_finish_json() -> *mut c_char {
+    let events = startup_trace::finish_startup_trace();
+    let json = serde_json::Value::Array(
+        events
+            .into_iter()
+            .map(|event| {
+                serde_json::json!({
+                    "name": event.name,
+                    "micros": event.micros,
+                    "working_set_before": event.working_set_before,
+                    "working_set_after": event.working_set_after,
+                    "peak_working_set_after": event.peak_working_set_after,
+                })
+            })
+            .collect(),
+    );
     CString::new(json.to_string()).map_or(ptr::null_mut(), CString::into_raw)
 }
 
@@ -1226,7 +1336,7 @@ fn shape_formatted_commit_text(session: &SessionState, text: &str) -> String {
 }
 
 pub(crate) fn session_menu_page_size(session: &SessionState) -> usize {
-    context_menu_settings(&session.engine.status().schema_id).page_size
+    session.menu_settings.page_size
 }
 
 #[derive(Clone, Copy)]
@@ -1809,15 +1919,6 @@ fn schema_access_time_quality(schema_id: &str) -> i64 {
     }
 }
 
-pub(crate) fn deployed_schema_name(schema_id: &str) -> String {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    find_config_value(&schema_config, "schema/name")
-        .and_then(Value::as_str)
-        .unwrap_or(schema_id)
-        .to_owned()
-}
-
 fn deployed_schema_list_entry(entry: &Value) -> Option<String> {
     let Value::Mapping(entry) = entry else {
         return None;
@@ -1850,19 +1951,17 @@ fn state_label_for_session(
     switch_state_label(&schema_config, option_name, state, abbreviated)
 }
 
-pub(crate) fn context_menu_settings(schema_id: &str) -> ContextMenuSettings {
-    let schema_config =
-        load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
-    let page_size = find_config_value(&schema_config, "menu/page_size")
+pub(crate) fn context_menu_settings_from_config(schema_config: &Value) -> ContextMenuSettings {
+    let page_size = find_config_value(schema_config, "menu/page_size")
         .and_then(config_scalar_int)
         .filter(|page_size| *page_size > 0)
         .map(|page_size| page_size as usize)
         .unwrap_or(DEFAULT_PAGE_SIZE);
-    let select_keys = find_config_value(&schema_config, "menu/alternative_select_keys")
+    let select_keys = find_config_value(schema_config, "menu/alternative_select_keys")
         .and_then(Value::as_str)
         .filter(|select_keys| !select_keys.is_empty())
         .map(ToOwned::to_owned);
-    let select_labels = match find_config_value(&schema_config, "menu/alternative_select_labels") {
+    let select_labels = match find_config_value(schema_config, "menu/alternative_select_labels") {
         Some(Value::Sequence(labels)) => labels
             .iter()
             .filter_map(Value::as_str)

@@ -2,10 +2,9 @@
 
 Yune is a Rust input-method engine that uses **upstream librime as a
 compatibility and performance oracle** while building a cleaner Rust engine.
-The current priority is not application integration. It is engine behavior and
-engine performance: prove that Yune can match librime's observable behavior and
-then converge toward librime's startup, mmap-backed `rsmarisa` lookup,
-lazy/page-bounded candidate iteration, memory, and allocation shape.
+The current priority is not application integration. It is preserving engine
+behavior while carrying completed M38 engine-performance parity lessons into
+future target-driven engine or product work.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -27,12 +26,15 @@ lazy/page-bounded candidate iteration, memory, and allocation shape.
 - [`decisions.md`](./decisions.md) - standing principles plus project-wide
   decision log.
 - [`requirements.md`](./requirements.md) - requirement IDs and status,
-  including the closed M37 engine gates and active M38 parity gates.
+  including the closed M37 and M38 engine gates.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
   and [`reports/yune-vs-librime-root-cause-analysis.md`](./reports/yune-vs-librime-root-cause-analysis.md)
   - current performance comparison and diagnosis.
-- [`plans/active/m38-plan-engine-performance-parity.md`](./plans/active/m38-plan-engine-performance-parity.md)
-  - active pure engine performance parity plan.
+- [`plans/completed/m38-plan-engine-performance-parity.md`](./plans/completed/m38-plan-engine-performance-parity.md)
+  - completed pure engine performance parity plan.
+- [`plans/active/m39-plan-long-input-engine-hardening.md`](./plans/active/m39-plan-long-input-engine-hardening.md)
+  - draft plan for long-input latency, memory attribution, and whole-engine
+    no-regression gates.
 - [`plans/completed/m37-plan-engine-hyper-optimization.md`](./plans/completed/m37-plan-engine-hyper-optimization.md)
   - completed engine hyper-optimization milestone.
 - [`plans/`](./plans) - active, reference, and completed plans, findings,
@@ -47,16 +49,16 @@ lazy/page-bounded candidate iteration, memory, and allocation shape.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior is complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. | Preserve upstream-observable behavior on every engine change. |
-| Engine performance | M33-M37 removed several real costs, but the fair upstream comparison still shows large lookup and memory gaps. | Close **M38** only when isolated engine startup/session and typing latency reach librime-level thresholds, with mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded candidate iteration, context export, memory, and allocation gates all satisfied. |
+| Engine performance | M38 closed the pure upstream `luna_pinyin` native parity gates for startup/session and the short/medium rows `hao`/`ni`/`zhongguo`. The post-M38 long-input baseline shows broader typing parity is not closed: `ceshiyixiachangjushuruxingnengzenyang` is Yune `412,192.727us` versus librime `294.151us` (`1,401.296x`), and the 59-character `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` stress row is Yune `1,202,404.588us` versus librime `702.212us` (`1,712.310x`). Memory also remains above librime: Track A median working set is `107,839,488-114,728,960 B` versus librime `11,091,968-15,884,288 B` (`7.22-9.72x`). | Draft M39 plan: keep the M38 startup/session and short-row wins, keep both long rows, add finer long-composition translator spans and length-curve counters, fix the measured latency owner, preserve mmap/`rsmarisa`, and run heap-owner profiling before memory optimization claims. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific frontends and application shells are outside this roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
 ## Authoritative Sequence
 
-1. **M38 engine performance parity** - active engine track after M37; it targets
-   isolated native engine startup, session lifecycle, mmap-backed `rsmarisa`
-   marisa-table lookup, lazy/page-bounded candidate iteration, context export,
-   memory, and allocation against same-run librime.
+1. **M39 long-input engine hardening** - draft active plan. Treat
+   uninterrupted 50+ character input as a primary engine requirement while
+   preserving startup/session, short-input latency, memory, mmap/`rsmarisa`,
+   page-bounded output, and behavior gates.
 2. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
 
@@ -87,52 +89,57 @@ Engine lessons carried forward:
 - Native engine wins must not be described as application, browser, or delivery
   wins without separate evidence.
 
-## M38 Readiness
+## M38 Closeout
 
-M38 is active because the clean upstream comparison still shows a large engine
-gap.
+M38 is complete. The final clean upstream comparison meets the engine latency,
+storage, lookup, iteration, behavior, and quality gates while keeping memory
+caveats explicit.
 
-M37 final upstream comparison:
+M38 final upstream comparison:
 
-- Warm startup/runtime-ready: Yune `50,415.700us`, librime `29,163.700us`
-  (`1.73x`).
-- Session create/select/destroy: Yune `48,233.200us`, librime `29,940.000us`
-  (`1.61x`).
-- `hao`: Yune `4,145.500us`, librime `11.900us` (`348.36x`).
-- `ni`: Yune `3,171.050us`, librime `14.600us` (`217.20x`).
-- `zhongguo`: Yune `4,801.675us`, librime `185.300us` (`25.91x`).
-- Median working set: Yune `159-161 MB`, librime `11-13 MB`.
+- Warm startup/runtime-ready: Yune `23,363.300us`, librime `24,351.000us`
+  (`0.959x`).
+- Session create/select/destroy: Yune `24,243.500us`, librime `27,969.500us`
+  (`0.867x`).
+- `hao`: Yune `38.933us`, librime `11.400us` (`3.415x`).
+- `ni`: Yune `56.750us`, librime `14.300us` (`3.969x`).
+- `zhongguo`: Yune `64.263us`, librime `181.375us` (`0.354x`).
+- Median working set: Yune `108-112 MB`, librime `10-13 MB`; selected
+  table/prism heap mirror bytes are `0`.
 
-The M38 closeout gates are deliberately engine-only:
+Post-M38 coverage update: long continuous pinyin rows have now been measured
+under [`reports/evidence/post-m38-long-input-baseline/baseline-native/`](./reports/evidence/post-m38-long-input-baseline/baseline-native/)
+and [`reports/evidence/post-m38-long-input-baseline/stress-59-native/`](./reports/evidence/post-m38-long-input-baseline/stress-59-native/).
+They are not in parity: `ceshiyixiachangjushuruxingnengzenyang` is Yune
+`412,192.727us`, librime `294.151us`, or `1,401.296x` slower; the 59-character
+`zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` stress row is
+Yune `1,202,404.588us`, librime `702.212us`, or `1,712.310x` slower. The next
+engine-performance plan must keep both rows, treat 50+ uninterrupted input as a
+primary engine requirement, instrument the long-composition translator path and
+length curve, and close or explicitly no-go the measured owner before claiming
+broader typing parity.
 
-- Phase 0 must rerun same-machine Yune and librime baseline rows before
-  implementation.
-- Phase 0 must attribute startup/session, raw prism lookup, raw table lookup,
-  selected table backend, `rsmarisa` lookup calls, translator candidate
-  production, context export, memory, and allocation owners.
-- Final engine status must prove a real marisa-backed deployed table is selected
-  through `rsmarisa` for the benchmarked hot path. Probe-only evidence, mmap
-  success, or extracted-payload inspection does not close M38.
-- Final selected table/prism bytes must be mmap-backed or otherwise
-  file-backed/borrowed on the native hot path. Owned-buffer selected table data
-  or a full heap mirror does not close M38.
-- Final candidate production must use lazy/page-bounded iterator behavior or an
-  equivalent bounded view for ordinary first-page reads. Full-list fallback must
-  be explicit, counted, and semantically justified.
-- Final startup and session medians must be within `1.25x` of same-run librime.
-- Final `hao`, `ni`, and `zhongguo` rows must each be within `5x` of same-run
-  librime. Rows that merely improve from M37 but remain outside this bound do
-  not close M38.
-- Final evidence must explain any remaining gap above librime. M38 cannot close
-  with unexplained lookup or memory outliers.
-- Application, frontend, browser, packaging, and public delivery performance are
-  explicitly out of scope.
+The current runs record memory baselines. Track A median working set is
+`107,839,488-114,728,960 B` for Yune versus `11,091,968-15,884,288 B` for
+librime (`7.22-9.72x`), and Yune max peak is `163,057,664-163,119,104 B`
+versus librime `14,045,184-16,154,624 B` (`10.10-11.61x`). This is measured
+working-set/peak evidence, not heap-owner attribution.
+
+Closed M38 gates:
+
+- Final Track A selected storage is `rsmarisa_byte_backed`, with positive
+  `rsmarisa` exact/prefix lookup counters and zero ordinary no-marisa fallback.
+- Final selected Track A table/prism bytes are mmap-backed and have no selected
+  heap mirror.
+- Ordinary first-page reads are page-bounded for the target rows.
+- Final reports make native isolated-engine claims only; no frontend, browser,
+  product, packaging, deployment, or public-delivery speed claim is made.
 
 ## Track Map
 
 | Track | Scope | Current source of truth |
 | --- | --- | --- |
-| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, and allocation | Active: [`plans/active/m38-plan-engine-performance-parity.md`](./plans/active/m38-plan-engine-performance-parity.md). Prior closeout: [`plans/completed/m37-plan-engine-hyper-optimization.md`](./plans/completed/m37-plan-engine-hyper-optimization.md), performance reports, and `docs/reports/evidence/`. |
+| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, and allocation | Active draft: [`plans/active/m39-plan-long-input-engine-hardening.md`](./plans/active/m39-plan-long-input-engine-hardening.md). Completed baseline: [`plans/completed/m38-plan-engine-performance-parity.md`](./plans/completed/m38-plan-engine-performance-parity.md), performance reports, and `docs/reports/evidence/m38-engine-performance-parity/`. |
 | Core compatibility | Upstream behavior fixtures and standard ABI-observable behavior | [`requirements.md`](./requirements.md), [`decisions.md`](./decisions.md), and per-milestone plans. |
 | AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
 | Historical record | Completed milestone outcomes and reference/provenance pointers | [`ledgers/milestone-history.md`](./ledgers/milestone-history.md). |
@@ -144,8 +151,8 @@ The M38 closeout gates are deliberately engine-only:
 | M0-M24 | Complete | Phase 1 named-target engine/basic oracle parity is complete; history lives in [`ledgers/milestone-history.md`](./ledgers/milestone-history.md). |
 | M25-M30 | Complete | Early performance and runtime-hardening work is historical context only. |
 | M31 | Complete | Public demo delivery is historical context and not a current engine-performance target. |
-| M33-M37 | Complete | Recent engine-performance work closed fairness, shared caches, compact storage, compiled-active paths, page-bounded materialization, and mapped storage experiments. |
-| M38 | Draft / active | Pure engine performance parity against same-run upstream librime evidence, including mandatory mmap-backed `rsmarisa` marisa-table lookup and lazy/page-bounded candidate iteration. |
+| M33-M38 | Complete | Recent engine-performance work closed fairness, shared caches, compact storage, compiled-active paths, page-bounded materialization, mapped storage, and pure upstream `luna_pinyin` native parity with `rsmarisa` hot-path lookup. |
+| M39 | Draft active | Long-input engine hardening: fix 37-character and 59-character uninterrupted input while preserving startup/session, short rows, mmap/`rsmarisa`, memory, and behavior. |
 
 ## Scope Ledger
 

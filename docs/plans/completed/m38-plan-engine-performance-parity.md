@@ -1,14 +1,58 @@
-# M38 Engine Performance Parity Plan
+﻿# M38 Engine Performance Parity Plan
 
-> **Status:** Draft / active - **Milestone:** M38 (engine performance parity) - **Created:** 2026-06-24 - **Type:** engine-performance plan
+> **Status:** Complete - **Milestone:** M38 (engine performance parity) - **Created:** 2026-06-24 - **Completed:** 2026-06-25 - **Type:** engine-performance plan
 >
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make Yune's isolated engine performance converge toward upstream librime `1.17.0` across startup, schema lifecycle, mmap-backed `rsmarisa` table lookup latency, lazy/page-bounded candidate production, context export, memory, and allocation behavior.
 
 **Architecture:** M38 treats performance as a pure engine problem. The milestone starts with isolated native engine measurements against librime, decomposes each gap into named owners, then optimizes the top engine owner without involving frontend, delivery, packaging, or application-specific pipelines. A real marisa-backed deployed table reader through `rsmarisa` over mmap/file-backed deployed bytes is a required engine data-path outcome, not a probe or optional storage experiment. Lazy/page-bounded candidate iteration is also a required outcome for ordinary first-page reads. Integration paths are used only as regression guards after isolated engine wins are proven.
 
 **Tech Stack:** Rust (`yune-core`, `yune-rime-api`), `rsmarisa`, native in-process benchmark harness, upstream `luna_pinyin` deployed table/prism/reverse assets, marisa-backed deployed table fixtures, `StaticTableTranslator`, `TableLookup`, `CompactTableStore`, `RimePrismBinPayload`, startup trace spans, per-key owner metrics, allocation/memory counters, upstream librime `1.17.0` oracle, and report visualizations under `docs/reports/evidence/`.
+
+---
+
+## Closeout Summary
+
+M38 closed on `2026-06-25` with final same-run native evidence in
+`docs/reports/evidence/m38-engine-performance-parity/phase-5-final-native/`.
+
+Final Track A upstream `luna_pinyin` medians versus same-run librime:
+
+| Row | Yune median | librime median | Ratio | Gate |
+| --- | ---: | ---: | ---: | --- |
+| startup/runtime-ready | `23,363.300us` | `24,351.000us` | `0.959x` | pass, under `1.25x` |
+| session create/select/destroy | `24,243.500us` | `27,969.500us` | `0.867x` | pass, under `1.25x` |
+| `hao` | `38.933us` | `11.400us` | `3.415x` | pass, under `5x` |
+| `ni` | `56.750us` | `14.300us` | `3.969x` | pass, under `5x` |
+| `zhongguo` | `64.263us` | `181.375us` | `0.354x` | pass, under `5x` |
+
+Final selected Track A storage is `rsmarisa_byte_backed`, with
+`table_mapping_mode=mmap`, `prism_mapping_mode=mmap`,
+`source_fallback=false`, table/prism heap mirror bytes `0`, positive
+`rsmarisa` exact/prefix lookup counters, bounded first-page reads, and no
+ordinary no-marisa compact fallback on the target rows.
+
+Whole-process memory remains above librime and is explicitly carried as
+residual context: Yune Track A medians are about `108-112 MB` versus librime
+about `10-13 MB`, with Yune max peak `163,151,872 B`. This does not block M38
+because the selected hot path has no hidden table/prism heap mirror and the
+remaining gap is reported honestly.
+
+Final verification passed:
+
+- `cargo fmt --check`
+- `cargo clippy --workspace --all-targets -- -D warnings`
+- focused compact-table, upstream `luna_pinyin`, schema-selection,
+  context-status, and yune-web reverse-lookup tests
+- `cargo test --workspace`
+- `npm.cmd --prefix packages/yune-web-runtime test`
+- `npm.cmd --prefix packages/yune-web-runtime run build`
+- final native benchmark
+- final `git diff --check` after closeout docs
+
+No frontend, browser, product, packaging, deployment, or public-delivery speed
+claim is made from M38.
 
 ---
 
@@ -228,7 +272,7 @@ Out of scope:
 - Modify: `crates/yune-core/src/m37_metrics.rs` or successor metrics module
 - Create: `docs/reports/evidence/m38-engine-performance-parity/phase-0-baseline/`
 
-- [ ] **Step 0.1: Confirm repo state**
+- [x] **Step 0.1: Confirm repo state**
 
 Run:
 
@@ -243,7 +287,7 @@ Expected:
 - Worktree dirt is known before editing.
 - The branch contains this active M38 engine-performance plan.
 
-- [ ] **Step 0.2: Rerun the same-run engine baseline**
+- [x] **Step 0.2: Rerun the same-run engine baseline**
 
 Run:
 
@@ -257,7 +301,7 @@ Expected:
   `zhongguo`, working set, and peak working set.
 - Baseline summary records same-run ratios.
 
-- [ ] **Step 0.3: Add lifecycle owner spans**
+- [x] **Step 0.3: Add lifecycle owner spans**
 
 Add or verify spans for:
 
@@ -279,7 +323,7 @@ Expected:
 - `phase-0-baseline/startup-session-attribution.md` names the largest startup
   and session owners before implementation work.
 
-- [ ] **Step 0.4: Add per-key owner metrics**
+- [x] **Step 0.4: Add per-key owner metrics**
 
 For `hao`, `ni`, and `zhongguo`, record:
 
@@ -307,7 +351,7 @@ Expected:
 - `phase-0-baseline/key-attribution.md` explains why the short-key rows remain
   far slower than librime.
 
-- [ ] **Step 0.5: Add raw engine microbench rows**
+- [x] **Step 0.5: Add raw engine microbench rows**
 
 Add Yune-only rows that isolate:
 
@@ -336,7 +380,7 @@ Expected:
 - Modify: `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`
 - Test: `crates/yune-rime-api/src/tests/schema_selection/`
 
-- [ ] **Step 1.1: Optimize the measured lifecycle owner**
+- [x] **Step 1.1: Optimize the measured lifecycle owner**
 
 Use Task 0 evidence to choose the first lifecycle change:
 
@@ -352,7 +396,7 @@ Expected:
 
 - The change targets the top measured lifecycle owner, not a speculative cache.
 
-- [ ] **Step 1.2: Capture lifecycle checkpoint**
+- [x] **Step 1.2: Capture lifecycle checkpoint**
 
 Run:
 
@@ -379,7 +423,7 @@ Expected:
 - Test: `crates/yune-core/src/tests/`
 - Test: `crates/yune-core/tests/upstream_luna_pinyin_parity.rs`
 
-- [ ] **Step 2.1: Prove the marisa table fixture**
+- [x] **Step 2.1: Prove the marisa table fixture**
 
 Add or identify a real upstream-compatible deployed table fixture whose table
 payload includes a marisa string table. Record its table format, marisa payload
@@ -395,7 +439,7 @@ Expected:
 - The evidence distinguishes a real runtime lookup fixture from an extracted
   probe payload.
 
-- [ ] **Step 2.2: Implement the `rsmarisa` table backend**
+- [x] **Step 2.2: Implement the `rsmarisa` table backend**
 
 Implement an internal marisa-backed table store that can:
 
@@ -416,7 +460,7 @@ Expected:
 - Native benchmark rows report `mapping_mode=mmap` or an equivalent
   file-backed/borrowed selected-byte path.
 
-- [ ] **Step 2.3: Select `rsmarisa` in the hot path**
+- [x] **Step 2.3: Select `rsmarisa` in the hot path**
 
 Route the benchmarked engine table path to the marisa backend when the deployed
 table supports it. Keep fallback explicit and counted.
@@ -430,7 +474,7 @@ Expected:
 - Per-key metrics show `rsmarisa` lookup calls and zero ordinary fallback to the
   no-marisa compact table.
 
-- [ ] **Step 2.4: Optimize the measured lookup owner**
+- [x] **Step 2.4: Optimize the measured lookup owner**
 
 Use Task 0 metrics to choose the first lookup change:
 
@@ -447,7 +491,7 @@ Expected:
 
 - No unrelated storage rewrite lands before the top lookup owner is named.
 
-- [ ] **Step 2.5: Implement lazy/page-sized engine iteration**
+- [x] **Step 2.5: Implement lazy/page-sized engine iteration**
 
 For ordinary first-page reads, generate candidates through a lazy/page-bounded
 iterator or equivalent bounded view: only the visible page plus bounded surplus
@@ -462,7 +506,7 @@ Expected:
   sorted/considered candidates, and full-list fallback count.
 - Candidate order stays byte-identical.
 
-- [ ] **Step 2.6: Keep exact multi-syllable lookup direct**
+- [x] **Step 2.6: Keep exact multi-syllable lookup direct**
 
 Ensure multi-syllable exact/canonical-code lookup avoids unnecessary prefix
 fallback and does not pay short-key completion breadth.
@@ -471,7 +515,7 @@ Expected:
 
 - `zhongguo` remains the proof row for direct table/prism lookup.
 
-- [ ] **Step 2.7: Capture lookup checkpoint**
+- [x] **Step 2.7: Capture lookup checkpoint**
 
 Run the benchmark into:
 
@@ -495,7 +539,7 @@ Expected:
 - Modify: `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`
 - Test: `crates/yune-rime-api/src/tests/`
 
-- [ ] **Step 3.1: Measure export and allocation after lookup changes**
+- [x] **Step 3.1: Measure export and allocation after lookup changes**
 
 After Task 2, check whether `RimeGetContext`, C-string export, allocation, or
 working-set growth is now the top owner.
@@ -505,7 +549,7 @@ Expected:
 - If export/allocation is small, do not rewrite it.
 - If export/allocation dominates, continue with Step 3.2.
 
-- [ ] **Step 3.2: Export only the visible page**
+- [x] **Step 3.2: Export only the visible page**
 
 Ensure `RimeGetContext` exports page-sized candidates without cloning a full
 list.
@@ -515,7 +559,7 @@ Expected:
 - Context candidate clones equal page size for ordinary first-page reads.
 - `RimeCandidate` ABI layout remains unchanged.
 
-- [ ] **Step 3.3: Reduce transient allocation**
+- [x] **Step 3.3: Reduce transient allocation**
 
 If allocation is measured as a top owner, reuse bounded page buffers or avoid
 duplicate string formatting before ABI export.
@@ -532,15 +576,15 @@ Expected:
 - Modify: `docs/reports/yune-vs-librime-root-cause-analysis.md`
 - Modify: `docs/roadmap.md`
 - Modify: `docs/requirements.md`
-- Move on closeout: `docs/plans/active/m38-plan-engine-performance-parity.md` to `docs/plans/completed/`
+- Moved on closeout to `docs/plans/completed/m38-plan-engine-performance-parity.md`
 - Create: `docs/reports/evidence/m38-engine-performance-parity/final-gates.md`
 
-- [ ] **Step 4.1: Run final engine benchmark**
+- [x] **Step 4.1: Run final engine benchmark**
 
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m38-engine-performance-parity\phase-3-final-native -Iterations 9 -SessionIterations 20 -KeyIterations 50
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m38-engine-performance-parity\phase-5-final-native -Iterations 9 -SessionIterations 20 -KeyIterations 50
 ```
 
 Expected:
@@ -548,7 +592,7 @@ Expected:
 - Final evidence includes same-run Yune and librime summaries, samples, owner
   metrics, startup/session traces, memory rows, and allocation notes.
 
-- [ ] **Step 4.2: Refresh reports**
+- [x] **Step 4.2: Refresh reports**
 
 Update reports with:
 
@@ -564,7 +608,7 @@ Expected:
 - The report cannot be read as a frontend, browser, application, packaging, or
   public-delivery win.
 
-- [ ] **Step 4.3: Run quality gates**
+- [x] **Step 4.3: Run quality gates**
 
 Run:
 
@@ -581,7 +625,7 @@ Expected:
 
 - All gates pass before closeout.
 
-- [ ] **Step 4.4: Close docs**
+- [x] **Step 4.4: Close docs**
 
 Record in closeout docs:
 
@@ -609,19 +653,18 @@ docs/reports/evidence/m38-engine-performance-parity/
   phase-0-baseline/
   phase-1-lifecycle/
   phase-2-lookup/
-  phase-3-final-native/
+  phase-5-final-native/
   final-gates.md
 ```
 
 Required final files:
 
-- `phase-3-final-native/summary.csv`
-- `phase-3-final-native/samples.csv`
-- `phase-3-final-native/m38_engine_metrics.csv` or successor metrics CSV
-- `phase-3-final-native/table_backend_status.csv` or markdown equivalent
-- `phase-3-final-native/mapping_status.csv` or markdown equivalent
-- `phase-3-final-native/iterator_window_metrics.csv` or markdown equivalent
-- `phase-3-final-native/startup_session_trace.csv` or markdown equivalent
+- `phase-5-final-native/summary.csv`
+- `phase-5-final-native/samples.csv`
+- `phase-5-final-native/m37_metrics.csv`
+- `phase-5-final-native/product_path_status.csv`
+- `phase-5-final-native/raw_lookup_microbench.csv`
+- `phase-5-final-native/startup_session_trace.csv`
 - `final-gates.md`
 
 ## Implementation Notes
@@ -642,3 +685,4 @@ Required final files:
   hundreds of times slower, M38 is not done.
 - If startup/session are above `1.25x` or any benchmarked typing row is above
   `5x` of same-run librime, M38 is not done even if the cause is understood.
+

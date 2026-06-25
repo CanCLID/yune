@@ -5,6 +5,7 @@ param(
     [int]$Iterations = 9,
     [int]$SessionIterations = 60,
     [int]$KeyIterations = 80,
+    [string]$TrackAInputs = "ni,hao,zhongguo",
     [switch]$DeployProductBeforeBenchmark
 )
 
@@ -176,7 +177,7 @@ $TrackBProductRun = Prepare-ProductRun "track-b-yune-product" $YuneDll
 
 $Commands = @(
     "cargo build --release -p yune-rime-api",
-    "powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot $OutputRoot -Iterations $Iterations -SessionIterations $SessionIterations -KeyIterations $KeyIterations$(if ($DeployProductBeforeBenchmark) { ' -DeployProductBeforeBenchmark' } else { '' })"
+    "powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot $OutputRoot -Iterations $Iterations -SessionIterations $SessionIterations -KeyIterations $KeyIterations -TrackAInputs $TrackAInputs$(if ($DeployProductBeforeBenchmark) { ' -DeployProductBeforeBenchmark' } else { '' })"
 )
 $Commands | Set-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
 
@@ -191,20 +192,23 @@ $Identity = @(
     "transient_work_root=$WorkRoot",
     "managed_runtime=false",
     "deploy_product_before_benchmark=$($DeployProductBeforeBenchmark.IsPresent)",
+    "track_a_inputs=$TrackAInputs",
     "iterations=$Iterations",
     "session_iterations=$SessionIterations",
     "key_iterations=$KeyIterations"
 )
 $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -Encoding UTF8
 
-Run-NativeBench "yune" "track-a-comparison" "luna_pinyin" $TrackAYuneRun $UpstreamDistLib "ni,hao,zhongguo" "track-a-yune"
-Run-NativeBench "librime-1.17.0" "track-a-comparison" "luna_pinyin" $TrackALibrimeRun (($UpstreamDistLib, $UpstreamBin, $UpstreamDistBin) -join ";") "ni,hao,zhongguo" "track-a-librime-1.17.0"
+Run-NativeBench "yune" "track-a-comparison" "luna_pinyin" $TrackAYuneRun $UpstreamDistLib $TrackAInputs "track-a-yune"
+Run-NativeBench "librime-1.17.0" "track-a-comparison" "luna_pinyin" $TrackALibrimeRun (($UpstreamDistLib, $UpstreamBin, $UpstreamDistBin) -join ";") $TrackAInputs "track-a-librime-1.17.0"
 Run-NativeBench "yune" "track-b-product" "jyut6ping3_mobile" $TrackBProductRun $RepoRoot "hai,ngohaig,jigaajiusihaa,loengjathau" "track-b-yune-product" -DeployBeforeBenchmark:$DeployProductBeforeBenchmark.IsPresent
 
 $CombinedSummary = @()
 $CombinedSamples = @()
 $CombinedM37Metrics = @()
 $CombinedProductPathStatus = @()
+$CombinedStartupSessionTrace = @()
+$CombinedRawLookupMicrobench = @()
 foreach ($Summary in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter summary.csv) {
     $CombinedSummary += Import-Csv -LiteralPath $Summary.FullName
 }
@@ -217,10 +221,18 @@ foreach ($Metrics in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter m37
 foreach ($Status in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter product_path_status.csv) {
     $CombinedProductPathStatus += Import-Csv -LiteralPath $Status.FullName
 }
+foreach ($Trace in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter startup_session_trace.csv) {
+    $CombinedStartupSessionTrace += Import-Csv -LiteralPath $Trace.FullName
+}
+foreach ($RawLookup in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter raw_lookup_microbench.csv) {
+    $CombinedRawLookupMicrobench += Import-Csv -LiteralPath $RawLookup.FullName
+}
 $CombinedSummary | Export-Csv -LiteralPath (Join-Path $OutputRoot "summary.csv") -NoTypeInformation -Encoding UTF8
 $CombinedSamples | Export-Csv -LiteralPath (Join-Path $OutputRoot "samples.csv") -NoTypeInformation -Encoding UTF8
 $CombinedM37Metrics | Export-Csv -LiteralPath (Join-Path $OutputRoot "m37_metrics.csv") -NoTypeInformation -Encoding UTF8
 $CombinedProductPathStatus | Export-Csv -LiteralPath (Join-Path $OutputRoot "product_path_status.csv") -NoTypeInformation -Encoding UTF8
+$CombinedStartupSessionTrace | Export-Csv -LiteralPath (Join-Path $OutputRoot "startup_session_trace.csv") -NoTypeInformation -Encoding UTF8
+$CombinedRawLookupMicrobench | Export-Csv -LiteralPath (Join-Path $OutputRoot "raw_lookup_microbench.csv") -NoTypeInformation -Encoding UTF8
 
 @"
 # Native In-Process Benchmark
@@ -229,4 +241,5 @@ This run uses the Rust `native_inprocess_benchmark` bench and loads each engine 
 
 - Track A: `luna_pinyin`, Yune versus librime `1.17.0`.
 - Track B: `jyut6ping3_mobile`, Yune product path before/after.
+- Track A inputs: `$TrackAInputs`.
 "@ | Set-Content -LiteralPath (Join-Path $OutputRoot "README.md") -Encoding UTF8

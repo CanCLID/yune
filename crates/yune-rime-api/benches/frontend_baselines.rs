@@ -2,7 +2,7 @@ use std::{
     collections::BTreeMap,
     ffi::CString,
     fs, mem,
-    os::raw::c_int,
+    os::raw::{c_int, c_void},
     path::{Path, PathBuf},
     ptr,
     sync::{Mutex, MutexGuard, OnceLock},

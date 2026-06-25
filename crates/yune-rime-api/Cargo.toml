@@ -18,10 +18,10 @@ yune-core = { path = "../yune-core" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 memmap2 = "0.9"
+rsmarisa = "0.4.2"
 
 [dev-dependencies]
 libloading = "0.8"
-rsmarisa = "0.4.2"
 
 [lints.rust]
 unsafe_code = "allow"

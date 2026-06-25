@@ -1,0 +1,2 @@
+﻿cargo build --release -p yune-rime-api
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot C:\Users\laubonghaudoi\Documents\GitHub\yune\docs\reports\evidence\m38-engine-performance-parity\phase-3-final-native -Iterations 9 -SessionIterations 20 -KeyIterations 50

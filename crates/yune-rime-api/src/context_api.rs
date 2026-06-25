@@ -2,22 +2,23 @@ use std::{ffi::CString, os::raw::c_int, ptr, time::Instant};
 
 use crate::{
     apply_visible_switch_radio_defaults, bool_from, clear_commit, clear_context, clear_status,
-    context_has_commit_text_preview, context_has_select_labels, context_menu_settings,
-    free_rime_candidates, sessions, Bool, RimeCandidate, RimeCommit, RimeContext, RimeSessionId,
-    RimeStatus, FALSE, TRUE,
+    context_has_commit_text_preview, context_has_select_labels, free_rime_candidates, sessions,
+    Bool, RimeCandidate, RimeCommit, RimeContext, RimeSessionId, RimeStatus, FALSE, TRUE,
 };
 
-struct M37GetContextTimer(Instant);
+struct M37GetContextTimer(Option<Instant>);
 
 impl M37GetContextTimer {
     fn start() -> Self {
-        Self(Instant::now())
+        Self(yune_core::m37_metrics_enabled().then(Instant::now))
     }
 }
 
 impl Drop for M37GetContextTimer {
     fn drop(&mut self) {
-        yune_core::m37_record_abi_get_context(self.0.elapsed());
+        if let Some(start) = self.0.take() {
+            yune_core::m37_record_abi_get_context(start.elapsed());
+        }
     }
 }
 
@@ -89,8 +90,7 @@ pub unsafe extern "C" fn RimeGetContext(
         };
         apply_visible_switch_radio_defaults(session);
         let composition_input = session.engine.context().composition.input.clone();
-        let status = session.engine.status();
-        let menu_settings = context_menu_settings(&status.schema_id);
+        let menu_settings = session.menu_settings.clone();
         (
             session.engine.page_snapshot(menu_settings.page_size),
             menu_settings,
@@ -108,7 +108,12 @@ pub unsafe extern "C" fn RimeGetContext(
     let select_keys = match menu_settings.select_keys.as_deref() {
         Some(select_keys) if !select_keys.as_bytes().contains(&0) => {
             match CString::new(select_keys) {
-                Ok(select_keys) => Some(select_keys),
+                Ok(select_keys) => {
+                    yune_core::m37_record_abi_c_string_allocation(
+                        select_keys.as_bytes_with_nul().len(),
+                    );
+                    Some(select_keys)
+                }
                 Err(_) => return FALSE,
             }
         }
@@ -144,6 +149,7 @@ pub unsafe extern "C" fn RimeGetContext(
         let Ok(preedit) = CString::new(preedit_text) else {
             return FALSE;
         };
+        yune_core::m37_record_abi_c_string_allocation(preedit.as_bytes_with_nul().len());
         let commit_text_preview = if composition.input.is_empty() {
             None
         } else if unsafe { context_has_commit_text_preview(context) } {
@@ -156,7 +162,12 @@ pub unsafe extern "C" fn RimeGetContext(
                     |candidate| candidate.commit_text_for_input(&composition.input),
                 );
             match CString::new(preview) {
-                Ok(preview) => Some(preview),
+                Ok(preview) => {
+                    yune_core::m37_record_abi_c_string_allocation(
+                        preview.as_bytes_with_nul().len(),
+                    );
+                    Some(preview)
+                }
                 Err(_) => return FALSE,
             }
         } else {
@@ -210,6 +221,7 @@ pub unsafe extern "C" fn RimeGetContext(
                 free_rime_candidates(&mut rime_candidates);
                 return FALSE;
             };
+            yune_core::m37_record_abi_c_string_allocation(text.as_bytes_with_nul().len());
             let comment = if candidate.comment.is_empty() {
                 ptr::null_mut()
             } else {
@@ -217,6 +229,7 @@ pub unsafe extern "C" fn RimeGetContext(
                     free_rime_candidates(&mut rime_candidates);
                     return FALSE;
                 };
+                yune_core::m37_record_abi_c_string_allocation(comment.as_bytes_with_nul().len());
                 comment.into_raw()
             };
             rime_candidates.push(RimeCandidate {
@@ -235,6 +248,7 @@ pub unsafe extern "C" fn RimeGetContext(
                     free_rime_candidates(&mut rime_candidates);
                     return FALSE;
                 };
+                yune_core::m37_record_abi_c_string_allocation(label.as_bytes_with_nul().len());
                 labels.push(label);
             }
             let mut labels = labels

@@ -1,0 +1,11 @@
+﻿date_utc=2026-06-25T08:13:27.8873453Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=88da12e76216e3d21bc8a106b925bb7de21201c2
+yune_git_status_short= M Cargo.lock |  M crates/yune-core/Cargo.toml |  M crates/yune-core/src/dictionary/compiled_table.rs |  M crates/yune-core/src/dictionary/mod.rs |  M crates/yune-core/src/dictionary/query_table.rs |  M crates/yune-core/src/engine.rs |  M crates/yune-core/src/lib.rs |  M crates/yune-core/src/m37_metrics.rs |  M crates/yune-core/src/tests/dictionary.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-rime-api/Cargo.toml |  M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M crates/yune-rime-api/src/context_api.rs |  M crates/yune-rime-api/src/deployment.rs |  M crates/yune-rime-api/src/lib.rs |  M crates/yune-rime-api/src/processors/selector.rs |  M crates/yune-rime-api/src/runtime.rs |  M crates/yune-rime-api/src/schema_install.rs |  M crates/yune-rime-api/src/schema_selection.rs |  M crates/yune-rime-api/src/session.rs |  M scripts/benchmark-native-rime-inprocess.ps1 | ?? docs/reports/evidence/m38-engine-performance-parity/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-2-rsmarisa-session-checkpoint
+managed_runtime=false
+deploy_product_before_benchmark=False
+iterations=5
+session_iterations=10
+key_iterations=20

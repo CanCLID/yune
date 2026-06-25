@@ -35,6 +35,7 @@ use crate::{
 /// `traits` follows the same preconditions as `RimeSetup`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
+    let _trace = crate::startup_trace::span("runtime_initialize");
     // SAFETY: forwarded preconditions are identical to `RimeSetup`.
     unsafe { RimeSetup(traits) };
     service_started().store(true, Ordering::SeqCst);
@@ -42,6 +43,7 @@ pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
 
 #[no_mangle]
 pub extern "C" fn RimeFinalize() {
+    let _trace = crate::startup_trace::span("runtime_finalize");
     RimeCleanupAllSessions();
     service_started().store(false, Ordering::SeqCst);
 }

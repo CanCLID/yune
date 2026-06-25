@@ -1,0 +1,11 @@
+﻿date_utc=2026-06-25T06:59:12.7157420Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=e79c337c55ebe7f5112225c74353e34d70888a56
+yune_git_status_short=?? docs/reports/evidence/m38-engine-performance-parity/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-0-baseline
+managed_runtime=false
+deploy_product_before_benchmark=False
+iterations=9
+session_iterations=20
+key_iterations=50

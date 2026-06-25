@@ -13,8 +13,8 @@ use yune_core::{Engine, KeyEvent};
 
 use crate::{
     apply_schema_to_session, bool_from, deployed_schema_list_entries, userdb, AffixSegmentor,
-    AsciiModeSwitchStyle, Bool, ChordComposerProcessor, EditorBindingAction, EditorCharHandler,
-    EditorProcessor, KeyBinderProcessor, MatcherSegmentor, NavigatorBindings,
+    AsciiModeSwitchStyle, Bool, ChordComposerProcessor, ContextMenuSettings, EditorBindingAction,
+    EditorCharHandler, EditorProcessor, KeyBinderProcessor, MatcherSegmentor, NavigatorBindings,
     NavigatorSyllableJumpPosition, PunctSegmentor, PunctuationProcessor, RecognizerProcessor,
     RimeSessionId, SelectorBindings, SpellerProcessor, FALSE,
 };
@@ -108,6 +108,9 @@ pub(crate) struct SessionState {
     pub(crate) matcher_segmentor: Option<MatcherSegmentor>,
     pub(crate) fallback_segmentor_enabled: bool,
     pub(crate) remaining_gear_deferrals: Vec<RemainingGearDeferral>,
+    pub(crate) menu_settings: ContextMenuSettings,
+    pub(crate) schema_reload_signature: Option<String>,
+    pub(crate) schema_reload_watch_signature: Option<String>,
     pub(crate) paging: bool,
     pub(crate) user_dict_name: Option<String>,
     pub(crate) last_active_time: u64,
@@ -142,6 +145,9 @@ impl SessionState {
             matcher_segmentor: None,
             fallback_segmentor_enabled: false,
             remaining_gear_deferrals: Vec::new(),
+            menu_settings: ContextMenuSettings::default(),
+            schema_reload_signature: None,
+            schema_reload_watch_signature: None,
             paging: false,
             user_dict_name: None,
             last_active_time: session_activity_now(),
@@ -203,6 +209,7 @@ pub(crate) fn service_started() -> &'static AtomicBool {
 
 #[no_mangle]
 pub extern "C" fn RimeCreateSession() -> RimeSessionId {
+    let _trace = crate::startup_trace::span("session_create");
     sessions()
         .lock()
         .expect("session registry should not be poisoned")
@@ -219,6 +226,7 @@ pub extern "C" fn RimeFindSession(session_id: RimeSessionId) -> Bool {
 
 #[no_mangle]
 pub extern "C" fn RimeDestroySession(session_id: RimeSessionId) -> Bool {
+    let _trace = crate::startup_trace::span("session_destroy");
     bool_from(
         session_id != 0
             && sessions()

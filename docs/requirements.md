@@ -332,21 +332,64 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 
 ## M38 Engine Performance Parity Requirements
 
-**Status: active / planned.** M38 is the pure isolated-engine parity milestone from [`plans/active/m38-plan-engine-performance-parity.md`](./plans/active/m38-plan-engine-performance-parity.md). It cannot close from product, frontend, browser, packaging, or delivery evidence. Closeout requires fresh same-run upstream librime `1.17.0` comparison evidence plus the hard storage, lookup, iteration, memory, behavior, and quality gates below.
+**Status: complete.** M38 closed as the pure isolated-engine parity milestone in [`plans/completed/m38-plan-engine-performance-parity.md`](./plans/completed/m38-plan-engine-performance-parity.md). Closeout evidence lives under [`reports/evidence/m38-engine-performance-parity/`](./reports/evidence/m38-engine-performance-parity/), with the final same-run native benchmark in `phase-5-final-native/` and final gate summary in `final-gates.md`.
 
-- [ ] **M38-ENGINE-01**: Every M38 performance claim is grounded in isolated native engine evidence. Product, frontend, browser, packaging, and delivery rows may appear only as regression guards and cannot close the milestone.
-- [ ] **M38-ENGINE-02**: Phase 0 reruns a fresh same-machine Yune and upstream librime `1.17.0` baseline for startup/runtime-ready, session create/select/destroy, `hao`, `ni`, `zhongguo`, working set, and peak working set before implementation.
-- [ ] **M38-ENGINE-03**: Phase 0 attributes startup/session and per-key owners before optimization, including runtime init, schema config, deployed artifact open/read/map, mapping mode, bytes copied, heap mirror bytes, selected table backend, `rsmarisa` calls, prism/table lookup, prefix/completion enumeration, iterator/window mode, materialization, sorting/top-K, context export, ABI allocation, memory, and allocation bytes.
-- [ ] **M38-ENGINE-04**: Final engine status proves a real marisa-backed deployed table is selected through `rsmarisa` for the benchmarked hot path. Positive `rsmarisa` lookup counters and zero ordinary no-marisa compact fallback are required; probe-only evidence does not close.
-- [ ] **M38-ENGINE-05**: Final selected table/prism bytes for the native benchmark path are mmap-backed or otherwise file-backed/borrowed from deployed bytes. Metrics report mapping mode, table bytes source, copied bytes, and heap mirror bytes. Owned selected hot-path table buffers or full heap mirrors do not close M38.
-- [ ] **M38-ENGINE-06**: Final startup/runtime-ready and session create/select/destroy medians are within `1.25x` of same-run upstream librime.
-- [ ] **M38-ENGINE-07**: Final `hao`, `ni`, and `zhongguo` key rows are each within `5x` of same-run upstream librime. Rows that only improve from M37 but remain outside this bound do not close M38.
-- [ ] **M38-ENGINE-08**: M38 adds or preserves Yune-only microbench rows for raw prism lookup, raw table lookup, raw `rsmarisa` lookup, translator candidate production, and page-sized context export so the remaining owner is diagnosable.
-- [ ] **M38-ENGINE-09**: Ordinary first-page reads use lazy/page-bounded translation iteration or an equivalent bounded view. Owned candidates, candidate clones, context export, and sort/top-K work scale with visible page plus bounded surplus; any full-list fallback is explicit, counted, and semantically justified.
-- [ ] **M38-ENGINE-10**: Final evidence reports working set, peak working set, and the best available allocation attribution. A latency win that adds a hidden heap mirror or leaves memory unexplained does not close M38.
-- [ ] **M38-ENGINE-11**: Upstream `luna_pinyin` behavior remains oracle-safe for paging, selection, deletion, context reads, and touched shared-code compatibility tests.
-- [ ] **M38-ENGINE-12**: Final reports make only native isolated-engine claims. They must not claim frontend, browser, product, packaging, deployment, or public-delivery wins without separate evidence.
-- [ ] **M38-ENGINE-13**: Closeout records final quality gates: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, focused engine and touched compatibility tests, `cargo test --workspace`, final native benchmark, touched report/chart checks, and `git diff --check`.
+- [x] **M38-ENGINE-01**: Final M38 claims are native isolated-engine claims only. Product rows remain regression/status context and no frontend, browser, packaging, deployment, or public-delivery speed claim is made.
+- [x] **M38-ENGINE-02**: Phase 0 reran fresh same-machine Yune and upstream librime `1.17.0` startup/runtime-ready, session create/select/destroy, `hao`, `ni`, `zhongguo`, working set, and peak working set before implementation.
+- [x] **M38-ENGINE-03**: Phase 0 and final evidence attribute startup/session and per-key owners, including selected backend, mapping mode, heap mirror bytes, `rsmarisa` calls, raw prism/table lookup, translator production, context export, memory, and ABI allocation bytes.
+- [x] **M38-ENGINE-04**: Final Track A status proves `selected_storage=rsmarisa_byte_backed` over the deployed `luna_pinyin` marisa table, with positive `rsmarisa` exact/prefix counters and zero ordinary no-marisa compact fallback.
+- [x] **M38-ENGINE-05**: Final selected Track A table and prism bytes are mmap-backed; table/prism heap mirror bytes are `0`.
+- [x] **M38-ENGINE-06**: Final startup/runtime-ready and session medians are within `1.25x` of same-run upstream librime: startup `0.959x`, session `0.867x`.
+- [x] **M38-ENGINE-07**: Final `hao`, `ni`, and `zhongguo` rows are each within `5x` of same-run upstream librime: `3.415x`, `3.969x`, and `0.354x`.
+- [x] **M38-ENGINE-08**: Final evidence includes Yune-only raw prism, raw table, raw `rsmarisa`, translator, and context-export microbench rows.
+- [x] **M38-ENGINE-09**: Ordinary Track A first-page reads are page-bounded; final counters show bounded reads, owned candidates/page clones scaled to page plus bounded surplus, and no full-list fallback on the target rows.
+- [x] **M38-ENGINE-10**: Final evidence reports working set, peak working set, allocation counters, and the remaining whole-process memory gap while preserving zero selected table/prism heap mirror bytes.
+- [x] **M38-ENGINE-11**: Upstream `luna_pinyin` behavior and touched compatibility paths are covered by focused tests plus `cargo test --workspace`.
+- [x] **M38-ENGINE-12**: Final reports make only native isolated-engine claims and explicitly exclude frontend/browser/product/delivery speed claims.
+- [x] **M38-ENGINE-13**: Closeout records final quality gates: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, focused engine and touched compatibility tests, `cargo test --workspace`, final native benchmark, report checks, and final `git diff --check`.
+
+## Post-M38 Engine Performance Follow-Up Requirements
+
+**Status: draft.** These requirements do not reopen M38. The post-M38 baseline
+in [`reports/evidence/post-m38-long-input-baseline/baseline-native/`](./reports/evidence/post-m38-long-input-baseline/baseline-native/)
+and the 59-character stress run in
+[`reports/evidence/post-m38-long-input-baseline/stress-59-native/`](./reports/evidence/post-m38-long-input-baseline/stress-59-native/)
+show that uninterrupted long input is not in parity. These requirements define
+evidence that the next engine-performance milestone must keep before claiming
+broader typing parity.
+
+- [ ] **POST-M38-PERF-01**: The next same-run native Yune-versus-librime
+  benchmark keeps the M38 Track A rows (`hao`, `ni`, `zhongguo`) and includes
+  the required long continuous pinyin rows
+  `ceshiyixiachangjushuruxingnengzenyang` and
+  `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong`.
+- [ ] **POST-M38-PERF-02**: The long-input rows record the same evidence shape
+  as the M38 target rows: Yune/librime medians and ratios, selected backend,
+  mapping mode, heap mirror bytes, rsmarisa/no-marisa fallback counters, raw
+  prism/table lookup, translator production, context export, memory,
+  allocation, and ABI export counters.
+- [ ] **POST-M38-PERF-03**: Any long-input optimization claim identifies whether
+  the owner is lookup enumeration, sentence/full-list behavior, paging/context
+  growth, ABI export, userdb/filter/ranker work, or another measured bucket.
+- [ ] **POST-M38-PERF-04**: Long-composition translator attribution splits the
+  current top-level translator bucket into inner owners, including
+  sentence/full-list fallback, `StaticTableTranslator::sentence_candidate`,
+  substring exact/prefix lookup loops, path cloning, sorting, context/export,
+  and any userdb/filter/ranker work that fires for the long row.
+- [ ] **POST-M38-PERF-05**: Memory follow-up uses the post-M38 working-set/peak
+  baseline as the comparison anchor and adds heap-owner attribution before any
+  memory reduction claim is accepted.
+- [ ] **POST-M38-PERF-06**: Long uninterrupted input is treated as a primary
+  engine requirement, not an optional stress test. The next milestone records a
+  length-curve benchmark around short, medium, 37-character, 50+ character, and
+  59-character inputs, and it does not claim broader typing parity unless the
+  50+ character row is brought into the agreed same-run librime ratio gate or
+  closed by an explicit measured no-go.
+- [ ] **POST-M38-PERF-07**: The next engine-performance milestone blocks
+  cross-dimension regressions: startup/session, short-input latency, long-input
+  latency, mmap/`rsmarisa` activation, bounded output, working set, peak memory,
+  and upstream-observable behavior must all be reported and must not regress
+  outside the milestone's explicit gates.
 
 ## Out of Scope
 
@@ -597,19 +640,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M37-ENGINE-09 | M37 | Complete - final native product path reports `mapping_mode=mmap`; `rsmarisa` probes also report `mmap` |
 | M37-ENGINE-10 | M37 | Complete - reports separate native/browser and Track A/Track B claims; no browser speed claim is made |
 | M37-ENGINE-11 | M37 | Complete - final quality gates are recorded in the completed M37 plan; runtime/browser gates were N/A for performance claims |
-| M38-ENGINE-01 | M38 | Active - isolated native engine evidence is the only closeout evidence; product/frontend/browser rows are regression guards only |
-| M38-ENGINE-02 | M38 | Active - fresh same-run upstream librime baseline required before implementation |
-| M38-ENGINE-03 | M38 | Active - startup/session, lookup, materialization, context, memory, and allocation owner attribution required before optimization |
-| M38-ENGINE-04 | M38 | Active - final hot path must use a real marisa-backed deployed table through `rsmarisa`; probes do not close |
-| M38-ENGINE-05 | M38 | Active - final native hot path must be mmap/file-backed or borrowed from deployed bytes without a full heap mirror |
-| M38-ENGINE-06 | M38 | Active - final startup/runtime-ready and session medians must be within `1.25x` of same-run upstream librime |
-| M38-ENGINE-07 | M38 | Active - final `hao`, `ni`, and `zhongguo` rows must each be within `5x` of same-run upstream librime |
-| M38-ENGINE-08 | M38 | Active - raw prism, raw table, raw `rsmarisa`, translator, and context-export microbench rows required |
-| M38-ENGINE-09 | M38 | Active - first-page reads must use lazy/page-bounded iteration or an equivalent bounded view with full-list fallback counted |
-| M38-ENGINE-10 | M38 | Active - working set, peak working set, and allocation attribution required; hidden heap mirror does not close |
-| M38-ENGINE-11 | M38 | Active - touched upstream `luna_pinyin` behavior and shared compatibility tests remain oracle-safe |
-| M38-ENGINE-12 | M38 | Active - final reports make only native isolated-engine claims without separate frontend/browser/product evidence |
-| M38-ENGINE-13 | M38 | Active - fmt, clippy, focused tests, workspace tests, final native benchmark, report checks, and `git diff --check` required |
+| M38-ENGINE-01 | M38 | Complete - final claims are native isolated-engine only; product/frontend/browser rows are not used as closeout evidence |
+| M38-ENGINE-02 | M38 | Complete - phase 0 recorded fresh same-run upstream librime and Yune baseline rows |
+| M38-ENGINE-03 | M38 | Complete - owner attribution recorded for lifecycle, lookup, materialization, context, memory, and allocation rows |
+| M38-ENGINE-04 | M38 | Complete - final Track A hot path uses `rsmarisa_byte_backed` deployed table lookup with positive counters and zero no-marisa fallback |
+| M38-ENGINE-05 | M38 | Complete - final selected table/prism bytes are mmap-backed with table/prism heap mirror bytes `0` |
+| M38-ENGINE-06 | M38 | Complete - final startup/session medians are within `1.25x` of same-run librime |
+| M38-ENGINE-07 | M38 | Complete - final `hao`, `ni`, and `zhongguo` rows are each within `5x` of same-run librime |
+| M38-ENGINE-08 | M38 | Complete - raw prism, raw table, raw `rsmarisa`, translator, and context-export rows recorded |
+| M38-ENGINE-09 | M38 | Complete - first-page reads are page-bounded for target rows with fallback counters reported |
+| M38-ENGINE-10 | M38 | Complete - working set, peak working set, allocation counters, and remaining memory gap are reported honestly |
+| M38-ENGINE-11 | M38 | Complete - touched upstream `luna_pinyin` behavior and shared compatibility tests are green |
+| M38-ENGINE-12 | M38 | Complete - final reports make only native isolated-engine claims |
+| M38-ENGINE-13 | M38 | Complete - fmt, clippy, focused tests, workspace tests, final native benchmark, report checks, and `git diff --check` recorded |
+| POST-M38-PERF-01 | Post-M38 | Draft - next same-run native benchmark must include required long continuous pinyin rows `ceshiyixiachangjushuruxingnengzenyang` and `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` |
+| POST-M38-PERF-02 | Post-M38 | Draft - long-input rows must carry the same owner/status/memory/allocation evidence as the M38 rows |
+| POST-M38-PERF-03 | Post-M38 | Draft - long-input optimization claims must name the measured owner |
+| POST-M38-PERF-04 | Post-M38 | Draft - long-composition translator attribution must split the current top-level translator bucket into inner owners |
+| POST-M38-PERF-05 | Post-M38 | Draft - memory follow-up must use the post-M38 working-set/peak baseline and add heap-owner attribution |
+| POST-M38-PERF-06 | Post-M38 | Draft - long uninterrupted 50+ character input is a primary engine requirement and must be covered by a length-curve benchmark plus an explicit parity/no-go gate |
+| POST-M38-PERF-07 | Post-M38 | Draft - next engine-performance milestone must report and block regressions across startup/session, short input, long input, mmap/rsmarisa, bounded output, memory, and behavior |
 
 **Coverage:**
 
@@ -639,10 +689,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M35 compact table+prism runtime storage performance requirements: 14 total, 13 complete, 1 closed by no-go, 0 draft
 - M36 product-path engine optimization requirements: 10 total, 7 complete, 3 closed by no-go, 0 draft
 - M37 engine hyper-optimization requirements: 11 total, 11 complete, 0 planned
-- M38 engine performance parity requirements: 13 total, 13 active, 0 complete
-- Mapped to phases: 244
+- M38 engine performance parity requirements: 13 total, 13 complete, 0 active
+- Post-M38 engine performance follow-up requirements: 7 total, 0 complete, 7 draft
+- Mapped to phases: 251
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-24 - M38 is active as a pure isolated-engine performance parity milestone against same-run upstream librime. It cannot close without mmap/file-backed selected bytes, real `rsmarisa` hot-path lookup, lazy/page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x` of librime, `hao`/`ni`/`zhongguo` within `5x` of librime, behavior gates, honest native-only claims, and final quality gates. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-25 - M38 engine performance parity is complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. The post-M38 long-input baseline adds `ceshiyixiachangjushuruxingnengzenyang` and shows broader typing parity is not closed (`412,192.727us` Yune versus `294.151us` librime); the 59-character stress run adds `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` and records `1,202,404.588us` Yune versus `702.212us` librime. Draft follow-up requirements now require keeping both long rows, treating 50+ uninterrupted input as a primary engine requirement, splitting the long-composition translator owner, adding a length-curve benchmark, blocking cross-dimension regressions, and adding heap-owner attribution before a memory reduction claim. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._

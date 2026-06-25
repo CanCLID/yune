@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="444" viewBox="0 0 980 444" role="img" aria-labelledby="title desc">
+<title id="title">M38 Track B product redeploy memory check</title>
+<desc id="desc">Bar chart comparing M37 final and M38 redeployed TypeDuck product median working set and peak working set.</desc>
+<rect width="100%" height="100%" fill="#fbfaf7"/>
+<text x="34" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#202124">M38 Track B product redeploy memory check</text>
+<text x="34" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#5f6368">jyut6ping3_mobile working set in MiB after rerunning M38 with fresh deployed product artifacts.</text>
+<rect x="190" y="84" width="14" height="14" fill="#2f6f73"/><text x="210" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#3c4043">M37 final</text>
+<rect x="360" y="84" width="14" height="14" fill="#4b6b9b"/><text x="380" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#3c4043">M38 redeploy check</text>
+
+<text x="34" y="120" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">hai</text>
+<rect x="190" y="102" width="466" height="16" rx="3" fill="#2f6f73"/>
+<text x="664" y="115" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">350.3 MiB</text>
+<rect x="190" y="125" width="559" height="16" rx="3" fill="#4b6b9b"/>
+<text x="757" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">420.2 MiB</text>
+<line x1="190" x2="830" y1="149" y2="149" stroke="#e4e1dc"/>
+
+<text x="34" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">ngohaig</text>
+<rect x="190" y="160" width="467" height="16" rx="3" fill="#2f6f73"/>
+<text x="665" y="173" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">350.9 MiB</text>
+<rect x="190" y="183" width="559" height="16" rx="3" fill="#4b6b9b"/>
+<text x="757" y="196" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">420.4 MiB</text>
+<line x1="190" x2="830" y1="207" y2="207" stroke="#e4e1dc"/>
+
+<text x="34" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">loengjathau</text>
+<rect x="190" y="218" width="463" height="16" rx="3" fill="#2f6f73"/>
+<text x="661" y="231" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">348.0 MiB</text>
+<rect x="190" y="241" width="560" height="16" rx="3" fill="#4b6b9b"/>
+<text x="758" y="254" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">421.0 MiB</text>
+<line x1="190" x2="830" y1="265" y2="265" stroke="#e4e1dc"/>
+
+<text x="34" y="294" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">jigaajiusihaa</text>
+<rect x="190" y="276" width="469" height="16" rx="3" fill="#2f6f73"/>
+<text x="667" y="289" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">352.3 MiB</text>
+<rect x="190" y="299" width="560" height="16" rx="3" fill="#4b6b9b"/>
+<text x="758" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">421.0 MiB</text>
+<line x1="190" x2="830" y1="323" y2="323" stroke="#e4e1dc"/>
+
+<text x="34" y="352" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">product peak</text>
+<rect x="190" y="334" width="640" height="16" rx="3" fill="#2f6f73"/>
+<text x="838" y="347" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">481.0 MiB</text>
+<rect x="190" y="357" width="640" height="16" rx="3" fill="#4b6b9b"/>
+<text x="838" y="370" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">481.1 MiB</text>
+<line x1="190" x2="830" y1="381" y2="381" stroke="#e4e1dc"/>
+
+<text x="190" y="412" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#5f6368">Source: Track B summary.csv working-set bytes divided by 1,048,576. Median rows rise, peak stays flat.</text>
+</svg>

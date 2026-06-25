@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     fs,
     path::Path,
 };
@@ -71,7 +71,7 @@ fn heap_table_lookup_exposes_exact_prefix_and_all_code_queries() {
             .prefix_candidates("ni")
             .map(|entry| {
                 let (code, candidate) = entry.into_parts();
-                (code.to_owned(), candidate.text().to_owned())
+                (code.into_owned(), candidate.text().to_owned())
             })
             .collect::<Vec<_>>(),
         [
@@ -81,7 +81,10 @@ fn heap_table_lookup_exposes_exact_prefix_and_all_code_queries() {
         ]
     );
     assert_eq!(
-        lookup.all_codes().collect::<Vec<_>>(),
+        lookup
+            .all_codes()
+            .map(|code| code.into_owned())
+            .collect::<Vec<_>>(),
         ["hao", "ni", "nia", "nib"]
     );
 }
@@ -129,13 +132,13 @@ fn compact_table_lookup_matches_heap_exact_prefix_and_all_code_queries() {
             .prefix_candidates("ni")
             .map(|entry| {
                 let (code, candidate) = entry.into_parts();
-                (code.to_owned(), candidate.text().to_owned())
+                (code.into_owned(), candidate.text().to_owned())
             })
             .collect::<Vec<_>>(),
         heap.prefix_candidates("ni")
             .map(|entry| {
                 let (code, candidate) = entry.into_parts();
-                (code.to_owned(), candidate.text().to_owned())
+                (code.into_owned(), candidate.text().to_owned())
             })
             .collect::<Vec<_>>()
     );
@@ -151,6 +154,135 @@ fn compact_table_lookup_matches_heap_exact_prefix_and_all_code_queries() {
         compact.tolerance_rules(),
         [RimeToleranceRule::new("en", ["eng"])]
     );
+}
+
+#[test]
+fn compact_table_lookup_resolves_marisa_backed_upstream_table_entries() {
+    let bytes = build_marisa_table_fixture();
+    let compact =
+        parse_compact_table_bin_lookup(&bytes).expect("marisa-backed upstream table should parse");
+
+    assert_eq!(compact.storage_label(), "rsmarisa_byte_backed");
+    assert!(compact.has_code("a"));
+    assert!(compact.has_code("xian"));
+    assert!(compact.has_code("zhongguo"));
+    assert!(compact.has_code("zhongguorenmin"));
+    assert!(!compact.has_code("zhongguoa"));
+    assert!(!compact.has_code("zhongguorenmina"));
+
+    let single = compact
+        .exact_candidates("a")
+        .map(|candidate| {
+            (
+                candidate.text().to_owned(),
+                candidate.raw_comment().to_owned(),
+                candidate.raw_quality(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        single,
+        [
+            ("\u{554a}".to_owned(), "a".to_owned(), 11.0),
+            ("\u{963f}".to_owned(), "a".to_owned(), 9.0)
+        ]
+    );
+
+    let phrase = compact
+        .exact_candidates("zhongguo")
+        .map(|candidate| {
+            (
+                candidate.text().to_owned(),
+                candidate.raw_comment().to_owned(),
+                candidate.raw_quality(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        phrase,
+        [("\u{4e2d}\u{56fd}".to_owned(), "zhongguo".to_owned(), 13.0)]
+    );
+
+    let long_phrase = compact
+        .exact_candidates("zhongguorenmin")
+        .map(|candidate| {
+            (
+                candidate.text().to_owned(),
+                candidate.raw_comment().to_owned(),
+                candidate.raw_quality(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        long_phrase,
+        [(
+            "\u{4e2d}\u{534e}\u{4eba}\u{6c11}\u{5171}\u{548c}\u{56fd}".to_owned(),
+            "zhongguorenmin".to_owned(),
+            21.0
+        )]
+    );
+
+    let ambiguous = compact
+        .exact_candidates("xian")
+        .map(|candidate| {
+            (
+                candidate.text().to_owned(),
+                candidate.raw_comment().to_owned(),
+                candidate.raw_quality(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        ambiguous,
+        [
+            ("\u{5148}".to_owned(), "xian".to_owned(), 15.0),
+            ("\u{897f}\u{5b89}".to_owned(), "xian".to_owned(), 14.0)
+        ]
+    );
+
+    let prefix = compact
+        .prefix_candidates("zhongg")
+        .map(|entry| {
+            let (code, candidate) = entry.into_parts();
+            (
+                code.into_owned(),
+                candidate.text().to_owned(),
+                candidate.raw_comment().to_owned(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        prefix,
+        [
+            (
+                "zhongguo".to_owned(),
+                "\u{4e2d}\u{56fd}".to_owned(),
+                "zhongguo".to_owned()
+            ),
+            (
+                "zhongguoren".to_owned(),
+                "\u{4e2d}\u{56fd}\u{4eba}".to_owned(),
+                "zhongguoren".to_owned()
+            ),
+            (
+                "zhongguorenmin".to_owned(),
+                "\u{4e2d}\u{534e}\u{4eba}\u{6c11}\u{5171}\u{548c}\u{56fd}".to_owned(),
+                "zhongguorenmin".to_owned()
+            )
+        ]
+    );
+
+    let all_codes_list = compact
+        .all_codes()
+        .map(|code| code.into_owned())
+        .collect::<Vec<_>>();
+    assert!(all_codes_list.iter().any(|code| code == "xian"));
+    let all_codes = all_codes_list.into_iter().collect::<HashSet<_>>();
+    assert!(all_codes.contains("a"));
+    assert!(all_codes.contains("xian"));
+    assert!(all_codes.contains("zhongguo"));
+    assert!(all_codes.contains("zhongguorenmin"));
+    assert!(!all_codes.contains("zhongguorenmi"));
 }
 
 #[test]
@@ -556,4 +688,248 @@ fn sample_dictionary() -> TableDictionary {
             ..TableDictionaryAdvancedData::default()
         },
     )
+}
+
+fn build_marisa_table_fixture() -> Vec<u8> {
+    let keys = [
+        "a",
+        "an",
+        "guo",
+        "min",
+        "ren",
+        "xi",
+        "xian",
+        "zhong",
+        "\u{554a}",
+        "\u{963f}",
+        "\u{56fd}",
+        "\u{4e2d}",
+        "\u{4e2d}\u{56fd}",
+        "\u{4e2d}\u{56fd}\u{4eba}",
+        "\u{4e2d}\u{534e}\u{4eba}\u{6c11}\u{5171}\u{548c}\u{56fd}",
+        "\u{5148}",
+        "\u{897f}\u{5b89}",
+    ];
+    let mut keyset = rsmarisa::Keyset::new();
+    for key in keys {
+        keyset
+            .push_back_str(key)
+            .expect("fixture key should be accepted");
+    }
+    let mut trie = rsmarisa::Trie::new();
+    trie.build(&mut keyset, 0);
+
+    let mut bytes = vec![0; 68];
+    put_c_string(&mut bytes, 0, b"Rime::Table/4.0");
+    put_u32_le(&mut bytes, 32, 0x1234_5678);
+    put_u32_le(&mut bytes, 36, 8);
+    put_u32_le(&mut bytes, 40, 9);
+
+    let syllabary_offset = bytes.len();
+    bytes.resize(syllabary_offset + 4 + 8 * 4, 0);
+    put_u32_le(&mut bytes, syllabary_offset, 8);
+    for (index, key) in ["a", "an", "guo", "min", "ren", "xi", "xian", "zhong"]
+        .into_iter()
+        .enumerate()
+    {
+        put_u32_le(
+            &mut bytes,
+            syllabary_offset + 4 + index * 4,
+            marisa_id(&trie, key),
+        );
+    }
+
+    let a_entries = append_marisa_entry_list(
+        &mut bytes,
+        &[
+            (marisa_id(&trie, "\u{554a}"), 11.0),
+            (marisa_id(&trie, "\u{963f}"), 9.0),
+        ],
+    );
+    let guo_entries = append_marisa_entry_list(&mut bytes, &[(marisa_id(&trie, "\u{56fd}"), 8.0)]);
+    let zhong_entries =
+        append_marisa_entry_list(&mut bytes, &[(marisa_id(&trie, "\u{4e2d}"), 7.0)]);
+    let xian_entries =
+        append_marisa_entry_list(&mut bytes, &[(marisa_id(&trie, "\u{5148}"), 15.0)]);
+    let xi_an_entries =
+        append_marisa_entry_list(&mut bytes, &[(marisa_id(&trie, "\u{897f}\u{5b89}"), 14.0)]);
+    let zhongguo_entries =
+        append_marisa_entry_list(&mut bytes, &[(marisa_id(&trie, "\u{4e2d}\u{56fd}"), 13.0)]);
+    let zhongguoren_entries = append_marisa_entry_list(
+        &mut bytes,
+        &[(marisa_id(&trie, "\u{4e2d}\u{56fd}\u{4eba}"), 17.0)],
+    );
+    let zhongguorenmin_tail = append_marisa_tail_index(
+        &mut bytes,
+        &[(
+            &[3],
+            marisa_id(
+                &trie,
+                "\u{4e2d}\u{534e}\u{4eba}\u{6c11}\u{5171}\u{548c}\u{56fd}",
+            ),
+            21.0,
+        )],
+    );
+
+    let second_trunk_offset = bytes.len();
+    bytes.resize(second_trunk_offset + 4 + 16, 0);
+    put_u32_le(&mut bytes, second_trunk_offset, 1);
+    put_marisa_trunk_node(
+        &mut bytes,
+        second_trunk_offset + 4,
+        4,
+        1,
+        zhongguoren_entries,
+        Some(zhongguorenmin_tail),
+    );
+
+    let trunk_offset = bytes.len();
+    bytes.resize(trunk_offset + 4 + 16, 0);
+    put_u32_le(&mut bytes, trunk_offset, 1);
+    put_marisa_trunk_node(
+        &mut bytes,
+        trunk_offset + 4,
+        2,
+        1,
+        zhongguo_entries,
+        Some(second_trunk_offset),
+    );
+
+    let xi_trunk_offset = bytes.len();
+    bytes.resize(xi_trunk_offset + 4 + 16, 0);
+    put_u32_le(&mut bytes, xi_trunk_offset, 1);
+    put_marisa_trunk_node(&mut bytes, xi_trunk_offset + 4, 1, 1, xi_an_entries, None);
+
+    let index_offset = bytes.len();
+    bytes.resize(index_offset + 4 + 8 * 12, 0);
+    put_u32_le(&mut bytes, index_offset, 8);
+    put_marisa_head_node(&mut bytes, index_offset + 4, 2, a_entries, None);
+    put_marisa_head_node(&mut bytes, index_offset + 16, 0, 0, None);
+    put_marisa_head_node(&mut bytes, index_offset + 28, 1, guo_entries, None);
+    put_marisa_head_node(&mut bytes, index_offset + 40, 0, 0, None);
+    put_marisa_head_node(&mut bytes, index_offset + 52, 0, 0, None);
+    put_marisa_head_node(&mut bytes, index_offset + 64, 0, 0, Some(xi_trunk_offset));
+    put_marisa_head_node(&mut bytes, index_offset + 76, 1, xian_entries, None);
+    put_marisa_head_node(
+        &mut bytes,
+        index_offset + 88,
+        1,
+        zhong_entries,
+        Some(trunk_offset),
+    );
+
+    let mut writer = rsmarisa::grimoire::io::Writer::from_vec(Vec::new());
+    trie.write(&mut writer)
+        .expect("fixture trie should serialize");
+    let payload = writer
+        .into_inner()
+        .expect("fixture trie payload should be returned");
+    let string_table_offset = bytes.len();
+    bytes.extend_from_slice(&payload);
+
+    put_offset(&mut bytes, 44, syllabary_offset);
+    put_offset(&mut bytes, 48, index_offset);
+    put_offset(&mut bytes, 60, string_table_offset);
+    put_u32_le(&mut bytes, 64, payload.len() as u32);
+
+    bytes
+}
+
+fn append_marisa_tail_index(bytes: &mut Vec<u8>, entries: &[(&[i32], u32, f32)]) -> usize {
+    let extra_offsets = entries
+        .iter()
+        .map(|(extra_ids, _, _)| append_marisa_i32_list(bytes, extra_ids))
+        .collect::<Vec<_>>();
+    let offset = bytes.len();
+    bytes.resize(offset + 4 + entries.len() * 16, 0);
+    put_u32_le(bytes, offset, entries.len() as u32);
+    for (index, ((extra_ids, text_id, weight), extra_offset)) in
+        entries.iter().zip(extra_offsets).enumerate()
+    {
+        let entry_offset = offset + 4 + index * 16;
+        put_u32_le(bytes, entry_offset, extra_ids.len() as u32);
+        put_offset(bytes, entry_offset + 4, extra_offset);
+        put_u32_le(bytes, entry_offset + 8, *text_id);
+        put_f32_le(bytes, entry_offset + 12, *weight);
+    }
+    offset
+}
+
+fn append_marisa_i32_list(bytes: &mut Vec<u8>, values: &[i32]) -> usize {
+    let offset = bytes.len();
+    bytes.resize(offset + values.len() * 4, 0);
+    for (index, value) in values.iter().enumerate() {
+        put_i32_le(bytes, offset + index * 4, *value);
+    }
+    offset
+}
+
+fn append_marisa_entry_list(bytes: &mut Vec<u8>, entries: &[(u32, f32)]) -> usize {
+    let offset = bytes.len();
+    bytes.resize(offset + entries.len() * 8, 0);
+    for (index, (text_id, weight)) in entries.iter().enumerate() {
+        let entry_offset = offset + index * 8;
+        put_u32_le(bytes, entry_offset, *text_id);
+        put_f32_le(bytes, entry_offset + 4, *weight);
+    }
+    offset
+}
+
+fn put_marisa_trunk_node(
+    bytes: &mut [u8],
+    offset: usize,
+    key: i32,
+    entry_count: u32,
+    entries_offset: usize,
+    next_level_offset: Option<usize>,
+) {
+    put_i32_le(bytes, offset, key);
+    put_u32_le(bytes, offset + 4, entry_count);
+    put_offset(bytes, offset + 8, entries_offset);
+    if let Some(next_level_offset) = next_level_offset {
+        put_offset(bytes, offset + 12, next_level_offset);
+    }
+}
+
+fn put_marisa_head_node(
+    bytes: &mut [u8],
+    offset: usize,
+    entry_count: u32,
+    entries_offset: usize,
+    next_level_offset: Option<usize>,
+) {
+    put_u32_le(bytes, offset, entry_count);
+    put_offset(bytes, offset + 4, entries_offset);
+    if let Some(next_level_offset) = next_level_offset {
+        put_offset(bytes, offset + 8, next_level_offset);
+    }
+}
+
+fn marisa_id(trie: &rsmarisa::Trie, key: &str) -> u32 {
+    let mut agent = rsmarisa::Agent::new();
+    agent.set_query_str(key);
+    assert!(trie.lookup(&mut agent), "fixture key should exist: {key}");
+    agent.key().id() as u32
+}
+
+fn put_c_string(bytes: &mut [u8], offset: usize, value: &[u8]) {
+    bytes[offset..offset + value.len()].copy_from_slice(value);
+}
+
+fn put_u32_le(bytes: &mut [u8], offset: usize, value: u32) {
+    bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+}
+
+fn put_i32_le(bytes: &mut [u8], offset: usize, value: i32) {
+    bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+}
+
+fn put_f32_le(bytes: &mut [u8], offset: usize, value: f32) {
+    bytes[offset..offset + 4].copy_from_slice(&value.to_bits().to_le_bytes());
+}
+
+fn put_offset(bytes: &mut [u8], field_offset: usize, target: usize) {
+    let raw = i32::try_from(target as isize - field_offset as isize)
+        .expect("fixture offset should fit i32");
+    put_i32_le(bytes, field_offset, raw);
 }

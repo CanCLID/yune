@@ -7,6 +7,7 @@ use crate::dictionary::compiled::{
 };
 use crate::dictionary::query_table::{LookupCandidate, LookupCandidateEntry, TableLookup};
 use crate::CandidateSource;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::ops::Range;
@@ -38,6 +39,23 @@ pub trait CompactTableByteSource: fmt::Debug + Send + Sync {
     fn storage_label(&self) -> &'static str;
 
     fn mapping_mode(&self) -> &'static str;
+
+    fn marisa_string_table(
+        &self,
+        offset: usize,
+        size: usize,
+    ) -> Result<Box<dyn CompactMarisaStringTable>, RimeTableBinParseError> {
+        SafeReadMarisaStringTable::from_bytes(self.bytes(), offset, size)
+            .map(|table| Box::new(table) as Box<dyn CompactMarisaStringTable>)
+    }
+}
+
+pub trait CompactMarisaStringTable: fmt::Debug + Send + Sync {
+    fn get(&self, id: u32) -> Option<String>;
+
+    fn num_keys(&self) -> usize;
+
+    fn mapping_mode(&self) -> &'static str;
 }
 
 #[derive(Clone, Debug)]
@@ -67,14 +85,14 @@ impl CompactTableByteSource for OwnedCompactTableBytes {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct CompactTableStore {
     syllabary_codes: Vec<String>,
     storage: CompactTableStorage,
     advanced: TableDictionaryAdvancedData,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 enum CompactTableStorage {
     Owned {
         code_groups: Vec<CompactCodeGroup>,
@@ -84,6 +102,13 @@ enum CompactTableStorage {
         source: Arc<dyn CompactTableByteSource>,
         code_groups: Vec<ByteBackedCodeGroup>,
         entries: Vec<ByteBackedTableEntry>,
+    },
+    MarisaBacked {
+        string_table: Box<dyn CompactMarisaStringTable>,
+        source: Arc<dyn CompactTableByteSource>,
+        index_offset: usize,
+        entry_count: usize,
+        syllable_ids_by_code: HashMap<String, usize>,
     },
 }
 
@@ -122,6 +147,67 @@ struct ByteBackedCodeGroup {
 struct ByteBackedTableEntry {
     text: ByteStringRef,
     weight: f32,
+}
+
+struct SafeReadMarisaStringTable {
+    trie: rsmarisa::Trie,
+    payload_range: Range<usize>,
+    num_keys: usize,
+}
+
+impl fmt::Debug for SafeReadMarisaStringTable {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("SafeReadMarisaStringTable")
+            .field("payload_range", &self.payload_range)
+            .field("num_keys", &self.num_keys)
+            .finish_non_exhaustive()
+    }
+}
+
+impl SafeReadMarisaStringTable {
+    fn from_bytes(
+        bytes: &[u8],
+        offset: usize,
+        size: usize,
+    ) -> Result<Self, RimeTableBinParseError> {
+        let end = offset
+            .checked_add(size)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let payload = bytes
+            .get(offset..end)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        let mut trie = rsmarisa::Trie::new();
+        let mut reader = rsmarisa::grimoire::io::Reader::from_reader(std::io::Cursor::new(payload));
+        trie.read(&mut reader)
+            .map_err(|_| RimeTableBinParseError::InvalidFormat)?;
+        let num_keys = trie.num_keys();
+        Ok(Self {
+            trie,
+            payload_range: offset..end,
+            num_keys,
+        })
+    }
+}
+
+impl CompactMarisaStringTable for SafeReadMarisaStringTable {
+    fn get(&self, id: u32) -> Option<String> {
+        if id as usize >= self.num_keys {
+            return None;
+        }
+        let mut agent = rsmarisa::Agent::new();
+        agent.set_query_id(id as usize);
+        self.trie.reverse_lookup(&mut agent);
+        Some(agent.key().as_str().to_owned())
+    }
+
+    fn num_keys(&self) -> usize {
+        self.num_keys
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "read_from_byte_source"
+    }
 }
 
 impl CompactTableStore {
@@ -214,9 +300,19 @@ impl CompactTableStore {
         let string_table_offset = read_offset_ptr(bytes, 60)?;
         let string_table_size = read_u32_le(bytes, 64).map_err(map_metadata_error)?;
         if string_table_offset.is_some() || string_table_size != 0 {
-            return Err(RimeTableBinParseError::UnsupportedSection {
-                role: "marisa string_table".to_owned(),
-            });
+            let string_table_offset =
+                string_table_offset.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+            if string_table_size == 0 {
+                return Err(RimeTableBinParseError::InvalidLength);
+            }
+            return Self::from_marisa_table_bin_byte_source(
+                source,
+                advanced,
+                syllabary_offset,
+                index_offset,
+                string_table_offset,
+                string_table_size as usize,
+            );
         }
 
         let syllable_refs = read_syllabary_refs(bytes, syllabary_offset)?;
@@ -238,9 +334,55 @@ impl CompactTableStore {
         })
     }
 
+    fn from_marisa_table_bin_byte_source(
+        source: Arc<dyn CompactTableByteSource>,
+        advanced: TableDictionaryAdvancedData,
+        syllabary_offset: usize,
+        index_offset: usize,
+        string_table_offset: usize,
+        string_table_size: usize,
+    ) -> Result<Self, RimeTableBinParseError> {
+        let string_table = source.marisa_string_table(string_table_offset, string_table_size)?;
+        let syllable_ids = read_marisa_syllabary_ids(source.bytes(), syllabary_offset)?;
+        let syllabary_codes = syllable_ids
+            .iter()
+            .map(|id| {
+                string_table
+                    .get(*id)
+                    .ok_or(RimeTableBinParseError::InvalidUtf8)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let syllable_ids_by_code = syllabary_codes
+            .iter()
+            .enumerate()
+            .map(|(index, code)| (code.clone(), index))
+            .collect::<HashMap<_, _>>();
+        let entry_count =
+            usize::try_from(read_u32_le(source.bytes(), 40).map_err(map_metadata_error)?)
+                .map_err(|_| RimeTableBinParseError::InvalidCount)?;
+        validate_marisa_head_index(source.bytes(), index_offset, syllabary_codes.len())?;
+
+        Ok(Self {
+            syllabary_codes,
+            storage: CompactTableStorage::MarisaBacked {
+                string_table,
+                source,
+                index_offset,
+                entry_count,
+                syllable_ids_by_code,
+            },
+            advanced,
+        })
+    }
+
     #[must_use]
-    pub(crate) fn syllabary_codes(&self) -> &[String] {
+    pub fn syllabary_codes(&self) -> &[String] {
         &self.syllabary_codes
+    }
+
+    #[must_use]
+    pub fn exact_candidate_count(&self, code: &str) -> usize {
+        self.exact_candidates(code).count()
     }
 
     #[must_use]
@@ -253,9 +395,12 @@ impl CompactTableStore {
         let entries = self
             .all_codes()
             .flat_map(|code| {
-                self.exact_candidates(code).map(move |candidate| {
-                    TableEntry::new(code, candidate.text(), candidate.raw_quality())
-                })
+                let code = code.into_owned();
+                self.exact_candidates(&code)
+                    .map(|candidate| {
+                        TableEntry::new(&code, candidate.text(), candidate.raw_quality())
+                    })
+                    .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
         TableDictionary::with_advanced_data(entries, self.advanced.clone())
@@ -286,6 +431,7 @@ impl CompactTableStore {
                 let bytes = source.bytes();
                 code_groups.binary_search_by(|group| group.code.as_str(bytes).cmp(code))
             }
+            CompactTableStorage::MarisaBacked { .. } => Err(0),
         }
     }
 
@@ -323,11 +469,39 @@ impl CompactTableStore {
         Some((source.as_ref(), group, &entries[group.entries.clone()]))
     }
 
+    fn marisa_exact_entry_cursors(
+        &self,
+        code: &str,
+    ) -> Option<(
+        &dyn CompactMarisaStringTable,
+        &[u8],
+        Vec<MarisaEntryCursorSpec>,
+    )> {
+        let CompactTableStorage::MarisaBacked {
+            string_table,
+            source,
+            index_offset,
+            syllable_ids_by_code,
+            ..
+        } = &self.storage
+        else {
+            return None;
+        };
+        let cursors = segment_marisa_code_paths(code, syllable_ids_by_code)
+            .into_iter()
+            .filter_map(|syllable_ids| {
+                marisa_entry_cursor_for_syllable_ids(source.bytes(), *index_offset, &syllable_ids)
+            })
+            .collect::<Vec<_>>();
+        (!cursors.is_empty()).then_some((string_table.as_ref(), source.bytes(), cursors))
+    }
+
     #[must_use]
     pub fn storage_label(&self) -> &'static str {
         match &self.storage {
             CompactTableStorage::Owned { .. } => "owned_heap",
             CompactTableStorage::ByteBacked { source, .. } => source.storage_label(),
+            CompactTableStorage::MarisaBacked { .. } => "rsmarisa_byte_backed",
         }
     }
 
@@ -336,6 +510,7 @@ impl CompactTableStore {
         match &self.storage {
             CompactTableStorage::Owned { .. } => "owned_heap",
             CompactTableStorage::ByteBacked { source, .. } => source.mapping_mode(),
+            CompactTableStorage::MarisaBacked { source, .. } => source.mapping_mode(),
         }
     }
 
@@ -344,6 +519,7 @@ impl CompactTableStore {
         match &self.storage {
             CompactTableStorage::Owned { entries, .. } => entries.len(),
             CompactTableStorage::ByteBacked { entries, .. } => entries.len(),
+            CompactTableStorage::MarisaBacked { entry_count, .. } => *entry_count,
         }
     }
 
@@ -352,7 +528,13 @@ impl CompactTableStore {
         match &self.storage {
             CompactTableStorage::Owned { .. } => 0,
             CompactTableStorage::ByteBacked { source, .. } => source.bytes().len(),
+            CompactTableStorage::MarisaBacked { source, .. } => source.bytes().len(),
         }
+    }
+
+    #[must_use]
+    pub fn is_marisa_backed(&self) -> bool {
+        matches!(self.storage, CompactTableStorage::MarisaBacked { .. })
     }
 }
 
@@ -369,6 +551,114 @@ pub(crate) struct CompactExactCandidates<'a> {
     inner: CompactExactCandidatesInner<'a>,
 }
 
+enum MarisaEntryCursorSpec {
+    EntryList {
+        entries_offset: usize,
+        entry_count: usize,
+    },
+    Tail {
+        tail_offset: usize,
+        tail_count: usize,
+        extra_ids: Vec<usize>,
+    },
+}
+
+enum MarisaActiveEntryCursor {
+    EntryList {
+        entries_offset: usize,
+        entry_count: usize,
+        cursor: usize,
+    },
+    Tail {
+        tail_offset: usize,
+        tail_count: usize,
+        cursor: usize,
+        extra_ids: Vec<usize>,
+    },
+}
+
+impl From<MarisaEntryCursorSpec> for MarisaActiveEntryCursor {
+    fn from(spec: MarisaEntryCursorSpec) -> Self {
+        match spec {
+            MarisaEntryCursorSpec::EntryList {
+                entries_offset,
+                entry_count,
+            } => Self::EntryList {
+                entries_offset,
+                entry_count,
+                cursor: 0,
+            },
+            MarisaEntryCursorSpec::Tail {
+                tail_offset,
+                tail_count,
+                extra_ids,
+            } => Self::Tail {
+                tail_offset,
+                tail_count,
+                cursor: 0,
+                extra_ids,
+            },
+        }
+    }
+}
+
+impl MarisaActiveEntryCursor {
+    fn next_candidate<'a>(
+        &mut self,
+        string_table: &'a dyn CompactMarisaStringTable,
+        bytes: &'a [u8],
+        code: &'a str,
+    ) -> Option<LookupCandidate<'a>> {
+        match self {
+            Self::EntryList {
+                entries_offset,
+                entry_count,
+                cursor,
+            } => {
+                if *cursor >= *entry_count {
+                    return None;
+                }
+                let entry_offset = entries_offset.checked_add(*cursor * 8)?;
+                *cursor += 1;
+                let text_id = read_u32_le(bytes, entry_offset).ok()?;
+                let weight = read_f32_le(bytes, entry_offset + 4).ok()?;
+                let text = string_table.get(text_id)?;
+                Some(LookupCandidate::new(
+                    text,
+                    code,
+                    weight,
+                    CandidateSource::Table,
+                ))
+            }
+            Self::Tail {
+                tail_offset,
+                tail_count,
+                cursor,
+                extra_ids,
+            } => loop {
+                if *cursor >= *tail_count {
+                    return None;
+                }
+                let entry_offset = tail_offset.checked_add(4 + *cursor * 16)?;
+                *cursor += 1;
+                let extra = read_marisa_tail_extra_ids(bytes, entry_offset)?;
+                if extra != *extra_ids {
+                    continue;
+                }
+                let text_id = read_u32_le(bytes, entry_offset + 8).ok()?;
+                let weight = read_f32_le(bytes, entry_offset + 12).ok()?;
+                let text = string_table.get(text_id)?;
+                return Some(LookupCandidate::new(
+                    text,
+                    code,
+                    weight,
+                    CandidateSource::Table,
+                ));
+            },
+        }
+    }
+}
+
 enum CompactExactCandidatesInner<'a> {
     Empty,
     Owned {
@@ -380,6 +670,13 @@ enum CompactExactCandidatesInner<'a> {
         code: ByteStringRef,
         inner: std::slice::Iter<'a, ByteBackedTableEntry>,
     },
+    Marisa {
+        string_table: &'a dyn CompactMarisaStringTable,
+        bytes: &'a [u8],
+        code: &'a str,
+        cursors: std::vec::IntoIter<MarisaEntryCursorSpec>,
+        current: Option<MarisaActiveEntryCursor>,
+    },
 }
 
 impl<'a> Iterator for CompactExactCandidates<'a> {
@@ -389,7 +686,7 @@ impl<'a> Iterator for CompactExactCandidates<'a> {
         match &mut self.inner {
             CompactExactCandidatesInner::Empty => None,
             CompactExactCandidatesInner::Owned { code, inner } => inner.next().map(|entry| {
-                LookupCandidate::new(&entry.text, code, entry.weight, CandidateSource::Table)
+                LookupCandidate::new(&entry.text, *code, entry.weight, CandidateSource::Table)
             }),
             CompactExactCandidatesInner::ByteBacked { bytes, code, inner } => {
                 let code = code.as_str(bytes);
@@ -402,6 +699,21 @@ impl<'a> Iterator for CompactExactCandidates<'a> {
                     )
                 })
             }
+            CompactExactCandidatesInner::Marisa {
+                string_table,
+                bytes,
+                code,
+                cursors,
+                current,
+            } => loop {
+                if let Some(cursor) = current {
+                    if let Some(candidate) = cursor.next_candidate(*string_table, bytes, code) {
+                        return Some(candidate);
+                    }
+                    *current = None;
+                }
+                *current = Some(cursors.next()?.into());
+            },
         }
     }
 }
@@ -412,6 +724,8 @@ pub(crate) struct CompactPrefixCandidates<'a> {
     group_index: usize,
     current: CompactPrefixCurrent<'a>,
     done: bool,
+    marisa_stack: Vec<MarisaTraversalFrame>,
+    marisa_pending: Vec<MarisaPendingCandidate>,
 }
 
 enum CompactPrefixCurrent<'a> {
@@ -427,20 +741,49 @@ enum CompactPrefixCurrent<'a> {
     },
 }
 
+struct MarisaPendingCandidate {
+    code: String,
+    text: String,
+    weight: f32,
+}
+
+enum MarisaTraversalFrame {
+    Node {
+        ids: Vec<usize>,
+        node_offset: usize,
+        level: MarisaNodeLevel,
+    },
+    Tail {
+        ids: Vec<usize>,
+        tail_offset: usize,
+        tail_count: usize,
+        cursor: usize,
+    },
+}
+
+#[derive(Clone, Copy)]
+enum MarisaNodeLevel {
+    Head,
+    Trunk,
+}
+
 impl<'a> Iterator for CompactPrefixCandidates<'a> {
     type Item = LookupCandidateEntry<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
+            if matches!(self.store.storage, CompactTableStorage::MarisaBacked { .. }) {
+                return self.next_marisa_prefix_candidate();
+            }
             match &mut self.current {
                 CompactPrefixCurrent::None => {}
                 CompactPrefixCurrent::Owned { code, entries } => {
                     if let Some(entry) = entries.next() {
                         return Some(LookupCandidateEntry::new(
-                            code,
+                            *code,
                             LookupCandidate::new(
                                 &entry.text,
-                                code,
+                                *code,
                                 entry.weight,
                                 CandidateSource::Table,
                             ),
@@ -509,6 +852,117 @@ impl<'a> Iterator for CompactPrefixCandidates<'a> {
                         entries: entries[group.entries.clone()].iter(),
                     };
                 }
+                CompactTableStorage::MarisaBacked { .. } => unreachable!(),
+            }
+        }
+    }
+}
+
+impl<'a> CompactPrefixCandidates<'a> {
+    fn next_marisa_prefix_candidate(&mut self) -> Option<LookupCandidateEntry<'a>> {
+        let CompactTableStorage::MarisaBacked {
+            string_table,
+            source,
+            ..
+        } = &self.store.storage
+        else {
+            return None;
+        };
+        loop {
+            if let Some(candidate) = self.marisa_pending.pop() {
+                let raw_comment = candidate.code.clone();
+                return Some(LookupCandidateEntry::new(
+                    candidate.code,
+                    LookupCandidate::new(
+                        candidate.text,
+                        raw_comment,
+                        candidate.weight,
+                        CandidateSource::Table,
+                    ),
+                ));
+            }
+            let frame = self.marisa_stack.pop()?;
+            match frame {
+                MarisaTraversalFrame::Node {
+                    ids,
+                    node_offset,
+                    level,
+                } => {
+                    let code = marisa_code_string(&self.store.syllabary_codes, &ids)?;
+                    if !marisa_code_prefix_compatible(&code, self.prefix) {
+                        continue;
+                    }
+                    if code.starts_with(self.prefix) {
+                        push_marisa_node_entries(
+                            &mut self.marisa_pending,
+                            string_table.as_ref(),
+                            source.bytes(),
+                            &code,
+                            node_offset,
+                            level,
+                        );
+                    }
+                    push_marisa_child_frames(
+                        &mut self.marisa_stack,
+                        source.bytes(),
+                        &self.store.syllabary_codes,
+                        &ids,
+                        node_offset,
+                        level,
+                        self.prefix,
+                    );
+                }
+                MarisaTraversalFrame::Tail {
+                    ids,
+                    tail_offset,
+                    tail_count,
+                    mut cursor,
+                } => {
+                    while cursor < tail_count {
+                        let Some(entry_offset) = tail_offset.checked_add(4 + cursor * 16) else {
+                            break;
+                        };
+                        cursor += 1;
+                        let Some(extra_ids) =
+                            read_marisa_tail_extra_ids(source.bytes(), entry_offset)
+                        else {
+                            continue;
+                        };
+                        let mut full_ids = ids.clone();
+                        full_ids.extend(extra_ids);
+                        let Some(code) = marisa_code_string(&self.store.syllabary_codes, &full_ids)
+                        else {
+                            continue;
+                        };
+                        if !code.starts_with(self.prefix) {
+                            continue;
+                        }
+                        let Some(text_id) = read_u32_le(source.bytes(), entry_offset + 8).ok()
+                        else {
+                            continue;
+                        };
+                        let Some(weight) = read_f32_le(source.bytes(), entry_offset + 12).ok()
+                        else {
+                            continue;
+                        };
+                        let Some(text) = string_table.get(text_id) else {
+                            continue;
+                        };
+                        let raw_comment = code.clone();
+                        if cursor < tail_count {
+                            self.marisa_stack.push(MarisaTraversalFrame::Tail {
+                                ids,
+                                tail_offset,
+                                tail_count,
+                                cursor,
+                            });
+                        }
+                        return Some(LookupCandidateEntry::new(
+                            code,
+                            LookupCandidate::new(text, raw_comment, weight, CandidateSource::Table),
+                        ));
+                    }
+                }
             }
         }
     }
@@ -524,17 +978,89 @@ enum CompactAllCodesInner<'a> {
         bytes: &'a [u8],
         inner: std::slice::Iter<'a, ByteBackedCodeGroup>,
     },
+    Marisa {
+        syllabary_codes: &'a [String],
+        bytes: &'a [u8],
+        stack: Vec<MarisaTraversalFrame>,
+        pending: Vec<String>,
+    },
 }
 
 impl<'a> Iterator for CompactAllCodes<'a> {
-    type Item = &'a str;
+    type Item = Cow<'a, str>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match &mut self.inner {
-            CompactAllCodesInner::Owned(inner) => inner.next().map(|group| group.code.as_str()),
-            CompactAllCodesInner::ByteBacked { bytes, inner } => {
-                inner.next().map(|group| group.code.as_str(bytes))
+            CompactAllCodesInner::Owned(inner) => {
+                inner.next().map(|group| Cow::Borrowed(group.code.as_str()))
             }
+            CompactAllCodesInner::ByteBacked { bytes, inner } => inner
+                .next()
+                .map(|group| Cow::Borrowed(group.code.as_str(bytes))),
+            CompactAllCodesInner::Marisa {
+                syllabary_codes,
+                bytes,
+                stack,
+                pending,
+            } => loop {
+                if let Some(code) = pending.pop() {
+                    return Some(Cow::Owned(code));
+                }
+                let frame = stack.pop()?;
+                match frame {
+                    MarisaTraversalFrame::Node {
+                        ids,
+                        node_offset,
+                        level,
+                    } => {
+                        if marisa_node_has_entries(bytes, node_offset, level) {
+                            if let Some(code) = marisa_code_string(syllabary_codes, &ids) {
+                                pending.push(code);
+                            }
+                        }
+                        push_marisa_child_frames(
+                            stack,
+                            bytes,
+                            syllabary_codes,
+                            &ids,
+                            node_offset,
+                            level,
+                            "",
+                        );
+                    }
+                    MarisaTraversalFrame::Tail {
+                        ids,
+                        tail_offset,
+                        tail_count,
+                        mut cursor,
+                    } => {
+                        while cursor < tail_count {
+                            let Some(entry_offset) = tail_offset.checked_add(4 + cursor * 16)
+                            else {
+                                break;
+                            };
+                            cursor += 1;
+                            let Some(extra_ids) = read_marisa_tail_extra_ids(bytes, entry_offset)
+                            else {
+                                continue;
+                            };
+                            let mut full_ids = ids.clone();
+                            full_ids.extend(extra_ids);
+                            if let Some(code) = marisa_code_string(syllabary_codes, &full_ids) {
+                                if cursor < tail_count {
+                                    stack.push(MarisaTraversalFrame::Tail {
+                                        ids,
+                                        tail_offset,
+                                        tail_count,
+                                        cursor,
+                                    });
+                                }
+                                return Some(Cow::Owned(code));
+                            }
+                        }
+                    }
+                }
+            },
         }
     }
 }
@@ -545,6 +1071,20 @@ impl TableLookup for CompactTableStore {
     type AllCodes<'a> = CompactAllCodes<'a>;
 
     fn has_code(&self, code: &str) -> bool {
+        if matches!(self.storage, CompactTableStorage::MarisaBacked { .. }) {
+            return self
+                .marisa_exact_entry_cursors(code)
+                .is_some_and(|(_, bytes, cursors)| {
+                    cursors.into_iter().any(|cursor| match cursor {
+                        MarisaEntryCursorSpec::EntryList { entry_count, .. } => entry_count > 0,
+                        MarisaEntryCursorSpec::Tail {
+                            tail_offset,
+                            tail_count,
+                            ref extra_ids,
+                        } => marisa_tail_has_extra_code(bytes, tail_offset, tail_count, extra_ids),
+                    })
+                });
+        }
         self.group_index(code).is_ok()
     }
 
@@ -560,6 +1100,14 @@ impl TableLookup for CompactTableStore {
                 code: group.code,
                 inner: entries.iter(),
             }
+        } else if let Some((string_table, bytes, cursors)) = self.marisa_exact_entry_cursors(code) {
+            CompactExactCandidatesInner::Marisa {
+                string_table,
+                bytes,
+                code,
+                cursors: cursors.into_iter(),
+                current: None,
+            }
         } else {
             CompactExactCandidatesInner::Empty
         };
@@ -567,12 +1115,35 @@ impl TableLookup for CompactTableStore {
     }
 
     fn prefix_candidates<'a>(&'a self, prefix: &'a str) -> Self::PrefixCandidates<'a> {
+        if let CompactTableStorage::MarisaBacked {
+            source,
+            index_offset,
+            ..
+        } = &self.storage
+        {
+            return CompactPrefixCandidates {
+                prefix,
+                store: self,
+                group_index: 0,
+                current: CompactPrefixCurrent::None,
+                done: false,
+                marisa_stack: marisa_initial_prefix_frames(
+                    source.bytes(),
+                    *index_offset,
+                    &self.syllabary_codes,
+                    prefix,
+                ),
+                marisa_pending: Vec::new(),
+            };
+        }
         CompactPrefixCandidates {
             prefix,
             store: self,
             group_index: self.group_index(prefix).unwrap_or_else(|index| index),
             current: CompactPrefixCurrent::None,
             done: false,
+            marisa_stack: Vec::new(),
+            marisa_pending: Vec::new(),
         }
     }
 
@@ -588,6 +1159,21 @@ impl TableLookup for CompactTableStore {
             } => CompactAllCodesInner::ByteBacked {
                 bytes: source.bytes(),
                 inner: code_groups.iter(),
+            },
+            CompactTableStorage::MarisaBacked {
+                source,
+                index_offset,
+                ..
+            } => CompactAllCodesInner::Marisa {
+                syllabary_codes: &self.syllabary_codes,
+                bytes: source.bytes(),
+                stack: marisa_initial_prefix_frames(
+                    source.bytes(),
+                    *index_offset,
+                    &self.syllabary_codes,
+                    "",
+                ),
+                pending: Vec::new(),
             },
         };
         CompactAllCodes { inner }
@@ -638,6 +1224,380 @@ fn read_syllabary_refs(
         syllables.push(read_string_ref_type(bytes, field_offset)?);
     }
     Ok(syllables)
+}
+
+fn read_marisa_syllabary_ids(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<Vec<u32>, RimeTableBinParseError> {
+    let count = read_count(bytes, offset)?;
+    let start = offset
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let total = count
+        .checked_mul(4)
+        .and_then(|len| start.checked_add(len))
+        .ok_or(RimeTableBinParseError::InvalidCount)?;
+    if total > bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+
+    let mut ids = Vec::with_capacity(count);
+    for index in 0..count {
+        let field_offset = start
+            .checked_add(
+                index
+                    .checked_mul(4)
+                    .ok_or(RimeTableBinParseError::InvalidCount)?,
+            )
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        ids.push(read_u32_le(bytes, field_offset).map_err(map_metadata_error)?);
+    }
+    Ok(ids)
+}
+
+fn validate_marisa_head_index(
+    bytes: &[u8],
+    offset: usize,
+    syllable_count: usize,
+) -> Result<(), RimeTableBinParseError> {
+    let count = read_count(bytes, offset)?;
+    if count > syllable_count {
+        return Err(RimeTableBinParseError::InvalidCount);
+    }
+    let start = offset
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let total = count
+        .checked_mul(12)
+        .and_then(|len| start.checked_add(len))
+        .ok_or(RimeTableBinParseError::InvalidCount)?;
+    if total > bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+    Ok(())
+}
+
+fn segment_marisa_code_paths(
+    code: &str,
+    syllable_ids_by_code: &HashMap<String, usize>,
+) -> Vec<Vec<usize>> {
+    if code.is_empty() {
+        return Vec::new();
+    }
+    let mut paths = Vec::new();
+    let mut current = Vec::new();
+    collect_marisa_code_paths(code, 0, syllable_ids_by_code, &mut current, &mut paths);
+    paths
+}
+
+fn collect_marisa_code_paths(
+    code: &str,
+    offset: usize,
+    syllable_ids_by_code: &HashMap<String, usize>,
+    current: &mut Vec<usize>,
+    paths: &mut Vec<Vec<usize>>,
+) {
+    if offset == code.len() {
+        paths.push(current.clone());
+        return;
+    }
+    let Some(tail) = code.get(offset..) else {
+        return;
+    };
+    let mut matches = syllable_ids_by_code
+        .iter()
+        .filter(|(syllable, _)| tail.starts_with(syllable.as_str()))
+        .collect::<Vec<_>>();
+    matches.sort_by(|left, right| {
+        right
+            .0
+            .len()
+            .cmp(&left.0.len())
+            .then_with(|| left.0.cmp(right.0))
+    });
+    for (syllable, syllable_id) in matches {
+        current.push(*syllable_id);
+        collect_marisa_code_paths(
+            code,
+            offset + syllable.len(),
+            syllable_ids_by_code,
+            current,
+            paths,
+        );
+        current.pop();
+    }
+}
+
+fn marisa_entry_cursor_for_syllable_ids(
+    bytes: &[u8],
+    index_offset: usize,
+    syllable_ids: &[usize],
+) -> Option<MarisaEntryCursorSpec> {
+    let first = *syllable_ids.first()?;
+    let head_count = read_count(bytes, index_offset).ok()?;
+    if first >= head_count {
+        return None;
+    }
+    let head_node = index_offset.checked_add(4 + first.checked_mul(12)?)?;
+    if syllable_ids.len() == 1 {
+        let (entries_offset, entry_count) = read_marisa_head_entry_list(bytes, head_node)?;
+        return Some(MarisaEntryCursorSpec::EntryList {
+            entries_offset,
+            entry_count,
+        });
+    }
+    let mut trunk_index = read_offset_ptr(bytes, head_node + 8).ok().flatten()?;
+    for depth in 1..syllable_ids.len() {
+        let trunk_node = find_marisa_trunk_node(bytes, trunk_index, syllable_ids[depth])?;
+        if depth == syllable_ids.len() - 1 {
+            let (entries_offset, entry_count) = read_marisa_trunk_entry_list(bytes, trunk_node)?;
+            return Some(MarisaEntryCursorSpec::EntryList {
+                entries_offset,
+                entry_count,
+            });
+        }
+        if depth == 2 {
+            let tail_offset = read_offset_ptr(bytes, trunk_node + 12).ok().flatten()?;
+            let tail_count = read_count(bytes, tail_offset).ok()?;
+            return Some(MarisaEntryCursorSpec::Tail {
+                tail_offset,
+                tail_count,
+                extra_ids: syllable_ids[3..].to_vec(),
+            });
+        }
+        trunk_index = read_offset_ptr(bytes, trunk_node + 12).ok().flatten()?;
+    }
+    None
+}
+
+fn read_marisa_head_entry_list(bytes: &[u8], node_offset: usize) -> Option<(usize, usize)> {
+    read_marisa_entry_list(bytes, node_offset, node_offset + 4)
+}
+
+fn read_marisa_trunk_entry_list(bytes: &[u8], node_offset: usize) -> Option<(usize, usize)> {
+    read_marisa_entry_list(bytes, node_offset + 4, node_offset + 8)
+}
+
+fn read_marisa_entry_list(
+    bytes: &[u8],
+    count_offset: usize,
+    pointer_offset: usize,
+) -> Option<(usize, usize)> {
+    let count = read_count(bytes, count_offset).ok()?;
+    if count == 0 {
+        return Some((0, 0));
+    }
+    let entries_offset = read_offset_ptr(bytes, pointer_offset).ok().flatten()?;
+    let total = count.checked_mul(8)?.checked_add(entries_offset)?;
+    (total <= bytes.len()).then_some((entries_offset, count))
+}
+
+fn find_marisa_trunk_node(bytes: &[u8], index_offset: usize, key: usize) -> Option<usize> {
+    let key = i32::try_from(key).ok()?;
+    let count = read_count(bytes, index_offset).ok()?;
+    let start = index_offset.checked_add(4)?;
+    let total = count.checked_mul(16)?.checked_add(start)?;
+    if total > bytes.len() {
+        return None;
+    }
+    let mut low = 0usize;
+    let mut high = count;
+    while low < high {
+        let middle = low + (high - low) / 2;
+        let node_offset = start.checked_add(middle.checked_mul(16)?)?;
+        let node_key = read_i32_le(bytes, node_offset).ok()?;
+        match node_key.cmp(&key) {
+            std::cmp::Ordering::Less => low = middle + 1,
+            std::cmp::Ordering::Equal => return Some(node_offset),
+            std::cmp::Ordering::Greater => high = middle,
+        }
+    }
+    None
+}
+
+fn marisa_initial_prefix_frames(
+    bytes: &[u8],
+    index_offset: usize,
+    syllabary_codes: &[String],
+    prefix: &str,
+) -> Vec<MarisaTraversalFrame> {
+    let Ok(head_count) = read_count(bytes, index_offset) else {
+        return Vec::new();
+    };
+    let mut frames = Vec::new();
+    for syllable_id in (0..head_count).rev() {
+        let Some(code) = syllabary_codes.get(syllable_id) else {
+            continue;
+        };
+        if !marisa_code_prefix_compatible(code, prefix) {
+            continue;
+        }
+        let Some(node_offset) = index_offset.checked_add(4 + syllable_id.saturating_mul(12)) else {
+            continue;
+        };
+        frames.push(MarisaTraversalFrame::Node {
+            ids: vec![syllable_id],
+            node_offset,
+            level: MarisaNodeLevel::Head,
+        });
+    }
+    frames
+}
+
+fn marisa_code_prefix_compatible(code: &str, prefix: &str) -> bool {
+    code.starts_with(prefix) || prefix.starts_with(code)
+}
+
+fn marisa_code_string(syllabary_codes: &[String], ids: &[usize]) -> Option<String> {
+    let mut code = String::new();
+    for id in ids {
+        code.push_str(syllabary_codes.get(*id)?);
+    }
+    Some(code)
+}
+
+fn marisa_node_has_entries(bytes: &[u8], node_offset: usize, level: MarisaNodeLevel) -> bool {
+    let entry_count_offset = match level {
+        MarisaNodeLevel::Head => node_offset,
+        MarisaNodeLevel::Trunk => node_offset + 4,
+    };
+    read_count(bytes, entry_count_offset).is_ok_and(|count| count > 0)
+}
+
+fn push_marisa_node_entries(
+    pending: &mut Vec<MarisaPendingCandidate>,
+    string_table: &dyn CompactMarisaStringTable,
+    bytes: &[u8],
+    code: &str,
+    node_offset: usize,
+    level: MarisaNodeLevel,
+) {
+    let entry_list = match level {
+        MarisaNodeLevel::Head => read_marisa_head_entry_list(bytes, node_offset),
+        MarisaNodeLevel::Trunk => read_marisa_trunk_entry_list(bytes, node_offset),
+    };
+    let Some((entries_offset, entry_count)) = entry_list else {
+        return;
+    };
+    let mut rows = Vec::new();
+    for index in 0..entry_count {
+        let Some(entry_offset) = entries_offset.checked_add(index * 8) else {
+            break;
+        };
+        let Some(text_id) = read_u32_le(bytes, entry_offset).ok() else {
+            continue;
+        };
+        let Some(weight) = read_f32_le(bytes, entry_offset + 4).ok() else {
+            continue;
+        };
+        let Some(text) = string_table.get(text_id) else {
+            continue;
+        };
+        rows.push(MarisaPendingCandidate {
+            code: code.to_owned(),
+            text,
+            weight,
+        });
+    }
+    pending.extend(rows.into_iter().rev());
+}
+
+fn push_marisa_child_frames(
+    stack: &mut Vec<MarisaTraversalFrame>,
+    bytes: &[u8],
+    syllabary_codes: &[String],
+    ids: &[usize],
+    node_offset: usize,
+    level: MarisaNodeLevel,
+    prefix: &str,
+) {
+    let next_level_offset = match level {
+        MarisaNodeLevel::Head => node_offset + 8,
+        MarisaNodeLevel::Trunk => node_offset + 12,
+    };
+    let Some(next_index) = read_offset_ptr(bytes, next_level_offset).ok().flatten() else {
+        return;
+    };
+    if ids.len() >= 3 {
+        let Ok(tail_count) = read_count(bytes, next_index) else {
+            return;
+        };
+        if let Some(code) = marisa_code_string(syllabary_codes, ids) {
+            if marisa_code_prefix_compatible(&code, prefix) {
+                stack.push(MarisaTraversalFrame::Tail {
+                    ids: ids.to_vec(),
+                    tail_offset: next_index,
+                    tail_count,
+                    cursor: 0,
+                });
+            }
+        }
+        return;
+    }
+
+    let Ok(child_count) = read_count(bytes, next_index) else {
+        return;
+    };
+    let Some(start) = next_index.checked_add(4) else {
+        return;
+    };
+    for index in (0..child_count).rev() {
+        let Some(child_offset) = start.checked_add(index.saturating_mul(16)) else {
+            continue;
+        };
+        let Some(key) = read_i32_le(bytes, child_offset)
+            .ok()
+            .and_then(|key| usize::try_from(key).ok())
+        else {
+            continue;
+        };
+        let mut child_ids = ids.to_vec();
+        child_ids.push(key);
+        let Some(code) = marisa_code_string(syllabary_codes, &child_ids) else {
+            continue;
+        };
+        if !marisa_code_prefix_compatible(&code, prefix) {
+            continue;
+        }
+        stack.push(MarisaTraversalFrame::Node {
+            ids: child_ids,
+            node_offset: child_offset,
+            level: MarisaNodeLevel::Trunk,
+        });
+    }
+}
+
+fn read_marisa_tail_extra_ids(bytes: &[u8], long_entry_offset: usize) -> Option<Vec<usize>> {
+    let count = read_count(bytes, long_entry_offset).ok()?;
+    let values_offset = read_offset_ptr(bytes, long_entry_offset + 4)
+        .ok()
+        .flatten()?;
+    let total = count.checked_mul(4)?.checked_add(values_offset)?;
+    if total > bytes.len() {
+        return None;
+    }
+    let mut ids = Vec::with_capacity(count);
+    for index in 0..count {
+        let offset = values_offset.checked_add(index.checked_mul(4)?)?;
+        let id = read_i32_le(bytes, offset).ok()?;
+        ids.push(usize::try_from(id).ok()?);
+    }
+    Some(ids)
+}
+
+fn marisa_tail_has_extra_code(
+    bytes: &[u8],
+    tail_offset: usize,
+    tail_count: usize,
+    extra_ids: &[usize],
+) -> bool {
+    (0..tail_count).any(|index| {
+        let Some(entry_offset) = tail_offset.checked_add(4 + index * 16) else {
+            return false;
+        };
+        read_marisa_tail_extra_ids(bytes, entry_offset).is_some_and(|extra| extra == extra_ids)
+    })
 }
 
 fn read_byte_backed_head_index_entries(

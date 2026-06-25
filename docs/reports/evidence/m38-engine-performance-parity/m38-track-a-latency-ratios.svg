@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="444" viewBox="0 0 980 444" role="img" aria-labelledby="title desc">
+<title id="title">M38 Track A latency ratios</title>
+<desc id="desc">Bar chart showing final M38 Yune to librime latency ratios for isolated luna_pinyin Track A rows.</desc>
+<rect width="100%" height="100%" fill="#fbfaf7"/>
+<text x="34" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#202124">M38 Track A latency ratios</text>
+<text x="34" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#5f6368">Final isolated native luna_pinyin comparison. Ratio is Yune median divided by same-run librime median; lower is better.</text>
+<rect x="190" y="84" width="14" height="14" fill="#4b6b9b"/><text x="210" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#3c4043">Yune / librime ratio</text>
+<line x1="318" x2="318" y1="102" y2="382" stroke="#9aa0a6" stroke-dasharray="4 5"/>
+<line x1="350" x2="350" y1="102" y2="382" stroke="#b45309" stroke-dasharray="4 5"/>
+<line x1="830" x2="830" y1="102" y2="382" stroke="#b45309" stroke-dasharray="4 5"/>
+<text x="306" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#5f6368">1x</text>
+<text x="330" y="416" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#5f6368">1.25x lifecycle gate</text>
+<text x="789" y="416" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#5f6368">5x key-row gate</text>
+
+<text x="34" y="120" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">startup</text>
+<rect x="190" y="106" width="123" height="18" rx="3" fill="#4b6b9b"/>
+<text x="322" y="120" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">0.959x</text>
+<line x1="190" x2="830" y1="145" y2="145" stroke="#e4e1dc"/>
+
+<text x="34" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">session</text>
+<rect x="190" y="164" width="111" height="18" rx="3" fill="#4b6b9b"/>
+<text x="310" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">0.867x</text>
+<line x1="190" x2="830" y1="203" y2="203" stroke="#e4e1dc"/>
+
+<text x="34" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">hao</text>
+<rect x="190" y="222" width="437" height="18" rx="3" fill="#4b6b9b"/>
+<text x="636" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">3.415x</text>
+<line x1="190" x2="830" y1="261" y2="261" stroke="#e4e1dc"/>
+
+<text x="34" y="294" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">ni</text>
+<rect x="190" y="280" width="508" height="18" rx="3" fill="#4b6b9b"/>
+<text x="707" y="294" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">3.969x</text>
+<line x1="190" x2="830" y1="319" y2="319" stroke="#e4e1dc"/>
+
+<text x="34" y="352" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#202124">zhongguo</text>
+<rect x="190" y="338" width="45" height="18" rx="3" fill="#4b6b9b"/>
+<text x="244" y="352" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#3c4043">0.354x</text>
+<line x1="190" x2="830" y1="377" y2="377" stroke="#e4e1dc"/>
+
+<text x="190" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#5f6368">Source: M38 phase-5-final-native Track A summary.csv and final-gates.md. Isolated native engine evidence only.</text>
+</svg>

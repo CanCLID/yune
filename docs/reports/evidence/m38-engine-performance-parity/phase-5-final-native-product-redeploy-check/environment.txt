@@ -1,0 +1,11 @@
+﻿date_utc=2026-06-25T16:32:03.1036062Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=027c18194406b8318914faf38f5223c75bc921f8
+yune_git_status_short= M Cargo.lock |  M crates/yune-core/Cargo.toml |  M crates/yune-core/src/dictionary/compiled_table.rs |  M crates/yune-core/src/dictionary/mod.rs |  M crates/yune-core/src/dictionary/query_table.rs |  M crates/yune-core/src/engine.rs |  M crates/yune-core/src/lib.rs |  M crates/yune-core/src/m37_metrics.rs |  M crates/yune-core/src/tests/dictionary.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-rime-api/Cargo.toml |  M crates/yune-rime-api/benches/frontend_baselines.rs |  M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M crates/yune-rime-api/src/context_api.rs |  M crates/yune-rime-api/src/deployment.rs |  M crates/yune-rime-api/src/lib.rs |  M crates/yune-rime-api/src/processors/selector.rs |  M crates/yune-rime-api/src/runtime.rs |  M crates/yune-rime-api/src/schema_install.rs |  M crates/yune-rime-api/src/schema_selection.rs |  M crates/yune-rime-api/src/session.rs |  M crates/yune-rime-api/src/tests/schema_selection/punctuation_spelling_correction.rs |  M docs/ledgers/milestone-history.md |  D docs/plans/active/m38-plan-engine-performance-parity.md |  M docs/reports/yune-vs-librime-performance.md |  M docs/reports/yune-vs-librime-root-cause-analysis.md |  M docs/requirements.md |  M docs/roadmap.md |  M scripts/benchmark-native-rime-inprocess.ps1 | ?? docs/plans/completed/m38-plan-engine-performance-parity.md | ?? docs/reports/evidence/m38-engine-performance-parity/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-5-final-native-product-redeploy-check
+managed_runtime=false
+deploy_product_before_benchmark=True
+iterations=9
+session_iterations=20
+key_iterations=50

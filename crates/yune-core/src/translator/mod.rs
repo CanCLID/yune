@@ -1,6 +1,8 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use crate::comment_format::CommentFormat;
 use crate::dictionary::{
@@ -98,7 +100,7 @@ impl PendingLookupCandidate {
 }
 
 struct PendingLookupCandidateRef<'a> {
-    entry_code: &'a str,
+    entry_code: Cow<'a, str>,
     lookup_code: &'a str,
     candidate: LookupCandidate<'a>,
     correction_distance: Option<usize>,
@@ -148,6 +150,19 @@ enum TableStorage {
     Compact(Box<CompactTableStore>),
 }
 
+struct LookupTimer(Option<Instant>);
+
+impl LookupTimer {
+    fn start() -> Self {
+        Self(crate::m37_metrics_enabled().then(Instant::now))
+    }
+
+    fn elapsed(&self) -> Duration {
+        self.0
+            .map_or_else(Duration::default, |start| start.elapsed())
+    }
+}
+
 impl TableStorage {
     fn has_code(&self, code: &str) -> bool {
         match self {
@@ -176,10 +191,36 @@ impl TableStorage {
         }
     }
 
-    fn all_codes(&self) -> Box<dyn Iterator<Item = &str> + '_> {
+    fn all_codes(&self) -> Box<dyn Iterator<Item = Cow<'_, str>> + '_> {
         match self {
             Self::Heap(entries) => Box::new(entries.all_codes()),
             Self::Compact(store) => Box::new(store.all_codes()),
+        }
+    }
+
+    fn record_exact_lookup(&self, duration: Duration, candidates: usize) {
+        match self {
+            Self::Heap(_) => crate::m37_record_heap_exact_lookup(duration, candidates),
+            Self::Compact(store) => {
+                if store.is_marisa_backed() {
+                    crate::m37_record_rsmarisa_exact_lookup(duration, candidates);
+                } else {
+                    crate::m37_record_no_marisa_compact_exact_lookup(duration, candidates);
+                }
+            }
+        }
+    }
+
+    fn record_prefix_lookup(&self, duration: Duration, candidates: usize) {
+        match self {
+            Self::Heap(_) => crate::m37_record_heap_prefix_lookup(duration, candidates),
+            Self::Compact(store) => {
+                if store.is_marisa_backed() {
+                    crate::m37_record_rsmarisa_prefix_lookup(duration, candidates);
+                } else {
+                    crate::m37_record_no_marisa_compact_prefix_lookup(duration, candidates);
+                }
+            }
         }
     }
 
@@ -203,9 +244,13 @@ impl TableStorage {
             Self::Compact(store) => store
                 .all_codes()
                 .flat_map(|code| {
-                    store.exact_candidates(code).map(move |candidate| {
-                        TableEntry::new(code, candidate.text(), candidate.raw_quality())
-                    })
+                    let code = code.into_owned();
+                    store
+                        .exact_candidates(&code)
+                        .map(|candidate| {
+                            TableEntry::new(&code, candidate.text(), candidate.raw_quality())
+                        })
+                        .collect::<Vec<_>>()
                 })
                 .collect(),
         }
@@ -224,18 +269,22 @@ impl TableStorage {
             Self::Compact(store) => store
                 .all_codes()
                 .flat_map(|code| {
-                    store.exact_candidates(code).map(move |candidate| {
-                        (
-                            code.to_owned(),
-                            Candidate {
-                                text: candidate.text().to_owned(),
-                                comment: candidate.raw_comment().to_owned(),
-                                preedit: None,
-                                source: candidate.source_hint(),
-                                quality: candidate.raw_quality(),
-                            },
-                        )
-                    })
+                    let code = code.into_owned();
+                    store
+                        .exact_candidates(&code)
+                        .map(|candidate| {
+                            (
+                                code.clone(),
+                                Candidate {
+                                    text: candidate.text().to_owned(),
+                                    comment: candidate.raw_comment().to_owned(),
+                                    preedit: None,
+                                    source: candidate.source_hint(),
+                                    quality: candidate.raw_quality(),
+                                },
+                            )
+                        })
+                        .collect::<Vec<_>>()
                 })
                 .collect(),
         }
@@ -454,7 +503,7 @@ impl StaticTableTranslator {
         let tolerance_rules = advanced.tolerance_rules.clone();
         let normal_codes = store
             .all_codes()
-            .map(ToOwned::to_owned)
+            .map(Cow::into_owned)
             .collect::<HashSet<_>>();
         Self {
             source_entries: None,
@@ -758,37 +807,38 @@ impl StaticTableTranslator {
             }
             if allow_dynamic_near_lookup {
                 for canonical_code in self.storage.all_codes() {
+                    let canonical_code = canonical_code.into_owned();
                     if canonical_code == lookup_code {
                         continue;
                     }
-                    if typeduck_length_distance_lower_bound(canonical_code, lookup_code)
+                    if typeduck_length_distance_lower_bound(&canonical_code, lookup_code)
                         > TYPEDUCK_CORRECTION_MAX_DISTANCE
                     {
                         continue;
                     }
                     if !self.enable_correction
                         && has_exact_lookup
-                        && !lookup_code.starts_with(canonical_code)
+                        && !lookup_code.starts_with(&canonical_code)
                     {
                         continue;
                     }
-                    if !self.lookup_code_has_non_abbreviation_candidate(canonical_code) {
+                    if !self.lookup_code_has_non_abbreviation_candidate(&canonical_code) {
                         continue;
                     }
                     if dynamic_syllable_count.is_some_and(|syllable_count| {
-                        !self.lookup_code_has_syllable_count(canonical_code, syllable_count)
+                        !self.lookup_code_has_syllable_count(&canonical_code, syllable_count)
                     }) {
                         continue;
                     }
                     let distance = typeduck_restricted_distance(
-                        canonical_code,
+                        &canonical_code,
                         lookup_code,
                         TYPEDUCK_CORRECTION_MAX_DISTANCE,
                     );
                     if distance == 0 || distance > TYPEDUCK_CORRECTION_MAX_DISTANCE {
                         continue;
                     }
-                    corrections.push((canonical_code.to_owned(), distance));
+                    corrections.push((canonical_code, distance));
                 }
             }
             if let Some(min_distance) = corrections.iter().map(|(_, distance)| *distance).min() {
@@ -901,7 +951,9 @@ impl StaticTableTranslator {
     fn lookup_candidate_category(&self, candidate: &PendingLookupCandidate) -> u8 {
         if candidate.spelling_abbreviation {
             1
-        } else if candidate.entry_code != candidate.lookup_code && !candidate.limited_prediction {
+        } else if candidate.entry_code.as_ref() != candidate.lookup_code
+            && !candidate.limited_prediction
+        {
             2
         } else {
             0
@@ -1002,15 +1054,13 @@ impl StaticTableTranslator {
     }
 
     fn bounded_request_supported(&self, lookup_specs: &[LookupCodeSpec]) -> bool {
-        !self.enable_correction
-            && (!self.prediction_never_first
-                || self.prediction_candidate_limit.is_some()
-                || self.prefix_fallback)
+        (!self.prediction_never_first
+            || self.prediction_candidate_limit.is_some()
+            || self.prefix_fallback)
             && !self.sentence_over_completion
-            && self.upstream_sentence_model.is_none()
-            && lookup_specs.iter().all(|spec| {
-                spec.correction_distance.is_none() && spec.required_syllable_count.is_none()
-            })
+            && lookup_specs
+                .iter()
+                .all(|spec| spec.required_syllable_count.is_none())
     }
 
     fn lookup_candidate_ref_raw_quality(&self, candidate: &PendingLookupCandidateRef<'_>) -> f32 {
@@ -1024,7 +1074,9 @@ impl StaticTableTranslator {
     fn lookup_candidate_ref_category(&self, candidate: &PendingLookupCandidateRef<'_>) -> u8 {
         if candidate.spelling_abbreviation {
             1
-        } else if candidate.entry_code != candidate.lookup_code && !candidate.limited_prediction {
+        } else if candidate.entry_code.as_ref() != candidate.lookup_code
+            && !candidate.limited_prediction
+        {
             2
         } else {
             0
@@ -1043,7 +1095,7 @@ impl StaticTableTranslator {
                     .partial_cmp(&self.lookup_candidate_ref_raw_quality(left))
                     .unwrap_or(Ordering::Equal)
             })
-            .then_with(|| left.entry_code.cmp(right.entry_code))
+            .then_with(|| left.entry_code.as_ref().cmp(right.entry_code.as_ref()))
             .then_with(|| left.candidate.text().cmp(right.candidate.text()))
             .then_with(|| left.emission_order.cmp(&right.emission_order))
     }
@@ -1072,13 +1124,13 @@ impl StaticTableTranslator {
         right: &PendingLookupCandidateRef<'_>,
     ) -> Ordering {
         self.materialized_quality(
-            right.entry_code,
+            right.entry_code.as_ref(),
             right.lookup_code,
             &right.candidate,
             right.correction_distance,
         )
         .partial_cmp(&self.materialized_quality(
-            left.entry_code,
+            left.entry_code.as_ref(),
             left.lookup_code,
             &left.candidate,
             left.correction_distance,
@@ -1153,10 +1205,14 @@ impl StaticTableTranslator {
         let has_correction_lookup = lookup_specs
             .iter()
             .any(|spec| spec.correction_distance.is_some());
+        let can_stop_after_window = !include_full_count && !ordered_mode;
+        let mut early_stopped = false;
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
             let spec_lookup_code = lookup_spec.lookup_code.as_str();
             let lookup_has_exact_candidates = self.storage.has_code(fetch_code);
+            let exact_start = LookupTimer::start();
+            let mut exact_candidates = 0;
             for candidate in self
                 .storage
                 .exact_candidates(fetch_code)
@@ -1169,12 +1225,13 @@ impl StaticTableTranslator {
                         && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                 })
             {
+                exact_candidates += 1;
                 full_count += 1;
                 has_full_exact_candidate = true;
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
                 let pending = PendingLookupCandidateRef {
-                    entry_code: spec_lookup_code,
+                    entry_code: Cow::Borrowed(spec_lookup_code),
                     lookup_code: spec_lookup_code,
                     candidate,
                     correction_distance: lookup_spec.correction_distance,
@@ -1188,12 +1245,21 @@ impl StaticTableTranslator {
                     self.push_bounded_pending(&mut selected, pending, limit);
                 }
                 emission_order += 1;
+                if can_stop_after_window && selected.len() >= limit {
+                    early_stopped = true;
+                    break;
+                }
             }
+            self.storage
+                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
             if lookup_spec.correction_distance.is_none()
                 && self.enable_completion
                 && !spec_lookup_code.is_empty()
                 && fetch_code == spec_lookup_code
+                && !(can_stop_after_window && selected.len() >= limit)
             {
+                let prefix_start = LookupTimer::start();
+                let mut prefix_candidates = 0;
                 for entry in self.storage.prefix_candidates(spec_lookup_code) {
                     let (entry_code, candidate) = entry.into_parts();
                     if entry_code == spec_lookup_code {
@@ -1209,8 +1275,9 @@ impl StaticTableTranslator {
                         )
                         && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                     {
+                        prefix_candidates += 1;
                         let spelling_abbreviation =
-                            self.is_spelling_abbreviation_view(entry_code, &candidate);
+                            self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
                         let pending = PendingLookupCandidateRef {
                             entry_code,
                             lookup_code: spec_lookup_code,
@@ -1240,8 +1307,18 @@ impl StaticTableTranslator {
                             full_count += 1;
                         }
                         emission_order += 1;
+                        if can_stop_after_window && selected.len() >= limit {
+                            early_stopped = true;
+                            break;
+                        }
                     }
                 }
+                self.storage
+                    .record_prefix_lookup(prefix_start.elapsed(), prefix_candidates);
+            }
+            if can_stop_after_window && selected.len() >= limit {
+                early_stopped = true;
+                break;
             }
         }
         full_count += limited_predictions.len();
@@ -1249,6 +1326,7 @@ impl StaticTableTranslator {
             self.push_bounded_pending_by_lookup_order(&mut selected, candidate, limit);
         }
         if selected.is_empty() && self.enable_sentence {
+            crate::m37_record_full_list_fallback();
             return TranslationResult::complete(self.translated_candidates_for_segment(
                 input,
                 filter_by_charset,
@@ -1264,7 +1342,7 @@ impl StaticTableTranslator {
             .into_iter()
             .map(|candidate| {
                 self.candidate_for_lookup_view(
-                    candidate.entry_code,
+                    candidate.entry_code.as_ref(),
                     &candidate.candidate,
                     candidate.lookup_code,
                     candidate.correction_distance,
@@ -1297,7 +1375,13 @@ impl StaticTableTranslator {
         if ordered_mode {
             Self::assign_ordered_candidate_qualities(&mut candidates);
         }
-        TranslationResult::bounded(candidates, full_count, include_full_count)
+        crate::m37_record_bounded_iterator(limit, candidates.len(), full_count);
+        let result_full_count = if early_stopped {
+            full_count.max(candidates.len().saturating_add(1))
+        } else {
+            full_count
+        };
+        TranslationResult::bounded(candidates, result_full_count, include_full_count)
     }
 
     fn candidates_for_lookup_codes(
@@ -1311,6 +1395,8 @@ impl StaticTableTranslator {
             let lookup_code = lookup_spec.lookup_code.as_str();
             let mut pending = Vec::new();
             let lookup_has_exact_candidates = self.storage.has_code(fetch_code);
+            let exact_start = LookupTimer::start();
+            let mut exact_candidates = 0;
             pending.extend(
                 self.storage
                     .exact_candidates(fetch_code)
@@ -1326,6 +1412,7 @@ impl StaticTableTranslator {
                         {
                             return None;
                         }
+                        exact_candidates += 1;
                         Some(PendingLookupCandidate {
                             entry_code: lookup_code.to_owned(),
                             lookup_code: lookup_code.to_owned(),
@@ -1337,11 +1424,15 @@ impl StaticTableTranslator {
                         })
                     }),
             );
+            self.storage
+                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
             if lookup_spec.correction_distance.is_none()
                 && self.enable_completion
                 && !lookup_code.is_empty()
                 && fetch_code == lookup_code
             {
+                let prefix_start = LookupTimer::start();
+                let mut prefix_lookup_candidates = 0;
                 let mut completion_candidates = Vec::new();
                 for entry in self.storage.prefix_candidates(lookup_code) {
                     let (entry_code, candidate) = entry.into_parts();
@@ -1363,16 +1454,20 @@ impl StaticTableTranslator {
                     {
                         continue;
                     }
+                    prefix_lookup_candidates += 1;
+                    let spelling_abbreviation =
+                        self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
                     completion_candidates.push(PendingLookupCandidate {
-                        entry_code: entry_code.to_owned(),
+                        entry_code: entry_code.into_owned(),
                         lookup_code: lookup_code.to_owned(),
                         candidate: candidate.to_candidate(),
                         correction_distance: lookup_spec.correction_distance,
-                        spelling_abbreviation: self
-                            .is_spelling_abbreviation_view(entry_code, &candidate),
+                        spelling_abbreviation,
                         limited_prediction,
                     });
                 }
+                self.storage
+                    .record_prefix_lookup(prefix_start.elapsed(), prefix_lookup_candidates);
                 if let Some(limit) = self.prediction_candidate_limit {
                     let mut limited_predictions = Vec::new();
                     let mut ordinary_completions = Vec::new();
@@ -1427,11 +1522,14 @@ impl StaticTableTranslator {
                 .len()
                 .saturating_sub(lookup_code.len())
                 .saturating_add(consumed_lookup_len);
+            let exact_start = LookupTimer::start();
+            let mut exact_candidates = 0;
             for candidate in self.storage.exact_candidates(prefix).filter(|candidate| {
                 self.is_dictionary_text_allowed(candidate.text())
                     && original_code_allows_prefix_fallback(candidate.raw_comment(), prefix)
                     && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
             }) {
+                exact_candidates += 1;
                 let recompose_on_default = consumed_input_len > 1
                     && !self.is_spelling_abbreviation_view(prefix, &candidate);
                 let mut candidate =
@@ -1445,6 +1543,8 @@ impl StaticTableTranslator {
                 };
                 candidates.push(candidate);
             }
+            self.storage
+                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
         }
         candidates
     }
@@ -1571,6 +1671,7 @@ impl StaticTableTranslator {
         request: CandidateRequest,
     ) -> TranslationResult {
         let Some(limit) = request.limit.filter(|limit| *limit > 0) else {
+            crate::m37_record_full_list_fallback();
             return TranslationResult::complete(self.translated_candidates_for_segment(
                 input,
                 filter_by_charset,
@@ -1589,6 +1690,7 @@ impl StaticTableTranslator {
         };
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         if !self.bounded_request_supported(&expanded_lookup_codes) {
+            crate::m37_record_full_list_fallback();
             return TranslationResult::complete(self.translated_candidates_for_segment(
                 input,
                 filter_by_charset,

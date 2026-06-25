@@ -1263,7 +1263,7 @@ impl Engine {
 
     fn can_use_bounded_refresh(&self) -> bool {
         let schema_allows_bounded = if self.status.schema_id == "luna_pinyin" {
-            self.context.composition.input.chars().count() <= 2
+            !self.context.composition.input.is_empty()
         } else {
             self.status.schema_id.starts_with("jyut6ping3")
         };
@@ -1273,13 +1273,24 @@ impl Engine {
             && self.filters.iter().all(|filter| {
                 matches!(
                     filter.name(),
-                    "charset_filter" | "dictionary_lookup_filter" | "simplifier"
+                    "charset_filter" | "dictionary_lookup_filter" | "simplifier" | "uniquifier"
                 )
             })
     }
 
     fn refresh_candidates_with_request(&mut self, request: CandidateRequest) {
         let input = self.context.composition.input.clone();
+        if request.limit.is_some() {
+            crate::m37_record_candidate_request_bounded(
+                DEFAULT_PAGE_SIZE,
+                request
+                    .limit
+                    .unwrap_or(DEFAULT_PAGE_SIZE)
+                    .saturating_sub(DEFAULT_PAGE_SIZE),
+            );
+        } else {
+            crate::m37_record_candidate_request_unbounded();
+        }
         let (mut candidates, candidate_list_complete) = if request.limit.is_some() {
             let mut candidates = Vec::new();
             let mut candidate_list_complete = true;
@@ -1298,6 +1309,7 @@ impl Engine {
             }
             (candidates, candidate_list_complete)
         } else {
+            crate::m37_record_full_list_translation();
             (
                 self.translators
                     .iter()

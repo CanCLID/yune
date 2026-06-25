@@ -1,0 +1,13 @@
+engine=librime-1.17.0
+track=track-a-comparison
+schema=luna_pinyin
+dll=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-5-final-native-product-redeploy-check\track-a-librime-1.17.0\rime.dll
+shared=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-5-final-native-product-redeploy-check\track-a-librime-1.17.0\shared
+user=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-5-final-native-product-redeploy-check\track-a-librime-1.17.0\user
+build=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-5-final-native-product-redeploy-check\track-a-librime-1.17.0\user\build
+inputs=ni,hao,zhongguo
+iterations=9
+session_iterations=20
+key_iterations=50
+deploy_before_benchmark=false
+managed_runtime=false

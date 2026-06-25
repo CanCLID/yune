@@ -216,7 +216,7 @@ fn lifecycle_safety_notification_handler_replacement_and_clearing_are_determinis
 #[test]
 fn lifecycle_safety_records_multithreaded_frontend_behavior_as_out_of_scope() {
     let _guard = test_guard();
-    let conventions = include_str!("../../../../docs/CONVENTIONS.md");
+    let conventions = include_str!("../../../../docs/conventions.md");
     assert!(conventions.contains("Process-global single RIME service"));
     assert!(conventions.contains("multiple concurrent engines/schemas in one instance are out"));
 }

@@ -72,7 +72,7 @@ The stack spans **two ecosystems** — Cargo/Rust and npm/Node — plus an Emscr
 
 **Languages:** Rust 2021 (MSRV `1.76`, set in workspace `Cargo.toml`); TypeScript (ESM, ES2022/NodeNext, strict) for the runtime package; Markdown, JSON, YAML, and a librime-shaped `extern "C"` ABI surface.
 
-**Rust workspace crates** (`Cargo.toml`, resolver 2, BSD-3-Clause):
+**Rust workspace crates** (`Cargo.toml`, resolver 2, MIT):
 
 - `yune-core` — input engine: session state, translators, filters, candidate-ranking hook, key handling, punctuation, spelling algebra, dictionary parsing. Dep: `regex`.
 - `yune-rime-api` — RIME-style C ABI shim, session registry, config/deployment APIs, schema parsing/install, levers, function tables, the `yune_web_*` WASM adapter. Deps: `libc`, `regex`, `serde_json`, `serde_yaml`, `yune-core`; dev-dep `libloading`. **`crate-type = ["rlib", "cdylib"]`** — the rlib links into tests/`yune-cli`; the cdylib is the artifact loaded by native frontends (as `rime.dll`) and compiled to WASM. The browser-loadable Emscripten module is linked through the tiny `yune_web_module` bin target so the build emits JS glue plus a companion `.wasm`.

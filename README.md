@@ -50,7 +50,7 @@ The Phase 2 Windows plan is the next platform/product planning artifact.
 | `crates/yune-core` | Deterministic Rust engine: schema-driven processors, translators, filters, candidates, UserDB, OpenCC subset, dictionary parsing/writing, spelling algebra, AI staging, and ranking hooks. |
 | `crates/yune-rime-api` | Librime-shaped C ABI: session lifecycle, config/deploy/schema APIs, function tables, TypeDuck profile ABI, native frontend tests, and the `yune-web` WASM-facing API. |
 | `crates/yune-cli` | CLI surrogate for driving core or ABI paths and comparing checked-in fixtures. |
-| `packages/yune-typeduck-runtime` | TypeScript wrapper around the `yune-web` WASM API. |
+| `packages/yune-web-runtime` | TypeScript wrapper around the `yune-web` WASM API. |
 | `apps/yune-web` | Canonical `yune-web` browser harness: upstream-derived shell, Yune patch, adapter, browser tests, public-demo package, and evidence. |
 | `docs` | Roadmap, decisions, requirements, conventions, fork-parity ledger, and execution plans. |
 
@@ -93,7 +93,7 @@ Current analysis and evidence:
   records the current measurement and caveats.
 - [docs/reports/yune-vs-librime-root-cause-analysis.md](docs/reports/yune-vs-librime-root-cause-analysis.md)
   explains the remaining root cause after M33.
-- [docs/plans/archive/m33-plan-engine-native-lookup-performance.md](docs/plans/archive/m33-plan-engine-native-lookup-performance.md)
+- [docs/plans/completed/m33-plan-engine-native-lookup-performance.md](docs/plans/completed/m33-plan-engine-native-lookup-performance.md)
   records the completed fairness/cache pass.
 
 ## AI-Native Layer
@@ -123,8 +123,8 @@ cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 
 # TypeScript runtime tests/build
-npm --prefix packages/yune-typeduck-runtime test
-npm --prefix packages/yune-typeduck-runtime run build
+npm --prefix packages/yune-web-runtime test
+npm --prefix packages/yune-web-runtime run build
 
 # Run a key sequence through the core engine
 cargo run -p yune-cli -- run "nihao "
@@ -143,14 +143,14 @@ and the current plan or archived M24 baseline under `docs/plans/`.
 
 ## Key Documentation
 
-- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) - architecture, coding rules,
+- [docs/conventions.md](docs/conventions.md) - architecture, coding rules,
   testing conventions, ABI rules, integrations, and current risks.
 - [docs/roadmap.md](docs/roadmap.md) - phase status, completed milestones,
   active work, and Phase 2 direction.
 - [docs/decisions.md](docs/decisions.md) - decision log and standing
   principles.
 - [docs/requirements.md](docs/requirements.md) - requirement IDs and status.
-- [docs/fork-parity-ledger.md](docs/fork-parity-ledger.md) - Cantoboard and
+- [docs/ledgers/fork-parity-ledger.md](docs/ledgers/fork-parity-ledger.md) - Cantoboard and
   TypeDuck fork deltas versus upstream.
 - [docs/plans/](docs/plans/) - active plans and archived execution records.
 
@@ -167,4 +167,6 @@ and the current plan or archived M24 baseline under `docs/plans/`.
 
 ## License
 
-BSD-3-Clause
+MIT for Yune's original code. Checked-in third-party schemas, dictionaries,
+fixtures, generated data, and provenance materials keep their upstream terms;
+see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

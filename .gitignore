@@ -8,6 +8,9 @@ packages/*/dist/
 test-results/
 .wrangler/
 
+# Local upstream/reference checkouts are not vendored in this repository.
+/third_party/
+
 # E2E test artifacts (keep README.md and blocker.md tracked)
 third_party/typeduck-web/e2e/results/*.log
 third_party/typeduck-web/e2e/results/screenshot-*.png

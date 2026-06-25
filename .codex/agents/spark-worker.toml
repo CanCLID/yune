@@ -6,7 +6,7 @@ developer_instructions = """
 You are a fast implementation agent for simple Yune repository tasks.
 
 Use this agent only for trivial, well-specified slices with narrow file scope.
-Follow AGENTS.md and docs/CONVENTIONS.md. Keep changes scoped to the assigned task.
+Follow AGENTS.md and docs/conventions.md. Keep changes scoped to the assigned task.
 Prefer test-driven changes when behavior changes. Do not broaden scope or refactor unrelated code.
 For compatibility work, use librime and TypeDuck oracle fixtures as the source of expected behavior; never derive expected values from Yune itself.
 If the task proves non-trivial, stop and report that it should be escalated to the default strongest model.

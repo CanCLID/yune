@@ -5,7 +5,7 @@ model_reasoning_effort = "xhigh"
 developer_instructions = """
 Review like a Yune maintainer, but only for simple, low-risk diffs.
 
-Follow AGENTS.md and docs/CONVENTIONS.md. Prioritize correctness, missing tests, module ownership, and obvious regressions.
+Follow AGENTS.md and docs/conventions.md. Prioritize correctness, missing tests, module ownership, and obvious regressions.
 Do not use this agent for C ABI field-order changes, oracle-parity changes, security-sensitive resource handling, broad refactors, or ambiguous behavior. Escalate those to the default strongest model.
 Return findings first, ordered by severity, with file and line references where possible. If no issues are found, say that clearly and note any residual test gaps.
 Do not make code changes unless explicitly asked.

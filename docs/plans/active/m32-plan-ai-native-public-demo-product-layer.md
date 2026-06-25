@@ -8,7 +8,7 @@
 
 **Architecture:** M32 builds on the completed M11 core/CLI AI layer and the completed M13 default-off TypeDuck-Web exposure. Classic input remains provider-free, synchronous, and byte-identical when AI is off. AI is a second-pass, explicitly labeled, local-first layer with privacy and memory controls; any remote-provider path requires an explicit decision and remains off by default. The first public Yune web demo should keep AI hidden or developer-only unless M32 deliberately changes that with reviewed evidence.
 
-**Tech Stack:** Rust (`yune-core` AI modules, `yune-rime-api` TypeDuck-Web exports), `packages/yune-typeduck-runtime`, TypeDuck-Web Vite + React + Tailwind, Playwright, existing M11/M13 AI tests and evidence, and the M31 public-demo deployment harness.
+**Tech Stack:** Rust (`yune-core` AI modules, `yune-rime-api` TypeDuck-Web exports), `packages/yune-web-runtime`, TypeDuck-Web Vite + React + Tailwind, Playwright, existing M11/M13 AI tests and evidence, and the M31 public-demo deployment harness.
 
 ---
 
@@ -64,7 +64,7 @@ Out of scope:
 - `crates/yune-core/src/engine.rs`: owns staged AI merge and commit-boundary safety.
 - `crates/yune-rime-api/src/typeduck_web.rs`: owns browser/WASM AI exports and response source labels.
 - `crates/yune-rime-api/tests/typeduck_web.rs`: owns native browser-runtime AI contract tests.
-- `packages/yune-typeduck-runtime/`: owns TypeScript AI control bindings.
+- `packages/yune-web-runtime/`: owns TypeScript AI control bindings.
 - `apps/yune-web/yune-integration/`: owns bridge-level AI wiring.
 - `apps/yune-web/source/`: owns public-demo AI UI.
 - `apps/yune-web/e2e/`: owns browser evidence.
@@ -234,7 +234,7 @@ Expected before UI/product changes:
 
 **Files:**
 
-- Modify: `packages/yune-typeduck-runtime/src/`
+- Modify: `packages/yune-web-runtime/src/`
 - Modify: `apps/yune-web/yune-integration/`
 - Modify: `apps/yune-web/source/src/`
 - Modify: `apps/yune-web/e2e/yune-typeduck.spec.ts`

@@ -1,7 +1,7 @@
 import { OUTPUT_STANDARD_BY_ID, OUTPUT_STANDARD_OPTIONS, normalizeOutputStandard } from "./consts";
 import { Segment } from "./Inputs";
 import SchemaSwitcher from "./SchemaSwitcher";
-import { outputStandardText, uiText } from "./uiText";
+import { uiText } from "./uiText";
 
 import type { OutputStandard } from "./consts";
 import type { RimeSchemaId } from "./types";
@@ -61,13 +61,12 @@ export default function Toolbar({
 	setIsCangjie5: Dispatch<SetStateAction<boolean>>;
 	uiLanguage: UiLanguage;
 }) {
-	const outputStandardValue = normalizeOutputStandard(outputStandard, "hk_traditional");
+	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
 	const currentOutputStandard = OUTPUT_STANDARD_BY_ID[outputStandardValue];
 	const text = uiText[uiLanguage].toolbar;
-	const outputText = outputStandardText[uiLanguage][outputStandardValue];
 	function cycleOutputStandard() {
 		setOutputStandard(currentValue => {
-			const normalizedCurrentValue = normalizeOutputStandard(currentValue, "hk_traditional");
+			const normalizedCurrentValue = normalizeOutputStandard(currentValue, "hong_kong_traditional");
 			const currentIndex = OUTPUT_STANDARD_OPTIONS.findIndex(option => option.id === normalizedCurrentValue);
 			return OUTPUT_STANDARD_OPTIONS[(currentIndex + 1) % OUTPUT_STANDARD_OPTIONS.length].id;
 		});
@@ -92,19 +91,19 @@ export default function Toolbar({
 					onClick={() => setIsAsciiMode(value => !value)} />
 				<ModeButton
 					ariaLabel={text.outputStandard}
-					active={outputStandardValue === "hk_traditional"}
+					active
 					activeGlyph={currentOutputStandard.glyph}
 					inactiveGlyph={currentOutputStandard.glyph}
-					activeLabel={outputText.shortLabel}
-					inactiveLabel={outputText.shortLabel}
+					activeLabel={currentOutputStandard.shortLabel}
+					inactiveLabel={currentOutputStandard.shortLabel}
 					onClick={cycleOutputStandard} />
 				<ModeButton
 					ariaLabel={text.fullShape}
-					active={!isFullShape}
-					activeGlyph="半"
-					inactiveGlyph="全"
-					activeLabel={text.halfShape}
-					inactiveLabel={text.fullShapeValue}
+					active={isFullShape}
+					activeGlyph="全"
+					inactiveGlyph="半"
+					activeLabel={text.fullShapeValue}
+					inactiveLabel={text.halfShape}
 					onClick={() => setIsFullShape(value => !value)} />
 			</div>
 		</div>

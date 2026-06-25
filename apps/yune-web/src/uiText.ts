@@ -177,6 +177,12 @@ export const uiText = {
       asciiModeDescription: "切換中文輸入或直接輸入英文字母。",
       fullShape: "全形",
       fullShapeDescription: "切換全形或半形字母及符號。",
+      hardReset: "清除本機資料",
+      hardResetDescription:
+        "清除此瀏覽器嘅設定、快取、用戶詞庫同引擎儲存，然後重新載入頁面。",
+      hardResetButton: "硬重設",
+      hardResetConfirm:
+        "要清除此瀏覽器嘅 yune-web 設定、快取、用戶詞庫同引擎儲存，然後重新載入頁面？",
       outputStandard: "輸出字形",
       extendedCharset: "擴展字集",
       extendedCharsetDescription: "允許字集過濾器顯示擴展字。",
@@ -352,6 +358,12 @@ export const uiText = {
       fullShape: "Full shape",
       fullShapeDescription:
         "Switches full-width or half-width letters and punctuation.",
+      hardReset: "Clear local data",
+      hardResetDescription:
+        "Clears this browser's settings, cache, user dictionary, and engine storage, then reloads the page.",
+      hardResetButton: "Hard reset",
+      hardResetConfirm:
+        "Clear this browser's yune-web settings, cache, user dictionary, and engine storage, then reload the page?",
       outputStandard: "Output standard",
       extendedCharset: "Extended charset",
       extendedCharsetDescription:
@@ -404,19 +416,28 @@ export const outputStandardText: Record<
   Record<OutputStandard, { label: string; shortLabel: string }>
 > = {
   yue: {
-    hk_traditional: { label: "香港繁體", shortLabel: "港繁" },
-    traditional: { label: "繁體中文", shortLabel: "繁體" },
-    taiwan_traditional: { label: "台灣正體", shortLabel: "台正" },
-    simplified: { label: "簡體中文", shortLabel: "簡體" },
+    opencc_traditional: { label: "傳統漢字", shortLabel: "傳" },
+    hong_kong_traditional: { label: "香港字形", shortLabel: "港" },
+    taiwan_traditional: { label: "台灣字型", shortLabel: "台" },
+    mainland_simplified: { label: "大陆简化字", shortLabel: "简" },
   },
   en: {
-    hk_traditional: { label: "Hong Kong Traditional", shortLabel: "HK Trad." },
-    traditional: { label: "Traditional Chinese", shortLabel: "Traditional" },
+    opencc_traditional: {
+      label: "OpenCC Traditional",
+      shortLabel: "Traditional",
+    },
+    hong_kong_traditional: {
+      label: "Hong Kong Traditional",
+      shortLabel: "HK Trad.",
+    },
     taiwan_traditional: {
       label: "Taiwan Traditional",
       shortLabel: "Taiwan Trad.",
     },
-    simplified: { label: "Simplified Chinese", shortLabel: "Simplified" },
+    mainland_simplified: {
+      label: "Mainland Simplified",
+      shortLabel: "Simplified",
+    },
   },
 };
 

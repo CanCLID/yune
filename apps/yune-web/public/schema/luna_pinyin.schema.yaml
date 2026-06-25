@@ -25,9 +25,9 @@ switches:
     states: [ 中文, 英文 ]
   - name: full_shape
     states: [ 半形, 全形 ]
-  - name: simplification
-    states: [ 繁體, 简体 ]
-    reset: 0
+  - options: [ noop, variants_hk, trad_tw, simplification ]
+    states: [ 傳統漢字, 香港傳統漢字, 臺灣傳統漢字, 大陆简化汉字 ]
+    reset: 1
   - name: ascii_punct
     states: [ 。，, ．， ]
 
@@ -54,41 +54,21 @@ engine:
     - script_translator
   filters:
     - charset_filter
-    - simplifier@output_hk2s
-    - simplifier@output_t2s
-    - simplifier@output_s2t
-    - simplifier@output_t2tw
-    - simplifier@output_s2tw
-    - simplifier@output_tw2s
-    - simplifier@output_tw2t
+    - simplifier
+    - simplifier@variants_hk
+    - simplifier@trad_tw
 
-output_hk2s:
-  option_name: output_hk2s
-  opencc_config: hk2s.json
-
-output_t2s:
-  option_name: output_t2s
+simplifier:
+  option_name: simplification
   opencc_config: t2s.json
 
-output_s2t:
-  option_name: output_s2t
-  opencc_config: s2t.json
+variants_hk:
+  option_name: variants_hk
+  opencc_config: t2hkf.json
 
-output_t2tw:
-  option_name: output_t2tw
+trad_tw:
+  option_name: trad_tw
   opencc_config: t2tw.json
-
-output_s2tw:
-  option_name: output_s2tw
-  opencc_config: s2tw.json
-
-output_tw2s:
-  option_name: output_tw2s
-  opencc_config: tw2s.json
-
-output_tw2t:
-  option_name: output_tw2t
-  opencc_config: tw2t.json
 
 speller:
   algebra:

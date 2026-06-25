@@ -1204,6 +1204,8 @@ fn default_simplifier_option_name(name_space: &str) -> String {
 fn default_simplifier_opencc_config(name_space: &str) -> String {
     let config_stem = name_space.strip_prefix("output_").unwrap_or(name_space);
     match config_stem {
+        "variants_hk" => "t2hkf.json".to_owned(),
+        "trad_tw" => "t2tw.json".to_owned(),
         "hk2s" | "t2s" | "s2t" | "t2tw" | "s2tw" | "tw2s" | "tw2t" => {
             format!("{config_stem}.json")
         }

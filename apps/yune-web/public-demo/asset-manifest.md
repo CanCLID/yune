@@ -21,8 +21,8 @@ Pruned from the public deploy:
 
 - Side mobile layouts such as longpress and 10-key schemas.
 
-Pinned public schema payload bytes from `schema-asset-manifest.json`: 32 files,
-31,421,456 bytes.
+Pinned public schema payload bytes from `schema-asset-manifest.json`: 38 files,
+31,685,919 bytes.
 
 Measured caveat: the public build still content-addresses a curated schema
 payload for deployment, but the browser-visible harness controls should match

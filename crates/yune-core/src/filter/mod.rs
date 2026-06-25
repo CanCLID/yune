@@ -332,6 +332,7 @@ pub struct SimplifierFilter {
 enum SimplifierConversion {
     None,
     TraditionalToSimplified,
+    TraditionalToHongKong,
     HongKongToSimplified,
     SimplifiedToTraditional,
     TraditionalToTaiwan,
@@ -430,6 +431,7 @@ impl SimplifierConversion {
         let config_stem = config_name.strip_suffix(".json").unwrap_or(&config_name);
         match config_stem {
             "" | "t2s" => Self::TraditionalToSimplified,
+            "t2hkf" => Self::TraditionalToHongKong,
             "hk2s" => Self::HongKongToSimplified,
             "s2t" => Self::SimplifiedToTraditional,
             "t2tw" => Self::TraditionalToTaiwan,
@@ -445,6 +447,7 @@ impl SimplifierConversion {
         match self {
             Self::None => text.to_owned(),
             Self::TraditionalToSimplified => simplify_traditional_text(text),
+            Self::TraditionalToHongKong => traditional_to_hong_kong_text(text),
             Self::HongKongToSimplified => simplify_hong_kong_text(text),
             Self::SimplifiedToTraditional => traditionalize_simplified_text(text),
             Self::TraditionalToTaiwan => traditional_to_taiwan_text(text),
@@ -512,11 +515,13 @@ impl CandidateFilter for SimplifierFilter {
 }
 
 const HK_VARIANTS: &str = include_str!("../opencc/data/HKVariants.txt");
+const HK_VARIANTS_FULL: &str = include_str!("../opencc/data/HKVariantsFull.txt");
 const HK_VARIANTS_REV_PHRASES: &str = include_str!("../opencc/data/HKVariantsRevPhrases.txt");
 const TS_CHARACTERS: &str = include_str!("../opencc/data/TSCharacters.txt");
 const TS_PHRASES: &str = include_str!("../opencc/data/TSPhrases.txt");
 
 static HK2S_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
+static T2HKF_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
 static T2S_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
 static S2T_OPENCC_CHAIN: OnceLock<OpenCcChain> = OnceLock::new();
 
@@ -597,6 +602,10 @@ fn simplify_hong_kong_text(text: &str) -> String {
     hk2s_opencc_chain().convert(text)
 }
 
+fn traditional_to_hong_kong_text(text: &str) -> String {
+    t2hkf_opencc_chain().convert(text)
+}
+
 fn traditionalize_simplified_text(text: &str) -> String {
     s2t_opencc_chain().convert(text)
 }
@@ -615,6 +624,16 @@ fn hk2s_opencc_chain() -> &'static OpenCcChain {
                 max_phrase_chars: max_opencc_key_chars(TS_PHRASES),
             },
         ],
+    })
+}
+
+fn t2hkf_opencc_chain() -> &'static OpenCcChain {
+    T2HKF_OPENCC_CHAIN.get_or_init(|| OpenCcChain {
+        stages: vec![OpenCcStage {
+            phrases: parse_opencc_phrase_map(HK_VARIANTS_FULL),
+            chars: parse_opencc_char_map(HK_VARIANTS_FULL),
+            max_phrase_chars: max_opencc_key_chars(HK_VARIANTS_FULL),
+        }],
     })
 }
 

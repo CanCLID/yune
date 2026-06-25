@@ -5,6 +5,7 @@ import {
 	normalizeOutputStandard,
 } from "./consts";
 import { Checkbox, Radio, Range, Section, Toggle } from "./Inputs";
+import { resetYuneWebStorage } from "./rime";
 import { candidateLayoutText, displayLanguageText, outputStandardText, showRomanizationText, typefaceText, uiText } from "./uiText";
 
 import type { ShowRomanization } from "./consts";
@@ -20,7 +21,7 @@ const thresholdRange = { min: 0, max: 200000, step: 1000 } as const;
 const languageOrder = Object.values(Language);
 
 export default function Preferences(prefs: PreferencesWithSetter) {
-	const outputStandard = normalizeOutputStandard(prefs.outputStandard, "hk_traditional");
+	const outputStandard = normalizeOutputStandard(prefs.outputStandard, "hong_kong_traditional");
 	const text = uiText[prefs.uiLanguage].settings;
 
 	function toggleDisplayLanguage(language: Language, checked: boolean) {
@@ -38,6 +39,12 @@ export default function Preferences(prefs: PreferencesWithSetter) {
 
 		prefs.setDisplayLanguages(nextLanguages);
 		prefs.setMainLanguage(nextPrimary);
+	}
+
+	function hardResetStorage() {
+		if (window.confirm(text.hardResetConfirm)) {
+			void resetYuneWebStorage();
+		}
 	}
 
 	return <section className="yd-preferences" data-yune-preferences>
@@ -76,6 +83,18 @@ export default function Preferences(prefs: PreferencesWithSetter) {
 				<Toggle label={text.predictionNeverFirst} description={text.predictionNeverFirstDescription} checked={prefs.predictionNeverFirst} setChecked={prefs.setPredictionNeverFirst} />
 				<Range label={text.predictionThreshold} description={text.predictionThresholdDescription} min={thresholdRange.min} max={thresholdRange.max} step={thresholdRange.step} value={prefs.predictionThreshold} setValue={prefs.setPredictionThreshold} />
 				<Toggle label={text.dictionaryExclude} description={text.dictionaryExcludeDescription} checked={prefs.dictionaryExclude.length > 0} setChecked={checked => prefs.setDictionaryExclude(checked ? [...DICTIONARY_EXCLUDE_BY_SCHEMA[prefs.activeSchema]] : [])} />
+				<div className="yd-field yd-field-row yd-field-row--split">
+					<span className="yd-field-copy">
+						<span className="yd-field-label">{text.hardReset}</span>
+						<span className="yd-field-description">{text.hardResetDescription}</span>
+					</span>
+					<button
+						type="button"
+						className="yd-button yd-button-danger"
+						onClick={hardResetStorage}>
+						{text.hardResetButton}
+					</button>
+				</div>
 			</Section>
 
 			<Section sectionId="display" title={text.displayTitle} description={text.displayDescription}>

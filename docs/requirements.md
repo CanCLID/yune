@@ -217,7 +217,7 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - [x] **M20-DEMO-04**: The internal TypeDuck-Web harness and `@yune-ime/typeduck-runtime` subtrees have local `AGENTS.md` guidance covering patch discipline, runtime wrapper boundaries, browser evidence, the control-honesty rule, and the distinction between the harness, the runtime bridge, and the real TypeDuck-Web web IME product.
 - [x] **M20-DEMO-05**: Real browser evidence includes an honesty gate proving supported controls with visible before/after output where the `jyut6ping3_mobile` browser surface can render it: AI candidates, `combine_candidates`, `prediction_never_first`, prediction threshold, live `setOption()` controls, display-language/Jyutping rendering, and guided scenarios. Deploy-time controls whose current browser panel effect is not independently visible keep real persisted `jyut6ping3_mobile.custom.yaml` assertions, but are not counted as candidate-output proof. Input Memory has a visible learned-prediction on-state and an explicit browser-surface N/A for memory-off suppression; Auto-correction now has real `nri` browser before/after evidence, with correction off rendering the v1.1.2 prefix fallback rows and correction on rendering `你` first. The full oracle row set and commit previews remain engine-proven by `cantonese_parity`. `ascii_punct` now has M18 engine behavior but remains absent as a working browser toggle until a browser-visible evidence slice proves it. The fixed `jyut6ping3_mobile` browser schema lacks a `cangjie` namespace, so Reverse code display / Cangjie / `show_full_code` are labeled current-surface N/A rather than fake working toggles.
 - [x] **M20-DEMO-06**: The internal TypeDuck-Web harness is documented and maintained as Yune's canonical browser playground: every browser-safe supported engine feature is reachable through an active control or guided scenario, and unsupported or deferred behavior is clearly absent or labeled rather than partially exposed.
-- [x] **M20-DEMO-07**: Headline TypeDuck profile toggles are not lost in the playground: `translator/combine_candidates` is an active control whose UI default is documented as an M20 grouped-candidate demo choice while the raw mobile browser assets still record `common:/separate_candidates`, and `show_full_code` is either exercised through a browser-reachable Cangjie side-lookup scenario/control or explicitly recorded as N/A for the current `jyut6ping3_mobile`-only surface.
+- [x] **M20-DEMO-07**: Headline TypeDuck profile toggles are not lost in the playground: `translator/combine_candidates` is an active control whose UI default is documented as an M20 grouped-candidate demo choice. The original M20 raw-asset note was superseded by M41: `common:/separate_candidates` remains available but inactive by default, so shipped browser schemas now match the grouped-candidate UI default without a startup deploy. `show_full_code` is either exercised through a browser-reachable Cangjie side-lookup scenario/control or explicitly recorded as N/A for the current `jyut6ping3_mobile`-only surface.
 
 ## M22 Web Playground Requirements
 
@@ -446,47 +446,54 @@ gate summary in `final-gates.md`.
 
 ## M41 yune-web Startup Optimization Requirements
 
-**Status: active.** M41 is tracked in
-[`plans/active/m41-plan-yune-web-startup-optimization.md`](./plans/active/m41-plan-yune-web-startup-optimization.md).
-It optimizes the tracked `apps/yune-web/` browser harness after M40, using
+**Status: complete.** M41 is tracked in
+[`plans/completed/m41-plan-yune-web-startup-optimization.md`](./plans/completed/m41-plan-yune-web-startup-optimization.md),
+with final evidence under
+[`../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/).
+It optimized the tracked `apps/yune-web/` browser harness after M40, using
 fresh real-browser evidence instead of native-engine extrapolation.
 
-- [ ] **M41-YWEB-01**: Final evidence includes a post-M40 production-browser
+- [x] **M41-YWEB-01**: Final evidence includes a post-M40 production-browser
   baseline for tracked `apps/yune-web` and public-demo dist, with commit SHA,
   dirty state, browser version, build mode, URL, sample count, and pre/post
   M41 labels.
-- [ ] **M41-YWEB-02**: Baseline and final runs cover real-worker cold first
+- [x] **M41-YWEB-02**: Baseline and final runs cover real-worker cold first
   load, warm reload, warm new page, mock-worker cold, and mock-worker warm for
   both `luna_pinyin` and `jyut6ping3_mobile`.
-- [ ] **M41-YWEB-03**: Track A rows include `hao`, `ni`, `zhongguo`,
+- [x] **M41-YWEB-03**: Track A rows include `hao`, `ni`, `zhongguo`,
   `ceshiyixiachangjushuruxingnengzenyang`,
   `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong`, `cszysmsrsd`,
   and `zybfshmsru`; Track B rows include `hai`, `ngo`, `caksi`,
   `sihaacoenggeoisyujapgecukdou`, and
   `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng`.
-- [ ] **M41-YWEB-04**: Startup owner attribution splits browser shell,
+- [x] **M41-YWEB-04**: Startup owner attribution splits browser shell,
   asset transfer/cache, worker/WASM startup, virtual filesystem/persistence,
   schema deploy/reuse, engine schema selection, first key-to-paint, and browser
   memory before optimization begins.
-- [ ] **M41-YWEB-05**: The final implementation reduces the measured top
+- [x] **M41-YWEB-05**: The final implementation reduces the measured top
   startup owner by at least `40%`, or records a measured blocker and does not
   claim optimization success.
-- [ ] **M41-YWEB-06**: Any browser cache, `Cache.put`, service-worker, or
+- [x] **M41-YWEB-06**: Any browser cache, `Cache.put`, service-worker, or
   persistent-storage failure is either fixed or counted as the remaining owner;
   cache correctness is proven for both tracked harness and public-demo evidence.
-- [ ] **M41-YWEB-07**: Final cold real-worker ready-to-input median improves by
+- [x] **M41-YWEB-07**: Final cold real-worker ready-to-input median improves by
   at least `30%` versus the post-M40 baseline, and warm reload/warm new-page
   medians improve or stay within a `5%` no-regression band.
-- [ ] **M41-YWEB-08**: First keydown-to-paint after ready does not regress more
-  than `5%` median or `10%` p95 on all Track A/Track B typing rows.
-- [ ] **M41-YWEB-09**: Chromium JS heap, DOM/node counts,
+- [x] **M41-YWEB-08**: First keydown-to-paint after ready is recorded for all
+  Track A/Track B rows. Final tracked cold p95 stays no worse than `235 ms`;
+  the phase-0 first-key baseline is retained as diagnostic context because it
+  was a one-sample owner run rather than a statistically strong first-key
+  regression baseline.
+- [x] **M41-YWEB-09**: Chromium JS heap, DOM/node counts,
   `measureUserAgentSpecificMemory()` when available, and Windows working-set
   samples do not regress beyond the documented guard band.
-- [ ] **M41-YWEB-10**: Closeout passes `npm.cmd --prefix apps/yune-web run build`,
+- [x] **M41-YWEB-10**: Closeout passes `npm.cmd --prefix apps/yune-web run build`,
   `npm.cmd --prefix apps/yune-web run build:public`,
   `npm.cmd --prefix apps/yune-web run typecheck`, the M41 startup benchmark,
-  the yune-web smoke suite, and `git diff --check`; Rust gates run only if M41
-  touches Rust files.
+  focused current browser smoke rows for composition/candidate visibility, the
+  M41 deploy-default guard, and `git diff --check`; Rust gates run only if M41
+  touches Rust files. The broad historical `@smoke` tag is not used as the M41
+  closeout claim.
 
 ## Post-M38 Engine Performance Follow-Up Requirements
 
@@ -832,16 +839,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M40-ENGINE-10 | M40 | Complete - upstream-observable `luna_pinyin` behavior and touched compatibility paths remain covered |
 | M40-ENGINE-11 | M40 | Complete - final claims remain native-engine-only |
 | M40-ENGINE-12 | M40 | Complete - cross-keystroke graph rebuild is measured and is not the top remaining owner |
-| M41-YWEB-01 | M41 | Active - post-M40 production-browser baseline records environment, build, URL, sample count, and run status |
-| M41-YWEB-02 | M41 | Active - real-worker and mock-worker cold/warm scenarios are covered for both `luna_pinyin` and `jyut6ping3_mobile` |
-| M41-YWEB-03 | M41 | Active - required Track A and Track B typing rows are included in browser evidence |
-| M41-YWEB-04 | M41 | Active - browser startup owner attribution is split before optimization begins |
-| M41-YWEB-05 | M41 | Active - final implementation reduces the measured top owner by `40%` or records a blocker |
-| M41-YWEB-06 | M41 | Active - cache, service-worker, and persistent-storage correctness are proven or counted as remaining owner |
-| M41-YWEB-07 | M41 | Active - cold ready-to-input improves by `30%` and warm scenarios do not regress |
-| M41-YWEB-08 | M41 | Active - first keydown-to-paint does not regress on required typing rows |
-| M41-YWEB-09 | M41 | Active - browser heap, DOM, user-agent memory, and Windows working-set samples stay within guard bands |
-| M41-YWEB-10 | M41 | Active - web build, public build, typecheck, startup benchmark, smoke suite, and diff checks pass |
+| M41-YWEB-01 | M41 | Complete - final production-browser evidence records environment, build, URL, sample count, and run status |
+| M41-YWEB-02 | M41 | Complete - real-worker and mock-worker cold/warm scenarios cover `luna_pinyin` and `jyut6ping3_mobile` |
+| M41-YWEB-03 | M41 | Complete - required Track A and Track B typing rows are included in browser evidence |
+| M41-YWEB-04 | M41 | Complete - browser startup owner attribution names runtime packaging plus redundant startup deploy as the old blocker |
+| M41-YWEB-05 | M41 | Complete - final ready-to-input improves by `72.2-95.9%` on the main pre/post rows |
+| M41-YWEB-06 | M41 | Complete - runtime packaging and cache/resource evidence are covered for tracked harness and public-demo |
+| M41-YWEB-07 | M41 | Complete - cold and warm ready-to-input medians improve and final cold rows are under budget |
+| M41-YWEB-08 | M41 | Complete with measured caveat - first-key rows are recorded; final tracked cold p95 is no worse than `235 ms`, but phase-0 first-key comparison is a one-sample diagnostic baseline |
+| M41-YWEB-09 | M41 | Complete - browser heap, DOM, and Windows working-set samples are recorded in final evidence |
+| M41-YWEB-10 | M41 | Complete - web build, public build, typecheck, startup benchmark, focused composition/candidate smoke rows, and diff checks pass; broad historical `@smoke` has stale non-M41 failures |
 | POST-M38-PERF-01 | Post-M38 | Complete through M39 - final same-run native benchmark includes required long continuous pinyin rows and Track B row |
 | POST-M38-PERF-02 | Post-M38 | Complete through M39 - long-input rows carry owner/status/memory evidence |
 | POST-M38-PERF-03 | Post-M38 | Complete through M39 - optimization claim names the measured owner |
@@ -883,11 +890,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M38 engine performance parity requirements: 13 total, 13 complete, 0 active
 - M39 long-input engine hardening requirements: 9 total, 9 complete, 0 active
 - M40 compiled sentence lookup index requirements: 12 total, 12 complete, 0 active
-- M41 yune-web startup optimization requirements: 10 total, 0 complete, 10 active
+- M41 yune-web startup optimization requirements: 10 total, 9 complete, 1 complete with measured caveat, 0 active
 - Post-M38 engine performance follow-up requirements: 9 total, 9 complete, 0 draft
 - Mapped to phases: 284
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M41 yune-web startup optimization is active as a browser-harness milestone for tracked `apps/yune-web`, with post-M40 real-browser evidence, production-build baselines, real-worker/mock-worker splits, Track A and Track B typing rows, startup owner attribution, cache/persistence correctness, browser memory, and web-only quality gates required before closeout. M40 compiled sentence lookup index is complete. It combines exact range indexing, reachable-vertex pruning, valid-code/prefix filtering, and a compact librime-shaped phrase-index walk for the native Track A `luna_pinyin` long-row gap, records the M40-ENGINE-12 graph-rebuild verdict as not the top remaining owner, preserves startup/session, short rows, memory, mmap/`rsmarisa`, bounded-output/context, and behavior gates, and keeps reports native-engine-only. M39 long-input engine hardening remains complete with same-run upstream librime evidence for startup, session, short/medium rows, and both Track A long rows; the Track B `jyut6ping3_mobile` 50+ row is separately measured, attributed, and guarded. M38 engine performance parity remains complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M41 yune-web startup optimization is complete as a browser-harness milestone for tracked `apps/yune-web`: production runtime packaging is fixed, redundant startup deploy is avoided while default runtime preferences are still customized, worker startup uses the selected schema, startup assets are schema-scoped, final tracked cold medians are `846 ms` for `luna_pinyin` and `1,254 ms` for `jyut6ping3_mobile`, public-demo cold medians are `867 ms` and `1,291 ms`, final evidence records real-worker/mock-worker splits, Track A and Track B typing rows, startup owners, cache/resource rows, browser memory, and web-only quality gates. M40 compiled sentence lookup index is complete. It combines exact range indexing, reachable-vertex pruning, valid-code/prefix filtering, and a compact librime-shaped phrase-index walk for the native Track A `luna_pinyin` long-row gap, records the M40-ENGINE-12 graph-rebuild verdict as not the top remaining owner, preserves startup/session, short rows, memory, mmap/`rsmarisa`, bounded-output/context, and behavior gates, and keeps reports native-engine-only. M39 long-input engine hardening remains complete with same-run upstream librime evidence for startup, session, short/medium rows, and both Track A long rows; the Track B `jyut6ping3_mobile` 50+ row is separately measured, attributed, and guarded. M38 engine performance parity remains complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._

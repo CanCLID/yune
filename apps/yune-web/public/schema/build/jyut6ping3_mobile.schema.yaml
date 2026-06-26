@@ -270,12 +270,19 @@ switches:
     states: ["。，", "．，"]
 translator:
   always_show_comments: true
-  combine_candidates: false
+  combine_candidates: true
   comment_format:
     - "xform/^/\\f/"
   dictionary: jyut6ping3
+  dictionary_exclude: []
+  enable_completion: true
+  enable_correction: false
+  enable_sentence: true
+  enable_user_dict: true
+  encode_commit_history: true
   prediction_candidate_limit: 1
   prediction_never_first: true
+  prediction_weight_threshold: 0
   prefix_fallback: true
   preedit_format:
     - "xform/([aeiouymngptk])vv/${1}4/"

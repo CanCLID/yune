@@ -81,9 +81,15 @@ speller:
 
 translator:
   dictionary: luna_pinyin
-  enable_sentence: false
-  enable_user_dict: false
-  encode_commit_history: false
+  enable_completion: true
+  enable_correction: false
+  enable_sentence: true
+  enable_user_dict: true
+  encode_commit_history: true
+  combine_candidates: true
+  prediction_never_first: true
+  prediction_weight_threshold: 0
+  dictionary_exclude: []
   preedit_format:
     - xform/([nl])v/$1ü/
     - xform/([nl])ue/$1üe/
@@ -107,6 +113,4 @@ recognizer:
     reverse_lookup: "^`[a-z']*;?$"
 
 __patch:
-  - common:/disable_completion?
-  - common:/enable_correction?
-  - common:/separate_candidates?
+  []

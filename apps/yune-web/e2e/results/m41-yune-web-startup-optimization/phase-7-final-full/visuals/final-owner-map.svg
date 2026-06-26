@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="360" viewBox="0 0 920 360" role="img" aria-labelledby="title desc">
+  <title id="title">M41 final startup owner map</title>
+  <desc id="desc">Stacked bars showing final ready-to-input medians split into the top measured owner and remaining startup time.</desc>
+  <style>
+    text { font-family: Arial, sans-serif; fill: #111827; font-size: 13px; }
+    .small { font-size: 12px; fill: #4b5563; }
+    .owner { fill: #2563eb; }
+    .rest { fill: #c7d2fe; }
+    .axis { stroke: #d1d5db; stroke-width: 1; }
+  </style>
+  <rect width="920" height="360" fill="#ffffff"/>
+  <text x="24" y="30" font-size="20" font-weight="700">M41 final startup owners</text>
+  <text x="24" y="52" class="small">Blue is the top measured owner; pale blue is the rest of ready-to-input.</text>
+  <rect x="610" y="26" width="14" height="14" class="owner"/><text x="630" y="38" class="small">Top owner</text>
+  <rect x="715" y="26" width="14" height="14" class="rest"/><text x="735" y="38" class="small">Other startup time</text>
+  <line x1="210" y1="72" x2="210" y2="318" class="axis"/>
+  <line x1="210" y1="318" x2="850" y2="318" class="axis"/>
+
+  <text x="24" y="100">tracked luna cold</text>
+  <rect x="210" y="84" width="300" height="18" rx="2" class="owner"/>
+  <rect x="510" y="84" width="131" height="18" rx="2" class="rest"/>
+  <text x="650" y="99" class="small">846 ms, residual 601 ms</text>
+
+  <text x="24" y="145">tracked jyut cold</text>
+  <rect x="210" y="129" width="304" height="18" rx="2" class="owner"/>
+  <rect x="514" y="129" width="300" height="18" rx="2" class="rest"/>
+  <text x="823" y="144" class="small">1,254 ms, worker 646 ms</text>
+
+  <text x="24" y="190">public luna cold</text>
+  <rect x="210" y="174" width="301" height="18" rx="2" class="owner"/>
+  <rect x="511" y="174" width="133" height="18" rx="2" class="rest"/>
+  <text x="653" y="189" class="small">867 ms, residual 600 ms</text>
+
+  <text x="24" y="235">public jyut cold</text>
+  <rect x="210" y="219" width="347" height="18" rx="2" class="owner"/>
+  <rect x="557" y="219" width="292" height="18" rx="2" class="rest"/>
+  <text x="690" y="254" class="small">1,291 ms, worker 680 ms</text>
+
+  <text x="24" y="280">tracked mock cold</text>
+  <rect x="210" y="264" width="298" height="18" rx="2" class="owner"/>
+  <text x="518" y="279" class="small">600 ms, shell floor</text>
+
+  <text x="210" y="342" class="small">0 ms</text>
+  <text x="820" y="342" class="small">1,500 ms</text>
+</svg>

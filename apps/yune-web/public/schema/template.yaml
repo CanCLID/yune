@@ -71,7 +71,15 @@ speller:
 
 translator:
   dictionary: jyut6ping3
+  enable_completion: true
+  enable_correction: false
+  enable_sentence: true
+  enable_user_dict: true
+  encode_commit_history: true
+  combine_candidates: true
   prediction_never_first: true
+  prediction_weight_threshold: 0
+  dictionary_exclude: []
   always_show_comments: true
   comment_format:
     - xform/^/\f/

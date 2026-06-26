@@ -7,7 +7,7 @@ patch:
     # - common:/enable_correction
     # - common:/disable_sentence
     # - common:/disable_learning
-    - common:/separate_candidates
+    # - common:/separate_candidates
     # - common:/use_cangjie3
     # - common:/show_cangjie_roots
     - common:/show_full_code

@@ -1,0 +1,1745 @@
+[
+  {
+    "scenarioId": "tracked-luna-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=luna_pinyin&m41Scenario=tracked-luna-cold",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-cold",
+    "publicDemo": false,
+    "readyToInputMs": 3115,
+    "startupCompleteMs": 754,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 4
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 13
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 127
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 610
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 754
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 537,
+      "load": 537,
+      "responseEnd": 28,
+      "requestStart": 24,
+      "transfer": 4
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 217229,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 5
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 31481,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 3
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 491496,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 482
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 40295,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -57
+      }
+    ],
+    "cache": {
+      "hits": 1,
+      "misses": 34,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768926699,
+      "usage": 31508459,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 47339
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 692,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 4996936,
+      "JSHeapTotalSize": 10330112,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 11200000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 23,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 20,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 1,
+        "firstCandidateText": "侴"
+      },
+      {
+        "input": "ni",
+        "ms": 32,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 14,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 17
+      },
+      {
+        "input": "zhongguo",
+        "ms": 27,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 13,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 4,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 9,
+        "firstCandidateText": "伱"
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 29,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 24,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 4,
+        "firstCandidateText": "中"
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 112,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 24,
+        "workerProcessMs": 32,
+        "workerRoundtripMs": 72,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 15
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 143,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 96,
+        "workerProcessMs": 37,
+        "workerRoundtripMs": 37,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 10
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 194,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 132,
+        "workerProcessMs": 48,
+        "workerRoundtripMs": 48,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 13
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-luna-warm-reload",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=luna_pinyin&m41Scenario=tracked-luna-warm-reload",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-warm-reload",
+    "publicDemo": false,
+    "readyToInputMs": 2399,
+    "startupCompleteMs": 589,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 3
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 8
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 42
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 536
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 589
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 22,
+      "load": 32,
+      "responseEnd": 2,
+      "requestStart": 1,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/bpmfhuninn/v6/taiOGmRuFJa3qsALi5gn1J6v2ZA.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 15580,
+        "decodedBodySize": 15580,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chirongoroundtc/v4/tss3AopDbiwZ4xauFDX3yQ3Ywoaj6mld-9c.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 47238,
+        "decodedBodySize": 98048,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironheihk/v5/wXKtE3MSr44vpVKPvzqVJaxhjXATtQ.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 41979,
+        "decodedBodySize": 86072,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironsunghk/v2/nuFgD_XLTZPpXIpS3-3dhGzHTQKpPTs.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 67767,
+        "decodedBodySize": 160004,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chocolateclassicalsans/v16/nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdzO4eI.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18876,
+        "decodedBodySize": 18876,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/huninn/v8/OpNNnoINg9bQ4xkZiSvR.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 19028,
+        "decodedBodySize": 19028,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/iansui/v13/w8gbH2UoTuUp5bOqiiuC.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 22508,
+        "decodedBodySize": 22508,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaimonotc/v10/pxiYyos4iPVgyWx9WtufHnsIf5nkaB0HummIow.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18928,
+        "decodedBodySize": 18928,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaitc/v10/w8gDH20td8wNsI3f40DmtXZb4_uNJ9w.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 17832,
+        "decodedBodySize": 17832,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/wdxllubrifonttc/v6/nKKN-H4mPq1yJurnWXfJE8svQHonWf_5GK0.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 11820,
+        "decodedBodySize": 11820,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -25
+      }
+    ],
+    "cache": {
+      "hits": 35,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768991339,
+      "usage": 31573099,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 111979
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 1103,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 7324948,
+      "JSHeapTotalSize": 15048704,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 16100000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 31,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 26,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 2,
+        "firstCandidateText": "侴"
+      },
+      {
+        "input": "ni",
+        "ms": 21,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 7,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 4,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 10,
+        "firstCandidateText": "伱"
+      },
+      {
+        "input": "zhongguo",
+        "ms": 23,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 17,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 5,
+        "firstCandidateText": "中"
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 88,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 18,
+        "workerProcessMs": 28,
+        "workerRoundtripMs": 36,
+        "reactUpdateMs": 18,
+        "paintProxyMs": 16
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 123,
+        "candidateCount": 4,
+        "totalCandidateCount": 4,
+        "workerQueueWaitMs": 116,
+        "workerProcessMs": 4,
+        "workerRoundtripMs": 4,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 2,
+        "firstCandidateText": "ㄔㄜㄕ"
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 170,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 152,
+        "workerProcessMs": 17,
+        "workerRoundtripMs": 17,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 1
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 220,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 169,
+        "workerProcessMs": 31,
+        "workerRoundtripMs": 31,
+        "reactUpdateMs": 2,
+        "paintProxyMs": 17
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-luna-warm-new-page",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=luna_pinyin&m41Scenario=tracked-luna-warm-new-page",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-warm-new-page",
+    "publicDemo": false,
+    "readyToInputMs": 2438,
+    "startupCompleteMs": 604,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 3
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 8
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 40
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 553
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 604
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 19,
+      "load": 28,
+      "responseEnd": 2,
+      "requestStart": 1,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 1
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 1
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 3
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -73
+      }
+    ],
+    "cache": {
+      "hits": 35,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768991343,
+      "usage": 31573103,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 111983
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 840,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 5259920,
+      "JSHeapTotalSize": 9805824,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 10600000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 22,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 19,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 1,
+        "firstCandidateText": "侴"
+      },
+      {
+        "input": "ni",
+        "ms": 21,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 8,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 4,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 9,
+        "firstCandidateText": "伱"
+      },
+      {
+        "input": "zhongguo",
+        "ms": 21,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 17,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 2,
+        "firstCandidateText": "中"
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 89,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 18,
+        "workerProcessMs": 29,
+        "workerRoundtripMs": 55,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 15
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 172,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 72,
+        "workerProcessMs": 35,
+        "workerRoundtripMs": 83,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 16
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 203,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 154,
+        "workerProcessMs": 48,
+        "workerRoundtripMs": 48,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 0
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 185,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 166,
+        "workerProcessMs": 5,
+        "workerRoundtripMs": 5,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 14
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-jyut-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=jyut6ping3_mobile&m41Scenario=tracked-jyut-cold",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-cold",
+    "publicDemo": false,
+    "readyToInputMs": 17041,
+    "startupCompleteMs": 695,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 5
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 11
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 1
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 125
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 553
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 695
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 525,
+      "load": 525,
+      "responseEnd": 24,
+      "requestStart": 22,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 217229,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 4
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 31481,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 2
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 491496,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 475
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 40295,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -59
+      }
+    ],
+    "cache": {
+      "hits": 1,
+      "misses": 34,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768911048,
+      "usage": 31492808,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 31688
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 839,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 5192200,
+      "JSHeapTotalSize": 9019392,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 10000000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 60,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 29,
+        "workerRoundtripMs": 29,
+        "reactUpdateMs": 29,
+        "paintProxyMs": 1,
+        "firstCandidateText": "係"
+      },
+      {
+        "input": "ngo",
+        "ms": 22,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 7,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 13
+      },
+      {
+        "input": "caksi",
+        "ms": 45,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 22,
+        "workerRoundtripMs": 27,
+        "reactUpdateMs": 4,
+        "paintProxyMs": 15,
+        "firstCandidateText": "我"
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 75,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 55,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 19,
+        "firstCandidateText": "卧蠶"
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 151,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 75,
+        "workerProcessMs": 56,
+        "workerRoundtripMs": 61,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 14,
+        "firstCandidateText": "我測時"
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-jyut-warm-reload",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=jyut6ping3_mobile&m41Scenario=tracked-jyut-warm-reload",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-warm-reload",
+    "publicDemo": false,
+    "readyToInputMs": 15783,
+    "startupCompleteMs": 524,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 3
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 10
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 41
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 470
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 524
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 22,
+      "load": 33,
+      "responseEnd": 2,
+      "requestStart": 1,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/bpmfhuninn/v6/taiOGmRuFJa3qsALi5gn1J6v2ZA.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 15580,
+        "decodedBodySize": 15580,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chirongoroundtc/v4/tss3AopDbiwZ4xauFDX3yQ3Ywoaj6mld-9c.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 47238,
+        "decodedBodySize": 98048,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironheihk/v5/wXKtE3MSr44vpVKPvzqVJaxhjXATtQ.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 41979,
+        "decodedBodySize": 86072,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironsunghk/v2/nuFgD_XLTZPpXIpS3-3dhGzHTQKpPTs.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 67767,
+        "decodedBodySize": 160004,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chocolateclassicalsans/v16/nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdzO4eI.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18876,
+        "decodedBodySize": 18876,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/huninn/v8/OpNNnoINg9bQ4xkZiSvR.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 19028,
+        "decodedBodySize": 19028,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/iansui/v13/w8gbH2UoTuUp5bOqiiuC.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 22508,
+        "decodedBodySize": 22508,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaimonotc/v10/pxiYyos4iPVgyWx9WtufHnsIf5nkaB0HummIow.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18928,
+        "decodedBodySize": 18928,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaitc/v10/w8gDH20td8wNsI3f40DmtXZb4_uNJ9w.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 17832,
+        "decodedBodySize": 17832,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/wdxllubrifonttc/v6/nKKN-H4mPq1yJurnWXfJE8svQHonWf_5GK0.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 11820,
+        "decodedBodySize": 11820,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -27
+      }
+    ],
+    "cache": {
+      "hits": 35,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768960521,
+      "usage": 31542281,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 81161
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 973,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 4960484,
+      "JSHeapTotalSize": 9281536,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 10000000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 59,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 30,
+        "workerRoundtripMs": 30,
+        "reactUpdateMs": 28,
+        "paintProxyMs": 1,
+        "firstCandidateText": "係"
+      },
+      {
+        "input": "ngo",
+        "ms": 26,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 9,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 15
+      },
+      {
+        "input": "caksi",
+        "ms": 46,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 27,
+        "workerProcessMs": 14,
+        "workerRoundtripMs": 14,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 4,
+        "firstCandidateText": "五"
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 106,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 44,
+        "workerProcessMs": 56,
+        "workerRoundtripMs": 57,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 4,
+        "firstCandidateText": "我測時"
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 122,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 50,
+        "workerProcessMs": 56,
+        "workerRoundtripMs": 56,
+        "reactUpdateMs": 5,
+        "paintProxyMs": 10,
+        "firstCandidateText": "時"
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-jyut-warm-new-page",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=jyut6ping3_mobile&m41Scenario=tracked-jyut-warm-new-page",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-warm-new-page",
+    "publicDemo": false,
+    "readyToInputMs": 16081,
+    "startupCompleteMs": 535,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 3
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 12
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 43
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 477
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 535
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 20,
+      "load": 29,
+      "responseEnd": 3,
+      "requestStart": 1,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 1
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 1
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 3
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -71
+      }
+    ],
+    "cache": {
+      "hits": 35,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768960525,
+      "usage": 31542285,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 81165
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 997,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 5594864,
+      "JSHeapTotalSize": 9281536,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 10000000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 58,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 29,
+        "workerRoundtripMs": 29,
+        "reactUpdateMs": 28,
+        "paintProxyMs": 1,
+        "firstCandidateText": "係"
+      },
+      {
+        "input": "ngo",
+        "ms": 30,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 13,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 15
+      },
+      {
+        "input": "caksi",
+        "ms": 32,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 28,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 3
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 89,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 55,
+        "workerProcessMs": 18,
+        "workerRoundtripMs": 23,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 9,
+        "firstCandidateText": "查"
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 175,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 96,
+        "workerProcessMs": 68,
+        "workerRoundtripMs": 68,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 11,
+        "firstCandidateText": "測時"
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-mock-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=luna_pinyin&m41Scenario=tracked-mock-cold",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "mock-worker-cold",
+    "publicDemo": false,
+    "readyToInputMs": 652,
+    "startupCompleteMs": 0,
+    "phases": [
+      {
+        "phase": "worker total to initialized",
+        "ms": 0
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 568,
+      "load": 568,
+      "responseEnd": 24,
+      "requestStart": 22,
+      "transfer": 2
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 217229,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 5
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 31481,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 4
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 491496,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 516
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 2314,
+        "encodedBodySize": 2014,
+        "decodedBodySize": 2014,
+        "duration": -57
+      }
+    ],
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10737418240,
+      "usage": 0,
+      "usageDetails": {}
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 609,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 4982916,
+      "JSHeapTotalSize": 8757248,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 10000000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 11,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 0,
+        "reactUpdateMs": 3,
+        "paintProxyMs": 8
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-mock-warm",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56587/?m41Schema=luna_pinyin&m41Scenario=tracked-mock-warm",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "mock-worker-warm",
+    "publicDemo": false,
+    "readyToInputMs": 413,
+    "startupCompleteMs": 0,
+    "phases": [
+      {
+        "phase": "worker total to initialized",
+        "ms": 0
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 377,
+      "load": 377,
+      "responseEnd": 3,
+      "requestStart": 2,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56587/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 31481,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 4
+      },
+      {
+        "name": "http://127.0.0.1:56587/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 217229,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 5
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 491496,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 345
+      },
+      {
+        "name": "http://127.0.0.1:56587/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 2314,
+        "encodedBodySize": 2014,
+        "decodedBodySize": 2014,
+        "duration": -10
+      }
+    ],
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10737418240,
+      "usage": 0,
+      "usageDetails": {}
+    },
+    "browserMemory": {
+      "Documents": 5,
+      "Nodes": 1713,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 6956796,
+      "JSHeapTotalSize": 12427264,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 14300000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 28,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 15,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 0,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 12
+      }
+    ]
+  },
+  {
+    "scenarioId": "public-luna-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56588/?m41Schema=luna_pinyin&m41Scenario=public-luna-cold",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-cold",
+    "publicDemo": true,
+    "readyToInputMs": 3119,
+    "startupCompleteMs": 768,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 4
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 12
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 153
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 599
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 768
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 525,
+      "load": 525,
+      "responseEnd": 25,
+      "requestStart": 24,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56588/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 217229,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 4
+      },
+      {
+        "name": "http://127.0.0.1:56588/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 31481,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 2
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 491496,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 474
+      },
+      {
+        "name": "http://127.0.0.1:56588/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 40295,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -62
+      }
+    ],
+    "cache": {
+      "hits": 1,
+      "misses": 34,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768926697,
+      "usage": 31508457,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 47337
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 840,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 4528356,
+      "JSHeapTotalSize": 10592256,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 11900000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 22,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 7,
+        "workerRoundtripMs": 7,
+        "reactUpdateMs": 14,
+        "paintProxyMs": 1,
+        "firstCandidateText": "哈"
+      },
+      {
+        "input": "ni",
+        "ms": 22,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 8,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 4,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 9,
+        "firstCandidateText": "伱"
+      },
+      {
+        "input": "zhongguo",
+        "ms": 21,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 16,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 4,
+        "firstCandidateText": "中"
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 103,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 52,
+        "workerProcessMs": 36,
+        "workerRoundtripMs": 37,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 14
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 152,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 143,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 6,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 2,
+        "firstCandidateText": "侧"
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 214,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 180,
+        "workerProcessMs": 18,
+        "workerRoundtripMs": 19,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 15
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 245,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 198,
+        "workerProcessMs": 33,
+        "workerRoundtripMs": 33,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 13
+      }
+    ]
+  },
+  {
+    "scenarioId": "public-jyut-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56588/?m41Schema=jyut6ping3_mobile&m41Scenario=public-jyut-cold",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-cold",
+    "publicDemo": true,
+    "readyToInputMs": 16872,
+    "startupCompleteMs": 702,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 4
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 12
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 125
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 561
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 702
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 538,
+      "load": 538,
+      "responseEnd": 24,
+      "requestStart": 23,
+      "transfer": 2
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56588/assets/index-BSFP6Md6.js",
+        "initiatorType": "script",
+        "transferSize": 217229,
+        "encodedBodySize": 216929,
+        "decodedBodySize": 216929,
+        "duration": 4
+      },
+      {
+        "name": "http://127.0.0.1:56588/assets/index-CxfgHB_s.css",
+        "initiatorType": "link",
+        "transferSize": 31481,
+        "encodedBodySize": 31181,
+        "decodedBodySize": 31181,
+        "duration": 2
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 491496,
+        "encodedBodySize": 491196,
+        "decodedBodySize": 1767293,
+        "duration": 487
+      },
+      {
+        "name": "http://127.0.0.1:56588/worker.js?v=m27-startup-runtime-v1",
+        "initiatorType": "other",
+        "transferSize": 40295,
+        "encodedBodySize": 39995,
+        "decodedBodySize": 39995,
+        "duration": -61
+      }
+    ],
+    "cache": {
+      "hits": 1,
+      "misses": 34,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10768911046,
+      "usage": 31492806,
+      "usageDetails": {
+        "caches": 31461120,
+        "indexedDB": 31686
+      }
+    },
+    "browserMemory": {
+      "Documents": 1,
+      "Nodes": 977,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 5484392,
+      "JSHeapTotalSize": 10854400,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 11900000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 62,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 31,
+        "workerRoundtripMs": 31,
+        "reactUpdateMs": 30,
+        "paintProxyMs": 1,
+        "firstCandidateText": "係"
+      },
+      {
+        "input": "ngo",
+        "ms": 25,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 8,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 15
+      },
+      {
+        "input": "caksi",
+        "ms": 48,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 28,
+        "workerProcessMs": 15,
+        "workerRoundtripMs": 15,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 4,
+        "firstCandidateText": "五"
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 70,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 30,
+        "workerProcessMs": 15,
+        "workerRoundtripMs": 23,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 15,
+        "firstCandidateText": "我測"
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 140,
+        "candidateCount": 6,
+        "totalCandidateCount": 6,
+        "workerQueueWaitMs": 120,
+        "workerProcessMs": 15,
+        "workerRoundtripMs": 15,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 4,
+        "firstCandidateText": "我測時"
+      }
+    ]
+  }
+]

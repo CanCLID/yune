@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +11,7 @@ const repoRoot = path.resolve(appRoot, "../..");
 const runtimeRoot = path.join(repoRoot, "packages/yune-web-runtime");
 const manifestPath = path.join(publicRoot, "schema-asset-manifest.json");
 const outputDir = path.resolve(process.argv[2] ?? path.join(publicRoot, "dist"));
+const viteOutputDir = await mkdtemp(path.join(tmpdir(), "yune-web-public-build-"));
 
 function commandPath(name) {
 	return path.join(appRoot, "node_modules", ".bin", `${name}${process.platform === "win32" ? ".cmd" : ""}`);
@@ -69,6 +71,9 @@ if (!await fileExists(vite)) throw new Error(`Missing Vite at ${vite}. Run npm -
 console.log("Building @yune-ime/yune-web-runtime");
 await run("npm", ["--prefix", runtimeRoot, "run", "build"], { cwd: repoRoot });
 
+console.log("Preparing yune-web WASM runtime");
+await run("node", [path.join(appRoot, "scripts", "prepare-runtime.mjs")], { cwd: appRoot });
+
 console.log("Bundling yune-web worker");
 await run(esbuild, [
 	"src/worker.ts",
@@ -80,14 +85,15 @@ await run(esbuild, [
 ], { cwd: appRoot });
 
 console.log("Building yune-web app");
-await run(vite, ["build", "--mode", "public"], {
+await run(vite, ["build", "--mode", "public", "--outDir", viteOutputDir, "--emptyOutDir"], {
 	cwd: appRoot,
 	env: { VITE_YUNE_PUBLIC_DEMO: "1" },
 });
 
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
-await cp(path.join(appRoot, "dist"), outputDir, { recursive: true, force: true });
+await cp(viteOutputDir, outputDir, { recursive: true, force: true });
+await rm(viteOutputDir, { recursive: true, force: true });
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 if (manifest.generatedFor !== "yune-web" || manifest.version !== "m31-yune-web-public-demo-v3") {

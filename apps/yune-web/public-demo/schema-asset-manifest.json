@@ -26,8 +26,8 @@
     },
     {
       "path": "common.custom.yaml",
-      "sha256": "86567a9f822c358bb3ce4401d4e4ec3dc627b7fe35844feca9106671e952079e",
-      "bytes": 320,
+      "sha256": "7549cebd4377072be04e491d0bcb5366fe01a005698ce14714cae4c8e8295ef3",
+      "bytes": 322,
       "tier": "shared",
       "required": true
     },
@@ -40,22 +40,22 @@
     },
     {
       "path": "template.yaml",
-      "sha256": "f918e04a8411af006e5433604e41af4d4e9898ee587b4453cf06bcce4dbb648a",
-      "bytes": 2119,
+      "sha256": "975e1195e8d9c5f7fb310011267b50d31cdb42f0e1a56bb6d0da33ec51f86ad4",
+      "bytes": 2336,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3.schema.yaml",
-      "sha256": "24937c1a681023dfaec0c52a297eec76873475ce7e3befa22f7033d3cbb38374",
-      "bytes": 2384,
+      "sha256": "4f7dcfc653057b9c23384e23fc34c43f3b25e184ca3541c530ca014544257e6b",
+      "bytes": 2514,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_mobile.schema.yaml",
-      "sha256": "9eb2bed115e9650ba36a62c018a448439c25989f8406c877f35ac58e97823b51",
-      "bytes": 1670,
+      "sha256": "d95a7bb1e8cd686756c9c4ac3475e84d034fb656d208b2aeef692e6e76c5404b",
+      "bytes": 1767,
       "tier": "shared",
       "required": true
     },
@@ -82,8 +82,8 @@
     },
     {
       "path": "luna_pinyin.schema.yaml",
-      "sha256": "edb48998c4a0d5ebb921f8b7bb8f6201733283b79463a7687835e32fee3b4725",
-      "bytes": 2261,
+      "sha256": "813bb8acf9fe1dc23443d3585944123bffc8918e954fe65bbb6d95283ee2f691",
+      "bytes": 2336,
       "tier": "shared",
       "required": true
     },
@@ -222,8 +222,8 @@
     },
     {
       "path": "build/jyut6ping3_mobile.schema.yaml",
-      "sha256": "eda67650beae9ccd38a943dedf5567ad6622fb0ef46de73bd73e0c2702c131ae",
-      "bytes": 9728,
+      "sha256": "269e5cb4a54f778b4eb6936072844c836873dd1cf883c97337286822f1b52ba2",
+      "bytes": 9917,
       "tier": "explicit",
       "required": true
     },
@@ -257,8 +257,8 @@
     },
     {
       "path": "cangjie5.schema.yaml",
-      "sha256": "405bf83fc32d103d71aa3ef9eaf89563175cc5403cbef25c16d379e46e877bb6",
-      "bytes": 2090,
+      "sha256": "694cccd36dcbb8abe502269d8fc854ad6df2737323beb105c59ffde30a4ee86f",
+      "bytes": 2228,
       "tier": "shared",
       "required": true
     },

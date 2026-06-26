@@ -209,6 +209,7 @@ export default function App() {
 	const text = uiText[uiLanguage];
 	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
 	const didRunSchemaEffect = useRef(false);
+	const didRunDeployPreferencesEffect = useRef(false);
 
 	useEffect(() => {
 		document.documentElement.lang = uiLanguage === "yue" ? "zh-HK" : "en";
@@ -222,7 +223,7 @@ export default function App() {
 		runAsyncTask(async () => {
 			if (!didRunSchemaEffect.current) {
 				didRunSchemaEffect.current = true;
-				if (activeSchema === "jyut6ping3") {
+				if (document.documentElement.dataset["yuneActiveSchema"] === activeSchema) {
 					return;
 				}
 			}
@@ -249,6 +250,24 @@ export default function App() {
 			return;
 		}
 		runAsyncTask(async () => {
+			let skipDeployForDefaultStartup = false;
+			if (!didRunDeployPreferencesEffect.current) {
+				didRunDeployPreferencesEffect.current = true;
+				if (isDefaultDeployPreferenceSet({
+					pageSize,
+					enableCompletion,
+					enableCorrection,
+					enableSentence,
+					enableLearning,
+					combineCandidates,
+					predictionNeverFirst,
+					predictionThreshold,
+					dictionaryExclude,
+					isCangjie5,
+				})) {
+					skipDeployForDefaultStartup = true;
+				}
+			}
 			let type: "warning" | "error" | undefined;
 			try {
 				const success = await Rime.customize({
@@ -263,7 +282,7 @@ export default function App() {
 					dictionaryExclude,
 					isCangjie5,
 				});
-				if (!((await Rime.deploy()) && success)) {
+				if (!(skipDeployForDefaultStartup ? success : ((await Rime.deploy()) && success))) {
 					type = "warning";
 				}
 			} catch {
@@ -549,4 +568,28 @@ export default function App() {
 			<ToastViewport />
 		</div>
 	);
+}
+
+function isDefaultDeployPreferenceSet(preferences: {
+	pageSize: number;
+	enableCompletion: boolean;
+	enableCorrection: boolean;
+	enableSentence: boolean;
+	enableLearning: boolean;
+	combineCandidates: boolean;
+	predictionNeverFirst: boolean;
+	predictionThreshold: number;
+	dictionaryExclude: string[];
+	isCangjie5: boolean;
+}) {
+	return preferences.pageSize === 6
+		&& preferences.enableCompletion
+		&& !preferences.enableCorrection
+		&& preferences.enableSentence
+		&& preferences.enableLearning
+		&& preferences.combineCandidates
+		&& preferences.predictionNeverFirst
+		&& preferences.predictionThreshold === 0
+		&& preferences.dictionaryExclude.length === 0
+		&& preferences.isCangjie5;
 }

@@ -74,9 +74,15 @@ speller:
 
 translator:
   dictionary: cangjie5
-  enable_sentence: false
-  enable_user_dict: false
-  encode_commit_history: false
+  enable_completion: true
+  enable_correction: false
+  enable_sentence: true
+  enable_user_dict: true
+  encode_commit_history: true
+  combine_candidates: true
+  prediction_never_first: true
+  prediction_weight_threshold: 0
+  dictionary_exclude: []
   comment_format:
     - 'xform/^/\v/'
     - "xlit|abcdefghijklmnopqrstuvwxyz~|日月金木水火土竹戈十大中一弓人心手口尸廿山女田難卜符～|"
@@ -94,4 +100,4 @@ recognizer:
   import_preset: default
 
 __patch:
-  - common:/separate_candidates?
+  []

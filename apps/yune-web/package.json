@@ -4,8 +4,9 @@
 	"description": "Public browser demo for the Yune input-method engine",
 	"type": "module",
 	"scripts": {
-		"start": "npm run worker -- --sourcemap && vite --host",
-		"build": "npm run worker -- --minify && vite build",
+		"prepare:runtime": "node scripts/prepare-runtime.mjs",
+		"start": "npm run prepare:runtime && npm run worker -- --sourcemap && vite --host",
+		"build": "npm run prepare:runtime && npm run worker -- --minify && vite build",
 		"build:public": "node public-demo/build.mjs",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"worker": "esbuild src/worker.ts --bundle --format=iife --outdir=public",

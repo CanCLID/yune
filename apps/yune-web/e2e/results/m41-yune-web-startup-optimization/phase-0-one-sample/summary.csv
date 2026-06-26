@@ -1,0 +1,11 @@
+scenarioId,schema,mode,publicDemo,samples,medianReadyToInputMs,p95ReadyToInputMs,medianStartupCompleteMs,p95StartupCompleteMs,medianFirstKeyToPaintMs,p95FirstKeyToPaintMs,transferBytes,encodedBytes,cacheHits,cacheMisses,cacheErrors,topOwner,topOwnerMedianMs
+tracked-luna-cold,luna_pinyin,real-worker-cold,false,1,3115,3115,754,754,32,194,780501,779301,1,34,0,React/browser ready gap,2361
+tracked-luna-warm-reload,luna_pinyin,real-worker-warm-reload,false,1,2399,2399,589,589,88,220,0,1060857,35,0,0,React/browser ready gap,1810
+tracked-luna-warm-new-page,luna_pinyin,real-worker-warm-new-page,false,1,2438,2438,604,604,89,203,0,779301,35,0,0,React/browser ready gap,1834
+tracked-jyut-cold,jyut6ping3_mobile,real-worker-cold,false,1,17041,17041,695,695,60,151,780501,779301,1,34,0,React/browser ready gap,16346
+tracked-jyut-warm-reload,jyut6ping3_mobile,real-worker-warm-reload,false,1,15783,15783,524,524,59,122,0,1060857,35,0,0,React/browser ready gap,15259
+tracked-jyut-warm-new-page,jyut6ping3_mobile,real-worker-warm-new-page,false,1,16081,16081,535,535,58,175,0,779301,35,0,0,React/browser ready gap,15546
+tracked-mock-cold,luna_pinyin,mock-worker-cold,false,1,652,652,0,0,11,11,742520,741320,0,0,0,React/browser ready gap,652
+tracked-mock-warm,luna_pinyin,mock-worker-warm,false,1,413,413,0,0,28,28,742520,741320,0,0,0,React/browser ready gap,413
+public-luna-cold,luna_pinyin,real-worker-cold,true,1,3119,3119,768,768,103,245,780501,779301,1,34,0,React/browser ready gap,2351
+public-jyut-cold,jyut6ping3_mobile,real-worker-cold,true,1,16872,16872,702,702,62,140,780501,779301,1,34,0,React/browser ready gap,16170

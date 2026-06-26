@@ -200,6 +200,10 @@ interface PersistenceDiagnosticSnapshot {
       exists?: boolean;
       settings?: Record<string, string | null>;
     };
+    deployedConfig?: {
+      exists?: boolean;
+      settings?: Record<string, string | null>;
+    };
   };
 }
 
@@ -2640,6 +2644,48 @@ test.describe("yune-web Browser E2E", () => {
     }
   });
 
+  test("M41 default startup preserves deploy-time engine defaults", async ({ page }) => {
+    const diagnostics = await readPersistenceDiagnostics(page);
+    const runtimeReady = diagnostics
+      .slice()
+      .reverse()
+      .find((diagnostic) =>
+        diagnostic.source === "yune-persistence"
+        && diagnostic.marker.phase === "runtime:init:finish"
+        && diagnostic.marker.reason === "after-init"
+        && diagnostic.marker.deployedConfig?.settings
+      );
+    const deployedSettings = runtimeReady?.marker.deployedConfig?.settings ?? {};
+
+    expect(Object.fromEntries([
+      "translator/enable_completion",
+      "translator/enable_correction",
+      "translator/enable_sentence",
+      "translator/enable_user_dict",
+      "translator/encode_commit_history",
+      "translator/combine_candidates",
+      "translator/prediction_never_first",
+      "translator/prediction_weight_threshold",
+      "translator/dictionary_exclude",
+      "cangjie/dictionary",
+    ].map((key) => [key, deployedSettings[key] ?? null]))).toEqual({
+      "translator/enable_completion": "true",
+      "translator/enable_correction": "false",
+      "translator/enable_sentence": "true",
+      "translator/enable_user_dict": "true",
+      "translator/encode_commit_history": "true",
+      "translator/combine_candidates": "true",
+      "translator/prediction_never_first": "true",
+      "translator/prediction_weight_threshold": "0",
+      "translator/dictionary_exclude": "[]",
+      "cangjie/dictionary": "cangjie5",
+    });
+
+    const startup = diagnostics.find((diagnostic) => diagnostic.source === "yune-startup");
+    expect(startup?.marker.markers?.map((marker) => marker.phase)).not.toContain("schema:deploy:start");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
   test("M13 AI-off identity and AI-on second-pass source labels @smoke", async ({ page }) => {
     await focusInputAndType(page, "nei");
 
@@ -2890,7 +2936,7 @@ test.describe("yune-web Browser E2E", () => {
     await expect(page.getByLabel(/ascii_punct/i)).toHaveCount(0);
     const commonCustom = await readRepoText("apps/yune-web/public/schema/common.custom.yaml");
     const commonYaml = await readRepoText("apps/yune-web/public/schema/common.yaml");
-    expect(commonCustom).toContain("- common:/separate_candidates");
+    expect(commonCustom).toContain("# - common:/separate_candidates");
     expect(commonYaml).toContain("translator/combine_candidates: false");
 
     await saveJsonEvidence("m20-control-surface-state.json", {
@@ -2900,7 +2946,7 @@ test.describe("yune-web Browser E2E", () => {
       defaults: {
         combineCandidates: {
           uiDemoDefault: true,
-          rawAssetPatch: "common.custom.yaml enables common:/separate_candidates, which maps to translator/combine_candidates: false in common.yaml.",
+          rawAssetPatch: "M41 keeps the common:/separate_candidates patch available but inactive, so the shipped default matches the grouped-candidate UI default without a startup deploy.",
         },
         predictionNeverFirst: true,
         predictionThreshold: 0,

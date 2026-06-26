@@ -317,18 +317,49 @@ let loading = true;
 const RIME_SHARED_DIR = "/usr/share/rime-data";
 const RIME_USER_DIR = "/rime";
 const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3";
+const INITIAL_SCHEMA_ID: RimeSchemaId = initialSchemaFromWorkerUrl();
 const YUNE_WEB_ASSET_VERSION = "m31-opencc-output-v11";
 const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
 const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v3";
 const YUNE_PUBLIC_DEMO = typeof YUNE_PUBLIC_DEMO_BUILD !== "undefined" && YUNE_PUBLIC_DEMO_BUILD === true;
-const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
+const YUNE_WEB_COMMON_SHARED_ASSETS = [
   "default.custom.yaml",
   "common.yaml",
   "common.custom.yaml",
   "include.yaml",
   "template.yaml",
+] as const;
+const YUNE_WEB_OPENCC_SHARED_ASSETS = [
+  "opencc/t2hkf.json",
+  "opencc/HKVariantsFull.txt",
+  "opencc/hk2s.json",
+  "opencc/HKVariantsRev.ocd2",
+  "opencc/HKVariantsRevPhrases.ocd2",
+  "opencc/TSCharacters.ocd2",
+  "opencc/TSPhrases.ocd2",
+] as const;
+const YUNE_WEB_LUNA_SHARED_ASSETS = [
+  ...YUNE_WEB_COMMON_SHARED_ASSETS,
+  "luna_pinyin.schema.yaml",
+  "luna_pinyin.dict.yaml",
+  "luna_pinyin.table.bin",
+  "luna_pinyin.reverse.bin",
+  "luna_pinyin.prism.bin",
+  "cangjie5.schema.yaml",
+  "cangjie5.dict.yaml",
+  ...YUNE_WEB_OPENCC_SHARED_ASSETS,
+] as const;
+const YUNE_WEB_CANGJIE_SHARED_ASSETS = [
+  ...YUNE_WEB_COMMON_SHARED_ASSETS,
+  "cangjie5.schema.yaml",
+  "cangjie5.dict.yaml",
+  ...YUNE_WEB_OPENCC_SHARED_ASSETS,
+] as const;
+const YUNE_WEB_JYUTPING_SHARED_ASSETS = [
+  ...YUNE_WEB_COMMON_SHARED_ASSETS,
   "jyut6ping3.schema.yaml",
+  "jyut6ping3_mobile.schema.yaml",
   "jyut6ping3_scolar.schema.yaml",
   "jyut6ping3_scolar.dict.yaml",
   "loengfan.schema.yaml",
@@ -340,15 +371,10 @@ const YUNE_WEB_PUBLIC_SHARED_ASSETS = [
   "luna_pinyin.schema.yaml",
   "luna_pinyin.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
-  "opencc/t2hkf.json",
-  "opencc/HKVariantsFull.txt",
-  "opencc/hk2s.json",
-  "opencc/HKVariantsRev.ocd2",
-  "opencc/HKVariantsRevPhrases.ocd2",
-  "opencc/TSCharacters.ocd2",
-  "opencc/TSPhrases.ocd2",
+  ...YUNE_WEB_OPENCC_SHARED_ASSETS,
   "jyut6ping3.table.bin",
   "jyut6ping3.reverse.bin",
+  "jyut6ping3_mobile.prism.bin",
   "jyut6ping3_scolar.table.bin",
   "jyut6ping3_scolar.reverse.bin",
   "jyut6ping3_scolar.prism.bin",
@@ -375,7 +401,7 @@ const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
 };
 let yuneModule: YuneWebBrowserModule | null = null;
 let loadedExtraSharedAssets: { path: string; content: string | Uint8Array }[] = [];
-let activeSchemaId: RimeSchemaId = DEFAULT_SCHEMA_ID;
+let activeSchemaId: RimeSchemaId = INITIAL_SCHEMA_ID;
 let publicAssetManifest: PublicAssetManifest | null = null;
 let publicAssetCacheStats: PublicAssetCacheStats = { hits: 0, misses: 0, unavailable: false };
 
@@ -430,57 +456,17 @@ const loadRime = (async () => {
     markStartup("persistence:mounted");
 
     markStartup("assets:load:start");
-    if (YUNE_PUBLIC_DEMO) {
-      publicAssetCacheStats = { hits: 0, misses: 0, unavailable: false };
-      loadedExtraSharedAssets = await loadPublicSharedAssets();
-    } else {
-      loadedExtraSharedAssets = await loadExtraSharedAssets([
-        "default.custom.yaml",
-        "common.yaml",
-        "common.custom.yaml",
-        "include.yaml",
-        "template.yaml",
-        "jyut6ping3.schema.yaml",
-        "jyut6ping3_scolar.schema.yaml",
-        "jyut6ping3_scolar.dict.yaml",
-        "luna_pinyin.schema.yaml",
-        "luna_pinyin.dict.yaml",
-        "luna_pinyin_yune_reverse.dict.yaml",
-        "loengfan.schema.yaml",
-        "loengfan.dict.yaml",
-        "cangjie3.schema.yaml",
-        "cangjie3.dict.yaml",
-        "cangjie5.schema.yaml",
-        "cangjie5.dict.yaml",
-        "opencc/t2hkf.json",
-        "opencc/HKVariantsFull.txt",
-        "opencc/hk2s.json",
-        "opencc/HKVariantsRev.ocd2",
-        "opencc/HKVariantsRevPhrases.ocd2",
-        "opencc/TSCharacters.ocd2",
-        "opencc/TSPhrases.ocd2",
-      ]);
-      loadedExtraSharedAssets.push(...await loadExtraSharedAssets([
-        "jyut6ping3.table.bin",
-        "jyut6ping3.reverse.bin",
-        "jyut6ping3_mobile.prism.bin",
-        "jyut6ping3_scolar.table.bin",
-        "jyut6ping3_scolar.reverse.bin",
-        "jyut6ping3_scolar.prism.bin",
-        "cangjie5.table.bin",
-        "cangjie5.reverse.bin",
-        "cangjie5.prism.bin",
-        "luna_pinyin.table.bin",
-        "luna_pinyin.reverse.bin",
-        "luna_pinyin.prism.bin",
-      ], true));
-    }
+    publicAssetCacheStats = { hits: 0, misses: 0, unavailable: false };
+    loadedExtraSharedAssets = await loadSharedAssetsForSchema(INITIAL_SCHEMA_ID);
     markStartup("assets:load:finish");
     markStartup("assets:loaded");
 
     markStartup("schema:select:start");
-    await selectYuneSchema(DEFAULT_SCHEMA_ID);
+    await selectYuneSchema(INITIAL_SCHEMA_ID);
     markStartup("schema:select:finish");
+    markStartup("startup-defaults:customize:start");
+    await customize(defaultStartupDeployPreferences());
+    markStartup("startup-defaults:customize:finish");
     markStartup("runtime:init:finish");
     markStartup("runtime:initialized");
 
@@ -497,11 +483,16 @@ const loadRime = (async () => {
         m31EvidenceVersion: YUNE_PUBLIC_DEMO ? YUNE_WEB_M31_EVIDENCE_VERSION : undefined,
         publicDemo: YUNE_PUBLIC_DEMO,
         assetVersion: YUNE_WEB_ASSET_VERSION,
-        schema: DEFAULT_SCHEMA_ID,
+        schema: INITIAL_SCHEMA_ID,
         wasmBuildProfile: YUNE_WEB_WASM_BUILD_PROFILE,
         wasmGlue: "yune-web.js",
         wasmBinary: "yune-web.wasm",
         assetCache: YUNE_PUBLIC_DEMO ? publicAssetCacheStats : undefined,
+        loadedExplicitAssets: [
+          "default.yaml",
+          `${INITIAL_SCHEMA_ID}.schema.yaml`,
+          `${PLAYGROUND_SCHEMAS[INITIAL_SCHEMA_ID].dictionaryId}.dict.yaml`,
+        ],
         loadedSharedAssets: loadedExtraSharedAssets.map((asset) => asset.path),
       },
     });
@@ -527,6 +518,33 @@ function printErr(message: string): void {
       console.error(message);
     }
   }
+}
+
+function initialSchemaFromWorkerUrl(): RimeSchemaId {
+  try {
+    const raw = new URL(location.href).searchParams.get("schema");
+    if (raw === "jyut6ping3" || raw === "cangjie5" || raw === "luna_pinyin") {
+      return raw;
+    }
+  } catch {
+    // Fall through to the app default below.
+  }
+  return DEFAULT_SCHEMA_ID;
+}
+
+function defaultStartupDeployPreferences(): Partial<RimePreferences> {
+  return {
+    pageSize: 6,
+    enableCompletion: true,
+    enableCorrection: false,
+    enableSentence: true,
+    enableLearning: true,
+    combineCandidates: true,
+    predictionNeverFirst: true,
+    predictionThreshold: 0,
+    dictionaryExclude: [],
+    isCangjie5: true,
+  };
 }
 
 async function loadPublicAssetManifest(): Promise<PublicAssetManifest> {
@@ -557,8 +575,12 @@ async function publicAssetManifestEntry(path: string): Promise<PublicAssetManife
 }
 
 async function loadPublicSharedAssets() {
+  return loadPublicSharedAssetPaths(sharedAssetPathsForSchema(INITIAL_SCHEMA_ID));
+}
+
+async function loadPublicSharedAssetPaths(paths: readonly string[]) {
   const assets = await Promise.all(
-    YUNE_WEB_PUBLIC_SHARED_ASSETS.map(async (path) => ({
+    paths.map(async (path) => ({
       path,
       content: await loadPublicSchemaAsset(path),
     })),
@@ -625,6 +647,41 @@ async function loadExtraSharedAssets(paths: string[], optional = false) {
   return assets.filter((asset): asset is { path: string; content: string | Uint8Array } => asset !== null);
 }
 
+async function loadSharedAssetsForSchema(schemaId: RimeSchemaId) {
+  const paths = sharedAssetPathsForSchema(schemaId);
+  if (YUNE_PUBLIC_DEMO) {
+    return loadPublicSharedAssetPaths(paths);
+  }
+  return loadExtraSharedAssets([...paths], true);
+}
+
+async function ensureSharedAssetsForSchema(schemaId: RimeSchemaId): Promise<void> {
+  const loadedPaths = new Set(loadedExtraSharedAssets.map((asset) => asset.path));
+  const missing = sharedAssetPathsForSchema(schemaId).filter((path) => !loadedPaths.has(path));
+  if (missing.length === 0) {
+    return;
+  }
+  loadedExtraSharedAssets.push(...await (YUNE_PUBLIC_DEMO
+    ? loadPublicSharedAssetPaths(missing)
+    : loadExtraSharedAssets(missing, true)));
+}
+
+function sharedAssetPathsForSchema(schemaId: RimeSchemaId): readonly string[] {
+  switch (schemaId) {
+    case "luna_pinyin":
+      return uniqueSharedAssetPaths(YUNE_WEB_LUNA_SHARED_ASSETS);
+    case "cangjie5":
+      return uniqueSharedAssetPaths(YUNE_WEB_CANGJIE_SHARED_ASSETS);
+    case "jyut6ping3":
+    default:
+      return uniqueSharedAssetPaths(YUNE_WEB_JYUTPING_SHARED_ASSETS);
+  }
+}
+
+function uniqueSharedAssetPaths(paths: readonly string[]): string[] {
+  return [...new Set(paths)];
+}
+
 async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets = false): Promise<void> {
   const module = yuneModule;
   if (module === null) {
@@ -634,6 +691,7 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
   if (schema === undefined) {
     throw new Error(`Unknown Yune schema: ${schemaId}`);
   }
+  await ensureSharedAssetsForSchema(schemaId);
   const assetsConfig: ExplicitYuneWebAssets = {
     defaultYaml: await schemaAssetSource("default.yaml"),
     schemaYaml: await schemaAssetSource(`${schema.id}.schema.yaml`),

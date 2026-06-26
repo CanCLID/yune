@@ -1,0 +1,11 @@
+scenarioId,schema,mode,publicDemo,samples,medianReadyToInputMs,p95ReadyToInputMs,medianStartupCompleteMs,p95StartupCompleteMs,medianFirstKeyToPaintMs,p95FirstKeyToPaintMs,transferBytes,encodedBytes,cacheHits,cacheMisses,cacheErrors,topOwner,topOwnerMedianMs
+tracked-luna-cold,luna_pinyin,real-worker-cold,false,10,846,932,250,316,64,186,5451094,5449894,0,0,0,React/browser ready residual,601
+tracked-luna-warm-reload,luna_pinyin,real-worker-warm-reload,false,20,266,268,203,208,86,167,0,5449894,0,0,0,worker total to initialized,203
+tracked-luna-warm-new-page,luna_pinyin,real-worker-warm-new-page,false,20,306,322,205,212,86,173,0,5449894,0,0,0,worker total to initialized,205
+tracked-jyut-cold,jyut6ping3_mobile,real-worker-cold,false,10,1254,1330,646,720,26,60,34862027,34860827,0,0,0,worker total to initialized,646
+tracked-jyut-warm-reload,jyut6ping3_mobile,real-worker-warm-reload,false,20,654,691,592,627,26,61,0,35142383,0,0,0,worker total to initialized,592
+tracked-jyut-warm-new-page,jyut6ping3_mobile,real-worker-warm-new-page,false,20,704,737,601,624,27,60,0,34860827,0,0,0,worker total to initialized,601
+tracked-mock-cold,luna_pinyin,mock-worker-cold,false,10,609,646,0,0,25,27,743347,742147,0,0,0,React/browser ready residual,609
+tracked-mock-warm,luna_pinyin,mock-worker-warm,false,20,383,393,0,0,25,26,743347,742147,0,0,0,React/browser ready residual,383
+public-luna-cold,luna_pinyin,real-worker-cold,true,10,867,883,263,276,40,171,5451034,5449834,2,20,0,React/browser ready residual,600
+public-jyut-cold,jyut6ping3_mobile,real-worker-cold,true,10,1291,1349,680,749,26,45,34861967,34860767,1,36,0,worker total to initialized,680

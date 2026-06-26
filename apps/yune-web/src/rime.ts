@@ -1,4 +1,4 @@
-import type { Actions, ListenerArgsMap, Message } from "./types";
+import type { Actions, ListenerArgsMap, Message, RimeSchemaId } from "./types";
 
 type ListenerPayload = {
 	[K in keyof ListenerArgsMap]: {
@@ -96,7 +96,7 @@ const debugWindow = window as DebugWindow;
 debugWindow.__YUNE_RIME_VERSION__ = YUNE_WEB_WORKER_VERSION;
 document.documentElement.dataset["yuneRimeVersion"] = YUNE_WEB_WORKER_VERSION;
 installDebugHelpers();
-const worker = new Worker(`./worker.js?v=${YUNE_WEB_WORKER_VERSION}`);
+const worker = new Worker(workerUrl());
 worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 	if (data.type === "diagnostic") {
 		(debugWindow.__YUNE_PERSISTENCE_DIAGNOSTICS__ ??= []).push(data);
@@ -341,4 +341,26 @@ export function subscribe<K extends keyof Listeners>(type: K, callback: Listener
 	return () => {
 		listeners[type] = listeners[type].filter(listener => listener !== callback) as never;
 	};
+}
+
+function workerUrl() {
+	const params = new URLSearchParams({
+		v: YUNE_WEB_WORKER_VERSION,
+		schema: initialWorkerSchema(),
+	});
+	return `./worker.js?${params.toString()}`;
+}
+
+function initialWorkerSchema(): RimeSchemaId {
+	try {
+		const stored = window.localStorage?.getItem("activeSchema");
+		return isRimeSchemaId(stored) ? stored : "jyut6ping3";
+	}
+	catch {
+		return "jyut6ping3";
+	}
+}
+
+function isRimeSchemaId(value: string | null): value is RimeSchemaId {
+	return value === "jyut6ping3" || value === "cangjie5" || value === "luna_pinyin";
 }

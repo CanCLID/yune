@@ -5,6 +5,14 @@ Date: 2026-06-26
 This report explains M40 native-engine behavior. It does not claim browser,
 frontend, product-delivery, packaging, or public-demo speed wins.
 
+The next browser-harness lane is now closed separately by M41. Its evidence is
+under
+[`../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/):
+the old user-visible startup owner was incomplete production runtime packaging
+plus a redundant startup deploy path, not native lookup. Final tracked cold
+ready-to-input medians are `846 ms` for `luna_pinyin` and `1,254 ms` for
+`jyut6ping3_mobile`.
+
 ## Current Verdict
 
 M39 removed the catastrophic Track A long-input failure, but it left one
@@ -118,7 +126,7 @@ verdict, not an assumption.
 | 2 | Track A incomplete-pinyin output parity | `cszysmsrsd` and `zybfshmsru` are bounded but export `0` candidates while same-run librime spends substantially more time. | Capture librime output and decide whether this is a missing abbreviation-expansion behavior or an intentionally empty Yune result. Do not treat the low ratio as a speed win until output parity is known. |
 | 3 | Track B profile/native enumeration | The protected 50+ row is guarded, but Track B remains on a separate no-marisa/profile path. | Open a separate TypeDuck-profile plan only if a named product row needs it. |
 | 4 | Track A short-key ratios | `hao` and `ni` are `3.237x` and `3.867x`, but absolute medians are `38.200 us` and `56.850 us`. | Defer unless a future native parity milestone sets a stricter short-key target. |
-| 5 | Browser/user-perceived startup | No M40 browser evidence was collected. | Requires a separate web plan and real-browser evidence. Native M40 evidence cannot close it. |
+| 5 | Browser/user-perceived startup | No M40 browser evidence was collected. M41 later closed this as a separate browser-harness lane with tracked cold medians of `846 ms` for `luna_pinyin` and `1,254 ms` for `jyut6ping3_mobile`. | Keep future browser work separate from native engine reports; likely follow-ups are browser/React shell residual, Jyutping asset payload, and remote delivery/cache behavior. |
 
 ![M40 memory gap](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-memory-gap.svg)
 
@@ -127,11 +135,11 @@ verdict, not an assumption.
 M40 closes the native Track A long-row owner it was scoped to close. The next
 optimization milestone should not continue mining `luna_pinyin` long-row
 latency unless a new native-engine target proves a fresh owner. The highest
-near-term application-visible problem is now the `yune-web` harness startup
-path, but that work must be measured and claimed separately from this native
-engine report.
+near-term application-visible problem after M40 was the `yune-web` harness
+startup path. M41 has now closed that separately with real-browser evidence and
+without changing the native-engine conclusion of this report.
 
-The web harness effort should start from real-browser startup evidence and
+Future web harness work should continue to start from real-browser evidence and
 split browser shell, asset delivery, worker/WASM startup, filesystem/cache,
 schema deploy/reuse, and engine schema selection. M40 native numbers are useful
 as an engine baseline only; they do not prove web startup, browser typing, or
@@ -169,4 +177,5 @@ decide whether Yune is missing upstream `luna_pinyin` abbreviation behavior or
 correctly returning no candidates for those probes.
 
 Future browser or product-delivery speed claims require separate rebuilt
-runtime and real-browser evidence. M40 supplies no such claim.
+runtime and real-browser evidence. M40 supplies no such claim; M41 supplies a
+separate `apps/yune-web` startup closeout.

@@ -38,8 +38,17 @@ engine:
 translator:
   dictionary: jyut6ping3
   __patch: include:/letter_to_tone
+  enable_completion: true
+  enable_correction: false
+  enable_sentence: true
+  enable_user_dict: true
+  encode_commit_history: true
+  combine_candidates: true
   prediction_candidate_limit: 1
   prefix_fallback: true
+  prediction_never_first: true
+  prediction_weight_threshold: 0
+  dictionary_exclude: []
 
 simplifier:
   option_name: simplification
@@ -108,7 +117,4 @@ recognizer:
     luna_pinyin: "^`[a-z']*;?$"
 
 __patch:
-  - common:/disable_completion?
-  - common:/enable_correction?
-  - common:/disable_sentence?
-  - common:/disable_learning?
+  []

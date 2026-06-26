@@ -5,6 +5,13 @@ Date: 2026-06-26
 This report is native-engine evidence only. It does not claim browser,
 frontend, product-delivery, packaging, or public-demo speed wins.
 
+Browser startup is tracked separately. M41 closed the `apps/yune-web`
+startup-harness milestone with production-browser evidence under
+[`../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/):
+tracked `luna_pinyin` cold ready-to-input is `846 ms` median and tracked
+`jyut6ping3_mobile` cold ready-to-input is `1,254 ms` median. Those are
+browser-harness numbers, not same-run librime-native ratios.
+
 ## Current Verdict
 
 M40 closes the compiled sentence lookup index milestone for Track A
@@ -185,11 +192,11 @@ items are whole-process memory owner profiling, stricter short-key parity if a
 new target requires it, and incomplete-pinyin output parity for `cszysmsrsd` and
 `zybfshmsru` because the final M40 rows export `0` candidates.
 
-The next active optimization is M41 `yune-web` startup under
-[`plans/active/m41-plan-yune-web-startup-optimization.md`](../plans/active/m41-plan-yune-web-startup-optimization.md).
-That work requires separate real-browser evidence for the browser harness,
-public-demo dist, worker/WASM lifecycle, cache/persistence, schema deploy/reuse,
-typing after ready, and Chromium memory. Native M40 numbers are baseline context
+M41 `yune-web` startup is now closed separately under
+[`plans/completed/m41-plan-yune-web-startup-optimization.md`](../plans/completed/m41-plan-yune-web-startup-optimization.md).
+It has separate real-browser evidence for the browser harness, public-demo
+dist, worker/WASM lifecycle, cache/persistence, schema deploy/reuse, typing
+after ready, and Chromium memory. Native M40 numbers remain baseline context
 only; they are not browser startup or public-demo speed claims.
 
 ## Evidence

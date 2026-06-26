@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="390" viewBox="0 0 920 390" role="img" aria-labelledby="title desc">
+  <title id="title">M41 ready-to-input before and after</title>
+  <desc id="desc">Bar chart comparing phase 0 and final ready-to-input medians for the main yune-web startup scenarios.</desc>
+  <style>
+    text { font-family: Arial, sans-serif; fill: #111827; font-size: 13px; }
+    .small { font-size: 12px; fill: #4b5563; }
+    .before { fill: #9ca3af; }
+    .after { fill: #059669; }
+    .axis { stroke: #d1d5db; stroke-width: 1; }
+  </style>
+  <rect width="920" height="390" fill="#ffffff"/>
+  <text x="24" y="30" font-size="20" font-weight="700">M41 yune-web ready-to-input medians</text>
+  <text x="24" y="52" class="small">Before is the bounded phase-0 owner sample; after is the full final production-browser run.</text>
+  <rect x="620" y="26" width="14" height="14" class="before"/><text x="640" y="38" class="small">Phase 0</text>
+  <rect x="710" y="26" width="14" height="14" class="after"/><text x="730" y="38" class="small">Final</text>
+  <line x1="220" y1="72" x2="220" y2="350" class="axis"/>
+  <line x1="220" y1="350" x2="850" y2="350" class="axis"/>
+
+  <text x="24" y="95">tracked luna cold</text>
+  <rect x="220" y="78" width="115" height="12" rx="2" class="before"/><text x="342" y="89" class="small">3,115 ms</text>
+  <rect x="220" y="94" width="31" height="12" rx="2" class="after"/><text x="258" y="105" class="small">846 ms</text>
+
+  <text x="24" y="135">tracked luna warm reload</text>
+  <rect x="220" y="118" width="89" height="12" rx="2" class="before"/><text x="316" y="129" class="small">2,399 ms</text>
+  <rect x="220" y="134" width="10" height="12" rx="2" class="after"/><text x="237" y="145" class="small">267 ms</text>
+
+  <text x="24" y="175">tracked jyut cold</text>
+  <rect x="220" y="158" width="630" height="12" rx="2" class="before"/><text x="856" y="169" class="small">17,041 ms</text>
+  <rect x="220" y="174" width="46" height="12" rx="2" class="after"/><text x="273" y="185" class="small">1,254 ms</text>
+
+  <text x="24" y="215">tracked jyut warm reload</text>
+  <rect x="220" y="198" width="584" height="12" rx="2" class="before"/><text x="810" y="209" class="small">15,783 ms</text>
+  <rect x="220" y="214" width="24" height="12" rx="2" class="after"/><text x="251" y="225" class="small">654 ms</text>
+
+  <text x="24" y="255">public luna cold</text>
+  <rect x="220" y="238" width="115" height="12" rx="2" class="before"/><text x="342" y="249" class="small">3,119 ms</text>
+  <rect x="220" y="254" width="32" height="12" rx="2" class="after"/><text x="259" y="265" class="small">867 ms</text>
+
+  <text x="24" y="295">public jyut cold</text>
+  <rect x="220" y="278" width="624" height="12" rx="2" class="before"/><text x="850" y="289" class="small">16,872 ms</text>
+  <rect x="220" y="294" width="48" height="12" rx="2" class="after"/><text x="275" y="305" class="small">1,291 ms</text>
+
+  <text x="220" y="374" class="small">0 ms</text>
+  <text x="825" y="374" class="small">17,000 ms</text>
+</svg>

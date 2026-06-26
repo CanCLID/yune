@@ -2,9 +2,12 @@
 
 Yune is a Rust input-method engine that uses **upstream librime as a
 compatibility and performance oracle** while building a cleaner Rust engine.
-The current priority is preserving the completed M40 native-engine state while
-recording the completed M41 `yune-web` browser-harness startup optimization
-milestone separately from native engine performance.
+The current priority is M42 native-engine follow-up work: verify and, if the
+oracle confirms it, restore upstream-observable `luna_pinyin` abbreviation
+sentence behavior for `cszysmsrsd` and `zybfshmsru`, then profile `ni`/`hao`
+short-key overhead without regressing the completed M40 native-engine wins. The
+completed M41 `yune-web` browser-harness startup optimization remains a
+separate browser milestone and does not widen native engine claims.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -26,10 +29,14 @@ milestone separately from native engine performance.
 - [`decisions.md`](./decisions.md) - standing principles plus project-wide
   decision log.
 - [`requirements.md`](./requirements.md) - requirement IDs and status,
-  including the closed M37-M40 engine gates and completed M41 web-harness gates.
+  including the active M42 native-engine gates, closed M37-M40 engine gates,
+  and completed M41 web-harness gates.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
   and [`reports/yune-vs-librime-root-cause-analysis.md`](./reports/yune-vs-librime-root-cause-analysis.md)
   - current performance comparison and diagnosis.
+- [`plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md`](./plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md)
+  - active native-engine plan for incomplete-pinyin abbreviation sentence
+  parity and short-key guardrails.
 - [`plans/completed/m41-plan-yune-web-startup-optimization.md`](./plans/completed/m41-plan-yune-web-startup-optimization.md)
   - completed browser-harness startup optimization plan for `apps/yune-web/`.
 - [`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](./plans/completed/m40-plan-compiled-sentence-lookup-index.md)
@@ -52,17 +59,20 @@ milestone separately from native engine performance.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior is complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. | Preserve upstream-observable behavior on every engine change. |
-| Engine performance | M40 closed the compiled sentence lookup index gates in native engine evidence. Startup/runtime-ready is Yune `23,934.200us` versus librime `26,218.400us` (`0.913x`), session is `23,994.000us` versus `25,700.000us` (`0.934x`), `hao`/`ni`/`zhongguo` remain inside gates, the 37-character Track A row is `289.914us` versus `295.800us` (`0.980x`), and the 59-character Track A row is `494.017us` versus `694.175us` (`0.712x`). The Track B Cantonese 50+ row is included as a guard at `196.387us/op` median, with two p95 outliers recorded as a caveat. | M40 is complete. Next engine work needs a new scoped plan, likely whole-process memory owner profiling, stricter short-key parity, or a separate TypeDuck-profile/native Track B owner if a named product row requires it. |
+| Engine performance | M40 closed the compiled sentence lookup index gates in native engine evidence. Startup/runtime-ready is Yune `23,934.200us` versus librime `26,218.400us` (`0.913x`), session is `23,994.000us` versus `25,700.000us` (`0.934x`), `hao`/`ni`/`zhongguo` remain inside gates, the 37-character Track A row is `289.914us` versus `295.800us` (`0.980x`), and the 59-character Track A row is `494.017us` versus `694.175us` (`0.712x`). The M40 incomplete-pinyin rows are not wins because `cszysmsrsd` and `zybfshmsru` export `0` candidates. The Track B Cantonese 50+ row is included as a guard at `196.387us/op` median, with two p95 outliers recorded as a caveat. | M42 is active. It must first capture upstream librime output. If the oracle proves a behavior target, M42 makes the incomplete-pinyin rows behavior-comparable; if not, it stops abbreviation implementation and records a reporting/no-go correction. Then it profiles or safely improves `ni`/`hao` fixed overhead while preserving M40 startup/session, long rows, storage, memory, bounded output/context, and Track B guard evidence. |
 | Web harness startup | M41 is complete for the tracked `apps/yune-web/` browser harness. Final production-browser medians are tracked `luna_pinyin` cold `846 ms`, tracked `jyut6ping3_mobile` cold `1,254 ms`, public-demo `luna_pinyin` cold `867 ms`, and public-demo `jyut6ping3_mobile` cold `1,291 ms`; warm/reload rows improved by `87.4-95.9%` from the bounded phase-0 owner baseline. | Browser startup is now a completed evidence-backed lane. Future web work needs a new scoped plan, likely browser/React shell residual, Jyutping asset payload, or remote delivery/cache behavior. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific native frontends remain outside this repo roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
 ## Authoritative Sequence
 
-1. **Future native engine owner slices** - require a new scoped plan and fresh
-   evidence. M40 leaves whole-process memory, stricter short-key parity,
-   incomplete-pinyin output parity, and separate TypeDuck-profile/native Track B
-   owners as possible future tracks.
+1. **M42 native engine abbreviation parity and short-key guardrails** - active.
+   Capture upstream `luna_pinyin` output for `cszysmsrsd` and `zybfshmsru`
+   first. If that capture proves a behavior target, fix incomplete-pinyin
+   abbreviation sentence output; if not, stop abbreviation implementation and
+   record a reporting/no-go correction. Then profile `ni`/`hao` fixed overhead.
+   Preserve every M40 native-engine storage, memory, long-row, startup/session,
+   bounded-output/context, and Track B guard win before claiming progress.
 2. **Future web harness slices** - require a new scoped browser plan and fresh
    evidence. M41 leaves browser/React shell residual, Jyutping asset payload,
    and remote delivery/cache behavior as possible future tracks.
@@ -75,6 +85,46 @@ milestone separately from native engine performance.
 Trigger-gated, not scheduled: extracting the full processor pipeline from
 `yune-rime-api` into `yune-core` lands only when a real non-ABI consumer needs
 the full input path. Do not milestone that extraction speculatively.
+
+## M42 Active Plan
+
+M42 is active under
+[`plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md`](./plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md).
+It owns the next native-engine round after M40 and keeps the scope deliberately
+narrow: upstream `luna_pinyin` abbreviation sentence parity for
+`cszysmsrsd`/`zybfshmsru` only if Phase 0 proves the oracle target, then
+measured `ni`/`hao` short-key overhead.
+
+The key correction is that the M40 incomplete-pinyin numbers are fast because
+they are wrong. Yune currently exports `0` candidates for both rows. The public
+My RIME reference and user observation suggest abbreviation-driven sentence and
+lexicon candidates, but Phase 0 must confirm the exact upstream librime
+`1.17.0` candidate shape, comments, order, preedit, and count before
+implementation hard-codes expected output. M42 therefore treats these rows as a
+correctness/parity gap before treating latency as comparable.
+
+M42 hard gates:
+
+- capture upstream librime `1.17.0` oracle candidates for `cszysmsrsd` and
+  `zybfshmsru`;
+- stop abbreviation implementation and record a reporting/no-go correction if
+  upstream exports no meaningful candidates for those rows;
+- record a final Yune-vs-librime candidate-output artifact for both rows,
+  including candidate count, text, comments, order, preedit, schema metadata,
+  and capture provenance;
+- add focused failing core/ABI tests for the current zero-candidate behavior;
+- implement a bounded abbreviation-aware canonical-code span graph through the
+  compiled prism and sentence model;
+- preserve the M40 full-pinyin sentence lookup index for both long Track A
+  rows;
+- profile `ni`/`hao` short-key overhead only after the abbreviation fix lands;
+- optimize short keys only if the top owner is measured and the fix preserves
+  behavior, memory, storage, output bounding, and long-row latency;
+- keep `rsmarisa`, mmap-backed selected bytes, zero selected heap mirrors, no
+  source fallback, positive lookup counters, bounded context export, and the
+  Track B 50+ guard row intact;
+- make no browser, frontend, product, packaging, delivery, or public-demo speed
+  claim.
 
 ## M41 Closeout
 
@@ -273,7 +323,7 @@ Closed M38 gates:
 
 | Track | Scope | Current source of truth |
 | --- | --- | --- |
-| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, and completed M40 sentence lookup indexing | Completed M40 plan: [`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](./plans/completed/m40-plan-compiled-sentence-lookup-index.md). Completed M39 plan: [`plans/completed/m39-plan-long-input-engine-hardening.md`](./plans/completed/m39-plan-long-input-engine-hardening.md). |
+| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, completed M40 sentence lookup indexing, and active M42 abbreviation sentence parity/short-key guardrails | Active M42 plan: [`plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md`](./plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md). Completed M40 plan: [`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](./plans/completed/m40-plan-compiled-sentence-lookup-index.md). |
 | Web harness startup | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, and Chromium memory | Completed M41 plan: [`plans/completed/m41-plan-yune-web-startup-optimization.md`](./plans/completed/m41-plan-yune-web-startup-optimization.md); final evidence under [`apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/). |
 | Core compatibility | Upstream behavior fixtures and standard ABI-observable behavior | [`requirements.md`](./requirements.md), [`decisions.md`](./decisions.md), and per-milestone plans. |
 | AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
@@ -288,6 +338,7 @@ Closed M38 gates:
 | M31 | Complete | Public demo delivery is historical context and not a current engine-performance target. |
 | M33-M40 | Complete | Recent engine-performance work closed fairness, shared caches, compact storage, compiled-active paths, page-bounded materialization, mapped storage, pure upstream `luna_pinyin` native parity with `rsmarisa` hot-path lookup, M39 long-input hardening, and M40 compiled sentence lookup indexing for both Track A long rows while preserving the Track B Cantonese profile guard row. |
 | M41 | Complete | Browser-harness startup optimization for tracked `apps/yune-web/`, with production-browser evidence, runtime packaging fixed, redundant startup deploy avoided, schema-scoped worker startup, and separate claims from native engine performance. |
+| M42 | Active | Native-engine abbreviation sentence parity and short-key guardrails: capture the upstream `cszysmsrsd`/`zybfshmsru` oracle first, fix only if the oracle proves a behavior target, profile `ni`/`hao`, and preserve M40 wins. |
 
 ## Scope Ledger
 
@@ -296,7 +347,7 @@ only when an engine target needs them; nothing here commits to a timeline.
 
 | In scope - target-driven, measured | Deferred - implement when an engine target needs it | Non-goal |
 | --- | --- | --- |
-| `luna_pinyin` core versus upstream `1.17.0`, including completed M17 null-grammar sentence/lattice and M18 punctuation processor slices | Learned `.gram`/octagram grammar, contextual translation, and broader plugin-backed gears until a named engine target needs them | Bit-for-bit parity with librime internals |
+| `luna_pinyin` core versus upstream `1.17.0`, including completed M17 null-grammar sentence/lattice, M18 punctuation processor slices, and active M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru` | Learned `.gram`/octagram grammar, contextual translation, and broader plugin-backed gears until a named engine target needs them | Bit-for-bit parity with librime internals |
 | Common RIME schemas added through explicit breadth milestones | Further schema breadth only with fresh oracle fixtures and owning tests | Unbounded schema checklist work |
 | Native engine performance parity for startup, session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, raw lookup, lazy/page-bounded translation, context export, memory, and allocation | Frontend/application delivery evidence and platform packaging | Claiming application-visible wins from native engine evidence |
 | AI-native layer on the compatible deterministic base | Richer AI experiments after the classic engine path is competitive | Replacing or altering classic input paths by default |

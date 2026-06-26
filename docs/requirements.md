@@ -495,6 +495,84 @@ fresh real-browser evidence instead of native-engine extrapolation.
   touches Rust files. The broad historical `@smoke` tag is not used as the M41
   closeout claim.
 
+## M42 Abbreviation Sentence Parity And Short-Key Guardrail Requirements
+
+**Status: planned.** M42 is tracked in
+[`plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md`](./plans/active/m42-plan-abbreviation-sentence-parity-short-key-guardrails.md).
+It is a native-engine-only follow-up to M40. The milestone first captures
+upstream output for the zero-candidate incomplete-pinyin rows. If the oracle
+proves a behavior target, M42 fixes those rows before using them as performance
+evidence; if not, it records a reporting/no-go correction with no abbreviation
+engine change. It then profiles `ni`/`hao` short-key fixed overhead without
+regressing M40.
+
+- [ ] **M42-ENGINE-01**: Upstream librime `1.17.0` oracle output is captured
+  for `cszysmsrsd` and `zybfshmsru`, including first-page candidate text,
+  comments, order, composition/preedit, schema metadata, and capture
+  provenance. My RIME may be recorded as a reproducer, but not as the oracle of
+  record. If the oracle exports no meaningful candidates, M42 stops the
+  abbreviation implementation path and records a reporting/no-go correction
+  instead of building a span graph for a non-bug.
+- [ ] **M42-ENGINE-02**: Phase 0 selects the branch. If upstream exports
+  meaningful candidates, focused core and ABI tests prove the current
+  zero-candidate Yune behavior before the fix and assert the captured
+  upstream-observable candidate output after the fix. If upstream exports no
+  meaningful candidates, M42 records the no-go branch and does not require
+  abbreviation-output tests for a non-bug.
+- [ ] **M42-ENGINE-03**: Implementation branch only: a bounded
+  abbreviation-aware spelling/canonical-code span graph is implemented from
+  compiled-prism/schema spelling data. The graph rejects arbitrary source
+  fallback, records fanout/build counters, and does not introduce selected
+  table/prism heap mirrors. Reporting/no-go branch: final evidence records that
+  no abbreviation span graph was added.
+- [ ] **M42-ENGINE-04**: Implementation branch only: the sentence model consumes
+  validated canonical-code spans for abbreviation inputs while preserving the
+  M40 exact/range, reachable-vertex, prefix-filter, and phrase-index path for
+  full pinyin rows. Abbreviation expansion stays behind a separate branch;
+  full-pinyin rows must not invoke it.
+- [ ] **M42-ENGINE-05**: Implementation branch only: `cszysmsrsd` and
+  `zybfshmsru` export nonzero candidates through the native ABI, with candidate
+  count, text, comments, order, and preedit matching the captured upstream
+  oracle. If the oracle shows a sentence candidate first and matched lexicon
+  candidates following, Yune must match that captured shape. Reporting/no-go
+  branch: reports reclassify the rows as non-comparable zero-candidate
+  reporting evidence, not a speed win.
+- [ ] **M42-ENGINE-06**: Implementation branch only: once behavior is
+  comparable, final native latency for `cszysmsrsd` and `zybfshmsru` is
+  measured against same-run librime. If either row misses the `1.25x` target,
+  M42 records a measured blocker and cannot be closed as a performance win
+  without explicit acceptance. Reporting/no-go branch: latency rows are
+  reported only as non-comparable evidence.
+- [ ] **M42-ENGINE-07**: Startup/runtime-ready, session, `hao`, `ni`, and
+  `zhongguo` remain within the M40 no-regression guard; any short-key
+  improvement names the measured owner before implementation.
+- [ ] **M42-ENGINE-08**: Both Track A long rows remain within `1.25x` same-run
+  librime and within the M40 no-regression guard; the M40 sentence lookup index
+  counters remain active. Any full-pinyin long-row regression or full-pinyin
+  counter evidence touching abbreviation span expansion is a hard stop for the
+  guard-relaxation change.
+- [ ] **M42-ENGINE-09**: Track A storage remains `rsmarisa_byte_backed`,
+  selected table/prism bytes remain mmap or byte-backed, selected table/prism
+  heap mirror bytes remain `0`, `source_fallback=false`, and positive runtime
+  `rsmarisa` counters remain present.
+- [ ] **M42-ENGINE-10**: Memory and output bounds are preserved: Track A peak
+  working set stays within `5%` of the M40 baseline `123,957,248 B`
+  (`130,155,110 B` maximum), any row-level working-set comparison quotes the
+  exact M40 row baseline beside the new value, any new abbreviation graph/index
+  owner is attributed, first-page output remains bounded, and `RimeGetContext`
+  remains page-sized.
+- [ ] **M42-ENGINE-11**: The Track B `jyut6ping3_mobile` 50+ row remains a
+  guard row only. M42 makes no TypeDuck-profile speed claim and does not widen
+  TypeDuck behavior unless a focused guard regression requires it.
+- [ ] **M42-ENGINE-12**: Final closeout updates the performance report,
+  root-cause report, roadmap, requirements, decisions, and milestone ledger;
+  records startup, session, `hao`, `ni`, `zhongguo`, both Track A long rows,
+  both incomplete-pinyin rows, the Track B guard row, memory/storage/status
+  evidence, a final `oracle-vs-yune-candidates.json` or equivalent
+  candidate-output artifact for `cszysmsrsd` and `zybfshmsru`, and passes
+  `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+  `cargo test --workspace`, and `git diff --check`.
+
 ## Post-M38 Engine Performance Follow-Up Requirements
 
 **Status: complete through M39.** These requirements do not reopen M38. The post-M38 baseline
@@ -849,6 +927,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M41-YWEB-08 | M41 | Complete with measured caveat - first-key rows are recorded; final tracked cold p95 is no worse than `235 ms`, but phase-0 first-key comparison is a one-sample diagnostic baseline |
 | M41-YWEB-09 | M41 | Complete - browser heap, DOM, and Windows working-set samples are recorded in final evidence |
 | M41-YWEB-10 | M41 | Complete - web build, public build, typecheck, startup benchmark, focused composition/candidate smoke rows, and diff checks pass; broad historical `@smoke` has stale non-M41 failures |
+| M42-ENGINE-01 | M42 | Planned - upstream librime `1.17.0` oracle output for `cszysmsrsd` and `zybfshmsru` must be captured with candidate/order/provenance details, and a no-candidate oracle result stops abbreviation implementation |
+| M42-ENGINE-02 | M42 | Planned - Phase 0 selects implementation tests for a real oracle target or no-go reporting for a non-bug |
+| M42-ENGINE-03 | M42 | Planned - implementation branch adds a bounded prism/schema-derived abbreviation span graph; no-go branch records that no graph was added |
+| M42-ENGINE-04 | M42 | Planned - implementation branch routes validated abbreviation spans separately while preserving M40 full-pinyin exact/range/reachable/prefix/phrase-index behavior |
+| M42-ENGINE-05 | M42 | Planned - implementation branch exports native ABI candidates matching captured upstream output; no-go branch reclassifies rows as non-comparable reporting evidence |
+| M42-ENGINE-06 | M42 | Planned - implementation branch measures behavior-comparable incomplete-pinyin latency against same-run librime; no-go branch reports latency only as non-comparable evidence |
+| M42-ENGINE-07 | M42 | Planned - startup, session, `hao`, `ni`, and `zhongguo` must remain inside M40 no-regression gates and short-key fixes must name the owner |
+| M42-ENGINE-08 | M42 | Planned - both Track A long rows must retain M40 latency and index-counter gates, with any abbreviation-path leakage treated as a hard stop |
+| M42-ENGINE-09 | M42 | Planned - Track A `rsmarisa`, mmap or byte-backed selected bytes, zero heap mirrors, no source fallback, and positive counters must remain intact |
+| M42-ENGINE-10 | M42 | Planned - memory, first-page output, and page-sized context bounds must be preserved against the named M40 peak baseline and new abbreviation owners attributed |
+| M42-ENGINE-11 | M42 | Planned - Track B 50+ row remains a guard only, with no TypeDuck-profile speed claim |
+| M42-ENGINE-12 | M42 | Planned - final docs, reports, candidate-output artifact, evidence bundle, native benchmark rows, and Rust/diff quality gates must close before completion |
 | POST-M38-PERF-01 | Post-M38 | Complete through M39 - final same-run native benchmark includes required long continuous pinyin rows and Track B row |
 | POST-M38-PERF-02 | Post-M38 | Complete through M39 - long-input rows carry owner/status/memory evidence |
 | POST-M38-PERF-03 | Post-M38 | Complete through M39 - optimization claim names the measured owner |
@@ -891,10 +981,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M39 long-input engine hardening requirements: 9 total, 9 complete, 0 active
 - M40 compiled sentence lookup index requirements: 12 total, 12 complete, 0 active
 - M41 yune-web startup optimization requirements: 10 total, 9 complete, 1 complete with measured caveat, 0 active
+- M42 abbreviation sentence parity and short-key guardrail requirements: 12 total, 12 planned, 0 complete
 - Post-M38 engine performance follow-up requirements: 9 total, 9 complete, 0 draft
-- Mapped to phases: 284
+- Mapped to phases: 296
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M41 yune-web startup optimization is complete as a browser-harness milestone for tracked `apps/yune-web`: production runtime packaging is fixed, redundant startup deploy is avoided while default runtime preferences are still customized, worker startup uses the selected schema, startup assets are schema-scoped, final tracked cold medians are `846 ms` for `luna_pinyin` and `1,254 ms` for `jyut6ping3_mobile`, public-demo cold medians are `867 ms` and `1,291 ms`, final evidence records real-worker/mock-worker splits, Track A and Track B typing rows, startup owners, cache/resource rows, browser memory, and web-only quality gates. M40 compiled sentence lookup index is complete. It combines exact range indexing, reachable-vertex pruning, valid-code/prefix filtering, and a compact librime-shaped phrase-index walk for the native Track A `luna_pinyin` long-row gap, records the M40-ENGINE-12 graph-rebuild verdict as not the top remaining owner, preserves startup/session, short rows, memory, mmap/`rsmarisa`, bounded-output/context, and behavior gates, and keeps reports native-engine-only. M39 long-input engine hardening remains complete with same-run upstream librime evidence for startup, session, short/medium rows, and both Track A long rows; the Track B `jyut6ping3_mobile` 50+ row is separately measured, attributed, and guarded. M38 engine performance parity remains complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M42 abbreviation sentence parity and short-key guardrails are planned as a native-engine-only follow-up to M40: `cszysmsrsd` and `zybfshmsru` must first be captured from upstream librime before any abbreviation engine change; if the oracle exports no meaningful candidates, M42 stops abbreviation implementation and records a reporting/no-go correction; if the oracle proves a behavior target, M42 repairs the zero-candidate fast exits before latency can be claimed. `ni`/`hao` fixed overhead must be profiled before any optimization, and M40 startup/session, long-row, storage, memory, bounded-output/context, and Track B guard wins remain hard no-regression gates. M41 yune-web startup optimization is complete as a browser-harness milestone for tracked `apps/yune-web`: production runtime packaging is fixed, redundant startup deploy is avoided while default runtime preferences are still customized, worker startup uses the selected schema, startup assets are schema-scoped, final tracked cold medians are `846 ms` for `luna_pinyin` and `1,254 ms` for `jyut6ping3_mobile`, public-demo cold medians are `867 ms` and `1,291 ms`, final evidence records real-worker/mock-worker splits, Track A and Track B typing rows, startup owners, cache/resource rows, browser memory, and web-only quality gates. M40 compiled sentence lookup index is complete. It combines exact range indexing, reachable-vertex pruning, valid-code/prefix filtering, and a compact librime-shaped phrase-index walk for the native Track A `luna_pinyin` long-row gap, records the M40-ENGINE-12 graph-rebuild verdict as not the top remaining owner, preserves startup/session, short rows, memory, mmap/`rsmarisa`, bounded-output/context, and behavior gates, and keeps reports native-engine-only. M39 long-input engine hardening remains complete with same-run upstream librime evidence for startup, session, short/medium rows, and both Track A long rows; the Track B `jyut6ping3_mobile` 50+ row is separately measured, attributed, and guarded. M38 engine performance parity remains complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._

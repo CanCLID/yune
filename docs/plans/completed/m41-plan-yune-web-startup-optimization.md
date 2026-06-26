@@ -535,7 +535,10 @@ Broad historical smoke caveat: the full historical `@smoke` tag is still not
 the M41 closeout claim. M41 closes with the focused current composition,
 candidate visibility, deploy-default, and startup benchmark gates. Remaining
 legacy browser-parity rows, including the old M16 sentence/combine assertions,
-need a separate cleanup plan if they are promoted back to closeout gates.
+now have a post-M41 targeted follow-up in
+[`m16-followup.md`](../../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/m16-followup.md):
+the baked defaults are active, but both old M16 rows still fail. They need a
+separate cleanup plan if they are promoted back to closeout gates.
 
 ## Out Of Scope
 

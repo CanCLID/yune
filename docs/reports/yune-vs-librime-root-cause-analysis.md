@@ -118,6 +118,20 @@ verdict, not an assumption.
 - Upstream-observable behavior and touched compatibility paths are covered by
   focused tests plus the full workspace test suite.
 
+## Optimization Pattern So Far
+
+The successful M33-M40 native work followed a narrow sequence rather than one
+large rewrite:
+
+| Pattern | Where it paid off | What to keep doing |
+| --- | --- | --- |
+| Fix comparison fairness first | M33 corrected the no-reverse `luna_pinyin` startup/session comparison before any hot-path claim. | Rebuild the baseline when the oracle setup, schema artifacts, or harness shape changes. |
+| Bound materialization before storage rewrites | M34, M37, and M38 kept first-page candidate and context work bounded so full-list fallback did not hide the real owner. | Treat any future full-list or full-context path as suspect until counters prove it is not hot. |
+| Activate storage with counters, not intention | M35-M38 only counted compact/mmap/`rsmarisa` wins when storage status and positive lookup counters proved the path was active. | Preserve the `rsmarisa_byte_backed`, mmap, zero-heap-mirror evidence contract for Track A. |
+| Split Track A from Track B | M36 and M39 separated upstream `luna_pinyin` comparisons from TypeDuck-profile guards. | Start a separate TypeDuck plan for Track B work; do not fold it into upstream native parity. |
+| Prefer compact indexes over heap mirrors | M40 stores numeric sentence ranges over existing entries instead of cloned strings or a trie-shaped mirror. | For the memory pass, profile first and keep new indexes borrowed/range-shaped unless evidence says otherwise. |
+| Keep browser claims evidence-bound | M40 made no browser claim; M41 closed the browser-harness lane with production-browser evidence. | Do not use native microbenchmarks as proof of user-visible startup or delivery speed. |
+
 ## Remaining Gaps Ranked
 
 | Rank | Gap | Evidence | Next diagnostic action |
@@ -129,6 +143,8 @@ verdict, not an assumption.
 | 5 | Browser/user-perceived startup | No M40 browser evidence was collected. M41 later closed this as a separate browser-harness lane with tracked cold medians of `846 ms` for `luna_pinyin` and `1,254 ms` for `jyut6ping3_mobile`. | Keep future browser work separate from native engine reports; likely follow-ups are browser/React shell residual, Jyutping asset payload, and remote delivery/cache behavior. |
 
 ![M40 memory gap](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-memory-gap.svg)
+
+![M40 next optimization attack map](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-next-attack-map.svg)
 
 ## Next Work Boundary
 

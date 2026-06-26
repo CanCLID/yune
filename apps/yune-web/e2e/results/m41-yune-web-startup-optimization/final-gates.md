@@ -139,8 +139,13 @@ dictionary exclude, and Cangjie 5 selected without a startup deploy marker.
 
 Broad historical smoke caveat: the older full `@smoke` tag is still not the
 M41 closeout claim. After the review fix, the current focused composition,
-candidate visibility, and M41 deploy-default guard pass. The legacy M16
-sentence/combine rows remain separate browser-behavior failures and were not
-proven green on the pre-M41 base during this review pass, so they should be
-handled by a future browser-parity cleanup rather than folded into this startup
+candidate visibility, and M41 deploy-default guard pass.
+
+M16 follow-up evidence is now recorded in
+[`m16-followup.md`](./m16-followup.md). A targeted post-M41 production-browser
+run of the old M16 combine/sentence rows still fails with the baked defaults
+active: `hou` returns only `好` instead of the M14 five-candidate expectation,
+and `ngohaigo` renders no candidate panel. Those rows are therefore current
+browser-parity failures, not startup-closeout gates. They should be handled by
+a future browser-parity cleanup rather than folded into this startup
 optimization closeout.

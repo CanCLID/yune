@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560" role="img" aria-labelledby="title desc">
+  <title id="title">M40 next optimization attack map</title>
+  <desc id="desc">Ranked post-M40 optimization targets, showing native engine memory as the first diagnostic target, followed by incomplete pinyin behavior, Track B profile work, short-key ratios, and separate browser-harness work.</desc>
+  <rect width="980" height="560" fill="#f8fafc"/>
+  <text x="40" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">Post-M40 next optimization attack map</text>
+  <text x="40" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">Start with measured owners. Native M40 long-row latency is closed.</text>
+  <text x="40" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">Remaining work splits into memory, behavior parity, profile-specific guards, and separate browser evidence.</text>
+
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <rect x="40" y="100" width="900" height="78" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+    <text x="62" y="126" font-size="16" font-weight="700" fill="#7f1d1d">1. Whole-process memory</text>
+    <text x="62" y="149" font-size="13" fill="#7f1d1d">Track A peak 123,957,248 B; librime same-run rows are roughly 13-17 MB.</text>
+    <text x="62" y="167" font-size="13" fill="#7f1d1d">Next action: heap-owner profile before storage changes.</text>
+
+    <rect x="40" y="196" width="900" height="78" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="62" y="222" font-size="16" font-weight="700" fill="#78350f">2. Incomplete-pinyin output parity</text>
+    <text x="62" y="245" font-size="13" fill="#78350f">cszysmsrsd and zybfshmsru are bounded but export 0 candidates.</text>
+    <text x="62" y="263" font-size="13" fill="#78350f">Next action: capture upstream output before calling them wins.</text>
+
+    <rect x="40" y="292" width="900" height="78" rx="6" fill="#dbeafe" stroke="#2563eb"/>
+    <text x="62" y="318" font-size="16" font-weight="700" fill="#1e3a8a">3. Track B profile/native enumeration</text>
+    <text x="62" y="341" font-size="13" fill="#1e3a8a">50+ Cantonese guard row median is 196.387 us/op; p95 has Windows outliers.</text>
+    <text x="62" y="359" font-size="13" fill="#1e3a8a">Next action: separate TypeDuck-profile plan only if needed.</text>
+
+    <rect x="40" y="388" width="900" height="78" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+    <text x="62" y="414" font-size="16" font-weight="700" fill="#14532d">4. Track A short-key ratios</text>
+    <text x="62" y="437" font-size="13" fill="#14532d">hao is 3.237x and ni is 3.867x, still inside the 5x guard with small absolute medians.</text>
+    <text x="62" y="455" font-size="13" fill="#14532d">Next action: defer unless target tightens.</text>
+
+    <rect x="40" y="484" width="900" height="50" rx="6" fill="#e2e8f0" stroke="#64748b"/>
+    <text x="62" y="510" font-size="16" font-weight="700" fill="#0f172a">Separate lane. Browser/user-perceived performance</text>
+    <text x="62" y="526" font-size="13" fill="#334155">Do not infer from native M40. Use rebuilt runtime and real-browser evidence for yune-web claims.</text>
+  </g>
+</svg>

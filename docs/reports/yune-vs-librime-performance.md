@@ -48,6 +48,8 @@ walk inside the native `UpstreamSentenceModel`. It does not optimize or claim
 
 ![M40 memory gap](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-memory-gap.svg)
 
+![M40 next optimization attack map](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-next-attack-map.svg)
+
 ## Final Same-Run Ratios
 
 Lower is better. `##########` is roughly librime parity (`1.0x`); the M40 long
@@ -184,6 +186,24 @@ Track A final status:
 Memory remains a major absolute gap versus librime. M40 does not claim memory
 parity; it proves the sentence lookup index does not regress the M39 Track A
 peak and does not add a selected table/prism heap mirror.
+
+## Optimization Approach Timeline
+
+The recent performance work has used one repeated rule: measure the owner first,
+land only the scoped owner change, and keep native engine claims separate from
+product or browser claims.
+
+| Milestone | Approach used | Resulting lesson for the next pass |
+| --- | --- | --- |
+| M33 engine native lookup fairness | Fixed unfair startup/session comparison by lazy-loading `stroke`, sharing immutable built dictionary translators, and deferring risky queryable storage work behind spike gates. | Keep benchmarks fair before spending time on hot-path surgery. |
+| M34 lazy candidate pipeline | Made safe upstream `luna_pinyin` rows page-bounded on the first candidate page while preserving full-list fallback for readers that really need it. | Bound output materialization before changing storage formats. |
+| M35 compact table/prism storage | Added compact payload lookup, candidate views, and prism canonical-code lookup for safe upstream `luna_pinyin`; left TypeDuck heap-backed by measured no-go. | Split Track A and Track B storage decisions when their schema invariants differ. |
+| M36 product-path optimization | Re-emitted schema-scoped no-marisa TypeDuck artifacts after measuring shipped product marisa blobs as stale/unsupported. | Do not force a faster storage path when the artifact contract is wrong; regenerate the contract first. |
+| M37 engine hyper-optimization | Attributed `hai`, made product rows page-bounded, moved product table bytes to mapped storage, and proved real `rsmarisa` mmap probes. | Pair latency and memory owners; mapped bytes matter only when counters prove they are active. |
+| M38 native parity | Established pure upstream `luna_pinyin` parity with `rsmarisa_byte_backed` selected storage, mmap-backed table/prism bytes, zero selected heap mirrors, and page-bounded first-page iteration. | Once storage is active, use same-run librime rows as the main native floor. |
+| M39 long-input hardening | Added long continuous pinyin and Track B guard rows, then isolated the remaining Track A owner to all-substrings sentence lookup. | Long-row failures need owner counters, not just wider guard thresholds. |
+| M40 compiled sentence lookup | Combined exact range indexing, reachable-vertex pruning, prefix filtering, and a compact phrase-index walk; graph rebuild was measured and rejected as the top owner. | The native long-row target is closed; the next engine pass should start with memory owner profiling or behavior parity, not more long-row lookup work. |
+| M41 browser-harness startup | Closed separately with production-browser evidence and no native-engine claim. | Browser or product speed claims need rebuilt runtime and real-browser evidence; do not infer them from M40 native numbers. |
 
 ## Parked Follow-Ups
 

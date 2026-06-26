@@ -1,7 +1,8 @@
 # M40 Compiled Sentence Lookup Index Plan
 
-> **Status:** Active - **Milestone:** M40 (compiled sentence lookup index) -
-> **Created:** 2026-06-26 - **Type:** engine-performance plan
+> **Status:** Complete - **Milestone:** M40 (compiled sentence lookup index) -
+> **Created:** 2026-06-26 - **Closed:** 2026-06-26 - **Type:**
+> engine-performance plan
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
@@ -204,7 +205,7 @@ needed inside M40:
 - Modify: `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`
 - Create: `docs/reports/evidence/m40-compiled-sentence-lookup-index/phase-0-baseline/`
 
-- [ ] **Step 0.1: Confirm repo state**
+- [x] **Step 0.1: Confirm repo state**
 
 Run:
 
@@ -217,7 +218,7 @@ git log --oneline -5 --decorate
 Expected: local worktree state is understood before editing. Preserve unrelated
 staged changes unless the user explicitly widens scope.
 
-- [ ] **Step 0.2: Run fresh same-run native baseline**
+- [x] **Step 0.2: Run fresh same-run native baseline**
 
 Run:
 
@@ -229,7 +230,7 @@ Expected: evidence includes Yune/librime Track A rows, Track B Yune
 no-regression row, startup/session, working set, peak working set, and current
 M39 owner counters.
 
-- [ ] **Step 0.3: Record baseline owner verdict**
+- [x] **Step 0.3: Record baseline owner verdict**
 
 Create:
 
@@ -255,7 +256,7 @@ Expected content:
 - Modify: `crates/yune-rime-api/benches/native_inprocess_benchmark.rs`
 - Test: `crates/yune-core/src/tests/poet.rs`
 
-- [ ] **Step 1.1: Add counters before changing behavior**
+- [x] **Step 1.1: Add counters before changing behavior**
 
 Add counters for:
 
@@ -273,7 +274,7 @@ Add counters for:
 Expected: existing M39 counters remain stable and new counters default to zero
 when the feature path does not fire.
 
-- [ ] **Step 1.2: Add focused counter tests**
+- [x] **Step 1.2: Add focused counter tests**
 
 Add a small `UpstreamSentenceModel` test that runs a long enough artificial
 input and asserts:
@@ -298,7 +299,7 @@ Expected: tests pass before behavior changes.
 - Create if needed: `crates/yune-core/src/poet/index.rs`
 - Test: `crates/yune-core/src/tests/poet.rs`
 
-- [ ] **Step 2.1: Introduce exact range index**
+- [x] **Step 2.1: Introduce exact range index**
 
 Build an immutable range index from code to `Range<usize>` over the existing
 sorted `entries_by_code` vector. Store ranges into the vector; do not clone
@@ -307,7 +308,7 @@ entry text or code payloads into the index.
 Expected: `entries_for_code` can return the same entry slice through the range
 index and records range-index hits/misses.
 
-- [ ] **Step 2.2: Preserve ordering behavior**
+- [x] **Step 2.2: Preserve ordering behavior**
 
 Add a test with multiple entries sharing the same code and different weights.
 
@@ -331,7 +332,7 @@ cargo test -p yune-core upstream_sentence_model -- --nocapture
 - Modify: `crates/yune-core/src/poet/index.rs` if created
 - Test: `crates/yune-core/src/tests/poet.rs`
 
-- [ ] **Step 3.1: Add prefix membership**
+- [x] **Step 3.1: Add prefix membership**
 
 Create a valid-code and valid-prefix membership structure from the same code
 set used by the exact range index. Prefer interned/borrowed code handles when
@@ -341,7 +342,7 @@ compact trie.
 
 Expected: invalid substrings can be rejected without calling exact entry lookup.
 
-- [ ] **Step 3.2: Process only reachable starts**
+- [x] **Step 3.2: Process only reachable starts**
 
 Change `word_graph_for_input` so it starts with reachable vertex `0`, skips
 unreachable starts, and inserts `end` when a table or vocabulary edge is added.
@@ -349,7 +350,7 @@ unreachable starts, and inserts `end` when a table or vocabulary edge is added.
 Expected: counters report skipped starts on long rows and behavior remains
 stable.
 
-- [ ] **Step 3.3: Break impossible prefix scans**
+- [x] **Step 3.3: Break impossible prefix scans**
 
 When a substring is no longer a valid prefix, break the inner `end` scan for
 that start.
@@ -375,7 +376,7 @@ cargo test -p yune-core translator:: -- --nocapture
 - Test: `crates/yune-core/src/tests/poet.rs`
 - Test: `crates/yune-core/src/tests/translator.rs`
 
-- [ ] **Step 4.1: Add phrase-index node model**
+- [x] **Step 4.1: Add phrase-index node model**
 
 Introduce a `SentencePhraseIndex` that represents code-prefix nodes with:
 
@@ -388,7 +389,7 @@ Introduce a `SentencePhraseIndex` that represents code-prefix nodes with:
 This can be implemented over code strings first, but the interface must allow
 future code-id or byte-backed nodes without changing `UpstreamSentenceModel`.
 
-- [ ] **Step 4.2: Route graph construction through phrase-index walks**
+- [x] **Step 4.2: Route graph construction through phrase-index walks**
 
 From each reachable start, walk the phrase index over input prefixes and emit
 graph edges only when an exact entry range exists.
@@ -399,7 +400,7 @@ Expected:
 - the old all-substrings exact lookup path is not the hot owner;
 - prefix filtering remains a guard, not the primary algorithm.
 
-- [ ] **Step 4.3: Preserve weighted candidate behavior**
+- [x] **Step 4.3: Preserve weighted candidate behavior**
 
 Add tests for:
 
@@ -416,7 +417,7 @@ cargo test -p yune-core poet:: -- --nocapture
 cargo test -p yune-core translator:: -- --nocapture
 ```
 
-- [ ] **Step 4.4: Measure cross-keystroke rebuild cost**
+- [x] **Step 4.4: Measure cross-keystroke rebuild cost**
 
 Add counters that distinguish:
 
@@ -445,7 +446,7 @@ as a sequence of prefixes.
 - Create:
   `docs/reports/evidence/m40-compiled-sentence-lookup-index/phase-3-memory/`
 
-- [ ] **Step 5.1: Split cold first-use from warm reuse**
+- [x] **Step 5.1: Split cold first-use from warm reuse**
 
 Add benchmark rows or metadata that separately reports:
 
@@ -457,7 +458,7 @@ Add benchmark rows or metadata that separately reports:
 
 Expected: a lazy index cannot hide a startup regression.
 
-- [ ] **Step 5.2: Remove unnecessary string duplication**
+- [x] **Step 5.2: Remove unnecessary string duplication**
 
 If memory evidence shows the range/prefix/phrase index retains duplicated
 strings, replace the top duplication owner with ids, ranges, or borrowed
@@ -465,7 +466,7 @@ handles before closeout.
 
 Expected: Track A peak does not regress more than `5%` from M39 final.
 
-- [ ] **Step 5.3: Record memory-owner evidence**
+- [x] **Step 5.3: Record memory-owner evidence**
 
 Write:
 
@@ -490,11 +491,10 @@ owners that are outside M40.
 - Modify: `docs/roadmap.md`
 - Modify: `docs/requirements.md`
 - Modify: `docs/decisions.md`
-- Move on closeout:
-  `docs/plans/active/m40-plan-compiled-sentence-lookup-index.md` to
+- Moved on closeout from the active plans directory to
   `docs/plans/completed/m40-plan-compiled-sentence-lookup-index.md`
 
-- [ ] **Step 6.1: Run final benchmark**
+- [x] **Step 6.1: Run final benchmark**
 
 Run:
 
@@ -504,7 +504,7 @@ powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess
 
 Expected: all M40 closeout gates have direct evidence.
 
-- [ ] **Step 6.2: Run quality gates**
+- [x] **Step 6.2: Run quality gates**
 
 Run:
 
@@ -517,7 +517,7 @@ git diff --check
 
 Expected: all pass.
 
-- [ ] **Step 6.3: Update reports and ledgers**
+- [x] **Step 6.3: Update reports and ledgers**
 
 Update final reports with:
 

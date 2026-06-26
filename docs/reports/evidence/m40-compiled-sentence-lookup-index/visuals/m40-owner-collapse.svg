@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="390" viewBox="0 0 960 390" role="img" aria-labelledby="title desc">
+  <title id="title">M40 sentence lookup owner collapse</title>
+  <desc id="desc">Bar chart showing prefix checks and table entries considered reductions from M40 baseline to M40 final for the two long rows.</desc>
+  <rect width="960" height="390" fill="#f8fafc"/>
+  <text x="40" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">Sentence lookup owner collapse</text>
+  <text x="40" y="63" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">A/B/C/D convert the old all-substrings path into reachable prefix/range walks.</text>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13">
+    <text x="40" y="115" fill="#111827">37-char prefix checks/key</text>
+    <rect x="270" y="100" width="241" height="22" rx="3" fill="#94a3b8"/>
+    <rect x="270" y="126" width="59" height="22" rx="3" fill="#2563eb"/>
+    <text x="525" y="117" fill="#334155">241.054 baseline</text>
+    <text x="343" y="143" fill="#334155">58.649 final, -75.7%</text>
+    <text x="40" y="190" fill="#111827">37-char table entries/key</text>
+    <rect x="270" y="175" width="520" height="22" rx="3" fill="#94a3b8"/>
+    <rect x="270" y="201" width="16" height="22" rx="3" fill="#2563eb"/>
+    <text x="805" y="192" fill="#334155">3,564.216 baseline</text>
+    <text x="300" y="218" fill="#334155">111.486 final, -96.9%</text>
+    <text x="40" y="265" fill="#111827">59-char prefix checks/key</text>
+    <rect x="270" y="250" width="450" height="22" rx="3" fill="#94a3b8"/>
+    <rect x="270" y="276" width="64" height="22" rx="3" fill="#2563eb"/>
+    <text x="735" y="267" fill="#334155">608.576 baseline</text>
+    <text x="348" y="293" fill="#334155">86.034 final, -85.9%</text>
+    <text x="40" y="340" fill="#111827">59-char table entries/key</text>
+    <rect x="270" y="325" width="520" height="22" rx="3" fill="#94a3b8"/>
+    <rect x="270" y="351" width="15" height="22" rx="3" fill="#2563eb"/>
+    <text x="805" y="342" fill="#334155">6,344.559 baseline</text>
+    <text x="300" y="368" fill="#334155">186.831 final, -97.1%</text>
+  </g>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="12">
+    <rect x="680" y="30" width="16" height="16" fill="#94a3b8"/><text x="704" y="43" fill="#334155">M40 baseline</text>
+    <rect x="800" y="30" width="16" height="16" fill="#2563eb"/><text x="824" y="43" fill="#334155">M40 final</text>
+  </g>
+</svg>

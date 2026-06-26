@@ -1,139 +1,153 @@
 # Yune vs upstream librime performance dashboard
 
-Date: 2026-06-25
+Date: 2026-06-26
 
 This report is native-engine evidence only. It does not claim browser,
 frontend, product-delivery, packaging, or public-demo speed wins.
 
 ## Current Verdict
 
-M39 closes the post-M38 long-input engine-hardening gap for the named target
-set. Startup/session and the short/medium rows remain inside their existing
-gates, both Track A upstream `luna_pinyin` long rows are inside the `5x`
-same-run native gate, and the Track B `jyut6ping3_mobile` 50+ character profile
-row is measured, attributed, and no-regressed.
+M40 closes the compiled sentence lookup index milestone for Track A
+`luna_pinyin`. Yune now beats or matches same-run upstream librime on the two
+required long continuous pinyin rows while preserving the M39 mmap/`rsmarisa`
+selected-storage path, startup/session guards, short/medium row guards,
+bounded output/context behavior, and memory no-regression.
 
-The Track A and Track B long rows do not share the same owner. Track A was
-dominated by upstream sentence-model scanning and now uses indexed, bounded
-sentence-model lookup. Track B remains a TypeDuck profile path dominated by
-no-marisa exact/prefix lookup plus profile fallback/full-list merge semantics.
-That path is preserved and gated rather than optimized by the Track A change.
+The M40 change is intentionally narrow. It combines exact range indexing,
+reachable-vertex pruning, prefix filtering, and a librime-shaped phrase-index
+walk inside the native `UpstreamSentenceModel`. It does not optimize or claim
+`yune-web`, browser startup, product delivery, packaging, or frontend speed.
 
 ## Achievement Snapshot
 
-| Dimension | M39 outcome | Why it matters |
+| Dimension | M40 outcome | Why it matters |
 | --- | --- | --- |
-| Startup/runtime-ready | `25.048 ms`, `0.917x` same-run librime | Engine startup remains at librime level after the long-input changes. |
-| Session create/select/destroy | `25.256 ms`, `0.938x` same-run librime | Schema/session lifecycle remains at librime level. |
-| Track A short/medium typing | `hao` `3.281x`, `ni` `3.863x`, `zhongguo` `0.329x` | Short rows stayed inside the established gate while long rows were fixed. |
-| Track A 37-character long input | `452.200 ms` -> `0.515 ms`, about `878x` faster | The original long-input stall is removed. |
-| Track A 59-character stress input | `1,240.081 ms` -> `0.918 ms`, about `1,351x` faster | 50+ character sentence input is now comfortably under the `5x` native gate. |
-| Track B 50+ profile row | `189.207 us/op` -> `188.857 us/op` | The protected profile path did not regress. |
-| Track A peak working set | `156.0 MiB` -> `118.2 MiB`, about `24%` lower | The sentence-model fix also removed a transient memory owner. |
+| Startup/runtime-ready | `23.934 ms`, `0.913x` same-run librime | Startup remains at librime level and improves from M39 `25.048 ms`. |
+| Session create/select/destroy | `23.994 ms`, `0.934x` same-run librime | Schema/session lifecycle remains at librime level and improves from M39 `25.256 ms`. |
+| Track A short/medium typing | `hao` `3.237x`, `ni` `3.867x`, `zhongguo` `0.323x` | The short/medium guard rows remain inside `5x` and do not regress more than `5%` from M39. |
+| Track A 37-character long input | M39 `514.903 us` -> M40 `289.914 us`, `0.980x` same-run librime | The remaining M39 long-row gap is closed. |
+| Track A 59-character stress input | M39 `917.961 us` -> M40 `494.017 us`, `0.712x` same-run librime | The 50+ character Track A row is now faster than same-run librime. |
+| Incomplete pinyin behavior probes | `cszysmsrsd` `24.820 us`, `zybfshmsru` `26.350 us`, `abi_candidates_exported=0` | These rows stay bounded, but the same-run ratio is not a speed win because Yune exports no candidates. They require a follow-up oracle output check for abbreviation behavior. |
+| Track B 50+ profile row | `196.387 us/op` median, `605.125 us/op` p95 | Guard row included; median is +`4.0%` vs M39, while p95 has two measured Windows scheduling outliers recorded as a caveat. |
+| Track A peak working set | `123,957,248 B` | Slightly below M39 final `123,985,920 B`; selected table/prism heap mirrors stay `0`. |
 
-## Visual Summary
+## Visual Dashboard
 
-### Final Same-Run Ratios
+![M40 same-run ratios](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-latency-vs-librime.svg)
 
-Lower is better. `##########` is roughly librime parity (`1.0x`); the M39
-native gate for comparison rows is `5.0x`.
+![M40 long input before and after](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-long-input-before-after.svg)
+
+![M40 sentence lookup owner collapse](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-owner-collapse.svg)
+
+![M40 memory gap](./evidence/m40-compiled-sentence-lookup-index/visuals/m40-memory-gap.svg)
+
+## Final Same-Run Ratios
+
+Lower is better. `##########` is roughly librime parity (`1.0x`); the M40 long
+row gate is `1.25x`, and the short/medium guard is `5.0x`. Rows that export no
+candidates are excluded from this comparable-ratio table.
 
 | Row | Ratio | Visual |
 | --- | ---: | --- |
-| startup/runtime-ready | `0.917x` | `#########` |
-| session create/select/destroy | `0.938x` | `#########` |
-| `zhongguo` | `0.329x` | `###` |
-| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `1.320x` | `#############` |
-| `ceshiyixiachangjushuruxingnengzenyang` | `1.765x` | `##################` |
-| `hao` | `3.281x` | `#################################` |
-| `ni` | `3.863x` | `#######################################` |
+| `zhongguo` | `0.323x` | `###` |
+| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `0.712x` | `#######` |
+| startup/runtime-ready | `0.913x` | `#########` |
+| session create/select/destroy | `0.934x` | `#########` |
+| `ceshiyixiachangjushuruxingnengzenyang` | `0.980x` | `##########` |
+| `hao` | `3.237x` | `################################` |
+| `ni` | `3.867x` | `#######################################` |
 
-![Latency ratio of Yune divided by librime after M39: zhongguo, startup and session are below librime parity; long inputs and short keys are 1.3x to 3.9x, all within the 5x gate](./evidence/m39-long-input-engine-hardening/visuals/m39-latency-vs-librime.svg)
+Non-comparable behavior probes:
 
-### Long-Input Collapse
-
-M39 removed the long-input stall while keeping the final rows close to
-librime.
-
-| Row | Phase 0 Yune | M39 final Yune | Same-run librime | Yune improvement |
-| --- | ---: | ---: | ---: | ---: |
-| 37-character Track A row | `452.200 ms` | `0.515 ms` | `0.292 ms` | `878x` |
-| 59-character Track A row | `1,240.081 ms` | `0.918 ms` | `0.696 ms` | `1,351x` |
-
-![Long-input latency after M39: the 37-char and 59-char Yune rows are now 0.515 ms and 0.918 ms, close to librime's 0.292 ms and 0.696 ms, down from 452 ms and 1.24 s before M39](./evidence/m39-long-input-engine-hardening/visuals/m39-long-input-collapse.svg)
-
-A linear axis would render the M39 rows as invisible slivers next to the
-pre-M39 bars, so this view shows the final near-parity state with the pre-M39
-stall annotated. Exact before/after values are in the table above.
-
-### Bottleneck Shape
-
-```mermaid
-flowchart LR
-  subgraph "Before M39"
-    A["Track A long input"] --> B["Upstream sentence-model scan"]
-    B --> C["Hundreds of ms to more than 1 second"]
-  end
-
-  subgraph "After M39"
-    D["Track A long input"] --> E["Indexed bounded sentence-model lookup"]
-    E --> F["0.515 ms and 0.918 ms medians"]
-  end
-
-  subgraph "Protected profile path"
-    G["Track B 50+ profile row"] --> H["No-marisa exact/prefix lookup plus profile fallback"]
-    H --> I["188.857 us/op final, no regression"]
-  end
-```
-
-## Evidence
-
-- M39 final gates:
-  [`reports/evidence/m39-long-input-engine-hardening/final-gates.md`](./evidence/m39-long-input-engine-hardening/final-gates.md)
-- Final native benchmark:
-  [`reports/evidence/m39-long-input-engine-hardening/phase-4-final-native/`](./evidence/m39-long-input-engine-hardening/phase-4-final-native/)
-- Baseline:
-  [`reports/evidence/m39-long-input-engine-hardening/phase-0-baseline/`](./evidence/m39-long-input-engine-hardening/phase-0-baseline/)
-- Owner attribution:
-  [`reports/evidence/m39-long-input-engine-hardening/phase-1-attribution/owner-attribution.md`](./evidence/m39-long-input-engine-hardening/phase-1-attribution/owner-attribution.md)
-- Memory attribution:
-  [`reports/evidence/m39-long-input-engine-hardening/phase-3-memory/memory-owner-summary.md`](./evidence/m39-long-input-engine-hardening/phase-3-memory/memory-owner-summary.md)
-- Completed plan:
-  [`plans/completed/m39-plan-long-input-engine-hardening.md`](../plans/completed/m39-plan-long-input-engine-hardening.md)
+| Row | Yune median | librime median | Exported candidates | Status |
+| --- | ---: | ---: | ---: | --- |
+| `cszysmsrsd` | `24.820 us` | `1,237.820 us` | `0` | Behavior probe; not a performance ratio. |
+| `zybfshmsru` | `26.350 us` | `866.720 us` | `0` | Behavior probe; not a performance ratio. |
 
 ## Final Native Dashboard
 
-| Row | Yune median | librime median | Ratio | M39 result |
+| Row | Yune median | librime median | Ratio / guard | M40 result |
 | --- | ---: | ---: | ---: | --- |
-| startup/runtime-ready | `25,048.200 us` | `27,314.000 us` | `0.917x` | Pass |
-| session create/select/destroy | `25,255.500 us` | `26,938.500 us` | `0.938x` | Pass |
-| `hao` | `38.933 us` | `11.867 us` | `3.281x` | Pass |
-| `ni` | `56.200 us` | `14.550 us` | `3.863x` | Pass |
-| `zhongguo` | `60.588 us` | `183.887 us` | `0.329x` | Pass |
-| `ceshiyixiachangjushuruxingnengzenyang` | `514.903 us` | `291.786 us` | `1.765x` | Pass |
-| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `917.961 us` | `695.653 us` | `1.320x` | Pass |
+| startup/runtime-ready | `23,934.200 us` | `26,218.400 us` | `0.913x` | Pass |
+| session create/select/destroy | `23,994.000 us` | `25,700.000 us` | `0.934x` | Pass |
+| `hao` | `38.200 us` | `11.800 us` | `3.237x` | Pass |
+| `ni` | `56.850 us` | `14.700 us` | `3.867x` | Pass |
+| `zhongguo` | `60.275 us` | `186.400 us` | `0.323x` | Pass |
+| `ceshiyixiachangjushuruxingnengzenyang` | `289.914 us` | `295.800 us` | `0.980x` | Pass |
+| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `494.017 us` | `694.175 us` | `0.712x` | Pass |
+| `cszysmsrsd` | `24.820 us` | `1,237.820 us` | N/A: `0` exported candidates | Behavior probe; oracle parity unverified |
+| `zybfshmsru` | `26.350 us` | `866.720 us` | N/A: `0` exported candidates | Behavior probe; oracle parity unverified |
 
 ## Before And After
 
-| Row | Phase 0 Yune | Final Yune | Final librime | Final ratio |
+| Row | M40 baseline Yune | M40 final Yune | Same-run librime | Final ratio |
 | --- | ---: | ---: | ---: | ---: |
-| startup/runtime-ready | `25,117.100 us` | `25,048.200 us` | `27,314.000 us` | `0.917x` |
-| session create/select/destroy | `24,309.000 us` | `25,255.500 us` | `26,938.500 us` | `0.938x` |
-| `hao` | `38.167 us` | `38.933 us` | `11.867 us` | `3.281x` |
-| `ni` | `56.500 us` | `56.200 us` | `14.550 us` | `3.863x` |
-| `zhongguo` | `61.700 us` | `60.588 us` | `183.887 us` | `0.329x` |
-| `ceshiyixiachangjushuruxingnengzenyang` | `452,200.116 us` | `514.903 us` | `291.786 us` | `1.765x` |
-| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `1,240,080.937 us` | `917.961 us` | `695.653 us` | `1.320x` |
+| startup/runtime-ready | `25,456.100 us` | `23,934.200 us` | `26,218.400 us` | `0.913x` |
+| session create/select/destroy | `25,421.500 us` | `23,994.000 us` | `25,700.000 us` | `0.934x` |
+| `hao` | `38.033 us` | `38.200 us` | `11.800 us` | `3.237x` |
+| `ni` | `56.300 us` | `56.850 us` | `14.700 us` | `3.867x` |
+| `zhongguo` | `59.525 us` | `60.275 us` | `186.400 us` | `0.323x` |
+| `ceshiyixiachangjushuruxingnengzenyang` | `500.249 us` | `289.914 us` | `295.800 us` | `0.980x` |
+| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `898.641 us` | `494.017 us` | `694.175 us` | `0.712x` |
+| `cszysmsrsd` | `29.270 us` | `24.820 us` | `1,237.820 us` | N/A: `0` exported candidates |
+| `zybfshmsru` | `32.370 us` | `26.350 us` | `866.720 us` | N/A: `0` exported candidates |
 
-## Track B Profile Gate
+Compared with M39 final evidence, the 37-character row moved from
+`514.903 us` to `289.914 us`, and the 59-character row moved from
+`917.961 us` to `494.017 us`.
 
-| Row | Phase 0 median | Final median | Phase 0 p95 | Final p95 | Result |
+The incomplete-pinyin rows are kept because they are useful boundedness probes,
+but they are not counted as performance wins. The final metrics show
+`abi_candidates_exported=0` for both rows, so a future oracle-output check must
+decide whether Yune is correctly returning empty output or missing
+`luna_pinyin` abbreviation expansion.
+
+## Sentence Lookup Strategy Gates
+
+| Strategy | Final proof | Result |
+| --- | --- | --- |
+| A exact range index | Long rows record exact-range hits: `22.189` hits/key on the 37-character row and `31.186` hits/key on the 59-character row. | Pass |
+| B reachable-vertex pruning | Long rows skip unreachable starts: `7.919` skips/key and `13.508` skips/key. | Pass |
+| C prefix filtering | Long rows record prefix hits, misses, and early breaks; prefix checks drop by `75.7%` and `85.9%` from baseline. | Pass |
+| D phrase-index walk | Long rows record phrase-index walks, nodes, and emitted ranges; table entries considered drop by `96.9%` and `97.1%`. | Pass |
+| Old partition fallback | Final partition-point fallback calls are `0.000` per key on both long rows. | Pass |
+
+## Bottleneck Shape
+
+```mermaid
+flowchart LR
+  subgraph "M39 remaining owner"
+    A["Track A long input"] --> B["Reach every substring"]
+    B --> C["Hundreds of prefix checks and thousands of table entries per key"]
+  end
+
+  subgraph "M40 native engine path"
+    D["Track A long input"] --> E["Reachable starts only"]
+    E --> F["Prefix range walk"]
+    F --> G["Exact entry ranges"]
+    G --> H["Bounded graph edges"]
+  end
+
+  subgraph "Measured rebuild verdict"
+    I["Cross-keystroke graph rebuild"] --> J["17.303 us/key and 31.014 us/key"]
+    J --> K["Not the top remaining owner"]
+  end
+```
+
+M40-ENGINE-12 is recorded: after A/B/C/D, graph rebuild is measured at
+`17.303 us/key` on the 37-character row and `31.014 us/key` on the
+59-character row. It is not the top remaining long-row owner, so M40 records a
+measured no-incrementality verdict rather than adding a cache path.
+
+## Track B Profile Guard
+
+| Row | M39 median | M40 final median | M39 p95 | M40 final p95 | Result |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung` | `189.207 us/op` | `188.857 us/op` | `202.084 us/op` | `194.910 us/op` | Pass |
+| `neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung` | `188.857 us/op` | `196.387 us/op` | `194.910 us/op` | `605.125 us/op` | Guard included; median is +`4.0%`, p95 has two measured Windows scheduling outliers. |
 
 Track B is not compared against upstream `rime/librime 1.17.0` because it is a
-TypeDuck-HK/librime `v1.1.2` profile surface. The M39 gate is native Yune
-profile no-regression plus owner attribution.
+TypeDuck-HK/librime `v1.1.2` profile surface. The M40 Track B row is a native
+Yune profile guard, not a Track A optimization target.
 
 ## Storage And Bounded Output
 
@@ -146,52 +160,57 @@ Track A final status:
 - `rsmarisa_status=ok`
 - `rsmarisa_mapping_mode=mmap`
 - `rsmarisa_num_keys=463586`
-- positive `rsmarisa` exact and prefix counters on target rows
-- no ordinary no-marisa fallback on Track A target rows
-- bounded first-page reads and no full-list fallback on target rows
-
-Track B final status:
-
-- `selected_storage=byte_backed`
-- table/prism mapping mode: `mmap`
-- selected table/prism heap mirror bytes: `0`
-- `source_fallback=false`
-- `rsmarisa_status=missing_string_table`
-- bounded request counted, with profile fallback/full-list merge counted and
-  explained for compatibility
+- positive `rsmarisa` exact and prefix counters on every target row
+- no selected table/prism heap mirror
+- bounded first-page reads and no full-list fallback becoming the owner
 
 ## Memory
 
-| Track | Phase 0 | Final | Result |
+| Track | M39 / baseline | M40 final | Result |
 | --- | ---: | ---: | --- |
-| Track A max peak | `163,598,336 B` | `123,985,920 B` | Lower after streaming sentence-model construction. |
-| Track A 37-character working set | `114,974,720 B` | `111,755,264 B` | Lower. |
-| Track A 59-character working set | `116,555,776 B` | `112,635,904 B` | Lower. |
-| Track B long-row working set | `441,483,264 B` | `441,450,496 B` | Flat to slightly lower. |
-| Track B peak | `504,557,568 B` | `504,041,472 B` | Lower. |
+| Track A max peak | M39 `123,985,920 B` | `123,957,248 B` | Slightly lower than M39; below the 5% guard. |
+| Track A 37-character working set | M40 baseline `112,103,424 B` | `114,704,384 B` | Higher row working set, but peak guard passes. |
+| Track A 59-character working set | M40 baseline `113,012,736 B` | `115,441,664 B` | Higher row working set, but peak guard passes. |
+| Track B long-row working set | M40 baseline `438,132,736 B` | `441,098,240 B` | Higher guard row working set. |
+| Track B peak | M40 baseline `504,537,088 B` | `504,881,152 B` | Slightly higher than baseline, still within normal Track B guard-band noise. |
 
-![Peak working set: librime luna is 14 MiB while Yune luna is 118 MiB, 8.4 times larger; the Yune jyut6ping3 product peak is 481 MiB on a separate schema with no librime peer](./evidence/m39-long-input-engine-hardening/visuals/m39-memory-gap.svg)
+Memory remains a major absolute gap versus librime. M40 does not claim memory
+parity; it proves the sentence lookup index does not regress the M39 Track A
+peak and does not add a selected table/prism heap mirror.
 
-Memory is the one dimension still far from librime: latency reached parity, but
-Yune's whole-process working set remains about `8.4x` librime on the fair Track
-A comparison, and the TypeDuck product peak is `~481 MiB`. This is the main open
-gap and the natural next target after a heap-owner profile.
+## Parked Follow-Ups
 
-The M39-owned memory owner was transient upstream sentence-model construction:
-the old build path held a full temporary table-entry list alongside model
-entries. `UpstreamSentenceModel::from_table_entries` now streams entries into
-the model, reducing the Track A peak without adding selected table/prism heap
-mirrors.
+The native engine report is now parked after M40. The remaining engine-side
+items are whole-process memory owner profiling, stricter short-key parity if a
+new target requires it, and incomplete-pinyin output parity for `cszysmsrsd` and
+`zybfshmsru` because the final M40 rows export `0` candidates.
+
+The next active optimization is M41 `yune-web` startup under
+[`plans/active/m41-plan-yune-web-startup-optimization.md`](../plans/active/m41-plan-yune-web-startup-optimization.md).
+That work requires separate real-browser evidence for the browser harness,
+public-demo dist, worker/WASM lifecycle, cache/persistence, schema deploy/reuse,
+typing after ready, and Chromium memory. Native M40 numbers are baseline context
+only; they are not browser startup or public-demo speed claims.
+
+## Evidence
+
+- M40 final gates:
+  [`reports/evidence/m40-compiled-sentence-lookup-index/final-gates.md`](./evidence/m40-compiled-sentence-lookup-index/final-gates.md)
+- Final native benchmark:
+  [`reports/evidence/m40-compiled-sentence-lookup-index/phase-4-final-native/`](./evidence/m40-compiled-sentence-lookup-index/phase-4-final-native/)
+- Baseline:
+  [`reports/evidence/m40-compiled-sentence-lookup-index/phase-0-baseline/`](./evidence/m40-compiled-sentence-lookup-index/phase-0-baseline/)
+- Memory attribution:
+  [`reports/evidence/m40-compiled-sentence-lookup-index/phase-3-memory/memory-owner-summary.md`](./evidence/m40-compiled-sentence-lookup-index/phase-3-memory/memory-owner-summary.md)
+- Completed plan:
+  [`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](../plans/completed/m40-plan-compiled-sentence-lookup-index.md)
 
 ## Quality Gates
 
-Final closeout gates passed:
+Final closeout gates:
 
 - `cargo fmt --check`
 - `cargo clippy --workspace --all-targets -- -D warnings`
 - `cargo test --workspace`
-- `cargo test -p yune-core translator:: -- --nocapture`
-- `cargo test -p yune-core upstream_luna_pinyin -- --nocapture`
-- `cargo test -p yune-rime-api --test typeduck_windows_boundary -- --nocapture`
-- final native benchmark with `-TrackBInputs`
+- final native benchmark with required Track A and Track B rows
 - `git diff --check`

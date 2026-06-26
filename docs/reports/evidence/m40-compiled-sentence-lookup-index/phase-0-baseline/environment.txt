@@ -1,0 +1,13 @@
+﻿date_utc=2026-06-26T06:03:28.2809326Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=94e77817306cd02afcda001c04bd585c11fdbe1d
+yune_git_status_short=?? docs/reports/evidence/m40-compiled-sentence-lookup-index/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-0-baseline
+managed_runtime=false
+deploy_product_before_benchmark=True
+track_a_inputs=ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=20
+key_iterations=20

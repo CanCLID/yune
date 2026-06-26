@@ -367,6 +367,26 @@ fn m37_metrics_exports_snapshot_json_for_loaded_benchmarks() {
     crate::yune_m37_metrics_reset();
     yune_core::m37_record_abi_candidates_exported(3);
     yune_core::m37_record_sentence_candidate(std::time::Duration::from_nanos(17), 1);
+    yune_core::m37_record_upstream_sentence_model_index_build(std::time::Duration::from_nanos(19));
+    yune_core::m37_record_upstream_sentence_model_lookup_index(
+        yune_core::M40SentenceLookupMetrics {
+            exact_range_index_hits: 2,
+            exact_range_index_misses: 1,
+            prefix_filter_hits: 3,
+            prefix_filter_misses: 1,
+            prefix_filter_early_breaks: 1,
+            reachable_starts_visited: 2,
+            unreachable_starts_skipped: 1,
+            phrase_index_walk_calls: 2,
+            phrase_index_nodes_visited: 3,
+            phrase_index_entry_ranges_emitted: 2,
+            partition_point_fallback_calls: 0,
+            graph_rebuild_duration: std::time::Duration::from_nanos(23),
+            incremental_reuse_hits: 0,
+            incremental_extend_duration: std::time::Duration::ZERO,
+            incremental_discarded_rebuild_chars: 4,
+        },
+    );
 
     let json = crate::yune_m37_metrics_snapshot_json();
     assert!(!json.is_null());
@@ -380,6 +400,24 @@ fn m37_metrics_exports_snapshot_json_for_loaded_benchmarks() {
     assert!(json_text.contains("\"prefix_fallback_calls\":0"));
     assert!(json_text.contains("\"upstream_sentence_model_calls\":0"));
     assert!(json_text.contains("\"upstream_sentence_model_code_prefix_checks\":0"));
+    assert!(json_text.contains("\"upstream_sentence_model_index_build_calls\":1"));
+    assert!(json_text.contains("\"upstream_sentence_model_index_build_ns\":19"));
+    assert!(json_text.contains("\"upstream_sentence_model_exact_range_index_hits\":2"));
+    assert!(json_text.contains("\"upstream_sentence_model_exact_range_index_misses\":1"));
+    assert!(json_text.contains("\"upstream_sentence_model_prefix_filter_hits\":3"));
+    assert!(json_text.contains("\"upstream_sentence_model_prefix_filter_misses\":1"));
+    assert!(json_text.contains("\"upstream_sentence_model_prefix_filter_early_breaks\":1"));
+    assert!(json_text.contains("\"upstream_sentence_model_reachable_starts_visited\":2"));
+    assert!(json_text.contains("\"upstream_sentence_model_unreachable_starts_skipped\":1"));
+    assert!(json_text.contains("\"upstream_sentence_model_phrase_index_walk_calls\":2"));
+    assert!(json_text.contains("\"upstream_sentence_model_phrase_index_nodes_visited\":3"));
+    assert!(json_text.contains("\"upstream_sentence_model_phrase_index_entry_ranges_emitted\":2"));
+    assert!(json_text.contains("\"upstream_sentence_model_partition_point_fallback_calls\":0"));
+    assert!(json_text.contains("\"upstream_sentence_model_graph_rebuild_calls\":1"));
+    assert!(json_text.contains("\"upstream_sentence_model_graph_rebuild_ns\":23"));
+    assert!(json_text.contains("\"upstream_sentence_model_incremental_reuse_hits\":0"));
+    assert!(json_text.contains("\"upstream_sentence_model_incremental_extend_ns\":0"));
+    assert!(json_text.contains("\"upstream_sentence_model_incremental_discarded_rebuild_chars\":4"));
     // SAFETY: `json` is owned by the metrics export.
     unsafe { crate::yune_m37_metrics_free_string(json) };
     crate::yune_m37_metrics_enable(FALSE);

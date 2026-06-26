@@ -396,54 +396,97 @@ gate summary in `final-gates.md`.
 
 ## M40 Compiled Sentence Lookup Index Requirements
 
-**Status: active.** M40 is planned in
-[`plans/active/m40-plan-compiled-sentence-lookup-index.md`](./plans/active/m40-plan-compiled-sentence-lookup-index.md).
-It targets the remaining native Track A `luna_pinyin` long-row gap after M39 by
-combining exact range indexing, reachable-vertex pruning, valid-code/prefix
-filtering, and a librime-shaped table phrase index. It must preserve the M38/M39
-storage hot path, startup/session, short rows, memory, bounded output/context,
-and upstream-observable behavior.
+**Status: complete.** M40 closed in
+[`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](./plans/completed/m40-plan-compiled-sentence-lookup-index.md).
+Closeout evidence lives under
+[`reports/evidence/m40-compiled-sentence-lookup-index/`](./reports/evidence/m40-compiled-sentence-lookup-index/),
+with the final same-run native benchmark in `phase-4-final-native/` and final
+gate summary in `final-gates.md`.
 
-- [ ] **M40-ENGINE-01**: Final same-run native evidence includes startup,
+- [x] **M40-ENGINE-01**: Final same-run native evidence includes startup,
   session, `hao`, `ni`, `zhongguo`, both Track A long rows, incomplete pinyin
   rows `cszysmsrsd` and `zybfshmsru`, and the Track B `jyut6ping3_mobile` 50+
-  row as a no-regression guard.
-- [ ] **M40-ENGINE-02**: Both Track A long rows improve from M39 and finish
-  within `1.25x` of same-run upstream librime, or the final report records a
-  measured blocker plus absolute Yune movement from M39.
-- [ ] **M40-ENGINE-03**: Final counters prove all four required strategies are
-  active on Track A long rows: exact code range indexing, reachable-vertex
-  pruning, valid-code/prefix filtering, and a librime-shaped table phrase index.
-- [ ] **M40-ENGINE-04**: Final owner counters show at least a `40%` reduction
-  from M39 in code-prefix checks and table entries considered on the
-  59-character Track A row, or record a measured blocker naming the replacement
-  top owner.
-- [ ] **M40-ENGINE-05**: Startup/runtime-ready and session medians remain
-  within `1.25x` of same-run upstream librime and do not regress more than `5%`
-  from M39 Yune medians unless the regression is fully attributed and accepted
-  as a measured no-go.
-- [ ] **M40-ENGINE-06**: `hao`, `ni`, and `zhongguo` remain within `5x` of
-  same-run librime and do not regress more than `5%` from M39 Yune medians.
-- [ ] **M40-ENGINE-07**: Track A selected storage remains
+  guard row.
+- [x] **M40-ENGINE-02**: Both Track A long rows improve from M39 and finish
+  within `1.25x` of same-run upstream librime: `514.903 us` -> `289.914 us`
+  (`0.980x`) and `917.961 us` -> `494.017 us` (`0.712x`).
+- [x] **M40-ENGINE-03**: Final counters prove all four required strategies are
+  active on Track A long rows: exact range hits, skipped unreachable starts,
+  prefix hits/misses/early breaks, and phrase-index walks/nodes/emitted ranges.
+- [x] **M40-ENGINE-04**: Final owner counters exceed the `40%` reduction gate
+  on the 59-character Track A row: code-prefix checks drop `608.576` ->
+  `86.034` per key and table entries considered drop `6,344.559` -> `186.831`
+  per key.
+- [x] **M40-ENGINE-05**: Startup/runtime-ready and session medians remain
+  within `1.25x` of same-run upstream librime and improve from M39:
+  startup `23,934.200 us` (`0.913x`) and session `23,994.000 us` (`0.934x`).
+- [x] **M40-ENGINE-06**: `hao`, `ni`, and `zhongguo` remain within `5x` of
+  same-run librime and do not regress more than `5%` from M39 Yune medians:
+  `3.237x`, `3.867x`, and `0.323x`.
+- [x] **M40-ENGINE-07**: Track A selected storage remains
   `rsmarisa_byte_backed`, selected table/prism bytes remain mmap-backed,
   selected table/prism heap mirror bytes remain `0`, `source_fallback=false`,
   and runtime `rsmarisa` lookup counters remain positive.
-- [ ] **M40-ENGINE-08**: Track A peak working set does not regress more than
-  `5%` from M39 final (`123,985,920 B`), and final evidence includes a memory
-  owner table covering the new sentence index structures.
-- [ ] **M40-ENGINE-09**: Track A target rows continue to use bounded first-page
+- [x] **M40-ENGINE-08**: Track A peak working set is `123,957,248 B`, below
+  M39 final `123,985,920 B`; final memory evidence records the compact numeric
+  sentence-index range owner and no cloned-string/trie heap mirror.
+- [x] **M40-ENGINE-09**: Track A target rows continue to use bounded first-page
   output and page-sized context export; no full-list fallback is introduced for
   the upstream comparison rows.
-- [ ] **M40-ENGINE-10**: Upstream-observable `luna_pinyin` behavior, sentence
+- [x] **M40-ENGINE-10**: Upstream-observable `luna_pinyin` behavior, sentence
   ranking, paging, candidate order, and touched compatibility paths remain
   covered by focused tests plus workspace gates.
-- [ ] **M40-ENGINE-11**: Reports remain native-engine-only. Browser, web
-  harness, frontend, application, packaging, deployment, and product-delivery
-  speed claims stay out of M40 unless a separate evidence plan supplies them.
-- [ ] **M40-ENGINE-12**: Final evidence reports whether cross-keystroke graph
-  rebuild remains a material owner after A/B/C/D. If it is the top remaining
-  long-row owner, M40 implements an incremental graph/cache path or records a
-  measured blocker before closeout.
+- [x] **M40-ENGINE-11**: Reports remain native-engine-only. Browser, web
+  harness, frontend, application, packaging, deployment, public-demo, and
+  product-delivery speed claims stay out of M40.
+- [x] **M40-ENGINE-12**: Final evidence reports that cross-keystroke graph
+  rebuild is not the top remaining long-row owner after A/B/C/D:
+  `17.303 us/key` and `31.014 us/key`, so no bounded incrementality path is
+  implemented in M40.
+
+## M41 yune-web Startup Optimization Requirements
+
+**Status: active.** M41 is tracked in
+[`plans/active/m41-plan-yune-web-startup-optimization.md`](./plans/active/m41-plan-yune-web-startup-optimization.md).
+It optimizes the tracked `apps/yune-web/` browser harness after M40, using
+fresh real-browser evidence instead of native-engine extrapolation.
+
+- [ ] **M41-YWEB-01**: Final evidence includes a post-M40 production-browser
+  baseline for tracked `apps/yune-web` and public-demo dist, with commit SHA,
+  dirty state, browser version, build mode, URL, sample count, and pre/post
+  M41 labels.
+- [ ] **M41-YWEB-02**: Baseline and final runs cover real-worker cold first
+  load, warm reload, warm new page, mock-worker cold, and mock-worker warm for
+  both `luna_pinyin` and `jyut6ping3_mobile`.
+- [ ] **M41-YWEB-03**: Track A rows include `hao`, `ni`, `zhongguo`,
+  `ceshiyixiachangjushuruxingnengzenyang`,
+  `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong`, `cszysmsrsd`,
+  and `zybfshmsru`; Track B rows include `hai`, `ngo`, `caksi`,
+  `sihaacoenggeoisyujapgecukdou`, and
+  `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng`.
+- [ ] **M41-YWEB-04**: Startup owner attribution splits browser shell,
+  asset transfer/cache, worker/WASM startup, virtual filesystem/persistence,
+  schema deploy/reuse, engine schema selection, first key-to-paint, and browser
+  memory before optimization begins.
+- [ ] **M41-YWEB-05**: The final implementation reduces the measured top
+  startup owner by at least `40%`, or records a measured blocker and does not
+  claim optimization success.
+- [ ] **M41-YWEB-06**: Any browser cache, `Cache.put`, service-worker, or
+  persistent-storage failure is either fixed or counted as the remaining owner;
+  cache correctness is proven for both tracked harness and public-demo evidence.
+- [ ] **M41-YWEB-07**: Final cold real-worker ready-to-input median improves by
+  at least `30%` versus the post-M40 baseline, and warm reload/warm new-page
+  medians improve or stay within a `5%` no-regression band.
+- [ ] **M41-YWEB-08**: First keydown-to-paint after ready does not regress more
+  than `5%` median or `10%` p95 on all Track A/Track B typing rows.
+- [ ] **M41-YWEB-09**: Chromium JS heap, DOM/node counts,
+  `measureUserAgentSpecificMemory()` when available, and Windows working-set
+  samples do not regress beyond the documented guard band.
+- [ ] **M41-YWEB-10**: Closeout passes `npm.cmd --prefix apps/yune-web run build`,
+  `npm.cmd --prefix apps/yune-web run build:public`,
+  `npm.cmd --prefix apps/yune-web run typecheck`, the M41 startup benchmark,
+  the yune-web smoke suite, and `git diff --check`; Rust gates run only if M41
+  touches Rust files.
 
 ## Post-M38 Engine Performance Follow-Up Requirements
 
@@ -777,18 +820,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M39-ENGINE-07 | M39 | Complete - memory owner attribution and no-regression are recorded |
 | M39-ENGINE-08 | M39 | Complete - focused behavior gates and workspace tests are green |
 | M39-ENGINE-09 | M39 | Complete - final reports make only native-engine claims |
-| M40-ENGINE-01 | M40 | Active - final native benchmark includes startup, session, short/medium, long, incomplete-pinyin, and Track B guard rows |
-| M40-ENGINE-02 | M40 | Active - Track A long rows improve from M39 and target within `1.25x` of same-run librime |
-| M40-ENGINE-03 | M40 | Active - exact range index, reachable vertices, prefix filter, and phrase index all prove active by counters |
-| M40-ENGINE-04 | M40 | Active - code-prefix checks and table entries considered reduce by at least `40%` on the 59-character Track A row or the blocker is measured |
-| M40-ENGINE-05 | M40 | Active - startup/runtime-ready and session stay within librime and M39 no-regression gates |
-| M40-ENGINE-06 | M40 | Active - `hao`, `ni`, and `zhongguo` stay inside short/medium no-regression gates |
-| M40-ENGINE-07 | M40 | Active - `rsmarisa`, mmap-backed selected bytes, zero heap mirrors, and no source fallback are preserved |
-| M40-ENGINE-08 | M40 | Active - Track A memory does not regress and the new sentence index has owner attribution |
-| M40-ENGINE-09 | M40 | Active - bounded first-page output and page-sized context export are preserved |
-| M40-ENGINE-10 | M40 | Active - upstream-observable `luna_pinyin` behavior and touched compatibility paths remain covered |
-| M40-ENGINE-11 | M40 | Active - final claims remain native-engine-only |
-| M40-ENGINE-12 | M40 | Active - cross-keystroke graph rebuild has a measured verdict and is fixed if it becomes the top remaining owner |
+| M40-ENGINE-01 | M40 | Complete - final native benchmark includes startup, session, short/medium, long, incomplete-pinyin, and Track B guard rows |
+| M40-ENGINE-02 | M40 | Complete - both Track A long rows improve from M39 and finish within `1.25x` of same-run librime |
+| M40-ENGINE-03 | M40 | Complete - exact range index, reachable vertices, prefix filter, and phrase index all prove active by counters |
+| M40-ENGINE-04 | M40 | Complete - 59-character code-prefix checks and table entries considered drop by more than `40%` |
+| M40-ENGINE-05 | M40 | Complete - startup/runtime-ready and session stay within librime and M39 no-regression gates |
+| M40-ENGINE-06 | M40 | Complete - `hao`, `ni`, and `zhongguo` stay inside short/medium no-regression gates |
+| M40-ENGINE-07 | M40 | Complete - `rsmarisa`, mmap-backed selected bytes, zero heap mirrors, and no source fallback are preserved |
+| M40-ENGINE-08 | M40 | Complete - Track A peak memory does not regress and the compact sentence index has owner attribution |
+| M40-ENGINE-09 | M40 | Complete - bounded first-page output and page-sized context export are preserved |
+| M40-ENGINE-10 | M40 | Complete - upstream-observable `luna_pinyin` behavior and touched compatibility paths remain covered |
+| M40-ENGINE-11 | M40 | Complete - final claims remain native-engine-only |
+| M40-ENGINE-12 | M40 | Complete - cross-keystroke graph rebuild is measured and is not the top remaining owner |
+| M41-YWEB-01 | M41 | Active - post-M40 production-browser baseline records environment, build, URL, sample count, and run status |
+| M41-YWEB-02 | M41 | Active - real-worker and mock-worker cold/warm scenarios are covered for both `luna_pinyin` and `jyut6ping3_mobile` |
+| M41-YWEB-03 | M41 | Active - required Track A and Track B typing rows are included in browser evidence |
+| M41-YWEB-04 | M41 | Active - browser startup owner attribution is split before optimization begins |
+| M41-YWEB-05 | M41 | Active - final implementation reduces the measured top owner by `40%` or records a blocker |
+| M41-YWEB-06 | M41 | Active - cache, service-worker, and persistent-storage correctness are proven or counted as remaining owner |
+| M41-YWEB-07 | M41 | Active - cold ready-to-input improves by `30%` and warm scenarios do not regress |
+| M41-YWEB-08 | M41 | Active - first keydown-to-paint does not regress on required typing rows |
+| M41-YWEB-09 | M41 | Active - browser heap, DOM, user-agent memory, and Windows working-set samples stay within guard bands |
+| M41-YWEB-10 | M41 | Active - web build, public build, typecheck, startup benchmark, smoke suite, and diff checks pass |
 | POST-M38-PERF-01 | Post-M38 | Complete through M39 - final same-run native benchmark includes required long continuous pinyin rows and Track B row |
 | POST-M38-PERF-02 | Post-M38 | Complete through M39 - long-input rows carry owner/status/memory evidence |
 | POST-M38-PERF-03 | Post-M38 | Complete through M39 - optimization claim names the measured owner |
@@ -829,11 +882,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M37 engine hyper-optimization requirements: 11 total, 11 complete, 0 planned
 - M38 engine performance parity requirements: 13 total, 13 complete, 0 active
 - M39 long-input engine hardening requirements: 9 total, 9 complete, 0 active
-- M40 compiled sentence lookup index requirements: 12 total, 0 complete, 12 active
+- M40 compiled sentence lookup index requirements: 12 total, 12 complete, 0 active
+- M41 yune-web startup optimization requirements: 10 total, 0 complete, 10 active
 - Post-M38 engine performance follow-up requirements: 9 total, 9 complete, 0 draft
-- Mapped to phases: 274
+- Mapped to phases: 284
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M40 compiled sentence lookup index is active. It combines exact range indexing, reachable-vertex pruning, valid-code/prefix filtering, and a librime-shaped table phrase index for the remaining native Track A `luna_pinyin` long-row gap, adds a required cross-keystroke graph-rebuild verdict, and blocks startup/session, short-row, memory, mmap/`rsmarisa`, bounded-output/context, and behavior regressions. M39 long-input engine hardening is complete with same-run upstream librime evidence for startup, session, short/medium rows, and both Track A long rows; the Track B `jyut6ping3_mobile` 50+ row is separately measured, attributed, and no-regressed. M39 proves the Track A owner was upstream sentence-model scanning, proves Track B is a separate TypeDuck-profile no-marisa prefix/fallback path, preserves mmap-backed selected table/prism bytes, real Track A `rsmarisa`, bounded Track A first-page output, zero selected table/prism heap mirrors, behavior gates, memory no-regression, and native-only claims. M38 engine performance parity remains complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M41 yune-web startup optimization is active as a browser-harness milestone for tracked `apps/yune-web`, with post-M40 real-browser evidence, production-build baselines, real-worker/mock-worker splits, Track A and Track B typing rows, startup owner attribution, cache/persistence correctness, browser memory, and web-only quality gates required before closeout. M40 compiled sentence lookup index is complete. It combines exact range indexing, reachable-vertex pruning, valid-code/prefix filtering, and a compact librime-shaped phrase-index walk for the native Track A `luna_pinyin` long-row gap, records the M40-ENGINE-12 graph-rebuild verdict as not the top remaining owner, preserves startup/session, short rows, memory, mmap/`rsmarisa`, bounded-output/context, and behavior gates, and keeps reports native-engine-only. M39 long-input engine hardening remains complete with same-run upstream librime evidence for startup, session, short/medium rows, and both Track A long rows; the Track B `jyut6ping3_mobile` 50+ row is separately measured, attributed, and guarded. M38 engine performance parity remains complete with same-run upstream librime evidence, mmap-backed selected table/prism bytes, real `rsmarisa` Track A hot-path lookup, page-bounded first-page iteration, memory/allocation attribution, startup/session within `1.25x`, `hao`/`ni`/`zhongguo` within `5x`, behavior gates, honest native-only claims, and final quality gates recorded. `roadmap.md` is now a current-state dashboard and the historical milestone ledger lives in `ledgers/milestone-history.md`. M37 engine hyper-optimization is complete with latency and memory attribution, byte-backed/native-mapped product storage, real `rsmarisa` product probes, fresh compiled artifacts, page-bounded materialization/context export, `hai` movement, product memory movement, behavior parity, honest claims, and final quality gates recorded in evidence. M31 remains complete as the `yune-web` public demo readiness milestone with browser delivery claims scoped to packaging/pruning/cache evidence, not startup/typing wins. M36 remains complete as the product-path engine optimization milestone after M35, with Track A/Track B and browser-delivery caveats preserved. M35 remains complete as the compact table+prism runtime storage milestone. M33, M34, P2-WIN-02, M30, M29, M28 follow-up, M28, M27, M26, M25, M24, M19, M23, M18, M22, M21, M20, and M10 remain complete as previously recorded._

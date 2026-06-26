@@ -2,9 +2,9 @@
 
 Yune is a Rust input-method engine that uses **upstream librime as a
 compatibility and performance oracle** while building a cleaner Rust engine.
-The current priority is not application integration. It is preserving engine
-behavior while carrying completed M39 long-input hardening lessons into M40's
-compiled sentence lookup index work.
+The current priority is preserving the completed M40 native-engine state while
+opening M41 as a separate `yune-web` browser-harness startup optimization
+milestone.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -26,12 +26,14 @@ compiled sentence lookup index work.
 - [`decisions.md`](./decisions.md) - standing principles plus project-wide
   decision log.
 - [`requirements.md`](./requirements.md) - requirement IDs and status,
-  including the closed M37-M39 engine gates.
+  including the closed M37-M40 engine gates and active M41 web-harness gates.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
   and [`reports/yune-vs-librime-root-cause-analysis.md`](./reports/yune-vs-librime-root-cause-analysis.md)
   - current performance comparison and diagnosis.
-- [`plans/active/m40-plan-compiled-sentence-lookup-index.md`](./plans/active/m40-plan-compiled-sentence-lookup-index.md)
-  - active compiled sentence lookup index plan.
+- [`plans/active/m41-plan-yune-web-startup-optimization.md`](./plans/active/m41-plan-yune-web-startup-optimization.md)
+  - active browser-harness startup optimization plan for `apps/yune-web/`.
+- [`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](./plans/completed/m40-plan-compiled-sentence-lookup-index.md)
+  - completed compiled sentence lookup index plan.
 - [`plans/completed/m39-plan-long-input-engine-hardening.md`](./plans/completed/m39-plan-long-input-engine-hardening.md)
   - completed long-input engine hardening plan.
 - [`plans/completed/m38-plan-engine-performance-parity.md`](./plans/completed/m38-plan-engine-performance-parity.md)
@@ -50,21 +52,24 @@ compiled sentence lookup index work.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior is complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. | Preserve upstream-observable behavior on every engine change. |
-| Engine performance | M39 closed the post-M38 long-input hardening gates in native engine evidence. Startup/runtime-ready is Yune `25,048.200us` versus librime `27,314.000us` (`0.917x`), session is `25,255.500us` versus `26,938.500us` (`0.938x`), `hao`/`ni`/`zhongguo` remain inside gates, the 37-character Track A row is `514.903us` versus `291.786us` (`1.765x`), and the 59-character Track A row is `917.961us` versus `695.653us` (`1.320x`). The Track B Cantonese 50+ row is separately gated at `188.857us/op` median and `194.910us/op` p95, below its Phase 0 profile baseline. | M40 is active: combine exact range indexing, reachable-vertex pruning, prefix filtering, and a librime-shaped table phrase index for Track A sentence lookup, plus a measured verdict on cross-keystroke graph rebuild. Closeout is blocked on long-row improvement, startup/session no-regression, memory no-regression, storage hot-path preservation, and fresh native evidence. |
+| Engine performance | M40 closed the compiled sentence lookup index gates in native engine evidence. Startup/runtime-ready is Yune `23,934.200us` versus librime `26,218.400us` (`0.913x`), session is `23,994.000us` versus `25,700.000us` (`0.934x`), `hao`/`ni`/`zhongguo` remain inside gates, the 37-character Track A row is `289.914us` versus `295.800us` (`0.980x`), and the 59-character Track A row is `494.017us` versus `694.175us` (`0.712x`). The Track B Cantonese 50+ row is included as a guard at `196.387us/op` median, with two p95 outliers recorded as a caveat. | M40 is complete. Next engine work needs a new scoped plan, likely whole-process memory owner profiling, stricter short-key parity, or a separate TypeDuck-profile/native Track B owner if a named product row requires it. |
+| Web harness startup | M41 is active for the tracked `apps/yune-web/` browser harness. It starts from post-M40 production-browser evidence and separates browser shell, asset transfer/cache, worker/WASM startup, virtual filesystem/persistence, deploy/schema reuse, engine schema selection, first key-to-paint, and browser memory. | Close M41 only with real-browser evidence for both `luna_pinyin` and `jyut6ping3_mobile`; native M40 numbers are baseline context, not browser-speed proof. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
-| Future platform work | Platform-specific frontends and application shells are outside this roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
+| Future platform work | Platform-specific native frontends remain outside this repo roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
 ## Authoritative Sequence
 
-1. **M40 compiled sentence lookup index** - active native-engine-only
-   performance work. It must combine exact range indexing, reachable-vertex
-   pruning, prefix filtering, and a librime-shaped table phrase index without
-   regressing startup, memory, short rows, mmap/`rsmarisa`, bounded output, or
-   upstream-observable behavior. It also must report whether cross-keystroke
-   graph rebuild becomes the next owner after those index changes.
-2. **Future AI-native engine experiments** - later, and only after classic
+1. **M41 `yune-web` startup optimization** - active browser-harness work under
+   [`plans/active/m41-plan-yune-web-startup-optimization.md`](./plans/active/m41-plan-yune-web-startup-optimization.md).
+   It must benchmark production builds first, optimize only the measured top
+   owner, and keep native-engine claims separate from browser claims.
+2. **Future native engine owner slices** - require a new scoped plan and fresh
+   evidence. M40 leaves whole-process memory, stricter short-key parity,
+   incomplete-pinyin output parity, and separate TypeDuck-profile/native Track B
+   owners as possible future tracks.
+3. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-3. **Future engine memory or profile-storage slices** - only with a new scoped
+4. **Future engine memory or profile-storage slices** - only with a new scoped
    plan, fresh owner evidence, and native-engine-only claims unless browser
    evidence is explicitly collected.
 
@@ -72,34 +77,72 @@ Trigger-gated, not scheduled: extracting the full processor pipeline from
 `yune-rime-api` into `yune-core` lands only when a real non-ABI consumer needs
 the full input path. Do not milestone that extraction speculatively.
 
-## M40 Active Plan
+## M41 Active Plan
 
-M40 is active under
-[`plans/active/m40-plan-compiled-sentence-lookup-index.md`](./plans/active/m40-plan-compiled-sentence-lookup-index.md).
-It follows directly from the post-M39 bottleneck: Track A long rows are no
-longer broken by raw table lookup, context export, or `rsmarisa` activation.
-The remaining gap is the sentence lookup shape around `word_graph_for_input`.
+M41 is active under
+[`plans/active/m41-plan-yune-web-startup-optimization.md`](./plans/active/m41-plan-yune-web-startup-optimization.md).
+It resumes the `yune-web` startup work after M40 by measuring the tracked
+browser harness directly, not by extrapolating from native-engine results.
 
-M40 combines four strategies as hard gates:
+M41 must keep these boundaries explicit:
 
-- exact-code `HashMap`/range indexing over sentence entries;
+- Use production builds as headline evidence; dev-server numbers are secondary.
+- Measure both `luna_pinyin` and `jyut6ping3_mobile` rows, including short,
+  long, incomplete, cold, warm, and mock-worker cases.
+- Split startup into browser shell, asset transfer/cache, worker/WASM startup,
+  virtual filesystem/persistence, deploy/schema reuse, engine schema selection,
+  first key-to-paint, and browser memory.
+- Optimize the measured top owner first, then prove no regression in typing,
+  memory, cache correctness, public-demo honesty, or native-engine behavior.
+- Do not touch Rust engine code unless M41 evidence proves a narrow runtime
+  boundary blocker and the native M40 gates are rerun.
+
+## M40 Closeout
+
+M40 is complete under
+[`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](./plans/completed/m40-plan-compiled-sentence-lookup-index.md).
+It followed directly from the post-M39 bottleneck: Track A long rows were no
+longer broken by raw table lookup, context export, or `rsmarisa` activation;
+the remaining gap was the sentence lookup shape around `word_graph_for_input`.
+
+M40 closed with all four required strategies active:
+
+- exact range indexing over sorted sentence entries;
 - reachable-vertex pruning so unreachable start positions are skipped;
-- valid-code/prefix filtering so impossible substrings do not reach table
-  lookup;
-- a librime-shaped table phrase index so the final runtime walks indexed
-  prefix nodes and weighted entry ranges rather than the old all-substrings
-  loop.
+- prefix filtering with early breaks for impossible substrings;
+- a compact phrase-index walk over sorted ranges rather than the old
+  all-substrings loop.
 
-The caveat is startup and memory. M40 cannot close by building a large eager
-heap mirror of the dictionary. The sentence index must be lazy, shared,
-borrowed, interned, or otherwise proven cheap enough by first-use, warm reuse,
-working-set, peak, and owner evidence. If the index moves long-row latency but
-regresses startup/session or Track A memory beyond the gates, M40 remains open.
+Final M40 native comparison:
 
-M40 is deliberately not a web-harness or product-delivery milestone. Those
-paths can and should get separate evidence later, but they do not change this
-engine-first goal: continue driving the isolated core runtime toward
-librime-class sentence lookup behavior after the M39 gate passed.
+- Warm startup/runtime-ready: Yune `23,934.200us`, librime `26,218.400us`
+  (`0.913x`).
+- Session create/select/destroy: Yune `23,994.000us`, librime `25,700.000us`
+  (`0.934x`).
+- `hao`: Yune `38.200us`, librime `11.800us` (`3.237x`).
+- `ni`: Yune `56.850us`, librime `14.700us` (`3.867x`).
+- `zhongguo`: Yune `60.275us`, librime `186.400us` (`0.323x`).
+- `ceshiyixiachangjushuruxingnengzenyang`: Yune `289.914us`, librime
+  `295.800us` (`0.980x`).
+- `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong`: Yune
+  `494.017us`, librime `694.175us` (`0.712x`).
+- `cszysmsrsd`: Yune `24.820us`, librime `1,237.820us`; not a comparable
+  speed ratio because Yune exports `0` candidates.
+- `zybfshmsru`: Yune `26.350us`, librime `866.720us`; not a comparable speed
+  ratio because Yune exports `0` candidates.
+- `jyut6ping3_mobile`
+  `neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung`: final Yune
+  median `196.387us/op`; p95 `605.125us/op` is retained as a measured outlier
+  caveat.
+
+The M40-ENGINE-12 graph-rebuild verdict is also closed: graph rebuild is
+measured at `17.303us/key` and `31.014us/key` on the two long rows, below the
+remaining sentence-model/translator owner, so bounded incrementality was not
+implemented in M40.
+
+M40 remains a native-engine-only milestone. It does not claim web-harness,
+frontend, product-delivery, packaging, browser startup, browser typing, or
+public-demo speed wins.
 
 ## M39 Closeout
 
@@ -208,7 +251,8 @@ Closed M38 gates:
 
 | Track | Scope | Current source of truth |
 | --- | --- | --- |
-| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, and active M40 sentence lookup indexing | Active M40 plan: [`plans/active/m40-plan-compiled-sentence-lookup-index.md`](./plans/active/m40-plan-compiled-sentence-lookup-index.md). Completed M39 plan: [`plans/completed/m39-plan-long-input-engine-hardening.md`](./plans/completed/m39-plan-long-input-engine-hardening.md). |
+| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, and completed M40 sentence lookup indexing | Completed M40 plan: [`plans/completed/m40-plan-compiled-sentence-lookup-index.md`](./plans/completed/m40-plan-compiled-sentence-lookup-index.md). Completed M39 plan: [`plans/completed/m39-plan-long-input-engine-hardening.md`](./plans/completed/m39-plan-long-input-engine-hardening.md). |
+| Web harness startup | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, and Chromium memory | Active M41 plan: [`plans/active/m41-plan-yune-web-startup-optimization.md`](./plans/active/m41-plan-yune-web-startup-optimization.md). |
 | Core compatibility | Upstream behavior fixtures and standard ABI-observable behavior | [`requirements.md`](./requirements.md), [`decisions.md`](./decisions.md), and per-milestone plans. |
 | AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
 | Historical record | Completed milestone outcomes and reference/provenance pointers | [`ledgers/milestone-history.md`](./ledgers/milestone-history.md). |
@@ -220,8 +264,8 @@ Closed M38 gates:
 | M0-M24 | Complete | Phase 1 named-target engine/basic oracle parity is complete; history lives in [`ledgers/milestone-history.md`](./ledgers/milestone-history.md). |
 | M25-M30 | Complete | Early performance and runtime-hardening work is historical context only. |
 | M31 | Complete | Public demo delivery is historical context and not a current engine-performance target. |
-| M33-M39 | Complete | Recent engine-performance work closed fairness, shared caches, compact storage, compiled-active paths, page-bounded materialization, mapped storage, pure upstream `luna_pinyin` native parity with `rsmarisa` hot-path lookup, and M39 long-input hardening for both Track A long rows plus the Track B Cantonese profile long row. |
-| M40 | Active | Compiled sentence lookup index milestone combining exact range indexing, reachable-vertex pruning, prefix filtering, a librime-shaped table phrase index, and a cross-keystroke rebuild verdict while blocking startup, memory, short-row, storage, and behavior regressions. |
+| M33-M40 | Complete | Recent engine-performance work closed fairness, shared caches, compact storage, compiled-active paths, page-bounded materialization, mapped storage, pure upstream `luna_pinyin` native parity with `rsmarisa` hot-path lookup, M39 long-input hardening, and M40 compiled sentence lookup indexing for both Track A long rows while preserving the Track B Cantonese profile guard row. |
+| M41 | Active | Browser-harness startup optimization for tracked `apps/yune-web/`, with post-M40 real-browser evidence and separate claims from native engine performance. |
 
 ## Scope Ledger
 

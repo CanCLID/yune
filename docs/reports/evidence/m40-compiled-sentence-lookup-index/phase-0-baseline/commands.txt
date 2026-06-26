@@ -1,0 +1,2 @@
+﻿cargo build --release -p yune-rime-api
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot C:\Users\laubonghaudoi\Documents\GitHub\yune\docs\reports\evidence\m40-compiled-sentence-lookup-index\phase-0-baseline -Iterations 9 -SessionIterations 20 -KeyIterations 20 -TrackAInputs ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru -TrackBInputs neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung -DeployProductBeforeBenchmark

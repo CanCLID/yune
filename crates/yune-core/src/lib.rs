@@ -67,8 +67,10 @@ pub use m37_metrics::{
     m37_record_sentence_path_replacements, m37_record_sentence_paths_pruned,
     m37_record_sentence_prefix_lookup, m37_record_sentence_substring_considered,
     m37_record_translator, m37_record_upstream_sentence_model,
-    m37_record_upstream_sentence_model_scan, m37_record_userdb_merge, M37MetricsSnapshot,
-    M37SentenceCandidateMetrics,
+    m37_record_upstream_sentence_model_index_build,
+    m37_record_upstream_sentence_model_lookup_index, m37_record_upstream_sentence_model_scan,
+    m37_record_userdb_merge, M37MetricsSnapshot, M37SentenceCandidateMetrics,
+    M40SentenceLookupMetrics,
 };
 pub use poet::{
     make_sentence, make_sentences, null_grammar_score, Grammar, NullGrammar, SentencePath,

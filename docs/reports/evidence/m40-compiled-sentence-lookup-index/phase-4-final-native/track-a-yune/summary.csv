@@ -1,0 +1,10 @@
+engine,track,schema_id,workload,input,samples,operations,median_us,p95_us,p99_us,max_us,median_working_set_bytes,max_peak_working_set_bytes
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ceshiyixiachangjushuruxingnengzenyang,20,740,289.914,320.865,320.865,320.865,114704384,123957248
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,cszysmsrsd,20,200,24.820,25.330,25.330,25.330,115494912,123957248
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,20,60,38.200,65.233,65.233,65.233,114360320,123957248
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,20,40,56.850,61.300,61.300,61.300,114290688,123957248
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,20,1180,494.017,535.132,535.132,535.132,115441664,123957248
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,20,160,60.275,63.062,63.062,63.062,114425856,123957248
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zybfshmsru,20,200,26.350,28.640,28.640,28.640,115630080,123957248
+yune,track-a-comparison,luna_pinyin,session_create_select_destroy,,20,20,23994.000,25250.700,25250.700,25250.700,110714880,123957248
+yune,track-a-comparison,luna_pinyin,startup_warm_shared_assets_runtime_ready,,9,9,23934.200,2966147.700,2966147.700,2966147.700,113979392,123957248

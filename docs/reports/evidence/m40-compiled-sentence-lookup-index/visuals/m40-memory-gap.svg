@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="330" viewBox="0 0 960 330" role="img" aria-labelledby="title desc">
+  <title id="title">M40 memory gap</title>
+  <desc id="desc">Bar chart showing Track A Yune peak working set versus librime observed peak and the M39 to M40 no-regression result.</desc>
+  <rect width="960" height="330" fill="#f8fafc"/>
+  <text x="40" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">Memory: no regression, not parity</text>
+  <text x="40" y="63" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">M40 proves the sentence index is compact; whole-process memory remains the largest engine gap.</text>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13">
+    <text x="48" y="120" fill="#111827">M39 Track A peak</text>
+    <rect x="250" y="103" width="520" height="26" rx="4" fill="#94a3b8"/>
+    <text x="785" y="121" fill="#334155">123,985,920 B</text>
+    <text x="48" y="175" fill="#111827">M40 Track A peak</text>
+    <rect x="250" y="158" width="520" height="26" rx="4" fill="#2563eb"/>
+    <text x="785" y="176" fill="#334155">123,957,248 B</text>
+    <text x="48" y="230" fill="#111827">librime observed peak</text>
+    <rect x="250" y="213" width="74" height="26" rx="4" fill="#10b981"/>
+    <text x="340" y="231" fill="#334155">about 17.6 MB</text>
+  </g>
+  <text x="250" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#334155">M40 slightly improves Track A peak from M39, but Yune is still roughly 7x the observed librime peak.</text>
+  <text x="250" y="295" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#64748b">bar scale: 0 to 124 MB; librime peak varies by row and is shown as the observed final-run maximum.</text>
+</svg>

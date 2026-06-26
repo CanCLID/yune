@@ -5,8 +5,8 @@ param(
     [int]$Iterations = 9,
     [int]$SessionIterations = 60,
     [int]$KeyIterations = 80,
-    [string]$TrackAInputs = "ni,hao,zhongguo",
-    [string]$TrackBInputs = "hai,ngohaig,jigaajiusihaa,loengjathau",
+    [string]$TrackAInputs = "ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru",
+    [string]$TrackBInputs = "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
     [switch]$DeployProductBeforeBenchmark
 )
 

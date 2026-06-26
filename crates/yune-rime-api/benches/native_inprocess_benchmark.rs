@@ -100,6 +100,24 @@ const M37_METRIC_FIELDS: &[&str] = &[
     "upstream_sentence_model_table_entries_considered",
     "upstream_sentence_model_vocabulary_entries_considered",
     "upstream_sentence_model_graph_edges",
+    "upstream_sentence_model_index_build_calls",
+    "upstream_sentence_model_index_build_ns",
+    "upstream_sentence_model_exact_range_index_hits",
+    "upstream_sentence_model_exact_range_index_misses",
+    "upstream_sentence_model_prefix_filter_hits",
+    "upstream_sentence_model_prefix_filter_misses",
+    "upstream_sentence_model_prefix_filter_early_breaks",
+    "upstream_sentence_model_reachable_starts_visited",
+    "upstream_sentence_model_unreachable_starts_skipped",
+    "upstream_sentence_model_phrase_index_walk_calls",
+    "upstream_sentence_model_phrase_index_nodes_visited",
+    "upstream_sentence_model_phrase_index_entry_ranges_emitted",
+    "upstream_sentence_model_partition_point_fallback_calls",
+    "upstream_sentence_model_graph_rebuild_calls",
+    "upstream_sentence_model_graph_rebuild_ns",
+    "upstream_sentence_model_incremental_reuse_hits",
+    "upstream_sentence_model_incremental_extend_ns",
+    "upstream_sentence_model_incremental_discarded_rebuild_chars",
     "prefix_fallback_calls",
     "prefix_fallback_ns",
     "prefix_fallback_views_visited",
@@ -448,11 +466,15 @@ fn run_startup(
 ) {
     for index in 0..options.iterations {
         let api = engine.api();
+        let m37_metrics = engine.m37_metrics();
         let traits = TraitsBundle::new(options);
         let before = current_memory_sample();
         let trace = engine.startup_trace();
         if let Some(trace) = trace {
             trace.begin();
+        }
+        if let Some(metrics) = m37_metrics {
+            metrics.reset_and_enable();
         }
         let start = Instant::now();
         unsafe {
@@ -466,6 +488,7 @@ fn run_startup(
         read_status(api, session_id);
         let ready = current_memory_sample();
         let elapsed = start.elapsed();
+        let metrics = m37_metrics.map(M37MetricsExports::disable_and_snapshot);
         assert_eq!(
             require("destroy_session", api.destroy_session)(session_id),
             TRUE
@@ -482,7 +505,7 @@ fn run_startup(
                 trace.finish(),
             );
         }
-        samples.push(Sample::new(
+        let mut sample = Sample::new(
             options,
             "startup_warm_shared_assets_runtime_ready",
             "",
@@ -492,7 +515,11 @@ fn run_startup(
             before,
             ready,
             Some(finalized),
-        ));
+        );
+        if let Some(metrics) = metrics {
+            attach_m37_metrics(&mut sample, metrics);
+        }
+        samples.push(sample);
     }
 }
 
@@ -503,11 +530,15 @@ fn run_session(
     startup_traces: &mut Vec<StartupTraceSample>,
 ) {
     with_service(engine, options, |api| {
+        let m37_metrics = engine.m37_metrics();
         for index in 0..options.session_iterations {
             let before = current_memory_sample();
             let trace = engine.startup_trace();
             if let Some(trace) = trace {
                 trace.begin();
+            }
+            if let Some(metrics) = m37_metrics {
+                metrics.reset_and_enable();
             }
             let start = Instant::now();
             let session_id = require("create_session", api.create_session)();
@@ -518,6 +549,7 @@ fn run_session(
                 TRUE
             );
             let elapsed = start.elapsed();
+            let metrics = m37_metrics.map(M37MetricsExports::disable_and_snapshot);
             let after = current_memory_sample();
             if let Some(trace) = trace {
                 push_startup_trace_samples(
@@ -529,7 +561,7 @@ fn run_session(
                     trace.finish(),
                 );
             }
-            samples.push(Sample::new(
+            let mut sample = Sample::new(
                 options,
                 "session_create_select_destroy",
                 "",
@@ -539,7 +571,11 @@ fn run_session(
                 before,
                 after,
                 None,
-            ));
+            );
+            if let Some(metrics) = metrics {
+                attach_m37_metrics(&mut sample, metrics);
+            }
+            samples.push(sample);
         }
     });
 }
@@ -581,16 +617,7 @@ fn run_key_workload(
                 None,
             );
             if let Some(metrics) = metrics {
-                sample.m37_metrics = Some(M37MetricSample {
-                    engine: options.engine.clone(),
-                    track: options.track.clone(),
-                    schema: options.schema.clone(),
-                    workload: "key_sequence_process_with_context",
-                    input: input.to_owned(),
-                    index,
-                    operation_count: input.chars().count(),
-                    metrics,
-                });
+                attach_m37_metrics(&mut sample, metrics);
             }
             samples.push(sample);
         }
@@ -598,6 +625,19 @@ fn run_key_workload(
             require("destroy_session", api.destroy_session)(session_id),
             TRUE
         );
+    });
+}
+
+fn attach_m37_metrics(sample: &mut Sample, metrics: BTreeMap<String, u64>) {
+    sample.m37_metrics = Some(M37MetricSample {
+        engine: sample.engine.clone(),
+        track: sample.track.clone(),
+        schema: sample.schema.clone(),
+        workload: sample.workload,
+        input: sample.input.clone(),
+        index: sample.index,
+        operation_count: sample.operation_count,
+        metrics,
     });
 }
 

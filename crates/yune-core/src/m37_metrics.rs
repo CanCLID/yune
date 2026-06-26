@@ -72,6 +72,24 @@ pub struct M37MetricsSnapshot {
     pub upstream_sentence_model_table_entries_considered: u64,
     pub upstream_sentence_model_vocabulary_entries_considered: u64,
     pub upstream_sentence_model_graph_edges: u64,
+    pub upstream_sentence_model_index_build_calls: u64,
+    pub upstream_sentence_model_index_build_ns: u64,
+    pub upstream_sentence_model_exact_range_index_hits: u64,
+    pub upstream_sentence_model_exact_range_index_misses: u64,
+    pub upstream_sentence_model_prefix_filter_hits: u64,
+    pub upstream_sentence_model_prefix_filter_misses: u64,
+    pub upstream_sentence_model_prefix_filter_early_breaks: u64,
+    pub upstream_sentence_model_reachable_starts_visited: u64,
+    pub upstream_sentence_model_unreachable_starts_skipped: u64,
+    pub upstream_sentence_model_phrase_index_walk_calls: u64,
+    pub upstream_sentence_model_phrase_index_nodes_visited: u64,
+    pub upstream_sentence_model_phrase_index_entry_ranges_emitted: u64,
+    pub upstream_sentence_model_partition_point_fallback_calls: u64,
+    pub upstream_sentence_model_graph_rebuild_calls: u64,
+    pub upstream_sentence_model_graph_rebuild_ns: u64,
+    pub upstream_sentence_model_incremental_reuse_hits: u64,
+    pub upstream_sentence_model_incremental_extend_ns: u64,
+    pub upstream_sentence_model_incremental_discarded_rebuild_chars: u64,
     pub prefix_fallback_calls: u64,
     pub prefix_fallback_ns: u64,
     pub prefix_fallback_views_visited: u64,
@@ -98,6 +116,25 @@ pub struct M37SentenceCandidateMetrics {
     pub path_replacements: usize,
     pub paths_pruned: usize,
     pub max_live_paths: usize,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct M40SentenceLookupMetrics {
+    pub exact_range_index_hits: usize,
+    pub exact_range_index_misses: usize,
+    pub prefix_filter_hits: usize,
+    pub prefix_filter_misses: usize,
+    pub prefix_filter_early_breaks: usize,
+    pub reachable_starts_visited: usize,
+    pub unreachable_starts_skipped: usize,
+    pub phrase_index_walk_calls: usize,
+    pub phrase_index_nodes_visited: usize,
+    pub phrase_index_entry_ranges_emitted: usize,
+    pub partition_point_fallback_calls: usize,
+    pub graph_rebuild_duration: Duration,
+    pub incremental_reuse_hits: usize,
+    pub incremental_extend_duration: Duration,
+    pub incremental_discarded_rebuild_chars: usize,
 }
 
 #[derive(Default)]
@@ -169,6 +206,24 @@ struct M37Metrics {
     upstream_sentence_model_table_entries_considered: AtomicU64,
     upstream_sentence_model_vocabulary_entries_considered: AtomicU64,
     upstream_sentence_model_graph_edges: AtomicU64,
+    upstream_sentence_model_index_build_calls: AtomicU64,
+    upstream_sentence_model_index_build_ns: AtomicU64,
+    upstream_sentence_model_exact_range_index_hits: AtomicU64,
+    upstream_sentence_model_exact_range_index_misses: AtomicU64,
+    upstream_sentence_model_prefix_filter_hits: AtomicU64,
+    upstream_sentence_model_prefix_filter_misses: AtomicU64,
+    upstream_sentence_model_prefix_filter_early_breaks: AtomicU64,
+    upstream_sentence_model_reachable_starts_visited: AtomicU64,
+    upstream_sentence_model_unreachable_starts_skipped: AtomicU64,
+    upstream_sentence_model_phrase_index_walk_calls: AtomicU64,
+    upstream_sentence_model_phrase_index_nodes_visited: AtomicU64,
+    upstream_sentence_model_phrase_index_entry_ranges_emitted: AtomicU64,
+    upstream_sentence_model_partition_point_fallback_calls: AtomicU64,
+    upstream_sentence_model_graph_rebuild_calls: AtomicU64,
+    upstream_sentence_model_graph_rebuild_ns: AtomicU64,
+    upstream_sentence_model_incremental_reuse_hits: AtomicU64,
+    upstream_sentence_model_incremental_extend_ns: AtomicU64,
+    upstream_sentence_model_incremental_discarded_rebuild_chars: AtomicU64,
     prefix_fallback_calls: AtomicU64,
     prefix_fallback_ns: AtomicU64,
     prefix_fallback_views_visited: AtomicU64,
@@ -323,6 +378,60 @@ pub fn m37_metrics_reset() {
     metrics
         .upstream_sentence_model_graph_edges
         .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_index_build_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_index_build_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_exact_range_index_hits
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_exact_range_index_misses
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_prefix_filter_hits
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_prefix_filter_misses
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_prefix_filter_early_breaks
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_reachable_starts_visited
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_unreachable_starts_skipped
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_phrase_index_walk_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_phrase_index_nodes_visited
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_phrase_index_entry_ranges_emitted
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_partition_point_fallback_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_graph_rebuild_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_graph_rebuild_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_incremental_reuse_hits
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_incremental_extend_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_incremental_discarded_rebuild_chars
+        .store(0, Ordering::Relaxed);
     metrics.prefix_fallback_calls.store(0, Ordering::Relaxed);
     metrics.prefix_fallback_ns.store(0, Ordering::Relaxed);
     metrics
@@ -452,6 +561,60 @@ pub fn m37_metrics_snapshot() -> M37MetricsSnapshot {
             .load(Ordering::Relaxed),
         upstream_sentence_model_graph_edges: metrics
             .upstream_sentence_model_graph_edges
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_index_build_calls: metrics
+            .upstream_sentence_model_index_build_calls
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_index_build_ns: metrics
+            .upstream_sentence_model_index_build_ns
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_exact_range_index_hits: metrics
+            .upstream_sentence_model_exact_range_index_hits
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_exact_range_index_misses: metrics
+            .upstream_sentence_model_exact_range_index_misses
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_prefix_filter_hits: metrics
+            .upstream_sentence_model_prefix_filter_hits
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_prefix_filter_misses: metrics
+            .upstream_sentence_model_prefix_filter_misses
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_prefix_filter_early_breaks: metrics
+            .upstream_sentence_model_prefix_filter_early_breaks
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_reachable_starts_visited: metrics
+            .upstream_sentence_model_reachable_starts_visited
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_unreachable_starts_skipped: metrics
+            .upstream_sentence_model_unreachable_starts_skipped
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_phrase_index_walk_calls: metrics
+            .upstream_sentence_model_phrase_index_walk_calls
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_phrase_index_nodes_visited: metrics
+            .upstream_sentence_model_phrase_index_nodes_visited
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_phrase_index_entry_ranges_emitted: metrics
+            .upstream_sentence_model_phrase_index_entry_ranges_emitted
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_partition_point_fallback_calls: metrics
+            .upstream_sentence_model_partition_point_fallback_calls
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_graph_rebuild_calls: metrics
+            .upstream_sentence_model_graph_rebuild_calls
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_graph_rebuild_ns: metrics
+            .upstream_sentence_model_graph_rebuild_ns
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_incremental_reuse_hits: metrics
+            .upstream_sentence_model_incremental_reuse_hits
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_incremental_extend_ns: metrics
+            .upstream_sentence_model_incremental_extend_ns
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_incremental_discarded_rebuild_chars: metrics
+            .upstream_sentence_model_incremental_discarded_rebuild_chars
             .load(Ordering::Relaxed),
         prefix_fallback_calls: metrics.prefix_fallback_calls.load(Ordering::Relaxed),
         prefix_fallback_ns: metrics.prefix_fallback_ns.load(Ordering::Relaxed),
@@ -828,6 +991,85 @@ pub fn m37_record_upstream_sentence_model_scan(
         add(
             &metrics.upstream_sentence_model_graph_edges,
             graph_edges as u64,
+        );
+    }
+}
+
+pub fn m37_record_upstream_sentence_model_index_build(duration: Duration) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .upstream_sentence_model_index_build_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add_duration(&metrics.upstream_sentence_model_index_build_ns, duration);
+    }
+}
+
+pub fn m37_record_upstream_sentence_model_lookup_index(record: M40SentenceLookupMetrics) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        add(
+            &metrics.upstream_sentence_model_exact_range_index_hits,
+            record.exact_range_index_hits as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_exact_range_index_misses,
+            record.exact_range_index_misses as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_prefix_filter_hits,
+            record.prefix_filter_hits as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_prefix_filter_misses,
+            record.prefix_filter_misses as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_prefix_filter_early_breaks,
+            record.prefix_filter_early_breaks as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_reachable_starts_visited,
+            record.reachable_starts_visited as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_unreachable_starts_skipped,
+            record.unreachable_starts_skipped as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_phrase_index_walk_calls,
+            record.phrase_index_walk_calls as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_phrase_index_nodes_visited,
+            record.phrase_index_nodes_visited as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_phrase_index_entry_ranges_emitted,
+            record.phrase_index_entry_ranges_emitted as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_partition_point_fallback_calls,
+            record.partition_point_fallback_calls as u64,
+        );
+        metrics
+            .upstream_sentence_model_graph_rebuild_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add_duration(
+            &metrics.upstream_sentence_model_graph_rebuild_ns,
+            record.graph_rebuild_duration,
+        );
+        add(
+            &metrics.upstream_sentence_model_incremental_reuse_hits,
+            record.incremental_reuse_hits as u64,
+        );
+        add_duration(
+            &metrics.upstream_sentence_model_incremental_extend_ns,
+            record.incremental_extend_duration,
+        );
+        add(
+            &metrics.upstream_sentence_model_incremental_discarded_rebuild_chars,
+            record.incremental_discarded_rebuild_chars as u64,
         );
     }
 }

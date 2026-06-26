@@ -1,7 +1,12 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
+use std::time::Instant;
 
 use crate::{Candidate, CandidateSource, PresetVocabularyEntry, TableDictionary, TableEntry};
+
+mod index;
+
+use index::SentenceLookupIndex;
 
 /// Upstream `grammar.h` null-grammar penalty (`ln(1e-6)`) used when no `.gram`
 /// language model is configured.
@@ -172,6 +177,7 @@ fn compare_path_state(left: &PathState, right: &PathState) -> Ordering {
 #[derive(Clone, Debug, Default)]
 pub struct UpstreamSentenceModel {
     entries_by_code: Vec<ModelEntry>,
+    lookup_index: SentenceLookupIndex,
     vocabulary: Vec<ModelVocabularyEntry>,
     vocabulary_first_codes: Vec<(String, usize)>,
     character_codes: HashMap<char, Vec<String>>,
@@ -241,6 +247,11 @@ impl UpstreamSentenceModel {
             codes.dedup();
         }
         entries_by_code.sort_by(compare_model_entry_by_code);
+        let index_start = crate::m37_metrics_enabled().then(Instant::now);
+        let lookup_index = SentenceLookupIndex::build(&entries_by_code);
+        if let Some(index_start) = index_start {
+            crate::m37_record_upstream_sentence_model_index_build(index_start.elapsed());
+        }
         let vocabulary = vocabulary
             .iter()
             .filter_map(|entry| {
@@ -268,6 +279,7 @@ impl UpstreamSentenceModel {
         vocabulary_first_codes.dedup();
         Self {
             entries_by_code,
+            lookup_index,
             vocabulary,
             vocabulary_first_codes,
             character_codes,
@@ -334,31 +346,59 @@ impl UpstreamSentenceModel {
     }
 
     fn word_graph_for_input(&self, input: &str) -> WordGraph {
+        let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
         let mut graph = WordGraph::new();
         let boundaries = input
             .char_indices()
             .map(|(index, _)| index)
             .chain(std::iter::once(input.len()))
             .collect::<Vec<_>>();
+        let mut reachable = vec![false; boundaries.len()];
+        if let Some(first) = reachable.first_mut() {
+            *first = true;
+        }
         let mut code_prefix_checks = 0usize;
         let mut table_entries_considered = 0usize;
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
+        let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
         for (start_index, start) in boundaries.iter().copied().enumerate() {
             if start >= input.len() {
                 continue;
             }
+            if !reachable[start_index] {
+                lookup_metrics.unreachable_starts_skipped += 1;
+                continue;
+            }
+            lookup_metrics.reachable_starts_visited += 1;
             let suffix = &input[start..];
-            for end in boundaries.iter().copied().skip(start_index + 1) {
-                let code = &input[start..end];
-                code_prefix_checks += 1;
-                let entries = self.entries_for_code(code);
-                table_entries_considered += entries.len();
-                for entry in entries {
+            lookup_metrics.phrase_index_walk_calls += 1;
+            let walk =
+                self.lookup_index
+                    .walk_from(&self.entries_by_code, input, &boundaries, start_index);
+            code_prefix_checks += walk.prefix_hits + walk.prefix_misses;
+            lookup_metrics.prefix_filter_hits += walk.prefix_hits;
+            lookup_metrics.prefix_filter_misses += walk.prefix_misses;
+            lookup_metrics.prefix_filter_early_breaks += walk.prefix_early_breaks;
+            lookup_metrics.exact_range_index_misses += walk.exact_range_misses;
+            lookup_metrics.phrase_index_nodes_visited += walk.nodes_visited;
+            lookup_metrics.phrase_index_entry_ranges_emitted += walk.entry_ranges_emitted;
+            for span in walk.spans {
+                let code = &input[start..span.end];
+                let Some(entries) = self.entries_for_code(code) else {
+                    lookup_metrics.exact_range_index_misses += 1;
+                    lookup_metrics.partition_point_fallback_calls += 1;
+                    continue;
+                };
+                lookup_metrics.exact_range_index_hits += 1;
+                let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                let mut inserted_edge = false;
+                for entry in bounded_entries {
                     graph
                         .entry(start)
                         .or_default()
-                        .entry(end)
+                        .entry(span.end)
                         .or_default()
                         .push(WordGraphEntry::new(
                             entry.text.clone(),
@@ -366,6 +406,10 @@ impl UpstreamSentenceModel {
                             f64::from(entry.weight),
                         ));
                     graph_edges += 1;
+                    inserted_edge = true;
+                }
+                if inserted_edge {
+                    reachable[span.end_index] = true;
                 }
                 let vocabulary_entries = self.vocabulary_indices_for_first_code(code);
                 for (_, index) in vocabulary_entries {
@@ -386,6 +430,9 @@ impl UpstreamSentenceModel {
                                 f64::from(vocabulary_entry.weight),
                             ));
                         graph_edges += 1;
+                        if let Ok(end_index) = boundaries.binary_search(&end) {
+                            reachable[end_index] = true;
+                        }
                     }
                 }
             }
@@ -402,17 +449,17 @@ impl UpstreamSentenceModel {
             vocabulary_entries_considered,
             graph_edges,
         );
+        if let Some(rebuild_start) = rebuild_start {
+            lookup_metrics.graph_rebuild_duration = rebuild_start.elapsed();
+            lookup_metrics.incremental_discarded_rebuild_chars = input.chars().count();
+            crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
+        }
         graph
     }
 
-    fn entries_for_code(&self, code: &str) -> &[ModelEntry] {
-        let start = self
-            .entries_by_code
-            .partition_point(|entry| entry.code.as_str() < code);
-        let end = self.entries_by_code[start..]
-            .partition_point(|entry| entry.code.as_str() == code)
-            + start;
-        &self.entries_by_code[start..end]
+    fn entries_for_code(&self, code: &str) -> Option<&[ModelEntry]> {
+        self.lookup_index
+            .entries_for_code(&self.entries_by_code, code)
     }
 
     fn vocabulary_indices_for_first_code(&self, code: &str) -> &[(String, usize)] {

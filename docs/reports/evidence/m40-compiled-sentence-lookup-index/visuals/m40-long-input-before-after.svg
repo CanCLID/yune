@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">M40 long-input before and after</title>
+  <desc id="desc">Grouped bar chart showing M39 median, M40 final median, and same-run librime median for the 37-character and 59-character pinyin rows.</desc>
+  <rect width="960" height="360" fill="#f8fafc"/>
+  <text x="40" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">Long-input rows: M39 to M40</text>
+  <text x="40" y="63" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">M40 closes the M39 long-row gap and beats same-run librime on the 59-character stress row.</text>
+  <line x1="250" y1="285" x2="880" y2="285" stroke="#cbd5e1"/>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">
+    <text x="72" y="137">37-char row</text>
+    <text x="72" y="238">59-char row</text>
+    <rect x="250" y="96" width="288" height="24" rx="3" fill="#94a3b8"/>
+    <text x="548" y="114">M39 514.903 us</text>
+    <rect x="250" y="126" width="162" height="24" rx="3" fill="#2563eb"/>
+    <text x="422" y="144">M40 289.914 us</text>
+    <rect x="250" y="156" width="166" height="24" rx="3" fill="#10b981"/>
+    <text x="426" y="174">librime 295.800 us</text>
+    <rect x="250" y="197" width="514" height="24" rx="3" fill="#94a3b8"/>
+    <text x="774" y="215">M39 917.961 us</text>
+    <rect x="250" y="227" width="277" height="24" rx="3" fill="#2563eb"/>
+    <text x="537" y="245">M40 494.017 us</text>
+    <rect x="250" y="257" width="389" height="24" rx="3" fill="#10b981"/>
+    <text x="649" y="275">librime 694.175 us</text>
+  </g>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="12">
+    <rect x="620" y="30" width="16" height="16" fill="#94a3b8"/><text x="644" y="43" fill="#334155">M39 final</text>
+    <rect x="720" y="30" width="16" height="16" fill="#2563eb"/><text x="744" y="43" fill="#334155">M40 final</text>
+    <rect x="825" y="30" width="16" height="16" fill="#10b981"/><text x="849" y="43" fill="#334155">librime</text>
+  </g>
+  <text x="250" y="310" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#64748b">bar scale: 0 to 1,000 us</text>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" role="img" aria-labelledby="title desc">
+  <title id="title">M40 comparable ratios versus upstream librime</title>
+  <desc id="desc">Horizontal bar chart showing M40 comparable Yune-to-librime ratios plus two gray incomplete-pinyin behavior probes that exported zero candidates.</desc>
+  <rect width="960" height="430" fill="#f8fafc"/>
+  <text x="40" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">M40 same-run ratios vs upstream librime</text>
+  <text x="40" y="63" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">Lower is better for comparable rows. Gray rows exported zero candidates and are not speed comparisons.</text>
+  <line x1="410" y1="86" x2="410" y2="392" stroke="#10b981" stroke-width="2"/>
+  <text x="398" y="410" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#047857">1x</text>
+  <line x1="850" y1="86" x2="850" y2="392" stroke="#ef4444" stroke-width="2"/>
+  <text x="836" y="410" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#b91c1c">5x</text>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13">
+    <text x="40" y="103" fill="#111827">cszysmsrsd</text>
+    <rect x="300" y="94" width="18" height="10" rx="2" fill="#cbd5e1"/>
+    <text x="330" y="104" fill="#64748b">0 candidates; behavior probe</text>
+    <text x="40" y="136" fill="#111827">zybfshmsru</text>
+    <rect x="300" y="127" width="18" height="10" rx="2" fill="#cbd5e1"/>
+    <text x="330" y="137" fill="#64748b">0 candidates; behavior probe</text>
+    <text x="40" y="169" fill="#111827">zhongguo</text>
+    <rect x="300" y="156" width="36" height="18" rx="3" fill="#0ea5e9"/>
+    <text x="346" y="170" fill="#0f172a">0.323x</text>
+    <text x="40" y="202" fill="#111827">59-char long row</text>
+    <rect x="300" y="189" width="78" height="18" rx="3" fill="#2563eb"/>
+    <text x="388" y="203" fill="#0f172a">0.712x</text>
+    <text x="40" y="235" fill="#111827">startup/runtime-ready</text>
+    <rect x="300" y="222" width="100" height="18" rx="3" fill="#64748b"/>
+    <text x="410" y="236" fill="#0f172a">0.913x</text>
+    <text x="40" y="268" fill="#111827">session create/select/destroy</text>
+    <rect x="300" y="255" width="103" height="18" rx="3" fill="#64748b"/>
+    <text x="413" y="269" fill="#0f172a">0.934x</text>
+    <text x="40" y="301" fill="#111827">37-char long row</text>
+    <rect x="300" y="288" width="108" height="18" rx="3" fill="#2563eb"/>
+    <text x="418" y="302" fill="#0f172a">0.980x</text>
+    <text x="40" y="334" fill="#111827">hao</text>
+    <rect x="300" y="321" width="356" height="18" rx="3" fill="#f59e0b"/>
+    <text x="666" y="335" fill="#0f172a">3.237x</text>
+    <text x="40" y="367" fill="#111827">ni</text>
+    <rect x="300" y="354" width="425" height="18" rx="3" fill="#f59e0b"/>
+    <text x="735" y="368" fill="#0f172a">3.867x</text>
+  </g>
+  <text x="300" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#64748b">ratio scale 0x to 5x</text>
+</svg>

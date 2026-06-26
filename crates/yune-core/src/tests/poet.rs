@@ -137,6 +137,69 @@ C\tef\t1000
 }
 
 #[test]
+fn upstream_sentence_model_records_m40_lookup_index_counters() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        "\
+---
+name: m40_sentence_index_metrics
+version: '1'
+sort: by_weight
+...
+
+A\tab\t1000
+B\tcd\t1000
+C\tef\t1000
+Alt\tab\t900
+",
+    )
+    .expect("dictionary should parse");
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let model = UpstreamSentenceModel::from_dictionary(&dictionary, 10);
+    let build_metrics = crate::m37_metrics_snapshot();
+    assert!(build_metrics.upstream_sentence_model_index_build_calls >= 1);
+    assert!(build_metrics.upstream_sentence_model_index_build_ns > 0);
+
+    crate::m37_metrics_reset();
+    let candidates = model.candidates_for_input("abcdefz");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_reset();
+    let reset_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(candidates[0].text, "ABC");
+    assert!(metrics.upstream_sentence_model_exact_range_index_hits >= 3);
+    assert!(metrics.upstream_sentence_model_exact_range_index_misses >= 1);
+    assert!(metrics.upstream_sentence_model_prefix_filter_hits >= 3);
+    assert!(metrics.upstream_sentence_model_prefix_filter_misses >= 1);
+    assert!(metrics.upstream_sentence_model_prefix_filter_early_breaks >= 1);
+    assert!(metrics.upstream_sentence_model_reachable_starts_visited >= 3);
+    assert!(metrics.upstream_sentence_model_unreachable_starts_skipped >= 1);
+    assert!(metrics.upstream_sentence_model_phrase_index_walk_calls >= 1);
+    assert!(metrics.upstream_sentence_model_phrase_index_nodes_visited >= 3);
+    assert!(metrics.upstream_sentence_model_phrase_index_entry_ranges_emitted >= 3);
+    assert_eq!(
+        metrics.upstream_sentence_model_partition_point_fallback_calls,
+        0
+    );
+    assert!(metrics.upstream_sentence_model_graph_rebuild_calls >= 1);
+    assert!(metrics.upstream_sentence_model_graph_rebuild_ns > 0);
+    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 0);
+
+    assert_eq!(
+        reset_metrics.upstream_sentence_model_exact_range_index_hits,
+        0
+    );
+    assert_eq!(
+        reset_metrics.upstream_sentence_model_phrase_index_walk_calls,
+        0
+    );
+    assert_eq!(reset_metrics.upstream_sentence_model_graph_rebuild_calls, 0);
+}
+
+#[test]
 fn upstream_sentence_model_accepts_owned_table_entry_stream() {
     let entries = [
         crate::TableEntry::new("ab", "A", 10.0),

@@ -47,36 +47,36 @@
     },
     {
       "path": "pinyin.yaml",
-      "sha256": "5474f43c5d70061f96e2070a9751091b45fa7196a6f329944762141ba819821b",
-      "bytes": 5040,
+      "sha256": "caa220b05172bf35775db07fed6ead7719c742e6139232d9797040dbe65f746c",
+      "bytes": 4895,
       "tier": "shared",
       "required": true
     },
     {
       "path": "key_bindings.yaml",
-      "sha256": "e4a1141fe078627e7c4887f81417be2b753b73701410e9a734266d09034a329a",
-      "bytes": 3193,
+      "sha256": "ee2476598b4cae89068b823868196eb07b5f72007a600814fe5804b39008b3ed",
+      "bytes": 3117,
       "tier": "shared",
       "required": true
     },
     {
       "path": "punctuation.yaml",
-      "sha256": "c9e5147fda24d1a13085075df5a2e73deecb643069be3751c6d4d793ceb2de5b",
-      "bytes": 2212,
+      "sha256": "d6f89592149098f0a2d0ed3e5c83f49adb6226cdf1d967b0bc0d293f4e5c496a",
+      "bytes": 2107,
       "tier": "shared",
       "required": true
     },
     {
       "path": "symbols.yaml",
-      "sha256": "1a51b57c5061214daaec0ec3ec27caf4f65e09c6b7a9c6a7a19d0d538802de68",
-      "bytes": 28792,
+      "sha256": "6d08969525bd66c67abf1791c99928079356bd0e673386c49c1959d2a52fdbba",
+      "bytes": 28473,
       "tier": "shared",
       "required": true
     },
     {
       "path": "essay.txt",
-      "sha256": "6c907bddbdcbd31553b0716833dfdcf34df0d21ba24c5080be7ab644f6a97705",
-      "bytes": 6330380,
+      "sha256": "09086a44204f469d2c16ad72784e1f567a6f016570dfc9aa79f868267a9c1385",
+      "bytes": 5887668,
       "tier": "shared",
       "required": true
     },
@@ -138,15 +138,15 @@
     },
     {
       "path": "stroke.schema.yaml",
-      "sha256": "fdb325b6a92110a2db299ff80258db570e88c98bc072fcad53fcd569403ad6d2",
-      "bytes": 3170,
+      "sha256": "06f680cf7c9d9a69948681ee25e9f6aeccfde4d8d590f93e179d4c4b3caee879",
+      "bytes": 3056,
       "tier": "shared",
       "required": true
     },
     {
       "path": "stroke.dict.yaml",
-      "sha256": "fa0e19bef06700456e86ae2f99871410092f3cff0a59c1731930eb845586ddb3",
-      "bytes": 3566770,
+      "sha256": "e897ed2e3d1da8d6e6a347310165374bebf36b9710afd789f5e31abb4da0fe76",
+      "bytes": 3396347,
       "tier": "shared",
       "required": true
     },
@@ -159,22 +159,22 @@
     },
     {
       "path": "opencc/t2hk.json",
-      "sha256": "bb27109c2ed7b4034150d00238ea07efe9d2421ac77f1fadd938b19f8c1c6a5b",
-      "bytes": 320,
+      "sha256": "a8531beb7430fe1afed0294a893af529c7b7fd2ad41567b5daccb8399c8ef2f0",
+      "bytes": 304,
       "tier": "shared",
       "required": true
     },
     {
       "path": "opencc/t2s.json",
-      "sha256": "ebe32a6766bfbaea1869f82368f54a8fc6c977a235e8a896b618714872b5df09",
-      "bytes": 428,
+      "sha256": "b818534194f27c2d95f01001edb0a5ec49b9050119892cb30a0504bb202cc07c",
+      "bytes": 406,
       "tier": "shared",
       "required": true
     },
     {
       "path": "opencc/t2tw.json",
-      "sha256": "d3e1b549cba6423f88528dfde1a9597fd53cb3496fe38c12092fd2a4d06bd387",
-      "bytes": 318,
+      "sha256": "11495bf144cd932a9568810822a5af0fbba2db9c2e06a2bb2871583423fac24a",
+      "bytes": 302,
       "tier": "shared",
       "required": true
     },

@@ -1,0 +1,13 @@
+﻿date_utc=2026-06-27T05:39:48.4004035Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=2d3360d5291ec5b5de3225300097e75ff7dce6fd
+yune_git_status_short=M  apps/yune-web/e2e/playwright.config.ts | A  apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-27-current-runtime/report.md | A  apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-27-current-runtime/samples.csv | A  apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-27-current-runtime/samples.json | A  apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-27-current-runtime/summary.csv | A  apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-27-current-runtime/summary.json | A  apps/yune-web/e2e/startup-benchmark/comparator-metrics.ts | A  apps/yune-web/e2e/yune-web-comparator-benchmark.spec.ts | M  apps/yune-web/e2e/yune-web.spec.ts | M  apps/yune-web/scripts/prepare-runtime.mjs |  M apps/yune-web/src/index.css | M  apps/yune-web/src/worker.ts | M  crates/yune-core/src/engine.rs | M  crates/yune-core/src/tests/translator.rs | M  crates/yune-rime-api/tests/yune_web.rs | M  docs/plans/active/web01-plan-yune-web-wasm-heap-payload-optimization.md | M  docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md | M  docs/reports/evidence/yune-web-vs-my-rime-baseline/visuals/web01-ready-to-input.svg | M  docs/reports/evidence/yune-web-vs-my-rime-baseline/visuals/web01-resource-payload.svg | M  docs/reports/evidence/yune-web-vs-my-rime-baseline/visuals/web01-wasm-heap.svg | M  docs/reports/yune-vs-librime-performance.md | M  docs/reports/yune-vs-librime-root-cause-analysis.md | M  docs/reports/yune-web-vs-my-rime-browser-baseline.md | M  docs/requirements.md | M  docs/roadmap.md | ?? docs/reports/evidence/post-m44-bottleneck-profiling/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-0-native-diagnostic
+managed_runtime=false
+deploy_product_before_benchmark=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=5
+session_iterations=30
+key_iterations=80

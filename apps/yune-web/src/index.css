@@ -1011,6 +1011,7 @@
 
 .yd-table-wrap {
 	margin: 0 18px;
+	max-height: clamp(260px, calc(100svh - 340px), 520px);
 	overflow: auto;
 	border: 1px solid var(--line);
 }
@@ -1035,6 +1036,9 @@
 
 .yd-userdb-table th,
 .yd-inspector-table th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
 	background: var(--surface2);
 	color: var(--ink2);
 	font-size: 11px;

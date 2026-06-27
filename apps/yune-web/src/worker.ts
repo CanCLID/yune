@@ -344,22 +344,41 @@ const YUNE_WEB_COMMON_SHARED_ASSETS = [
 const YUNE_WEB_OPENCC_SHARED_ASSETS = [
   "opencc/t2hkf.json",
   "opencc/HKVariantsFull.txt",
+  "opencc/t2s.json",
+  "opencc/t2tw.json",
   "opencc/hk2s.json",
   "opencc/HKVariantsRev.ocd2",
   "opencc/HKVariantsRevPhrases.ocd2",
   "opencc/TSCharacters.ocd2",
   "opencc/TSPhrases.ocd2",
 ] as const;
+const YUNE_WEB_LUNA_OPENCC_SHARED_ASSETS = [
+  "opencc/t2hk.json",
+  "opencc/t2s.json",
+  "opencc/t2tw.json",
+  "opencc/HKVariants.ocd2",
+  "opencc/TSCharacters.ocd2",
+  "opencc/TSPhrases.ocd2",
+  "opencc/TWVariants.ocd2",
+] as const;
 const YUNE_WEB_LUNA_SHARED_ASSETS = [
-  ...YUNE_WEB_COMMON_SHARED_ASSETS,
+  "default.custom.yaml",
+  "pinyin.yaml",
+  "key_bindings.yaml",
+  "punctuation.yaml",
+  "symbols.yaml",
+  "essay.txt",
   "luna_pinyin.schema.yaml",
   "luna_pinyin.dict.yaml",
   "luna_pinyin.table.bin",
   "luna_pinyin.reverse.bin",
   "luna_pinyin.prism.bin",
-  "cangjie5.schema.yaml",
-  "cangjie5.dict.yaml",
-  ...YUNE_WEB_OPENCC_SHARED_ASSETS,
+  "stroke.schema.yaml",
+  "stroke.dict.yaml",
+  "stroke.table.bin",
+  "stroke.reverse.bin",
+  "stroke.prism.bin",
+  ...YUNE_WEB_LUNA_OPENCC_SHARED_ASSETS,
 ] as const;
 const YUNE_WEB_CANGJIE_SHARED_ASSETS = [
   ...YUNE_WEB_COMMON_SHARED_ASSETS,
@@ -384,8 +403,6 @@ const YUNE_WEB_JYUTPING_SHARED_ASSETS = [
   "cangjie3.dict.yaml",
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
-  "luna_pinyin.schema.yaml",
-  "luna_pinyin.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
   ...YUNE_WEB_OPENCC_SHARED_ASSETS,
   "jyut6ping3.table.bin",
@@ -394,9 +411,6 @@ const YUNE_WEB_JYUTPING_SHARED_ASSETS = [
   "jyut6ping3_scolar.table.bin",
   "jyut6ping3_scolar.reverse.bin",
   "jyut6ping3_scolar.prism.bin",
-  "luna_pinyin.table.bin",
-  "luna_pinyin.reverse.bin",
-  "luna_pinyin.prism.bin",
 ] as const;
 const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
   jyut6ping3: {

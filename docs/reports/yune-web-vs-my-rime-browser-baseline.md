@@ -17,9 +17,10 @@ The separate optimization plan already exists:
 
 - [`docs/plans/active/web01-plan-yune-web-wasm-heap-payload-optimization.md`](../plans/active/web01-plan-yune-web-wasm-heap-payload-optimization.md)
 
-Current caveat: the repository worktree is mixed with unrelated native/M44 and
-browser bug-fix edits. The benchmark evidence below is a current measurement
-baseline, not a WEB-01 closeout and not a clean `WEB01-00` branch claim.
+Current caveat: the benchmark evidence was captured before the baseline was
+committed and includes inherited M44/native closeout state plus browser bug
+fixes. It is the current same-machine measurement baseline, not a WEB-01
+closeout and not a clean optimization-branch `WEB01-00` claim.
 
 ## Evidence
 
@@ -172,9 +173,10 @@ runtime comparator uses the live deployment. My RIME's WASM build flags set
 
 1. Keep WEB-01 separate and clean.
 
-   Before optimization claims, start from a branch with no `crates/` changes.
-   The current evidence is valid as a measurement baseline, but it does not
-   satisfy the WEB01-00 clean-branch gate.
+   Start the implementation branch from `origin/main` at `1ec4d522` or a newer
+   synchronized commit, and keep the WEB-01 optimization diff free of
+   `crates/` changes. The current evidence is valid as a measurement baseline,
+   but it does not by itself satisfy the WEB01-00 clean-branch gate.
 
 2. Calibrate `INITIAL_MEMORY`.
 
@@ -189,6 +191,10 @@ runtime comparator uses the live deployment. My RIME's WASM build flags set
    - Jyutping may still grow to about `893 MiB`; if so, report that as the
      next measured blocker rather than calling the initial-memory work a full
      success.
+   - Draft WEB-01 win gates are `<=64 MiB` for Luna and `<=256 MiB` for
+     Jyutping, with `<=128 MiB` as the Jyutping stretch target. If calibration
+     shows those gates are too strict or too loose, update the plan before
+     implementation continues.
 
 3. Add richer startup memory markers.
 

@@ -6,9 +6,10 @@ assets are used with project-owner approval from the TypeDuck author.
 
 Public scope:
 
-- Public schemas: `jyut6ping3`, `cangjie5`, and `luna_pinyin`.
-- Public output standards: Hong Kong Traditional and Simplified Chinese through
-  the `hk2s` OpenCC chain.
+- Public schemas: `jyut6ping3`, `cangjie5`, and upstream-derived
+  `luna_pinyin`.
+- Public output standards: Hong Kong Traditional, Taiwan Traditional, and
+  Simplified Chinese through OpenCC chains.
 - AI posture: default-off, local-only second-pass candidate logic; no remote AI
   calls, no telemetry, and no committed secrets.
 - App path: `apps/yune-web/` is the tracked Vite app. The retired

@@ -1,6 +1,6 @@
 # Yune vs upstream librime root-cause dashboard
 
-Date: 2026-06-26
+Date: 2026-06-27
 
 This report explains current M44 native/profile-engine evidence. It does not
 claim browser, frontend, product-delivery, packaging, public-demo, deployment,
@@ -31,6 +31,13 @@ Measured blockers:
 - Track A memory: peak moved only from `128,135,168 B` to `127,619,072 B`,
   still above the `<=107,797,708 B` memory-win target.
 
+Post-M44 diagnostic profiling sharpens both blockers without changing the M44
+closeout status. The short-key owner is broader than the final `ni` row: the
+intermediate `n` row is now the clearest Track A short-prefix owner. The memory
+owner is also still unresolved: repeated high-water peak stays around
+`127 MB`, while steady after-ready working-set samples are lower and the
+retained-owner profile explains only part of the process footprint.
+
 ![M44 root-cause gains and blockers](./evidence/m44-native-performance-owner-reduction/visuals/m44-root-cause-gains-and-blockers.svg)
 
 ## M44 Cause Map
@@ -45,9 +52,53 @@ Measured blockers:
 
 The important split is that Track B's single-letter product row `h` is fixed
 for M44, while Track A's single-letter/prefix family is not. M44 final evidence
-uses `ni` as the measured blocker, and the post-M43 diagnostic pass also showed
-`n` as a short-key fixed-overhead row. The next Track A short-key milestone
-should focus on the `n`/`ni` prefix and ranking path, not the sentence model.
+uses `ni` as the measured blocker; the post-M44 diagnostic pass shows the
+intermediate `n` row is the sharper short-prefix owner. The next Track A
+short-key milestone should focus on the `n`/`ni` prefix and ranking path, not
+the sentence model.
+
+## Post-M44 Diagnostic Profiling
+
+This pass is a bottleneck diagnostic, not a new milestone closeout. It reruns
+native Track A with the intermediate `n` row added and records working-set
+bands so high-water peak can be separated from steady after-ready resident
+size.
+
+Short-prefix latency:
+
+| Row | Yune median | librime median | Ratio | Diagnostic read |
+| --- | ---: | ---: | ---: | --- |
+| `n` | `79.400 us` | `21.900 us` | `3.626x` | Clearest remaining Track A short-prefix owner. |
+| `ni` | `53.750 us` | `15.050 us` | `3.571x` | Still misses parity; inherits the earlier `n` step. |
+| `hao` | `25.667 us` | `12.100 us` | `2.121x` | M44 target remains met, but constant-factor gap remains. |
+
+Short-prefix raw lookup evidence:
+
+| Input | Prism completions | Table lookup codes | Raw candidates | Raw table median | Translator median | Read |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `n` | `26` | `27` | `1,260` | `166.000 us` | `74.100 us` | Broad one-letter prefix expansion is visible before page export. |
+| `ni` | `1` | `1` | `182` | `19.600 us` | `50.200 us` | Not explained by raw candidate count alone; sequence/downstream work remains. |
+| `hao` | `1` | `1` | `139` | `15.500 us` | `22.533 us` | Relatively cheap after M44, but still above librime constant factors. |
+
+Memory diagnostic:
+
+| Measurement | Diagnostic value | Read |
+| --- | ---: | --- |
+| Yune Track A repeated high-water peak | `127,430,656 B` | Same max peak repeats across startup, session, short, long, and abbreviation rows. |
+| Yune session after-ready median | `87,240,704 B` | Steady session sample is about `40 MB` below the high-water peak. |
+| Yune `n` after-ready median | `90,714,112 B` | Short-prefix steady footprint is much lower than peak. |
+| Yune longest diagnostic row after-ready median | `97,677,312 B` | Longest sampled row remains about `30 MB` below peak. |
+| librime Track A max peak band | `13,897,728-18,186,240 B` | Large process-memory gap remains real. |
+| Reducible retained owner still named | `18,694,662 B` | `poet.entries_by_code`; not enough to explain process peak. |
+| Mapped table bytes | `13,013,460 B` | File-backed table storage; not a selected-table heap mirror. |
+
+This supports a two-part next attack. For short-key latency, target a bounded
+borrowed prefix path with early stop after the first-page order is proven, and
+guard it with upstream candidate-output evidence for `n`, `ni`, and `hao`.
+For memory, do not start with another structural storage rewrite. First split
+private heap, file-backed mapped pages, allocator high-water behavior, and
+steady after-ready resident size; only authorize a code change if that pass
+names a reducible, peak-moving owner.
 
 ## Abbreviation Owner
 
@@ -69,7 +120,9 @@ M42/M43 evidence and is not a new M44 regression.
 ## Short-Key Owner
 
 M44 reduced unnecessary first-page surplus work enough for `hao`, but `ni`
-still exposes the prefix owner:
+still exposes the prefix owner. The post-M44 diagnostic makes the owner more
+specific: `n` is slower than `ni` in absolute time and expands to `27` table
+lookup codes with `1,260` raw candidates before page export.
 
 | Row | Phase 0 median | Final median | Same-run ratio | M44 status |
 | --- | ---: | ---: | ---: | --- |
@@ -77,10 +130,11 @@ still exposes the prefix owner:
 | `ni` | `58.150 us` | `49.450 us` | `3.434x` | Target missed. |
 
 The residual `ni` cause is not the upstream sentence model:
-`upstream_sentence_model_calls=0` remains true. The next diagnostic should
-separate the `n` prefix lookup, candidate ranking, comment/quality formatting,
-duplicate handling, and first-page export costs. It should stay scoped to the
-short-prefix path and must not widen M40 long-row or M42 abbreviation behavior.
+`upstream_sentence_model_calls=0` remains true. The next short-key optimization
+should separate the `n` prefix lookup, candidate ranking, comment/quality
+formatting, duplicate handling, and first-page export costs. It should stay
+scoped to the short-prefix path and must not widen M40 long-row or M42
+abbreviation behavior.
 
 ## Track B Product-Profile Owner
 
@@ -121,6 +175,15 @@ owners and mapped page behavior before attempting another storage rewrite.
 The old M42 single-run peak `119,775,232 B` remains useful historical context,
 but the current comparable repeated M43/M44 band is around `127-128 MB`.
 
+The post-M44 diagnostic strengthens that read. Every sampled Yune Track A
+workload reports the same `127,430,656 B` high-water peak, but after-ready
+medians sit much lower: session `87,240,704 B`, `n` `90,714,112 B`, and the
+longest sampled abbreviation row `97,677,312 B`. That pattern looks more like a
+high-water or transient residency question than a simple retained-structure
+owner. The next memory milestone should therefore treat the `<=107,797,708 B`
+target as blocked until private heap, mmap resident pages, and allocator
+high-water behavior are measured separately.
+
 ## Guardrails Preserved
 
 | Gate | M44 final evidence |
@@ -144,6 +207,10 @@ but the current comparable repeated M43/M44 band is around `127-128 MB`.
   [`./evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md`](./evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md)
 - M44 visual evidence:
   [`./evidence/m44-native-performance-owner-reduction/visuals/`](./evidence/m44-native-performance-owner-reduction/visuals/)
+- Post-M44 bottleneck diagnostic:
+  [`./evidence/post-m44-bottleneck-profiling/phase-0-native-diagnostic/`](./evidence/post-m44-bottleneck-profiling/phase-0-native-diagnostic/)
+- Post-M44 bottleneck diagnostic summary:
+  [`./evidence/post-m44-bottleneck-profiling/phase-0-native-diagnostic/analysis-summary.md`](./evidence/post-m44-bottleneck-profiling/phase-0-native-diagnostic/analysis-summary.md)
 - Post-M43 bottleneck provenance:
   [`./evidence/post-m43-bottleneck-analysis/`](./evidence/post-m43-bottleneck-analysis/)
 - Historical M43 memory-owner evidence:

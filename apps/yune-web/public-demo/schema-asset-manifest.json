@@ -46,6 +46,41 @@
       "required": true
     },
     {
+      "path": "pinyin.yaml",
+      "sha256": "5474f43c5d70061f96e2070a9751091b45fa7196a6f329944762141ba819821b",
+      "bytes": 5040,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "key_bindings.yaml",
+      "sha256": "e4a1141fe078627e7c4887f81417be2b753b73701410e9a734266d09034a329a",
+      "bytes": 3193,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "punctuation.yaml",
+      "sha256": "c9e5147fda24d1a13085075df5a2e73deecb643069be3751c6d4d793ceb2de5b",
+      "bytes": 2212,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "symbols.yaml",
+      "sha256": "1a51b57c5061214daaec0ec3ec27caf4f65e09c6b7a9c6a7a19d0d538802de68",
+      "bytes": 28792,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "essay.txt",
+      "sha256": "6c907bddbdcbd31553b0716833dfdcf34df0d21ba24c5080be7ab644f6a97705",
+      "bytes": 6330380,
+      "tier": "shared",
+      "required": true
+    },
+    {
       "path": "jyut6ping3.schema.yaml",
       "sha256": "4f7dcfc653057b9c23384e23fc34c43f3b25e184ca3541c530ca014544257e6b",
       "bytes": 2514,
@@ -82,15 +117,15 @@
     },
     {
       "path": "luna_pinyin.schema.yaml",
-      "sha256": "813bb8acf9fe1dc23443d3585944123bffc8918e954fe65bbb6d95283ee2f691",
-      "bytes": 2336,
+      "sha256": "668b4d4957e4cc8f9cea32ed3f08f0ecf4a7be8cdba058700507487bd96dd5c7",
+      "bytes": 2809,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.dict.yaml",
-      "sha256": "dee37dbc2cfe8c04b23f428b9afa23607be2d22a8daf8446f14f8882c801459f",
-      "bytes": 422312,
+      "sha256": "69c7142fcd67cf070677c6435333a8a35e2fc1232d4f0851ef8bac31324bf7ee",
+      "bytes": 891377,
       "tier": "shared",
       "required": true
     },
@@ -102,6 +137,20 @@
       "required": true
     },
     {
+      "path": "stroke.schema.yaml",
+      "sha256": "fdb325b6a92110a2db299ff80258db570e88c98bc072fcad53fcd569403ad6d2",
+      "bytes": 3170,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "stroke.dict.yaml",
+      "sha256": "fa0e19bef06700456e86ae2f99871410092f3cff0a59c1731930eb845586ddb3",
+      "bytes": 3566770,
+      "tier": "shared",
+      "required": true
+    },
+    {
       "path": "opencc/t2hkf.json",
       "sha256": "a894e19a876b7aa285d563d5d4937eed4fcf24df9c837b3fe03d8cb2e5a23e48",
       "bytes": 321,
@@ -109,9 +158,37 @@
       "required": true
     },
     {
+      "path": "opencc/t2hk.json",
+      "sha256": "bb27109c2ed7b4034150d00238ea07efe9d2421ac77f1fadd938b19f8c1c6a5b",
+      "bytes": 320,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/t2s.json",
+      "sha256": "ebe32a6766bfbaea1869f82368f54a8fc6c977a235e8a896b618714872b5df09",
+      "bytes": 428,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/t2tw.json",
+      "sha256": "d3e1b549cba6423f88528dfde1a9597fd53cb3496fe38c12092fd2a4d06bd387",
+      "bytes": 318,
+      "tier": "shared",
+      "required": true
+    },
+    {
       "path": "opencc/HKVariantsFull.txt",
       "sha256": "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2",
       "bytes": 784,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/HKVariants.ocd2",
+      "sha256": "62750cb79eef18a407030b05bd4abe0e102bec2254d04b2d2310792f44519321",
+      "bytes": 4893,
       "tier": "shared",
       "required": true
     },
@@ -148,6 +225,55 @@
       "sha256": "5a50521f8c831a436ea6cd297cba88fbe27f25d9b8e616ecf844cb1ab315c85b",
       "bytes": 9776,
       "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "opencc/TWVariants.ocd2",
+      "sha256": "390f07a1867ad56aa60a7af23b6e4b3acc96ea48d893c06ede3dffb1c576c2bc",
+      "bytes": 4595,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "loengfan.schema.yaml",
+      "sha256": "9297d11effa423ca2ec977aa86ffbd5fc28ee3ffb4e6fc7d82c4b7777c78fe59",
+      "bytes": 636,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "loengfan.dict.yaml",
+      "sha256": "0727c128f7b9a54ba576cf700daf9ca4a95dab0659dd4259d70cbdac25f9ad0b",
+      "bytes": 1780170,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie3.schema.yaml",
+      "sha256": "c8361ddc97d1cee95bba5125e559da3167406572c70e1d70aba9eae71794952d",
+      "bytes": 168,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie3.dict.yaml",
+      "sha256": "8ea67632d3580c8a5b2a0d1dbb423ad9bd746fd01b843aa21d0bff4c4f782bac",
+      "bytes": 383470,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie5.schema.yaml",
+      "sha256": "694cccd36dcbb8abe502269d8fc854ad6df2737323beb105c59ffde30a4ee86f",
+      "bytes": 2228,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie5.dict.yaml",
+      "sha256": "d7edeff4e80d262e75a0f6988d94a1eed489f5d8ebdfc4c089b0da819429fbba",
+      "bytes": 406681,
+      "tier": "explicit",
       "required": true
     },
     {
@@ -194,22 +320,43 @@
     },
     {
       "path": "luna_pinyin.table.bin",
-      "sha256": "26601971bd7845c8e84eb8f8440b14633c815578fe0560c6b81fa62b69af278d",
-      "bytes": 613855,
+      "sha256": "d23853c9b3f96a580ae82688446331aaef6bb8fe35e5a19eb2c13c675306021e",
+      "bytes": 13013460,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.reverse.bin",
-      "sha256": "b41098f7b24f7f936e1e28e2fc135cfd982e4c056cc4f3ef61c617b508485f13",
-      "bytes": 704357,
+      "sha256": "6ee0892852af4688fae0f3647c47827d89af9b3ff5ffe1a57e85e333c1706839",
+      "bytes": 252756,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.prism.bin",
-      "sha256": "ff26c58bf4c9677b79d00656b03b62d619b1fd29be132715371be07b6f260c33",
-      "bytes": 23465,
+      "sha256": "814b7ebdeec0a325906e1dd72f5e5d907468bd16dd83bdd021bf6503b8a21083",
+      "bytes": 31728,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "stroke.table.bin",
+      "sha256": "269c817f3c991ffd56e5d2c0b4f2a46194257735b6a44fdcb1bc822caa8d7250",
+      "bytes": 4548476,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "stroke.reverse.bin",
+      "sha256": "65540b9e06a381981d0fb2995909d3ce424210c1613dd8b08b001d25b05e7300",
+      "bytes": 1498516,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "stroke.prism.bin",
+      "sha256": "df938cb21bd60f2575884efe6f6f4430645938e592cce7b43e3d15e34ebc9990",
+      "bytes": 3501372,
       "tier": "shared",
       "required": true
     },
@@ -224,48 +371,6 @@
       "path": "build/jyut6ping3_mobile.schema.yaml",
       "sha256": "269e5cb4a54f778b4eb6936072844c836873dd1cf883c97337286822f1b52ba2",
       "bytes": 9917,
-      "tier": "explicit",
-      "required": true
-    },
-    {
-      "path": "loengfan.schema.yaml",
-      "sha256": "9297d11effa423ca2ec977aa86ffbd5fc28ee3ffb4e6fc7d82c4b7777c78fe59",
-      "bytes": 636,
-      "tier": "shared",
-      "required": true
-    },
-    {
-      "path": "loengfan.dict.yaml",
-      "sha256": "0727c128f7b9a54ba576cf700daf9ca4a95dab0659dd4259d70cbdac25f9ad0b",
-      "bytes": 1780170,
-      "tier": "shared",
-      "required": true
-    },
-    {
-      "path": "cangjie3.schema.yaml",
-      "sha256": "c8361ddc97d1cee95bba5125e559da3167406572c70e1d70aba9eae71794952d",
-      "bytes": 168,
-      "tier": "shared",
-      "required": true
-    },
-    {
-      "path": "cangjie3.dict.yaml",
-      "sha256": "8ea67632d3580c8a5b2a0d1dbb423ad9bd746fd01b843aa21d0bff4c4f782bac",
-      "bytes": 383470,
-      "tier": "shared",
-      "required": true
-    },
-    {
-      "path": "cangjie5.schema.yaml",
-      "sha256": "694cccd36dcbb8abe502269d8fc854ad6df2737323beb105c59ffde30a4ee86f",
-      "bytes": 2228,
-      "tier": "shared",
-      "required": true
-    },
-    {
-      "path": "cangjie5.dict.yaml",
-      "sha256": "d7edeff4e80d262e75a0f6988d94a1eed489f5d8ebdfc4c089b0da819429fbba",
-      "bytes": 406681,
       "tier": "explicit",
       "required": true
     }

@@ -13,16 +13,19 @@ Included asset groups:
 - `jyut6ping3_scolar` lookup assets used by the current dictionary lookup
   filter.
 - Cangjie 3/5 and Loengfan assets required by Jyutping reverse lookup.
-- Luna Pinyin assets required by the Jyutping dependency and reverse lookup
-  path.
-- OpenCC `hk2s` files used by the public Simplified Chinese output standard.
+- Upstream Luna Pinyin source and compiled table/prism/reverse assets, scoped
+  to the `luna_pinyin` schema selection.
+- Upstream Stroke source and compiled table/prism/reverse assets for Luna
+  reverse lookup.
+- OpenCC files used by Hong Kong, Taiwan, and Simplified Chinese output
+  standards.
 
 Pruned from the public deploy:
 
 - Side mobile layouts such as longpress and 10-key schemas.
 
-Pinned public schema payload bytes from `schema-asset-manifest.json`: 38 files,
-31,685,919 bytes.
+Pinned public schema payload bytes from `schema-asset-manifest.json`: 53 files,
+63,611,047 bytes.
 
 Measured caveat: the public build still content-addresses a curated schema
 payload for deployment, but the browser-visible harness controls should match

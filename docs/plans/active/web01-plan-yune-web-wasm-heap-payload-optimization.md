@@ -1,8 +1,8 @@
 # WEB-01 Yune Web WASM Heap And Payload Optimization Plan
 
-> **Status:** Active sidecar - **Milestone:** WEB-01 (browser-harness WASM
-> heap and payload optimization) - **Created:** 2026-06-26 - **Type:**
-> browser-harness plan
+> **Status:** Active - **Milestone:** WEB-01 (browser-harness WASM
+> heap and payload optimization) - **Updated:** 2026-06-27 - **Type:**
+> browser-harness execution plan
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
@@ -17,7 +17,8 @@ comparator, without making or claiming native-engine changes.
 
 ## Architecture
 
-WEB-01 is a harness-only sidecar that can run in parallel with M43. It starts
+WEB-01 is a harness-only optimization plan that starts after the M44 native
+closeout and remains separate from future native residual-owner work. It starts
 from browser evidence, then applies the lowest-risk owner first:
 
 1. Make the yune-web/My RIME browser comparison benchmark reusable.
@@ -29,9 +30,9 @@ from browser evidence, then applies the lowest-risk owner first:
 5. Publish closeout evidence that separates harness wins from native-engine
    wins.
 
-M43 owns native retained state and short-key engine owners. WEB-01 owns only
-browser build flags, browser asset loading, worker memory retention,
-public-demo packaging, and browser evidence.
+Native residual-owner plans own `ni`, native whole-process memory, and
+engine/profile behavior. WEB-01 owns only browser build flags, browser asset
+loading, worker memory retention, public-demo packaging, and browser evidence.
 
 ## Tech Stack
 
@@ -67,14 +68,17 @@ WEB-01 uses browser-visible WASM linear-memory diagnostics:
 
 ## Baseline
 
-The current branch evidence was captured on
-`codex/yune-web-wasm-heap-optimization` after commit `712a5a8`. That commit
-also contains a native `crates/yune-rime-api` userdb/schema-installer change
-from the earlier userdb bug fix. WEB-01 execution must first split or rebase
-that native change out of the harness branch before making optimization claims.
+The current WEB-01 draft starts from `main` commit `1ec4d522` (`Finalize M44
+and yune-web baseline fixes`). That commit contains the reusable comparator
+benchmark and the fresh `2026-06-27-current-runtime` evidence, but it also
+contains M44 native/profile closeout changes and browser bug fixes. Treat those
+rows as the current same-machine measurement baseline, not as a clean
+WEB-01 optimization branch claim.
 
-Until that cleanup is done, the `2026-06-26` browser rows below are useful as
-preliminary measurements, not a clean harness-only baseline.
+The first optimization branch must be cut from `origin/main` at `1ec4d522` or a
+newer synchronized commit, and the optimization diff must contain no `crates/`
+changes. Any WEB-01 win must be measured against the committed baseline below
+with browser evidence from that clean optimization branch.
 
 Current refreshed-runtime comparator baseline from
 `apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-27-current-runtime/`:
@@ -86,9 +90,10 @@ Current refreshed-runtime comparator baseline from
   apps/yune-web/e2e run test:e2e -- --grep "YUNE WEB COMPARATOR"
   --workers=1`.
 - Result: passed, `1` Playwright benchmark test.
-- Current limitation: this is a mixed-worktree baseline with unrelated native
-  and browser bug-fix dirt still present. It is valid as current measurement
-  evidence, but it is not a clean WEB01-00 branch claim.
+- Current limitation: these rows were captured before the baseline was
+  committed and include inherited M44/native plus browser bug-fix state. They
+  are valid current measurement evidence, but not a WEB01-00 optimization
+  branch claim.
 
 | Scenario | Schema | Ready ms | Input->candidate ms | Commit ms | WASM linear ready | Observed linear peak | Unique encoded resources |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -128,7 +133,7 @@ The 2026-06-26 rows are retained as historical preliminary evidence. They were
 captured before the local runtime was refreshed and therefore do not describe
 the current Jyutping high-water.
 
-Post-M43 rebase check:
+Historical pre-refresh Yune-only check:
 
 - Branch rebase target: `ad93ec7` (`Complete M43 native memory owner
   reduction`).
@@ -138,13 +143,9 @@ Post-M43 rebase check:
   YUNE_WEB_BENCHMARK_PHASE=post-m43-baseline npm --prefix apps/yune-web/e2e
   run test:e2e -- --grep "YUNE WEB WASM HEAP" --workers=1`.
 - Result: passed, `1` Playwright benchmark test.
-- Current limitation: this is the existing Yune-only WASM linear-memory
-  benchmark. The reusable yune-web/My RIME comparator benchmark remains Task 0
-  work.
-- Scope limitation: the branch still contains the known native
-  `crates/yune-rime-api` userdb/schema-installer diff. Treat this as
-  post-M43 branch-state evidence, not final WEB01-00-clean baseline evidence,
-  until that native diff is split out.
+- Current limitation: this is retained only as historical Yune-only evidence
+  before the refreshed local runtime exposed the `893.1 MiB` Jyutping
+  high-water. It must not be used as the current WEB-01 baseline.
 
 | Scenario | Samples | Ready ms | First key ms | WASM linear ready | Observed linear peak | Encoded resources |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -171,34 +172,33 @@ Out of scope:
 - `crates/yune-core/`.
 - `crates/yune-rime-api/` behavior, C ABI, native runtime, schema installer, or
   native memory owners.
-- M43 native memory or short-key owner reductions.
+- M44 native/profile behavior and future native residual-owner reductions.
 - AI behavior, remote providers, or candidate ranking changes.
 - Replacing the deterministic engine with TypeScript-side fake learning,
   TypeScript-side fake candidates, or fake memory accounting.
 
-## Pre-Execution Cleanup Gate
+## Clean Execution Branch Gate
 
-Before Task 0 optimization work starts:
+Before Task 1 optimization work starts:
 
-- [ ] Split the existing `crates/yune-rime-api/src/schema_install.rs`
-  userdb/schema-installer behavior change out of this WEB-01 branch, or rebase
-  WEB-01 onto a commit that does not include it.
-- [ ] If the native userdb fix is preserved, give it its own native branch or
-  standalone commit with an honest rationale and native/oracle verification
-  separate from WEB-01.
-- [ ] Confirm the WEB-01 working branch diff contains no `crates/` changes.
-- [ ] Re-run or relabel browser baseline evidence after the split. Any evidence
-  collected before the split must stay labeled as "preliminary branch state."
+- [ ] Create a WEB-01 implementation branch from `origin/main` at `1ec4d522` or
+  a newer synchronized commit.
+- [ ] Confirm the WEB-01 optimization diff contains no `crates/` changes.
+- [ ] Keep M44 native/profile changes as inherited baseline state only; do not
+  describe WEB-01 results as native-engine wins.
+- [ ] Re-run the comparator with `SAMPLES=7` before accepting latency
+  regression claims. The `SAMPLES=3` rows are sufficient for current memory and
+  payload targeting, but not for a strong latency guard.
+- [ ] Record whether the run is `baseline`, `initial-memory`, `asset-pruning`,
+  `buffer-release`, `final`, or `measured-no-go` in `YUNE_WEB_COMPARATOR_PHASE`.
 
-## Parallel Coordination With M43
+## Native/Browser Coordination After M44
 
-- WEB-01 may run at the same time as M43 because the intended write sets are
-  disjoint.
 - WEB-01 must not commit changes under `crates/` to claim a browser heap win.
-- If M43 lands before WEB-01 closes, rebase WEB-01 and rerun all browser
-  evidence. Any memory movement after that rebase must be described as
-  "combined branch state" unless the same harness diff was measured before and
-  after M43.
+- If a future native residual-owner plan lands before WEB-01 closes, rebase
+  WEB-01 and rerun browser evidence. Any memory movement after that rebase must
+  be described as "combined branch state" unless the same harness diff was
+  measured before and after the native change.
 - Final WEB-01 claims must say whether the win came from:
   - browser `INITIAL_MEMORY`,
   - browser asset payload/defer behavior,
@@ -210,10 +210,14 @@ Before Task 0 optimization work starts:
 - `WEB01-00`: The executable WEB-01 branch contains no `crates/` changes.
 - `WEB01-01`: The yune-web/My RIME comparator benchmark is reusable and writes
   evidence under `apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/`.
-- `WEB01-02`: `luna_pinyin` public-demo peak WASM linear memory meets the
-  Task 0 calibrated target, provisionally `<=64 MiB`.
-- `WEB01-03`: `jyut6ping3_mobile` public-demo peak WASM linear memory meets
-  the Task 0 calibrated target, provisionally `<=96 MiB`.
+- `WEB01-02`: `luna_pinyin` public-demo peak WASM linear memory drops from the
+  `128.0 MiB` baseline and meets the Task 0 calibrated target, provisionally
+  `<=64 MiB`.
+- `WEB01-03`: `jyut6ping3_mobile` public-demo peak WASM linear memory drops
+  materially from the `893.1 MiB` baseline and meets the Task 0 calibrated
+  target. Draft win gate: `<=256 MiB`; stretch gate: `<=128 MiB`. If neither
+  gate is reachable, WEB-01 may close only as a measured no-go with owner
+  attribution.
 - `WEB01-04`: Startup median and first-key median regress by no more than
   `10%` versus the WEB-01 baseline for tracked and public-demo builds.
 - `WEB01-05`: Jyutping unique encoded browser resources are lower than the
@@ -225,12 +229,15 @@ Before Task 0 optimization work starts:
   reverse lookup smoke still passes when not blocked by a known unrelated
   reverse-input bug.
 - `WEB01-09`: Userdb learning still persists after reload.
-- `WEB01-10`: Reports do not claim native-engine memory wins unless M43
-  evidence separately proves them.
+- `WEB01-10`: Reports do not claim native-engine memory wins unless a separate
+  native milestone separately proves them.
 - `WEB01-11`: Latency claims use enough samples to support a `10%` guard, or
   explicitly publish the observed noise band. `SAMPLES=3` is acceptable for
   near-deterministic linear-memory checks, but not sufficient by itself for a
   strong startup or first-key latency regression claim.
+- `WEB01-12`: Final evidence separates current WASM linear-memory reservation,
+  observed peak WASM linear memory, unique encoded browser resources, worker JS
+  heap/storage estimates, and user-visible ready-to-input.
 
 ## Task 0: Baseline And Benchmark Harness
 
@@ -272,7 +279,7 @@ Before Task 0 optimization work starts:
   `2026-06-26` evidence. Differences larger than normal browser noise must be
   explained before optimization starts.
 - [ ] Add a calibration run before accepting the provisional `64 MiB` /
-  `96 MiB` targets:
+  `256 MiB` / `128 MiB` targets:
   - build with a lower `INITIAL_MEMORY` floor plus `ALLOW_MEMORY_GROWTH=1`;
   - exercise startup, first candidate, commit, reload, schema switching, userdb
     persistence, and reverse lookup for `luna_pinyin` and
@@ -448,6 +455,7 @@ Expected result:
   - baseline vs final peak observed WASM linear memory,
   - baseline vs final ready-to-input,
   - baseline vs final unique encoded resources,
+  - baseline vs final worker JS heap/storage estimate,
   - owner attribution waterfall or path table for asset pruning.
 - [ ] State the final attribution:
   - `browser-initial-memory-win`,
@@ -455,10 +463,10 @@ Expected result:
   - `browser-js-retention-win`,
   - `native-owned-remaining`,
   - or `measured-no-go`.
-- [ ] If the branch has been rebased after M43, explicitly say whether final
-  evidence is pre-M43, post-M43, or combined.
+- [ ] If the branch has been rebased after later native work, explicitly say
+  whether final evidence is pure WEB-01 or combined branch state.
 - [ ] Update `docs/roadmap.md` so WEB-01 appears as the active browser-harness
-  sidecar while M43 remains the active native-engine milestone.
+  sidecar while native residual-owner work remains a separate future plan.
 - [ ] Move this plan to `docs/plans/completed/` only after all acceptance gates
   are satisfied or a measured no-go is documented.
 
@@ -485,7 +493,8 @@ WEB-01 may close as a win if:
 
 - the branch contains no `crates/` changes; and
 - Yune public-demo `jyut6ping3_mobile` peak WASM linear memory drops from
-  `128.0 MiB` to the Task 0 calibrated target, provisionally `<=96 MiB`; and
+  `893.1 MiB` to the Task 0 calibrated target, provisionally `<=256 MiB` with
+  `<=128 MiB` as the stretch gate; and
 - `luna_pinyin` peak WASM linear memory drops from `128.0 MiB` to the Task 0
   calibrated target, provisionally `<=64 MiB`; and
 - startup/first-key medians stay within the `10%` regression guard; and
@@ -500,5 +509,5 @@ WEB-01 may close as a measured no-go if:
 - the report names the remaining owner as native/runtime retained state or a
   future deeper runtime boundary.
 
-WEB-01 must not close by claiming that M43 reduced browser memory unless the
-same browser benchmark proves the harness diff independently.
+WEB-01 must not close by claiming that M44 or later native work reduced browser
+memory unless the same browser benchmark proves the harness diff independently.

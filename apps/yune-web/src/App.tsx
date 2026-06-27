@@ -9,7 +9,7 @@ import ThemeSwitcher from "./ThemeSwitcher";
 import Toolbar from "./Toolbar";
 import { notify, setToastLanguage, ToastViewport } from "./toast";
 import UiLanguageSwitcher from "./UiLanguageSwitcher";
-import { uiText } from "./uiText";
+import { schemaText, uiText } from "./uiText";
 import YuneInspector from "./YuneInspector";
 import YuneStatusStrip from "./YuneStatusStrip";
 import YuneUserdbViewer from "./YuneUserdbViewer";
@@ -253,6 +253,7 @@ export default function App() {
 	} = preferences;
 	const text = uiText[uiLanguage];
 	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
+	const composePlaceholder = schemaText[uiLanguage][activeSchema].label;
 	const toggleAsciiMode = useCallback(() => {
 		setIsAsciiMode(value => !value);
 	}, [setIsAsciiMode]);
@@ -372,7 +373,7 @@ export default function App() {
 				await Rime.setOption("ascii_mode", isAsciiMode);
 				await Rime.setOption("full_shape", isFullShape);
 				await Rime.setOption("traditionalization", false);
-				const activeOutputOption = outputOptionForStandard(outputStandardValue);
+				const activeOutputOption = outputOptionForStandard(outputStandardValue, activeSchema);
 				document.documentElement.dataset["yuneActiveOutputOption"] = activeOutputOption ?? "none";
 				const appliedOutputOptions: string[] = [];
 				for (const optionName of OUTPUT_STANDARD_ENGINE_OPTIONS) {
@@ -545,7 +546,7 @@ export default function App() {
 									data-chinese-typeface={chineseTypeface}
 									ref={setTextArea}
 									aria-label={text.compose.inputAria}
-									placeholder={text.compose.placeholder}
+									placeholder={composePlaceholder}
 									disabled={isInputDisabled}
 									{...NO_AUTO_FILL}
 								/>

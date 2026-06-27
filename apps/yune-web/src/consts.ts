@@ -99,11 +99,27 @@ export const OUTPUT_STANDARD_ENGINE_OPTIONS = [
   "variants_hk",
   "trad_tw",
   "simplification",
+  "zh_hans",
+  "zh_hant_hk",
+  "zh_hant_tw",
 ] as const;
 
 export function outputOptionForStandard(
   outputStandard: OutputStandard,
+  schemaId: RimeSchemaId,
 ): (typeof OUTPUT_STANDARD_ENGINE_OPTIONS)[number] | undefined {
+  if (schemaId === "luna_pinyin") {
+    switch (outputStandard) {
+      case "opencc_traditional":
+        return undefined;
+      case "hong_kong_traditional":
+        return "zh_hant_hk";
+      case "taiwan_traditional":
+        return "zh_hant_tw";
+      case "mainland_simplified":
+        return "zh_hans";
+    }
+  }
   switch (outputStandard) {
     case "opencc_traditional":
       return undefined;

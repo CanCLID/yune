@@ -1,11 +1,10 @@
 # Rime schema
 # encoding: utf-8
 
-__include: template:/
-
 schema:
   schema_id: luna_pinyin
   name: 朙月拼音
+  version: '0.31'
   author:
     - 佛振 <chen.sst@gmail.com>
   description: |
@@ -15,19 +14,27 @@ schema:
       * Android open source project
       * Chewing - 新酷音
       * opencc - 開放中文轉換
-
-menu:
-  __patch: include:/no_candidate_selection
+  dependencies:
+    - stroke
 
 switches:
   - name: ascii_mode
     reset: 0
-    states: [ 中文, 英文 ]
+    states: [ 中文, 西文 ]
+    abbrev: [ 中, Ａ ]
   - name: full_shape
-    states: [ 半形, 全形 ]
-  - options: [ noop, variants_hk, trad_tw, simplification ]
-    states: [ 傳統漢字, 香港傳統漢字, 臺灣傳統漢字, 大陆简化汉字 ]
-    reset: 1
+    states: [ 半角, 全角 ]
+  - options:
+      - zh_hant
+      - zh_hans
+      - zh_hant_hk
+      - zh_hant_tw
+    states:
+      - 傳統漢字
+      - 简化字
+      - 香港字形
+      - 臺灣字形
+    abbrev: [ 漢, 简, 港, 臺 ]
   - name: ascii_punct
     states: [ 。，, ．， ]
 
@@ -44,73 +51,90 @@ engine:
   segmentors:
     - ascii_segmentor
     - matcher
-    - affix_segmentor@reverse_lookup
     - abc_segmentor
     - punct_segmentor
     - fallback_segmentor
   translators:
     - punct_translator
+    - table_translator@custom_phrase
     - reverse_lookup_translator
     - script_translator
   filters:
-    - charset_filter
-    - simplifier
-    - simplifier@variants_hk
-    - simplifier@trad_tw
-
-simplifier:
-  option_name: simplification
-  opencc_config: t2s.json
-
-variants_hk:
-  option_name: variants_hk
-  opencc_config: t2hkf.json
-
-trad_tw:
-  option_name: trad_tw
-  opencc_config: t2tw.json
+    - simplifier@zh_hans
+    - simplifier@zh_hant_hk
+    - simplifier@zh_hant_tw
+    - uniquifier
 
 speller:
+  alphabet: zyxwvutsrqponmlkjihgfedcba
+  delimiter: " '"
   algebra:
-    - abbrev/^([a-z]).+$/$1/
-    - derive/^([nl])ve$/$1ue/
-    - derive/^([jqxy])u/$1v/
-    - derive/un$/uen/
-    - derive/ui$/uei/
-    - derive/iu$/iou/
+    __patch:
+      - pinyin:/abbreviation
+      - pinyin:/spelling_correction
+      - pinyin:/key_correction
 
 translator:
   dictionary: luna_pinyin
-  enable_completion: true
-  enable_correction: false
-  enable_sentence: true
-  enable_user_dict: true
-  encode_commit_history: true
-  combine_candidates: true
-  prediction_never_first: true
-  prediction_weight_threshold: 0
-  dictionary_exclude: []
   preedit_format:
     - xform/([nl])v/$1ü/
     - xform/([nl])ue/$1üe/
     - xform/([jqxy])v/$1u/
-  comment_format:
-    - xform/^/\v/
+
+custom_phrase:
+  dictionary: ""
+  user_dict: custom_phrase
+  db_class: stabledb
+  enable_completion: false
+  enable_sentence: false
+  initial_quality: 1
 
 reverse_lookup:
-  tag: reverse_lookup
-  dictionary: cangjie5
-  target: translator
+  dictionary: stroke
+  enable_completion: true
   prefix: "`"
-  suffix: ";"
-  tips: "reverse lookup"
+  suffix: "'"
+  tips: 〔筆畫〕
+  preedit_format:
+    - xlit/hspnz/一丨丿丶乙/
   comment_format:
-    - xform/^/\v/
+    - xform/([nl])v/$1ü/
+
+punctuator:
+  import_preset: symbols
+
+key_binder:
+  import_preset: default
+  bindings:
+    - { when: always, accept: Control+Shift+4, toggle: zh_hans }
+    - { when: always, accept: Control+Shift+dollar, toggle: zh_hans }
 
 recognizer:
   import_preset: default
   patterns:
-    reverse_lookup: "^`[a-z']*;?$"
+    punct: '^/([0-9]0?|[A-Za-z]+)$'
+    reverse_lookup: "`[a-z]*'?$"
+
+zh_hans:
+  option_name: zh_hans
+  opencc_config: t2s.json
+  tips: none
+  excluded_types: [ reverse_lookup ]
+
+zh_hant_hk:
+  option_name: zh_hant_hk
+  opencc_config: t2hk.json
+  tips: none
+  excluded_types: [ reverse_lookup ]
+
+zh_hant_tw:
+  option_name: zh_hant_tw
+  opencc_config: t2tw.json
+  tips: none
+  excluded_types: [ reverse_lookup ]
 
 __patch:
-  []
+  # 使用八股文語言模型
+  - grammar:/hant?
+  # 用家自選配置
+  - luna_pinyin.custom:/patch?

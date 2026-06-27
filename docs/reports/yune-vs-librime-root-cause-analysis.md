@@ -188,6 +188,16 @@ New owner rows explain only part of that headline:
 | `compact_table.syllabary_codes` | heap-owned reducible | `4,189,674 B` | Too small to justify a headline `rsmarisa` branch. |
 | candidate text/comment payload | shared/overlapping | `2,575,292 B` | Visible but overlapping and small. |
 
+The clean post-M46 rerun visualizes the same shape: process memory remains in
+the hundreds of MB while named rows remain tens of MB. Treat the owner chart as
+a scale view, not a strict additive heap decomposition, because rows mix
+required heap, mmap file-backed bytes, guarded translator state, and overlapping
+logical payloads.
+
+![Post-M46 clean Track B memory scale](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-memory-scale.svg)
+
+![Post-M46 clean Track B owner scale](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-owner-scale.svg)
+
 M46 Phase 0 therefore did not authorize a Track B `rsmarisa`, payload, scolar,
 reverse-index, or transient memory optimization branch. It selected
 `schema-switch-regression-fix-first`, because browser evidence showed
@@ -201,12 +211,56 @@ return `nei -> 你` with six candidates, zero worker action errors, and the same
 
 ![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
 
+The same clean rerun also keeps Track B latency framed as a Yune-only product
+guard. Short-prefix rows remain the heavy cases, while the 50+ guard stays
+small; this is not a fair cross-engine comparison lane.
+
+![Post-M46 clean Track B latency profile](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/track-b-clean-latency-profile.svg)
+
 M46 therefore records `schema-switch-correctness-fixed-memory-unchanged` and
 `measured-no-go-owner-unclassified`. No native Track B or browser WASM memory
 success is claimed.
 
 M46 evidence:
 [`./evidence/m46-jyutping-native-wasm-memory-attribution/`](./evidence/m46-jyutping-native-wasm-memory-attribution/).
+
+## WEB-02 Public-Demo Jyutping Owner Classification
+
+WEB-02 closes the M46 browser-owner gap for the public-demo Jyutping path. The
+measured web ABI path now reports `source_fallback=true`,
+`selected_storage=owned_heap`, and `byte_source_len=0`, with fallback reason
+`source fallback after compiled reject: Invalid("prism parse failed:
+UnsupportedVersion")`.
+
+The shipped public-demo Jyutping compiled assets explain the fallback:
+
+| Asset | Shipped header | WEB-02 read |
+| --- | --- | --- |
+| `jyut6ping3_mobile.prism.bin` | `Rime::Prism/3.0` | rejected by current compact-prism parser |
+| `jyut6ping3_scolar.prism.bin` | `Rime::Prism/3.0` | rejected by current compact-prism parser |
+| `luna_pinyin.prism.bin` | `Rime::Prism/4.0` | current-format comparison point |
+
+The retained owner is engine heap at runtime, but the root cause is
+web/public-demo artifact delivery: this path ships old Jyutping prism payloads
+and does not leave current generated Jyutping compiled files in `user/build`.
+The live owner rows are:
+
+| Owner | Selected storage | Retained estimate | Items |
+| --- | --- | ---: | ---: |
+| `translator.entries_by_code` | `owned_heap` | `510,925,748 B` | `1,139,357` |
+| `translator.entries_by_code` | `owned_heap` | `18,676,626 B` | `70,805` |
+| **Total reported retained owner** |  | **`529,602,374 B` (`505.1 MiB`)** |  |
+
+This does not claim a browser memory win: the known Jyutping browser high-water
+remains `893.1 MiB`. It changes the next action from generic payload or
+`INITIAL_MEMORY` experiments to a measured target: fix the public-demo/browser
+compiled-asset contract so Jyutping selects current byte-backed storage, then
+rerun the browser high-water measurement.
+
+Evidence:
+[`./evidence/web02-jyutping-wasm-memory-attribution/`](./evidence/web02-jyutping-wasm-memory-attribution/).
+
+![WEB-02 public-demo Jyutping storage owner scale](./evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
 
 ## Memory Synthesis: M43-M46
 
@@ -221,13 +275,14 @@ is itself the finding:
   There is no large reducible structure left to refactor, and M43 already proved
   that shrinking a named owner (`poet.entries_by_code`, `-19.5 MB`) does not
   move process peak.
-- The browser headline is most likely an **init-transient, not a resident
-  owner.** Browser Jyutping stays at `893.1 MiB` regardless of loaded asset
-  bytes (`0 B` extras through `26 MB` full Jyutping all reach the same
-  high-water), JS heap is only `5-6 MB`, and Emscripten linear memory never
-  shrinks below the peak reached during schema initialization. The heap most
-  likely spikes during Jyutping init and is then stuck; steady-state *need* may
-  be far lower (Luna settles at `160 MiB`).
+- The public-demo browser Jyutping headline is now **partly resident
+  source-fallback heap, not purely unclassified/transient.** WEB-02 proves the
+  shipped public-demo Jyutping `Rime::Prism/3.0` assets are rejected and the
+  live path falls back to `owned_heap`, retaining `529,602,374 B` of
+  `translator.entries_by_code` dictionaries. The remaining gap to the
+  `893.1 MiB` high-water is still allocator/transient territory, but the first
+  reduction target is no longer generic high-water profiling; it is the
+  public-demo/browser compiled-asset contract.
 - The cross-engine browser comparison is **not like-for-like**, so the size of
   any Yune inefficiency is unquantified. The librime-based My RIME browser build
   runs Jyutping in `68 MiB`, but on the Cantonese-only
@@ -247,8 +302,11 @@ is itself the finding:
   comparison, and the clean target for any memory work is the fair `luna_pinyin`
   gap.
 
-The next memory step, if pursued, is therefore **init-time allocation high-water
-profiling targeting the fair `luna_pinyin` gap** — which initialization phase
-spikes the heap, and why a librime-family engine fits the same schema in ~10x
-less. Another structural-owner pass is not the move; M43-M46 proved that dry.
-This is recorded as future work; M46 changes no memory code.
+The next memory step, if pursued, is therefore two-stage. First fix the
+WEB-02-owned public-demo/browser compiled-asset fallback and remeasure
+Jyutping. If byte-backed Jyutping still leaves a large high-water after that,
+then do init-time allocation high-water profiling targeting the fair
+`luna_pinyin` gap and the remaining Jyutping allocator/transient excess.
+Another native structural-owner pass is not the move; M43-M46 proved that dry.
+This is recorded as future work; WEB-02 changes diagnostics and evidence only,
+not memory behavior.

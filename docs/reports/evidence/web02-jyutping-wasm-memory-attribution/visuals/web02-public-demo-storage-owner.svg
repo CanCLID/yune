@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420" role="img" aria-labelledby="title desc">
+  <title id="title">WEB-02 public-demo Jyutping memory owner scale</title>
+  <desc id="desc">Bar chart comparing browser high-water, retained source fallback heap owners, and byte-backed table byte source size.</desc>
+  <rect width="920" height="420" fill="#ffffff"/>
+  <text x="40" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#111827">WEB-02 public-demo Jyutping memory owner scale</text>
+  <text x="40" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4b5563">Source fallback is proven: Prism/3.0 is rejected, so Jyutping selects owned heap dictionaries instead of byte-backed compact storage.</text>
+
+  <line x1="220" y1="330" x2="860" y2="330" stroke="#d1d5db" stroke-width="1"/>
+  <line x1="220" y1="120" x2="220" y2="330" stroke="#d1d5db" stroke-width="1"/>
+
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6b7280">
+    <text x="220" y="352" text-anchor="middle">0</text>
+    <text x="363" y="352" text-anchor="middle">200 MiB</text>
+    <text x="506" y="352" text-anchor="middle">400 MiB</text>
+    <text x="649" y="352" text-anchor="middle">600 MiB</text>
+    <text x="792" y="352" text-anchor="middle">800 MiB</text>
+  </g>
+
+  <g stroke="#e5e7eb" stroke-width="1">
+    <line x1="363" y1="120" x2="363" y2="330"/>
+    <line x1="506" y1="120" x2="506" y2="330"/>
+    <line x1="649" y1="120" x2="649" y2="330"/>
+    <line x1="792" y1="120" x2="792" y2="330"/>
+  </g>
+
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="40" y="145" font-size="14" font-weight="600" fill="#111827">Browser Jyutping high-water</text>
+    <rect x="220" y="126" width="638" height="28" rx="4" fill="#374151"/>
+    <text x="868" y="145" font-size="13" fill="#111827" text-anchor="end">893.1 MiB</text>
+
+    <text x="40" y="205" font-size="14" font-weight="600" fill="#111827">Retained source fallback heap</text>
+    <rect x="220" y="186" width="361" height="28" rx="4" fill="#dc2626"/>
+    <text x="591" y="205" font-size="13" fill="#111827">505.1 MiB</text>
+
+    <text x="40" y="265" font-size="14" font-weight="600" fill="#111827">Main owned heap dictionary</text>
+    <rect x="220" y="246" width="348" height="28" rx="4" fill="#f97316"/>
+    <text x="578" y="265" font-size="13" fill="#111827">487.3 MiB</text>
+
+    <text x="40" y="305" font-size="14" font-weight="600" fill="#111827">M46 byte-backed table sources</text>
+    <rect x="220" y="286" width="29" height="28" rx="4" fill="#2563eb"/>
+    <text x="259" y="305" font-size="13" fill="#111827">40.6 MiB</text>
+  </g>
+
+  <text x="40" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#4b5563">Evidence: task0-web-abi-public-demo/storage-diagnostics.json and memory-owner-rows.csv. High-water is the existing M46/WEB-01 browser row; WEB-02 classifies the retained owner, not a reduction.</text>
+</svg>

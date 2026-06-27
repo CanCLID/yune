@@ -19,7 +19,10 @@ use crate::{
     RimeTraits, FALSE, TRUE,
 };
 
-use crate::session::{session_candidates_snapshot, session_inspector_snapshot, with_session};
+use crate::session::{
+    session_candidates_snapshot, session_inspector_snapshot, session_web_diagnostics_snapshot,
+    with_session,
+};
 
 const AI_BUDGET: Duration = Duration::from_millis(25);
 const LOCAL_AI_SOURCE_LABEL: &str = "ai:local";
@@ -663,6 +666,39 @@ fn attach_inspector_debug(session_id: RimeSessionId, context: &mut JsonValue) {
     let Some((snapshot, candidates)) = session_inspector_snapshot(session_id) else {
         return;
     };
+    let storage_debug = session_web_diagnostics_snapshot(session_id).map_or_else(
+        || json!({}),
+        |diagnostics| {
+            json!({
+                "source_fallback": !diagnostics.source_fallbacks.is_empty(),
+                "source_fallbacks": diagnostics.source_fallbacks.into_iter().map(|deferral| json!({
+                    "gear": deferral.gear,
+                    "observed_librime_role": deferral.observed_librime_role,
+                    "current_yune_behavior": deferral.current_yune_behavior,
+                    "scope_decision": deferral.scope_decision,
+                    "target_phase": deferral.target_phase,
+                })).collect::<Vec<_>>(),
+                "selected": diagnostics.storage.into_iter().map(|row| json!({
+                    "translator_index": row.translator_index,
+                    "translator": row.translator,
+                    "owner": row.owner,
+                    "selected_storage": row.selected_storage,
+                    "mapping_mode": row.mapping_mode,
+                    "is_marisa_backed": row.is_marisa_backed,
+                    "byte_source_len": row.byte_source_len,
+                    "stored_entry_count": row.stored_entry_count,
+                })).collect::<Vec<_>>(),
+                "memory_owner_rows": diagnostics.memory_owner_rows.into_iter().map(|row| json!({
+                    "owner": row.owner,
+                    "class": row.class.as_str(),
+                    "estimated_bytes": row.estimated_bytes,
+                    "item_count": row.item_count,
+                    "storage": row.storage,
+                    "notes": row.notes,
+                })).collect::<Vec<_>>(),
+            })
+        },
+    );
     let threshold = snapshot.prediction_weight_threshold;
     let prediction_candidates = candidates
         .iter()
@@ -703,6 +739,7 @@ fn attach_inspector_debug(session_id: RimeSessionId, context: &mut JsonValue) {
             "weight_threshold": threshold,
             "candidates": prediction_candidates,
         },
+        "storage": storage_debug,
         "ai_staging": {
             "state": snapshot.ai_staging.state,
             "for_input": snapshot.ai_staging.for_input,

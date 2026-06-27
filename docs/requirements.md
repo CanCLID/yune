@@ -128,6 +128,26 @@ Requirements for the next integration milestone. These requirements turn the Pha
 - [x] **WIN-PARITY-01**: Cantonese/Jyutping parity regression coverage locks the captured v1.1.2 engine behavior in active `cantonese_parity` tests; schema-menu/userdb observations remain frontend/T3 evidence limits.
 - [x] **WIN-FRONTEND-01**: TypeDuck-Windows builds/links against the Yune package and passes a stock real-server IPC smoke. Stock `TypeDuckServer.exe` starts from `output\`, loads packaged Yune `output\rime.dll`, and stock `TestTypeDuckIPC.exe /console` returns a nonzero session, sends `ngohaig` key events, and receives `status.schema_id=jyut6ping3` plus candidate/context data. Tracked evidence: `docs/plans/completed/m10-evidence/t3-stock-real-server/`. Caveat: interactive TSF typing, visible candidate-window rendering, and candidate-panel UI behavior are deferred to the Phase 2 Windows product/frontend track.
 
+## WEB-02 Jyutping WASM Memory Attribution Requirements
+
+**Status: complete as Phase 0 source-fallback classification.** WEB-02 adds a
+web-safe inspector storage diagnostic and classifies the public-demo Jyutping
+browser owner left unclassified by M46. Evidence:
+`docs/reports/evidence/web02-jyutping-wasm-memory-attribution/`; plan:
+[`docs/plans/completed/web02-plan-jyutping-wasm-memory-attribution.md`](./plans/completed/web02-plan-jyutping-wasm-memory-attribution.md).
+
+- [x] **WEB02-ATTR-01**: The web ABI response can expose selected storage,
+  mapping mode, byte-source length, source-fallback deferrals, and memory-owner
+  rows through the existing inspector JSON path without adding a new export.
+- [x] **WEB02-ATTR-02**: The shipped public-demo Jyutping assets are reconciled
+  against the live web ABI path. WEB-02 proves `Rime::Prism/3.0` Jyutping
+  prisms are rejected as `UnsupportedVersion`, selected storage is
+  `owned_heap`, and retained `translator.entries_by_code` rows total
+  `529,602,374 B`.
+- [x] **WEB02-ATTR-03**: WEB-02 does not claim a memory reduction. The
+  `893.1 MiB` high-water remains a measured blocker until a follow-up branch
+  fixes the browser/public-demo compiled-asset contract and remeasures.
+
 ## P2-WIN-02 TypeDuck Windows Boundary Compatibility Requirements
 
 **Status: complete; Yune boundary fixed and non-Yune TSF input-delivery blocker classified.** P2-WIN-02 closes the Yune-side raw TypeDuck `jyut6ping3` `ngohaig` boundary bug found by TypeDuck-Windows Phase 0C without widening the default upstream ABI. Evidence: `docs/reports/evidence/p2-win02-boundary-compat-2026-06-22/`; plan: [`docs/plans/completed/p2-win02-plan-typeduck-boundary-compat.md`](./plans/completed/p2-win02-plan-typeduck-boundary-compat.md).

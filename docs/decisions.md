@@ -438,6 +438,29 @@ zero worker action errors, and `893.1 MiB` WASM high-water. M46 closes as
 `504,627,200 B`, browser Jyutping still reaches `893.1 MiB`, and no native
 Track B or browser WASM memory success is claimed.
 
+### WEB-02 Jyutping public-demo WASM memory owner classification (project-wide D-45)
+
+**D-45 / WEB02-JYUTPING-SOURCE-FALLBACK-OWNER - Fix the browser/public-demo
+compiled-asset contract before more Jyutping memory-reduction experiments.**
+WEB-02 proves the public-demo Jyutping browser path is not byte-backed. The
+live web ABI path reports `source_fallback=true`, `selected_storage=owned_heap`,
+`byte_source_len=0`, and fallback reason
+`source fallback after compiled reject: Invalid("prism parse failed:
+UnsupportedVersion")`. The shipped public-demo Jyutping prisms are
+`Rime::Prism/3.0`, while M46's valid native Track B path used generated
+current `Rime::Prism/4.0` deploy artifacts and selected byte-backed storage
+with `source_fallback=false`.
+
+The retained owner is engine heap at runtime:
+`translator.entries_by_code=510,925,748 B` plus `18,676,626 B`
+(`529,602,374 B` total). The root cause belongs to web/public-demo artifact
+delivery and deploy staging, not to WEB-01 payload-family selection or
+`INITIAL_MEMORY`. WEB-02 does not claim a memory reduction and does not move the
+known `893.1 MiB` high-water. Any follow-up Jyutping browser memory branch must
+first make the browser/public-demo path select current byte-backed compiled
+storage, then rerun WASM ready/peak/steady evidence. If that still leaves a
+large high-water, allocator/transient profiling can follow.
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/completed/m00-analysis-founding.md`, `docs/roadmap.md`, and `docs/plans/completed/m05-m07-record-foundation-refactor.md` are the retained source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into the retained docs before `.planning/` was removed. External research was skipped at setup because scope was driven by existing docs and direct librime comparison.
@@ -452,4 +475,4 @@ Track B or browser WASM memory success is claimed.
 
 ---
 
-_Last updated: 2026-06-27 - D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and browser Jyutping remains `893.1 MiB`, so M46 closes as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` does not reduce settled linear memory, 48 MiB worsens Luna, and Jyutping remains `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
+_Last updated: 2026-06-27 - D-45 records WEB-02 complete as a public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets force `owned_heap`, retained `translator.entries_by_code` rows total `529,602,374 B`, and the next branch must fix the compiled-asset contract before further memory experiments. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and browser Jyutping remains `893.1 MiB`, so M46 closes as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` does not reduce settled linear memory, 48 MiB worsens Luna, and Jyutping remains `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._

@@ -1,0 +1,146 @@
+{
+  "asset_root": "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\crates\\yune-rime-api\\../../apps/yune-web/public-demo/dist/schema",
+  "candidate_head": [
+    {
+      "comment": "\f\r1,你,nei5,1,0,,oth,,,,,,,you (singular),تم,तपाईं,आप,kamu",
+      "quality": 21.0,
+      "source": "table",
+      "text": "你"
+    },
+    {
+      "comment": "\f\r1,呢,nei1,2,0,,oth,ver,,,這,,,this,,,,\r0,呢,ne1,1,0,,part,,,,,,,(how about),(particle),,(particle),(imbuhan kata)\r0,呢,ni1,2,0,,oth,ver,,,這,,,this,,,,",
+      "quality": 20.0,
+      "source": "table",
+      "text": "呢"
+    },
+    {
+      "comment": "\f\r1,尼,nei4,1,0,,n,,,,,,,nun,,,,kamu",
+      "quality": 19.0,
+      "source": "table",
+      "text": "尼"
+    },
+    {
+      "comment": "\f\r1,妮,nei4,1,0,,n,,,,,,,little girl,,,,",
+      "quality": 18.0,
+      "source": "table",
+      "text": "妮"
+    },
+    {
+      "comment": "\f\r1,彌,nei4,1,0,,morph,,,,,,彌補，彌留,full; fill,,,,penuh",
+      "quality": 17.0,
+      "source": "table",
+      "text": "彌"
+    }
+  ],
+  "input": "nei",
+  "schema_id": "jyut6ping3_mobile",
+  "source_fallback": true,
+  "storage": {
+    "memory_owner_rows": [
+      {
+        "class": "heap_owned_guarded",
+        "estimated_bytes": 510925748,
+        "item_count": 1139357,
+        "notes": "heap dictionary rows used by source-YAML and small test translators",
+        "owner": "translator.entries_by_code",
+        "storage": "BTreeMap<String, Vec<Candidate>>"
+      },
+      {
+        "class": "shared",
+        "estimated_bytes": 0,
+        "item_count": 0,
+        "notes": "upstream sentence model not retained for this translator",
+        "owner": "poet.entries_by_code",
+        "storage": "none"
+      },
+      {
+        "class": "shared",
+        "estimated_bytes": 0,
+        "item_count": 0,
+        "notes": "upstream sentence model not retained for this translator",
+        "owner": "poet.lookup_index",
+        "storage": "none"
+      },
+      {
+        "class": "shared",
+        "estimated_bytes": 0,
+        "item_count": 0,
+        "notes": "upstream sentence model not retained for this translator",
+        "owner": "poet.abbreviation_vocabulary",
+        "storage": "none"
+      },
+      {
+        "class": "heap_owned_guarded",
+        "estimated_bytes": 18676626,
+        "item_count": 70805,
+        "notes": "heap dictionary rows used by source-YAML and small test translators",
+        "owner": "translator.entries_by_code",
+        "storage": "BTreeMap<String, Vec<Candidate>>"
+      },
+      {
+        "class": "shared",
+        "estimated_bytes": 0,
+        "item_count": 0,
+        "notes": "upstream sentence model not retained for this translator",
+        "owner": "poet.entries_by_code",
+        "storage": "none"
+      },
+      {
+        "class": "shared",
+        "estimated_bytes": 0,
+        "item_count": 0,
+        "notes": "upstream sentence model not retained for this translator",
+        "owner": "poet.lookup_index",
+        "storage": "none"
+      },
+      {
+        "class": "shared",
+        "estimated_bytes": 0,
+        "item_count": 0,
+        "notes": "upstream sentence model not retained for this translator",
+        "owner": "poet.abbreviation_vocabulary",
+        "storage": "none"
+      }
+    ],
+    "selected": [
+      {
+        "byte_source_len": 0,
+        "is_marisa_backed": false,
+        "mapping_mode": "owned_heap",
+        "owner": "translator.entries_by_code",
+        "selected_storage": "owned_heap",
+        "stored_entry_count": 1139357,
+        "translator": "static_table_translator",
+        "translator_index": 1
+      },
+      {
+        "byte_source_len": 0,
+        "is_marisa_backed": false,
+        "mapping_mode": "owned_heap",
+        "owner": "translator.entries_by_code",
+        "selected_storage": "owned_heap",
+        "stored_entry_count": 70805,
+        "translator": "static_table_translator",
+        "translator_index": 2
+      }
+    ],
+    "source_fallback": true,
+    "source_fallbacks": [
+      {
+        "current_yune_behavior": "source fallback after compiled reject: Invalid(\"prism parse failed: UnsupportedVersion\")",
+        "gear": "dictionary_source_fallback",
+        "observed_librime_role": "compiled dictionary reject with source fallback",
+        "scope_decision": "prefer source dictionary when compiled data is missing, stale, unsupported, or invalid",
+        "target_phase": "04-compiled-dictionary-data"
+      }
+    ]
+  },
+  "summary": {
+    "reported_memory_owner_bytes": 529602374,
+    "selected_storage_values": [
+      "owned_heap",
+      "owned_heap"
+    ],
+    "total_byte_source_len": 0
+  }
+}

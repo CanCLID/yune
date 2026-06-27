@@ -7,7 +7,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use serde_json::Value;
+use serde_json::{json, Value};
 use yune_rime_api::{
     rime_get_api, yune_web_cleanup, yune_web_customize, yune_web_delete_candidate, yune_web_deploy,
     yune_web_flip_page, yune_web_free_response, yune_web_init, yune_web_process_key,
@@ -1214,6 +1214,19 @@ schema:\n  schema_id: yune_web_luna\n  name: Yune Web Luna\nmenu:\n  page_size: 
         }
     }
 
+    fn write_public_demo_assets(&self) {
+        let schema_root = public_demo_schema_root();
+        copy_dir_contents(&schema_root, &self.shared);
+        let staging = self.user.join("build");
+        for file_name in ["default.yaml", "jyut6ping3_mobile.schema.yaml"] {
+            fs::copy(
+                schema_root.join("build").join(file_name),
+                staging.join(file_name),
+            )
+            .expect("public-demo preloaded build asset should be copied");
+        }
+    }
+
     fn remove(self) {
         reset_rime();
         fs::remove_dir_all(self.root).expect("temp dir should be removed");
@@ -1236,6 +1249,148 @@ fn yune_web_adapter_deploys_browser_real_assets_after_init() {
     assert!(!state.is_null());
 
     assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn yune_web_adapter_storage_diagnostics_reports_live_jyutping_storage() {
+    let _guard = test_guard();
+    let runtime =
+        YuneWebRuntime::create_with_schema("browser-app-storage-diagnostics", "jyut6ping3_mobile");
+    runtime.write_browser_app_assets();
+
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+    let composing = process_input(state, "nei");
+    let storage = &composing["context"]["debug"]["storage"];
+    assert!(storage["source_fallback"].is_boolean());
+    let selected = storage["selected"]
+        .as_array()
+        .expect("selected storage rows should be an array");
+    assert!(
+        selected
+            .iter()
+            .any(|row| row["owner"] == "compact_table.storage"
+                || row["owner"] == "translator.entries_by_code"),
+        "Jyutping should report a live translator storage row: {selected:?}"
+    );
+    assert!(storage["memory_owner_rows"]
+        .as_array()
+        .expect("memory owner rows should be an array")
+        .iter()
+        .any(|row| row["owner"] == "compact_table.storage"
+            || row["owner"] == "translator.entries_by_code"));
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+#[ignore = "WEB-02 evidence-only: writes public-demo storage diagnostics to YUNE_WEB02_EVIDENCE_DIR"]
+fn web02_public_demo_storage_diagnostics_exports_owner_rows() {
+    let _guard = test_guard();
+    let evidence_dir = PathBuf::from(
+        std::env::var_os("YUNE_WEB02_EVIDENCE_DIR")
+            .expect("YUNE_WEB02_EVIDENCE_DIR must point to the WEB-02 evidence directory"),
+    );
+    fs::create_dir_all(&evidence_dir).expect("evidence directory should be created");
+
+    let runtime =
+        YuneWebRuntime::create_with_schema("web02-public-demo-diagnostics", "jyut6ping3_mobile");
+    runtime.write_public_demo_assets();
+
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+    let composing = process_input(state, "nei");
+    let storage = &composing["context"]["debug"]["storage"];
+    let selected = storage["selected"]
+        .as_array()
+        .expect("selected storage rows should be an array");
+    assert!(
+        !selected.is_empty(),
+        "public-demo Jyutping should report at least one live storage row"
+    );
+
+    let total_byte_source_len = selected
+        .iter()
+        .filter_map(|row| row["byte_source_len"].as_u64())
+        .sum::<u64>();
+    let memory_rows = storage["memory_owner_rows"]
+        .as_array()
+        .expect("memory owner rows should be an array");
+    let reported_memory_owner_bytes = memory_rows
+        .iter()
+        .filter_map(|row| row["estimated_bytes"].as_u64())
+        .sum::<u64>();
+    let evidence = json!({
+        "schema_id": "jyut6ping3_mobile",
+        "input": "nei",
+        "asset_root": public_demo_schema_root().display().to_string(),
+        "source_fallback": storage["source_fallback"],
+        "storage": storage,
+        "summary": {
+            "selected_storage_values": selected.iter()
+                .filter_map(|row| row["selected_storage"].as_str())
+                .collect::<Vec<_>>(),
+            "total_byte_source_len": total_byte_source_len,
+            "reported_memory_owner_bytes": reported_memory_owner_bytes,
+        },
+        "candidate_head": composing["context"]["candidates"]
+            .as_array()
+            .expect("candidate rows should be an array")
+            .iter()
+            .take(5)
+            .cloned()
+            .collect::<Vec<_>>(),
+    });
+    fs::write(
+        evidence_dir.join("storage-diagnostics.json"),
+        serde_json::to_string_pretty(&evidence).expect("evidence should serialize"),
+    )
+    .expect("storage diagnostics evidence should be written");
+    fs::write(
+        evidence_dir.join("storage-selected.csv"),
+        storage_selected_csv(selected),
+    )
+    .expect("storage selected CSV should be written");
+    fs::write(
+        evidence_dir.join("memory-owner-rows.csv"),
+        memory_owner_rows_csv(memory_rows),
+    )
+    .expect("memory owner rows CSV should be written");
+    fs::write(
+        evidence_dir.join("compiled-asset-inventory.csv"),
+        compiled_asset_inventory_csv(&runtime),
+    )
+    .expect("compiled asset inventory CSV should be written");
 
     unsafe { yune_web_cleanup(state) };
     runtime.remove();
@@ -2105,6 +2260,97 @@ fn browser_app_schema_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema")
 }
 
+fn public_demo_schema_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public-demo/dist/schema")
+}
+
+fn storage_selected_csv(rows: &[Value]) -> String {
+    let mut output = String::from(
+        "translator_index,translator,owner,selected_storage,mapping_mode,is_marisa_backed,byte_source_len,stored_entry_count\n",
+    );
+    for row in rows {
+        output.push_str(&format!(
+            "{},{},{},{},{},{},{},{}\n",
+            row["translator_index"].as_u64().unwrap_or_default(),
+            csv_field(row["translator"].as_str().unwrap_or_default()),
+            csv_field(row["owner"].as_str().unwrap_or_default()),
+            csv_field(row["selected_storage"].as_str().unwrap_or_default()),
+            csv_field(row["mapping_mode"].as_str().unwrap_or_default()),
+            row["is_marisa_backed"].as_bool().unwrap_or_default(),
+            row["byte_source_len"].as_u64().unwrap_or_default(),
+            row["stored_entry_count"].as_u64().unwrap_or_default(),
+        ));
+    }
+    output
+}
+
+fn memory_owner_rows_csv(rows: &[Value]) -> String {
+    let mut output = String::from("owner,class,estimated_bytes,item_count,storage,notes\n");
+    for row in rows {
+        output.push_str(&format!(
+            "{},{},{},{},{},{}\n",
+            csv_field(row["owner"].as_str().unwrap_or_default()),
+            csv_field(row["class"].as_str().unwrap_or_default()),
+            row["estimated_bytes"].as_u64().unwrap_or_default(),
+            row["item_count"].as_u64().unwrap_or_default(),
+            csv_field(row["storage"].as_str().unwrap_or_default()),
+            csv_field(row["notes"].as_str().unwrap_or_default()),
+        ));
+    }
+    output
+}
+
+fn csv_field(value: &str) -> String {
+    if value.contains([',', '"', '\n', '\r']) {
+        format!("\"{}\"", value.replace('"', "\"\""))
+    } else {
+        value.to_owned()
+    }
+}
+
+fn compiled_asset_inventory_csv(runtime: &YuneWebRuntime) -> String {
+    let mut output = String::from("scope,path,exists,bytes,header\n");
+    let roots = [
+        ("shared", runtime.shared.clone()),
+        ("user_build", runtime.user.join("build")),
+    ];
+    for (scope, root) in roots {
+        for file_name in [
+            "jyut6ping3.table.bin",
+            "jyut6ping3.reverse.bin",
+            "jyut6ping3_mobile.prism.bin",
+            "jyut6ping3_scolar.table.bin",
+            "jyut6ping3_scolar.reverse.bin",
+            "jyut6ping3_scolar.prism.bin",
+            "luna_pinyin.table.bin",
+            "luna_pinyin.reverse.bin",
+            "luna_pinyin.prism.bin",
+        ] {
+            let path = root.join(file_name);
+            let (exists, bytes, header) = compiled_asset_inventory_row(&path);
+            output.push_str(&format!(
+                "{},{},{},{},{}\n",
+                scope,
+                csv_field(file_name),
+                exists,
+                bytes,
+                csv_field(&header),
+            ));
+        }
+    }
+    output
+}
+
+fn compiled_asset_inventory_row(path: &Path) -> (bool, u64, String) {
+    if !path.is_file() {
+        return (false, 0, String::new());
+    }
+    let bytes = fs::read(path).expect("compiled asset should be readable");
+    let header_len = bytes.len().min(32);
+    let header = String::from_utf8_lossy(&bytes[..header_len]).replace('\0', "\\0");
+    (true, bytes.len() as u64, header)
+}
+
 fn rich_dictionary_comment_oracle_build_status() -> Result<PathBuf, String> {
     let build_root = typeduck_oracle_root().join("rime-user/build");
     let required_files = [
@@ -2172,5 +2418,23 @@ fn copy_asset_if_exists(schema_root: &Path, destination_root: &Path, relative_pa
             fs::create_dir_all(parent).expect("asset parent directory should be created");
         }
         fs::copy(source, destination).expect("browser optional asset should be copied");
+    }
+}
+
+fn copy_dir_contents(source_root: &Path, destination_root: &Path) {
+    for entry in fs::read_dir(source_root).expect("source asset directory should be readable") {
+        let entry = entry.expect("source asset entry should be readable");
+        let source = entry.path();
+        let destination = destination_root.join(entry.file_name());
+        if source.is_dir() {
+            fs::create_dir_all(&destination)
+                .expect("destination asset directory should be created");
+            copy_dir_contents(&source, &destination);
+        } else {
+            if let Some(parent) = destination.parent() {
+                fs::create_dir_all(parent).expect("asset parent directory should be created");
+            }
+            fs::copy(&source, &destination).expect("public-demo asset should be copied");
+        }
     }
 }

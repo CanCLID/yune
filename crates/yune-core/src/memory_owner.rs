@@ -58,3 +58,38 @@ impl MemoryOwnerRow {
         }
     }
 }
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StorageDiagnosticsRow {
+    pub translator_index: usize,
+    pub translator: String,
+    pub owner: String,
+    pub selected_storage: String,
+    pub mapping_mode: String,
+    pub is_marisa_backed: bool,
+    pub byte_source_len: usize,
+    pub stored_entry_count: usize,
+}
+
+impl StorageDiagnosticsRow {
+    #[must_use]
+    pub fn new(
+        owner: impl Into<String>,
+        selected_storage: impl Into<String>,
+        mapping_mode: impl Into<String>,
+        is_marisa_backed: bool,
+        byte_source_len: usize,
+        stored_entry_count: usize,
+    ) -> Self {
+        Self {
+            translator_index: 0,
+            translator: String::new(),
+            owner: owner.into(),
+            selected_storage: selected_storage.into(),
+            mapping_mode: mapping_mode.into(),
+            is_marisa_backed,
+            byte_source_len,
+            stored_entry_count,
+        }
+    }
+}

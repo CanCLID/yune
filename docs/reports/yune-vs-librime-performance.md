@@ -118,6 +118,21 @@ claimed. The evidence root is
 
 ![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
 
+WEB-02 follow-up classifies the public-demo Jyutping browser owner that M46
+left unclassified. The measured web ABI path now reports
+`source_fallback=true`, `selected_storage=owned_heap`, and
+`byte_source_len=0` for the public-demo Jyutping path. The fallback reason is
+`prism parse failed: UnsupportedVersion`: shipped public-demo Jyutping prisms
+are `Rime::Prism/3.0`, while the compact byte-backed path uses current
+`Rime::Prism/4.0` artifacts. Retained owner rows name
+`translator.entries_by_code` at `510,925,748 B` plus `18,676,626 B`
+(`529,602,374 B` total, `505.1 MiB`). This is not a memory reduction and does
+not change the `893.1 MiB` browser high-water; it names the first reduction
+target as the web/public-demo compiled-asset contract. Evidence:
+[`./evidence/web02-jyutping-wasm-memory-attribution/`](./evidence/web02-jyutping-wasm-memory-attribution/).
+
+![WEB-02 public-demo Jyutping storage owner scale](./evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
+
 ## M45 Visual Dashboard
 
 The checked-in M45 visuals summarize the final native evidence under

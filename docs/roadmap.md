@@ -2,7 +2,7 @@
 
 Yune is a Rust input-method engine that uses **upstream librime as a
 compatibility and performance oracle** while building a cleaner Rust engine.
-M45, WEB-01, and M46 are complete with measured blockers. M45 confirmed
+M45, WEB-01, M46, and WEB-02 are complete with measured blockers. M45 confirmed
 upstream candidate-output parity for Track A `n`/`ni`/`hao`, kept `hao` inside
 the short-key ratio target, and split steady resident memory from real peak
 memory. WEB-01 then proved that the current browser `893.1 MiB` Jyutping WASM
@@ -10,7 +10,11 @@ high-water is not fixed by browser `INITIAL_MEMORY` or shared-asset-family
 payload changes. M46 took that handoff, fixed the product-affecting
 multi-schema Jyutping correctness bug, and closed memory as
 `measured-no-go-owner-unclassified`: native Track B still peaks at
-`504,627,200 B`, and browser Jyutping still reaches `893.1 MiB`.
+`504,627,200 B`, and browser Jyutping still reaches `893.1 MiB`. WEB-02 then
+classified the public-demo Jyutping browser owner as source fallback:
+`Rime::Prism/3.0` Jyutping prisms are rejected, the live path selects
+`owned_heap`, and retained `translator.entries_by_code` rows total
+`529,602,374 B`.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -43,6 +47,9 @@ multi-schema Jyutping correctness bug, and closed memory as
 - [`plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md`](./plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md)
   - completed attribution-first plan for the TypeDuck/Jyutping native Track B
   and browser WASM memory owners left after M45 and WEB-01.
+- [`plans/completed/web02-plan-jyutping-wasm-memory-attribution.md`](./plans/completed/web02-plan-jyutping-wasm-memory-attribution.md)
+  - completed browser/public-demo source-fallback owner classification for the
+  Jyutping `893.1 MiB` WASM high-water.
 - [`plans/completed/m45-plan-native-short-key-latency-memory-attribution.md`](./plans/completed/m45-plan-native-short-key-latency-memory-attribution.md)
   - completed partial native-engine plan for Track A short-prefix latency and
   Track A memory attribution after M44.
@@ -82,16 +89,15 @@ multi-schema Jyutping correctness bug, and closed memory as
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior is complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. | Preserve upstream-observable behavior on every engine change. |
 | Engine performance | M45 is complete as a partial native-engine follow-up to M44. Phase 0 selected `short-key-measured-no-go`, so no short-key engine implementation was retained. Final `hao` preserves the M44 pass at `24.267us` / `2.110x`, while `n` remains `68.900us` / `3.313x` and `ni` remains `49.450us` / `3.458x`. Track A steady resident rows meet the resident target (`87,498,752-98,684,928 B`), but the real cold-start peak remains `127,475,712 B`, so M45 records a standing peak-cost blocker. M46 confirms Track B still peaks at `504,627,200 B` with mostly unclassified process memory. | Keep `n`/`ni` as separate future Track A blockers unless a new plan targets them. Future Track B/Jyutping memory work needs a new measured-owner plan. |
-| Web harness startup and memory | M41 is complete for the tracked `apps/yune-web/` browser harness. WEB-01 is complete as measured no-go: fair `luna_pinyin` comparison is `160.0 MiB` peak versus My RIME `16.0 MiB`; Jyutping remains a Yune-only guard at `893.1 MiB` because My RIME's `68.0 MiB` row uses a smaller Cantonese-only package. Final attribution keeps Yune Jyutping at `893.1 MiB` even for `extras` and `jyutping-core`. M46 fixed the Cangjie -> Luna -> Jyutping no-candidate row, but the browser high-water remains `893.1 MiB`; the older `~1.9 GiB` high-water remains historical WEB-01 evidence, not the fresh current high-water. | Do not start another WEB-01-style harness plan. Browser memory claims need measured WASM ready/peak/steady movement in a new scoped plan. |
+| Web harness startup and memory | M41 is complete for the tracked `apps/yune-web/` browser harness. WEB-01 is complete as measured no-go: fair `luna_pinyin` comparison is `160.0 MiB` peak versus My RIME `16.0 MiB`; Jyutping remains a Yune-only guard at `893.1 MiB` because My RIME's `68.0 MiB` row uses a smaller Cantonese-only package. Final attribution keeps Yune Jyutping at `893.1 MiB` even for `extras` and `jyutping-core`. M46 fixed the Cangjie -> Luna -> Jyutping no-candidate row. WEB-02 then classified the public-demo Jyutping owner: shipped `Rime::Prism/3.0` assets force `owned_heap` source fallback with `529,602,374 B` retained in `translator.entries_by_code`; the browser high-water itself still remains `893.1 MiB`. | Do not start another WEB-01-style payload/`INITIAL_MEMORY` plan. The next browser memory branch should fix the public-demo/browser compiled-asset contract and then remeasure WASM ready/peak/steady. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific native frontends remain outside this repo roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
 ## Authoritative Sequence
 
-1. **Future measured-owner memory slice** - only with a new scoped plan. M46
-   closed the WEB-01 handoff as a useful partial result: schema-switch
-   correctness is fixed, but native Track B and browser Jyutping memory did
-   not move.
+1. **Future measured-owner memory slice** - only with a new scoped plan. WEB-02
+   classified the public-demo Jyutping browser owner as source fallback from
+   stale/unsupported `Rime::Prism/3.0` assets, but memory did not move.
 2. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
 3. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,

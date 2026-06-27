@@ -83,7 +83,7 @@ pub use m37_metrics::{
     m37_record_userdb_merge, M37MetricsSnapshot, M37SentenceCandidateMetrics,
     M40SentenceLookupMetrics,
 };
-pub use memory_owner::{MemoryOwnerClass, MemoryOwnerRow};
+pub use memory_owner::{MemoryOwnerClass, MemoryOwnerRow, StorageDiagnosticsRow};
 pub use poet::{
     make_sentence, make_sentences, null_grammar_score, Grammar, NullGrammar, SentenceCodeSpan,
     SentencePath, UpstreamSentenceModel, WordGraph, WordGraphEntry, UPSTREAM_NO_GRAMMAR_PENALTY,
@@ -152,6 +152,10 @@ pub trait Translator: Send + Sync {
     }
 
     fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
+        Vec::new()
+    }
+
+    fn storage_diagnostics(&self) -> Vec<StorageDiagnosticsRow> {
         Vec::new()
     }
 }

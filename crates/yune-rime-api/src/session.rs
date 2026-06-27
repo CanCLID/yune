@@ -310,6 +310,31 @@ pub(crate) fn session_inspector_snapshot(
     ))
 }
 
+pub(crate) struct SessionWebDiagnosticsSnapshot {
+    pub(crate) storage: Vec<yune_core::StorageDiagnosticsRow>,
+    pub(crate) memory_owner_rows: Vec<yune_core::MemoryOwnerRow>,
+    pub(crate) source_fallbacks: Vec<RemainingGearDeferral>,
+}
+
+pub(crate) fn session_web_diagnostics_snapshot(
+    session_id: RimeSessionId,
+) -> Option<SessionWebDiagnosticsSnapshot> {
+    let mut registry = sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let session = registry.get_session_mut(session_id)?;
+    Some(SessionWebDiagnosticsSnapshot {
+        storage: session.engine.storage_diagnostics(),
+        memory_owner_rows: session.engine.memory_owner_rows(),
+        source_fallbacks: session
+            .remaining_gear_deferrals
+            .iter()
+            .filter(|deferral| deferral.gear == "dictionary_source_fallback")
+            .cloned()
+            .collect(),
+    })
+}
+
 #[cfg(test)]
 pub(crate) fn remaining_gear_deferrals_snapshot(
     session_id: RimeSessionId,

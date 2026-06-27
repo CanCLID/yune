@@ -16,8 +16,8 @@ use crate::spelling_algebra::{ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
     Candidate, CandidateRequest, CandidateSource, Context, M37SentenceCandidateMetrics,
     MemoryOwnerClass, MemoryOwnerRow, PresetVocabularyEntry, RimeCorrectionEntry,
-    RimeToleranceRule, SpellingAlgebraDebug, Status, TableDictionary, TableDictionaryParseError,
-    TableEntry, TranslationResult, Translator,
+    RimeToleranceRule, SpellingAlgebraDebug, Status, StorageDiagnosticsRow, TableDictionary,
+    TableDictionaryParseError, TableEntry, TranslationResult, Translator,
 };
 
 const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
@@ -313,6 +313,27 @@ impl TableStorage {
                 rows.extend(store.memory_owner_rows());
                 rows
             }
+        }
+    }
+
+    fn storage_diagnostics(&self) -> Vec<StorageDiagnosticsRow> {
+        match self {
+            Self::Heap(entries) => vec![StorageDiagnosticsRow::new(
+                "translator.entries_by_code",
+                "owned_heap",
+                "owned_heap",
+                false,
+                0,
+                entries.values().map(Vec::len).sum(),
+            )],
+            Self::Compact(store) => vec![StorageDiagnosticsRow::new(
+                "compact_table.storage",
+                store.storage_label(),
+                store.mapping_mode(),
+                store.is_marisa_backed(),
+                store.byte_source_len(),
+                store.stored_entry_count(),
+            )],
         }
     }
 }
@@ -2806,6 +2827,10 @@ impl Translator for StaticTableTranslator {
             ]);
         }
         rows
+    }
+
+    fn storage_diagnostics(&self) -> Vec<StorageDiagnosticsRow> {
+        self.storage.storage_diagnostics()
     }
 }
 

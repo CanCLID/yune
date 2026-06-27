@@ -1,0 +1,9 @@
+owner,class,estimated_bytes,item_count,storage,notes
+translator.entries_by_code,heap_owned_guarded,510925748,1139357,"BTreeMap<String, Vec<Candidate>>",heap dictionary rows used by source-YAML and small test translators
+poet.entries_by_code,shared,0,0,none,upstream sentence model not retained for this translator
+poet.lookup_index,shared,0,0,none,upstream sentence model not retained for this translator
+poet.abbreviation_vocabulary,shared,0,0,none,upstream sentence model not retained for this translator
+translator.entries_by_code,heap_owned_guarded,18676626,70805,"BTreeMap<String, Vec<Candidate>>",heap dictionary rows used by source-YAML and small test translators
+poet.entries_by_code,shared,0,0,none,upstream sentence model not retained for this translator
+poet.lookup_index,shared,0,0,none,upstream sentence model not retained for this translator
+poet.abbreviation_vocabulary,shared,0,0,none,upstream sentence model not retained for this translator

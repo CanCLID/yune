@@ -12,8 +12,8 @@ use crate::{
     CandidateRequest, CandidateSource, CommitRecord, Composition, Context, EchoTranslator,
     EngineInspectorSnapshot, FilterAuditRecord, KeyCode, KeyEvent, KeyModifiers,
     KeySequenceParseError, MemoryOwnerRow, MemoryStore, PageSnapshot, RerankResult, SegmentDebug,
-    Snapshot, StagedAiCandidates, Status, Translator, UserDb, UserDbCommitMetadata,
-    UserDbLookupRequest, UserDbLookupResult,
+    Snapshot, StagedAiCandidates, Status, StorageDiagnosticsRow, Translator, UserDb,
+    UserDbCommitMetadata, UserDbLookupRequest, UserDbLookupResult,
 };
 
 pub struct Engine {
@@ -312,6 +312,27 @@ impl Engine {
         self.translators
             .iter()
             .flat_map(|translator| translator.memory_owner_rows())
+            .collect()
+    }
+
+    #[must_use]
+    pub fn storage_diagnostics(&self) -> Vec<StorageDiagnosticsRow> {
+        self.translators
+            .iter()
+            .enumerate()
+            .flat_map(|(translator_index, translator)| {
+                let translator_name = translator.name().to_owned();
+                translator
+                    .storage_diagnostics()
+                    .into_iter()
+                    .map(move |mut row| {
+                        row.translator_index = translator_index;
+                        if row.translator.is_empty() {
+                            row.translator = translator_name.clone();
+                        }
+                        row
+                    })
+            })
             .collect()
     }
 

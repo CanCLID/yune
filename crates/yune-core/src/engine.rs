@@ -1386,6 +1386,16 @@ impl Engine {
         }
         crate::m37_record_filter_pipeline(filter_start.elapsed());
         self.last_filter_audit = filter_audit;
+        if request.limit.is_some()
+            && self.status.schema_id == "luna_pinyin"
+            && crate::translator::is_m44_track_a_short_key_prefix(&input)
+            && !candidate_list_complete
+            && !self.filters.is_empty()
+            && candidates.len() < DEFAULT_PAGE_SIZE
+        {
+            self.refresh_candidates_with_request(CandidateRequest::unbounded());
+            return;
+        }
         let ranker_start = Instant::now();
         for ranker in &self.rankers {
             if let RerankResult::Ready(ranked) = ranker.try_rerank(&self.context, &candidates) {

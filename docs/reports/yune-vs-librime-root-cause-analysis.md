@@ -109,6 +109,7 @@ guards are not the same thing as a process memory win:
 | Metric | Phase 0 | Final | Read |
 | --- | ---: | ---: | --- |
 | Track A peak working set | `128,135,168 B` | `127,619,072 B` | Only `516,096 B` movement; still above target. |
+| Historical M42 `+5%` ceiling | n/a | `125,763,994 B` | Still breached; M44 is not a memory win. |
 | M44 memory-win target | n/a | `<=107,797,708 B` | Not met. |
 | `poet.entries_by_code` retained bytes | `18,694,662 B` | `18,694,662 B` | M43-packed owner remains; M44 did not reduce it further. |
 | selected table/prism heap mirrors | n/a | `0 B` | Storage guard pass. |
@@ -117,6 +118,8 @@ guards are not the same thing as a process memory win:
 The current root-cause read is that retained owner rows no longer explain the
 whole-process peak. The next memory pass should profile allocator/private/RSS
 owners and mapped page behavior before attempting another storage rewrite.
+The old M42 single-run peak `119,775,232 B` remains useful historical context,
+but the current comparable repeated M43/M44 band is around `127-128 MB`.
 
 ## Guardrails Preserved
 
@@ -135,7 +138,7 @@ owners and mapped page behavior before attempting another storage rewrite.
   [`./evidence/m44-native-performance-owner-reduction/phase-0-native-benchmark/`](./evidence/m44-native-performance-owner-reduction/phase-0-native-benchmark/)
 - M44 final benchmark:
   [`./evidence/m44-native-performance-owner-reduction/final-native-benchmark/`](./evidence/m44-native-performance-owner-reduction/final-native-benchmark/)
-- M44 candidate-output parity:
+- M44 abbreviation candidate-output parity:
   [`./evidence/m44-native-performance-owner-reduction/final-native-benchmark/oracle-vs-yune-candidate-output.md`](./evidence/m44-native-performance-owner-reduction/final-native-benchmark/oracle-vs-yune-candidate-output.md)
 - M44 final gates:
   [`./evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md`](./evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md)

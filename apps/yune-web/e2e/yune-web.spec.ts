@@ -1387,6 +1387,18 @@ test.describe("yune-web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
+  test("Default Jyutping composes clean multi-syllable shipped phrase", async ({
+    page,
+  }) => {
+    const state = await typeCompositionAndWaitForTopCandidate(
+      page,
+      "ngogokdak",
+      "\u6211\u89ba\u5f97",
+    );
+    expect(state.candidates[0].text).toBe("\u6211\u89ba\u5f97");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
   test("UI language switcher localizes labels and persists @bilingual", async ({
     page,
   }) => {

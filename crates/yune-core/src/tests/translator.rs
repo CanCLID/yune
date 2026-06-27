@@ -1,10 +1,22 @@
 use std::collections::HashMap;
 
 use crate::{
-    build_prism_bin, parse_rime_prism_bin_payload, CandidateRequest, CandidateSource, Context,
-    Engine, HistoryTranslator, MemoryOwnerClass, PunctuationTranslator, ReverseLookupTranslator,
-    StaticTableTranslator, Status, TableDictionary, Translator,
+    build_prism_bin, parse_rime_prism_bin_payload, Candidate, CandidateFilter, CandidateRequest,
+    CandidateSource, Context, Engine, HistoryTranslator, MemoryOwnerClass, PunctuationTranslator,
+    ReverseLookupTranslator, StaticTableTranslator, Status, TableDictionary, Translator,
 };
+
+struct DropFirstWindowFilter;
+
+impl CandidateFilter for DropFirstWindowFilter {
+    fn name(&self) -> &'static str {
+        "uniquifier"
+    }
+
+    fn apply(&self, candidates: &mut Vec<Candidate>) {
+        candidates.retain(|candidate| !candidate.text.starts_with("DROP"));
+    }
+}
 
 #[test]
 fn reverse_lookup_translator_uses_target_dictionary_comments() {
@@ -677,6 +689,17 @@ D	yi	100
         full_pinyin_metrics.abbreviation_code_span_graph_build_ns, 0,
         "full-pinyin sentence lookup must not record abbreviation code-span graph work"
     );
+    assert_eq!(full_pinyin_metrics.abbreviation_span_discovery_ns, 0);
+    assert_eq!(
+        full_pinyin_metrics.abbreviation_span_candidates_considered,
+        0
+    );
+    assert_eq!(full_pinyin_metrics.abbreviation_span_codes_emitted, 0);
+    assert_eq!(full_pinyin_metrics.abbreviation_model_has_code_calls, 0);
+    assert_eq!(full_pinyin_metrics.abbreviation_model_has_code_ns, 0);
+    assert_eq!(full_pinyin_metrics.abbreviation_sentence_ranking_ns, 0);
+    assert_eq!(full_pinyin_metrics.abbreviation_preedit_format_ns, 0);
+    assert_eq!(full_pinyin_metrics.abbreviation_candidate_format_ns, 0);
 
     crate::m37_metrics_enable(true);
     crate::m37_metrics_reset();
@@ -855,6 +878,68 @@ H7	hao	40
 }
 
 #[test]
+fn short_luna_key_refresh_falls_back_when_filter_surplus_underfills_first_page() {
+    let _guard = super::m37_metrics_test_guard();
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_filter(DropFirstWindowFilter);
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(
+            r#"
+---
+name: short_key_underfill
+version: "0.1"
+sort: by_weight
+...
+
+DROP1	ni	100
+DROP2	ni	99
+DROP3	ni	98
+DROP4	ni	97
+DROP5	ni	96
+DROP6	ni	95
+DROP7	ni	94
+A	ni	93
+B	ni	92
+C	ni	91
+D	ni	90
+E	ni	89
+"#,
+        )
+        .expect("dictionary should parse")
+        .with_completion(false)
+        .with_sentence(false),
+    );
+
+    engine
+        .process_key_sequence("n")
+        .expect("key sequence should parse");
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine
+        .process_key_sequence("i")
+        .expect("key sequence should parse");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.candidate_request_bounded_calls, 1);
+    assert_eq!(metrics.candidate_request_surplus_total, 2);
+    assert_eq!(metrics.candidate_request_unbounded_calls, 1);
+    assert!(engine.candidate_list_complete());
+    assert_eq!(
+        engine
+            .context()
+            .candidates
+            .iter()
+            .take(5)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["A", "B", "C", "D", "E"]
+    );
+}
+
+#[test]
 fn bounded_typeduck_profile_request_records_m44_track_b_owner_metrics() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::parse_rime_dict_yaml(
@@ -905,6 +990,59 @@ HAI	hai	80
     assert!(metrics.track_b_prefix_lookup_ns > 0);
     assert!(metrics.track_b_candidates_materialized > 0);
     assert!(metrics.track_b_first_page_materialize_ns > 0);
+}
+
+#[test]
+fn bounded_typeduck_short_prefix_pruning_matches_full_translation_for_target_rows() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: track_b_prefix_parity
+version: "0.1"
+sort: by_weight
+...
+
+NEI	nei	100
+NEI2	nei	90
+NGO	ngo	100
+NGO2	ngo	90
+HAI	hai	100
+HAU	hau	100
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["nei", "ngo", "hai", "hau"].map(str::to_owned);
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_dynamic_correction_lookup(true)
+        .with_spelling_algebra(&formulas);
+
+    for input in ["nei", "ngo"] {
+        let full = translator.translate(input);
+        let bounded = translator.translate_with_context_and_request(
+            input,
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(5).with_debug_full_count(true),
+        );
+
+        assert_eq!(
+            bounded
+                .candidates
+                .iter()
+                .map(|candidate| (candidate.text.as_str(), candidate.comment.as_str()))
+                .collect::<Vec<_>>(),
+            full.iter()
+                .take(bounded.candidates.len())
+                .map(|candidate| (candidate.text.as_str(), candidate.comment.as_str()))
+                .collect::<Vec<_>>(),
+            "bounded Track B short-prefix pruning must preserve full translation order for {input}"
+        );
+    }
 }
 
 #[test]

@@ -23,7 +23,8 @@ Same-run Track A oracle: upstream `rime/librime 1.17.0` with `luna_pinyin`.
 | `zybfshmsru` | `540.970 us` | `853.120 us` | `0.634x`; target pass |
 
 Track A peak working set is `127,619,072 B`, above the M44 memory target
-`<=107,797,708 B`. Memory remains a measured blocker.
+`<=107,797,708 B` and still above the historical M42 `+5%` ceiling
+`125,763,994 B`. Memory remains a measured blocker.
 
 ## Track B Product-Profile Rows
 
@@ -41,11 +42,14 @@ Track B deployed storage remains `source_fallback=false`.
 
 ## Behavior And Storage Gates
 
-- Candidate-output comparison for `cszysmsrsd` and `zybfshmsru`: pass for
-  text, comments, order, preedit, commit preview, and first-page metadata.
+- Candidate-output comparison for abbreviation rows `cszysmsrsd` and
+  `zybfshmsru`: pass for text, comments, order, preedit, commit preview, and
+  first-page metadata. This artifact is scoped to abbreviation rows; it is not
+  a standalone oracle-vs-Yune candidate dump for `hao`, `ni`, or Track B short
+  rows.
 - `hao` and `ni`: `upstream_sentence_model_calls=0`.
-- Both M40 full-pinyin long rows: `abbreviation_span_discovery_calls=0`,
-  `abbreviation_code_span_graph_build_ns=0`, and short-key counters are `0`.
+- Both M40 full-pinyin long rows: all abbreviation-only counters are `0`, and
+  short-key counters are `0`.
 - Track A storage: `selected_storage=rsmarisa_byte_backed`, table/prism
   mapping mode `mmap`, table/prism heap mirrors `0`, `source_fallback=false`,
   `rsmarisa_status=ok`, and positive `rsmarisa` counters.
@@ -67,6 +71,13 @@ Two read-only review passes were run before final closeout.
   cushion, and that Track B pruning was too broad. The metric path, ranking
   bound, short-key refresh, and Track B prefix gate were tightened and covered
   by focused tests.
+- External M44 review follow-up found three extra evidence gaps. The M44 visual
+  concern was stale: checked-in M44 SVGs are linked from the reports. The real
+  short-key risk was fixed by falling back to a complete refresh when permitted
+  filters under-fill an incomplete bounded first page. Track B bounded pruning
+  now has a focused bounded-vs-full output preservation test for `nei` and
+  `ngo`. The requirements traceability table now marks M44 complete with
+  measured `ni` and memory blockers instead of planned.
 
 ## Evidence Artifacts
 
@@ -80,8 +91,10 @@ Two read-only review passes were run before final closeout.
   `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/product_path_status.csv`
 - Memory owner profile:
   `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/memory-owner-profile.csv`
-- Candidate output:
+- Candidate output for abbreviation rows:
   `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/oracle-vs-yune-candidate-output.md`
+- Visual evidence:
+  `docs/reports/evidence/m44-native-performance-owner-reduction/visuals/`
 
 ## Required Commands
 
@@ -98,4 +111,19 @@ Focused checks also run:
 - `cargo test -p yune-core bounded_compact_translator_uses_prism_abbreviation_spans_for_sentence_model`
 - `cargo test -p yune-core long_luna_rows_do_not_record_m44_short_key_metrics`
 - `cargo test -p yune-core short_luna_key_refresh_uses_first_page_bound_and_completes_on_page_turn`
+- `cargo test -p yune-core short_luna_key_refresh_falls_back_when_filter_surplus_underfills_first_page`
 - `cargo test -p yune-core bounded_typeduck_profile_request_records_m44_track_b_owner_metrics`
+- `cargo test -p yune-core bounded_typeduck_short_prefix_pruning_matches_full_translation_for_target_rows`
+
+Post-review follow-up verification for the added guard and documentation
+corrections:
+
+| Command | Result |
+| --- | --- |
+| `cargo fmt --check` | Pass |
+| `cargo clippy --workspace --all-targets -- -D warnings` | Pass |
+| `cargo test -p yune-core` | Pass |
+| `cargo test -p yune-rime-api m37_metrics_exports_snapshot_json_for_loaded_benchmarks` | Pass |
+| `cargo test -p yune-rime-api --test yune_web` | Pass; 31 tests passed in about 702 seconds after the bounded fallback was narrowed to the Track A `luna_pinyin` short-key path. |
+| `cargo test --workspace` | Pass; includes the slow real-asset `yune_web` integration suite. |
+| `git diff --check` | Pass |

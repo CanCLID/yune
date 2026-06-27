@@ -90,8 +90,14 @@ first-page metadata.
 | --- | ---: | ---: | --- |
 | `poet.entries_by_code` retained bytes | `18,694,662 B` | `18,694,662 B` | Remaining retained owner; no new memory reduction. |
 | Track A peak working set | `128,135,168 B` | `127,619,072 B` | Still misses memory target. |
+| Historical M42 `+5%` ceiling | n/a | `125,763,994 B` | Still breached; M44 is flat versus M43/M44 noise, not a new memory win. |
 | Whole-process memory-win target | n/a | `<=107,797,708 B` required | Not met. |
 | Track B deployed peak | `504,934,400 B` | `505,122,816 B` | Stable; no browser/product memory claim. |
+
+The M42 single-run peak `119,775,232 B` remains historical evidence. The
+current comparable M43/M44 repeated benchmark band is around `127-128 MB`, so
+M44 records memory as an open blocker rather than treating the old single run as
+the active closeout baseline.
 
 Track A final storage/status:
 
@@ -138,7 +144,7 @@ Key artifacts:
   [`phase-0-native-benchmark/`](./evidence/m44-native-performance-owner-reduction/phase-0-native-benchmark/)
 - Final benchmark bundle:
   [`final-native-benchmark/`](./evidence/m44-native-performance-owner-reduction/final-native-benchmark/)
-- Final candidate-output comparison:
+- Final candidate-output comparison for the two abbreviation rows only:
   [`oracle-vs-yune-candidate-output.md`](./evidence/m44-native-performance-owner-reduction/final-native-benchmark/oracle-vs-yune-candidate-output.md)
 - Final gates:
   [`final-gates.md`](./evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md)

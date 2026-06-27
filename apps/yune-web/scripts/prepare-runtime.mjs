@@ -1,4 +1,4 @@
-import { cp, mkdir, stat } from "node:fs/promises";
+import { cp, mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,6 +43,16 @@ async function copyRuntime() {
 			[
 				"Missing yune-web WASM runtime artifacts.",
 				"Build them first with scripts/yune-web-wasm-build.sh, then rerun npm --prefix apps/yune-web run build.",
+			].join(" "),
+		);
+	}
+
+	const jsRuntime = await readFile(jsSource, "utf8");
+	if (!jsRuntime.includes("createYuneWebModule") || !jsRuntime.includes('Module["HEAPU8"]')) {
+		throw new Error(
+			[
+				`Stale yune-web WASM runtime artifact at ${path.relative(repoRoot, jsSource)}.`,
+				"Build a fresh runtime with scripts/yune-web-wasm-build.sh before running the app so WASM heap metrics are available.",
 			].join(" "),
 		);
 	}

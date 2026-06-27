@@ -484,7 +484,7 @@
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) minmax(360px, 0.86fr);
 	gap: 24px;
-	align-items: stretch;
+	align-items: start;
 }
 
 .yd-compose-panel,
@@ -499,6 +499,7 @@
 
 .yd-compose-panel {
 	display: grid;
+	align-content: start;
 	gap: 12px;
 	grid-template-rows: auto minmax(220px, auto);
 	min-width: 0;
@@ -968,6 +969,7 @@
 }
 
 .yd-userdb-panel {
+	align-self: start;
 	padding-bottom: 16px;
 	min-width: 0;
 	overflow: hidden;

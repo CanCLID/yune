@@ -55,9 +55,11 @@ interface CreateYuneWebModuleOptions {
 type CreateYuneWebModule = (options: CreateYuneWebModuleOptions) => Promise<YuneWebBrowserModule>;
 
 interface PlaygroundSchema {
-  id: RimeSchemaId;
+  runtimeId: RimeSchemaId | "jyut6ping3_mobile";
   name: string;
   dictionaryId: string;
+  deployedDefaultPath?: string;
+  deployedSchemaPath?: string;
 }
 
 interface StartupMarker {
@@ -398,17 +400,19 @@ const YUNE_WEB_JYUTPING_SHARED_ASSETS = [
 ] as const;
 const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
   jyut6ping3: {
-    id: "jyut6ping3",
+    runtimeId: "jyut6ping3_mobile",
     name: "Jyutping",
     dictionaryId: "jyut6ping3",
+    deployedDefaultPath: "build/default.yaml",
+    deployedSchemaPath: "build/jyut6ping3_mobile.schema.yaml",
   },
   cangjie5: {
-    id: "cangjie5",
+    runtimeId: "cangjie5",
     name: "Cangjie 5",
     dictionaryId: "cangjie5",
   },
   luna_pinyin: {
-    id: "luna_pinyin",
+    runtimeId: "luna_pinyin",
     name: "Luna Pinyin",
     dictionaryId: "luna_pinyin",
   },
@@ -538,7 +542,7 @@ const loadRime = (async () => {
         m31EvidenceVersion: YUNE_PUBLIC_DEMO ? YUNE_WEB_M31_EVIDENCE_VERSION : undefined,
         publicDemo: YUNE_PUBLIC_DEMO,
         assetVersion: YUNE_WEB_ASSET_VERSION,
-        schema: INITIAL_SCHEMA_ID,
+        schema: PLAYGROUND_SCHEMAS[INITIAL_SCHEMA_ID].runtimeId,
         wasmMemory: startupWasmMemorySnapshot(startupMemory),
         wasmBuildProfile: YUNE_WEB_WASM_BUILD_PROFILE,
         wasmGlue: "yune-web.js",
@@ -546,7 +550,7 @@ const loadRime = (async () => {
         assetCache: YUNE_PUBLIC_DEMO ? publicAssetCacheStats : undefined,
         loadedExplicitAssets: [
           "default.yaml",
-          `${INITIAL_SCHEMA_ID}.schema.yaml`,
+          `${PLAYGROUND_SCHEMAS[INITIAL_SCHEMA_ID].runtimeId}.schema.yaml`,
           `${PLAYGROUND_SCHEMAS[INITIAL_SCHEMA_ID].dictionaryId}.dict.yaml`,
         ],
         loadedSharedAssets: loadedExtraSharedAssets.map((asset) => asset.path),
@@ -579,6 +583,9 @@ function printErr(message: string): void {
 function initialSchemaFromWorkerUrl(): RimeSchemaId {
   try {
     const raw = new URL(location.href).searchParams.get("schema");
+    if (raw === "jyut6ping3_mobile") {
+      return "jyut6ping3";
+    }
     if (raw === "jyut6ping3" || raw === "cangjie5" || raw === "luna_pinyin") {
       return raw;
     }
@@ -750,8 +757,14 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
   await ensureSharedAssetsForSchema(schemaId);
   const assetsConfig: ExplicitYuneWebAssets = {
     defaultYaml: await schemaAssetSource("default.yaml"),
-    schemaYaml: await schemaAssetSource(`${schema.id}.schema.yaml`),
+    schemaYaml: await schemaAssetSource(`${schema.runtimeId}.schema.yaml`),
     dictionaryYaml: await schemaAssetSource(`${schema.dictionaryId}.dict.yaml`),
+    ...(schema.deployedDefaultPath === undefined ? {} : {
+      deployedDefaultYaml: await schemaAssetSource(schema.deployedDefaultPath),
+    }),
+    ...(schema.deployedSchemaPath === undefined ? {} : {
+      deployedSchemaYaml: await schemaAssetSource(schema.deployedSchemaPath),
+    }),
   };
   const assets = await loadExplicitAssets(assetsConfig);
   validateExplicitAssets(assets);
@@ -761,7 +774,7 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
     {
       sharedDataDir: RIME_SHARED_DIR,
       userDataDir: RIME_USER_DIR,
-      schemaId: schema.id,
+      schemaId: schema.runtimeId,
     },
     assets,
     schema.dictionaryId,
@@ -769,8 +782,8 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
     preserveDeployedAssets,
     YUNE_WEB_ASSET_VERSION,
   );
-  activeSchemaId = schema.id;
-  dispatch("schemaChanged", schema.id, schema.name);
+  activeSchemaId = schemaId;
+  dispatch("schemaChanged", schemaId, schema.name);
 }
 
 async function schemaAssetSource(path: string): Promise<AssetSource> {

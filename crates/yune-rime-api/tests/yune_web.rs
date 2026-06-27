@@ -1669,6 +1669,16 @@ fn yune_web_adapter_browser_app_assets_load_public_mobile_schema() {
         "public mobile schema should compose shipped Jyutping candidates"
     );
 
+    drop(response_json(unsafe {
+        yune_web_process_key(state, 0xff1b, 0)
+    }));
+    let sentence = process_input(state, "ngogokdak");
+    assert_eq!(
+        sentence["context"]["candidates"][0]["text"],
+        Value::String("\u{6211}\u{89ba}\u{5f97}".to_owned()),
+        "clean browser app assets should compose multi-syllable Jyutping phrases"
+    );
+
     unsafe { yune_web_cleanup(state) };
     runtime.remove();
 }

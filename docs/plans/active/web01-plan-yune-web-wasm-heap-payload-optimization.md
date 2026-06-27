@@ -76,7 +76,45 @@ that native change out of the harness branch before making optimization claims.
 Until that cleanup is done, the `2026-06-26` browser rows below are useful as
 preliminary measurements, not a clean harness-only baseline.
 
-Current browser baseline from
+Current refreshed-runtime comparator baseline from
+`apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-27-current-runtime/`:
+
+- Command:
+  `YUNE_WEB_COMPARATOR_BASELINE=1 YUNE_WEB_COMPARATOR_INCLUDE_MY_RIME=1
+  YUNE_WEB_COMPARATOR_SAMPLES=3
+  YUNE_WEB_COMPARATOR_PHASE=2026-06-27-current-runtime npm --prefix
+  apps/yune-web/e2e run test:e2e -- --grep "YUNE WEB COMPARATOR"
+  --workers=1`.
+- Result: passed, `1` Playwright benchmark test.
+- Current limitation: this is a mixed-worktree baseline with unrelated native
+  and browser bug-fix dirt still present. It is valid as current measurement
+  evidence, but it is not a clean WEB01-00 branch claim.
+
+| Scenario | Schema | Ready ms | Input->candidate ms | Commit ms | WASM linear ready | Observed linear peak | Unique encoded resources |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| My RIME live | Luna Pinyin | `655` | `98` | `116` | `16.0 MiB` | `16.0 MiB` | `8.5 MiB` |
+| Yune public demo | Luna Pinyin | `932` | `68` | `112` | `128.0 MiB` | `128.0 MiB` | `5.5 MiB` |
+| Yune tracked build | Luna Pinyin | `930` | `69` | `116` | `128.0 MiB` | `128.0 MiB` | `5.4 MiB` |
+| My RIME live | Jyutping | `994` | `87` | `126` | `56.6 MiB` | `68.0 MiB` | `24.9 MiB` |
+| Yune public demo | Jyutping | `6621` | `119` | `120` | `893.1 MiB` | `893.1 MiB` | `33.5 MiB` |
+| Yune tracked build | Jyutping | `6574` | `105` | `116` | `893.1 MiB` | `893.1 MiB` | `33.5 MiB` |
+
+Current known owners:
+
+- Yune Luna Pinyin browser linear-memory size is fixed at `128 MiB` because
+  `scripts/yune-web-wasm-build.sh` sets `-sINITIAL_MEMORY=134217728`.
+- Current refreshed-runtime Yune Jyutping grows to `893.1 MiB` during browser
+  startup/schema init and stays there through candidate and commit. Lowering
+  the initial floor alone cannot be claimed as a full Jyutping fix unless the
+  calibrated run proves the high-water also falls.
+- My RIME uses `ALLOW_MEMORY_GROWTH=1` and `MAXIMUM_MEMORY=4GB`, but does not
+  set `INITIAL_MEMORY`.
+- Yune Jyutping startup eagerly loads large browser assets, including
+  `jyut6ping3_scolar.dict.yaml`, `jyut6ping3_scolar.table.bin`,
+  `jyut6ping3.table.bin`, `jyut6ping3_scolar.reverse.bin`, and
+  `jyut6ping3.dict.yaml`.
+
+Earlier preliminary browser baseline from
 `apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-26/`:
 
 | Scenario | Schema | Ready ms | Input->candidate ms | Commit ms | WASM linear ready | Observed linear peak | Unique encoded resources |
@@ -86,16 +124,9 @@ Current browser baseline from
 | My RIME live | Luna Pinyin | `547` | `30` | `17` | `16.0 MiB` | `16.0 MiB` | `8.5 MiB` |
 | Yune public demo | Luna Pinyin | `764` | `30` | `24` | `128.0 MiB` | `128.0 MiB` | `5.4 MiB` |
 
-Current known owners:
-
-- Yune browser linear-memory size is fixed at `128 MiB` because
-  `scripts/yune-web-wasm-build.sh` sets `-sINITIAL_MEMORY=134217728`.
-- My RIME uses `ALLOW_MEMORY_GROWTH=1` and `MAXIMUM_MEMORY=4GB`, but does not
-  set `INITIAL_MEMORY`.
-- Yune Jyutping startup eagerly loads large browser assets, including
-  `jyut6ping3_scolar.dict.yaml`, `jyut6ping3_scolar.table.bin`,
-  `jyut6ping3.table.bin`, `jyut6ping3_scolar.reverse.bin`, and
-  `jyut6ping3.dict.yaml`.
+The 2026-06-26 rows are retained as historical preliminary evidence. They were
+captured before the local runtime was refreshed and therefore do not describe
+the current Jyutping high-water.
 
 Post-M43 rebase check:
 
@@ -212,14 +243,14 @@ Before Task 0 optimization work starts:
 - Preserve:
   `apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/2026-06-26/`
 
-- [ ] Add a dedicated comparator benchmark that runs these rows:
+- [x] Add a dedicated comparator benchmark that runs these rows:
   - tracked `luna_pinyin`
   - tracked `jyut6ping3_mobile`
   - public-demo `luna_pinyin`
   - public-demo `jyut6ping3_mobile`
   - optional live My RIME `luna_pinyin`
   - optional live My RIME `jyut6ping3`
-- [ ] Record per sample:
+- [x] Record per sample:
   - `readyToInputMs`
   - `inputToCandidateMs`
   - `commitMs`
@@ -230,14 +261,14 @@ Before Task 0 optimization work starts:
   - JS heap
   - storage estimate
   - top resource list
-- [ ] Add environment switches:
+- [x] Add environment switches:
   - `YUNE_WEB_COMPARATOR_BASELINE=1`
   - `YUNE_WEB_COMPARATOR_INCLUDE_MY_RIME=1`
   - `YUNE_WEB_COMPARATOR_SAMPLES=<n>`
   - `YUNE_WEB_COMPARATOR_PHASE=<phase-name>`
-- [ ] Make My RIME optional. The benchmark must still pass and write Yune-only
+- [x] Make My RIME optional. The benchmark must still pass and write Yune-only
   evidence when external network or Vercel/CDN access is unavailable.
-- [ ] Re-run the current baseline once and compare it against the existing
+- [x] Re-run the current baseline once and compare it against the existing
   `2026-06-26` evidence. Differences larger than normal browser noise must be
   explained before optimization starts.
 - [ ] Add a calibration run before accepting the provisional `64 MiB` /
@@ -251,7 +282,7 @@ Before Task 0 optimization work starts:
     explicit headroom;
   - if the provisional gates are too low or too loose, update `WEB01-02` and
     `WEB01-03` before implementation proceeds.
-- [ ] For latency regression rows, prefer at least `7` samples. If only `3`
+- [x] For latency regression rows, prefer at least `7` samples. If only `3`
   samples are available, mark the row as directional and publish the noise
   caveat.
 

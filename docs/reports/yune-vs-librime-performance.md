@@ -71,6 +71,8 @@ native Track B remains `504,627,200 B` peak, and browser Jyutping remains
 claimed. The evidence root is
 [`./evidence/m46-jyutping-native-wasm-memory-attribution/`](./evidence/m46-jyutping-native-wasm-memory-attribution/).
 
+![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
+
 ## M45 Visual Dashboard
 
 The checked-in M45 visuals summarize the final native evidence under

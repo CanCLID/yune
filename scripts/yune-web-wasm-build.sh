@@ -300,8 +300,8 @@ fi
 configure_emscripten_linker
 
 EXPORTED_FUNCTIONS=$(join_exported_functions)
-RUNTIME_METHODS="ccall,cwrap,UTF8ToString,FS,IDBFS"
-EXTRA_RUSTFLAGS="-C link-arg=-O3 -C link-arg=-sEXPORTED_FUNCTIONS=$EXPORTED_FUNCTIONS -C link-arg=-sEXPORTED_RUNTIME_METHODS=$RUNTIME_METHODS -C link-arg=-sMODULARIZE=1 -C link-arg=-sEXPORT_NAME=createYuneWebModule -C link-arg=-sENVIRONMENT=web,worker,node -C link-arg=-sFORCE_FILESYSTEM=1 -C link-arg=-sALLOW_MEMORY_GROWTH=1 -C link-arg=-sINITIAL_MEMORY=134217728 -C link-arg=-sSTACK_SIZE=8388608 -C link-arg=-lidbfs.js"
+RUNTIME_METHODS="ccall,cwrap,UTF8ToString,FS,IDBFS,HEAPU8"
+EXTRA_RUSTFLAGS="-C link-arg=-O3 -C link-arg=-sEXPORTED_FUNCTIONS=$EXPORTED_FUNCTIONS -C link-arg=-sEXPORTED_RUNTIME_METHODS=$RUNTIME_METHODS -C link-arg=-sMODULARIZE=1 -C link-arg=-sEXPORT_NAME=createYuneWebModule -C link-arg=-sENVIRONMENT=web,worker,node -C link-arg=-sFORCE_FILESYSTEM=1 -C link-arg=-sALLOW_MEMORY_GROWTH=1 -C link-arg=-sINITIAL_MEMORY=134217728 -C link-arg=-sMEMORY_GROWTH_GEOMETRIC_STEP=0 -C link-arg=-sMEMORY_GROWTH_LINEAR_STEP=33554432 -C link-arg=-sSTACK_SIZE=8388608 -C link-arg=-lidbfs.js"
 if [ "${RUSTFLAGS+x}" = x ] && [ -n "$RUSTFLAGS" ]; then
   export RUSTFLAGS="$RUSTFLAGS $EXTRA_RUSTFLAGS"
 else

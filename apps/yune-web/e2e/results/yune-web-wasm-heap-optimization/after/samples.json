@@ -1,0 +1,6432 @@
+[
+  {
+    "scenarioId": "tracked-luna-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=luna_pinyin&scenario=tracked-luna-cold",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-cold",
+    "publicDemo": false,
+    "readyToInputMs": 928,
+    "startupCompleteMs": 333,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 6
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 19
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 68
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 234
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 333
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 471,
+      "load": 471,
+      "responseEnd": 14,
+      "requestStart": 10,
+      "transfer": 4
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 220820,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 3
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 32581,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 2
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 492080,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 386
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=luna_pinyin",
+        "initiatorType": "other",
+        "transferSize": 41403,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -105
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 72860,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 2575943,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 6799,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 422312,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 181,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 915,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 322,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2721,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 613855,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 704357,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 23465,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2228,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 406681,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 321,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 784,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 643,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 4923,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 7030,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 46132,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 9776,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 2,
+      "misses": 20,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10739712190,
+      "usage": 2293950,
+      "usageDetails": {
+        "caches": 2279424,
+        "indexedDB": 14526
+      }
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 1060,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 6403224,
+      "JSHeapTotalSize": 11993088,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 13400000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 25,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 25,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 25,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 25,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 93,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 93,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 93,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 327,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 327,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 333,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 333,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 333,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 15,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 6,
+        "workerRoundtripMs": 6,
+        "reactUpdateMs": 8,
+        "paintProxyMs": 1,
+        "firstCandidateText": "哈",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ni",
+        "ms": 11,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 3,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhongguo",
+        "ms": 12,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 3,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 8,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 49,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 38,
+        "workerProcessMs": 4,
+        "workerRoundtripMs": 4,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 6,
+        "firstCandidateText": "中估",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 51,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 39,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 5,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 7,
+        "firstCandidateText": "侧ㄕㄧ",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 59,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 44,
+        "workerProcessMs": 4,
+        "workerRoundtripMs": 8,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "firstCandidateText": "侧ㄕㄧ习",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 68,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 52,
+        "workerProcessMs": 4,
+        "workerRoundtripMs": 8,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 8,
+        "firstCandidateText": "侧ㄕㄧ习",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-luna-warm-reload",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=luna_pinyin&scenario=tracked-luna-warm-reload",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-warm-reload",
+    "publicDemo": false,
+    "readyToInputMs": 253,
+    "startupCompleteMs": 208,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 2
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 7
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 14
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 184
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 208
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 12,
+      "load": 20,
+      "responseEnd": 1,
+      "requestStart": 0,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/bpmfhuninn/v6/taiOGmRuFJa3qsALi5gn1J6v2ZAbaqe-.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 15492,
+        "decodedBodySize": 15492,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chirongoroundtc/v4/tss3AopDbiwZ4xauFDX3yQ3Ywoaj6mld-9cCPRBv.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 47220,
+        "decodedBodySize": 98024,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironheihk/v5/wXKtE3MSr44vpVKPvzqVJaxhjVQTtfLQhopX3w.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 3027325,
+        "decodedBodySize": 4776916,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironheihk/v5/wXKtE3MSr44vpVKPvzqVJaxhjXATtfLQhoo.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 41961,
+        "decodedBodySize": 86048,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironsunghk/v2/nuFgD_XLTZPpXIpS3-3dhGzHTQKpPTvSh2E-.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 67733,
+        "decodedBodySize": 159948,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chocolateclassicalsans/v16/nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdzO4eI1GLYTg.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18772,
+        "decodedBodySize": 18772,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/huninn/v8/OpNNnoINg9bQ4xkZiSvRrCh9Xg.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 19028,
+        "decodedBodySize": 19028,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/iansui/v13/w8gbH2UoTuUp5bOqiiuC9lQHoA.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 22508,
+        "decodedBodySize": 22508,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaimonotc/v10/pxiYyos4iPVgyWx9WtufHnsIf5nkaB0HummIo9hNgXE.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18900,
+        "decodedBodySize": 18900,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaitc/v10/w8gDH20td8wNsI3f40DmtXZb4_uNJ9wDZCVA.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 17804,
+        "decodedBodySize": 17804,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/wdxllubrifonttc/v6/nKKN-H4mPq1yJurnWXfJE8svQHonWf_5GK1QqrA9.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 11808,
+        "decodedBodySize": 11808,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=luna_pinyin",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -26
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 22,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10739732825,
+      "usage": 2314585,
+      "usageDetails": {
+        "caches": 2279424,
+        "indexedDB": 35161
+      }
+    },
+    "browserMemory": {
+      "Documents": 5,
+      "Nodes": 2238,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 9422612,
+      "JSHeapTotalSize": 18612224,
+      "usedJSHeapSize": 10600000,
+      "totalJSHeapSize": 20500000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 9,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 9,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 9,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 9,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 23,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 23,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 23,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 207,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 207,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 208,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 208,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 208,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 13,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 11,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 2,
+        "firstCandidateText": "侴",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ni",
+        "ms": 10,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 3,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 5,
+        "firstCandidateText": "伱",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhongguo",
+        "ms": 22,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 12,
+        "workerProcessMs": 5,
+        "workerRoundtripMs": 5,
+        "reactUpdateMs": 5,
+        "paintProxyMs": 0,
+        "firstCandidateText": "偺",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 41,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 23,
+        "workerProcessMs": 7,
+        "workerRoundtripMs": 11,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "firstCandidateText": "中介",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 31,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 22,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 6,
+        "firstCandidateText": "侧乷",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 48,
+        "candidateCount": 2,
+        "totalCandidateCount": 2,
+        "workerQueueWaitMs": 24,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 15,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 8,
+        "firstCandidateText": "ㄔㄜㄕ",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 56,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 39,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 9,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "firstCandidateText": "侧ㄕ丫",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-luna-warm-new-page",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=luna_pinyin&scenario=tracked-luna-warm-new-page",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-warm-new-page",
+    "publicDemo": false,
+    "readyToInputMs": 311,
+    "startupCompleteMs": 203,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 3
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 7
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 13
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 180
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 203
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 14,
+      "load": 22,
+      "responseEnd": 1,
+      "requestStart": 0,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 1
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 1
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 3
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=luna_pinyin",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -81
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 22,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10739732829,
+      "usage": 2314589,
+      "usageDetails": {
+        "caches": 2279424,
+        "indexedDB": 35165
+      }
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 1060,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 6010180,
+      "JSHeapTotalSize": 12255232,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 13400000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 23,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 23,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 23,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 203,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 203,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 203,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 203,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 203,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 2,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 3,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 14,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 10,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 2,
+        "firstCandidateText": "侴",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ni",
+        "ms": 11,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 3,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 5,
+        "firstCandidateText": "伱",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhongguo",
+        "ms": 7,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 6,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 36,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 27,
+        "workerProcessMs": 4,
+        "workerRoundtripMs": 4,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 5,
+        "firstCandidateText": "中估",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 41,
+        "candidateCount": 2,
+        "totalCandidateCount": 2,
+        "workerQueueWaitMs": 28,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 6,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 6,
+        "firstCandidateText": "ㄔㄜㄕ",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 58,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 41,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 8,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 8,
+        "firstCandidateText": "侧ㄕㄧ",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 66,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 49,
+        "workerProcessMs": 4,
+        "workerRoundtripMs": 9,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "firstCandidateText": "侧ㄕㄧ习",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-jyut-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=jyut6ping3_mobile&scenario=tracked-jyut-cold",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-cold",
+    "publicDemo": false,
+    "readyToInputMs": 1360,
+    "startupCompleteMs": 851,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 6
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 16
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 166
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 659
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 851
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 413,
+      "load": 421,
+      "responseEnd": 5,
+      "requestStart": 5,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 220820,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 2
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 32581,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 2
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 492074,
+        "encodedBodySize": 491774,
+        "decodedBodySize": 1775536,
+        "duration": 384
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=jyut6ping3",
+        "initiatorType": "other",
+        "transferSize": 41403,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -82
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 72860,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 2575943,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 6799,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2514,
+        "encodedBodySize": 2514,
+        "decodedBodySize": 2514,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 3467039,
+        "encodedBodySize": 3467039,
+        "decodedBodySize": 3467039,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 181,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 915,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 322,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2721,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_mobile.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 1767,
+        "encodedBodySize": 1767,
+        "decodedBodySize": 1767,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 395,
+        "encodedBodySize": 395,
+        "decodedBodySize": 395,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 7127626,
+        "encodedBodySize": 7127626,
+        "decodedBodySize": 7127626,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/loengfan.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 636,
+        "encodedBodySize": 636,
+        "decodedBodySize": 636,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/loengfan.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 1780170,
+        "encodedBodySize": 1780170,
+        "decodedBodySize": 1780170,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 168,
+        "encodedBodySize": 168,
+        "decodedBodySize": 168,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 383470,
+        "encodedBodySize": 383470,
+        "decodedBodySize": 383470,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2228,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 406681,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 422312,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin_yune_reverse.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 175,
+        "encodedBodySize": 175,
+        "decodedBodySize": 175,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 321,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 784,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 643,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 4923,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 7030,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 46132,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 9776,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 4306860,
+        "encodedBodySize": 4306860,
+        "decodedBodySize": 4306860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 70012,
+        "encodedBodySize": 70012,
+        "decodedBodySize": 70012,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_mobile.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 242728,
+        "encodedBodySize": 242728,
+        "decodedBodySize": 242728,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 6115656,
+        "encodedBodySize": 6115656,
+        "decodedBodySize": 6115656,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 3568716,
+        "encodedBodySize": 3568716,
+        "decodedBodySize": 3568716,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 2343228,
+        "encodedBodySize": 2343228,
+        "decodedBodySize": 2343228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 613855,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 704357,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 23465,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 1,
+      "misses": 36,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10769141332,
+      "usage": 31723092,
+      "usageDetails": {
+        "caches": 31708416,
+        "indexedDB": 14676
+      }
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 941,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 5460640,
+      "JSHeapTotalSize": 38813696,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 42100000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 22,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 22,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 22,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 22,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 188,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 188,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 188,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 847,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 847,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 851,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 851,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 851,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 16,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 7,
+        "workerRoundtripMs": 7,
+        "reactUpdateMs": 8,
+        "paintProxyMs": 0,
+        "firstCandidateText": "係",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ngo",
+        "ms": 13,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 5,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "caksi",
+        "ms": 11,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 3,
+        "reactUpdateMs": 2,
+        "paintProxyMs": 6,
+        "firstCandidateText": "我",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 26,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 17,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 7,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 21,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 12,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 0,
+        "reactUpdateMs": 2,
+        "paintProxyMs": 6,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-jyut-warm-reload",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=jyut6ping3_mobile&scenario=tracked-jyut-warm-reload",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-warm-reload",
+    "publicDemo": false,
+    "readyToInputMs": 662,
+    "startupCompleteMs": 616,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 2
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 8
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 34
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 571
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 616
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 12,
+      "load": 20,
+      "responseEnd": 1,
+      "requestStart": 0,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/bpmfhuninn/v6/taiOGmRuFJa3qsALi5gn1J6v2ZAbaqe-.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 15492,
+        "decodedBodySize": 15492,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chirongoroundtc/v4/tss3AopDbiwZ4xauFDX3yQ3Ywoaj6mld-9cCPRBv.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 47220,
+        "decodedBodySize": 98024,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironheihk/v5/wXKtE3MSr44vpVKPvzqVJaxhjVQTtfLQhopX3w.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 3027325,
+        "decodedBodySize": 4776916,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironheihk/v5/wXKtE3MSr44vpVKPvzqVJaxhjXATtfLQhoo.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 41961,
+        "decodedBodySize": 86048,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chironsunghk/v2/nuFgD_XLTZPpXIpS3-3dhGzHTQKpPTvSh2E-.ttf",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 67733,
+        "decodedBodySize": 159948,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/chocolateclassicalsans/v16/nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdzO4eI1GLYTg.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18772,
+        "decodedBodySize": 18772,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/huninn/v8/OpNNnoINg9bQ4xkZiSvRrCh9Xg.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 19028,
+        "decodedBodySize": 19028,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/iansui/v13/w8gbH2UoTuUp5bOqiiuC9lQHoA.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 22508,
+        "decodedBodySize": 22508,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaimonotc/v10/pxiYyos4iPVgyWx9WtufHnsIf5nkaB0HummIo9hNgXE.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 18900,
+        "decodedBodySize": 18900,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/lxgwwenkaitc/v10/w8gDH20td8wNsI3f40DmtXZb4_uNJ9wDZCVA.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 17804,
+        "decodedBodySize": 17804,
+        "duration": 0
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/wdxllubrifonttc/v6/nKKN-H4mPq1yJurnWXfJE8svQHonWf_5GK1QqrA9.woff2",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 11808,
+        "decodedBodySize": 11808,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=jyut6ping3",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -26
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2514,
+        "decodedBodySize": 2514,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 3467039,
+        "decodedBodySize": 3467039,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_mobile.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 1767,
+        "decodedBodySize": 1767,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 395,
+        "decodedBodySize": 395,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 7127626,
+        "decodedBodySize": 7127626,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/loengfan.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 636,
+        "decodedBodySize": 636,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/loengfan.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 1780170,
+        "decodedBodySize": 1780170,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 168,
+        "decodedBodySize": 168,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 383470,
+        "decodedBodySize": 383470,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin_yune_reverse.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 175,
+        "decodedBodySize": 175,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 4306860,
+        "decodedBodySize": 4306860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 70012,
+        "decodedBodySize": 70012,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_mobile.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 242728,
+        "decodedBodySize": 242728,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 6115656,
+        "decodedBodySize": 6115656,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 3568716,
+        "decodedBodySize": 3568716,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2343228,
+        "decodedBodySize": 2343228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 37,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10769164327,
+      "usage": 31746087,
+      "usageDetails": {
+        "caches": 31708416,
+        "indexedDB": 37671
+      }
+    },
+    "browserMemory": {
+      "Documents": 5,
+      "Nodes": 2091,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 7830492,
+      "JSHeapTotalSize": 14024704,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 15200000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 10,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 44,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 44,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 44,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 615,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 615,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 616,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 616,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 616,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 13,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 6,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 6,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 0,
+        "firstCandidateText": "係",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ngo",
+        "ms": 9,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "caksi",
+        "ms": 10,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 5,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 4,
+        "firstCandidateText": "我",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 19,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 5,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 14,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 17,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 6,
+        "reactUpdateMs": 3,
+        "paintProxyMs": 8,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-jyut-warm-new-page",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=jyut6ping3_mobile&scenario=tracked-jyut-warm-new-page",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-warm-new-page",
+    "publicDemo": false,
+    "readyToInputMs": 928,
+    "startupCompleteMs": 799,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 5
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 10
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 76
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 706
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 799
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 21,
+      "load": 29,
+      "responseEnd": 1,
+      "requestStart": 0,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 0,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 1
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 0,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 1
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 0,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 5
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=jyut6ping3",
+        "initiatorType": "other",
+        "transferSize": 0,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -98
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2514,
+        "decodedBodySize": 2514,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 3467039,
+        "decodedBodySize": 3467039,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_mobile.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 1767,
+        "decodedBodySize": 1767,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 395,
+        "decodedBodySize": 395,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 7127626,
+        "decodedBodySize": 7127626,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/loengfan.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 636,
+        "decodedBodySize": 636,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/loengfan.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 1780170,
+        "decodedBodySize": 1780170,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 168,
+        "decodedBodySize": 168,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 383470,
+        "decodedBodySize": 383470,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin_yune_reverse.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 175,
+        "decodedBodySize": 175,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 4306860,
+        "decodedBodySize": 4306860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 70012,
+        "decodedBodySize": 70012,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_mobile.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 242728,
+        "decodedBodySize": 242728,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 6115656,
+        "decodedBodySize": 6115656,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 3568716,
+        "decodedBodySize": 3568716,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/jyut6ping3_scolar.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 2343228,
+        "decodedBodySize": 2343228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56598/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 0,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 37,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10769164331,
+      "usage": 31746091,
+      "usageDetails": {
+        "caches": 31708416,
+        "indexedDB": 37675
+      }
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 1059,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 7488244,
+      "JSHeapTotalSize": 41697280,
+      "usedJSHeapSize": 11900000,
+      "totalJSHeapSize": 47400000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 15,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 15,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 15,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 15,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 91,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 91,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 91,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 797,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 797,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 799,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 799,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 799,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 12,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 6,
+        "workerRoundtripMs": 6,
+        "reactUpdateMs": 5,
+        "paintProxyMs": 1,
+        "firstCandidateText": "係",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ngo",
+        "ms": 3,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 2,
+        "paintProxyMs": 0,
+        "firstCandidateText": "我",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "caksi",
+        "ms": 15,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 5,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 3,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 5,
+        "firstCandidateText": "我",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 14,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 9,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 0,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 4,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 27,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 25,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 0,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 1,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-mock-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=luna_pinyin&scenario=tracked-mock-cold",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "mock-worker-cold",
+    "publicDemo": false,
+    "readyToInputMs": 508,
+    "startupCompleteMs": 0,
+    "phases": [
+      {
+        "phase": "worker total to initialized",
+        "ms": 0
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 420,
+      "load": 420,
+      "responseEnd": 7,
+      "requestStart": 6,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 220820,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 4
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 32581,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 3
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 492065,
+        "encodedBodySize": 491765,
+        "decodedBodySize": 1775536,
+        "duration": 368
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=luna_pinyin",
+        "initiatorType": "other",
+        "transferSize": 2425,
+        "encodedBodySize": 2125,
+        "decodedBodySize": 2125,
+        "duration": -67
+      }
+    ],
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10737418240,
+      "usage": 0,
+      "usageDetails": {}
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 635,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 4885216,
+      "JSHeapTotalSize": 8519680,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 10000000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 0,
+      "peakBytes": 0
+    },
+    "wasmMemoryMarkers": [],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 3,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 4
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 4,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 4
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 3,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 14,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 7,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 0,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 6,
+        "wasmHeapBytes": 0,
+        "peakWasmHeapBytes": 0
+      }
+    ]
+  },
+  {
+    "scenarioId": "tracked-mock-warm",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56598/?benchmark=wasm-heap&schema=luna_pinyin&scenario=tracked-mock-warm",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "mock-worker-warm",
+    "publicDemo": false,
+    "readyToInputMs": 312,
+    "startupCompleteMs": 0,
+    "phases": [
+      {
+        "phase": "worker total to initialized",
+        "ms": 0
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 277,
+      "load": 287,
+      "responseEnd": 3,
+      "requestStart": 3,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56598/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 220820,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 3
+      },
+      {
+        "name": "http://127.0.0.1:56598/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 32581,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 3
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 492080,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 257
+      },
+      {
+        "name": "http://127.0.0.1:56598/worker.js?v=yune-web-wasm-heap-v1&schema=luna_pinyin",
+        "initiatorType": "other",
+        "transferSize": 2425,
+        "encodedBodySize": 2125,
+        "decodedBodySize": 2125,
+        "duration": -21
+      }
+    ],
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10737418240,
+      "usage": 0,
+      "usageDetails": {}
+    },
+    "browserMemory": {
+      "Documents": 5,
+      "Nodes": 1270,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 6605680,
+      "JSHeapTotalSize": 11927552,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 13400000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 0,
+      "peakBytes": 0
+    },
+    "wasmMemoryMarkers": [],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 3,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 11,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 5,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 0,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 6,
+        "wasmHeapBytes": 0,
+        "peakWasmHeapBytes": 0
+      }
+    ]
+  },
+  {
+    "scenarioId": "public-luna-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56599/?benchmark=wasm-heap&schema=luna_pinyin&scenario=public-luna-cold",
+    "schema": "luna_pinyin",
+    "appSchema": "luna_pinyin",
+    "mode": "real-worker-cold",
+    "publicDemo": true,
+    "readyToInputMs": 836,
+    "startupCompleteMs": 334,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 5
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 14
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 58
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 251
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 333
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 406,
+      "load": 415,
+      "responseEnd": 5,
+      "requestStart": 4,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56599/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 220820,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 3
+      },
+      {
+        "name": "http://127.0.0.1:56599/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 32581,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 2
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 492080,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 377
+      },
+      {
+        "name": "http://127.0.0.1:56599/worker.js?v=yune-web-wasm-heap-v1&schema=luna_pinyin",
+        "initiatorType": "other",
+        "transferSize": 41403,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -78
+      },
+      {
+        "name": "http://127.0.0.1:56599/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 72860,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 2575943,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 6799,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 422312,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 181,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 915,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 322,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2721,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 613855,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 704357,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 23465,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2228,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 406681,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 321,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 784,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 643,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 4923,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 7030,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 46132,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 9776,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 2,
+      "misses": 20,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10739712188,
+      "usage": 2293948,
+      "usageDetails": {
+        "caches": 2279424,
+        "indexedDB": 14524
+      }
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 1106,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 5718760,
+      "JSHeapTotalSize": 11993088,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 13400000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 19,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 19,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 19,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 19,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 77,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 77,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 77,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 328,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 328,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 333,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 333,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 333,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 1,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 3,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hao",
+        "ms": 13,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 11,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 1,
+        "firstCandidateText": "侴",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ni",
+        "ms": 10,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 3,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 4,
+        "firstCandidateText": "伱",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhongguo",
+        "ms": 21,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 13,
+        "workerRoundtripMs": 13,
+        "reactUpdateMs": 4,
+        "paintProxyMs": 3,
+        "firstCandidateText": "偺",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "ms": 33,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 11,
+        "workerProcessMs": 15,
+        "workerRoundtripMs": 15,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 7,
+        "firstCandidateText": "中介",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "ms": 62,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 32,
+        "workerProcessMs": 13,
+        "workerRoundtripMs": 13,
+        "reactUpdateMs": 8,
+        "paintProxyMs": 8,
+        "firstCandidateText": "中冎",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "cszysmsrsd",
+        "ms": 54,
+        "candidateCount": 2,
+        "totalCandidateCount": 2,
+        "workerQueueWaitMs": 50,
+        "workerProcessMs": 1,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 2,
+        "firstCandidateText": "ㄔㄜㄕ",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "zybfshmsru",
+        "ms": 70,
+        "candidateCount": 1,
+        "totalCandidateCount": 1,
+        "workerQueueWaitMs": 51,
+        "workerProcessMs": 3,
+        "workerRoundtripMs": 10,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 8,
+        "firstCandidateText": "侧ㄕ丫",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  },
+  {
+    "scenarioId": "public-jyut-cold",
+    "sampleIndex": 0,
+    "url": "http://127.0.0.1:56599/?benchmark=wasm-heap&schema=jyut6ping3_mobile&scenario=public-jyut-cold",
+    "schema": "jyut6ping3_mobile",
+    "appSchema": "jyut6ping3",
+    "mode": "real-worker-cold",
+    "publicDemo": true,
+    "readyToInputMs": 1378,
+    "startupCompleteMs": 879,
+    "phases": [
+      {
+        "phase": "worker script/glue load",
+        "ms": 4
+      },
+      {
+        "phase": "wasm instantiate/runtime create",
+        "ms": 16
+      },
+      {
+        "phase": "filesystem mount",
+        "ms": 0
+      },
+      {
+        "phase": "schema/shared asset load",
+        "ms": 188
+      },
+      {
+        "phase": "schema select/init",
+        "ms": 665
+      },
+      {
+        "phase": "worker total to initialized",
+        "ms": 879
+      }
+    ],
+    "navigation": {
+      "domContentLoaded": 411,
+      "load": 412,
+      "responseEnd": 5,
+      "requestStart": 5,
+      "transfer": 1
+    },
+    "resources": [
+      {
+        "name": "http://127.0.0.1:56599/assets/index-BrFMHWMn.css",
+        "initiatorType": "link",
+        "transferSize": 32581,
+        "encodedBodySize": 32281,
+        "decodedBodySize": 32281,
+        "duration": 3
+      },
+      {
+        "name": "http://127.0.0.1:56599/assets/index-635zXvQx.js",
+        "initiatorType": "script",
+        "transferSize": 220820,
+        "encodedBodySize": 220520,
+        "decodedBodySize": 220520,
+        "duration": 4
+      },
+      {
+        "name": "https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Chiron+GoRound+TC:wght@400;700&family=Chiron+Hei+HK:wght@400;700&family=Chiron+Sung+HK:wght@400;700&family=Chocolate+Classical+Sans&family=Huninn&family=Iansui&family=LXGW+WenKai+Mono+TC&family=LXGW+WenKai+TC&family=WDXL+Lubrifont+TC&display=swap",
+        "initiatorType": "css",
+        "transferSize": 492080,
+        "encodedBodySize": 491780,
+        "decodedBodySize": 1775536,
+        "duration": 367
+      },
+      {
+        "name": "http://127.0.0.1:56599/worker.js?v=yune-web-wasm-heap-v1&schema=jyut6ping3",
+        "initiatorType": "other",
+        "transferSize": 41403,
+        "encodedBodySize": 41103,
+        "decodedBodySize": 41103,
+        "duration": -70
+      },
+      {
+        "name": "http://127.0.0.1:56599/yune-web.js",
+        "initiatorType": "worker",
+        "transferSize": 72860,
+        "encodedBodySize": 72860,
+        "decodedBodySize": 72860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/yune-web.wasm",
+        "initiatorType": "worker",
+        "transferSize": 2575943,
+        "encodedBodySize": 2575943,
+        "decodedBodySize": 2575943,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/default.yaml",
+        "initiatorType": "worker",
+        "transferSize": 6799,
+        "encodedBodySize": 6799,
+        "decodedBodySize": 6799,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2514,
+        "encodedBodySize": 2514,
+        "decodedBodySize": 2514,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 3467039,
+        "encodedBodySize": 3467039,
+        "decodedBodySize": 3467039,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/default.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 181,
+        "encodedBodySize": 181,
+        "decodedBodySize": 181,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/common.yaml",
+        "initiatorType": "worker",
+        "transferSize": 915,
+        "encodedBodySize": 915,
+        "decodedBodySize": 915,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/common.custom.yaml",
+        "initiatorType": "worker",
+        "transferSize": 322,
+        "encodedBodySize": 322,
+        "decodedBodySize": 322,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/include.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2721,
+        "encodedBodySize": 2721,
+        "decodedBodySize": 2721,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/template.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3_mobile.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 1767,
+        "encodedBodySize": 1767,
+        "decodedBodySize": 1767,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3_scolar.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 395,
+        "encodedBodySize": 395,
+        "decodedBodySize": 395,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3_scolar.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 7127626,
+        "encodedBodySize": 7127626,
+        "decodedBodySize": 7127626,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/loengfan.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 636,
+        "encodedBodySize": 636,
+        "decodedBodySize": 636,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/loengfan.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 1780170,
+        "encodedBodySize": 1780170,
+        "decodedBodySize": 1780170,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/cangjie3.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 168,
+        "encodedBodySize": 168,
+        "decodedBodySize": 168,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/cangjie3.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 383470,
+        "encodedBodySize": 383470,
+        "decodedBodySize": 383470,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/cangjie5.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2228,
+        "encodedBodySize": 2228,
+        "decodedBodySize": 2228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/cangjie5.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 406681,
+        "encodedBodySize": 406681,
+        "decodedBodySize": 406681,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.schema.yaml",
+        "initiatorType": "worker",
+        "transferSize": 2336,
+        "encodedBodySize": 2336,
+        "decodedBodySize": 2336,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 422312,
+        "encodedBodySize": 422312,
+        "decodedBodySize": 422312,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin_yune_reverse.dict.yaml",
+        "initiatorType": "worker",
+        "transferSize": 175,
+        "encodedBodySize": 175,
+        "decodedBodySize": 175,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/t2hkf.json",
+        "initiatorType": "worker",
+        "transferSize": 321,
+        "encodedBodySize": 321,
+        "decodedBodySize": 321,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/HKVariantsFull.txt",
+        "initiatorType": "worker",
+        "transferSize": 784,
+        "encodedBodySize": 784,
+        "decodedBodySize": 784,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/hk2s.json",
+        "initiatorType": "worker",
+        "transferSize": 643,
+        "encodedBodySize": 643,
+        "decodedBodySize": 643,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/HKVariantsRev.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 4923,
+        "encodedBodySize": 4923,
+        "decodedBodySize": 4923,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/HKVariantsRevPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 7030,
+        "encodedBodySize": 7030,
+        "decodedBodySize": 7030,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/TSCharacters.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 46132,
+        "encodedBodySize": 46132,
+        "decodedBodySize": 46132,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/opencc/TSPhrases.ocd2",
+        "initiatorType": "worker",
+        "transferSize": 9776,
+        "encodedBodySize": 9776,
+        "decodedBodySize": 9776,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 4306860,
+        "encodedBodySize": 4306860,
+        "decodedBodySize": 4306860,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 70012,
+        "encodedBodySize": 70012,
+        "decodedBodySize": 70012,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3_mobile.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 242728,
+        "encodedBodySize": 242728,
+        "decodedBodySize": 242728,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3_scolar.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 6115656,
+        "encodedBodySize": 6115656,
+        "decodedBodySize": 6115656,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3_scolar.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 3568716,
+        "encodedBodySize": 3568716,
+        "decodedBodySize": 3568716,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/jyut6ping3_scolar.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 2343228,
+        "encodedBodySize": 2343228,
+        "decodedBodySize": 2343228,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.table.bin",
+        "initiatorType": "worker",
+        "transferSize": 613855,
+        "encodedBodySize": 613855,
+        "decodedBodySize": 613855,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.reverse.bin",
+        "initiatorType": "worker",
+        "transferSize": 704357,
+        "encodedBodySize": 704357,
+        "decodedBodySize": 704357,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:56599/schema/luna_pinyin.prism.bin",
+        "initiatorType": "worker",
+        "transferSize": 23465,
+        "encodedBodySize": 23465,
+        "decodedBodySize": 23465,
+        "duration": 0
+      }
+    ],
+    "cache": {
+      "hits": 1,
+      "misses": 36,
+      "errors": []
+    },
+    "storageEstimate": {
+      "quota": 10769141330,
+      "usage": 31723090,
+      "usageDetails": {
+        "caches": 31708416,
+        "indexedDB": 14674
+      }
+    },
+    "browserMemory": {
+      "Documents": 3,
+      "Nodes": 985,
+      "LayoutCount": 0,
+      "RecalcStyleCount": 0,
+      "JSHeapUsedSize": 6180116,
+      "JSHeapTotalSize": 38813696,
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 39600000,
+      "jsHeapSizeLimit": 3760000000,
+      "windowsWorkingSetBytes": 0
+    },
+    "wasmMemory": {
+      "currentBytes": 134217728,
+      "peakBytes": 134217728
+    },
+    "wasmMemoryMarkers": [
+      {
+        "phase": "module:created",
+        "ms": 20,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "filesystem:mount:finish",
+        "ms": 20,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "persistence:mounted",
+        "ms": 20,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:start",
+        "ms": 20,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:load:finish",
+        "ms": 208,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "assets:loaded",
+        "ms": 208,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:start",
+        "ms": 208,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "schema:select:finish",
+        "ms": 873,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:start",
+        "ms": 873,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "startup-defaults:customize:finish",
+        "ms": 879,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:init:finish",
+        "ms": 879,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      },
+      {
+        "phase": "runtime:initialized",
+        "ms": 879,
+        "wasmMemory": {
+          "currentBytes": 134217728,
+          "peakBytes": 134217728
+        }
+      }
+    ],
+    "startupActions": [
+      {
+        "action": "customize",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 1,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "setOption",
+        "input": "yune_inspector",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "customize",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 2
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "soft_cursor",
+        "queueWaitMs": 2,
+        "workerRoundtripMs": 2,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 3,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 3
+      },
+      {
+        "action": "setOption",
+        "input": "ascii_mode",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "full_shape",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "traditionalization",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "variants_hk",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "trad_tw",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "simplification",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "extended_charset",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "setOption",
+        "input": "disabled",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 0,
+        "workerMs": 0,
+        "totalMs": 0
+      },
+      {
+        "action": "getUserdbSnapshot",
+        "queueWaitMs": 0,
+        "workerRoundtripMs": 1,
+        "workerMs": 0,
+        "totalMs": 1
+      }
+    ],
+    "firstKeyToPaint": [
+      {
+        "input": "hai",
+        "ms": 13,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 7,
+        "workerRoundtripMs": 7,
+        "reactUpdateMs": 5,
+        "paintProxyMs": 1,
+        "firstCandidateText": "係",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "ngo",
+        "ms": 14,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 5,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 8,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "caksi",
+        "ms": 14,
+        "candidateCount": 5,
+        "totalCandidateCount": 5,
+        "workerQueueWaitMs": 7,
+        "workerProcessMs": 2,
+        "workerRoundtripMs": 2,
+        "reactUpdateMs": 1,
+        "paintProxyMs": 5,
+        "firstCandidateText": "五",
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "sihaacoenggeoisyujapgecukdou",
+        "ms": 13,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 11,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 1,
+        "reactUpdateMs": 0,
+        "paintProxyMs": 1,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      },
+      {
+        "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+        "ms": 19,
+        "candidateCount": 0,
+        "totalCandidateCount": 0,
+        "workerQueueWaitMs": 0,
+        "workerProcessMs": 0,
+        "workerRoundtripMs": 3,
+        "reactUpdateMs": 9,
+        "paintProxyMs": 8,
+        "wasmHeapBytes": 134217728,
+        "peakWasmHeapBytes": 134217728
+      }
+    ]
+  }
+]

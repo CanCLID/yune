@@ -6,6 +6,15 @@ export interface StartupPhase {
   ms: number;
 }
 
+export interface WasmMemorySnapshot {
+  currentBytes: number;
+  peakBytes: number;
+}
+
+export interface StartupWasmMemoryMarker extends StartupPhase {
+  wasmMemory: WasmMemorySnapshot;
+}
+
 export interface StartupResource {
   name: string;
   initiatorType: string;
@@ -26,6 +35,8 @@ export interface FirstKeyToPaintSample {
   reactUpdateMs?: number;
   paintProxyMs?: number;
   firstCandidateText?: string;
+  wasmHeapBytes?: number;
+  peakWasmHeapBytes?: number;
 }
 
 export interface StartupActionDiagnostic {
@@ -53,6 +64,8 @@ export interface StartupSample {
   cache: { hits: number; misses: number; errors: string[] };
   storageEstimate?: { usage?: number; quota?: number };
   browserMemory?: Record<string, number>;
+  wasmMemory?: WasmMemorySnapshot;
+  wasmMemoryMarkers: StartupWasmMemoryMarker[];
   startupActions: StartupActionDiagnostic[];
   firstKeyToPaint: FirstKeyToPaintSample[];
 }
@@ -71,6 +84,11 @@ interface SummaryRow {
   p95FirstKeyToPaintMs: number;
   transferBytes: number;
   encodedBytes: number;
+  medianWasmHeapBytes: number;
+  p95WasmHeapBytes: number;
+  medianPeakWasmHeapBytes: number;
+  p95PeakWasmHeapBytes: number;
+  maxPeakWasmHeapBytes: number;
   cacheHits: number;
   cacheMisses: number;
   cacheErrors: number;
@@ -187,6 +205,11 @@ export function summarizeSamples(samples: StartupSample[]): SummaryRow[] {
       p95FirstKeyToPaintMs: percentile(firstKey, 0.95),
       transferBytes: Math.round(median(group.map(sample => sample.resources.reduce((sum, resource) => sum + resource.transferSize, 0)))),
       encodedBytes: Math.round(median(group.map(sample => sample.resources.reduce((sum, resource) => sum + resource.encodedBodySize, 0)))),
+      medianWasmHeapBytes: Math.round(median(group.map(sample => sample.wasmMemory?.currentBytes ?? 0))),
+      p95WasmHeapBytes: Math.round(percentile(group.map(sample => sample.wasmMemory?.currentBytes ?? 0), 0.95)),
+      medianPeakWasmHeapBytes: Math.round(median(group.map(sample => sample.wasmMemory?.peakBytes ?? 0))),
+      p95PeakWasmHeapBytes: Math.round(percentile(group.map(sample => sample.wasmMemory?.peakBytes ?? 0), 0.95)),
+      maxPeakWasmHeapBytes: Math.max(0, ...group.map(sample => sample.wasmMemory?.peakBytes ?? 0)),
       cacheHits: Math.round(median(group.map(sample => sample.cache.hits))),
       cacheMisses: Math.round(median(group.map(sample => sample.cache.misses))),
       cacheErrors: Math.round(median(group.map(sample => sample.cache.errors.length))),
@@ -226,8 +249,12 @@ function csvRows(samples: StartupSample[]): string {
     "cacheErrors",
     "transferBytes",
     "encodedBytes",
+    "wasmHeapBytes",
+    "peakWasmHeapBytes",
+    "wasmMemoryMarkerCount",
     "firstKeyMedianMs",
     "firstKeyP95Ms",
+    "firstKeyPeakWasmHeapBytes",
   ];
   const rows = samples.map(sample => [
     sample.scenarioId,
@@ -243,8 +270,12 @@ function csvRows(samples: StartupSample[]): string {
     sample.cache.errors.length,
     sample.resources.reduce((sum, resource) => sum + resource.transferSize, 0),
     sample.resources.reduce((sum, resource) => sum + resource.encodedBodySize, 0),
+    sample.wasmMemory?.currentBytes ?? "",
+    sample.wasmMemory?.peakBytes ?? "",
+    sample.wasmMemoryMarkers.length,
     median(sample.firstKeyToPaint.map(key => key.ms)),
     percentile(sample.firstKeyToPaint.map(key => key.ms), 0.95),
+    Math.max(0, ...sample.firstKeyToPaint.map(key => key.peakWasmHeapBytes ?? 0)),
   ]);
   return [header, ...rows].map(row => row.map(csvEscape).join(",")).join("\n") + "\n";
 }
@@ -264,6 +295,11 @@ function summaryCsv(rows: SummaryRow[]): string {
     p95FirstKeyToPaintMs: "",
     transferBytes: "",
     encodedBytes: "",
+    medianWasmHeapBytes: "",
+    p95WasmHeapBytes: "",
+    medianPeakWasmHeapBytes: "",
+    p95PeakWasmHeapBytes: "",
+    maxPeakWasmHeapBytes: "",
     cacheHits: "",
     cacheMisses: "",
     cacheErrors: "",
@@ -281,21 +317,21 @@ function dashboardMarkdown(samples: StartupSample[], summary: SummaryRow[]): str
     .map(row => `| ${row.scenarioId} | ${row.topOwner} | ${row.topOwnerMedianMs.toFixed(1)} | ${row.medianReadyToInputMs.toFixed(1)} | ${row.p95ReadyToInputMs.toFixed(1)} |`)
     .join("\n");
   const summaryRows = summary
-    .map(row => `| ${row.scenarioId} | ${row.samples} | ${row.schema} | ${row.mode} | ${row.publicDemo ? "yes" : "no"} | ${row.medianReadyToInputMs.toFixed(1)} | ${row.p95ReadyToInputMs.toFixed(1)} | ${row.medianFirstKeyToPaintMs.toFixed(1)} | ${row.transferBytes} | ${row.encodedBytes} | ${row.cacheHits}/${row.cacheMisses}/${row.cacheErrors} |`)
+    .map(row => `| ${row.scenarioId} | ${row.samples} | ${row.schema} | ${row.mode} | ${row.publicDemo ? "yes" : "no"} | ${row.medianReadyToInputMs.toFixed(1)} | ${row.p95ReadyToInputMs.toFixed(1)} | ${row.medianFirstKeyToPaintMs.toFixed(1)} | ${row.transferBytes} | ${row.encodedBytes} | ${row.medianWasmHeapBytes} | ${row.medianPeakWasmHeapBytes} | ${row.cacheHits}/${row.cacheMisses}/${row.cacheErrors} |`)
     .join("\n");
   const resourceRows = resourceSummary(samples)
     .map(row => `| ${row.group} | ${row.transferBytes} | ${row.encodedBytes} | ${row.durationMs.toFixed(1)} |`)
     .join("\n");
   const memoryRows = summaryMemory(samples)
-    .map(row => `| ${row.scenarioId} | ${row.jsHeapUsedSize ?? ""} | ${row.jsHeapTotalSize ?? ""} | ${row.domNodes ?? ""} | ${row.workingSetBytes ?? ""} |`)
+    .map(row => `| ${row.scenarioId} | ${row.wasmHeapBytes ?? ""} | ${row.peakWasmHeapBytes ?? ""} | ${row.jsHeapUsedSize ?? ""} | ${row.jsHeapTotalSize ?? ""} | ${row.domNodes ?? ""} | ${row.workingSetBytes ?? ""} |`)
     .join("\n");
 
-  return `# M41 Startup Dashboard
+  return `# Yune Web Startup Benchmark Dashboard
 
 ## Summary
 
-| Scenario | Samples | Schema | Mode | Public | Median ready ms | p95 ready ms | Median first key ms | Transfer bytes | Encoded bytes | Cache h/m/e |
-| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Scenario | Samples | Schema | Mode | Public | Median ready ms | p95 ready ms | Median first key ms | Transfer bytes | Encoded bytes | WASM heap bytes | Peak WASM heap bytes | Cache h/m/e |
+| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 ${summaryRows}
 
 ## Startup Owner Map
@@ -312,8 +348,8 @@ ${resourceRows}
 
 ## Browser Memory
 
-| Scenario | JS heap used | JS heap total | DOM nodes | Windows working set |
-| --- | ---: | ---: | ---: | ---: |
+| Scenario | WASM heap | Peak WASM heap | JS heap used | JS heap total | DOM nodes | Windows working set |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
 ${memoryRows}
 `;
 }
@@ -355,6 +391,8 @@ function summaryMemory(samples: StartupSample[]): Array<Record<string, number | 
   }
   return [...byScenario.entries()].map(([scenarioId, list]) => ({
     scenarioId,
+    wasmHeapBytes: Math.round(median(list.map(sample => sample.wasmMemory?.currentBytes ?? 0))),
+    peakWasmHeapBytes: Math.round(median(list.map(sample => sample.wasmMemory?.peakBytes ?? 0))),
     jsHeapUsedSize: Math.round(median(list.map(sample => sample.browserMemory?.["JSHeapUsedSize"] ?? 0))),
     jsHeapTotalSize: Math.round(median(list.map(sample => sample.browserMemory?.["JSHeapTotalSize"] ?? 0))),
     domNodes: Math.round(median(list.map(sample => sample.browserMemory?.["Nodes"] ?? 0))),

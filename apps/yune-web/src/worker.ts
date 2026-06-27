@@ -6,7 +6,7 @@
  * and message handling logic.
  */
 
-import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences, RimeNotification, RimeDeployStatus, RimeSchemaId, YuneWebUserdbParseError, YuneWebUserdbRow, YuneWebUserdbSnapshot } from "./types";
+import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences, RimeNotification, RimeDeployStatus, RimeSchemaId, YuneWebMemorySnapshot, YuneWebUserdbParseError, YuneWebUserdbRow, YuneWebUserdbSnapshot } from "./types";
 
 // Yune integration imports
 import {
@@ -41,6 +41,9 @@ import {
 interface YuneWebBrowserModule extends EmscriptenYuneWebModule {
   FS: YuneWebFilesystem;
   IDBFS: unknown;
+  HEAP8?: Int8Array;
+  HEAPU8?: Uint8Array;
+  wasmMemory?: WebAssembly.Memory;
 }
 
 interface CreateYuneWebModuleOptions {
@@ -60,6 +63,12 @@ interface PlaygroundSchema {
 interface StartupMarker {
   phase: string;
   ms: number;
+  wasmMemory?: StartupWasmMemorySnapshot;
+}
+
+interface StartupWasmMemorySnapshot {
+  currentBytes: number;
+  peakBytes: number;
 }
 
 interface PublicAssetManifestEntry {
@@ -155,23 +164,23 @@ const actions: Actions = {
   async processKey(input) {
     const result = await processKey(input);
     // Persistence sync handled by adapter
-    return result;
+    return withMemorySnapshot(result);
   },
   async stageAi() {
     const result = await stageAi();
-    return result;
+    return withMemorySnapshot(result);
   },
   async selectCandidate(index) {
     const result = await selectCandidate(index);
-    return result;
+    return withMemorySnapshot(result);
   },
   async deleteCandidate(index) {
     const result = await deleteCandidate(index);
-    return result;
+    return withMemorySnapshot(result);
   },
   async flipPage(backward) {
     const result = await flipPage(backward);
-    return result;
+    return withMemorySnapshot(result);
   },
   async customize(preferences) {
     const result = await customize(preferences);
@@ -318,7 +327,7 @@ const RIME_SHARED_DIR = "/usr/share/rime-data";
 const RIME_USER_DIR = "/rime";
 const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3";
 const INITIAL_SCHEMA_ID: RimeSchemaId = initialSchemaFromWorkerUrl();
-const YUNE_WEB_ASSET_VERSION = "m31-opencc-output-v11";
+const YUNE_WEB_ASSET_VERSION = "yune-web-wasm-heap-v1";
 const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
 const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v3";
@@ -354,6 +363,11 @@ const YUNE_WEB_CANGJIE_SHARED_ASSETS = [
   ...YUNE_WEB_COMMON_SHARED_ASSETS,
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
+  "jyut6ping3_scolar.schema.yaml",
+  "jyut6ping3_scolar.dict.yaml",
+  "jyut6ping3_scolar.table.bin",
+  "jyut6ping3_scolar.reverse.bin",
+  "jyut6ping3_scolar.prism.bin",
   ...YUNE_WEB_OPENCC_SHARED_ASSETS,
 ] as const;
 const YUNE_WEB_JYUTPING_SHARED_ASSETS = [
@@ -404,6 +418,41 @@ let loadedExtraSharedAssets: { path: string; content: string | Uint8Array }[] = 
 let activeSchemaId: RimeSchemaId = INITIAL_SCHEMA_ID;
 let publicAssetManifest: PublicAssetManifest | null = null;
 let publicAssetCacheStats: PublicAssetCacheStats = { hits: 0, misses: 0, unavailable: false };
+let peakWasmHeapBytes = 0;
+
+function withMemorySnapshot(result: RimeResult): RimeResult {
+  const memory = activeWasmMemorySnapshot();
+  return memory === undefined ? result : { ...result, memory };
+}
+
+function activeWasmMemorySnapshot(): YuneWebMemorySnapshot | undefined {
+  const module = yuneModule;
+  if (module === null) {
+    return undefined;
+  }
+  return wasmMemorySnapshot(module);
+}
+
+function wasmMemorySnapshot(module: YuneWebBrowserModule): YuneWebMemorySnapshot | undefined {
+  const wasmHeapBytes = wasmHeapByteLength(module);
+  if (wasmHeapBytes === undefined) {
+    return undefined;
+  }
+  peakWasmHeapBytes = Math.max(peakWasmHeapBytes, wasmHeapBytes);
+  return { wasmHeapBytes, peakWasmHeapBytes };
+}
+
+function startupWasmMemorySnapshot(memory: YuneWebMemorySnapshot | undefined): StartupWasmMemorySnapshot | undefined {
+  return memory === undefined
+    ? undefined
+    : { currentBytes: memory.wasmHeapBytes, peakBytes: memory.peakWasmHeapBytes };
+}
+
+function wasmHeapByteLength(module: YuneWebBrowserModule): number | undefined {
+  const buffer =
+    module.HEAPU8?.buffer ?? module.HEAP8?.buffer ?? module.wasmMemory?.buffer;
+  return buffer instanceof ArrayBuffer ? buffer.byteLength : undefined;
+}
 
 function nowMs(): number {
   return performance.timeOrigin + performance.now();
@@ -423,8 +472,13 @@ function resolveYuneWebModuleFactory(): CreateYuneWebModule {
 const loadRime = (async () => {
   const startupStartedAt = performance.now();
   const startupMarkers: StartupMarker[] = [];
-  const markStartup = (phase: string) => {
-    startupMarkers.push({ phase, ms: Math.round(performance.now() - startupStartedAt) });
+  const markStartup = (phase: string, moduleForMemory: YuneWebBrowserModule | null = yuneModule) => {
+    const marker: StartupMarker = { phase, ms: Math.round(performance.now() - startupStartedAt) };
+    const memory = moduleForMemory === null ? undefined : startupWasmMemorySnapshot(wasmMemorySnapshot(moduleForMemory));
+    if (memory !== undefined) {
+      marker.wasmMemory = memory;
+    }
+    startupMarkers.push(marker);
   };
   try {
     markStartup("runtime:init:start");
@@ -443,7 +497,7 @@ const loadRime = (async () => {
       },
     });
     markStartup("wasm:module:create:finish");
-    markStartup("module:created");
+    markStartup("module:created", module);
 
     if (module.IDBFS === undefined || module.IDBFS === null) {
       throw new Error("Yune Emscripten module missing IDBFS runtime method");
@@ -452,26 +506,27 @@ const loadRime = (async () => {
     markStartup("filesystem:mount:start");
     mountYuneWebPersistence(module.FS, module.IDBFS, {}, RIME_USER_DIR);
     yuneModule = module;
-    markStartup("filesystem:mount:finish");
-    markStartup("persistence:mounted");
+    markStartup("filesystem:mount:finish", module);
+    markStartup("persistence:mounted", module);
 
     markStartup("assets:load:start");
     publicAssetCacheStats = { hits: 0, misses: 0, unavailable: false };
     loadedExtraSharedAssets = await loadSharedAssetsForSchema(INITIAL_SCHEMA_ID);
-    markStartup("assets:load:finish");
-    markStartup("assets:loaded");
+    markStartup("assets:load:finish", module);
+    markStartup("assets:loaded", module);
 
     markStartup("schema:select:start");
     await selectYuneSchema(INITIAL_SCHEMA_ID);
-    markStartup("schema:select:finish");
+    markStartup("schema:select:finish", module);
     markStartup("startup-defaults:customize:start");
     await customize(defaultStartupDeployPreferences());
-    markStartup("startup-defaults:customize:finish");
-    markStartup("runtime:init:finish");
-    markStartup("runtime:initialized");
+    markStartup("startup-defaults:customize:finish", module);
+    markStartup("runtime:init:finish", module);
+    markStartup("runtime:initialized", module);
+    const startupMemory = activeWasmMemorySnapshot();
 
     loading = false;
-    dispatch("initialized", true);
+    dispatch("initialized", true, startupMemory);
     postMessage({
       type: "diagnostic",
       source: "yune-startup",
@@ -484,6 +539,7 @@ const loadRime = (async () => {
         publicDemo: YUNE_PUBLIC_DEMO,
         assetVersion: YUNE_WEB_ASSET_VERSION,
         schema: INITIAL_SCHEMA_ID,
+        wasmMemory: startupWasmMemorySnapshot(startupMemory),
         wasmBuildProfile: YUNE_WEB_WASM_BUILD_PROFILE,
         wasmGlue: "yune-web.js",
         wasmBinary: "yune-web.wasm",

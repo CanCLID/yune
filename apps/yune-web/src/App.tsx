@@ -24,6 +24,8 @@ import type { UiLanguage } from "./uiText";
 interface YuneMetrics {
 	lookupMs?: number;
 	aiMs?: number;
+	wasmHeapBytes?: number;
+	peakWasmHeapBytes?: number;
 	candidateCount?: number;
 	totalCandidateCount?: number;
 	latestInput?: string;
@@ -41,6 +43,28 @@ function metricValue(value: number | undefined, unit: string, emptyLabel: string
 	</>;
 }
 
+function byteMetricValue(value: number | undefined, emptyLabel: string) {
+	if (value === undefined) {
+		return <span className="yd-metric-empty">{emptyLabel}</span>;
+	}
+	if (value < 1024) {
+		return <>
+			{value}
+			<span>B</span>
+		</>;
+	}
+	if (value < 1024 * 1024) {
+		return <>
+			{(value / 1024).toFixed(1)}
+			<span>KiB</span>
+		</>;
+	}
+	return <>
+		{(value / (1024 * 1024)).toFixed(1)}
+		<span>MiB</span>
+	</>;
+}
+
 function YuneInspectorMetrics({
 	metrics,
 	userdbSnapshot,
@@ -55,6 +79,18 @@ function YuneInspectorMetrics({
 		<div className="yd-metric">
 			<div className="yd-metric-label">{text.lookup}</div>
 			<div className="yd-metric-value" data-yune-metric-lookup>{metricValue(metrics.lookupMs, "ms", text.na)}</div>
+		</div>
+		<div className="yd-metric">
+			<div className="yd-metric-label">{text.wasmHeap}</div>
+			<div className="yd-metric-value" data-yune-metric-wasm-heap>
+				{byteMetricValue(metrics.wasmHeapBytes, text.na)}
+			</div>
+		</div>
+		<div className="yd-metric">
+			<div className="yd-metric-label">{text.peakWasmHeap}</div>
+			<div className="yd-metric-value" data-yune-metric-peak-wasm-heap>
+				{byteMetricValue(metrics.peakWasmHeapBytes, text.na)}
+			</div>
 		</div>
 		<div className="yd-metric">
 			<div className="yd-metric-label">{text.aiRerank}</div>
@@ -116,8 +152,14 @@ export default function App() {
 
 	useEffect(() => {
 		const { resolve } = startAsyncTask();
-		return subscribe("initialized", (success) => {
+		return subscribe("initialized", (success, memory) => {
 			setEngineStartupState(success ? "ready" : "failed");
+			if (memory) {
+				updateMetrics({
+					wasmHeapBytes: memory.wasmHeapBytes,
+					peakWasmHeapBytes: memory.peakWasmHeapBytes,
+				});
+			}
 			if (!success) {
 				notify(
 					"error",
@@ -168,6 +210,8 @@ export default function App() {
 			const merged = { ...current, ...next };
 			return current.lookupMs === merged.lookupMs
 				&& current.aiMs === merged.aiMs
+				&& current.wasmHeapBytes === merged.wasmHeapBytes
+				&& current.peakWasmHeapBytes === merged.peakWasmHeapBytes
 				&& current.candidateCount === merged.candidateCount
 				&& current.totalCandidateCount === merged.totalCandidateCount
 				&& current.latestInput === merged.latestInput
@@ -201,6 +245,7 @@ export default function App() {
 		isDisabled,
 		dictionaryExclude,
 		isAsciiMode,
+		setIsAsciiMode,
 		isFullShape,
 		outputStandard,
 		isCangjie5,
@@ -208,6 +253,9 @@ export default function App() {
 	} = preferences;
 	const text = uiText[uiLanguage];
 	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
+	const toggleAsciiMode = useCallback(() => {
+		setIsAsciiMode(value => !value);
+	}, [setIsAsciiMode]);
 	const didRunSchemaEffect = useRef(false);
 	const didRunDeployPreferencesEffect = useRef(false);
 
@@ -234,7 +282,10 @@ export default function App() {
 				}
 				setInspectorDebug(undefined);
 				setEngineStatus(undefined);
-				setMetrics({});
+				setMetrics(current => ({
+					wasmHeapBytes: current.wasmHeapBytes,
+					peakWasmHeapBytes: current.peakWasmHeapBytes,
+				}));
 				updateDeployStatus();
 			} catch {
 				type = "error";
@@ -446,7 +497,7 @@ export default function App() {
 					<a className="yd-brand" href="/" aria-label={text.header.home}>
 						<span className="yd-brand-mark">韻</span>
 						<span className="yd-brand-copy">
-							<span className="yd-brand-title">{text.header.title} <span>yune-web</span></span>
+							<span className="yd-brand-title">{text.header.title}</span>
 						</span>
 					</a>
 					<div className="yd-header-status">
@@ -514,6 +565,7 @@ export default function App() {
 									onStatus={setEngineStatus}
 									onUserdbChange={refreshUserdbAfterCommit}
 									onMetrics={updateMetrics}
+									onToggleAsciiMode={toggleAsciiMode}
 								/>
 							)}
 						</section>

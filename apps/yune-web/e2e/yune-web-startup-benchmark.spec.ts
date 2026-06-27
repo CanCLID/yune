@@ -13,6 +13,8 @@ import {
   type FirstKeyToPaintSample,
   type StartupResource,
   type StartupSample,
+  type StartupWasmMemoryMarker,
+  type WasmMemorySnapshot,
 } from "./startup-benchmark/metrics";
 import {
   appSchemaId,
@@ -23,17 +25,24 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(__dirname, "..");
-const resultRoot = path.join(__dirname, "results", "m41-yune-web-startup-optimization");
-const phaseName = process.env.M41_PHASE ?? "phase-0-baseline";
+const isWasmHeapBenchmark = process.env.YUNE_WEB_WASM_HEAP_BENCHMARK === "1";
+const benchmarkLabel = isWasmHeapBenchmark ? "YUNE WEB WASM HEAP benchmark" : "M41 STARTUP benchmark";
+const resultRoot = path.join(
+  __dirname,
+  "results",
+  process.env.YUNE_WEB_BENCHMARK_RESULT_ROOT
+    ?? (isWasmHeapBenchmark ? "yune-web-wasm-heap-optimization" : "m41-yune-web-startup-optimization"),
+);
+const phaseName = process.env.YUNE_WEB_BENCHMARK_PHASE ?? process.env.M41_PHASE ?? "phase-0-baseline";
 const phaseDir = path.join(resultRoot, phaseName);
 const trackedDist = path.join(appRoot, "dist");
 const publicDist = path.join(appRoot, "public-demo", "dist");
 const readyTimeoutMs = 120_000;
 
-test.describe("M41 STARTUP benchmark", () => {
+test.describe(benchmarkLabel, () => {
   test.setTimeout(60 * 60 * 1000);
 
-  test("M41 STARTUP production harness baseline", async () => {
+  test(`${benchmarkLabel} production harness baseline`, async () => {
     await assertDistExists(trackedDist, "tracked apps/yune-web dist");
     await assertDistExists(publicDist, "public-demo dist");
     const trackedServer = await startStaticServer(trackedDist);
@@ -68,7 +77,7 @@ async function runScenarioSample(
 ): Promise<StartupSample> {
   const userDataDir = path.join(
     os.tmpdir(),
-    `yune-m41-${process.pid}-${scenario.id}-${sampleIndex}-${Date.now()}`,
+    `yune-web-benchmark-${process.pid}-${scenario.id}-${sampleIndex}-${Date.now()}`,
   );
   await rm(userDataDir, { recursive: true, force: true });
   await mkdir(userDataDir, { recursive: true });
@@ -86,7 +95,7 @@ async function runScenarioSample(
     if (scenario.mode.startsWith("mock-worker")) {
       await installMockWorker(context);
     }
-    const url = `${baseUrl}/?m41Schema=${encodeURIComponent(scenario.schema)}&m41Scenario=${encodeURIComponent(scenario.id)}`;
+    const url = `${baseUrl}/?benchmark=${isWasmHeapBenchmark ? "wasm-heap" : "m41"}&schema=${encodeURIComponent(scenario.schema)}&scenario=${encodeURIComponent(scenario.id)}`;
     const page = await context.newPage();
     if (scenario.mode === "real-worker-warm-reload" || scenario.mode === "mock-worker-warm") {
       await loadAndWaitReady(page, url, scenario);
@@ -118,6 +127,8 @@ async function collectReadySample(
   const startupActions = await collectActionDiagnostics(page);
   const firstKeyToPaint = await collectFirstKeyToPaint(page, scenario.inputs);
   const startupDiagnostic = await startupMarker(page);
+  const wasmMemory = collectWasmMemory(startupDiagnostic, firstKeyToPaint);
+  const wasmMemoryMarkers = collectWasmMemoryMarkers(startupDiagnostic);
   const resources = [
     ...await collectResources(page),
     ...await collectWorkerResources(startupDiagnostic, distRoot, url, scenario),
@@ -163,6 +174,8 @@ async function collectReadySample(
     cache,
     storageEstimate,
     browserMemory: memory,
+    wasmMemory,
+    wasmMemoryMarkers,
     startupActions,
     firstKeyToPaint,
   };
@@ -224,6 +237,8 @@ async function collectFirstKeyToPaint(page: Page, inputs: string[]): Promise<Fir
           reactUpdateMs?: number;
           paintProxyMs?: number;
           firstCandidateText?: string;
+          wasmHeapBytes?: number;
+          peakWasmHeapBytes?: number;
         }>;
         const newDiagnostics = diagnostics.slice(minCount);
         return newDiagnostics.slice().reverse().find(entry => entry.input === expectedInput)
@@ -244,6 +259,8 @@ async function collectFirstKeyToPaint(page: Page, inputs: string[]): Promise<Fir
       reactUpdateMs?: number;
       paintProxyMs?: number;
       firstCandidateText?: string;
+      wasmHeapBytes?: number;
+      peakWasmHeapBytes?: number;
     } | null;
     results.push({
       input,
@@ -256,6 +273,8 @@ async function collectFirstKeyToPaint(page: Page, inputs: string[]): Promise<Fir
       reactUpdateMs: value?.reactUpdateMs,
       paintProxyMs: value?.paintProxyMs,
       firstCandidateText: value?.firstCandidateText,
+      wasmHeapBytes: value?.wasmHeapBytes,
+      peakWasmHeapBytes: value?.peakWasmHeapBytes,
     });
   }
   return results;
@@ -265,6 +284,7 @@ async function startupMarker(page: Page): Promise<{
   phase?: string;
   totalMs?: number;
   markers?: Array<{ phase: string; ms: number }>;
+  wasmMemory?: WasmMemorySnapshot;
   assetCache?: { hits?: number; misses?: number };
   wasmGlue?: string;
   wasmBinary?: string;
@@ -277,7 +297,8 @@ async function startupMarker(page: Page): Promise<{
       marker?: {
         phase?: string;
         totalMs?: number;
-        markers?: Array<{ phase: string; ms: number }>;
+        markers?: Array<{ phase: string; ms: number; wasmMemory?: WasmMemorySnapshot }>;
+        wasmMemory?: WasmMemorySnapshot;
         assetCache?: { hits?: number; misses?: number };
       };
     }>;
@@ -287,6 +308,33 @@ async function startupMarker(page: Page): Promise<{
       .find(entry => entry.source === "yune-startup" && entry.marker?.phase === "startup:complete")
       ?.marker;
   });
+}
+
+function collectWasmMemory(
+  startupDiagnostic: { wasmMemory?: WasmMemorySnapshot } | undefined,
+  firstKeyToPaint: FirstKeyToPaintSample[],
+): WasmMemorySnapshot | undefined {
+  const latestFirstKey = firstKeyToPaint
+    .slice()
+    .reverse()
+    .find(sample => sample.wasmHeapBytes !== undefined || sample.peakWasmHeapBytes !== undefined);
+  if (latestFirstKey?.wasmHeapBytes !== undefined && latestFirstKey.peakWasmHeapBytes !== undefined) {
+    return {
+      currentBytes: latestFirstKey.wasmHeapBytes,
+      peakBytes: latestFirstKey.peakWasmHeapBytes,
+    };
+  }
+  return startupDiagnostic?.wasmMemory;
+}
+
+function collectWasmMemoryMarkers(
+  startupDiagnostic: { markers?: Array<{ phase: string; ms: number; wasmMemory?: WasmMemorySnapshot }> } | undefined,
+): StartupWasmMemoryMarker[] {
+  return (startupDiagnostic?.markers ?? []).flatMap(marker =>
+    marker.wasmMemory === undefined
+      ? []
+      : [{ phase: marker.phase, ms: marker.ms, wasmMemory: marker.wasmMemory }],
+  );
 }
 
 async function collectResources(page: Page): Promise<StartupResource[]> {
@@ -477,6 +525,7 @@ function postDiagnostic() {
         { phase: "worker:start", ms: 0 },
         { phase: "runtime:initialized", ms: Math.round(performance.now() - startedAt) }
       ],
+      wasmMemory: { currentBytes: 0, peakBytes: 0 },
       schema: "mock",
       assetCache: { hits: 0, misses: 0, unavailable: false },
       loadedSharedAssets: []
@@ -499,7 +548,8 @@ self.onmessage = (event) => {
       page: 0,
       isLastPage: true,
       highlightedIndex: 0,
-      candidates: []
+      candidates: [],
+      memory: { wasmHeapBytes: 0, peakWasmHeapBytes: 0 }
     };
   } else if (name === "getUserdbSnapshot") {
     result = { schemaId: "luna_pinyin", dictionaryId: "mock", path: "/rime/mock.userdb", exists: false, bytes: 0, updatedAt: null, rows: [], rawText: "", parseErrors: [] };

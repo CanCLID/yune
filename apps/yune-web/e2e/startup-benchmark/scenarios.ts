@@ -52,11 +52,11 @@ export function appSchemaId(schema: StartupSchema): "luna_pinyin" | "jyut6ping3"
 }
 
 export function scenarioSamples(scenario: StartupScenario): number {
-  const override = Number(process.env.M41_STARTUP_SAMPLES ?? "");
+  const override = Number(process.env.YUNE_WEB_BENCHMARK_SAMPLES ?? process.env.M41_STARTUP_SAMPLES ?? "");
   if (Number.isFinite(override) && override > 0) {
     return Math.max(1, Math.floor(override));
   }
-  if (process.env.M41_STARTUP_QUICK === "1") {
+  if (process.env.YUNE_WEB_BENCHMARK_QUICK === "1" || process.env.M41_STARTUP_QUICK === "1") {
     return scenario.mode.includes("cold") ? 2 : 3;
   }
   return scenario.samples;

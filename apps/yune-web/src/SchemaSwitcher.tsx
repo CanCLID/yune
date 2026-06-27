@@ -19,7 +19,6 @@ export default function SchemaSwitcher({
 	const schemaOptions = SCHEMA_OPTIONS;
 	const active = schemaOptions.find(schema => schema.id === activeSchema) ?? schemaOptions[0];
 	const text = uiText[uiLanguage].toolbar;
-	const activeText = schemaText[uiLanguage][active.id];
 
 	return <div className={`yd-schema-dropdown${compact ? " yd-schema-dropdown-compact" : ""}`} data-yune-schema-switcher>
 		<label className="yd-top-label" htmlFor="yune-schema-select">{text.schema}</label>
@@ -47,6 +46,5 @@ export default function SchemaSwitcher({
 				</label>
 			)}
 		</div>
-		<p className="yd-schema-hint">{activeText.reverseLookup}</p>
 	</div>;
 }

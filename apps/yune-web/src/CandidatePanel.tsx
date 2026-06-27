@@ -39,11 +39,15 @@ interface PendingPerfDiagnostic {
 	workerRoundtripMs?: number;
 	responseMappingMs: number;
 	totalWorkerActionMs?: number;
+	wasmHeapBytes?: number;
+	peakWasmHeapBytes?: number;
 }
 
 interface MetricUpdate {
 	lookupMs?: number;
 	aiMs?: number;
+	wasmHeapBytes?: number;
+	peakWasmHeapBytes?: number;
 	candidateCount?: number;
 	totalCandidateCount?: number;
 	latestInput?: string;
@@ -57,6 +61,8 @@ function appendTypingDiagnostic(diagnostic: {
 	action: "processKey";
 	input?: string;
 	totalMs: number;
+	wasmHeapBytes?: number;
+	peakWasmHeapBytes?: number;
 }) {
 	const existing = document.documentElement.dataset["yuneTypingDiagnostics"];
 	const diagnostics = existing ? JSON.parse(existing) as typeof diagnostic[] : [];
@@ -98,6 +104,7 @@ export default function CandidatePanel({
 	onStatus,
 	onUserdbChange,
 	onMetrics,
+	onToggleAsciiMode,
 }: {
 	runAsyncTask(asyncTask: () => Promise<void>): void;
 	textArea: HTMLTextAreaElement;
@@ -108,6 +115,7 @@ export default function CandidatePanel({
 	onStatus?(status: YuneStatusSnapshot | undefined): void;
 	onUserdbChange?(): void;
 	onMetrics?(metrics: MetricUpdate): void;
+	onToggleAsciiMode(): void;
 }) {
 	const [inputState, setInputState] = useState<InputState | undefined>();
 	const inputStateRef = useRef<InputState | undefined>();
@@ -116,6 +124,8 @@ export default function CandidatePanel({
 	const dictionaryPanel = useRef<HTMLDivElement>(null);
 	const pendingPerfDiagnostics = useRef<PendingPerfDiagnostic[]>([]);
 	const lastClassicStateRef = useRef<InputState | undefined>();
+	const pendingAsciiModeShift = useRef<string | undefined>();
+	const pendingAsciiModeShiftWasChorded = useRef(false);
 
 	const hideDictionary = useCallback(() => {
 		setShowDictionaryIndex(undefined);
@@ -175,6 +185,8 @@ export default function CandidatePanel({
 						workerRoundtripMs: actionDiagnostic?.workerRoundtripMs,
 						responseMappingMs: Math.round(responseMappingFinishedAt - responseMappingStartedAt),
 						totalWorkerActionMs: actionDiagnostic?.totalMs,
+						wasmHeapBytes: result.memory?.wasmHeapBytes,
+						peakWasmHeapBytes: result.memory?.peakWasmHeapBytes,
 					});
 				}
 				const candidateCount = result.isComposing ? Math.min(result.candidates.length, prefs.pageSize) : undefined;
@@ -186,6 +198,10 @@ export default function CandidatePanel({
 					latestInput: result.isComposing ? result.inputBuffer.active || result.inputBuffer.before : undefined,
 					candidateCount,
 					totalCandidateCount,
+					...(result.memory ? {
+						wasmHeapBytes: result.memory.wasmHeapBytes,
+						peakWasmHeapBytes: result.memory.peakWasmHeapBytes,
+					} : {}),
 					...(metricKind === "lookup" ? { lookupMs: Math.round(performance.now() - startedAt) } : {}),
 					...(metricKind === "ai" ? { aiMs: Math.round(performance.now() - startedAt) } : {}),
 				});
@@ -195,6 +211,8 @@ export default function CandidatePanel({
 						action: "processKey",
 						input: result.isComposing ? result.inputBuffer.active || result.inputBuffer.before : undefined,
 						totalMs: Math.round(performance.now() - startedAt),
+						wasmHeapBytes: result.memory?.wasmHeapBytes,
+						peakWasmHeapBytes: result.memory?.peakWasmHeapBytes,
 					});
 				});
 				hideDictionary();
@@ -243,6 +261,9 @@ export default function CandidatePanel({
 		const hasMeta = event.getModifierState("Meta");
 		const hasAlt = event.getModifierState("Alt");
 		const hasShift = event.getModifierState("Shift");
+		if (!inputState && prefs.isAsciiMode && document.activeElement === textArea) {
+			return undefined;
+		}
 		if (
 			(inputState || (
 				document.activeElement === textArea
@@ -278,13 +299,37 @@ export default function CandidatePanel({
 			return [...modifiers].join("+");
 		}
 		return undefined;
-	}, [inputState, textArea]);
+	}, [inputState, prefs.isAsciiMode, textArea]);
 
 	useEffect(() => {
 		function isModifierRelease(event: KeyboardEvent) {
 			return /^(Control|Meta|Alt|Shift)(Left|Right)$/.test(event.code);
 		}
+		function isAsciiModeShiftTap(event: KeyboardEvent) {
+			return event.key === "Shift"
+				&& /^Shift(Left|Right)$/.test(event.code)
+				&& !event.ctrlKey
+				&& !event.metaKey
+				&& !event.altKey;
+		}
+		function canToggleAsciiModeFromKeyboard() {
+			return document.activeElement === textArea || Boolean(inputStateRef.current);
+		}
 		function onKeyDown(event: KeyboardEvent) {
+			if (isAsciiModeShiftTap(event) && canToggleAsciiModeFromKeyboard()) {
+				if (pendingAsciiModeShift.current && event.code !== pendingAsciiModeShift.current) {
+					pendingAsciiModeShiftWasChorded.current = true;
+				}
+				else if (!event.repeat && !pendingAsciiModeShift.current) {
+					pendingAsciiModeShift.current = event.code;
+					pendingAsciiModeShiftWasChorded.current = false;
+				}
+				event.preventDefault();
+				return;
+			}
+			if (pendingAsciiModeShift.current) {
+				pendingAsciiModeShiftWasChorded.current = true;
+			}
 			if (selectCandidateFromDigitKey(event)) {
 				return;
 			}
@@ -295,6 +340,19 @@ export default function CandidatePanel({
 			}
 		}
 		function onKeyUp(event: KeyboardEvent) {
+			if (isAsciiModeShiftTap(event) && pendingAsciiModeShift.current === event.code) {
+				event.preventDefault();
+				const shouldToggle = !pendingAsciiModeShiftWasChorded.current && canToggleAsciiModeFromKeyboard();
+				pendingAsciiModeShift.current = undefined;
+				pendingAsciiModeShiftWasChorded.current = false;
+				if (shouldToggle) {
+					onToggleAsciiMode();
+				}
+				return;
+			}
+			if (pendingAsciiModeShift.current && !isAsciiModeShiftTap(event)) {
+				pendingAsciiModeShiftWasChorded.current = true;
+			}
 			if (/^[0-9]$/.test(event.key) && inputStateRef.current) {
 				return;
 			}
@@ -309,7 +367,7 @@ export default function CandidatePanel({
 			document.removeEventListener("keydown", onKeyDown);
 			document.removeEventListener("keyup", onKeyUp);
 		};
-	}, [inputState, parseKey, processKey, selectCandidateFromDigitKey]);
+	}, [inputState, onToggleAsciiMode, parseKey, processKey, selectCandidateFromDigitKey, textArea]);
 
 	useEffect(() => {
 		lastClassicStateRef.current = undefined;

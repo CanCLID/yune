@@ -192,9 +192,9 @@
 	height: 46px;
 	background: var(--accent);
 	color: var(--accent-fg);
-	font-family: "Noto Sans TC", sans-serif;
+	font-family: var(--font-hei);
 	font-size: 25px;
-	font-weight: 900;
+	font-weight: 400;
 	line-height: 1;
 	flex: 0 0 auto;
 }
@@ -206,7 +206,7 @@
 }
 
 .yd-brand-title {
-	font-family: "Noto Sans TC", sans-serif;
+	font-family: var(--font-hei);
 	font-size: clamp(18px, 2.2vw, 27px);
 	font-weight: 900;
 	line-height: 1.05;
@@ -301,20 +301,28 @@
 }
 
 .yd-toolbar {
+	display: grid;
+	gap: 12px;
+}
+
+.yd-toolbar-row {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	gap: 12px;
 	flex-wrap: wrap;
 }
 
 .yd-schema-dropdown,
-.yd-top-field {
-	display: grid;
-	gap: 6px;
+.yd-top-field,
+.yd-reverse-lookup {
+	display: flex;
+	align-items: center;
+	gap: 10px;
 	min-width: min(100%, 310px);
 }
 
 .yd-top-label {
+	flex: 0 0 auto;
 	color: var(--ink3);
 	font-size: 15px;
 	font-weight: 700;
@@ -324,7 +332,9 @@
 }
 
 .yd-schema-select {
-	width: 100%;
+	width: auto;
+	flex: 1 1 250px;
+	min-width: 220px;
 	min-height: 44px;
 	border: 1px solid var(--line);
 	background: var(--bg);
@@ -335,12 +345,55 @@
 	appearance: auto;
 }
 
-.yd-schema-hint {
+.yd-reverse-lookup {
+	flex: 0 1 auto;
+	min-width: min(100%, 310px);
+}
+
+.yd-toolbar-row-primary .yd-mode-choice {
+	display: block;
+	flex: 1 1 520px;
+}
+
+.yd-mode-choice .yd-top-label-spacer {
+	display: none;
+}
+
+.yd-toolbar-row-secondary .yd-cangjie-choice {
+	min-width: min(100%, 240px);
+}
+
+.yd-reverse-lookup-list {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
 	margin: 0;
-	color: var(--ink3);
-	font-size: 11px;
-	line-height: 1.45;
-	max-width: 52ch;
+	padding: 0;
+	list-style: none;
+}
+
+.yd-reverse-lookup-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	min-height: 32px;
+	border: 1px solid var(--line2);
+	background: var(--surface2);
+	color: var(--ink2);
+	padding: 5px 9px;
+	font-size: 12px;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
+.yd-reverse-lookup-item code {
+	border: 1px solid var(--line);
+	background: var(--bg);
+	color: var(--ink);
+	padding: 2px 5px;
+	font-size: 12px;
+	line-height: 1;
 }
 
 .yd-mode-row {
@@ -378,9 +431,9 @@
 	height: 28px;
 	background: var(--accent);
 	color: var(--accent-fg);
-	font-family: "Noto Sans TC", sans-serif;
+	font-family: var(--font-hei);
 	font-size: 16px;
-	font-weight: 900;
+	font-weight: 400;
 	line-height: 1;
 }
 
@@ -389,6 +442,7 @@
 }
 
 .yd-mode-label {
+	font-family: var(--font-hei);
 	font-size: 13px;
 	font-weight: 600;
 	white-space: nowrap;
@@ -484,7 +538,7 @@
 	gap: 9px;
 	color: var(--ink2);
 	font-family: var(--font-sans);
-	font-size: 12px;
+	font-size: 14px;
 	font-weight: 700;
 	letter-spacing: 0.04em;
 	white-space: nowrap;
@@ -1079,7 +1133,7 @@
 
 .yd-metric-label {
 	color: var(--ink3);
-	font-size: 12px;
+	font-size: 13px;
 	font-weight: 700;
 	letter-spacing: 0.04em;
 	line-height: 1.2;
@@ -1088,7 +1142,7 @@
 .yd-metric-value {
 	margin-top: 3px;
 	color: var(--ink);
-	font-size: 18px;
+	font-size: 20px;
 	font-weight: 700;
 	line-height: 1.1;
 }
@@ -1096,7 +1150,7 @@
 .yd-metric-value span {
 	margin-left: 4px;
 	color: var(--ink3);
-	font-size: 12px;
+	font-size: 13px;
 }
 
 .yd-metric-accent {
@@ -1114,7 +1168,7 @@
 	gap: 9px;
 	cursor: pointer;
 	color: var(--ink2);
-	font-size: 12px;
+	font-size: 14px;
 	font-weight: 700;
 }
 
@@ -1130,9 +1184,10 @@
 
 .yd-inspector-summary span {
 	border-right: 1px solid var(--line2);
-	padding: 9px 16px;
+	padding: 10px 16px;
 	color: var(--ink2);
-	font-size: 13px;
+	font-size: 15px;
+	line-height: 1.35;
 }
 
 .yd-inspector-summary b {
@@ -1158,7 +1213,7 @@
 .yd-inspector-column h3 {
 	margin: 0 0 10px;
 	font-family: "Noto Sans TC", sans-serif;
-	font-size: 15px;
+	font-size: 16px;
 	font-weight: 800;
 }
 
@@ -1166,9 +1221,16 @@
 	margin-top: 22px;
 }
 
+.yd-inspector-column .yd-square-chip {
+	min-height: 30px;
+	padding: 5px 9px;
+	font-size: 14px;
+	line-height: 1.3;
+}
+
 .yd-inspector-list {
 	display: grid;
-	gap: 9px;
+	gap: 10px;
 }
 
 .yd-inspector-list-row {
@@ -1176,7 +1238,8 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
-	font-size: 13px;
+	font-size: 15px;
+	line-height: 1.45;
 }
 
 .yd-inspector-list-row span:first-child {
@@ -1193,6 +1256,19 @@
 .yd-inspector-empty {
 	padding: 18px;
 	color: var(--ink3);
+	font-size: 15px;
+	line-height: 1.45;
+}
+
+.yd-inspector-table th,
+.yd-inspector-table td {
+	padding: 9px 11px;
+	font-size: 14px;
+	line-height: 1.35;
+}
+
+.yd-inspector-table th {
+	font-size: 13px;
 }
 
 .yd-preferences {
@@ -1511,6 +1587,7 @@
 	}
 
 	.yd-toolbar,
+	.yd-toolbar-row,
 	.yd-mode-row,
 	.yd-header-status {
 		width: 100%;
@@ -1518,6 +1595,7 @@
 
 	.yd-schema-dropdown,
 	.yd-top-field,
+	.yd-reverse-lookup,
 	.yd-mode-button {
 		width: 100%;
 	}

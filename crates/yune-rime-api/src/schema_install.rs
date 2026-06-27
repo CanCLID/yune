@@ -325,8 +325,12 @@ fn install_schema_dictionary_translator_from_config(
     let dictionary_exclude =
         schema_string_list(schema_config, &format!("{name_space}/dictionary_exclude"));
     let spelling_algebra = spelling_algebra_for_dictionary(schema_config, name_space);
-    if let Some(user_dict_name) = &user_dict_name {
-        session.set_user_dict_name(user_dict_name.clone());
+    let owns_userdb =
+        name_space == "translator" || (!has_affix && session.user_dict_name.is_none());
+    if owns_userdb {
+        if let Some(user_dict_name) = &user_dict_name {
+            session.set_user_dict_name(user_dict_name.clone());
+        }
     }
     if prediction_never_first {
         session.engine.set_prediction_never_first(true);

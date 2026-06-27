@@ -849,6 +849,47 @@ fn yune_web_adapter_ai_rows_do_not_auto_commit_and_do_not_write_userdb() {
 }
 
 #[test]
+fn yune_web_adapter_classic_commit_writes_userdb() {
+    let _guard = test_guard();
+    let runtime = YuneWebRuntime::create("classic-userdb-learning");
+    runtime.write_mobile_schema_with_reverse_dictionary();
+    runtime.write_cantonese_dictionary();
+    runtime.write_dictionary("cangjie5");
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+
+    let composing = process_input(state, "nei");
+    assert_eq!(
+        composing["context"]["candidates"][0]["text"],
+        Value::String("\u{4f60}".to_owned())
+    );
+
+    let committed = response_json(unsafe { yune_web_process_key(state, ' ' as i32, 0) });
+    assert_eq!(
+        committed["commits"],
+        Value::Array(vec![Value::String("\u{4f60}".to_owned())])
+    );
+
+    let store_path = runtime.user.join("jyut6ping3.userdb");
+    let stored = fs::read_to_string(&store_path).expect("classic commit should write userdb");
+    assert!(stored.contains("/db_name\tjyut6ping3\n"));
+    assert!(stored.contains("\t\u{4f60}\tc="), "{stored}");
+    assert!(
+        !runtime.user.join("cangjie5.userdb").exists(),
+        "reverse-lookup dictionaries must not own classic userdb learning"
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
 fn yune_web_adapter_handles_null_inputs_and_response_freeing() {
     let _guard = test_guard();
     assert!(unsafe { yune_web_init(ptr::null(), ptr::null(), ptr::null()) }.is_null());
@@ -1008,6 +1049,21 @@ schema:\n  schema_id: yune_web_luna\n  name: Yune Web Luna\nmenu:\n  page_size: 
         fs::write(staging.join("default.yaml"), default_config)
             .expect("staging default config should be written");
         fs::write(staging.join("yune_web_luna.schema.yaml"), &schema_config)
+            .expect("staging schema config should be written");
+        fs::write(self.shared.join("default.yaml"), default_config)
+            .expect("shared default config should be written");
+        fs::write(self.shared.join("yune_web_luna.schema.yaml"), schema_config)
+            .expect("shared schema config should be written");
+    }
+
+    fn write_mobile_schema_with_reverse_dictionary(&self) {
+        let default_config = "config_version: yune-web\nschema_list:\n  - schema: yune_web_luna\n";
+        let schema_config = "\
+schema:\n  schema_id: yune_web_luna\n  name: Yune Web Luna\nmenu:\n  page_size: 50\n  alternative_select_keys: \"\\x00\"\nswitches:\n  - name: ascii_mode\n    reset: 0\nengine:\n  processors:\n    - speller\n    - express_editor\n  translators:\n    - script_translator\n    - table_translator@cangjie\nspeller:\n  alphabet: zyxwvutsrqponmlkjihgfedcba\n  delimiter: \" '\"\n  algebra:\n    - \"derive/\\\\d//\"\ntranslator:\n  dictionary: jyut6ping3\n  enable_completion: true\n  enable_sentence: false\ncangjie:\n  dictionary: cangjie5\n  prefix: \"`vc\"\n  suffix: \";\"\n";
+        let staging = self.user.join("build");
+        fs::write(staging.join("default.yaml"), default_config)
+            .expect("staging default config should be written");
+        fs::write(staging.join("yune_web_luna.schema.yaml"), schema_config)
             .expect("staging schema config should be written");
         fs::write(self.shared.join("default.yaml"), default_config)
             .expect("shared default config should be written");

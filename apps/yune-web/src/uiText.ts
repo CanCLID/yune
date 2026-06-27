@@ -40,6 +40,7 @@ export const uiText = {
     toolbar: {
       schema: "方案",
       schemaChoices: "方案相容選擇",
+      reverseLookup: "反查支援",
       modeSpacer: "模式",
       asciiMode: "中英模式",
       chinese: "中文",
@@ -63,7 +64,9 @@ export const uiText = {
     },
     metrics: {
       aria: "即時引擎數據",
-      lookup: "查詢",
+      lookup: "輸入延遲",
+      wasmHeap: "WASM 佔用",
+      peakWasmHeap: "WASM 峰值佔用",
       aiRerank: "智能重排",
       candidates: "候選",
       userdb: "用戶詞庫",
@@ -209,6 +212,7 @@ export const uiText = {
     toolbar: {
       schema: "Schema",
       schemaChoices: "Schema compatibility choices",
+      reverseLookup: "Reverse lookup",
       modeSpacer: "Mode",
       asciiMode: "ASCII mode",
       chinese: "Chinese",
@@ -232,7 +236,9 @@ export const uiText = {
     },
     metrics: {
       aria: "Live engine metrics",
-      lookup: "Lookup",
+      lookup: "Input latency",
+      wasmHeap: "WASM heap",
+      peakWasmHeap: "Peak WASM heap",
       aiRerank: "AI rerank",
       candidates: "Candidates",
       userdb: "Userdb",
@@ -377,36 +383,48 @@ export const uiText = {
 
 export const schemaText: Record<
   UiLanguage,
-  Record<RimeSchemaId, { label: string; reverseLookup: string }>
+  Record<
+    RimeSchemaId,
+    {
+      label: string;
+      reverseLookups: readonly { trigger: string; schema: string }[];
+    }
+  >
 > = {
   yue: {
     jyut6ping3: {
       label: "粵語拼音",
-      reverseLookup:
-        "`zhe → 這（普通話 / luna_pinyin 反查）；`vl... → 粵語兩分；`vc... → 倉頡",
+      reverseLookups: [
+        { trigger: "`", schema: "朙月拼音" },
+        { trigger: "`vl", schema: "粵語兩分" },
+        { trigger: "`vc", schema: "倉頡五代" },
+      ],
     },
     cangjie5: {
       label: "倉頡五代",
-      reverseLookup: "`nei; → 你（粵拼反查）",
+      reverseLookups: [{ trigger: "`…;", schema: "粵拼" }],
     },
     luna_pinyin: {
       label: "朙月拼音",
-      reverseLookup: "`a; → 日（倉頡反查）",
+      reverseLookups: [{ trigger: "`…;", schema: "倉頡五代" }],
     },
   },
   en: {
     jyut6ping3: {
       label: "Jyutping",
-      reverseLookup:
-        "`zhe → 這 (Mandarin / luna_pinyin reverse lookup); `vl... → Cantonese two-stroke; `vc... → Cangjie",
+      reverseLookups: [
+        { trigger: "`", schema: "Luna Pinyin" },
+        { trigger: "`vl", schema: "Cantonese two-stroke" },
+        { trigger: "`vc", schema: "Cangjie 5" },
+      ],
     },
     cangjie5: {
       label: "Cangjie 5",
-      reverseLookup: "`nei; → 你 (Jyutping reverse lookup)",
+      reverseLookups: [{ trigger: "`…;", schema: "Jyutping" }],
     },
     luna_pinyin: {
       label: "Luna Pinyin",
-      reverseLookup: "`a; → 日 (Cangjie reverse lookup)",
+      reverseLookups: [{ trigger: "`…;", schema: "Cangjie 5" }],
     },
   },
 };
@@ -418,7 +436,7 @@ export const outputStandardText: Record<
   yue: {
     opencc_traditional: { label: "傳統漢字", shortLabel: "傳" },
     hong_kong_traditional: { label: "香港字形", shortLabel: "港" },
-    taiwan_traditional: { label: "台灣字型", shortLabel: "台" },
+    taiwan_traditional: { label: "台灣字形", shortLabel: "台" },
     mainland_simplified: { label: "大陆简化字", shortLabel: "简" },
   },
   en: {

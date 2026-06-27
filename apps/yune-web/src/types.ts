@@ -42,6 +42,11 @@ export interface YuneWebUserdbSnapshot {
 	parseErrors: YuneWebUserdbParseError[];
 }
 
+export interface YuneWebMemorySnapshot {
+	wasmHeapBytes: number;
+	peakWasmHeapBytes: number;
+}
+
 export interface Actions {
 	setOption(option: string, value: boolean): Promise<void>;
 	selectSchema(schemaId: RimeSchemaId): Promise<boolean>;
@@ -87,6 +92,7 @@ interface RimePayload {
 	success: boolean;
 	committed?: string;
 	status?: YuneWebStatus;
+	memory?: YuneWebMemorySnapshot;
 }
 
 export type RimeResult = (RimeComposing | RimeNotComposing) & RimePayload;
@@ -106,7 +112,7 @@ export interface ListenerArgsMap {
 	deployStatusChanged: [status: RimeDeployStatus];
 	schemaChanged: [id: string, name: string];
 	optionChanged: [option: string, value: boolean];
-	initialized: [success: boolean];
+	initialized: [success: boolean, memory?: YuneWebMemorySnapshot];
 }
 
 interface NamedMessage<K extends keyof Actions> {

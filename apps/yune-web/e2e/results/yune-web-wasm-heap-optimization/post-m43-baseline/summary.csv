@@ -1,0 +1,11 @@
+scenarioId,schema,mode,publicDemo,samples,medianReadyToInputMs,p95ReadyToInputMs,medianStartupCompleteMs,p95StartupCompleteMs,medianFirstKeyToPaintMs,p95FirstKeyToPaintMs,transferBytes,encodedBytes,medianWasmHeapBytes,p95WasmHeapBytes,medianPeakWasmHeapBytes,p95PeakWasmHeapBytes,maxPeakWasmHeapBytes,cacheHits,cacheMisses,cacheErrors,topOwner,topOwnerMedianMs
+tracked-luna-cold,luna_pinyin,real-worker-cold,false,3,776,932,286,298,28,57,5705544,5704344,134217728,134217728,134217728,134217728,134217728,0,0,0,React/browser ready residual,495
+tracked-luna-warm-reload,luna_pinyin,real-worker-warm-reload,false,3,246,252,203,204,23,66,0,5985570,134217728,134217728,134217728,134217728,134217728,0,0,0,worker total to initialized,203
+tracked-luna-warm-new-page,luna_pinyin,real-worker-warm-new-page,false,3,331,331,220,220,23,62,0,5704344,134217728,134217728,134217728,134217728,134217728,0,0,0,worker total to initialized,220
+tracked-jyut-cold,jyut6ping3_mobile,real-worker-cold,false,3,1250,1576,770,1051,13,30,35116704,35115504,134217728,134217728,134217728,134217728,134217728,0,0,0,worker total to initialized,770
+tracked-jyut-warm-reload,jyut6ping3_mobile,real-worker-warm-reload,false,3,672,763,625,709,14,28,0,38424055,134217728,134217728,134217728,134217728,134217728,0,0,0,worker total to initialized,625
+tracked-jyut-warm-new-page,jyut6ping3_mobile,real-worker-warm-new-page,false,3,768,800,661,692,14,41,0,35115504,134217728,134217728,134217728,134217728,134217728,0,0,0,worker total to initialized,661
+tracked-mock-cold,luna_pinyin,mock-worker-cold,false,3,482,510,0,0,13,15,747906,746706,0,0,0,0,0,0,0,0,React/browser ready residual,482
+tracked-mock-warm,luna_pinyin,mock-worker-warm,false,3,314,317,0,0,14,14,747906,746706,0,0,0,0,0,0,0,0,React/browser ready residual,314
+public-luna-cold,luna_pinyin,real-worker-cold,true,3,777,799,307,315,31,74,5705484,5704284,134217728,134217728,134217728,134217728,134217728,2,20,0,React/browser ready residual,475
+public-jyut-cold,jyut6ping3_mobile,real-worker-cold,true,3,1263,1290,778,808,13,30,35116644,35115444,134217728,134217728,134217728,134217728,134217728,1,36,0,worker total to initialized,778

@@ -20,7 +20,6 @@ export interface SchemaOption {
   label: string;
   schemaName: string;
   secondaryLabel: string;
-  reverseLookup: string;
 }
 
 export const SCHEMA_OPTIONS: readonly SchemaOption[] = [
@@ -29,22 +28,18 @@ export const SCHEMA_OPTIONS: readonly SchemaOption[] = [
     label: "粵語拼音 Jyutping",
     schemaName: "粵語拼音",
     secondaryLabel: "Jyutping",
-    reverseLookup:
-      "`zhe -> 這（普通話 / luna_pinyin 反查）; `vl... -> 粵語兩分; `vc... -> 倉頡",
   },
   {
     id: "cangjie5",
     label: "倉頡五代 Cangjie 5",
     schemaName: "倉頡五代",
     secondaryLabel: "Cangjie 5",
-    reverseLookup: "`nei; -> 你（粵拼反查）",
   },
   {
     id: "luna_pinyin",
     label: "朙月拼音 Luna Pinyin",
     schemaName: "朙月拼音",
     secondaryLabel: "Luna Pinyin",
-    reverseLookup: "`a; -> 日（倉頡反查）",
   },
 ];
 
@@ -84,7 +79,7 @@ export const OUTPUT_STANDARD_OPTIONS: readonly OutputStandardOption[] = [
   },
   {
     id: "taiwan_traditional",
-    label: "台灣字型 Taiwan Traditional",
+    label: "台灣字形 Taiwan Traditional",
     shortLabel: "台灣字形",
     glyph: "台",
   },

@@ -70,13 +70,13 @@ export default function YuneInspector({
 						<h3>{text.filters}</h3>
 						<div className="yd-inspector-list" data-yune-inspector-filters>
 							{debug.filter_audit.length
-								? debug.filter_audit.map(record =>
-									<div key={record.name} className="yd-inspector-list-row">
+								? debug.filter_audit.map((record, index) =>
+									<div key={`${record.name}-${index}`} className="yd-inspector-list-row">
 										<span>{record.name}</span>
 										<span>{`${record.before_count} → ${record.after_count}`}</span>
 									</div>)
-								: debug.filter_pipeline.map(name =>
-									<div key={name} className="yd-inspector-list-row">
+								: debug.filter_pipeline.map((name, index) =>
+									<div key={`${name}-${index}`} className="yd-inspector-list-row">
 										<span>{name}</span>
 										<span>-</span>
 									</div>)}

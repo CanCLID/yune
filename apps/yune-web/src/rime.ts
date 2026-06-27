@@ -91,7 +91,7 @@ for (const type of allListenerTypes) {
 }
 const lastListenerArgs = {} as Partial<{ [K in keyof ListenerArgsMap]: ListenerArgsMap[K] }>;
 
-const YUNE_WEB_WORKER_VERSION = "m27-startup-runtime-v1";
+const YUNE_WEB_WORKER_VERSION = "yune-web-wasm-heap-v1";
 const debugWindow = window as DebugWindow;
 debugWindow.__YUNE_RIME_VERSION__ = YUNE_WEB_WORKER_VERSION;
 document.documentElement.dataset["yuneRimeVersion"] = YUNE_WEB_WORKER_VERSION;

@@ -37,6 +37,7 @@ pub struct Engine {
 
 const DEFAULT_PAGE_SIZE: usize = 5;
 const BOUNDED_REFRESH_SURPLUS: usize = 15;
+const M44_SHORT_KEY_REFRESH_SURPLUS: usize = 2;
 const TYPEDUCK_E_SQUARED: f32 = 7.389_056;
 const TYPEDUCK_EXP_E_SQUARED: f32 = 1618.178;
 
@@ -1265,7 +1266,25 @@ impl Engine {
                 .get("extended_charset")
                 .copied()
                 .unwrap_or(false);
-        CandidateRequest::bounded(DEFAULT_PAGE_SIZE + BOUNDED_REFRESH_SURPLUS)
+        let input = self.context.composition.input.as_str();
+        let has_filter_surplus_risk = self.filters.iter().any(|filter| {
+            matches!(
+                filter.name(),
+                "charset_filter" | "simplifier" | "uniquifier"
+            )
+        });
+        let surplus = if self.status.schema_id == "luna_pinyin"
+            && crate::translator::is_m44_track_a_short_key_prefix(input)
+        {
+            if has_filter_surplus_risk {
+                M44_SHORT_KEY_REFRESH_SURPLUS
+            } else {
+                0
+            }
+        } else {
+            BOUNDED_REFRESH_SURPLUS
+        };
+        CandidateRequest::bounded(DEFAULT_PAGE_SIZE + surplus)
             .with_filter_extended_cjk(filter_extended_cjk)
     }
 

@@ -848,12 +848,20 @@ impl StaticTableTranslator {
         if let (Some(prism), Some(syllabary_codes)) =
             (self.prism_payload.as_ref(), self.storage.syllabary_codes())
         {
+            let track_b_short_prefix = self.uses_m44_track_b_short_prefix_lookup(lookup_code);
             let prism_start = crate::m37_metrics_enabled().then(Instant::now);
             let lookups = prism.lookup_canonical_codes(lookup_code, syllabary_codes);
             if let Some(start) = prism_start {
-                crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
+                let elapsed = start.elapsed();
+                crate::m37_record_prism_lookup(elapsed, lookups.len());
+                if self.dynamic_correction_lookup {
+                    crate::m37_record_track_b_spelling_expansion(elapsed, lookups.len());
+                }
             }
             for lookup in lookups {
+                if track_b_short_prefix && lookup.code != lookup_code {
+                    continue;
+                }
                 if !lookup.correction
                     && !specs.iter().any(|spec| spec.code == lookup.code)
                     && self.storage.has_code(lookup.code)
@@ -975,6 +983,7 @@ impl StaticTableTranslator {
         let Some((spans, preedit)) = self.abbreviation_sentence_spans(model, input) else {
             return Vec::new();
         };
+        let format_start = crate::m37_metrics_enabled().then(Instant::now);
         let mut candidates = model
             .candidates_for_code_spans_with_limit(input, &spans, limit)
             .into_iter()
@@ -982,6 +991,9 @@ impl StaticTableTranslator {
             .collect::<Vec<_>>();
         for candidate in &mut candidates {
             candidate.preedit = Some(preedit.clone());
+        }
+        if let Some(start) = format_start {
+            crate::m37_record_abbreviation_candidate_format(start.elapsed());
         }
         candidates
     }
@@ -1000,6 +1012,9 @@ impl StaticTableTranslator {
         }
         let prism = self.prism_payload.as_ref()?;
         let syllabary_codes = self.storage.syllabary_codes()?;
+        let discovery_start = crate::m37_metrics_enabled().then(Instant::now);
+        let mut candidates_considered = 0usize;
+        let mut codes_emitted = 0usize;
         let boundaries = input
             .char_indices()
             .map(|(index, _)| index)
@@ -1021,25 +1036,31 @@ impl StaticTableTranslator {
                 if let Some(start) = prism_start {
                     crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
                 }
-                let mut codes = lookups
-                    .into_iter()
-                    .filter(|lookup| {
-                        !lookup.correction
-                            && (lookup.abbreviation || lookup.code == spelling)
-                            && model.has_code(lookup.code)
-                    })
-                    .map(|lookup| {
-                        if lookup.abbreviation {
-                            saw_abbreviation = true;
-                        }
-                        lookup.code.to_owned()
-                    })
-                    .collect::<Vec<_>>();
+                let mut codes = Vec::new();
+                for lookup in lookups {
+                    candidates_considered += 1;
+                    if lookup.correction || !(lookup.abbreviation || lookup.code == spelling) {
+                        continue;
+                    }
+                    let has_code_start = crate::m37_metrics_enabled().then(Instant::now);
+                    let has_code = model.has_code(lookup.code);
+                    if let Some(start) = has_code_start {
+                        crate::m37_record_abbreviation_model_has_code(start.elapsed());
+                    }
+                    if !has_code {
+                        continue;
+                    }
+                    if lookup.abbreviation {
+                        saw_abbreviation = true;
+                    }
+                    codes.push(lookup.code.to_owned());
+                }
                 codes.sort();
                 codes.dedup();
                 codes.truncate(MAX_ABBREVIATION_SENTENCE_CODES_PER_SPAN);
                 for code in codes {
                     spans.push(SentenceCodeSpan::new(start, end, code));
+                    codes_emitted += 1;
                     if spans.len() >= MAX_ABBREVIATION_SENTENCE_TOTAL_SPANS {
                         break;
                     }
@@ -1052,11 +1073,24 @@ impl StaticTableTranslator {
                 break;
             }
         }
-        if !saw_abbreviation || spans.is_empty() {
-            return None;
+        let result = if !saw_abbreviation || spans.is_empty() {
+            None
+        } else {
+            let preedit_start = crate::m37_metrics_enabled().then(Instant::now);
+            let preedit = abbreviation_preedit_from_spans(input, &boundaries, &spans);
+            if let Some(start) = preedit_start {
+                crate::m37_record_abbreviation_preedit_format(start.elapsed());
+            }
+            preedit.map(|preedit| (spans, preedit))
+        };
+        if let Some(start) = discovery_start {
+            crate::m37_record_abbreviation_span_discovery(
+                start.elapsed(),
+                candidates_considered,
+                codes_emitted,
+            );
         }
-        let preedit = abbreviation_preedit_from_spans(input, &boundaries, &spans)?;
-        Some((spans, preedit))
+        result
     }
 
     fn exact_lookup_min_syllable_count(&self, lookup_code: &str) -> Option<usize> {
@@ -1253,6 +1287,18 @@ impl StaticTableTranslator {
                 .all(|spec| spec.required_syllable_count.is_none())
     }
 
+    fn uses_m44_short_key_metrics(&self, lookup_code: &str) -> bool {
+        !self.dynamic_correction_lookup && is_m44_track_a_short_key_prefix(lookup_code)
+    }
+
+    fn uses_m44_track_b_metrics(&self) -> bool {
+        self.dynamic_correction_lookup
+    }
+
+    fn uses_m44_track_b_short_prefix_lookup(&self, lookup_code: &str) -> bool {
+        self.dynamic_correction_lookup && is_m44_track_b_short_key_prefix(lookup_code)
+    }
+
     fn lookup_candidate_ref_raw_quality(&self, candidate: &PendingLookupCandidateRef<'_>) -> f32 {
         let mut raw_quality = candidate.candidate.raw_quality();
         if let Some(distance) = candidate.correction_distance {
@@ -1387,6 +1433,11 @@ impl StaticTableTranslator {
             include_full_count,
         } = request;
         let ordered_mode = self.prediction_candidate_limit.is_some() || self.prefix_fallback;
+        let record_short_key = self.uses_m44_short_key_metrics(lookup_code);
+        let record_track_b = self.uses_m44_track_b_metrics();
+        let short_key_filter_start =
+            (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
+        let mut short_key_rows_scanned = 0usize;
         let mut selected = Vec::new();
         let mut limited_predictions = Vec::new();
         let mut emission_order = 0;
@@ -1440,8 +1491,15 @@ impl StaticTableTranslator {
                     break;
                 }
             }
+            if record_short_key {
+                short_key_rows_scanned += exact_candidates;
+            }
+            let exact_elapsed = exact_start.elapsed();
             self.storage
-                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
+                .record_exact_lookup(exact_elapsed, exact_candidates);
+            if record_track_b {
+                crate::m37_record_track_b_exact_lookup(exact_elapsed);
+            }
             if lookup_spec.correction_distance.is_none()
                 && self.enable_completion
                 && !spec_lookup_code.is_empty()
@@ -1503,13 +1561,24 @@ impl StaticTableTranslator {
                         }
                     }
                 }
+                if record_short_key {
+                    short_key_rows_scanned += prefix_candidates;
+                }
+                let prefix_elapsed = prefix_start.elapsed();
                 self.storage
-                    .record_prefix_lookup(prefix_start.elapsed(), prefix_candidates);
+                    .record_prefix_lookup(prefix_elapsed, prefix_candidates);
+                if record_track_b {
+                    crate::m37_record_track_b_prefix_lookup(prefix_elapsed);
+                }
             }
             if can_stop_after_window && selected.len() >= limit {
                 early_stopped = true;
                 break;
             }
+        }
+        if let Some(start) = short_key_filter_start {
+            crate::m37_record_short_key_filter(start.elapsed());
+            crate::m37_record_short_key_candidate_rows_scanned(short_key_rows_scanned);
         }
         full_count += limited_predictions.len();
         for candidate in limited_predictions {
@@ -1631,10 +1700,24 @@ impl StaticTableTranslator {
             }
         }
         if ordered_mode {
+            let sort_start = (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
             selected.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
+            if let Some(start) = sort_start {
+                crate::m37_record_short_key_sort_rank(start.elapsed());
+            }
         } else {
+            let sort_start = (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
             selected.sort_by(|left, right| self.bounded_candidate_order(left, right));
+            if let Some(start) = sort_start {
+                crate::m37_record_short_key_sort_rank(start.elapsed());
+            }
         }
+        let materialized_count = selected.len();
+        let materialize_start = ((record_short_key || record_track_b)
+            && crate::m37_metrics_enabled())
+        .then(Instant::now);
+        let comment_quality_start =
+            (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
         let mut candidates = selected
             .into_iter()
             .map(|candidate| {
@@ -1646,6 +1729,20 @@ impl StaticTableTranslator {
                 )
             })
             .collect::<Vec<_>>();
+        if let Some(start) = comment_quality_start {
+            crate::m37_record_short_key_comment_quality(start.elapsed());
+        }
+        if record_short_key {
+            crate::m37_record_short_key_candidates_cloned(materialized_count);
+            for _ in 0..materialized_count {
+                crate::m37_record_short_key_candidate_materialized();
+            }
+        }
+        if record_track_b {
+            for _ in 0..materialized_count {
+                crate::m37_record_track_b_candidate_materialized();
+            }
+        }
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
@@ -1672,6 +1769,14 @@ impl StaticTableTranslator {
         if ordered_mode {
             Self::assign_ordered_candidate_qualities(&mut candidates);
         }
+        if let Some(start) = materialize_start {
+            if record_short_key {
+                crate::m37_record_short_key_first_page_materialize(start.elapsed());
+            }
+            if record_track_b {
+                crate::m37_record_track_b_first_page_materialize(start.elapsed());
+            }
+        }
         crate::m37_record_bounded_iterator(limit, candidates.len(), full_count);
         let result_full_count = if early_stopped {
             full_count.max(candidates.len().saturating_add(1))
@@ -1687,6 +1792,7 @@ impl StaticTableTranslator {
         filter_by_charset: bool,
     ) -> Vec<Candidate> {
         let mut candidates = Vec::new();
+        let record_track_b = self.uses_m44_track_b_metrics();
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
             let lookup_code = lookup_spec.lookup_code.as_str();
@@ -1721,8 +1827,12 @@ impl StaticTableTranslator {
                         })
                     }),
             );
+            let exact_elapsed = exact_start.elapsed();
             self.storage
-                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
+                .record_exact_lookup(exact_elapsed, exact_candidates);
+            if record_track_b {
+                crate::m37_record_track_b_exact_lookup(exact_elapsed);
+            }
             if lookup_spec.correction_distance.is_none()
                 && self.enable_completion
                 && !lookup_code.is_empty()
@@ -1763,8 +1873,12 @@ impl StaticTableTranslator {
                         limited_prediction,
                     });
                 }
+                let prefix_elapsed = prefix_start.elapsed();
                 self.storage
-                    .record_prefix_lookup(prefix_start.elapsed(), prefix_lookup_candidates);
+                    .record_prefix_lookup(prefix_elapsed, prefix_lookup_candidates);
+                if record_track_b {
+                    crate::m37_record_track_b_prefix_lookup(prefix_elapsed);
+                }
                 if let Some(limit) = self.prediction_candidate_limit {
                     let mut limited_predictions = Vec::new();
                     let mut ordinary_completions = Vec::new();
@@ -1786,6 +1900,7 @@ impl StaticTableTranslator {
             if self.prediction_candidate_limit.is_some() {
                 pending.sort_by(|left, right| self.lookup_candidate_order(left, right));
             }
+            let pending_count = pending.len();
             candidates.extend(pending.into_iter().map(|pending| {
                 self.candidate_for_lookup(
                     &pending.entry_code,
@@ -1794,6 +1909,11 @@ impl StaticTableTranslator {
                     pending.correction_distance,
                 )
             }));
+            if record_track_b {
+                for _ in 0..pending_count {
+                    crate::m37_record_track_b_candidate_materialized();
+                }
+            }
         }
         candidates
     }
@@ -2244,6 +2364,17 @@ impl StaticTableTranslator {
         )
         .map(Self::from_dictionary)
     }
+}
+
+pub(crate) fn is_m44_track_a_short_key_prefix(input: &str) -> bool {
+    matches!(input, "h" | "ha" | "hao" | "n" | "ni")
+}
+
+fn is_m44_track_b_short_key_prefix(input: &str) -> bool {
+    matches!(
+        input,
+        "h" | "ha" | "hai" | "hau" | "n" | "ne" | "nei" | "ng" | "ngo"
+    )
 }
 
 fn record_sentence_candidate_metrics(

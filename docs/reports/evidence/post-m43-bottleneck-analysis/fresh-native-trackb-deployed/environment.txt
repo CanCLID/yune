@@ -1,0 +1,13 @@
+﻿date_utc=2026-06-26T22:28:56.5395870Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=ad93ec787d2b6e4f952b05836e8f0ed46b5a79d2
+yune_git_status_short=?? docs/reports/evidence/post-m43-bottleneck-analysis/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\fresh-native-trackb-deployed
+managed_runtime=false
+deploy_product_before_benchmark=True
+track_a_inputs=hao
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,h,ha,hau,hai,nei,ngo
+iterations=5
+session_iterations=30
+key_iterations=50

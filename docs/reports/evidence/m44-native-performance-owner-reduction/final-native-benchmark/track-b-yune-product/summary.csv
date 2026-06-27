@@ -1,0 +1,10 @@
+engine,track,schema_id,workload,input,samples,operations,median_us,p95_us,p99_us,max_us,median_working_set_bytes,max_peak_working_set_bytes
+yune,track-b-product,jyut6ping3_mobile,key_sequence_process_with_context,h,80,80,1669.600,1700.800,1740.900,1740.900,440975360,505122816
+yune,track-b-product,jyut6ping3_mobile,key_sequence_process_with_context,ha,80,160,1141.650,1176.150,1238.850,1238.850,440983552,505122816
+yune,track-b-product,jyut6ping3_mobile,key_sequence_process_with_context,hai,80,240,763.933,788.767,981.633,981.633,440975360,505122816
+yune,track-b-product,jyut6ping3_mobile,key_sequence_process_with_context,hau,80,240,774.600,811.400,927.033,927.033,440971264,505122816
+yune,track-b-product,jyut6ping3_mobile,key_sequence_process_with_context,nei,80,240,398.933,478.033,535.433,535.433,440963072,505122816
+yune,track-b-product,jyut6ping3_mobile,key_sequence_process_with_context,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,80,4880,32.462,33.100,33.215,33.215,442355712,505122816
+yune,track-b-product,jyut6ping3_mobile,key_sequence_process_with_context,ngo,80,240,573.333,596.733,778.000,778.000,441540608,505122816
+yune,track-b-product,jyut6ping3_mobile,session_create_select_destroy,,60,60,223155.600,234089.600,236362.900,236362.900,428040192,505122816
+yune,track-b-product,jyut6ping3_mobile,startup_warm_shared_assets_runtime_ready,,9,9,180984.700,1181662.900,1181662.900,1181662.900,436736000,505122816

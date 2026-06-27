@@ -429,6 +429,42 @@ fn m37_metrics_exports_snapshot_json_for_loaded_benchmarks() {
     assert!(json_text.contains("\"upstream_sentence_model_incremental_reuse_hits\":0"));
     assert!(json_text.contains("\"upstream_sentence_model_incremental_extend_ns\":0"));
     assert!(json_text.contains("\"upstream_sentence_model_incremental_discarded_rebuild_chars\":4"));
+    for field in [
+        "abbreviation_span_discovery_calls",
+        "abbreviation_span_discovery_ns",
+        "abbreviation_span_candidates_considered",
+        "abbreviation_span_codes_emitted",
+        "abbreviation_model_has_code_calls",
+        "abbreviation_model_has_code_ns",
+        "abbreviation_code_span_graph_build_ns",
+        "abbreviation_sentence_ranking_ns",
+        "abbreviation_preedit_format_ns",
+        "abbreviation_candidate_format_ns",
+        "short_key_candidate_rows_scanned",
+        "short_key_candidates_materialized",
+        "short_key_candidates_cloned",
+        "short_key_filter_ns",
+        "short_key_sort_rank_ns",
+        "short_key_comment_quality_ns",
+        "short_key_first_page_materialize_ns",
+        "track_b_spelling_expansions_considered",
+        "track_b_spelling_expansion_ns",
+        "track_b_exact_lookup_calls",
+        "track_b_exact_lookup_ns",
+        "track_b_prefix_lookup_calls",
+        "track_b_prefix_lookup_ns",
+        "track_b_candidates_materialized",
+        "track_b_first_page_materialize_ns",
+    ] {
+        assert!(
+            crate::M37_METRIC_FIELDS.contains(&field),
+            "M44 metric {field} must be listed for m37_metrics.csv export"
+        );
+        assert!(
+            json_text.contains(&format!("\"{field}\":0")),
+            "M44 metric {field} must be exported in the snapshot JSON: {json_text}"
+        );
+    }
     // SAFETY: `json` is owned by the metrics export.
     unsafe { crate::yune_m37_metrics_free_string(json) };
     crate::yune_m37_metrics_enable(FALSE);

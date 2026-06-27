@@ -103,6 +103,31 @@ pub struct M37MetricsSnapshot {
     pub dynamic_correction_ns: u64,
     pub dynamic_correction_codes_considered: u64,
     pub dynamic_correction_candidates: u64,
+    pub abbreviation_span_discovery_calls: u64,
+    pub abbreviation_span_discovery_ns: u64,
+    pub abbreviation_span_candidates_considered: u64,
+    pub abbreviation_span_codes_emitted: u64,
+    pub abbreviation_model_has_code_calls: u64,
+    pub abbreviation_model_has_code_ns: u64,
+    pub abbreviation_code_span_graph_build_ns: u64,
+    pub abbreviation_sentence_ranking_ns: u64,
+    pub abbreviation_preedit_format_ns: u64,
+    pub abbreviation_candidate_format_ns: u64,
+    pub short_key_candidate_rows_scanned: u64,
+    pub short_key_candidates_materialized: u64,
+    pub short_key_candidates_cloned: u64,
+    pub short_key_filter_ns: u64,
+    pub short_key_sort_rank_ns: u64,
+    pub short_key_comment_quality_ns: u64,
+    pub short_key_first_page_materialize_ns: u64,
+    pub track_b_spelling_expansions_considered: u64,
+    pub track_b_spelling_expansion_ns: u64,
+    pub track_b_exact_lookup_calls: u64,
+    pub track_b_exact_lookup_ns: u64,
+    pub track_b_prefix_lookup_calls: u64,
+    pub track_b_prefix_lookup_ns: u64,
+    pub track_b_candidates_materialized: u64,
+    pub track_b_first_page_materialize_ns: u64,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -242,6 +267,31 @@ struct M37Metrics {
     dynamic_correction_ns: AtomicU64,
     dynamic_correction_codes_considered: AtomicU64,
     dynamic_correction_candidates: AtomicU64,
+    abbreviation_span_discovery_calls: AtomicU64,
+    abbreviation_span_discovery_ns: AtomicU64,
+    abbreviation_span_candidates_considered: AtomicU64,
+    abbreviation_span_codes_emitted: AtomicU64,
+    abbreviation_model_has_code_calls: AtomicU64,
+    abbreviation_model_has_code_ns: AtomicU64,
+    abbreviation_code_span_graph_build_ns: AtomicU64,
+    abbreviation_sentence_ranking_ns: AtomicU64,
+    abbreviation_preedit_format_ns: AtomicU64,
+    abbreviation_candidate_format_ns: AtomicU64,
+    short_key_candidate_rows_scanned: AtomicU64,
+    short_key_candidates_materialized: AtomicU64,
+    short_key_candidates_cloned: AtomicU64,
+    short_key_filter_ns: AtomicU64,
+    short_key_sort_rank_ns: AtomicU64,
+    short_key_comment_quality_ns: AtomicU64,
+    short_key_first_page_materialize_ns: AtomicU64,
+    track_b_spelling_expansions_considered: AtomicU64,
+    track_b_spelling_expansion_ns: AtomicU64,
+    track_b_exact_lookup_calls: AtomicU64,
+    track_b_exact_lookup_ns: AtomicU64,
+    track_b_prefix_lookup_calls: AtomicU64,
+    track_b_prefix_lookup_ns: AtomicU64,
+    track_b_candidates_materialized: AtomicU64,
+    track_b_first_page_materialize_ns: AtomicU64,
 }
 
 fn metrics() -> &'static M37Metrics {
@@ -467,6 +517,73 @@ pub fn m37_metrics_reset() {
     metrics
         .dynamic_correction_candidates
         .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_span_discovery_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_span_discovery_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_span_candidates_considered
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_span_codes_emitted
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_model_has_code_calls
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_model_has_code_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_code_span_graph_build_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_sentence_ranking_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_preedit_format_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .abbreviation_candidate_format_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .short_key_candidate_rows_scanned
+        .store(0, Ordering::Relaxed);
+    metrics
+        .short_key_candidates_materialized
+        .store(0, Ordering::Relaxed);
+    metrics
+        .short_key_candidates_cloned
+        .store(0, Ordering::Relaxed);
+    metrics.short_key_filter_ns.store(0, Ordering::Relaxed);
+    metrics.short_key_sort_rank_ns.store(0, Ordering::Relaxed);
+    metrics
+        .short_key_comment_quality_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .short_key_first_page_materialize_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .track_b_spelling_expansions_considered
+        .store(0, Ordering::Relaxed);
+    metrics
+        .track_b_spelling_expansion_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .track_b_exact_lookup_calls
+        .store(0, Ordering::Relaxed);
+    metrics.track_b_exact_lookup_ns.store(0, Ordering::Relaxed);
+    metrics
+        .track_b_prefix_lookup_calls
+        .store(0, Ordering::Relaxed);
+    metrics.track_b_prefix_lookup_ns.store(0, Ordering::Relaxed);
+    metrics
+        .track_b_candidates_materialized
+        .store(0, Ordering::Relaxed);
+    metrics
+        .track_b_first_page_materialize_ns
+        .store(0, Ordering::Relaxed);
 }
 
 #[must_use]
@@ -655,6 +772,65 @@ pub fn m37_metrics_snapshot() -> M37MetricsSnapshot {
             .load(Ordering::Relaxed),
         dynamic_correction_candidates: metrics
             .dynamic_correction_candidates
+            .load(Ordering::Relaxed),
+        abbreviation_span_discovery_calls: metrics
+            .abbreviation_span_discovery_calls
+            .load(Ordering::Relaxed),
+        abbreviation_span_discovery_ns: metrics
+            .abbreviation_span_discovery_ns
+            .load(Ordering::Relaxed),
+        abbreviation_span_candidates_considered: metrics
+            .abbreviation_span_candidates_considered
+            .load(Ordering::Relaxed),
+        abbreviation_span_codes_emitted: metrics
+            .abbreviation_span_codes_emitted
+            .load(Ordering::Relaxed),
+        abbreviation_model_has_code_calls: metrics
+            .abbreviation_model_has_code_calls
+            .load(Ordering::Relaxed),
+        abbreviation_model_has_code_ns: metrics
+            .abbreviation_model_has_code_ns
+            .load(Ordering::Relaxed),
+        abbreviation_code_span_graph_build_ns: metrics
+            .abbreviation_code_span_graph_build_ns
+            .load(Ordering::Relaxed),
+        abbreviation_sentence_ranking_ns: metrics
+            .abbreviation_sentence_ranking_ns
+            .load(Ordering::Relaxed),
+        abbreviation_preedit_format_ns: metrics
+            .abbreviation_preedit_format_ns
+            .load(Ordering::Relaxed),
+        abbreviation_candidate_format_ns: metrics
+            .abbreviation_candidate_format_ns
+            .load(Ordering::Relaxed),
+        short_key_candidate_rows_scanned: metrics
+            .short_key_candidate_rows_scanned
+            .load(Ordering::Relaxed),
+        short_key_candidates_materialized: metrics
+            .short_key_candidates_materialized
+            .load(Ordering::Relaxed),
+        short_key_candidates_cloned: metrics.short_key_candidates_cloned.load(Ordering::Relaxed),
+        short_key_filter_ns: metrics.short_key_filter_ns.load(Ordering::Relaxed),
+        short_key_sort_rank_ns: metrics.short_key_sort_rank_ns.load(Ordering::Relaxed),
+        short_key_comment_quality_ns: metrics.short_key_comment_quality_ns.load(Ordering::Relaxed),
+        short_key_first_page_materialize_ns: metrics
+            .short_key_first_page_materialize_ns
+            .load(Ordering::Relaxed),
+        track_b_spelling_expansions_considered: metrics
+            .track_b_spelling_expansions_considered
+            .load(Ordering::Relaxed),
+        track_b_spelling_expansion_ns: metrics
+            .track_b_spelling_expansion_ns
+            .load(Ordering::Relaxed),
+        track_b_exact_lookup_calls: metrics.track_b_exact_lookup_calls.load(Ordering::Relaxed),
+        track_b_exact_lookup_ns: metrics.track_b_exact_lookup_ns.load(Ordering::Relaxed),
+        track_b_prefix_lookup_calls: metrics.track_b_prefix_lookup_calls.load(Ordering::Relaxed),
+        track_b_prefix_lookup_ns: metrics.track_b_prefix_lookup_ns.load(Ordering::Relaxed),
+        track_b_candidates_materialized: metrics
+            .track_b_candidates_materialized
+            .load(Ordering::Relaxed),
+        track_b_first_page_materialize_ns: metrics
+            .track_b_first_page_materialize_ns
             .load(Ordering::Relaxed),
     }
 }
@@ -1158,4 +1334,116 @@ pub fn m37_record_dynamic_correction(
         );
         add(&metrics.dynamic_correction_candidates, candidates as u64);
     }
+}
+
+pub fn m37_record_abbreviation_span_discovery(
+    duration: Duration,
+    candidates_considered: usize,
+    codes_emitted: usize,
+) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .abbreviation_span_discovery_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add_duration(&metrics.abbreviation_span_discovery_ns, duration);
+        add(
+            &metrics.abbreviation_span_candidates_considered,
+            candidates_considered as u64,
+        );
+        add(
+            &metrics.abbreviation_span_codes_emitted,
+            codes_emitted as u64,
+        );
+    }
+}
+
+pub fn m37_record_abbreviation_model_has_code(duration: Duration) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .abbreviation_model_has_code_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add_duration(&metrics.abbreviation_model_has_code_ns, duration);
+    }
+}
+
+pub fn m37_record_abbreviation_code_span_graph_build(duration: Duration) {
+    add_duration(&metrics().abbreviation_code_span_graph_build_ns, duration);
+}
+
+pub fn m37_record_abbreviation_sentence_ranking(duration: Duration) {
+    add_duration(&metrics().abbreviation_sentence_ranking_ns, duration);
+}
+
+pub fn m37_record_abbreviation_preedit_format(duration: Duration) {
+    add_duration(&metrics().abbreviation_preedit_format_ns, duration);
+}
+
+pub fn m37_record_abbreviation_candidate_format(duration: Duration) {
+    add_duration(&metrics().abbreviation_candidate_format_ns, duration);
+}
+
+pub fn m37_record_short_key_candidate_rows_scanned(count: usize) {
+    add(&metrics().short_key_candidate_rows_scanned, count as u64);
+}
+
+pub fn m37_record_short_key_candidate_materialized() {
+    add(&metrics().short_key_candidates_materialized, 1);
+}
+
+pub fn m37_record_short_key_candidates_cloned(count: usize) {
+    add(&metrics().short_key_candidates_cloned, count as u64);
+}
+
+pub fn m37_record_short_key_filter(duration: Duration) {
+    add_duration(&metrics().short_key_filter_ns, duration);
+}
+
+pub fn m37_record_short_key_sort_rank(duration: Duration) {
+    add_duration(&metrics().short_key_sort_rank_ns, duration);
+}
+
+pub fn m37_record_short_key_comment_quality(duration: Duration) {
+    add_duration(&metrics().short_key_comment_quality_ns, duration);
+}
+
+pub fn m37_record_short_key_first_page_materialize(duration: Duration) {
+    add_duration(&metrics().short_key_first_page_materialize_ns, duration);
+}
+
+pub fn m37_record_track_b_spelling_expansion(duration: Duration, expansions_considered: usize) {
+    add(
+        &metrics().track_b_spelling_expansions_considered,
+        expansions_considered as u64,
+    );
+    add_duration(&metrics().track_b_spelling_expansion_ns, duration);
+}
+
+pub fn m37_record_track_b_exact_lookup(duration: Duration) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .track_b_exact_lookup_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add_duration(&metrics.track_b_exact_lookup_ns, duration);
+    }
+}
+
+pub fn m37_record_track_b_prefix_lookup(duration: Duration) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        metrics
+            .track_b_prefix_lookup_calls
+            .fetch_add(1, Ordering::Relaxed);
+        add_duration(&metrics.track_b_prefix_lookup_ns, duration);
+    }
+}
+
+pub fn m37_record_track_b_candidate_materialized() {
+    add(&metrics().track_b_candidates_materialized, 1);
+}
+
+pub fn m37_record_track_b_first_page_materialize(duration: Duration) {
+    add_duration(&metrics().track_b_first_page_materialize_ns, duration);
 }

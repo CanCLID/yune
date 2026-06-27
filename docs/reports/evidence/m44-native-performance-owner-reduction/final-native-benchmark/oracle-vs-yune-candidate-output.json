@@ -1,0 +1,174 @@
+﻿{
+    "capture":  {
+                    "milestone":  "M44",
+                    "phase":  "final-native-benchmark",
+                    "oracle":  "native upstream rime/librime 1.17.0 with luna_pinyin",
+                    "yune_source":  "target/m44-candidate-output/yune current DLL with native Yune smoke data",
+                    "librime_source":  "target/native-inprocess/final-native-benchmark/track-a-librime-1.17.0"
+                },
+    "all_final_guards_pass":  true,
+    "comparisons":  [
+                        {
+                            "input":  "cszysmsrsd",
+                            "schema_id_match":  true,
+                            "schema_name_match":  true,
+                            "preedit_match":  true,
+                            "commit_text_preview_match":  true,
+                            "page_metadata_match":  true,
+                            "candidate_output_match":  true,
+                            "rime_get_input_match":  false,
+                            "rime_get_input_caveat":  "oracle segments abbreviation input while Yune keeps raw input; this is not counted as candidate-output drift",
+                            "oracle":  {
+                                           "schema_id":  "luna_pinyin",
+                                           "schema_name":  "朙月拼音",
+                                           "rime_get_input":  "c s z y s m s r s d",
+                                           "preedit":  "c s z y s m s r s d",
+                                           "commit_text_preview":  "重商主義什麼是認識到",
+                                           "page_metadata":  {
+                                                                 "page_size":  5,
+                                                                 "page_no":  0,
+                                                                 "is_last_page":  false,
+                                                                 "highlighted_candidate_index":  0
+                                                             },
+                                           "selected_candidates":  [
+                                                                       {
+                                                                           "text":  "重商主義什麼是認識到",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "重商主義",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "催生作用",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "產生爭議",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "測試資源",
+                                                                           "comment":  null
+                                                                       }
+                                                                   ]
+                                       },
+                            "yune":  {
+                                         "schema_id":  "luna_pinyin",
+                                         "schema_name":  "朙月拼音",
+                                         "rime_get_input":  "cszysmsrsd",
+                                         "preedit":  "c s z y s m s r s d",
+                                         "commit_text_preview":  "重商主義什麼是認識到",
+                                         "page_metadata":  {
+                                                               "page_size":  5,
+                                                               "page_no":  0,
+                                                               "is_last_page":  false,
+                                                               "highlighted_candidate_index":  0
+                                                           },
+                                         "selected_candidates":  [
+                                                                     {
+                                                                         "text":  "重商主義什麼是認識到",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "重商主義",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "催生作用",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "產生爭議",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "測試資源",
+                                                                         "comment":  null
+                                                                     }
+                                                                 ]
+                                     }
+                        },
+                        {
+                            "input":  "zybfshmsru",
+                            "schema_id_match":  true,
+                            "schema_name_match":  true,
+                            "preedit_match":  true,
+                            "commit_text_preview_match":  true,
+                            "page_metadata_match":  true,
+                            "candidate_output_match":  true,
+                            "rime_get_input_match":  false,
+                            "rime_get_input_caveat":  "oracle segments abbreviation input while Yune keeps raw input; this is not counted as candidate-output drift",
+                            "oracle":  {
+                                           "schema_id":  "luna_pinyin",
+                                           "schema_name":  "朙月拼音",
+                                           "rime_get_input":  "z y b f sh m s ru",
+                                           "preedit":  "z y b f sh m s ru",
+                                           "commit_text_preview":  "自有辦法什麼收入",
+                                           "page_metadata":  {
+                                                                 "page_size":  5,
+                                                                 "page_no":  0,
+                                                                 "is_last_page":  false,
+                                                                 "highlighted_candidate_index":  0
+                                                             },
+                                           "selected_candidates":  [
+                                                                       {
+                                                                           "text":  "自有辦法什麼收入",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "自有辦法",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "重要部分",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "晝夜不分",
+                                                                           "comment":  null
+                                                                       },
+                                                                       {
+                                                                           "text":  "主要部分",
+                                                                           "comment":  null
+                                                                       }
+                                                                   ]
+                                       },
+                            "yune":  {
+                                         "schema_id":  "luna_pinyin",
+                                         "schema_name":  "朙月拼音",
+                                         "rime_get_input":  "zybfshmsru",
+                                         "preedit":  "z y b f sh m s ru",
+                                         "commit_text_preview":  "自有辦法什麼收入",
+                                         "page_metadata":  {
+                                                               "page_size":  5,
+                                                               "page_no":  0,
+                                                               "is_last_page":  false,
+                                                               "highlighted_candidate_index":  0
+                                                           },
+                                         "selected_candidates":  [
+                                                                     {
+                                                                         "text":  "自有辦法什麼收入",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "自有辦法",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "重要部分",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "晝夜不分",
+                                                                         "comment":  null
+                                                                     },
+                                                                     {
+                                                                         "text":  "主要部分",
+                                                                         "comment":  null
+                                                                     }
+                                                                 ]
+                                     }
+                        }
+                    ]
+}

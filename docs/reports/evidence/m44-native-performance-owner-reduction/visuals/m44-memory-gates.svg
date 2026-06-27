@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="430" viewBox="0 0 980 430" role="img" aria-labelledby="title desc">
+<title id="title">M44 Track A memory gates</title>
+<desc id="desc">Track A phase 0 and final peak working set against the M44 memory target.</desc>
+<rect x="0" y="0" width="980.00" height="430" rx="0" fill="#f8fafc"/>
+<text x="40" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827" text-anchor="start">M44 Track A memory gate remains open</text>
+<text x="40" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">Final peak working set stayed near Phase 0 and above the required memory-win target.</text>
+<line x1="715.22" y1="88" x2="715.22" y2="330" stroke="#64748b" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="721.22" y="94" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">target 107,797,708 B</text>
+<text x="40" y="124" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">Memory-win target</text>
+<rect x="300" y="107" width="415.22" height="24" rx="4" fill="#16a34a"/>
+<text x="725.22" y="125" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">107,797,708 B (102.8 MiB)</text>
+<text x="40" y="182" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">Phase 0 peak working set</text>
+<rect x="300" y="165" width="493.56" height="24" rx="4" fill="#d97706"/>
+<text x="803.56" y="183" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#92400e" text-anchor="start">128,135,168 B (122.2 MiB)</text>
+<text x="40" y="240" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">Final peak working set</text>
+<rect x="300" y="223" width="491.57" height="24" rx="4" fill="#dc2626"/>
+<text x="801.57" y="241" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#991b1b" text-anchor="start">127,619,072 B (121.7 MiB)</text>
+<text x="40" y="298" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">Remaining poet.entries_by_code</text>
+<rect x="300" y="281" width="72.01" height="24" rx="4" fill="#2563eb"/>
+<text x="382.01" y="299" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#1d4ed8" text-anchor="start">18,694,662 B (17.8 MiB)</text>
+<text x="40" y="388" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">Source: final-native-benchmark/final-gates.md and memory-owner-profile.csv. Storage guards still pass; this chart is not a memory-win claim.</text>
+</svg>

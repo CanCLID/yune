@@ -1,0 +1,140 @@
+﻿{
+    "provenance":  {
+                       "captured_at_utc":  "2026-06-27T01:46:52.1608884Z",
+                       "repo_head":  "ad93ec787d2b6e4f952b05836e8f0ed46b5a79d2",
+                       "repo_status":  [
+                                           " M crates/yune-core/src/engine.rs",
+                                           " M crates/yune-core/src/lib.rs",
+                                           " M crates/yune-core/src/m37_metrics.rs",
+                                           " M crates/yune-core/src/poet/mod.rs",
+                                           " M crates/yune-core/src/tests/translator.rs",
+                                           " M crates/yune-core/src/translator/mod.rs",
+                                           " M crates/yune-rime-api/benches/native_inprocess_benchmark.rs",
+                                           " M crates/yune-rime-api/src/lib.rs",
+                                           " M crates/yune-rime-api/src/tests/session_api.rs",
+                                           " M docs/decisions.md",
+                                           " M docs/ledgers/milestone-history.md",
+                                           " M docs/reports/yune-vs-librime-performance.md",
+                                           " M docs/reports/yune-vs-librime-root-cause-analysis.md",
+                                           " M docs/requirements.md",
+                                           " M docs/roadmap.md",
+                                           "?? docs/plans/completed/m44-plan-native-performance-owner-reduction.md",
+                                           "?? docs/reports/evidence/m44-native-performance-owner-reduction/",
+                                           "?? docs/reports/evidence/post-m43-bottleneck-analysis/"
+                                       ],
+                       "engine":  "Yune yune-rime-api current workspace",
+                       "dll_path":  "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\m44-candidate-output\\yune\\rime.dll",
+                       "shared_data_dir":  "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\m44-candidate-output\\yune\\shared",
+                       "user_data_dir":  "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\m44-candidate-output\\yune\\user",
+                       "prebuilt_data_dir":  "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\m44-candidate-output\\yune\\user\\build",
+                       "source_row_policy":  "m44_current_dll_with_m42_native_yune_smoke_data"
+                   },
+    "capture":  [
+                    {
+                        "schema_id":  "luna_pinyin",
+                        "schema_name":  "朙月拼音",
+                        "input":  "cszysmsrsd",
+                        "rime_get_input":  "cszysmsrsd",
+                        "processed":  [
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1
+                                      ],
+                        "is_composing":  true,
+                        "is_ascii_mode":  false,
+                        "preedit":  "c s z y s m s r s d",
+                        "commit_text_preview":  "重商主義什麼是認識到",
+                        "highlighted_candidate_index":  0,
+                        "page_size":  5,
+                        "page_no":  0,
+                        "is_last_page":  false,
+                        "selected_candidates":  [
+                                                    {
+                                                        "index":  0,
+                                                        "text":  "重商主義什麼是認識到",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  1,
+                                                        "text":  "重商主義",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  2,
+                                                        "text":  "催生作用",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  3,
+                                                        "text":  "產生爭議",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  4,
+                                                        "text":  "測試資源",
+                                                        "comment":  null
+                                                    }
+                                                ]
+                    },
+                    {
+                        "schema_id":  "luna_pinyin",
+                        "schema_name":  "朙月拼音",
+                        "input":  "zybfshmsru",
+                        "rime_get_input":  "zybfshmsru",
+                        "processed":  [
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1,
+                                          1
+                                      ],
+                        "is_composing":  true,
+                        "is_ascii_mode":  false,
+                        "preedit":  "z y b f sh m s ru",
+                        "commit_text_preview":  "自有辦法什麼收入",
+                        "highlighted_candidate_index":  0,
+                        "page_size":  5,
+                        "page_no":  0,
+                        "is_last_page":  false,
+                        "selected_candidates":  [
+                                                    {
+                                                        "index":  0,
+                                                        "text":  "自有辦法什麼收入",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  1,
+                                                        "text":  "自有辦法",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  2,
+                                                        "text":  "重要部分",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  3,
+                                                        "text":  "晝夜不分",
+                                                        "comment":  null
+                                                    },
+                                                    {
+                                                        "index":  4,
+                                                        "text":  "主要部分",
+                                                        "comment":  null
+                                                    }
+                                                ]
+                    }
+                ]
+}

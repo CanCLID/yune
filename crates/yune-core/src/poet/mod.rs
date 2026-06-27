@@ -710,8 +710,9 @@ impl UpstreamSentenceModel {
         graph: &WordGraph,
         max_candidates: usize,
     ) -> Vec<Candidate> {
+        let ranking_start = crate::m37_metrics_enabled().then(Instant::now);
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
-        let sentence_limit = self.max_candidates.max(max_candidates);
+        let sentence_limit = max_candidates.saturating_mul(4).min(self.max_candidates);
         let sentences_by_end = make_abbreviation_sentences_by_end(graph, sentence_limit);
         let total_end = input.len();
         let first_segment_end = sentences_by_end
@@ -789,6 +790,9 @@ impl UpstreamSentenceModel {
         let base_quality = candidates.len() as f32;
         for (index, candidate) in candidates.iter_mut().enumerate() {
             candidate.quality = base_quality - index as f32;
+        }
+        if let Some(start) = ranking_start {
+            crate::m37_record_abbreviation_sentence_ranking(start.elapsed());
         }
         candidates
     }
@@ -903,7 +907,8 @@ impl UpstreamSentenceModel {
             graph_edges,
         );
         if let Some(rebuild_start) = rebuild_start {
-            lookup_metrics.graph_rebuild_duration = rebuild_start.elapsed();
+            let elapsed = rebuild_start.elapsed();
+            lookup_metrics.graph_rebuild_duration = elapsed;
             lookup_metrics.incremental_discarded_rebuild_chars = input.chars().count();
             crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
         }
@@ -1040,9 +1045,11 @@ impl UpstreamSentenceModel {
             graph_edges,
         );
         if let Some(rebuild_start) = rebuild_start {
-            lookup_metrics.graph_rebuild_duration = rebuild_start.elapsed();
+            let elapsed = rebuild_start.elapsed();
+            lookup_metrics.graph_rebuild_duration = elapsed;
             lookup_metrics.incremental_discarded_rebuild_chars = input.chars().count();
             crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
+            crate::m37_record_abbreviation_code_span_graph_build(elapsed);
         }
         graph
     }

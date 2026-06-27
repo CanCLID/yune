@@ -665,6 +665,73 @@ meet the M43 memory-win target.
   `cargo test --workspace`, and `git diff --check`. The active plan moves to
   completed only after these gates pass.
 
+## M44 Native Performance Owner Reduction Requirements
+
+**Status: complete with measured `ni` and memory blockers.** M44 is tracked in
+[`plans/completed/m44-plan-native-performance-owner-reduction.md`](./plans/completed/m44-plan-native-performance-owner-reduction.md).
+It is a native-engine follow-up to the post-M43 bottleneck analysis. It targeted
+all four current performance blockers together and closes as a partial result:
+Track A `hao`, Track A abbreviation rows, and Track B product-profile short
+rows pass their targets; Track A `ni` and whole-process memory remain measured
+blockers.
+
+- [x] **M44-ENGINE-01**: Phase 0 captures a fresh same-run native benchmark
+  under `docs/reports/evidence/m44-native-performance-owner-reduction/` for
+  startup, session, `hao`, `ni`, `zhongguo`, both Track A full-pinyin long
+  rows, `cszysmsrsd`, `zybfshmsru`, Track B short rows `h`, `ha`, `hai`,
+  `hau`, `nei`, `ngo`, and the Track B 50+ guard row. Track B rows use
+  deployed product-profile storage with `source_fallback=false`.
+- [x] **M44-ENGINE-02**: Phase 0 adds and exports counters for all four
+  workstreams. New abbreviation, short-key, and Track B fields are exported
+  through `M37_METRIC_FIELDS`; memory retained/mmap ownership remains in
+  `memory-owner-profile.csv`.
+- [x] **M44-ENGINE-03**: Phase 0 records a verdict for each workstream before
+  hot-path implementation. The accepted implementation bounded abbreviation
+  ranking, bounded Track A short-key refresh surplus, and pruned Track B short
+  prefix alias exact probes. Memory closed as a measured no-win path because no
+  safe M44 owner moved peak.
+- [x] **M44-ENGINE-04**: Track A abbreviation optimization preserves M42
+  candidate-output parity and keeps the abbreviation branch separate from the
+  M40 full-pinyin sentence lookup path. Final `cszysmsrsd` is `545.020us`
+  (`0.445x`) and final `zybfshmsru` is `540.970us` (`0.634x`), so both targets
+  pass.
+- [x] **M44-ENGINE-05**: Track A short-key optimization preserves `hao` and
+  `ni` first-page behavior and `upstream_sentence_model_calls=0`, but only
+  `hao` reaches target. Final `hao` is `24.700us` (`2.123x`), target met.
+  Final `ni` is `49.450us` (`3.434x`), target missed and recorded as the next
+  measured short-key blocker.
+- [x] **M44-ENGINE-06**: Track A memory optimization reconciles retained owner
+  estimates against peak/RSS evidence and may claim a memory win only if Track
+  A peak reaches `<=107,797,708 B`. Final Track A peak is `127,619,072 B`, so
+  M44 records memory as a measured blocker and does not claim a memory win.
+- [x] **M44-ENGINE-07**: Track B native product-profile optimization reduces
+  short-row medians for `h`, `ha`, `hai`, `hau`, `nei`, and `ngo` by at least
+  `50%`, drops selected exact lookup counters by more than `75%`, and keeps the
+  50+ Track B guard stable. Final short-row improvements are `84.7-92.4%` and
+  exact lookups are `1-3` per key.
+- [x] **M44-ENGINE-08**: Startup/runtime-ready, session, `zhongguo`, and both
+  Track A full-pinyin long rows remain inside their M43 no-regression guards.
+  Full-pinyin rows do not invoke abbreviation expansion.
+- [x] **M44-ENGINE-09**: Track A storage remains `rsmarisa_byte_backed`,
+  selected table/prism bytes remain mmap or byte-backed, selected table/prism
+  heap mirror bytes remain `0`, `source_fallback=false`, and positive runtime
+  `rsmarisa` counters remain present. Track B deployed profile storage remains
+  source-fallback-free.
+- [x] **M44-ENGINE-10**: Output/profile guards remain intact: first-page output
+  and `RimeGetContext` remain page-bounded, M42 abbreviation candidate output
+  remains exact, and `hao`/`ni` output remains oracle-shaped.
+- [x] **M44-ENGINE-11**: Reports and roadmap keep M44 native/profile-scoped. No
+  web, frontend, product-delivery, packaging, deployment, public-demo,
+  browser-speed, or upstream-default TypeDuck-profile speed claim is made from
+  M44 evidence.
+- [x] **M44-ENGINE-12**: Final closeout updates the performance report,
+  root-cause report, roadmap, requirements, decisions, milestone ledger, and
+  plan state; records startup, session, `hao`, `ni`, `zhongguo`, both Track A
+  long rows, both abbreviation rows, all selected Track B short rows, the Track
+  B guard, storage/memory/status evidence, and candidate-output evidence. Final
+  quality gates are recorded in
+  `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md`.
+
 ## Post-M38 Engine Performance Follow-Up Requirements
 
 **Status: complete through M39.** These requirements do not reopen M38. The post-M38 baseline
@@ -1043,6 +1110,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M43-ENGINE-10 | M43 | Complete with measured blocker - final Track A peak stayed inside Phase 0 noise and bounded output/context plus Track B guards pass, but historical M42 `+5%` peak ceiling remains above target |
 | M43-ENGINE-11 | M43 | Complete - M43 reporting stays native-only with no web/product/browser/TypeDuck-profile speed claim |
 | M43-ENGINE-12 | M43 | Complete - final reports, docs, evidence bundle, native benchmark rows, and Rust/diff quality gates are recorded |
+| M44-ENGINE-01 | M44 | Planned - fresh same-run native baseline captures all four target families plus startup/session and guard rows |
+| M44-ENGINE-02 | M44 | Planned - counters for abbreviation, short-key, memory, and Track B owners are added and exported in the benchmark CSV schema |
+| M44-ENGINE-03 | M44 | Planned - Phase 0 records one verdict per workstream before hot-path implementation |
+| M44-ENGINE-04 | M44 | Planned - abbreviation latency target is optimized while preserving M42 output and M40 full-pinyin boundaries |
+| M44-ENGINE-05 | M44 | Planned - `hao`/`ni` short-key latency target is optimized while preserving upstream-observable output |
+| M44-ENGINE-06 | M44 | Planned - Track A memory target is optimized or reported as a measured blocker with reconciled RSS/owner evidence |
+| M44-ENGINE-07 | M44 | Planned - Track B native product-profile short-row target is optimized while preserving the long guard and source-fallback-free storage |
+| M44-ENGINE-08 | M44 | Planned - startup/session, `zhongguo`, and both Track A long rows remain inside guards |
+| M44-ENGINE-09 | M44 | Planned - `rsmarisa`, mmap/byte-backed selected bytes, zero heap mirrors, no source fallback, and positive counters remain intact |
+| M44-ENGINE-10 | M44 | Planned - output/profile guards, page bounds, and retained-cache accounting remain intact |
+| M44-ENGINE-11 | M44 | Planned - M44 reporting stays native/profile-scoped with no unrelated speed claim |
+| M44-ENGINE-12 | M44 | Planned - final reports, docs, evidence bundle, candidate output, all target rows, and Rust/diff quality gates are recorded |
 | POST-M38-PERF-01 | Post-M38 | Complete through M39 - final same-run native benchmark includes required long continuous pinyin rows and Track B row |
 | POST-M38-PERF-02 | Post-M38 | Complete through M39 - long-input rows carry owner/status/memory evidence |
 | POST-M38-PERF-03 | Post-M38 | Complete through M39 - optimization claim names the measured owner |
@@ -1087,10 +1166,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M41 yune-web startup optimization requirements: 10 total, 9 complete, 1 complete with measured caveat, 0 active
 - M42 abbreviation sentence parity and short-key guardrail requirements: 12 total, 11 complete, 1 complete with measured blocker, 0 active
 - M43 native memory and short-key owner reduction requirements: 12 total, 10 complete, 2 complete with measured blocker, 0 active
+- M44 native performance owner reduction requirements: 12 total, 12 planned, 0 complete
 - Post-M38 engine performance follow-up requirements: 9 total, 9 complete, 0 draft
-- Mapped to phases: 308
+- Mapped to phases: 320
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M43 native memory and short-key owner reduction is complete as a partial structural memory reduction: Phase 0 selected `poet.entries_by_code`, final evidence reduced that owner by `19,513,879 B`, and whole-process memory remains a measured blocker because Track A peak stayed within Phase 0 noise rather than meeting the memory-win target. M43 preserves M42 abbreviation candidate-output parity for `cszysmsrsd` and `zybfshmsru` as a guard, not as an abbreviation-latency target, and makes no short-key, browser, product, or TypeDuck-profile speed claim. M42 abbreviation sentence parity and short-key guardrails remain complete with a measured performance blocker; M41 yune-web startup optimization remains complete as a separate browser-harness milestone with production-browser evidence and no native-engine claim. M40 compiled sentence lookup index, M39 long-input engine hardening, M38 engine performance parity, and earlier milestones remain complete as previously recorded._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M44 is complete as a partial native/profile performance owner-reduction milestone. It closes `hao`, both abbreviation rows, and the selected Track B short-row lookup explosion, but records `ni` and Track A peak memory as measured blockers, so it is not a full performance success. M43 native memory and short-key owner reduction is complete as a partial structural memory reduction: Phase 0 selected `poet.entries_by_code`, final evidence reduced that owner by `19,513,879 B`, and whole-process memory remains a measured blocker because Track A peak stayed within Phase 0 noise rather than meeting the memory-win target. M42 abbreviation sentence parity and short-key guardrails remain complete with a measured performance blocker; M41 yune-web startup optimization remains complete as a separate browser-harness milestone with production-browser evidence and no native-engine claim. M40 compiled sentence lookup index, M39 long-input engine hardening, M38 engine performance parity, and earlier milestones remain complete as previously recorded._

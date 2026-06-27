@@ -669,7 +669,17 @@ D	yi	100
         full_pinyin_metrics.upstream_sentence_model_vocabulary_entries_considered, 0,
         "full-pinyin sentence lookup must stay on the M40 model without abbreviation vocabulary"
     );
+    assert_eq!(
+        full_pinyin_metrics.abbreviation_span_discovery_calls, 0,
+        "full-pinyin sentence lookup must not invoke the M42 abbreviation path"
+    );
+    assert_eq!(
+        full_pinyin_metrics.abbreviation_code_span_graph_build_ns, 0,
+        "full-pinyin sentence lookup must not record abbreviation code-span graph work"
+    );
 
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
     let result = translator.translate_with_context_and_request(
         "cszy",
         &Status::default(),
@@ -677,10 +687,224 @@ D	yi	100
         &context,
         CandidateRequest::bounded(5),
     );
+    let abbreviation_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
 
     assert_eq!(result.candidates[0].text, "ABCD");
     assert_eq!(result.candidates[0].source, CandidateSource::Sentence);
     assert!(result.is_complete);
+    assert!(abbreviation_metrics.abbreviation_span_discovery_calls > 0);
+    assert!(abbreviation_metrics.abbreviation_span_discovery_ns > 0);
+    assert!(abbreviation_metrics.abbreviation_span_candidates_considered > 0);
+    assert!(abbreviation_metrics.abbreviation_span_codes_emitted > 0);
+    assert!(abbreviation_metrics.abbreviation_model_has_code_calls > 0);
+    assert!(abbreviation_metrics.abbreviation_model_has_code_ns > 0);
+    assert!(abbreviation_metrics.abbreviation_code_span_graph_build_ns > 0);
+    assert!(abbreviation_metrics.abbreviation_sentence_ranking_ns > 0);
+    assert!(abbreviation_metrics.abbreviation_preedit_format_ns > 0);
+    assert!(abbreviation_metrics.abbreviation_candidate_format_ns > 0);
+}
+
+#[test]
+fn long_luna_rows_do_not_record_m44_short_key_metrics() {
+    let _guard = super::m37_metrics_test_guard();
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(
+            r#"
+---
+name: long_luna_metrics
+version: "0.1"
+sort: by_weight
+...
+
+LONG	ceshiyixiachangjushuruxingnengzenyang	100
+ZHONG	zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong	100
+"#,
+        )
+        .expect("dictionary should parse")
+        .with_completion(true)
+        .with_sentence(false),
+    );
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine
+        .process_key_sequence("ceshiyixiachangjushuruxingnengzenyang")
+        .expect("key sequence should parse");
+    engine.clear_composition();
+    engine
+        .process_key_sequence("zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong")
+        .expect("key sequence should parse");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.short_key_candidate_rows_scanned, 0);
+    assert_eq!(metrics.short_key_candidates_materialized, 0);
+    assert_eq!(metrics.short_key_candidates_cloned, 0);
+    assert_eq!(metrics.short_key_filter_ns, 0);
+    assert_eq!(metrics.short_key_sort_rank_ns, 0);
+    assert_eq!(metrics.short_key_comment_quality_ns, 0);
+    assert_eq!(metrics.short_key_first_page_materialize_ns, 0);
+}
+
+#[test]
+fn bounded_short_key_request_records_m44_owner_metrics() {
+    let _guard = super::m37_metrics_test_guard();
+    let translator = StaticTableTranslator::parse_rime_dict_yaml(
+        r#"
+---
+name: short_key_metrics
+version: "0.1"
+sort: by_weight
+...
+
+H	hao	100
+H2	hao	90
+HA	ha	80
+HAO1	haoa	70
+HAO2	haob	60
+"#,
+    )
+    .expect("dictionary should parse")
+    .with_completion(true)
+    .with_sentence(false);
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let result = translator.translate_with_context_and_request(
+        "hao",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(3).with_debug_full_count(true),
+    );
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(result.candidates[0].text, "H");
+    assert!(metrics.short_key_candidate_rows_scanned > 0);
+    assert!(metrics.short_key_candidates_materialized > 0);
+    assert!(metrics.short_key_candidates_cloned > 0);
+    assert!(metrics.short_key_filter_ns > 0);
+    assert!(metrics.short_key_sort_rank_ns > 0);
+    assert!(metrics.short_key_comment_quality_ns > 0);
+    assert!(metrics.short_key_first_page_materialize_ns > 0);
+}
+
+#[test]
+fn short_luna_key_refresh_uses_first_page_bound_and_completes_on_page_turn() {
+    let _guard = super::m37_metrics_test_guard();
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(
+            r#"
+---
+name: short_key_engine_metrics
+version: "0.1"
+sort: by_weight
+...
+
+H1	hao	100
+H2	hao	90
+H3	hao	80
+H4	hao	70
+H5	hao	60
+H6	hao	50
+H7	hao	40
+"#,
+        )
+        .expect("dictionary should parse")
+        .with_completion(false)
+        .with_sentence(false),
+    );
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine
+        .process_key_sequence("hao")
+        .expect("key sequence should parse");
+    let refresh_metrics = crate::m37_metrics_snapshot();
+
+    assert_eq!(engine.context().candidates.len(), 5);
+    assert!(!engine.candidate_list_complete());
+    assert!(refresh_metrics.candidate_request_bounded_calls > 0);
+    assert_eq!(refresh_metrics.candidate_request_surplus_total, 0);
+    assert_eq!(
+        engine
+            .context()
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["H1", "H2", "H3", "H4", "H5"]
+    );
+
+    crate::m37_metrics_reset();
+    assert!(engine.change_page(false));
+    let paging_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert!(engine.candidate_list_complete());
+    assert!(engine.context().candidates.len() >= 7);
+    assert!(paging_metrics.candidate_request_unbounded_calls > 0);
+}
+
+#[test]
+fn bounded_typeduck_profile_request_records_m44_track_b_owner_metrics() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: track_b_metrics
+version: "0.1"
+sort: by_weight
+...
+
+HA	ha	100
+HAU	hau	90
+HAI	hai	80
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["ha", "hau", "hai"].map(str::to_owned);
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_dynamic_correction_lookup(true)
+        .with_spelling_algebra(&formulas);
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let result = translator.translate_with_context_and_request(
+        "h",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(3).with_debug_full_count(true),
+    );
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(result.candidates[0].text, "HA");
+    assert!(metrics.track_b_spelling_expansions_considered > 0);
+    assert!(metrics.track_b_spelling_expansion_ns > 0);
+    assert!(metrics.track_b_exact_lookup_calls > 0);
+    assert!(
+        metrics.track_b_exact_lookup_calls <= 1,
+        "short TypeDuck prefix rows should not exact-probe every prism expansion"
+    );
+    assert!(metrics.track_b_exact_lookup_ns > 0);
+    assert!(metrics.track_b_prefix_lookup_calls > 0);
+    assert!(metrics.track_b_prefix_lookup_ns > 0);
+    assert!(metrics.track_b_candidates_materialized > 0);
+    assert!(metrics.track_b_first_page_materialize_ns > 0);
 }
 
 #[test]

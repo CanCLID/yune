@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="550" viewBox="0 0 1080 550" role="img" aria-labelledby="title desc">
+<title id="title">M44 Track B deployed profile short-row reductions</title>
+<desc id="desc">Final Track B latency as a share of Phase 0 latency.</desc>
+<rect x="0" y="0" width="1080.00" height="550" rx="0" fill="#f8fafc"/>
+<text x="40" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827" text-anchor="start">M44 Track B product-profile owner reduction</text>
+<text x="40" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">Final latency as share of Phase 0. All selected short rows improved by more than 50%.</text>
+<text x="250" y="88" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">0%</text>
+<text x="870" y="88" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">100% Phase 0 baseline</text>
+<text x="40" y="116" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">h</text>
+<text x="120" y="116" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">21,832.9 -&gt; 1,669.6 us</text>
+<rect x="250" y="100" width="620.00" height="22" rx="4" fill="#e2e8f0"/>
+<rect x="250" y="100" width="47.41" height="22" rx="4" fill="#16a34a"/>
+<text x="307.41" y="117" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">92.4% faster</text>
+<text x="1015" y="117" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">exact 1</text>
+<text x="40" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">ha</text>
+<text x="120" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">11,328.8 -&gt; 1,141.7 us</text>
+<rect x="250" y="152" width="620.00" height="22" rx="4" fill="#e2e8f0"/>
+<rect x="250" y="152" width="62.48" height="22" rx="4" fill="#16a34a"/>
+<text x="322.48" y="169" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">89.9% faster</text>
+<text x="1015" y="169" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">exact 2</text>
+<text x="40" y="220" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">hai</text>
+<text x="120" y="220" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">7,550.4 -&gt; 763.9 us</text>
+<rect x="250" y="204" width="620.00" height="22" rx="4" fill="#e2e8f0"/>
+<rect x="250" y="204" width="62.73" height="22" rx="4" fill="#16a34a"/>
+<text x="322.73" y="221" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">89.9% faster</text>
+<text x="1015" y="221" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">exact 3</text>
+<text x="40" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">hau</text>
+<text x="120" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">7,617.6 -&gt; 774.6 us</text>
+<rect x="250" y="256" width="620.00" height="22" rx="4" fill="#e2e8f0"/>
+<rect x="250" y="256" width="63.05" height="22" rx="4" fill="#16a34a"/>
+<text x="323.05" y="273" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">89.8% faster</text>
+<text x="1015" y="273" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">exact 3</text>
+<text x="40" y="324" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">nei</text>
+<text x="120" y="324" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">3,572.4 -&gt; 398.9 us</text>
+<rect x="250" y="308" width="620.00" height="22" rx="4" fill="#e2e8f0"/>
+<rect x="250" y="308" width="69.24" height="22" rx="4" fill="#16a34a"/>
+<text x="329.24" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">88.8% faster</text>
+<text x="1015" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">exact 3</text>
+<text x="40" y="376" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">ngo</text>
+<text x="120" y="376" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">3,752.9 -&gt; 573.3 us</text>
+<rect x="250" y="360" width="620.00" height="22" rx="4" fill="#e2e8f0"/>
+<rect x="250" y="360" width="94.72" height="22" rx="4" fill="#16a34a"/>
+<text x="354.72" y="377" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">84.7% faster</text>
+<text x="1015" y="377" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">exact 3</text>
+<text x="40" y="428" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#111827" text-anchor="start">50+ guard</text>
+<text x="120" y="428" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">189.0 -&gt; 32.5 us</text>
+<rect x="250" y="412" width="620.00" height="22" rx="4" fill="#e2e8f0"/>
+<rect x="250" y="412" width="106.47" height="22" rx="4" fill="#16a34a"/>
+<text x="366.47" y="429" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#166534" text-anchor="start">82.8% faster</text>
+<text x="1015" y="429" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="end">exact 119</text>
+<text x="40" y="515" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">Source: phase-0-native-benchmark/summary.csv and final-native-benchmark/summary.csv; exact counters from final M44 evidence.</text>
+</svg>

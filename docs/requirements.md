@@ -737,6 +737,86 @@ blockers.
   are recorded in
   `docs/reports/evidence/m44-native-performance-owner-reduction/final-native-benchmark/final-gates.md`.
 
+## M45 Native Short-Key Latency And Memory Attribution Requirements
+
+**Status: active.** M45 is tracked in
+[`plans/active/m45-plan-native-short-key-latency-memory-attribution.md`](./plans/active/m45-plan-native-short-key-latency-memory-attribution.md).
+It is a native-engine-only follow-up to M44 and the post-M44 diagnostic
+profiling. It targets Track A `luna_pinyin` short-prefix latency for `n`,
+`ni`, and `hao`, and resolves the Track A memory target question by attribution
+before any storage rewrite.
+
+- [ ] **M45-ENGINE-01**: Phase 0 captures a fresh same-run native benchmark
+  under `docs/reports/evidence/m45-native-short-key-memory-attribution/` for
+  startup, session, `n`, `ni`, `hao`, `zhongguo`, both Track A full-pinyin long
+  rows, `cszysmsrsd`, `zybfshmsru`, and the Track B 50+ guard row.
+- [ ] **M45-ENGINE-02**: Phase 0 captures upstream librime `1.17.0`
+  candidate-output oracle evidence for `n`, `ni`, and `hao`, including
+  candidate count, first-page text, comments, order, page metadata, context
+  preedit, commit preview where available, capture command, environment, and
+  oracle provenance. Short-key implementation cannot start until this evidence
+  exists and Yune's behavior target is clear.
+- [ ] **M45-ENGINE-03**: Phase 0 verifies or adds exported short-key owner
+  counters for `n`, `ni`, and `hao`, covering prefix code enumeration, raw
+  table lookup codes/candidates, borrowed or owned rows scanned, materialized
+  and cloned candidates, rank/sort, comment/quality formatting, filters,
+  first-page materialization, context export, and ABI string allocation. Any
+  new field must be present in benchmark CSV exports and metric-export tests.
+- [ ] **M45-ENGINE-04**: Phase 0 captures memory attribution that separates
+  after-ready resident working set, observed high-water peak, after-finalize
+  working set, private bytes or closest Windows-supported proxy, file-backed
+  mapped pages, allocator high-water or retained heap proxy,
+  benchmark-cumulative high-water carried across rows, real per-cold-start
+  deploy/startup peak, retained owner estimates, and unclassified process
+  memory.
+- [ ] **M45-ENGINE-05**: Phase 0 records explicit branch verdicts before
+  hot-path code changes: `short-key-borrowed-prefix`,
+  `short-key-measured-no-go`, or `short-key-reporting-only` for latency, and
+  `steady-state-meets-target-benchmark-artifact`,
+  `steady-state-meets-target-standing-peak-cost`, `transient-peak-bound`,
+  `measured-no-go`, or narrowly evidenced `memory-owner-reduction` for memory.
+- [ ] **M45-ENGINE-06**: Short-key implementation branch only: `n`, `ni`, and
+  `hao` use a bounded borrowed prefix path that materializes only the exported
+  page after first-page order is proven. Final rows must match the captured
+  upstream candidate-output oracle and reach `<=3.0x` same-run upstream
+  librime, or M45 records the missed row as a measured blocker. If bare `n`
+  misses, reports must name it as benchmark-parity work on a degenerate
+  single-letter row, not as a perceptible typing UX blocker.
+- [ ] **M45-ENGINE-07**: Short-key implementation branch preserves the M44
+  under-fill fallback, keeps `upstream_sentence_model_calls=0` on `n`, `ni`,
+  and `hao`, and does not invoke M40 full-pinyin sentence lookup or M42
+  abbreviation routing on short-key rows.
+- [ ] **M45-ENGINE-08**: Memory branch follows the Phase 0 verdict. If
+  steady after-ready resident Track A rows are `<=107,797,708 B`, reports may
+  reframe the old peak target only when the peak is proven to be a
+  benchmark-cumulative artifact. If the peak is a real per-cold-start
+  deploy/startup cost, reports must keep both the resident pass and the peak
+  miss visible and may not close memory as full success. If a transient or
+  retained owner is implemented, it must be bounded and tied to the measured
+  target. If no safe owner exists, M45 records a measured no-go and does not
+  change storage.
+- [ ] **M45-ENGINE-09**: Track A storage remains `rsmarisa_byte_backed`,
+  selected table/prism bytes remain mmap or selected byte-backed, selected
+  table/prism heap mirror bytes remain `0`, `source_fallback=false`, and
+  positive runtime `rsmarisa` counters remain present.
+- [ ] **M45-ENGINE-10**: Startup/runtime-ready, session, `zhongguo`, both M40
+  full-pinyin long rows, both M42/M44 abbreviation rows, bounded output/context,
+  and the Track B 50+ guard row remain inside the no-regression gates recorded
+  in the M45 plan. Full-pinyin long rows must not invoke abbreviation expansion
+  or the M45 short-key fast path.
+- [ ] **M45-ENGINE-11**: Reports and roadmap keep M45 native-engine-scoped. No
+  browser, frontend, WASM, yune-web/My RIME browser, product-delivery,
+  packaging, deployment, public-demo, broad TypeDuck-profile speed, AI, learned
+  `.gram`/octagram, or plugin ABI claim is made from M45 evidence.
+- [ ] **M45-ENGINE-12**: Final closeout updates the performance report,
+  root-cause report, roadmap, requirements, decisions, milestone ledger, and
+  plan state; records startup, session, `n`, `ni`, `hao`, `zhongguo`, both
+  Track A long rows, both abbreviation rows, the Track B guard, short-key
+  candidate-output evidence, storage/status evidence, memory attribution
+  verdict, and final quality gates: `cargo fmt --check`,
+  `cargo clippy --workspace --all-targets -- -D warnings`,
+  `cargo test --workspace`, and `git diff --check`.
+
 ## Post-M38 Engine Performance Follow-Up Requirements
 
 **Status: complete through M39.** These requirements do not reopen M38. The post-M38 baseline
@@ -1127,6 +1207,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M44-ENGINE-10 | M44 | Complete - output/profile guards, page bounds, and retained-cache accounting remain intact; final oracle candidate-output artifact is scoped to abbreviation rows |
 | M44-ENGINE-11 | M44 | Complete - M44 reporting stays native/profile-scoped with no unrelated speed claim |
 | M44-ENGINE-12 | M44 | Complete - final reports, docs, evidence bundle, target rows, scoped candidate-output evidence, and Rust/diff quality gates are recorded |
+| M45-ENGINE-01 | M45 | Active - fresh same-run native baseline must cover short-key rows, guard rows, and memory evidence |
+| M45-ENGINE-02 | M45 | Active - upstream candidate-output oracle evidence for `n`, `ni`, and `hao` is required before implementation |
+| M45-ENGINE-03 | M45 | Active - short-key owner counters must be verified or added and exported before trusting results |
+| M45-ENGINE-04 | M45 | Active - memory attribution must split steady resident, high-water peak, benchmark-cumulative artifact, real cold-start peak, private/mapped/transient classes, and retained estimates |
+| M45-ENGINE-05 | M45 | Active - short-key and memory branch verdicts must be recorded before hot-path changes, with benchmark-artifact and standing-peak-cost outcomes separated |
+| M45-ENGINE-06 | M45 | Active - bounded borrowed short-key path must match oracle output and target `<=3.0x` same-run librime, with `n` allowed to close only as a named measured blocker if it misses |
+| M45-ENGINE-07 | M45 | Active - M44 under-fill fallback and sentence-path separation must be preserved |
+| M45-ENGINE-08 | M45 | Active - memory follows attribution verdict, keeps both peak and resident numbers visible, and cannot rewrite storage without a named peak-moving owner |
+| M45-ENGINE-09 | M45 | Active - `rsmarisa`, mmap/byte-backed selected bytes, zero heap mirrors, no source fallback, and positive counters remain required |
+| M45-ENGINE-10 | M45 | Active - startup/session, `zhongguo`, M40 long rows, M42/M44 abbreviations, bounded output/context, and Track B guard remain no-regression gates |
+| M45-ENGINE-11 | M45 | Active - reporting stays native-engine-scoped with no web/WASM/product/browser claim |
+| M45-ENGINE-12 | M45 | Active - final reports, docs, evidence, candidate-output comparison, memory verdict, and Rust/diff quality gates are required |
 | POST-M38-PERF-01 | Post-M38 | Complete through M39 - final same-run native benchmark includes required long continuous pinyin rows and Track B row |
 | POST-M38-PERF-02 | Post-M38 | Complete through M39 - long-input rows carry owner/status/memory evidence |
 | POST-M38-PERF-03 | Post-M38 | Complete through M39 - optimization claim names the measured owner |
@@ -1172,10 +1264,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M42 abbreviation sentence parity and short-key guardrail requirements: 12 total, 11 complete, 1 complete with measured blocker, 0 active
 - M43 native memory and short-key owner reduction requirements: 12 total, 10 complete, 2 complete with measured blocker, 0 active
 - M44 native performance owner reduction requirements: 12 total, 10 complete, 2 complete with measured blocker, 0 active
+- M45 native short-key latency and memory attribution requirements: 12 total, 0 complete, 12 active
 - Post-M38 engine performance follow-up requirements: 9 total, 9 complete, 0 draft
-- Mapped to phases: 320
+- Mapped to phases: 332
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-26 - M44 is complete as a partial native/profile performance owner-reduction milestone. It closes `hao`, both abbreviation rows, and the selected Track B short-row lookup explosion, but records `ni` and Track A peak memory as measured blockers, so it is not a full performance success. M43 native memory and short-key owner reduction is complete as a partial structural memory reduction: Phase 0 selected `poet.entries_by_code`, final evidence reduced that owner by `19,513,879 B`, and whole-process memory remains a measured blocker because Track A peak stayed within Phase 0 noise rather than meeting the memory-win target. M42 abbreviation sentence parity and short-key guardrails remain complete with a measured performance blocker; M41 yune-web startup optimization remains complete as a separate browser-harness milestone with production-browser evidence and no native-engine claim. M40 compiled sentence lookup index, M39 long-input engine hardening, M38 engine performance parity, and earlier milestones remain complete as previously recorded._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-27 - M45 is active as a native-engine-only short-key latency and memory-attribution milestone. It targets Track A `n`/`ni`/`hao` short-prefix latency with upstream candidate-output oracle evidence, and it resolves Track A memory through steady-resident/high-water/private/mapped/transient attribution before any storage rewrite. M45 must distinguish benchmark-cumulative high-water artifacts from real per-cold-start deploy/startup peaks, and it must keep both peak and steady-state memory numbers visible under any memory reframe. M44 remains complete as a partial native/profile performance owner-reduction milestone: it closes `hao`, both abbreviation rows, and the selected Track B short-row lookup explosion, but records `ni` and Track A peak memory as measured blockers. M43 native memory and short-key owner reduction remains complete as a partial structural memory reduction. M42 abbreviation sentence parity and short-key guardrails remain complete with a measured performance blocker; M41 yune-web startup optimization remains complete as a separate browser-harness milestone with production-browser evidence and no native-engine claim. M40 compiled sentence lookup index, M39 long-input engine hardening, M38 engine performance parity, and earlier milestones remain complete as previously recorded._

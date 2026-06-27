@@ -15,8 +15,8 @@ const appRoot = path.resolve(__dirname, "..");
 const resultRoot = path.join(
   __dirname,
   "results",
-  "yune-web-wasm-heap-optimization",
-  "attribution",
+  process.env.YUNE_WEB_WASM_ATTRIBUTION_RESULT_ROOT ??
+    path.join("yune-web-wasm-heap-optimization", "attribution"),
 );
 const phaseName = process.env.YUNE_WEB_WASM_ATTRIBUTION_PHASE ?? "baseline-attribution";
 const phaseDir = path.join(resultRoot, phaseName);

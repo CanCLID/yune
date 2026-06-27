@@ -67,6 +67,7 @@ fn main() {
         &options.output.join("memory-owner-profile.csv"),
         &engine,
         &options,
+        &samples,
     );
     write_metadata(&options.output.join("metadata.txt"), &options);
     println!("engine={}", options.engine);
@@ -1574,7 +1575,12 @@ fn write_raw_lookup_microbench(path: &PathBuf, options: &Options, samples: &[Sam
     fs::write(path, output).expect("raw lookup microbench CSV should be written");
 }
 
-fn write_memory_owner_profile(path: &PathBuf, engine: &LoadedRime, options: &Options) {
+fn write_memory_owner_profile(
+    path: &PathBuf,
+    engine: &LoadedRime,
+    options: &Options,
+    samples: &[Sample],
+) {
     let mut output = String::from("engine,track,schema_id,session_id,owner_id,module,structure,byte_class,sharing_scope,retained_estimate_bytes,non_overlapping_reducible_bytes,logical_bytes,item_count,mapped_file_bytes,mapping_mode,evidence_source,notes\n");
     if options.engine != "yune" {
         fs::write(path, output).expect("memory owner profile CSV should be written");
@@ -1589,14 +1595,23 @@ fn write_memory_owner_profile(path: &PathBuf, engine: &LoadedRime, options: &Opt
         assert_ne!(session_id, 0, "create_session returned 0");
         select_schema(api, session_id, &options.schema);
         set_default_options(api, session_id);
-        for row in exports.snapshot() {
+        let rows = exports.snapshot();
+        let named_non_overlapping = rows
+            .iter()
+            .filter(|row| row.byte_class == "heap_owned_reducible")
+            .map(|row| row.estimated_bytes)
+            .sum::<u64>();
+        for row in rows {
             let (module, structure) = split_owner_id(&row.owner);
             let non_overlapping_reducible_bytes = if row.byte_class == "heap_owned_reducible" {
                 row.estimated_bytes
             } else {
                 0
             };
-            let logical_bytes = if row.byte_class == "overlap_estimate" {
+            let logical_bytes = if matches!(
+                row.byte_class.as_str(),
+                "overlap_estimate" | "shared_or_overlapping" | "transient" | "unclassified"
+            ) {
                 row.estimated_bytes
             } else {
                 0
@@ -1608,8 +1623,11 @@ fn write_memory_owner_profile(path: &PathBuf, engine: &LoadedRime, options: &Opt
             };
             let sharing_scope = match row.byte_class.as_str() {
                 "shared" => "shared_reference",
+                "shared_or_overlapping" => "shared_or_overlapping",
                 "mmap_file_backed" => "file_mapping",
                 "overlap_estimate" => "logical_overlap",
+                "transient" => "transient",
+                "unclassified" => "unclassified",
                 _ => "session_or_process_heap",
             };
             output.push_str(&format!(
@@ -1633,12 +1651,96 @@ fn write_memory_owner_profile(path: &PathBuf, engine: &LoadedRime, options: &Opt
                 csv(&row.notes),
             ));
         }
+        append_process_memory_owner_rows(&mut output, options, samples, named_non_overlapping);
         assert_eq!(
             require("destroy_session", api.destroy_session)(session_id),
             TRUE
         );
     });
     fs::write(path, output).expect("memory owner profile CSV should be written");
+}
+
+fn append_process_memory_owner_rows(
+    output: &mut String,
+    options: &Options,
+    samples: &[Sample],
+    named_non_overlapping_bytes: u64,
+) {
+    let median_steady = median_u64(
+        samples
+            .iter()
+            .filter_map(|sample| sample.after_ready_working_set_bytes)
+            .collect::<Vec<_>>(),
+    );
+    let peak = samples
+        .iter()
+        .filter_map(|sample| sample.peak_working_set_bytes)
+        .max();
+    let private = median_u64(
+        samples
+            .iter()
+            .filter_map(|sample| sample.private_bytes)
+            .collect::<Vec<_>>(),
+    );
+    let peak_pagefile = samples
+        .iter()
+        .filter_map(|sample| sample.peak_pagefile_bytes)
+        .max();
+    for (owner, value, note) in [
+        (
+            "process.after_ready_working_set_unclassified_lower_bound",
+            median_steady.map(|value| value.saturating_sub(named_non_overlapping_bytes)),
+            "median after-ready working set minus non-overlapping reducible owner rows; lower-bound proxy only",
+        ),
+        (
+            "process.peak_working_set_high_water",
+            peak,
+            "maximum observed peak working set in this benchmark process; includes allocator, loader, mappings, and overlap",
+        ),
+        (
+            "process.private_bytes_proxy",
+            private,
+            "median private bytes proxy from PROCESS_MEMORY_COUNTERS_EX where available",
+        ),
+        (
+            "process.peak_pagefile_high_water",
+            peak_pagefile,
+            "maximum observed peak pagefile usage proxy from PROCESS_MEMORY_COUNTERS_EX where available",
+        ),
+    ] {
+        let Some(value) = value else {
+            continue;
+        };
+        let (module, structure) = split_owner_id(owner);
+        output.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            csv(&options.engine),
+            csv(&options.track),
+            csv(&options.schema),
+            0,
+            csv(owner),
+            csv(module),
+            csv(structure),
+            "unclassified",
+            "process_memory_proxy",
+            value,
+            0,
+            value,
+            1,
+            0,
+            "process_memory",
+            "native_inprocess_benchmark",
+            csv(note),
+        ));
+    }
+}
+
+fn median_u64(mut values: Vec<u64>) -> Option<u64> {
+    if values.is_empty() {
+        return None;
+    }
+    values.sort_unstable();
+    Some(values[values.len().saturating_sub(1) / 2])
 }
 
 fn split_owner_id(owner: &str) -> (&str, &str) {

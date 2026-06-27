@@ -757,6 +757,7 @@ fn install_schema_reverse_lookup_translator_from_config(
             .and_then(config_scalar_bool)
             .unwrap_or(false);
     let comment_format = schema_comment_format(schema_config, name_space);
+    let spelling_algebra = spelling_algebra_for_dictionary(schema_config, name_space);
     let lazy_schema_config = schema_config.clone();
     let lazy_name_space = name_space.to_owned();
     let lazy_target_namespace = target_namespace;
@@ -784,7 +785,8 @@ fn install_schema_reverse_lookup_translator_from_config(
         )
         .with_tag(tag)
         .with_completion(enable_completion)
-        .with_comment_format(&comment_format),
+        .with_comment_format(&comment_format)
+        .with_spelling_algebra(&spelling_algebra),
     );
 }
 

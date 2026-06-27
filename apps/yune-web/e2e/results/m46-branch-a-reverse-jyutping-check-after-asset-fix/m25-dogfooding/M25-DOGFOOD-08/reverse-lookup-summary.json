@@ -1,0 +1,248 @@
+{
+  "note": "M25 intentionally diverges from TypeDuck v1.1.2's historical `p trigger: bare ` belongs to luna_pinyin; retained side lookups use explicit `vl and `vc triggers.",
+  "activeSchema": "jyut6ping3",
+  "triggerCopy": "反查支援`朙月拼音`vl粵語兩分`vc倉頡五代",
+  "bareLuna": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "這",
+        "note": "this",
+        "source": null,
+        "rowText": "1.ze2這thisⓘ"
+      },
+      {
+        "index": 1,
+        "text": "这",
+        "note": null,
+        "source": null,
+        "rowText": "2.这"
+      },
+      {
+        "index": 2,
+        "text": "㙷",
+        "note": null,
+        "source": null,
+        "rowText": "3.㙷"
+      },
+      {
+        "index": 3,
+        "text": "㝂",
+        "note": null,
+        "source": null,
+        "rowText": "4.㝂"
+      },
+      {
+        "index": 4,
+        "text": "㞏",
+        "note": null,
+        "source": null,
+        "rowText": "5.㞏"
+      },
+      {
+        "index": 5,
+        "text": "㡇",
+        "note": "(罕見)",
+        "source": null,
+        "rowText": "6.zip3㡇(罕見)"
+      }
+    ]
+  },
+  "overlap": {
+    "`lai": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "㚓",
+          "note": null,
+          "source": null,
+          "rowText": "1.㚓"
+        },
+        {
+          "index": 1,
+          "text": "㥎",
+          "note": "(罕見)",
+          "source": null,
+          "rowText": "2.lei4㥎(罕見)"
+        },
+        {
+          "index": 2,
+          "text": "㸊",
+          "note": null,
+          "source": null,
+          "rowText": "3.㸊"
+        },
+        {
+          "index": 3,
+          "text": "䂾",
+          "note": null,
+          "source": null,
+          "rowText": "4.䂾"
+        },
+        {
+          "index": 4,
+          "text": "䄤",
+          "note": null,
+          "source": null,
+          "rowText": "5.䄤"
+        },
+        {
+          "index": 5,
+          "text": "䅘",
+          "note": null,
+          "source": null,
+          "rowText": "6.䅘"
+        }
+      ]
+    },
+    "`ci": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "ㄘ",
+          "note": null,
+          "source": null,
+          "rowText": "1.ㄘ"
+        },
+        {
+          "index": 1,
+          "text": "㐸",
+          "note": null,
+          "source": null,
+          "rowText": "2.㐸"
+        },
+        {
+          "index": 2,
+          "text": "㓨",
+          "note": null,
+          "source": null,
+          "rowText": "3.㓨"
+        },
+        {
+          "index": 3,
+          "text": "㘂",
+          "note": null,
+          "source": null,
+          "rowText": "4.㘂"
+        },
+        {
+          "index": 4,
+          "text": "㞖",
+          "note": null,
+          "source": null,
+          "rowText": "5.㞖"
+        },
+        {
+          "index": 5,
+          "text": "㠿",
+          "note": null,
+          "source": null,
+          "rowText": "6.㠿"
+        }
+      ]
+    },
+    "`xi": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "㑶",
+          "note": null,
+          "source": null,
+          "rowText": "1.㑶"
+        },
+        {
+          "index": 1,
+          "text": "㓾",
+          "note": null,
+          "source": null,
+          "rowText": "2.㓾"
+        },
+        {
+          "index": 2,
+          "text": "㔒",
+          "note": null,
+          "source": null,
+          "rowText": "3.㔒"
+        },
+        {
+          "index": 3,
+          "text": "㕃",
+          "note": null,
+          "source": null,
+          "rowText": "4.㕃"
+        },
+        {
+          "index": 4,
+          "text": "㕧",
+          "note": null,
+          "source": null,
+          "rowText": "5.㕧"
+        },
+        {
+          "index": 5,
+          "text": "㗩",
+          "note": "(罕見)",
+          "source": null,
+          "rowText": "6.sap1㗩(罕見)"
+        }
+      ]
+    },
+    "`re": {
+      "aiEnabled": false,
+      "inputValue": "",
+      "candidates": [
+        {
+          "index": 0,
+          "text": "㳧",
+          "note": null,
+          "source": null,
+          "rowText": "1.㳧"
+        },
+        {
+          "index": 1,
+          "text": "叒",
+          "note": null,
+          "source": null,
+          "rowText": "2.叒"
+        },
+        {
+          "index": 2,
+          "text": "喏",
+          "note": null,
+          "source": null,
+          "rowText": "3.je5喏ⓘ"
+        },
+        {
+          "index": 3,
+          "text": "惹",
+          "note": "irritate",
+          "source": null,
+          "rowText": "4.je5惹irritateⓘ"
+        },
+        {
+          "index": 4,
+          "text": "渃",
+          "note": null,
+          "source": null,
+          "rowText": "5.渃"
+        },
+        {
+          "index": 5,
+          "text": "热",
+          "note": null,
+          "source": null,
+          "rowText": "6.热"
+        }
+      ]
+    }
+  },
+  "operationErrorToastCount": 0
+}

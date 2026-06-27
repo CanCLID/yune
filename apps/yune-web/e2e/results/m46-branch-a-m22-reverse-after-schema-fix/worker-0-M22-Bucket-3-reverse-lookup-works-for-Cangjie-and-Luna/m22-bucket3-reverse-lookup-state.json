@@ -1,0 +1,102 @@
+{
+  "cangjieReverse": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "你",
+        "note": "onf",
+        "source": null,
+        "rowText": "1.你onf"
+      },
+      {
+        "index": 1,
+        "text": "呢",
+        "note": "rsp",
+        "source": null,
+        "rowText": "2.呢rsp"
+      },
+      {
+        "index": 2,
+        "text": "尼",
+        "note": "sp",
+        "source": null,
+        "rowText": "3.尼sp"
+      },
+      {
+        "index": 3,
+        "text": "妮",
+        "note": "vsp",
+        "source": null,
+        "rowText": "4.妮vsp"
+      },
+      {
+        "index": 4,
+        "text": "彌",
+        "note": "nmfb",
+        "source": null,
+        "rowText": "5.彌nmfb"
+      },
+      {
+        "index": 5,
+        "text": "妳",
+        "note": "vnf",
+        "source": null,
+        "rowText": "6.妳vnf"
+      }
+    ]
+  },
+  "lunaReverse": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "十",
+        "note": "shi",
+        "source": null,
+        "rowText": "1.十shi"
+      },
+      {
+        "index": 1,
+        "text": "丁",
+        "note": "ding; zheng",
+        "source": null,
+        "rowText": "2.丁ding; zheng"
+      },
+      {
+        "index": 2,
+        "text": "丅",
+        "note": "xia",
+        "source": null,
+        "rowText": "3.丅xia"
+      },
+      {
+        "index": 3,
+        "text": "𠃍",
+        "note": "hs",
+        "source": null,
+        "rowText": "4.𠃍hs"
+      },
+      {
+        "index": 4,
+        "text": "𘠌",
+        "note": "hs",
+        "source": null,
+        "rowText": "5.𘠌hs"
+      },
+      {
+        "index": 5,
+        "text": "𘠍",
+        "note": "hs",
+        "source": null,
+        "rowText": "6.𘠍hs"
+      }
+    ]
+  },
+  "reverseLookup": {
+    "cangjie5": "Jyutping dictionary lookup with cangjie5 target comments",
+    "luna_pinyin": "Stroke reverse lookup with luna_pinyin target comments"
+  }
+}

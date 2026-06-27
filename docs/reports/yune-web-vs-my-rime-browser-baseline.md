@@ -1,23 +1,25 @@
-# Yune Web vs My RIME Browser Baseline And WEB-01 Closeout
+# Yune Web vs My RIME Browser Baseline, WEB-01, And M46 Handoff
 
 Date: 2026-06-27
 
 ## Scope
 
-This is the WEB-01 browser-harness closeout for `apps/yune-web`, isolated from
-native engine optimization and labelled post-M45. It compares freshly rebuilt
-local `yune-web` production artifacts against the open-source My RIME
-deployment at <https://my-rime.vercel.app/>, then records the lower
-`INITIAL_MEMORY` calibration and asset-family attribution.
+This report records the WEB-01 browser-harness closeout for `apps/yune-web`,
+then the M46 handoff result. WEB-01 is isolated from native engine
+optimization and labelled post-M45. It compares freshly rebuilt local
+`yune-web` production artifacts against the open-source My RIME deployment at
+<https://my-rime.vercel.app/>, then records the lower `INITIAL_MEMORY`
+calibration and asset-family attribution.
 
 This report must not be used as a native-engine, M44/M45, packaging,
 deployment, public-demo speed, or product-delivery claim. It is only about
 browser WASM linear memory, browser startup, worker resources, and
 browser-harness evidence.
 
-The closeout plan is:
+The closeout plans are:
 
 - [`docs/plans/completed/web01-plan-yune-web-wasm-heap-payload-optimization.md`](../plans/completed/web01-plan-yune-web-wasm-heap-payload-optimization.md)
+- [`docs/plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md`](../plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md)
 
 ## Evidence
 
@@ -175,11 +177,49 @@ Final attribution:
 
    Final Yune public-demo Jyutping unique encoded resources are `31.8 MiB`
    versus My RIME `24.9 MiB`. The attribution table names the scolar,
-   reverse-lookup, OpenCC, and core byte groups. Because focused reverse lookup
-   and multi-schema switching smokes currently fail independently of the 64 MiB
-   candidate, WEB-01 does not ship pruning or lazy-loading changes.
+   reverse-lookup, OpenCC, and core byte groups. At WEB-01 closeout, focused
+   reverse lookup and multi-schema switching smokes still blocked safe pruning
+   or lazy-loading changes. M46 later fixed the correctness blocker without
+   moving the `893.1 MiB` high-water.
 
-5. The remaining blocker is a future WASM-memory runtime/engine plan.
+## M46 Handoff Result
+
+M46 took the WEB-01 handoff and closed the product-affecting correctness half of
+the schema-switch row. It does not claim a browser memory win.
+
+Branch A post-fix evidence:
+
+- [`../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/branch-a-final-after-reverse-assets/`](../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/branch-a-final-after-reverse-assets/)
+- [`../../apps/yune-web/e2e/results/m46-branch-a-behavior-gates-final/`](../../apps/yune-web/e2e/results/m46-branch-a-behavior-gates-final/)
+- [`../../apps/yune-web/e2e/results/m46-branch-a-m22-reverse-after-schema-fix/`](../../apps/yune-web/e2e/results/m46-branch-a-m22-reverse-after-schema-fix/)
+
+| Scenario | Final Jyutping result | Candidate count | Worker action errors | WASM high-water |
+| --- | --- | ---: | ---: | ---: |
+| Clean Jyutping | `nei -> 你` | 6 | 0 | `893.1 MiB` |
+| Cangjie -> Luna -> Jyutping | `nei -> 你` | 6 | 0 | `893.1 MiB` |
+| Jyutping -> Luna -> Jyutping | `nei -> 你` | 6 | 0 | `893.1 MiB` |
+
+![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
+
+The old WEB-01 `~1.9 GiB` schema-switch high-water did not reproduce in the
+structured M46 captures. The current post-fix high-water remains
+`936,509,440 B` (`893.1 MiB`) for both clean Jyutping and schema-switch
+scenarios. M46 therefore records
+`schema-switch-correctness-fixed-memory-unchanged` and
+`measured-no-go-owner-unclassified`.
+
+5. The schema-switch failure is a named correctness and memory follow-up, not
+   a footnote.
+
+   The focused smoke records a Cangjie -> Luna -> Jyutping switch that grows
+   the page to about `1.9 GiB` WASM and then returns no Jyutping candidates.
+   WEB-01 evidence proves this failure exists in the current post-M45 runtime
+   and blocks safe asset pruning. It does not yet prove whether the failure was
+   present before the WEB-01 harness changes, so the first follow-up gate must
+   reproduce the row on the pre-WEB-01 baseline or classify it as a
+   WEB-01-introduced harness regression.
+
+6. The remaining blocker is a future WASM-memory runtime/engine plan.
 
    Start there with `apps/yune-web/src/worker.ts`,
    `apps/yune-web/src/yune-integration/adapter.ts`, WASM allocator/growth
@@ -204,3 +244,30 @@ public-demo speed win, or product delivery win. Remaining measured blockers:
   ASCII toggle pass; reverse lookup and multi-schema switching fail on the
   current runtime even with a 128 MiB comparison artifact, so asset pruning is
   blocked.
+- Named follow-up: reproduce the Cangjie -> Luna -> Jyutping schema-switch row
+  on the pre-WEB-01 baseline or classify it as a WEB-01-introduced harness
+  regression, then fix the `~1.9 GiB` WASM growth and no-candidate correctness
+  failure before any schema-asset pruning claim.
+
+## M46 Phase 0 Follow-Up
+
+M46 is now the WEB-01 handoff. Fresh post-WEB-01 browser evidence lives under:
+
+- `apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/phase-0-post-web01-single-schema/`
+- `apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/asset-family/phase-0-post-web01-asset-family/`
+- `apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/phase-0-schema-switch-current/`
+
+M46 confirms the WEB-01 heap result: Jyutping still reaches `893.1 MiB` in
+tracked and public-demo single-schema rows, and asset-family rows still reach
+`893.1 MiB` from `extras` through `full-jyutping`.
+
+The schema-switch follow-up is now split:
+
+| Row | M46 result | Read |
+| --- | --- | --- |
+| Clean Jyutping `nei` | pass, `893.1 MiB` | Single-schema product startup still works. |
+| Cangjie `a` -> Luna `hao` -> Jyutping `nei` | `candidate-missing`, `893.1 MiB` | Correctness bug reproduces in current runtime. |
+| Older `~1.9 GiB` high-water | not reproduced in M46 structured capture | Memory spike remains historical WEB-01 evidence, not the fresh current high-water. |
+
+M46 Phase 0 selected `schema-switch-regression-fix-first`. This does not change
+WEB-01's measured no-go status and does not claim a browser heap reduction.

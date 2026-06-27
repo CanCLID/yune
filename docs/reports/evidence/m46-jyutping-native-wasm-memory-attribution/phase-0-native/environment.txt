@@ -1,0 +1,13 @@
+﻿date_utc=2026-06-27T16:39:05.3253424Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=47d136d4d57a8c88984b9802f2f1f19eacf49dca
+yune_git_status_short= M apps/yune-web/e2e/playwright.config.ts |  M crates/yune-core/src/dictionary/compiled_table.rs |  M crates/yune-core/src/memory_owner.rs |  M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M docs/decisions.md |  M docs/plans/completed/m45-plan-native-short-key-latency-memory-attribution.md |  M docs/plans/completed/web01-plan-yune-web-wasm-heap-payload-optimization.md |  M docs/reports/yune-vs-librime-performance.md |  M docs/reports/yune-vs-librime-root-cause-analysis.md |  M docs/reports/yune-web-vs-my-rime-browser-baseline.md |  M docs/requirements.md |  M docs/roadmap.md | ?? apps/yune-web/e2e/yune-web-jyutping-memory-attribution.spec.ts | ?? docs/plans/active/m46-plan-jyutping-native-wasm-memory-attribution.md | ?? docs/reports/evidence/m46-jyutping-native-wasm-memory-attribution/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-0-native
+managed_runtime=false
+deploy_product_before_benchmark=True
+track_a_inputs=ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=h,ha,hai,hau,nei,ngo,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

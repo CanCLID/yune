@@ -299,6 +299,7 @@ const allActions: (keyof Actions)[] = [
 	"setOption",
 	"selectSchema",
 	"getUserdbSnapshot",
+	"importUserdb",
 	"processKey",
 	"stageAi",
 	"selectCandidate",

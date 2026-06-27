@@ -37,11 +37,15 @@ full short-key or memory success.
 
 Final short-key evidence:
 
+- Phase 0 selected `short-key-measured-no-go`, so M45 did not retain a
+  short-key engine implementation branch. The final medians are fresh same-run
+  evidence for blocker status and candidate-output parity, not optimization
+  progress from M45.
 - `n`: `68.900us`, `3.313x` same-run upstream librime; target missed and
   recorded as a measured benchmark-parity blocker.
 - `ni`: `49.450us`, `3.458x`; target missed and recorded as a measured
   benchmark-parity blocker.
-- `hao`: `24.267us`, `2.110x`; target met.
+- `hao`: `24.267us`, `2.110x`; M44 target pass preserved.
 - Final `n`/`ni`/`hao` candidate output matches upstream librime `1.17.0` for
   candidate text, comments, order, preedit, commit preview, and page metadata.
 - `upstream_sentence_model_calls=0` remains true for the short-key rows, so

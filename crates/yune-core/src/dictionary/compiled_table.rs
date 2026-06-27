@@ -9,7 +9,7 @@ use crate::dictionary::query_table::{LookupCandidate, LookupCandidateEntry, Tabl
 use crate::CandidateSource;
 use crate::{MemoryOwnerClass, MemoryOwnerRow};
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::mem;
 use std::ops::Range;
@@ -550,6 +550,8 @@ impl CompactTableStore {
             "canonical code list retained for prism lookup",
         )];
         rows.extend(self.storage.memory_owner_rows());
+        rows.extend(self.storage.payload_owner_rows());
+        rows.extend(advanced_memory_owner_rows(&self.advanced));
         rows
     }
 }
@@ -625,6 +627,78 @@ impl CompactTableStorage {
             ],
         }
     }
+
+    fn payload_owner_rows(&self) -> Vec<MemoryOwnerRow> {
+        let (class, storage, text_bytes, comment_bytes, entry_count) = match self {
+            Self::Owned {
+                code_groups,
+                entries,
+            } => {
+                let text_bytes = entries
+                    .iter()
+                    .map(|entry| estimate_owned_string_bytes(&entry.text))
+                    .sum();
+                let comment_bytes = code_groups
+                    .iter()
+                    .map(|group| group.code.capacity().saturating_mul(group.entries.len()))
+                    .sum();
+                (
+                    MemoryOwnerClass::HeapOwnedRequired,
+                    "owned_heap",
+                    text_bytes,
+                    comment_bytes,
+                    entries.len(),
+                )
+            }
+            Self::ByteBacked {
+                code_groups,
+                entries,
+                ..
+            } => {
+                let text_bytes = entries.iter().map(|entry| entry.text.len).sum();
+                let comment_bytes = code_groups
+                    .iter()
+                    .map(|group| group.code.len.saturating_mul(group.entries.len()))
+                    .sum();
+                (
+                    MemoryOwnerClass::SharedOrOverlapping,
+                    "table_bin_byte_refs",
+                    text_bytes,
+                    comment_bytes,
+                    entries.len(),
+                )
+            }
+            Self::MarisaBacked {
+                source,
+                entry_count,
+                ..
+            } => (
+                MemoryOwnerClass::SharedOrOverlapping,
+                source.storage_label(),
+                source.bytes().len(),
+                0,
+                *entry_count,
+            ),
+        };
+        vec![
+            MemoryOwnerRow::new(
+                "compact_table.candidate_text_payload",
+                class,
+                text_bytes,
+                entry_count,
+                storage,
+                "candidate text payload; byte-backed rows overlap compact_table.storage",
+            ),
+            MemoryOwnerRow::new(
+                "compact_table.candidate_comment_payload",
+                class,
+                comment_bytes,
+                entry_count,
+                storage,
+                "candidate raw comments/code payload; byte-backed rows overlap compact_table.storage",
+            ),
+        ]
+    }
 }
 
 fn byte_source_class(source: &dyn CompactTableByteSource) -> MemoryOwnerClass {
@@ -682,6 +756,182 @@ fn estimate_owned_storage_bytes(
                 .map(|entry| estimate_owned_string_bytes(&entry.text))
                 .sum(),
         )
+}
+
+fn advanced_memory_owner_rows(advanced: &TableDictionaryAdvancedData) -> Vec<MemoryOwnerRow> {
+    vec![
+        MemoryOwnerRow::new(
+            "compact_table.stems",
+            MemoryOwnerClass::HeapOwnedRequired,
+            estimate_string_vec_map_bytes(&advanced.stems),
+            advanced.stems.values().map(Vec::len).sum(),
+            "HashMap<String, Vec<String>>",
+            "retained phrase-code stems needed for lookup records and dictionary panels",
+        ),
+        MemoryOwnerRow::new(
+            "compact_table.lookup_records",
+            MemoryOwnerClass::HeapOwnedRequired,
+            estimate_lookup_records_bytes(&advanced.lookup_records),
+            advanced.lookup_records.values().map(Vec::len).sum(),
+            "HashMap<String, Vec<DictionaryLookupRecord>>",
+            "retained dictionary lookup records required by TypeDuck dictionary panels",
+        ),
+        MemoryOwnerRow::new(
+            "compact_table.corrections_tolerance",
+            MemoryOwnerClass::HeapOwnedRequired,
+            estimate_correction_tolerance_bytes(
+                &advanced.corrections,
+                &advanced.tolerance_rules,
+            ),
+            advanced
+                .corrections
+                .len()
+                .saturating_add(advanced.tolerance_rules.len()),
+            "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>",
+            "retained correction/tolerance payload required by TypeDuck fuzzy input behavior",
+        ),
+        MemoryOwnerRow::new(
+            "compact_table.dict_settings",
+            MemoryOwnerClass::HeapOwnedRequired,
+            estimate_string_btree_map_bytes(&advanced.dict_settings),
+            advanced.dict_settings.len(),
+            "BTreeMap<String, String>",
+            "retained dictionary settings parsed from deployed dictionary metadata",
+        ),
+        MemoryOwnerRow::new(
+            "compact_table.preset_vocabulary",
+            MemoryOwnerClass::HeapOwnedRequired,
+            estimate_preset_vocabulary_bytes(&advanced.preset_vocabulary),
+            advanced.preset_vocabulary.len(),
+            "Vec<PresetVocabularyEntry>",
+            "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
+        ),
+    ]
+}
+
+fn estimate_string_vec_map_bytes(values: &HashMap<String, Vec<String>>) -> usize {
+    mem::size_of::<HashMap<String, Vec<String>>>()
+        .saturating_add(
+            values
+                .capacity()
+                .saturating_mul(mem::size_of::<(String, Vec<String>)>()),
+        )
+        .saturating_add(
+            values
+                .iter()
+                .map(|(key, list)| {
+                    key.capacity()
+                        .saturating_add(list.capacity().saturating_mul(mem::size_of::<String>()))
+                        .saturating_add(list.iter().map(String::capacity).sum::<usize>())
+                })
+                .sum::<usize>(),
+        )
+}
+
+fn estimate_string_btree_map_bytes(values: &BTreeMap<String, String>) -> usize {
+    mem::size_of::<BTreeMap<String, String>>().saturating_add(
+        values
+            .iter()
+            .map(|(key, value)| {
+                mem::size_of::<(String, String)>()
+                    .saturating_add(key.capacity())
+                    .saturating_add(value.capacity())
+            })
+            .sum::<usize>(),
+    )
+}
+
+fn estimate_lookup_records_bytes(values: &HashMap<String, Vec<DictionaryLookupRecord>>) -> usize {
+    mem::size_of::<HashMap<String, Vec<DictionaryLookupRecord>>>()
+        .saturating_add(
+            values
+                .capacity()
+                .saturating_mul(mem::size_of::<(String, Vec<DictionaryLookupRecord>)>()),
+        )
+        .saturating_add(
+            values
+                .iter()
+                .map(|(text, records)| {
+                    text.capacity()
+                        .saturating_add(
+                            records
+                                .capacity()
+                                .saturating_mul(mem::size_of::<DictionaryLookupRecord>()),
+                        )
+                        .saturating_add(
+                            records
+                                .iter()
+                                .map(|record| {
+                                    record
+                                        .code
+                                        .capacity()
+                                        .saturating_add(
+                                            record
+                                                .fields
+                                                .capacity()
+                                                .saturating_mul(mem::size_of::<String>()),
+                                        )
+                                        .saturating_add(
+                                            record
+                                                .fields
+                                                .iter()
+                                                .map(String::capacity)
+                                                .sum::<usize>(),
+                                        )
+                                })
+                                .sum::<usize>(),
+                        )
+                })
+                .sum::<usize>(),
+        )
+}
+
+fn estimate_correction_tolerance_bytes(
+    corrections: &[RimeCorrectionEntry],
+    tolerance_rules: &[RimeToleranceRule],
+) -> usize {
+    mem::size_of_val(corrections)
+        .saturating_add(
+            corrections
+                .iter()
+                .map(|entry| {
+                    entry
+                        .observed_input
+                        .capacity()
+                        .saturating_add(entry.canonical_code.capacity())
+                })
+                .sum::<usize>(),
+        )
+        .saturating_add(mem::size_of_val(tolerance_rules))
+        .saturating_add(
+            tolerance_rules
+                .iter()
+                .map(|rule| {
+                    rule.near_code
+                        .capacity()
+                        .saturating_add(
+                            rule.candidate_codes
+                                .capacity()
+                                .saturating_mul(mem::size_of::<String>()),
+                        )
+                        .saturating_add(
+                            rule.candidate_codes
+                                .iter()
+                                .map(String::capacity)
+                                .sum::<usize>(),
+                        )
+                })
+                .sum::<usize>(),
+        )
+}
+
+fn estimate_preset_vocabulary_bytes(values: &[super::PresetVocabularyEntry]) -> usize {
+    mem::size_of_val(values).saturating_add(
+        values
+            .iter()
+            .map(|entry| entry.text.capacity())
+            .sum::<usize>(),
+    )
 }
 
 #[cfg(test)]

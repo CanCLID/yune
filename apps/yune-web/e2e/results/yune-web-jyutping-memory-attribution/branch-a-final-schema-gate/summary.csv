@@ -1,0 +1,4 @@
+kind,initialized,verdict,steps,failedSteps,maxObservedWasmBytes,workerActionErrors,url
+clean-jyutping,true,pass,1,,936509440,0,http://127.0.0.1:61314/?benchmark=m46-jyutping-memory&scenario=clean-jyutping
+schema-switch,true,pass,3,,936509440,0,http://127.0.0.1:61314/?benchmark=m46-jyutping-memory&scenario=schema-switch
+jyutping-luna-jyutping,true,pass,3,,936509440,0,http://127.0.0.1:61314/?benchmark=m46-jyutping-memory&scenario=jyutping-luna-jyutping

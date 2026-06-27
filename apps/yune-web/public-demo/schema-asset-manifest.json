@@ -264,8 +264,8 @@
     },
     {
       "path": "cangjie5.schema.yaml",
-      "sha256": "694cccd36dcbb8abe502269d8fc854ad6df2737323beb105c59ffde30a4ee86f",
-      "bytes": 2228,
+      "sha256": "eeae927aaafb47cb899f0387f0393c54c3c0a2375a285916ef6ee42448d0d1a8",
+      "bytes": 2562,
       "tier": "shared",
       "required": true
     },

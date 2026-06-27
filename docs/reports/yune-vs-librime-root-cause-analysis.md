@@ -11,12 +11,13 @@ or broad product speed wins.
 M45 closes as a partial native-engine root-cause milestone. It improves the
 memory accounting and confirms the short-key behavior guard, but it does not
 close the remaining `n`/`ni` short-prefix ratio gap or the real peak-memory
-cost.
+cost. Phase 0 selected `short-key-measured-no-go`, so M45 did not retain a
+short-key engine implementation branch.
 
 Measured outcomes:
 
 - `hao` remains inside target at `24.267 us`, `2.110x` same-run upstream
-  librime.
+  librime. This preserves the M44 `hao` pass; it is not a new M45 speed win.
 - `n` is now the clearest short-prefix blocker: `68.900 us`, `3.313x`.
 - `ni` remains a blocker: `49.450 us`, `3.458x`.
 - Short-key candidate output for `n`, `ni`, and `hao` matches upstream
@@ -49,6 +50,11 @@ The remaining root cause is not the sentence path. Final owner counters show
 `upstream_sentence_model_calls=0` and small first-page materialization costs on
 the short-key rows:
 
+The `Prefix lookup` and `First-page materialize` columns are sub-operation
+times from the metrics-instrumented run, whose total process-key time is higher
+than the clean `Yune median` (for example `ni` instruments at `96.900 us`).
+They show which owner dominates, not exact shares of the clean median.
+
 | Row | Yune median | Ratio | Prefix lookup | Rows scanned | First-page materialize | Read |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | `n` | `68.900 us` | `3.313x` | `35.100 us` | `7` | `1.700 us` | Prefix/translator constant factor still too high. |
@@ -56,9 +62,11 @@ the short-key rows:
 | `hao` | `24.267 us` | `2.110x` | `9.300 us` | `21` | `8.600 us` | Ratio target met. |
 
 M45 does not retain a short-key implementation branch because the explored
-bounded table-range experiment did not move the measured target. The next slice
-needs a narrower constant-factor owner before changing the translator path.
-Because the misses are tens of microseconds, the blocker is recorded as
+bounded table-range experiment did not move the measured target. The final
+`n`/`ni` medians should therefore be read as fresh same-run evidence and
+candidate-output parity proof, not as optimization progress from M45. The next
+slice needs a narrower constant-factor owner before changing the translator
+path. Because the misses are tens of microseconds, the blocker is recorded as
 benchmark-parity work rather than a perceptible typing UX blocker.
 
 ## Memory Root Cause
@@ -127,3 +135,51 @@ blocker, not as full memory success.
 
 Historical predecessor evidence remains under
 [`./evidence/m44-native-performance-owner-reduction/`](./evidence/m44-native-performance-owner-reduction/).
+
+## M46 Track B/Jyutping Memory Attribution
+
+M46 closes as a useful partial result with measured memory blockers. It does
+not change the M45 Track A verdict. It attributes the TypeDuck/Jyutping Track B
+native memory and the yune-web Jyutping WASM high-water, fixes the
+product-affecting multi-schema browser correctness blocker, and stops before a
+storage rewrite because the headline memory owner remains mostly unclassified.
+
+Fresh M46 Phase 0 native evidence keeps the Track B product path
+source-fallback-free while confirming the headline memory blocker:
+
+| Measurement | Value | Read |
+| --- | ---: | --- |
+| Track B peak working set | `504,627,200 B` | Real high-water remains. |
+| Track B steady resident band | `427,356,160-442,966,016 B` | Resident footprint remains large. |
+| Track B private bytes proxy | `423,641,088 B` | Private memory is also large. |
+| Track B peak pagefile proxy | `535,744,512 B` | Peak pressure is visible outside working set. |
+
+New owner rows explain only part of that headline:
+
+| Owner | Class | Estimate | Read |
+| --- | --- | ---: | --- |
+| `compact_table.lookup_records` | heap-owned required | `31,920,140 B` | Largest named owner; required for dictionary panels. |
+| `compact_table.storage` | mmap file-backed | `15,248,382 B` | Base table selected storage, not a heap mirror. |
+| `translator.entries_by_code` | heap-owned guarded | `8,327,700 B` | Guarded/source-YAML or small-test state. |
+| `compact_table.syllabary_codes` | heap-owned reducible | `4,189,674 B` | Too small to justify a headline `rsmarisa` branch. |
+| candidate text/comment payload | shared/overlapping | `2,575,292 B` | Visible but overlapping and small. |
+
+M46 Phase 0 therefore did not authorize a Track B `rsmarisa`, payload, scolar,
+reverse-index, or transient memory optimization branch. It selected
+`schema-switch-regression-fix-first`, because browser evidence showed
+Cangjie -> Luna -> Jyutping returning zero Jyutping candidates in a current
+post-WEB-01 multi-schema session.
+
+Branch A fixed that correctness blocker. Post-fix browser evidence shows clean
+Jyutping, Cangjie -> Luna -> Jyutping, and Jyutping -> Luna -> Jyutping all
+return `nei -> 你` with six candidates, zero worker action errors, and the same
+`893.1 MiB` WASM high-water.
+
+![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
+
+M46 therefore records `schema-switch-correctness-fixed-memory-unchanged` and
+`measured-no-go-owner-unclassified`. No native Track B or browser WASM memory
+success is claimed.
+
+M46 evidence:
+[`./evidence/m46-jyutping-native-wasm-memory-attribution/`](./evidence/m46-jyutping-native-wasm-memory-attribution/).

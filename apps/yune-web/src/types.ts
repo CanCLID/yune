@@ -51,6 +51,7 @@ export interface Actions {
 	setOption(option: string, value: boolean): Promise<void>;
 	selectSchema(schemaId: RimeSchemaId): Promise<boolean>;
 	getUserdbSnapshot(): Promise<YuneWebUserdbSnapshot>;
+	importUserdb(rawText: string): Promise<YuneWebUserdbSnapshot>;
 	processKey(input: string): Promise<RimeResult>;
 	stageAi(): Promise<RimeResult>;
 	selectCandidate(index: number): Promise<RimeResult>;

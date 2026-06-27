@@ -43,6 +43,12 @@ Final measured outcome:
   pass. Reverse lookup and multi-schema switching fail on the current runtime
   even with a 128 MiB comparison artifact, blocking safe asset pruning in
   WEB-01.
+- The schema-switch row is now a named follow-up: Cangjie -> Luna -> Jyutping
+  can grow the browser heap to about `1.9 GiB` and return no Jyutping
+  candidates. Existing evidence proves the current-runtime failure, but does
+  not yet prove whether it was present before WEB-01; the next plan must
+  reproduce it on the pre-WEB-01 baseline or classify it as a WEB-01-introduced
+  harness regression before optimizing.
 
 ## Architecture
 

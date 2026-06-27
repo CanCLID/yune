@@ -1,0 +1,3 @@
+kind,initialized,verdict,steps,failedSteps,maxObservedWasmBytes,workerActionErrors,url
+clean-jyutping,true,pass,1,,936509440,0,http://127.0.0.1:50473/?benchmark=m46-jyutping-memory&scenario=clean-jyutping
+schema-switch,true,candidate-missing,3,jyutping-nei-after-switch,936509440,1,http://127.0.0.1:50473/?benchmark=m46-jyutping-memory&scenario=schema-switch

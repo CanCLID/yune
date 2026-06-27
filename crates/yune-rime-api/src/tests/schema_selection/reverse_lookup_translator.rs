@@ -337,6 +337,179 @@ reverse_lookup:
 }
 
 #[test]
+fn select_schema_served_jyutping_mobile_routes_bare_grave_to_luna_reverse_lookup() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("served-jyutping-mobile-reverse-lookup");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+
+    let schema_root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema");
+    for file_name in [
+        "default.yaml",
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3.dict.yaml",
+        "luna_pinyin.dict.yaml",
+        "luna_pinyin_yune_reverse.dict.yaml",
+        "opencc/t2s.json",
+        "opencc/t2tw.json",
+        "opencc/t2hkf.json",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsFull.txt",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+    ] {
+        m21_gap_01_copy_asset(&schema_root, &shared, file_name);
+    }
+    for file_name in ["default.yaml", "jyut6ping3_mobile.schema.yaml"] {
+        m21_gap_01_copy_asset(&schema_root.join("build"), &staging, file_name);
+    }
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("jyut6ping3_mobile").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    let quoteleft = CString::new("quoteleft").expect("key name should be valid");
+    let quoteleft_keycode = unsafe { RimeGetKeycodeByName(quoteleft.as_ptr()) };
+    assert_eq!(quoteleft_keycode, '`' as c_int);
+    assert_eq!(RimeProcessKey(session_id, quoteleft_keycode, 0), TRUE);
+    for ch in "zhe".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+
+    let candidates =
+        super::super::session_candidates_snapshot(session_id).expect("session should exist");
+    assert!(
+        candidates.iter().any(|candidate| candidate.text == "\u{9019}"),
+        "expected bare-grave Luna reverse lookup candidate in {candidates:?}"
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn select_schema_served_cangjie_routes_grave_jyutping_reverse_lookup() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("served-cangjie-jyutping-reverse-lookup");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+
+    let schema_root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema");
+    for file_name in [
+        "default.yaml",
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "cangjie5.schema.yaml",
+        "cangjie5.dict.yaml",
+        "jyut6ping3.dict.yaml",
+        "jyut6ping3_scolar.schema.yaml",
+        "jyut6ping3_scolar.dict.yaml",
+        "jyut6ping3_scolar.table.bin",
+        "jyut6ping3_scolar.reverse.bin",
+        "jyut6ping3_scolar.prism.bin",
+        "opencc/t2s.json",
+        "opencc/t2tw.json",
+        "opencc/t2hkf.json",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsFull.txt",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+    ] {
+        m21_gap_01_copy_asset(&schema_root, &shared, file_name);
+    }
+    fs::copy(
+        shared.join("cangjie5.schema.yaml"),
+        staging.join("cangjie5.schema.yaml"),
+    )
+    .expect("deployed cangjie schema should be staged");
+    m21_gap_01_copy_asset(&schema_root.join("build"), &staging, "default.yaml");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let schema_id = CString::new("cangjie5").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+        TRUE
+    );
+    let quoteleft = CString::new("quoteleft").expect("key name should be valid");
+    let quoteleft_keycode = unsafe { RimeGetKeycodeByName(quoteleft.as_ptr()) };
+    assert_eq!(quoteleft_keycode, '`' as c_int);
+    assert_eq!(RimeProcessKey(session_id, quoteleft_keycode, 0), TRUE);
+    for ch in "nei;".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+
+    let candidates =
+        super::super::session_candidates_snapshot(session_id).expect("session should exist");
+    let segment_tags = crate::sessions()
+        .lock()
+        .expect("session registry should not be poisoned")
+        .sessions
+        .get(&session_id)
+        .expect("session should exist")
+        .engine
+        .context()
+        .segment_tags
+        .clone();
+    let deferrals =
+        remaining_gear_deferrals_snapshot(session_id).expect("session should exist");
+    assert!(
+        candidates.iter().any(|candidate| candidate.text == "\u{4f60}"),
+        "expected Cangjie schema Jyutping reverse lookup candidate in {candidates:?}; segment_tags={segment_tags:?}; deferrals={deferrals:?}"
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_matcher_segmentor_adds_librime_recognizer_pattern_tags() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

@@ -1,0 +1,48 @@
+{
+  "aiEnabled": false,
+  "inputValue": "",
+  "candidates": [
+    {
+      "index": 0,
+      "text": "這",
+      "note": "this",
+      "source": null,
+      "rowText": "1.ze2這thisⓘ"
+    },
+    {
+      "index": 1,
+      "text": "这",
+      "note": null,
+      "source": null,
+      "rowText": "2.这"
+    },
+    {
+      "index": 2,
+      "text": "㙷",
+      "note": null,
+      "source": null,
+      "rowText": "3.㙷"
+    },
+    {
+      "index": 3,
+      "text": "㝂",
+      "note": null,
+      "source": null,
+      "rowText": "4.㝂"
+    },
+    {
+      "index": 4,
+      "text": "㞏",
+      "note": null,
+      "source": null,
+      "rowText": "5.㞏"
+    },
+    {
+      "index": 5,
+      "text": "㡇",
+      "note": "(罕見)",
+      "source": null,
+      "rowText": "6.zip3㡇(罕見)"
+    }
+  ]
+}

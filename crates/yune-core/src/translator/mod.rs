@@ -348,6 +348,34 @@ fn estimate_candidate_bytes(candidate: &Candidate) -> usize {
         .saturating_add(candidate.preedit.as_ref().map_or(0, String::capacity))
 }
 
+fn estimate_table_entries_bytes(entries: &[TableEntry]) -> usize {
+    mem::size_of_val(entries).saturating_add(
+        entries
+            .iter()
+            .map(|entry| entry.code.capacity().saturating_add(entry.text.capacity()))
+            .sum::<usize>(),
+    )
+}
+
+fn estimate_string_vec_hash_map_bytes(values: &HashMap<String, Vec<String>>) -> usize {
+    mem::size_of::<HashMap<String, Vec<String>>>()
+        .saturating_add(
+            values
+                .capacity()
+                .saturating_mul(mem::size_of::<(String, Vec<String>)>()),
+        )
+        .saturating_add(
+            values
+                .iter()
+                .map(|(key, list)| {
+                    key.capacity()
+                        .saturating_add(list.capacity().saturating_mul(mem::size_of::<String>()))
+                        .saturating_add(list.iter().map(String::capacity).sum::<usize>())
+                })
+                .sum::<usize>(),
+        )
+}
+
 pub struct StaticTableTranslator {
     source_entries: Option<Vec<(String, Candidate)>>,
     storage: TableStorage,
@@ -2801,6 +2829,7 @@ pub struct ReverseLookupTranslator {
     tag: String,
     enable_completion: bool,
     comment_format: CommentFormat,
+    spelling_algebra_formulas: Vec<String>,
 }
 
 impl ReverseLookupTranslator {
@@ -2821,6 +2850,7 @@ impl ReverseLookupTranslator {
             tag: "reverse_lookup".to_owned(),
             enable_completion: false,
             comment_format: CommentFormat::default(),
+            spelling_algebra_formulas: Vec::new(),
         }
     }
 
@@ -2840,6 +2870,7 @@ impl ReverseLookupTranslator {
             tag: "reverse_lookup".to_owned(),
             enable_completion: false,
             comment_format: CommentFormat::default(),
+            spelling_algebra_formulas: Vec::new(),
         }
     }
 
@@ -2861,6 +2892,17 @@ impl ReverseLookupTranslator {
         self
     }
 
+    #[must_use]
+    pub fn with_spelling_algebra(mut self, formulas: &[String]) -> Self {
+        self.spelling_algebra_formulas = formulas.to_vec();
+        if matches!(self.storage, ReverseLookupStorage::Ready(_)) {
+            if let ReverseLookupStorage::Ready(data) = &mut self.storage {
+                data.apply_spelling_algebra(formulas);
+            }
+        }
+        self
+    }
+
     fn accepts_segment_tags(&self, segment_tags: &[String]) -> bool {
         segment_tags
             .iter()
@@ -2876,10 +2918,10 @@ impl ReverseLookupTranslator {
                     .expect("reverse lookup lazy data should not be poisoned");
                 if loaded.is_none() {
                     if let Some((dictionary, reverse_dictionary)) = loader() {
-                        *loaded = Some(ReverseLookupData::from_dictionaries(
-                            dictionary,
-                            reverse_dictionary,
-                        ));
+                        let mut data =
+                            ReverseLookupData::from_dictionaries(dictionary, reverse_dictionary);
+                        data.apply_spelling_algebra(&self.spelling_algebra_formulas);
+                        *loaded = Some(data);
                     }
                 }
                 loaded.as_ref().map(f)
@@ -2914,6 +2956,89 @@ impl ReverseLookupData {
         Self {
             entries: dictionary.entries,
             reverse_comments,
+        }
+    }
+
+    fn apply_spelling_algebra(&mut self, formulas: &[String]) {
+        let algebra = SpellingAlgebra::parse(formulas);
+        if algebra.is_empty() {
+            return;
+        }
+        let entries = std::mem::take(&mut self.entries)
+            .into_iter()
+            .map(|entry| {
+                let code = entry.code;
+                let candidate = Candidate {
+                    text: entry.text,
+                    comment: String::new(),
+                    preedit: None,
+                    source: CandidateSource::ReverseLookup,
+                    quality: entry.weight,
+                };
+                (code, candidate)
+            })
+            .collect::<Vec<_>>();
+        let (expanded, _, _) = algebra.expand_entries_with_normal_codes(entries);
+        self.entries = expanded
+            .into_iter()
+            .map(|entry| TableEntry::new(entry.code, entry.candidate.text, entry.candidate.quality))
+            .collect();
+    }
+
+    fn memory_owner_rows(&self, storage_label: &'static str) -> Vec<MemoryOwnerRow> {
+        vec![
+            MemoryOwnerRow::new(
+                "reverse_lookup.entries",
+                MemoryOwnerClass::HeapOwnedRequired,
+                estimate_table_entries_bytes(&self.entries),
+                self.entries.len(),
+                storage_label,
+                "retained reverse-lookup dictionary entries; required when the reverse translator is loaded",
+            ),
+            MemoryOwnerRow::new(
+                "reverse_lookup.comments_index",
+                MemoryOwnerClass::HeapOwnedRequired,
+                estimate_string_vec_hash_map_bytes(&self.reverse_comments),
+                self.reverse_comments.values().map(Vec::len).sum(),
+                storage_label,
+                "retained reverse-comment side index used to join dictionary-panel lookup comments",
+            ),
+        ]
+    }
+}
+
+impl ReverseLookupStorage {
+    fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
+        match self {
+            Self::Ready(data) => data.memory_owner_rows("ready_heap"),
+            Self::Lazy { loaded, .. } => {
+                let loaded = loaded
+                    .lock()
+                    .expect("reverse lookup lazy data should not be poisoned");
+                loaded.as_ref().map_or_else(
+                    || {
+                        vec![
+                            MemoryOwnerRow::new(
+                                "reverse_lookup.entries",
+                                MemoryOwnerClass::SharedOrOverlapping,
+                                0,
+                                0,
+                                "lazy_unloaded",
+                                "lazy reverse-lookup dictionary is not retained until used",
+                            ),
+                            MemoryOwnerRow::new(
+                                "reverse_lookup.comments_index",
+                                MemoryOwnerClass::SharedOrOverlapping,
+                                0,
+                                0,
+                                "lazy_unloaded",
+                                "lazy reverse-comment side index is not retained until used",
+                            ),
+                        ]
+                    },
+                    |data| data.memory_owner_rows("lazy_loaded_heap"),
+                )
+            }
         }
     }
 }
@@ -2989,6 +3114,23 @@ impl Translator for ReverseLookupTranslator {
             return Vec::new();
         }
         self.translate(input)
+    }
+
+    fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
+        let mut rows = self.storage.memory_owner_rows();
+        rows.push(MemoryOwnerRow::new(
+            "reverse_lookup.config",
+            MemoryOwnerClass::HeapOwnedRequired,
+            self.prefix
+                .capacity()
+                .saturating_add(self.suffix.capacity())
+                .saturating_add(self.tag.capacity())
+                .saturating_add(mem::size_of::<CommentFormat>()),
+            1,
+            "ReverseLookupTranslator",
+            "prefix/suffix/tag/comment-format state for the reverse lookup translator",
+        ));
+        rows
     }
 }
 

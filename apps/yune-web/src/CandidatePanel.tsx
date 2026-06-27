@@ -444,6 +444,7 @@ export default function CandidatePanel({
 		? inputState.highlightedIndex
 		: undefined;
 	const dictionaryCandidate = typeof dictionaryIndex === "number" ? visibleCandidates[dictionaryIndex] : undefined;
+	const hasDictionaryPanel = dictionaryCandidate?.hasDictionaryEntry(prefs) ?? false;
 	const panelContent = <>
 		<div className="candidate-list-pane">
 			<div className="candidate-panel-header">
@@ -476,9 +477,14 @@ export default function CandidatePanel({
 				)}
 			</table>
 		</div>
-		{dictionaryCandidate && <DictionaryPanel info={dictionaryCandidate} prefs={prefs} ref={dictionaryPanel} />}
+		{hasDictionaryPanel && dictionaryCandidate && <DictionaryPanel info={dictionaryCandidate} prefs={prefs} ref={dictionaryPanel} />}
 	</>;
-	const panelClassName = `candidate-panel candidate-panel--${prefs.candidateMenuLayout}${prefs.isCandidatePanelFixed ? " candidate-panel--fixed" : ""}`;
+	const panelClassName = [
+		"candidate-panel",
+		`candidate-panel--${prefs.candidateMenuLayout}`,
+		hasDictionaryPanel ? "candidate-panel--with-dictionary" : "candidate-panel--list-only",
+		prefs.isCandidatePanelFixed ? "candidate-panel--fixed" : "",
+	].filter(Boolean).join(" ");
 	if (prefs.isCandidatePanelFixed) {
 		return <div className={panelClassName}>{panelContent}</div>;
 	}

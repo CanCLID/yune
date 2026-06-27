@@ -4091,7 +4091,7 @@ test.describe("yune-web Browser E2E", () => {
       "\u4f60",
     );
     const jyutpingStatus = await readYuneStatus(page);
-    expect(jyutpingStatus.schema).toBe("jyut6ping3");
+    expect(jyutpingStatus.schema).toBe("jyut6ping3_mobile");
 
     await saveJsonEvidence("m22-bucket3-schema-switch-state.json", {
       cangjie,
@@ -4120,10 +4120,10 @@ test.describe("yune-web Browser E2E", () => {
     await selectSchema(page, /Luna Pinyin/);
     const lunaReverse = await typeCompositionAndWaitForCandidate(
       page,
-      "`a;",
-      "\u65e5",
+      "`hs",
+      "\u5341",
     );
-    expect(candidateTexts(lunaReverse)).toContain("\u65e5");
+    expect(candidateTexts(lunaReverse)).toContain("\u5341");
 
     await saveJsonEvidence("m22-bucket3-reverse-lookup-state.json", {
       cangjieReverse,
@@ -4131,7 +4131,7 @@ test.describe("yune-web Browser E2E", () => {
       reverseLookup: {
         cangjie5: "Jyutping dictionary lookup with cangjie5 target comments",
         luna_pinyin:
-          "Cangjie5 dictionary lookup with luna_pinyin target comments",
+          "Stroke reverse lookup with luna_pinyin target comments",
       },
     });
     await takeEvidenceScreenshot(page, "m22-bucket3-reverse-lookup");

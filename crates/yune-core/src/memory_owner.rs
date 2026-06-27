@@ -1,9 +1,13 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MemoryOwnerClass {
     HeapOwnedReducible,
+    HeapOwnedRequired,
     HeapOwnedGuarded,
     MmapFileBacked,
     Shared,
+    SharedOrOverlapping,
+    Transient,
+    Unclassified,
     OverlapEstimate,
 }
 
@@ -12,9 +16,13 @@ impl MemoryOwnerClass {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::HeapOwnedReducible => "heap_owned_reducible",
+            Self::HeapOwnedRequired => "heap_owned_required",
             Self::HeapOwnedGuarded => "heap_owned_guarded",
             Self::MmapFileBacked => "mmap_file_backed",
             Self::Shared => "shared",
+            Self::SharedOrOverlapping => "shared_or_overlapping",
+            Self::Transient => "transient",
+            Self::Unclassified => "unclassified",
             Self::OverlapEstimate => "overlap_estimate",
         }
     }

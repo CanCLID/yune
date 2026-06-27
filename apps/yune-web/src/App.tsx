@@ -15,6 +15,7 @@ import YuneStatusStrip from "./YuneStatusStrip";
 import YuneUserdbViewer from "./YuneUserdbViewer";
 
 import type {
+	RimePreferences,
 	YuneWebUserdbSnapshot,
 	YuneInspectorDebug,
 	YuneStatusSnapshot,
@@ -32,6 +33,19 @@ interface YuneMetrics {
 }
 
 type EngineStartupState = "starting" | "ready" | "failed";
+type DeployPreferenceSet = Pick<
+	RimePreferences,
+	| "pageSize"
+	| "enableCompletion"
+	| "enableCorrection"
+	| "enableSentence"
+	| "enableLearning"
+	| "combineCandidates"
+	| "predictionNeverFirst"
+	| "predictionThreshold"
+	| "dictionaryExclude"
+	| "isCangjie5"
+>;
 
 function metricValue(value: number | undefined, unit: string, emptyLabel: string) {
 	if (value === undefined) {
@@ -259,6 +273,9 @@ export default function App() {
 	}, [setIsAsciiMode]);
 	const didRunSchemaEffect = useRef(false);
 	const didRunDeployPreferencesEffect = useRef(false);
+	const lastDeployPreferenceKey = useRef<string | undefined>(undefined);
+	const lastDeployPreferenceSchema = useRef<string | undefined>(undefined);
+	const restoreTextAreaFocusAfterLiveOptions = useRef(false);
 
 	useEffect(() => {
 		document.documentElement.lang = uiLanguage === "yue" ? "zh-HK" : "en";
@@ -302,39 +319,48 @@ export default function App() {
 			return;
 		}
 		runAsyncTask(async () => {
-			let skipDeployForDefaultStartup = false;
-			if (!didRunDeployPreferencesEffect.current) {
-				didRunDeployPreferencesEffect.current = true;
-				if (isDefaultDeployPreferenceSet({
-					pageSize,
-					enableCompletion,
-					enableCorrection,
-					enableSentence,
-					enableLearning,
-					combineCandidates,
-					predictionNeverFirst,
-					predictionThreshold,
-					dictionaryExclude,
-					isCangjie5,
-				})) {
-					skipDeployForDefaultStartup = true;
-				}
+			const deployPreferences: DeployPreferenceSet = {
+				pageSize,
+				enableCompletion,
+				enableCorrection,
+				enableSentence,
+				enableLearning,
+				combineCandidates,
+				predictionNeverFirst,
+				predictionThreshold,
+				dictionaryExclude,
+				isCangjie5,
+			};
+			const deployPreferenceKey = deployPreferenceSetKey(deployPreferences);
+			const firstRun = !didRunDeployPreferencesEffect.current;
+			const previousDeployPreferenceKey = lastDeployPreferenceKey.current;
+			const previousDeployPreferenceSchema = lastDeployPreferenceSchema.current;
+			const deployPreferencesChanged =
+				previousDeployPreferenceKey !== undefined
+				&& previousDeployPreferenceKey !== deployPreferenceKey;
+			const schemaChanged =
+				previousDeployPreferenceSchema !== undefined
+				&& previousDeployPreferenceSchema !== activeSchema;
+			didRunDeployPreferencesEffect.current = true;
+			lastDeployPreferenceKey.current = deployPreferenceKey;
+			lastDeployPreferenceSchema.current = activeSchema;
+
+			if (!firstRun && !deployPreferencesChanged && !schemaChanged) {
+				return;
+			}
+			if (
+				isDefaultDeployPreferenceSet(deployPreferences)
+				&& (
+					firstRun
+					|| (schemaChanged && !deployPreferencesChanged && activeSchema === "jyut6ping3")
+				)
+			) {
+				return;
 			}
 			let type: "warning" | "error" | undefined;
 			try {
-				const success = await Rime.customize({
-					pageSize,
-					enableCompletion,
-					enableCorrection,
-					enableSentence,
-					enableLearning,
-					combineCandidates,
-					predictionNeverFirst,
-					predictionThreshold,
-					dictionaryExclude,
-					isCangjie5,
-				});
-				if (!(skipDeployForDefaultStartup ? success : ((await Rime.deploy()) && success))) {
+				const success = await Rime.customize(deployPreferences);
+				if (!((await Rime.deploy()) && success)) {
 					type = "warning";
 				}
 			} catch {
@@ -365,6 +391,9 @@ export default function App() {
 	useEffect(() => {
 		if (!isEngineReady) {
 			return;
+		}
+		if (textArea !== null && document.activeElement === textArea) {
+			restoreTextAreaFocusAfterLiveOptions.current = true;
 		}
 		runAsyncTask(async () => {
 			let type: "warning" | "error" | undefined;
@@ -400,7 +429,25 @@ export default function App() {
 		isDisabled,
 		isEngineReady,
 		runAsyncTask,
+		textArea,
 	]);
+
+	useEffect(() => {
+		if (
+			!loading
+			&& restoreTextAreaFocusAfterLiveOptions.current
+			&& textArea !== null
+		) {
+			restoreTextAreaFocusAfterLiveOptions.current = false;
+			if (
+				textArea.isConnected
+				&& !textArea.disabled
+				&& document.activeElement === document.body
+			) {
+				textArea.focus({ preventScroll: true });
+			}
+		}
+	}, [loading, textArea]);
 
 	useEffect(() => {
 		if (!isEngineReady) {
@@ -460,6 +507,23 @@ export default function App() {
 					? `${error.name}: ${error.message}`
 					: String(error),
 			);
+		} finally {
+			setIsUserdbLoading(false);
+		}
+	}, []);
+
+	const importUserdbSnapshot = useCallback(async (rawText: string) => {
+		setIsUserdbLoading(true);
+		setUserdbError(undefined);
+		try {
+			setUserdbSnapshot(await Rime.importUserdb(rawText));
+		} catch (error) {
+			setUserdbError(
+				error instanceof Error
+					? `${error.name}: ${error.message}`
+					: String(error),
+			);
+			throw error;
 		} finally {
 			setIsUserdbLoading(false);
 		}
@@ -575,6 +639,7 @@ export default function App() {
 							isLoading={isUserdbLoading}
 							error={userdbError}
 							onRefresh={refreshUserdbSnapshot}
+							onImport={importUserdbSnapshot}
 							uiLanguage={uiLanguage} />
 					</div>
 					<YuneStatusStrip status={engineStatus} outputStandard={outputStandardValue} uiLanguage={uiLanguage} />
@@ -623,18 +688,22 @@ export default function App() {
 	);
 }
 
-function isDefaultDeployPreferenceSet(preferences: {
-	pageSize: number;
-	enableCompletion: boolean;
-	enableCorrection: boolean;
-	enableSentence: boolean;
-	enableLearning: boolean;
-	combineCandidates: boolean;
-	predictionNeverFirst: boolean;
-	predictionThreshold: number;
-	dictionaryExclude: string[];
-	isCangjie5: boolean;
-}) {
+function deployPreferenceSetKey(preferences: DeployPreferenceSet): string {
+	return JSON.stringify({
+		pageSize: preferences.pageSize,
+		enableCompletion: preferences.enableCompletion,
+		enableCorrection: preferences.enableCorrection,
+		enableSentence: preferences.enableSentence,
+		enableLearning: preferences.enableLearning,
+		combineCandidates: preferences.combineCandidates,
+		predictionNeverFirst: preferences.predictionNeverFirst,
+		predictionThreshold: preferences.predictionThreshold,
+		dictionaryExclude: preferences.dictionaryExclude,
+		isCangjie5: preferences.isCangjie5,
+	});
+}
+
+function isDefaultDeployPreferenceSet(preferences: DeployPreferenceSet) {
 	return preferences.pageSize === 6
 		&& preferences.enableCompletion
 		&& !preferences.enableCorrection

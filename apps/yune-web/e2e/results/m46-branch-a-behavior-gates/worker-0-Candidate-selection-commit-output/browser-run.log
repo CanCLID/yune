@@ -1,0 +1,4 @@
+[2026-06-27T17:22:24.077Z] Candidate selection: committed="你"
+[2026-06-27T17:22:24.078Z] Test: Candidate selection → commit output - passed (6551ms)
+[2026-06-27T17:25:59.343Z] Candidate selection: committed="你"
+[2026-06-27T17:25:59.344Z] Test: Candidate selection → commit output - passed (6952ms)

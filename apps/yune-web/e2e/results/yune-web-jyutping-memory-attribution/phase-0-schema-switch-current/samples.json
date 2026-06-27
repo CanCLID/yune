@@ -1,0 +1,729 @@
+[
+  {
+    "kind": "clean-jyutping",
+    "build": "tracked-dist",
+    "url": "http://127.0.0.1:54366/?benchmark=m46-jyutping-memory&scenario=clean-jyutping",
+    "initialized": true,
+    "startedAt": "2026-06-27T16:49:31.939Z",
+    "finishedAt": "2026-06-27T16:49:39.617Z",
+    "steps": [
+      {
+        "name": "jyutping-only-nei",
+        "expectedSchema": "jyut6ping3",
+        "activeSchema": "jyut6ping3",
+        "input": "nei",
+        "expectedTop": "你",
+        "topCandidate": "你",
+        "candidateCount": 6,
+        "candidates": [
+          {
+            "index": 0,
+            "text": "你",
+            "note": "you (singular)",
+            "source": null,
+            "rowText": "1.nei5你you (singular)ⓘ"
+          },
+          {
+            "index": 1,
+            "text": "呢",
+            "note": "this",
+            "source": null,
+            "rowText": "2.nei1呢thisⓘ"
+          },
+          {
+            "index": 2,
+            "text": "尼",
+            "note": "nun",
+            "source": null,
+            "rowText": "3.nei4尼nunⓘ"
+          },
+          {
+            "index": 3,
+            "text": "妮",
+            "note": "little girl",
+            "source": null,
+            "rowText": "4.nei4妮little girlⓘ"
+          },
+          {
+            "index": 4,
+            "text": "彌",
+            "note": "full; fill",
+            "source": null,
+            "rowText": "5.nei4彌full; fillⓘ"
+          },
+          {
+            "index": 5,
+            "text": "妳",
+            "note": "you",
+            "source": null,
+            "rowText": "6.nei5妳youⓘ"
+          }
+        ],
+        "inputValue": "",
+        "startupWasmMemory": {
+          "currentBytes": 936509440,
+          "peakBytes": 936509440
+        },
+        "startupMarkers": [
+          {
+            "phase": "runtime:init:start",
+            "ms": 0
+          },
+          {
+            "phase": "worker:start",
+            "ms": 0
+          },
+          {
+            "phase": "wasm-glue:loaded",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:start",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:finish",
+            "ms": 16
+          },
+          {
+            "phase": "module:created",
+            "ms": 16,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "filesystem:mount:start",
+            "ms": 16
+          },
+          {
+            "phase": "filesystem:mount:finish",
+            "ms": 16,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "persistence:mounted",
+            "ms": 16,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:start",
+            "ms": 16,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:finish",
+            "ms": 102,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:loaded",
+            "ms": 102,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:start",
+            "ms": 102,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:finish",
+            "ms": 4901,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:start",
+            "ms": 4901,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:finish",
+            "ms": 4909,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:init:finish",
+            "ms": 4909,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:initialized",
+            "ms": 4909,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          }
+        ],
+        "passed": true,
+        "consoleErrors": []
+      }
+    ],
+    "verdict": "pass",
+    "maxObservedWasmBytes": 936509440
+  },
+  {
+    "kind": "schema-switch",
+    "build": "tracked-dist",
+    "url": "http://127.0.0.1:54366/?benchmark=m46-jyutping-memory&scenario=schema-switch",
+    "initialized": true,
+    "startedAt": "2026-06-27T16:49:39.617Z",
+    "finishedAt": "2026-06-27T16:50:03.765Z",
+    "steps": [
+      {
+        "name": "cangjie-a",
+        "expectedSchema": "cangjie5",
+        "activeSchema": "cangjie5",
+        "input": "a",
+        "expectedTop": "日",
+        "topCandidate": "日",
+        "candidateCount": 6,
+        "candidates": [
+          {
+            "index": 0,
+            "text": "日",
+            "note": "date; day日",
+            "source": null,
+            "rowText": "1.jat6日date; day日ⓘ"
+          },
+          {
+            "index": 1,
+            "text": "曰",
+            "note": "say日",
+            "source": null,
+            "rowText": "2.joek6曰say日ⓘ"
+          },
+          {
+            "index": 2,
+            "text": "昌",
+            "note": "proseperous日日",
+            "source": null,
+            "rowText": "3.coeng1昌proseperous日日ⓘ"
+          },
+          {
+            "index": 3,
+            "text": "昍",
+            "note": "日日 (rare)",
+            "source": null,
+            "rowText": "4.hyun1昍日日 (rare)"
+          },
+          {
+            "index": 4,
+            "text": "晶",
+            "note": "crystal日日日",
+            "source": null,
+            "rowText": "5.zing1晶crystal日日日ⓘ"
+          },
+          {
+            "index": 5,
+            "text": "晿",
+            "note": "日日日",
+            "source": null,
+            "rowText": "6.晿日日日"
+          }
+        ],
+        "inputValue": "",
+        "startupWasmMemory": {
+          "currentBytes": 936509440,
+          "peakBytes": 936509440
+        },
+        "startupMarkers": [
+          {
+            "phase": "runtime:init:start",
+            "ms": 0
+          },
+          {
+            "phase": "worker:start",
+            "ms": 0
+          },
+          {
+            "phase": "wasm-glue:loaded",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:start",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:finish",
+            "ms": 17
+          },
+          {
+            "phase": "module:created",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "filesystem:mount:start",
+            "ms": 17
+          },
+          {
+            "phase": "filesystem:mount:finish",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "persistence:mounted",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:start",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:finish",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:loaded",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:start",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:finish",
+            "ms": 4946,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:start",
+            "ms": 4946,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:finish",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:init:finish",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:initialized",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          }
+        ],
+        "passed": true,
+        "consoleErrors": [
+          "memory allocation of 150994944 bytes failed",
+          "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace",
+          "Aborted()",
+          "YUNE_WORKER_ACTION_ERROR {action: deploy, input: undefined, enqueuedAt: 1782578997971.7, sentAt: 1782578997972.5, receivedAt: 1782579001265.9001}",
+          "undefined"
+        ]
+      },
+      {
+        "name": "luna-hao",
+        "expectedSchema": "luna_pinyin",
+        "activeSchema": "luna_pinyin",
+        "input": "hao",
+        "expectedTop": "好",
+        "topCandidate": "好",
+        "candidateCount": 6,
+        "candidates": [
+          {
+            "index": 0,
+            "text": "好",
+            "note": "hao",
+            "source": null,
+            "rowText": "1.好hao"
+          },
+          {
+            "index": 1,
+            "text": "號",
+            "note": "hao",
+            "source": null,
+            "rowText": "2.號hao"
+          },
+          {
+            "index": 2,
+            "text": "浩",
+            "note": "hao",
+            "source": null,
+            "rowText": "3.浩hao"
+          },
+          {
+            "index": 3,
+            "text": "豪",
+            "note": "hao",
+            "source": null,
+            "rowText": "4.豪hao"
+          },
+          {
+            "index": 4,
+            "text": "耗",
+            "note": "hao",
+            "source": null,
+            "rowText": "5.耗hao"
+          },
+          {
+            "index": 5,
+            "text": "郝",
+            "note": "hao",
+            "source": null,
+            "rowText": "6.郝hao"
+          }
+        ],
+        "inputValue": "",
+        "startupWasmMemory": {
+          "currentBytes": 936509440,
+          "peakBytes": 936509440
+        },
+        "startupMarkers": [
+          {
+            "phase": "runtime:init:start",
+            "ms": 0
+          },
+          {
+            "phase": "worker:start",
+            "ms": 0
+          },
+          {
+            "phase": "wasm-glue:loaded",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:start",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:finish",
+            "ms": 17
+          },
+          {
+            "phase": "module:created",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "filesystem:mount:start",
+            "ms": 17
+          },
+          {
+            "phase": "filesystem:mount:finish",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "persistence:mounted",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:start",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:finish",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:loaded",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:start",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:finish",
+            "ms": 4946,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:start",
+            "ms": 4946,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:finish",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:init:finish",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:initialized",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          }
+        ],
+        "passed": true,
+        "consoleErrors": [
+          "memory allocation of 150994944 bytes failed",
+          "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace",
+          "Aborted()",
+          "YUNE_WORKER_ACTION_ERROR {action: deploy, input: undefined, enqueuedAt: 1782578997971.7, sentAt: 1782578997972.5, receivedAt: 1782579001265.9001}",
+          "undefined"
+        ]
+      },
+      {
+        "name": "jyutping-nei-after-switch",
+        "expectedSchema": "jyut6ping3",
+        "activeSchema": "jyut6ping3",
+        "input": "nei",
+        "expectedTop": "你",
+        "topCandidate": null,
+        "candidateCount": 0,
+        "candidates": [],
+        "inputValue": "",
+        "startupWasmMemory": {
+          "currentBytes": 936509440,
+          "peakBytes": 936509440
+        },
+        "startupMarkers": [
+          {
+            "phase": "runtime:init:start",
+            "ms": 0
+          },
+          {
+            "phase": "worker:start",
+            "ms": 0
+          },
+          {
+            "phase": "wasm-glue:loaded",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:start",
+            "ms": 4
+          },
+          {
+            "phase": "wasm:module:create:finish",
+            "ms": 17
+          },
+          {
+            "phase": "module:created",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "filesystem:mount:start",
+            "ms": 17
+          },
+          {
+            "phase": "filesystem:mount:finish",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "persistence:mounted",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:start",
+            "ms": 17,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:load:finish",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "assets:loaded",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:start",
+            "ms": 138,
+            "wasmMemory": {
+              "currentBytes": 134217728,
+              "peakBytes": 134217728
+            }
+          },
+          {
+            "phase": "schema:select:finish",
+            "ms": 4946,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:start",
+            "ms": 4946,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "startup-defaults:customize:finish",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:init:finish",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          },
+          {
+            "phase": "runtime:initialized",
+            "ms": 4955,
+            "wasmMemory": {
+              "currentBytes": 936509440,
+              "peakBytes": 936509440
+            }
+          }
+        ],
+        "passed": false,
+        "consoleErrors": [
+          "memory allocation of 150994944 bytes failed",
+          "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace",
+          "Aborted()",
+          "YUNE_WORKER_ACTION_ERROR {action: deploy, input: undefined, enqueuedAt: 1782578997971.7, sentAt: 1782578997972.5, receivedAt: 1782579001265.9001}",
+          "undefined"
+        ]
+      }
+    ],
+    "verdict": "candidate-missing",
+    "maxObservedWasmBytes": 936509440
+  }
+]

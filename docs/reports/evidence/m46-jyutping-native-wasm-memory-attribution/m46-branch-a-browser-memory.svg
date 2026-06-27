@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="360" viewBox="0 0 860 360" role="img" aria-labelledby="title desc">
+  <title id="title">M46 Branch A Browser WASM Memory And Correctness</title>
+  <desc id="desc">Clean Jyutping and schema-switch rows both remain at 893.1 MiB; Branch A fixes correctness but not memory.</desc>
+  <rect width="860" height="360" fill="#f8fafc"/>
+  <text x="40" y="45" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">M46 Branch A: correctness fixed, memory unchanged</text>
+  <text x="40" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#475569">Post-fix browser attribution, Chromium / Playwright, 2026-06-27</text>
+  <line x1="170" y1="290" x2="790" y2="290" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="170" y1="110" x2="790" y2="110" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="48" y="114" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">893.1 MiB</text>
+  <text x="54" y="294" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">0 MiB</text>
+  <rect x="230" y="110" width="120" height="180" fill="#2563eb"/>
+  <rect x="510" y="110" width="120" height="180" fill="#16a34a"/>
+  <text x="220" y="315" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">Clean Jyutping</text>
+  <text x="472" y="315" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">Cangjie - Luna - Jyutping</text>
+  <text x="238" y="102" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">893.1 MiB</text>
+  <text x="518" y="102" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">893.1 MiB</text>
+  <rect x="700" y="122" width="18" height="18" fill="#16a34a"/>
+  <text x="728" y="137" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">post-fix pass</text>
+  <rect x="700" y="154" width="18" height="18" fill="#dc2626"/>
+  <text x="728" y="169" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">pre-fix schema-switch failed</text>
+  <text x="40" y="342" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#475569">M46 result: schema-switch-correctness-fixed-memory-unchanged; remaining memory blocker is measured-no-go-owner-unclassified.</text>
+</svg>

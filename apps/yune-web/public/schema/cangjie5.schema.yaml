@@ -38,11 +38,13 @@ engine:
   segmentors:
     - ascii_segmentor
     - matcher
+    - affix_segmentor@reverse_lookup
     - abc_segmentor
     - punct_segmentor
     - fallback_segmentor
   translators:
     - punct_translator
+    - reverse_lookup_translator
     - table_translator
   filters:
     - dictionary_lookup_filter
@@ -52,6 +54,19 @@ engine:
 
 dictionary_lookup_filter:
   dictionary: jyut6ping3_scolar
+
+reverse_lookup:
+  tag: reverse_lookup
+  dictionary: jyut6ping3
+  target: translator
+  prefix: "`"
+  suffix: ";"
+  tips: reverse lookup
+  speller:
+    algebra:
+      - derive/\d//
+  comment_format:
+    - 'xform/^/\v/'
 
 simplifier:
   option_name: simplification
@@ -98,6 +113,8 @@ key_binder:
 
 recognizer:
   import_preset: default
+  patterns:
+    reverse_lookup: "^`[a-z']*;?$"
 
 __patch:
   []

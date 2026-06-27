@@ -34,6 +34,7 @@ import {
 import {
   joinYuneWebVirtualPath,
   mountYuneWebPersistence,
+  syncAfterUserDataChange,
   type EmscriptenYuneWebModule,
   type YuneWebFilesystem,
 } from "@yune-ime/yune-web-runtime";
@@ -163,6 +164,9 @@ const actions: Actions = {
   async getUserdbSnapshot() {
     return activeUserdbSnapshot();
   },
+  async importUserdb(rawText) {
+    return importActiveUserdb(rawText);
+  },
   async processKey(input) {
     const result = await processKey(input);
     // Persistence sync handled by adapter
@@ -209,9 +213,7 @@ function activeUserdbSnapshot(): YuneWebUserdbSnapshot {
   if (module === null) {
     throw new Error("Yune module is not loaded");
   }
-  const schema = PLAYGROUND_SCHEMAS[activeSchemaId];
-  const dictionaryId = schema.dictionaryId;
-  const path = joinYuneWebVirtualPath(RIME_USER_DIR, `${dictionaryId}.userdb`);
+  const { dictionaryId, path } = activeUserdbPath();
   const base = {
     schemaId: activeSchemaId,
     dictionaryId,
@@ -241,6 +243,25 @@ function activeUserdbSnapshot(): YuneWebUserdbSnapshot {
     rawText,
     parseErrors,
   };
+}
+
+async function importActiveUserdb(rawText: string): Promise<YuneWebUserdbSnapshot> {
+  const module = yuneModule;
+  if (module === null) {
+    throw new Error("Yune module is not loaded");
+  }
+  const { path } = activeUserdbPath();
+  module.FS.writeFile(path, rawText);
+  await syncAfterUserDataChange(module.FS);
+  await selectYuneSchema(activeSchemaId, true);
+  return activeUserdbSnapshot();
+}
+
+function activeUserdbPath() {
+  const schema = PLAYGROUND_SCHEMAS[activeSchemaId];
+  const dictionaryId = schema.dictionaryId;
+  const path = joinYuneWebVirtualPath(RIME_USER_DIR, `${dictionaryId}.userdb`);
+  return { dictionaryId, path };
 }
 
 function userdbUpdatedAt(fs: YuneWebFilesystem, path: string): string | null {
@@ -393,6 +414,7 @@ const YUNE_WEB_CANGJIE_SHARED_ASSETS = [
   ...YUNE_WEB_COMMON_SHARED_ASSETS,
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
+  "jyut6ping3.dict.yaml",
   "jyut6ping3_scolar.schema.yaml",
   "jyut6ping3_scolar.dict.yaml",
   "jyut6ping3_scolar.table.bin",
@@ -412,6 +434,7 @@ const YUNE_WEB_JYUTPING_SHARED_ASSETS = [
   "cangjie3.dict.yaml",
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
+  "luna_pinyin.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
   ...YUNE_WEB_OPENCC_SHARED_ASSETS,
   "jyut6ping3.table.bin",
@@ -445,6 +468,7 @@ const YUNE_WEB_REVERSE_LOOKUP_SHARED_ASSETS = [
   "cangjie3.dict.yaml",
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
+  "luna_pinyin.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
 ] as const;
 const YUNE_WEB_OPENCC_ATTRIBUTION_SHARED_ASSETS = [

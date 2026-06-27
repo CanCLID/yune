@@ -9,7 +9,10 @@ speed wins.
 Browser startup remains tracked separately. M41 closed the `apps/yune-web`
 startup-harness milestone with production-browser evidence under
 [`../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/).
-WEB-01 owns the next browser-harness WASM and payload sidecar.
+WEB-01 closed as a measured browser-harness no-go. M46 closed the
+TypeDuck/Jyutping native Track B and browser WASM memory handoff as a useful
+partial result: schema-switch correctness is fixed, but memory remains a
+measured no-go/unclassified blocker.
 
 ## Current Verdict
 
@@ -19,9 +22,14 @@ full performance or memory success.
 Results:
 
 - `hao` passes the short-key target at `24.267us`, `2.110x` same-run upstream
-  librime.
+  librime. This preserves the M44 short-key pass; it is not a new M45 speed
+  win.
 - `n` remains a measured short-key blocker at `68.900us`, `3.313x`.
 - `ni` remains a measured short-key blocker at `49.450us`, `3.458x`.
+- Phase 0 selected `short-key-measured-no-go`. M45 did not retain a short-key
+  engine implementation branch; final short-key medians are fresh same-run
+  evidence used to lock candidate-output parity and blocker status, not proof
+  of an optimization versus the post-M44 diagnostic baseline.
 - Startup, session, `zhongguo`, both M40 full-pinyin long rows, and both
   M42/M44 abbreviation rows stay inside their native no-regression gates.
 - Track A steady after-ready working set meets the resident target, with final
@@ -33,6 +41,35 @@ M45 therefore records two remaining native blockers: short-prefix constant
 factor for `n`/`ni`, and the real per-cold-start peak-memory cost. It does not
 claim any browser, WASM, frontend, public-demo, packaging, deployment, broad
 product, AI, learned `.gram`/octagram, or plugin ABI win.
+
+## M46 Track B Memory Update
+
+M46 is TypeDuck/Jyutping memory attribution, not a Track A short-key latency
+plan. Fresh Track B native product evidence records:
+
+| Row | Median us | p95 us | Median working set | Peak working set |
+| --- | ---: | ---: | ---: | ---: |
+| `h` | `1767.200` | `1785.900` | `441,155,584 B` | `504,627,200 B` |
+| `ha` | `1198.400` | `1206.200` | `441,958,400 B` | `504,627,200 B` |
+| `hai` | `813.767` | `839.767` | `441,950,208 B` | `504,627,200 B` |
+| `hau` | `822.200` | `1002.633` | `441,966,592 B` | `504,627,200 B` |
+| `nei` | `399.367` | `473.100` | `441,982,976 B` | `504,627,200 B` |
+| `ngo` | `600.533` | `604.867` | `442,011,648 B` | `504,627,200 B` |
+| 50+ guard | `33.480` | `33.787` | `442,966,016 B` | `504,627,200 B` |
+
+Track B storage remains source-fallback-free:
+`selected_storage=byte_backed`, table/prism mapping `mmap`, selected table and
+prism heap mirrors `0`, and `rsmarisa_status=missing_string_table` for both
+`jyut6ping3` and `jyut6ping3_scolar`.
+
+M46 Phase 0 selected `schema-switch-regression-fix-first`, then Branch A fixed
+the multi-schema browser correctness blocker. The memory headline did not move:
+native Track B remains `504,627,200 B` peak, and browser Jyutping remains
+`893.1 MiB` for clean and schema-switch rows. M46 therefore closes as
+`schema-switch-correctness-fixed-memory-unchanged` with
+`measured-no-go-owner-unclassified`; no Track B memory optimization branch is
+claimed. The evidence root is
+[`./evidence/m46-jyutping-native-wasm-memory-attribution/`](./evidence/m46-jyutping-native-wasm-memory-attribution/).
 
 ## M45 Visual Dashboard
 
@@ -98,6 +135,11 @@ Track A final storage/status:
 Final counters keep the sentence paths out of the short-key rows:
 `upstream_sentence_model_calls=0` for `n`, `ni`, and `hao`.
 
+The per-owner figures below come from the metrics-instrumented run (m37
+counters enabled), so the `Process key` column exceeds the clean benchmark
+medians above (for example `ni` is `96.900 us` instrumented versus `49.450 us`
+clean). Read this table for relative owner share, not absolute latency.
+
 | Row | Process key | Translator | Prefix lookup | Rows scanned | First page materialize | Result |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | `n` | `66.900 us` | `64.800 us` | `35.100 us` | `7` | `1.700 us` | Miss; measured blocker |
@@ -106,7 +148,10 @@ Final counters keep the sentence paths out of the short-key rows:
 
 The residual issue is a short-prefix translator/prefix lookup constant factor,
 not the M40 full-pinyin sentence lookup or M42 abbreviation routing. M45 does
-not claim a perceptible typing UX win; these rows are tens of microseconds.
+not claim a perceptible typing UX win; these rows are tens of microseconds. No
+short-key code branch was retained in M45, so the small movement from the
+diagnostic ratios should be treated as normal same-machine run variance rather
+than optimization progress.
 
 ## Evidence Bundle
 

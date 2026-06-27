@@ -1,0 +1,191 @@
+{
+  "cangjie": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "日",
+        "note": "date; day日",
+        "source": null,
+        "rowText": "1.jat6日date; day日ⓘ"
+      },
+      {
+        "index": 1,
+        "text": "曰",
+        "note": "say日",
+        "source": null,
+        "rowText": "2.joek6曰say日ⓘ"
+      },
+      {
+        "index": 2,
+        "text": "昌",
+        "note": "proseperous日日",
+        "source": null,
+        "rowText": "3.coeng1昌proseperous日日ⓘ"
+      },
+      {
+        "index": 3,
+        "text": "昍",
+        "note": "日日 (罕見)",
+        "source": null,
+        "rowText": "4.hyun1昍日日 (罕見)"
+      },
+      {
+        "index": 4,
+        "text": "晶",
+        "note": "crystal日日日",
+        "source": null,
+        "rowText": "5.zing1晶crystal日日日ⓘ"
+      },
+      {
+        "index": 5,
+        "text": "晿",
+        "note": "日日日",
+        "source": null,
+        "rowText": "6.晿日日日"
+      }
+    ]
+  },
+  "cangjieStatus": {
+    "schema": "cangjie5",
+    "schema_id": "cangjie5",
+    "schema_name": "倉頡五代",
+    "disabled": "enabled",
+    "is_disabled": "false",
+    "is_composing": "true",
+    "outputStandard": "hong_kong_traditional",
+    "is_simplified": "false",
+    "is_traditional": "false",
+    "ascii": "Chinese",
+    "is_ascii_mode": "false",
+    "is_full_shape": "false",
+    "is_ascii_punct": "false"
+  },
+  "luna": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "好",
+        "note": "hao",
+        "source": null,
+        "rowText": "1.好hao"
+      },
+      {
+        "index": 1,
+        "text": "號",
+        "note": "hao",
+        "source": null,
+        "rowText": "2.號hao"
+      },
+      {
+        "index": 2,
+        "text": "浩",
+        "note": "hao",
+        "source": null,
+        "rowText": "3.浩hao"
+      },
+      {
+        "index": 3,
+        "text": "豪",
+        "note": "hao",
+        "source": null,
+        "rowText": "4.豪hao"
+      },
+      {
+        "index": 4,
+        "text": "耗",
+        "note": "hao",
+        "source": null,
+        "rowText": "5.耗hao"
+      },
+      {
+        "index": 5,
+        "text": "郝",
+        "note": "hao",
+        "source": null,
+        "rowText": "6.郝hao"
+      }
+    ]
+  },
+  "lunaStatus": {
+    "schema": "luna_pinyin",
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "disabled": "enabled",
+    "is_disabled": "false",
+    "is_composing": "true",
+    "outputStandard": "hong_kong_traditional",
+    "is_simplified": "false",
+    "is_traditional": "false",
+    "ascii": "Chinese",
+    "is_ascii_mode": "false",
+    "is_full_shape": "false",
+    "is_ascii_punct": "false"
+  },
+  "jyutping": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "你",
+        "note": "you (singular)",
+        "source": null,
+        "rowText": "1.nei5你you (singular)ⓘ"
+      },
+      {
+        "index": 1,
+        "text": "呢",
+        "note": "this",
+        "source": null,
+        "rowText": "2.nei1呢thisⓘ"
+      },
+      {
+        "index": 2,
+        "text": "尼",
+        "note": "nun",
+        "source": null,
+        "rowText": "3.nei4尼nunⓘ"
+      },
+      {
+        "index": 3,
+        "text": "妮",
+        "note": "little girl",
+        "source": null,
+        "rowText": "4.nei4妮little girlⓘ"
+      },
+      {
+        "index": 4,
+        "text": "彌",
+        "note": "full; fill",
+        "source": null,
+        "rowText": "5.nei4彌full; fillⓘ"
+      },
+      {
+        "index": 5,
+        "text": "妳",
+        "note": "you",
+        "source": null,
+        "rowText": "6.nei5妳youⓘ"
+      }
+    ]
+  },
+  "jyutpingStatus": {
+    "schema": "jyut6ping3_mobile",
+    "schema_id": "jyut6ping3_mobile",
+    "schema_name": "粵語拼音",
+    "disabled": "enabled",
+    "is_disabled": "false",
+    "is_composing": "true",
+    "outputStandard": "hong_kong_traditional",
+    "is_simplified": "false",
+    "is_traditional": "false",
+    "ascii": "Chinese",
+    "is_ascii_mode": "false",
+    "is_full_shape": "false",
+    "is_ascii_punct": "false"
+  }
+}

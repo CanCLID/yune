@@ -1,9 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::{
     build_prism_bin, parse_rime_prism_bin_payload, Candidate, CandidateFilter, CandidateRequest,
-    CandidateSource, Context, Engine, HistoryTranslator, MemoryOwnerClass, PunctuationTranslator,
-    ReverseLookupTranslator, StaticTableTranslator, Status, TableDictionary, Translator,
+    CandidateSource, Context, DictionaryLookupRecord, Engine, HistoryTranslator, MemoryOwnerClass,
+    PresetVocabularyEntry, PunctuationTranslator, ReverseLookupTranslator, RimeCorrectionEntry,
+    RimeToleranceRule, StaticTableTranslator, Status, TableDictionary, TableDictionaryAdvancedData,
+    TableEntry, Translator,
 };
 
 struct DropFirstWindowFilter;
@@ -147,6 +149,83 @@ fn static_table_memory_owner_rows_cover_m43_owner_set() {
     assert_eq!(
         owner_class("poet.abbreviation_vocabulary"),
         MemoryOwnerClass::HeapOwnedReducible
+    );
+}
+
+#[test]
+fn compact_table_memory_owner_rows_cover_m46_payload_owner_set() {
+    let mut stems = HashMap::new();
+    stems.insert("你".to_owned(), vec!["nei5".to_owned()]);
+    let mut dict_settings = BTreeMap::new();
+    dict_settings.insert("display.language".to_owned(), "zh-HK".to_owned());
+    let mut lookup_records = HashMap::new();
+    lookup_records.insert(
+        "你".to_owned(),
+        vec![DictionaryLookupRecord {
+            code: "nei5".to_owned(),
+            fields: vec!["你".to_owned(), "nei5".to_owned(), "1".to_owned()],
+        }],
+    );
+    let dictionary = TableDictionary::with_advanced_data(
+        [TableEntry::new("nei5", "你", 10.0)],
+        TableDictionaryAdvancedData {
+            stems,
+            dict_settings,
+            corrections: vec![RimeCorrectionEntry::new("nri", "nei")],
+            tolerance_rules: vec![RimeToleranceRule::new("nei", ["nri"])],
+            lookup_records,
+            preset_vocabulary: vec![PresetVocabularyEntry::new("你好", 1.0)],
+            ..TableDictionaryAdvancedData::default()
+        },
+    );
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, None);
+
+    let rows = translator.memory_owner_rows();
+    let owner_class = |owner: &str| {
+        rows.iter()
+            .find(|row| row.owner == owner)
+            .map(|row| row.class)
+            .expect("owner row should be present")
+    };
+
+    for owner in [
+        "compact_table.candidate_text_payload",
+        "compact_table.candidate_comment_payload",
+        "compact_table.stems",
+        "compact_table.lookup_records",
+        "compact_table.corrections_tolerance",
+        "compact_table.dict_settings",
+        "compact_table.preset_vocabulary",
+    ] {
+        assert_eq!(owner_class(owner), MemoryOwnerClass::HeapOwnedRequired);
+    }
+}
+
+#[test]
+fn reverse_lookup_memory_owner_rows_cover_m46_side_index_owner_set() {
+    let dictionary = TableDictionary::new([TableEntry::new("nei", "你", 10.0)]);
+    let reverse_dictionary = TableDictionary::new([TableEntry::new("ni", "你", 10.0)]);
+    let translator = ReverseLookupTranslator::new(dictionary, Some(reverse_dictionary), "`", ";");
+
+    let rows = translator.memory_owner_rows();
+    let owner_class = |owner: &str| {
+        rows.iter()
+            .find(|row| row.owner == owner)
+            .map(|row| row.class)
+            .expect("owner row should be present")
+    };
+
+    assert_eq!(
+        owner_class("reverse_lookup.entries"),
+        MemoryOwnerClass::HeapOwnedRequired
+    );
+    assert_eq!(
+        owner_class("reverse_lookup.comments_index"),
+        MemoryOwnerClass::HeapOwnedRequired
+    );
+    assert_eq!(
+        owner_class("reverse_lookup.config"),
+        MemoryOwnerClass::HeapOwnedRequired
     );
 }
 

@@ -1,0 +1,13 @@
+﻿date_utc=2026-06-27T20:38:02.7269014Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=e757e37361828280c1965ebc13e82d7aced8ede6
+yune_git_status_short=?? docs/reports/evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\native-track-b-clean
+managed_runtime=false
+deploy_product_before_benchmark=True
+track_a_inputs=ni
+track_b_inputs=h,ha,hai,hau,nei,ngo,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

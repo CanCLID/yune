@@ -41,6 +41,14 @@ omitted `-DeployProductBeforeBenchmark`; Track B status is
 peak. M46's byte-backed `source_fallback=false` evidence remains the valid Track
 B product memory source.
 
+Clean Track B follow-up:
+[`./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/`](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/).
+This rerun uses `-DeployProductBeforeBenchmark` and records
+`compiled_ready=true`, `selected_storage=byte_backed`, table/prism `mmap`, and
+`source_fallback=false`. It confirms M46's root-cause read: Track B still peaks
+at `504,676,352 B`, steady rows stay in the `427-441 MB` band, and the largest
+named product owner remains `compact_table.lookup_records` at `31,920,140 B`.
+
 ![M45 short-key same-run ratio gates](./evidence/m45-native-short-key-memory-attribution/visuals/m45-short-key-ratios.svg)
 
 ![M45 steady resident and peak memory bands](./evidence/m45-native-short-key-memory-attribution/visuals/m45-memory-bands.svg)

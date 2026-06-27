@@ -52,6 +52,13 @@ not use `-DeployProductBeforeBenchmark`: `product_path_status.csv` records
 source-YAML fallback `translator.entries_by_code` BTreeMap and peak near
 `1.05 GB`; they must not replace M46's valid byte-backed Track B result below.
 
+A clean follow-up Track B rerun under
+[`./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/`](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/)
+uses `-DeployProductBeforeBenchmark` and is valid product evidence:
+`compiled_ready=true`, `selected_storage=byte_backed`, table/prism `mmap`, and
+`source_fallback=false`. It confirms the M46 memory result with peak working set
+`504,676,352 B` and steady rows from `427,171,840 B` to `440,688,640 B`.
+
 ## Current Verdict
 
 M45 closes as a partial native-engine result with measured blockers, not as a

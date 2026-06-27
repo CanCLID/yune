@@ -41,6 +41,32 @@ Read:
 - Do not cite this run's Track B native rows as product memory or owner
   evidence.
 
+## Native Track B Clean Product Snapshot
+
+Evidence: [`native-track-b-clean/`](./native-track-b-clean/)
+
+Command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot C:\Users\laubonghaudoi\Documents\GitHub\yune\docs\reports\evidence\reframed-comparison-review-2026-06-27\native-track-b-clean -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs ni -TrackBInputs h,ha,hai,hau,nei,ngo,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung -DeployProductBeforeBenchmark
+```
+
+Read:
+
+- Valid product path: `compiled_ready=true`, `selected_storage=byte_backed`,
+  table/prism `mmap`, and `source_fallback=false` for both `jyut6ping3`
+  dictionaries.
+- Peak Track B working set: `504,676,352 B`; peak pagefile proxy:
+  `536,322,048 B`.
+- Steady Track B working set rows: `427,171,840-440,688,640 B`.
+- Short rows: `h 1675.500 us`, `ha 1143.100 us`, `hai 778.000 us`,
+  `hau 805.067 us`, `nei 397.267 us`, `ngo 581.400 us`.
+- 50+ guard: `32.385 us`.
+
+This clean rerun confirms M46's byte-backed Track B memory conclusion and
+replaces the invalid Track B rows from `native-track-a/` for current product
+Track B discussion.
+
 ## Browser Comparator Snapshot
 
 Evidence:

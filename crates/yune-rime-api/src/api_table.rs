@@ -66,6 +66,10 @@ fn typeduck_profile_api_entry() -> *mut RimeTypeDuckProfileApi {
         as *mut RimeTypeDuckProfileApi
 }
 
+fn yune_windows_profile_api_entry() -> *mut RimeYuneWindowsProfileApi {
+    typeduck_profile_api_entry().cast::<RimeYuneWindowsProfileApi>()
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct RimeTypeDuckProfileApi {
@@ -79,6 +83,8 @@ pub struct RimeTypeDuckProfileApi {
     pub config_list_append_string:
         Option<unsafe extern "C" fn(*mut RimeConfig, *const c_char, *const c_char) -> Bool>,
 }
+
+pub type RimeYuneWindowsProfileApi = RimeTypeDuckProfileApi;
 
 fn build_typeduck_profile_api() -> RimeTypeDuckProfileApi {
     let mut upstream = build_rime_api();
@@ -205,6 +211,11 @@ pub extern "C" fn rime_get_api() -> *mut RimeApi {
 #[no_mangle]
 pub extern "C" fn rime_get_typeduck_profile_api() -> *mut RimeTypeDuckProfileApi {
     typeduck_profile_api_entry()
+}
+
+#[no_mangle]
+pub extern "C" fn rime_get_yune_windows_profile_api() -> *mut RimeYuneWindowsProfileApi {
+    yune_windows_profile_api_entry()
 }
 
 #[no_mangle]

@@ -8,13 +8,16 @@ use std::{
 };
 
 use libloading::Library;
-use yune_rime_api::{Bool, RimeApi, RimeConfig, RimeTypeDuckProfileApi, TRUE};
+use yune_rime_api::{
+    Bool, RimeApi, RimeConfig, RimeTypeDuckProfileApi, RimeYuneWindowsProfileApi, TRUE,
+};
 
 #[path = "frontend_hosts/mod.rs"]
 mod frontend_hosts;
 
 type RimeGetApi = unsafe extern "C" fn() -> *mut yune_rime_api::RimeApi;
 type RimeGetTypeDuckProfileApi = unsafe extern "C" fn() -> *mut RimeTypeDuckProfileApi;
+type RimeGetYuneWindowsProfileApi = unsafe extern "C" fn() -> *mut RimeYuneWindowsProfileApi;
 
 fn test_guard() -> MutexGuard<'static, ()> {
     static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -218,6 +221,79 @@ fn dynamic_loader_harness_loads_packaged_typeduck_profile_dll() {
         profile_api.upstream.data_size,
         (mem::size_of::<RimeTypeDuckProfileApi>() - mem::size_of::<c_int>()) as c_int,
         "profile accessor must advertise the extended TypeDuck-profile table"
+    );
+    assert!(
+        profile_api.upstream.data_size > default_api.data_size,
+        "profile table must be opt-in and larger than the default table"
+    );
+    assert_profile_append_slots_round_trip(profile_api);
+
+    let trace = frontend_hosts::native::run_native_host_lifecycle(&mut profile_api.upstream)
+        .unwrap_or_else(|blocker| panic!("packaged profile lifecycle blocker: {blocker:?}"));
+    assert_eq!(
+        trace.to_json(),
+        frontend_hosts::BASELINE_TRACE_FIXTURE.replace("\r\n", "\n")
+    );
+}
+
+#[test]
+fn dynamic_loader_harness_loads_packaged_yune_windows_profile_dll() {
+    let Some(artifact) = std::env::var_os("YUNE_WINDOWS_PACKAGE_RIME_DLL") else {
+        eprintln!(
+            "set YUNE_WINDOWS_PACKAGE_RIME_DLL to run the packaged Yune Windows profile smoke"
+        );
+        return;
+    };
+    let _guard = test_guard();
+    let artifact = PathBuf::from(artifact);
+    assert!(
+        artifact.is_file(),
+        "packaged rime.dll should exist at {}",
+        artifact.display()
+    );
+
+    // SAFETY: loading is restricted to the packaged DLL path provided by the
+    // Yune Windows packaging script.
+    let library = unsafe { Library::new(&artifact) }.unwrap_or_else(|error| {
+        panic!(
+            "failed to load packaged DLL {}: {error}",
+            artifact.display()
+        )
+    });
+
+    // SAFETY: the harness resolves only the exported null-terminated rime_get_api symbol.
+    let get_api: libloading::Symbol<RimeGetApi> = unsafe { library.get(b"rime_get_api\0") }
+        .unwrap_or_else(|error| panic!("missing packaged symbol rime_get_api: {error}"));
+    // SAFETY: the resolved symbol follows the exported rime_get_api contract.
+    let default_api = unsafe { get_api() };
+    assert!(
+        !default_api.is_null(),
+        "packaged rime_get_api returned null"
+    );
+    // SAFETY: the table pointer was checked for null before dereference, and the
+    // library is kept alive for the full duration of table use.
+    let default_api = unsafe { &mut *default_api };
+    assert_upstream_api_data_size(default_api, "packaged rime_get_api");
+    assert_packaged_direct_call_symbols(&library);
+
+    // SAFETY: the harness resolves only the exported null-terminated profile accessor.
+    let get_profile_api: libloading::Symbol<RimeGetYuneWindowsProfileApi> =
+        unsafe { library.get(b"rime_get_yune_windows_profile_api\0") }.unwrap_or_else(|error| {
+            panic!("missing packaged symbol rime_get_yune_windows_profile_api: {error}")
+        });
+    // SAFETY: the resolved symbol follows the exported profile accessor contract.
+    let profile_api = unsafe { get_profile_api() };
+    assert!(
+        !profile_api.is_null(),
+        "packaged rime_get_yune_windows_profile_api returned null"
+    );
+    // SAFETY: the table pointer was checked for null before dereference, and the
+    // library is kept alive for the full duration of table use.
+    let profile_api = unsafe { &mut *profile_api };
+    assert_eq!(
+        profile_api.upstream.data_size,
+        (mem::size_of::<RimeYuneWindowsProfileApi>() - mem::size_of::<c_int>()) as c_int,
+        "profile accessor must advertise the extended Yune Windows table"
     );
     assert!(
         profile_api.upstream.data_size > default_api.data_size,

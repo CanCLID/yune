@@ -45,7 +45,8 @@ mod web_runtime;
 pub use abi::*;
 use api_table::state_label_cache;
 pub use api_table::{
-    rime_get_api, rime_get_typeduck_profile_api, rime_levers_get_api, RimeTypeDuckProfileApi,
+    rime_get_api, rime_get_typeduck_profile_api, rime_get_yune_windows_profile_api,
+    rime_levers_get_api, RimeTypeDuckProfileApi, RimeYuneWindowsProfileApi,
 };
 pub use candidate_api::*;
 use config::*;

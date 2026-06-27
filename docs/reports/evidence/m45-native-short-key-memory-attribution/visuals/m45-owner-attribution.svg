@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="360" viewBox="0 0 820 360" role="img" aria-labelledby="title desc">
+  <title id="title">M45 retained owner attribution</title>
+  <desc id="desc">Largest retained owners by class in the M45 Track A memory profile.</desc>
+  <rect width="820" height="360" fill="#f8fafc"/>
+  <text x="32" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">M45 Retained Owner Attribution</text>
+  <text x="32" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">Known retained owners do not explain or safely move the 127 MB peak in M45.</text>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="13">
+    <text x="54" y="122" fill="#111827">poet.entries_by_code</text>
+    <rect x="250" y="104" width="420" height="24" rx="4" fill="#f97316"/>
+    <text x="684" y="122" fill="#111827">18,694,662 B heap reducible</text>
+
+    <text x="54" y="166" fill="#111827">compact_table.storage</text>
+    <rect x="250" y="148" width="292" height="24" rx="4" fill="#2563eb"/>
+    <text x="556" y="166" fill="#111827">13,013,460 B mmap file-backed</text>
+
+    <text x="54" y="210" fill="#111827">poet.lookup_index</text>
+    <rect x="250" y="192" width="60" height="24" rx="4" fill="#7c3aed"/>
+    <text x="324" y="210" fill="#111827">2,660,848 B guarded</text>
+
+    <text x="54" y="254" fill="#111827">other reducible owners</text>
+    <rect x="250" y="236" width="1" height="24" rx="1" fill="#94a3b8"/>
+    <text x="266" y="254" fill="#111827">30,875 B total, too small to move peak</text>
+
+    <rect x="54" y="294" width="16" height="16" rx="3" fill="#f97316"/>
+    <text x="78" y="307" fill="#475569">heap-owned reducible</text>
+    <rect x="230" y="294" width="16" height="16" rx="3" fill="#2563eb"/>
+    <text x="254" y="307" fill="#475569">file-backed mmap</text>
+    <rect x="390" y="294" width="16" height="16" rx="3" fill="#7c3aed"/>
+    <text x="414" y="307" fill="#475569">guarded performance structure</text>
+  </g>
+</svg>

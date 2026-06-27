@@ -1,0 +1,319 @@
+﻿{
+    "comparison":  {
+                       "milestone":  "M45",
+                       "phase":  "phase-0-short-key-oracle",
+                       "oracle_source":  "librime-1.17.0-candidate-output.json",
+                       "yune_source":  "yune-candidate-output.json",
+                       "oracle":  "native upstream rime/librime 1.17.0 with luna_pinyin",
+                       "product_or_browser_oracle":  "not_used",
+                       "all_pass":  true
+                   },
+    "cases":  [
+                  {
+                      "input":  "n",
+                      "pass":  true,
+                      "candidate_text_comment_order_match":  true,
+                      "context_preedit_match":  true,
+                      "commit_preview_match":  true,
+                      "first_page_metadata_match":  true,
+                      "oracle":  {
+                                     "schema_id":  "luna_pinyin",
+                                     "schema_name":  "朙月拼音",
+                                     "input":  "n",
+                                     "rime_get_input":  "n",
+                                     "processed":  [
+                                                       1
+                                                   ],
+                                     "is_composing":  true,
+                                     "is_ascii_mode":  false,
+                                     "preedit":  "n",
+                                     "commit_text_preview":  "你",
+                                     "highlighted_candidate_index":  0,
+                                     "page_size":  5,
+                                     "page_no":  0,
+                                     "is_last_page":  false,
+                                     "selected_candidates":  [
+                                                                 {
+                                                                     "index":  0,
+                                                                     "text":  "你",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  1,
+                                                                     "text":  "那",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  2,
+                                                                     "text":  "呢",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  3,
+                                                                     "text":  "能",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  4,
+                                                                     "text":  "年",
+                                                                     "comment":  null
+                                                                 }
+                                                             ],
+                                     "first_page_candidate_count":  5,
+                                     "candidate_count":  5
+                                 },
+                      "yune":  {
+                                   "schema_id":  "luna_pinyin",
+                                   "schema_name":  "朙月拼音",
+                                   "input":  "n",
+                                   "rime_get_input":  "n",
+                                   "processed":  [
+                                                     1
+                                                 ],
+                                   "is_composing":  true,
+                                   "is_ascii_mode":  false,
+                                   "preedit":  "n",
+                                   "commit_text_preview":  "你",
+                                   "highlighted_candidate_index":  0,
+                                   "page_size":  5,
+                                   "page_no":  0,
+                                   "is_last_page":  false,
+                                   "selected_candidates":  [
+                                                               {
+                                                                   "index":  0,
+                                                                   "text":  "你",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  1,
+                                                                   "text":  "那",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  2,
+                                                                   "text":  "呢",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  3,
+                                                                   "text":  "能",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  4,
+                                                                   "text":  "年",
+                                                                   "comment":  null
+                                                               }
+                                                           ],
+                                   "first_page_candidate_count":  5,
+                                   "candidate_count":  5
+                               }
+                  },
+                  {
+                      "input":  "ni",
+                      "pass":  true,
+                      "candidate_text_comment_order_match":  true,
+                      "context_preedit_match":  true,
+                      "commit_preview_match":  true,
+                      "first_page_metadata_match":  true,
+                      "oracle":  {
+                                     "schema_id":  "luna_pinyin",
+                                     "schema_name":  "朙月拼音",
+                                     "input":  "ni",
+                                     "rime_get_input":  "ni",
+                                     "processed":  [
+                                                       1,
+                                                       1
+                                                   ],
+                                     "is_composing":  true,
+                                     "is_ascii_mode":  false,
+                                     "preedit":  "ni",
+                                     "commit_text_preview":  "你",
+                                     "highlighted_candidate_index":  0,
+                                     "page_size":  5,
+                                     "page_no":  0,
+                                     "is_last_page":  false,
+                                     "selected_candidates":  [
+                                                                 {
+                                                                     "index":  0,
+                                                                     "text":  "你",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  1,
+                                                                     "text":  "擬",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  2,
+                                                                     "text":  "尼",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  3,
+                                                                     "text":  "泥",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  4,
+                                                                     "text":  "呢",
+                                                                     "comment":  null
+                                                                 }
+                                                             ],
+                                     "first_page_candidate_count":  5,
+                                     "candidate_count":  5
+                                 },
+                      "yune":  {
+                                   "schema_id":  "luna_pinyin",
+                                   "schema_name":  "朙月拼音",
+                                   "input":  "ni",
+                                   "rime_get_input":  "ni",
+                                   "processed":  [
+                                                     1,
+                                                     1
+                                                 ],
+                                   "is_composing":  true,
+                                   "is_ascii_mode":  false,
+                                   "preedit":  "ni",
+                                   "commit_text_preview":  "你",
+                                   "highlighted_candidate_index":  0,
+                                   "page_size":  5,
+                                   "page_no":  0,
+                                   "is_last_page":  false,
+                                   "selected_candidates":  [
+                                                               {
+                                                                   "index":  0,
+                                                                   "text":  "你",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  1,
+                                                                   "text":  "擬",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  2,
+                                                                   "text":  "尼",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  3,
+                                                                   "text":  "泥",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  4,
+                                                                   "text":  "呢",
+                                                                   "comment":  null
+                                                               }
+                                                           ],
+                                   "first_page_candidate_count":  5,
+                                   "candidate_count":  5
+                               }
+                  },
+                  {
+                      "input":  "hao",
+                      "pass":  true,
+                      "candidate_text_comment_order_match":  true,
+                      "context_preedit_match":  true,
+                      "commit_preview_match":  true,
+                      "first_page_metadata_match":  true,
+                      "oracle":  {
+                                     "schema_id":  "luna_pinyin",
+                                     "schema_name":  "朙月拼音",
+                                     "input":  "hao",
+                                     "rime_get_input":  "hao",
+                                     "processed":  [
+                                                       1,
+                                                       1,
+                                                       1
+                                                   ],
+                                     "is_composing":  true,
+                                     "is_ascii_mode":  false,
+                                     "preedit":  "hao",
+                                     "commit_text_preview":  "好",
+                                     "highlighted_candidate_index":  0,
+                                     "page_size":  5,
+                                     "page_no":  0,
+                                     "is_last_page":  false,
+                                     "selected_candidates":  [
+                                                                 {
+                                                                     "index":  0,
+                                                                     "text":  "好",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  1,
+                                                                     "text":  "號",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  2,
+                                                                     "text":  "浩",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  3,
+                                                                     "text":  "豪",
+                                                                     "comment":  null
+                                                                 },
+                                                                 {
+                                                                     "index":  4,
+                                                                     "text":  "耗",
+                                                                     "comment":  null
+                                                                 }
+                                                             ],
+                                     "first_page_candidate_count":  5,
+                                     "candidate_count":  5
+                                 },
+                      "yune":  {
+                                   "schema_id":  "luna_pinyin",
+                                   "schema_name":  "朙月拼音",
+                                   "input":  "hao",
+                                   "rime_get_input":  "hao",
+                                   "processed":  [
+                                                     1,
+                                                     1,
+                                                     1
+                                                 ],
+                                   "is_composing":  true,
+                                   "is_ascii_mode":  false,
+                                   "preedit":  "hao",
+                                   "commit_text_preview":  "好",
+                                   "highlighted_candidate_index":  0,
+                                   "page_size":  5,
+                                   "page_no":  0,
+                                   "is_last_page":  false,
+                                   "selected_candidates":  [
+                                                               {
+                                                                   "index":  0,
+                                                                   "text":  "好",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  1,
+                                                                   "text":  "號",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  2,
+                                                                   "text":  "浩",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  3,
+                                                                   "text":  "豪",
+                                                                   "comment":  null
+                                                               },
+                                                               {
+                                                                   "index":  4,
+                                                                   "text":  "耗",
+                                                                   "comment":  null
+                                                               }
+                                                           ],
+                                   "first_page_candidate_count":  5,
+                                   "candidate_count":  5
+                               }
+                  }
+              ]
+}

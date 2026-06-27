@@ -1,7 +1,8 @@
 # M45 Native Short-Key Latency And Memory Attribution Plan
 
-> **Status:** Active - **Milestone:** M45 (native short-key latency and memory
-> attribution) - **Created:** 2026-06-27 - **Type:** native-engine plan
+> **Status:** Complete with measured blockers - **Milestone:** M45 (native
+> short-key latency and memory attribution) - **Created:** 2026-06-27 -
+> **Closed:** 2026-06-27 - **Type:** native-engine plan
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
@@ -28,6 +29,46 @@ another `compact_table` or `poet` storage rewrite just because peak memory is
 above the old target. M43 already reduced a large retained owner without moving
 peak; M45 only authorizes code if new evidence names a safe, bounded,
 peak-moving owner.
+
+## Closeout Summary
+
+M45 closes as a partial native-engine result with measured blockers, not as a
+full short-key or memory success.
+
+Final short-key evidence:
+
+- `n`: `68.900us`, `3.313x` same-run upstream librime; target missed and
+  recorded as a measured benchmark-parity blocker.
+- `ni`: `49.450us`, `3.458x`; target missed and recorded as a measured
+  benchmark-parity blocker.
+- `hao`: `24.267us`, `2.110x`; target met.
+- Final `n`/`ni`/`hao` candidate output matches upstream librime `1.17.0` for
+  candidate text, comments, order, preedit, commit preview, and page metadata.
+- `upstream_sentence_model_calls=0` remains true for the short-key rows, so
+  the blocker is not the M40 full-pinyin sentence lookup or M42 abbreviation
+  routing path.
+
+Final memory evidence:
+
+- Steady Track A resident rows are below `107,797,708 B`, ranging from
+  `87,498,752 B` to `98,684,928 B`.
+- The first startup sample still records a real `127,475,712 B` high-water
+  peak, so the final memory verdict is
+  `steady-state-meets-target-standing-peak-cost`.
+- No memory-code or storage rewrite is retained. The retained owner profile
+  names `poet.entries_by_code` (`18,694,662 B`) and file-backed
+  `compact_table.storage` (`13,013,460 B`), but does not name a new safe
+  peak-moving owner.
+
+M45 preserves startup/session, `zhongguo`, both M40 full-pinyin long rows,
+both M42/M44 abbreviation rows, bounded output/context, Track A storage
+(`rsmarisa_byte_backed`, mmap table/prism, zero selected heap mirrors,
+`source_fallback=false`, positive `rsmarisa` counters), and the Track B guard.
+It makes no browser, frontend, WASM, public-demo, packaging, deployment, broad
+product, AI, learned `.gram`/octagram, or plugin ABI claim.
+
+Primary evidence:
+[`docs/reports/evidence/m45-native-short-key-memory-attribution/`](../../reports/evidence/m45-native-short-key-memory-attribution/)
 
 ## Architecture
 

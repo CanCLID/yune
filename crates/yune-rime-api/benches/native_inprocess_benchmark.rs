@@ -386,6 +386,12 @@ struct Sample {
     after_ready_working_set_bytes: Option<u64>,
     after_finalize_working_set_bytes: Option<u64>,
     peak_working_set_bytes: Option<u64>,
+    before_private_bytes: Option<u64>,
+    after_ready_private_bytes: Option<u64>,
+    after_finalize_private_bytes: Option<u64>,
+    private_bytes: Option<u64>,
+    pagefile_bytes: Option<u64>,
+    peak_pagefile_bytes: Option<u64>,
     m37_metrics: Option<M37MetricSample>,
 }
 
@@ -835,13 +841,27 @@ impl Sample {
             operation_count,
             total_us,
             us_per_operation: total_us / operation_count as f64,
-            before_working_set_bytes: before.working_set_bytes,
-            after_ready_working_set_bytes: after_ready.working_set_bytes,
-            after_finalize_working_set_bytes: after_finalize
-                .and_then(|sample| sample.working_set_bytes),
+            before_working_set_bytes: before.working_set,
+            after_ready_working_set_bytes: after_ready.working_set,
+            after_finalize_working_set_bytes: after_finalize.and_then(|sample| sample.working_set),
             peak_working_set_bytes: max_optional(
-                after_ready.peak_working_set_bytes,
-                after_finalize.and_then(|sample| sample.peak_working_set_bytes),
+                after_ready.peak_working_set,
+                after_finalize.and_then(|sample| sample.peak_working_set),
+            ),
+            before_private_bytes: before.private,
+            after_ready_private_bytes: after_ready.private,
+            after_finalize_private_bytes: after_finalize.and_then(|sample| sample.private),
+            private_bytes: max_optional(
+                after_ready.private,
+                after_finalize.and_then(|sample| sample.private),
+            ),
+            pagefile_bytes: max_optional(
+                after_ready.pagefile,
+                after_finalize.and_then(|sample| sample.pagefile),
+            ),
+            peak_pagefile_bytes: max_optional(
+                after_ready.peak_pagefile,
+                after_finalize.and_then(|sample| sample.peak_pagefile),
             ),
             m37_metrics: None,
         }
@@ -850,8 +870,11 @@ impl Sample {
 
 #[derive(Clone, Copy, Debug, Default)]
 struct MemorySample {
-    working_set_bytes: Option<u64>,
-    peak_working_set_bytes: Option<u64>,
+    working_set: Option<u64>,
+    peak_working_set: Option<u64>,
+    private: Option<u64>,
+    pagefile: Option<u64>,
+    peak_pagefile: Option<u64>,
 }
 
 #[cfg(windows)]
@@ -868,6 +891,7 @@ fn current_memory_sample() -> MemorySample {
         quota_non_paged_pool_usage: usize,
         pagefile_usage: usize,
         peak_pagefile_usage: usize,
+        private_usage: usize,
     }
 
     #[link(name = "kernel32")]
@@ -895,6 +919,7 @@ fn current_memory_sample() -> MemorySample {
         quota_non_paged_pool_usage: 0,
         pagefile_usage: 0,
         peak_pagefile_usage: 0,
+        private_usage: 0,
     };
     let ok = unsafe {
         GetProcessMemoryInfo(
@@ -907,8 +932,11 @@ fn current_memory_sample() -> MemorySample {
         return MemorySample::default();
     }
     MemorySample {
-        working_set_bytes: Some(counters.working_set_size as u64),
-        peak_working_set_bytes: Some(counters.peak_working_set_size as u64),
+        working_set: Some(counters.working_set_size as u64),
+        peak_working_set: Some(counters.peak_working_set_size as u64),
+        private: Some(counters.private_usage as u64),
+        pagefile: Some(counters.pagefile_usage as u64),
+        peak_pagefile: Some(counters.peak_pagefile_usage as u64),
     }
 }
 
@@ -918,10 +946,10 @@ fn current_memory_sample() -> MemorySample {
 }
 
 fn write_samples(path: &PathBuf, samples: &[Sample]) {
-    let mut output = String::from("engine,track,schema_id,workload,input,sample_index,operation_count,total_us,us_per_operation,before_working_set_bytes,after_ready_working_set_bytes,after_finalize_working_set_bytes,peak_working_set_bytes\n");
+    let mut output = String::from("engine,track,schema_id,workload,input,sample_index,operation_count,total_us,us_per_operation,before_working_set_bytes,after_ready_working_set_bytes,after_finalize_working_set_bytes,peak_working_set_bytes,before_private_bytes,after_ready_private_bytes,after_finalize_private_bytes,private_bytes,pagefile_bytes,peak_pagefile_bytes\n");
     for sample in samples {
         output.push_str(&format!(
-            "{},{},{},{},{},{},{},{:.3},{:.3},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{:.3},{:.3},{},{},{},{},{},{},{},{},{},{}\n",
             csv(&sample.engine),
             csv(&sample.track),
             csv(&sample.schema),
@@ -934,7 +962,13 @@ fn write_samples(path: &PathBuf, samples: &[Sample]) {
             optional_u64(sample.before_working_set_bytes),
             optional_u64(sample.after_ready_working_set_bytes),
             optional_u64(sample.after_finalize_working_set_bytes),
-            optional_u64(sample.peak_working_set_bytes)
+            optional_u64(sample.peak_working_set_bytes),
+            optional_u64(sample.before_private_bytes),
+            optional_u64(sample.after_ready_private_bytes),
+            optional_u64(sample.after_finalize_private_bytes),
+            optional_u64(sample.private_bytes),
+            optional_u64(sample.pagefile_bytes),
+            optional_u64(sample.peak_pagefile_bytes)
         ));
     }
     fs::write(path, output).expect("samples CSV should be written");
@@ -954,7 +988,7 @@ fn write_summary(path: &PathBuf, samples: &[Sample]) {
             .or_default()
             .push(sample);
     }
-    let mut output = String::from("engine,track,schema_id,workload,input,samples,operations,median_us,p95_us,p99_us,max_us,median_working_set_bytes,max_peak_working_set_bytes\n");
+    let mut output = String::from("engine,track,schema_id,workload,input,samples,operations,median_us,p95_us,p99_us,max_us,median_working_set_bytes,max_peak_working_set_bytes,median_private_bytes,max_peak_pagefile_bytes\n");
     for ((engine, track, schema, workload, input), samples) in groups {
         let mut latencies = samples
             .iter()
@@ -974,8 +1008,17 @@ fn write_summary(path: &PathBuf, samples: &[Sample]) {
             .iter()
             .map(|sample| sample.operation_count)
             .sum::<usize>();
+        let mut private_bytes = samples
+            .iter()
+            .filter_map(|sample| sample.private_bytes)
+            .collect::<Vec<_>>();
+        private_bytes.sort_unstable();
+        let peak_pagefile = samples
+            .iter()
+            .filter_map(|sample| sample.peak_pagefile_bytes)
+            .max();
         output.push_str(&format!(
-            "{},{},{},{},{},{},{},{:.3},{:.3},{:.3},{:.3},{},{}\n",
+            "{},{},{},{},{},{},{},{:.3},{:.3},{:.3},{:.3},{},{},{},{}\n",
             csv(engine),
             csv(track),
             csv(schema),
@@ -990,7 +1033,11 @@ fn write_summary(path: &PathBuf, samples: &[Sample]) {
             working_sets
                 .get(working_sets.len().saturating_sub(1) / 2)
                 .map_or_else(|| "unavailable".to_owned(), ToString::to_string),
-            optional_u64(peak)
+            optional_u64(peak),
+            private_bytes
+                .get(private_bytes.len().saturating_sub(1) / 2)
+                .map_or_else(|| "unavailable".to_owned(), ToString::to_string),
+            optional_u64(peak_pagefile)
         ));
     }
     fs::write(path, output).expect("summary CSV should be written");

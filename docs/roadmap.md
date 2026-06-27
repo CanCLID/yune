@@ -2,18 +2,15 @@
 
 Yune is a Rust input-method engine that uses **upstream librime as a
 compatibility and performance oracle** while building a cleaner Rust engine.
-M45 is active as the next native-engine performance milestone. It targets the
-post-M44 Track A short-prefix owner for `n`/`ni`/`hao` and resolves the Track A
-memory question by attribution before any storage rewrite. M44 is complete as a
-partial native/profile performance reduction: it closes the Track A
-abbreviation latency blocker, the Track B native product-profile short-row
-lookup explosion, and the `hao` short-key target while preserving M40/M42/M43
-behavior and storage guards. It does not close as a full performance success
-because Track A `ni` remains above target and Track A peak memory still misses
-the whole-process memory target. WEB-01 is active in parallel as a
-browser-harness sidecar for WASM linear-memory reservation and startup payload
-only. It must not claim native engine memory wins or widen M45/M44
-native-engine claims.
+M45 is complete with measured native-engine blockers. It confirmed upstream
+candidate-output parity for Track A `n`/`ni`/`hao`, kept `hao` inside the
+short-key ratio target, and split steady resident memory from real peak memory.
+It does not close as a full performance or memory success because `n` and `ni`
+remain above the `<=3.0x` short-key target and Track A still records a real
+`127,475,712 B` cold-start peak. WEB-01 is active next as the browser-harness
+sidecar for WASM linear-memory reservation and startup payload only. It must
+label inherited native changes as post-M45 baseline, must not include new
+`crates/` changes, and must not claim native engine memory wins.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -35,15 +32,15 @@ native-engine claims.
 - [`decisions.md`](./decisions.md) - standing principles plus project-wide
   decision log.
 - [`requirements.md`](./requirements.md) - requirement IDs and status,
-  including active M45 native-engine gates, completed M44 native-engine gates,
+  including completed M45 native-engine gates, completed M44 native-engine gates,
   completed M43 native-engine gates, completed M42 native-engine gates, closed
   M37-M40 engine gates, and completed M41 web-harness gates.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
   and [`reports/yune-vs-librime-root-cause-analysis.md`](./reports/yune-vs-librime-root-cause-analysis.md)
   - current performance comparison and diagnosis.
-- [`plans/active/m45-plan-native-short-key-latency-memory-attribution.md`](./plans/active/m45-plan-native-short-key-latency-memory-attribution.md)
-  - active native-engine plan for Track A short-prefix latency and Track A
-  memory attribution after M44.
+- [`plans/completed/m45-plan-native-short-key-latency-memory-attribution.md`](./plans/completed/m45-plan-native-short-key-latency-memory-attribution.md)
+  - completed partial native-engine plan for Track A short-prefix latency and
+  Track A memory attribution after M44.
 - [`plans/completed/m44-plan-native-performance-owner-reduction.md`](./plans/completed/m44-plan-native-performance-owner-reduction.md)
   - completed partial native/profile plan for reducing four M44 performance
   owner families without regressing M40/M42/M43 guards.
@@ -78,27 +75,23 @@ native-engine claims.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior is complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. | Preserve upstream-observable behavior on every engine change. |
-| Engine performance | M45 is active as a native-engine-only follow-up to M44. The post-M44 diagnostic identifies `n` as the sharper short-prefix owner (`79.400us`, `3.626x` same-run librime), with `ni` still slow (`53.750us`, `3.571x`) and `hao` improved but still above librime (`25.667us`, `2.121x`). The same diagnostic shows repeated Track A high-water peak at `127,430,656 B`, while after-ready medians are lower (`87-98 MB`) and may already meet the old `<=107,797,708 B` resident target if the peak is proven to be a benchmark-cumulative artifact. If the peak is a real per-cold-start deploy/startup spike, it remains a standing peak cost. | Execute M45 Phase 0 first: capture `n`/`ni`/`hao` upstream candidate-output oracle evidence, confirm the short-prefix owner, and split memory into steady resident, high-water peak, benchmark-cumulative artifact, real cold-start peak, private heap, mapped pages, and allocator/transient buckets before any storage rewrite. |
-| Web harness startup and memory | M41 is complete for the tracked `apps/yune-web/` browser harness. WEB-01 is active as a browser-only WASM linear-memory reservation and Jyutping payload plan. The fresh 2026-06-27 comparator baseline records Yune public-demo `luna_pinyin` at `128.0 MiB` peak WASM linear memory versus My RIME `16.0 MiB`, and Yune public-demo Jyutping at `893.1 MiB` versus My RIME `68.0 MiB`; Yune Jyutping also loads `33.5 MiB` unique encoded resources versus My RIME `24.9 MiB`. | Start WEB-01 from a clean no-`crates/` branch. Draft win gates are Luna `<=64 MiB`, Jyutping `<=256 MiB` with `<=128 MiB` stretch, and Jyutping resources below `28 MiB` or a path-owned no-go. Claims stay limited to browser linear-memory, payload, and worker-retention owners. |
+| Engine performance | M45 is complete as a partial native-engine follow-up to M44. Final `hao` passes at `24.267us` / `2.110x`, while `n` remains `68.900us` / `3.313x` and `ni` remains `49.450us` / `3.458x`. Track A steady resident rows meet the resident target (`87,498,752-98,684,928 B`), but the real cold-start peak remains `127,475,712 B`, so M45 records a standing peak-cost blocker. | Keep native reports scoped to M45 evidence. Any next native slice needs a new plan and a narrower owner for the `n`/`ni` constant factor or peak-memory attribution. |
+| Web harness startup and memory | M41 is complete for the tracked `apps/yune-web/` browser harness. WEB-01 is active as a browser-only WASM linear-memory reservation and Jyutping payload plan. The fresh 2026-06-27 comparator baseline records Yune public-demo `luna_pinyin` at `128.0 MiB` peak WASM linear memory versus My RIME `16.0 MiB`, and Yune public-demo Jyutping at `893.1 MiB` versus My RIME `68.0 MiB`; Yune Jyutping also loads `33.5 MiB` unique encoded resources versus My RIME `24.9 MiB`. | Run WEB-01 on post-M45 main with evidence labelled post-M45. Draft win gates are Luna `<=64 MiB`, Jyutping `<=256 MiB` with `<=128 MiB` stretch, and Jyutping resources below `28 MiB` or a path-owned no-go. Claims stay limited to browser linear-memory, payload, and worker-retention owners. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific native frontends remain outside this repo roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
 ## Authoritative Sequence
 
-1. **M45 native short-key latency and memory attribution** - active under
-   [`plans/active/m45-plan-native-short-key-latency-memory-attribution.md`](./plans/active/m45-plan-native-short-key-latency-memory-attribution.md).
-   It owns Track A `n`/`ni`/`hao` short-prefix latency and native Track A memory
-   attribution/reframing. It must start from fresh owner evidence and keep
-   M40/M42/M43/M44 closed guards intact.
-2. **WEB-01 yune-web WASM linear memory and payload sidecar** - active under
+1. **WEB-01 yune-web WASM linear memory and payload sidecar** - active under
    [`plans/active/web01-plan-yune-web-wasm-heap-payload-optimization.md`](./plans/active/web01-plan-yune-web-wasm-heap-payload-optimization.md).
    It covers browser-harness code, public-demo packaging, WASM build flags,
    browser benchmarks, reports, and evidence. It must calibrate lower browser
    `INITIAL_MEMORY` from observed WASM linear-memory high-water plus headroom
-   before claiming a browser win, and it must not widen M44 native-engine claims.
-3. **Future AI-native engine experiments** - later, and only after classic
+   before claiming a browser win, and it must not widen M45/M44 native-engine
+   claims.
+2. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-4. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+3. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
    fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
    row is explicitly selected as the target.
 
@@ -106,36 +99,39 @@ Trigger-gated, not scheduled: extracting the full processor pipeline from
 `yune-rime-api` into `yune-core` lands only when a real non-ABI consumer needs
 the full input path. Do not milestone that extraction speculatively.
 
-## M45 Active
+## M45 Closeout
 
-M45 is active under
-[`plans/active/m45-plan-native-short-key-latency-memory-attribution.md`](./plans/active/m45-plan-native-short-key-latency-memory-attribution.md).
+M45 is complete with measured blockers under
+[`plans/completed/m45-plan-native-short-key-latency-memory-attribution.md`](./plans/completed/m45-plan-native-short-key-latency-memory-attribution.md).
 It is a native-engine-only follow-up to M44 and the post-M44 diagnostic
 profiling.
 
-The targets are:
+Final M45 result:
 
-- capture upstream `luna_pinyin` candidate-output oracle evidence for `n`,
-  `ni`, and `hao` before changing the short-key path;
-- reduce `n`, `ni`, and `hao` to `<=3.0x` same-run upstream librime while
-  preserving first-page candidate text, comments, order, preedit, commit
-  preview, and page metadata; if bare `n` misses, record it as measured
-  benchmark-parity work on a degenerate single-letter row rather than a
-  perceptible UX blocker;
-- preserve the M44 under-fill fallback so bounded short-key work cannot return
-  too few candidates after filters;
-- attribute Track A memory before rewriting storage, splitting steady
-  after-ready resident size, high-water peak, private heap, mapped pages,
-  allocator behavior, and transient deploy/startup memory;
-- close memory as `steady-state-meets-target-benchmark-artifact`,
-  `steady-state-meets-target-standing-peak-cost`, `transient-peak-bound`,
-  `measured-no-go`, or a narrowly evidenced `memory-owner-reduction`, with
-  both high-water peak and steady resident memory visible in the closeout.
+- `n`: `68.900us`, `3.313x`; target missed, measured benchmark-parity blocker.
+- `ni`: `49.450us`, `3.458x`; target missed, measured benchmark-parity
+  blocker.
+- `hao`: `24.267us`, `2.110x`; target met.
+- Startup/runtime-ready: `23,386.400us`, `0.875x`; guard passed.
+- Session create/select/destroy: `23,444.800us`, `0.921x`; guard passed.
+- `zhongguo`: `61.225us`, `0.373x`; guard passed.
+- M40 long rows: `0.939x` and `0.720x`; guard passed.
+- M42/M44 abbreviation rows: `0.440x` and `0.640x`; guard passed with
+  candidate-output behavior preserved.
+- Track A steady resident memory: `87,498,752-98,684,928 B`; resident target
+  met.
+- Track A peak memory: `127,475,712 B`; real standing peak-cost blocker.
 
-M45 is not allowed to claim browser, frontend, WASM, product-delivery,
-packaging, deployment, public-demo, broad TypeDuck-profile speed, AI, learned
-`.gram`/octagram, or plugin ABI progress. WEB-01 and any future WASM-memory
-engine milestone remain separate tracks.
+M45 records the memory verdict as
+`steady-state-meets-target-standing-peak-cost`: resident rows are below
+`107,797,708 B`, but the first startup still records the `127 MB` peak, so
+the peak cannot be reframed away as a pure benchmark artifact. No memory
+storage rewrite is retained.
+
+M45 remains native-engine scoped. It makes no browser, frontend, WASM,
+product-delivery, packaging, deployment, public-demo, broad TypeDuck-profile,
+AI, learned `.gram`/octagram, or plugin ABI claim. WEB-01 starts after this
+point and must label inherited native evidence as post-M45 baseline.
 
 ## M44 Closeout
 

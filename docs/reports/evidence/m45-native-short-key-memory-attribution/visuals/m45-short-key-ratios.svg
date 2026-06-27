@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="320" viewBox="0 0 760 320" role="img" aria-labelledby="title desc">
+  <title id="title">M45 short-key same-run ratio gates</title>
+  <desc id="desc">Yune to librime ratios for n, ni, and hao with a 3.0x target line.</desc>
+  <rect width="760" height="320" fill="#f8fafc"/>
+  <text x="32" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">M45 Short-Key Ratio Gates</text>
+  <text x="32" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#475569">Native Track A, same-run upstream librime 1.17.0. Target is at or below 3.0x.</text>
+  <line x1="475" y1="92" x2="475" y2="270" stroke="#0f766e" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="484" y="103" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#0f766e">3.0x target</text>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="14">
+    <text x="68" y="134" fill="#111827">n</text>
+    <rect x="180" y="112" width="298" height="30" rx="4" fill="#dc2626"/>
+    <text x="490" y="133" fill="#111827">3.313x miss</text>
+    <text x="180" y="158" fill="#475569">68.900 us vs 20.800 us</text>
+
+    <text x="68" y="204" fill="#111827">ni</text>
+    <rect x="180" y="182" width="311" height="30" rx="4" fill="#dc2626"/>
+    <text x="503" y="203" fill="#111827">3.458x miss</text>
+    <text x="180" y="228" fill="#475569">49.450 us vs 14.300 us</text>
+
+    <text x="68" y="274" fill="#111827">hao</text>
+    <rect x="180" y="252" width="190" height="30" rx="4" fill="#16a34a"/>
+    <text x="382" y="273" fill="#111827">2.110x pass</text>
+    <text x="180" y="298" fill="#475569">24.267 us vs 11.500 us</text>
+  </g>
+</svg>

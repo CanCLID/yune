@@ -767,6 +767,13 @@ fn schema_dictionary_artifact_requests(schema_config: &Value) -> Vec<DictionaryA
             continue;
         };
         let Some(dictionary_id) = validate_data_resource_id(raw_dictionary_id) else {
+            // A namespace with an empty `dictionary` (e.g. `table_translator@custom_phrase`,
+            // which reads `custom_phrase.txt` rather than a compiled dictionary) has no
+            // compiled artifact to build. Match librime by skipping it rather than emitting
+            // a build request that cannot succeed and aborts the whole deploy.
+            if raw_dictionary_id.is_empty() {
+                continue;
+            }
             requests.push(DictionaryArtifactRequest {
                 dictionary_id: raw_dictionary_id.to_owned(),
                 prism_id: raw_dictionary_id.to_owned(),
@@ -1470,4 +1477,44 @@ pub(crate) fn prebuild_all_schemas() -> bool {
         }
     }
     success
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_dictionary_namespace_yields_no_build_request() {
+        // `table_translator@custom_phrase` carries `dictionary: ''` and reads
+        // `custom_phrase.txt`, not a compiled dictionary (a standard librime
+        // pattern). It must not produce a dictionary build request; emitting one
+        // with an empty id previously aborted the whole deploy of any schema that
+        // used custom_phrase (e.g. luna_pinyin), forcing stale prebuilt assets.
+        let schema_config: Value = serde_yaml::from_str(
+            r"
+engine:
+  translators:
+    - table_translator
+    - table_translator@custom_phrase
+translator:
+  dictionary: luna_pinyin
+custom_phrase:
+  dictionary: ''
+",
+        )
+        .expect("schema config should parse");
+        let requests = schema_dictionary_artifact_requests(&schema_config);
+        assert!(
+            requests
+                .iter()
+                .all(|request| !request.dictionary_id.is_empty()),
+            "empty custom_phrase dictionary must not produce a build request: {requests:?}"
+        );
+        assert!(
+            requests
+                .iter()
+                .any(|request| request.dictionary_id == "luna_pinyin"),
+            "the real table_translator dictionary must still be requested: {requests:?}"
+        );
+    }
 }

@@ -2,10 +2,9 @@
 
 Date: 2026-06-27
 
-This report explains current M45 and M46 native-engine evidence. It does not
-claim browser, frontend, product-delivery, packaging, public-demo, deployment,
-WASM, or broad product speed wins; the browser/WASM figures below are recorded
-as measured gaps, not wins.
+This report explains current native-engine evidence and the separately measured
+browser/WASM launch-path evidence. Native Track A claims remain native-only;
+browser/public-demo claims are made only where real-browser evidence is linked.
 
 ## Current Verdict
 
@@ -48,6 +47,12 @@ This rerun uses `-DeployProductBeforeBenchmark` and records
 `source_fallback=false`. It confirms M46's root-cause read: Track B still peaks
 at `504,676,352 B`, steady rows stay in the `427-441 MB` band, and the largest
 named product owner remains `compact_table.lookup_records` at `31,920,140 B`.
+
+WEB-03 follow-up evidence resolves the public-demo Jyutping source-fallback
+owner that WEB-02 named. The launch compiled assets are current `Rime::Prism/4.0`
+payloads, native diagnostics byte-back all three public schemas, and the
+browser shipping/full Jyutping rows now peak and settle at `160.0 MiB`. The old
+`893.1 MiB` row remains only as a synthetic no-launch-assets control.
 
 ![M45 short-key same-run ratio gates](./evidence/m45-native-short-key-memory-attribution/visuals/m45-short-key-ratios.svg)
 
@@ -262,6 +267,44 @@ Evidence:
 
 ![WEB-02 public-demo Jyutping storage owner scale](./evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
 
+## WEB-03 Launch Asset Contract Closeout
+
+WEB-03 found the upstream cause behind the stale browser assets: Yune deploy
+treated `table_translator@custom_phrase` with `dictionary: ''` as a buildable
+dictionary, emitted an empty dictionary-id build request, and aborted clean
+rebuilds for schemas that imported that standard namespace. The engine fix
+skips empty dictionary namespaces, matching librime behavior. The asset slice
+then regenerated and shipped current launch assets for `jyut6ping3_mobile`
+including `jyut6ping3_scolar` and `luna_pinyin_yune_reverse`, `cangjie5`, and
+`luna_pinyin`.
+
+Native diagnostics now prove the intended storage path before browser launch:
+`source_fallback=false`, zero fallback rows, `selected_storage=byte_backed`, and
+positive `byte_source_len` for all three public schemas. Cangjie also has the
+minimum correctness smoke: `cangjie5` input `a` returns U+65E5 first.
+
+Fresh browser evidence after the regenerated assets records:
+
+| Browser row | Max WASM | Ready | Input-to-candidate | Commit | Read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| public-demo `full-jyutping` | `160.0 MiB` | `1306 ms` | `100 ms` | `110 ms` | Shipping full launch path byte-backs. |
+| public-demo `jyutping-core` | `160.0 MiB` | `1096 ms` | `80 ms` | `110 ms` | Core Jyutping byte-backs. |
+| public-demo schema-switch | `160.0 MiB` | n/a | n/a | n/a | Jyutping, Cangjie, Luna switch and type. |
+| public-demo `extras` | `893.1 MiB` | `5178 ms` | `72 ms` | `117 ms` | Negative control: launch assets withheld. |
+
+WEB-03 therefore changes the WEB-02 browser-root-cause verdict: the shipped
+launch path no longer owns a `529,602,374 B` source-fallback dictionary heap.
+It does not change the native Track B `504 MB` memory result, does not claim a
+native memory win, and does not solve the fair browser `luna_pinyin` memory gap
+against My RIME (`160.0 MiB` versus `16.0 MiB`).
+
+Evidence:
+[`./evidence/web03-three-schema-launch-readiness/`](./evidence/web03-three-schema-launch-readiness/).
+
+![WEB-03 browser WASM memory closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
+
+![WEB-03 browser timing closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
+
 ## Memory Synthesis: M43-M46
 
 Four milestones attacked memory and the headline never moved. That convergence
@@ -275,14 +318,12 @@ is itself the finding:
   There is no large reducible structure left to refactor, and M43 already proved
   that shrinking a named owner (`poet.entries_by_code`, `-19.5 MB`) does not
   move process peak.
-- The public-demo browser Jyutping headline is now **partly resident
-  source-fallback heap, not purely unclassified/transient.** WEB-02 proves the
-  shipped public-demo Jyutping `Rime::Prism/3.0` assets are rejected and the
-  live path falls back to `owned_heap`, retaining `529,602,374 B` of
-  `translator.entries_by_code` dictionaries. The remaining gap to the
-  `893.1 MiB` high-water is still allocator/transient territory, but the first
-  reduction target is no longer generic high-water profiling; it is the
-  public-demo/browser compiled-asset contract.
+- The public-demo browser Jyutping source-fallback owner is now fixed on the
+  shipping path. WEB-02 proved stale `Rime::Prism/3.0` assets retained
+  `529,602,374 B` of `translator.entries_by_code`; WEB-03 regenerated current
+  launch assets and remeasured the browser path at `160.0 MiB`. The old
+  `893.1 MiB` figure remains only for the negative-control attribution row that
+  intentionally withholds launch assets.
 - The cross-engine browser comparison is **not like-for-like**, so the size of
   any Yune inefficiency is unquantified. The librime-based My RIME browser build
   runs Jyutping in `68 MiB`, but on the Cantonese-only
@@ -302,11 +343,8 @@ is itself the finding:
   comparison, and the clean target for any memory work is the fair `luna_pinyin`
   gap.
 
-The next memory step, if pursued, is therefore two-stage. First fix the
-WEB-02-owned public-demo/browser compiled-asset fallback and remeasure
-Jyutping. If byte-backed Jyutping still leaves a large high-water after that,
-then do init-time allocation high-water profiling targeting the fair
-`luna_pinyin` gap and the remaining Jyutping allocator/transient excess.
-Another native structural-owner pass is not the move; M43-M46 proved that dry.
-This is recorded as future work; WEB-02 changes diagnostics and evidence only,
-not memory behavior.
+The next memory step, if pursued, should target the fair `luna_pinyin` browser
+gap and the remaining runtime high-water floor, not another Jyutping
+source-fallback repair. Another native structural-owner pass is not the move;
+M43-M46 proved that dry, and WEB-03 already removed the browser launch
+source-fallback owner.

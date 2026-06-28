@@ -160,7 +160,13 @@ const reverseLookupAssets = [
   "cangjie3.dict.yaml",
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
+  "cangjie5.table.bin",
+  "cangjie5.reverse.bin",
+  "cangjie5.prism.bin",
   "luna_pinyin_yune_reverse.dict.yaml",
+  "luna_pinyin_yune_reverse.table.bin",
+  "luna_pinyin_yune_reverse.reverse.bin",
+  "luna_pinyin_yune_reverse.prism.bin",
 ] as const;
 const openccAttributionAssets = [
   ...jyutpingCoreAssets,
@@ -179,6 +185,9 @@ const fullJyutpingAssets = [
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
+  "luna_pinyin_yune_reverse.table.bin",
+  "luna_pinyin_yune_reverse.reverse.bin",
+  "luna_pinyin_yune_reverse.prism.bin",
   ...openccAssets,
   "jyut6ping3.table.bin",
   "jyut6ping3.reverse.bin",

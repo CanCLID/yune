@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="330" viewBox="0 0 920 330" role="img" aria-labelledby="title desc">
+  <title id="title">WEB-03 browser timing closeout</title>
+  <desc id="desc">Public-demo launch rows show ready time around 1.1 to 1.4 seconds and first candidate/commit actions near 60 to 120 milliseconds.</desc>
+  <rect width="920" height="330" fill="#ffffff"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2937">WEB-03 Public-Demo Timing</text>
+  <text x="28" y="60" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4b5563">Rows are from the post-byte-backed-assets browser attribution run.</text>
+  <text x="255" y="88" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#374151">ready</text>
+  <text x="545" y="88" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#374151">input to candidate</text>
+  <text x="725" y="88" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#374151">commit</text>
+
+  <text x="28" y="126" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">Luna core</text>
+  <rect x="255" y="106" width="218" height="24" rx="4" fill="#2563eb"/>
+  <rect x="545" y="106" width="52" height="24" rx="4" fill="#60a5fa"/>
+  <rect x="725" y="106" width="80" height="24" rx="4" fill="#93c5fd"/>
+  <text x="484" y="125" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">989 ms</text>
+  <text x="607" y="125" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">79 ms</text>
+  <text x="815" y="125" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">122 ms</text>
+
+  <text x="28" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">Jyutping core</text>
+  <rect x="255" y="156" width="241" height="24" rx="4" fill="#047857"/>
+  <rect x="545" y="156" width="53" height="24" rx="4" fill="#34d399"/>
+  <rect x="725" y="156" width="72" height="24" rx="4" fill="#6ee7b7"/>
+  <text x="507" y="175" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">1096 ms</text>
+  <text x="608" y="175" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">80 ms</text>
+  <text x="807" y="175" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">110 ms</text>
+
+  <text x="28" y="226" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">Full Jyutping</text>
+  <rect x="255" y="206" width="287" height="24" rx="4" fill="#065f46"/>
+  <rect x="545" y="206" width="66" height="24" rx="4" fill="#10b981"/>
+  <rect x="725" y="206" width="72" height="24" rx="4" fill="#6ee7b7"/>
+  <text x="553" y="225" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">1306 ms</text>
+  <text x="621" y="225" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">100 ms</text>
+  <text x="807" y="225" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#111827">110 ms</text>
+
+  <text x="28" y="282" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#4b5563">Full Jyutping loaded 65.5 MiB of shared assets and 72.2 MiB of unique encoded resources; WASM peak and steady were 160.0 MiB.</text>
+</svg>

@@ -892,11 +892,12 @@ remaining Jyutping WASM high-water as outside the WEB-01 harness-only scope.
 
 ## WEB-03 Three-Schema Launch Readiness Requirements
 
-**Status: partial native/asset closeout.** WEB-03 is tracked in
-[`plans/active/web03-plan-three-schema-launch-readiness.md`](./plans/active/web03-plan-three-schema-launch-readiness.md).
-The engine fix landed separately in `3ffd4b21`. The remaining browser
-remeasure is blocked on a local Emscripten toolchain; until it runs, WEB-03
-does not claim that the WEB-02 `893.1 MiB` browser high-water is fixed.
+**Status: complete.** WEB-03 is tracked in
+[`plans/completed/web03-plan-three-schema-launch-readiness.md`](./plans/completed/web03-plan-three-schema-launch-readiness.md).
+The engine fix landed separately in `3ffd4b21`; regenerated launch assets landed
+in `ef37bfe9`. The final browser remeasure shows the shipping Jyutping launch
+path at `160.0 MiB` ready/peak/steady WASM. The old `893.1 MiB` value remains
+only for the synthetic no-launch-assets `extras` negative-control row.
 
 - [x] **WEB03-01**: Clean launch-schema regeneration emits current compiled
   assets for `jyut6ping3_mobile`, imported `jyut6ping3_scolar`,
@@ -915,35 +916,36 @@ does not claim that the WEB-02 `893.1 MiB` browser high-water is fixed.
   `luna_pinyin`.
 - [x] **WEB03-05**: Cangjie minimum correctness is covered by a deterministic
   shape-code smoke: `cangjie5` input `a` returns U+65E5 first.
-- [ ] **WEB03-06**: A toolchain-equipped run builds fresh Emscripten WASM,
+- [x] **WEB03-06**: A toolchain-equipped run builds fresh Emscripten WASM,
   rebuilds the public demo, and remeasures browser memory/startup/typing for
-  the three schemas. The browser high-water and final reports remain pending
-  until this evidence exists.
-- [ ] **WEB03-07**: Final browser reports, WEB-02 evidence README, public
-  READMEs, visuals, and plan closeout are refreshed only after WEB03-06
-  produces the new browser numbers.
+  the three schemas. Public-demo `full-jyutping` records ready `1306 ms`,
+  input-to-candidate `100 ms`, commit `110 ms`, and `160.0 MiB` peak/steady
+  WASM.
+- [x] **WEB03-07**: Final browser reports, WEB-02 evidence README, public
+  READMEs, visuals, and plan closeout are refreshed after WEB03-06 produces the
+  new browser numbers.
 
 ## M46 Jyutping Native And WASM Memory Attribution Requirements
 
-**Status: active.** M46 is tracked in
-[`plans/active/m46-plan-jyutping-native-wasm-memory-attribution.md`](./plans/active/m46-plan-jyutping-native-wasm-memory-attribution.md).
+**Status: complete with measured no-go.** M46 is tracked in
+[`plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md`](./plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md).
 It follows M45 and WEB-01 by attributing the remaining TypeDuck/Jyutping memory
 owners across native Track B and browser WASM before choosing any optimization
-branch. It is the WEB-01 handoff, not a new WEB-01-style harness-payload or
-`INITIAL_MEMORY` calibration plan.
+branch. It closed with schema-switch correctness fixed and memory recorded as
+`measured-no-go-owner-unclassified`.
 
-- [ ] **M46-MEM-01**: Phase 0 records fresh provenance and serialized
+- [x] **M46-MEM-01**: Phase 0 records fresh provenance and serialized
   benchmark context for native Track B and browser WASM runs, including commit,
   worktree status, host, browser, Rust, Node/npm, M45/WEB-01 evidence inputs,
   and proof that native and browser memory benchmarks were not run
   concurrently.
-- [ ] **M46-MEM-02**: Phase 0 captures a fresh native Track B baseline for
+- [x] **M46-MEM-02**: Phase 0 captures a fresh native Track B baseline for
   `h`, `ha`, `hai`, `hau`, `nei`, `ngo`, and the 50+ guard row, with
   startup/session/status/storage evidence under
   `docs/reports/evidence/m46-jyutping-native-wasm-memory-attribution/`.
-- [ ] **M46-MEM-03**: Every new native metric field needed by M46 attribution
+- [x] **M46-MEM-03**: Every new native metric field needed by M46 attribution
   is added to `M37_METRIC_FIELDS` before CSV output is trusted.
-- [ ] **M46-MEM-04**: Native owner attribution separates compact code strings,
+- [x] **M46-MEM-04**: Native owner attribution separates compact code strings,
   code-id maps, candidate text/comment payloads, lookup records, reverse
   indexes, base-vs-scolar duplicated structures, table/prism/reverse/OpenCC
   payloads, schema/config bytes, source/deploy transient bytes, allocator
@@ -951,12 +953,12 @@ branch. It is the WEB-01 handoff, not a new WEB-01-style harness-payload or
   `byte_source_len` values such as `15,248,382` for `jyut6ping3` and
   `27,325,622` for `jyut6ping3_scolar` must be labelled as status/source
   lengths unless `memory-owner-profile.csv` confirms them as retained owners.
-- [ ] **M46-MEM-05**: Native owner rows classify bytes as
+- [x] **M46-MEM-05**: Native owner rows classify bytes as
   `heap_owned_reducible`, `heap_owned_required`, `heap_owned_guarded`,
   `mmap_file_backed`, `shared_or_overlapping`, `transient`, or `unclassified`.
   No owner can be counted as a win target unless it is non-overlapping and
   reconciled against measured RSS/private/working-set movement.
-- [ ] **M46-MEM-06**: Browser/WASM attribution measures single-schema Luna,
+- [x] **M46-MEM-06**: Browser/WASM attribution measures single-schema Luna,
   single-schema Jyutping, Jyutping core-only assets, full Jyutping assets,
   and schema-switch sequences under
   `apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/`. Phase 0
@@ -964,14 +966,14 @@ branch. It is the WEB-01 handoff, not a new WEB-01-style harness-payload or
   `893.1 MiB` while native Track B is about `504 MB` peak /
   `427-441 MB` steady, naming WASM-specific owners and whether native owner
   reductions are expected to transfer.
-- [ ] **M46-MEM-07**: The Cangjie -> Luna -> Jyutping no-Jyutping-candidates
+- [x] **M46-MEM-07**: The Cangjie -> Luna -> Jyutping no-Jyutping-candidates
   row is reproduced or classified in `schema-switch-correctness.md`
   independently from the memory verdict. The file must cover current runtime,
   pre-WEB-01 executable baseline where practical, a clean single-schema
   Jyutping page, product-flow impact versus test-path-only impact, owning
   layer, and severity. Product-affecting schema-switch correctness regressions
   must be fixed or explicitly owned before M46 closeout.
-- [ ] **M46-MEM-08**: Phase 0 writes `phase-0-verdict.md` selecting exactly
+- [x] **M46-MEM-08**: Phase 0 writes `phase-0-verdict.md` selecting exactly
   one memory-action family before optimization and linking both
   `schema-switch-correctness.md` and `native-vs-wasm-gap.md`:
   `schema-switch-regression-fix-first`, `candidate-payload-owner-authorized`,
@@ -979,30 +981,30 @@ branch. It is the WEB-01 handoff, not a new WEB-01-style harness-payload or
   `scolar-defer-or-lazy-load-authorized`, `reverse-index-owner-authorized`,
   `transient-deploy-peak-owner-authorized`, or
   `measured-no-go-owner-unclassified`.
-- [ ] **M46-MEM-09**: Any fresh Track B `rsmarisa` spike reconciles the M36
+- [x] **M46-MEM-09**: Any fresh Track B `rsmarisa` spike reconciles the M36
   no-go first by reading D-33, the completed M36 plan, and
   `docs/reports/evidence/m36-product-path/`. It must generate fresh compatible
   table/reverse/prism artifacts, keep TypeDuck v1.1.2 behavior intact, report
   `rsmarisa_status=ok` only for the selected deployed path, and stop as no-go
   if measured native/WASM headline memory does not move.
-- [ ] **M46-MEM-10**: Any candidate payload, comment, lookup-record, scolar,
+- [x] **M46-MEM-10**: Any candidate payload, comment, lookup-record, scolar,
   reverse-index, or transient-deploy optimization preserves TypeDuck v1.1.2
   rich comments, lookup records, correction/tolerance, partial selection,
   default-confirm recomposition, long composition, schema switching, reverse
   lookup, browser dictionary panels, and userdb behavior.
   `cargo test -p yune-core --test cantonese_parity` is a hard gate for any
   storage, payload, candidate, lookup, correction, or TypeDuck profile change.
-- [ ] **M46-MEM-11**: Track B storage remains source-fallback-free in final
+- [x] **M46-MEM-11**: Track B storage remains source-fallback-free in final
   evidence. Selected deployed profile storage must report
   `source_fallback=false`; selected table/prism heap mirrors remain `0`;
   table/prism/reverse bytes are mmap or byte-backed as designed; and any
   rsmarisa counters/status are positive only when actually selected.
-- [ ] **M46-MEM-12**: Track B short rows `h`, `ha`, `hai`, `hau`, `nei`, and
+- [x] **M46-MEM-12**: Track B short rows `h`, `ha`, `hai`, `hau`, `nei`, and
   `ngo` remain at least as good as the M45 post-M44 baseline, and the 50+
   guard remains stable. Track A startup, session, `hao`, `n`, `ni`,
   `zhongguo`, M40 long rows, M42/M44 abbreviation rows, bounded first-page
   output, and `RimeGetContext` do not regress.
-- [ ] **M46-MEM-13**: M46 claims success only when the selected owner produces
+- [x] **M46-MEM-13**: M46 claims success only when the selected owner produces
   measured native RSS/private/working-set movement and browser WASM
   ready/peak/steady movement. Structural owner movement alone closes only as a
   partial result, and unresolved owner attribution closes as measured no-go.
@@ -1012,7 +1014,7 @@ branch. It is the WEB-01 handoff, not a new WEB-01-style harness-payload or
   claiming memory success. A native-only movement that `native-vs-wasm-gap.md`
   shows cannot transfer to browser WASM is a native partial result, not a
   browser memory success.
-- [ ] **M46-MEM-14**: Closeout updates
+- [x] **M46-MEM-14**: Closeout updates
   `docs/reports/yune-vs-librime-root-cause-analysis.md`,
   `docs/reports/yune-vs-librime-performance.md`,
   `docs/reports/yune-web-vs-my-rime-browser-baseline.md`, visuals, roadmap,

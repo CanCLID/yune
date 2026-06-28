@@ -49,8 +49,14 @@ cargo test -p yune-rime-api --test yune_web web02_public_demo_storage_diagnostic
 
 ## Follow-Up Branch
 
-Do not run another payload-family or `INITIAL_MEMORY` branch from this evidence.
-The next reduction branch should fix the browser/public-demo compiled-asset
-contract so Jyutping selects byte-backed/current-format storage, then rerun the
-browser high-water measurement. If the fixed path remains high, only then move
-to allocator high-water or streamed-deploy work.
+WEB-03 executed that follow-up. After the deploy fix in `3ffd4b21` and the
+regenerated public-demo assets in `ef37bfe9`, the shipping Jyutping browser path
+selects byte-backed/current-format storage and fresh Playwright evidence records
+`160.0 MiB` ready/peak/steady WASM for the public-demo `full-jyutping` row and
+the three-schema switch checks.
+
+This WEB-02 bundle remains the historical source-fallback owner classification.
+The old `893.1 MiB` value is now retained only by the WEB-03 synthetic `extras`
+negative-control row that intentionally withholds launch compiled assets, not by
+the shipped launch path. WEB-03 evidence:
+[`../web03-three-schema-launch-readiness/`](../web03-three-schema-launch-readiness/).

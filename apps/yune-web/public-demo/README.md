@@ -21,6 +21,19 @@ public-demo flag, runs the Vite public build, copies only the pinned public
 schema assets listed in `schema-asset-manifest.json`, validates every SHA-256,
 and writes `apps/yune-web/public-demo/dist/`.
 
+## Launch Assets
+
+The public demo launch schema set is `jyut6ping3_mobile`, `cangjie5`, and
+`luna_pinyin`. WEB-03 made the compiled-asset contract explicit: the public
+schema manifest and worker asset lists include current `.table.bin`,
+`.reverse.bin`, and `.prism.bin` payloads for the launch schemas and Jyutping
+helper dictionaries, with launch prisms at `Rime::Prism/4.0`.
+
+Current WEB-03 browser evidence shows the shipped Jyutping launch/full path
+byte-backs and peaks at `160.0 MiB`; the old `893.1 MiB` row is retained only as
+a synthetic no-launch-assets negative control. Evidence:
+[`../../../docs/reports/evidence/web03-three-schema-launch-readiness/`](../../../docs/reports/evidence/web03-three-schema-launch-readiness/).
+
 Deploy with Wrangler Pages after the local preview and M31 evidence gates pass:
 
 ```powershell

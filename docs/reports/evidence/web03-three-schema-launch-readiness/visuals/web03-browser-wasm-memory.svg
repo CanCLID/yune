@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="360" viewBox="0 0 920 360" role="img" aria-labelledby="title desc">
+  <title id="title">WEB-03 browser WASM memory closeout</title>
+  <desc id="desc">Browser high-water drops from 893.1 MiB on the WEB-02 source-fallback path to 160.0 MiB on WEB-03 shipping Jyutping launch rows.</desc>
+  <rect width="920" height="360" fill="#ffffff"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2937">WEB-03 Browser WASM Memory</text>
+  <text x="28" y="60" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4b5563">Shipping Jyutping launch rows now byte-back at 160.0 MiB; extras remains a no-assets negative control.</text>
+  <line x1="260" y1="302" x2="790" y2="302" stroke="#d1d5db" stroke-width="1"/>
+  <text x="260" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6b7280">0</text>
+  <text x="545" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6b7280">~500 MiB</text>
+  <text x="760" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6b7280">893 MiB</text>
+
+  <text x="28" y="112" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">WEB-02 Jyutping source fallback</text>
+  <rect x="260" y="92" width="520" height="30" rx="4" fill="#b91c1c"/>
+  <text x="790" y="112" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">893.1 MiB</text>
+
+  <text x="28" y="162" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">WEB-03 public-demo full Jyutping</text>
+  <rect x="260" y="142" width="93" height="30" rx="4" fill="#047857"/>
+  <text x="365" y="162" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">160.0 MiB</text>
+
+  <text x="28" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">WEB-03 three-schema switch max</text>
+  <rect x="260" y="192" width="93" height="30" rx="4" fill="#059669"/>
+  <text x="365" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">160.0 MiB</text>
+
+  <text x="28" y="262" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">WEB-03 public-demo Luna</text>
+  <rect x="260" y="242" width="37" height="30" rx="4" fill="#2563eb"/>
+  <text x="309" y="262" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">64.0 MiB</text>
+
+  <text x="28" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#111827">WEB-03 extras negative control</text>
+  <rect x="260" y="272" width="520" height="30" rx="4" fill="#9ca3af"/>
+  <text x="790" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">893.1 MiB</text>
+</svg>

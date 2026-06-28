@@ -2,9 +2,9 @@
 
 Date: 2026-06-27
 
-This report is native-engine evidence only. It does not claim browser,
-frontend, product-delivery, packaging, public-demo, WASM, or TypeDuck-profile
-speed wins.
+This report separates native-engine comparison evidence from browser-harness
+evidence. Native Track A claims remain native-engine only; browser/WASM claims
+are made only where real-browser evidence is linked below.
 
 Browser startup remains tracked separately. M41 closed the `apps/yune-web`
 startup-harness milestone with production-browser evidence under
@@ -12,7 +12,9 @@ startup-harness milestone with production-browser evidence under
 WEB-01 closed as a measured browser-harness no-go. M46 closed the
 TypeDuck/Jyutping native Track B and browser WASM memory handoff as a useful
 partial result: schema-switch correctness is fixed, but memory remains a
-measured no-go/unclassified blocker.
+measured no-go/unclassified blocker. WEB-03 then fixed the compiled-asset
+contract for the launch Jyutping path and remeasured the browser path; the
+shipping/full Jyutping rows now peak and settle at `160.0 MiB`.
 
 ## Comparison Lanes
 
@@ -132,6 +134,29 @@ target as the web/public-demo compiled-asset contract. Evidence:
 [`./evidence/web02-jyutping-wasm-memory-attribution/`](./evidence/web02-jyutping-wasm-memory-attribution/).
 
 ![WEB-02 public-demo Jyutping storage owner scale](./evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
+
+WEB-03 closes the launch compiled-asset contract follow-up. After the engine
+deploy fix in `3ffd4b21` and the regenerated public-demo assets in `ef37bfe9`,
+fresh Emscripten/Playwright evidence shows the shipping Jyutping launch rows no
+longer select source fallback. The public-demo `full-jyutping` row records
+ready `1306 ms`, input-to-candidate `100 ms`, commit `110 ms`, and ready/peak/
+steady WASM memory all at `160.0 MiB`. The schema-switch run covers
+`jyut6ping3_mobile`, `cangjie5`, and `luna_pinyin`, returning the expected
+smoke candidates with zero worker action errors and a max observed WASM value
+of `160.0 MiB`.
+
+This is a browser-harness/public-demo compiled-asset fix, not a native-engine
+memory win and not a broad product speed claim. The synthetic `extras` row in
+the attribution benchmark still reaches `893.1 MiB` because it intentionally
+withholds the launch compiled assets; it is retained as a negative control, not
+the shipped path. The fair browser comparison lane also remains unchanged:
+`luna_pinyin` is still `160.0 MiB` for Yune versus My RIME's `16.0 MiB`.
+Evidence:
+[`./evidence/web03-three-schema-launch-readiness/`](./evidence/web03-three-schema-launch-readiness/).
+
+![WEB-03 browser WASM memory closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
+
+![WEB-03 browser timing closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
 
 ## M45 Visual Dashboard
 

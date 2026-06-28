@@ -60,6 +60,19 @@ pub trait CompactMarisaStringTable: fmt::Debug + Send + Sync {
     fn mapping_mode(&self) -> &'static str;
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RimeTableBinAdvancedDataOptions {
+    pub load_lookup_records: bool,
+}
+
+impl Default for RimeTableBinAdvancedDataOptions {
+    fn default() -> Self {
+        Self {
+            load_lookup_records: true,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) struct OwnedCompactTableBytes {
     bytes: Arc<[u8]>,
@@ -1579,11 +1592,22 @@ impl TableLookup for CompactTableStore {
 pub fn parse_rime_table_bin_advanced_data(
     bytes: impl AsRef<[u8]>,
 ) -> Result<TableDictionaryAdvancedData, RimeTableBinParseError> {
+    parse_rime_table_bin_advanced_data_with_options(
+        bytes,
+        RimeTableBinAdvancedDataOptions::default(),
+    )
+}
+
+pub fn parse_rime_table_bin_advanced_data_with_options(
+    bytes: impl AsRef<[u8]>,
+    options: RimeTableBinAdvancedDataOptions,
+) -> Result<TableDictionaryAdvancedData, RimeTableBinParseError> {
     let bytes = bytes.as_ref();
     ensure_len(bytes, 68)?;
     let index_offset =
         read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
-    let advanced = read_yune_table_advanced_payload(bytes, total_index_end(bytes, index_offset)?)?;
+    let advanced =
+        read_yune_table_advanced_payload(bytes, total_index_end(bytes, index_offset)?, options)?;
     if !advanced.entries.is_empty() {
         return Err(RimeTableBinParseError::UnsupportedSection {
             role: "byte-backed advanced table entries".to_owned(),
@@ -2146,7 +2170,11 @@ pub fn parse_rime_table_bin_dictionary(
 
     let syllables = read_syllabary(bytes, syllabary_offset)?;
     let mut entries = read_head_index_entries(bytes, index_offset, &syllables)?;
-    let advanced = read_yune_table_advanced_payload(bytes, total_index_end(bytes, index_offset)?)?;
+    let advanced = read_yune_table_advanced_payload(
+        bytes,
+        total_index_end(bytes, index_offset)?,
+        RimeTableBinAdvancedDataOptions::default(),
+    )?;
     entries.extend(advanced.entries);
     Ok(TableDictionary::with_advanced_data(entries, advanced.data))
 }
@@ -2243,6 +2271,7 @@ fn total_index_end(bytes: &[u8], offset: usize) -> Result<usize, RimeTableBinPar
 fn read_yune_table_advanced_payload(
     bytes: &[u8],
     offset: usize,
+    options: RimeTableBinAdvancedDataOptions,
 ) -> Result<AdvancedTablePayload, RimeTableBinParseError> {
     let marker = b"YUNE-TABLE-ADV\0";
     let Some(marker_offset) = bytes
@@ -2324,7 +2353,12 @@ fn read_yune_table_advanced_payload(
     };
     cursor = next_cursor;
     let lookup_records = if cursor < bytes.len() {
-        read_lookup_record_payload(bytes, cursor)?
+        if options.load_lookup_records {
+            read_lookup_record_payload(bytes, cursor)?
+        } else {
+            skip_lookup_record_payload(bytes, cursor)?;
+            HashMap::new()
+        }
     } else {
         HashMap::new()
     };
@@ -2466,6 +2500,66 @@ fn read_lookup_record_payload(
     Ok(lookup_records)
 }
 
+fn skip_lookup_record_payload(
+    bytes: &[u8],
+    mut cursor: usize,
+) -> Result<(), RimeTableBinParseError> {
+    if !bytes[cursor..].starts_with(b"YUNE-LOOKUP\0") {
+        return Err(RimeTableBinParseError::UnsupportedSection {
+            role: "lookup record payload".to_owned(),
+        });
+    }
+    cursor = cursor
+        .checked_add(b"YUNE-LOOKUP\0".len())
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let text_count = read_count(bytes, cursor)?;
+    if text_count > MAX_LOOKUP_TEXT_COUNT {
+        return Err(RimeTableBinParseError::InvalidCount);
+    }
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+
+    let mut record_total = 0usize;
+    for _ in 0..text_count {
+        cursor = skip_len_string(bytes, cursor)?;
+        let record_count = read_count(bytes, cursor)?;
+        if record_count > MAX_LOOKUP_RECORD_COUNT {
+            return Err(RimeTableBinParseError::InvalidCount);
+        }
+        record_total = record_total
+            .checked_add(record_count)
+            .ok_or(RimeTableBinParseError::InvalidCount)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+
+        for _ in 0..record_count {
+            cursor = skip_len_string(bytes, cursor)?;
+            let field_count = read_count(bytes, cursor)?;
+            if field_count > MAX_LOOKUP_FIELD_COUNT {
+                return Err(RimeTableBinParseError::InvalidCount);
+            }
+            cursor = cursor
+                .checked_add(4)
+                .ok_or(RimeTableBinParseError::OutOfBounds)?;
+
+            for _ in 0..field_count {
+                cursor = skip_len_string(bytes, cursor)?;
+            }
+        }
+    }
+    if cursor != bytes.len() {
+        return Err(RimeTableBinParseError::UnsupportedSection {
+            role: "trailing table payload".to_owned(),
+        });
+    }
+    crate::memory_probe_mark(format!(
+        "m47:compact_table:after_lookup_record_payload_skip:lookup_texts={text_count}:lookup_records={record_total}"
+    ));
+    Ok(())
+}
+
 fn read_entry_list(
     bytes: &[u8],
     offset: usize,
@@ -2532,6 +2626,21 @@ fn read_len_string(bytes: &[u8], offset: usize) -> Result<(String, usize), RimeT
         .map(str::to_owned)
         .map_err(|_| RimeTableBinParseError::InvalidUtf8)?;
     Ok((value, end))
+}
+
+fn skip_len_string(bytes: &[u8], offset: usize) -> Result<usize, RimeTableBinParseError> {
+    let len = read_count(bytes, offset)?;
+    let start = offset
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let end = start
+        .checked_add(len)
+        .ok_or(RimeTableBinParseError::InvalidLength)?;
+    if end > bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+    std::str::from_utf8(&bytes[start..end]).map_err(|_| RimeTableBinParseError::InvalidUtf8)?;
+    Ok(end)
 }
 
 fn read_offset_ptr(

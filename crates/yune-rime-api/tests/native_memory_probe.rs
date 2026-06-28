@@ -273,6 +273,8 @@ fn native_memory_probe_reports_working_set() {
 
     let disable_dictionary_lookup_records =
         std::env::var("YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS").is_ok();
+    let disable_compact_lookup_records =
+        std::env::var("YUNE_MEM_DISABLE_COMPACT_LOOKUP_RECORDS").is_ok();
 
     if std::env::var("YUNE_MEM_NOSENTENCE").is_ok() {
         for name in ["jyut6ping3.schema.yaml", "jyut6ping3_mobile.schema.yaml"] {
@@ -327,6 +329,20 @@ fn native_memory_probe_reports_working_set() {
         assert!(
             patched > 0,
             "YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS requested but no target deployed schema was present"
+        );
+    }
+    if disable_compact_lookup_records {
+        let mut patched = 0usize;
+        for name in ["jyut6ping3.schema.yaml", "jyut6ping3_mobile.schema.yaml"] {
+            let path = user.join("build").join(name);
+            if path.exists() {
+                patch_schema_disable_compact_lookup_records(&path);
+                patched += 1;
+            }
+        }
+        assert!(
+            patched > 0,
+            "YUNE_MEM_DISABLE_COMPACT_LOOKUP_RECORDS requested but no target deployed schema was present"
         );
     }
     phases.push(capture_phase(
@@ -421,6 +437,36 @@ fn patch_schema_disable_dictionary_lookup_records(path: &Path) {
     );
     let patched = text.replace(marker, "dictionary_lookup_filter:\n  dictionary: jyut6ping3_scolar\n  load_lookup_records: false\n");
     fs::write(path, patched).expect("patch dictionary lookup filter config");
+}
+
+fn patch_schema_disable_compact_lookup_records(path: &Path) {
+    let text = fs::read_to_string(path).unwrap_or_else(|error| {
+        panic!(
+            "YUNE_MEM_DISABLE_COMPACT_LOOKUP_RECORDS requested but deployed schema {} could not be read: {error}",
+            path.display()
+        )
+    });
+    let mut patched = patch_namespace_disable_compact_lookup_records(&text, "translator");
+    patched = patch_namespace_disable_compact_lookup_records(&patched, "luna_pinyin");
+    fs::write(path, patched).expect("patch compact lookup record config");
+}
+
+fn patch_namespace_disable_compact_lookup_records(text: &str, namespace: &str) -> String {
+    let marker = format!("{namespace}:\n");
+    assert!(
+        text.contains(&marker),
+        "YUNE_MEM_DISABLE_COMPACT_LOOKUP_RECORDS requested but deployed schema does not contain the {namespace} block"
+    );
+    let block_start = text.find(&marker).expect("namespace marker should exist") + marker.len();
+    let block_end = text[block_start..]
+        .find("\n\n")
+        .map(|offset| block_start + offset)
+        .unwrap_or(text.len());
+    if text[block_start..block_end].contains("load_lookup_records:") {
+        return text.to_owned();
+    }
+    let insertion = format!("{marker}  load_lookup_records: false\n");
+    text.replacen(&marker, &insertion, 1)
 }
 
 fn evidence_path(raw_path: &str) -> PathBuf {

@@ -1,0 +1,11 @@
+metric,before,current,delta,unit,notes
+after_create_session_working_set,137.3,68.9,-68.4,MB,Windows WorkingSet64 proxy
+after_create_session_private_bytes,102.7,30.1,-72.6,MB,PROCESS_MEMORY_COUNTERS_EX.PrivateUsage
+after_create_session_allocator_live,66.5,20.3,-46.2,MB,test-local global allocator live bytes
+peak_working_set,172.1,80.8,-91.3,MB,Windows peak working set for this process
+steady_working_set,137.8,69.4,-68.4,MB,steady_after_esc phase
+steady_private_bytes,102.8,30.2,-72.6,MB,steady_after_esc phase
+steady_allocator_live,66.6,20.4,-46.2,MB,steady_after_esc phase
+final_named_owner_bytes,94560260,48871058,-45689202,bytes,sum of owner-attribution rows
+final_heap_owned_named_owner_bytes,50545914,4856712,-45689202,bytes,heap-owned owner rows only
+final_clean_mmap_file_backed_estimate_bytes,40740505,40740505,0,bytes,mmap/file-backed owner rows

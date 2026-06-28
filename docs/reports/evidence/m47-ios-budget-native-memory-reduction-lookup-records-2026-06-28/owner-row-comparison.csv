@@ -1,0 +1,8 @@
+owner_scope,before_class,before_estimated_bytes,before_item_count,current_class,current_estimated_bytes,current_item_count,delta_bytes,verdict
+compact_table.lookup_records primary jyut6ping3_mobile,heap_owned_required,31920140,127144,heap_owned_required,48,0,-31920092,skipped compact table lookup-record retention for keyboard-profile run
+compact_table.lookup_records secondary luna_pinyin_yune_reverse,heap_owned_required,13769158,70807,heap_owned_required,48,0,-13769110,skipped reverse/UI compact lookup-record retention for keyboard-profile run
+compact_table.lookup_records total,heap_owned_required,45689298,197951,heap_owned_required,96,0,-45689202,removed RED-03 measured heap owner while preserving default eager behavior
+compact_table.syllabary_codes total,heap_owned_reducible,4850892,132724,heap_owned_reducible,4850892,132724,0,remaining top heap owner after RED-03
+compact_table.storage total,mmap_file_backed,19888937,438999,mmap_file_backed,19888937,438999,0,raw table bytes stay mapped/file-backed
+prism.spelling_map total,mmap_file_backed,11955056,133932,mmap_file_backed,11955056,133932,0,unchanged RED-02 byte-backed prism payload
+prism.double_array_units total,mmap_file_backed,8896512,2224128,mmap_file_backed,8896512,2224128,0,unchanged RED-02 byte-backed prism payload

@@ -12,13 +12,13 @@ use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
     memory_probe_mark, parse_rime_prism_runtime_payload, parse_rime_reverse_bin_dictionary,
-    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary,
+    parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
     CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
     EchoTranslator, HistoryTranslator, ReverseLookupFilter, ReverseLookupTranslator,
-    RimePrismRuntimePayload, SchemaListTranslator, SimplifierFilter, SingleCharFilter,
-    StaticTableTranslator, SwitchTranslator, TableDictionary, TaggedFilter, Translator,
-    UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
+    RimePrismRuntimePayload, RimeTableBinAdvancedDataOptions, SchemaListTranslator,
+    SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary,
+    TaggedFilter, Translator, UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -1148,6 +1148,7 @@ fn install_schema_dictionary_lookup_filter_from_config(
             dictionary_name.clone(),
             false,
             false,
+            RimeTableBinAdvancedDataOptions::default(),
         ) {
             DictionaryLoadOutcome::Compiled(compiled) => {
                 let Some(dictionary) = compiled.dictionary else {
@@ -1486,6 +1487,7 @@ fn load_schema_table_dictionary_with_compact_preference(
         raw_dictionary_name,
         true,
         prefer_compact,
+        compact_table_advanced_data_options(schema_config, name_space),
     )
 }
 
@@ -1503,7 +1505,22 @@ fn load_schema_reverse_dictionary(
         reverse_name,
         false,
         false,
+        RimeTableBinAdvancedDataOptions::default(),
     ))
+}
+
+fn compact_table_advanced_data_options(
+    schema_config: &Value,
+    name_space: &str,
+) -> RimeTableBinAdvancedDataOptions {
+    RimeTableBinAdvancedDataOptions {
+        load_lookup_records: find_config_value(
+            schema_config,
+            &format!("{name_space}/load_lookup_records"),
+        )
+        .and_then(config_scalar_bool)
+        .unwrap_or(true),
+    }
 }
 
 fn load_schema_dictionary_by_name(
@@ -1512,6 +1529,7 @@ fn load_schema_dictionary_by_name(
     raw_dictionary_name: String,
     require_prism: bool,
     prefer_compact: bool,
+    advanced_data_options: RimeTableBinAdvancedDataOptions,
 ) -> DictionaryLoadOutcome {
     let Some(dictionary_name) = validate_data_resource_id(&raw_dictionary_name) else {
         return DictionaryLoadOutcome::NoUsablePath {
@@ -1531,6 +1549,7 @@ fn load_schema_dictionary_by_name(
         source_yaml.as_ref(),
         require_prism,
         prefer_compact,
+        advanced_data_options,
     );
     match compiled {
         Ok(compiled) => DictionaryLoadOutcome::Compiled(Box::new(compiled)),
@@ -1572,6 +1591,7 @@ fn load_schema_compiled_dictionary(
     source_yaml: Option<&String>,
     require_prism: bool,
     prefer_compact: bool,
+    advanced_data_options: RimeTableBinAdvancedDataOptions,
 ) -> Result<CompiledDictionary, CompiledRejectReason> {
     let table_name = validate_data_resource_id(&format!("{dictionary_name}.table.bin"))
         .ok_or_else(|| CompiledRejectReason::Invalid("invalid table resource id".to_owned()))?;
@@ -1706,7 +1726,10 @@ fn load_schema_compiled_dictionary(
         }
         let mut table_advanced = {
             let _trace = startup_trace::span("compiled_table_dictionary_parse");
-            parse_rime_table_bin_advanced_data(table_source.bytes())
+            parse_rime_table_bin_advanced_data_with_options(
+                table_source.bytes(),
+                advanced_data_options,
+            )
         }
         .map_err(|error| match error {
             yune_core::RimeTableBinParseError::UnsupportedSection { role } => {

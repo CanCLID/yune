@@ -24,12 +24,12 @@ three different numbers; only one is the iOS proxy:
 | Source | jyut6ping3_mobile | What it is |
 | --- | ---: | --- |
 | Initial lean native probe | **~298 MB steady / 482 MB peak** | Original M47 baseline: real `RimeApi`, mmap path, prebuilt assets, one schema per fresh Rust process |
-| Current lean native probe after RED-02 | **138.1 MB steady / 172.1 MB peak** | Current Windows proxy after RED-01 lookup-record opt-out and RED-02 prism byte-backed runtime storage |
+| Current lean native probe after RED-03 | **69.4 MB steady / 80.8 MB peak** | Current Windows proxy after RED-01 side lookup opt-out, RED-02 prism byte-backed runtime storage, and RED-03 compact lookup-record opt-out |
 | .NET in-process benchmark (Track B) | ~436 MB after-ready / 504 MB peak | A .NET process hosting **both** Yune *and* librime DLLs — polluted upper bound, **not** the iOS number |
 | Browser WASM | 160 MiB | WASM linear memory, **no mmap**, owned tables — a different deployment |
 
 The earlier "Jyutping native ~504 MB" headline was the dual-DLL harness; the
-iOS-relevant steady was initially **~298 MB** and is now **138.1 MB** after RED-02.
+iOS-relevant steady was initially **~298 MB** and is now **69.4 MB** after RED-03.
 
 ## Methodology
 
@@ -275,30 +275,64 @@ keyboard profile is still roughly **2.9x** over the 48 MB steady target and
 **2.7x** over the 64 MB peak target on the Windows proxy harness. The next
 measured blocker is compact lookup-record materialization, not prism storage.
 
+## RED-03 compact lookup-record closeout (Windows-measured, 2026-06-28)
+
+Evidence:
+[`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
+from the same native probe, with RED-01 enabled and RED-03 applied through the
+temporary deployed schema's `translator/load_lookup_records: false` and
+`luna_pinyin/load_lookup_records: false` settings. The committed public schema
+bundle is unchanged, and the parser default remains eager.
+
+RED-03 keeps table assets and default rich lookup behavior intact, but compact
+runtime parsing can now validate and walk the `YUNE-LOOKUP` advanced payload
+without retaining `HashMap<String, Vec<DictionaryLookupRecord>>` when a
+translator namespace opts out.
+
+| Metric | Before | After | Delta |
+| --- | ---: | ---: | ---: |
+| Steady WS | **137.8 MB** | **69.4 MB** | **-68.4 MB** |
+| Steady private | **102.8 MB** | **30.2 MB** | **-72.6 MB** |
+| Steady allocator live | **66.6 MB** | **20.4 MB** | **-46.2 MB** |
+| Peak WS | **172.1 MB** | **80.8 MB** | **-91.3 MB** |
+| Named heap owners | **48.2 MB** | **4.6 MB** | **-43.6 MB** |
+
+| Owner | Before | After | Verdict |
+| --- | ---: | ---: | --- |
+| Primary `jyut6ping3_mobile` `compact_table.lookup_records` | `31,920,140 B` / `127,144` records | `48 B` / `0` records | Skipped in keyboard-profile run. |
+| Secondary `luna_pinyin_yune_reverse` `compact_table.lookup_records` | `13,769,158 B` / `70,807` records | `48 B` / `0` records | Skipped in keyboard-profile run. |
+| `compact_table.lookup_records` total | `45,689,298 B` / `197,951` records | `96 B` / `0` records | RED-03 measured heap owner removed. |
+| `compact_table.syllabary_codes` total | `4,850,892 B` | `4,850,892 B` | Top remaining named heap owner. |
+
+Mmap/file-backed owner rows stayed flat at `40,740,505 B`, so this branch
+removed live retained heap rather than clean file mappings. The steady Windows
+working set is now roughly **1.45x** over the 48 MB target, and the peak is still
+roughly **1.26x** over the 64 MB target.
+
 ## Verdict (Windows-measured)
 
 Against the 64 MB hard budget, the original isolated `jyut6ping3_mobile` baseline
 was **~4.7x over** the 48 MB steady target and **~3.6x over** the 64 MB peak
-target. After RED-02, the keyboard-profile run is still **~2.9x over** steady and
-**~2.7x over** peak. Cangjie5 remains ~1.5x over at steady; luna_pinyin is
+target. After RED-03, the keyboard-profile run is still **~1.45x over** steady and
+**~1.26x over** peak. Cangjie5 remains ~1.5x over at steady; luna_pinyin is
 borderline-under at steady but ~4.6x over at peak. Even a small-schema base is
-~60-95 MB. The multilingual Jyutping keyboard **does not fit** in its current
-shape, and closing the gap remains **architecture-level work, not tuning**. The
-portable levers (drop remaining `create_session` eager materialization, reduce
-compact `lookup_records`, defer reverse/UI payloads, bound transients, slim the
-mobile profile) are Windows-implementable and benefit every platform. **No
+~60-95 MB before profile-specific UI deferral. The multilingual Jyutping keyboard
+**does not fit** in its current shape, and closing the gap remains
+**architecture-level work, not tuning**. The portable levers (defer reverse/UI
+payloads, bound transients, slim the mobile profile, then revisit remaining
+named heap) are Windows-implementable and benefit every platform. **No
 "iOS-ready" claim** until a later real-Apple-device validation pass.
 
 ## Next work
 
-RED-01 and RED-02 are complete. Start the next branch with compact
-`lookup_records`: reduce or lazily load the primary `jyut6ping3_mobile` and
-secondary `luna_pinyin_yune_reverse` lookup-record maps while keeping
-dictionary-panel/comment behavior explicit. Do not start the reverse/UI branch
-until the compact lookup-record branch is measured, unless the branch itself
-proves lookup records cannot move without deferring that UI path. Do not use
+RED-01, RED-02, and RED-03 are complete. Start the next branch with reverse/UI
+lazy loading: defer `script_translator@luna_pinyin` /
+`luna_pinyin_yune_reverse` until the grave-prefix reverse lookup path is used,
+or isolate it as an optional UI pack for keyboard-extension builds. Keep both
+steady and peak visible; the current RED-03 peak is still **80.8 MB**. Do not use
 allocator changes as the next branch unless a later allocator-specific probe
-shows a steady live-vs-resident gap that Phase 0/RED-01/RED-02 did not show.
+shows a steady live-vs-resident gap that Phase 0/RED-01/RED-02/RED-03 did not
+show.
 
 ## Evidence
 
@@ -314,4 +348,6 @@ shows a steady live-vs-resident gap that Phase 0/RED-01/RED-02 did not show.
   [`evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/`](./evidence/m47-ios-budget-native-memory-prism-attribution-2026-06-28/)
 - M47 RED-02 prism runtime storage reduction:
   [`evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/)
+- M47 RED-03 compact lookup-record reduction:
+  [`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
 - Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../crates/yune-rime-api/tests/native_memory_probe.rs)

@@ -26,9 +26,10 @@ pub use compiled_reverse::{parse_rime_reverse_bin_dictionary, RimeReverseBinPars
 #[cfg(test)]
 pub(crate) use compiled_table::parse_compact_table_bin_lookup;
 pub use compiled_table::{
-    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary,
-    rime_table_bin_dict_file_checksum, CompactMarisaStringTable, CompactTableByteSource,
-    CompactTableStore, RimeTableBinParseError,
+    parse_rime_table_bin_advanced_data, parse_rime_table_bin_advanced_data_with_options,
+    parse_rime_table_bin_dictionary, rime_table_bin_dict_file_checksum, CompactMarisaStringTable,
+    CompactTableByteSource, CompactTableStore, RimeTableBinAdvancedDataOptions,
+    RimeTableBinParseError,
 };
 pub use double_array::{DartsDoubleArray, DartsDoubleArrayError, DartsMatch};
 pub use encoder::{CodeCoords, TableEncoder, TableEncoderFormulaError, TableEncodingRule};

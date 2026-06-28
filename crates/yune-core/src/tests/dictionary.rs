@@ -11,11 +11,13 @@ use crate::dictionary::{parse_compact_table_bin_lookup, TableLookup};
 use crate::{
     build_prism_bin, build_reverse_bin, build_table_bin, execute_rebuild_plan,
     parse_rime_prism_bin_payload, parse_rime_prism_runtime_payload,
-    parse_rime_reverse_bin_dictionary, parse_rime_table_bin_dictionary,
+    parse_rime_reverse_bin_dictionary, parse_rime_table_bin_advanced_data,
+    parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, Candidate, CandidateSource, CompactTableByteSource,
-    DartsDoubleArray, MemoryOwnerClass, RimeCorrectionEntry, RimeDictArtifactStatus,
-    RimeDictRebuildExecutionReport, RimeDictRebuildPlan, RimeDictRebuildSources,
-    RimePrismSpellingDescriptor, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
+    DartsDoubleArray, DictionaryLookupRecord, MemoryOwnerClass, RimeCorrectionEntry,
+    RimeDictArtifactStatus, RimeDictRebuildExecutionReport, RimeDictRebuildPlan,
+    RimeDictRebuildSources, RimePrismSpellingDescriptor, RimeTableBinAdvancedDataOptions,
+    RimeTableBinParseError, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
     TableEncoder, TableEntry,
 };
 
@@ -616,6 +618,80 @@ ngo5hai6,1,0,,oth,ver,,,我是,,,I am,,,,\t我係\n",
 }
 
 #[test]
+fn table_advanced_parser_can_skip_lookup_records_without_dropping_keyboard_payloads() {
+    let mut stems = HashMap::new();
+    stems.insert("word".to_owned(), vec!["nei".to_owned()]);
+    let mut lookup_records = HashMap::new();
+    lookup_records.insert(
+        "word".to_owned(),
+        vec![DictionaryLookupRecord {
+            code: "nei".to_owned(),
+            fields: vec!["word".to_owned(), "nei,1,primary".to_owned()],
+        }],
+    );
+    let dictionary = TableDictionary::with_advanced_data(
+        [TableEntry::new("nei", "word", 1.0)],
+        TableDictionaryAdvancedData {
+            stems,
+            corrections: vec![RimeCorrectionEntry::new("leoi", "neoi")],
+            tolerance_rules: vec![RimeToleranceRule::new("nei", ["lei"])],
+            lookup_records,
+            ..TableDictionaryAdvancedData::default()
+        },
+    );
+
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let default_data =
+        parse_rime_table_bin_advanced_data(&table_bytes).expect("advanced data should parse");
+    assert_eq!(default_data.lookup_records["word"][0].code, "nei");
+
+    let skipped = parse_rime_table_bin_advanced_data_with_options(
+        &table_bytes,
+        RimeTableBinAdvancedDataOptions {
+            load_lookup_records: false,
+        },
+    )
+    .expect("advanced data should parse without retaining lookup records");
+
+    assert!(skipped.lookup_records.is_empty());
+    assert_eq!(skipped.stems["word"], ["nei"]);
+    assert_eq!(
+        skipped.corrections,
+        [RimeCorrectionEntry::new("leoi", "neoi")]
+    );
+    assert_eq!(
+        skipped.tolerance_rules,
+        [RimeToleranceRule::new("nei", ["lei"])]
+    );
+}
+
+#[test]
+fn table_advanced_lookup_record_skip_still_rejects_invalid_utf8() {
+    let dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(
+        "---\n\
+name: lookup\n\
+version: '0.1'\n\
+sort: original\n\
+...\n\
+\n\
+ngo5hai6,1,0,,oth,ver,,,word,,,I am,,,,\tword\n",
+    )
+    .expect("typeduck lookup dictionary should parse");
+    let mut table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    corrupt_first_lookup_record_code_byte(&mut table_bytes);
+
+    let error = parse_rime_table_bin_advanced_data_with_options(
+        &table_bytes,
+        RimeTableBinAdvancedDataOptions {
+            load_lookup_records: false,
+        },
+    )
+    .expect_err("skip mode should validate lookup record UTF-8");
+
+    assert_eq!(error, RimeTableBinParseError::InvalidUtf8);
+}
+
+#[test]
 fn rebuild_plan_executor_writes_only_requested_artifacts() {
     let root = std::env::temp_dir().join(format!("yune-m18-rebuild-{}", std::process::id()));
     if root.exists() {
@@ -817,6 +893,37 @@ fn table_dictionary_heap_lookup(dictionary: &TableDictionary) -> BTreeMap<String
             });
     }
     lookup
+}
+
+fn corrupt_first_lookup_record_code_byte(bytes: &mut [u8]) {
+    let marker = b"YUNE-LOOKUP\0";
+    let marker_offset = bytes
+        .windows(marker.len())
+        .position(|window| window == marker)
+        .expect("fixture should contain lookup payload");
+    let mut cursor = marker_offset + marker.len();
+    let text_count = read_test_u32(bytes, cursor);
+    assert_eq!(text_count, 1, "fixture should have one lookup text");
+    cursor += 4;
+    cursor = skip_test_len_string(bytes, cursor);
+    let record_count = read_test_u32(bytes, cursor);
+    assert_eq!(record_count, 1, "fixture should have one lookup record");
+    cursor += 4;
+    let code_len = read_test_u32(bytes, cursor);
+    assert!(code_len > 0, "fixture code should not be empty");
+    bytes[cursor + 4] = 0xff;
+}
+
+fn skip_test_len_string(bytes: &[u8], offset: usize) -> usize {
+    offset + 4 + read_test_u32(bytes, offset)
+}
+
+fn read_test_u32(bytes: &[u8], offset: usize) -> usize {
+    u32::from_le_bytes(
+        bytes[offset..offset + 4]
+            .try_into()
+            .expect("fixture should contain a u32"),
+    ) as usize
 }
 
 fn sample_dictionary() -> TableDictionary {

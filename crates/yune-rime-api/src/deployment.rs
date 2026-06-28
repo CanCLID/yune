@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs,
+    io::Read,
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     process,
@@ -10,9 +11,9 @@ use std::{
 
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
-    execute_rebuild_plan, parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload,
-    parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata, rime_checksum_bytes,
-    rime_dict_rebuild_plan, rime_dict_source_checksum, RimeDictArtifactStatus,
+    execute_rebuild_plan, memory_probe_mark, parse_rime_prism_bin_metadata,
+    parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata,
+    rime_checksum_bytes, rime_dict_rebuild_plan, rime_dict_source_checksum, RimeDictArtifactStatus,
     RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildSources,
     RimePrismChecksumMetadata, TableDictionary,
 };
@@ -94,12 +95,15 @@ pub extern "C" fn RimePrebuildAllSchemas() -> Bool {
 
 #[no_mangle]
 pub extern "C" fn RimeDeployWorkspace() -> Bool {
+    memory_probe_mark("m47:deploy_workspace:start");
     if !run_installation_update() {
         return FALSE;
     }
+    memory_probe_mark("m47:deploy_workspace:after_installation_update");
     if !run_workspace_maintenance_tasks() {
         return FALSE;
     }
+    memory_probe_mark("m47:deploy_workspace:after_workspace_maintenance");
     TRUE
 }
 
@@ -590,16 +594,23 @@ fn current_unix_time_string() -> String {
 }
 
 pub(crate) fn workspace_update() -> bool {
+    memory_probe_mark("m47:deploy:workspace_update:start");
     clear_workspace_dictionary_rebuild_reports();
     if !deploy_config_file("default.yaml", "config_version") {
         return false;
     }
+    memory_probe_mark("m47:deploy:workspace_update:after_default_config");
     let _ = symlink_prebuilt_dictionaries();
+    memory_probe_mark("m47:deploy:workspace_update:after_prebuilt_link_sync");
 
     let default_config = load_runtime_config_root("default", ConfigOpenKind::Deployed);
     let Some(schema_ids) = workspace_schema_ids(&default_config) else {
         return false;
     };
+    memory_probe_mark(format!(
+        "m47:deploy:workspace_update:after_schema_list:schema_count={}",
+        schema_ids.len()
+    ));
 
     let mut built = HashSet::new();
     let mut success = true;
@@ -607,6 +618,9 @@ pub(crate) fn workspace_update() -> bool {
         if !workspace_update_schema(&schema_id, false, &mut built) {
             success = false;
         }
+        memory_probe_mark(format!(
+            "m47:deploy:workspace_update:after_schema:{schema_id}"
+        ));
     }
 
     write_last_build_time() && success
@@ -749,10 +763,14 @@ fn schema_dictionary_artifact_requests(schema_config: &Value) -> Vec<DictionaryA
                     .or_insert(false);
             }
             if component == "dictionary_lookup_filter" {
-                namespaces.insert(
-                    namespace.unwrap_or("dictionary_lookup_filter").to_owned(),
-                    true,
-                );
+                let namespace = namespace.unwrap_or("dictionary_lookup_filter");
+                let load_lookup_records =
+                    find_config_value(schema_config, &format!("{namespace}/load_lookup_records"))
+                        .and_then(Value::as_bool)
+                        .unwrap_or(true);
+                if load_lookup_records {
+                    namespaces.insert(namespace.to_owned(), true);
+                }
             }
         }
     }
@@ -846,27 +864,33 @@ fn workspace_update_dictionary_artifact(
     let prebuilt_prism_path = prebuilt_data_dir.join(format!("{}.prism.bin", request.prism_id));
     let prebuilt_reverse_path = prebuilt_data_dir.join(format!("{dictionary_id}.reverse.bin"));
 
-    let table_metadata = fs::read(&table_path)
-        .ok()
-        .and_then(|bytes| parse_rime_table_bin_metadata(bytes).ok());
-    let table_exists = table_metadata.is_some();
-    let prism_metadata = fs::read(&prism_path).ok().and_then(prism_checksum_metadata);
-    let reverse_metadata = fs::read(&reverse_path)
-        .ok()
-        .and_then(|bytes| parse_rime_reverse_bin_metadata(bytes).ok());
-    let reverse_exists = reverse_metadata.is_some();
-    let prebuilt_table_metadata = (!table_exists)
-        .then(|| fs::read(&prebuilt_table_path).ok())
-        .flatten()
-        .and_then(|bytes| parse_rime_table_bin_metadata(bytes).ok());
+    let table_dict_file_checksum = table_dict_file_checksum_from_path(&table_path);
+    let table_exists = table_dict_file_checksum.is_some();
+    let prism_metadata = prism_checksum_metadata_from_path(&prism_path);
+    let reverse_dict_file_checksum = reverse_dict_file_checksum_from_path(&reverse_path);
+    let reverse_exists = reverse_dict_file_checksum.is_some();
+    memory_probe_mark(format!(
+        "m47:deploy:{dictionary_id}:after_staging_metadata:table={}:prism={}:reverse={}",
+        table_exists,
+        prism_metadata.is_some(),
+        reverse_exists
+    ));
+
+    let prebuilt_table_dict_file_checksum = (!table_exists)
+        .then(|| table_dict_file_checksum_from_path(&prebuilt_table_path))
+        .flatten();
     let prebuilt_prism_metadata = (!prism_path.is_file())
-        .then(|| fs::read(&prebuilt_prism_path).ok())
-        .flatten()
-        .and_then(prism_checksum_metadata);
-    let prebuilt_reverse_metadata = (!reverse_exists)
-        .then(|| fs::read(&prebuilt_reverse_path).ok())
-        .flatten()
-        .and_then(|bytes| parse_rime_reverse_bin_metadata(bytes).ok());
+        .then(|| prism_checksum_metadata_from_path(&prebuilt_prism_path))
+        .flatten();
+    let prebuilt_reverse_dict_file_checksum = (!reverse_exists)
+        .then(|| reverse_dict_file_checksum_from_path(&prebuilt_reverse_path))
+        .flatten();
+    memory_probe_mark(format!(
+        "m47:deploy:{dictionary_id}:after_prebuilt_metadata:table_bytes={}:prism_bytes={}:reverse_bytes={}",
+        file_size_bytes(&prebuilt_table_path).unwrap_or(0),
+        file_size_bytes(&prebuilt_prism_path).unwrap_or(0),
+        file_size_bytes(&prebuilt_reverse_path).unwrap_or(0)
+    ));
 
     let schema_checksum =
         schema_dictionary_checksum(schema_config_signature(schema_config, &dictionary_id));
@@ -875,13 +899,10 @@ fn workspace_update_dictionary_artifact(
         source_dict_file_checksum: source_checksum,
         pack_source_checksums: pack_checksums,
         schema_file_checksum: schema_checksum,
-        table_dict_file_checksum: table_metadata
-            .map(|metadata| metadata.dict_file_checksum)
-            .or_else(|| prebuilt_table_metadata.map(|metadata| metadata.dict_file_checksum)),
+        table_dict_file_checksum: table_dict_file_checksum.or(prebuilt_table_dict_file_checksum),
         prism: prism_metadata.or(prebuilt_prism_metadata),
-        reverse_dict_file_checksum: reverse_metadata
-            .map(|metadata| metadata.dict_file_checksum)
-            .or_else(|| prebuilt_reverse_metadata.map(|metadata| metadata.dict_file_checksum)),
+        reverse_dict_file_checksum: reverse_dict_file_checksum
+            .or(prebuilt_reverse_dict_file_checksum),
         prebuilt_table_available: prebuilt_table_path.is_file(),
         prebuilt_prism_available: prebuilt_prism_path.is_file(),
         prebuilt_reverse_available: prebuilt_reverse_path.is_file(),
@@ -892,6 +913,10 @@ fn workspace_update_dictionary_artifact(
         Ok(plan) => plan,
         Err(_) => return None,
     };
+    memory_probe_mark(format!(
+        "m47:deploy:{dictionary_id}:after_rebuild_plan:table={:?}:prism={:?}:reverse={:?}",
+        plan.report.table, plan.report.prism, plan.report.reverse
+    ));
 
     let mut write_plan = plan.clone();
     let dictionary =
@@ -909,14 +934,26 @@ fn workspace_update_dictionary_artifact(
     if plan.report.table == RimeDictArtifactStatus::ReusedPrebuilt {
         copy_if_present(&prebuilt_table_path, &table_path)?;
         write_plan.rebuild_table = false;
+        memory_probe_mark(format!(
+            "m47:deploy:{dictionary_id}:after_prebuilt_table_copy:bytes={}",
+            file_size_bytes(&table_path).unwrap_or(0)
+        ));
     }
     if plan.report.prism == RimeDictArtifactStatus::ReusedPrebuilt {
         copy_if_present(&prebuilt_prism_path, &prism_path)?;
         write_plan.rebuild_prism = false;
+        memory_probe_mark(format!(
+            "m47:deploy:{dictionary_id}:after_prebuilt_prism_copy:bytes={}",
+            file_size_bytes(&prism_path).unwrap_or(0)
+        ));
     }
     if plan.report.reverse == RimeDictArtifactStatus::ReusedPrebuilt {
         copy_if_present(&prebuilt_reverse_path, &reverse_path)?;
         write_plan.rebuild_reverse = false;
+        memory_probe_mark(format!(
+            "m47:deploy:{dictionary_id}:after_prebuilt_reverse_copy:bytes={}",
+            file_size_bytes(&reverse_path).unwrap_or(0)
+        ));
     }
     if write_plan.rebuild_table || write_plan.rebuild_prism || write_plan.rebuild_reverse {
         let dictionary = dictionary.as_ref()?;
@@ -932,6 +969,7 @@ fn workspace_update_dictionary_artifact(
             schema_file_checksum: schema_checksum,
         };
         execute_rebuild_plan(&write_plan, &sources, &staging_dir).ok()?;
+        memory_probe_mark(format!("m47:deploy:{dictionary_id}:after_rebuild_execute"));
     }
     Some(plan.report)
 }
@@ -964,14 +1002,39 @@ fn load_workspace_vocabulary_txt(shared_data_dir: &Path, resource_id: &str) -> O
     fs::read_to_string(shared_data_dir.join(format!("{resource_id}.txt"))).ok()
 }
 
-fn prism_checksum_metadata(bytes: Vec<u8>) -> Option<RimePrismChecksumMetadata> {
-    if let Ok(metadata) = parse_rime_prism_bin_metadata(&bytes) {
+fn table_dict_file_checksum_from_path(path: &Path) -> Option<u32> {
+    read_file_prefix(path, 68)
+        .and_then(|bytes| parse_rime_table_bin_metadata(bytes).ok())
+        .map(|metadata| metadata.dict_file_checksum)
+}
+
+fn reverse_dict_file_checksum_from_path(path: &Path) -> Option<u32> {
+    read_file_prefix(path, 64)
+        .and_then(|bytes| parse_rime_reverse_bin_metadata(bytes).ok())
+        .map(|metadata| metadata.dict_file_checksum)
+}
+
+fn prism_checksum_metadata_from_path(path: &Path) -> Option<RimePrismChecksumMetadata> {
+    let header = read_file_prefix(path, 320)?;
+    if let Some(metadata) = prism_checksum_metadata_from_bytes(&header) {
+        return Some(metadata);
+    }
+    fs::read(path)
+        .ok()
+        .and_then(|bytes| prism_checksum_metadata_from_bytes(&bytes))
+}
+
+fn prism_checksum_metadata_from_bytes(
+    bytes: impl AsRef<[u8]>,
+) -> Option<RimePrismChecksumMetadata> {
+    let bytes = bytes.as_ref();
+    if let Ok(metadata) = parse_rime_prism_bin_metadata(bytes) {
         return Some(RimePrismChecksumMetadata {
             dict_file_checksum: metadata.dict_file_checksum,
             schema_file_checksum: metadata.schema_file_checksum,
         });
     }
-    parse_rime_prism_bin_payload(&bytes)
+    parse_rime_prism_bin_payload(bytes)
         .ok()
         .map(|payload| RimePrismChecksumMetadata {
             dict_file_checksum: payload.dict_file_checksum,
@@ -979,10 +1042,26 @@ fn prism_checksum_metadata(bytes: Vec<u8>) -> Option<RimePrismChecksumMetadata> 
         })
 }
 
+fn read_file_prefix(path: &Path, byte_count: usize) -> Option<Vec<u8>> {
+    let mut file = fs::File::open(path).ok()?;
+    let mut bytes = vec![0; byte_count];
+    file.read_exact(&mut bytes).ok()?;
+    Some(bytes)
+}
+
+fn file_size_bytes(path: &Path) -> Option<u64> {
+    fs::metadata(path).ok().map(|metadata| metadata.len())
+}
+
 fn schema_config_signature(schema_config: &Value, dictionary_id: &str) -> Vec<u8> {
     let mut normalized = schema_config.clone();
     if let Value::Mapping(mapping) = &mut normalized {
         mapping.remove(Value::String("__build_info".to_owned()));
+        if let Some(Value::Mapping(filter_config)) =
+            mapping.get_mut(Value::String("dictionary_lookup_filter".to_owned()))
+        {
+            filter_config.remove(Value::String("load_lookup_records".to_owned()));
+        }
     }
     serde_yaml::to_string(&normalized)
         .unwrap_or_else(|_| dictionary_id.to_owned())
@@ -1520,6 +1599,83 @@ custom_phrase:
                 .iter()
                 .any(|request| request.dictionary_id == "luna_pinyin"),
             "the real table_translator dictionary must still be requested: {requests:?}"
+        );
+    }
+
+    #[test]
+    fn disabled_dictionary_lookup_filter_yields_no_side_artifact_request() {
+        let schema_config: Value = serde_yaml::from_str(
+            r"
+engine:
+  translators:
+    - table_translator
+  filters:
+    - dictionary_lookup_filter
+translator:
+  dictionary: jyut6ping3
+dictionary_lookup_filter:
+  dictionary: jyut6ping3_scolar
+  load_lookup_records: false
+",
+        )
+        .expect("schema config should parse");
+        let requests = schema_dictionary_artifact_requests(&schema_config);
+        assert!(
+            requests
+                .iter()
+                .any(|request| request.dictionary_id == "jyut6ping3"),
+            "the primary translator dictionary must still be requested: {requests:?}"
+        );
+        assert!(
+            requests
+                .iter()
+                .all(|request| request.dictionary_id != "jyut6ping3_scolar"),
+            "disabled lookup filter must not build the UI-only side dictionary: {requests:?}"
+        );
+    }
+
+    #[test]
+    fn lookup_record_gate_does_not_invalidate_unrelated_dictionary_artifacts() {
+        let base: Value = serde_yaml::from_str(
+            r"
+translator:
+  dictionary: jyut6ping3
+dictionary_lookup_filter:
+  dictionary: jyut6ping3_scolar
+",
+        )
+        .expect("base schema config should parse");
+        let gated: Value = serde_yaml::from_str(
+            r"
+translator:
+  dictionary: jyut6ping3
+dictionary_lookup_filter:
+  dictionary: jyut6ping3_scolar
+  load_lookup_records: false
+",
+        )
+        .expect("gated schema config should parse");
+        let changed: Value = serde_yaml::from_str(
+            r"
+translator:
+  dictionary: jyut6ping3
+  prism: jyut6ping3_mobile
+dictionary_lookup_filter:
+  dictionary: jyut6ping3_scolar
+  load_lookup_records: false
+",
+        )
+        .expect("changed schema config should parse");
+
+        assert_eq!(
+            schema_config_signature(&base, "jyut6ping3"),
+            schema_config_signature(&gated, "jyut6ping3"),
+            "lookup-record loading is a runtime/UI side-dictionary gate, not a primary prism input"
+        );
+        assert_ne!(
+            schema_config_signature(&base, "jyut6ping3"),
+            schema_config_signature(&changed, "jyut6ping3"),
+            "dictionary-affecting config must still participate in artifact reuse checks"
         );
     }
 }

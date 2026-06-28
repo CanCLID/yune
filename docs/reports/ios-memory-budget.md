@@ -24,12 +24,12 @@ three different numbers; only one is the iOS proxy:
 | Source | jyut6ping3_mobile | What it is |
 | --- | ---: | --- |
 | Initial lean native probe | **~298 MB steady / 482 MB peak** | Original M47 baseline: real `RimeApi`, mmap path, prebuilt assets, one schema per fresh Rust process |
-| Current lean native probe after RED-04 | **58.5 MB steady / 81.0 MB peak** | Current Windows proxy after RED-01 side lookup opt-out, RED-02 prism byte-backed runtime storage, RED-03 compact lookup-record opt-out, and RED-04 optional reverse/UI pack omission |
+| Current lean native probe after RED-05 | **56.9 MB steady / 78.4 MB peak** | Current Windows proxy after RED-01 side lookup opt-out, RED-02 prism byte-backed runtime storage, RED-03 compact lookup-record opt-out, RED-04 optional reverse/UI pack omission, and RED-05 no-rebuild deploy hygiene |
 | .NET in-process benchmark (Track B) | ~436 MB after-ready / 504 MB peak | A .NET process hosting **both** Yune *and* librime DLLs — polluted upper bound, **not** the iOS number |
 | Browser WASM | 160 MiB | WASM linear memory, **no mmap**, owned tables — a different deployment |
 
 The earlier "Jyutping native ~504 MB" headline was the dual-DLL harness; the
-iOS-relevant steady was initially **~298 MB** and is now **58.5 MB** after RED-04.
+iOS-relevant steady was initially **~298 MB** and is now **56.9 MB** after RED-05.
 
 ## Methodology
 
@@ -343,12 +343,47 @@ RED-04 is a useful steady-state profile gate but not a peak closeout. The peak
 is still **~81 MB**, so the next blocker is the remaining transient/high-water
 path rather than retained reverse/UI data.
 
+## RED-05 deploy transient closeout (Windows-measured, 2026-06-28)
+
+Evidence:
+[`evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/)
+from the same native probe, with RED-01, RED-03, and RED-04 keyboard-profile
+gates enabled. The `before` reference is the RED-04 `current/` folder; RED-05's
+`current/` folder is the measured post-change run.
+
+RED-05 adds deployment-phase memory markers and removes the deploy-time rebuild
+transient for the keyboard profile. Deployment now reads only fixed-size compiled
+artifact headers for reuse checks, the lookup-filter side dictionary request is
+skipped when `dictionary_lookup_filter/load_lookup_records: false`, and that
+lookup-record gate is normalized out of unrelated dictionary artifact checksums
+so primary/reverse prebuilt artifacts are still reused.
+
+| Metric | Before (RED-04 current) | After RED-05 | Delta |
+| --- | ---: | ---: | ---: |
+| Steady WS | **58.5 MB** | **56.9 MB** | **-1.6 MB** |
+| Steady private | **23.3 MB** | **23.7 MB** | **+0.4 MB** |
+| Steady allocator live | **16.0 MB** | **16.0 MB** | **0.0 MB** |
+| Peak WS | **81.0 MB** | **78.4 MB** | **-2.6 MB** |
+| Allocator high-water | **59.9 MB** | **35.4 MB** | **-24.5 MB** |
+| After-deploy WS | **11.8 MB** | **8.8 MB** | **-3.0 MB** |
+| After-deploy peak WS | **81.0 MB** | **12.4 MB** | **-68.6 MB** |
+| After-deploy allocator high-water | **59.9 MB** | **3.7 MB** | **-56.2 MB** |
+
+The RED-05 events show deploy no longer owns the run's peak: the deploy plan
+reuses prebuilt `luna_pinyin`, `luna_pinyin_yune_reverse`, and `jyut6ping3`
+artifacts, and the `jyut6ping3_scolar` side-dictionary build row is absent. The
+remaining peak occurs during `create_session()`, at
+`m47:compiled_dictionary:jyut6ping3:after_compact_table_store_parse`: working set
+**69.1 MB**, process peak **78.4 MB**, allocator live **27.7 MB**, allocator
+high-water **35.4 MB**. The next measured branch is therefore the primary
+`jyut6ping3` compact-table load/parse transient, not deploy or allocator decay.
+
 ## Verdict (Windows-measured)
 
 Against the 64 MB hard budget, the original isolated `jyut6ping3_mobile` baseline
 was **~4.7x over** the 48 MB steady target and **~3.6x over** the 64 MB peak
-target. After RED-04, the keyboard-profile run is still **~1.22x over** steady and
-**~1.27x over** peak. Cangjie5 remains ~1.5x over at steady; luna_pinyin is
+target. After RED-05, the keyboard-profile run is still **~1.19x over** steady and
+**~1.23x over** peak. Cangjie5 remains ~1.5x over at steady; luna_pinyin is
 borderline-under at steady but ~4.6x over at peak. Even a small-schema base is
 ~60-95 MB before profile-specific UI deferral. The multilingual Jyutping keyboard
 **does not fit** in its current shape, and closing the gap remains
@@ -359,12 +394,12 @@ Windows-implementable and benefit every platform. **No
 
 ## Next work
 
-RED-01, RED-02, RED-03, and RED-04 are complete. Start the next branch with
-peak transient investigation: the current RED-04 peak is still **81.0 MB** even
-though steady is **58.5 MB**. Keep both steady and peak visible. Do not use
-allocator changes as the next branch unless a later allocator-specific probe
-shows a steady live-vs-resident gap that Phase 0/RED-01/RED-02/RED-03/RED-04 did
-not show.
+RED-01 through RED-05 are complete. Start the next branch with the primary
+`jyut6ping3` compact-table load/parse transient: the current RED-05 peak is still
+**78.4 MB** even though steady is **56.9 MB**, and deploy now peaks only
+**12.4 MB**. Keep both steady and peak visible. Do not use allocator changes as
+the next branch unless a later allocator-specific probe shows a steady
+live-vs-resident gap that Phase 0/RED-01/RED-02/RED-03/RED-04/RED-05 did not show.
 
 ## Evidence
 
@@ -384,4 +419,6 @@ not show.
   [`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
 - M47 RED-04 reverse/UI optional pack reduction:
   [`evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/)
+- M47 RED-05 deploy transient reduction:
+  [`evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/)
 - Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../crates/yune-rime-api/tests/native_memory_probe.rs)

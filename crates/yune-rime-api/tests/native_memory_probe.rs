@@ -290,6 +290,21 @@ fn native_memory_probe_reports_working_set() {
             let _ = fs::remove_file(shared.join("build").join(name));
         }
     }
+    if disable_dictionary_lookup_records {
+        for name in [
+            "template.yaml",
+            "jyut6ping3.schema.yaml",
+            "jyut6ping3_mobile.schema.yaml",
+        ] {
+            let path = shared.join(name);
+            if patch_schema_disable_dictionary_lookup_records_if_present(&path) {
+                let _ = fs::remove_file(shared.join("build").join(name));
+            }
+        }
+        for name in ["jyut6ping3.schema.yaml", "jyut6ping3_mobile.schema.yaml"] {
+            let _ = fs::remove_file(shared.join("build").join(name));
+        }
+    }
     phases.push(capture_phase(
         "after_temp_schema_copy",
         "temporary committed schema bundle copied into isolated runtime dirs",
@@ -436,6 +451,14 @@ fn native_memory_probe_reports_working_set() {
 }
 
 fn patch_schema_disable_dictionary_lookup_records(path: &Path) {
+    assert!(
+        patch_schema_disable_dictionary_lookup_records_if_present(path),
+        "YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS requested but deployed schema {} does not contain the dictionary_lookup_filter block",
+        path.display()
+    );
+}
+
+fn patch_schema_disable_dictionary_lookup_records_if_present(path: &Path) -> bool {
     let text = fs::read_to_string(path).unwrap_or_else(|error| {
         panic!(
             "YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS requested but deployed schema {} could not be read: {error}",
@@ -443,16 +466,15 @@ fn patch_schema_disable_dictionary_lookup_records(path: &Path) {
         )
     });
     if text.contains("load_lookup_records: false") {
-        return;
+        return true;
     }
     let marker = "dictionary_lookup_filter:\n  dictionary: jyut6ping3_scolar\n";
-    assert!(
-        text.contains(marker),
-        "YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS requested but deployed schema {} does not contain the dictionary_lookup_filter block",
-        path.display()
-    );
+    if !text.contains(marker) {
+        return false;
+    }
     let patched = text.replace(marker, "dictionary_lookup_filter:\n  dictionary: jyut6ping3_scolar\n  load_lookup_records: false\n");
     fs::write(path, patched).expect("patch dictionary lookup filter config");
+    true
 }
 
 fn patch_schema_disable_compact_lookup_records(path: &Path) {

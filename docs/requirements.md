@@ -900,7 +900,9 @@ path at `160.0 MiB` ready/peak/steady WASM. The old `893.1 MiB` value remains
 only for the synthetic no-launch-assets `extras` negative-control row. A
 post-closeout follow-up restores byte-backed Jyutping phrase composition
 (`ngogokdak -> 我覺得`) and visible prefix lookup rows in the regenerated compact
-path.
+path. A later correctness follow-up fixes a `DartsDoubleArray` prism
+construction bug that had corrupted the byte-backed toneless-to-canonical
+mapping for common multi-syllable words (see WEB03-10).
 
 - [x] **WEB03-01**: Clean launch-schema regeneration emits current compiled
   assets for `jyut6ping3_mobile`, imported `jyut6ping3_scolar`,
@@ -938,6 +940,20 @@ path.
   ready/peak WASM memory still `160.0 MiB`. The native guard now covers both
   long rows, expected first candidates, and bounded byte-backed prefix/sentence
   expansion counters.
+- [x] **WEB03-10**: Common multi-syllable Jyutping words resolve to their
+  canonical word on the committed byte-backed launch assets. A `DartsDoubleArray`
+  construction bug that left sibling slots unreserved before recursing had
+  corrupted the prism, so `exact_match` returned out-of-range values and the
+  toneless form of multi-syllable codes was dropped (`litbiu` returned the
+  sentence-path `小斑啄木鳥` instead of `列表`; `caamhaau`/`waakze` matched only the
+  `caa`/`waa` prefix). The fix reserves sibling slots before recursing and only
+  changes prism bytes, so the four affected prisms and both manifests are
+  regenerated. A yune-core trie/prism regression test is verified to fail without
+  the fix, and a committed-asset `yune_web` test asserts `litbiu -> 列表`,
+  `ngojiu -> 我要`, `ngaamngaam -> 啱啱`, `caamhaau -> 參考`, `waakze -> 或者`, and
+  `honangwui -> 可能會`. Fixed in `a76fcd59`; guard added in `d1c0171a`. Gates:
+  yune-core `259/0`, `cantonese_parity` `37/0`, `upstream_luna_pinyin_parity`
+  `12/0`, `yune_web` `35/0`, clippy `-D warnings` + fmt clean.
 
 ## M46 Jyutping Native And WASM Memory Attribution Requirements
 

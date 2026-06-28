@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="535" viewBox="0 0 1120 535" role="img" aria-labelledby="title desc">
+  <title id="title">Current Yune browser input latency suite</title>
+  <desc id="desc">Exact keydown-to-paint from WEB-03 rebuilt public-demo evidence; lower is better.</desc>
+  <rect width="1120" height="535" fill="#FCFCFD"/>
+  <text x="32" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430" text-anchor="start">Current Yune browser input latency suite</text>
+  <text x="32" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#6F768A" text-anchor="start">Exact keydown-to-paint from WEB-03 rebuilt public-demo evidence; lower is better.</text>
+  <line x1="490.0" y1="78" x2="490.0" y2="478" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="490" y="498" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">0.0 ms</text>
+  <line x1="636.5" y1="78" x2="636.5" y2="478" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="636.5" y="498" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">38.4 ms</text>
+  <line x1="783.0" y1="78" x2="783.0" y2="478" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="783.0" y="498" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">76.7 ms</text>
+  <line x1="929.5" y1="78" x2="929.5" y2="478" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="929.5" y="498" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">115.1 ms</text>
+  <line x1="1076.0" y1="78" x2="1076.0" y2="478" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="1076" y="498" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">153.4 ms</text>
+  <text x="478" y="107" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Luna hao</text>
+  <rect x="490" y="93" width="152.8" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="648.8031290743155" y="107" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">40.00 ms</text>
+  <text x="478" y="137" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Luna ni</text>
+  <rect x="490" y="123" width="84.0" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="580.0417209908735" y="137" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">22.00 ms</text>
+  <text x="478" y="167" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Luna zhongguo</text>
+  <rect x="490" y="153" width="72.6" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="568.5814863102999" y="167" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">19.00 ms</text>
+  <text x="478" y="197" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Luna ceshiyixiachangjushuruxingnengzenyang</text>
+  <rect x="490" y="183" width="164.3" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="660.2633637548892" y="197" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">43.00 ms</text>
+  <text x="478" y="227" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Luna zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong</text>
+  <rect x="490" y="213" width="286.5" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="782.5058670143416" y="227" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">75.00 ms</text>
+  <text x="478" y="257" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Luna cszysmsrsd</text>
+  <rect x="490" y="243" width="99.3" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="595.3220338983051" y="257" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">26.00 ms</text>
+  <text x="478" y="287" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Luna zybfshmsru</text>
+  <rect x="490" y="273" width="129.9" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="625.8826597131682" y="287" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">34.00 ms</text>
+  <text x="478" y="317" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Jyutping hai</text>
+  <rect x="490" y="303" width="179.5" height="18" rx="2" fill="#F390CA" stroke="#8A3A6F" stroke-width="1"/>
+  <text x="675.5436766623208" y="317" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">47.00 ms</text>
+  <text x="478" y="347" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Jyutping ngo</text>
+  <rect x="490" y="333" width="87.9" height="18" rx="2" fill="#F390CA" stroke="#8A3A6F" stroke-width="1"/>
+  <text x="583.8617992177315" y="347" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">23.00 ms</text>
+  <text x="478" y="377" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Jyutping caksi</text>
+  <rect x="490" y="363" width="340.0" height="18" rx="2" fill="#F390CA" stroke="#8A3A6F" stroke-width="1"/>
+  <text x="835.986962190352" y="377" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">89.00 ms</text>
+  <text x="478" y="407" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Jyutping ngogokdak</text>
+  <rect x="490" y="393" width="84.0" height="18" rx="2" fill="#F390CA" stroke="#8A3A6F" stroke-width="1"/>
+  <text x="580.0417209908735" y="407" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">22.00 ms</text>
+  <text x="478" y="437" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Jyutping sihaacoenggeoisyujapgecukdou</text>
+  <rect x="490" y="423" width="496.6" height="18" rx="2" fill="#F390CA" stroke="#8A3A6F" stroke-width="1"/>
+  <text x="992.6101694915254" y="437" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">130.00 ms</text>
+  <text x="478" y="467" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Jyutping taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng</text>
+  <rect x="490" y="453" width="282.7" height="18" rx="2" fill="#F390CA" stroke="#8A3A6F" stroke-width="1"/>
+  <text x="778.6857887874837" y="467" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">74.00 ms</text>
+</svg>

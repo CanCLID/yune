@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="349" viewBox="0 0 1000 349" role="img" aria-labelledby="title desc">
+  <title id="title">Current remaining performance gaps</title>
+  <desc id="desc">Ratios above 1 mean Yune is heavier or slower; Jyutping browser row is guard-only.</desc>
+  <rect width="1000" height="349" fill="#FCFCFD"/>
+  <text x="32" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430" text-anchor="start">Current remaining performance gaps</text>
+  <text x="32" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#6F768A" text-anchor="start">Ratios above 1 mean Yune is heavier or slower; Jyutping browser row is guard-only.</text>
+  <line x1="300.0" y1="78" x2="300.0" y2="292" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="300" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">0.0x</text>
+  <line x1="464.0" y1="78" x2="464.0" y2="292" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="464.0" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">2.0x</text>
+  <line x1="628.0" y1="78" x2="628.0" y2="292" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="628.0" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">4.0x</text>
+  <line x1="792.0" y1="78" x2="792.0" y2="292" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="792.0" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">6.1x</text>
+  <line x1="956.0" y1="78" x2="956.0" y2="292" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="956" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">8.1x</text>
+  <line x1="381.3" y1="76" x2="381.3" y2="292" stroke="#1F2430" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="385.2585160411247" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="600" fill="#1F2430" text-anchor="start">1x ref</text>
+  <text x="288" y="107" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native Track A peak memory</text>
+  <rect x="300" y="93" width="570.4" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="876.4347826086957" y="107" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">7.02x</text>
+  <text x="288" y="141" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Luna memory</text>
+  <rect x="300" y="127" width="325.0" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="631.034064164499" y="141" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">4.00x</text>
+  <text x="288" y="175" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native short key ni</text>
+  <rect x="300" y="161" width="295.1" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="601.1309302613652" y="175" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">3.63x</text>
+  <text x="288" y="209" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native short key n</text>
+  <rect x="300" y="195" width="289.0" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="595.0365415582808" y="209" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">3.56x</text>
+  <text x="288" y="243" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Luna startup</text>
+  <rect x="300" y="229" width="128.4" height="18" rx="2" fill="#FFE15B" stroke="#736422" stroke-width="1"/>
+  <text x="434.3884553449771" y="243" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">1.58x</text>
+  <text x="288" y="277" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Jyutping memory guard</text>
+  <rect x="300" y="263" width="191.0" height="18" rx="2" fill="#E2E5EA" stroke="#464C55" stroke-width="1"/>
+  <text x="496.9575126966432" y="277" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">2.35x</text>
+</svg>

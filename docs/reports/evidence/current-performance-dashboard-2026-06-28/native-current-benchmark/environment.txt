@@ -1,0 +1,13 @@
+﻿date_utc=2026-06-28T06:27:57.3259659Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=8d7b2a7c826cce3ff8c9bd38e787f2ecd62ccf34
+yune_git_status_short= M docs/reports/evidence/reframed-comparison-review-2026-06-27/README.md |  M docs/reports/evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/README.md |  M docs/reports/yune-vs-librime-performance.md |  M docs/reports/yune-vs-librime-root-cause-analysis.md |  M docs/reports/yune-web-vs-my-rime-browser-baseline.md | ?? apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/current-dashboard/ | ?? docs/reports/evidence/current-performance-dashboard-2026-06-28/ | ?? docs/reports/evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/visuals/ | ?? docs/reports/history/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\native-current-benchmark
+managed_runtime=false
+deploy_product_before_benchmark=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

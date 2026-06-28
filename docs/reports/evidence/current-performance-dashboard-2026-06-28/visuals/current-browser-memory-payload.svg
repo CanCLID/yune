@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="369" viewBox="0 0 1100 369" role="img" aria-labelledby="title desc">
+  <title id="title">Current browser memory and payload</title>
+  <desc id="desc">Current-dashboard comparator: WASM high-water and unique encoded resources. Jyutping comparison is dictionary-confounded.</desc>
+  <rect width="1100" height="369" fill="#FCFCFD"/>
+  <text x="32" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430" text-anchor="start">Current browser memory and payload</text>
+  <text x="32" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#6F768A" text-anchor="start">Current-dashboard comparator: WASM high-water and unique encoded resources. Jyutping comparison is dictionary-confounded.</text>
+  <line x1="360.0" y1="78" x2="360.0" y2="312" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="360" y="332" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">0.0 MiB</text>
+  <line x1="534.0" y1="78" x2="534.0" y2="312" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="534.0" y="332" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">43.8 MiB</text>
+  <line x1="708.0" y1="78" x2="708.0" y2="312" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="708.0" y="332" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">87.5 MiB</text>
+  <line x1="882.0" y1="78" x2="882.0" y2="312" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="882.0" y="332" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">131.2 MiB</text>
+  <line x1="1056.0" y1="78" x2="1056.0" y2="312" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="1056" y="332" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="400" fill="#6F768A" text-anchor="middle">175.0 MiB</text>
+  <text x="348" y="107" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">luna_pinyin Yune WASM peak</text>
+  <rect x="360" y="93" width="254.5" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="620.5371428571428" y="107" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">64.00 MiB</text>
+  <text x="348" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">luna_pinyin Yune resources</text>
+  <rect x="360" y="121" width="117.3" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="483.3257142857143" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">29.50 MiB</text>
+  <text x="348" y="163" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">luna_pinyin My RIME WASM peak</text>
+  <rect x="360" y="149" width="63.6" height="18" rx="2" fill="#E2E5EA" stroke="#464C55" stroke-width="1"/>
+  <text x="429.63428571428574" y="163" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">16.00 MiB</text>
+  <text x="348" y="191" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">luna_pinyin My RIME resources</text>
+  <rect x="360" y="177" width="33.8" height="18" rx="2" fill="#E2E5EA" stroke="#464C55" stroke-width="1"/>
+  <text x="399.8057142857143" y="191" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">8.50 MiB</text>
+  <text x="348" y="219" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">jyutping Yune WASM peak</text>
+  <rect x="360" y="205" width="636.3" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="1002.3428571428572" y="219" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">160.00 MiB</text>
+  <text x="348" y="247" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">jyutping Yune resources</text>
+  <rect x="360" y="233" width="287.1" height="18" rx="2" fill="#A3BEFA" stroke="#2E4780" stroke-width="1"/>
+  <text x="653.1497142857143" y="247" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">72.20 MiB</text>
+  <text x="348" y="275" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">jyutping My RIME WASM peak</text>
+  <rect x="360" y="261" width="270.4" height="18" rx="2" fill="#E2E5EA" stroke="#464C55" stroke-width="1"/>
+  <text x="636.4457142857143" y="275" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">68.00 MiB</text>
+  <text x="348" y="303" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">jyutping My RIME resources</text>
+  <rect x="360" y="289" width="99.0" height="18" rx="2" fill="#E2E5EA" stroke="#464C55" stroke-width="1"/>
+  <text x="465.03085714285714" y="303" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#1F2430" text-anchor="start">24.90 MiB</text>
+</svg>

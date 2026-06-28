@@ -1,0 +1,464 @@
+[
+  {
+    "scenarioId": "yune-tracked",
+    "app": "yune-web",
+    "build": "tracked-dist",
+    "schema": "luna_pinyin",
+    "comparisonLane": "fair comparison",
+    "input": "ni",
+    "samples": 3,
+    "medianReadyToInputMs": 971,
+    "p95ReadyToInputMs": 3716,
+    "medianInputToCandidateMs": 67,
+    "p95InputToCandidateMs": 69,
+    "medianCommitMs": 118,
+    "p95CommitMs": 119,
+    "medianWasmReadyBytes": 67108864,
+    "medianWasmPeakBytes": 67108864,
+    "maxWasmPeakBytes": 67108864,
+    "medianJSHeapUsedBytes": 4811312,
+    "medianResourceTransferBytes": 30879592,
+    "medianResourceUniqueEncodedBytes": 30870592,
+    "medianStorageUsageBytes": 15883,
+    "yuneMedianInternalKeydownToPaintMs": 20,
+    "yuneMedianWorkerProcessMs": 4,
+    "committedValues": [
+      "你"
+    ],
+    "topResources": [
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/essay.txt",
+        "encodedBodySize": 5887668,
+        "transferSize": 5887968
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/luna_pinyin.table.bin",
+        "encodedBodySize": 4640486,
+        "transferSize": 4640786
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/stroke.table.bin",
+        "encodedBodySize": 4548476,
+        "transferSize": 4548776
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/stroke.prism.bin",
+        "encodedBodySize": 3501372,
+        "transferSize": 3501672
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/stroke.dict.yaml",
+        "encodedBodySize": 3396347,
+        "transferSize": 3396647
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/yune-web.wasm",
+        "encodedBodySize": 2617938,
+        "transferSize": 2618238
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/luna_pinyin.prism.bin",
+        "encodedBodySize": 1641885,
+        "transferSize": 1642185
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/stroke.reverse.bin",
+        "encodedBodySize": 1498516,
+        "transferSize": 1498816
+      }
+    ]
+  },
+  {
+    "scenarioId": "yune-tracked",
+    "app": "yune-web",
+    "build": "tracked-dist",
+    "schema": "jyutping",
+    "comparisonLane": "guard",
+    "input": "nei",
+    "samples": 3,
+    "medianReadyToInputMs": 1279,
+    "p95ReadyToInputMs": 1358,
+    "medianInputToCandidateMs": 89,
+    "p95InputToCandidateMs": 119,
+    "medianCommitMs": 107,
+    "p95CommitMs": 118,
+    "medianWasmReadyBytes": 167772160,
+    "medianWasmPeakBytes": 167772160,
+    "maxWasmPeakBytes": 167772160,
+    "medianJSHeapUsedBytes": 4963212,
+    "medianResourceTransferBytes": 75714005,
+    "medianResourceUniqueEncodedBytes": 75700505,
+    "medianStorageUsageBytes": 23914,
+    "yuneMedianInternalKeydownToPaintMs": 41,
+    "yuneMedianWorkerProcessMs": 6,
+    "committedValues": [
+      "你"
+    ],
+    "topResources": [
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/jyut6ping3_mobile.prism.bin",
+        "encodedBodySize": 19313669,
+        "transferSize": 19313969
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/jyut6ping3.table.bin",
+        "encodedBodySize": 15248382,
+        "transferSize": 15248682
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/jyut6ping3_scolar.table.bin",
+        "encodedBodySize": 12478842,
+        "transferSize": 12479142
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/jyut6ping3_scolar.dict.yaml",
+        "encodedBodySize": 7127626,
+        "transferSize": 7127926
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/luna_pinyin_yune_reverse.table.bin",
+        "encodedBodySize": 4640555,
+        "transferSize": 4640855
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/jyut6ping3.reverse.bin",
+        "encodedBodySize": 3592525,
+        "transferSize": 3592825
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/schema/jyut6ping3.dict.yaml",
+        "encodedBodySize": 3467039,
+        "transferSize": 3467339
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52033/yune-web.wasm",
+        "encodedBodySize": 2617938,
+        "transferSize": 2618238
+      }
+    ]
+  },
+  {
+    "scenarioId": "yune-public-demo",
+    "app": "yune-web",
+    "build": "public-demo-dist",
+    "schema": "luna_pinyin",
+    "comparisonLane": "fair comparison",
+    "input": "ni",
+    "samples": 3,
+    "medianReadyToInputMs": 1000,
+    "p95ReadyToInputMs": 1020,
+    "medianInputToCandidateMs": 74,
+    "p95InputToCandidateMs": 84,
+    "medianCommitMs": 107,
+    "p95CommitMs": 114,
+    "medianWasmReadyBytes": 67108864,
+    "medianWasmPeakBytes": 67108864,
+    "maxWasmPeakBytes": 67108864,
+    "medianJSHeapUsedBytes": 4765164,
+    "medianResourceTransferBytes": 31181088,
+    "medianResourceUniqueEncodedBytes": 30895886,
+    "medianStorageUsageBytes": 27427859,
+    "yuneMedianInternalKeydownToPaintMs": 29,
+    "yuneMedianWorkerProcessMs": 4,
+    "committedValues": [
+      "你"
+    ],
+    "topResources": [
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/essay.txt",
+        "encodedBodySize": 5887668,
+        "transferSize": 5887968
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/luna_pinyin.table.bin",
+        "encodedBodySize": 4640486,
+        "transferSize": 4640786
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/stroke.table.bin",
+        "encodedBodySize": 4548476,
+        "transferSize": 4548776
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/stroke.prism.bin",
+        "encodedBodySize": 3501372,
+        "transferSize": 3501672
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/stroke.dict.yaml",
+        "encodedBodySize": 3396347,
+        "transferSize": 3396647
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/yune-web.wasm",
+        "encodedBodySize": 2631051,
+        "transferSize": 2631351
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/luna_pinyin.prism.bin",
+        "encodedBodySize": 1641885,
+        "transferSize": 1642185
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/stroke.reverse.bin",
+        "encodedBodySize": 1498516,
+        "transferSize": 1498816
+      }
+    ]
+  },
+  {
+    "scenarioId": "yune-public-demo",
+    "app": "yune-web",
+    "build": "public-demo-dist",
+    "schema": "jyutping",
+    "comparisonLane": "guard",
+    "input": "nei",
+    "samples": 3,
+    "medianReadyToInputMs": 1347,
+    "p95ReadyToInputMs": 1439,
+    "medianInputToCandidateMs": 103,
+    "p95InputToCandidateMs": 103,
+    "medianCommitMs": 108,
+    "p95CommitMs": 120,
+    "medianWasmReadyBytes": 167772160,
+    "medianWasmPeakBytes": 167772160,
+    "maxWasmPeakBytes": 167772160,
+    "medianJSHeapUsedBytes": 4989740,
+    "medianResourceTransferBytes": 76165993,
+    "medianResourceUniqueEncodedBytes": 75725799,
+    "medianStorageUsageBytes": 72283250,
+    "yuneMedianInternalKeydownToPaintMs": 35,
+    "yuneMedianWorkerProcessMs": 1,
+    "committedValues": [
+      "你"
+    ],
+    "topResources": [
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/jyut6ping3_mobile.prism.bin",
+        "encodedBodySize": 19313669,
+        "transferSize": 19313969
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/jyut6ping3.table.bin",
+        "encodedBodySize": 15248382,
+        "transferSize": 15248682
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/jyut6ping3_scolar.table.bin",
+        "encodedBodySize": 12478842,
+        "transferSize": 12479142
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/jyut6ping3_scolar.dict.yaml",
+        "encodedBodySize": 7127626,
+        "transferSize": 7127926
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/luna_pinyin_yune_reverse.table.bin",
+        "encodedBodySize": 4640555,
+        "transferSize": 4640855
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/jyut6ping3.reverse.bin",
+        "encodedBodySize": 3592525,
+        "transferSize": 3592825
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/schema/jyut6ping3.dict.yaml",
+        "encodedBodySize": 3467039,
+        "transferSize": 3467339
+      },
+      {
+        "context": "worker",
+        "name": "http://127.0.0.1:52034/yune-web.wasm",
+        "encodedBodySize": 2631051,
+        "transferSize": 2631351
+      }
+    ]
+  },
+  {
+    "scenarioId": "my-rime-live",
+    "app": "my-rime",
+    "build": "vercel-live-c73ea17",
+    "schema": "luna_pinyin",
+    "comparisonLane": "fair comparison",
+    "input": "ni",
+    "samples": 3,
+    "medianReadyToInputMs": 634,
+    "p95ReadyToInputMs": 836,
+    "medianInputToCandidateMs": 95,
+    "p95InputToCandidateMs": 96,
+    "medianCommitMs": 119,
+    "p95CommitMs": 122,
+    "medianWasmReadyBytes": 16777216,
+    "medianWasmPeakBytes": 16777216,
+    "maxWasmPeakBytes": 16777216,
+    "medianJSHeapUsedBytes": 11316672,
+    "medianResourceTransferBytes": 8951281,
+    "medianResourceUniqueEncodedBytes": 8946481,
+    "medianStorageUsageBytes": 16062668,
+    "yuneMedianInternalKeydownToPaintMs": 0,
+    "yuneMedianWorkerProcessMs": 0,
+    "committedValues": [
+      "你"
+    ],
+    "topResources": [
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/luna-pinyin@0.1.1/luna_pinyin.table.bin",
+        "encodedBodySize": 4223050,
+        "transferSize": 4223350
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/stroke@0.1.3/stroke.prism.bin",
+        "encodedBodySize": 1177789,
+        "transferSize": 1178089
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/stroke@0.1.3/stroke.table.bin",
+        "encodedBodySize": 999301,
+        "transferSize": 999601
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@libreservice/my-rime@0.10.9/dist/rime.wasm",
+        "encodedBodySize": 822201,
+        "transferSize": 822501
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@libreservice/my-rime@0.10.9/dist/rime.data",
+        "encodedBodySize": 599179,
+        "transferSize": 599479
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/stroke@0.1.3/stroke.reverse.bin",
+        "encodedBodySize": 561328,
+        "transferSize": 561628
+      },
+      {
+        "context": "page",
+        "name": "https://my-rime.vercel.app/assets/index-Dx7zgIB7.js",
+        "encodedBodySize": 412839,
+        "transferSize": 413139
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/luna-pinyin@0.1.1/luna_pinyin.reverse.bin",
+        "encodedBodySize": 88880,
+        "transferSize": 89180
+      }
+    ]
+  },
+  {
+    "scenarioId": "my-rime-live",
+    "app": "my-rime",
+    "build": "vercel-live-c73ea17",
+    "schema": "jyutping",
+    "comparisonLane": "guard",
+    "input": "nei",
+    "samples": 3,
+    "medianReadyToInputMs": 998,
+    "p95ReadyToInputMs": 1230,
+    "medianInputToCandidateMs": 99,
+    "p95InputToCandidateMs": 116,
+    "medianCommitMs": 114,
+    "p95CommitMs": 124,
+    "medianWasmReadyBytes": 59375616,
+    "medianWasmPeakBytes": 71303168,
+    "maxWasmPeakBytes": 71303168,
+    "medianJSHeapUsedBytes": 12146412,
+    "medianResourceTransferBytes": 26133518,
+    "medianResourceUniqueEncodedBytes": 26125718,
+    "medianStorageUsageBytes": 41618760,
+    "yuneMedianInternalKeydownToPaintMs": 0,
+    "yuneMedianWorkerProcessMs": 0,
+    "committedValues": [
+      "你"
+    ],
+    "topResources": [
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/cantonese@0.1.5/jyut6ping3.table.bin",
+        "encodedBodySize": 10340349,
+        "transferSize": 10340649
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/luna-pinyin@0.1.1/luna_pinyin.table.bin",
+        "encodedBodySize": 4223050,
+        "transferSize": 4223350
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/cangjie@0.1.3/cangjie5.table.bin",
+        "encodedBodySize": 3425337,
+        "transferSize": 3425637
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/cangjie@0.1.3/cangjie5.reverse.bin",
+        "encodedBodySize": 1685344,
+        "transferSize": 1685644
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/cangjie@0.1.3/cangjie5.prism.bin",
+        "encodedBodySize": 1559844,
+        "transferSize": 1560144
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/stroke@0.1.3/stroke.prism.bin",
+        "encodedBodySize": 1177789,
+        "transferSize": 1178089
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@rime-contrib/stroke@0.1.3/stroke.table.bin",
+        "encodedBodySize": 999301,
+        "transferSize": 999601
+      },
+      {
+        "context": "worker",
+        "name": "https://cdn.jsdelivr.net/npm/@libreservice/my-rime@0.10.9/dist/rime.wasm",
+        "encodedBodySize": 822201,
+        "transferSize": 822501
+      }
+    ]
+  }
+]

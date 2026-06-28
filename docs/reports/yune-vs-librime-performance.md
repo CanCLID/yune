@@ -1,337 +1,121 @@
-# Yune vs upstream librime performance dashboard
+# Current Yune Performance Dashboard
 
 Date: 2026-06-28
 
-This report separates native-engine comparison evidence from browser-harness
-evidence. Native Track A claims remain native-engine only; browser/WASM claims
-are made only where real-browser evidence is linked below.
+This dashboard shows the current benchmark state only. Milestone closeout
+narrative and older benchmark rows have been moved to
+[`history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md).
 
-Browser startup remains tracked separately. M41 closed the `apps/yune-web`
-startup-harness milestone with production-browser evidence under
-[`../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/`](../../apps/yune-web/e2e/results/m41-yune-web-startup-optimization/).
-WEB-01 closed as a measured browser-harness no-go. M46 closed the
-TypeDuck/Jyutping native Track B and browser WASM memory handoff as a useful
-partial result: schema-switch correctness is fixed, but memory remains a
-measured no-go/unclassified blocker. WEB-03 then fixed the compiled-asset
-contract for the launch Jyutping path and remeasured the browser path; the
-shipping/full Jyutping rows now peak and settle at `160.0 MiB`.
+## Technical Summary
 
-## Comparison Lanes
+- **Native fair lane (`luna_pinyin`)**: Yune is faster than upstream librime
+  1.17.0 on startup/session, `zhongguo`, the 59-character pinyin row, and both
+  abbreviation rows. The current misses are still the short prefixes `n`
+  (`3.557x`) and `ni` (`3.632x`) versus same-run librime; the 37-character
+  pinyin row is now a watch row at `1.021x`.
+- **Native memory**: Track A still has a real high-water gap: Yune peaks at
+  `128.5 MB` working set versus librime's `18.3 MB` max observed peer peak.
+  Steady resident rows are lower, but this dashboard keeps the peak visible.
+- **Browser fair lane (`luna_pinyin`)**: current Yune public demo uses
+  `64.0 MiB` WASM peak versus My RIME `16.0 MiB` (`4.0x`). Yune is slower to
+  ready (`1000 ms` vs `634 ms`), but faster on first input in the current
+  comparator (`74 ms` vs `95 ms`).
+- **Browser Jyutping**: current Yune public demo is byte-backed and stays at
+  `160.0 MiB` WASM peak. This row is a guard, not a fair peer comparison,
+  because My RIME's Jyutping uses a different Cantonese-only dictionary.
 
-Three lanes, only two of which are fair cross-engine comparisons:
+## Current Evidence Bundle
 
-| Lane | Comparison | Schema | Fair? |
-| --- | --- | --- | --- |
-| **Track A** | Yune vs upstream **librime 1.17.0**, native | `luna_pinyin` | Yes — same schema/dictionary, same-run |
-| **Track B** | Yune-web vs **My RIME**, browser | `luna_pinyin` | Yes — same schema (see [browser report](./yune-web-vs-my-rime-browser-baseline.md)) |
-| **Jyutping guard** | Yune only, native + browser | `jyut6ping3_mobile` | No — TypeDuck multilingual dictionary; no librime/My-RIME equivalent |
+The normalized dashboard source is
+[`evidence/current-performance-dashboard-2026-06-28/`](./evidence/current-performance-dashboard-2026-06-28/).
 
-The Jyutping path is a Yune-only integration / correctness / performance guard,
-not a head-to-head number: My RIME's Jyutping uses Cantonese-only
-[`rime-cantonese`](https://github.com/rime/rime-cantonese), while Yune carries
-TypeDuck's multilingual `jyut6ping3` (Cantonese plus English/Hindi/Urdu/Nepali).
-**Every cross-engine speed and memory claim in this report is a fair
-`luna_pinyin` lane; the Jyutping numbers are guard evidence, never a
-comparison.** On the fair lanes, Yune is several times faster than librime on
-most native rows, and several times heavier in memory — about `127 MB` native
-(Track A) versus `13-17 MB` for librime, and about `160 MiB` browser (Track B)
-versus My RIME's `16 MiB`, both on `luna_pinyin` (~10x).
+Source inputs:
 
-## Latest Review Snapshot
+- Native Track A: fresh same-run `luna_pinyin` evidence captured for this
+  dashboard pass with product deploy enabled:
+  [`evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/summary.csv`](./evidence/current-performance-dashboard-2026-06-28/native-current-benchmark/summary.csv).
+- Browser peer comparator: fresh `current-dashboard` Playwright run under
+  [`../../apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/current-dashboard/`](../../apps/yune-web/e2e/results/yune-web-vs-my-rime-baseline/current-dashboard/).
+- Browser input-latency suite: latest rebuilt public-demo WEB-03 latency bundle
+  under
+  [`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
 
-The run-labeled review snapshot under
-[`./evidence/reframed-comparison-review-2026-06-27/`](./evidence/reframed-comparison-review-2026-06-27/)
-confirms the same current Track A shape while showing normal short-key
-run-to-run noise. Fresh Track A ratios are `hao 2.199x`, `n 3.534x`, and
-`ni 3.698x`; the public README and README SVG intentionally summarize those as
-approximate ranges rather than repinning public docs to one benchmark run.
+## Native Track A
 
-Only the fresh Track A rows from that native snapshot are valid for comparison
-claims. Its Track B native rows are invalid product evidence because the run did
-not use `-DeployProductBeforeBenchmark`: `product_path_status.csv` records
-`compiled_ready=false`, `selected_storage=unavailable`, and
-`source_fallback=true` for the Jyutping dictionaries. Those rows materialize a
-source-YAML fallback `translator.entries_by_code` BTreeMap and peak near
-`1.05 GB`; they must not replace M46's valid byte-backed Track B result below.
+![Current native Track A latency ratios](./evidence/current-performance-dashboard-2026-06-28/visuals/current-native-latency-ratios.svg)
 
-A clean follow-up Track B rerun under
-[`./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/`](./evidence/reframed-comparison-review-2026-06-27/native-track-b-clean/)
-uses `-DeployProductBeforeBenchmark` and is valid product evidence:
-`compiled_ready=true`, `selected_storage=byte_backed`, table/prism `mmap`, and
-`source_fallback=false`. It confirms the M46 memory result with peak working set
-`504,676,352 B` and steady rows from `427,171,840 B` to `440,688,640 B`.
-
-## Current Verdict
-
-M45 closes as a partial native-engine result with measured blockers, not as a
-full performance or memory success.
-
-Results:
-
-- `hao` passes the short-key target at `24.267us`, `2.110x` same-run upstream
-  librime. This preserves the M44 short-key pass; it is not a new M45 speed
-  win.
-- `n` remains a measured short-key blocker at `68.900us`, `3.313x`.
-- `ni` remains a measured short-key blocker at `49.450us`, `3.458x`.
-- Phase 0 selected `short-key-measured-no-go`. M45 did not retain a short-key
-  engine implementation branch; final short-key medians are fresh same-run
-  evidence used to lock candidate-output parity and blocker status, not proof
-  of an optimization versus the post-M44 diagnostic baseline.
-- Startup, session, `zhongguo`, both M40 full-pinyin long rows, and both
-  M42/M44 abbreviation rows stay inside their native no-regression gates.
-- Track A steady after-ready working set meets the resident target, with final
-  steady rows from `87,498,752 B` to `98,684,928 B`.
-- Track A peak memory remains a real standing cost at `127,475,712 B`, above
-  the `107,797,708 B` target, so M45 does not claim full memory success.
-
-M45 therefore records two remaining native blockers: short-prefix constant
-factor for `n`/`ni`, and the real per-cold-start peak-memory cost. It does not
-claim any browser, WASM, frontend, public-demo, packaging, deployment, broad
-product, AI, learned `.gram`/octagram, or plugin ABI win.
-
-## M46 Track B Memory Update
-
-M46 is TypeDuck/Jyutping memory attribution, not a Track A short-key latency
-plan. Fresh Track B native product evidence records:
-
-| Row | Median us | p95 us | Median working set | Peak working set |
-| --- | ---: | ---: | ---: | ---: |
-| `h` | `1767.200` | `1785.900` | `441,155,584 B` | `504,627,200 B` |
-| `ha` | `1198.400` | `1206.200` | `441,958,400 B` | `504,627,200 B` |
-| `hai` | `813.767` | `839.767` | `441,950,208 B` | `504,627,200 B` |
-| `hau` | `822.200` | `1002.633` | `441,966,592 B` | `504,627,200 B` |
-| `nei` | `399.367` | `473.100` | `441,982,976 B` | `504,627,200 B` |
-| `ngo` | `600.533` | `604.867` | `442,011,648 B` | `504,627,200 B` |
-| 50+ guard | `33.480` | `33.787` | `442,966,016 B` | `504,627,200 B` |
-
-Track B storage remains source-fallback-free:
-`selected_storage=byte_backed`, table/prism mapping `mmap`, selected table and
-prism heap mirrors `0`, and `rsmarisa_status=missing_string_table` for both
-`jyut6ping3` and `jyut6ping3_scolar`.
-
-M46 Phase 0 selected `schema-switch-regression-fix-first`, then Branch A fixed
-the multi-schema browser correctness blocker. The memory headline did not move:
-native Track B remains `504,627,200 B` peak, and browser Jyutping remains
-`893.1 MiB` for clean and schema-switch rows. M46 therefore closes as
-`schema-switch-correctness-fixed-memory-unchanged` with
-`measured-no-go-owner-unclassified`; no Track B memory optimization branch is
-claimed. The evidence root is
-[`./evidence/m46-jyutping-native-wasm-memory-attribution/`](./evidence/m46-jyutping-native-wasm-memory-attribution/).
-
-![M46 Branch A browser memory and correctness](./evidence/m46-jyutping-native-wasm-memory-attribution/m46-branch-a-browser-memory.svg)
-
-WEB-02 follow-up classifies the public-demo Jyutping browser owner that M46
-left unclassified. The measured web ABI path now reports
-`source_fallback=true`, `selected_storage=owned_heap`, and
-`byte_source_len=0` for the public-demo Jyutping path. The fallback reason is
-`prism parse failed: UnsupportedVersion`: shipped public-demo Jyutping prisms
-are `Rime::Prism/3.0`, while the compact byte-backed path uses current
-`Rime::Prism/4.0` artifacts. Retained owner rows name
-`translator.entries_by_code` at `510,925,748 B` plus `18,676,626 B`
-(`529,602,374 B` total, `505.1 MiB`). This is not a memory reduction and does
-not change the `893.1 MiB` browser high-water; it names the first reduction
-target as the web/public-demo compiled-asset contract. Evidence:
-[`./evidence/web02-jyutping-wasm-memory-attribution/`](./evidence/web02-jyutping-wasm-memory-attribution/).
-
-![WEB-02 public-demo Jyutping storage owner scale](./evidence/web02-jyutping-wasm-memory-attribution/visuals/web02-public-demo-storage-owner.svg)
-
-WEB-03 closes the launch compiled-asset contract follow-up. After the engine
-deploy fix in `3ffd4b21` and the regenerated public-demo assets in `ef37bfe9`,
-fresh Emscripten/Playwright evidence shows the shipping Jyutping launch rows no
-longer select source fallback. The public-demo `full-jyutping` row records
-ready `1306 ms`, input-to-candidate `100 ms`, commit `110 ms`, and ready/peak/
-steady WASM memory all at `160.0 MiB`. The schema-switch run covers
-`jyut6ping3_mobile`, `cangjie5`, and `luna_pinyin`, returning the expected
-smoke candidates with zero worker action errors and a max observed WASM value
-of `160.0 MiB`.
-
-Post-closeout correction: the memory remeasure at `d4d84203` was real, but the
-byte-backed Jyutping path still had a phrase-composition regression that the
-memory-only closeout did not disclose. The follow-up fix restores compact-path
-prism alias lookups for sentence substrings and prefix fallback. Full native
-`yune_web` now passes 33/0 with 2 ignored evidence-only tests,
-`cantonese_parity` passes 37/0, the WEB-03 byte-backed guard asserts
-`ngogokdak -> 我覺得`, and a rebuilt public-demo browser smoke proves both
-`ngogokdak -> 我覺得` and the `zouhapci` visible lookup rows. Evidence:
-[`./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md).
-
-Additional 2026-06-28 latency correction: the earlier WEB-03 report did not
-update all short/long browser input-latency dimensions. A live deployed probe
-reproduced a Jyutping long-input regression while memory stayed fixed at
-`160.0 MiB`. The follow-up bounds sentence-span candidate collection and
-prefix-fallback expansion; rebuilt local public-demo evidence restores the
-affected long rows without changing memory.
-
-Latest focused browser latency evidence:
-
-| Schema | Input | Exact keydown-to-paint | Max during input | WASM current/peak |
-| --- | --- | ---: | ---: | ---: |
-| `luna_pinyin` | `hao` | `40 ms` | `40 ms` | `64.0 MiB` |
-| `luna_pinyin` | `ni` | `22 ms` | `22 ms` | `64.0 MiB` |
-| `luna_pinyin` | `zhongguo` | `19 ms` | `30 ms` | `64.0 MiB` |
-| `luna_pinyin` | `ceshiyixiachangjushuruxingnengzenyang` | `43 ms` | `45 ms` | `64.0 MiB` |
-| `luna_pinyin` | `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `75 ms` | `78 ms` | `64.0 MiB` |
-| `luna_pinyin` | `cszysmsrsd` | `26 ms` | `29 ms` | `64.0 MiB` |
-| `luna_pinyin` | `zybfshmsru` | `34 ms` | `47 ms` | `64.0 MiB` |
-| `jyut6ping3_mobile` | `hai` | `47 ms` | `47 ms` | `160.0 MiB` |
-| `jyut6ping3_mobile` | `ngo` | `23 ms` | `24 ms` | `160.0 MiB` |
-| `jyut6ping3_mobile` | `caksi` | `89 ms` | `90 ms` | `160.0 MiB` |
-| `jyut6ping3_mobile` | `ngogokdak` | `22 ms` | `33 ms` | `160.0 MiB` |
-| `jyut6ping3_mobile` | `sihaacoenggeoisyujapgecukdou` | `130 ms` | `136 ms` | `160.0 MiB` |
-| `jyut6ping3_mobile` | `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` | `74 ms` | `74 ms` | `160.0 MiB` |
-
-Regression delta for the affected Jyutping rows:
-
-| Input | Deployed pre-fix | Rebuilt local fix |
-| --- | ---: | ---: |
-| `caksi` | `299 ms` | `89 ms` |
-| `ngogokdak` | `160 ms` | `22 ms` |
-| `sihaacoenggeoisyujapgecukdou` | `3764 ms` | `130 ms` |
-| `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` | `1518 ms` | `74 ms` |
-
-The final Jyutping-only sanity check after the last WASM rebuild records the
-same two long rows at `142 ms` and `78 ms`, also with ready/peak WASM memory at
-`160.0 MiB`.
-
-Guardrail follow-up: the native WEB-03 long-input guard now covers both
-Jyutping rows above, checks the expected first candidate for each, and caps the
-byte-backed prefix/sentence expansion counters so the latency fix cannot be
-kept by silently dropping candidate quality.
-
-Evidence:
-[`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
-
-This is a browser-harness/public-demo compiled-asset fix, not a native-engine
-memory win and not a broad product speed claim. The synthetic `extras` row in
-the attribution benchmark still reaches `893.1 MiB` because it intentionally
-withholds the launch compiled assets; it is retained as a negative control, not
-the shipped path. The fair browser comparison lane also remains unchanged:
-`luna_pinyin` is still `160.0 MiB` for Yune versus My RIME's `16.0 MiB`.
-Evidence:
-[`./evidence/web03-three-schema-launch-readiness/`](./evidence/web03-three-schema-launch-readiness/).
-
-![WEB-03 browser WASM memory closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
-
-![WEB-03 browser timing closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
-
-![WEB-03 Jyutping latency regression fix](./evidence/web03-three-schema-launch-readiness/visuals/web03-jyutping-latency-regression-fix.svg)
-
-## M45 Visual Dashboard
-
-The checked-in M45 visuals summarize the final native evidence under
-[`./evidence/m45-native-short-key-memory-attribution/`](./evidence/m45-native-short-key-memory-attribution/).
-
-![M45 short-key same-run ratio gates](./evidence/m45-native-short-key-memory-attribution/visuals/m45-short-key-ratios.svg)
-
-![M45 steady resident and peak memory bands](./evidence/m45-native-short-key-memory-attribution/visuals/m45-memory-bands.svg)
-
-![M45 retained owner attribution](./evidence/m45-native-short-key-memory-attribution/visuals/m45-owner-attribution.svg)
-
-## M45 Final Native Dashboard
-
-Same-run oracle: upstream `rime/librime 1.17.0` with `luna_pinyin`.
-
-| Row | Yune median | librime median | Ratio / guard | M45 result |
+| Dimension | Yune median | librime median | Yune / librime | Current read |
 | --- | ---: | ---: | ---: | --- |
-| startup/runtime-ready | `23,386.400 us` | `26,740.300 us` | `0.875x` | Pass; no startup claim |
-| session create/select/destroy | `23,444.800 us` | `25,462.900 us` | `0.921x` | Pass; no session claim |
-| `n` | `68.900 us` | `20.800 us` | `3.313x` | Misses target; measured blocker |
-| `ni` | `49.450 us` | `14.300 us` | `3.458x` | Misses target; measured blocker |
-| `hao` | `24.267 us` | `11.500 us` | `2.110x` | Target met |
-| `zhongguo` | `61.225 us` | `164.225 us` | `0.373x` | Pass |
-| `ceshiyixiachangjushuruxingnengzenyang` | `279.459 us` | `297.611 us` | `0.939x` | Pass; no abbreviation expansion |
-| `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `478.915 us` | `665.317 us` | `0.720x` | Pass; no abbreviation expansion |
-| `cszysmsrsd` | `525.480 us` | `1,193.170 us` | `0.440x` | Pass; behavior guard preserved |
-| `zybfshmsru` | `534.090 us` | `833.980 us` | `0.640x` | Pass; behavior guard preserved |
+| startup | `23,024.800 us` | `28,737.400 us` | `0.801x` | Yune faster |
+| session | `24,179.000 us` | `29,380.100 us` | `0.823x` | Yune faster |
+| `n` | `71.500 us` | `20.100 us` | `3.557x` | blocker |
+| `ni` | `50.300 us` | `13.850 us` | `3.632x` | blocker |
+| `hao` | `25.233 us` | `11.400 us` | `2.213x` | watch |
+| `zhongguo` | `62.188 us` | `163.175 us` | `0.381x` | Yune faster |
+| 37-char pinyin | `292.373 us` | `286.422 us` | `1.021x` | watch |
+| 59-char pinyin | `489.776 us` | `678.215 us` | `0.722x` | Yune faster |
+| abbreviation 10-char | `547.380 us` | `1,224.350 us` | `0.447x` | Yune faster |
+| abbreviation 8-char | `565.190 us` | `865.370 us` | `0.653x` | Yune faster |
 
-The final short-key candidate comparison passes for `n`, `ni`, and `hao`:
-candidate text, comments, order, context preedit, commit preview, and
-first-page metadata match upstream librime `1.17.0`.
+## Memory High-Water
 
-## M45 Memory And Storage
+![Current memory high-water by lane](./evidence/current-performance-dashboard-2026-06-28/visuals/current-memory-peaks.svg)
 
-| Metric | Phase 0 | Final | Result |
+| Lane | Yune | Peer | Current read |
 | --- | ---: | ---: | --- |
-| Startup steady working set | `89,931,776 B` | `90,161,152 B` | Below resident target |
-| Session steady working set | `87,539,712 B` | `87,498,752 B` | Below resident target |
-| `n` steady working set | `91,295,744 B` | `91,058,176 B` | Below resident target |
-| Highest Track A steady row | `98,058,240 B` | `98,684,928 B` | Below resident target |
-| Track A peak working set | `127,528,960 B` | `127,475,712 B` | Still above target; standing peak-cost blocker |
-| Track A peak pagefile | `112,230,400 B` | `112,218,112 B` | Still a peak-cost signal |
-| Whole-process memory target | n/a | `<=107,797,708 B` required | Resident met; peak not met |
+| Native Track A peak working set | `128.5 MB` | librime max peer peak `18.3 MB` | Yune still materially heavier |
+| Browser `luna_pinyin` WASM peak | `64.0 MiB` | My RIME `16.0 MiB` | fair browser gap is now `4.0x` |
+| Browser Jyutping WASM peak | `160.0 MiB` | My RIME `68.0 MiB` | guard only, dictionary-confounded |
 
-M45 records `steady-state-meets-target-standing-peak-cost`: steady Track A
-resident memory is below the old target, but the first startup sample reaches
-the same `127 MB` high-water value, so the peak remains a real cold-start cost.
+## Browser Peer Dashboard
 
-Track A final storage/status:
+![Current browser peer latency](./evidence/current-performance-dashboard-2026-06-28/visuals/current-browser-peer-latency.svg)
 
-- `selected_storage=rsmarisa_byte_backed`
-- table/prism mapping mode: `mmap`
-- selected table/prism heap mirror bytes: `0`
-- `source_fallback=false`
-- `rsmarisa_status=ok`
-- `rsmarisa_mapping_mode=mmap`
-- positive `rsmarisa` exact/prefix counters remain present in target rows
-- first-page output and `RimeGetContext` stay page-bounded
+![Current browser memory and payload](./evidence/current-performance-dashboard-2026-06-28/visuals/current-browser-memory-payload.svg)
 
-## M45 Short-Key Owner Profile
+| Scenario | Schema | Ready | Input -> candidate | Commit | WASM peak | Unique encoded resources | Validity |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Yune public demo | `luna_pinyin` | `1000 ms` | `74 ms` | `107 ms` | `64.0 MiB` | `29.5 MiB` | fair |
+| My RIME live | `luna_pinyin` | `634 ms` | `95 ms` | `119 ms` | `16.0 MiB` | `8.5 MiB` | fair |
+| Yune public demo | Jyutping | `1347 ms` | `103 ms` | `108 ms` | `160.0 MiB` | `72.2 MiB` | guard only |
+| My RIME live | Jyutping | `998 ms` | `99 ms` | `114 ms` | `68.0 MiB` | `24.9 MiB` | guard only |
 
-Final counters keep the sentence paths out of the short-key rows:
-`upstream_sentence_model_calls=0` for `n`, `ni`, and `hao`.
+## Yune Browser Input-Latency Suite
 
-The per-owner figures below come from the metrics-instrumented run (m37
-counters enabled), so the `Process key` column exceeds the clean benchmark
-medians above (for example `ni` is `96.900 us` instrumented versus `49.450 us`
-clean). Read this table for relative owner share, not absolute latency.
+![Current Yune browser input latency suite](./evidence/current-performance-dashboard-2026-06-28/visuals/current-yune-browser-input-latency.svg)
 
-| Row | Process key | Translator | Prefix lookup | Rows scanned | First page materialize | Result |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `n` | `66.900 us` | `64.800 us` | `35.100 us` | `7` | `1.700 us` | Miss; measured blocker |
-| `ni` | `96.900 us` | `92.200 us` | `35.600 us` | `14` | `5.200 us` | Miss; measured blocker |
-| `hao` | `70.700 us` | `64.000 us` | `9.300 us` | `21` | `8.600 us` | Ratio target met |
+| Schema | Input | Exact keydown-to-paint | Max during input | WASM peak | First candidate |
+| --- | --- | ---: | ---: | ---: | --- |
+| `luna_pinyin` | `hao` | `40 ms` | `40 ms` | `64.0 MiB` | `好` |
+| `luna_pinyin` | `ni` | `22 ms` | `22 ms` | `64.0 MiB` | `你` |
+| `luna_pinyin` | `zhongguo` | `19 ms` | `30 ms` | `64.0 MiB` | `中國大陸` |
+| `luna_pinyin` | `ceshiyixiachangjushuruxingnengzenyang` | `43 ms` | `45 ms` | `64.0 MiB` | `測是一下長據書如行能怎樣` |
+| `luna_pinyin` | `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `75 ms` | `78 ms` | `64.0 MiB` | `這個因請其是應該之喫差哦長據子書如才能用` |
+| `luna_pinyin` | `cszysmsrsd` | `26 ms` | `29 ms` | `64.0 MiB` | placeholder row |
+| `luna_pinyin` | `zybfshmsru` | `34 ms` | `47 ms` | `64.0 MiB` | placeholder row |
+| `jyut6ping3_mobile` | `hai` | `47 ms` | `47 ms` | `160.0 MiB` | `係` |
+| `jyut6ping3_mobile` | `ngo` | `23 ms` | `24 ms` | `160.0 MiB` | `我` |
+| `jyut6ping3_mobile` | `caksi` | `89 ms` | `90 ms` | `160.0 MiB` | `測時` |
+| `jyut6ping3_mobile` | `ngogokdak` | `22 ms` | `33 ms` | `160.0 MiB` | `我覺得` |
+| `jyut6ping3_mobile` | `sihaacoenggeoisyujapgecukdou` | `130 ms` | `136 ms` | `160.0 MiB` | `試下場據輸入嘅速都` |
+| `jyut6ping3_mobile` | `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` | `74 ms` | `74 ms` | `160.0 MiB` | `睇下如果打好場嘅據自個責會點樣` |
 
-The residual issue is a short-prefix translator/prefix lookup constant factor,
-not the M40 full-pinyin sentence lookup or M42 abbreviation routing. M45 does
-not claim a perceptible typing UX win; these rows are tens of microseconds. No
-short-key code branch was retained in M45, so the small movement from the
-diagnostic ratios should be treated as normal same-machine run variance rather
-than optimization progress.
+## Remaining Current Gaps
 
-## Evidence Bundle
+![Current remaining performance gaps](./evidence/current-performance-dashboard-2026-06-28/visuals/current-root-cause-gaps.svg)
 
-Primary evidence root:
-[`./evidence/m45-native-short-key-memory-attribution/`](./evidence/m45-native-short-key-memory-attribution/)
-
-Key artifacts:
-
-- Phase 0 benchmark:
-  [`phase-0-native-baseline/`](./evidence/m45-native-short-key-memory-attribution/phase-0-native-baseline/)
-- Phase 0 short-key oracle:
-  [`phase-0-short-key-oracle/`](./evidence/m45-native-short-key-memory-attribution/phase-0-short-key-oracle/)
-- Phase 0 verdict:
-  [`phase-0-verdict.md`](./evidence/m45-native-short-key-memory-attribution/phase-0-verdict.md)
-- Final benchmark bundle:
-  [`final-native-benchmark/`](./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/)
-- Final candidate-output comparison:
-  [`final-candidate-comparison/oracle-vs-yune-candidate-output.md`](./evidence/m45-native-short-key-memory-attribution/final-candidate-comparison/oracle-vs-yune-candidate-output.md)
-- Final memory attribution:
-  [`final-memory-attribution.md`](./evidence/m45-native-short-key-memory-attribution/final-memory-attribution.md)
-- Final visual evidence:
-  [`visuals/`](./evidence/m45-native-short-key-memory-attribution/visuals/)
-- Final gates:
-  [`final-native-benchmark/final-gates.md`](./evidence/m45-native-short-key-memory-attribution/final-native-benchmark/final-gates.md)
-
-## Prior Native Context
-
-M44 remains the predecessor native/profile closeout. It passed `hao`, both
-abbreviation rows, and the selected Track B short-row lookup targets, while
-recording `ni` and peak memory as measured blockers. Its evidence remains under
-[`./evidence/m44-native-performance-owner-reduction/`](./evidence/m44-native-performance-owner-reduction/).
-
-## Remaining Gaps
-
-| Rank | Gap | Evidence | Next diagnostic action |
+| Rank | Gap | Current value | Next diagnostic target |
 | ---: | --- | --- | --- |
-| 1 | Track A `n`/`ni` short-prefix constant factor | Final `n` `68.900us` / `3.313x`; final `ni` `49.450us` / `3.458x`; `upstream_sentence_model_calls=0`. | Isolate a bounded prefix/translator constant-factor owner without widening long-row, abbreviation, or TypeDuck-profile behavior. |
-| 2 | Track A real peak memory | Final peak `127,475,712 B` with steady resident rows below target; first startup still records the peak. | Profile allocator/transient/private and mapped residency before any storage rewrite; keep peak and steady resident numbers separate. |
+| 1 | Native Track A peak memory | `128.5 MB` vs librime max peer peak `18.3 MB` | allocator/transient/private-byte attribution for the high-water peak |
+| 2 | Browser `luna_pinyin` memory | `64.0 MiB` vs My RIME `16.0 MiB` | WASM runtime floor and public-demo resource/heap split |
+| 3 | Native `ni` latency | `50.300 us` vs `13.850 us` | short-prefix translator/prefix constant factor |
+| 4 | Native `n` latency | `71.500 us` vs `20.100 us` | same short-prefix owner, separately from sentence and abbreviation paths |
+| 5 | Browser `luna_pinyin` startup | `1000 ms` vs My RIME `634 ms` | startup asset/runtime phases after current public-demo build |
+
+## History
+
+Older milestone closeout detail remains in:
+
+- [`history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-performance-pre-current-dashboard.md)
+- [`plans/completed/`](../plans/completed/)
+- [`ledgers/milestone-history.md`](../ledgers/milestone-history.md)

@@ -1,0 +1,5 @@
+scenario,app,schema,input,median_ready_to_input_ms,median_input_to_candidate_ms,median_commit_ms,wasm_ready_mib,wasm_peak_mib,unique_encoded_resources_mib,comparison_validity
+yune-public-demo,yune-web,luna_pinyin,ni,1000,74,107,64.0,64.0,29.5,fair_same_schema
+yune-public-demo,yune-web,jyutping,nei,1347,103,108,160.0,160.0,72.2,guard_only_dictionary_confounded
+my-rime-live,my-rime,luna_pinyin,ni,634,95,119,16.0,16.0,8.5,fair_same_schema
+my-rime-live,my-rime,jyutping,nei,998,99,114,56.6,68.0,24.9,guard_only_dictionary_confounded

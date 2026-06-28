@@ -7,7 +7,8 @@ phrase-composition follow-up fix. Tasks 2-5 are complete: launch assets are
 regenerated, native diagnostics byte-back all three public schemas, fresh
 Emscripten/Playwright evidence shows the shipping Jyutping launch/full browser
 rows peak and settle at `160.0 MiB`, and the byte-backed path now preserves
-multi-syllable Jyutping phrase composition.
+multi-syllable Jyutping phrase composition. A later latency follow-up fixed the
+long-input regression introduced by the phrase-composition repair.
 
 Scope boundary: this is a browser-harness/public-demo compiled-asset fix. It
 does not claim a native-engine memory win, a broad product speed win, or a fair
@@ -26,7 +27,9 @@ assets; it remains a negative control, not the shipped path.
 - `task3-native-byte-backed/compiled-asset-inventory.csv`
 - `visuals/web03-browser-wasm-memory.svg`
 - `visuals/web03-browser-timing.svg`
+- `visuals/web03-jyutping-latency-regression-fix.svg`
 - `phrase-composition-regression-fix/final-gates.md`
+- `../../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`
 - `../../../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/web03-after-byte-backed-assets/summary.csv`
 - `../../../../apps/yune-web/e2e/results/yune-web-jyutping-memory-attribution/web03-after-byte-backed-assets/report.md`
 - `../../../../apps/yune-web/e2e/results/web03-three-schema-launch-readiness/browser-attribution/web03-after-byte-backed-assets/summary.csv`
@@ -136,6 +139,46 @@ Attribution evidence:
 `extras` is the negative-control row from the attribution harness: it requests
 no launch compiled assets and therefore still exercises the old source-fallback
 high-water shape.
+
+## Latency Regression Follow-Up
+
+The phrase-composition repair restored byte-backed Jyutping correctness but
+over-broadened sentence/prefix fallback expansion. A live deployed probe on
+2026-06-28 reproduced a long-input latency regression while memory remained
+fixed at `160.0 MiB`:
+
+| Input | Deployed pre-fix exact keydown-to-paint | Rebuilt local fix |
+| --- | ---: | ---: |
+| `caksi` | `299 ms` | `89 ms` |
+| `ngogokdak` | `160 ms` | `22 ms` |
+| `sihaacoenggeoisyujapgecukdou` | `3764 ms` | `130 ms` |
+| `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` | `1518 ms` | `74 ms` |
+
+The fix keeps alias resolution for the compact byte-backed path but bounds
+hidden expansion work:
+
+- sentence alias expansion only asks the prism for the amount the sentence path
+  can consume;
+- sentence spans cap collected candidates per span;
+- prefix fallback sorts a small capped pending set instead of materializing and
+  sorting every matching row.
+
+New native guard:
+
+```powershell
+cargo test -p yune-rime-api --test yune_web web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion
+```
+
+Focused verification:
+
+- long-input expansion guard: passed;
+- WEB-03 byte-backed launch guard: passed;
+- public mobile phrase composition: passed;
+- visible lookup enrichment: passed;
+- rebuilt local public-demo browser latency evidence:
+  `apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`.
+
+![WEB-03 Jyutping latency regression fix](./visuals/web03-jyutping-latency-regression-fix.svg)
 
 ## Verification
 

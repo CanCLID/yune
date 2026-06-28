@@ -8,7 +8,9 @@ use std::{
 };
 
 use serde_json::{json, Value};
-use yune_core::RimeDictArtifactStatus;
+use yune_core::{
+    m37_metrics_enable, m37_metrics_reset, m37_metrics_snapshot, RimeDictArtifactStatus,
+};
 use yune_rime_api::{
     rime_get_api, workspace_dictionary_rebuild_reports, yune_web_cleanup, yune_web_customize,
     yune_web_delete_candidate, yune_web_deploy, yune_web_flip_page, yune_web_free_response,
@@ -1662,6 +1664,69 @@ fn web03_public_demo_launch_schemas_byte_back_compiled_assets() {
         )
         .expect("compiled asset inventory should be written");
     }
+}
+
+#[test]
+fn web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion() {
+    let _guard = test_guard();
+    let runtime =
+        YuneWebRuntime::create_with_schema("web03-jyutping-long-input-perf", "jyut6ping3_mobile");
+    runtime.write_public_demo_assets();
+    deploy_public_demo_schema(&runtime, "jyut6ping3_mobile");
+
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(
+        !state.is_null(),
+        "jyut6ping3_mobile should initialize from public-demo assets"
+    );
+    assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+    let composing = process_input(state, "nei");
+    assert_schema_storage_byte_backed(
+        "jyut6ping3_mobile",
+        &composing["context"]["debug"]["storage"],
+    );
+
+    drop(response_json(unsafe {
+        yune_web_process_key(state, 0xff1b, 0)
+    }));
+
+    m37_metrics_enable(true);
+    m37_metrics_reset();
+    let long_input = "sihaacoenggeoisyujapgecukdou";
+    let response = process_input(state, long_input);
+    let metrics = m37_metrics_snapshot();
+    m37_metrics_enable(false);
+
+    let candidates = response["context"]["candidates"]
+        .as_array()
+        .expect("candidate rows should be an array");
+    assert!(
+        !candidates.is_empty(),
+        "long byte-backed Jyutping input should still produce candidates: {response:?}"
+    );
+    assert!(
+        metrics.prefix_fallback_views_visited <= 5_000,
+        "long byte-backed Jyutping input should not materialize every prefix fallback row: {metrics:?}"
+    );
+    assert!(
+        metrics.sentence_entry_matches_collected <= 5_000,
+        "long byte-backed Jyutping input should not materialize every sentence substring row: {metrics:?}"
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
 }
 
 #[test]

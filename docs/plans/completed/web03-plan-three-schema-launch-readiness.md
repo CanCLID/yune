@@ -157,6 +157,32 @@ Evidence:
 [`../../reports/evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](../../reports/evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md),
 [`../../../apps/yune-web/e2e/results/web03-three-schema-launch-readiness/phrase-composition-regression-fix/browser-phrase-smoke/`](../../../apps/yune-web/e2e/results/web03-three-schema-launch-readiness/phrase-composition-regression-fix/browser-phrase-smoke/).
 
+### Task 7 - Long-Input Latency Follow-Up
+
+Complete in the WEB-03 latency follow-up.
+
+The phrase-composition repair restored correctness but over-broadened
+compact-path sentence/prefix fallback expansion. A live deployed probe on
+2026-06-28 reproduced the regression while memory stayed fixed at `160.0 MiB`:
+the 28-character Jyutping row reached `3764 ms` and the 52-character row
+reached `1518 ms` exact keydown-to-paint.
+
+The follow-up bounds hidden work while keeping the compact-path alias behavior:
+
+- sentence alias expansion asks the prism only for the codes the sentence path
+  can consume;
+- sentence spans cap collected candidates per span;
+- prefix fallback sorts a small capped pending set instead of every matching
+  dictionary row.
+
+Rebuilt local public-demo evidence records `130 ms` for
+`sihaacoenggeoisyujapgecukdou` and `74 ms` for
+`taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng`, with ready/peak WASM
+memory still `160.0 MiB`.
+
+Evidence:
+[`../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
+
 ## Closeout Updates
 
 Updated:
@@ -169,6 +195,7 @@ Updated:
 - [`../../reports/yune-vs-librime-root-cause-analysis.md`](../../reports/yune-vs-librime-root-cause-analysis.md)
 - [`../../reports/evidence/web02-jyutping-wasm-memory-attribution/README.md`](../../reports/evidence/web02-jyutping-wasm-memory-attribution/README.md)
 - [`../../reports/evidence/web03-three-schema-launch-readiness/README.md`](../../reports/evidence/web03-three-schema-launch-readiness/README.md)
+- [`../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/)
 
 ## Remaining Measured Blockers
 

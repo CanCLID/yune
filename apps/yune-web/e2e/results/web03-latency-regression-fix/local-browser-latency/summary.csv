@@ -1,0 +1,14 @@
+schema,input,exactMatched,diagnosticInput,inputLength,totalKeydownToPaintMs,workerQueueWaitMs,workerProcessMs,workerRoundtripMs,reactUpdateMs,paintProxyMs,candidateCount,totalCandidateCount,firstCandidateText,wasmHeapBytes,peakWasmHeapBytes,wallMs,newDiagnosticCount,maxNewTotalKeydownToPaintMs,maxNewWorkerProcessMs,sumNewWorkerProcessMs
+luna_pinyin,hao,true,hao,3,40,20,0,1,3,16,5,5,"好",67108864,67108864,59,3,40,5,6
+luna_pinyin,ni,true,ni,2,22,4,0,3,1,13,5,5,"你",67108864,67108864,42,3,22,0,0
+luna_pinyin,zhongguo,true,zhongguo,8,19,10,0,1,0,8,4,4,"中國大陸",67108864,67108864,41,10,30,1,2
+luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,true,ceshiyixiachangjushuruxingnengzenyang,37,43,33,1,1,0,9,5,5,"測是一下長據書如行能怎樣",67108864,67108864,79,39,45,1,8
+luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,true,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,59,75,68,1,1,0,6,5,5,"這個因請其是應該之喫差哦長據子書如才能用",67108864,67108864,119,45,78,1,16
+luna_pinyin,cszysmsrsd,true,cszysmsrsd,10,26,21,0,0,0,4,1,1,"??????????",67108864,67108864,34,10,29,6,7
+luna_pinyin,zybfshmsru,true,zybfshmsru,10,34,30,0,0,0,4,1,1,"????????",67108864,67108864,63,12,47,1,1
+jyut6ping3_mobile,hai,true,hai,3,47,35,0,3,1,9,1,1,"係",167772160,167772160,67,3,47,6,7
+jyut6ping3_mobile,ngo,true,ngo,3,23,9,0,1,1,12,6,6,"我",167772160,167772160,45,4,24,1,2
+jyut6ping3_mobile,caksi,true,caksi,5,89,78,0,1,0,10,6,6,"測時",167772160,167772160,106,7,90,57,60
+jyut6ping3_mobile,ngogokdak,true,ngogokdak,9,22,11,0,1,0,9,6,6,"我覺得",167772160,167772160,41,11,33,1,4
+jyut6ping3_mobile,sihaacoenggeoisyujapgecukdou,true,sihaacoenggeoisyujapgecukdou,28,130,123,1,1,0,6,6,6,"試下場據輸入嘅速都",167772160,167772160,157,30,136,91,93
+jyut6ping3_mobile,taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng,true,taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng,52,74,55,1,7,1,12,6,6,"睇下如果打好場嘅據自個責會點樣",167772160,167772160,114,45,74,1,12

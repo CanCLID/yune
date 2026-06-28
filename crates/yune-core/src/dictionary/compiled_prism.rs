@@ -45,6 +45,16 @@ impl RimePrismBinPayload {
         spelling: &str,
         syllabary_codes: &'a [String],
     ) -> Vec<PrismLookupCode<'a>> {
+        self.lookup_canonical_codes_with_limit(spelling, syllabary_codes, usize::MAX)
+    }
+
+    #[must_use]
+    pub fn lookup_canonical_codes_with_limit<'a>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        limit: usize,
+    ) -> Vec<PrismLookupCode<'a>> {
         let Some(spelling_index) = self
             .double_array
             .as_ref()
@@ -66,6 +76,7 @@ impl RimePrismBinPayload {
                     credibility: descriptor.credibility,
                 })
             })
+            .take(limit)
             .collect()
     }
 }

@@ -307,6 +307,37 @@ It does not change the native Track B `504 MB` memory result, does not claim a
 native memory win, and does not solve the fair browser `luna_pinyin` memory gap
 against My RIME (`160.0 MiB` versus `16.0 MiB`).
 
+Second post-closeout correction: the phrase-composition repair introduced a
+long-input Jyutping latency regression. A live deployed probe on 2026-06-28
+showed the memory fix was still intact (`160.0 MiB`), but long typing was not:
+`sihaacoenggeoisyujapgecukdou` reached `3764 ms` exact keydown-to-paint and
+`taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` reached `1518 ms`. The
+owner was not assets or WASM heap growth; it was compact-path sentence/prefix
+fallback expansion materializing and sorting too many hidden rows after alias
+resolution.
+
+The fix bounds that work while preserving the alias behavior needed for
+`ngogokdak` and `zouhapci`:
+
+- sentence alias lookup asks the prism only for the codes the sentence path can
+  consume;
+- sentence spans cap candidates per span;
+- prefix fallback sorts a small capped pending set instead of every matching
+  dictionary row.
+
+Rebuilt local public-demo evidence records:
+
+| Input | Deployed pre-fix | Rebuilt local fix | Memory |
+| --- | ---: | ---: | ---: |
+| `caksi` | `299 ms` | `89 ms` | `160.0 MiB` |
+| `ngogokdak` | `160 ms` | `22 ms` | `160.0 MiB` |
+| `sihaacoenggeoisyujapgecukdou` | `3764 ms` | `130 ms` | `160.0 MiB` |
+| `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` | `1518 ms` | `74 ms` | `160.0 MiB` |
+
+The final Jyutping-only sanity check after the last WASM rebuild records the
+same two long rows at `142 ms` and `78 ms`, also with ready/peak WASM memory at
+`160.0 MiB`.
+
 Post-closeout correction: the phrase-composition regression is now fixed and
 gated. Final follow-up evidence records full native `yune_web` 33/0 with 2
 ignored evidence-only tests, `cantonese_parity` 37/0, WEB-03 byte-backed guard
@@ -317,10 +348,14 @@ Evidence:
 [`./evidence/web03-three-schema-launch-readiness/`](./evidence/web03-three-schema-launch-readiness/).
 Follow-up evidence:
 [`./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md).
+Latency follow-up evidence:
+[`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
 
 ![WEB-03 browser WASM memory closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
 
 ![WEB-03 browser timing closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
+
+![WEB-03 Jyutping latency regression fix](./evidence/web03-three-schema-launch-readiness/visuals/web03-jyutping-latency-regression-fix.svg)
 
 ## Memory Synthesis: M43-M46
 

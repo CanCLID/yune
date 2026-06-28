@@ -497,6 +497,12 @@ sentence substrings and prefix fallback probes, and the WEB-03 guard now covers
 `ngogokdak -> 我覺得` plus visible `zouhapci` dictionary rows before treating the
 launch path as complete.
 
+Latency follow-up note: the phrase-composition repair must also stay bounded.
+The compact byte-backed path now caps sentence alias expansion, sentence-span
+candidate collection, and prefix-fallback pending rows. Rebuilt local
+public-demo evidence records the affected long Jyutping rows at `130 ms` and
+`74 ms` while keeping ready/peak WASM memory at `160.0 MiB`.
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/completed/m00-analysis-founding.md`, `docs/roadmap.md`, and `docs/plans/completed/m05-m07-record-foundation-refactor.md` are the retained source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into the retained docs before `.planning/` was removed. External research was skipped at setup because scope was driven by existing docs and direct librime comparison.

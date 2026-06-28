@@ -28,6 +28,12 @@ const MAX_ABBREVIATION_SENTENCE_INPUT_BYTES: usize = 16;
 const MAX_ABBREVIATION_SENTENCE_SPAN_BYTES: usize = 6;
 const MAX_ABBREVIATION_SENTENCE_CODES_PER_SPAN: usize = 128;
 const MAX_ABBREVIATION_SENTENCE_TOTAL_SPANS: usize = 4096;
+const MAX_SENTENCE_ALIAS_LOOKUP_BYTES: usize = 12;
+const MAX_SENTENCE_ALIAS_LOOKUP_CODES: usize = 64;
+const MAX_SENTENCE_CANDIDATES_PER_SPAN: usize = 8;
+const MAX_PREFIX_FALLBACK_CANDIDATES: usize = 64;
+const MAX_PREFIX_FALLBACK_PENDING_CANDIDATES: usize = 256;
+const MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE: usize = 2;
 /// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture
 /// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
 /// jyut6ping3 TypeDuck profile.
@@ -897,6 +903,10 @@ impl StaticTableTranslator {
             .any(|tag| segment_tags.iter().any(|segment_tag| segment_tag == tag))
     }
 
+    fn bounds_compact_fallback_expansion(&self) -> bool {
+        matches!(self.storage, TableStorage::Compact(_)) && self.prism_payload.is_some()
+    }
+
     fn expanded_lookup_specs(&self, lookup_code: &str) -> Vec<LookupCodeSpec> {
         let mut specs = vec![LookupCodeSpec::exact(lookup_code)];
         let has_exact_lookup = self.storage.has_code(lookup_code);
@@ -1030,26 +1040,34 @@ impl StaticTableTranslator {
 
     fn sentence_lookup_specs(&self, lookup_code: &str) -> Vec<LookupCodeSpec> {
         let mut specs = vec![LookupCodeSpec::exact(lookup_code)];
-        if let (Some(prism), Some(syllabary_codes)) =
+        if lookup_code.len() > MAX_SENTENCE_ALIAS_LOOKUP_BYTES {
+            return specs;
+        }
+        let (Some(prism), Some(syllabary_codes)) =
             (self.prism_payload.as_ref(), self.storage.syllabary_codes())
-        {
-            let prism_start = crate::m37_metrics_enabled().then(Instant::now);
-            let lookups = prism.lookup_canonical_codes(lookup_code, syllabary_codes);
-            if let Some(start) = prism_start {
-                crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
+        else {
+            return specs;
+        };
+        let prism_start = crate::m37_metrics_enabled().then(Instant::now);
+        let lookups = prism.lookup_canonical_codes_with_limit(
+            lookup_code,
+            syllabary_codes,
+            MAX_SENTENCE_ALIAS_LOOKUP_CODES,
+        );
+        if let Some(start) = prism_start {
+            crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
+        }
+        for lookup in lookups {
+            if lookup.correction
+                || specs.iter().any(|spec| spec.code == lookup.code)
+                || !self.storage.has_code(lookup.code)
+            {
+                continue;
             }
-            for lookup in lookups {
-                if lookup.correction
-                    || specs.iter().any(|spec| spec.code == lookup.code)
-                    || !self.storage.has_code(lookup.code)
-                {
-                    continue;
-                }
-                specs.push(LookupCodeSpec::alias(
-                    lookup.code.to_owned(),
-                    lookup_code.to_owned(),
-                ));
-            }
+            specs.push(LookupCodeSpec::alias(
+                lookup.code.to_owned(),
+                lookup_code.to_owned(),
+            ));
         }
         specs
     }
@@ -2027,6 +2045,22 @@ impl StaticTableTranslator {
         let mut pending = Vec::new();
         let mut emission_order = 0;
         let mut views_visited = 0;
+        let bound_expansion = self.bounds_compact_fallback_expansion();
+        let output_cap = if bound_expansion {
+            MAX_PREFIX_FALLBACK_CANDIDATES
+        } else {
+            usize::MAX
+        };
+        let pending_cap = if bound_expansion {
+            MAX_PREFIX_FALLBACK_PENDING_CANDIDATES
+        } else {
+            usize::MAX
+        };
+        let per_fetch_cap = if bound_expansion {
+            MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE
+        } else {
+            usize::MAX
+        };
         for prefix_spec in &prefixes {
             let prefix = prefix_spec.input_prefix;
             let fetch_code = prefix_spec.fetch_code.as_str();
@@ -2036,6 +2070,7 @@ impl StaticTableTranslator {
                 .saturating_add(prefix_spec.consumed_lookup_len);
             let exact_start = LookupTimer::start();
             let mut exact_candidates = 0;
+            let mut emitted_for_fetch_code = 0usize;
             for candidate in self
                 .storage
                 .exact_candidates(fetch_code)
@@ -2063,9 +2098,19 @@ impl StaticTableTranslator {
                     recompose_on_default,
                 });
                 emission_order += 1;
+                emitted_for_fetch_code += 1;
+                if emitted_for_fetch_code >= per_fetch_cap {
+                    break;
+                }
+                if pending.len() >= pending_cap {
+                    break;
+                }
             }
             self.storage
                 .record_exact_lookup(exact_start.elapsed(), exact_candidates);
+            if pending.len() >= pending_cap {
+                break;
+            }
         }
         pending.sort_by(|left, right| {
             right
@@ -2097,6 +2142,9 @@ impl StaticTableTranslator {
                 recompose_on_default: pending.recompose_on_default,
             };
             candidates.push(candidate);
+            if candidates.len() >= output_cap {
+                break;
+            }
         }
         if let Some(start) = fallback_start {
             crate::m37_record_prefix_fallback(start.elapsed(), views_visited, candidates.len());
@@ -2322,6 +2370,11 @@ impl StaticTableTranslator {
         });
         let mut live_paths = 1usize;
         let mut max_live_paths = 1usize;
+        let max_candidates_per_span = if self.bounds_compact_fallback_expansion() {
+            MAX_SENTENCE_CANDIDATES_PER_SPAN
+        } else {
+            usize::MAX
+        };
         for pos in input
             .char_indices()
             .map(|(index, _)| index)
@@ -2349,10 +2402,20 @@ impl StaticTableTranslator {
                 }
                 let exact_start = crate::m37_metrics_enabled().then(Instant::now);
                 let sentence_specs = self.sentence_lookup_specs(entry_code);
-                let mut entry_matches = sentence_specs
-                    .iter()
-                    .flat_map(|spec| self.storage.exact_candidates(&spec.code))
-                    .collect::<Vec<_>>();
+                let mut entry_matches = Vec::new();
+                'specs: for spec in &sentence_specs {
+                    for candidate in self.storage.exact_candidates(&spec.code) {
+                        if !self.is_dictionary_text_allowed(candidate.text())
+                            || (filter_by_charset && contains_extended_cjk(candidate.text()))
+                        {
+                            continue;
+                        }
+                        entry_matches.push(candidate);
+                        if entry_matches.len() >= max_candidates_per_span {
+                            break 'specs;
+                        }
+                    }
+                }
                 if let Some(start) = exact_start {
                     sentence_metrics.exact_lookup_calls += 1;
                     sentence_metrics.exact_lookup_ns += start.elapsed();
@@ -2362,6 +2425,9 @@ impl StaticTableTranslator {
                     let prefix_start = crate::m37_metrics_enabled().then(Instant::now);
                     let mut prefix_candidates = 0usize;
                     for entry in self.storage.prefix_candidates(entry_code) {
+                        if entry_matches.len() >= max_candidates_per_span {
+                            break;
+                        }
                         let (completion_code, candidate) = entry.into_parts();
                         if !completion_code.starts_with(entry_code) {
                             break;
@@ -2393,11 +2459,6 @@ impl StaticTableTranslator {
                     end_pos += ch.len_utf8();
                 }
                 for candidate in entry_matches {
-                    if !self.is_dictionary_text_allowed(candidate.text())
-                        || (filter_by_charset && contains_extended_cjk(candidate.text()))
-                    {
-                        continue;
-                    }
                     let mut next_path = path.clone();
                     sentence_metrics.path_clones += 1;
                     if !raw_sentence_piece_matches_input_code(

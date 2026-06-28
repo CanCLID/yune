@@ -155,6 +155,47 @@ prism alias lookups for sentence substrings and prefix fallback. Full native
 `ngogokdak -> 我覺得` and the `zouhapci` visible lookup rows. Evidence:
 [`./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md`](./evidence/web03-three-schema-launch-readiness/phrase-composition-regression-fix/final-gates.md).
 
+Additional 2026-06-28 latency correction: the earlier WEB-03 report did not
+update all short/long browser input-latency dimensions. A live deployed probe
+reproduced a Jyutping long-input regression while memory stayed fixed at
+`160.0 MiB`. The follow-up bounds sentence-span candidate collection and
+prefix-fallback expansion; rebuilt local public-demo evidence restores the
+affected long rows without changing memory.
+
+Latest focused browser latency evidence:
+
+| Schema | Input | Exact keydown-to-paint | Max during input | WASM current/peak |
+| --- | --- | ---: | ---: | ---: |
+| `luna_pinyin` | `hao` | `40 ms` | `40 ms` | `64.0 MiB` |
+| `luna_pinyin` | `ni` | `22 ms` | `22 ms` | `64.0 MiB` |
+| `luna_pinyin` | `zhongguo` | `19 ms` | `30 ms` | `64.0 MiB` |
+| `luna_pinyin` | `ceshiyixiachangjushuruxingnengzenyang` | `43 ms` | `45 ms` | `64.0 MiB` |
+| `luna_pinyin` | `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | `75 ms` | `78 ms` | `64.0 MiB` |
+| `luna_pinyin` | `cszysmsrsd` | `26 ms` | `29 ms` | `64.0 MiB` |
+| `luna_pinyin` | `zybfshmsru` | `34 ms` | `47 ms` | `64.0 MiB` |
+| `jyut6ping3_mobile` | `hai` | `47 ms` | `47 ms` | `160.0 MiB` |
+| `jyut6ping3_mobile` | `ngo` | `23 ms` | `24 ms` | `160.0 MiB` |
+| `jyut6ping3_mobile` | `caksi` | `89 ms` | `90 ms` | `160.0 MiB` |
+| `jyut6ping3_mobile` | `ngogokdak` | `22 ms` | `33 ms` | `160.0 MiB` |
+| `jyut6ping3_mobile` | `sihaacoenggeoisyujapgecukdou` | `130 ms` | `136 ms` | `160.0 MiB` |
+| `jyut6ping3_mobile` | `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` | `74 ms` | `74 ms` | `160.0 MiB` |
+
+Regression delta for the affected Jyutping rows:
+
+| Input | Deployed pre-fix | Rebuilt local fix |
+| --- | ---: | ---: |
+| `caksi` | `299 ms` | `89 ms` |
+| `ngogokdak` | `160 ms` | `22 ms` |
+| `sihaacoenggeoisyujapgecukdou` | `3764 ms` | `130 ms` |
+| `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` | `1518 ms` | `74 ms` |
+
+The final Jyutping-only sanity check after the last WASM rebuild records the
+same two long rows at `142 ms` and `78 ms`, also with ready/peak WASM memory at
+`160.0 MiB`.
+
+Evidence:
+[`../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/`](../../apps/yune-web/e2e/results/web03-latency-regression-fix/local-browser-latency/).
+
 This is a browser-harness/public-demo compiled-asset fix, not a native-engine
 memory win and not a broad product speed claim. The synthetic `extras` row in
 the attribution benchmark still reaches `893.1 MiB` because it intentionally
@@ -167,6 +208,8 @@ Evidence:
 ![WEB-03 browser WASM memory closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-wasm-memory.svg)
 
 ![WEB-03 browser timing closeout](./evidence/web03-three-schema-launch-readiness/visuals/web03-browser-timing.svg)
+
+![WEB-03 Jyutping latency regression fix](./evidence/web03-three-schema-launch-readiness/visuals/web03-jyutping-latency-regression-fix.svg)
 
 ## M45 Visual Dashboard
 

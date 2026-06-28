@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-06-28T05:42:16.354Z",
+  "build": "local-public-demo-post-latency-fix-final-wasm-rebuild",
+  "startup": {
+    "currentBytes": 167772160,
+    "peakBytes": 167772160
+  },
+  "rows": [
+    {
+      "input": "caksi",
+      "totalKeydownToPaintMs": 112,
+      "maxTotalKeydownToPaintMs": 112,
+      "workerProcessMs": 0,
+      "maxWorkerProcessMs": 62,
+      "sumWorkerProcessMs": 65,
+      "firstCandidateText": "測時",
+      "wasmHeapBytes": 167772160,
+      "peakWasmHeapBytes": 167772160
+    },
+    {
+      "input": "ngogokdak",
+      "totalKeydownToPaintMs": 23,
+      "maxTotalKeydownToPaintMs": 26,
+      "workerProcessMs": 1,
+      "maxWorkerProcessMs": 1,
+      "sumWorkerProcessMs": 5,
+      "firstCandidateText": "我覺得",
+      "wasmHeapBytes": 167772160,
+      "peakWasmHeapBytes": 167772160
+    },
+    {
+      "input": "sihaacoenggeoisyujapgecukdou",
+      "totalKeydownToPaintMs": 142,
+      "maxTotalKeydownToPaintMs": 142,
+      "workerProcessMs": 0,
+      "maxWorkerProcessMs": 89,
+      "sumWorkerProcessMs": 94,
+      "firstCandidateText": "試下場據輸入嘅速都",
+      "wasmHeapBytes": 167772160,
+      "peakWasmHeapBytes": 167772160
+    },
+    {
+      "input": "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
+      "totalKeydownToPaintMs": 78,
+      "maxTotalKeydownToPaintMs": 79,
+      "workerProcessMs": 1,
+      "maxWorkerProcessMs": 13,
+      "sumWorkerProcessMs": 29,
+      "firstCandidateText": "睇下如果打好場嘅據自個責會點樣",
+      "wasmHeapBytes": 167772160,
+      "peakWasmHeapBytes": 167772160
+    }
+  ]
+}

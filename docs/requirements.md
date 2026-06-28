@@ -931,6 +931,11 @@ path.
   multi-syllable Jyutping composition after regeneration. Evidence asserts
   `ngogokdak -> 我覺得`, keeps `zouhapci` visible lookup rows on the first page,
   and passes full native `yune_web` plus `cantonese_parity`.
+- [x] **WEB03-09**: The byte-backed Jyutping long-input path has a bounded
+  expansion guard and focused browser latency evidence. Rebuilt local
+  public-demo rows record `sihaacoenggeoisyujapgecukdou` at `130 ms` and
+  `taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng` at `74 ms`, with
+  ready/peak WASM memory still `160.0 MiB`.
 
 ## M46 Jyutping Native And WASM Memory Attribution Requirements
 

@@ -295,6 +295,130 @@ caa\tOTHER\t0
 }
 
 #[test]
+fn select_schema_can_skip_namespaced_translator_load_for_optional_ui_pack() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-skip-namespaced-translator-load");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("eager.schema.yaml"),
+        "\
+schema:
+  schema_id: eager
+engine:
+  translators:
+    - table_translator
+    - table_translator@secondary
+    - echo_translator
+translator:
+  dictionary: primary
+  enable_completion: false
+secondary:
+  dictionary: secondary
+  prefix: \"`\"
+  enable_completion: false
+",
+    )
+    .expect("eager schema config should be written");
+    fs::write(
+        staging.join("keyboard.schema.yaml"),
+        "\
+schema:
+  schema_id: keyboard
+engine:
+  translators:
+    - table_translator
+    - table_translator@secondary
+    - echo_translator
+translator:
+  dictionary: primary
+  enable_completion: false
+secondary:
+  dictionary: secondary
+  prefix: \"`\"
+  enable_completion: false
+  load_translator: false
+",
+    )
+    .expect("keyboard schema config should be written");
+    fs::write(
+        shared.join("primary.dict.yaml"),
+        "\
+---
+name: primary
+version: '0.1'
+sort: original
+columns: [code, text]
+...
+
+a\tPRIMARY
+",
+    )
+    .expect("primary dictionary should be written");
+    fs::write(
+        shared.join("secondary.dict.yaml"),
+        "\
+---
+name: secondary
+version: '0.1'
+sort: original
+columns: [code, text]
+...
+
+b\tSECONDARY
+",
+    )
+    .expect("secondary dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let candidate_texts_for = |schema: &str, input: &str| {
+        RimeClearComposition(session_id);
+        let schema_id = CString::new(schema).expect("schema id should be valid");
+        // SAFETY: schema id is a valid NUL-terminated string.
+        assert_eq!(
+            unsafe { RimeSelectSchema(session_id, schema_id.as_ptr()) },
+            TRUE
+        );
+        for ch in input.chars() {
+            assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+        }
+        current_candidate_pairs(session_id)
+            .into_iter()
+            .map(|(text, _)| text)
+            .collect::<Vec<_>>()
+    };
+
+    assert_eq!(candidate_texts_for("eager", "a")[0], "PRIMARY");
+    assert!(
+        candidate_texts_for("eager", "`b").contains(&"SECONDARY".to_owned()),
+        "default namespaced translator path should remain eager"
+    );
+    assert_eq!(candidate_texts_for("keyboard", "a")[0], "PRIMARY");
+    assert!(
+        !candidate_texts_for("keyboard", "`b").contains(&"SECONDARY".to_owned()),
+        "keyboard-profile opt-out should skip the optional prefixed translator"
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_applies_librime_translator_tag_options() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

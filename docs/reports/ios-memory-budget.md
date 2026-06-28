@@ -24,12 +24,12 @@ three different numbers; only one is the iOS proxy:
 | Source | jyut6ping3_mobile | What it is |
 | --- | ---: | --- |
 | Initial lean native probe | **~298 MB steady / 482 MB peak** | Original M47 baseline: real `RimeApi`, mmap path, prebuilt assets, one schema per fresh Rust process |
-| Current lean native probe after RED-03 | **69.4 MB steady / 80.8 MB peak** | Current Windows proxy after RED-01 side lookup opt-out, RED-02 prism byte-backed runtime storage, and RED-03 compact lookup-record opt-out |
+| Current lean native probe after RED-04 | **58.5 MB steady / 81.0 MB peak** | Current Windows proxy after RED-01 side lookup opt-out, RED-02 prism byte-backed runtime storage, RED-03 compact lookup-record opt-out, and RED-04 optional reverse/UI pack omission |
 | .NET in-process benchmark (Track B) | ~436 MB after-ready / 504 MB peak | A .NET process hosting **both** Yune *and* librime DLLs — polluted upper bound, **not** the iOS number |
 | Browser WASM | 160 MiB | WASM linear memory, **no mmap**, owned tables — a different deployment |
 
 The earlier "Jyutping native ~504 MB" headline was the dual-DLL harness; the
-iOS-relevant steady was initially **~298 MB** and is now **69.4 MB** after RED-03.
+iOS-relevant steady was initially **~298 MB** and is now **58.5 MB** after RED-04.
 
 ## Methodology
 
@@ -309,30 +309,62 @@ removed live retained heap rather than clean file mappings. The steady Windows
 working set is now roughly **1.45x** over the 48 MB target, and the peak is still
 roughly **1.26x** over the 64 MB target.
 
+## RED-04 reverse/UI optional pack closeout (Windows-measured, 2026-06-28)
+
+Evidence:
+[`evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/)
+from the same native probe, with RED-01 and RED-03 enabled and RED-04 applied
+through the temporary deployed schema's `luna_pinyin/load_translator: false`
+setting. The committed public schema bundle is unchanged, and default reverse
+lookup behavior remains eager.
+
+RED-04 adds an explicit optional-pack gate: a translator namespace can set
+`load_translator: false` to skip installing that translator before any dictionary
+load. This is not behavior-preserving first-use lazy loading; with the gate
+enabled for `luna_pinyin`, the grave-prefix Mandarin reverse lookup UI is
+intentionally absent from that keyboard-profile run.
+
+| Metric | Before | After | Delta |
+| --- | ---: | ---: | ---: |
+| Steady WS | **69.2 MB** | **58.5 MB** | **-10.7 MB** |
+| Steady private | **29.7 MB** | **23.3 MB** | **-6.4 MB** |
+| Steady allocator live | **20.4 MB** | **16.0 MB** | **-4.4 MB** |
+| Peak WS | **80.7 MB** | **81.0 MB** | **+0.3 MB** |
+| Named owners | **48.9 MB** | **41.4 MB** | **-7.5 MB** |
+
+| Owner | Before | After | Verdict |
+| --- | ---: | ---: | --- |
+| `compact_table.storage` | `19,888,937 B` mmap-backed | `15,248,382 B` mmap-backed | Secondary reverse table mapping omitted. |
+| `prism.spelling_map` | `11,955,056 B` mmap-backed | `10,965,828 B` mmap-backed | Secondary reverse prism spelling-map bytes omitted. |
+| `prism.double_array_units` | `8,896,512 B` mmap-backed | `8,388,608 B` mmap-backed | Secondary reverse prism double-array bytes omitted. |
+| `compact_table.syllabary_codes` | `4,850,892 B` heap | `4,189,674 B` heap | Secondary reverse syllabary code Vec omitted. |
+
+RED-04 is a useful steady-state profile gate but not a peak closeout. The peak
+is still **~81 MB**, so the next blocker is the remaining transient/high-water
+path rather than retained reverse/UI data.
+
 ## Verdict (Windows-measured)
 
 Against the 64 MB hard budget, the original isolated `jyut6ping3_mobile` baseline
 was **~4.7x over** the 48 MB steady target and **~3.6x over** the 64 MB peak
-target. After RED-03, the keyboard-profile run is still **~1.45x over** steady and
-**~1.26x over** peak. Cangjie5 remains ~1.5x over at steady; luna_pinyin is
+target. After RED-04, the keyboard-profile run is still **~1.22x over** steady and
+**~1.27x over** peak. Cangjie5 remains ~1.5x over at steady; luna_pinyin is
 borderline-under at steady but ~4.6x over at peak. Even a small-schema base is
 ~60-95 MB before profile-specific UI deferral. The multilingual Jyutping keyboard
 **does not fit** in its current shape, and closing the gap remains
-**architecture-level work, not tuning**. The portable levers (defer reverse/UI
-payloads, bound transients, slim the mobile profile, then revisit remaining
-named heap) are Windows-implementable and benefit every platform. **No
+**architecture-level work, not tuning**. The portable levers (bound transients,
+slim the mobile profile, then revisit remaining named heap) are
+Windows-implementable and benefit every platform. **No
 "iOS-ready" claim** until a later real-Apple-device validation pass.
 
 ## Next work
 
-RED-01, RED-02, and RED-03 are complete. Start the next branch with reverse/UI
-lazy loading: defer `script_translator@luna_pinyin` /
-`luna_pinyin_yune_reverse` until the grave-prefix reverse lookup path is used,
-or isolate it as an optional UI pack for keyboard-extension builds. Keep both
-steady and peak visible; the current RED-03 peak is still **80.8 MB**. Do not use
+RED-01, RED-02, RED-03, and RED-04 are complete. Start the next branch with
+peak transient investigation: the current RED-04 peak is still **81.0 MB** even
+though steady is **58.5 MB**. Keep both steady and peak visible. Do not use
 allocator changes as the next branch unless a later allocator-specific probe
-shows a steady live-vs-resident gap that Phase 0/RED-01/RED-02/RED-03 did not
-show.
+shows a steady live-vs-resident gap that Phase 0/RED-01/RED-02/RED-03/RED-04 did
+not show.
 
 ## Evidence
 
@@ -350,4 +382,6 @@ show.
   [`evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-prism-storage-2026-06-28/)
 - M47 RED-03 compact lookup-record reduction:
   [`evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-lookup-records-2026-06-28/)
+- M47 RED-04 reverse/UI optional pack reduction:
+  [`evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](./evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/)
 - Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../crates/yune-rime-api/tests/native_memory_probe.rs)

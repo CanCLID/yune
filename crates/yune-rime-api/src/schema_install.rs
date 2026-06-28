@@ -190,6 +190,17 @@ fn install_schema_dictionary_translator_from_config(
     component_name: &str,
     name_space: &str,
 ) {
+    let load_translator =
+        find_config_value(schema_config, &format!("{name_space}/load_translator"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(true);
+    if !load_translator {
+        memory_probe_mark(format!(
+            "m47:translator:{component_name}@{name_space}:skip_translator_load:load_translator=false"
+        ));
+        return;
+    }
+
     let user_dict_name = find_config_value(schema_config, &format!("{name_space}/dictionary"))
         .and_then(config_scalar_string)
         .and_then(|name| validate_data_resource_id(&name));

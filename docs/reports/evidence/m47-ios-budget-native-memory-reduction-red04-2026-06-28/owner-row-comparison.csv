@@ -1,0 +1,7 @@
+owner,before_class,before_estimated_bytes,before_item_count,current_class,current_estimated_bytes,current_item_count,delta_bytes,verdict
+compact_table.storage,mmap_file_backed,19888937,332576,mmap_file_backed,15248382,241796,-4640555,secondary luna_pinyin_yune_reverse table mapping omitted
+prism.spelling_map,mmap_file_backed,11955056,565994,mmap_file_backed,10965828,516286,-989228,secondary reverse prism spelling-map bytes omitted
+prism.double_array_units,mmap_file_backed,8896512,2224128,mmap_file_backed,8388608,2097152,-507904,secondary reverse prism double-array bytes omitted
+compact_table.syllabary_codes,heap_owned_reducible,4850892,134628,heap_owned_reducible,4189674,114653,-661218,secondary reverse syllabary code Vec omitted
+compact_table.candidate_comment_payload,shared_or_overlapping,1861361,197948,shared_or_overlapping,1516569,127143,-344792,secondary reverse byte-backed comment payload omitted
+compact_table.candidate_text_payload,shared_or_overlapping,1410493,197948,shared_or_overlapping,1058723,127143,-351770,secondary reverse byte-backed text payload omitted

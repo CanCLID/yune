@@ -275,6 +275,8 @@ fn native_memory_probe_reports_working_set() {
         std::env::var("YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS").is_ok();
     let disable_compact_lookup_records =
         std::env::var("YUNE_MEM_DISABLE_COMPACT_LOOKUP_RECORDS").is_ok();
+    let disable_luna_reverse_translator =
+        std::env::var("YUNE_MEM_DISABLE_LUNA_REVERSE_TRANSLATOR").is_ok();
 
     if std::env::var("YUNE_MEM_NOSENTENCE").is_ok() {
         for name in ["jyut6ping3.schema.yaml", "jyut6ping3_mobile.schema.yaml"] {
@@ -343,6 +345,20 @@ fn native_memory_probe_reports_working_set() {
         assert!(
             patched > 0,
             "YUNE_MEM_DISABLE_COMPACT_LOOKUP_RECORDS requested but no target deployed schema was present"
+        );
+    }
+    if disable_luna_reverse_translator {
+        let mut patched = 0usize;
+        for name in ["jyut6ping3.schema.yaml", "jyut6ping3_mobile.schema.yaml"] {
+            let path = user.join("build").join(name);
+            if path.exists() {
+                patch_schema_disable_luna_reverse_translator(&path);
+                patched += 1;
+            }
+        }
+        assert!(
+            patched > 0,
+            "YUNE_MEM_DISABLE_LUNA_REVERSE_TRANSLATOR requested but no target deployed schema was present"
         );
     }
     phases.push(capture_phase(
@@ -466,6 +482,35 @@ fn patch_namespace_disable_compact_lookup_records(text: &str, namespace: &str) -
         return text.to_owned();
     }
     let insertion = format!("{marker}  load_lookup_records: false\n");
+    text.replacen(&marker, &insertion, 1)
+}
+
+fn patch_schema_disable_luna_reverse_translator(path: &Path) {
+    let text = fs::read_to_string(path).unwrap_or_else(|error| {
+        panic!(
+            "YUNE_MEM_DISABLE_LUNA_REVERSE_TRANSLATOR requested but deployed schema {} could not be read: {error}",
+            path.display()
+        )
+    });
+    let patched = patch_namespace_bool_if_absent(&text, "luna_pinyin", "load_translator", false);
+    fs::write(path, patched).expect("patch Luna reverse translator config");
+}
+
+fn patch_namespace_bool_if_absent(text: &str, namespace: &str, key: &str, value: bool) -> String {
+    let marker = format!("{namespace}:\n");
+    assert!(
+        text.contains(&marker),
+        "requested schema patch but deployed schema does not contain the {namespace} block"
+    );
+    let block_start = text.find(&marker).expect("namespace marker should exist") + marker.len();
+    let block_end = text[block_start..]
+        .find("\n\n")
+        .map(|offset| block_start + offset)
+        .unwrap_or(text.len());
+    if text[block_start..block_end].contains(&format!("{key}:")) {
+        return text.to_owned();
+    }
+    let insertion = format!("{marker}  {key}: {value}\n");
     text.replacen(&marker, &insertion, 1)
 }
 

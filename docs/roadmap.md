@@ -55,6 +55,11 @@ lock the user-visible words down.
 - [`reports/yune-vs-librime-performance.md`](./reports/yune-vs-librime-performance.md)
   and [`reports/yune-vs-librime-root-cause-analysis.md`](./reports/yune-vs-librime-root-cause-analysis.md)
   - current performance comparison and diagnosis.
+- [`reports/ios-memory-budget.md`](./reports/ios-memory-budget.md) - native
+  single-active-schema memory vs the iOS keyboard-extension budget; the measured
+  baseline for the active M47 reduction plan.
+- [`plans/active/m47-plan-ios-budget-native-memory-reduction.md`](./plans/active/m47-plan-ios-budget-native-memory-reduction.md)
+  - active attribution-first plan to drive native memory under the iOS budget.
 - [`plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md`](./plans/completed/m46-plan-jyutping-native-wasm-memory-attribution.md)
   - completed attribution-first plan for the TypeDuck/Jyutping native Track B
   and browser WASM memory owners left after M45 and WEB-01.
@@ -102,20 +107,30 @@ lock the user-visible words down.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior is complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. | Preserve upstream-observable behavior on every engine change. |
-| Engine performance | M45 is complete as a partial native-engine follow-up to M44. Phase 0 selected `short-key-measured-no-go`, so no short-key engine implementation was retained. Final `hao` preserves the M44 pass at `24.267us` / `2.110x`, while `n` remains `68.900us` / `3.313x` and `ni` remains `49.450us` / `3.458x`. Track A steady resident rows meet the resident target (`87,498,752-98,684,928 B`), but the real cold-start peak remains `127,475,712 B`, so M45 records a standing peak-cost blocker. M46 confirms Track B still peaks at `504,627,200 B` with mostly unclassified process memory. | Keep `n`/`ni` as separate future Track A blockers unless a new plan targets them. Future Track B/Jyutping memory work needs a new measured-owner plan. |
+| Engine performance | M45 is complete as a partial native-engine follow-up to M44. Phase 0 selected `short-key-measured-no-go`, so no short-key engine implementation was retained. Final `hao` preserves the M44 pass at `24.267us` / `2.110x`, while `n` remains `68.900us` / `3.313x` and `ni` remains `49.450us` / `3.458x`. Track A steady resident rows meet the resident target (`87,498,752-98,684,928 B`), but the real cold-start peak remains `127,475,712 B`, so M45 records a standing peak-cost blocker. M46 confirms Track B still peaks at `504,627,200 B` with mostly unclassified process memory. | **Active: M47 iOS-budget native memory reduction.** The lean-probe baseline (isolated from the dual-DLL harness) is `jyut6ping3_mobile` steady `~298 MB` / peak `~482 MB`, loaded eagerly at `create_session`; target steady ≤ 48 MB / peak ≤ 64 MB. Keep `n`/`ni` as separate future Track A latency blockers. |
 | Web harness startup and memory | M41 is complete for the tracked `apps/yune-web/` browser harness. WEB-01 is complete as measured no-go for `INITIAL_MEMORY` and payload-only changes. M46 fixed the Cangjie -> Luna -> Jyutping no-candidate row. WEB-02 classified the stale-asset source-fallback owner at `529,602,374 B`; WEB-03 fixed that launch compiled-asset contract and remeasured the shipping Jyutping launch/full browser rows at `160.0 MiB` ready/peak/steady. The follow-up compact-path fix restores byte-backed Jyutping phrase composition, visible prefix lookup rows, and bounded long-input browser latency. A later correctness fix repaired a `DartsDoubleArray` prism construction bug that had broken the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (now guarded by trie-level and committed-asset regression tests). The fair `luna_pinyin` browser comparison remains `160.0 MiB` peak versus My RIME `16.0 MiB`; the old Jyutping `893.1 MiB` value now remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another measured owner, not another payload-only or Jyutping stale-asset branch. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific native frontends remain outside this repo roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
 
 ## Authoritative Sequence
 
-1. **Future measured-owner memory slice** - only with a new scoped plan. WEB-03
-   removed the public-demo Jyutping source-fallback owner on the shipping path;
-   the next browser memory target should be the fair `luna_pinyin` runtime
-   high-water floor or another freshly measured owner.
-2. **Future AI-native engine experiments** - later, and only after classic
+1. **M47 iOS-budget native memory reduction (active)** - the now-concrete memory
+   slice. The product target is a Cantoboard-style iOS keyboard extension, so the
+   binding goal is fitting the single-active-schema native working set under an
+   iOS keyboard-extension budget (steady ≤ 48 MB, peak ≤ 64 MB; stretch 48 MB) as
+   portable engine work that benefits iOS/Android/Windows IME/WASM/embedding.
+   Lean-probe baseline: `jyut6ping3_mobile` steady `~298 MB` / peak `~482 MB`,
+   loaded eagerly at `create_session`; ~44 MB classified, ~235 MB un-owned.
+   Attribution-first (M43/M45/M46 rule): Phase 0 resolves the un-owned bulk before
+   any reduction branch. Plan:
+   [`plans/active/m47-plan-ios-budget-native-memory-reduction.md`](./plans/active/m47-plan-ios-budget-native-memory-reduction.md);
+   evidence: [`reports/ios-memory-budget.md`](./reports/ios-memory-budget.md).
+   On-device iOS validation is a later Phase 2 frontend gate, not part of M47.
+2. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
+   high-water floor or another freshly measured owner, only with a new scoped plan.
+3. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-3. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+4. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
    fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
    row is explicitly selected as the target.
 
@@ -553,7 +568,8 @@ Closed M38 gates:
 | WEB-01 | Complete with measured no-go | Browser-harness WASM linear-memory and payload sidecar for `apps/yune-web/`. The final 64 MiB initial-memory candidate still settles at `160.0 MiB` for Luna and `893.1 MiB` for Jyutping; attribution shows Jyutping remains `893.1 MiB` even for `extras` and `jyutping-core`. No browser heap, payload, native memory, or product-delivery win is claimed. |
 | M46 | Complete with measured no-go | Attribution-first TypeDuck/Jyutping native Track B and browser WASM memory milestone and WEB-01 handoff. It fixed schema-switch correctness but closed memory as `measured-no-go-owner-unclassified`: native Track B remains around `504 MB`, and the then-current browser Jyutping row stayed at `893.1 MiB`. |
 | WEB-02 | Complete with measured blocker | Public-demo Jyutping browser owner classification: stale `Rime::Prism/3.0` assets force source fallback and `owned_heap` storage, naming the compiled-asset contract as the next branch. At WEB-02 closeout the browser high-water remained `893.1 MiB`; no memory win was claimed. |
-| WEB-03 | Complete | Engine fix `3ffd4b21` unblocked clean rebuilds; asset commit `ef37bfe9` regenerated launch assets for `jyut6ping3_mobile`, `cangjie5`, and `luna_pinyin`, shipped Cangjie compiled assets, refreshed manifests/dist, and proved native public-demo storage is byte-backed with no fallback rows. Fresh Emscripten/Playwright evidence records public-demo `full-jyutping` at `160.0 MiB` ready/peak/steady, with ready `1306 ms`, input-to-candidate `100 ms`, and commit `110 ms`; follow-up gates restore byte-backed `ngogokdak -> 我覺得` and `zouhapci` visible lookup rows. The old `893.1 MiB` value is retained only as the synthetic `extras` negative control. |
+| WEB-03 | Complete | Engine fix `3ffd4b21` unblocked clean rebuilds; asset commit `ef37bfe9` regenerated launch assets for `jyut6ping3_mobile`, `cangjie5`, and `luna_pinyin`, shipped Cangjie compiled assets, refreshed manifests/dist, and proved native public-demo storage is byte-backed with no fallback rows. Fresh Emscripten/Playwright evidence records public-demo `full-jyutping` at `160.0 MiB` ready/peak/steady, with ready `1306 ms`, input-to-candidate `100 ms`, and commit `110 ms`; follow-up gates restore byte-backed `ngogokdak -> 我覺得` and `zouhapci` visible lookup rows. A later correctness follow-up (`a76fcd59`, guard `d1c0171a`) fixed a `DartsDoubleArray` prism construction bug that had broken the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words. The old `893.1 MiB` value is retained only as the synthetic `extras` negative control. |
+| M47 | Active (attribution-first) | iOS-budget native memory reduction: drive single-active-schema native working set under an iOS keyboard-extension budget (steady ≤ 48 MB, peak ≤ 64 MB; stretch 48 MB) as portable engine work. Measured lean-probe baseline: `jyut6ping3_mobile` steady `~298 MB` / peak `~482 MB`, loaded at `create_session` (deploy is ~11 MB); ~44 MB classified heap, ~235 MB un-owned. Plan: [`plans/active/m47-plan-ios-budget-native-memory-reduction.md`](./plans/active/m47-plan-ios-budget-native-memory-reduction.md). |
 
 WEB-03 latency addendum: a 2026-06-28 follow-up bounds compact-path fallback
 expansion after the phrase-composition repair and restores local browser

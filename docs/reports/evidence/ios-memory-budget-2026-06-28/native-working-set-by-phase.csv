@@ -1,0 +1,7 @@
+probe,schema_selected,default_schema_in_workspace,baseline_harness_mb,after_setup_init_mb,after_deploy_mb,after_create_session_mb,after_select_schema_mb,after_typing_mb,steady_mb,peak_mb,notes
+native_memory_probe,jyut6ping3_mobile,jyut6ping3,5.2,5.9,10.8,293.4,298.3,298.4,298.4,482.0,full launch workspace; create_session loads default jyut6ping3
+native_memory_probe,jyut6ping3_mobile,jyut6ping3,5.2,5.9,11.0,,,,296.8,482.1,enable_sentence+enable_completion disabled (A/B); ~no change => sentence model is not the owner
+native_memory_probe,luna_pinyin,luna_pinyin,5.2,5.9,,62.3,,,62.6,294.0,default.yaml patched to luna-only; small dict; large transient frees back to steady
+native_memory_probe,cangjie5,cangjie5,5.2,5.9,11.0,93.6,,94.9,94.9,102.0,default.yaml patched to cangjie-only
+reference_dotnet_harness,jyut6ping3_mobile,jyut6ping3,,,,,,,435.8,504.4,Track B .NET in-process benchmark (hosts BOTH yune + librime DLLs); after-ready / peak; harness-polluted upper bound
+reference_browser_wasm,jyut6ping3_mobile,jyut6ping3,,,,,,,160.0,160.0,WASM linear memory (no mmap; owned tables); different deployment than native iOS

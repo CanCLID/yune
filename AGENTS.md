@@ -30,6 +30,15 @@ See `decisions.md` D-24 (oracle precedence) and D-25 (target-driven scope).
   `docs/plans/active/p2-win01-plan-typeduck-windows-next.md`, for a Yune-first
   TypeDuck-Windows product/frontend. Phase 2 work must not widen Yune's default
   upstream ABI.
+- **M47 is the active engine milestone: iOS-budget native memory reduction.**
+  Portable engine work to fit the single-active-schema native working set under an
+  iOS keyboard-extension budget (steady ≤ 48 MB, peak ≤ 64 MB), measured on Windows
+  via the lean `native_memory_probe`. Attribution-first: the measured baseline is
+  `jyut6ping3_mobile` steady `~298 MB` / peak `~482 MB` loaded eagerly at
+  `create_session`, with ~235 MB un-owned that Phase 0 must attribute before any
+  reduction branch. Plan:
+  `docs/plans/active/m47-plan-ios-budget-native-memory-reduction.md`; baseline:
+  `docs/reports/ios-memory-budget.md`. On-device iOS proof is a later Phase 2 gate.
 - **AI foundation exists.** M11 completed the core/CLI AI layer. M13 exposed it
   in the web harness now canonical as `yune-web`: default-off, local-only,
   second-pass `stage_ai` flow.

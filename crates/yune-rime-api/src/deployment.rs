@@ -949,7 +949,7 @@ fn load_workspace_table_dictionary(
         source_yaml,
         packs,
         |resource_id| load_workspace_dictionary_yaml(shared_data_dir, resource_id),
-        |resource_id| load_workspace_dictionary_yaml(shared_data_dir, resource_id),
+        |resource_id| load_workspace_vocabulary_txt(shared_data_dir, resource_id),
     )
     .ok()
 }
@@ -957,6 +957,11 @@ fn load_workspace_table_dictionary(
 fn load_workspace_dictionary_yaml(shared_data_dir: &Path, resource_id: &str) -> Option<String> {
     let resource_id = validate_data_resource_id(resource_id)?;
     fs::read_to_string(shared_data_dir.join(format!("{resource_id}.dict.yaml"))).ok()
+}
+
+fn load_workspace_vocabulary_txt(shared_data_dir: &Path, resource_id: &str) -> Option<String> {
+    let resource_id = validate_data_resource_id(resource_id)?;
+    fs::read_to_string(shared_data_dir.join(format!("{resource_id}.txt"))).ok()
 }
 
 fn prism_checksum_metadata(bytes: Vec<u8>) -> Option<RimePrismChecksumMetadata> {

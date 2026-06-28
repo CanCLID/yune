@@ -1,0 +1,63 @@
+schema_id,owner,class,estimated_bytes,item_count,storage,notes
+jyut6ping3_mobile,translator.entries_by_code,shared,0,0,compact_table,compact storage path does not retain a translator BTreeMap
+jyut6ping3_mobile,compact_table.syllabary_codes,heap_owned_reducible,4189674,114653,Vec<String>,canonical code list retained for prism lookup
+jyut6ping3_mobile,compact_table.syllable_ids_by_code,shared,0,0,none,byte-backed compact storage does not retain the rsmarisa syllable map
+jyut6ping3_mobile,compact_table.storage,mmap_file_backed,15248382,241796,byte_backed:mmap,table bytes are excluded from heap-owned branch triggers when mapped
+jyut6ping3_mobile,compact_table.candidate_text_payload,shared_or_overlapping,1058723,127143,table_bin_byte_refs,candidate text payload; byte-backed rows overlap compact_table.storage
+jyut6ping3_mobile,compact_table.candidate_comment_payload,shared_or_overlapping,1516569,127143,table_bin_byte_refs,candidate raw comments/code payload; byte-backed rows overlap compact_table.storage
+jyut6ping3_mobile,compact_table.stems,heap_owned_required,48,0,"HashMap<String, Vec<String>>",retained phrase-code stems needed for lookup records and dictionary panels
+jyut6ping3_mobile,compact_table.lookup_records,heap_owned_required,31920140,127144,"HashMap<String, Vec<DictionaryLookupRecord>>",retained dictionary lookup records required by TypeDuck dictionary panels
+jyut6ping3_mobile,compact_table.corrections_tolerance,heap_owned_required,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,retained correction/tolerance payload required by TypeDuck fuzzy input behavior
+jyut6ping3_mobile,compact_table.dict_settings,heap_owned_required,24,0,"BTreeMap<String, String>",retained dictionary settings parsed from deployed dictionary metadata
+jyut6ping3_mobile,compact_table.preset_vocabulary,heap_owned_required,0,0,Vec<PresetVocabularyEntry>,retained preset vocabulary weights when the selected dictionary includes vocabulary packs
+jyut6ping3_mobile,poet.entries_by_code,shared,0,0,none,upstream sentence model not retained for this translator
+jyut6ping3_mobile,poet.lookup_index,shared,0,0,none,upstream sentence model not retained for this translator
+jyut6ping3_mobile,poet.abbreviation_vocabulary,shared,0,0,none,upstream sentence model not retained for this translator
+jyut6ping3_mobile,translator.entries_by_code,shared,0,0,compact_table,compact storage path does not retain a translator BTreeMap
+jyut6ping3_mobile,compact_table.syllabary_codes,heap_owned_reducible,661218,19975,Vec<String>,canonical code list retained for prism lookup
+jyut6ping3_mobile,compact_table.syllable_ids_by_code,shared,0,0,none,byte-backed compact storage does not retain the rsmarisa syllable map
+jyut6ping3_mobile,compact_table.storage,mmap_file_backed,4640555,90780,byte_backed:mmap,table bytes are excluded from heap-owned branch triggers when mapped
+jyut6ping3_mobile,compact_table.candidate_text_payload,shared_or_overlapping,351770,70805,table_bin_byte_refs,candidate text payload; byte-backed rows overlap compact_table.storage
+jyut6ping3_mobile,compact_table.candidate_comment_payload,shared_or_overlapping,344792,70805,table_bin_byte_refs,candidate raw comments/code payload; byte-backed rows overlap compact_table.storage
+jyut6ping3_mobile,compact_table.stems,heap_owned_required,48,0,"HashMap<String, Vec<String>>",retained phrase-code stems needed for lookup records and dictionary panels
+jyut6ping3_mobile,compact_table.lookup_records,heap_owned_required,13769158,70807,"HashMap<String, Vec<DictionaryLookupRecord>>",retained dictionary lookup records required by TypeDuck dictionary panels
+jyut6ping3_mobile,compact_table.corrections_tolerance,heap_owned_required,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,retained correction/tolerance payload required by TypeDuck fuzzy input behavior
+jyut6ping3_mobile,compact_table.dict_settings,heap_owned_required,24,0,"BTreeMap<String, String>",retained dictionary settings parsed from deployed dictionary metadata
+jyut6ping3_mobile,compact_table.preset_vocabulary,heap_owned_required,0,0,Vec<PresetVocabularyEntry>,retained preset vocabulary weights when the selected dictionary includes vocabulary packs
+jyut6ping3_mobile,poet.entries_by_code,shared,0,0,none,upstream sentence model not retained for this translator
+jyut6ping3_mobile,poet.lookup_index,shared,0,0,none,upstream sentence model not retained for this translator
+jyut6ping3_mobile,poet.abbreviation_vocabulary,shared,0,0,none,upstream sentence model not retained for this translator
+cangjie5,reverse_lookup.entries,shared_or_overlapping,0,0,lazy_unloaded,lazy reverse-lookup dictionary is not retained until used
+cangjie5,reverse_lookup.comments_index,shared_or_overlapping,0,0,lazy_unloaded,lazy reverse-comment side index is not retained until used
+cangjie5,reverse_lookup.config,heap_owned_required,40,1,ReverseLookupTranslator,prefix/suffix/tag/comment-format state for the reverse lookup translator
+cangjie5,translator.entries_by_code,shared,0,0,compact_table,compact storage path does not retain a translator BTreeMap
+cangjie5,compact_table.syllabary_codes,heap_owned_reducible,1102838,38964,Vec<String>,canonical code list retained for prism lookup
+cangjie5,compact_table.syllable_ids_by_code,shared,0,0,none,byte-backed compact storage does not retain the rsmarisa syllable map
+cangjie5,compact_table.storage,mmap_file_backed,3092119,81919,byte_backed:mmap,table bytes are excluded from heap-owned branch triggers when mapped
+cangjie5,compact_table.candidate_text_payload,shared_or_overlapping,137136,42955,table_bin_byte_refs,candidate text payload; byte-backed rows overlap compact_table.storage
+cangjie5,compact_table.candidate_comment_payload,shared_or_overlapping,183036,42955,table_bin_byte_refs,candidate raw comments/code payload; byte-backed rows overlap compact_table.storage
+cangjie5,compact_table.stems,heap_owned_required,48,0,"HashMap<String, Vec<String>>",retained phrase-code stems needed for lookup records and dictionary panels
+cangjie5,compact_table.lookup_records,heap_owned_required,7491093,42955,"HashMap<String, Vec<DictionaryLookupRecord>>",retained dictionary lookup records required by TypeDuck dictionary panels
+cangjie5,compact_table.corrections_tolerance,heap_owned_required,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,retained correction/tolerance payload required by TypeDuck fuzzy input behavior
+cangjie5,compact_table.dict_settings,heap_owned_required,24,0,"BTreeMap<String, String>",retained dictionary settings parsed from deployed dictionary metadata
+cangjie5,compact_table.preset_vocabulary,heap_owned_required,0,0,Vec<PresetVocabularyEntry>,retained preset vocabulary weights when the selected dictionary includes vocabulary packs
+cangjie5,poet.entries_by_code,shared,0,0,none,upstream sentence model not retained for this translator
+cangjie5,poet.lookup_index,shared,0,0,none,upstream sentence model not retained for this translator
+cangjie5,poet.abbreviation_vocabulary,shared,0,0,none,upstream sentence model not retained for this translator
+luna_pinyin,reverse_lookup.entries,shared_or_overlapping,0,0,lazy_unloaded,lazy reverse-lookup dictionary is not retained until used
+luna_pinyin,reverse_lookup.comments_index,shared_or_overlapping,0,0,lazy_unloaded,lazy reverse-comment side index is not retained until used
+luna_pinyin,reverse_lookup.config,heap_owned_required,40,1,ReverseLookupTranslator,prefix/suffix/tag/comment-format state for the reverse lookup translator
+luna_pinyin,translator.entries_by_code,shared,0,0,compact_table,compact storage path does not retain a translator BTreeMap
+luna_pinyin,compact_table.syllabary_codes,heap_owned_reducible,661218,19975,Vec<String>,canonical code list retained for prism lookup
+luna_pinyin,compact_table.syllable_ids_by_code,shared,0,0,none,byte-backed compact storage does not retain the rsmarisa syllable map
+luna_pinyin,compact_table.storage,mmap_file_backed,4640486,90780,byte_backed:mmap,table bytes are excluded from heap-owned branch triggers when mapped
+luna_pinyin,compact_table.candidate_text_payload,shared_or_overlapping,351770,70805,table_bin_byte_refs,candidate text payload; byte-backed rows overlap compact_table.storage
+luna_pinyin,compact_table.candidate_comment_payload,shared_or_overlapping,344792,70805,table_bin_byte_refs,candidate raw comments/code payload; byte-backed rows overlap compact_table.storage
+luna_pinyin,compact_table.stems,heap_owned_required,48,0,"HashMap<String, Vec<String>>",retained phrase-code stems needed for lookup records and dictionary panels
+luna_pinyin,compact_table.lookup_records,heap_owned_required,13768889,70805,"HashMap<String, Vec<DictionaryLookupRecord>>",retained dictionary lookup records required by TypeDuck dictionary panels
+luna_pinyin,compact_table.corrections_tolerance,heap_owned_required,0,0,Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>,retained correction/tolerance payload required by TypeDuck fuzzy input behavior
+luna_pinyin,compact_table.dict_settings,heap_owned_required,24,0,"BTreeMap<String, String>",retained dictionary settings parsed from deployed dictionary metadata
+luna_pinyin,compact_table.preset_vocabulary,heap_owned_required,469,11,Vec<PresetVocabularyEntry>,retained preset vocabulary weights when the selected dictionary includes vocabulary packs
+luna_pinyin,poet.entries_by_code,heap_owned_reducible,1826332,70805,Vec<ModelEntry>,sentence model entries cloned from table rows
+luna_pinyin,poet.lookup_index,heap_owned_guarded,159816,19975,SentenceLookupIndex,sorted code-range index used by M40 sentence lookup
+luna_pinyin,poet.abbreviation_vocabulary,heap_owned_reducible,1433,11,Vec<ModelVocabularyEntry>,abbreviation-only vocabulary used by M42 guard rows

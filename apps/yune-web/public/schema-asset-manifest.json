@@ -1,5 +1,5 @@
 {
-  "version": "m31-yune-web-public-demo-v3",
+  "version": "web03-three-schema-launch-v1",
   "generatedFor": "yune-web",
   "sourceRoot": "apps/yune-web/public/schema",
   "assets": [
@@ -137,6 +137,27 @@
       "required": true
     },
     {
+      "path": "luna_pinyin_yune_reverse.table.bin",
+      "sha256": "2d1570ed51d91dd09f991bcb0e6ed5131c22aa665a34e4a0e744a0f11866e46b",
+      "bytes": 4640555,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin_yune_reverse.reverse.bin",
+      "sha256": "f274be35ff3eae18922662c7d6e17abf19cea753274ec17aea1bd0d2b5992a5f",
+      "bytes": 1263091,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "luna_pinyin_yune_reverse.prism.bin",
+      "sha256": "4d37189d3bdcb32c4cdfd5a79b432bac21c4bde94012b4608cebaa5c915aa457",
+      "bytes": 1513837,
+      "tier": "shared",
+      "required": true
+    },
+    {
       "path": "stroke.schema.yaml",
       "sha256": "06f680cf7c9d9a69948681ee25e9f6aeccfde4d8d590f93e179d4c4b3caee879",
       "bytes": 3056,
@@ -264,8 +285,8 @@
     },
     {
       "path": "cangjie5.schema.yaml",
-      "sha256": "694cccd36dcbb8abe502269d8fc854ad6df2737323beb105c59ffde30a4ee86f",
-      "bytes": 2228,
+      "sha256": "eeae927aaafb47cb899f0387f0393c54c3c0a2375a285916ef6ee42448d0d1a8",
+      "bytes": 2562,
       "tier": "shared",
       "required": true
     },
@@ -277,65 +298,86 @@
       "required": true
     },
     {
+      "path": "cangjie5.table.bin",
+      "sha256": "9ff24b37de16a7c3f35b3b8cf0992ec7d97ff604099f484094e8f1407ca31ccc",
+      "bytes": 3092119,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie5.reverse.bin",
+      "sha256": "e8ecd4366f90d538e3623698a152c651172934450e4c179b9235b23c82778cfd",
+      "bytes": 663901,
+      "tier": "shared",
+      "required": true
+    },
+    {
+      "path": "cangjie5.prism.bin",
+      "sha256": "12692f0c48e78fc1152170aa550d86558dd1b7bdd63d4f2337b1a4dd9ab9ac7b",
+      "bytes": 1430557,
+      "tier": "shared",
+      "required": true
+    },
+    {
       "path": "jyut6ping3.table.bin",
-      "sha256": "5f686227e2ec3461c8b2bd6d6a19903a851f3f2354260e5da4ddb5f3d1e2177a",
-      "bytes": 4306860,
+      "sha256": "2171814199c053e9c51a1a17a8a525d2d3af76e945f025a4850790f327f2af12",
+      "bytes": 15248382,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3.reverse.bin",
-      "sha256": "23c7946c39e76894022d9319c639fc19bba5f5099f772c91fe435bebcb0114c7",
-      "bytes": 70012,
+      "sha256": "081085514b906a8e8d7d809468afa8226636b1e3d1a3c14fe70c58a987c9cba5",
+      "bytes": 3592525,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_mobile.prism.bin",
-      "sha256": "63408a1efe90aa66ebf891658cf06fd6b235eb17c072224e8f6ca736dc452eaf",
-      "bytes": 242728,
+      "sha256": "9be24055a9ee8ac8e4d59c56c12e0fbb52da6078b423bab4f8ca2087b8cb0e7b",
+      "bytes": 19313669,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_scolar.table.bin",
-      "sha256": "9e09a610ce5bcb59c8784d48ab5698172d72d74ad7a2b5fec34f95b6d4bdfeba",
-      "bytes": 6115656,
+      "sha256": "dc1db91db57b9f1f2a154ef87bff2dfdf66b6d552001504159a076bf7d4e11f9",
+      "bytes": 12478842,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_scolar.reverse.bin",
-      "sha256": "3191705dc4615274a1ff7dde3acb87828935d60980ef4788558af189e4f75174",
-      "bytes": 3568716,
+      "sha256": "f23e0c2a30862898ae9857962a232fa18fb19a34dd45031f80470a641bbefd18",
+      "bytes": 89,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_scolar.prism.bin",
-      "sha256": "d28a9fe4469a78c9783c1a8d8fd40910481a92c445ad2373190e83d7ad325f78",
-      "bytes": 2343228,
+      "sha256": "bb66de69bcb59a8d7c9614e5e4dc2b75e4c54ddf30a3a6d0071aa423ddbdca87",
+      "bytes": 325,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.table.bin",
-      "sha256": "d23853c9b3f96a580ae82688446331aaef6bb8fe35e5a19eb2c13c675306021e",
-      "bytes": 13013460,
+      "sha256": "4b376be51169bf7741acfe7c77f005ec52d2261699184b0573286bc18878d16f",
+      "bytes": 4640486,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.reverse.bin",
-      "sha256": "6ee0892852af4688fae0f3647c47827d89af9b3ff5ffe1a57e85e333c1706839",
-      "bytes": 252756,
+      "sha256": "f975eaf31d95e56e930c4582a3b4138ce4335a0c66c03e00bf0316761262f431",
+      "bytes": 1263091,
       "tier": "shared",
       "required": true
     },
     {
       "path": "luna_pinyin.prism.bin",
-      "sha256": "814b7ebdeec0a325906e1dd72f5e5d907468bd16dd83bdd021bf6503b8a21083",
-      "bytes": 31728,
+      "sha256": "1164a58b9e37555220307f947aa031ff639382a3bfa31c383dbc4ffc6095ca02",
+      "bytes": 1641885,
       "tier": "shared",
       "required": true
     },

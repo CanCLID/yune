@@ -197,6 +197,8 @@ fn install_schema_dictionary_translator_from_config(
         is_typeduck_jyut6ping3_profile(schema_config, user_dict_name.as_deref());
     let is_upstream_luna_pinyin_profile =
         is_upstream_luna_pinyin_profile(schema_config, user_dict_name.as_deref(), component_name);
+    let is_yune_web_launch_byte_backed_profile =
+        is_yune_web_launch_byte_backed_profile(schema_config, user_dict_name.as_deref());
     let cache_key =
         schema_dictionary_translator_cache_key(schema_config, component_name, name_space);
     let enable_charset_filter = find_config_value(
@@ -343,7 +345,9 @@ fn install_schema_dictionary_translator_from_config(
         return;
     }
 
-    let prefer_compact_storage = is_upstream_luna_pinyin_profile || is_typeduck_jyut6ping3_profile;
+    let prefer_compact_storage = is_upstream_luna_pinyin_profile
+        || is_typeduck_jyut6ping3_profile
+        || is_yune_web_launch_byte_backed_profile;
     let (dictionary, compact_store, prism_payload, loaded_from_compiled) =
         match load_schema_table_dictionary_with_compact_preference(
             schema_config,
@@ -370,7 +374,8 @@ fn install_schema_dictionary_translator_from_config(
         };
     let use_compact_storage = prism_payload.is_some()
         && (is_upstream_luna_pinyin_profile
-            || (is_typeduck_jyut6ping3_profile && loaded_from_compiled));
+            || (loaded_from_compiled
+                && (is_typeduck_jyut6ping3_profile || is_yune_web_launch_byte_backed_profile)));
     let mut translator = {
         let _trace = startup_trace::span("translator_index_build");
         match (use_compact_storage, compact_store, dictionary) {
@@ -696,6 +701,22 @@ fn is_typeduck_jyut6ping3_profile(schema_config: &Value, dictionary_name: Option
     find_config_value(schema_config, "schema/schema_id")
         .and_then(config_scalar_string)
         .is_some_and(|schema_id| schema_id == "jyut6ping3" || schema_id.starts_with("jyut6ping3_"))
+}
+
+fn is_yune_web_launch_byte_backed_profile(
+    schema_config: &Value,
+    dictionary_name: Option<&str>,
+) -> bool {
+    let Some(dictionary_name) = dictionary_name else {
+        return false;
+    };
+    find_config_value(schema_config, "schema/schema_id")
+        .and_then(config_scalar_string)
+        .is_some_and(|schema_id| match schema_id.as_str() {
+            "jyut6ping3_mobile" => dictionary_name == "luna_pinyin_yune_reverse",
+            "cangjie5" => dictionary_name == "cangjie5",
+            _ => false,
+        })
 }
 
 fn is_upstream_luna_pinyin_profile(

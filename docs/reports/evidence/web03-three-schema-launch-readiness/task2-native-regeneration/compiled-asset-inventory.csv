@@ -1,0 +1,16 @@
+path,exists,bytes,header
+jyut6ping3.table.bin,true,15248382,Rime::Table/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+jyut6ping3.reverse.bin,true,3592525,Rime::Reverse/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+jyut6ping3_mobile.prism.bin,true,19313669,Rime::Prism/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+jyut6ping3_scolar.table.bin,true,12478842,Rime::Table/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+jyut6ping3_scolar.reverse.bin,true,89,Rime::Reverse/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+jyut6ping3_scolar.prism.bin,true,325,Rime::Prism/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+luna_pinyin_yune_reverse.table.bin,true,4640555,Rime::Table/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+luna_pinyin_yune_reverse.reverse.bin,true,1263091,Rime::Reverse/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+luna_pinyin_yune_reverse.prism.bin,true,1513837,Rime::Prism/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+cangjie5.table.bin,true,3092119,Rime::Table/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+cangjie5.reverse.bin,true,663901,Rime::Reverse/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+cangjie5.prism.bin,true,1430557,Rime::Prism/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+luna_pinyin.table.bin,true,4640486,Rime::Table/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+luna_pinyin.reverse.bin,true,1263091,Rime::Reverse/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0
+luna_pinyin.prism.bin,true,1641885,Rime::Prism/4.0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0

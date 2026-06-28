@@ -1,8 +1,37 @@
 # WEB-03 Three-Schema Launch Readiness & Compiled-Asset Contract
 
-> **Status:** Draft (uncommitted) — root cause **found + fix proven** — **Track:** Web harness deploy + compiled-asset delivery — **Created:** 2026-06-27 — **Updated:** 2026-06-27 (root cause pinned, candidate fix verified, external review folded in) — **Type:** engine fix + asset regen + guard plan
+> **Status:** Partial asset/native closeout (Tasks 2-4 complete; Task 5 blocked on local Emscripten) — root cause **found + fix proven** — **Track:** Web harness deploy + compiled-asset delivery — **Created:** 2026-06-27 — **Updated:** 2026-06-27 (asset/native evidence added) — **Type:** engine fix + asset regen + guard plan
 >
 > Follows WEB-02 (`b216ca82`). Launch-ready (project owner) = the public demo offers **all three schemas selectable and working** — upstream `rime-luna-pinyin`, upstream `rime-cangjie` (`cangjie5`), and multilingual `jyut6ping3`. WEB-02 traced the Jyutping `893.1 MiB` to source-fallback from a stale `Rime::Prism/3.0` asset. This plan found *why* the assets are stale and can't be regenerated, and proved a fix.
+
+## Asset/native execution update (2026-06-27)
+
+Tasks 2-4 are complete in the WEB-03 asset slice. Evidence is under
+`docs/reports/evidence/web03-three-schema-launch-readiness/`.
+
+- Clean forced regeneration rebuilt the launch-schema compiled assets from
+  source and produced `Rime::Prism/4.0` for every launch prism. No row used
+  `ReusedPrebuilt`; repeated imports in the same clean workspace may show
+  `ReusedFresh` after an earlier schema rebuilt them.
+- `apps/yune-web/public/schema`, both schema manifests, the public-demo dist,
+  and the worker asset lists now include Cangjie compiled assets and the
+  Jyutping Luna reverse helper assets.
+- Native storage diagnostics pass for `jyut6ping3_mobile`, `cangjie5`, and
+  `luna_pinyin`: `source_fallback=false`, zero fallback rows, and
+  `selected_storage=byte_backed` with positive `byte_source_len`.
+- The Cangjie minimum correctness smoke is covered by the native guard:
+  `cangjie5` input `a` returns U+65E5 as the first candidate.
+- During regeneration, Luna correctness exposed one additional deploy gap:
+  workspace dictionary rebuild used the dictionary YAML loader for vocabulary
+  packs, so `essay.txt` weights were not applied to generated tables. WEB-03
+  adds a `.txt` vocabulary loader before regenerating assets, preserving
+  `luna_pinyin` input `ni` -> U+4F60 in the byte-backed path.
+
+Task 5 is still blocked in this environment: `wasm32-unknown-emscripten` is
+installed, but `emcc`/`emar` are not available on PATH and no `EMSDK` is
+configured. The browser high-water memory number is therefore not remeasured
+here, and this plan must not claim that the WEB-02 `893.1 MiB` browser result
+is fixed until a toolchain-equipped run captures the new Playwright evidence.
 
 ## Root cause (CONFIRMED 2026-06-27)
 

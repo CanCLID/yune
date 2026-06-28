@@ -1,0 +1,58 @@
+[
+  {
+    "dictionary_id": "luna_pinyin",
+    "prism": "Rebuilt",
+    "reverse": "Rebuilt",
+    "schema_id": "luna_pinyin",
+    "table": "Rebuilt"
+  },
+  {
+    "dictionary_id": "jyut6ping3_scolar",
+    "prism": "Rebuilt",
+    "reverse": "Rebuilt",
+    "schema_id": "jyut6ping3_mobile",
+    "table": "Rebuilt"
+  },
+  {
+    "dictionary_id": "luna_pinyin_yune_reverse",
+    "prism": "Rebuilt",
+    "reverse": "Rebuilt",
+    "schema_id": "jyut6ping3_mobile",
+    "table": "Rebuilt"
+  },
+  {
+    "dictionary_id": "jyut6ping3",
+    "prism": "Rebuilt",
+    "reverse": "Rebuilt",
+    "schema_id": "jyut6ping3_mobile",
+    "table": "Rebuilt"
+  },
+  {
+    "dictionary_id": "jyut6ping3_scolar",
+    "prism": "Rebuilt",
+    "reverse": "ReusedFresh",
+    "schema_id": "cangjie5",
+    "table": "ReusedFresh"
+  },
+  {
+    "dictionary_id": "cangjie5",
+    "prism": "Rebuilt",
+    "reverse": "Rebuilt",
+    "schema_id": "cangjie5",
+    "table": "Rebuilt"
+  },
+  {
+    "dictionary_id": "stroke",
+    "prism": "Rebuilt",
+    "reverse": "Rebuilt",
+    "schema_id": "stroke",
+    "table": "Rebuilt"
+  },
+  {
+    "dictionary_id": "luna_pinyin",
+    "prism": "ReusedFresh",
+    "reverse": "ReusedFresh",
+    "schema_id": "luna_pinyin",
+    "table": "ReusedFresh"
+  }
+]

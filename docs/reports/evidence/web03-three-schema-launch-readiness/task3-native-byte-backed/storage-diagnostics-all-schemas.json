@@ -1,0 +1,649 @@
+[
+  {
+    "candidate_head": [
+      {
+        "comment": "\f\r1,你,nei5,1,0,,oth,,,,,,,you (singular),تم,तपाईं,आप,kamu",
+        "quality": 2.0,
+        "source": "completion",
+        "text": "你"
+      }
+    ],
+    "input": "nei",
+    "schema_id": "jyut6ping3_mobile",
+    "source_fallback": false,
+    "storage": {
+      "memory_owner_rows": [
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "compact storage path does not retain a translator BTreeMap",
+          "owner": "translator.entries_by_code",
+          "storage": "compact_table"
+        },
+        {
+          "class": "heap_owned_reducible",
+          "estimated_bytes": 4189674,
+          "item_count": 114653,
+          "notes": "canonical code list retained for prism lookup",
+          "owner": "compact_table.syllabary_codes",
+          "storage": "Vec<String>"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "byte-backed compact storage does not retain the rsmarisa syllable map",
+          "owner": "compact_table.syllable_ids_by_code",
+          "storage": "none"
+        },
+        {
+          "class": "mmap_file_backed",
+          "estimated_bytes": 15248382,
+          "item_count": 241796,
+          "notes": "table bytes are excluded from heap-owned branch triggers when mapped",
+          "owner": "compact_table.storage",
+          "storage": "byte_backed:mmap"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 1058723,
+          "item_count": 127143,
+          "notes": "candidate text payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_text_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 1516569,
+          "item_count": 127143,
+          "notes": "candidate raw comments/code payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_comment_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 48,
+          "item_count": 0,
+          "notes": "retained phrase-code stems needed for lookup records and dictionary panels",
+          "owner": "compact_table.stems",
+          "storage": "HashMap<String, Vec<String>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 31920140,
+          "item_count": 127144,
+          "notes": "retained dictionary lookup records required by TypeDuck dictionary panels",
+          "owner": "compact_table.lookup_records",
+          "storage": "HashMap<String, Vec<DictionaryLookupRecord>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "retained correction/tolerance payload required by TypeDuck fuzzy input behavior",
+          "owner": "compact_table.corrections_tolerance",
+          "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 24,
+          "item_count": 0,
+          "notes": "retained dictionary settings parsed from deployed dictionary metadata",
+          "owner": "compact_table.dict_settings",
+          "storage": "BTreeMap<String, String>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
+          "owner": "compact_table.preset_vocabulary",
+          "storage": "Vec<PresetVocabularyEntry>"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.entries_by_code",
+          "storage": "none"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.lookup_index",
+          "storage": "none"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.abbreviation_vocabulary",
+          "storage": "none"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "compact storage path does not retain a translator BTreeMap",
+          "owner": "translator.entries_by_code",
+          "storage": "compact_table"
+        },
+        {
+          "class": "heap_owned_reducible",
+          "estimated_bytes": 661218,
+          "item_count": 19975,
+          "notes": "canonical code list retained for prism lookup",
+          "owner": "compact_table.syllabary_codes",
+          "storage": "Vec<String>"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "byte-backed compact storage does not retain the rsmarisa syllable map",
+          "owner": "compact_table.syllable_ids_by_code",
+          "storage": "none"
+        },
+        {
+          "class": "mmap_file_backed",
+          "estimated_bytes": 4640555,
+          "item_count": 90780,
+          "notes": "table bytes are excluded from heap-owned branch triggers when mapped",
+          "owner": "compact_table.storage",
+          "storage": "byte_backed:mmap"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 351770,
+          "item_count": 70805,
+          "notes": "candidate text payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_text_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 344792,
+          "item_count": 70805,
+          "notes": "candidate raw comments/code payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_comment_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 48,
+          "item_count": 0,
+          "notes": "retained phrase-code stems needed for lookup records and dictionary panels",
+          "owner": "compact_table.stems",
+          "storage": "HashMap<String, Vec<String>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 13769158,
+          "item_count": 70807,
+          "notes": "retained dictionary lookup records required by TypeDuck dictionary panels",
+          "owner": "compact_table.lookup_records",
+          "storage": "HashMap<String, Vec<DictionaryLookupRecord>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "retained correction/tolerance payload required by TypeDuck fuzzy input behavior",
+          "owner": "compact_table.corrections_tolerance",
+          "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 24,
+          "item_count": 0,
+          "notes": "retained dictionary settings parsed from deployed dictionary metadata",
+          "owner": "compact_table.dict_settings",
+          "storage": "BTreeMap<String, String>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
+          "owner": "compact_table.preset_vocabulary",
+          "storage": "Vec<PresetVocabularyEntry>"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.entries_by_code",
+          "storage": "none"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.lookup_index",
+          "storage": "none"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.abbreviation_vocabulary",
+          "storage": "none"
+        }
+      ],
+      "selected": [
+        {
+          "byte_source_len": 15248382,
+          "is_marisa_backed": false,
+          "mapping_mode": "mmap",
+          "owner": "compact_table.storage",
+          "selected_storage": "byte_backed",
+          "stored_entry_count": 127143,
+          "translator": "static_table_translator",
+          "translator_index": 1
+        },
+        {
+          "byte_source_len": 4640555,
+          "is_marisa_backed": false,
+          "mapping_mode": "mmap",
+          "owner": "compact_table.storage",
+          "selected_storage": "byte_backed",
+          "stored_entry_count": 70805,
+          "translator": "static_table_translator",
+          "translator_index": 2
+        }
+      ],
+      "source_fallback": false,
+      "source_fallbacks": []
+    }
+  },
+  {
+    "candidate_head": [
+      {
+        "comment": "\u000b日\f\r1,日,jat6,1,0,,mw,,,,,,,date; day,دن,दिन,दिन,hari",
+        "quality": 1.0,
+        "source": "table",
+        "text": "日"
+      },
+      {
+        "comment": "\u000b日\f\r1,曰,joek6,1,0,,morph,,,,,,子曰,say,,,,mengatakan",
+        "quality": 1.0,
+        "source": "table",
+        "text": "曰"
+      },
+      {
+        "comment": "\u000b日日\f\r1,昌,coeng1,1,0,,morph,,,,,,,proseperous,,,,makmur",
+        "quality": 0.0,
+        "source": "completion",
+        "text": "昌"
+      },
+      {
+        "comment": "\u000b日日\f\r1,昍,hyun1,1,0,,,,rare,,,,,,,,,",
+        "quality": 0.0,
+        "source": "completion",
+        "text": "昍"
+      },
+      {
+        "comment": "\u000b日日日\f\r1,晶,zing1,1,0,,morph,,,,,,晶石，水晶,crystal,,,,",
+        "quality": 0.0,
+        "source": "completion",
+        "text": "晶"
+      }
+    ],
+    "input": "a",
+    "schema_id": "cangjie5",
+    "source_fallback": false,
+    "storage": {
+      "memory_owner_rows": [
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "lazy reverse-lookup dictionary is not retained until used",
+          "owner": "reverse_lookup.entries",
+          "storage": "lazy_unloaded"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "lazy reverse-comment side index is not retained until used",
+          "owner": "reverse_lookup.comments_index",
+          "storage": "lazy_unloaded"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 40,
+          "item_count": 1,
+          "notes": "prefix/suffix/tag/comment-format state for the reverse lookup translator",
+          "owner": "reverse_lookup.config",
+          "storage": "ReverseLookupTranslator"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "compact storage path does not retain a translator BTreeMap",
+          "owner": "translator.entries_by_code",
+          "storage": "compact_table"
+        },
+        {
+          "class": "heap_owned_reducible",
+          "estimated_bytes": 1102838,
+          "item_count": 38964,
+          "notes": "canonical code list retained for prism lookup",
+          "owner": "compact_table.syllabary_codes",
+          "storage": "Vec<String>"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "byte-backed compact storage does not retain the rsmarisa syllable map",
+          "owner": "compact_table.syllable_ids_by_code",
+          "storage": "none"
+        },
+        {
+          "class": "mmap_file_backed",
+          "estimated_bytes": 3092119,
+          "item_count": 81919,
+          "notes": "table bytes are excluded from heap-owned branch triggers when mapped",
+          "owner": "compact_table.storage",
+          "storage": "byte_backed:mmap"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 137136,
+          "item_count": 42955,
+          "notes": "candidate text payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_text_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 183036,
+          "item_count": 42955,
+          "notes": "candidate raw comments/code payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_comment_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 48,
+          "item_count": 0,
+          "notes": "retained phrase-code stems needed for lookup records and dictionary panels",
+          "owner": "compact_table.stems",
+          "storage": "HashMap<String, Vec<String>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 7491093,
+          "item_count": 42955,
+          "notes": "retained dictionary lookup records required by TypeDuck dictionary panels",
+          "owner": "compact_table.lookup_records",
+          "storage": "HashMap<String, Vec<DictionaryLookupRecord>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "retained correction/tolerance payload required by TypeDuck fuzzy input behavior",
+          "owner": "compact_table.corrections_tolerance",
+          "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 24,
+          "item_count": 0,
+          "notes": "retained dictionary settings parsed from deployed dictionary metadata",
+          "owner": "compact_table.dict_settings",
+          "storage": "BTreeMap<String, String>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
+          "owner": "compact_table.preset_vocabulary",
+          "storage": "Vec<PresetVocabularyEntry>"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.entries_by_code",
+          "storage": "none"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.lookup_index",
+          "storage": "none"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "upstream sentence model not retained for this translator",
+          "owner": "poet.abbreviation_vocabulary",
+          "storage": "none"
+        }
+      ],
+      "selected": [
+        {
+          "byte_source_len": 3092119,
+          "is_marisa_backed": false,
+          "mapping_mode": "mmap",
+          "owner": "compact_table.storage",
+          "selected_storage": "byte_backed",
+          "stored_entry_count": 42955,
+          "translator": "static_table_translator",
+          "translator_index": 2
+        }
+      ],
+      "source_fallback": false,
+      "source_fallbacks": []
+    }
+  },
+  {
+    "candidate_head": [
+      {
+        "comment": "ni",
+        "quality": null,
+        "source": "table",
+        "text": "你"
+      },
+      {
+        "comment": "ni",
+        "quality": null,
+        "source": "table",
+        "text": "擬"
+      },
+      {
+        "comment": "ni",
+        "quality": null,
+        "source": "table",
+        "text": "尼"
+      },
+      {
+        "comment": "ni",
+        "quality": null,
+        "source": "table",
+        "text": "泥"
+      },
+      {
+        "comment": "ni",
+        "quality": null,
+        "source": "table",
+        "text": "呢"
+      }
+    ],
+    "input": "ni",
+    "schema_id": "luna_pinyin",
+    "source_fallback": false,
+    "storage": {
+      "memory_owner_rows": [
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "lazy reverse-lookup dictionary is not retained until used",
+          "owner": "reverse_lookup.entries",
+          "storage": "lazy_unloaded"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "lazy reverse-comment side index is not retained until used",
+          "owner": "reverse_lookup.comments_index",
+          "storage": "lazy_unloaded"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 40,
+          "item_count": 1,
+          "notes": "prefix/suffix/tag/comment-format state for the reverse lookup translator",
+          "owner": "reverse_lookup.config",
+          "storage": "ReverseLookupTranslator"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "compact storage path does not retain a translator BTreeMap",
+          "owner": "translator.entries_by_code",
+          "storage": "compact_table"
+        },
+        {
+          "class": "heap_owned_reducible",
+          "estimated_bytes": 661218,
+          "item_count": 19975,
+          "notes": "canonical code list retained for prism lookup",
+          "owner": "compact_table.syllabary_codes",
+          "storage": "Vec<String>"
+        },
+        {
+          "class": "shared",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "byte-backed compact storage does not retain the rsmarisa syllable map",
+          "owner": "compact_table.syllable_ids_by_code",
+          "storage": "none"
+        },
+        {
+          "class": "mmap_file_backed",
+          "estimated_bytes": 4640486,
+          "item_count": 90780,
+          "notes": "table bytes are excluded from heap-owned branch triggers when mapped",
+          "owner": "compact_table.storage",
+          "storage": "byte_backed:mmap"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 351770,
+          "item_count": 70805,
+          "notes": "candidate text payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_text_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "shared_or_overlapping",
+          "estimated_bytes": 344792,
+          "item_count": 70805,
+          "notes": "candidate raw comments/code payload; byte-backed rows overlap compact_table.storage",
+          "owner": "compact_table.candidate_comment_payload",
+          "storage": "table_bin_byte_refs"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 48,
+          "item_count": 0,
+          "notes": "retained phrase-code stems needed for lookup records and dictionary panels",
+          "owner": "compact_table.stems",
+          "storage": "HashMap<String, Vec<String>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 13768889,
+          "item_count": 70805,
+          "notes": "retained dictionary lookup records required by TypeDuck dictionary panels",
+          "owner": "compact_table.lookup_records",
+          "storage": "HashMap<String, Vec<DictionaryLookupRecord>>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 0,
+          "item_count": 0,
+          "notes": "retained correction/tolerance payload required by TypeDuck fuzzy input behavior",
+          "owner": "compact_table.corrections_tolerance",
+          "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 24,
+          "item_count": 0,
+          "notes": "retained dictionary settings parsed from deployed dictionary metadata",
+          "owner": "compact_table.dict_settings",
+          "storage": "BTreeMap<String, String>"
+        },
+        {
+          "class": "heap_owned_required",
+          "estimated_bytes": 469,
+          "item_count": 11,
+          "notes": "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
+          "owner": "compact_table.preset_vocabulary",
+          "storage": "Vec<PresetVocabularyEntry>"
+        },
+        {
+          "class": "heap_owned_reducible",
+          "estimated_bytes": 1826332,
+          "item_count": 70805,
+          "notes": "sentence model entries cloned from table rows",
+          "owner": "poet.entries_by_code",
+          "storage": "Vec<ModelEntry>"
+        },
+        {
+          "class": "heap_owned_guarded",
+          "estimated_bytes": 159816,
+          "item_count": 19975,
+          "notes": "sorted code-range index used by M40 sentence lookup",
+          "owner": "poet.lookup_index",
+          "storage": "SentenceLookupIndex"
+        },
+        {
+          "class": "heap_owned_reducible",
+          "estimated_bytes": 1433,
+          "item_count": 11,
+          "notes": "abbreviation-only vocabulary used by M42 guard rows",
+          "owner": "poet.abbreviation_vocabulary",
+          "storage": "Vec<ModelVocabularyEntry>"
+        }
+      ],
+      "selected": [
+        {
+          "byte_source_len": 4640486,
+          "is_marisa_backed": false,
+          "mapping_mode": "mmap",
+          "owner": "compact_table.storage",
+          "selected_storage": "byte_backed",
+          "stored_entry_count": 70805,
+          "translator": "static_table_translator",
+          "translator_index": 2
+        }
+      ],
+      "source_fallback": false,
+      "source_fallbacks": []
+    }
+  }
+]

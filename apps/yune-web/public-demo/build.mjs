@@ -96,7 +96,7 @@ await cp(viteOutputDir, outputDir, { recursive: true, force: true });
 await rm(viteOutputDir, { recursive: true, force: true });
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-if (manifest.generatedFor !== "yune-web" || manifest.version !== "m31-yune-web-public-demo-v3") {
+if (manifest.generatedFor !== "yune-web" || manifest.version !== "web03-three-schema-launch-v1") {
 	throw new Error("Unexpected schema asset manifest metadata");
 }
 

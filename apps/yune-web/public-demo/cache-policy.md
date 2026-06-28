@@ -6,10 +6,12 @@ query-string versioning.
 - `schema-asset-manifest.json` pins every deployed schema/OpenCC/WASM-adjacent
   schema payload by SHA-256 and byte count.
 - The public worker opens Cache Storage bucket
-  `yune-web-assets-m31-yune-web-public-demo-v2`.
+  `yune-web-assets-web03-three-schema-launch-v1`.
 - Each schema asset is cached under `schema/<path>?sha256=<manifest hash>`.
 - A warm visit can reuse unchanged schema payloads while a changed hash creates
   a new cache key.
+- WEB-03 bumps the bucket because the launch bundle now ships regenerated
+  `Rime::Prism/4.0` assets plus Cangjie compiled table/prism/reverse payloads.
 - The existing Yune Emscripten IDBFS deploy cache still records runtime deploy
   cache hits/misses separately.
 - The Cloudflare deployment uses Pages Direct Upload at

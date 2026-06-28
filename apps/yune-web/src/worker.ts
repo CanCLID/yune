@@ -350,10 +350,10 @@ const RIME_SHARED_DIR = "/usr/share/rime-data";
 const RIME_USER_DIR = "/rime";
 const DEFAULT_SCHEMA_ID: RimeSchemaId = "jyut6ping3";
 const INITIAL_SCHEMA_ID: RimeSchemaId = initialSchemaFromWorkerUrl();
-const YUNE_WEB_ASSET_VERSION = "yune-web-wasm-heap-v1";
+const YUNE_WEB_ASSET_VERSION = "yune-web-wasm-heap-v2";
 const YUNE_WEB_WASM_BUILD_PROFILE = "release";
 const YUNE_WEB_M27_EVIDENCE_VERSION = "m27-startup-v1";
-const YUNE_WEB_M31_EVIDENCE_VERSION = "m31-yune-web-public-demo-v3";
+const YUNE_WEB_M31_EVIDENCE_VERSION = "web03-three-schema-launch-v1";
 const YUNE_PUBLIC_DEMO = typeof YUNE_PUBLIC_DEMO_BUILD !== "undefined" && YUNE_PUBLIC_DEMO_BUILD === true;
 type WasmAttributionAssetFamily =
   | "luna-core"
@@ -414,7 +414,12 @@ const YUNE_WEB_CANGJIE_SHARED_ASSETS = [
   ...YUNE_WEB_COMMON_SHARED_ASSETS,
   "cangjie5.schema.yaml",
   "cangjie5.dict.yaml",
+  "cangjie5.table.bin",
+  "cangjie5.reverse.bin",
+  "cangjie5.prism.bin",
   "jyut6ping3.dict.yaml",
+  "jyut6ping3.table.bin",
+  "jyut6ping3.reverse.bin",
   "jyut6ping3_scolar.schema.yaml",
   "jyut6ping3_scolar.dict.yaml",
   "jyut6ping3_scolar.table.bin",
@@ -436,6 +441,9 @@ const YUNE_WEB_JYUTPING_SHARED_ASSETS = [
   "cangjie5.dict.yaml",
   "luna_pinyin.dict.yaml",
   "luna_pinyin_yune_reverse.dict.yaml",
+  "luna_pinyin_yune_reverse.table.bin",
+  "luna_pinyin_yune_reverse.reverse.bin",
+  "luna_pinyin_yune_reverse.prism.bin",
   ...YUNE_WEB_OPENCC_SHARED_ASSETS,
   "jyut6ping3.table.bin",
   "jyut6ping3.reverse.bin",

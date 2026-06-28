@@ -8,15 +8,34 @@ use std::{
 };
 
 use serde_json::{json, Value};
+use yune_core::RimeDictArtifactStatus;
 use yune_rime_api::{
-    rime_get_api, yune_web_cleanup, yune_web_customize, yune_web_delete_candidate, yune_web_deploy,
-    yune_web_flip_page, yune_web_free_response, yune_web_init, yune_web_process_key,
-    yune_web_response_handled, yune_web_response_json, yune_web_select_candidate,
-    yune_web_set_ai_enabled, yune_web_set_option, yune_web_stage_ai, Bool, RimeStringSlice,
-    RimeTraits, FALSE, TRUE,
+    rime_get_api, workspace_dictionary_rebuild_reports, yune_web_cleanup, yune_web_customize,
+    yune_web_delete_candidate, yune_web_deploy, yune_web_flip_page, yune_web_free_response,
+    yune_web_init, yune_web_process_key, yune_web_response_handled, yune_web_response_json,
+    yune_web_select_candidate, yune_web_set_ai_enabled, yune_web_set_option, yune_web_stage_ai,
+    Bool, RimeDeploySchema, RimeDeployerInitialize, RimeRunTask, RimeStringSlice, RimeTraits,
+    FALSE, TRUE,
 };
 
 const SCHEMA_ID: &str = "yune_web_luna";
+const WEB03_COMPILED_SCHEMA_ASSETS: &[&str] = &[
+    "jyut6ping3.table.bin",
+    "jyut6ping3.reverse.bin",
+    "jyut6ping3_mobile.prism.bin",
+    "jyut6ping3_scolar.table.bin",
+    "jyut6ping3_scolar.reverse.bin",
+    "jyut6ping3_scolar.prism.bin",
+    "luna_pinyin_yune_reverse.table.bin",
+    "luna_pinyin_yune_reverse.reverse.bin",
+    "luna_pinyin_yune_reverse.prism.bin",
+    "cangjie5.table.bin",
+    "cangjie5.reverse.bin",
+    "cangjie5.prism.bin",
+    "luna_pinyin.table.bin",
+    "luna_pinyin.reverse.bin",
+    "luna_pinyin.prism.bin",
+];
 const TYPEDUCK_V112_COMMENTS: &str =
     include_str!("../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json");
 const TYPEDUCK_V112_M28_PARTIAL_SELECTION: &str = include_str!(
@@ -1206,6 +1225,12 @@ schema:\n  schema_id: yune_web_luna\n  name: Yune Web Luna\nmenu:\n  page_size: 
             "jyut6ping3_scolar.table.bin",
             "jyut6ping3_scolar.reverse.bin",
             "jyut6ping3_scolar.prism.bin",
+            "luna_pinyin_yune_reverse.table.bin",
+            "luna_pinyin_yune_reverse.reverse.bin",
+            "luna_pinyin_yune_reverse.prism.bin",
+            "cangjie5.table.bin",
+            "cangjie5.reverse.bin",
+            "cangjie5.prism.bin",
             "luna_pinyin.table.bin",
             "luna_pinyin.reverse.bin",
             "luna_pinyin.prism.bin",
@@ -1394,6 +1419,234 @@ fn web02_public_demo_storage_diagnostics_exports_owner_rows() {
 
     unsafe { yune_web_cleanup(state) };
     runtime.remove();
+}
+
+#[test]
+#[ignore = "WEB-03 evidence-only: set YUNE_WEB03_EVIDENCE_DIR and optionally YUNE_WEB03_APPLY_ASSETS=1"]
+fn web03_regenerates_public_schema_compiled_assets_from_clean_rebuild() {
+    let _guard = test_guard();
+    let evidence_dir = web03_evidence_root_from_env()
+        .expect("YUNE_WEB03_EVIDENCE_DIR must point to the WEB-03 evidence directory")
+        .join("task2-native-regeneration");
+    fs::create_dir_all(&evidence_dir).expect("evidence directory should be created");
+
+    let root = unique_temp_dir("web03-clean-schema-rebuild");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    copy_clean_schema_sources(&browser_app_schema_root(), &shared);
+    fs::create_dir_all(user.join("build")).expect("user build dir should be created");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let mut traits = empty_rime_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { RimeDeployerInitialize(&traits) };
+
+    for task in [
+        "workspace_update:jyut6ping3_mobile",
+        "workspace_update:cangjie5",
+        "workspace_update:luna_pinyin",
+    ] {
+        let task = CString::new(task).expect("task name should be valid");
+        assert_eq!(RimeRunTask(task.as_ptr()), TRUE);
+    }
+
+    let reports = workspace_dictionary_rebuild_reports();
+    assert!(
+        !reports.is_empty(),
+        "clean public-schema rebuild should emit dictionary rebuild reports"
+    );
+    for report in &reports {
+        assert_ne!(
+            report.report.table,
+            RimeDictArtifactStatus::ReusedPrebuilt,
+            "{report:?}"
+        );
+        assert_ne!(
+            report.report.prism,
+            RimeDictArtifactStatus::ReusedPrebuilt,
+            "{report:?}"
+        );
+        assert_ne!(
+            report.report.reverse,
+            RimeDictArtifactStatus::ReusedPrebuilt,
+            "{report:?}"
+        );
+    }
+    for dictionary_id in [
+        "jyut6ping3",
+        "jyut6ping3_scolar",
+        "luna_pinyin_yune_reverse",
+        "cangjie5",
+        "luna_pinyin",
+    ] {
+        assert_dictionary_rebuilt_from_source(&reports, dictionary_id);
+    }
+
+    let build_dir = user.join("build");
+    for file_name in WEB03_COMPILED_SCHEMA_ASSETS {
+        let path = build_dir.join(file_name);
+        assert!(path.is_file(), "missing regenerated asset {file_name}");
+        if file_name.ends_with(".prism.bin") {
+            yune_core::parse_rime_prism_bin_payload(
+                fs::read(&path).expect("prism should be readable"),
+            )
+            .unwrap_or_else(|error| panic!("{file_name} should be Rime::Prism/4.0: {error:?}"));
+        }
+    }
+
+    fs::write(
+        evidence_dir.join("workspace-rebuild-reports.json"),
+        serde_json::to_string_pretty(&workspace_rebuild_reports_json(&reports))
+            .expect("rebuild report evidence should serialize"),
+    )
+    .expect("rebuild report evidence should be written");
+    fs::write(
+        evidence_dir.join("workspace-rebuild-reports.csv"),
+        workspace_rebuild_reports_csv(&reports),
+    )
+    .expect("rebuild report CSV should be written");
+    fs::write(
+        evidence_dir.join("compiled-asset-inventory.csv"),
+        compiled_asset_inventory_for_root_csv(&build_dir, WEB03_COMPILED_SCHEMA_ASSETS),
+    )
+    .expect("compiled asset inventory should be written");
+
+    if std::env::var_os("YUNE_WEB03_APPLY_ASSETS").as_deref() == Some(std::ffi::OsStr::new("1")) {
+        for file_name in WEB03_COMPILED_SCHEMA_ASSETS {
+            fs::copy(
+                build_dir.join(file_name),
+                browser_app_schema_root().join(file_name),
+            )
+            .expect("regenerated asset should be copied into public/schema");
+        }
+    }
+
+    reset_rime();
+    fs::remove_dir_all(root).expect("temp dir should be removed");
+}
+
+#[test]
+fn web03_public_demo_launch_schemas_byte_back_compiled_assets() {
+    let _guard = test_guard();
+    let mut evidence = Vec::new();
+    let mut selected_csv_rows = Vec::new();
+    let mut memory_csv_rows = Vec::new();
+
+    for (schema_id, input, expected_top) in [
+        ("jyut6ping3_mobile", "nei", Some("\u{4f60}")),
+        ("cangjie5", "a", Some("\u{65e5}")),
+        ("luna_pinyin", "ni", Some("\u{4f60}")),
+    ] {
+        let runtime = YuneWebRuntime::create_with_schema(
+            &format!("web03-byte-backed-{schema_id}"),
+            schema_id,
+        );
+        runtime.write_public_demo_assets();
+        deploy_public_demo_schema(&runtime, schema_id);
+
+        let state = unsafe {
+            yune_web_init(
+                runtime.shared_c.as_ptr(),
+                runtime.user_c.as_ptr(),
+                runtime.schema_id_c.as_ptr(),
+            )
+        };
+        assert!(
+            !state.is_null(),
+            "{schema_id} should initialize from public-demo assets"
+        );
+        assert_eq!(unsafe { yune_web_deploy(state) }, TRUE);
+
+        let inspector = CString::new("yune_inspector").expect("option should be valid");
+        assert_eq!(
+            unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+            TRUE
+        );
+        let composing = process_input(state, input);
+        let candidates = composing["context"]["candidates"]
+            .as_array()
+            .expect("candidate rows should be an array");
+        assert!(
+            !candidates.is_empty(),
+            "{schema_id} should produce candidates for {input:?}: {composing:?}"
+        );
+        if let Some(expected_top) = expected_top {
+            assert_eq!(
+                candidates[0]["text"],
+                Value::String(expected_top.to_owned()),
+                "{schema_id} should preserve deterministic smoke output for {input:?}"
+            );
+        }
+
+        let storage = &composing["context"]["debug"]["storage"];
+        assert_schema_storage_byte_backed(schema_id, storage);
+        let selected = storage["selected"]
+            .as_array()
+            .expect("selected storage rows should be an array");
+        let memory_rows = storage["memory_owner_rows"]
+            .as_array()
+            .expect("memory owner rows should be an array");
+        evidence.push(json!({
+            "schema_id": schema_id,
+            "input": input,
+            "source_fallback": storage["source_fallback"],
+            "storage": storage,
+            "candidate_head": candidates.iter().take(5).cloned().collect::<Vec<_>>(),
+        }));
+        selected_csv_rows.extend(
+            selected
+                .iter()
+                .cloned()
+                .map(|mut row| {
+                    row["schema_id"] = Value::String(schema_id.to_owned());
+                    row
+                })
+                .collect::<Vec<_>>(),
+        );
+        memory_csv_rows.extend(
+            memory_rows
+                .iter()
+                .cloned()
+                .map(|mut row| {
+                    row["schema_id"] = Value::String(schema_id.to_owned());
+                    row
+                })
+                .collect::<Vec<_>>(),
+        );
+
+        unsafe { yune_web_cleanup(state) };
+        runtime.remove();
+    }
+
+    if let Some(evidence_dir) = web03_evidence_root_from_env() {
+        let evidence_dir = evidence_dir.join("task3-native-byte-backed");
+        fs::create_dir_all(&evidence_dir).expect("evidence directory should be created");
+        fs::write(
+            evidence_dir.join("storage-diagnostics-all-schemas.json"),
+            serde_json::to_string_pretty(&evidence).expect("evidence should serialize"),
+        )
+        .expect("storage diagnostics evidence should be written");
+        fs::write(
+            evidence_dir.join("storage-selected-all-schemas.csv"),
+            schema_storage_selected_csv(&selected_csv_rows),
+        )
+        .expect("storage selected CSV should be written");
+        fs::write(
+            evidence_dir.join("memory-owner-rows-all-schemas.csv"),
+            schema_memory_owner_rows_csv(&memory_csv_rows),
+        )
+        .expect("memory owner rows CSV should be written");
+        fs::write(
+            evidence_dir.join("compiled-asset-inventory.csv"),
+            compiled_asset_inventory_for_root_csv(
+                &public_demo_schema_root(),
+                WEB03_COMPILED_SCHEMA_ASSETS,
+            ),
+        )
+        .expect("compiled asset inventory should be written");
+    }
 }
 
 #[test]
@@ -2264,6 +2517,141 @@ fn public_demo_schema_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public-demo/dist/schema")
 }
 
+fn web03_evidence_root_from_env() -> Option<PathBuf> {
+    std::env::var_os("YUNE_WEB03_EVIDENCE_DIR")
+        .map(PathBuf::from)
+        .map(|path| {
+            if path.is_absolute() {
+                path
+            } else {
+                PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../..")
+                    .join(path)
+            }
+        })
+}
+
+fn deploy_public_demo_schema(runtime: &YuneWebRuntime, schema_id: &str) {
+    let mut traits = empty_rime_traits();
+    traits.shared_data_dir = runtime.shared_c.as_ptr();
+    traits.user_data_dir = runtime.user_c.as_ptr();
+    unsafe { RimeDeployerInitialize(&traits) };
+    let schema_file =
+        CString::new(format!("{schema_id}.schema.yaml")).expect("schema file name should be valid");
+    assert_eq!(
+        RimeDeploySchema(schema_file.as_ptr()),
+        TRUE,
+        "{schema_id} should deploy from public-demo assets"
+    );
+}
+
+fn copy_clean_schema_sources(source_root: &Path, destination_root: &Path) {
+    for entry in fs::read_dir(source_root).expect("source schema dir should be readable") {
+        let entry = entry.expect("source schema entry should be readable");
+        let source = entry.path();
+        let file_name = entry.file_name();
+        let file_name = file_name.to_string_lossy();
+        if source.is_dir() {
+            if file_name == "build" {
+                continue;
+            }
+            copy_clean_schema_sources(&source, &destination_root.join(file_name.as_ref()));
+            continue;
+        }
+        if source.extension().and_then(|extension| extension.to_str()) == Some("bin") {
+            continue;
+        }
+        let destination = destination_root.join(file_name.as_ref());
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent).expect("destination parent should be created");
+        }
+        fs::copy(&source, destination).expect("schema source file should be copied");
+    }
+}
+
+fn assert_dictionary_rebuilt_from_source(
+    reports: &[yune_rime_api::WorkspaceDictionaryRebuildReport],
+    dictionary_id: &str,
+) {
+    assert!(
+        reports
+            .iter()
+            .any(|report| report.dictionary_id == dictionary_id
+                && report.report.table == RimeDictArtifactStatus::Rebuilt
+                && report.report.prism == RimeDictArtifactStatus::Rebuilt
+                && report.report.reverse == RimeDictArtifactStatus::Rebuilt),
+        "{dictionary_id} should have a full Rebuilt report: {reports:?}"
+    );
+}
+
+fn workspace_rebuild_reports_json(
+    reports: &[yune_rime_api::WorkspaceDictionaryRebuildReport],
+) -> Value {
+    Value::Array(
+        reports
+            .iter()
+            .map(|report| {
+                json!({
+                    "schema_id": report.schema_id,
+                    "dictionary_id": report.dictionary_id,
+                    "table": format!("{:?}", report.report.table),
+                    "prism": format!("{:?}", report.report.prism),
+                    "reverse": format!("{:?}", report.report.reverse),
+                })
+            })
+            .collect(),
+    )
+}
+
+fn workspace_rebuild_reports_csv(
+    reports: &[yune_rime_api::WorkspaceDictionaryRebuildReport],
+) -> String {
+    let mut output = String::from("schema_id,dictionary_id,table,prism,reverse\n");
+    for report in reports {
+        output.push_str(&format!(
+            "{},{},{:?},{:?},{:?}\n",
+            csv_field(&report.schema_id),
+            csv_field(&report.dictionary_id),
+            report.report.table,
+            report.report.prism,
+            report.report.reverse,
+        ));
+    }
+    output
+}
+
+fn assert_schema_storage_byte_backed(schema_id: &str, storage: &Value) {
+    assert_eq!(
+        storage["source_fallback"].as_bool(),
+        Some(false),
+        "{schema_id} should not report dictionary source fallback: {storage:?}"
+    );
+    assert!(
+        storage["source_fallbacks"]
+            .as_array()
+            .is_some_and(Vec::is_empty),
+        "{schema_id} source fallback rows should be empty: {storage:?}"
+    );
+    let selected = storage["selected"]
+        .as_array()
+        .expect("selected storage rows should be an array");
+    assert!(
+        !selected.is_empty(),
+        "{schema_id} should expose at least one selected storage row"
+    );
+    for row in selected {
+        assert_eq!(
+            row["selected_storage"].as_str(),
+            Some("byte_backed"),
+            "{schema_id} should select byte-backed storage: {row:?}"
+        );
+        assert!(
+            row["byte_source_len"].as_u64().unwrap_or_default() > 0,
+            "{schema_id} byte-backed row should carry source bytes: {row:?}"
+        );
+    }
+}
+
 fn storage_selected_csv(rows: &[Value]) -> String {
     let mut output = String::from(
         "translator_index,translator,owner,selected_storage,mapping_mode,is_marisa_backed,byte_source_len,stored_entry_count\n",
@@ -2271,6 +2659,27 @@ fn storage_selected_csv(rows: &[Value]) -> String {
     for row in rows {
         output.push_str(&format!(
             "{},{},{},{},{},{},{},{}\n",
+            row["translator_index"].as_u64().unwrap_or_default(),
+            csv_field(row["translator"].as_str().unwrap_or_default()),
+            csv_field(row["owner"].as_str().unwrap_or_default()),
+            csv_field(row["selected_storage"].as_str().unwrap_or_default()),
+            csv_field(row["mapping_mode"].as_str().unwrap_or_default()),
+            row["is_marisa_backed"].as_bool().unwrap_or_default(),
+            row["byte_source_len"].as_u64().unwrap_or_default(),
+            row["stored_entry_count"].as_u64().unwrap_or_default(),
+        ));
+    }
+    output
+}
+
+fn schema_storage_selected_csv(rows: &[Value]) -> String {
+    let mut output = String::from(
+        "schema_id,translator_index,translator,owner,selected_storage,mapping_mode,is_marisa_backed,byte_source_len,stored_entry_count\n",
+    );
+    for row in rows {
+        output.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{}\n",
+            csv_field(row["schema_id"].as_str().unwrap_or_default()),
             row["translator_index"].as_u64().unwrap_or_default(),
             csv_field(row["translator"].as_str().unwrap_or_default()),
             csv_field(row["owner"].as_str().unwrap_or_default()),
@@ -2300,6 +2709,24 @@ fn memory_owner_rows_csv(rows: &[Value]) -> String {
     output
 }
 
+fn schema_memory_owner_rows_csv(rows: &[Value]) -> String {
+    let mut output =
+        String::from("schema_id,owner,class,estimated_bytes,item_count,storage,notes\n");
+    for row in rows {
+        output.push_str(&format!(
+            "{},{},{},{},{},{},{}\n",
+            csv_field(row["schema_id"].as_str().unwrap_or_default()),
+            csv_field(row["owner"].as_str().unwrap_or_default()),
+            csv_field(row["class"].as_str().unwrap_or_default()),
+            row["estimated_bytes"].as_u64().unwrap_or_default(),
+            row["item_count"].as_u64().unwrap_or_default(),
+            csv_field(row["storage"].as_str().unwrap_or_default()),
+            csv_field(row["notes"].as_str().unwrap_or_default()),
+        ));
+    }
+    output
+}
+
 fn csv_field(value: &str) -> String {
     if value.contains([',', '"', '\n', '\r']) {
         format!("\"{}\"", value.replace('"', "\"\""))
@@ -2315,17 +2742,7 @@ fn compiled_asset_inventory_csv(runtime: &YuneWebRuntime) -> String {
         ("user_build", runtime.user.join("build")),
     ];
     for (scope, root) in roots {
-        for file_name in [
-            "jyut6ping3.table.bin",
-            "jyut6ping3.reverse.bin",
-            "jyut6ping3_mobile.prism.bin",
-            "jyut6ping3_scolar.table.bin",
-            "jyut6ping3_scolar.reverse.bin",
-            "jyut6ping3_scolar.prism.bin",
-            "luna_pinyin.table.bin",
-            "luna_pinyin.reverse.bin",
-            "luna_pinyin.prism.bin",
-        ] {
+        for file_name in WEB03_COMPILED_SCHEMA_ASSETS {
             let path = root.join(file_name);
             let (exists, bytes, header) = compiled_asset_inventory_row(&path);
             output.push_str(&format!(
@@ -2337,6 +2754,21 @@ fn compiled_asset_inventory_csv(runtime: &YuneWebRuntime) -> String {
                 csv_field(&header),
             ));
         }
+    }
+    output
+}
+
+fn compiled_asset_inventory_for_root_csv(root: &Path, file_names: &[&str]) -> String {
+    let mut output = String::from("path,exists,bytes,header\n");
+    for file_name in file_names {
+        let (exists, bytes, header) = compiled_asset_inventory_row(&root.join(file_name));
+        output.push_str(&format!(
+            "{},{},{},{}\n",
+            csv_field(file_name),
+            exists,
+            bytes,
+            csv_field(&header),
+        ));
     }
     output
 }

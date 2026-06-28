@@ -890,6 +890,39 @@ remaining Jyutping WASM high-water as outside the WEB-01 harness-only scope.
   wins, public-demo speed wins, packaging wins, deployment wins, or
   product-delivery wins from WEB-01.
 
+## WEB-03 Three-Schema Launch Readiness Requirements
+
+**Status: partial native/asset closeout.** WEB-03 is tracked in
+[`plans/active/web03-plan-three-schema-launch-readiness.md`](./plans/active/web03-plan-three-schema-launch-readiness.md).
+The engine fix landed separately in `3ffd4b21`. The remaining browser
+remeasure is blocked on a local Emscripten toolchain; until it runs, WEB-03
+does not claim that the WEB-02 `893.1 MiB` browser high-water is fixed.
+
+- [x] **WEB03-01**: Clean launch-schema regeneration emits current compiled
+  assets for `jyut6ping3_mobile`, imported `jyut6ping3_scolar`,
+  `luna_pinyin_yune_reverse`, `cangjie5`, and `luna_pinyin`, with every launch
+  prism at `Rime::Prism/4.0` and no `ReusedPrebuilt` rows in the regeneration
+  evidence.
+- [x] **WEB03-02**: `apps/yune-web/public/schema`, both schema asset manifests,
+  public-demo dist, cache bucket, and worker asset lists include the regenerated
+  launch assets, including Cangjie `.table/.prism/.reverse.bin` payloads.
+- [x] **WEB03-03**: Workspace dictionary rebuild loads vocabulary `.txt` files
+  separately from imported `.dict.yaml` files, so regenerated Luna-compatible
+  compiled tables preserve `essay.txt` weights.
+- [x] **WEB03-04**: Native public-demo storage diagnostics prove
+  `source_fallback=false`, zero fallback rows, `selected_storage=byte_backed`,
+  and positive `byte_source_len` for `jyut6ping3_mobile`, `cangjie5`, and
+  `luna_pinyin`.
+- [x] **WEB03-05**: Cangjie minimum correctness is covered by a deterministic
+  shape-code smoke: `cangjie5` input `a` returns U+65E5 first.
+- [ ] **WEB03-06**: A toolchain-equipped run builds fresh Emscripten WASM,
+  rebuilds the public demo, and remeasures browser memory/startup/typing for
+  the three schemas. The browser high-water and final reports remain pending
+  until this evidence exists.
+- [ ] **WEB03-07**: Final browser reports, WEB-02 evidence README, public
+  READMEs, visuals, and plan closeout are refreshed only after WEB03-06
+  produces the new browser numbers.
+
 ## M46 Jyutping Native And WASM Memory Attribution Requirements
 
 **Status: active.** M46 is tracked in

@@ -461,6 +461,28 @@ first make the browser/public-demo path select current byte-backed compiled
 storage, then rerun WASM ready/peak/steady evidence. If that still leaves a
 large high-water, allocator/transient profiling can follow.
 
+### WEB-03 launch compiled-asset contract partial closeout (project-wide D-46)
+
+**D-46 / WEB03-LAUNCH-COMPILED-ASSET-CONTRACT - Treat regenerated launch
+compiled assets and byte-backed storage as a delivery contract, but require
+browser evidence before claiming memory success.** The WEB-03 asset slice
+regenerates and ships current compiled assets for the three public-demo launch
+schemas: `jyut6ping3_mobile` (including `jyut6ping3_scolar` and
+`luna_pinyin_yune_reverse`), `cangjie5`, and `luna_pinyin`. The public-demo
+manifests, dist, cache bucket, and worker asset lists must stay in sync with
+those assets, including Cangjie `.table/.prism/.reverse.bin` payloads.
+
+Two runtime/deploy details are now part of that contract: workspace rebuilds
+must load vocabulary `.txt` packs separately from imported `.dict.yaml` packs,
+and the launch schemas' compiled dictionaries may select compact byte-backed
+storage only when the compiled path loaded successfully. Native diagnostics
+must show `source_fallback=false`, no fallback rows,
+`selected_storage=byte_backed`, and positive `byte_source_len` for all three
+schemas. This native proof removes the known stale-asset/source-fallback
+precondition, but it does not move the WEB-02 browser high-water by itself.
+Until fresh Emscripten/Playwright evidence exists, the browser result remains
+the last measured `893.1 MiB` and no browser memory fix is claimed.
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/completed/m00-analysis-founding.md`, `docs/roadmap.md`, and `docs/plans/completed/m05-m07-record-foundation-refactor.md` are the retained source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into the retained docs before `.planning/` was removed. External research was skipped at setup because scope was driven by existing docs and direct librime comparison.
@@ -475,4 +497,4 @@ large high-water, allocator/transient profiling can follow.
 
 ---
 
-_Last updated: 2026-06-27 - D-45 records WEB-02 complete as a public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets force `owned_heap`, retained `translator.entries_by_code` rows total `529,602,374 B`, and the next branch must fix the compiled-asset contract before further memory experiments. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and browser Jyutping remains `893.1 MiB`, so M46 closes as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` does not reduce settled linear memory, 48 MiB worsens Luna, and Jyutping remains `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._
+_Last updated: 2026-06-27 - D-46 records WEB-03 as a partial native/asset closeout: regenerated launch compiled assets and native byte-backed storage are now a delivery contract, but the browser result remains the last measured `893.1 MiB` until fresh Emscripten/Playwright evidence exists. D-45 records WEB-02 complete as a public-demo Jyutping source-fallback owner classification: shipped `Rime::Prism/3.0` assets force `owned_heap`, retained `translator.entries_by_code` rows total `529,602,374 B`, and the next branch must fix the compiled-asset contract before further memory experiments. D-44 M46 is complete with measured blockers: Branch A fixed the Cangjie -> Luna -> Jyutping no-candidate correctness bug, but native Track B remains `504,627,200 B` peak with mostly unclassified memory and browser Jyutping remains `893.1 MiB`, so M46 closes as `schema-switch-correctness-fixed-memory-unchanged` with `measured-no-go-owner-unclassified`. D-43 records WEB-01 complete with measured browser-harness no-go: lower `INITIAL_MEMORY` does not reduce settled linear memory, 48 MiB worsens Luna, and Jyutping remains `893.1 MiB` even for empty/core attribution rows. D-42 records M45 complete with measured native-engine blockers: `hao` passes, `n` and `ni` match upstream candidate output but miss `<=3.0x`, steady Track A resident memory meets the resident target, and the real `127,475,712 B` cold-start peak remains a standing blocker. D-41 records M44 complete as a partial native/profile performance reduction. D-40 records M43 complete as a native partial structural memory reduction. D-39 records M42 complete with a measured abbreviation-latency blocker. D-38 records M41 complete as a separate browser-harness startup milestone. D-37 records M40 complete, D-36 records M39 complete, and earlier decisions remain in force._

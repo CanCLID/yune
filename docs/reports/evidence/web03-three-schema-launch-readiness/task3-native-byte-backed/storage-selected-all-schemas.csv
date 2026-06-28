@@ -1,0 +1,5 @@
+schema_id,translator_index,translator,owner,selected_storage,mapping_mode,is_marisa_backed,byte_source_len,stored_entry_count
+jyut6ping3_mobile,1,static_table_translator,compact_table.storage,byte_backed,mmap,false,15248382,127143
+jyut6ping3_mobile,2,static_table_translator,compact_table.storage,byte_backed,mmap,false,4640555,70805
+cangjie5,2,static_table_translator,compact_table.storage,byte_backed,mmap,false,3092119,42955
+luna_pinyin,2,static_table_translator,compact_table.storage,byte_backed,mmap,false,4640486,70805

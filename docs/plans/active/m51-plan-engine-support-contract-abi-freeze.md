@@ -4,9 +4,9 @@
 
 **Goal:** Write and enforce the engine support contract for Yune's launch-ready engine surface: supported profiles, schema behavior targets, storage/runtime expectations, and ABI freeze rules.
 
-**Architecture:** M51 is a contract-and-guard milestone after M50. It does not add product/frontends or widen ABI; it consolidates the rules already spread across `AGENTS.md`, `docs/conventions.md`, M10/M19 reference docs, requirements, and ABI tests into one support contract, then adds narrow tests/scripts that fail when the default upstream ABI or TypeDuck profile boundary drifts.
+**Architecture:** M51 is a contract-and-guard milestone after M50. It does not add product/frontends or widen ABI; it consolidates the rules already spread across `AGENTS.md`, `docs/conventions.md`, M10/M19 reference docs, requirements, and ABI tests into one support contract, then adds narrow tests/scripts that fail when the default upstream ABI, TypeDuck profile boundary, or `yune_web_*` export family drifts.
 
-**Tech Stack:** Markdown docs, Rust ABI layout tests (`crates/yune-rime-api/src/tests/abi.rs`), package/header smoke tests, existing TypeDuck profile ABI tests, `cargo fmt`, `cargo clippy`, and focused compatibility suites.
+**Tech Stack:** Markdown docs, Rust ABI layout tests (`crates/yune-rime-api/src/tests/abi.rs`), package/header smoke tests, existing TypeDuck profile ABI tests, `scripts/yune-web-exports.txt`, `crates/yune-rime-api/src/web_runtime.rs`, `cargo fmt`, `cargo clippy`, and focused compatibility suites.
 
 ---
 
@@ -17,6 +17,8 @@ In scope:
 - Engine support contract for the repo, not platform frontend plans.
 - Default upstream `rime_get_api()` expectations.
 - TypeDuck profile ABI expectations through `rime_get_typeduck_profile_api()`.
+- Yune-owned browser/WASM `snake_case` `yune_web_*` export expectations through
+  `scripts/yune-web-exports.txt`.
 - `RimeApi`, `RimeLeversApi`, `RimeCandidate`, and core lifecycle support promises.
 - Supported named target set: upstream `luna_pinyin` / common-schema behavior against librime `1.17.0`, TypeDuck `jyut6ping3` profile behavior against TypeDuck-HK/librime `v1.1.2`, and compact byte-backed storage expectations.
 - Explicit non-goals and unsupported librime features.
@@ -24,7 +26,9 @@ In scope:
 Out of scope:
 
 - iOS/macOS packaging, Apple `phys_footprint`, keyboard-extension UX, or platform SDK work.
-- Browser/public-demo claims.
+- Browser/public-demo performance, memory, UX, packaging, or deployment claims.
+  The `yune_web_*` exported-function family is in scope only as an engine ABI
+  contract.
 - New RIME feature implementation unless a named target requires it.
 - ABI widening.
 
@@ -44,6 +48,14 @@ Out of scope:
   - Keep TypeDuck fork-only list append helpers profile-scoped.
 - Modify if needed: `scripts/package-typeduck-windows.ps1`
   - Only if the existing package smoke does not prove the profile contract stated by the new document.
+- Modify if needed: `scripts/yune-web-exports.txt`
+  - Only if the written contract intentionally changes the browser/WASM export
+    set; otherwise it is the allowlist to verify.
+- Modify if needed: `crates/yune-rime-api/src/web_runtime.rs`
+  - Only if a test exposes a mismatch between exported `yune_web_*` functions
+    and the allowlist.
+- Modify if needed: `crates/yune-rime-api/src/bin/yune_web_module.rs`
+  - Keep the Emscripten linker anchor in sync with the export allowlist.
 - Create: `docs/reports/evidence/m51-engine-support-contract-abi-freeze/`
   - Contract review notes, ABI gate outputs, and closeout evidence.
 
@@ -58,6 +70,9 @@ Out of scope:
 - Read: `docs/plans/reference/m10-reference-typeduck-windows-contract.md`
 - Read: `docs/plans/reference/m10-reference-typeduck-windows-native-build.md`
 - Read: `docs/plans/reference/m19-reference-typeduck-profile-abi.md`
+- Read: `scripts/yune-web-exports.txt`
+- Read: `crates/yune-rime-api/src/web_runtime.rs`
+- Read: `crates/yune-rime-api/src/bin/yune_web_module.rs`
 - Create: `docs/reports/evidence/m51-engine-support-contract-abi-freeze/contract-inventory.md`
 
 - [ ] **Step 0.1: Record the current contract sources**
@@ -75,6 +90,9 @@ Create `contract-inventory.md` with:
 | `docs/decisions.md` | oracle precedence and target-driven scope |
 | `docs/plans/reference/m10-reference-typeduck-windows-contract.md` | historical TypeDuck fork requirements and caveats |
 | `docs/plans/reference/m19-reference-typeduck-profile-abi.md` | named TypeDuck profile accessor and slot order |
+| `scripts/yune-web-exports.txt` | canonical 14-symbol `yune_web_*` browser/WASM export allowlist |
+| `crates/yune-rime-api/src/web_runtime.rs` | implementation of exported `yune_web_*` functions |
+| `crates/yune-rime-api/src/bin/yune_web_module.rs` | linker anchor keeping `yune_web_*` functions reachable for Emscripten |
 ```
 
 Add direct line references or short excerpts only where needed; avoid long pasted blocks.
@@ -87,6 +105,7 @@ Run:
 cargo test -p yune-rime-api abi
 cargo test -p yune-rime-api config_api
 cargo test -p yune-rime-api typeduck_windows_boundary
+cargo test -p yune-rime-api --test yune_web yune_web_adapter_processes_keys_and_returns_json_state
 ```
 
 If a selector does not match tests in the current tree, replace it with the narrow existing test command that covers the same ABI surface and record the replacement in `contract-inventory.md`.
@@ -123,6 +142,8 @@ Status: Active after M51 closeout.
 
 ## TypeDuck Profile ABI Contract
 
+## Yune Web WASM ABI Contract
+
 ## Runtime Storage Contract
 
 ## Behavior And Performance Evidence Contract
@@ -151,7 +172,27 @@ State exactly:
 - TypeDuck fork-only slots stay behind `rime_get_typeduck_profile_api()`;
 - new TypeDuck profile slots require fresh TypeDuck fork-header evidence and tests.
 
-- [ ] **Step 1.4: Fill runtime storage and evidence sections**
+- [ ] **Step 1.4: Fill the Yune Web WASM ABI contract section**
+
+State exactly:
+
+- `yune_web_*` is a Yune-owned browser/WASM ABI family, not the default RIME C
+  ABI and not the TypeDuck profile ABI.
+- The canonical exported-symbol allowlist is `scripts/yune-web-exports.txt`.
+- The current allowlist contains exactly these 14 functions:
+  `yune_web_init`, `yune_web_process_key`, `yune_web_select_candidate`,
+  `yune_web_delete_candidate`, `yune_web_flip_page`, `yune_web_deploy`,
+  `yune_web_customize`, `yune_web_set_option`, `yune_web_set_ai_enabled`,
+  `yune_web_stage_ai`, `yune_web_cleanup`, `yune_web_response_json`,
+  `yune_web_response_handled`, and `yune_web_free_response`.
+- Adding, renaming, or removing any exported `yune_web_*` function requires
+  updating `scripts/yune-web-exports.txt`, the Emscripten linker anchor in
+  `crates/yune-rime-api/src/bin/yune_web_module.rs`, TypeScript runtime calls,
+  and focused tests.
+- M51 documents this ABI family only; it makes no browser performance, memory,
+  UX, package, or deployment claim.
+
+- [ ] **Step 1.5: Fill runtime storage and evidence sections**
 
 State exactly:
 
@@ -160,7 +201,7 @@ State exactly:
 - native, browser, product, and platform claims must stay separate;
 - Windows private/working-set proxies are not Apple `phys_footprint`.
 
-- [ ] **Step 1.5: Link the contract from conventions**
+- [ ] **Step 1.6: Link the contract from conventions**
 
 Add one paragraph near the C ABI rules in `docs/conventions.md`:
 
@@ -171,7 +212,7 @@ Keep this section as the quick C ABI rule reference; update the contract when a
 support boundary changes.
 ```
 
-- [ ] **Step 1.6: Commit the contract draft**
+- [ ] **Step 1.7: Commit the contract draft**
 
 ```powershell
 git add -- docs/contracts/engine-support-contract.md docs/conventions.md
@@ -198,12 +239,19 @@ Check whether tests already assert:
 - `RimeCandidate` size and field offsets;
 - TypeDuck profile accessor data size and fork-only slots;
 - absence of fork-only slots from default upstream `rime_get_api()`.
+- `scripts/yune-web-exports.txt` matches the exported `yune_web_*` functions
+  documented in the contract and kept alive by `yune_web_module.rs`.
 
 Record the result in `abi-freeze.md`.
 
 - [ ] **Step 2.2: Add missing guard tests only**
 
-If a listed expectation is missing, add a direct layout or function-table test. Use existing `field_offset` / `assert_api_slot!` helpers in `crates/yune-rime-api/src/tests/abi.rs` rather than introducing a new ABI framework.
+If a listed expectation is missing, add a direct layout, function-table, or
+export-list test. Use existing `field_offset` / `assert_api_slot!` helpers in
+`crates/yune-rime-api/src/tests/abi.rs` for RIME ABI checks rather than
+introducing a new ABI framework. For `yune_web_*`, prefer a small test or script
+that compares `scripts/yune-web-exports.txt` against the exported functions
+named in `web_runtime.rs` and the linker anchor in `yune_web_module.rs`.
 
 Do not change ABI implementation unless a test exposes a real mismatch with the current contract.
 
@@ -214,6 +262,7 @@ Run:
 ```powershell
 cargo test -p yune-rime-api abi
 cargo test -p yune-rime-api config_api
+cargo test -p yune-rime-api --test yune_web yune_web_adapter_processes_keys_and_returns_json_state
 ```
 
 Expected: pass.
@@ -221,7 +270,7 @@ Expected: pass.
 - [ ] **Step 2.4: Commit ABI guards**
 
 ```powershell
-git add -- crates/yune-rime-api/src/tests/abi.rs crates/yune-rime-api/src/tests/config_api.rs docs/reports/evidence/m51-engine-support-contract-abi-freeze/abi-freeze.md
+git add -- crates/yune-rime-api/src/tests/abi.rs crates/yune-rime-api/src/tests/config_api.rs scripts/yune-web-exports.txt crates/yune-rime-api/src/web_runtime.rs crates/yune-rime-api/src/bin/yune_web_module.rs docs/reports/evidence/m51-engine-support-contract-abi-freeze/abi-freeze.md
 git commit -m "Freeze engine ABI expectations"
 git push origin main
 ```
@@ -243,6 +292,8 @@ Add requirement entries using the existing requirement style:
 - `M51-CONTRACT-01`: engine support contract exists and is linked from conventions/roadmap.
 - `M51-ABI-01`: default upstream ABI layout remains locked by tests.
 - `M51-ABI-02`: TypeDuck fork-only ABI remains profile-scoped.
+- `M51-ABI-03`: `yune_web_*` exported-symbol ABI remains synchronized with
+  `scripts/yune-web-exports.txt`.
 - `M51-EVIDENCE-01`: native/browser/product/platform claims must cite their own evidence lanes.
 
 - [ ] **Step 3.2: Update the roadmap**
@@ -251,7 +302,9 @@ Update `docs/roadmap.md` so M51 is marked complete only after:
 
 - the contract exists;
 - ABI tests pass;
-- broad clippy remains green after M50;
+- broad clippy remains green after M50 Task 0;
+- M50 latency rows may still close as measured partial and do not block M51
+  unless the M50 work changes an ABI or support boundary;
 - no platform/frontend work is claimed.
 
 - [ ] **Step 3.3: Write docs sync evidence**
@@ -268,7 +321,9 @@ Updated:
 - `docs/requirements.md`
 - `docs/roadmap.md`
 
-No platform frontend, browser, packaging, or iOS-device claim is made.
+No platform frontend, browser performance, browser memory, packaging, or
+iOS-device claim is made. The only browser-related scope is the `yune_web_*`
+engine ABI/export-list contract.
 ```
 
 - [ ] **Step 3.4: Commit docs sync**
@@ -297,6 +352,7 @@ cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test -p yune-rime-api abi
 cargo test -p yune-rime-api config_api
+cargo test -p yune-rime-api --test yune_web yune_web_adapter_processes_keys_and_returns_json_state
 cargo test -p yune-core --test upstream_luna_pinyin_parity
 cargo test -p yune-core --test cantonese_parity
 ```
@@ -316,6 +372,7 @@ Create `final-gates.md`:
 | `cargo clippy --workspace --all-targets -- -D warnings` | record actual result | record any stderr summary |
 | `cargo test -p yune-rime-api abi` | record actual result | record selected test count |
 | `cargo test -p yune-rime-api config_api` | record actual result | record selected test count |
+| `cargo test -p yune-rime-api --test yune_web yune_web_adapter_processes_keys_and_returns_json_state` | record actual result | record selected test count |
 | `cargo test -p yune-core --test upstream_luna_pinyin_parity` | record actual result | record selected test count |
 | `cargo test -p yune-core --test cantonese_parity` | record actual result | record selected test count |
 
@@ -329,6 +386,8 @@ Success requires:
 - contract document created and linked;
 - ABI expectations either already covered or newly covered by tests;
 - TypeDuck fork-only slots remain profile-scoped;
+- `yune_web_*` exported symbols remain synchronized with
+  `scripts/yune-web-exports.txt`;
 - no default ABI widening;
 - final gates pass.
 

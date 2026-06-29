@@ -90,8 +90,8 @@ gate is either passed or honestly closed as measured partial.
   attribute full Luna Track A memory.
 - [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md)
   - following engine contract milestone to document supported engine targets,
-  runtime storage expectations, default upstream ABI boundaries, and the
-  TypeDuck profile ABI freeze.
+  runtime storage expectations, default upstream ABI boundaries, the TypeDuck
+  profile ABI freeze, and the `yune_web_*` exported-symbol family.
 - [`plans/completed/m47-plan-ios-budget-native-memory-reduction.md`](./plans/completed/m47-plan-ios-budget-native-memory-reduction.md)
   - completed attribution-first plan that drove the comments-intact keyboard from
   ~195 MB to ~67 MB WS / ~22 MB private (portable scope); Apple-device
@@ -197,7 +197,10 @@ next milestone.
    launch-facing engine support contract, link it from conventions/roadmap,
    and verify that default upstream `rime_get_api()` and `RimeCandidate` remain
    upstream-shaped while TypeDuck fork-only slots stay behind the named profile
-   accessor. No platform frontend or ABI widening is in scope. Plan:
+   accessor and the `yune_web_*` exported-symbol family remains synchronized
+   with `scripts/yune-web-exports.txt`. No platform frontend, browser
+   performance claim, or ABI widening is in scope. M51 depends on M50's
+   clippy-green/stable-ABI baseline, not M50 latency success. Plan:
    [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md).
 5. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped plan.
@@ -685,7 +688,7 @@ Closed M38 gates:
 | M48 | Complete | `luna_pinyin` sentence over-segmentation correctness fix: upstream oracle bytes for `jianli`/`biancheng` were captured first, then Yune's poet path was moved from raw-frequency accumulation to librime's fixed-scale log dictionary entry weight (`ln(raw_or_epsilon) - ln(1e8)`, no `/total`) before `Grammar::Evaluate` adds the null penalty. The compact shipped upstream Luna path now loads full `essay` vocabulary for normal sentence ranking while keeping the M42 abbreviation vocabulary bounded. Production CLI now returns `jianli` -> `å»ºç«‹`, `ç°¡æ­·`, `ç›£ç†`, `ç›£åˆ©`, `å‰ªåŠ›` and `biancheng` -> `è®Šæˆ`, `ç·¨ç¨‹`, `ä¾¿æˆ`, `ç·¨æˆ`, `é‚ŠåŸŽ`. Gates passed: `upstream_luna_pinyin_parity`, `poet`, `cantonese_parity`, `yune_web`, and `cargo fmt --check`; at closeout, broad clippy was blocked by unrelated `compiled_prism.rs:430` `clippy::ref_option`, which M50 Task 0 later superseded and cleared. Plan: [`plans/completed/m48-plan-luna-pinyin-sentence-over-segmentation.md`](./plans/completed/m48-plan-luna-pinyin-sentence-over-segmentation.md). |
 | M49 | Complete with measured blockers | Track A short-key latency follow-up: MARISA prefix traversal and transient preset-vocabulary prefiltering improved `n` to `62.400us` / `3.074x`, `ni` to `46.250us` / `3.269x`, and the 37-character row to `894.400us` / `3.094x`, but all three still miss the strict `<=3.0x` launch-readiness gate. Current full `luna_pinyin` Track A memory is also a blocker at `188.3 MB` peak versus librime `17.6 MB`. Plan: [`plans/completed/m49-plan-track-a-short-key-latency-followup.md`](./plans/completed/m49-plan-track-a-short-key-latency-followup.md). |
 | M50 | Active | Track A launch-readiness completion: fix the known broad-clippy blocker, capture a fresh native Track A baseline, reduce or re-close `n`, `ni`, and the 37-character `luna_pinyin` row, and attribute full Luna Track A memory without web, frontend, product, or iOS-device claims. Plan: [`plans/active/m50-plan-track-a-launch-readiness-completion.md`](./plans/active/m50-plan-track-a-launch-readiness-completion.md). |
-| M51 | Planned after M50 | Engine support contract and ABI freeze: document supported engine targets, runtime storage expectations, default upstream ABI boundaries, TypeDuck profile ABI boundaries, evidence-lane rules, and add or confirm ABI guard tests. No ABI widening or platform frontend work is in scope. Plan: [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md). |
+| M51 | Planned after M50 | Engine support contract and ABI freeze: document supported engine targets, runtime storage expectations, default upstream ABI boundaries, TypeDuck profile ABI boundaries, the `yune_web_*` exported-symbol family, evidence-lane rules, and add or confirm ABI/export guard tests. No ABI widening, browser performance claim, or platform frontend work is in scope. M51 depends on M50's clippy-green/stable-ABI baseline, not on M50 latency success. Plan: [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md). |
 
 WEB-03 latency addendum: a 2026-06-28 follow-up bounds compact-path fallback
 expansion after the phrase-composition repair and restores local browser

@@ -1151,10 +1151,10 @@ fn install_schema_dictionary_lookup_filter_from_config(
     match load_schema_dictionary_lookup_records_byte_backed(&dictionary_name, source_yaml.as_ref())
     {
         Ok(Some(records)) => {
+            let lookup_texts = records.text_count();
+            let lookup_records = records.record_count();
             memory_probe_mark(format!(
-                "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:after_byte_backed_dictionary_load:lookup_texts={}:lookup_records={}",
-                records.text_count(),
-                records.record_count()
+                "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:after_byte_backed_dictionary_load:lookup_texts={lookup_texts}:lookup_records={lookup_records}"
             ));
             let tags = schema_filter_tags(schema_config, name_space);
             session.engine.add_filter(TaggedFilter::new(
@@ -1214,10 +1214,10 @@ fn install_schema_dictionary_lookup_filter_from_config(
             }
         },
     };
+    let lookup_texts = dictionary.lookup_record_text_count();
+    let lookup_records = dictionary.lookup_record_count();
     memory_probe_mark(format!(
-        "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:after_dictionary_load:lookup_texts={}:lookup_records={}",
-        dictionary.lookup_record_text_count(),
-        dictionary.lookup_record_count()
+        "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:after_dictionary_load:lookup_texts={lookup_texts}:lookup_records={lookup_records}"
     ));
     let tags = schema_filter_tags(schema_config, name_space);
     session.engine.add_filter(TaggedFilter::new(
@@ -1772,10 +1772,10 @@ fn load_schema_compiled_dictionary(
             }
         }
     };
+    let lookup_texts = reverse_dictionary.lookup_record_text_count();
+    let lookup_records = reverse_dictionary.lookup_record_count();
     memory_probe_mark(format!(
-        "m47:compiled_dictionary:{dictionary_name}:after_reverse_dictionary_parse:lookup_texts={}:lookup_records={}",
-        reverse_dictionary.lookup_record_text_count(),
-        reverse_dictionary.lookup_record_count()
+        "m47:compiled_dictionary:{dictionary_name}:after_reverse_dictionary_parse:lookup_texts={lookup_texts}:lookup_records={lookup_records}"
     ));
 
     let mut advanced_dictionary = TableDictionary::with_advanced_data(
@@ -1840,9 +1840,7 @@ fn load_schema_compiled_dictionary(
         let (table_lookup_texts, table_lookup_records) =
             advanced_lookup_record_counts(&table_advanced);
         memory_probe_mark(format!(
-            "m47:compiled_dictionary:{dictionary_name}:after_table_advanced_payload_parse:lookup_texts={}:lookup_records={}",
-            table_lookup_texts,
-            table_lookup_records
+            "m47:compiled_dictionary:{dictionary_name}:after_table_advanced_payload_parse:lookup_texts={table_lookup_texts}:lookup_records={table_lookup_records}"
         ));
         advanced_dictionary = TableDictionary::with_advanced_data(Vec::new(), table_advanced)
             .with_merged_advanced_data_from(&advanced_dictionary);
@@ -1874,10 +1872,10 @@ fn load_schema_compiled_dictionary(
             }
             other => CompiledRejectReason::Invalid(format!("table parse failed: {other:?}")),
         })?;
+        let lookup_texts = dictionary.lookup_record_text_count();
+        let lookup_records = dictionary.lookup_record_count();
         memory_probe_mark(format!(
-            "m47:compiled_dictionary:{dictionary_name}:after_table_dictionary_parse:lookup_texts={}:lookup_records={}",
-            dictionary.lookup_record_text_count(),
-            dictionary.lookup_record_count()
+            "m47:compiled_dictionary:{dictionary_name}:after_table_dictionary_parse:lookup_texts={lookup_texts}:lookup_records={lookup_records}"
         ));
         (
             Some(dictionary.with_merged_advanced_data_from(&advanced_dictionary)),

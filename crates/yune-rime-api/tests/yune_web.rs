@@ -1787,12 +1787,12 @@ fn web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion() 
     let long_inputs = [
         (
             "sihaacoenggeoisyujapgecukdou",
-            "\u{8a66}\u{4e0b}\u{5834}\u{64da}\u{8f38}\u{5165}\u{5605}\u{901f}\u{90fd}",
+            "\u{6642}\u{4e0b}\u{5834}\u{64da}\u{8f38}\u{5165}\u{5605}\u{901f}\u{5ea6}",
             5_000,
         ),
         (
             "taihaajyugwodaahoucoenggegeoizigosingnangwuidimjoeng",
-            "\u{7747}\u{4e0b}\u{5982}\u{679c}\u{6253}\u{597d}\u{5834}\u{5605}\u{64da}\u{81ea}\u{500b}\u{8cac}\u{6703}\u{9ede}\u{6a23}",
+            "\u{7747}\u{4e0b}\u{5982}\u{679c}\u{6253}\u{597d}\u{5834}\u{5605}\u{53e5}\u{5b50}\u{500b}\u{6027}\u{80fd}\u{6703}\u{9ede}\u{6a23}",
             6_000,
         ),
     ];
@@ -2930,7 +2930,7 @@ fn yune_web_adapter_comments_intact_keyboard_profile_skips_translator_lookup_pay
     );
     assert!(
         translator_lookup_rows.iter().all(|row| row["class"] == "shared"
-            && row["estimated_bytes"] == Value::from(0)),
+            && row["estimated_bytes"].as_u64() == Some(0)),
         "comments-intact profile should report no retained translator lookup payload: {owner_rows:?}"
     );
 

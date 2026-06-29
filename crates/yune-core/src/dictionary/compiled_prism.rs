@@ -55,7 +55,7 @@ impl RimePrismBinPayload {
             MemoryOwnerRow::new(
                 "prism.double_array_units",
                 MemoryOwnerClass::HeapOwnedRequired,
-                estimate_double_array_units_bytes(&self.double_array),
+                estimate_double_array_units_bytes(self.double_array.as_ref()),
                 self.double_array
                     .as_ref()
                     .map_or(0, |double_array| double_array.units().len()),
@@ -427,8 +427,8 @@ fn prism_byte_source_class(source: &dyn CompactTableByteSource) -> MemoryOwnerCl
     }
 }
 
-fn estimate_double_array_units_bytes(double_array: &Option<DartsDoubleArray>) -> usize {
-    double_array.as_ref().map_or(0, |double_array| {
+fn estimate_double_array_units_bytes(double_array: Option<&DartsDoubleArray>) -> usize {
+    double_array.map_or(0, |double_array| {
         mem::size_of::<DartsDoubleArray>().saturating_add(
             double_array
                 .units_capacity()

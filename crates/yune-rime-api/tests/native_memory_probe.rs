@@ -99,6 +99,7 @@ struct PhaseSample {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
+#[allow(clippy::struct_field_names)]
 struct OwnerStats {
     named_owner_bytes: u64,
     heap_owned_bytes: u64,
@@ -612,6 +613,7 @@ fn print_memresults(
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 fn write_evidence(
     evidence_dir: &Path,
     schema: &str,
@@ -778,6 +780,7 @@ fn csv_header() -> String {
     "event_index,phase,working_set_bytes,working_set_mb,private_bytes,private_mb,peak_working_set_bytes,peak_working_set_mb,allocator_live_bytes,allocator_live_mb,allocator_high_water_bytes,allocator_high_water_mb,named_owner_bytes,clean_mmap_file_backed_estimate_bytes,conclusion\n".to_owned()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn csv_row(
     event_index: Option<usize>,
     phase: &str,

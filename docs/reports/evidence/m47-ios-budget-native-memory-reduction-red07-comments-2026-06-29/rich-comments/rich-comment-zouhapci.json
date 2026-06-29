@@ -1,0 +1,33 @@
+{
+  "evidence": "visible candidates retain TypeDuck dictionary-panel rich comment bytes after RED-07 byte-backed lookup storage",
+  "input": "zouhapci",
+  "profile": "comments-intact keyboard profile",
+  "samples": [
+    {
+      "comment": "\f\r1,組合,zou2hap6,1,0,,v n,,,,,,,combine,,,,Menyusun",
+      "has_dictionary_payload": true,
+      "text": "組合"
+    },
+    {
+      "comment": "\f\r1,做,zou6,1,0,,v,,,,,,,do,کرنا,गर्नु पर्ने,करना,melakukan",
+      "has_dictionary_payload": true,
+      "text": "做"
+    },
+    {
+      "comment": "\f\r1,早,zou2,1,0,,adj,,,,,,,early,جلدی,चाँडै,जल्दी,dini",
+      "has_dictionary_payload": true,
+      "text": "早"
+    },
+    {
+      "comment": "\f\r1,組,zou2,1,0,,n,,,,,,,group,گروپ,समूह,समूह,kelompok",
+      "has_dictionary_payload": true,
+      "text": "組"
+    },
+    {
+      "comment": "\f\r1,租,zou1,1,0,,v,,,,,,,rent,کرایہ,भाडा,किराए पर लेना,menyewa",
+      "has_dictionary_payload": true,
+      "text": "租"
+    }
+  ],
+  "schema": "jyut6ping3_mobile"
+}

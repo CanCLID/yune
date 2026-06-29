@@ -1,0 +1,16 @@
+{
+  "after_create_session_clean_mmap_file_backed_estimate_bytes": 40740505,
+  "after_create_session_heap_owned_named_owner_bytes": 101241509,
+  "after_create_session_named_owner_bytes": 145255855,
+  "allocator_metric": "test-local #[global_allocator] wrapper over std::alloc::System; process-wide approximation",
+  "final_clean_mmap_file_backed_estimate_bytes": 40740505,
+  "final_heap_owned_named_owner_bytes": 101241509,
+  "final_named_owner_bytes": 145255855,
+  "harness": "Windows native RimeApi lean probe with GetProcessMemoryInfo counters",
+  "owner_attribution_csv": "owner-attribution.csv",
+  "phase_events_csv": "create-session-events.csv",
+  "phase_memory_csv": "phase-memory.csv",
+  "private_bytes_metric": "PROCESS_MEMORY_COUNTERS_EX.PrivateUsage",
+  "schema": "jyut6ping3_mobile",
+  "working_set_metric": "PROCESS_MEMORY_COUNTERS_EX.WorkingSetSize, equivalent to Windows process working set"
+}

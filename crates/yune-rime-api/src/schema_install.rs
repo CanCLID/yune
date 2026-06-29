@@ -11,14 +11,16 @@ use std::{
 use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
-    memory_probe_mark, parse_rime_prism_runtime_payload, parse_rime_reverse_bin_dictionary,
+    byte_backed_lookup_records_from_table_bin_byte_source, memory_probe_mark,
+    parse_rime_prism_runtime_payload, parse_rime_reverse_bin_dictionary,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
     CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
     EchoTranslator, HistoryTranslator, ReverseLookupFilter, ReverseLookupTranslator,
     RimePrismRuntimePayload, RimeTableBinAdvancedDataOptions, SchemaListTranslator,
     SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary,
-    TaggedFilter, Translator, UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
+    TableDictionaryAdvancedData, TaggedFilter, Translator, UniquifierFilter,
+    TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -1139,6 +1141,27 @@ fn install_schema_dictionary_lookup_filter_from_config(
         "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:before_dictionary_load"
     ));
     let source_yaml = load_schema_source_dictionary_yaml(&dictionary_name);
+    match load_schema_dictionary_lookup_records_byte_backed(&dictionary_name, source_yaml.as_ref())
+    {
+        Ok(Some(records)) => {
+            memory_probe_mark(format!(
+                "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:after_byte_backed_dictionary_load:lookup_texts={}:lookup_records={}",
+                records.text_count(),
+                records.record_count()
+            ));
+            let tags = schema_filter_tags(schema_config, name_space);
+            session.engine.add_filter(TaggedFilter::new(
+                DictionaryLookupFilter::from_byte_backed_records(records),
+                tags,
+            ));
+            memory_probe_mark(format!(
+                "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:after_filter_install"
+            ));
+            return;
+        }
+        Ok(None) => {}
+        Err(_) => {}
+    }
     let dictionary = match source_yaml.as_deref() {
         Some(dictionary_yaml) if has_typeduck_lookup_source_rows(dictionary_yaml) => {
             match TableDictionary::parse_typeduck_lookup_dict_yaml(dictionary_yaml) {
@@ -1197,6 +1220,32 @@ fn install_schema_dictionary_lookup_filter_from_config(
     memory_probe_mark(format!(
         "m47:filter:dictionary_lookup_filter@{name_space}:dictionary:{dictionary_name}:after_filter_install"
     ));
+}
+
+fn load_schema_dictionary_lookup_records_byte_backed(
+    dictionary_name: &str,
+    source_yaml: Option<&String>,
+) -> Result<Option<yune_core::ByteBackedDictionaryLookupRecords>, CompiledRejectReason> {
+    let table_name = validate_data_resource_id(&format!("{dictionary_name}.table.bin"))
+        .ok_or_else(|| CompiledRejectReason::Invalid("invalid table resource id".to_owned()))?;
+    let Some(table_path) = selected_runtime_data_path(&table_name) else {
+        return Ok(None);
+    };
+    let table_source = load_compiled_table_byte_source(&table_path)?;
+    if let Some(source_yaml) = source_yaml {
+        let source_checksum = rime_dict_source_checksum(0, [source_yaml.as_bytes()], None);
+        let table_checksum = rime_table_bin_dict_file_checksum(table_source.bytes());
+        if table_checksum != Some(source_checksum) {
+            return Err(CompiledRejectReason::Stale);
+        }
+    }
+    byte_backed_lookup_records_from_table_bin_byte_source(table_source).map_err(|error| match error
+    {
+        yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
+            CompiledRejectReason::Unsupported(role)
+        }
+        other => CompiledRejectReason::Invalid(format!("lookup payload parse failed: {other:?}")),
+    })
 }
 
 fn install_schema_simplifier_filter_from_config(
@@ -1524,13 +1573,24 @@ fn compact_table_advanced_data_options(
     schema_config: &Value,
     name_space: &str,
 ) -> RimeTableBinAdvancedDataOptions {
+    let load_lookup_records =
+        find_config_value(schema_config, &format!("{name_space}/load_lookup_records"))
+            .and_then(config_scalar_bool)
+            .unwrap_or(true);
     RimeTableBinAdvancedDataOptions {
-        load_lookup_records: find_config_value(
-            schema_config,
-            &format!("{name_space}/load_lookup_records"),
+        load_lookup_records,
+        byte_back_lookup_records: load_lookup_records,
+    }
+}
+
+fn advanced_lookup_record_counts(advanced: &TableDictionaryAdvancedData) -> (usize, usize) {
+    if let Some(records) = &advanced.byte_backed_lookup_records {
+        (records.text_count(), records.record_count())
+    } else {
+        (
+            advanced.lookup_records.len(),
+            advanced.lookup_records.values().map(Vec::len).sum(),
         )
-        .and_then(config_scalar_bool)
-        .unwrap_or(true),
     }
 }
 
@@ -1753,10 +1813,29 @@ fn load_schema_compiled_dictionary(
             }
             other => CompiledRejectReason::Invalid(format!("table parse failed: {other:?}")),
         })?;
+        if advanced_data_options.load_lookup_records
+            && advanced_data_options.byte_back_lookup_records
+        {
+            if let Some(lookup_records) =
+                byte_backed_lookup_records_from_table_bin_byte_source(Arc::clone(&table_source))
+                    .map_err(|error| match error {
+                        yune_core::RimeTableBinParseError::UnsupportedSection { role } => {
+                            CompiledRejectReason::Unsupported(role)
+                        }
+                        other => CompiledRejectReason::Invalid(format!(
+                            "table lookup payload parse failed: {other:?}"
+                        )),
+                    })?
+            {
+                table_advanced = table_advanced.with_byte_backed_lookup_records(lookup_records);
+            }
+        }
+        let (table_lookup_texts, table_lookup_records) =
+            advanced_lookup_record_counts(&table_advanced);
         memory_probe_mark(format!(
             "m47:compiled_dictionary:{dictionary_name}:after_table_advanced_payload_parse:lookup_texts={}:lookup_records={}",
-            table_advanced.lookup_records.len(),
-            table_advanced.lookup_records.values().map(Vec::len).sum::<usize>()
+            table_lookup_texts,
+            table_lookup_records
         ));
         if dictionary_name == "luna_pinyin" && table_advanced.preset_vocabulary.is_empty() {
             let _trace = startup_trace::span("compiled_table_preset_vocabulary_load");

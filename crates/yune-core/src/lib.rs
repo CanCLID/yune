@@ -27,15 +27,18 @@ pub use ai::{
 };
 use comment_format::CommentFormat;
 pub use dictionary::{
-    build_prism_bin, build_reverse_bin, build_table_bin, execute_rebuild_plan,
+    build_prism_bin, build_reverse_bin, build_table_bin,
+    byte_backed_lookup_records_from_table_bin_byte_source,
+    byte_backed_lookup_records_from_table_bin_bytes, execute_rebuild_plan,
     parse_rime_preset_vocabulary_entries, parse_rime_prism_bin_metadata,
     parse_rime_prism_bin_payload, parse_rime_prism_runtime_payload,
     parse_rime_reverse_bin_dictionary, parse_rime_reverse_bin_metadata,
     parse_rime_table_bin_advanced_data, parse_rime_table_bin_advanced_data_with_options,
     parse_rime_table_bin_dictionary, parse_rime_table_bin_metadata, rime_checksum_bytes,
     rime_dict_rebuild_plan, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
-    CodeCoords, CompactMarisaStringTable, CompactTableByteSource, CompactTableStore,
-    DartsDoubleArray, DartsDoubleArrayError, DartsMatch, DictionaryLookupRecord,
+    ByteBackedDictionaryLookupRecords, CodeCoords, CompactMarisaStringTable,
+    CompactTableByteSource, CompactTableStore, DartsDoubleArray, DartsDoubleArrayError, DartsMatch,
+    DictionaryLookupByteSource, DictionaryLookupByteStoreError, DictionaryLookupRecord,
     PresetVocabularyEntry, RimeChecksumComputer, RimeCompiledMetadataError, RimeCorrectionEntry,
     RimeDictArtifactStatus, RimeDictRebuildError, RimeDictRebuildExecuteError,
     RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildPlan,

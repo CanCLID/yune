@@ -6,6 +6,9 @@ use crate::dictionary::compiled::{
     parse_rime_format_version_for_payload, read_f32_le, read_i32_le, read_u32_le,
 };
 use crate::dictionary::query_table::{LookupCandidate, LookupCandidateEntry, TableLookup};
+use crate::dictionary::source::{
+    ByteBackedDictionaryLookupRecords, DictionaryLookupByteSource, DictionaryLookupByteStoreError,
+};
 use crate::CandidateSource;
 use crate::{MemoryOwnerClass, MemoryOwnerRow};
 use std::borrow::Cow;
@@ -63,12 +66,14 @@ pub trait CompactMarisaStringTable: fmt::Debug + Send + Sync {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RimeTableBinAdvancedDataOptions {
     pub load_lookup_records: bool,
+    pub byte_back_lookup_records: bool,
 }
 
 impl Default for RimeTableBinAdvancedDataOptions {
     fn default() -> Self {
         Self {
             load_lookup_records: true,
+            byte_back_lookup_records: false,
         }
     }
 }
@@ -97,6 +102,25 @@ impl CompactTableByteSource for OwnedCompactTableBytes {
 
     fn mapping_mode(&self) -> &'static str {
         "owned_bytes"
+    }
+}
+
+#[derive(Debug)]
+struct CompactLookupByteSource {
+    source: Arc<dyn CompactTableByteSource>,
+}
+
+impl DictionaryLookupByteSource for CompactLookupByteSource {
+    fn bytes(&self) -> &[u8] {
+        self.source.bytes()
+    }
+
+    fn storage_label(&self) -> &'static str {
+        self.source.storage_label()
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        self.source.mapping_mode()
     }
 }
 
@@ -772,6 +796,32 @@ fn estimate_owned_storage_bytes(
 }
 
 fn advanced_memory_owner_rows(advanced: &TableDictionaryAdvancedData) -> Vec<MemoryOwnerRow> {
+    let lookup_record_row = if let Some(records) = &advanced.byte_backed_lookup_records {
+        MemoryOwnerRow::new(
+            "compact_table.lookup_records",
+            byte_backed_lookup_owner_class(records),
+            records
+                .payload_bytes()
+                .saturating_add(records.estimated_index_bytes()),
+            records.record_count(),
+            format!(
+                "byte_backed_lookup_payload({}; {}; index_bytes={})",
+                records.storage_label(),
+                records.mapping_mode(),
+                records.estimated_index_bytes()
+            ),
+            "dictionary lookup records retained as an indexed compiled payload instead of an eager HashMap",
+        )
+    } else {
+        MemoryOwnerRow::new(
+            "compact_table.lookup_records",
+            MemoryOwnerClass::HeapOwnedRequired,
+            estimate_lookup_records_bytes(&advanced.lookup_records),
+            advanced.lookup_records.values().map(Vec::len).sum(),
+            "HashMap<String, Vec<DictionaryLookupRecord>>",
+            "retained dictionary lookup records required by TypeDuck dictionary panels",
+        )
+    };
     vec![
         MemoryOwnerRow::new(
             "compact_table.stems",
@@ -781,14 +831,7 @@ fn advanced_memory_owner_rows(advanced: &TableDictionaryAdvancedData) -> Vec<Mem
             "HashMap<String, Vec<String>>",
             "retained phrase-code stems needed for lookup records and dictionary panels",
         ),
-        MemoryOwnerRow::new(
-            "compact_table.lookup_records",
-            MemoryOwnerClass::HeapOwnedRequired,
-            estimate_lookup_records_bytes(&advanced.lookup_records),
-            advanced.lookup_records.values().map(Vec::len).sum(),
-            "HashMap<String, Vec<DictionaryLookupRecord>>",
-            "retained dictionary lookup records required by TypeDuck dictionary panels",
-        ),
+        lookup_record_row,
         MemoryOwnerRow::new(
             "compact_table.corrections_tolerance",
             MemoryOwnerClass::HeapOwnedRequired,
@@ -820,6 +863,14 @@ fn advanced_memory_owner_rows(advanced: &TableDictionaryAdvancedData) -> Vec<Mem
             "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
         ),
     ]
+}
+
+fn byte_backed_lookup_owner_class(records: &ByteBackedDictionaryLookupRecords) -> MemoryOwnerClass {
+    match records.mapping_mode() {
+        "mmap" => MemoryOwnerClass::SharedOrOverlapping,
+        "owned_bytes" => MemoryOwnerClass::HeapOwnedGuarded,
+        _ => MemoryOwnerClass::SharedOrOverlapping,
+    }
 }
 
 fn estimate_string_vec_map_bytes(values: &HashMap<String, Vec<String>>) -> usize {
@@ -1616,6 +1667,122 @@ pub fn parse_rime_table_bin_advanced_data_with_options(
     Ok(advanced.data)
 }
 
+pub fn byte_backed_lookup_records_from_table_bin_bytes(
+    bytes: impl Into<Arc<[u8]>>,
+) -> Result<Option<ByteBackedDictionaryLookupRecords>, RimeTableBinParseError> {
+    byte_backed_lookup_records_from_table_bin_byte_source(Arc::new(OwnedCompactTableBytes::new(
+        bytes,
+    )))
+}
+
+pub fn byte_backed_lookup_records_from_table_bin_byte_source(
+    source: Arc<dyn CompactTableByteSource>,
+) -> Result<Option<ByteBackedDictionaryLookupRecords>, RimeTableBinParseError> {
+    let source: Arc<dyn DictionaryLookupByteSource> = Arc::new(CompactLookupByteSource { source });
+    byte_backed_lookup_records_from_table_lookup_source(source)
+}
+
+fn byte_backed_lookup_records_from_table_lookup_source(
+    source: Arc<dyn DictionaryLookupByteSource>,
+) -> Result<Option<ByteBackedDictionaryLookupRecords>, RimeTableBinParseError> {
+    let Some(payload_offset) = lookup_record_payload_offset_for_table_bin(source.bytes())? else {
+        return Ok(None);
+    };
+    ByteBackedDictionaryLookupRecords::from_lookup_payload(source, payload_offset)
+        .map(Some)
+        .map_err(map_lookup_byte_store_error)
+}
+
+fn lookup_record_payload_offset_for_table_bin(
+    bytes: &[u8],
+) -> Result<Option<usize>, RimeTableBinParseError> {
+    ensure_len(bytes, 68)?;
+    let index_offset =
+        read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+    let marker = b"YUNE-TABLE-ADV\0";
+    let advanced_offset = total_index_end(bytes, index_offset)?;
+    let Some(marker_offset) = bytes
+        .get(advanced_offset..)
+        .and_then(|tail| {
+            tail.windows(marker.len())
+                .position(|window| window == marker)
+        })
+        .map(|position| advanced_offset + position)
+    else {
+        return Ok(None);
+    };
+
+    let mut cursor = marker_offset
+        .checked_add(marker.len())
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    let stem_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    for _ in 0..stem_count {
+        cursor = skip_len_string(bytes, cursor)?;
+        let value_count = read_count(bytes, cursor)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        for _ in 0..value_count {
+            cursor = skip_len_string(bytes, cursor)?;
+        }
+    }
+
+    let entry_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    for _ in 0..entry_count {
+        cursor = skip_len_string(bytes, cursor)?;
+        cursor = skip_len_string(bytes, cursor)?;
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    }
+
+    let rule_count = read_count(bytes, cursor)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    for _ in 0..rule_count {
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(RimeTableBinParseError::OutOfBounds)?;
+        cursor = skip_len_string(bytes, cursor)?;
+    }
+
+    if cursor < bytes.len() {
+        let (_, _, next) = read_correction_tolerance_payload(bytes, cursor)?;
+        cursor = next;
+    }
+
+    if cursor >= bytes.len() {
+        return Ok(None);
+    }
+    if bytes[cursor..].starts_with(b"YUNE-LOOKUP\0") {
+        Ok(Some(cursor))
+    } else {
+        Err(RimeTableBinParseError::UnsupportedSection {
+            role: "lookup record payload".to_owned(),
+        })
+    }
+}
+
+fn map_lookup_byte_store_error(error: DictionaryLookupByteStoreError) -> RimeTableBinParseError {
+    match error {
+        DictionaryLookupByteStoreError::UnsupportedSection => {
+            RimeTableBinParseError::UnsupportedSection {
+                role: "lookup record payload".to_owned(),
+            }
+        }
+        DictionaryLookupByteStoreError::OutOfBounds => RimeTableBinParseError::OutOfBounds,
+        DictionaryLookupByteStoreError::InvalidCount => RimeTableBinParseError::InvalidCount,
+        DictionaryLookupByteStoreError::InvalidUtf8 => RimeTableBinParseError::InvalidUtf8,
+    }
+}
+
 fn read_syllabary_refs(
     bytes: &[u8],
     offset: usize,
@@ -2354,7 +2521,12 @@ fn read_yune_table_advanced_payload(
     cursor = next_cursor;
     let lookup_records = if cursor < bytes.len() {
         if options.load_lookup_records {
-            read_lookup_record_payload(bytes, cursor)?
+            if options.byte_back_lookup_records {
+                skip_lookup_record_payload(bytes, cursor)?;
+                HashMap::new()
+            } else {
+                read_lookup_record_payload(bytes, cursor)?
+            }
         } else {
             skip_lookup_record_payload(bytes, cursor)?;
             HashMap::new()
@@ -2371,6 +2543,7 @@ fn read_yune_table_advanced_payload(
             corrections,
             tolerance_rules,
             lookup_records,
+            byte_backed_lookup_records: None,
             ..TableDictionaryAdvancedData::default()
         },
     })

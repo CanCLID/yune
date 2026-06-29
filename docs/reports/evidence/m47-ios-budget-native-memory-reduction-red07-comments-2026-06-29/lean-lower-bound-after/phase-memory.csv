@@ -1,0 +1,10 @@
+event_index,phase,working_set_bytes,working_set_mb,private_bytes,private_mb,peak_working_set_bytes,peak_working_set_mb,allocator_live_bytes,allocator_live_mb,allocator_high_water_bytes,allocator_high_water_mb,named_owner_bytes,clean_mmap_file_backed_estimate_bytes,conclusion
+,"baseline_process_start",5328896,5.1,790528,0.8,5328896,5.1,4446,0,8900,0,,,"Windows process baseline before temporary schema copy"
+,"after_temp_schema_copy",6512640,6.2,1032192,1,6512640,6.2,5616,0,26356,0,,,"temporary committed schema bundle copied into isolated runtime dirs"
+,"after_setup",6717440,6.4,1032192,1,6717440,6.4,7194,0,26356,0,,,"RimeApi setup complete"
+,"after_initialize",6725632,6.4,1032192,1,6725632,6.4,7272,0,26356,0,,,"RimeApi initialize complete"
+,"after_deploy",9191424,8.8,1925120,1.8,13000704,12.4,12476,0,3892968,3.7,,,"deploy reused prebuilt assets; create_session has not run"
+,"after_create_session",58986496,56.3,24141824,23,64315392,61.3,16750520,16,23834548,22.7,41375423,34602818,"create_session loaded the workspace default schema"
+,"after_select_schema",59199488,56.5,24395776,23.3,64315392,61.3,16750647,16,23834548,22.7,41375423,34602818,"select_schema applied requested active schema"
+,"after_typing_neihoumaa",59637760,56.9,24403968,23.3,64315392,61.3,16801241,16,23834548,22.7,41375423,34602818,"realistic short Jyutping typing path"
+,"steady_after_esc",59637760,56.9,24403968,23.3,64315392,61.3,16800355,16,23834548,22.7,41375423,34602818,"steady sample after ESC clear"

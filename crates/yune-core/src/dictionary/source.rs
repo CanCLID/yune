@@ -1,5 +1,9 @@
 use super::TableEncoder;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::fmt;
+use std::mem;
+use std::ops::Range;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableEntry {
@@ -39,6 +43,279 @@ impl PresetVocabularyEntry {
 pub struct DictionaryLookupRecord {
     pub code: String,
     pub fields: Vec<String>,
+}
+
+pub trait DictionaryLookupByteSource: fmt::Debug + Send + Sync {
+    fn bytes(&self) -> &[u8];
+
+    fn storage_label(&self) -> &'static str;
+
+    fn mapping_mode(&self) -> &'static str;
+}
+
+impl DictionaryLookupByteSource for [u8] {
+    fn bytes(&self) -> &[u8] {
+        self
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "owned_bytes"
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DictionaryLookupByteStoreError {
+    UnsupportedSection,
+    OutOfBounds,
+    InvalidCount,
+    InvalidUtf8,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ByteBackedLookupTextEntry {
+    text: Range<usize>,
+    records: Range<usize>,
+    record_count: usize,
+}
+
+#[derive(Clone, Debug)]
+pub struct ByteBackedDictionaryLookupRecords {
+    source: Arc<dyn DictionaryLookupByteSource>,
+    entries: Arc<[ByteBackedLookupTextEntry]>,
+    payload: Range<usize>,
+    record_count: usize,
+}
+
+impl PartialEq for ByteBackedDictionaryLookupRecords {
+    fn eq(&self, other: &Self) -> bool {
+        self.entries == other.entries
+            && self.payload == other.payload
+            && self.record_count == other.record_count
+            && self.source.bytes().get(self.payload.clone())
+                == other.source.bytes().get(other.payload.clone())
+    }
+}
+
+impl Eq for ByteBackedDictionaryLookupRecords {}
+
+impl ByteBackedDictionaryLookupRecords {
+    pub fn from_lookup_payload(
+        source: Arc<dyn DictionaryLookupByteSource>,
+        payload_offset: usize,
+    ) -> Result<Self, DictionaryLookupByteStoreError> {
+        let bytes = source.bytes();
+        if !bytes
+            .get(payload_offset..)
+            .is_some_and(|tail| tail.starts_with(b"YUNE-LOOKUP\0"))
+        {
+            return Err(DictionaryLookupByteStoreError::UnsupportedSection);
+        }
+        let mut cursor = payload_offset
+            .checked_add(b"YUNE-LOOKUP\0".len())
+            .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+        let text_count = read_lookup_count(bytes, cursor)?;
+        if text_count > 1_000_000 {
+            return Err(DictionaryLookupByteStoreError::InvalidCount);
+        }
+        cursor = cursor
+            .checked_add(4)
+            .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+
+        let mut entries: Vec<ByteBackedLookupTextEntry> = Vec::with_capacity(text_count);
+        let mut record_total = 0usize;
+        for _ in 0..text_count {
+            let (text, next) = read_lookup_string_range(bytes, cursor)?;
+            cursor = next;
+            if let Some(previous) = entries.last() {
+                if lookup_range_str(bytes, &previous.text)? >= lookup_range_str(bytes, &text)? {
+                    return Err(DictionaryLookupByteStoreError::InvalidCount);
+                }
+            }
+
+            let record_count = read_lookup_count(bytes, cursor)?;
+            if record_count > 1_000_000 {
+                return Err(DictionaryLookupByteStoreError::InvalidCount);
+            }
+            record_total = record_total
+                .checked_add(record_count)
+                .ok_or(DictionaryLookupByteStoreError::InvalidCount)?;
+            cursor = cursor
+                .checked_add(4)
+                .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+
+            let records_start = cursor;
+            for _ in 0..record_count {
+                let (_, next) = read_lookup_string_range(bytes, cursor)?;
+                cursor = next;
+                let field_count = read_lookup_count(bytes, cursor)?;
+                if field_count > 64 {
+                    return Err(DictionaryLookupByteStoreError::InvalidCount);
+                }
+                cursor = cursor
+                    .checked_add(4)
+                    .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+
+                for _ in 0..field_count {
+                    let (_, next) = read_lookup_string_range(bytes, cursor)?;
+                    cursor = next;
+                }
+            }
+            entries.push(ByteBackedLookupTextEntry {
+                text,
+                records: records_start..cursor,
+                record_count,
+            });
+        }
+
+        if cursor != bytes.len() {
+            return Err(DictionaryLookupByteStoreError::UnsupportedSection);
+        }
+
+        Ok(Self {
+            source,
+            entries: entries.into(),
+            payload: payload_offset..cursor,
+            record_count: record_total,
+        })
+    }
+
+    #[must_use]
+    pub fn text_count(&self) -> usize {
+        self.entries.len()
+    }
+
+    #[must_use]
+    pub fn record_count(&self) -> usize {
+        self.record_count
+    }
+
+    #[must_use]
+    pub fn payload_bytes(&self) -> usize {
+        self.payload.len()
+    }
+
+    #[must_use]
+    pub fn estimated_index_bytes(&self) -> usize {
+        mem::size_of::<Self>().saturating_add(
+            self.entries
+                .len()
+                .saturating_mul(mem::size_of::<ByteBackedLookupTextEntry>()),
+        )
+    }
+
+    #[must_use]
+    pub fn storage_label(&self) -> &'static str {
+        self.source.storage_label()
+    }
+
+    #[must_use]
+    pub fn mapping_mode(&self) -> &'static str {
+        self.source.mapping_mode()
+    }
+
+    #[must_use]
+    pub fn contains_text(&self, text: &str) -> bool {
+        self.entry_index(text).is_some()
+    }
+
+    #[must_use]
+    pub fn records_for_text(&self, text: &str) -> Option<Vec<DictionaryLookupRecord>> {
+        let index = self.entry_index(text)?;
+        self.decode_records(&self.entries[index]).ok()
+    }
+
+    fn entry_index(&self, text: &str) -> Option<usize> {
+        let bytes = self.source.bytes();
+        self.entries
+            .binary_search_by(|entry| {
+                lookup_range_str(bytes, &entry.text)
+                    .unwrap_or_default()
+                    .cmp(text)
+            })
+            .ok()
+    }
+
+    fn decode_records(
+        &self,
+        entry: &ByteBackedLookupTextEntry,
+    ) -> Result<Vec<DictionaryLookupRecord>, DictionaryLookupByteStoreError> {
+        let bytes = self.source.bytes();
+        let mut cursor = entry.records.start;
+        let mut records = Vec::with_capacity(entry.record_count);
+        while cursor < entry.records.end {
+            let (code, next) = read_lookup_string_owned(bytes, cursor)?;
+            cursor = next;
+            let field_count = read_lookup_count(bytes, cursor)?;
+            if field_count > 64 {
+                return Err(DictionaryLookupByteStoreError::InvalidCount);
+            }
+            cursor = cursor
+                .checked_add(4)
+                .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+
+            let mut fields = Vec::with_capacity(field_count);
+            for _ in 0..field_count {
+                let (field, next) = read_lookup_string_owned(bytes, cursor)?;
+                cursor = next;
+                fields.push(field);
+            }
+            records.push(DictionaryLookupRecord { code, fields });
+        }
+        if cursor != entry.records.end {
+            return Err(DictionaryLookupByteStoreError::OutOfBounds);
+        }
+        Ok(records)
+    }
+}
+
+fn read_lookup_count(bytes: &[u8], offset: usize) -> Result<usize, DictionaryLookupByteStoreError> {
+    let end = offset
+        .checked_add(4)
+        .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+    let raw = bytes
+        .get(offset..end)
+        .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+    Ok(u32::from_le_bytes([raw[0], raw[1], raw[2], raw[3]]) as usize)
+}
+
+fn read_lookup_string_range(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<(Range<usize>, usize), DictionaryLookupByteStoreError> {
+    let length = read_lookup_count(bytes, offset)?;
+    let start = offset
+        .checked_add(4)
+        .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+    let end = start
+        .checked_add(length)
+        .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?;
+    let range = start..end;
+    lookup_range_str(bytes, &range)?;
+    Ok((range, end))
+}
+
+fn read_lookup_string_owned(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<(String, usize), DictionaryLookupByteStoreError> {
+    let (range, next) = read_lookup_string_range(bytes, offset)?;
+    Ok((lookup_range_str(bytes, &range)?.to_owned(), next))
+}
+
+fn lookup_range_str<'a>(
+    bytes: &'a [u8],
+    range: &Range<usize>,
+) -> Result<&'a str, DictionaryLookupByteStoreError> {
+    std::str::from_utf8(
+        bytes
+            .get(range.clone())
+            .ok_or(DictionaryLookupByteStoreError::OutOfBounds)?,
+    )
+    .map_err(|_| DictionaryLookupByteStoreError::InvalidUtf8)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -90,6 +367,7 @@ pub struct TableDictionary {
     pub(crate) corrections: Vec<RimeCorrectionEntry>,
     pub(crate) tolerance_rules: Vec<RimeToleranceRule>,
     pub(crate) lookup_records: HashMap<String, Vec<DictionaryLookupRecord>>,
+    pub(crate) byte_backed_lookup_records: Option<ByteBackedDictionaryLookupRecords>,
     pub(crate) preset_vocabulary: Vec<PresetVocabularyEntry>,
 }
 
@@ -101,6 +379,7 @@ pub struct TableDictionaryAdvancedData {
     pub corrections: Vec<RimeCorrectionEntry>,
     pub tolerance_rules: Vec<RimeToleranceRule>,
     pub lookup_records: HashMap<String, Vec<DictionaryLookupRecord>>,
+    pub byte_backed_lookup_records: Option<ByteBackedDictionaryLookupRecords>,
     pub preset_vocabulary: Vec<PresetVocabularyEntry>,
 }
 
@@ -123,6 +402,7 @@ impl TableDictionary {
             corrections: advanced.corrections,
             tolerance_rules: advanced.tolerance_rules,
             lookup_records: advanced.lookup_records,
+            byte_backed_lookup_records: advanced.byte_backed_lookup_records,
             preset_vocabulary: advanced.preset_vocabulary,
         }
     }
@@ -139,6 +419,9 @@ impl TableDictionary {
         self.preset_vocabulary
             .extend(other.preset_vocabulary.clone());
         merge_dictionary_lookup_records(&mut self.lookup_records, other.lookup_records.clone());
+        if self.byte_backed_lookup_records.is_none() {
+            self.byte_backed_lookup_records = other.byte_backed_lookup_records.clone();
+        }
         self
     }
 
@@ -290,6 +573,7 @@ impl TableDictionary {
             corrections: metadata.corrections,
             tolerance_rules: metadata.tolerance_rules,
             lookup_records,
+            byte_backed_lookup_records: None,
             preset_vocabulary: Vec::new(),
         })
     }
@@ -308,6 +592,7 @@ impl TableDictionary {
             corrections: self.corrections.clone(),
             tolerance_rules: self.tolerance_rules.clone(),
             lookup_records: self.lookup_records.clone(),
+            byte_backed_lookup_records: self.byte_backed_lookup_records.clone(),
             preset_vocabulary: self.preset_vocabulary.clone(),
         }
     }
@@ -349,17 +634,46 @@ impl TableDictionary {
 
     #[must_use]
     pub fn lookup_record_text_count(&self) -> usize {
-        self.lookup_records.len()
+        if self.lookup_records.is_empty() {
+            self.byte_backed_lookup_records
+                .as_ref()
+                .map_or(0, ByteBackedDictionaryLookupRecords::text_count)
+        } else {
+            self.lookup_records.len()
+        }
     }
 
     #[must_use]
     pub fn lookup_record_count(&self) -> usize {
-        self.lookup_records.values().map(Vec::len).sum()
+        let eager_count = self.lookup_records.values().map(Vec::len).sum();
+        if eager_count == 0 {
+            self.byte_backed_lookup_records
+                .as_ref()
+                .map_or(0, ByteBackedDictionaryLookupRecords::record_count)
+        } else {
+            eager_count
+        }
+    }
+
+    #[must_use]
+    pub fn byte_backed_lookup_records(&self) -> Option<&ByteBackedDictionaryLookupRecords> {
+        self.byte_backed_lookup_records.as_ref()
     }
 
     #[must_use]
     pub fn preset_vocabulary_entries(&self) -> &[PresetVocabularyEntry] {
         &self.preset_vocabulary
+    }
+}
+
+impl TableDictionaryAdvancedData {
+    #[must_use]
+    pub fn with_byte_backed_lookup_records(
+        mut self,
+        lookup_records: ByteBackedDictionaryLookupRecords,
+    ) -> Self {
+        self.byte_backed_lookup_records = Some(lookup_records);
+        self
     }
 }
 
@@ -471,6 +785,7 @@ fn finalize_rime_table_entries(
         corrections: metadata.corrections.clone(),
         tolerance_rules: metadata.tolerance_rules.clone(),
         lookup_records,
+        byte_backed_lookup_records: None,
         preset_vocabulary: Vec::new(),
     }
 }

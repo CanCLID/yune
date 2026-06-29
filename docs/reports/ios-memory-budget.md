@@ -24,12 +24,15 @@ three different numbers; only one is the iOS proxy:
 | Source | jyut6ping3_mobile | What it is |
 | --- | ---: | --- |
 | Initial lean native probe | **~298 MB steady / 482 MB peak** | Original M47 baseline: real `RimeApi`, mmap path, prebuilt assets, one schema per fresh Rust process |
-| Current lean native probe after RED-06 | **58.0 MB steady / 62.9 MB peak** | Current Windows proxy after RED-01 side lookup opt-out, RED-02 prism byte-backed runtime storage, RED-03 compact lookup-record opt-out, RED-04 optional reverse/UI pack omission, RED-05 no-rebuild deploy hygiene, and RED-06 reverse-parse scratch lifetime bounding |
+| Current lean lower-bound probe after RED-07 | **56.9 MB steady / 61.3 MB peak** | Memory-light lower bound after RED-01/RED-03/RED-04 opt-outs plus RED-05/RED-06/RED-07 storage work; it intentionally omits rich TypeDuck dictionary comments and reverse UI |
+| Current comments-intact keyboard probe after RED-07 | **78.7 MB steady / 89.1 MB peak** | Product-honest keyboard proxy with rich TypeDuck comments retained and grave-prefix reverse UI omitted |
 | .NET in-process benchmark (Track B) | ~436 MB after-ready / 504 MB peak | A .NET process hosting **both** Yune *and* librime DLLs — polluted upper bound, **not** the iOS number |
 | Browser WASM | 160 MiB | WASM linear memory, **no mmap**, owned tables — a different deployment |
 
 The earlier "Jyutping native ~504 MB" headline was the dual-DLL harness; the
-iOS-relevant steady was initially **~298 MB** and is now **58.0 MB** after RED-06.
+iOS-relevant steady was initially **~298 MB**. After RED-07, the lean lower
+bound is **56.9 MB** steady / **61.3 MB** peak, while the comments-intact
+keyboard proxy is **78.7 MB** steady / **89.1 MB** peak.
 
 ## Methodology
 
@@ -443,16 +446,61 @@ branch should target steady retained data after the compact parse, especially
 the `normal_codes` HashSet and unnamed compact-table descriptor heap, not
 allocator decay.
 
+## RED-07 comments-intact lookup storage closeout (Windows-measured, 2026-06-29)
+
+Evidence:
+[`evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/)
+from the same native probe. These are Windows `WorkingSetSize` / `PrivateUsage`
+measurements, not iOS `phys_footprint`.
+
+RED-07 responds to the product-profile correction from TypeDuck-iOS: rich
+candidate comments are part of the dictionary UX, so the old **58 MB** lean row
+is only a lower bound. TypeDuck-iOS reference evidence in the RED-07 bundle
+shows RIME candidate comments carry the multilingual dictionary payload, Swift
+parses visible/opened candidate comments, and English/Unihan/ngram support
+stores are separate data. RED-07 therefore keeps rich comments and removes their
+heap retention by indexing the compiled `YUNE-LOOKUP` payload instead of eagerly
+retaining `HashMap<String, Vec<DictionaryLookupRecord>>`.
+
+| Profile | Before steady / peak | After RED-07 steady / peak | After private | After allocator live | Rich comments |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Lean lower bound | **56.7 / 61.8 MB** | **56.9 / 61.3 MB** | **23.3 MB** | **16.0 MB** | omitted |
+| Comments-intact keyboard | **164.0 / 171.2 MB** | **78.7 / 89.1 MB** | **33.7 MB** | **25.6 MB** | retained |
+| Full mobile | **194.0 / 201.3 MB** | **91.4 / 102.4 MB** | **41.6 MB** | **32.3 MB** | retained |
+
+The owner movement is direct:
+
+| Profile | Before lookup owners | After lookup owners |
+| --- | ---: | ---: |
+| Comments-intact keyboard | `82,615,735 B` `heap_owned_required` | `31,717,345 B` `shared_or_overlapping` byte-backed payload rows |
+| Full mobile | `96,384,893 B` `heap_owned_required` | `37,253,867 B` `shared_or_overlapping` byte-backed payload rows |
+
+Representative `zouhapci` candidates in
+[`rich-comments/rich-comment-zouhapci.json`](./evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/rich-comments/rich-comment-zouhapci.json)
+retain `\f\r1,` TypeDuck dictionary-panel bytes after the storage change.
+
+RED-07 verdict: the removed bulk was live retained lookup/comment heap, not
+allocator-retained free memory. The byte-backed path preserves rich comments and
+turns the lookup payload into shared/overlapping compiled bytes plus a small
+index. M47 is still not closed: comments-intact keyboard remains above both the
+48 MB steady target and the 64 MB peak hard budget on this Windows proxy, and
+full mobile remains higher because it also keeps the grave-prefix reverse UI
+path. No iOS-ready claim is made.
+
 ## Verdict (Windows-measured)
 
 Against the 64 MB hard budget, the original isolated `jyut6ping3_mobile` baseline
 was **~4.7x over** the 48 MB steady target and **~3.6x over** the 64 MB peak
-target. After RED-06, the keyboard-profile run is still **~1.21x over** the steady
-target but is **under** the 64 MB peak hard budget on the Windows proxy. Cangjie5 remains ~1.5x over at steady; luna_pinyin is
-borderline-under at steady but ~4.6x over at peak. Even a small-schema base is
-~60-95 MB before profile-specific UI deferral. The memory-light Jyutping keyboard
-profile **does not fit the 48 MB steady target** in its current shape, and closing
-the remaining steady gap remains
+target. After RED-07, the lean lower-bound run is still **~1.19x over** the
+steady target but is **under** the 64 MB peak hard budget on the Windows proxy.
+The comments-intact keyboard proxy is **~1.64x over** the steady target and
+**~1.39x over** the 64 MB peak hard budget; full mobile is **~1.90x over**
+steady and **~1.60x over** peak. Cangjie5 remains ~1.5x over at steady;
+luna_pinyin is borderline-under at steady but ~4.6x over at peak. Even a
+small-schema base is ~60-95 MB before profile-specific UI deferral. The
+memory-light Jyutping lower bound and the comments-intact keyboard profile
+**do not fit the 48 MB steady target** in their current shape, and closing the
+remaining gap remains
 **architecture-level work, not tuning**. The portable levers (bound transients,
 slim the mobile profile, then revisit remaining named heap) are
 Windows-implementable and benefit every platform. **No
@@ -460,13 +508,15 @@ Windows-implementable and benefit every platform. **No
 
 ## Next work
 
-RED-01 through RED-06 are complete. Start the next branch with steady retained
-data after compact loading: the current lean keyboard proxy peaks at **62.9 MB**
-but steadies at **58.0 MB**, and the `normal_codes` HashSet row raises allocator
-live back to **16.1 MB** after parse scratch is gone. Keep both steady and peak
-visible. Do not use allocator changes as the next branch unless a later
+RED-01 through RED-07 are complete. Start the next branch with steady retained
+data after compact loading and product-profile payload size. For the lean lower
+bound, the remaining gap is steady compact-table/code-index ownership after
+`create_session`. For the comments-intact keyboard profile, the first measured
+blocker is now the remaining shared/overlapping compiled lookup/table payload
+and compact index footprint, not eager lookup-record heap. Keep both steady and
+peak visible. Do not use allocator changes as the next branch unless a later
 allocator-specific probe shows a steady live-vs-resident gap that Phase
-0/RED-01/RED-02/RED-03/RED-04/RED-05/RED-06 did not show.
+0/RED-01/RED-02/RED-03/RED-04/RED-05/RED-06/RED-07 did not show.
 
 ## Evidence
 
@@ -492,4 +542,6 @@ allocator-specific probe shows a steady live-vs-resident gap that Phase
   [`evidence/m47-ios-keyboard-profile-pin-2026-06-29/`](./evidence/m47-ios-keyboard-profile-pin-2026-06-29/)
 - M47 RED-06 compact-table parse transient reduction:
   [`evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/)
+- M47 RED-07 comments-intact lookup storage reduction:
+  [`evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/`](./evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/)
 - Probe: [`crates/yune-rime-api/tests/native_memory_probe.rs`](../../crates/yune-rime-api/tests/native_memory_probe.rs)

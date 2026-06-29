@@ -26,10 +26,11 @@ pub use compiled_reverse::{parse_rime_reverse_bin_dictionary, RimeReverseBinPars
 #[cfg(test)]
 pub(crate) use compiled_table::parse_compact_table_bin_lookup;
 pub use compiled_table::{
-    parse_rime_table_bin_advanced_data, parse_rime_table_bin_advanced_data_with_options,
-    parse_rime_table_bin_dictionary, rime_table_bin_dict_file_checksum, CompactMarisaStringTable,
-    CompactTableByteSource, CompactTableStore, RimeTableBinAdvancedDataOptions,
-    RimeTableBinParseError,
+    byte_backed_lookup_records_from_table_bin_byte_source,
+    byte_backed_lookup_records_from_table_bin_bytes, parse_rime_table_bin_advanced_data,
+    parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
+    rime_table_bin_dict_file_checksum, CompactMarisaStringTable, CompactTableByteSource,
+    CompactTableStore, RimeTableBinAdvancedDataOptions, RimeTableBinParseError,
 };
 pub use double_array::{DartsDoubleArray, DartsDoubleArrayError, DartsMatch};
 pub use encoder::{CodeCoords, TableEncoder, TableEncoderFormulaError, TableEncodingRule};
@@ -41,8 +42,9 @@ pub use rebuild_executor::{
 pub use reverse_writer::build_reverse_bin;
 pub(crate) use source::normalize_table_code;
 pub use source::{
-    parse_rime_preset_vocabulary_entries, DictionaryLookupRecord, PresetVocabularyEntry,
-    RimeCorrectionEntry, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
-    TableDictionaryParseError, TableEntry,
+    parse_rime_preset_vocabulary_entries, ByteBackedDictionaryLookupRecords,
+    DictionaryLookupByteSource, DictionaryLookupByteStoreError, DictionaryLookupRecord,
+    PresetVocabularyEntry, RimeCorrectionEntry, RimeToleranceRule, TableDictionary,
+    TableDictionaryAdvancedData, TableDictionaryParseError, TableEntry,
 };
 pub use table_writer::build_table_bin;

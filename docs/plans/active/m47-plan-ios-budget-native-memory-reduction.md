@@ -1,22 +1,22 @@
 # M47 iOS-Budget Native Memory Reduction Plan
 
-> **Status:** Active / post-RED-06 create-session transient reduced - **Track:** Engine performance (portable; cross-platform memory budget) - **Created:** 2026-06-28 - **Updated:** 2026-06-29 - **Type:** attribution-first measurement-and-reduction plan
+> **Status:** Active / post-RED-07 comments-intact lookup storage reduced - **Track:** Engine performance (portable; cross-platform memory budget) - **Created:** 2026-06-28 - **Updated:** 2026-06-29 - **Type:** attribution-first measurement-and-reduction plan
 >
 > **For agentic workers:** attribution before optimization (the M43/M45/M46 rule). Do not retain a reduction branch that is not justified by a measured owner. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** Drive the **single-active-schema native working set under an iOS keyboard-extension budget** so that Yune can be embedded in a Cantoboard-style iOS keyboard (and benefit Android, Windows IME, WASM, and desktop/server embedding at the same time). Target: **steady <= 48 MB, peak <= 64 MB** for one active schema; **stretch peak <= 48 MB**. The initial measured baseline was `jyut6ping3_mobile` steady **~298 MB** / peak **~482 MB**; after RED-06 the Windows proxy is steady **58.0 MB** / peak **62.9 MB**, so peak now clears the Windows-proxy hard budget but steady still needs architecture-level reduction.
+**Goal:** Drive the **single-active-schema native working set under an iOS keyboard-extension budget** so that Yune can be embedded in a Cantoboard-style iOS keyboard (and benefit Android, Windows IME, WASM, and desktop/server embedding at the same time). Target: **steady <= 48 MB, peak <= 64 MB** for one active schema; **stretch peak <= 48 MB**. The initial measured baseline was `jyut6ping3_mobile` steady **~298 MB** / peak **~482 MB**. After RED-07, the lean lower bound is steady **56.9 MB** / peak **61.3 MB**, while the comments-intact keyboard proxy is steady **78.7 MB** / peak **89.1 MB** with rich TypeDuck comments retained. Peak clears the Windows-proxy hard budget only for the lower-bound profile; the comments-intact product proxy still needs architecture-level reduction.
 
 **Why now / why portable:** The product target is an iOS keyboard extension (reference: [Cantoboard](https://github.com/Cantoboard/Cantoboard), which ships librime via [librime-ios-build](https://github.com/Cantoboard/librime-ios-build) under the extension's hard memory ceiling). iOS app extensions are jetsam-killed at a small budget (treated here as **64 MB**, target **48 MB**). All of the reduction levers — dictionary storage, lazy loading, compact indexes, allocator pressure, eager-materialization removal, startup transients, asset size — are **portable engine work** that can be designed, implemented, and measured on Windows and ships to every platform. Only the **final** "fits in an actual iOS keyboard extension" proof needs an Apple device; that validation is a later Phase 2 frontend gate, explicitly out of this plan.
 
 ## Budget (iOS-shaped, measured on Windows)
 
-| Dimension | Target | Stretch | Current after RED-06 (lean keyboard-profile probe, jyut6ping3_mobile) |
+| Dimension | Target | Stretch | Current after RED-07 (comments-intact keyboard proxy, jyut6ping3_mobile) |
 | --- | --- | --- | --- |
-| Steady working set, one active schema | <= 48 MB | <= 40 MB | **58.0 MB** |
-| Peak working set (load transient included) | <= 64 MB | <= 48 MB | **62.9 MB** |
-| Startup | no source-fallback, no rebuild, no large transient parse spike | - | deploy **9.1 MB** / peak **12.7 MB**; create-session peak now bounded by reverse scratch drop |
-| Assets | compiled-only mobile profile, lazy/optional packs | - | shipped compiled; current keyboard profile omits dictionary-panel rich comments and grave-prefix Mandarin reverse UI |
-| Correctness | committed-asset tests for real typing cases stay green | - | keyboard-profile opt-out gate green for normal output, phrases, matching guards, and rich-comment omission tradeoff |
+| Steady working set, one active schema | <= 48 MB | <= 40 MB | **78.7 MB** with rich comments retained; lower bound is **56.9 MB** |
+| Peak working set (load transient included) | <= 64 MB | <= 48 MB | **89.1 MB** with rich comments retained; lower bound is **61.3 MB** |
+| Startup | no source-fallback, no rebuild, no large transient parse spike | - | deploy remains cheap; RED-06 bounded parse scratch, RED-07 removes lookup-record heap retention |
+| Assets | compiled-only mobile profile, lazy/optional packs | - | shipped compiled; comments-intact keyboard keeps rich comments, while grave-prefix Mandarin reverse UI remains optional/omitted in that proxy |
+| Correctness | committed-asset tests for real typing cases stay green | - | rich-comment and keyboard-profile gates green; no iOS-ready claim |
 
 ## Measured baseline (the starting point this plan attacks)
 
@@ -45,13 +45,16 @@ profiles:
 | Profile | Definition | Current Windows proxy |
 | --- | --- | --- |
 | Committed default workspace | Committed `default.yaml` first schema (`jyut6ping3`), no memory opt-outs | **268.6 MB** steady / **487.7 MB** peak |
-| Full mobile profile | `YUNE_MEM_DEFAULT=jyut6ping3_mobile`, no memory opt-outs | **195.2 MB** steady / **202.7 MB** peak |
-| Lean keyboard profile | `jyut6ping3_mobile` with RED-01/RED-03/RED-04 opt-outs | **58.0 MB** steady / **62.9 MB** peak |
+| Full mobile profile | `YUNE_MEM_DEFAULT=jyut6ping3_mobile`, no memory opt-outs | **91.4 MB** steady / **102.4 MB** peak after RED-07 |
+| Comments-intact keyboard profile | `jyut6ping3_mobile` with rich TypeDuck comments retained and grave-prefix reverse UI omitted | **78.7 MB** steady / **89.1 MB** peak after RED-07 |
+| Lean lower-bound profile | `jyut6ping3_mobile` with dictionary-panel comments, compact lookup records, and reverse UI omitted | **56.9 MB** steady / **61.3 MB** peak after RED-07 |
 
-The current M47 keyboard profile intentionally omits TypeDuck rich
-dictionary-panel comment bytes and grave-prefix Mandarin reverse lookup UI; it
-retains normal Jyutping candidate text, normal table comments, multi-syllable
-phrase composition, and recent matching-regression behavior. Evidence:
+The lean lower bound intentionally omits TypeDuck rich dictionary-panel comment
+bytes and grave-prefix Mandarin reverse lookup UI. RED-07 adds a product-honest
+comments-intact keyboard proxy that keeps rich comments while still omitting the
+optional reverse UI. Normal Jyutping candidate text, normal table comments,
+multi-syllable phrase composition, and recent matching-regression behavior stay
+guarded. Evidence:
 [`../../reports/evidence/m47-ios-keyboard-profile-pin-2026-06-29/`](../../reports/evidence/m47-ios-keyboard-profile-pin-2026-06-29/).
 
 ## Phase 0 — Attribution (mandatory before any reduction branch)
@@ -74,10 +77,11 @@ Candidate levers, now ordered by Phase 0, RED-01, the post-RED-01 prism attribut
 - [x] **M47-RED-04 (reverse/UI optional pack):** Closed by [`../../reports/evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/`](../../reports/evidence/m47-ios-budget-native-memory-reduction-red04-2026-06-28/). Added an explicit namespaced `load_translator: false` gate and used it only in the keyboard-profile probe's temporary deployed schema for `luna_pinyin`. This is an optional-pack gate, not behavior-preserving first-use lazy loading: grave-prefix Mandarin reverse lookup is intentionally absent when the opt-out is enabled. Isolated `jyut6ping3_mobile` with RED-01, RED-03, and RED-04 opt-outs moved steady **69.2 -> 58.5 MB** WS, **29.7 -> 23.3 MB** private, **20.4 -> 16.0 MB** allocator-live; peak stayed **80.7 -> 81.0 MB**. Named owner rows dropped by **7,495,635 B**, mostly mmap/file-backed secondary reverse table/prism payload.
 - [x] **M47-RED-05 (deploy transient / no-rebuild hygiene):** Closed by [`../../reports/evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/`](../../reports/evidence/m47-ios-budget-native-memory-reduction-red05-2026-06-28/). Added deploy-phase memory markers, bounded compiled-artifact metadata reads to headers, skipped the lookup-filter side artifact request when `dictionary_lookup_filter/load_lookup_records: false`, and normalized that gate out of unrelated dictionary artifact checksums so primary/reverse prebuilt artifacts are reused. Isolated `jyut6ping3_mobile` with RED-01, RED-03, RED-04, and RED-05 gates moved steady **58.5 -> 56.9 MB** WS, **23.3 -> 23.7 MB** private, allocator live stayed **16.0 MB**, peak **81.0 -> 78.4 MB**, and after-deploy peak **81.0 -> 12.4 MB**. Remaining peak is at `create_session`, not deploy.
 - [x] **M47-RED-06 (primary compact-table parse transient):** Closed by [`../../reports/evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/`](../../reports/evidence/m47-ios-budget-native-memory-reduction-red06-2026-06-29/). Bounded the primary `jyut6ping3` `create_session` spike by dropping reverse `.bin` bytes and the parsed reverse dictionary after merging advanced data, before table advanced payload parsing and compact store parsing. Fresh keyboard-profile baseline moved peak **79.6 -> 62.9 MB** and allocator high-water **35.4 -> 22.7 MB** while steady stayed **58.1 -> 58.0 MB**. The `after_compact_table_store_parse` row moved **70.3 MB WS / 79.6 MB peak / 27.7 MB allocator-live** to **53.4 MB WS / 62.9 MB peak / 14.9 MB allocator-live**.
-- [ ] **M47-RED-07 (steady compact-table/code-index owners):** Next branch. Reduce steady retained data after compact loading, especially the `all_codes()` -> `normal_codes` `HashSet<String>` and unnamed compact-table descriptor heap. The RED-06 trace shows parse scratch is gone, but `normal_codes` raises the steady row back to **56.3 MB** WS / **16.1 MB** allocator-live before final steady **58.0 MB**.
-- [ ] **M47-RED-08 (allocator strategy, lower priority):** Phase 0 through RED-06 do not show a large steady allocator-retained-free gap in the isolated mobile run. Revisit decaying allocator work only after eager-materialization owners move, or with a dedicated allocator A/B proof.
-- [ ] **M47-RED-09 (asset/profile slimming):** Compiled-only mobile profile, lazy/optional multilingual packs, so the eagerly-loaded default schema is the minimal keyboard dictionary.
-- [ ] **M47-RED-10 (startup hygiene):** Guarantee the keyboard path never rebuilds, never source-falls-back, and ships compiled assets only (prebuilt mmap), so the build transient cannot occur on device.
+- [x] **M47-RED-07 (comments-intact lookup/comment byte-backed storage):** Closed by [`../../reports/evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/`](../../reports/evidence/m47-ios-budget-native-memory-reduction-red07-comments-2026-06-29/). Product correction: TypeDuck-iOS keeps rich candidate comments as dictionary UX, so the old lean **58 MB** row is only a lower bound. Yune now keeps rich comments while indexing compiled `YUNE-LOOKUP` payloads instead of retaining eager `HashMap<String, Vec<DictionaryLookupRecord>>` owners. Comments-intact keyboard moved steady **164.0 -> 78.7 MB**, private **133.7 -> 33.7 MB**, allocator-live **98.3 -> 25.6 MB**, peak **171.2 -> 89.1 MB**; full mobile moved steady **194.0 -> 91.4 MB**, private **159.6 -> 41.6 MB**, allocator-live **116.7 -> 32.3 MB**, peak **201.3 -> 102.4 MB**. Representative `zouhapci` rich comments are preserved in the evidence bundle.
+- [ ] **M47-RED-08 (steady compact-table/code-index and payload owners):** Next branch. Reduce steady retained data after compact loading and remaining product-profile payload size. For the lean lower bound, target `all_codes()` -> `normal_codes` `HashSet<String>` and unnamed compact-table descriptor heap. For the comments-intact keyboard profile, the measured blocker is now shared/overlapping compiled lookup/table payload plus compact index footprint, not eager lookup-record heap.
+- [ ] **M47-RED-09 (allocator strategy, lower priority):** Phase 0 through RED-07 do not show a large steady allocator-retained-free gap in the isolated mobile run. Revisit decaying allocator work only after eager-materialization owners move, or with a dedicated allocator A/B proof.
+- [ ] **M47-RED-10 (asset/profile slimming):** Compiled-only mobile profile, lazy/optional multilingual packs, so the eagerly-loaded default schema is the minimal keyboard dictionary.
+- [ ] **M47-RED-11 (startup hygiene):** Guarantee the keyboard path never rebuilds, never source-falls-back, and ships compiled assets only (prebuilt mmap), so the build transient cannot occur on device.
 
 ## Success bar
 

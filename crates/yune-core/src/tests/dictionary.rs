@@ -9,16 +9,17 @@ use serde_json::Value;
 
 use crate::dictionary::{parse_compact_table_bin_lookup, TableLookup};
 use crate::{
-    build_prism_bin, build_reverse_bin, build_table_bin, execute_rebuild_plan,
+    build_prism_bin, build_reverse_bin, build_table_bin,
+    byte_backed_lookup_records_from_table_bin_bytes, execute_rebuild_plan,
     parse_rime_prism_bin_payload, parse_rime_prism_runtime_payload,
     parse_rime_reverse_bin_dictionary, parse_rime_table_bin_advanced_data,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, Candidate, CandidateSource, CompactTableByteSource,
-    DartsDoubleArray, DictionaryLookupRecord, MemoryOwnerClass, RimeCorrectionEntry,
-    RimeDictArtifactStatus, RimeDictRebuildExecutionReport, RimeDictRebuildPlan,
-    RimeDictRebuildSources, RimePrismSpellingDescriptor, RimeTableBinAdvancedDataOptions,
-    RimeTableBinParseError, RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData,
-    TableEncoder, TableEntry,
+    CompactTableStore, DartsDoubleArray, DictionaryLookupRecord, MemoryOwnerClass,
+    RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildExecutionReport,
+    RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismSpellingDescriptor,
+    RimeTableBinAdvancedDataOptions, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
+    TableDictionaryAdvancedData, TableEncoder, TableEntry,
 };
 
 #[derive(Debug)]
@@ -649,6 +650,7 @@ fn table_advanced_parser_can_skip_lookup_records_without_dropping_keyboard_paylo
         &table_bytes,
         RimeTableBinAdvancedDataOptions {
             load_lookup_records: false,
+            ..RimeTableBinAdvancedDataOptions::default()
         },
     )
     .expect("advanced data should parse without retaining lookup records");
@@ -663,6 +665,62 @@ fn table_advanced_parser_can_skip_lookup_records_without_dropping_keyboard_paylo
         skipped.tolerance_rules,
         [RimeToleranceRule::new("nei", ["lei"])]
     );
+}
+
+#[test]
+fn byte_backed_lookup_records_decode_from_compiled_payload_without_heap_owner() {
+    let dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(
+        "---\n\
+name: lookup\n\
+version: '0.1'\n\
+sort: original\n\
+...\n\
+\n\
+ngo5hai6,1,0,,oth,ver,,,word,,,I am,,,,\tword\n\
+nei5,1,0,,oth,,,,,,,you (singular),tm,nepali,hindi,kamu\tword\n",
+    )
+    .expect("typeduck lookup dictionary should parse");
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let byte_backed = byte_backed_lookup_records_from_table_bin_bytes(table_bytes.clone())
+        .expect("compiled lookup payload should parse")
+        .expect("compiled lookup payload should be present");
+
+    assert_eq!(byte_backed.text_count(), 1);
+    assert_eq!(byte_backed.record_count(), 2);
+    let records = byte_backed
+        .records_for_text("word")
+        .expect("records should decode on demand");
+    assert_eq!(records[0].code, "ngo5hai6");
+    assert_eq!(
+        records[0].fields,
+        ["word", "ngo5hai6,1,0,,oth,ver,,,word,,,I am,,,,"]
+    );
+    assert_eq!(records[1].code, "nei5");
+    assert!(byte_backed.records_for_text("missing").is_none());
+
+    let advanced = parse_rime_table_bin_advanced_data_with_options(
+        &table_bytes,
+        RimeTableBinAdvancedDataOptions {
+            load_lookup_records: true,
+            byte_back_lookup_records: true,
+        },
+    )
+    .expect("advanced data should parse without retaining lookup records");
+    assert!(advanced.lookup_records.is_empty());
+
+    let store = CompactTableStore::from_table_bin_bytes(
+        table_bytes,
+        advanced.with_byte_backed_lookup_records(byte_backed),
+    )
+    .expect("compact store should parse");
+    let owner = store
+        .memory_owner_rows()
+        .into_iter()
+        .find(|row| row.owner == "compact_table.lookup_records")
+        .expect("compact lookup owner row should be present");
+    assert_ne!(owner.class, MemoryOwnerClass::HeapOwnedRequired);
+    assert_eq!(owner.item_count, 2);
+    assert!(owner.storage.contains("byte_backed"));
 }
 
 #[test]
@@ -684,6 +742,7 @@ ngo5hai6,1,0,,oth,ver,,,word,,,I am,,,,\tword\n",
         &table_bytes,
         RimeTableBinAdvancedDataOptions {
             load_lookup_records: false,
+            ..RimeTableBinAdvancedDataOptions::default()
         },
     )
     .expect_err("skip mode should validate lookup record UTF-8");

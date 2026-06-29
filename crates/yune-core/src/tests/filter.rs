@@ -1,8 +1,9 @@
 use crate::{
-    Candidate, CandidateFilter, CandidateSource, CharsetFilter, DictionaryLookupFilter, Engine,
-    MemoryOwnerClass, ReverseLookupFilter, ReverseLookupTranslator, RimeCorrectionEntry,
-    SimplifierFilter, SingleCharFilter, StaticTableTranslator, TableDictionary,
-    TableDictionaryAdvancedData, TableEntry, TaggedFilter, Translator, UniquifierFilter,
+    build_table_bin, byte_backed_lookup_records_from_table_bin_bytes, Candidate, CandidateFilter,
+    CandidateSource, CharsetFilter, DictionaryLookupFilter, Engine, MemoryOwnerClass,
+    ReverseLookupFilter, ReverseLookupTranslator, RimeCorrectionEntry, SimplifierFilter,
+    SingleCharFilter, StaticTableTranslator, TableDictionary, TableDictionaryAdvancedData,
+    TableEntry, TaggedFilter, Translator, UniquifierFilter,
 };
 
 #[test]
@@ -238,6 +239,74 @@ ni1,2,0,,oth,ver,,,this,,,this,,,,\t{}\n",
             "\u{5462}", "\u{5462}", "\u{5462}",
         )
     );
+}
+
+#[test]
+fn dictionary_lookup_filter_emits_typeduck_comments_from_byte_backed_records() {
+    let dictionary_yaml = format!(
+        "---\n\
+name: typeduck_lookup\n\
+version: \"0.1\"\n\
+sort: original\n\
+...\n\
+\n\
+nei5,1,0,,oth,,,,,,,you (singular),tm,nepali,hindi,kamu\t{}\n\
+ne1,1,0,,part,,,,,,,(how about),(particle),,(particle),(imbuhan kata)\t{}\n\
+nei1,2,0,,oth,ver,,,this,,,this,,,,\t{}\n\
+ni1,2,0,,oth,ver,,,this,,,this,,,,\t{}\n",
+        "\u{4f60}", "\u{5462}", "\u{5462}", "\u{5462}",
+    );
+    let dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(&dictionary_yaml)
+        .expect("TypeDuck code-first lookup rows should parse");
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let byte_backed = byte_backed_lookup_records_from_table_bin_bytes(table_bytes)
+        .expect("compiled lookup payload should parse")
+        .expect("compiled lookup payload should be present");
+    let filter = DictionaryLookupFilter::from_byte_backed_records(byte_backed);
+
+    let mut candidates = vec![
+        Candidate {
+            text: "\u{4f60}".to_owned(),
+            comment: "\u{000c}nei5".to_owned(),
+            preedit: None,
+            source: CandidateSource::Table,
+            quality: 1.0,
+        },
+        Candidate {
+            text: "\u{5462}".to_owned(),
+            comment: "\u{000c}nei1".to_owned(),
+            preedit: None,
+            source: CandidateSource::Table,
+            quality: 1.0,
+        },
+    ];
+    filter.apply(&mut candidates);
+
+    assert_eq!(
+        candidates[0].comment,
+        format!(
+            "\u{000c}\r1,{},nei5,1,0,,oth,,,,,,,you (singular),tm,nepali,hindi,kamu",
+            "\u{4f60}",
+        )
+    );
+    assert_eq!(
+        candidates[1].comment,
+        format!(
+            "\u{000c}\r1,{},nei1,2,0,,oth,ver,,,this,,,this,,,,\
+\r0,{},ne1,1,0,,part,,,,,,,(how about),(particle),,(particle),(imbuhan kata)\
+\r0,{},ni1,2,0,,oth,ver,,,this,,,this,,,,",
+            "\u{5462}", "\u{5462}", "\u{5462}",
+        )
+    );
+
+    let owner = filter
+        .memory_owner_rows()
+        .into_iter()
+        .find(|row| row.owner == "dictionary_lookup_filter.lookup_records")
+        .expect("dictionary lookup filter owner row should be present");
+    assert_ne!(owner.class, MemoryOwnerClass::HeapOwnedRequired);
+    assert_eq!(owner.item_count, 4);
+    assert!(owner.storage.contains("byte_backed"));
 }
 
 #[test]

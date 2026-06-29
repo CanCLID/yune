@@ -1,6 +1,6 @@
 use super::{
-    Candidate, CandidateFilter, CandidateSource, CommentFormat, Context, DictionaryLookupRecord,
-    MemoryOwnerClass, MemoryOwnerRow, TableDictionary,
+    ByteBackedDictionaryLookupRecords, Candidate, CandidateFilter, CandidateSource, CommentFormat,
+    Context, DictionaryLookupRecord, MemoryOwnerClass, MemoryOwnerRow, TableDictionary,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -71,14 +71,45 @@ impl CandidateFilter for CharsetFilter {
 }
 
 pub struct DictionaryLookupFilter {
-    records_by_text: HashMap<String, Vec<DictionaryLookupRecord>>,
+    records: DictionaryLookupRecordSource,
+}
+
+enum DictionaryLookupRecordSource {
+    Eager(HashMap<String, Vec<DictionaryLookupRecord>>),
+    ByteBacked(ByteBackedDictionaryLookupRecords),
+}
+
+impl DictionaryLookupRecordSource {
+    fn records_for_text(&self, text: &str) -> Option<Vec<DictionaryLookupRecord>> {
+        match self {
+            Self::Eager(records_by_text) => records_by_text.get(text).cloned(),
+            Self::ByteBacked(records) => records.records_for_text(text),
+        }
+    }
+
+    fn contains_text(&self, text: &str) -> bool {
+        match self {
+            Self::Eager(records_by_text) => records_by_text.contains_key(text),
+            Self::ByteBacked(records) => records.contains_text(text),
+        }
+    }
 }
 
 impl DictionaryLookupFilter {
     #[must_use]
     pub fn new(dictionary: TableDictionary) -> Self {
+        if let Some(records) = dictionary.byte_backed_lookup_records {
+            return Self::from_byte_backed_records(records);
+        }
         Self {
-            records_by_text: dictionary.lookup_records,
+            records: DictionaryLookupRecordSource::Eager(dictionary.lookup_records),
+        }
+    }
+
+    #[must_use]
+    pub fn from_byte_backed_records(records: ByteBackedDictionaryLookupRecords) -> Self {
+        Self {
+            records: DictionaryLookupRecordSource::ByteBacked(records),
         }
     }
 
@@ -87,18 +118,18 @@ impl DictionaryLookupFilter {
             if let Some(records) = self.sentence_lookup_records(&candidate.text) {
                 let mut comment = String::new();
                 comment.push('\u{000c}');
-                if !self.records_by_text.contains_key(&candidate.text) {
+                if !self.records.contains_text(&candidate.text) {
                     let composition_record = composition_lookup_record(&candidate.text, &records);
                     append_dictionary_lookup_record(&mut comment, true, &composition_record);
                 }
-                for record in records {
+                for record in &records {
                     append_dictionary_lookup_record(&mut comment, true, record);
                 }
                 return Some(comment);
             }
         }
 
-        let records = self.records_by_text.get(&candidate.text)?;
+        let records = self.records.records_for_text(&candidate.text)?;
         if records.is_empty() {
             return None;
         }
@@ -130,10 +161,10 @@ impl DictionaryLookupFilter {
         Some(comment)
     }
 
-    fn sentence_lookup_records(&self, text: &str) -> Option<Vec<&DictionaryLookupRecord>> {
+    fn sentence_lookup_records(&self, text: &str) -> Option<Vec<DictionaryLookupRecord>> {
         let mut records = Vec::new();
-        if let Some(exact_records) = self.records_by_text.get(text) {
-            records.extend(exact_records.iter());
+        if let Some(exact_records) = self.records.records_for_text(text) {
+            records.extend(exact_records);
         }
 
         let mut cursor = 0;
@@ -142,7 +173,7 @@ impl DictionaryLookupFilter {
             else {
                 return (!records.is_empty()).then_some(records);
             };
-            records.extend(prefix_records.iter());
+            records.extend(prefix_records);
             cursor += prefix_len;
         }
 
@@ -153,7 +184,7 @@ impl DictionaryLookupFilter {
         &self,
         text: &str,
         cursor: usize,
-    ) -> Option<(usize, &Vec<DictionaryLookupRecord>)> {
+    ) -> Option<(usize, Vec<DictionaryLookupRecord>)> {
         let boundaries = text[cursor..]
             .char_indices()
             .map(|(offset, _)| cursor + offset)
@@ -163,8 +194,8 @@ impl DictionaryLookupFilter {
             .collect::<Vec<_>>();
         boundaries.into_iter().rev().find_map(|end| {
             let prefix = &text[cursor..end];
-            self.records_by_text
-                .get(prefix)
+            self.records
+                .records_for_text(prefix)
                 .map(|records| (prefix.len(), records))
         })
     }
@@ -211,14 +242,39 @@ impl CandidateFilter for DictionaryLookupFilter {
     }
 
     fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
-        vec![MemoryOwnerRow::new(
-            "dictionary_lookup_filter.lookup_records",
-            MemoryOwnerClass::HeapOwnedRequired,
-            estimate_dictionary_lookup_records_bytes(&self.records_by_text),
-            self.records_by_text.values().map(Vec::len).sum(),
-            "HashMap<String, Vec<DictionaryLookupRecord>>",
-            "retained TypeDuck dictionary-panel records applied by dictionary_lookup_filter",
-        )]
+        match &self.records {
+            DictionaryLookupRecordSource::Eager(records_by_text) => vec![MemoryOwnerRow::new(
+                "dictionary_lookup_filter.lookup_records",
+                MemoryOwnerClass::HeapOwnedRequired,
+                estimate_dictionary_lookup_records_bytes(records_by_text),
+                records_by_text.values().map(Vec::len).sum(),
+                "HashMap<String, Vec<DictionaryLookupRecord>>",
+                "retained TypeDuck dictionary-panel records applied by dictionary_lookup_filter",
+            )],
+            DictionaryLookupRecordSource::ByteBacked(records) => vec![MemoryOwnerRow::new(
+                "dictionary_lookup_filter.lookup_records",
+                byte_backed_lookup_owner_class(records),
+                records
+                    .payload_bytes()
+                    .saturating_add(records.estimated_index_bytes()),
+                records.record_count(),
+                format!(
+                    "byte_backed_lookup_payload({}; {}; index_bytes={})",
+                    records.storage_label(),
+                    records.mapping_mode(),
+                    records.estimated_index_bytes()
+                ),
+                "TypeDuck dictionary-panel records decoded on demand from the compiled lookup payload",
+            )],
+        }
+    }
+}
+
+fn byte_backed_lookup_owner_class(records: &ByteBackedDictionaryLookupRecords) -> MemoryOwnerClass {
+    match records.mapping_mode() {
+        "mmap" => MemoryOwnerClass::SharedOrOverlapping,
+        "owned_bytes" => MemoryOwnerClass::HeapOwnedGuarded,
+        _ => MemoryOwnerClass::SharedOrOverlapping,
     }
 }
 
@@ -271,7 +327,7 @@ fn estimate_dictionary_lookup_records_bytes(
 
 fn composition_lookup_record(
     text: &str,
-    records: &[&DictionaryLookupRecord],
+    records: &[DictionaryLookupRecord],
 ) -> DictionaryLookupRecord {
     let code = records
         .iter()

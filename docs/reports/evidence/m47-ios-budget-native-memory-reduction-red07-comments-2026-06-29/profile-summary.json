@@ -1,0 +1,134 @@
+{
+  "date": "2026-06-29",
+  "harness": "Windows native RimeApi probe with PROCESS_MEMORY_COUNTERS_EX WorkingSetSize/PrivateUsage and a test-local counting allocator; not iOS phys_footprint",
+  "schema": "jyut6ping3_mobile",
+  "verdict": "RED-07 moves rich TypeDuck lookup/comment records from heap-owned HashMap retention to byte-backed compiled payload lookup. The comments-intact keyboard profile now keeps rich comments at 78.7 MB steady / 89.1 MB peak Windows working set, down from 164.0 MB / 171.2 MB. The full mobile profile is 91.4 MB steady / 102.4 MB peak, down from 194.0 MB / 201.3 MB.",
+  "profiles": [
+    {
+      "profile": "lean_lower_bound",
+      "definition": "jyut6ping3_mobile with dictionary lookup records, compact lookup records, and luna reverse translator disabled",
+      "comments_retained": false,
+      "before": {
+        "evidence_dir": "lean-lower-bound",
+        "working_set_mb": 56.7,
+        "private_mb": 23.1,
+        "peak_working_set_mb": 61.8,
+        "allocator_live_mb": 16.0,
+        "allocator_high_water_mb": 22.7,
+        "named_owner_bytes": 41375423,
+        "heap_owned_named_owner_bytes": 4195326,
+        "clean_mmap_file_backed_estimate_bytes": 34602818
+      },
+      "after": {
+        "evidence_dir": "lean-lower-bound-after",
+        "working_set_mb": 56.9,
+        "private_mb": 23.3,
+        "peak_working_set_mb": 61.3,
+        "allocator_live_mb": 16.0,
+        "allocator_high_water_mb": 22.7,
+        "named_owner_bytes": 41375423,
+        "heap_owned_named_owner_bytes": 4195326,
+        "clean_mmap_file_backed_estimate_bytes": 34602818
+      }
+    },
+    {
+      "profile": "comments_intact_keyboard",
+      "definition": "jyut6ping3_mobile default with rich dictionary comments retained; luna reverse translator disabled",
+      "comments_retained": true,
+      "before": {
+        "evidence_dir": "comments-intact-keyboard-before",
+        "working_set_mb": 164.0,
+        "private_mb": 133.7,
+        "peak_working_set_mb": 171.2,
+        "allocator_live_mb": 98.3,
+        "allocator_high_water_mb": 108.1,
+        "named_owner_bytes": 123991110,
+        "heap_owned_named_owner_bytes": 86811013,
+        "clean_mmap_file_backed_estimate_bytes": 34602818,
+        "lookup_owner_class": "heap_owned_required"
+      },
+      "after": {
+        "evidence_dir": "comments-intact-keyboard-after",
+        "working_set_mb": 78.7,
+        "private_mb": 33.7,
+        "peak_working_set_mb": 89.1,
+        "allocator_live_mb": 25.6,
+        "allocator_high_water_mb": 59.9,
+        "named_owner_bytes": 73092720,
+        "heap_owned_named_owner_bytes": 4195278,
+        "clean_mmap_file_backed_estimate_bytes": 34602818,
+        "lookup_owner_class": "shared_or_overlapping_byte_backed"
+      },
+      "delta": {
+        "working_set_mb": -85.3,
+        "private_mb": -100.0,
+        "peak_working_set_mb": -82.1,
+        "allocator_live_mb": -72.7,
+        "heap_owned_named_owner_bytes": -82615735
+      }
+    },
+    {
+      "profile": "full_mobile",
+      "definition": "jyut6ping3_mobile default, no opt-outs",
+      "comments_retained": true,
+      "before": {
+        "evidence_dir": "full-mobile-before",
+        "working_set_mb": 194.0,
+        "private_mb": 159.6,
+        "peak_working_set_mb": 201.3,
+        "allocator_live_mb": 116.7,
+        "allocator_high_water_mb": 126.4,
+        "named_owner_bytes": 145255855,
+        "heap_owned_named_owner_bytes": 101241509,
+        "clean_mmap_file_backed_estimate_bytes": 40740505,
+        "lookup_owner_class": "heap_owned_required"
+      },
+      "after": {
+        "evidence_dir": "full-mobile-after",
+        "working_set_mb": 91.4,
+        "private_mb": 41.6,
+        "peak_working_set_mb": 102.4,
+        "allocator_live_mb": 32.3,
+        "allocator_high_water_mb": 59.9,
+        "named_owner_bytes": 86124829,
+        "heap_owned_named_owner_bytes": 4856616,
+        "clean_mmap_file_backed_estimate_bytes": 40740505,
+        "lookup_owner_class": "shared_or_overlapping_byte_backed"
+      },
+      "delta": {
+        "working_set_mb": -102.6,
+        "private_mb": -118.0,
+        "peak_working_set_mb": -98.9,
+        "allocator_live_mb": -84.4,
+        "heap_owned_named_owner_bytes": -96384893
+      }
+    }
+  ],
+  "typeduck_ios_reference": {
+    "repo": "TypeDuck-HK/TypeDuck-iOS",
+    "commit": "094abb53cf6d6254b997de90d1a96239088d3f7b",
+    "schema_submodule_commit": "dde24bc8dfd6c3dd836af0f7e57a12d7652631a9",
+    "rime_candidate_comments_carry_dictionary_payload": [
+      "CantoboardFramework/RimeKit/RKRimeSession.mm:99-123 copies RimeCandidate text and comment",
+      "CantoboardFramework/Keyboard/View/Candidate/CandidateInfo.swift:21-35 parses comments into entries",
+      "CantoboardFramework/Keyboard/View/Candidate/CandidateEntry.swift:38-42 names multilingual dictionary columns"
+    ],
+    "swift_parses_visible_or_opened_comments": [
+      "CandidatePaneView.swift:738-751 parses for cell sizing",
+      "CandidatePaneView.swift:822-834 parses displayed cells",
+      "CandidatePaneView.swift:791-809 parses when opening the dictionary panel",
+      "Caveat: grouping modes can bulk-parse loaded candidates"
+    ],
+    "support_data_is_separate": [
+      "EnglishDict and Unihan use LevelDbTable",
+      "NGram is a separate mmap-backed .ngram format"
+    ],
+    "asset_size_bytes": {
+      "typeduck_ios_comparable_six_rime_bins": 16646044,
+      "yune_comparable_six_rime_bins": 50674920,
+      "yune_web03_15_file_compiled_set": 70830098,
+      "typeduck_ios_support_stores_total": 13044998
+    }
+  },
+  "rich_comment_sample": "rich-comments/rich-comment-zouhapci.json"
+}

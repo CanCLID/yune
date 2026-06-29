@@ -2804,8 +2804,51 @@ fn yune_web_adapter_browser_app_assets_enrich_visible_lookup_candidates() {
         );
     }
 
+    write_red07_comment_evidence_if_requested(candidates);
+
     unsafe { yune_web_cleanup(state) };
     runtime.remove();
+}
+
+fn write_red07_comment_evidence_if_requested(candidates: &[Value]) {
+    let Some(evidence_root) = red07_evidence_root_from_env() else {
+        return;
+    };
+    fs::create_dir_all(&evidence_root).expect("RED-07 evidence directory should be writable");
+    let sample_texts = [
+        "\u{7d44}\u{5408}",
+        "\u{505a}",
+        "\u{65e9}",
+        "\u{7d44}",
+        "\u{79df}",
+    ];
+    let samples = sample_texts
+        .iter()
+        .filter_map(|text| {
+            let candidate = candidates
+                .iter()
+                .find(|candidate| candidate["text"] == Value::String((*text).to_owned()))?;
+            Some(json!({
+                "text": text,
+                "comment": candidate["comment"],
+                "has_dictionary_payload": candidate["comment"]
+                    .as_str()
+                    .is_some_and(|comment| comment.contains('\u{000c}') && comment.contains("\r1,")),
+            }))
+        })
+        .collect::<Vec<_>>();
+    let payload = json!({
+        "schema": "jyut6ping3_mobile",
+        "input": "zouhapci",
+        "profile": "comments-intact keyboard profile",
+        "evidence": "visible candidates retain TypeDuck dictionary-panel rich comment bytes after RED-07 byte-backed lookup storage",
+        "samples": samples,
+    });
+    fs::write(
+        evidence_root.join("rich-comment-zouhapci.json"),
+        serde_json::to_vec_pretty(&payload).expect("RED-07 evidence JSON should serialize"),
+    )
+    .expect("RED-07 evidence JSON should be writable");
 }
 
 fn typeduck_oracle_root() -> PathBuf {
@@ -2822,6 +2865,20 @@ fn public_demo_schema_root() -> PathBuf {
 
 fn web03_evidence_root_from_env() -> Option<PathBuf> {
     std::env::var_os("YUNE_WEB03_EVIDENCE_DIR")
+        .map(PathBuf::from)
+        .map(|path| {
+            if path.is_absolute() {
+                path
+            } else {
+                PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../..")
+                    .join(path)
+            }
+        })
+}
+
+fn red07_evidence_root_from_env() -> Option<PathBuf> {
+    std::env::var_os("YUNE_M47_RED07_EVIDENCE_DIR")
         .map(PathBuf::from)
         .map(|path| {
             if path.is_absolute() {

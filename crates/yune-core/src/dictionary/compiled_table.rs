@@ -1383,13 +1383,15 @@ impl<'a> CompactPrefixCandidates<'a> {
                     }
                     push_marisa_child_frames(
                         &mut self.marisa_stack,
-                        source.bytes(),
-                        &self.store.syllabary_codes,
-                        &ids,
-                        &code,
-                        node_offset,
-                        level,
-                        self.prefix,
+                        MarisaChildFrameInput {
+                            bytes: source.bytes(),
+                            syllabary_codes: &self.store.syllabary_codes,
+                            ids: &ids,
+                            code: &code,
+                            node_offset,
+                            level,
+                            prefix: self.prefix,
+                        },
                     );
                     if code.starts_with(self.prefix) {
                         push_marisa_node_entry_frame(
@@ -1547,13 +1549,15 @@ impl<'a> Iterator for CompactAllCodes<'a> {
                         }
                         push_marisa_child_frames(
                             stack,
-                            bytes,
-                            syllabary_codes,
-                            &ids,
-                            &code,
-                            node_offset,
-                            level,
-                            "",
+                            MarisaChildFrameInput {
+                                bytes,
+                                syllabary_codes,
+                                ids: &ids,
+                                code: &code,
+                                node_offset,
+                                level,
+                                prefix: "",
+                            },
                         );
                     }
                     MarisaTraversalFrame::Entries { .. } => {}
@@ -2155,31 +2159,38 @@ fn push_marisa_node_entry_frame(
     });
 }
 
-fn push_marisa_child_frames(
-    stack: &mut Vec<MarisaTraversalFrame>,
-    bytes: &[u8],
-    syllabary_codes: &[String],
-    ids: &[usize],
-    code: &str,
+struct MarisaChildFrameInput<'a> {
+    bytes: &'a [u8],
+    syllabary_codes: &'a [String],
+    ids: &'a [usize],
+    code: &'a str,
     node_offset: usize,
     level: MarisaNodeLevel,
-    prefix: &str,
+    prefix: &'a str,
+}
+
+fn push_marisa_child_frames(
+    stack: &mut Vec<MarisaTraversalFrame>,
+    input: MarisaChildFrameInput<'_>,
 ) {
-    let next_level_offset = match level {
-        MarisaNodeLevel::Head => node_offset + 8,
-        MarisaNodeLevel::Trunk => node_offset + 12,
+    let next_level_offset = match input.level {
+        MarisaNodeLevel::Head => input.node_offset + 8,
+        MarisaNodeLevel::Trunk => input.node_offset + 12,
     };
-    let Some(next_index) = read_offset_ptr(bytes, next_level_offset).ok().flatten() else {
+    let Some(next_index) = read_offset_ptr(input.bytes, next_level_offset)
+        .ok()
+        .flatten()
+    else {
         return;
     };
-    if ids.len() >= 3 {
-        let Ok(tail_count) = read_count(bytes, next_index) else {
+    if input.ids.len() >= 3 {
+        let Ok(tail_count) = read_count(input.bytes, next_index) else {
             return;
         };
-        if marisa_code_prefix_compatible(code, prefix) {
+        if marisa_code_prefix_compatible(input.code, input.prefix) {
             stack.push(MarisaTraversalFrame::Tail {
-                ids: ids.to_vec(),
-                code: code.to_owned(),
+                ids: input.ids.to_vec(),
+                code: input.code.to_owned(),
                 tail_offset: next_index,
                 tail_count,
                 cursor: 0,
@@ -2188,7 +2199,7 @@ fn push_marisa_child_frames(
         return;
     }
 
-    let Ok(child_count) = read_count(bytes, next_index) else {
+    let Ok(child_count) = read_count(input.bytes, next_index) else {
         return;
     };
     let Some(start) = next_index.checked_add(4) else {
@@ -2198,22 +2209,22 @@ fn push_marisa_child_frames(
         let Some(child_offset) = start.checked_add(index.saturating_mul(16)) else {
             continue;
         };
-        let Some(key) = read_i32_le(bytes, child_offset)
+        let Some(key) = read_i32_le(input.bytes, child_offset)
             .ok()
             .and_then(|key| usize::try_from(key).ok())
         else {
             continue;
         };
-        let Some(child_code_part) = syllabary_codes.get(key) else {
+        let Some(child_code_part) = input.syllabary_codes.get(key) else {
             continue;
         };
-        let mut child_code = String::with_capacity(code.len() + child_code_part.len());
-        child_code.push_str(code);
+        let mut child_code = String::with_capacity(input.code.len() + child_code_part.len());
+        child_code.push_str(input.code);
         child_code.push_str(child_code_part);
-        if !marisa_code_prefix_compatible(&child_code, prefix) {
+        if !marisa_code_prefix_compatible(&child_code, input.prefix) {
             continue;
         }
-        let mut child_ids = ids.to_vec();
+        let mut child_ids = input.ids.to_vec();
         child_ids.push(key);
         stack.push(MarisaTraversalFrame::Node {
             ids: child_ids,

@@ -16,7 +16,10 @@ In scope:
 
 - Native Track A `luna_pinyin` only.
 - Same-run Yune vs upstream librime `1.17.0` evidence.
-- The known broad-clippy blocker at `crates/yune-core/src/dictionary/compiled_prism.rs:430`.
+- The previous broad-clippy blocker at
+  `crates/yune-core/src/dictionary/compiled_table.rs:2158`
+  (`clippy::too_many_arguments`) introduced by the M49 MARISA traversal helper.
+  Task 0 closes this blocker before latency/memory work begins.
 - Latency owners for `n`, `ni`, and the 37-character pinyin row.
 - Full `luna_pinyin` Track A memory attribution for peak, steady/private proxy, and named owner rows.
 
@@ -45,8 +48,8 @@ Evidence root to compare against:
 
 ## Files And Responsibilities
 
-- Modify: `crates/yune-core/src/dictionary/compiled_prism.rs`
-  - Remove the known `clippy::ref_option` blocker without changing runtime behavior.
+- Modify: `crates/yune-core/src/dictionary/compiled_table.rs`
+  - Remove the current `clippy::too_many_arguments` blocker without changing runtime behavior.
 - Modify if owner evidence requires it: `crates/yune-core/src/dictionary/compiled_table.rs`
   - Track A compact-table prefix traversal, MARISA-backed lookup, and bounded candidate iteration.
 - Modify if owner evidence requires it: `crates/yune-core/src/translator/mod.rs`
@@ -72,9 +75,9 @@ Evidence root to compare against:
 
 **Files:**
 
-- Modify: `crates/yune-core/src/dictionary/compiled_prism.rs`
+- Modify: `crates/yune-core/src/dictionary/compiled_table.rs`
 
-- [ ] **Step 0.1: Reproduce the current clippy blocker**
+- [x] **Step 0.1: Reproduce the current clippy blocker**
 
 Run:
 
@@ -82,33 +85,38 @@ Run:
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-Expected before the fix: failure naming `crates/yune-core/src/dictionary/compiled_prism.rs` and `clippy::ref_option`.
+Expected before the fix: failure naming `crates/yune-core/src/dictionary/compiled_table.rs:2158` and `clippy::too_many_arguments`.
 
-- [ ] **Step 0.2: Fix only the linted signature/site**
+- [x] **Step 0.2: Fix only the linted signature/site**
 
-Change the linted `&Option<T>` surface to `Option<&T>` or equivalent at the exact reported location. Preserve the memory-owner estimate semantics.
+Refactor the linted helper so the MARISA traversal context is grouped into a
+small private struct or equivalent local abstraction. Preserve traversal order,
+prefix compatibility checks, and candidate output.
 
 Do not change parser behavior, byte-backed prism lookup, or any public API.
 
-- [ ] **Step 0.3: Verify the focused and broad gates**
+- [x] **Step 0.3: Verify the focused and broad gates**
 
 Run:
 
 ```powershell
 cargo fmt --check
-cargo test -p yune-core compiled_prism
+cargo test -p yune-core dictionary::
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 Expected: all pass. If broad clippy exposes a second unrelated lint, record it in `docs/reports/evidence/m50-track-a-launch-readiness/task0-clippy/README.md` and fix it only if the fix is mechanical and scoped.
 
-- [ ] **Step 0.4: Commit the clippy unblock**
+- [x] **Step 0.4: Commit the clippy unblock**
 
 ```powershell
-git add -- crates/yune-core/src/dictionary/compiled_prism.rs docs/reports/evidence/m50-track-a-launch-readiness/task0-clippy
+git add -- crates/yune-core/src/dictionary/compiled_table.rs docs/reports/evidence/m50-track-a-launch-readiness/task0-clippy
 git commit -m "Fix Track A clippy gate blocker"
 git push origin main
 ```
+
+Closed by the M50 Task 0 evidence in
+`docs/reports/evidence/m50-track-a-launch-readiness/task0-clippy/`.
 
 ## Task 1: Fresh M50 Baseline And Owner Attribution
 

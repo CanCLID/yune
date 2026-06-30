@@ -1,6 +1,13 @@
 ﻿# Milestone History
 
-This file holds the historical milestone ledger split out of [`roadmap.md`](../roadmap.md) on 2026-06-24. The roadmap now owns current sequencing and readiness gates; this file owns completed milestone context and pointers to completed evidence.
+This file holds the historical milestone ledger split out of
+[`roadmap.md`](../roadmap.md) on 2026-06-24. The roadmap now owns current
+sequencing and readiness gates; this file owns completed milestone context and
+pointers to completed evidence.
+
+On 2026-06-30, the detailed historical closeout narratives that still lived in
+the roadmap were collapsed back to this ledger, completed plans, reports, and
+evidence folders so the roadmap can stay a live dashboard.
 
 For implementation details, prefer the linked plan, record, requirement section, or report over this summary.
 

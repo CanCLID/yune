@@ -109,12 +109,20 @@ fifth	ne	5
         bounded
             .candidates
             .iter()
-            .map(|candidate| candidate.text.as_str())
+            .map(|candidate| (
+                candidate.text.as_str(),
+                candidate.comment.as_str(),
+                candidate.source.clone(),
+            ))
             .collect::<Vec<_>>(),
         eager
             .iter()
             .take(3)
-            .map(|candidate| candidate.text.as_str())
+            .map(|candidate| (
+                candidate.text.as_str(),
+                candidate.comment.as_str(),
+                candidate.source.clone(),
+            ))
             .collect::<Vec<_>>()
     );
     assert_eq!(bounded.full_count, Some(5));

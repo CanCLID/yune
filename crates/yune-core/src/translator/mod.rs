@@ -1301,7 +1301,7 @@ impl StaticTableTranslator {
     }
 
     fn is_dictionary_text_allowed(&self, text: &str) -> bool {
-        !self.dictionary_exclude.contains(text)
+        self.dictionary_exclude.is_empty() || !self.dictionary_exclude.contains(text)
     }
 
     fn is_limited_prediction_view(
@@ -1333,6 +1333,9 @@ impl StaticTableTranslator {
     }
 
     fn is_spelling_abbreviation_view(&self, code: &str, candidate: &LookupCandidate<'_>) -> bool {
+        if self.spelling_abbreviation_entries.is_empty() {
+            return false;
+        }
         self.spelling_abbreviation_entries.contains(&(
             code.to_owned(),
             candidate.text().to_owned(),
@@ -1414,12 +1417,55 @@ impl StaticTableTranslator {
         lookup_code: &str,
         correction_distance: Option<usize>,
     ) -> Candidate {
-        self.format_candidate_for_lookup(
-            entry_code,
-            candidate.to_candidate(),
-            lookup_code,
-            correction_distance,
-        )
+        let materialize_start = crate::m37_metrics_enabled().then(Instant::now);
+        let text = candidate.text().to_owned();
+        let source_hint = candidate.source_hint();
+        let mut raw_quality = candidate.raw_quality();
+        if let Some(start) = materialize_start {
+            crate::m37_record_owned_candidate_materialization(start.elapsed());
+        }
+
+        let comment_code = if self.show_full_code {
+            candidate.raw_comment().to_owned()
+        } else if entry_code == lookup_code {
+            String::new()
+        } else {
+            entry_code
+                .strip_prefix(lookup_code)
+                .filter(|suffix| !suffix.is_empty())
+                .map_or_else(
+                    || candidate.raw_comment().to_owned(),
+                    |suffix| format!("~{suffix}"),
+                )
+        };
+        let comment = if comment_code.is_empty() {
+            String::new()
+        } else {
+            self.comment_format.apply(&comment_code)
+        };
+        let preedit = if entry_code == lookup_code {
+            let preedit = self.preedit_format.apply(lookup_code);
+            (preedit != lookup_code).then_some(preedit)
+        } else {
+            None
+        };
+        if let Some(distance) = correction_distance {
+            raw_quality += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
+        }
+        let mut source = source_hint;
+        let mut quality = raw_quality.exp() + self.initial_quality;
+        if entry_code != lookup_code {
+            source = CandidateSource::Completion;
+            quality -= 1.0;
+        }
+
+        Candidate {
+            text,
+            comment,
+            preedit,
+            source,
+            quality,
+        }
     }
 
     fn format_candidate_for_lookup(

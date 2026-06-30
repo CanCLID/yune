@@ -9,6 +9,7 @@ Scope: native Track A `luna_pinyin` only. This folder must not be used for brows
 | Task 0 clippy gate | complete | `task0-clippy/` |
 | Phase 0 baseline | complete | `phase-0-baseline/` |
 | Sentence row reduction | complete | `sentence-row/` |
+| Short-prefix reduction | measured partial | `short-prefix-final/` |
 
 ## Current Decision Order
 
@@ -45,3 +46,24 @@ shows the 37-character tracked row inside the `<=3.0x` gate:
 Memory attribution now names `poet.vocabulary` as `53,644,752 B` retained heap
 for normal preset vocabulary. This is attribution, not a retained prefix index;
 the focused guard rejects any hidden `prefix_index` owner row.
+
+## Short-Prefix Slice
+
+Evidence: `short-prefix-final/`.
+
+The short-prefix slice keeps M44's bounded first-page behavior and filter
+underfill fallback intact. It avoids raw-comment cloning while materializing
+bounded lookup candidates when the formatted comment is empty or derived from
+the entry-code suffix, and it adds empty-set fast paths for Track A dictionary
+exclusion and spelling-abbreviation checks.
+
+The final run improved or held the Yune medians versus the Phase 0 baseline for
+the short-prefix rows, but `ni` remains above the same-run `<=3.0x` gate:
+
+- `n`: `60.000 us` vs librime `21.600 us`, `2.778x`.
+- `ni`: `44.500 us` vs librime `14.600 us`, `3.048x`; measured blocker.
+
+M37 attribution for `ni` still shows the core blocker as exact-row scan work
+under charset filtering: `196` lookup views for the two-key sequence, `14`
+materialized candidates, and `26.550 us` median short-key filter time. No
+retained heap prefix or vocabulary index was added.

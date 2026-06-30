@@ -1,0 +1,13 @@
+﻿date_utc=2026-06-30T00:31:49.0850568Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=c83ed915aba7222567e9213a902d51ec699da76c
+yune_git_status_short= M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs | ?? docs/reports/evidence/m50-track-a-launch-readiness/short-prefix-fast-path/ | ?? docs/reports/evidence/m50-track-a-launch-readiness/short-prefix-final/ | ?? docs/reports/evidence/m50-track-a-launch-readiness/short-prefix/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\short-prefix-final
+managed_runtime=false
+deploy_product_before_benchmark=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

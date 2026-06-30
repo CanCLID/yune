@@ -10,6 +10,7 @@ Scope: native Track A `luna_pinyin` only. This folder must not be used for brows
 | Phase 0 baseline | complete | `phase-0-baseline/` |
 | Sentence row reduction | complete | `sentence-row/` |
 | Short-prefix reduction | measured partial | `short-prefix-final/` |
+| Full Track A memory attribution | measured blocker | `memory-attribution/` |
 
 ## Current Decision Order
 
@@ -67,3 +68,19 @@ M37 attribution for `ni` still shows the core blocker as exact-row scan work
 under charset filtering: `196` lookup views for the two-key sequence, `14`
 materialized candidates, and `26.550 us` median short-key filter time. No
 retained heap prefix or vocabulary index was added.
+
+## Memory Attribution Slice
+
+Evidence: `memory-attribution/`.
+
+The fresh Track A `luna_pinyin` benchmark records Yune peak working set
+`188,436,480 B` versus librime peak `17,653,760 B`. Named non-overlapping
+reducible owners now sum to `72,370,289 B`, including `poet.vocabulary` at
+`53,644,752 B`; mmap file-backed rows contribute `13,044,872 B` of mapped
+storage. The derived peak working-set gap after subtracting those
+classes is `103,021,319 B`, and the benchmark's process owner row reports
+`process.after_ready_working_set_unclassified_lower_bound` as `106,121,103 B`.
+
+Verdict: memory is attributed with a named measured blocker. M50 does not reduce
+the remaining process-level unclassified/private gap and does not claim iOS
+`phys_footprint`.

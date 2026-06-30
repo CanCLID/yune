@@ -50,7 +50,12 @@ conventions link to it, focused guards lock default upstream ABI layout,
 TypeDuck profile slots, and the `yune_web_*` export allowlist, and final gates
 passed without widening the default upstream ABI. A post-M51 review cleanup
 documents and guards the parallel Yune Windows profile accessor against the same
-current profile table.
+current profile table. **M52 is the active milestone:** it freezes the native
+Track A `luna_pinyin` performance guardrails and dispositions the M50 measured
+blockers - the `ni` and 37-character latency rows (improve under `<=3.0x` or
+close as a bounded-microsecond ceiling) and the full Luna memory peak (reduce a
+named owner or close with a precise product-profile-relevance statement) -
+without reopening web/frontend/iOS work.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -82,7 +87,7 @@ current profile table.
   - current performance comparison and diagnosis.
 - [`reports/ios-memory-budget.md`](./reports/ios-memory-budget.md) - native
   single-active-schema memory vs the iOS keyboard-extension budget; the measured
-  baseline for the active M47 reduction plan.
+  baseline for the completed M47 reduction plan.
 - [`plans/completed/m48-plan-luna-pinyin-sentence-over-segmentation.md`](./plans/completed/m48-plan-luna-pinyin-sentence-over-segmentation.md)
   - completed oracle-driven correctness plan for the M48 `luna_pinyin` sentence
   over-segmentation fix (librime-scaled log poet weights plus compact runtime
@@ -150,7 +155,7 @@ current profile table.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior remains complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. **M51 is complete:** `docs/contracts/engine-support-contract.md` records supported targets, oracle precedence, default upstream ABI rules, profile ABI rules, `yune_web_*` export rules, storage expectations, and evidence-lane rules. M51 focused guards lock default `RimeApi`/`RimeCandidate`, TypeDuck profile append slots, and `yune_web_*` synchronization with `scripts/yune-web-exports.txt`; post-M51 cleanup adds explicit Yune Windows profile accessor alias/scalar-slot coverage for the same current profile table. | Future engine work must preserve the contract or update it with named oracle/header evidence and focused tests. |
-| Engine performance | **M50 is complete as a measured partial Track A launch-readiness closeout.** Broad clippy is restored. Final same-run native rows put `n` inside the `<=3.0x` gate at `61.000us` / `2.877x`, while `ni` remains `45.450us` / `3.156x` and the 37-character row remains `890.689us` / `3.074x`; the intermediate sentence-row run measured the 37-character row inside gate at `860.011us` / `2.920x`, but the final closeout run is authoritative. Full `luna_pinyin` Track A memory is attributed but still a blocker at `188.4 MB` peak / `197.2 MB` max-summary private versus librime `17.1 MB` peak. Named owners include `poet.vocabulary` at `53.6 MB` and process unclassified lower bound at `106.2 MB`; no retained heap prefix index was added. M47 remains complete for portable TypeDuck keyboard memory and is not conflated with this full Luna Track A row. | Next native-engine work should start from the M50 measured blockers (`ni`, 37-character row, and full Luna memory/private gap) or from M51 contract/ABI guard outcomes, not from a launch-clean Track A assumption. Apple `phys_footprint` proof remains unnumbered far-future platform validation. |
+| Engine performance | **M50 is complete as a measured partial Track A launch-readiness closeout.** Broad clippy is restored. Final same-run native rows put `n` inside the `<=3.0x` gate at `61.000us` / `2.877x`, while `ni` remains `45.450us` / `3.156x` and the 37-character row remains `890.689us` / `3.074x`; the intermediate sentence-row run measured the 37-character row inside gate at `860.011us` / `2.920x`, but the final closeout run is authoritative. Full `luna_pinyin` Track A memory is attributed but still a blocker at `188.4 MB` peak / `197.2 MB` max-summary private versus librime `17.1 MB` peak. Named owners include `poet.vocabulary` at `53.6 MB` and process unclassified lower bound at `106.2 MB`; no retained heap prefix index was added. M47 remains complete for portable TypeDuck keyboard memory and is not conflated with this full Luna Track A row. | **M52 (active)** takes these measured blockers: it freezes a same-run latency + memory regression guardrail (promoting the existing 59-character Luna row into the gate), attempts the `ni` and 37-character gates but may close them as bounded-microsecond ceilings (the absolute gaps are `~31 us` and `~601 us`), and either reduces the full Luna memory peak or dispositions its product-profile relevance. Apple `phys_footprint` proof remains unnumbered far-future platform validation. |
 | Web harness startup and memory | M41 is complete for the tracked `apps/yune-web/` browser harness. WEB-01 is complete as measured no-go for `INITIAL_MEMORY` and payload-only changes. M46 fixed the Cangjie -> Luna -> Jyutping no-candidate row. WEB-02 classified the stale-asset source-fallback owner at `529,602,374 B`; WEB-03 fixed that launch compiled-asset contract and remeasured the shipping Jyutping launch/full browser rows at `160.0 MiB` ready/peak/steady. The follow-up compact-path fix restores byte-backed Jyutping phrase composition, visible prefix lookup rows, and bounded long-input browser latency. A later correctness fix repaired a `DartsDoubleArray` prism construction bug that had broken the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (now guarded by trie-level and committed-asset regression tests). The current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; the old Jyutping `893.1 MiB` value now remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another measured owner, not another payload-only or Jyutping stale-asset branch. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
 | Future platform work | Platform-specific native frontends remain outside this repo roadmap. | Start a separate repository or separate plan before changing platform/application contracts. |
@@ -208,11 +213,23 @@ next milestone.
    pass, and no default ABI widening is in scope. M51 depends on M50's
    clippy-green/stable-ABI baseline, not M50 latency success. Plan:
    [`plans/completed/m51-plan-engine-support-contract-abi-freeze.md`](./plans/completed/m51-plan-engine-support-contract-abi-freeze.md).
-5. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
+5. **M52 Track A performance guardrails and blocker disposition is the active
+   milestone.** It freezes a committed same-run Track A regression guardrail
+   (`n`, `ni`, short prefixes, the 37-character row, and the existing
+   59-character Luna row) plus a memory-peak ceiling gate, then dispositions the
+   M50 measured
+   blockers: each latency row is improved under `<=3.0x` or closed with a
+   bounded-absolute-microsecond ceiling rationale, and the full Luna Track A
+   memory peak is either reduced with named owner movement or closed with a
+   precise product-profile-relevance statement naming what loads
+   `poet.vocabulary`. Native Track A only; no web/frontend/iOS reopen and no
+   default ABI change. Plan:
+   [`plans/active/m52-plan-track-a-guardrails-and-disposition.md`](./plans/active/m52-plan-track-a-guardrails-and-disposition.md).
+6. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped plan.
-6. **Future AI-native engine experiments** - later, and only after classic
+7. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-7. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+8. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
    fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
    row is explicitly selected as the target.
 

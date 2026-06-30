@@ -1113,6 +1113,21 @@ required evidence and closeout gates.
   dominated by a profile-specific path such as prefix fallback, dynamic
   correction, or another measured bucket.
 
+### M51 Engine Support Contract And ABI Freeze
+
+- [x] **M51-CONTRACT-01**: The engine support contract exists at
+  `docs/contracts/engine-support-contract.md` and is linked from conventions.
+- [x] **M51-ABI-01**: Default upstream `rime_get_api()` and upstream-shaped
+  `RimeCandidate` layout remain locked by focused ABI tests.
+- [x] **M51-ABI-02**: TypeDuck fork-only ABI slots remain profile-scoped behind
+  `rime_get_typeduck_profile_api()` and are covered by profile-table tests.
+- [x] **M51-ABI-03**: The `yune_web_*` exported-symbol ABI remains synchronized
+  with `scripts/yune-web-exports.txt`, Rust `#[no_mangle]` exports, the
+  Emscripten linker anchor, and TypeScript runtime bindings.
+- [x] **M51-EVIDENCE-01**: Native, browser, product, and platform claims must
+  cite their own evidence lanes; Windows working-set/private proxies are not
+  Apple `phys_footprint`.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1242,6 +1257,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M19-BREADTH-03 | M19 | Complete - `cangjie5` upstream 1.17.0 fixture and owning parity test added |
 | M19-BREADTH-04 | M19 | Complete - `bopomofo` upstream 1.17.0 fixture and owning parity test added |
 | M19-ABI-01 | M19 | Complete - named TypeDuck-profile ABI accessor exposes list-append slots while default `rime_get_api()` remains upstream-shaped |
+| M51-CONTRACT-01 | M51 | Complete - contract document exists and conventions link to it |
+| M51-ABI-01 | M51 | Complete - default upstream ABI layout and `RimeCandidate` are locked by focused ABI tests |
+| M51-ABI-02 | M51 | Complete - TypeDuck fork-only slots remain profile-scoped and round-trip through profile-table tests |
+| M51-ABI-03 | M51 | Complete - `yune_web_*` export allowlist is synchronized across Rust exports, linker anchor, and TypeScript runtime |
+| M51-EVIDENCE-01 | M51 | Complete - engine support contract requires separate native/browser/product/platform evidence lanes |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
 | M22-PLAY-03 | M22 Bucket 1 | Complete - traditionalization, disabled, extended_charset, and dictionary_exclude have browser evidence; ascii_punct remains absent without browser-visible before/after evidence |
@@ -1528,7 +1548,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 - WEB-01 yune-web WASM heap and payload requirements: 11 total, 8 complete, 3 complete with measured blocker/no-go, 0 active
 - M46 Jyutping native and WASM memory attribution requirements: 14 total, 9 complete, 3 complete with measured blocker/no-go, 2 closed by no-go, 0 active
 - Post-M38 engine performance follow-up requirements: 9 total, 9 complete, 0 draft
-- Mapped to phases: 357
+- M51 engine support contract and ABI-freeze requirements: 5 total, 5 complete, 0 active
+- Mapped to phases: 362
 - Unmapped: 0
 
 ---

@@ -43,10 +43,10 @@ partial: final `n` is inside gate at `61.000 us` / `2.877x`, while `ni` remains
 `45.450 us` / `3.156x` and the 37-character row remains `890.689 us` /
 `3.074x`. Full Luna Track A memory is attributed but still a blocker at
 `188.4 MB` peak / `197.2 MB` max-summary private, with `poet.vocabulary`
-(`53.6 MB`) and process unclassified lower bound (`106.2 MB`) named. M51 is now
-the active engine support contract and ABI-freeze milestone, so the
-launch-facing engine surface is documented and guarded without widening the
-default upstream ABI.
+(`53.6 MB`) and process unclassified lower bound (`106.2 MB`) named. M51 is in
+closeout: the engine support contract is written, conventions link to it, and
+focused guards now lock default upstream ABI layout, TypeDuck profile slots, and
+the `yune_web_*` export allowlist without widening the default upstream ABI.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -91,9 +91,9 @@ default upstream ABI.
   Track A `luna_pinyin` launch-readiness latency blockers, and attributed full
   Luna Track A memory.
 - [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md)
-  - following engine contract milestone to document supported engine targets,
-  runtime storage expectations, default upstream ABI boundaries, the TypeDuck
-  profile ABI freeze, and the `yune_web_*` exported-symbol family.
+  - closeout-stage engine contract milestone documenting supported engine
+  targets, runtime storage expectations, default upstream ABI boundaries, the
+  TypeDuck profile ABI freeze, and the `yune_web_*` exported-symbol family.
 - [`plans/completed/m47-plan-ios-budget-native-memory-reduction.md`](./plans/completed/m47-plan-ios-budget-native-memory-reduction.md)
   - completed attribution-first plan that drove the comments-intact keyboard from
   ~195 MB to ~67 MB WS / ~22 MB private (portable scope); Apple-device
@@ -145,7 +145,7 @@ default upstream ABI.
 
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
-| Core compatibility | Phase 1 named-target upstream behavior remains complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. **M48 is complete:** `jianli` and `biancheng` now match the upstream first page after the poet path converts raw dictionary weights to librime's fixed-scale log entry weights and the shipped compact `luna_pinyin` path loads the required preset vocabulary. | Preserve upstream-observable behavior on every engine change. M51 now documents the engine support contract and freezes ABI expectations without widening the default upstream ABI. |
+| Core compatibility | Phase 1 named-target upstream behavior remains complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. **M51 is in closeout:** `docs/contracts/engine-support-contract.md` now records supported targets, oracle precedence, default upstream ABI rules, TypeDuck profile ABI rules, `yune_web_*` export rules, storage expectations, and evidence-lane rules. Focused guards lock default `RimeApi`/`RimeCandidate`, TypeDuck profile append slots, and `yune_web_*` synchronization with `scripts/yune-web-exports.txt`. | Finish M51 final gates before moving the plan and ledger to complete. Future engine work must preserve the contract or update it with named oracle/header evidence and focused tests. |
 | Engine performance | **M50 is complete as a measured partial Track A launch-readiness closeout.** Broad clippy is restored. Final same-run native rows put `n` inside the `<=3.0x` gate at `61.000us` / `2.877x`, while `ni` remains `45.450us` / `3.156x` and the 37-character row remains `890.689us` / `3.074x`; the intermediate sentence-row run measured the 37-character row inside gate at `860.011us` / `2.920x`, but the final closeout run is authoritative. Full `luna_pinyin` Track A memory is attributed but still a blocker at `188.4 MB` peak / `197.2 MB` max-summary private versus librime `17.1 MB` peak. Named owners include `poet.vocabulary` at `53.6 MB` and process unclassified lower bound at `106.2 MB`; no retained heap prefix index was added. M47 remains complete for portable TypeDuck keyboard memory and is not conflated with this full Luna Track A row. | Next native-engine work should start from the M50 measured blockers (`ni`, 37-character row, and full Luna memory/private gap) or from M51 contract/ABI guard outcomes, not from a launch-clean Track A assumption. Apple `phys_footprint` proof remains unnumbered far-future platform validation. |
 | Web harness startup and memory | M41 is complete for the tracked `apps/yune-web/` browser harness. WEB-01 is complete as measured no-go for `INITIAL_MEMORY` and payload-only changes. M46 fixed the Cangjie -> Luna -> Jyutping no-candidate row. WEB-02 classified the stale-asset source-fallback owner at `529,602,374 B`; WEB-03 fixed that launch compiled-asset contract and remeasured the shipping Jyutping launch/full browser rows at `160.0 MiB` ready/peak/steady. The follow-up compact-path fix restores byte-backed Jyutping phrase composition, visible prefix lookup rows, and bounded long-input browser latency. A later correctness fix repaired a `DartsDoubleArray` prism construction bug that had broken the byte-backed Jyutping toneless-to-canonical mapping for common multi-syllable words (now guarded by trie-level and committed-asset regression tests). The fair `luna_pinyin` browser comparison remains `160.0 MiB` peak versus My RIME `16.0 MiB`; the old Jyutping `893.1 MiB` value now remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another measured owner, not another payload-only or Jyutping stale-asset branch. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
@@ -197,14 +197,13 @@ next milestone.
    (`890.689 us` / `3.074x`), and full Luna Track A memory (`188.4 MB` peak /
    `197.2 MB` max-summary private) as measured blockers. Plan:
    [`plans/completed/m50-plan-track-a-launch-readiness-completion.md`](./plans/completed/m50-plan-track-a-launch-readiness-completion.md).
-4. **M51 engine support contract and ABI freeze is active.** Write the
-   launch-facing engine support contract, link it from conventions/roadmap,
-   and verify that default upstream `rime_get_api()` and `RimeCandidate` remain
-   upstream-shaped while TypeDuck fork-only slots stay behind the named profile
-   accessor and the `yune_web_*` exported-symbol family remains synchronized
-   with `scripts/yune-web-exports.txt`. No platform frontend, browser
-   performance claim, or ABI widening is in scope. M51 depends on M50's
-   clippy-green/stable-ABI baseline, not M50 latency success. Plan:
+4. **M51 engine support contract and ABI freeze is in closeout.** The
+   launch-facing engine support contract exists at
+   [`contracts/engine-support-contract.md`](./contracts/engine-support-contract.md),
+   conventions link to it, focused ABI/profile/export guards pass, and no
+   default ABI widening is in scope. M51 depends on M50's
+   clippy-green/stable-ABI baseline, not M50 latency success; final gates are
+   still required before moving the plan and ledger to complete. Plan:
    [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md).
 5. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped plan.
@@ -692,7 +691,7 @@ Closed M38 gates:
 | M48 | Complete | `luna_pinyin` sentence over-segmentation correctness fix: upstream oracle bytes for `jianli`/`biancheng` were captured first, then Yune's poet path was moved from raw-frequency accumulation to librime's fixed-scale log dictionary entry weight (`ln(raw_or_epsilon) - ln(1e8)`, no `/total`) before `Grammar::Evaluate` adds the null penalty. The compact shipped upstream Luna path now loads full `essay` vocabulary for normal sentence ranking while keeping the M42 abbreviation vocabulary bounded. Production CLI now returns `jianli` -> `å»ºç«‹`, `ç°¡æ­·`, `ç›£ç†`, `ç›£åˆ©`, `å‰ªåŠ›` and `biancheng` -> `è®Šæˆ`, `ç·¨ç¨‹`, `ä¾¿æˆ`, `ç·¨æˆ`, `é‚ŠåŸŽ`. Gates passed: `upstream_luna_pinyin_parity`, `poet`, `cantonese_parity`, `yune_web`, and `cargo fmt --check`; at closeout, broad clippy was blocked by unrelated `compiled_prism.rs:430` `clippy::ref_option`, which M50 Task 0 later superseded and cleared. Plan: [`plans/completed/m48-plan-luna-pinyin-sentence-over-segmentation.md`](./plans/completed/m48-plan-luna-pinyin-sentence-over-segmentation.md). |
 | M49 | Complete with measured blockers | Track A short-key latency follow-up: MARISA prefix traversal and transient preset-vocabulary prefiltering improved `n` to `62.400us` / `3.074x`, `ni` to `46.250us` / `3.269x`, and the 37-character row to `894.400us` / `3.094x`, but all three still miss the strict `<=3.0x` launch-readiness gate. Current full `luna_pinyin` Track A memory is also a blocker at `188.3 MB` peak versus librime `17.6 MB`. Plan: [`plans/completed/m49-plan-track-a-short-key-latency-followup.md`](./plans/completed/m49-plan-track-a-short-key-latency-followup.md). |
 | M50 | Complete with measured blockers | Track A launch-readiness completion: broad clippy is restored, final `n` is inside gate at `61.000us` / `2.877x`, and the remaining tracked blockers are measured as `ni` `45.450us` / `3.156x`, 37-character row `890.689us` / `3.074x`, and full Luna Track A memory `188.4 MB` peak / `197.2 MB` max-summary private. Memory attribution names `poet.vocabulary` (`53.6 MB`) and process unclassified lower bound (`106.2 MB`); no retained heap prefix index, web/frontend/product, or iOS-device claim is made. Plan: [`plans/completed/m50-plan-track-a-launch-readiness-completion.md`](./plans/completed/m50-plan-track-a-launch-readiness-completion.md). |
-| M51 | Active | Engine support contract and ABI freeze: document supported engine targets, runtime storage expectations, default upstream ABI boundaries, TypeDuck profile ABI boundaries, the `yune_web_*` exported-symbol family, evidence-lane rules, and add or confirm ABI/export guard tests. No ABI widening, browser performance claim, or platform frontend work is in scope. M51 depends on M50's clippy-green/stable-ABI baseline, not on M50 latency success. Plan: [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md). |
+| M51 | Active - closeout gates pending | Engine support contract and ABI freeze: `docs/contracts/engine-support-contract.md` is linked from conventions; default upstream `RimeApi`/`RimeCandidate`, TypeDuck profile append slots, and the `yune_web_*` exported-symbol family are covered by focused guards. No ABI widening, browser performance claim, or platform frontend work is in scope. Final gates are pending before the plan moves to completed. Plan: [`plans/active/m51-plan-engine-support-contract-abi-freeze.md`](./plans/active/m51-plan-engine-support-contract-abi-freeze.md). |
 
 WEB-03 latency addendum: a 2026-06-28 follow-up bounds compact-path fallback
 expansion after the phrase-composition repair and restores local browser

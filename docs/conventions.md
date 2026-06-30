@@ -216,6 +216,11 @@ yune/
 
 ## 5. C ABI Rules
 
+The detailed launch-facing engine contract lives in
+[`docs/contracts/engine-support-contract.md`](./contracts/engine-support-contract.md).
+Keep this section as the quick C ABI rule reference; update the contract when a
+support boundary changes.
+
 **`RimeApi` field order IS the ABI.** The `#[repr(C)]` function table in `crates/yune-rime-api/src/abi.rs` is accessed by struct-pointer offset, so the order of its fields is the actual C contract. Core ABI fields follow upstream `rime/librime` headers; explicit TypeDuck-profile fork-only fields follow the TypeDuck fork's `rime_api.h`. Never insert mid-struct without matching oracle/header evidence. A misplaced field silently breaks every native frontend.
 
 - **Fork-only slots:** `config_list_append_bool` / `_int` / `_double` / `_string` do not exist in upstream librime and are not exposed by default `rime_get_api()`. Their helper implementations remain in `config_api.rs` with direct TypeDuck-profile tests. M19 exposes them only through the named `rime_get_typeduck_profile_api()` accessor, whose appended slot order is documented in `docs/plans/reference/m19-reference-typeduck-profile-abi.md`. Future TypeDuck-profile slots still require fresh fork-header evidence.

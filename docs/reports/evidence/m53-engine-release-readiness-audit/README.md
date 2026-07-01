@@ -44,6 +44,20 @@ files/code before disposition:
 | info | `track-a-thresholds.csv` `source_value` column holds phase-0 baseline (not final observed) values | No change: the notes column already says "phase-0 baseline"; distinct from `threshold-check.csv` observed values by design. |
 | info | Unlinked M42 evidence SVG caption overclaims full-pinyin rows | No change: milestone-scoped historical evidence, correct for the M42 run, and not embedded by any live dashboard. |
 
+## Follow-Up Review Findings (post-commit)
+
+An external review after the initial M53 commit surfaced two compatibility/
+frontend claim-drift items the claim-wording pass missed because it scoped to
+*performance* wording only. Recorded here and fixed:
+
+| Severity | Finding | Disposition |
+| --- | --- | --- |
+| medium | `README.md` compatibility bullet said Cantonese `jyut6ping3` produces identical output "to RIME 1.17.0", conflating the oracle - `jyut6ping3` is validated against TypeDuck-HK/librime `v1.1.2`, not upstream 1.17.0 (contradicting the README's own Compatibility section) | Fixed: split the sentence by named target (`luna_pinyin` vs upstream 1.17.0; `jyut6ping3` vs TypeDuck-HK/librime v1.1.2). |
+| medium | `README.md` claimed validation "as a drop-in replacement in real-world frontends (TypeDuck-Web, TypeDuck-Windows)", overstating TypeDuck-Windows (M10 proved package/header, profile-ABI, and stock IPC smoke; interactive TSF typing and candidate UI are Phase 2) | Fixed: scoped `yune-web` to real in-browser validation and TypeDuck-Windows to backend/profile/IPC compatibility smoke, with interactive TSF/UI named as Phase 2. |
+
+Lesson for future audits: the claim-wording dimension must cover compatibility,
+oracle-precedence, and frontend-validation claims, not just performance claims.
+
 ## Release-Readiness Verdict
 
 The engine docs are **release-ready for downstream engine consumers** after the

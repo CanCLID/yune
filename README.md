@@ -100,10 +100,14 @@ Everything runs in safe Rust. The workspace enforces `unsafe_code = "forbid"`.
 
 Yune is an active engine project.
 
-- **Compatibility baseline:** Phase 1 is complete. Yune produces identical output
-  to RIME 1.17.0 for Mandarin (`luna_pinyin`) and Cantonese (`jyut6ping3` via
-  TypeDuck profile). It has been validated as a drop-in replacement in real-world
-  frontends (TypeDuck-Web, TypeDuck-Windows).
+- **Compatibility baseline:** Phase 1 is complete. Yune produces identical
+  output to its oracle on each named target: Mandarin `luna_pinyin` against
+  upstream `rime/librime 1.17.0`, and Cantonese `jyut6ping3` against
+  TypeDuck-HK/librime `v1.1.2` through the TypeDuck profile. `yune-web` has real
+  in-browser validation (TypeDuck-Web); the TypeDuck-Windows backend has
+  package/header, profile-ABI, and stock real-server IPC compatibility smoke
+  through the named profile accessor, while interactive TSF typing and visible
+  candidate UI remain Phase 2 product/frontend work.
 - **Current work:** milestones M38-M52 are complete. On the fair `luna_pinyin`
   lane, same-run against upstream librime, latency is mixed and honestly
   measured: Yune is faster on the more expensive queries (`zhongguo` and both

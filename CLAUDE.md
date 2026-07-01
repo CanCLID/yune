@@ -130,3 +130,15 @@ Where to add behavior: see [docs/conventions.md §3](docs/conventions.md)
   the seam under `apps/yune-web/src/yune-integration/`. Browser-visible claims
   require real-browser (Playwright) evidence — see
   [apps/yune-web/e2e/yune-browser-smoke.md](apps/yune-web/e2e/yune-browser-smoke.md).
+- **A "done / gates passed / verified" report is a claim, not a fact — verify
+  it.** Independently re-run the load-bearing check before accepting or building
+  on another session's, agent's, or handoff's work. Repeat offenders here: a
+  closeout that claimed gates passed but never ran the broad `cargo clippy
+  --workspace --all-targets -- -D warnings` (lint errors don't fail `cargo
+  test`/`build`, so they slip a partial check); an "oracle" test that compared
+  two checked-in files or round-tripped through Yune's own builder instead of
+  executing the real path over externally-captured oracle bytes (a byte-parity
+  bug shipped green behind it); and README claims drifting ahead of the measured
+  evidence. When you close a milestone, run the *exact* named gate commands and
+  list them; when you review, re-run the gate/behavior the finding hinges on.
+  Full detail: AGENTS.md "Verification Discipline".

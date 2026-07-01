@@ -154,5 +154,37 @@ yune-web browser work must also follow the current plan or archived M24
 baseline and `apps/yune-web/e2e/yune-browser-smoke.md`; preserve the
 real-browser evidence gate for user-visible claims.
 
+## Verification Discipline
+
+Treat any "done / gates passed / verified" report — from a prior session,
+another agent, or a handoff — as an **unverified claim, not a fact.**
+Independently re-run the load-bearing check before you accept it or build on it.
+This repeatedly caught real defects that a trusted handoff would have shipped:
+
+- **Run the exact named gate, not a subset.** A closeout claimed the quality
+  gate passed but never ran `cargo clippy --workspace --all-targets -- -D
+  warnings`, and that gate was failing. Lint-only errors do not fail `cargo
+  test`/`cargo build`, so a partial "fmt + tests passed" check silently misses
+  them. If you claim the gate passed, run the exact commands (fmt, the broad
+  clippy `-D warnings`, the relevant tests) and list them — do not paraphrase
+  "verification passed."
+- **An oracle test must execute the real path over external bytes.** A
+  byte-parity bug shipped green because its "oracle" test compared one
+  checked-in file to another, and the other grammar tests round-tripped through
+  Yune's own encoder/builder/reader. Self-consistency is not oracle parity. A
+  real oracle test runs Yune's production path over externally-captured oracle
+  bytes and byte-compares (see the oracle-driven/non-circular rule in Key
+  Constraints); a manifest/provenance assertion is not a behavior test.
+- **Verify public/docs claims against evidence across ALL claim kinds.** README
+  and top-level claims (performance, compatibility, oracle precedence,
+  frontend-validation, ABI, licensing) drifted ahead of the measured evidence
+  across several closeouts, and a claim audit scoped to one kind (e.g.
+  performance) missed the others. Check every claim kind against the evidence
+  and the engine support contract at closeout, not just the one in focus.
+
+When reviewing another agent's work, re-run the specific gate or reproduce the
+exact behavior a finding hinges on rather than trusting the summary. The
+two-review-pass rule above is only as good as the independent checks behind it.
+
 The GSD planning system has been retired. Planning, decisions, conventions, and
 requirements now live under `docs/`, not `.planning/`.

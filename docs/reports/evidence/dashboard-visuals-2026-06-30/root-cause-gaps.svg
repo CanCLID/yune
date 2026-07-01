@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="328" viewBox="0 0 1040 328" role="img" aria-labelledby="title desc">
+  <title id="title">Current performance gaps by lane (Yune / peer ratio)</title>
+  <desc id="desc">Native Track A refreshed by M52, 2026-06-30; browser rows carried from 2026-06-28. Lower is better; dashed line = 1.0x peer parity. Jyutping browser row is guard-only (different dictionary).</desc>
+  <rect width="1040" height="328" fill="#FCFCFD"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Current performance gaps by lane (Yune / peer ratio)</text>
+  <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Native Track A refreshed by M52, 2026-06-30; browser rows carried from 2026-06-28.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Lower is better; dashed line = 1.0x peer parity. Jyutping browser row is guard-only (different dictionary).</text>
+  <line x1="270.0" y1="95" x2="270.0" y2="302" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="270.0" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0x</text>
+  <line x1="382.5" y1="95" x2="382.5" y2="302" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="382.5" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">3x</text>
+  <line x1="495.0" y1="95" x2="495.0" y2="302" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="495.0" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">6x</text>
+  <line x1="607.5" y1="95" x2="607.5" y2="302" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="607.5" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">9x</text>
+  <line x1="720.0" y1="95" x2="720.0" y2="302" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="720.0" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">12x</text>
+  <line x1="307.5" y1="93" x2="307.5" y2="302" stroke="#1F2430" stroke-width="2" stroke-dasharray="4 4"/>
+  <text x="311.5" y="89" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="600" fill="#1F2430">1x parity</text>
+  <text x="258" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native Track A peak memory</text>
+  <rect x="270" y="96" width="408.8" height="18" rx="2" fill="#F2C879" stroke="#9C7B1E" stroke-width="1"/>
+  <text x="684.8" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">10.90x</text>
+  <text x="734.8" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">188.4 vs 17.3 MB; watch</text>
+  <text x="258" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Luna memory</text>
+  <rect x="270" y="130" width="150.0" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="426.0" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">4.00x</text>
+  <text x="469.0" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">64.0 vs 16.0 MiB; blocker</text>
+  <text x="258" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native 37-char latency</text>
+  <rect x="270" y="164" width="114.5" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="390.5" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">3.05x</text>
+  <text x="433.5" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">ceiling</text>
+  <text x="258" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native ni latency</text>
+  <rect x="270" y="198" width="117.9" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="393.9" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">3.14x</text>
+  <text x="436.9" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">ceiling</text>
+  <text x="258" y="246" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Jyutping memory (guard)</text>
+  <rect x="270" y="232" width="88.2" height="18" rx="2" fill="#BFC6D4" stroke="#868EA0" stroke-width="1"/>
+  <text x="364.2" y="246" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">2.35x</text>
+  <text x="407.2" y="246" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">160 vs 68 MiB; diff dict</text>
+  <text x="258" y="280" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Luna startup</text>
+  <rect x="270" y="266" width="59.1" height="18" rx="2" fill="#F2C879" stroke="#9C7B1E" stroke-width="1"/>
+  <text x="335.1" y="280" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">1.58x</text>
+  <text x="378.1" y="280" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">1000 vs 634 ms; watch</text>
+</svg>

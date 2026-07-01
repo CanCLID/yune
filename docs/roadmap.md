@@ -11,7 +11,9 @@ Current status: Phase 1 named-target compatibility is complete; M47's portable
 TypeDuck/Jyutping keyboard memory work is complete for the Windows proxy; M51
 froze the engine support contract and ABI boundaries; M52 froze native Track A
 `luna_pinyin` performance guardrails and dispositioned the remaining M50
-blockers. No active numbered engine milestone is open in this roadmap.
+blockers; M53 re-verified the engine docs and public claims for
+release-readiness and corrected stale `README.md` performance wording. No active
+numbered engine milestone is open in this roadmap.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -120,17 +122,78 @@ cleanup tasks. They require a new owner-evidenced design, likely around compact
 byte-backed poet storage, top-k or incremental scoring, or another algorithmic
 change that changes the cost model without changing candidate output.
 
+## Closing The 188 MB Native Track A Memory Gap
+
+This is the one gap that is large and structural rather than
+sub-perceptual-microsecond. It is not a wall: the technique that closes it is
+already proven in this repo. It is deferred, not blocked, and would open as an
+owner-evidenced performance-research milestone (tentatively **M54 native Track A
+structural memory research**), after the release-readiness audit, only with a
+fresh plan and a real win bar.
+
+Why the peak is `188.4 MB` versus librime's `17.3 MB`: at native `luna_pinyin`
+schema selection Yune loads the upstream sentence model into owned heap
+structures - `poet.vocabulary` (`53.6 MB`, the full upstream Luna preset
+vocabulary that M48 had to load to fix `jianli`/`biancheng` over-segmentation),
+`poet.entries_by_code` (`18.7 MB`), and a process unclassified lower bound of
+`105.6 MB`. librime keeps the equivalent data mmap'd/paged from compiled files,
+so it never counts as dirty private memory. The gap is a storage-strategy
+difference, not an algorithmic defect.
+
+The proven precedent is **M47**: it byte-backed the TypeDuck table, prism, and
+lookup/comment payloads from mmap'd compiled storage - exactly librime's
+strategy - and cut the shipping `jyut6ping3_mobile` keyboard profile from about
+`298 MB` to about `67 MB` working set / `22 MB` private with the full dictionary
+retained. The same move applies to the poet sentence model.
+
+Design sketch for the milestone, in order:
+
+1. **Attribute the `105.6 MB` unclassified lower bound first.** It is currently
+   a measured floor, not a named owner; you cannot reduce what you have not
+   named. Profile allocator/arena residency and deploy/compile transients before
+   touching poet code.
+2. **Byte-back `poet.vocabulary` and `poet.entries_by_code`.** Compile them into
+   an mmap-backed artifact served by offset (like the compiled table/prism), so
+   the OS pages them instead of holding owned `Vec`/`BTreeMap` heap. Target the
+   named `~72 MB` first.
+3. **Preserve candidate output exactly.** This path is oracle-sensitive - M48
+   fixed a real scoring bug here - so byte-backed access must produce identical
+   sentence ranking, gated by `upstream_luna_pinyin_parity` and `cantonese_parity`.
+4. **Respect the memory/latency tension.** Byte-backed or lazy access can add
+   per-lookup deserialization latency. Any change must stay within the M52
+   latency ceilings; measure both memory and latency in the same run. Memory
+   wins if they conflict, but the latency guardrail must still pass.
+
+Win bar (set before coding): a measured Track A peak reduction with named-owner
+movement toward the byte-backed floor - not a no-regression ceiling. Close as
+partial/no-go if the owner is not real or the parity/latency risk is
+unacceptable.
+
+Priority caveat: native `luna_pinyin` Track A is the oracle-comparison lane, not
+a shipping product profile (the shipping native target is TypeDuck/Jyutping,
+already in budget after M47). So this work is highest value when either native
+Luna becomes a shipping profile, or the byte-backed poet storage is built as a
+portable technique that also lowers the Track B product, WASM, and iOS lanes.
+
 ## Authoritative Sequence
 
 1. **No active numbered engine milestone is open.** M52 is complete and is the
    current native performance guardrail source of truth.
-2. **Recommended next engineering slice: release-readiness audit.** Keep this
-   small and engine-only: verify support-contract consistency, report freshness,
-   evidence links, manual guardrail instructions, and public claim wording before
-   platform/frontend sessions consume the engine.
+2. **M53 engine release-readiness audit is complete.** The five-dimension audit
+   (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness,
+   public claim wording, link/evidence integrity) found the substantive
+   invariants clean with no ABI/guardrail/link drift; the only real defects were
+   stale `README.md`/archived "faster than librime" claims, now corrected to the
+   M52 lane-specific numbers. Evidence:
+   [`reports/evidence/m53-engine-release-readiness-audit/`](./reports/evidence/m53-engine-release-readiness-audit/).
+   Plan:
+   [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md).
 3. **Future performance research is optional and must be owner-evidenced.** A
    "surpass librime" milestone should start from the Performance North Star and
-   should not reuse M52's regression ceilings as a success bar.
+   should not reuse M52's regression ceilings as a success bar. The concrete
+   candidate is the native Track A memory work sketched in
+   [Closing The 188 MB Native Track A Memory Gap](#closing-the-188-mb-native-track-a-memory-gap)
+   (tentatively M54), opened only after the release-readiness audit.
 4. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
@@ -157,7 +220,7 @@ and current decision rules.
 | --- | --- | --- |
 | Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, Track A guardrails, and TypeDuck/Jyutping profile storage | M52 plan/evidence, M50 plan/evidence, M47 plan/evidence, and performance reports. |
 | Web harness startup and memory | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, Chromium memory, and compiled-asset contract | WEB-03 plan/evidence, WEB-02 owner classification, WEB-01 measured no-go, M41 startup evidence, and browser reports. |
-| Core compatibility | Upstream behavior fixtures and standard ABI-observable behavior | Requirements, decisions, engine support contract, and per-milestone plans. |
+| Core compatibility | Upstream behavior fixtures and standard ABI-observable behavior | Requirements, decisions, engine support contract, per-milestone plans, and the M53 release-readiness audit (`reports/evidence/m53-engine-release-readiness-audit/`). |
 | AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
 | Historical record | Completed milestone outcomes and reference/provenance pointers | Milestone history ledger. |
 
@@ -170,6 +233,7 @@ and current decision rules.
 | WEB-01/02/03 | Complete | Browser memory attribution, stale-asset owner classification, and launch compiled-asset contract. |
 | M47 | Complete for portable scope | TypeDuck/Jyutping comments-intact keyboard memory is under the Windows private/dirty proxy target; Apple `phys_footprint` proof remains parked. |
 | M48-M52 | Complete | Current engine correctness, support-contract, and Track A guardrail closeouts; M52 is the current native performance source of truth. |
+| M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived "faster than librime" wording to the M52 lane-specific numbers. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
 
 ## Scope Ledger
 

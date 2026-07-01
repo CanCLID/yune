@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="388" viewBox="0 0 1040 388" role="img" aria-labelledby="title desc">
+  <title id="title">Native Track A memory: peak high-water and named owners</title>
+  <desc id="desc">M52 final, 2026-06-30. luna_pinyin comparison lane, peak working set in MB. Top: Yune peak vs same-run librime peer. Bottom: named Yune owners that make up the 188.4 MB peak.</desc>
+  <rect width="1040" height="388" fill="#FCFCFD"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Native Track A memory: peak high-water and named owners</text>
+  <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">M52 final, 2026-06-30. luna_pinyin comparison lane, peak working set in MB.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Top: Yune peak vs same-run librime peer. Bottom: named Yune owners that make up the 188.4 MB peak.</text>
+  <line x1="270.0" y1="95" x2="270.0" y2="362" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="270.0" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0 MB</text>
+  <line x1="382.5" y1="95" x2="382.5" y2="362" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="382.5" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">50 MB</text>
+  <line x1="495.0" y1="95" x2="495.0" y2="362" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="495.0" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">100 MB</text>
+  <line x1="607.5" y1="95" x2="607.5" y2="362" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="607.5" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">150 MB</text>
+  <line x1="720.0" y1="95" x2="720.0" y2="362" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="720.0" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">200 MB</text>
+  <text x="28" y="109" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">Peak working set, same-run lanes</text>
+  <text x="258" y="134" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Yune Track A peak</text>
+  <rect x="270" y="120" width="423.9" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="699.9" y="134" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">188.4 MB</text>
+  <text x="763.9" y="134" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">comparison lane high-water</text>
+  <text x="258" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">librime max peer peak</text>
+  <rect x="270" y="154" width="38.9" height="18" rx="2" fill="#BFC6D4" stroke="#868EA0" stroke-width="1"/>
+  <text x="314.9" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">17.3 MB</text>
+  <text x="371.9" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">same-run peer scale</text>
+  <line x1="28" y1="190" x2="1012" y2="190" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="28" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">Named Yune owners (subset of the 188.4 MB)</text>
+  <text x="258" y="238" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">process unclassified lower bound</text>
+  <rect x="270" y="224" width="237.6" height="18" rx="2" fill="#C7B3E0" stroke="#5E4B86" stroke-width="1"/>
+  <text x="513.6" y="238" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">105.6 MB</text>
+  <text x="258" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">poet.vocabulary</text>
+  <rect x="270" y="258" width="120.6" height="18" rx="2" fill="#C7B3E0" stroke="#5E4B86" stroke-width="1"/>
+  <text x="396.6" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">53.6 MB</text>
+  <text x="453.6" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">full upstream Luna preset vocab</text>
+  <text x="258" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">poet.entries_by_code</text>
+  <rect x="270" y="292" width="42.1" height="18" rx="2" fill="#C7B3E0" stroke="#5E4B86" stroke-width="1"/>
+  <text x="318.1" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">18.7 MB</text>
+  <text x="375.1" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">sentence-model entries</text>
+  <text x="258" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">poet.lookup_index</text>
+  <rect x="270" y="326" width="6.1" height="18" rx="2" fill="#C7B3E0" stroke="#5E4B86" stroke-width="1"/>
+  <text x="282.1" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">2.7 MB</text>
+  <text x="332.1" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">M40 index</text>
+</svg>

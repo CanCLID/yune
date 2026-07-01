@@ -104,16 +104,17 @@ Yune is an active engine project.
   to RIME 1.17.0 for Mandarin (`luna_pinyin`) and Cantonese (`jyut6ping3` via
   TypeDuck profile). It has been validated as a drop-in replacement in real-world
   frontends (TypeDuck-Web, TypeDuck-Windows).
-- **Current work:** milestones M38-M46 are complete. Native startup/session,
-  `zhongguo`, both long full-pinyin rows, and both abbreviation rows are now
-  faster than same-run librime while matching its candidate output. The
-  remaining gaps are explicit and honestly measured: short-key fixed overhead
-  (`n`/`ni`/`hao` are slower than librime, but only tens of microseconds, so
-  imperceptible while typing), and whole-process memory, where M43-M46
-  attributed the footprint but found no cheap structural fix — Yune is several
-  times heavier than librime on the fair `luna_pinyin` comparison, and the
-  Jyutping product path is heavier still (though it carries a much larger
-  multilingual dictionary, so it has no like-for-like librime baseline).
+- **Current work:** milestones M38-M52 are complete. On the fair `luna_pinyin`
+  lane, same-run against upstream librime, latency is mixed and honestly
+  measured: Yune is faster on the more expensive queries (`zhongguo` and both
+  abbreviation rows) and matches librime candidate output on every row, but is
+  slower on short keys (`n`/`ni`/`hao`) and on the 37/59-character pinyin
+  sentence rows. The short-key losses are tens of microseconds (imperceptible
+  while typing); the sentence-row losses are a few hundred microseconds. Startup
+  and session are near parity. The one large gap is memory: Yune is ~10-11x
+  heavier than librime on the fair native comparison (M52 guardrails it against
+  regression), and the Jyutping product path is heavier still (it carries a much
+  larger multilingual dictionary, so it has no like-for-like librime baseline).
 - **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. It's
   a Yune engine demo, not a claim that browser-level performance is solved.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web
@@ -147,36 +148,39 @@ are exposed exclusively through `rime_get_typeduck_profile_api()`.
 
 The current native comparison is mixed, honest, and intentionally measured
 same-run against upstream `rime/librime 1.17.0`. Yune **matches librime
-candidate output on every row** and is **faster on seven of ten rows** —
-including the two abbreviation rows it also matches byte-for-byte. It is slower
-only on the three single-character short-key rows, a higher constant factor on
-inputs of tens of microseconds that is imperceptible while typing. The one real
-gap is memory, where Yune is several times heavier than librime.
+candidate output on every row**. Latency is faster on the more expensive queries
+(`zhongguo` and the two abbreviation rows) and slower on short keys and the
+37/59-character pinyin sentence rows; startup and session are near parity. The
+one real gap is memory, where Yune is ~10-11x heavier than librime.
 
-![Yune vs librime native latency ratios](docs/reports/evidence/yune-vs-librime-native-ratios.svg)
+![Yune vs librime native latency ratios across all input dimensions](docs/reports/evidence/dashboard-visuals-2026-06-30/native-track-a-latency-ratios.svg)
 
-Current native Track A same-run ratios (M45 final; lower is better):
+Current native Track A same-run ratios (M52 final, 2026-06-30; lower is better):
 
-- **Faster than librime:** `zhongguo` `0.373x`, `cszysmsrsd` `0.440x`,
-  `zybfshmsru` `0.640x`, 59-character pinyin `0.720x`, startup `0.875x`,
-  session `0.921x`, and 37-character pinyin `0.939x`. The two abbreviation rows
-  (`cszysmsrsd`, `zybfshmsru`) match librime candidate output exactly *and* beat
-  its latency.
-- **Slower than librime:** `hao` ~`2.1-2.2x`, `n` ~`3.3-3.5x`, `ni`
-  ~`3.5-3.7x` (short-key ratios vary a few percent run-to-run). These are
-  single-character inputs of `24-69 us` — a real constant-factor gap, but
-  imperceptible in use; candidate output matches librime on every run.
+- **Faster than librime:** `zhongguo` `0.28x` (Yune saves ~120 us),
+  `cszysmsrsd` (10-char abbreviation) `0.43x` (~701 us), `zybfshmsru` (8-char
+  abbreviation) `0.64x` (~312 us). Yune matches librime candidate output on
+  these rows *and* beats its latency.
+- **Near parity:** startup `1.11x` and session `1.00x` (both run-noisy).
+- **Slower than librime:** the short keys `hao` `2.15x` (+13 us), `n` `2.82x`
+  (+39 us), and `ni` `3.14x` (+31 us) — single-character inputs, tens of
+  microseconds, imperceptible in use; and the 37-character `3.05x` (+602 us) and
+  59-character `2.25x` (+858 us) pinyin sentence rows. Candidate output matches
+  librime on every row. M52 freezes `ni` and the 37-character row as
+  bounded-microsecond regression ceilings, not `<=3.0x` passes.
 - **Memory is the honest weak spot.** On the fair `luna_pinyin` comparison —
-  same schema, no dictionary confound — Yune is about `10x` heavier than a
-  librime-family engine both natively (`127 MB` vs librime `13-17 MB`) and in the
-  browser (`160 MiB` vs My RIME `16 MiB`). That ~10x is real, not a dictionary
-  artifact. The Jyutping product path is heavier still (`504 MB` native, `893 MB`
-  browser), but it is **not** a like-for-like comparison — Yune runs TypeDuck's
-  multilingual `jyut6ping3` (Cantonese plus English/Hindi/Urdu/Nepali), so its
-  number is the ~10x base inefficiency plus a larger dictionary, recorded as a
-  guard rather than a comparison. M43-M46 attributed the visible structural
-  owners and found no cheap structural fix, so memory stays a measured, open
-  gap.
+  same schema, no dictionary confound — Yune is about `11x` heavier than a
+  librime-family engine both natively (`188.4 MB` vs librime `17.3 MB`, M52
+  guardrailed) and in the browser (`64 MiB` vs My RIME `16 MiB`). The gap is
+  real, not a dictionary artifact; it grew after M48 loaded the full essay
+  preset vocabulary and is a storage-strategy difference (librime mmaps its
+  data — see the roadmap's "Closing the 188 MB gap" sketch for the byte-backing
+  path). The Jyutping product path is heavier still (`504 MB` native, `160 MiB`
+  browser after WEB-03 byte-backing), but it is **not** a like-for-like
+  comparison — Yune runs TypeDuck's multilingual `jyut6ping3` (Cantonese plus
+  English/Hindi/Urdu/Nepali), recorded as a guard rather than a comparison. M47
+  already byte-backed the shipping keyboard profile to about `67 MB` working set
+  / `22 MB` private.
 - Track B TypeDuck-profile rows and browser startup are separate evidence lanes,
   not upstream-librime native comparisons.
 

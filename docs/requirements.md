@@ -1163,6 +1163,22 @@ required evidence and closeout gates.
 - [x] **M52-ENGINE-06**: M52 stays native Track A scoped and makes no web,
   browser, product, package, deployment, iOS-device, or ABI claim.
 
+### M53 Engine Release-Readiness Audit
+
+- [x] **M53-AUDIT-01**: Support-contract consistency is verified across the
+  contract, conventions, roadmap, requirements, and milestone ledger with no
+  contradiction.
+- [x] **M53-AUDIT-02**: ABI wording matches the code - default upstream
+  `rime_get_api()`/`RimeCandidate`, profile-only TypeDuck/Yune Windows slots,
+  and exactly 14 `yune_web_*` exports.
+- [x] **M53-AUDIT-03**: M52 guardrail evidence is fresh and numerically
+  consistent across the docs, with the manual regression-gate command canonical.
+- [x] **M53-AUDIT-04**: Public performance claims are lane-specific; stale broad
+  "faster than librime" wording in `README.md` and the linked archived report is
+  corrected to the `zhongguo` + abbreviation-only scope.
+- [x] **M53-AUDIT-05**: All engine-doc evidence links and anchors resolve and
+  the 2026-06-30 dashboard visuals are adopted.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1309,6 +1325,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M52-ENGINE-04 | M52 | Complete - 37-character Luna closes as a bounded-microsecond ceiling at `895.178us` / `3.053x` with a `601.967us` absolute gap and threshold pass |
 | M52-ENGINE-05 | M52 | Complete - full Luna Track A memory closes as a guardrailed comparison-lane watch with `poet.vocabulary` and product-profile relevance named |
 | M52-ENGINE-06 | M52 | Complete - scope stayed native Track A only with no web, browser, product, package, deployment, iOS-device, or ABI claim |
+| M53-AUDIT-01 | M53 | Complete - support-contract consistency verified across contract, conventions, roadmap, requirements, and ledger |
+| M53-AUDIT-02 | M53 | Complete - ABI wording matches code: default upstream `rime_get_api()`/`RimeCandidate`, profile-only fork slots, exactly 14 `yune_web_*` exports |
+| M53-AUDIT-03 | M53 | Complete - M52 guardrail evidence fresh and numerically consistent; regression-gate command canonical |
+| M53-AUDIT-04 | M53 | Complete - public performance claims lane-specific; stale `README.md`/archived "faster than librime" wording corrected to `zhongguo` + abbreviation scope |
+| M53-AUDIT-05 | M53 | Complete - all engine-doc evidence links/anchors resolve and the 2026-06-30 dashboard visuals are adopted |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
 | M22-PLAY-03 | M22 Bucket 1 | Complete - traditionalization, disabled, extended_charset, and dictionary_exclude have browser evidence; ascii_punct remains absent without browser-visible before/after evidence |
@@ -1598,9 +1619,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M50 Track A launch-readiness completion requirements: 6 total, 4 complete, 2 complete with measured blocker, 0 active
 - M51 engine support contract and ABI-freeze requirements: 5 total, 5 complete, 0 active
 - M52 Track A guardrails and blocker disposition requirements: 6 total, 6 complete, 0 active
-- Mapped to phases: 374
+- M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
+- Mapped to phases: 379
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-30 - M52 is complete for native Track A guardrails and blocker disposition: committed thresholds and the final regression gate cover the tracked latency rows and full Luna peak memory, `ni` and the 37-character row close as bounded-microsecond ceilings, and full Luna Track A memory closes as a guardrailed comparison-lane watch with product-profile relevance named. Current browser fair-lane memory remains the dashboard `64.0 MiB` Luna row versus My RIME `16.0 MiB`; WEB-03 Jyutping `160.0 MiB` and old Jyutping `893.1 MiB` values stay historical or lane-specific, not the current fair Luna number._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-30 - M53 engine release-readiness audit is complete: the engine docs are release-ready for downstream engine consumers. A five-dimension audit (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness, public claim wording, link/evidence integrity) found the substantive invariants clean with no ABI/guardrail/link drift; the only real defects were stale M45-era "faster than librime" claims and a `127 MB` memory figure on `README.md` (plus one linked archived report), corrected to the M52 (2026-06-30) lane-specific numbers (faster only on `zhongguo` + the two abbreviation rows; native Track A memory `188.4 MB` vs librime `17.3 MB`). M52 remains the native Track A guardrail source of truth; the 188 MB memory reduction stays the deferred M54 candidate._

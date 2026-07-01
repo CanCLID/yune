@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="192" viewBox="0 0 1040 192" role="img" aria-labelledby="title desc">
+  <title id="title">Native Track B lifecycle latency: TypeDuck jyut6ping3 product path</title>
+  <desc id="desc">Native TypeDuck jyut6ping3 product lane, one-time lifecycle medians in us; M47 byte-backing cut both. Per-key processing is 336.49 us (was 341.67), essentially flat - too small to plot on this scale.</desc>
+  <rect width="1040" height="192" fill="#FCFCFD"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Native Track B lifecycle latency: TypeDuck jyut6ping3 product path</text>
+  <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Native TypeDuck jyut6ping3 product lane, one-time lifecycle medians in us; M47 byte-backing cut both.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Per-key processing is 336.49 us (was 341.67), essentially flat - too small to plot on this scale.</text>
+  <line x1="270.0" y1="95" x2="270.0" y2="166" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="270.0" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0k us</text>
+  <line x1="420.0" y1="95" x2="420.0" y2="166" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="420.0" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">50k us</text>
+  <line x1="570.0" y1="95" x2="570.0" y2="166" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="570.0" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">100k us</text>
+  <line x1="720.0" y1="95" x2="720.0" y2="166" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="720.0" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">150k us</text>
+  <text x="258" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">startup warm runtime-ready</text>
+  <rect x="270" y="96" width="272.4" height="18" rx="2" fill="#7FB1D6" stroke="#355E80" stroke-width="1"/>
+  <text x="548.4" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">90,795 us</text>
+  <text x="619.4" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">was 124,505</text>
+  <text x="258" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">session create/select/destroy</text>
+  <rect x="270" y="130" width="276.3" height="18" rx="2" fill="#7FB1D6" stroke="#355E80" stroke-width="1"/>
+  <text x="552.3" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">92,093 us</text>
+  <text x="623.3" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">was 141,590</text>
+</svg>

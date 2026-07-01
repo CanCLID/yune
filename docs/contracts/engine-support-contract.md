@@ -1,6 +1,6 @@
 # Engine Support Contract
 
-Status: Active after M51 closeout.
+Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit.
 
 This contract defines Yune's launch-facing engine support boundary. It is a
 contract for engine behavior, storage, ABI shape, and evidence lanes; it is not

@@ -1,5 +1,12 @@
 # Yune vs upstream librime performance dashboard
 
+> **Superseded (2026-06-30).** This is an archived snapshot. Its "faster on most
+> native rows" reading is reversed by the current M52 data: the 37/59-character
+> pinyin sentence rows and the short keys are slower than librime; Yune is faster
+> only on `zhongguo` and the two abbreviation rows. See the live
+> [`../yune-vs-librime-performance.md`](../yune-vs-librime-performance.md) for the
+> current numbers. Kept for history only.
+
 Date: 2026-06-28
 
 This report separates native-engine comparison evidence from browser-harness

@@ -63,6 +63,20 @@ browser rows in this file are carried from that evidence.
 | `hao` | `24.967 us` | `11.633 us` | `2.146x` | strict ratio pass; threshold pass |
 | 37-char pinyin | `895.178 us` | `293.211 us` | `3.053x` | bounded-microsecond ceiling; threshold pass |
 | 59-char pinyin | `1,545.754 us` | `687.795 us` | `2.247x` | strict ratio pass; threshold pass |
+| `zhongguo` (common word) | `46.150 us` | `166.600 us` | `0.277x` | Yune faster (carried 2026-06-29) |
+| `cszysmsrsd` (10-char abbr) | `517.720 us` | `1,218.320 us` | `0.425x` | Yune faster (carried 2026-06-29) |
+| `zybfshmsru` (8-char abbr) | `547.580 us` | `859.790 us` | `0.637x` | Yune faster (carried 2026-06-29) |
+
+Across the full input-dimension suite the picture is mixed, not slower
+everywhere. Yune is faster than librime on `zhongguo` and the two abbreviation
+rows (green below), where the compiled index and Rust path win by `120-701 us`.
+It is slower on the short keys `n`/`ni`/`hao` (coral, but only `13-39 us`,
+imperceptible) and on the `37`/`59-character` pinyin sentence rows
+(`602`/`858 us`, the poet-graph cost). Startup and session are near parity and
+run-noisy. The M52 gate rows carry M52 numbers; `zhongguo` and the abbreviation
+rows are carried from the 2026-06-29 full suite.
+
+![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-06-30/native-track-a-latency-ratios.svg)
 
 ## Native Track A Guardrail
 
@@ -96,6 +110,34 @@ lean probe reports the comments-intact keyboard profile at about `67 MB` working
 set / `22 MB` private. These are separate lanes and are not interchangeable
 memory claims.
 
+![Native Track A memory peak and named owners](./evidence/dashboard-visuals-2026-06-30/native-track-a-memory.svg)
+
+## Native Track B (TypeDuck `jyut6ping3` product)
+
+Track B is the native TypeDuck/Jyutping product path. It has no librime peer
+lane, because TypeDuck is a fork rather than upstream librime, so the read is
+absolute memory cost and the M47 byte-backing trajectory, not a same-run ratio.
+These rows are carried from the 2026-06-29 evidence; M52 ran `-SkipTrackB`.
+
+| Dimension | 2026-06-28 | 2026-06-29 | Read |
+| --- | ---: | ---: | --- |
+| peak working set (process) | `504.4 MB` | `504.4 MB` | flat; in-process deploy/compile transient over both dictionaries |
+| median working set (key sequence) | `440.1 MB` | `255.0 MB` | resident fell with byte-backed records |
+| private bytes (key sequence) | `420.0 MB` | `183.9 MB` | owned heap collapsed by M47 lookup/comment byte-backing |
+| private bytes (session) | `405.8 MB` | `178.8 MB` | steady private dropped with byte-backed records |
+| key-sequence latency | `341.674 us` | `336.490 us` | product key latency essentially flat |
+| startup warm runtime-ready | `124,505.300 us` | `90,795.000 us` | faster with byte-backed records |
+| session create/select/destroy | `141,590.400 us` | `92,093.100 us` | faster with byte-backed records |
+
+![Native Track B memory, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-06-30/native-track-b-memory.svg)
+
+![Native Track B lifecycle latency, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-06-30/native-track-b-latency.svg)
+
+Source: [`current-native-track-b.csv`](./evidence/current-performance-dashboard-2026-06-29/current-native-track-b.csv).
+This is the M47/M46 native product lane and must not be conflated with the
+Track A `luna_pinyin` comparison lane above or with the iOS `phys_footprint`
+target.
+
 ## Browser Peer Dashboard
 
 Carried forward from the 2026-06-28 Playwright run.
@@ -107,6 +149,15 @@ Carried forward from the 2026-06-28 Playwright run.
 | Yune public demo | Jyutping | `1347 ms` | `103 ms` | `108 ms` | `160.0 MiB` | `72.2 MiB` | guard only |
 | My RIME live | Jyutping | `998 ms` | `99 ms` | `114 ms` | `68.0 MiB` | `24.9 MiB` | guard only |
 
+![Browser peer latency: Yune public demo vs My RIME](./evidence/current-performance-dashboard-2026-06-29/visuals/current-browser-peer-latency.svg)
+
+![Browser memory and payload by lane](./evidence/current-performance-dashboard-2026-06-29/visuals/current-browser-memory-payload.svg)
+
+![Yune browser input latency suite](./evidence/current-performance-dashboard-2026-06-29/visuals/current-yune-browser-input-latency.svg)
+
+Browser visuals are carried unchanged from the 2026-06-28 Playwright run under
+[`current-performance-dashboard-2026-06-29/visuals/`](./evidence/current-performance-dashboard-2026-06-29/visuals/).
+
 ## Remaining Current Gaps
 
 | Rank | Gap | Current value | Next diagnostic target |
@@ -116,6 +167,8 @@ Carried forward from the 2026-06-28 Playwright run.
 | 3 | Native Track A full-Luna memory watch | `188.4 MB` vs librime max peer peak `17.3 MB`; M52 ceiling `198.0 MB` | future owner work only if native Luna becomes a shipping product profile |
 | 4 | Native `ni` latency watch | `44.950 us` vs `14.300 us`; threshold ceiling `3.223x` | bounded exact-row scan under charset filtering, no retained heap prefix index |
 | 5 | Native 37-char latency watch | `895.178 us` vs `293.211 us`; threshold ceiling `3.267x` | preset-vocabulary sentence-model graph cost, no parity-risk shortcut |
+
+![Current performance gaps by lane](./evidence/dashboard-visuals-2026-06-30/root-cause-gaps.svg)
 
 ## History
 

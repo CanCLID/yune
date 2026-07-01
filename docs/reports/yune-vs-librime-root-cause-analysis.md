@@ -44,6 +44,8 @@ The native lane was refreshed by the M52 final same-run benchmark on
 | Browser `luna_pinyin` startup | Yune public-demo startup still slower | `1000 ms` vs My RIME `634 ms` (carried) | watch |
 | Browser Jyutping | Larger TypeDuck profile; not a peer-comparable lane | Yune `160.0 MiB`, My RIME Jyutping `68.0 MiB` on different dictionary (carried) | guard only |
 
+![Current performance gaps by lane](./evidence/dashboard-visuals-2026-06-30/root-cause-gaps.svg)
+
 ## Native Track A Cause
 
 M52 deliberately did not change the translator or poet hot path. The owner
@@ -60,6 +62,18 @@ Current native latency rows:
 | `hao` | `24.967 us` | `11.633 us` | `2.146x` | strict ratio pass |
 | 37-char pinyin | `895.178 us` | `293.211 us` | `3.053x` | preset-vocabulary sentence-model graph cost |
 | 59-char pinyin | `1,545.754 us` | `687.795 us` | `2.247x` | strict ratio pass |
+| `zhongguo` (common word) | `46.150 us` | `166.600 us` | `0.277x` | Yune faster (carried 2026-06-29) |
+| `cszysmsrsd` (10-char abbr) | `517.720 us` | `1,218.320 us` | `0.425x` | Yune faster (carried 2026-06-29) |
+| `zybfshmsru` (8-char abbr) | `547.580 us` | `859.790 us` | `0.637x` | Yune faster (carried 2026-06-29) |
+
+The slow rows are the short-key exact-row scan and the preset-vocabulary poet
+graph (the `37`/`59-character` pinyin sentences). They are real but bounded:
+Yune is actually faster than librime on `zhongguo` and the abbreviation rows,
+where the compiled index and Rust path win by `120-701 us`. The short-key losses
+are `13-39 us`, below any perceptible threshold; the `37`/`59-character` losses
+are larger (`602`/`858 us`) but are the poet-graph cost, not a short-key issue.
+
+![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-06-30/native-track-a-latency-ratios.svg)
 
 The final raw lookup diagnostics keep the cost shape stable:
 
@@ -84,6 +98,8 @@ Native Track A memory is now a guardrailed comparison-lane watch:
 | `poet.lookup_index` | `2.7 MB` | guarded M40 sentence lookup index |
 | Process unclassified lower bound | `105.6 MB` | carried process proxy after named owners |
 
+![Native Track A memory peak and named owners](./evidence/dashboard-visuals-2026-06-30/native-track-a-memory.svg)
+
 This does **not** invalidate M47. M47's comments-intact
 `jyut6ping3_mobile` keyboard profile remains the separate iOS-target lane and
 reports about `22 MB` private in the lean native probe. The `188.4 MB` value
@@ -96,6 +112,19 @@ translator/dictionary pair and installs the upstream sentence model with
 `essay` preset vocabulary. Byte-backing `poet.vocabulary` would be a real
 storage design change and could add per-lookup latency, so M52 leaves it as a
 future owner only if native Luna becomes a shipping product profile.
+
+## Native Track B Cause (product lane)
+
+Track B is the native TypeDuck `jyut6ping3` product path and is a separate lane
+from Track A: it has no librime peer, so the read is absolute cost plus the M47
+byte-backing trajectory. M47 lookup-record/comment byte-backing collapsed the
+owned heap, cutting key-sequence private bytes from `420.0 MB` to `183.9 MB`
+and median working set from `440.1 MB` to `255.0 MB`. The `504.4 MB` process
+peak is flat because it is dominated by the in-process deploy/compile transient
+that loads both dictionaries, not by steady residency. These rows are carried
+from the 2026-06-29 evidence; M52 ran `-SkipTrackB`.
+
+![Native Track B memory, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-06-30/native-track-b-memory.svg)
 
 ## Browser Root Cause
 
@@ -111,6 +140,8 @@ The fair browser target is `luna_pinyin`, not Jyutping:
 The fair gap remains `4.0x`; startup and WASM memory are the browser-side
 blockers. Jyutping remains a launch guard lane, not a peer lane, because the
 dictionary families differ.
+
+![Browser memory and payload by lane](./evidence/current-performance-dashboard-2026-06-29/visuals/current-browser-memory-payload.svg)
 
 ## Current Evidence
 

@@ -43,11 +43,22 @@ export const SCHEMA_OPTIONS: readonly SchemaOption[] = [
   },
   {
     id: "luna_pinyin_octagram",
-    label: "æœ™æœˆæ‹¼éŸ³ + Octagram",
-    schemaName: "æœ™æœˆæ‹¼éŸ³ + Octagram",
+    label: "\u6719\u6708\u62fc\u97f3 + Octagram",
+    schemaName: "\u6719\u6708\u62fc\u97f3 + Octagram",
     secondaryLabel: "Luna Pinyin + Octagram",
   },
 ];
+
+export const PUBLIC_SCHEMA_OPTIONS: readonly SchemaOption[] =
+  SCHEMA_OPTIONS.filter(schema => schema.id !== "luna_pinyin_octagram");
+
+export function isRimeSchemaId(value: string | null): value is RimeSchemaId {
+  return SCHEMA_OPTIONS.some(option => option.id === value);
+}
+
+export function isLunaOutputSchema(schemaId: RimeSchemaId): boolean {
+  return schemaId === "luna_pinyin" || schemaId === "luna_pinyin_octagram";
+}
 
 export type CandidateMenuLayout = "horizontal" | "vertical";
 
@@ -114,7 +125,7 @@ export function outputOptionForStandard(
   outputStandard: OutputStandard,
   schemaId: RimeSchemaId,
 ): (typeof OUTPUT_STANDARD_ENGINE_OPTIONS)[number] | undefined {
-  if (schemaId === "luna_pinyin" || schemaId === "luna_pinyin_octagram") {
+  if (isLunaOutputSchema(schemaId)) {
     switch (outputStandard) {
       case "opencc_traditional":
         return undefined;

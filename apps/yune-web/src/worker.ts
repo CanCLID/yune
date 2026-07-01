@@ -12,9 +12,9 @@ import {
   grammarDiagnosticForSchema,
   grammarMemoryDelta,
   grammarModelRequestForSchema,
-  isRimeSchemaId,
   type GrammarModelDiagnostic,
 } from "./octagram";
+import { isRimeSchemaId } from "./consts";
 
 // Yune integration imports
 import {
@@ -116,6 +116,7 @@ declare const globalThis: {
   onYunePersistenceDiagnostic?: (marker: YunePersistenceDiagnostic) => void;
   createYuneWebModule?: CreateYuneWebModule;
   createYuneTypeduckModule?: CreateYuneWebModule;
+  crypto?: Crypto;
 };
 
 declare function importScripts(...urls: string[]): void;
@@ -518,10 +519,10 @@ const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
 let yuneModule: YuneWebBrowserModule | null = null;
 let loadedExtraSharedAssets: { path: string; content: string | Uint8Array }[] = [];
 let activeSchemaId: RimeSchemaId = INITIAL_SCHEMA_ID;
-let activeGrammarDiagnostic: GrammarModelDiagnostic = grammarDiagnosticForSchema(INITIAL_SCHEMA_ID);
 let publicAssetManifest: PublicAssetManifest | null = null;
 let publicAssetCacheStats: PublicAssetCacheStats = { hits: 0, misses: 0, unavailable: false };
 let peakWasmHeapBytes = 0;
+const verifiedOctagramModelCache = new Map<string, Uint8Array>();
 
 function withMemorySnapshot(result: RimeResult): RimeResult {
   const memory = activeWasmMemorySnapshot();
@@ -887,10 +888,7 @@ function uniqueSharedAssetPaths(paths: readonly string[]): string[] {
   return [...new Set(paths)];
 }
 
-async function loadOctagramAssetForSchema(
-  schemaId: RimeSchemaId,
-  memoryBefore: YuneWebMemorySnapshot | undefined,
-): Promise<{
+async function loadOctagramAssetForSchema(schemaId: RimeSchemaId): Promise<{
   effectiveSchemaId: RimeSchemaId;
   asset: { path: string; content: Uint8Array } | null;
   diagnostic: GrammarModelDiagnostic;
@@ -901,13 +899,29 @@ async function loadOctagramAssetForSchema(
       effectiveSchemaId: schemaId,
       asset: null,
       diagnostic: grammarDiagnosticForSchema(schemaId, {
-        ...grammarMemoryDelta(memoryBefore, memoryBefore),
         reason: "schema has no grammar/language",
       }),
     };
   }
 
   try {
+    const cached = verifiedOctagramModelCache.get(request.expectedSha256);
+    if (cached !== undefined) {
+      return {
+        effectiveSchemaId: schemaId,
+        asset: { path: request.sharedDataPath, content: cached },
+        diagnostic: grammarDiagnosticForSchema(schemaId, {
+          delivered: true,
+          modelId: request.modelId,
+          expectedSha256: request.expectedSha256,
+          actualSha256: request.expectedSha256,
+          bytes: cached.byteLength,
+          sourcePath: request.assetPath,
+          fallback: false,
+          reason: "verified browser delivery cache hit; ranking rows prove engine grammar use",
+        }),
+      };
+    }
     const content = await loadAssetContent({
       type: "url",
       url: `schema/${request.assetPath}`,
@@ -915,18 +929,19 @@ async function loadOctagramAssetForSchema(
     if (!(content instanceof Uint8Array)) {
       throw new Error(`octagram model ${request.assetPath} did not load as bytes`);
     }
+    if (content.byteLength !== OCTAGRAM_MODEL_BYTES) {
+      throw new Error(`octagram model size mismatch: expected ${OCTAGRAM_MODEL_BYTES}, got ${content.byteLength}`);
+    }
     const actualSha256 = await sha256Hex(content);
     if (actualSha256 !== request.expectedSha256) {
       throw new Error(`octagram model checksum mismatch: expected ${request.expectedSha256}, got ${actualSha256}`);
     }
-    if (content.byteLength !== OCTAGRAM_MODEL_BYTES) {
-      throw new Error(`octagram model size mismatch: expected ${OCTAGRAM_MODEL_BYTES}, got ${content.byteLength}`);
-    }
+    verifiedOctagramModelCache.set(request.expectedSha256, content);
     return {
       effectiveSchemaId: schemaId,
       asset: { path: request.sharedDataPath, content },
       diagnostic: grammarDiagnosticForSchema(schemaId, {
-        loaded: true,
+        delivered: true,
         modelId: request.modelId,
         expectedSha256: request.expectedSha256,
         actualSha256,
@@ -941,7 +956,7 @@ async function loadOctagramAssetForSchema(
       asset: null,
       diagnostic: grammarDiagnosticForSchema(schemaId, {
         effectiveSchemaId: "luna_pinyin",
-        loaded: false,
+        delivered: false,
         modelId: request.modelId,
         expectedSha256: request.expectedSha256,
         sourcePath: request.assetPath,
@@ -953,7 +968,14 @@ async function loadOctagramAssetForSchema(
 }
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes.slice().buffer);
+  if (!globalThis.crypto?.subtle) {
+    throw new Error("octagram checksum verification requires a secure context (localhost or HTTPS)");
+  }
+  const source =
+    bytes.buffer instanceof ArrayBuffer
+      ? new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+      : Uint8Array.from(bytes);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", source);
   return [...new Uint8Array(digest)]
     .map(byte => byte.toString(16).padStart(2, "0"))
     .join("");
@@ -967,9 +989,11 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
   if (PLAYGROUND_SCHEMAS[schemaId] === undefined) {
     throw new Error(`Unknown Yune schema: ${schemaId}`);
   }
-  await ensureSharedAssetsForSchema(schemaId);
   const memoryBefore = activeWasmMemorySnapshot();
-  const octagram = await loadOctagramAssetForSchema(schemaId, memoryBefore);
+  const [octagram] = await Promise.all([
+    loadOctagramAssetForSchema(schemaId),
+    ensureSharedAssetsForSchema(schemaId),
+  ]);
   const effectiveSchemaId = octagram.effectiveSchemaId;
   const schema = PLAYGROUND_SCHEMAS[effectiveSchemaId];
   const perSchemaExtraSharedAssets = octagram.asset === null
@@ -1003,17 +1027,12 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
     YUNE_WEB_ASSET_VERSION,
   );
   activeSchemaId = schemaId;
-  activeGrammarDiagnostic = {
+  const activeGrammarDiagnostic = {
     ...octagram.diagnostic,
     ...grammarMemoryDelta(memoryBefore, activeWasmMemorySnapshot()),
   };
-  dispatch("schemaChanged", schemaId, schema.name);
+  dispatch("schemaChanged", effectiveSchemaId, schema.name);
   dispatch("grammarDiagnosticChanged", activeGrammarDiagnostic);
-  postMessage({
-    type: "diagnostic",
-    source: "yune-octagram",
-    marker: activeGrammarDiagnostic,
-  });
 }
 
 async function schemaAssetSource(path: string): Promise<AssetSource> {

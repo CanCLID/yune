@@ -140,19 +140,19 @@ function YuneInspectorMetrics({
 		<div
 			className="yd-metric"
 			data-yune-grammar-diagnostic
-			data-loaded={grammarDiagnostic?.loaded ?? false}
+			data-delivered={grammarDiagnostic?.delivered ?? false}
 			data-model-id={grammarDiagnostic?.modelId ?? ""}
 			data-checksum={grammarDiagnostic?.actualSha256 ?? ""}
 			data-expected-checksum={grammarDiagnostic?.expectedSha256 ?? ""}
 			data-memory-delta-bytes={grammarDiagnostic?.memoryDeltaBytes ?? ""}>
-			<div className="yd-metric-label">Octagram</div>
+			<div className="yd-metric-label">{text.octagram}</div>
 			<div className="yd-metric-value" data-yune-metric-grammar title={grammarDiagnostic?.actualSha256 ?? grammarDiagnostic?.reason ?? ""}>
-				{grammarDiagnostic?.loaded
+				{grammarDiagnostic?.delivered
 					? <>
 						{grammarDiagnostic.modelId}
 						<span> {grammarDiagnostic.actualSha256?.slice(0, 8)}</span>
 					</>
-					: <span className="yd-metric-empty">{grammarDiagnostic?.fallback ? "fallback" : "off"}</span>}
+					: <span className="yd-metric-empty">{grammarDiagnostic?.fallback ? text.fallback : text.off}</span>}
 			</div>
 		</div>
 	</div>;

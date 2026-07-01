@@ -1,20 +1,16 @@
 {
   "date": "2026-07-01",
   "verdict": "complete",
+  "review_followup": {
+    "reason": "Claude review found WEB-04 evidence semantics, default-off, fetch atomicity, and browser-gate hardening issues after the first closeout.",
+    "result": "fixed and reverified"
+  },
   "tasks": {
     "task_1_dev_model_fetch_ignore": "implemented",
     "task_2_dedicated_octagram_schema": "implemented",
     "task_3_adapter_toggle_diagnostics": "implemented",
-    "task_4_browser_evidence": "green",
+    "task_4_browser_evidence": "green after follow-up",
     "task_5_closeout": "complete"
-  },
-  "toolchain_unblock": {
-    "initial_blocker": "scripts/yune-web-wasm-build.sh could not find nm or llvm-nm on PATH",
-    "resolution_command": "& 'C:\\Program Files\\Git\\bin\\bash.exe' -lc 'cd /c/Users/laubonghaudoi/Documents/GitHub/yune && source /c/Users/laubonghaudoi/tools/emsdk/emsdk_env.sh >/dev/null && ./scripts/yune-web-wasm-build.sh'",
-    "verified_artifacts": [
-      "target/wasm32-unknown-emscripten/release/yune-web.wasm",
-      "target/wasm32-unknown-emscripten/release/yune-web.js"
-    ]
   },
   "model": {
     "source": "https://github.com/lotem/rime-octagram-data",
@@ -31,27 +27,35 @@
     "schema": "apps/yune-web/public/schema/luna_pinyin_octagram.schema.yaml",
     "plain_luna_schema_diff": "none",
     "shared_grammar_yaml_added": false,
+    "shared_grammar_hant_patch_in_octagram_schema": false,
     "uses_extra_shared_assets": true,
+    "public_demo_exposes_octagram_profile": false,
     "fallback": "missing or checksum-bad model falls back to plain luna_pinyin with visible diagnostics",
     "diagnostics": [
-      "loaded",
+      "delivered",
       "modelId",
       "expectedSha256",
       "actualSha256",
       "bytes",
       "fallback",
+      "memoryBeforeBytes",
+      "memoryAfterBytes",
       "memoryDeltaBytes"
-    ]
+    ],
+    "memory_note": "memoryDeltaBytes is schema-select/redeploy high-water context, not model-only attribution; JS fetch/cache, MEMFS delivery, and engine state are included."
   },
   "verification": {
     "passed": [
-      "..\\\\..\\\\packages\\\\yune-web-runtime\\\\node_modules\\\\.bin\\\\vitest.cmd run yune-integration/octagram.test.ts yune-integration/assets.test.ts",
+      "..\\..\\packages\\yune-web-runtime\\node_modules\\.bin\\vitest.cmd run yune-integration/octagram.test.ts yune-integration/assets.test.ts",
       "npm.cmd --prefix apps/yune-web run typecheck",
       "npm.cmd --prefix apps/yune-web run worker -- --minify",
-      "& 'C:\\\\Program Files\\\\Git\\\\bin\\\\bash.exe' -lc 'cd /c/Users/laubonghaudoi/Documents/GitHub/yune && source /c/Users/laubonghaudoi/tools/emsdk/emsdk_env.sh >/dev/null && ./scripts/yune-web-wasm-build.sh'",
+      "& 'C:\\Program Files\\Git\\bin\\bash.exe' -lc 'cd /c/Users/laubonghaudoi/Documents/GitHub/yune && source /c/Users/laubonghaudoi/tools/emsdk/emsdk_env.sh >/dev/null && export PATH=\"$PATH:$HOME/tools/emsdk/upstream/bin\" && ./scripts/yune-web-wasm-build.sh'",
+      "npm.cmd --prefix apps/yune-web run fetch:octagram-dev-model",
       "npm.cmd --prefix apps/yune-web run build",
-      "npx.cmd vite build",
       "npx.cmd playwright test --config playwright.config.ts --grep WEB-04"
+    ],
+    "notes": [
+      "WASM build still emits an existing wasm-target warning for crates/yune-rime-api/src/schema_install.rs unused fmt import; WEB-04 follow-up did not touch crates/."
     ],
     "blocked": []
   },
@@ -63,39 +67,91 @@
       "apps/yune-web/e2e/results/worker-1-WEB-04-plain-Luna-remains-default-off-without-grammar-model/web04-plain-luna-negative-control.json",
       "apps/yune-web/e2e/results/worker-2-WEB-04-missing-octagram-model-fails-the-octagram-evidence-gate/web04-missing-model-fail-closed.json"
     ],
-    "octagram_loaded": {
+    "octagram_delivery": {
       "requestedSchemaId": "luna_pinyin_octagram",
       "effectiveSchemaId": "luna_pinyin_octagram",
-      "loaded": true,
+      "delivered": true,
       "modelId": "zh-hant-t-essay-bgw",
+      "expectedSha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
       "actualSha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
       "bytes": 10513408,
+      "sourcePath": "dev/octagram/zh-hant-t-essay-bgw.gram",
       "fallback": false,
-      "memoryDeltaBytes": 134217728
+      "reason": "verified browser delivery cache hit; ranking rows prove engine grammar use",
+      "memoryBeforeBytes": 738197504,
+      "memoryAfterBytes": 838860800,
+      "memoryDeltaBytes": 100663296
     },
     "plain_luna_negative_control": {
-      "requestedSchemaId": "luna_pinyin",
-      "effectiveSchemaId": "luna_pinyin",
-      "loaded": false,
-      "modelId": null,
-      "fallback": false,
+      "diagnostic": {
+        "requestedSchemaId": "luna_pinyin",
+        "effectiveSchemaId": "luna_pinyin",
+        "delivered": false,
+        "modelId": null,
+        "expectedSha256": null,
+        "fallback": false,
+        "reason": "schema has no grammar/language",
+        "memoryBeforeBytes": 335544320,
+        "memoryAfterBytes": 436207616,
+        "memoryDeltaBytes": 100663296
+      },
       "input": "youhuiyong",
-      "top": "\u904a\u6232\u7528",
-      "memoryDeltaBytes": 100663296
+      "top": "\u904a\u6232\u7528"
     },
     "missing_model_fail_closed": {
       "requestedSchemaId": "luna_pinyin_octagram",
       "effectiveSchemaId": "luna_pinyin",
-      "loaded": false,
+      "delivered": false,
       "modelId": "zh-hant-t-essay-bgw",
+      "expectedSha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+      "sourcePath": "dev/octagram/zh-hant-t-essay-bgw.gram",
       "fallback": true,
-      "actualSha256": null
+      "reason": "TypeError: Failed to fetch",
+      "memoryBeforeBytes": 335544320,
+      "memoryAfterBytes": 436207616,
+      "memoryDeltaBytes": 100663296
     },
-    "octagram_top_candidates": {
-      "youhuiyong": "\u512a\u60e0\u7528",
-      "jintianhuiyi": "\u4eca\u5929\u6703\u8b70",
-      "jintianwanshangyouhui": "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
-      "gegeguojiayougegeguojiadeguoge": "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c"
+    "ranking_rows": [
+      {
+        "input": "youhuiyong",
+        "plainTop": "\u904a\u6232\u7528",
+        "octagramTop": "\u512a\u60e0\u7528",
+        "changed": true
+      },
+      {
+        "input": "jintianhuiyi",
+        "plainTop": "\u4eca\u5929\u56de\u61b6",
+        "octagramTop": "\u4eca\u5929\u6703\u8b70",
+        "changed": true
+      },
+      {
+        "input": "jintianwanshangyouhui",
+        "plainTop": "\u4eca\u5929\u665a\u4e0a\u904a\u6232",
+        "octagramTop": "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+        "changed": true
+      },
+      {
+        "input": "gegeguojiayougegeguojiadeguoge",
+        "plainTop": "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u5fb7\u570b\u500b",
+        "octagramTop": "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+        "changed": true
+      }
+    ],
+    "all_ranking_rows_changed": true,
+    "proof_note": "All four rows first matched plain Luna tops, then changed to the octagram oracle tops after the dedicated profile delivered the pinned model.",
+    "memory_high_water": {
+      "note": "Memory numbers are schema-select/redeploy WASM heap high-water deltas. They include JS fetch/cache, MEMFS delivery, and engine state; they are not model-only attribution.",
+      "plain": {
+        "beforeBytes": 335544320,
+        "afterBytes": 436207616,
+        "deltaBytes": 100663296
+      },
+      "octagram": {
+        "beforeBytes": 738197504,
+        "afterBytes": 838860800,
+        "deltaBytes": 100663296
+      },
+      "web03FairLaneBaselineMiB": 64
     }
   },
   "closeout": {

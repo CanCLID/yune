@@ -110,8 +110,8 @@ In scope:
   fetched by URL + checksum into a gitignored local asset, only when the octagram
   profile is selected.
 - A **UI toggle or schema-selector entry** ("Luna Pinyin" vs "Luna Pinyin +
-  Octagram") and **diagnostics** (grammar model loaded yes/no, id + checksum,
-  measured memory delta).
+  Octagram") and **diagnostics** (grammar model delivered yes/no, id + checksum,
+  measured schema-select high-water memory delta).
 - **Playwright evidence**: inputs where octagram changes ranking, a negative
   control proving toggle-off preserves current Luna behavior, and the browser
   memory delta.
@@ -144,7 +144,7 @@ Out of scope:
   - Register the octagram profile and its conditional/lazy `.gram` asset.
 - Modify: `apps/yune-web/src/yune-integration/adapter.ts` (and integration UI)
   - Pass the `.gram` via `extraSharedAssets` for the octagram profile; add the
-    profile switch and the loaded/missing-grammar diagnostic surface.
+    profile switch and the delivered/missing-grammar diagnostic surface.
 - Do **not** modify `packages/yune-web-runtime/` or any `crates/` engine file
   (unless review later adopts the deferred runtime gate).
 - Modify on closeout only: `docs/roadmap.md`, `docs/requirements.md`,
@@ -195,7 +195,7 @@ a harness slice.
 - [x] Create `luna_pinyin_octagram.schema.yaml` setting `grammar/language`
   **inline** for the pinned model. Do **not** add a shared `grammar.yaml`/`hant`
   node (plain `luna_pinyin` imports `grammar:/hant?` and would consume it).
-- [x] Confirm plain `luna_pinyin` still deploys with **no grammar model loaded**,
+- [x] Confirm plain `luna_pinyin` still deploys with **no grammar model delivered**,
   and the octagram profile deploys **with** it, through the existing schema-switch
   path. *(Completed by the 2026-07-01 browser follow-up evidence.)*
 
@@ -207,14 +207,15 @@ passed.
 - [x] Deliver the dev `.gram` for the octagram profile through the existing
   adapter `extraSharedAssets` seam, lazily (only when the profile is selected).
   If the model is missing or the checksum mismatches, fall back to plain Luna and
-  surface a "grammar model not loaded" diagnostic - never error. **This graceful
+  surface a "grammar model not delivered" diagnostic - never error. **This graceful
   fallback is dev-UX only**; the verification gate and Playwright evidence for the
   octagram profile must fail-closed on a missing/bad model (Task 4), not pass on
   the fallback.
 - [x] Expose the profile switch as a **default-off** UI toggle or schema-selector
   entry in `yune-integration`.
-- [x] Add diagnostics: grammar model loaded yes/no, model id + checksum, and the
-  measured browser-memory delta with vs without the model.
+- [x] Add diagnostics: grammar model delivered yes/no, model id + checksum, and
+  the measured schema-select high-water browser-memory delta with vs without the
+  model.
 
 ## Task 4: Browser Evidence
 
@@ -224,17 +225,18 @@ the WEB-04 Playwright gate now passes. See
 `browser-harness-followup-2026-07-01.md`.
 
 - [x] **Fail-closed gate:** the octagram evidence must first assert the
-  diagnostic shows the grammar model actually loaded (id + checksum match). A
-  missing or checksum-bad model **fails** the octagram gate; it must not silently
-  serve plain Luna and pass. Only the negative control below expects plain-Luna
-  output.
+  diagnostic shows the grammar model was delivered (id + checksum match), then
+  prove all named rows changed versus plain Luna. A missing or checksum-bad
+  model **fails** the octagram gate; it must not silently serve plain Luna and
+  pass. Only the negative control below expects plain-Luna output.
 - [x] Capture Playwright evidence for the octagram profile: inputs where the top
   candidates/ordering differ from plain Luna (the observable win), with
   before/after candidate lists recorded.
 - [x] Capture a negative control: with the plain profile selected, Luna candidate
   behavior is unchanged from the current harness.
-- [x] Record the browser memory high-water with the model loaded vs not, framed
-  against the WEB-03 `64.0 MiB` Luna fair-lane number - measured evidence, not a
+- [x] Record the browser memory high-water with the model delivered vs not,
+  framed against the WEB-03 `64.0 MiB` Luna fair-lane number as
+  schema-select/redeploy context - measured evidence, not a model-only
   performance claim.
 - [x] Keep all evidence under
   `docs/reports/evidence/web04-octagram-debug-harness/`, browser lane separated
@@ -255,13 +257,14 @@ the WEB-04 Playwright gate now passes. See
 WEB-04 closes as complete when:
 
 - The deployed native path is proven to match librime octagram ranking (Task 0).
-- The harness offers a default-off `luna_pinyin_octagram` profile that loads a
+- The harness offers a default-off `luna_pinyin_octagram` profile that delivers a
   pinned, non-vendored `.gram`; **plain `luna_pinyin` loads no grammar model and
   is byte-for-byte unchanged**.
-- Diagnostics show grammar-loaded state, model id/checksum, and memory delta.
+- Diagnostics show grammar-delivery state, model id/checksum, and
+  schema-select high-water memory delta.
 - Playwright evidence shows octagram changing ranking on named inputs plus the
   plain-profile negative control, and **fails closed** if the grammar model did
-  not load (a fallback-to-plain-Luna cannot produce green octagram evidence).
+  not deliver (a fallback-to-plain-Luna cannot produce green octagram evidence).
 - **No engine contract change, no `packages/yune-web-runtime` change, and no
   `.gram` bytes committed.**
 
@@ -285,8 +288,8 @@ Add to `docs/requirements.md` only on closeout:
 - **WEB-04-03**: The dev `.gram` is delivered via the app adapter
   `extraSharedAssets` seam, fetched by URL/checksum into a gitignored asset; no
   model bytes are committed and `packages/yune-web-runtime` is unchanged.
-- **WEB-04-04**: Diagnostics report grammar-model loaded state, id/checksum, and
-  the browser memory delta.
+- **WEB-04-04**: Diagnostics report grammar-model delivery state, id/checksum,
+  and the browser schema-select high-water memory delta.
 - **WEB-04-05**: Playwright evidence shows octagram changing ranking plus a
   plain-profile negative control; browser claims stay in the browser lane and no
   engine support boundary is widened.

@@ -1,5 +1,5 @@
 import type { Actions, ListenerArgsMap, Message, RimeSchemaId } from "./types";
-import { isRimeSchemaId } from "./octagram";
+import { isRimeSchemaId } from "./consts";
 
 type ListenerPayload = {
 	[K in keyof ListenerArgsMap]: {

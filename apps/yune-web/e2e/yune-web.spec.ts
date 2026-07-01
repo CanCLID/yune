@@ -633,12 +633,16 @@ async function waitForAppReady(page: Page): Promise<void> {
 async function readGrammarDiagnostic(page: Page): Promise<{
   requestedSchemaId?: string;
   effectiveSchemaId?: string;
-  loaded?: boolean;
+  delivered?: boolean;
   modelId?: string | null;
   expectedSha256?: string | null;
   actualSha256?: string;
   bytes?: number;
+  sourcePath?: string;
   fallback?: boolean;
+  reason?: string;
+  memoryBeforeBytes?: number;
+  memoryAfterBytes?: number;
   memoryDeltaBytes?: number;
 }> {
   return page.evaluate(() => {
@@ -1134,7 +1138,11 @@ async function waitForPersistedSettings(
   return latestPersistedSettings(page);
 }
 
-async function selectSchema(page: Page, label: string | RegExp): Promise<void> {
+async function selectSchema(
+  page: Page,
+  label: string | RegExp,
+  expectedActiveSchemaId?: string,
+): Promise<void> {
   await clearComposition(page);
   const switcher = page.locator("[data-yune-schema-switcher]");
   await expect(switcher).toBeVisible({ timeout: 5000 });
@@ -1145,7 +1153,8 @@ async function selectSchema(page: Page, label: string | RegExp): Promise<void> {
   } else {
     await switcher.getByLabel(label).click({ force: true });
   }
-  if (expectedSchema !== null) {
+  const expectedActiveSchema = expectedActiveSchemaId ?? expectedSchema;
+  if (expectedActiveSchema !== null) {
     await expect
       .poll(
         async () =>
@@ -1154,7 +1163,7 @@ async function selectSchema(page: Page, label: string | RegExp): Promise<void> {
           ),
         { timeout: TIMEOUT_MS },
       )
-      .toBe(expectedSchema);
+      .toBe(expectedActiveSchema);
   }
   await waitForAppReady(page);
   await expect(page.locator(".candidate-panel")).toHaveCount(0, {
@@ -1370,12 +1379,56 @@ test.describe("yune-web Browser E2E", () => {
   test("WEB-04 octagram profile loads pinned model and changes Luna ranking", async ({
     page,
   }) => {
+    const rows = [
+      {
+        input: "youhuiyong",
+        plainTop: "\u904a\u6232\u7528",
+        octagramTop: "\u512a\u60e0\u7528",
+      },
+      {
+        input: "jintianhuiyi",
+        plainTop: "\u4eca\u5929\u56de\u61b6",
+        octagramTop: "\u4eca\u5929\u6703\u8b70",
+      },
+      {
+        input: "jintianwanshangyouhui",
+        plainTop: "\u4eca\u5929\u665a\u4e0a\u904a\u6232",
+        octagramTop: "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+      },
+      {
+        input: "gegeguojiayougegeguojiadeguoge",
+        plainTop:
+          "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u5fb7\u570b\u500b",
+        octagramTop:
+          "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+      },
+    ] as const;
+
+    await selectSchema(page, /Luna Pinyin$/);
+    const plainDiagnostic = await readGrammarDiagnostic(page);
+    expect(plainDiagnostic).toMatchObject({
+      requestedSchemaId: "luna_pinyin",
+      effectiveSchemaId: "luna_pinyin",
+      delivered: false,
+      modelId: null,
+      fallback: false,
+    });
+    const plainEvidence: Record<string, CandidatePanelSnapshot> = {};
+    for (const row of rows) {
+      await clearComposition(page);
+      plainEvidence[row.input] = await typeCompositionAndWaitForTopCandidate(
+        page,
+        row.input,
+        row.plainTop,
+      );
+    }
+
     await selectSchema(page, /Luna Pinyin \+ Octagram/);
-    const diagnostic = await readGrammarDiagnostic(page);
-    expect(diagnostic).toMatchObject({
+    const octagramDiagnostic = await readGrammarDiagnostic(page);
+    expect(octagramDiagnostic).toMatchObject({
       requestedSchemaId: "luna_pinyin_octagram",
       effectiveSchemaId: "luna_pinyin_octagram",
-      loaded: true,
+      delivered: true,
       modelId: "zh-hant-t-essay-bgw",
       expectedSha256: "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
       actualSha256: "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
@@ -1383,7 +1436,7 @@ test.describe("yune-web Browser E2E", () => {
       fallback: false,
     });
     await expect(grammarDiagnosticMetric(page)).toHaveAttribute(
-      "data-loaded",
+      "data-delivered",
       "true",
     );
     await expect(grammarDiagnosticMetric(page)).toHaveAttribute(
@@ -1391,20 +1444,45 @@ test.describe("yune-web Browser E2E", () => {
       "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
     );
 
-    const rows = [
-      ["youhuiyong", "\u512a\u60e0\u7528"],
-      ["jintianhuiyi", "\u4eca\u5929\u6703\u8b70"],
-      ["jintianwanshangyouhui", "\u4eca\u5929\u665a\u4e0a\u53c8\u6703"],
-      ["gegeguojiayougegeguojiadeguoge", "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c"],
-    ] as const;
-    const evidence: Record<string, CandidatePanelSnapshot> = {};
-    for (const [input, expectedTop] of rows) {
+    const octagramEvidence: Record<string, CandidatePanelSnapshot> = {};
+    for (const row of rows) {
       await clearComposition(page);
-      evidence[input] = await typeCompositionAndWaitForTopCandidate(page, input, expectedTop);
+      octagramEvidence[row.input] = await typeCompositionAndWaitForTopCandidate(
+        page,
+        row.input,
+        row.octagramTop,
+      );
+      expect(plainEvidence[row.input].candidates[0]?.text).toBe(row.plainTop);
+      expect(octagramEvidence[row.input].candidates[0]?.text).toBe(
+        row.octagramTop,
+      );
+      expect(octagramEvidence[row.input].candidates[0]?.text).not.toBe(
+        plainEvidence[row.input].candidates[0]?.text,
+      );
     }
     await saveJsonEvidence("web04-octagram-browser-ranking.json", {
-      diagnostic,
-      evidence,
+      plainDiagnostic,
+      octagramDiagnostic,
+      rows,
+      plainEvidence,
+      octagramEvidence,
+      engineProof:
+        "All four rows first matched plain Luna tops, then changed to the octagram oracle tops after the dedicated profile delivered the pinned model.",
+      memoryHighWater: {
+        note:
+          "Memory numbers are schema-select/redeploy WASM heap high-water deltas. They include JS fetch/cache, MEMFS delivery, and engine state; they are not model-only attribution.",
+        plain: {
+          beforeBytes: plainDiagnostic.memoryBeforeBytes,
+          afterBytes: plainDiagnostic.memoryAfterBytes,
+          deltaBytes: plainDiagnostic.memoryDeltaBytes,
+        },
+        octagram: {
+          beforeBytes: octagramDiagnostic.memoryBeforeBytes,
+          afterBytes: octagramDiagnostic.memoryAfterBytes,
+          deltaBytes: octagramDiagnostic.memoryDeltaBytes,
+        },
+        web03FairLaneBaselineMiB: 64,
+      },
     });
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
@@ -1417,7 +1495,7 @@ test.describe("yune-web Browser E2E", () => {
     expect(diagnostic).toMatchObject({
       requestedSchemaId: "luna_pinyin",
       effectiveSchemaId: "luna_pinyin",
-      loaded: false,
+      delivered: false,
       modelId: null,
       fallback: false,
     });
@@ -1439,18 +1517,18 @@ test.describe("yune-web Browser E2E", () => {
     await page.route("**/schema/dev/octagram/*.gram", route => route.abort());
     await page.reload({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
     await waitForAppReady(page);
-    await selectSchema(page, /Luna Pinyin \+ Octagram/);
+    await selectSchema(page, /Luna Pinyin \+ Octagram/, "luna_pinyin");
     const diagnostic = await readGrammarDiagnostic(page);
     expect(diagnostic).toMatchObject({
       requestedSchemaId: "luna_pinyin_octagram",
       effectiveSchemaId: "luna_pinyin",
-      loaded: false,
+      delivered: false,
       modelId: "zh-hant-t-essay-bgw",
       fallback: true,
     });
     expect(diagnostic.actualSha256).toBeUndefined();
     await expect(grammarDiagnosticMetric(page)).toHaveAttribute(
-      "data-loaded",
+      "data-delivered",
       "false",
     );
     await saveJsonEvidence("web04-missing-model-fail-closed.json", {

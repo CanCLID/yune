@@ -5,10 +5,7 @@ export const OCTAGRAM_MODEL_FILENAME = `${OCTAGRAM_MODEL_ID}.gram`;
 export const OCTAGRAM_DEV_MODEL_ASSET_PATH = `dev/octagram/${OCTAGRAM_MODEL_FILENAME}`;
 export const OCTAGRAM_MODEL_SHA256 = "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3";
 export const OCTAGRAM_MODEL_BYTES = 10513408;
-export const OCTAGRAM_MODEL_URL =
-  "https://raw.githubusercontent.com/lotem/rime-octagram-data/bb8e1313552f0f27f2f968031dfaf4563e55d982/zh-hant-t-essay-bgw.gram";
-export const OCTAGRAM_MODEL_SOURCE_COMMIT = "bb8e1313552f0f27f2f968031dfaf4563e55d982";
-export const OCTAGRAM_MODEL_SOURCE_BRANCH = "hant";
+// Source pin lives in docs/reports/evidence/m54-native-octagram-grammar-support/external-pins.json.
 
 export interface GrammarModelRequest {
   modelId: string;
@@ -20,7 +17,7 @@ export interface GrammarModelRequest {
 export interface GrammarModelDiagnostic {
   requestedSchemaId: RimeSchemaId;
   effectiveSchemaId: RimeSchemaId;
-  loaded: boolean;
+  delivered: boolean;
   modelId: string | null;
   expectedSha256: string | null;
   actualSha256?: string;
@@ -31,17 +28,6 @@ export interface GrammarModelDiagnostic {
   memoryBeforeBytes?: number;
   memoryAfterBytes?: number;
   memoryDeltaBytes?: number;
-}
-
-export function isRimeSchemaId(value: string | null): value is RimeSchemaId {
-  return value === "jyut6ping3"
-    || value === "cangjie5"
-    || value === "luna_pinyin"
-    || value === "luna_pinyin_octagram";
-}
-
-export function isLunaOutputSchema(schemaId: RimeSchemaId): boolean {
-  return schemaId === "luna_pinyin" || schemaId === "luna_pinyin_octagram";
 }
 
 export function grammarModelRequestForSchema(schemaId: RimeSchemaId): GrammarModelRequest | null {
@@ -67,7 +53,7 @@ export function grammarDiagnosticForSchema(
   return {
     requestedSchemaId: schemaId,
     effectiveSchemaId,
-    loaded: fields.loaded ?? false,
+    delivered: fields.delivered ?? false,
     modelId: fields.modelId ?? request?.modelId ?? null,
     expectedSha256: fields.expectedSha256 ?? request?.expectedSha256 ?? null,
     actualSha256: fields.actualSha256,

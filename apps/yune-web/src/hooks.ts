@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language, normalizeOutputStandard, SCHEMA_OPTIONS } from "./consts";
+import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language, PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS, normalizeOutputStandard } from "./consts";
 import Rime, { subscribe } from "./rime";
 import { notify } from "./toast";
 import { isUiLanguage } from "./uiText";
@@ -243,7 +243,11 @@ function parseActiveSchema(value: string, defaultValue: RimeSchemaId): RimeSchem
 	if (value === "jyut6ping3_mobile") {
 		return "jyut6ping3";
 	}
-	return SCHEMA_OPTIONS.some(option => option.id === value) ? value as RimeSchemaId : defaultValue;
+	const schemaOptions =
+		import.meta.env.VITE_YUNE_PUBLIC_DEMO === "1"
+			? PUBLIC_SCHEMA_OPTIONS
+			: SCHEMA_OPTIONS;
+	return schemaOptions.some(option => option.id === value) ? value as RimeSchemaId : defaultValue;
 }
 
 function parseOutputStandard(value: string, defaultValue: OutputStandard): OutputStandard {

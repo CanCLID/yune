@@ -979,11 +979,12 @@ performance improvement. Evidence:
   `grammar.yaml`/`hant` node is added.
 - [x] **WEB04-OCTAGRAM-03**: The browser worker delivers the model only for the
   octagram profile through the existing `extraSharedAssets` seam, validates byte
-  size and SHA256, and reports loaded/fallback/checksum/memory diagnostics.
+  size and SHA256, and reports delivered/fallback/checksum/schema-select
+  high-water memory diagnostics.
 - [x] **WEB04-OCTAGRAM-04**: Playwright evidence proves the octagram profile
-  loads the pinned model and changes ranking on named rows, proves plain Luna
-  remains unchanged as the negative control, and fails closed when the model is
-  missing instead of passing on fallback output.
+  delivers the pinned model and changes all four named rows versus plain Luna,
+  proves plain Luna remains unchanged as the negative control, and fails closed
+  when the model is missing instead of passing on fallback output.
 - [x] **WEB04-OCTAGRAM-05**: WEB-04 leaves `crates/`,
   `packages/yune-web-runtime`, default `rime_get_api()`, and the support
   contract unchanged; it is browser harness dogfooding/observability only.
@@ -1402,8 +1403,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M54-OCTAGRAM-07 | M54 | Complete - full third-party `.gram` models stay external; checked-in data is oracle output/provenance plus Yune-owned synthetic tests |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
-| WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes loaded/fallback/checksum/memory diagnostics |
-| WEB04-OCTAGRAM-04 | WEB-04 | Complete - WEB-04 Playwright evidence proves loaded octagram ranking, plain Luna negative control, and missing-model fail-closed behavior |
+| WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
+| WEB04-OCTAGRAM-04 | WEB-04 | Complete - WEB-04 Playwright evidence proves delivered octagram profile plus all-row ranking changes versus plain Luna, plain Luna negative control, and missing-model fail-closed behavior |
 | WEB04-OCTAGRAM-05 | WEB-04 | Complete - no `crates/`, `packages/yune-web-runtime`, default ABI, or support-contract widening is part of the browser harness slice |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |

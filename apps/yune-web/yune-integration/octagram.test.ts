@@ -6,9 +6,11 @@ import {
   OCTAGRAM_MODEL_SHA256,
   grammarDiagnosticForSchema,
   grammarModelRequestForSchema,
+} from "../src/octagram.js";
+import {
   isLunaOutputSchema,
   isRimeSchemaId,
-} from "../src/octagram.js";
+} from "../src/consts.js";
 
 describe("WEB-04 octagram browser profile policy", () => {
   it("keeps the plain Luna profile default-off", () => {
@@ -35,7 +37,7 @@ describe("WEB-04 octagram browser profile policy", () => {
     expect(grammarDiagnosticForSchema("luna_pinyin_octagram")).toMatchObject({
       requestedSchemaId: "luna_pinyin_octagram",
       effectiveSchemaId: "luna_pinyin_octagram",
-      loaded: false,
+      delivered: false,
       modelId: OCTAGRAM_MODEL_ID,
       expectedSha256: OCTAGRAM_MODEL_SHA256,
       fallback: false,

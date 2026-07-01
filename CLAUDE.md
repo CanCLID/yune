@@ -15,10 +15,15 @@ source of truth and read them before non-trivial work:
 ## What This Is
 
 Yune is a Rust input-method engine (Pinyin/Jyutping → Chinese characters) that
-is a **drop-in, behavior-compatible replacement for librime/RIME**. It reads the
-same schema/dictionary YAML and exposes the same C ABI, but is idiomatic safe
-Rust internally. Correctness is defined by an **external oracle** (real librime),
-never by Yune itself.
+reads RIME-format schema/dictionary YAML and exposes the same librime-shaped C
+ABI, but is idiomatic safe Rust internally. Correctness is defined by an
+**external oracle** (real librime), never by Yune itself. It is a drop-in
+replacement **for named targets** — upstream `luna_pinyin`/common schemas
+against `rime/librime 1.17.0`, and the TypeDuck `jyut6ping3` profile against
+TypeDuck-HK/librime `v1.1.2` — **not** a bit-for-bit or every-schema librime
+clone. Scope is target-driven: a librime feature is implemented only when a
+named target needs it (see [AGENTS.md](AGENTS.md) and
+[docs/contracts/engine-support-contract.md](docs/contracts/engine-support-contract.md)).
 
 ## Commands
 

@@ -49,7 +49,7 @@ In scope:
 Out of scope:
 
 - Any implementation or optimization; the 188 MB memory work stays the deferred
-  M54 candidate.
+  M55 candidate.
 - Frontend, browser, yune-web, platform, product, package, deployment, or
   iOS-device proof.
 - ABI changes and any new performance success bar. M52 ceilings remain

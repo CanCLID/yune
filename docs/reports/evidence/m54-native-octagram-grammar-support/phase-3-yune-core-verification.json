@@ -1,0 +1,141 @@
+{
+  "created": "2026-07-01",
+  "milestone": "M54",
+  "purpose": "durable summary of Yune native OctagramGrammar verification against committed octagram oracle fixtures",
+  "scope": [
+    "canonical lotem oracle lane",
+    "RIME-LMDG real-world validation lane"
+  ],
+  "acceptance": "accepted top candidate matches committed oracle fixture for each listed input; full first-page ordering remains outside this gate because known non-M54 table/menu ordering differences remain separately scoped",
+  "models_vendored": false,
+  "full_reports_ignored": true,
+  "lanes": [
+    {
+      "lane": "canonical lotem oracle",
+      "fixture": "crates/yune-core/tests/fixtures/upstream-octagram/lotem-luna-pinyin-octagram.json",
+      "external_model": {
+        "source": "lotem/rime-octagram-data",
+        "model_file": "zh-hant-t-essay-bgw.gram",
+        "commit": "bb8e1313552f0f27f2f968031dfaf4563e55d982",
+        "sha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+        "license": "LGPL-3.0",
+        "vendoring": "external reference only"
+      },
+      "ignored_full_report_sha256": "18521c346272a998f816011fd891bfa1275eeae48b008f24465c6acfb3ed74e7",
+      "cases": [
+        {
+          "input": "nihao",
+          "oracle_top": "\u4f60\u597d",
+          "yune_top": "\u4f60\u597d",
+          "top_matches": true
+        },
+        {
+          "input": "zhongguo",
+          "oracle_top": "\u4e2d\u570b",
+          "yune_top": "\u4e2d\u570b",
+          "top_matches": true
+        },
+        {
+          "input": "youhuiyong",
+          "oracle_top": "\u512a\u60e0\u7528",
+          "yune_top": "\u512a\u60e0\u7528",
+          "top_matches": true
+        },
+        {
+          "input": "jintianhuiyi",
+          "oracle_top": "\u4eca\u5929\u6703\u8b70",
+          "yune_top": "\u4eca\u5929\u6703\u8b70",
+          "top_matches": true
+        },
+        {
+          "input": "jintianwanshangyouhui",
+          "oracle_top": "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+          "yune_top": "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+          "top_matches": true
+        },
+        {
+          "input": "gegeguojiayougegeguojiadeguoge",
+          "oracle_top": "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+          "yune_top": "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+          "top_matches": true
+        },
+        {
+          "input": "woxiangqubeijing",
+          "oracle_top": "\u6211\u60f3\u53bb\u5317\u4eac",
+          "yune_top": "\u6211\u60f3\u53bb\u5317\u4eac",
+          "top_matches": true
+        }
+      ]
+    },
+    {
+      "lane": "RIME-LMDG real-world validation",
+      "fixture": "crates/yune-core/tests/fixtures/upstream-octagram/rime-lmdg-luna-pinyin-validation.json",
+      "external_model": {
+        "source": "amzxyz/RIME-LMDG",
+        "model_file": "wanxiang-lts-zh-hant.gram",
+        "release_tag": "LTS",
+        "release_commit": "c78463a521aee2681db6cd6424a75a9b413237a3",
+        "sha256": "48085c1f87ca1a33ace42ffec13a3113f67606621586e25453e1a62ac55e1684",
+        "license": "CC-BY-4.0",
+        "vendoring": "external reference only"
+      },
+      "ignored_full_report_sha256": "5e4b1daa1141be5d8b0634a87b0ba5d82db88ed4e472723710825e8898c854c3",
+      "cases": [
+        {
+          "input": "nihao",
+          "oracle_top": "\u4f60\u597d",
+          "yune_top": "\u4f60\u597d",
+          "top_matches": true
+        },
+        {
+          "input": "zhongguo",
+          "oracle_top": "\u4e2d\u570b",
+          "yune_top": "\u4e2d\u570b",
+          "top_matches": true
+        },
+        {
+          "input": "youhuiyong",
+          "oracle_top": "\u53c8\u6703\u7528",
+          "yune_top": "\u53c8\u6703\u7528",
+          "top_matches": true
+        },
+        {
+          "input": "jintianhuiyi",
+          "oracle_top": "\u4eca\u5929\u6703\u8b70",
+          "yune_top": "\u4eca\u5929\u6703\u8b70",
+          "top_matches": true
+        },
+        {
+          "input": "jintianyouhui",
+          "oracle_top": "\u4eca\u5929\u53c8\u6703",
+          "yune_top": "\u4eca\u5929\u53c8\u6703",
+          "top_matches": true
+        },
+        {
+          "input": "jintianwanshangyouhui",
+          "oracle_top": "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+          "yune_top": "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+          "top_matches": true
+        },
+        {
+          "input": "wanshanghuiyi",
+          "oracle_top": "\u665a\u4e0a\u6703\u8b70",
+          "yune_top": "\u665a\u4e0a\u6703\u8b70",
+          "top_matches": true
+        },
+        {
+          "input": "gegeguojiayougegeguojiadeguoge",
+          "oracle_top": "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+          "yune_top": "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+          "top_matches": true
+        },
+        {
+          "input": "woxiangqubeijing",
+          "oracle_top": "\u6211\u60f3\u53bb\u5317\u4eac",
+          "yune_top": "\u6211\u60f3\u53bb\u5317\u4eac",
+          "top_matches": true
+        }
+      ]
+    }
+  ]
+}

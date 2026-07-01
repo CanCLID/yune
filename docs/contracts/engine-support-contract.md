@@ -1,6 +1,6 @@
 # Engine Support Contract
 
-Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit.
+Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI.
 
 This contract defines Yune's launch-facing engine support boundary. It is a
 contract for engine behavior, storage, ABI shape, and evidence lanes; it is not
@@ -18,6 +18,25 @@ Yune supports named targets, not full librime feature parity.
 - Broad librime feature parity is not a goal.
 - New behavior needs a named target and an oracle fixture before it can become
   required behavior.
+
+## Native Octagram Grammar Support
+
+M54 supports octagram-compatible `.gram` scoring only as a Yune-native
+`Grammar` provider for the named upstream `luna_pinyin` octagram target. The
+canonical oracle lane is upstream `rime/librime 1.17.0` plus
+`lotem/librime-octagram` and pinned `lotem/rime-octagram-data`; the
+`amzxyz/RIME-LMDG` lane is pinned real-world validation evidence.
+
+Support rules:
+
+- schemas without `grammar/language` keep the existing null-grammar behavior;
+- `grammar/language` is a logical runtime data ID that resolves to
+  `<language>.gram`, not an arbitrary filesystem path;
+- full third-party `.gram` models are external oracle or validation inputs
+  unless a future plan explicitly accepts size, license, and attribution costs;
+- contextual translation remains deferred;
+- this support does not implement the librime C++ plugin ABI, plugin lifecycle,
+  dynamic module loading, Lua, predict, proto, or frontend/platform contracts.
 
 ## Compatibility Oracles
 
@@ -144,7 +163,8 @@ The following surfaces are unsupported or deferred unless a future named plan
 adds a target, oracle, ABI contract, and evidence:
 
 - full librime C++ plugin ABI compatibility;
-- learned `.gram` / octagram grammar;
+- learned `.gram` / octagram grammar beyond the named native M54 target;
+- contextual translation;
 - remote AI providers in the classic deterministic path;
 - default ABI widening for TypeDuck fork convenience;
 - platform frontend packaging or keyboard-extension contracts;

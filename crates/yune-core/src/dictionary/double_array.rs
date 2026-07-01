@@ -35,6 +35,17 @@ impl DartsDoubleArray {
     where
         K: AsRef<str>,
     {
+        let byte_keys = keys
+            .iter()
+            .map(|(key, value)| (key.as_ref().as_bytes(), *value))
+            .collect::<Vec<_>>();
+        Self::build_bytes(&byte_keys)
+    }
+
+    pub fn build_bytes<K>(keys: &[(K, u32)]) -> Result<Self, DartsDoubleArrayError>
+    where
+        K: AsRef<[u8]>,
+    {
         if keys.is_empty() {
             return Err(DartsDoubleArrayError::Empty);
         }
@@ -48,13 +59,13 @@ impl DartsDoubleArray {
                 return Err(DartsDoubleArrayError::EmptyKey);
             }
             let mut node = 0usize;
-            for byte in key.bytes() {
-                if let Some(next) = trie[node].children.get(&byte).copied() {
+            for byte in key {
+                if let Some(next) = trie[node].children.get(byte).copied() {
                     node = next;
                 } else {
                     let next = trie.len();
                     trie.push(TrieNode::default());
-                    trie[node].children.insert(byte, next);
+                    trie[node].children.insert(*byte, next);
                     node = next;
                 }
             }
@@ -93,12 +104,17 @@ impl DartsDoubleArray {
 
     #[must_use]
     pub fn exact_match(&self, key: &str) -> Option<u32> {
+        self.exact_match_bytes(key.as_bytes())
+    }
+
+    #[must_use]
+    pub fn exact_match_bytes(&self, key: &[u8]) -> Option<u32> {
         let mut node_pos = 0usize;
         let mut unit = *self.units.get(node_pos)?;
-        for byte in key.bytes() {
-            node_pos ^= usize::try_from(Self::offset(unit)).ok()? ^ usize::from(byte);
+        for byte in key {
+            node_pos ^= usize::try_from(Self::offset(unit)).ok()? ^ usize::from(*byte);
             unit = *self.units.get(node_pos)?;
-            if Self::label(unit) != u32::from(byte) {
+            if Self::label(unit) != u32::from(*byte) {
                 return None;
             }
         }
@@ -111,6 +127,11 @@ impl DartsDoubleArray {
 
     #[must_use]
     pub fn common_prefix_search(&self, key: &str) -> Vec<DartsMatch> {
+        self.common_prefix_search_bytes(key.as_bytes())
+    }
+
+    #[must_use]
+    pub fn common_prefix_search_bytes(&self, key: &[u8]) -> Vec<DartsMatch> {
         let mut matches = Vec::new();
         let mut node_pos = 0usize;
         let Some(mut unit) = self.units.get(node_pos).copied() else {
@@ -120,13 +141,13 @@ impl DartsDoubleArray {
             return matches;
         };
         node_pos ^= root_offset;
-        for (index, byte) in key.bytes().enumerate() {
-            node_pos ^= usize::from(byte);
+        for (index, byte) in key.iter().enumerate() {
+            node_pos ^= usize::from(*byte);
             let Some(next_unit) = self.units.get(node_pos).copied() else {
                 return matches;
             };
             unit = next_unit;
-            if Self::label(unit) != u32::from(byte) {
+            if Self::label(unit) != u32::from(*byte) {
                 return matches;
             }
             let Ok(offset) = usize::try_from(Self::offset(unit)) else {

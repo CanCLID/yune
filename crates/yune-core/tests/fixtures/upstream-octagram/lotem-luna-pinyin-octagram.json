@@ -1,0 +1,883 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "octagram_plugin": "lotem/librime-octagram",
+    "octagram_plugin_commit": "dfcc15115788c828d9dd7b4bff68067d3ce2ffb8",
+    "capture_date": "2026-07-01",
+    "capture_os": "Windows",
+    "build_kind": "source-built librime 1.17.0 with merged octagram module",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File target/m54-native-octagram/capture-octagram-lotem.ps1 -RepoRoot .; capture uses scripts/oracle-rime-probe.cs with modules [default, octagram] and writes the committed lotem octagram fixture from ignored target/m54-native-octagram/oracle-capture output.",
+    "build_outputs": {
+      "rime_dll_sha256": "c972d2a09b516176dfd62c57a293cd3ae57d06267f891e8c9331f85b6c761c38",
+      "rime_deployer_sha256": "b24904f215c455d22ee089a65124885e18d562a534d594a997ff523708ce4034"
+    },
+    "build_inputs": {
+      "boost": {
+        "version": "1.89.0",
+        "archive_url": "https://archives.boost.io/release/1.89.0/source/boost_1_89_0.tar.bz2",
+        "archive_sha256": "85a33fa22621b4f314f8e85e1a5e2a9363d22e4f4992925d4bb3bc631b5a0c7a"
+      },
+      "official_librime_dependency_asset": "https://github.com/rime/librime/releases/download/1.17.0/rime-deps-33e7814-Windows-msvc-x64.7z"
+    }
+  },
+  "lane": "lotem canonical octagram oracle",
+  "schema": {
+    "schema_id": "luna_pinyin",
+    "schema_data": "rime/rime-luna-pinyin",
+    "schema_data_commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+    "dependencies": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    }
+  },
+  "module_list": [
+    "default",
+    "octagram"
+  ],
+  "grammar_model": {
+    "source": "lotem/rime-octagram-data",
+    "license": "LGPL-3.0",
+    "config_commit": "8ceef1b42eb77e86501382a52e85c309c0f2f04c",
+    "data_branch": "hant",
+    "data_commit": "bb8e1313552f0f27f2f968031dfaf4563e55d982",
+    "model_file": "zh-hant-t-essay-bgw.gram",
+    "model_sha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+    "model_bytes": 10513408,
+    "vendoring": "external reference only; full .gram is not checked in"
+  },
+  "schema_patch": {
+    "custom_file": "luna_pinyin.custom.yaml",
+    "patch": {
+      "__include": "grammar:/hant",
+      "translator/contextual_suggestions": false
+    }
+  },
+  "input_sequence": [
+    "nihao",
+    "zhongguo",
+    "youhuiyong",
+    "jintianhuiyi",
+    "jintianwanshangyouhui",
+    "gegeguojiayougegeguojiadeguoge",
+    "woxiangqubeijing"
+  ],
+  "cases": [
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "nihao",
+      "rime_get_input": "ni hao",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ni hao",
+      "commit_text_preview": "你好",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你好",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "妳好",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "逆號",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "擬好",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "你",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "zhongguo",
+      "rime_get_input": "zhong guo",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "zhong guo",
+      "commit_text_preview": "中國",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "中國",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "種過",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "種果",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "忠果",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "中古",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "youhuiyong",
+      "rime_get_input": "you hui yong",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "you hui yong",
+      "commit_text_preview": "優惠用",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "優惠用",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "優惠",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "又會",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "幽會",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "游回",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "jintianhuiyi",
+      "rime_get_input": "jin tian hui yi",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "jin tian hui yi",
+      "commit_text_preview": "今天會議",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "今天會議",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "今天會",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "jintianwanshangyouhui",
+      "rime_get_input": "jin tian wan shang you hui",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "jin tian wan shang you hui",
+      "commit_text_preview": "今天晚上又會",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "今天晚上又會",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "今天晚上",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "gegeguojiayougegeguojiadeguoge",
+      "rime_get_input": "ge ge guo jia you ge ge guo jia de guo ge",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ge ge guo jia you ge ge guo jia de guo ge",
+      "commit_text_preview": "各個國家有各個國家的國歌",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "各個國家有各個國家的國歌",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "各個國家",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "各個",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "哥哥",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "個個",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "woxiangqubeijing",
+      "rime_get_input": "wo xiang qu bei jing",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "wo xiang qu bei jing",
+      "commit_text_preview": "我想去北京",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "我想去北京",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "我想去",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "我想",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "我向",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "我像",
+          "comment": null
+        }
+      ]
+    }
+  ],
+  "null_grammar_control": [
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "nihao",
+      "rime_get_input": "ni hao",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ni hao",
+      "commit_text_preview": "你好",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你好",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "妳好",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "逆號",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "擬好",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "你",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "zhongguo",
+      "rime_get_input": "zhong guo",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "zhong guo",
+      "commit_text_preview": "中國",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "中國",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "種過",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "種果",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "忠果",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "中古",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "youhuiyong",
+      "rime_get_input": "you hui yong",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "you hui yong",
+      "commit_text_preview": "有會用",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "有會用",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "優惠",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "又會",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "幽會",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "游回",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "jintianhuiyi",
+      "rime_get_input": "jin tian hui yi",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "jin tian hui yi",
+      "commit_text_preview": "今天回憶",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "今天回憶",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "今天會",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "jintianwanshangyouhui",
+      "rime_get_input": "jin tian wan shang you hui",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "jin tian wan shang you hui",
+      "commit_text_preview": "今天晚上優惠",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "今天晚上優惠",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "今天晚上",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "今天",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "金田",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "金天",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "gegeguojiayougegeguojiadeguoge",
+      "rime_get_input": "ge ge guo jia you ge ge guo jia de guo ge",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ge ge guo jia you ge ge guo jia de guo ge",
+      "commit_text_preview": "各個國家有各個國家德國個",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "各個國家有各個國家德國個",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "各個國家",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "各個",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "哥哥",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "個個",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "woxiangqubeijing",
+      "rime_get_input": "wo xiang qu bei jing",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "wo xiang qu bei jing",
+      "commit_text_preview": "我想去北京",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "我想去北京",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "我想去",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "我想",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "我向",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "我像",
+          "comment": null
+        }
+      ]
+    }
+  ],
+  "observed_octagram_differences": [
+    "youhuiyong",
+    "jintianhuiyi",
+    "jintianwanshangyouhui",
+    "gegeguojiayougegeguojiadeguoge"
+  ]
+}

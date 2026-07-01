@@ -1,0 +1,33 @@
+{
+  "fixture_set": "upstream-octagram",
+  "created": "2026-07-01",
+  "purpose": "M54 native octagram-compatible grammar support oracle fixtures",
+  "files": [
+    {
+      "path": "lotem-luna-pinyin-octagram.json",
+      "lane": "canonical oracle",
+      "sha256": "885ca3e611aa819e52733dfcd03f9eba5e233c78cd02e37e26cb2fdd77e09882",
+      "model_vendored": false
+    },
+    {
+      "path": "rime-lmdg-luna-pinyin-validation.json",
+      "lane": "real-world validation",
+      "sha256": "57f0960f1b52a3076b54c6cd16cd7d5d0dd4cb75a70771fa31b2919f26faa8ec",
+      "model_vendored": false
+    },
+    {
+      "path": "synthetic-rear-boundary-oracle.json",
+      "lane": "synthetic executable oracle",
+      "sha256": "96041608ec65966e41f7012d7b8533c0fafc7f0a6ddb631f441d7a73d99a583a",
+      "model_vendored": true,
+      "model_license": "MIT"
+    }
+  ],
+  "notes": [
+    "Fixtures store oracle output bytes and provenance only.",
+    "Full third-party .gram model files are referenced by URL, commit/release, byte size, and SHA256, but are not checked in.",
+    "The synthetic rear-boundary fixture stores only Yune-owned tiny .gram bytes used to make an executable empty-context parity check.",
+    "Both lanes force translator/contextual_suggestions=false; contextual translation remains out of M54 scope.",
+    "The public librime C API and dynamic C++ plugin ABI are not part of these fixtures."
+  ]
+}

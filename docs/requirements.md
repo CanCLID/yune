@@ -112,7 +112,11 @@ Requirements for the next integration milestone. These requirements turn the Pha
 - [x] **UPSTREAM-BEHAVIOR-01**: Upstream `luna_pinyin` behavioral fixtures are captured from the official `1.17.0` release binary for curated mechanics, full `ni` selection, action/paging/commit, reverse lookup, punctuation/symbols, option toggles, and later M17/M18 sentence/processor slices.
 - [x] **UPSTREAM-BEHAVIOR-02**: Full-dictionary `ni` selection uses every exact-code `luna_pinyin.dict.yaml` row plus relevant `essay.txt` rows for in-scope candidates, with provenance checks preventing default/zero essay-weight ranking.
 - [x] **UPSTREAM-BEHAVIOR-03**: Menu-dependent behavior is compared through Yune's real `Engine` path for paging, numeric selection, space commit, reverse lookup, punctuation, and supported option behavior.
-- [x] **UPSTREAM-BEHAVIOR-04**: Unsupported upstream behavior remains explicit: former `zhongguo` sentence/lattice and punctuation processor blockers were closed by M17/M18 fixtures, while learned `.gram`/octagram grammar and contextual translation remain deferred until a named target needs them.
+- [x] **UPSTREAM-BEHAVIOR-04**: Unsupported upstream behavior remains explicit:
+  former `zhongguo` sentence/lattice and punctuation processor blockers were
+  closed by M17/M18 fixtures; M54 added named native octagram-compatible grammar
+  support; broader octagram/plugin behavior and contextual translation remain
+  deferred until a named target needs them.
 - [x] **UPSTREAM-BEHAVIOR-05**: `oracle_fixture_provenance` enforces non-circular fixture metadata, source-row policies, schema repository commits, capture commands, and absence of local absolute oracle-cache paths across all upstream `luna_pinyin` fixtures.
 - [x] **UPSTREAM-BEHAVIOR-06**: M17 captures upstream `luna_pinyin` sentence and lattice goldens, implements the null-grammar poet path with `kPenalty = -13.815510557964274`, and keeps TypeDuck `jyut6ping3` sentence tuning isolated.
 
@@ -166,7 +170,7 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 ### Plugin Compatibility
 
 - **PLUGIN-01**: Yune can load or adapt librime C++ plugin ABI extensions.
-- **PLUGIN-02**: Lua, octagram, predict, proto, and other distribution plugin ecosystems have migration paths.
+- **PLUGIN-02**: Lua, dynamic octagram plugin loading, predict, proto, and other distribution plugin ecosystems have migration paths.
 
 ### Product Frontend
 
@@ -1183,6 +1187,32 @@ required evidence and closeout gates.
 - [x] **M53-AUDIT-05**: All engine-doc evidence links and anchors resolve and
   the 2026-06-30 dashboard visuals are adopted.
 
+### M54 Native Octagram Grammar Support
+
+- [x] **M54-OCTAGRAM-01**: The lotem canonical oracle lane and RIME-LMDG
+  validation lane have pinned source/data versions, model checksums,
+  data-license status, attribution notes, and fixture manifests defining the
+  supported octagram scope.
+- [x] **M54-OCTAGRAM-02**: Yune implements octagram-compatible grammar loading
+  and scoring through a native Rust `Grammar` provider, not a librime C++
+  plugin ABI.
+- [x] **M54-OCTAGRAM-03**: The `poet` sentence/lattice path uses
+  upstream-compatible grammar context and preserves null-grammar behavior when
+  no model is configured.
+- [x] **M54-OCTAGRAM-04**: Oracle fixture evidence proves accepted candidate
+  behavior for the named octagram target, and negative controls prove existing
+  `luna_pinyin` and `jyut6ping3` behavior is unchanged.
+- [x] **M54-OCTAGRAM-05**: Documentation and support-contract wording
+  distinguish named native octagram support from broader plugin ABI
+  compatibility, which remains deferred.
+- [x] **M54-OCTAGRAM-06**: Evidence records octagram model memory/timing impact
+  without making unsupported frontend, browser, platform, product, or broad
+  performance claims.
+- [x] **M54-OCTAGRAM-07**: Checked-in fixture data respects model-data
+  licensing: full lotem/RIME-LMDG `.gram` files are not vendored; the repository
+  stores oracle outputs, checksums/URLs, license notes, and small synthetic
+  parser/scoring fixtures.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1268,7 +1298,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UPSTREAM-BEHAVIOR-01 | M12 | Complete - six official-binary `luna_pinyin` fixture files are checked in under `upstream-1.17.0` |
 | UPSTREAM-BEHAVIOR-02 | M12 | Complete - full `ni` selection fixture includes all exact dictionary rows and candidate essay rows |
 | UPSTREAM-BEHAVIOR-03 | M12 | Complete - active parity tests drive real parser/dictionary/translator/filter/Engine paths |
-| UPSTREAM-BEHAVIOR-04 | M12/M17/M18 | Complete - former sentence/lattice and processor blockers are fixture-backed; learned grammar/contextual paths remain deferred |
+| UPSTREAM-BEHAVIOR-04 | M12/M17/M18/M54 | Complete - former sentence/lattice and processor blockers are fixture-backed; M54 adds named native octagram-compatible grammar support; broader grammar/plugin/contextual paths remain deferred |
 | UPSTREAM-BEHAVIOR-05 | M12 | Complete - provenance test scans all upstream `luna_pinyin` fixtures and source policies |
 | UPSTREAM-BEHAVIOR-06 | M17 | Complete - upstream `luna_pinyin` sentence/lattice fixtures and null-grammar poet path are active |
 | AI-01 | M11 S1 | Complete - staged provider interface in `yune-core` |
@@ -1334,6 +1364,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M53-AUDIT-03 | M53 | Complete - M52 guardrail evidence fresh and numerically consistent; regression-gate command canonical |
 | M53-AUDIT-04 | M53 | Complete - `README.md`/archived public claim drift corrected across performance ("faster than librime" scoped to `zhongguo` + abbreviation rows), compatibility scope, oracle precedence (`jyut6ping3` vs TypeDuck-HK/librime `v1.1.2`), TypeDuck-Windows frontend-validation scope, ABI/drop-in wording, and Rust safety/lint-scope wording |
 | M53-AUDIT-05 | M53 | Complete - all engine-doc evidence links/anchors resolve and the 2026-06-30 dashboard visuals are adopted |
+| M54-OCTAGRAM-01 | M54 | Complete - lotem canonical and RIME-LMDG validation lanes are pinned with commits, checksums, license notes, and manifests |
+| M54-OCTAGRAM-02 | M54 | Complete - native Rust `OctagramGrammar` loads and scores `.gram` data behind the existing `Grammar` provider path |
+| M54-OCTAGRAM-03 | M54 | Complete - grammar scoring uses two-word context and preserves null-grammar behavior for schemas without `.gram` |
+| M54-OCTAGRAM-04 | M54 | Complete - accepted octagram candidate behavior is evidenced; upstream luna null-grammar and TypeDuck `jyut6ping3` regression gates pass |
+| M54-OCTAGRAM-05 | M54 | Complete - support contract and roadmap distinguish native octagram support from deferred librime C++ plugin ABI support |
+| M54-OCTAGRAM-06 | M54 | Complete - octagram owner rows and final evidence record memory/timing scope without public performance claims |
+| M54-OCTAGRAM-07 | M54 | Complete - full third-party `.gram` models stay external; checked-in data is oracle output/provenance plus Yune-owned synthetic tests |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
 | M22-PLAY-03 | M22 Bucket 1 | Complete - traditionalization, disabled, extended_charset, and dictionary_exclude have browser evidence; ascii_punct remains absent without browser-visible before/after evidence |
@@ -1624,9 +1661,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M51 engine support contract and ABI-freeze requirements: 5 total, 5 complete, 0 active
 - M52 Track A guardrails and blocker disposition requirements: 6 total, 6 complete, 0 active
 - M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
-- Mapped to phases: 379
+- M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
+- Mapped to phases: 386
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-30 - M53 engine release-readiness audit is complete: the engine docs are release-ready for downstream engine consumers. A five-dimension audit (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness, public claim wording, link/evidence integrity) found the substantive invariants clean with no ABI/guardrail/link drift; the only real defects were public-facing claim drift in `README.md` (plus one linked archived report) across performance, compatibility scope, oracle-precedence, frontend-validation, ABI/drop-in, and Rust safety/lint-scope wording. All are corrected to contract-accurate, M52 (2026-06-30) lane-specific wording (faster only on `zhongguo` + the two abbreviation rows; native Track A memory `188.4 MB` vs librime `17.3 MB`). M52 remains the native Track A guardrail source of truth; the 188 MB memory reduction stays the deferred M54 candidate._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-01 - M54 native octagram grammar support is complete for the named upstream `luna_pinyin` octagram target. The lotem canonical oracle lane and RIME-LMDG validation lane are pinned; full third-party `.gram` models remain external by URL/checksum/license evidence; Yune implements clean-room native `.gram` parsing/scoring behind the existing `Grammar` provider without public C ABI changes; null-grammar `luna_pinyin` and TypeDuck `jyut6ping3` gates remain unchanged. M52 remains the native Track A guardrail source of truth; the 188 MB memory reduction moves to the deferred M55 candidate._

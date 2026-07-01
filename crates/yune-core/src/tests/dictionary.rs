@@ -66,6 +66,27 @@ fn darts_double_array_exact_and_prefix_search_round_trip_inserted_keys() {
 }
 
 #[test]
+fn darts_double_array_supports_non_utf8_binary_keys() {
+    let double_array =
+        DartsDoubleArray::build_bytes(&[(vec![0x8e, 0x2d], 7), (vec![0x8e, 0x2d, 0xe1, 0x80], 11)])
+            .expect("binary keys should build");
+
+    assert_eq!(double_array.exact_match_bytes(&[0x8e, 0x2d]), Some(7));
+    assert_eq!(
+        double_array.exact_match_bytes(&[0x8e, 0x2d, 0xe1, 0x80]),
+        Some(11)
+    );
+    assert_eq!(double_array.exact_match_bytes(&[0x8e, 0x2e]), None);
+
+    let prefixes = double_array
+        .common_prefix_search_bytes(&[0x8e, 0x2d, 0xe1, 0x80, b'x'])
+        .into_iter()
+        .map(|matched| (matched.value, matched.length))
+        .collect::<Vec<_>>();
+    assert_eq!(prefixes, [(7, 2), (11, 4)]);
+}
+
+#[test]
 fn build_prism_bin_round_trips_multi_syllable_toneless_spellings() {
     // Regression for a double-array construction bug: a parent node validated its
     // child slots as free but did not reserve them before recursing, so one child's

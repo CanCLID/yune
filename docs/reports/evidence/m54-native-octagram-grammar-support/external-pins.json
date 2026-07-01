@@ -1,0 +1,130 @@
+{
+  "updated": "2026-07-01",
+  "milestone": "M54",
+  "purpose": "native octagram grammar support task 0 source and data pins",
+  "oracles": {
+    "librime": {
+      "url": "https://github.com/rime/librime",
+      "tag": "1.17.0",
+      "commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+    },
+    "luna_pinyin_schema": {
+      "url": "https://github.com/rime/rime-luna-pinyin",
+      "commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+      "dependencies": {
+        "https://github.com/rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+        "https://github.com/rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+        "https://github.com/rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+      }
+    },
+    "librime_octagram": {
+      "url": "https://github.com/lotem/librime-octagram",
+      "commit": "dfcc15115788c828d9dd7b4bff68067d3ce2ffb8",
+      "license": "GPL-3.0",
+      "use": "oracle build reference only; do not copy implementation code"
+    }
+  },
+  "canonical_lotem_lane": {
+    "config": {
+      "url": "https://github.com/lotem/rime-octagram-data",
+      "branch": "master",
+      "commit": "8ceef1b42eb77e86501382a52e85c309c0f2f04c",
+      "license": "LGPL-3.0",
+      "license_sha256": "ea7d049c7705dc13afc202dd18e1827f3484f8212fd3fa7b82fc4a0c363432c9",
+      "grammar_yaml_sha256": "712b548ce485c8f6a38e4cbaa99e599fdaeddc8e54bcb0ae5fafcb95bdd63d69"
+    },
+    "selected_default_model": "zh-hant-t-essay-bgw.gram",
+    "hans_branch": {
+      "commit": "9c482c6660fa9e3268bd1d1a9341ef26aa90f94d",
+      "models": [
+        {
+          "path": "zh-hans-t-essay-bgc.gram",
+          "bytes": 4114432,
+          "sha256": "eb33e589767c9ee0e262d4d8a9c040294fbfbb8ffaa4efe21c7338987c3d2924"
+        },
+        {
+          "path": "zh-hans-t-essay-bgw.gram",
+          "bytes": 10404864,
+          "sha256": "11bbeebb84e321dc2617d5fe4c1b3c51945703ed779a12e12b8b0270e1baec79"
+        }
+      ]
+    },
+    "hant_branch": {
+      "commit": "bb8e1313552f0f27f2f968031dfaf4563e55d982",
+      "models": [
+        {
+          "path": "zh-hant-t-essay-bgc.gram",
+          "bytes": 4075520,
+          "sha256": "3cc18e6c8d1ff9650f4b0be9681f414a0915eaa85a593df9e49ca7dc08dbe7fe"
+        },
+        {
+          "path": "zh-hant-t-essay-bgw.gram",
+          "bytes": 10513408,
+          "sha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3"
+        }
+      ]
+    },
+    "schema_patch": {
+      "base_schema": "luna_pinyin",
+      "include": "grammar:/hant",
+      "overrides": {
+        "translator/contextual_suggestions": false
+      }
+    },
+    "vendoring": "external reference only; commit oracle output bytes and manifests, not full model files"
+  },
+  "rime_lmdg_validation_lane": {
+    "url": "https://github.com/amzxyz/RIME-LMDG",
+    "head_commit": "f00fc2bf2b9b393f7a5c335a7067fa80a1f24f13",
+    "license": "CC-BY-4.0",
+    "license_sha256": "cbd5af318286b74656f145dff5091907cc23d6d8c9ad09e0291ec2497792ba41",
+    "selected_release": {
+      "tag": "LTS",
+      "tag_commit": "c78463a521aee2681db6cd6424a75a9b413237a3",
+      "asset": {
+        "name": "wanxiang-lts-zh-hant.gram",
+        "bytes": 421967916,
+        "sha256": "48085c1f87ca1a33ace42ffec13a3113f67606621586e25453e1a62ac55e1684",
+        "url": "https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hant.gram"
+      }
+    },
+    "alternate_asset": {
+      "name": "wanxiang-lts-zh-hans.gram",
+      "bytes": 420538412,
+      "sha256": "491d05ceb4a058b11f51ec4fe2cf83c092bfa042526f74ccc56977a209a2bd72",
+      "url": "https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram"
+    },
+    "schema_patch": {
+      "include": "octagram",
+      "grammar": {
+        "language": "wanxiang-lts-zh-hant",
+        "collocation_max_length": 6,
+        "collocation_min_length": 3,
+        "collocation_penalty": -14,
+        "non_collocation_penalty": -6,
+        "weak_collocation_penalty": -100
+      },
+      "overrides": {
+        "translator/contextual_suggestions": false,
+        "translator/max_homophones": 8
+      }
+    },
+    "vendoring": "external reference only; asset is too large for routine fixtures and requires CC-BY-4.0 attribution if redistributed"
+  },
+  "unit_test_lane": {
+    "source": "Yune-owned generated synthetic tiny .gram bytes",
+    "vendoring": "allowed because generated/owned by Yune",
+    "third_party_model_bytes": "not allowed in unit fixtures by default"
+  },
+  "out_of_scope": [
+    "librime C++ plugin ABI",
+    "dynamic plugin loading",
+    "Lua",
+    "predict",
+    "proto",
+    "AI ranking",
+    "frontend/platform work",
+    "public performance claims",
+    "contextual translation"
+  ]
+}

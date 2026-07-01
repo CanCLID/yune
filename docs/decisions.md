@@ -20,7 +20,7 @@ Cross-cutting decisions that govern all current and future work:
 
 - **Module and test ownership per slice; `lib.rs`/`main.rs` stay facades.** Each compatibility slice owns its implementation module and test module. `lib.rs` (and `main.rs`) remain thin facades plus facade-owned tests; cross-cutting behavior tests live under per-crate `tests/` modules. Mechanical refactors preserve observable behavior and assertions; they do not rewrite working slices.
 
-- **Plugin ABI compatibility is deferred.** Full C++ librime plugin ABI compatibility (Lua, octagram, predict, proto, etc.) is expensive and not yet required by a concrete frontend or schema-migration path. Deferred until a real distribution requirement makes it necessary.
+- **Plugin ABI compatibility is deferred.** Full C++ librime plugin ABI compatibility (Lua, dynamic octagram plugin loading, predict, proto, etc.) is expensive and not yet required by a concrete frontend or schema-migration path. M54's native octagram-compatible `Grammar` provider is not plugin ABI compatibility. Deferred until a real distribution requirement makes it necessary.
 
 - **Upstream-first oracle sequencing.** Upstream `rime/librime 1.17.0` is the default core compatibility oracle. TypeDuck-HK/librime `v1.1.2` is retained as a TypeDuck-Web/Windows compatibility-profile oracle only. If upstream and TypeDuck behavior disagree, upstream wins for core Yune; TypeDuck behavior must stay behind a named profile test, fixture, adapter, or ABI note.
 
@@ -40,7 +40,7 @@ Cross-cutting decisions that govern all current and future work:
 
 **D-05 — Treat the module/test refactor as a structural rule for future feature work.** Large single-file accumulation slowed review, search, focused testing, and extraction; module/test ownership per slice with `lib.rs`/`main.rs` as facades is now the rule. _Outcome: Pending._
 
-**D-06 — Keep plugin ABI compatibility deferred.** Plugin compatibility is expensive and not yet required by a concrete frontend or schema-migration path. _Outcome: Pending._
+**D-06 — Keep plugin ABI compatibility deferred.** Plugin compatibility is expensive and not yet required by a concrete frontend or schema-migration path. Native M54 octagram-compatible grammar support does not change this because it does not load librime C++ plugins. _Outcome: Pending._
 
 **D-07 — Treat runtime resource identifiers as logical IDs, not arbitrary filesystem paths.** Schema-controlled dictionary/import/pack/vocabulary IDs are validated (rejecting drive prefixes, backslashes, traversal) before any runtime data path is constructed; explicit user-supplied import/export/restore file paths remain arbitrary paths, but the derived logical names joined into runtime roots are validated. Boundaries fail closed (FALSE, -1, None, Value::Null).
 
@@ -244,7 +244,7 @@ M19 also names the TypeDuck-Windows ABI delta through `rime_get_typeduck_profile
 
 **D-30 / UPSTREAM-POET - Implement `luna_pinyin` sentence/lattice parity through the upstream null-grammar path, not through TypeDuck tuning.** M17 captures `luna-pinyin-sentence.json` and `luna-pinyin-lattice.json` from the pinned upstream `rime/librime 1.17.0` release binary before implementation. The captured schema has `essay.txt` preset vocabulary but no `.gram` model, so Yune implements the grammar-absent poet scoring path in `yune-core`: `entry_weight + kPenalty` per word, with the verbatim upstream `kPenalty = -13.815510557964274`, plus a bounded sentence/lattice candidate path installed only for the upstream `luna_pinyin` script-translator profile. The existing TypeDuck `jyut6ping3` sentence heuristic and its `21.0` word penalty remain profile-gated and separate.
 
-This closes the two M17-owned `luna_pinyin` blockers in `upstream_luna_pinyin_parity.rs` without changing `RimeApi`, `RimeCandidate`, or the TypeDuck-profile ABI surface. Learned `.gram`/octagram models, the C++ plugin ABI, and broader contextual translation stay deferred until a future named target proves they are required. Extends D-24 (oracle precedence), D-25 (target-driven scope), and D-28 (profile-specific tuning isolation). _Outcome: Good._
+This closes the two M17-owned `luna_pinyin` blockers in `upstream_luna_pinyin_parity.rs` without changing `RimeApi`, `RimeCandidate`, or the TypeDuck-profile ABI surface. M54 later added native octagram-compatible grammar support for a named upstream `luna_pinyin` target; broader `.gram`/octagram behavior, the C++ plugin ABI, and contextual translation stay deferred until a future named target proves they are required. Extends D-24 (oracle precedence), D-25 (target-driven scope), and D-28 (profile-specific tuning isolation). _Outcome: Good._
 
 ### Upstream-style Jyutping composition target (project-wide D-31)
 

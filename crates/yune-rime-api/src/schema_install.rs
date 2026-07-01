@@ -16,7 +16,8 @@ use yune_core::{
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
     CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
-    EchoTranslator, HistoryTranslator, ReverseLookupFilter, ReverseLookupTranslator,
+    EchoTranslator, HistoryTranslator, OctagramGrammar, OctagramGrammarConfig,
+    OctagramGrammarParseError, ReverseLookupFilter, ReverseLookupTranslator,
     RimePrismRuntimePayload, RimeTableBinAdvancedDataOptions, SchemaListTranslator,
     SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary,
     TableDictionaryAdvancedData, TaggedFilter, Translator, UniquifierFilter,
@@ -462,6 +463,15 @@ fn install_schema_dictionary_translator_from_config(
         if !abbreviation_vocabulary.is_empty() {
             translator = translator.with_abbreviation_preset_vocabulary(abbreviation_vocabulary);
         }
+        match load_schema_octagram_grammar(schema_config) {
+            Ok(Some(grammar)) => {
+                translator = translator.with_upstream_sentence_grammar(grammar);
+            }
+            Ok(None) => {}
+            Err((language, reason)) => {
+                record_octagram_grammar_load_failure(session, language, reason);
+            }
+        }
         translator = translator.with_upstream_sentence_model(100);
     }
     if is_typeduck_jyut6ping3_profile {
@@ -528,7 +538,93 @@ fn schema_dictionary_translator_cache_key(
         "reverse",
         &format!("{dictionary_name}.reverse.bin"),
     );
+    if let Some(language) = schema_octagram_language(schema_config) {
+        if let Some(language) = validate_data_resource_id(&language) {
+            append_runtime_file_metadata_signature(
+                &mut parts,
+                "grammar",
+                &format!("{language}.gram"),
+            );
+        } else {
+            parts.push(format!("grammar:{language}:invalid"));
+        }
+    }
     Some(parts.join("\n"))
+}
+
+fn schema_octagram_language(schema_config: &Value) -> Option<String> {
+    find_config_value(schema_config, "grammar/language").and_then(config_scalar_string)
+}
+
+fn load_schema_octagram_grammar(
+    schema_config: &Value,
+) -> Result<Option<OctagramGrammar>, (String, OctagramGrammarLoadFailure)> {
+    let Some(raw_language) = schema_octagram_language(schema_config) else {
+        return Ok(None);
+    };
+    let Some(language) = validate_data_resource_id(&raw_language) else {
+        return Err((raw_language, OctagramGrammarLoadFailure::InvalidResourceId));
+    };
+    let Some(grammar_resource_id) = validate_data_resource_id(&format!("{language}.gram")) else {
+        return Err((language, OctagramGrammarLoadFailure::InvalidResourceId));
+    };
+    let Some(path) = selected_runtime_data_path(&grammar_resource_id) else {
+        return Err((language, OctagramGrammarLoadFailure::Missing));
+    };
+    let source = load_compiled_data_byte_source(&path, "grammar").map_err(|reason| {
+        (
+            language.clone(),
+            OctagramGrammarLoadFailure::ReadRejected(reason),
+        )
+    })?;
+    let grammar =
+        OctagramGrammar::from_bytes(source.bytes(), schema_octagram_config(schema_config))
+            .map_err(|reason| {
+                (
+                    language.clone(),
+                    OctagramGrammarLoadFailure::ParseRejected(reason),
+                )
+            })?;
+    Ok(Some(grammar))
+}
+
+fn schema_octagram_config(schema_config: &Value) -> OctagramGrammarConfig {
+    let mut config = OctagramGrammarConfig::default();
+    if let Some(value) = find_config_value(schema_config, "grammar/collocation_max_length")
+        .and_then(config_scalar_int)
+        .and_then(|value| usize::try_from(value).ok())
+        .filter(|value| *value > 0)
+    {
+        config.collocation_max_length = value;
+    }
+    if let Some(value) = find_config_value(schema_config, "grammar/collocation_min_length")
+        .and_then(config_scalar_int)
+        .and_then(|value| usize::try_from(value).ok())
+        .filter(|value| *value > 0)
+    {
+        config.collocation_min_length = value;
+    }
+    if let Some(value) = find_config_value(schema_config, "grammar/collocation_penalty")
+        .and_then(config_scalar_double)
+    {
+        config.collocation_penalty = value;
+    }
+    if let Some(value) = find_config_value(schema_config, "grammar/non_collocation_penalty")
+        .and_then(config_scalar_double)
+    {
+        config.non_collocation_penalty = value;
+    }
+    if let Some(value) = find_config_value(schema_config, "grammar/weak_collocation_penalty")
+        .and_then(config_scalar_double)
+    {
+        config.weak_collocation_penalty = value;
+    }
+    if let Some(value) =
+        find_config_value(schema_config, "grammar/rear_penalty").and_then(config_scalar_double)
+    {
+        config.rear_penalty = value;
+    }
+    config
 }
 
 fn append_source_dictionary_cache_signature(
@@ -1536,6 +1632,14 @@ enum DictionaryLoadFailure {
     CompiledRejected(CompiledRejectReason),
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum OctagramGrammarLoadFailure {
+    InvalidResourceId,
+    Missing,
+    ReadRejected(CompiledRejectReason),
+    ParseRejected(OctagramGrammarParseError),
+}
+
 fn load_schema_table_dictionary(schema_config: &Value, name_space: &str) -> DictionaryLoadOutcome {
     load_schema_table_dictionary_with_compact_preference(schema_config, name_space, false)
 }
@@ -2114,6 +2218,33 @@ fn record_dictionary_load_failure(
                 "record explicit dictionary load failure instead of installing an empty translator"
                     .to_owned(),
             target_phase: "04-compiled-dictionary-data".to_owned(),
+        });
+}
+
+fn record_octagram_grammar_load_failure(
+    session: &mut SessionState,
+    language: String,
+    reason: OctagramGrammarLoadFailure,
+) {
+    let current_yune_behavior =
+        format!("Octagram grammar '{language}' left on NullGrammar: {reason:?}");
+    if session
+        .remaining_gear_deferrals
+        .iter()
+        .any(|deferral| deferral.gear == "grammar")
+    {
+        return;
+    }
+    session
+        .remaining_gear_deferrals
+        .push(RemainingGearDeferral {
+            gear: "grammar".to_owned(),
+            observed_librime_role: "octagram grammar model loaded from grammar/language".to_owned(),
+            current_yune_behavior,
+            scope_decision:
+                "load native octagram-compatible .gram only from logical runtime data ids"
+                    .to_owned(),
+            target_phase: "m54-native-octagram-grammar-support".to_owned(),
         });
 }
 

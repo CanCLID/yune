@@ -11,7 +11,7 @@ use crate::dictionary::{
     RimePrismBinPayload, RimePrismRuntimePayload, TableLookup,
 };
 use crate::filter::contains_extended_cjk;
-use crate::poet::{SentenceCodeSpan, UpstreamSentenceModel};
+use crate::poet::{GrammarProvider, SentenceCodeSpan, UpstreamSentenceModel};
 use crate::spelling_algebra::{ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
     Candidate, CandidateRequest, CandidateSource, Context, M37SentenceCandidateMetrics,
@@ -494,6 +494,7 @@ pub struct StaticTableTranslator {
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
     abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry>,
+    upstream_sentence_grammar: GrammarProvider,
     upstream_sentence_model: Option<UpstreamSentenceModel>,
 }
 
@@ -552,6 +553,7 @@ impl StaticTableTranslator {
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
             abbreviation_preset_vocabulary: Vec::new(),
+            upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_model: None,
         }
     }
@@ -611,6 +613,7 @@ impl StaticTableTranslator {
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
             abbreviation_preset_vocabulary,
+            upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_model: None,
         }
     }
@@ -660,6 +663,7 @@ impl StaticTableTranslator {
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
             abbreviation_preset_vocabulary,
+            upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_model: None,
         }
     }
@@ -722,6 +726,7 @@ impl StaticTableTranslator {
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
             abbreviation_preset_vocabulary,
+            upstream_sentence_grammar: GrammarProvider::default(),
             upstream_sentence_model: None,
         }
     }
@@ -885,19 +890,19 @@ impl StaticTableTranslator {
             && self.prism_payload.is_some()
             && self.single_letter_sentence_guard_enabled
             && !abbreviation_vocabulary.is_empty();
-        if let Some(entries) = self.source_entries.take() {
+        let model = if let Some(entries) = self.source_entries.take() {
             let table_entries = entries
                 .into_iter()
                 .map(|(code, candidate)| TableEntry::new(code, candidate.text, candidate.quality))
                 .collect::<Vec<_>>();
-            self.upstream_sentence_model = Some(UpstreamSentenceModel::from_table_entries(
+            UpstreamSentenceModel::from_table_entries(
                 table_entries,
                 &self.preset_vocabulary,
                 max_candidates,
-            ));
+            )
         } else {
             let full_pinyin_vocabulary = self.preset_vocabulary.as_slice();
-            self.upstream_sentence_model = Some(if build_abbreviation_model {
+            if build_abbreviation_model {
                 UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
                     self.storage.table_entry_iter(),
                     full_pinyin_vocabulary,
@@ -910,7 +915,19 @@ impl StaticTableTranslator {
                     full_pinyin_vocabulary,
                     max_candidates,
                 )
-            });
+            }
+        };
+        self.upstream_sentence_model =
+            Some(model.with_grammar(self.upstream_sentence_grammar.clone()));
+        self
+    }
+
+    #[must_use]
+    pub fn with_upstream_sentence_grammar(mut self, grammar: impl Into<GrammarProvider>) -> Self {
+        let grammar = grammar.into();
+        self.upstream_sentence_grammar = grammar.clone();
+        if let Some(model) = self.upstream_sentence_model.take() {
+            self.upstream_sentence_model = Some(model.with_grammar(grammar));
         }
         self
     }

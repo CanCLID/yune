@@ -9,6 +9,10 @@ fn fixture_root(name: &str) -> std::path::PathBuf {
         .join(name)
 }
 
+fn repo_root() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..")
+}
+
 #[test]
 fn oracle_fixture_roots_have_machine_readable_provenance() {
     assert_manifest(
@@ -35,6 +39,109 @@ fn oracle_fixture_roots_have_machine_readable_provenance() {
         "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
         false,
     );
+
+    let octagram_root = fixture_root("upstream-octagram");
+    let manifest = read_json(&octagram_root.join("oracle-manifest.json"));
+    assert_eq!(manifest["fixture_set"], "upstream-octagram");
+    assert_eq!(manifest["created"], "2026-07-01");
+    assert_eq!(
+        manifest["purpose"],
+        "M54 native octagram-compatible grammar support oracle fixtures"
+    );
+    let files = manifest["files"]
+        .as_array()
+        .expect("upstream-octagram manifest should list files");
+    assert_eq!(
+        files.len(),
+        3,
+        "M54 should pin two external lanes plus the synthetic executable oracle"
+    );
+    assert!(files.iter().any(|file| {
+        file["path"] == "lotem-luna-pinyin-octagram.json"
+            && file["lane"] == "canonical oracle"
+            && file["model_vendored"] == false
+            && file["sha256"].as_str().is_some_and(|sha| sha.len() == 64)
+    }));
+    assert!(files.iter().any(|file| {
+        file["path"] == "rime-lmdg-luna-pinyin-validation.json"
+            && file["lane"] == "real-world validation"
+            && file["model_vendored"] == false
+            && file["sha256"].as_str().is_some_and(|sha| sha.len() == 64)
+    }));
+    assert!(files.iter().any(|file| {
+        file["path"] == "synthetic-rear-boundary-oracle.json"
+            && file["lane"] == "synthetic executable oracle"
+            && file["model_vendored"] == true
+            && file["model_license"] == "MIT"
+            && file["sha256"].as_str().is_some_and(|sha| sha.len() == 64)
+    }));
+}
+
+#[test]
+fn upstream_octagram_fixtures_have_non_circular_source_provenance_and_verification() {
+    let root = fixture_root("upstream-octagram");
+    let lotem_path = root.join("lotem-luna-pinyin-octagram.json");
+    let lmdg_path = root.join("rime-lmdg-luna-pinyin-validation.json");
+    let synthetic_path = root.join("synthetic-rear-boundary-oracle.json");
+    let lotem = read_json(&lotem_path);
+    let lmdg = read_json(&lmdg_path);
+    let synthetic = read_json(&synthetic_path);
+
+    assert_upstream_octagram_fixture_header(
+        &lotem_path,
+        &lotem,
+        "lotem canonical octagram oracle",
+        "lotem/rime-octagram-data",
+        "LGPL-3.0",
+        "zh-hant-t-essay-bgw.gram",
+        "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+    );
+    assert_eq!(lotem["schema_patch"]["patch"]["__include"], "grammar:/hant");
+    assert_eq!(
+        lotem["schema_patch"]["patch"]["translator/contextual_suggestions"],
+        false
+    );
+    assert_non_empty_array(&lotem_path, &lotem, &["observed_octagram_differences"]);
+    assert_non_empty_array(&lotem_path, &lotem, &["null_grammar_control"]);
+
+    assert_upstream_octagram_fixture_header(
+        &lmdg_path,
+        &lmdg,
+        "RIME-LMDG real-world validation",
+        "amzxyz/RIME-LMDG",
+        "CC-BY-4.0",
+        "wanxiang-lts-zh-hant.gram",
+        "48085c1f87ca1a33ace42ffec13a3113f67606621586e25453e1a62ac55e1684",
+    );
+    assert_eq!(
+        lmdg["schema_patch"]["patch"]["grammar"]["language"],
+        "wanxiang-lts-zh-hant"
+    );
+    assert_eq!(
+        lmdg["schema_patch"]["patch"]["translator/contextual_suggestions"],
+        false
+    );
+    assert_non_empty_array(&lmdg_path, &lmdg, &["observed_octagram_differences"]);
+    assert_non_empty_array(&lmdg_path, &lmdg, &["null_grammar_control"]);
+
+    assert_synthetic_octagram_oracle_fixture(&synthetic_path, &synthetic);
+
+    assert_no_local_absolute_paths(&lotem_path, &lotem);
+    assert_no_local_absolute_paths(&lmdg_path, &lmdg);
+    assert_no_local_absolute_paths(&synthetic_path, &synthetic);
+
+    let report_path = repo_root()
+        .join("docs")
+        .join("reports")
+        .join("evidence")
+        .join("m54-native-octagram-grammar-support")
+        .join("phase-3-yune-core-verification.json");
+    let report = read_json(&report_path);
+    assert_eq!(report["models_vendored"], false);
+    assert_eq!(report["full_reports_ignored"], true);
+    assert_no_local_absolute_paths(&report_path, &report);
+    assert_octagram_verification_lane(&report_path, &report, &lotem);
+    assert_octagram_verification_lane(&report_path, &report, &lmdg);
 }
 
 #[test]
@@ -827,6 +934,161 @@ fn assert_luna_fixture_header(path: &Path, fixture: &Value) {
         fixture.get("input_sequence").is_some() || fixture.get("scenarios").is_some(),
         "{path:?} must include input_sequence or scenarios"
     );
+}
+
+fn assert_upstream_octagram_fixture_header(
+    path: &Path,
+    fixture: &Value,
+    lane: &str,
+    model_source: &str,
+    license: &str,
+    model_file: &str,
+    model_sha256: &str,
+) {
+    assert_eq!(fixture["lane"], lane, "{path:?}");
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0", "{path:?}");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["oracle"]["octagram_plugin"], "lotem/librime-octagram",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["oracle"]["octagram_plugin_commit"], "dfcc15115788c828d9dd7b4bff68067d3ce2ffb8",
+        "{path:?}"
+    );
+    assert!(
+        fixture["oracle"]["capture_command"]
+            .as_str()
+            .is_some_and(|command| command.contains("scripts/oracle-rime-probe.cs")),
+        "{path:?} must include a reproducible octagram capture command"
+    );
+    assert_eq!(fixture["schema"]["schema_id"], "luna_pinyin", "{path:?}");
+    assert_eq!(
+        fixture["schema"]["schema_data"], "rime/rime-luna-pinyin",
+        "{path:?}"
+    );
+    assert_eq!(fixture["grammar_model"]["source"], model_source, "{path:?}");
+    assert_eq!(fixture["grammar_model"]["license"], license, "{path:?}");
+    assert_eq!(
+        fixture["grammar_model"]["model_file"], model_file,
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["grammar_model"]["model_sha256"], model_sha256,
+        "{path:?}"
+    );
+    assert!(
+        fixture["grammar_model"]["vendoring"]
+            .as_str()
+            .is_some_and(|vendoring| vendoring.contains("external reference only")),
+        "{path:?} should not vendor full .gram model bytes"
+    );
+    assert_non_empty_array(path, fixture, &["cases"]);
+}
+
+fn assert_synthetic_octagram_oracle_fixture(path: &Path, fixture: &Value) {
+    assert_eq!(
+        fixture["lane"], "synthetic executable octagram oracle",
+        "{path:?}"
+    );
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0", "{path:?}");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["oracle"]["octagram_plugin"], "lotem/librime-octagram",
+        "{path:?}"
+    );
+    assert!(
+        fixture["oracle"]["capture_command"]
+            .as_str()
+            .is_some_and(|command| command.contains("scripts/oracle-rime-probe.cs")),
+        "{path:?} must include a reproducible synthetic capture command"
+    );
+    assert_eq!(
+        fixture["schema"]["schema_id"], "m54_synthetic_octagram",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["grammar_model"]["source"], "Yune-owned synthetic fixture",
+        "{path:?}"
+    );
+    assert_eq!(fixture["grammar_model"]["license"], "MIT", "{path:?}");
+    assert_eq!(
+        fixture["grammar_model"]["model_sha256"],
+        "08e8cf7c33a1fd72a35264070487b889ab89b9751f381093d187267d30b4140a",
+        "{path:?}"
+    );
+    assert_non_empty_array(path, fixture, &["grammar_model", "model_bytes_hex_chunks"]);
+    assert_eq!(
+        fixture["capture"]["source_row_policy"], "m54_synthetic_octagram_rear_boundary_oracle",
+        "{path:?}"
+    );
+    let candidates = fixture["cases"][0]["selected_candidates"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{path:?} should include selected candidates"));
+    assert_eq!(candidates[0]["text"], "B", "{path:?}");
+    assert_eq!(candidates[1]["text"], "A", "{path:?}");
+}
+
+fn assert_octagram_verification_lane(report_path: &Path, report: &Value, fixture: &Value) {
+    let lane = fixture["lane"]
+        .as_str()
+        .expect("fixture lane should be text");
+    let report_lane = report["lanes"]
+        .as_array()
+        .expect("verification report should list lanes")
+        .iter()
+        .find(|entry| {
+            let fixture_path = entry["fixture"].as_str().unwrap_or_default();
+            match lane {
+                "lotem canonical octagram oracle" => {
+                    fixture_path.ends_with("lotem-luna-pinyin-octagram.json")
+                }
+                "RIME-LMDG real-world validation" => {
+                    fixture_path.ends_with("rime-lmdg-luna-pinyin-validation.json")
+                }
+                _ => false,
+            }
+        })
+        .unwrap_or_else(|| panic!("{report_path:?} should include verification lane for {lane}"));
+    assert!(
+        report_lane["ignored_full_report_sha256"]
+            .as_str()
+            .is_some_and(|sha| sha.len() == 64),
+        "{report_path:?} should retain the ignored full report hash for {lane}"
+    );
+
+    let fixture_cases = fixture["cases"]
+        .as_array()
+        .expect("octagram fixture cases should be an array");
+    let report_cases = report_lane["cases"]
+        .as_array()
+        .expect("verification lane cases should be an array");
+    assert_eq!(report_cases.len(), fixture_cases.len(), "{report_path:?}");
+    for report_case in report_cases {
+        let input = report_case["input"]
+            .as_str()
+            .expect("verification input should be text");
+        let fixture_case = fixture_cases
+            .iter()
+            .find(|case| case["input"] == input)
+            .unwrap_or_else(|| {
+                panic!("{report_path:?} has verification input not in fixture: {input}")
+            });
+        let expected_top = fixture_case["selected_candidates"][0]["text"]
+            .as_str()
+            .expect("fixture selected top should be text");
+        assert_eq!(report_case["oracle_top"], expected_top, "{report_path:?}");
+        assert_eq!(report_case["yune_top"], expected_top, "{report_path:?}");
+        assert_eq!(report_case["top_matches"], true, "{report_path:?}");
+    }
 }
 
 fn assert_upstream_schema_fixture_header(

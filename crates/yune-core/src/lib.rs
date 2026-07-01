@@ -94,7 +94,9 @@ pub use memory_probe::{
     begin_memory_probe, finish_memory_probe, memory_probe_mark, MemoryProbeEvent, MemoryProbeSample,
 };
 pub use poet::{
-    make_sentence, make_sentences, null_grammar_score, Grammar, NullGrammar, SentenceCodeSpan,
+    encode_octagram_key, make_sentence, make_sentence_with_grammar, make_sentences,
+    make_sentences_with_grammar, null_grammar_score, Grammar, GrammarProvider, NullGrammar,
+    OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError, SentenceCodeSpan,
     SentencePath, UpstreamSentenceModel, WordGraph, WordGraphEntry, UPSTREAM_NO_GRAMMAR_PENALTY,
 };
 pub use punctuation::{PunctuationDefinition, PunctuationProcessor, PunctuationTranslator};

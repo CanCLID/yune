@@ -13,6 +13,7 @@ use crate::{
 };
 
 use super::*;
+use yune_core::{encode_octagram_key, CandidateSource, DartsDoubleArray};
 
 #[test]
 fn config_resource_ids_accept_logical_names_and_expected_suffixes() {
@@ -217,6 +218,98 @@ fn schema_dictionary_loading_rejects_unsafe_dictionary_name() {
 }
 
 #[test]
+fn schema_octagram_loading_rejects_unsafe_grammar_language_name() {
+    let _guard = test_guard();
+    let temp = unique_temp_dir("resource-id-grammar-reject");
+    let shared = temp.join("shared");
+    let staging = temp.join("staging");
+    let user = temp.join("user");
+    fs::create_dir_all(&shared).expect("create shared dir");
+    fs::create_dir_all(&staging).expect("create staging dir");
+    fs::create_dir_all(&user).expect("create user dir");
+    fs::write(
+        staging.join("luna_pinyin.schema.yaml"),
+        "\
+schema:
+  schema_id: luna_pinyin
+engine:
+  translators:
+    - script_translator
+translator:
+  dictionary: luna_pinyin
+grammar:
+  language: ../evil
+",
+    )
+    .expect("write schema");
+    write_luna_test_dictionary(&shared);
+    setup_test_runtime_paths(&shared, &staging, &user);
+
+    let mut session = SessionState::default();
+    session.engine.set_schema("luna_pinyin", "luna_pinyin");
+    install_schema_translator_chain(&mut session, "luna_pinyin");
+
+    assert!(session.remaining_gear_deferrals.iter().any(|deferral| {
+        deferral.gear == "grammar" && deferral.current_yune_behavior.contains("InvalidResourceId")
+    }));
+    let _ = fs::remove_dir_all(temp);
+}
+
+#[test]
+fn schema_octagram_loading_uses_logical_gram_resource_for_luna_pinyin() {
+    let _guard = test_guard();
+    let temp = unique_temp_dir("resource-id-grammar-load");
+    let shared = temp.join("shared");
+    let staging = temp.join("staging");
+    let user = temp.join("user");
+    fs::create_dir_all(&shared).expect("create shared dir");
+    fs::create_dir_all(&staging).expect("create staging dir");
+    fs::create_dir_all(&user).expect("create user dir");
+    fs::write(
+        staging.join("luna_pinyin.schema.yaml"),
+        "\
+schema:
+  schema_id: luna_pinyin
+engine:
+  translators:
+    - script_translator
+translator:
+  dictionary: luna_pinyin
+grammar:
+  language: m54_test
+",
+    )
+    .expect("write schema");
+    write_luna_test_dictionary(&shared);
+    fs::write(
+        shared.join("m54_test.gram"),
+        synthetic_octagram_gram(&[("今天會議", 500_000)]),
+    )
+    .expect("write synthetic gram");
+    setup_test_runtime_paths(&shared, &staging, &user);
+
+    let mut session = SessionState::default();
+    session.engine.set_schema("luna_pinyin", "luna_pinyin");
+    install_schema_translator_chain(&mut session, "luna_pinyin");
+    session.engine.process_sequence("jtyh");
+
+    let sentence_candidates = session
+        .engine
+        .context()
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.source == CandidateSource::Sentence)
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(sentence_candidates.first().copied(), Some("今天會議"));
+    assert!(session
+        .remaining_gear_deferrals
+        .iter()
+        .all(|deferral| deferral.gear != "grammar"));
+    let _ = fs::remove_dir_all(temp);
+}
+
+#[test]
 fn levers_custom_settings_reject_unsafe_config_ids() {
     let _guard = test_guard();
     let unsafe_config_id = CString::new("../evil").expect("config id C string");
@@ -294,4 +387,66 @@ fn userdb_apis_reject_unsafe_logical_dict_names_but_keep_file_paths() {
     assert!(!user.join("..").join("evil.userdb").exists());
 
     let _ = fs::remove_dir_all(temp);
+}
+
+fn setup_test_runtime_paths(
+    shared: &std::path::Path,
+    staging: &std::path::Path,
+    user: &std::path::Path,
+) {
+    let traits = RimeTraits {
+        shared_data_dir: CString::new(shared.to_string_lossy().as_ref())
+            .expect("shared path")
+            .into_raw(),
+        user_data_dir: CString::new(user.to_string_lossy().as_ref())
+            .expect("user path")
+            .into_raw(),
+        staging_dir: CString::new(staging.to_string_lossy().as_ref())
+            .expect("staging path")
+            .into_raw(),
+        ..empty_traits()
+    };
+    // SAFETY: traits contains valid C strings for the duration of setup.
+    unsafe { RimeSetup(&traits) };
+    // SAFETY: reclaim setup strings after RimeSetup copied path values.
+    unsafe {
+        drop(CString::from_raw(traits.shared_data_dir as *mut c_char));
+        drop(CString::from_raw(traits.user_data_dir as *mut c_char));
+        drop(CString::from_raw(traits.staging_dir as *mut c_char));
+    }
+}
+
+fn write_luna_test_dictionary(shared: &std::path::Path) {
+    fs::write(
+        shared.join("luna_pinyin.dict.yaml"),
+        "\
+---
+name: luna_pinyin
+version: '0.1'
+sort: by_weight
+...
+
+今天\tjt\t1000
+優惠\tyh\t1000000000
+會議\tyh\t1
+",
+    )
+    .expect("write luna dictionary");
+}
+
+fn synthetic_octagram_gram(entries: &[(&str, u32)]) -> Vec<u8> {
+    let encoded_entries = entries
+        .iter()
+        .map(|(key, value)| (encode_octagram_key(key), *value))
+        .collect::<Vec<_>>();
+    let double_array =
+        DartsDoubleArray::build_bytes(&encoded_entries).expect("synthetic gram keys should build");
+    let mut bytes = vec![0; 44];
+    bytes[.."Rime::Grammar/1.0".len()].copy_from_slice(b"Rime::Grammar/1.0");
+    bytes[36..40].copy_from_slice(&(double_array.units().len() as u32).to_le_bytes());
+    bytes[40..44].copy_from_slice(&4_i32.to_le_bytes());
+    for unit in double_array.units() {
+        bytes.extend_from_slice(&unit.to_le_bytes());
+    }
+    bytes
 }

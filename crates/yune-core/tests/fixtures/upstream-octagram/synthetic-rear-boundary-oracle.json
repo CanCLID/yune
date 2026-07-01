@@ -1,0 +1,111 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "octagram_plugin": "lotem/librime-octagram",
+    "octagram_plugin_commit": "dfcc15115788c828d9dd7b4bff68067d3ce2ffb8",
+    "capture_date": "2026-07-01",
+    "capture_os": "Windows",
+    "build_kind": "source-built librime 1.17.0 with merged octagram module",
+    "capture_command": "Rebuild target/m54-native-octagram/synthetic-oracle with m54_synthetic_octagram.schema.yaml, m54_synthetic.dict.yaml, m54_synthetic.gram, then run scripts/oracle-rime-probe.cs with modules [default, octagram] and input [a]; see docs/reports/evidence/m54-native-octagram-grammar-support/synthetic-rear-boundary-oracle.md.",
+    "build_outputs": {
+      "rime_dll_sha256": "c972d2a09b516176dfd62c57a293cd3ae57d06267f891e8c9331f85b6c761c38",
+      "rime_deployer_sha256": "b24904f215c455d22ee089a65124885e18d562a534d594a997ff523708ce4034"
+    }
+  },
+  "lane": "synthetic executable octagram oracle",
+  "purpose": "Lock upstream empty-context behavior: Octagram::Query returns non_collocation_penalty before any rear '$' score when the context is empty.",
+  "schema": {
+    "schema_id": "m54_synthetic_octagram",
+    "schema_data": "inline Yune-owned synthetic table schema",
+    "dictionary": "m54_synthetic",
+    "schema_yaml_sha256": "6e98ad184ce5329bbd203999099b5d42d5eefa95635ba130c5204bde0d77ceb3",
+    "dictionary_yaml_sha256": "5728ea1ff3e38df4716e3597d84ecf34908b5107afc01eec445a90dee006aadd",
+    "dictionary_rows": [
+      {
+        "text": "B",
+        "code": "a",
+        "weight": 1000.0
+      },
+      {
+        "text": "A",
+        "code": "a",
+        "weight": 1.0
+      }
+    ]
+  },
+  "module_list": [
+    "default",
+    "octagram"
+  ],
+  "grammar_model": {
+    "source": "Yune-owned synthetic fixture",
+    "license": "MIT",
+    "model_file": "inline:m54_synthetic.gram",
+    "model_sha256": "08e8cf7c33a1fd72a35264070487b889ab89b9751f381093d187267d30b4140a",
+    "model_bytes": 452,
+    "model_bytes_hex_chunks": [
+      "52696d653a3a4772616d6d61722f312e30000000000000000000000000000000",
+      "0000000066000000040000000004000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000004104000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "000040420f0024050000"
+    ],
+    "entries": [
+      {
+        "key": "A$",
+        "value": 1000000
+      }
+    ],
+    "vendoring": "committed inline synthetic fixture bytes; no third-party model data"
+  },
+  "capture": {
+    "source_row_policy": "m54_synthetic_octagram_rear_boundary_oracle",
+    "input_sequence": [
+      "a"
+    ],
+    "tested_invariant": "The top candidate remains B; the synthetic A$ rear-boundary score must not apply to an empty-context whole-input candidate."
+  },
+  "cases": [
+    {
+      "schema_id": "m54_synthetic_octagram",
+      "schema_name": "M54 Synthetic Octagram",
+      "input": "a",
+      "rime_get_input": "a",
+      "processed": [
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "a",
+      "commit_text_preview": "B",
+      "highlighted_candidate_index": 0,
+      "page_size": 9,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "B",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "A",
+          "comment": null
+        }
+      ]
+    }
+  ]
+}

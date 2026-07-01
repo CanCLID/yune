@@ -9,8 +9,12 @@ use crate::{
 };
 
 mod index;
+mod octagram;
 
 use index::SentenceLookupIndex;
+pub use octagram::{
+    encode_octagram_key, OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError,
+};
 
 /// Upstream `grammar.h` null-grammar penalty (`ln(1e-6)`) used when no `.gram`
 /// language model is configured.
@@ -32,6 +36,33 @@ pub struct NullGrammar;
 impl Grammar for NullGrammar {
     fn query(&self, _context: &str, _word: &str, _is_rear: bool) -> f64 {
         UPSTREAM_NO_GRAMMAR_PENALTY
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum GrammarProvider {
+    Null(NullGrammar),
+    Octagram(OctagramGrammar),
+}
+
+impl Default for GrammarProvider {
+    fn default() -> Self {
+        Self::Null(NullGrammar)
+    }
+}
+
+impl Grammar for GrammarProvider {
+    fn query(&self, context: &str, word: &str, is_rear: bool) -> f64 {
+        match self {
+            Self::Null(grammar) => grammar.query(context, word, is_rear),
+            Self::Octagram(grammar) => grammar.query(context, word, is_rear),
+        }
+    }
+}
+
+impl From<OctagramGrammar> for GrammarProvider {
+    fn from(grammar: OctagramGrammar) -> Self {
+        Self::Octagram(grammar)
     }
 }
 
@@ -142,16 +173,37 @@ pub fn make_sentence(graph: &WordGraph, total_length: usize) -> Option<SentenceP
 }
 
 #[must_use]
+pub fn make_sentence_with_grammar(
+    graph: &WordGraph,
+    total_length: usize,
+    grammar: &dyn Grammar,
+) -> Option<SentencePath> {
+    make_sentences_with_grammar(graph, total_length, 1, grammar)
+        .into_iter()
+        .next()
+}
+
+#[must_use]
 pub fn make_sentences(
     graph: &WordGraph,
     total_length: usize,
     max_sentences: usize,
 ) -> Vec<SentencePath> {
+    make_sentences_with_grammar(graph, total_length, max_sentences, &NullGrammar)
+}
+
+#[must_use]
+pub fn make_sentences_with_grammar(
+    graph: &WordGraph,
+    total_length: usize,
+    max_sentences: usize,
+    grammar: &dyn Grammar,
+) -> Vec<SentencePath> {
     if max_sentences == 0 {
         return Vec::new();
     }
 
-    make_sentences_by_end(graph, max_sentences)
+    make_sentences_by_end(graph, max_sentences, total_length, grammar)
         .remove(&total_length)
         .unwrap_or_default()
 }
@@ -159,12 +211,14 @@ pub fn make_sentences(
 fn make_sentences_by_end(
     graph: &WordGraph,
     max_sentences: usize,
+    total_length: usize,
+    grammar: &dyn Grammar,
 ) -> BTreeMap<usize, Vec<SentencePath>> {
     if max_sentences == 0 {
         return BTreeMap::new();
     }
 
-    collect_sentence_states(graph, max_sentences)
+    collect_sentence_states(graph, max_sentences, total_length, grammar)
         .into_iter()
         .filter(|(end, _)| *end > 0)
         .map(|(end, states)| (end, sentence_paths_from_states(states, max_sentences)))
@@ -174,12 +228,14 @@ fn make_sentences_by_end(
 fn make_abbreviation_sentences_by_end(
     graph: &WordGraph,
     max_sentences: usize,
+    total_length: usize,
+    grammar: &dyn Grammar,
 ) -> BTreeMap<usize, Vec<SentencePath>> {
     if max_sentences == 0 {
         return BTreeMap::new();
     }
 
-    collect_abbreviation_sentence_states(graph, max_sentences)
+    collect_abbreviation_sentence_states(graph, max_sentences, total_length, grammar)
         .into_iter()
         .filter(|(end, _)| *end > 0)
         .map(|(end, states)| {
@@ -194,6 +250,8 @@ fn make_abbreviation_sentences_by_end(
 fn collect_sentence_states(
     graph: &WordGraph,
     max_sentences: usize,
+    total_length: usize,
+    grammar: &dyn Grammar,
 ) -> BTreeMap<usize, Vec<PathState>> {
     let mut states: BTreeMap<usize, Vec<PathState>> = BTreeMap::new();
     states.insert(0, vec![PathState::default()]);
@@ -205,9 +263,15 @@ fn collect_sentence_states(
             for source in &source_states {
                 for entry in entries {
                     let mut next = source.clone();
-                    next.weight += null_grammar_score(entry.weight);
+                    next.weight += entry.weight
+                        + grammar.query(
+                            &source.grammar_context(),
+                            &entry.text,
+                            *end == total_length,
+                        );
                     next.text.push_str(&entry.text);
                     next.word_lengths.push(end - start);
+                    next.push_word(&entry.text);
                     insert_state(states.entry(*end).or_default(), next, max_sentences * 3);
                 }
             }
@@ -220,6 +284,8 @@ fn collect_sentence_states(
 fn collect_abbreviation_sentence_states(
     graph: &WordGraph,
     max_sentences: usize,
+    total_length: usize,
+    grammar: &dyn Grammar,
 ) -> BTreeMap<usize, Vec<PathState>> {
     let mut states: BTreeMap<usize, Vec<PathState>> = BTreeMap::new();
     states.insert(0, vec![PathState::default()]);
@@ -231,9 +297,15 @@ fn collect_abbreviation_sentence_states(
             for source in &source_states {
                 for entry in entries {
                     let mut next = source.clone();
-                    next.weight += null_grammar_score(entry.weight);
+                    next.weight += entry.weight
+                        + grammar.query(
+                            &source.grammar_context(),
+                            &entry.text,
+                            *end == total_length,
+                        );
                     next.text.push_str(&entry.text);
                     next.word_lengths.push(end - start);
+                    next.push_word(&entry.text);
                     insert_abbreviation_state(
                         states.entry(*end).or_default(),
                         next,
@@ -252,15 +324,24 @@ fn sentence_paths_from_states(
     max_sentences: usize,
 ) -> Vec<SentencePath> {
     states.sort_by(compare_path_state);
-    states
-        .into_iter()
-        .take(max_sentences)
-        .map(|state| SentencePath {
+    let mut paths = Vec::new();
+    for state in states {
+        if paths
+            .iter()
+            .any(|path: &SentencePath| path.text == state.text)
+        {
+            continue;
+        }
+        paths.push(SentencePath {
             text: state.text,
             weight: state.weight,
             word_lengths: state.word_lengths,
-        })
-        .collect()
+        });
+        if paths.len() == max_sentences {
+            break;
+        }
+    }
+    paths
 }
 
 fn abbreviation_sentence_paths_from_states(
@@ -268,15 +349,24 @@ fn abbreviation_sentence_paths_from_states(
     max_sentences: usize,
 ) -> Vec<SentencePath> {
     states.sort_by(compare_abbreviation_path_state);
-    states
-        .into_iter()
-        .take(max_sentences)
-        .map(|state| SentencePath {
+    let mut paths = Vec::new();
+    for state in states {
+        if paths
+            .iter()
+            .any(|path: &SentencePath| path.text == state.text)
+        {
+            continue;
+        }
+        paths.push(SentencePath {
             text: state.text,
             weight: state.weight,
             word_lengths: state.word_lengths,
-        })
-        .collect()
+        });
+        if paths.len() == max_sentences {
+            break;
+        }
+    }
+    paths
 }
 
 #[derive(Clone, Debug, Default)]
@@ -284,12 +374,26 @@ struct PathState {
     text: String,
     weight: f64,
     word_lengths: Vec<usize>,
+    recent_words: Vec<String>,
+}
+
+impl PathState {
+    fn grammar_context(&self) -> String {
+        self.recent_words.concat()
+    }
+
+    fn push_word(&mut self, word: &str) {
+        if self.recent_words.len() == 2 {
+            self.recent_words.remove(0);
+        }
+        self.recent_words.push(word.to_owned());
+    }
 }
 
 fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: usize) {
     if let Some(existing_index) = states
         .iter()
-        .position(|existing| existing.text == candidate.text)
+        .position(|existing| has_same_future_grammar_state(existing, &candidate))
     {
         if compare_path_state(&candidate, &states[existing_index]) == Ordering::Less {
             states.remove(existing_index);
@@ -309,7 +413,7 @@ fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: u
 fn insert_abbreviation_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: usize) {
     if let Some(existing_index) = states
         .iter()
-        .position(|existing| existing.text == candidate.text)
+        .position(|existing| has_same_future_grammar_state(existing, &candidate))
     {
         if compare_abbreviation_path_state(&candidate, &states[existing_index]) == Ordering::Less {
             states.remove(existing_index);
@@ -324,6 +428,10 @@ fn insert_abbreviation_state(states: &mut Vec<PathState>, candidate: PathState, 
     if states.len() > beam_width {
         states.pop();
     }
+}
+
+fn has_same_future_grammar_state(left: &PathState, right: &PathState) -> bool {
+    left.text == right.text && left.recent_words == right.recent_words
 }
 
 fn compare_path_state(left: &PathState, right: &PathState) -> Ordering {
@@ -361,6 +469,7 @@ fn abbreviation_synthesized_sentence(
     graph: &WordGraph,
     first_end: usize,
     total_end: usize,
+    grammar: &dyn Grammar,
 ) -> Option<SentencePath> {
     let mut segments = vec![(0usize, first_end)];
     segments.extend(abbreviation_best_suffix_partition(
@@ -369,11 +478,17 @@ fn abbreviation_synthesized_sentence(
     let mut text = String::new();
     let mut weight = 0.0;
     let mut word_lengths = Vec::with_capacity(segments.len());
+    let mut recent_words = Vec::<String>::new();
     for (start, end) in segments {
         let entry = graph.get(&start)?.get(&end)?.first()?;
         text.push_str(&entry.text);
-        weight += null_grammar_score(entry.weight);
+        weight +=
+            entry.weight + grammar.query(&recent_words.concat(), &entry.text, end == total_end);
         word_lengths.push(end - start);
+        if recent_words.len() == 2 {
+            recent_words.remove(0);
+        }
+        recent_words.push(entry.text.clone());
     }
     Some(SentencePath {
         text,
@@ -470,6 +585,7 @@ pub struct UpstreamSentenceModel {
     character_codes: HashMap<char, Vec<String>>,
     abbreviation_character_codes: HashMap<char, Vec<String>>,
     max_candidates: usize,
+    grammar: GrammarProvider,
 }
 
 impl UpstreamSentenceModel {
@@ -586,7 +702,14 @@ impl UpstreamSentenceModel {
             character_codes,
             abbreviation_character_codes,
             max_candidates: max_candidates.max(1),
+            grammar: GrammarProvider::default(),
         }
+    }
+
+    #[must_use]
+    pub fn with_grammar(mut self, grammar: impl Into<GrammarProvider>) -> Self {
+        self.grammar = grammar.into();
+        self
     }
 
     #[must_use]
@@ -596,7 +719,7 @@ impl UpstreamSentenceModel {
 
     #[must_use]
     pub fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
-        vec![
+        let mut rows = vec![
             MemoryOwnerRow::new(
                 "poet.entries_by_code",
                 MemoryOwnerClass::HeapOwnedReducible,
@@ -637,7 +760,11 @@ impl UpstreamSentenceModel {
                 "Vec<ModelVocabularyEntry>",
                 "abbreviation-only vocabulary used by M42 guard rows",
             ),
-        ]
+        ];
+        if let GrammarProvider::Octagram(grammar) = &self.grammar {
+            rows.push(grammar.memory_owner_row());
+        }
+        rows
     }
 
     #[must_use]
@@ -681,7 +808,8 @@ impl UpstreamSentenceModel {
         max_candidates: usize,
     ) -> Vec<Candidate> {
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
-        let sentences_by_end = make_sentences_by_end(graph, max_candidates);
+        let sentences_by_end =
+            make_sentences_by_end(graph, max_candidates, input.len(), &self.grammar);
         let mut candidates = HashMap::new();
         for end in input
             .char_indices()
@@ -731,7 +859,8 @@ impl UpstreamSentenceModel {
         let ranking_start = crate::m37_metrics_enabled().then(Instant::now);
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
         let sentence_limit = max_candidates.saturating_mul(4).min(self.max_candidates);
-        let sentences_by_end = make_abbreviation_sentences_by_end(graph, sentence_limit);
+        let sentences_by_end =
+            make_abbreviation_sentences_by_end(graph, sentence_limit, input.len(), &self.grammar);
         let total_end = input.len();
         let first_segment_end = sentences_by_end
             .get(&total_end)
@@ -742,7 +871,7 @@ impl UpstreamSentenceModel {
 
         let mut ranked = Vec::<RankedSentence>::new();
         if let Some(sentence) = first_segment_end
-            .and_then(|end| abbreviation_synthesized_sentence(graph, end, total_end))
+            .and_then(|end| abbreviation_synthesized_sentence(graph, end, total_end, &self.grammar))
             .or_else(|| {
                 sentences_by_end
                     .get(&total_end)
@@ -1115,7 +1244,7 @@ impl UpstreamSentenceModel {
         let Some(remaining) = input.get(offset..) else {
             return false;
         };
-        let Some(next_codes) = self.character_codes.get(&chars[index]) else {
+        let Some(next_codes) = self.normal_phrase_character_codes().get(&chars[index]) else {
             return false;
         };
         next_codes.iter().any(|next_code| {
@@ -1143,7 +1272,7 @@ impl UpstreamSentenceModel {
             }
             return;
         }
-        let Some(next_codes) = self.character_codes.get(&chars[index]) else {
+        let Some(next_codes) = self.normal_phrase_character_codes().get(&chars[index]) else {
             return;
         };
         for next_code in next_codes {
@@ -1153,6 +1282,13 @@ impl UpstreamSentenceModel {
                 self.derive_matching_phrase_codes_from(chars, input, index + 1, current, codes);
             }
             current.truncate(original_len);
+        }
+    }
+
+    fn normal_phrase_character_codes(&self) -> &HashMap<char, Vec<String>> {
+        match self.grammar {
+            GrammarProvider::Octagram(_) => &self.abbreviation_character_codes,
+            GrammarProvider::Null(_) => &self.character_codes,
         }
     }
 

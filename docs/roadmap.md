@@ -12,7 +12,9 @@ TypeDuck/Jyutping keyboard memory work is complete for the Windows proxy; M51
 froze the engine support contract and ABI boundaries; M52 froze native Track A
 `luna_pinyin` performance guardrails and dispositioned the remaining M50
 blockers; M53 re-verified the engine docs and public claims for
-release-readiness and corrected stale `README.md` public-claim wording. No active
+release-readiness and corrected stale `README.md` public-claim wording; M54
+adds native octagram-compatible grammar support for the named upstream
+`luna_pinyin` target without implementing the librime C++ plugin ABI. No active
 numbered engine milestone is open in this roadmap.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
@@ -46,6 +48,8 @@ numbered engine milestone is open in this roadmap.
   values are Windows proxies, not Apple `phys_footprint`.
 - [`plans/completed/m52-plan-track-a-guardrails-and-disposition.md`](./plans/completed/m52-plan-track-a-guardrails-and-disposition.md)
   - latest native Track A guardrail and blocker-disposition milestone.
+- [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md)
+  - native octagram-compatible grammar support milestone.
 - [`plans/completed/m51-plan-engine-support-contract-abi-freeze.md`](./plans/completed/m51-plan-engine-support-contract-abi-freeze.md)
   - engine support contract and ABI freeze milestone.
 - [`plans/completed/m47-plan-ios-budget-native-memory-reduction.md`](./plans/completed/m47-plan-ios-budget-native-memory-reduction.md)
@@ -61,7 +65,7 @@ numbered engine milestone is open in this roadmap.
 
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
-| Core compatibility | Phase 1 named-target upstream behavior remains complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. M51 records supported targets, oracle precedence, default upstream ABI rules, profile ABI rules, `yune_web_*` export rules, storage expectations, and evidence-lane rules. Post-M51 cleanup documents and tests `rime_get_yune_windows_profile_api()` as a parallel accessor for the same current profile table. | Future engine work must preserve the contract or update it with named oracle/header evidence and focused tests. |
+| Core compatibility | Phase 1 named-target upstream behavior remains complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. M54 adds native octagram-compatible grammar support for the named upstream `luna_pinyin` octagram target using pinned lotem oracle data, with RIME-LMDG kept as a pinned validation lane. M51 records supported targets, oracle precedence, default upstream ABI rules, profile ABI rules, `yune_web_*` export rules, storage expectations, and evidence-lane rules. Post-M51 cleanup documents and tests `rime_get_yune_windows_profile_api()` as a parallel accessor for the same current profile table. | Future engine work must preserve the contract or update it with named oracle/header evidence and focused tests. Full librime C++ plugin ABI support remains deferred. |
 | Engine performance | M52 is complete for native Track A guardrails and blocker disposition. The committed threshold artifact and fail-on-regression benchmark gate cover `n`, `ni`, `hao`, the 37-character Luna row, the existing 59-character Luna row, and full Luna peak memory. Final same-run rows are startup `24,139.200us` / `1.113x`, session `23,404.000us` / `1.001x`, `n` `60.300us` / `2.818x`, `ni` `44.950us` / `3.143x`, `hao` `24.967us` / `2.146x`, 37-character `895.178us` / `3.053x`, and 59-character `1,545.754us` / `2.247x`. Full Luna Track A memory is `188.4 MB` peak / `194.3 MB` max-summary private versus librime `17.3 MB` max peer peak; named owners include `poet.vocabulary` `53.6 MB`, `poet.entries_by_code` `18.7 MB`, and process unclassified lower bound `105.6 MB`. | Future native Track A work should only reopen these rows with a new owner-evidenced plan. M52 guardrails are regression ceilings, not a claim that `ni` or the 37-character row meet the strict `<=3.0x` target. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
 | Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. |
@@ -127,7 +131,7 @@ change that changes the cost model without changing candidate output.
 This is the one gap that is large and structural rather than
 sub-perceptual-microsecond. It is not a wall: the technique that closes it is
 already proven in this repo. It is deferred, not blocked, and would open as an
-owner-evidenced performance-research milestone (tentatively **M54 native Track A
+owner-evidenced performance-research milestone (tentatively **M55 native Track A
 structural memory research**), after the release-readiness audit, only with a
 fresh plan and a real win bar.
 
@@ -177,8 +181,9 @@ portable technique that also lowers the Track B product, WASM, and iOS lanes.
 
 ## Authoritative Sequence
 
-1. **No active numbered engine milestone is open.** M52 is complete and is the
-   current native performance guardrail source of truth.
+1. **No active numbered engine milestone is open.** M54 is complete for native
+   octagram-compatible grammar support; M52 remains the current native
+   performance guardrail source of truth.
 2. **M53 engine release-readiness audit is complete.** The five-dimension audit
    (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness,
    public claim wording, link/evidence integrity) found the substantive
@@ -190,18 +195,24 @@ portable technique that also lowers the Track B product, WASM, and iOS lanes.
    [`reports/evidence/m53-engine-release-readiness-audit/`](./reports/evidence/m53-engine-release-readiness-audit/).
    Plan:
    [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md).
-3. **Future performance research is optional and must be owner-evidenced.** A
+3. **M54 native octagram-compatible grammar support is complete.** Yune now
+   supports the named upstream `luna_pinyin` octagram target through a native
+   Rust `Grammar` provider and logical `.gram` resource loading. Evidence:
+   [`reports/evidence/m54-native-octagram-grammar-support/`](./reports/evidence/m54-native-octagram-grammar-support/).
+   Plan:
+   [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md).
+4. **Future performance research is optional and must be owner-evidenced.** A
    "surpass librime" milestone should start from the Performance North Star and
    should not reuse M52's regression ceilings as a success bar. The concrete
    candidate is the native Track A memory work sketched in
    [Closing The 188 MB Native Track A Memory Gap](#closing-the-188-mb-native-track-a-memory-gap)
-   (tentatively M54), opened only after the release-readiness audit.
-4. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
+   (tentatively M55), opened only with a fresh owner-evidenced plan.
+5. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
-5. **Future AI-native engine experiments** - later, and only after classic
+6. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-6. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+7. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
    fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
    row is explicitly selected as the target.
 
@@ -236,6 +247,7 @@ and current decision rules.
 | M47 | Complete for portable scope | TypeDuck/Jyutping comments-intact keyboard memory is under the Windows private/dirty proxy target; Apple `phys_footprint` proof remains parked. |
 | M48-M52 | Complete | Current engine correctness, support-contract, and Track A guardrail closeouts; M52 is the current native performance source of truth. |
 | M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived public-claim wording to the contract-accurate M52 lane-specific record. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
+| M54 | Complete | Native octagram-compatible grammar support for the named upstream `luna_pinyin` target, with pinned lotem oracle data, RIME-LMDG validation evidence, external model checksums, clean-room Rust `.gram` parsing/scoring, null-grammar and TypeDuck regression gates, and no public C ABI change. Plan: [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md). |
 
 ## Scope Ledger
 
@@ -244,7 +256,7 @@ only when an engine target needs them; nothing here commits to a timeline.
 
 | In scope - target-driven, measured | Deferred - implement when an engine target needs it | Non-goal |
 | --- | --- | --- |
-| `luna_pinyin` core versus upstream `1.17.0`, including completed M17 null-grammar sentence/lattice, M18 punctuation processor slices, completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`, and completed M48 `jianli`/`biancheng` over-segmentation parity | Learned `.gram`/octagram grammar, contextual translation, and broader plugin-backed gears until a named engine target needs them | Bit-for-bit parity with librime internals |
+| `luna_pinyin` core versus upstream `1.17.0`, including completed M17 null-grammar sentence/lattice, M18 punctuation processor slices, completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`, completed M48 `jianli`/`biancheng` over-segmentation parity, and completed M54 native octagram-compatible grammar support for the named upstream target | Broader learned `.gram`/octagram behavior, contextual translation, and plugin-backed gears beyond the named M54 target | Bit-for-bit parity with librime internals |
 | Common RIME schemas added through explicit breadth milestones | Further schema breadth only with fresh oracle fixtures and owning tests | Unbounded schema checklist work |
 | Native engine performance guardrails for startup, session lifecycle, lookup, lazy/page-bounded translation, context export, memory, and allocation | Frontend/application delivery evidence and platform packaging | Claiming application-visible wins from native engine evidence |
 | AI-native layer on the compatible deterministic base | Richer AI experiments after the classic engine path is competitive | Replacing or altering classic input paths by default |
@@ -262,8 +274,10 @@ only when an engine target needs them; nothing here commits to a timeline.
   engine candidates. They are useful for download size, cold start, WASM, and
   conservative resident footprint, but are not required for the current
   iOS-dirty proxy result. Open them only with a fresh owner-ranked plan.
-- **librime C++ plugin ABI** (Lua, octagram, predict, proto): deferred until a
-  concrete engine target requires it; prefer Yune-native extension points first.
+- **librime C++ plugin ABI** (Lua, dynamic octagram plugin loading, predict,
+  proto): deferred until a concrete engine target requires it; M54's native
+  octagram-compatible grammar support is not C++ plugin ABI support. Prefer
+  Yune-native extension points first.
 - **AI-native input layer beyond M13:** future work owns richer local-first AI
   behavior, privacy/memory controls, and any explicit remote-provider decision.
   Until then, proven AI remains default-off and outside the classic performance

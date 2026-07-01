@@ -2,7 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Status:** Reviewed - Task 0 green after native product-path fix; Tasks 1-5 not started. - **Track:** Web harness startup and memory (`apps/yune-web`). - **Created:** 2026-07-01 - **Updated:** 2026-07-01 (post-fix review P3s folded in: WEB-04 profile gate is now presence-only so an invalid `grammar/language` records a visible grammar deferral, with a focused regression; Task 0 checklist marked complete per follow-up evidence) - **Type:** dogfooding/observability slice (data + app plumbing; no engine contract change).
+> **Status:** Complete - Task 0 green after native product-path fix; Tasks 1-5
+> complete with browser evidence and closeout docs. - **Track:** Web
+> harness startup and memory (`apps/yune-web`). - **Created:** 2026-07-01 -
+> **Updated:** 2026-07-01 (WEB-04 completed; browser follow-up evidence passed
+> after sourcing the local Emscripten environment for the WASM build; see
+> `docs/reports/evidence/web04-octagram-debug-harness/browser-harness-followup-2026-07-01.md`)
+> - **Type:** dogfooding/observability slice (data + app plumbing; no engine
+> contract change).
 
 **Goal:** Make the M54 native octagram grammar feature **observable and
 toggleable in the `yune-web` browser harness for `luna_pinyin`**, so the engine
@@ -173,69 +180,73 @@ a harness slice.
 
 ## Task 1: Dev Model Fetch + Ignore
 
-**Status:** Not started.
+**Status:** Green; model fetch implemented and browser evidence passed.
 
-- [ ] Add a script that downloads the pinned `.gram` by URL and verifies its
+- [x] Add a script that downloads the pinned `.gram` by URL and verifies its
   checksum into a gitignored local asset path (no browser-runtime fetch of the
   model; no committed bytes).
-- [ ] Add a `.gitignore` rule covering `.gram` under the harness so LGPL model
+- [x] Add a `.gitignore` rule covering `.gram` under the harness so LGPL model
   data cannot be accidentally committed.
 
 ## Task 2: Dedicated Octagram Schema Profile
 
-**Status:** Not started.
+**Status:** Green; browser deploy proof passed.
 
-- [ ] Create `luna_pinyin_octagram.schema.yaml` setting `grammar/language`
+- [x] Create `luna_pinyin_octagram.schema.yaml` setting `grammar/language`
   **inline** for the pinned model. Do **not** add a shared `grammar.yaml`/`hant`
   node (plain `luna_pinyin` imports `grammar:/hant?` and would consume it).
-- [ ] Confirm plain `luna_pinyin` still deploys with **no grammar model loaded**,
+- [x] Confirm plain `luna_pinyin` still deploys with **no grammar model loaded**,
   and the octagram profile deploys **with** it, through the existing schema-switch
-  path.
+  path. *(Completed by the 2026-07-01 browser follow-up evidence.)*
 
 ## Task 3: Adapter Asset Delivery, Toggle, Diagnostics
 
-**Status:** Not started.
+**Status:** Green; adapter delivery, toggle, diagnostics, and browser evidence
+passed.
 
-- [ ] Deliver the dev `.gram` for the octagram profile through the existing
+- [x] Deliver the dev `.gram` for the octagram profile through the existing
   adapter `extraSharedAssets` seam, lazily (only when the profile is selected).
   If the model is missing or the checksum mismatches, fall back to plain Luna and
   surface a "grammar model not loaded" diagnostic - never error. **This graceful
   fallback is dev-UX only**; the verification gate and Playwright evidence for the
   octagram profile must fail-closed on a missing/bad model (Task 4), not pass on
   the fallback.
-- [ ] Expose the profile switch as a **default-off** UI toggle or schema-selector
+- [x] Expose the profile switch as a **default-off** UI toggle or schema-selector
   entry in `yune-integration`.
-- [ ] Add diagnostics: grammar model loaded yes/no, model id + checksum, and the
+- [x] Add diagnostics: grammar model loaded yes/no, model id + checksum, and the
   measured browser-memory delta with vs without the model.
 
 ## Task 4: Browser Evidence
 
-**Status:** Not started.
+**Status:** Green. The local WASM build blocker was resolved by sourcing the
+local Emscripten environment before running `scripts/yune-web-wasm-build.sh`;
+the WEB-04 Playwright gate now passes. See
+`browser-harness-followup-2026-07-01.md`.
 
-- [ ] **Fail-closed gate:** the octagram evidence must first assert the
+- [x] **Fail-closed gate:** the octagram evidence must first assert the
   diagnostic shows the grammar model actually loaded (id + checksum match). A
   missing or checksum-bad model **fails** the octagram gate; it must not silently
   serve plain Luna and pass. Only the negative control below expects plain-Luna
   output.
-- [ ] Capture Playwright evidence for the octagram profile: inputs where the top
+- [x] Capture Playwright evidence for the octagram profile: inputs where the top
   candidates/ordering differ from plain Luna (the observable win), with
   before/after candidate lists recorded.
-- [ ] Capture a negative control: with the plain profile selected, Luna candidate
+- [x] Capture a negative control: with the plain profile selected, Luna candidate
   behavior is unchanged from the current harness.
-- [ ] Record the browser memory high-water with the model loaded vs not, framed
+- [x] Record the browser memory high-water with the model loaded vs not, framed
   against the WEB-03 `64.0 MiB` Luna fair-lane number - measured evidence, not a
   performance claim.
-- [ ] Keep all evidence under
+- [x] Keep all evidence under
   `docs/reports/evidence/web04-octagram-debug-harness/`, browser lane separated
   from native/engine claims.
 
 ## Task 5: Closeout
 
-**Status:** Not started.
+**Status:** Complete.
 
-- [ ] Update roadmap (Snapshot/Sequence/Ledger), requirements (WEB-04 IDs +
+- [x] Update roadmap (Snapshot/Sequence/Ledger), requirements (WEB-04 IDs +
   coverage), and milestone-history; archive this plan to `completed/`.
-- [ ] Keep the support contract's octagram row scoped to the named engine target;
+- [x] Keep the support contract's octagram row scoped to the named engine target;
   this slice adds a harness dogfooding surface, not a broadened engine support
   claim.
 
@@ -284,8 +295,8 @@ Add to `docs/requirements.md` only on closeout:
 
 Suggested prompt for review:
 
-> Please review `docs/plans/active/web04-plan-octagram-debug-harness-luna-pinyin.md`
-> as a draft WEB-04 plan. Focus on: whether the dedicated `luna_pinyin_octagram`
+> Please review `docs/plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`
+> as a completed WEB-04 closeout. Focus on: whether the dedicated `luna_pinyin_octagram`
 > profile (inline `grammar/language`, no shared `grammar.yaml`/`hant`) actually
 > keeps plain Luna default-off; whether the native Phase 0 gate is the right
 > prerequisite; the `.gram` model/license/size + memory posture (default-off,

@@ -959,6 +959,35 @@ mapping for common multi-syllable words (see WEB03-10).
   yune-core `259/0`, `cantonese_parity` `37/0`, `upstream_luna_pinyin_parity`
   `12/0`, `yune_web` `35/0`, clippy `-D warnings` + fmt clean.
 
+## WEB-04 Octagram Debug Harness Requirements
+
+**Status: complete.** WEB-04 makes the completed M54 native octagram grammar
+feature observable in the tracked `apps/yune-web` harness through a default-off
+`luna_pinyin_octagram` profile. It does not broaden the engine support contract,
+does not vendor full third-party `.gram` bytes, and does not claim browser
+performance improvement. Evidence:
+`docs/reports/evidence/web04-octagram-debug-harness/`; plan:
+[`docs/plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md).
+
+- [x] **WEB04-OCTAGRAM-01**: The lotem `zh-hant-t-essay-bgw.gram` development
+  model is fetched by pinned URL/commit/checksum into a gitignored local
+  `apps/yune-web/public/schema/dev/octagram/` path; no full `.gram` model bytes
+  are committed.
+- [x] **WEB04-OCTAGRAM-02**: The browser harness exposes a dedicated
+  `luna_pinyin_octagram` schema profile with inline `grammar/language`, while
+  plain `luna_pinyin` remains default-off/null-grammar and no shared
+  `grammar.yaml`/`hant` node is added.
+- [x] **WEB04-OCTAGRAM-03**: The browser worker delivers the model only for the
+  octagram profile through the existing `extraSharedAssets` seam, validates byte
+  size and SHA256, and reports loaded/fallback/checksum/memory diagnostics.
+- [x] **WEB04-OCTAGRAM-04**: Playwright evidence proves the octagram profile
+  loads the pinned model and changes ranking on named rows, proves plain Luna
+  remains unchanged as the negative control, and fails closed when the model is
+  missing instead of passing on fallback output.
+- [x] **WEB04-OCTAGRAM-05**: WEB-04 leaves `crates/`,
+  `packages/yune-web-runtime`, default `rime_get_api()`, and the support
+  contract unchanged; it is browser harness dogfooding/observability only.
+
 ## M46 Jyutping Native And WASM Memory Attribution Requirements
 
 **Status: complete with measured no-go.** M46 is tracked in
@@ -1371,6 +1400,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M54-OCTAGRAM-05 | M54 | Complete - support contract and roadmap distinguish native octagram support from deferred librime C++ plugin ABI support |
 | M54-OCTAGRAM-06 | M54 | Complete - octagram owner rows and final evidence record memory/timing scope without public performance claims |
 | M54-OCTAGRAM-07 | M54 | Complete - full third-party `.gram` models stay external; checked-in data is oracle output/provenance plus Yune-owned synthetic tests |
+| WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
+| WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
+| WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes loaded/fallback/checksum/memory diagnostics |
+| WEB04-OCTAGRAM-04 | WEB-04 | Complete - WEB-04 Playwright evidence proves loaded octagram ranking, plain Luna negative control, and missing-model fail-closed behavior |
+| WEB04-OCTAGRAM-05 | WEB-04 | Complete - no `crates/`, `packages/yune-web-runtime`, default ABI, or support-contract widening is part of the browser harness slice |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
 | M22-PLAY-03 | M22 Bucket 1 | Complete - traditionalization, disabled, extended_charset, and dictionary_exclude have browser evidence; ascii_punct remains absent without browser-visible before/after evidence |
@@ -1662,9 +1696,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M52 Track A guardrails and blocker disposition requirements: 6 total, 6 complete, 0 active
 - M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
 - M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
-- Mapped to phases: 386
+- WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
+- Mapped to phases: 391
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-01 - M54 native octagram grammar support is complete for the named upstream `luna_pinyin` octagram target. The lotem canonical oracle lane and RIME-LMDG validation lane are pinned; full third-party `.gram` models remain external by URL/checksum/license evidence; Yune implements clean-room native `.gram` parsing/scoring behind the existing `Grammar` provider without public C ABI changes; null-grammar `luna_pinyin` and TypeDuck `jyut6ping3` gates remain unchanged. M52 remains the native Track A guardrail source of truth; the 188 MB memory reduction moves to the deferred M55 candidate._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-01 - WEB-04 is complete for the tracked `apps/yune-web` octagram debug harness: a default-off `luna_pinyin_octagram` profile loads a pinned, non-vendored lotem `.gram` through `extraSharedAssets`, exposes diagnostics, proves octagram ranking and fail-closed browser behavior in Playwright, and keeps the engine support contract/default ABI unchanged. M54 remains the native octagram engine milestone; WEB-04 is browser dogfooding/observability only._

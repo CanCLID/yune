@@ -11,3 +11,6 @@ public/worker.js
 public/worker.js.map
 public/yune-web.js
 public/yune-web.wasm
+
+# WEB-04 local-only octagram dev models are fetched by URL/checksum.
+public/schema/dev/**/*.gram

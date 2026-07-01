@@ -7,6 +7,14 @@
  */
 
 import type { Actions, ListenerArgsMap, Message, RimeResult, RimePreferences, RimeNotification, RimeDeployStatus, RimeSchemaId, YuneWebMemorySnapshot, YuneWebUserdbParseError, YuneWebUserdbRow, YuneWebUserdbSnapshot } from "./types";
+import {
+  OCTAGRAM_MODEL_BYTES,
+  grammarDiagnosticForSchema,
+  grammarMemoryDelta,
+  grammarModelRequestForSchema,
+  isRimeSchemaId,
+  type GrammarModelDiagnostic,
+} from "./octagram";
 
 // Yune integration imports
 import {
@@ -501,10 +509,16 @@ const PLAYGROUND_SCHEMAS: Record<RimeSchemaId, PlaygroundSchema> = {
     name: "Luna Pinyin",
     dictionaryId: "luna_pinyin",
   },
+  luna_pinyin_octagram: {
+    runtimeId: "luna_pinyin_octagram",
+    name: "Luna Pinyin + Octagram",
+    dictionaryId: "luna_pinyin",
+  },
 };
 let yuneModule: YuneWebBrowserModule | null = null;
 let loadedExtraSharedAssets: { path: string; content: string | Uint8Array }[] = [];
 let activeSchemaId: RimeSchemaId = INITIAL_SCHEMA_ID;
+let activeGrammarDiagnostic: GrammarModelDiagnostic = grammarDiagnosticForSchema(INITIAL_SCHEMA_ID);
 let publicAssetManifest: PublicAssetManifest | null = null;
 let publicAssetCacheStats: PublicAssetCacheStats = { hits: 0, misses: 0, unavailable: false };
 let peakWasmHeapBytes = 0;
@@ -672,7 +686,7 @@ function initialSchemaFromWorkerUrl(): RimeSchemaId {
     if (raw === "jyut6ping3_mobile") {
       return "jyut6ping3";
     }
-    if (raw === "jyut6ping3" || raw === "cangjie5" || raw === "luna_pinyin") {
+    if (isRimeSchemaId(raw)) {
       return raw;
     }
   } catch {
@@ -840,6 +854,7 @@ function sharedAssetPathsForSchema(schemaId: RimeSchemaId): readonly string[] {
   }
   switch (schemaId) {
     case "luna_pinyin":
+    case "luna_pinyin_octagram":
       return uniqueSharedAssetPaths(YUNE_WEB_LUNA_SHARED_ASSETS);
     case "cangjie5":
       return uniqueSharedAssetPaths(YUNE_WEB_CANGJIE_SHARED_ASSETS);
@@ -872,16 +887,94 @@ function uniqueSharedAssetPaths(paths: readonly string[]): string[] {
   return [...new Set(paths)];
 }
 
+async function loadOctagramAssetForSchema(
+  schemaId: RimeSchemaId,
+  memoryBefore: YuneWebMemorySnapshot | undefined,
+): Promise<{
+  effectiveSchemaId: RimeSchemaId;
+  asset: { path: string; content: Uint8Array } | null;
+  diagnostic: GrammarModelDiagnostic;
+}> {
+  const request = grammarModelRequestForSchema(schemaId);
+  if (request === null) {
+    return {
+      effectiveSchemaId: schemaId,
+      asset: null,
+      diagnostic: grammarDiagnosticForSchema(schemaId, {
+        ...grammarMemoryDelta(memoryBefore, memoryBefore),
+        reason: "schema has no grammar/language",
+      }),
+    };
+  }
+
+  try {
+    const content = await loadAssetContent({
+      type: "url",
+      url: `schema/${request.assetPath}`,
+    });
+    if (!(content instanceof Uint8Array)) {
+      throw new Error(`octagram model ${request.assetPath} did not load as bytes`);
+    }
+    const actualSha256 = await sha256Hex(content);
+    if (actualSha256 !== request.expectedSha256) {
+      throw new Error(`octagram model checksum mismatch: expected ${request.expectedSha256}, got ${actualSha256}`);
+    }
+    if (content.byteLength !== OCTAGRAM_MODEL_BYTES) {
+      throw new Error(`octagram model size mismatch: expected ${OCTAGRAM_MODEL_BYTES}, got ${content.byteLength}`);
+    }
+    return {
+      effectiveSchemaId: schemaId,
+      asset: { path: request.sharedDataPath, content },
+      diagnostic: grammarDiagnosticForSchema(schemaId, {
+        loaded: true,
+        modelId: request.modelId,
+        expectedSha256: request.expectedSha256,
+        actualSha256,
+        bytes: content.byteLength,
+        sourcePath: request.assetPath,
+        fallback: false,
+      }),
+    };
+  } catch (error) {
+    return {
+      effectiveSchemaId: "luna_pinyin",
+      asset: null,
+      diagnostic: grammarDiagnosticForSchema(schemaId, {
+        effectiveSchemaId: "luna_pinyin",
+        loaded: false,
+        modelId: request.modelId,
+        expectedSha256: request.expectedSha256,
+        sourcePath: request.assetPath,
+        fallback: true,
+        reason: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+      }),
+    };
+  }
+}
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes.slice().buffer);
+  return [...new Uint8Array(digest)]
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets = false): Promise<void> {
   const module = yuneModule;
   if (module === null) {
     throw new Error("Yune module is not loaded");
   }
-  const schema = PLAYGROUND_SCHEMAS[schemaId];
-  if (schema === undefined) {
+  if (PLAYGROUND_SCHEMAS[schemaId] === undefined) {
     throw new Error(`Unknown Yune schema: ${schemaId}`);
   }
   await ensureSharedAssetsForSchema(schemaId);
+  const memoryBefore = activeWasmMemorySnapshot();
+  const octagram = await loadOctagramAssetForSchema(schemaId, memoryBefore);
+  const effectiveSchemaId = octagram.effectiveSchemaId;
+  const schema = PLAYGROUND_SCHEMAS[effectiveSchemaId];
+  const perSchemaExtraSharedAssets = octagram.asset === null
+    ? loadedExtraSharedAssets
+    : [...loadedExtraSharedAssets, octagram.asset];
   const assetsConfig: ExplicitYuneWebAssets = {
     defaultYaml: await schemaAssetSource("default.yaml"),
     schemaYaml: await schemaAssetSource(`${schema.runtimeId}.schema.yaml`),
@@ -905,12 +998,22 @@ async function selectYuneSchema(schemaId: RimeSchemaId, preserveDeployedAssets =
     },
     assets,
     schema.dictionaryId,
-    loadedExtraSharedAssets,
+    perSchemaExtraSharedAssets,
     preserveDeployedAssets,
     YUNE_WEB_ASSET_VERSION,
   );
   activeSchemaId = schemaId;
+  activeGrammarDiagnostic = {
+    ...octagram.diagnostic,
+    ...grammarMemoryDelta(memoryBefore, activeWasmMemorySnapshot()),
+  };
   dispatch("schemaChanged", schemaId, schema.name);
+  dispatch("grammarDiagnosticChanged", activeGrammarDiagnostic);
+  postMessage({
+    type: "diagnostic",
+    source: "yune-octagram",
+    marker: activeGrammarDiagnostic,
+  });
 }
 
 async function schemaAssetSource(path: string): Promise<AssetSource> {

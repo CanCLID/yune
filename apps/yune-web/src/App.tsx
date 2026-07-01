@@ -16,6 +16,7 @@ import YuneUserdbViewer from "./YuneUserdbViewer";
 
 import type {
 	RimePreferences,
+	GrammarModelDiagnostic,
 	YuneWebUserdbSnapshot,
 	YuneInspectorDebug,
 	YuneStatusSnapshot,
@@ -82,10 +83,12 @@ function byteMetricValue(value: number | undefined, emptyLabel: string) {
 function YuneInspectorMetrics({
 	metrics,
 	userdbSnapshot,
+	grammarDiagnostic,
 	uiLanguage,
 }: {
 	metrics: YuneMetrics;
 	userdbSnapshot?: YuneWebUserdbSnapshot;
+	grammarDiagnostic?: GrammarModelDiagnostic;
 	uiLanguage: UiLanguage;
 }) {
 	const text = uiText[uiLanguage].metrics;
@@ -132,6 +135,24 @@ function YuneInspectorMetrics({
 						<span> {text.rows}</span>
 					</>
 					: <span className="yd-metric-empty">{text.na}</span>}
+			</div>
+		</div>
+		<div
+			className="yd-metric"
+			data-yune-grammar-diagnostic
+			data-loaded={grammarDiagnostic?.loaded ?? false}
+			data-model-id={grammarDiagnostic?.modelId ?? ""}
+			data-checksum={grammarDiagnostic?.actualSha256 ?? ""}
+			data-expected-checksum={grammarDiagnostic?.expectedSha256 ?? ""}
+			data-memory-delta-bytes={grammarDiagnostic?.memoryDeltaBytes ?? ""}>
+			<div className="yd-metric-label">Octagram</div>
+			<div className="yd-metric-value" data-yune-metric-grammar title={grammarDiagnostic?.actualSha256 ?? grammarDiagnostic?.reason ?? ""}>
+				{grammarDiagnostic?.loaded
+					? <>
+						{grammarDiagnostic.modelId}
+						<span> {grammarDiagnostic.actualSha256?.slice(0, 8)}</span>
+					</>
+					: <span className="yd-metric-empty">{grammarDiagnostic?.fallback ? "fallback" : "off"}</span>}
 			</div>
 		</div>
 	</div>;
@@ -219,6 +240,7 @@ export default function App() {
 		YuneStatusSnapshot | undefined
 	>();
 	const [metrics, setMetrics] = useState<YuneMetrics>({});
+	const [grammarDiagnostic, setGrammarDiagnostic] = useState<GrammarModelDiagnostic | undefined>();
 	const updateMetrics = useCallback((next: YuneMetrics) => {
 		setMetrics(current => {
 			const merged = { ...current, ...next };
@@ -313,6 +335,10 @@ export default function App() {
 			}
 		});
 	}, [activeSchema, isEngineReady, runAsyncTask]);
+
+	useEffect(() =>
+		subscribe("grammarDiagnosticChanged", setGrammarDiagnostic),
+	[]);
 
 	useEffect(() => {
 		if (!isEngineReady) {
@@ -648,7 +674,7 @@ export default function App() {
 							<div>
 								<span>{text.inspector.gateTitle}</span>
 							</div>
-							<YuneInspectorMetrics metrics={metrics} userdbSnapshot={userdbSnapshot} uiLanguage={uiLanguage} />
+							<YuneInspectorMetrics metrics={metrics} userdbSnapshot={userdbSnapshot} grammarDiagnostic={grammarDiagnostic} uiLanguage={uiLanguage} />
 							<label className="yd-inspector-enable" data-yune-inspector-toggle>
 								<input
 									type="checkbox"

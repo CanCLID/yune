@@ -18,6 +18,16 @@ describe("yune-web explicit asset loading", () => {
     );
   });
 
+  it("loads .gram model bytes as binary assets", async () => {
+    const bytes = new Uint8Array([0x67, 0x72, 0x61, 0x6d]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(bytes, { status: 200 })),
+    );
+
+    await expect(loadAssetContent({ type: "url", url: "schema/dev/octagram/model.gram" })).resolves.toEqual(bytes);
+  });
+
   it("loads optional deployed build YAML when the app provides it", async () => {
     vi.stubGlobal(
       "fetch",

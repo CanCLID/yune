@@ -8,6 +8,7 @@
 		"start": "npm run prepare:runtime && npm run worker -- --sourcemap && vite --host",
 		"build": "npm run prepare:runtime && npm run worker -- --minify && vite build",
 		"build:public": "node public-demo/build.mjs",
+		"fetch:octagram-dev-model": "node scripts/fetch-octagram-dev-model.mjs",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"worker": "esbuild src/worker.ts --bundle --format=iife --outdir=public",
 		"preview": "vite preview --host"

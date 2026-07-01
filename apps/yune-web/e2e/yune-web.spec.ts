@@ -630,6 +630,27 @@ async function waitForAppReady(page: Page): Promise<void> {
   });
 }
 
+async function readGrammarDiagnostic(page: Page): Promise<{
+  requestedSchemaId?: string;
+  effectiveSchemaId?: string;
+  loaded?: boolean;
+  modelId?: string | null;
+  expectedSha256?: string | null;
+  actualSha256?: string;
+  bytes?: number;
+  fallback?: boolean;
+  memoryDeltaBytes?: number;
+}> {
+  return page.evaluate(() => {
+    const raw = document.documentElement.dataset.yuneGrammarDiagnostic;
+    return raw ? JSON.parse(raw) : {};
+  });
+}
+
+function grammarDiagnosticMetric(page: Page): Locator {
+  return page.locator('.yd-metric[data-yune-grammar-diagnostic="true"]');
+}
+
 async function openApp(page: Page): Promise<void> {
   await page.goto(APP_URL, {
     timeout: TIMEOUT_MS,
@@ -1144,6 +1165,9 @@ async function selectSchema(page: Page, label: string | RegExp): Promise<void> {
 
 function expectedSchemaIdForLabel(label: string | RegExp): string | null {
   const text = typeof label === "string" ? label : label.source;
+  if (/Octagram/i.test(text)) {
+    return "luna_pinyin_octagram";
+  }
   if (/Cangjie/i.test(text)) {
     return "cangjie5";
   }
@@ -1341,6 +1365,97 @@ test.describe("yune-web Browser E2E", () => {
     setEvidenceScope(testInfo);
     consoleErrors = await captureConsoleErrors(page);
     await openApp(page);
+  });
+
+  test("WEB-04 octagram profile loads pinned model and changes Luna ranking", async ({
+    page,
+  }) => {
+    await selectSchema(page, /Luna Pinyin \+ Octagram/);
+    const diagnostic = await readGrammarDiagnostic(page);
+    expect(diagnostic).toMatchObject({
+      requestedSchemaId: "luna_pinyin_octagram",
+      effectiveSchemaId: "luna_pinyin_octagram",
+      loaded: true,
+      modelId: "zh-hant-t-essay-bgw",
+      expectedSha256: "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+      actualSha256: "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+      bytes: 10513408,
+      fallback: false,
+    });
+    await expect(grammarDiagnosticMetric(page)).toHaveAttribute(
+      "data-loaded",
+      "true",
+    );
+    await expect(grammarDiagnosticMetric(page)).toHaveAttribute(
+      "data-checksum",
+      "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3",
+    );
+
+    const rows = [
+      ["youhuiyong", "\u512a\u60e0\u7528"],
+      ["jintianhuiyi", "\u4eca\u5929\u6703\u8b70"],
+      ["jintianwanshangyouhui", "\u4eca\u5929\u665a\u4e0a\u53c8\u6703"],
+      ["gegeguojiayougegeguojiadeguoge", "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c"],
+    ] as const;
+    const evidence: Record<string, CandidatePanelSnapshot> = {};
+    for (const [input, expectedTop] of rows) {
+      await clearComposition(page);
+      evidence[input] = await typeCompositionAndWaitForTopCandidate(page, input, expectedTop);
+    }
+    await saveJsonEvidence("web04-octagram-browser-ranking.json", {
+      diagnostic,
+      evidence,
+    });
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("WEB-04 plain Luna remains default-off without grammar model", async ({
+    page,
+  }) => {
+    await selectSchema(page, /Luna Pinyin$/);
+    const diagnostic = await readGrammarDiagnostic(page);
+    expect(diagnostic).toMatchObject({
+      requestedSchemaId: "luna_pinyin",
+      effectiveSchemaId: "luna_pinyin",
+      loaded: false,
+      modelId: null,
+      fallback: false,
+    });
+    const state = await typeCompositionAndWaitForTopCandidate(
+      page,
+      "youhuiyong",
+      "\u904a\u6232\u7528",
+    );
+    await saveJsonEvidence("web04-plain-luna-negative-control.json", {
+      diagnostic,
+      state,
+    });
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
+  test("WEB-04 missing octagram model fails the octagram evidence gate", async ({
+    page,
+  }) => {
+    await page.route("**/schema/dev/octagram/*.gram", route => route.abort());
+    await page.reload({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+    await waitForAppReady(page);
+    await selectSchema(page, /Luna Pinyin \+ Octagram/);
+    const diagnostic = await readGrammarDiagnostic(page);
+    expect(diagnostic).toMatchObject({
+      requestedSchemaId: "luna_pinyin_octagram",
+      effectiveSchemaId: "luna_pinyin",
+      loaded: false,
+      modelId: "zh-hant-t-essay-bgw",
+      fallback: true,
+    });
+    expect(diagnostic.actualSha256).toBeUndefined();
+    await expect(grammarDiagnosticMetric(page)).toHaveAttribute(
+      "data-loaded",
+      "false",
+    );
+    await saveJsonEvidence("web04-missing-model-fail-closed.json", {
+      diagnostic,
+    });
   });
 
   test("WASM heap metrics populate after startup and typing", async ({

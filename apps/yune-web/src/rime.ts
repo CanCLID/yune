@@ -1,4 +1,5 @@
 import type { Actions, ListenerArgsMap, Message, RimeSchemaId } from "./types";
+import { isRimeSchemaId } from "./octagram";
 
 type ListenerPayload = {
 	[K in keyof ListenerArgsMap]: {
@@ -81,6 +82,7 @@ const queue: Message[] = [];
 const allListenerTypes: (keyof Listeners)[] = [
 	"deployStatusChanged",
 	"schemaChanged",
+	"grammarDiagnosticChanged",
 	"optionChanged",
 	"initialized",
 ];
@@ -117,6 +119,9 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 		if (name === "schemaChanged") {
 			document.documentElement.dataset["yuneActiveSchema"] = args[0];
 			document.documentElement.dataset["yuneActiveSchemaName"] = args[1];
+		}
+		if (name === "grammarDiagnosticChanged") {
+			document.documentElement.dataset["yuneGrammarDiagnostic"] = JSON.stringify(args[0]);
 		}
 		for (const listener of listeners[name]) {
 			// @ts-expect-error Unactionable
@@ -369,8 +374,4 @@ function initialWorkerSchema(): RimeSchemaId {
 	catch {
 		return "jyut6ping3";
 	}
-}
-
-function isRimeSchemaId(value: string | null): value is RimeSchemaId {
-	return value === "jyut6ping3" || value === "cangjie5" || value === "luna_pinyin";
 }

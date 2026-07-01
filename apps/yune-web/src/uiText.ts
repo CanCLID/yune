@@ -430,6 +430,10 @@ export const schemaText: Record<
       label: "朙月拼音",
       reverseLookups: [{ trigger: "`…;", schema: "倉頡五代" }],
     },
+    luna_pinyin_octagram: {
+      label: "朙月拼音 + Octagram",
+      reverseLookups: [{ trigger: "`…;", schema: "倉頡五代" }],
+    },
   },
   en: {
     jyut6ping3: {
@@ -446,6 +450,10 @@ export const schemaText: Record<
     },
     luna_pinyin: {
       label: "Luna Pinyin",
+      reverseLookups: [{ trigger: "`…;", schema: "Cangjie 5" }],
+    },
+    luna_pinyin_octagram: {
+      label: "Luna Pinyin + Octagram",
       reverseLookups: [{ trigger: "`…;", schema: "Cangjie 5" }],
     },
   },

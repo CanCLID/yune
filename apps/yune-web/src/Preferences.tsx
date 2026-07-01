@@ -15,6 +15,7 @@ const DICTIONARY_EXCLUDE_BY_SCHEMA = {
 	jyut6ping3: ["你"],
 	cangjie5: ["日"],
 	luna_pinyin: ["侴"],
+	luna_pinyin_octagram: ["侴"],
 } as const;
 
 const thresholdRange = { min: 0, max: 200000, step: 1000 } as const;

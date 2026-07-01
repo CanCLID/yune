@@ -1,8 +1,11 @@
 import type CandidateInfo from "./CandidateInfo";
+import type { GrammarModelDiagnostic } from "./octagram";
 import type { CandidateMenuLayout, ChineseTypefaceId, Language, OutputStandard, ShowRomanization } from "./consts";
 import type { UiLanguage } from "./uiText";
 import type { Dispatch, SetStateAction } from "react";
 import type { YuneWebInspectorDebug, YuneWebStatus } from "@yune-ime/yune-web-runtime";
+
+export type { GrammarModelDiagnostic } from "./octagram";
 
 export interface RimeAPI {
 	init(): boolean;
@@ -99,7 +102,7 @@ interface RimePayload {
 export type RimeResult = (RimeComposing | RimeNotComposing) & RimePayload;
 export type YuneInspectorDebug = YuneWebInspectorDebug;
 export type YuneStatusSnapshot = YuneWebStatus;
-export type RimeSchemaId = "jyut6ping3" | "cangjie5" | "luna_pinyin";
+export type RimeSchemaId = "jyut6ping3" | "cangjie5" | "luna_pinyin" | "luna_pinyin_octagram";
 
 export type RimeDeployStatus = "start" | "success" | "failure";
 
@@ -112,6 +115,7 @@ export interface RimeNotification {
 export interface ListenerArgsMap {
 	deployStatusChanged: [status: RimeDeployStatus];
 	schemaChanged: [id: string, name: string];
+	grammarDiagnosticChanged: [diagnostic: GrammarModelDiagnostic];
 	optionChanged: [option: string, value: boolean];
 	initialized: [success: boolean, memory?: YuneWebMemorySnapshot];
 }

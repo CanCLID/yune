@@ -41,6 +41,12 @@ export const SCHEMA_OPTIONS: readonly SchemaOption[] = [
     schemaName: "朙月拼音",
     secondaryLabel: "Luna Pinyin",
   },
+  {
+    id: "luna_pinyin_octagram",
+    label: "æœ™æœˆæ‹¼éŸ³ + Octagram",
+    schemaName: "æœ™æœˆæ‹¼éŸ³ + Octagram",
+    secondaryLabel: "Luna Pinyin + Octagram",
+  },
 ];
 
 export type CandidateMenuLayout = "horizontal" | "vertical";
@@ -108,7 +114,7 @@ export function outputOptionForStandard(
   outputStandard: OutputStandard,
   schemaId: RimeSchemaId,
 ): (typeof OUTPUT_STANDARD_ENGINE_OPTIONS)[number] | undefined {
-  if (schemaId === "luna_pinyin") {
+  if (schemaId === "luna_pinyin" || schemaId === "luna_pinyin_octagram") {
     switch (outputStandard) {
       case "opencc_traditional":
         return undefined;

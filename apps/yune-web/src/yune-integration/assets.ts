@@ -152,7 +152,7 @@ export function validateExplicitAssets(assets: YuneWebFilesystemAssets): void {
 }
 
 function isBinaryAssetUrl(url: string): boolean {
-  return /\.(?:bin|ocd2)(?:[?#].*)?$/i.test(url);
+  return /\.(?:bin|ocd2|gram)(?:[?#].*)?$/i.test(url);
 }
 
 /**

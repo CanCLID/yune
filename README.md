@@ -7,7 +7,7 @@
 
 > The engine that turns your typing into Chinese characters.
 > Type `nihao`, get 你好. Type `nei5 hou2`, get 你好 in Cantonese.
-> Built in Rust — runs on desktop, in the browser, and anywhere else.
+> Built in Rust - native ABI, browser WASM, and CLI paths.
 
 ## Contents
 
@@ -30,10 +30,10 @@
 You type romanized Chinese (Pinyin for Mandarin, Jyutping for Cantonese) on a
 standard keyboard. Yune converts it to the right Chinese characters in real time.
 
-Under the hood, Yune reads the same dictionary and configuration files as
-[RIME](https://rime.im) — the most widely used open-source Chinese input-method
-engine. This means it works with the thousands of existing RIME schemas and
-dictionaries that the community has built over the years.
+Under the hood, Yune reads RIME-style dictionary and configuration files for its
+named targets and supported common-schema behavior. The goal is predictable
+compatibility with existing RIME schemas when a target has oracle evidence, not
+a universal all-schema claim.
 
 **[yune-web.pages.dev](https://yune-web.pages.dev)** — try it in your browser.
 
@@ -50,8 +50,9 @@ dictionaries that the community has built over the years.
   config/context/candidate/session/deploy APIs, dynamic-loader tests, and
   frontend lifecycle tests.
 - TypeDuck profile behavior: fork-only ABI slots exposed through
-  `rime_get_typeduck_profile_api()`, rich Cantonese dictionary comments, and
-  TypeDuck-Web/Windows compatibility evidence.
+  `rime_get_typeduck_profile_api()`, rich Cantonese dictionary comments,
+  TypeDuck-Web browser evidence, and TypeDuck-Windows backend/profile/IPC smoke
+  evidence.
 - Browser runtime: `@yune-ime/yune-web-runtime`, the `yune-web` Vite app,
   multi-schema browser harness (jyut6ping3, cangjie5, luna_pinyin, and more),
   UI language switching, output standard selection, public demo, and Playwright
@@ -67,15 +68,15 @@ embed in modern environments like browsers and mobile apps.
 
 Yune rebuilds the engine from scratch in Rust with three goals:
 
-**Run everywhere.** The same core engine compiles to a native shared library
-(for desktop IMEs like Squirrel, Weasel, or ibus-rime), to WebAssembly (for
-browser-based input), or to a CLI tool (for testing and benchmarking).
+**Run everywhere.** The same core engine can be exposed as a native
+librime-shaped shared library for desktop host experiments, as WebAssembly for
+browser-based input, or as a CLI tool for testing and benchmarking.
 
-**Be testable.** Every behavior is verified byte-for-byte against the real RIME
-engine. Instead of porting C++ code (and inheriting its bugs and assumptions),
-Yune runs RIME as a "behavior oracle": capture what it outputs for a given
-input, then assert Yune produces the exact same result. This preserves
-compatibility without cargo-culting a 15-year-old C++ architecture.
+**Be testable.** Covered behavior is verified byte-for-byte against the relevant
+RIME-family oracle. Instead of porting C++ code (and inheriting its bugs and
+assumptions), Yune runs the oracle as a behavior reference: capture what it
+outputs for a given input, then assert Yune produces the exact same result. This
+preserves compatibility without cargo-culting a 15-year-old C++ architecture.
 
 **Prepare for AI-native input.** The engine has a built-in, default-off AI layer.
 In the future, an on-device language model could suggest completions or
@@ -94,7 +95,8 @@ rankers — rather than a monolithic class hierarchy. Want to plug in a custom
 ranking model? Implement a trait. Want a different dictionary format? Swap the
 translator.
 
-Everything runs in safe Rust. The workspace enforces `unsafe_code = "forbid"`.
+The deterministic core is safe Rust. The workspace forbids unsafe code by
+default, with explicit ABI/FFI exceptions in `yune-rime-api` and `yune-cli`.
 
 ## Current Status
 
@@ -254,7 +256,7 @@ Browser-visible claims need Playwright or equivalent real-browser evidence.
 | Path | What's In It |
 | --- | --- |
 | `crates/yune-core` | The engine: dictionary lookup, spelling algebra, candidate ranking, filters, user dictionary, AI staging. |
-| `crates/yune-rime-api` | C ABI adapter: exposes the engine as a drop-in replacement for RIME's shared library. |
+| `crates/yune-rime-api` | C ABI adapter: exposes the engine through the supported librime-shaped default ABI and named profile surfaces. |
 | `crates/yune-cli` | Developer CLI: feed it keystrokes, get JSON output for testing and debugging. |
 | `packages/yune-web-runtime` | TypeScript wrapper for the WASM build. |
 | `apps/yune-web` | Browser demo app — the public face of the project. |

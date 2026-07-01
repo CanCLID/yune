@@ -55,8 +55,25 @@ frontend claim-drift items the claim-wording pass missed because it scoped to
 | medium | `README.md` compatibility bullet said Cantonese `jyut6ping3` produces identical output "to RIME 1.17.0", conflating the oracle - `jyut6ping3` is validated against TypeDuck-HK/librime `v1.1.2`, not upstream 1.17.0 (contradicting the README's own Compatibility section) | Fixed: split the sentence by named target (`luna_pinyin` vs upstream 1.17.0; `jyut6ping3` vs TypeDuck-HK/librime v1.1.2). |
 | medium | `README.md` claimed validation "as a drop-in replacement in real-world frontends (TypeDuck-Web, TypeDuck-Windows)", overstating TypeDuck-Windows (M10 proved package/header, profile-ABI, and stock IPC smoke; interactive TSF typing and candidate UI are Phase 2) | Fixed: scoped `yune-web` to real in-browser validation and TypeDuck-Windows to backend/profile/IPC compatibility smoke, with interactive TSF/UI named as Phase 2. |
 
-Lesson for future audits: the claim-wording dimension must cover compatibility,
-oracle-precedence, and frontend-validation claims, not just performance claims.
+Lesson for future audits: the claim-wording dimension must cover compatibility
+scope, oracle-precedence, ABI/drop-in, frontend-validation, and safety/lint
+claims, not just performance claims.
+
+## Focused README Claim Sweep Findings (post-closeout)
+
+A focused README non-performance claim sweep on 2026-06-30 compared README
+compatibility/oracle, ABI/drop-in, frontend-validation, AI-posture,
+quick-start/package, and browser/public-demo claims against `AGENTS.md`, the
+engine support contract, roadmap, conventions, milestone ledger, and the active
+P2-WIN-01 TypeDuck-Windows plan. Recorded here and fixed:
+
+| Severity | Finding | Disposition |
+| --- | --- | --- |
+| medium | README intro said Yune reads "the same dictionary and configuration files as RIME" and therefore "works with the thousands of existing RIME schemas and dictionaries", overstating the named-target/common-schema contract. | Fixed: scoped the intro to RIME-style files for named targets and supported common-schema behavior, with compatibility tied to oracle evidence rather than a blanket all-schema claim. |
+| medium | README capability bullet said "TypeDuck-Web/Windows compatibility evidence", which could still imply broad Windows frontend validation. | Fixed: split it into TypeDuck-Web browser evidence and TypeDuck-Windows backend/profile/IPC smoke evidence. |
+| medium | README "Be testable" said "Every behavior" is byte-verified against RIME, overstating coverage beyond supported targets. | Fixed: "Covered behavior" is verified against the relevant RIME-family oracle. |
+| low | README tagline said Yune runs "anywhere else", "Run everywhere" listed desktop IMEs, and the layout table called `yune-rime-api` a "drop-in replacement", which was looser than the support contract's supported default ABI/profile surfaces. | Fixed: tagline names native ABI/browser WASM/CLI paths; desktop phrasing is now "desktop host experiments"; `yune-rime-api` is described as supported librime-shaped default ABI plus named profile surfaces. |
+| low | README said "Everything runs in safe Rust" and that the workspace enforces `unsafe_code = "forbid"`, contradicting the explicit ABI/FFI exceptions in `yune-rime-api` and `yune-cli`. | Fixed: scoped safe Rust to the deterministic core and named the ABI/FFI unsafe-code exceptions. |
 
 ## Release-Readiness Verdict
 
@@ -67,9 +84,7 @@ fork-only slots stay behind their named profile accessors, `yune_web_*` is a
 separate WASM ABI with exactly 14 exports, the M52 guardrail numbers reconcile,
 all evidence links resolve, and no doc implies Yune is broadly faster than
 librime. The only real defects were public-facing claim drift in `README.md`
-(and one linked archived report), spanning three kinds of wording: stale M45-era
-performance claims, an oracle-precedence conflation (Cantonese `jyut6ping3`
-attributed to upstream 1.17.0 rather than TypeDuck-HK/librime `v1.1.2`), and an
-overstated TypeDuck-Windows frontend-validation claim - all corrected to
-contract-accurate, M52 lane-specific wording (the latter two surfaced by the
-follow-up review recorded above).
+(and one linked archived report), spanning performance, compatibility scope,
+oracle-precedence, frontend-validation, ABI/drop-in, and Rust safety/lint-scope
+wording. All are corrected to contract-accurate, M52 lane-specific wording (the
+non-performance items surfaced by the follow-up reviews recorded above).

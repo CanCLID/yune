@@ -10,18 +10,15 @@ consistency, ABI-wording-vs-code, M52 guardrail freshness, public claim wording,
 link/evidence integrity), with each finding adversarially re-verified, found the
 substantive invariants clean and no ABI/guardrail/link drift. The only real
 defects were public-facing claim drift on `README.md` (plus one linked archived
-report) across three kinds of wording - stale M45-era "faster than librime"
-performance claims and a `127 MB` memory figure, an oracle-precedence conflation
-(Cantonese `jyut6ping3` attributed to upstream 1.17.0 rather than
-TypeDuck-HK/librime `v1.1.2`), and an overstated TypeDuck-Windows
-frontend-validation claim - all corrected to contract-accurate, M52
-(2026-06-30) lane-specific wording (the latter two surfaced by follow-up
-review). Evidence:
+report), spanning performance, compatibility scope, oracle-precedence,
+frontend-validation, ABI/drop-in, and Rust safety/lint-scope wording. All are
+corrected to contract-accurate, M52 (2026-06-30) lane-specific wording (the
+non-performance items surfaced by follow-up reviews). Evidence:
 [`../../reports/evidence/m53-engine-release-readiness-audit/`](../../reports/evidence/m53-engine-release-readiness-audit/).
 
 **Goal:** Confirm the engine's launch-facing docs and evidence are internally
 consistent and release-ready before any platform/frontend session consumes the
-engine, and correct any stale public performance claim - without reopening
+engine, and correct any stale public claim - without reopening
 performance work or touching code/ABI.
 
 **Architecture:** Read-only audit followed by targeted doc fixes. The audit
@@ -44,8 +41,9 @@ In scope:
   named profile accessors; `yune_web_*` as a separate 14-symbol WASM ABI.
 - M52 guardrail freshness: threshold file, `threshold-check.csv`, manual command
   shape, and numeric consistency across the docs.
-- Public performance-claim wording: no stale broad "faster than librime"
-  framing; lane-specific claims only.
+- Public claim wording: no stale broad "faster than librime" framing, no
+  unsupported compatibility/oracle/frontend/ABI/safety overclaim, and
+  lane-specific claims only.
 - Adopting the 2026-06-30 dashboard visuals and the reframed reports.
 
 Out of scope:
@@ -71,12 +69,12 @@ Out of scope:
   the roadmap.
 - [x] **Task 4: Sweep public claim wording.** Result: the two live reports and
   roadmap were already lane-specific; `README.md` (and one linked archived
-  report) carried claim drift corrected across three kinds of wording - stale
-  M45-era performance overclaims, an oracle-precedence conflation (`jyut6ping3`
-  vs TypeDuck-HK/librime `v1.1.2`), and an overstated TypeDuck-Windows frontend
-  claim. The performance sweep landed in the initial pass; the oracle and
-  frontend items were surfaced by follow-up review, a reminder that this sweep
-  must cover compatibility/oracle/frontend wording, not just performance.
+  report) carried claim drift spanning performance, compatibility scope,
+  oracle-precedence, frontend-validation, ABI/drop-in, and Rust safety/lint-scope
+  wording. The performance sweep landed in the initial pass; the broader README
+  wording items were surfaced by follow-up reviews, a reminder that this sweep
+  must cover compatibility scope, oracle, ABI/drop-in, frontend, and safety/lint
+  claims, not just performance.
 - [x] **Task 5: Verify link/evidence integrity and adopt the visuals.** Result:
   all links/anchors resolve; the 2026-06-30 dashboard-visuals folder is complete
   and embedded; the reports/roadmap/visuals edits are adopted by this milestone.
@@ -107,8 +105,9 @@ Added to `docs/requirements.md` on closeout:
   across the docs; the manual regression-gate command is canonical.
 - **M53-AUDIT-04**: Public claims are contract-accurate; `README.md` (and one
   linked archived report) claim drift was corrected across performance ("faster
-  than librime" scoped to `zhongguo` + the two abbreviation rows), oracle
-  precedence (`jyut6ping3` vs TypeDuck-HK/librime `v1.1.2`, not upstream 1.17.0),
-  and TypeDuck-Windows frontend-validation scope.
+  than librime" scoped to `zhongguo` + the two abbreviation rows), compatibility
+  scope, oracle precedence (`jyut6ping3` vs TypeDuck-HK/librime `v1.1.2`, not
+  upstream 1.17.0), TypeDuck-Windows frontend-validation scope, ABI/drop-in
+  wording, and Rust safety/lint-scope wording.
 - **M53-AUDIT-05**: All engine-doc evidence links/anchors resolve and the
   2026-06-30 dashboard visuals are adopted.

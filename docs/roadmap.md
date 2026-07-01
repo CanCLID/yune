@@ -12,7 +12,7 @@ TypeDuck/Jyutping keyboard memory work is complete for the Windows proxy; M51
 froze the engine support contract and ABI boundaries; M52 froze native Track A
 `luna_pinyin` performance guardrails and dispositioned the remaining M50
 blockers; M53 re-verified the engine docs and public claims for
-release-readiness and corrected stale `README.md` performance wording. No active
+release-readiness and corrected stale `README.md` public-claim wording. No active
 numbered engine milestone is open in this roadmap.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
@@ -184,7 +184,8 @@ portable technique that also lowers the Track B product, WASM, and iOS lanes.
    public claim wording, link/evidence integrity) found the substantive
    invariants clean with no ABI/guardrail/link drift; the only real defects were
    public-facing claim drift in `README.md` (and one linked archived report)
-   across performance, oracle-precedence, and frontend-validation wording, now
+   across performance, compatibility scope, oracle-precedence,
+   frontend-validation, ABI/drop-in, and Rust safety/lint-scope wording, now
    corrected to contract-accurate, M52 lane-specific wording. Evidence:
    [`reports/evidence/m53-engine-release-readiness-audit/`](./reports/evidence/m53-engine-release-readiness-audit/).
    Plan:
@@ -234,7 +235,7 @@ and current decision rules.
 | WEB-01/02/03 | Complete | Browser memory attribution, stale-asset owner classification, and launch compiled-asset contract. |
 | M47 | Complete for portable scope | TypeDuck/Jyutping comments-intact keyboard memory is under the Windows private/dirty proxy target; Apple `phys_footprint` proof remains parked. |
 | M48-M52 | Complete | Current engine correctness, support-contract, and Track A guardrail closeouts; M52 is the current native performance source of truth. |
-| M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived "faster than librime" wording to the M52 lane-specific numbers. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
+| M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived public-claim wording to the contract-accurate M52 lane-specific record. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
 
 ## Scope Ledger
 

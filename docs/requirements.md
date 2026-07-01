@@ -1175,10 +1175,11 @@ required evidence and closeout gates.
   consistent across the docs, with the manual regression-gate command canonical.
 - [x] **M53-AUDIT-04**: Public claims are contract-accurate; `README.md` (and one
   linked archived report) claim drift across performance wording (broad "faster
-  than librime" scoped to `zhongguo` + the two abbreviation rows), oracle
-  precedence (`jyut6ping3` measured against TypeDuck-HK/librime `v1.1.2`, not
-  upstream 1.17.0), and frontend-validation scope (TypeDuck-Windows limited to
-  backend/profile/IPC smoke) is corrected.
+  than librime" scoped to `zhongguo` + the two abbreviation rows), compatibility
+  scope, oracle precedence (`jyut6ping3` measured against TypeDuck-HK/librime
+  `v1.1.2`, not upstream 1.17.0), frontend-validation scope (TypeDuck-Windows
+  limited to backend/profile/IPC smoke), ABI/drop-in wording, and Rust
+  safety/lint-scope wording is corrected.
 - [x] **M53-AUDIT-05**: All engine-doc evidence links and anchors resolve and
   the 2026-06-30 dashboard visuals are adopted.
 
@@ -1331,7 +1332,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M53-AUDIT-01 | M53 | Complete - support-contract consistency verified across contract, conventions, roadmap, requirements, and ledger |
 | M53-AUDIT-02 | M53 | Complete - ABI wording matches code: default upstream `rime_get_api()`/`RimeCandidate`, profile-only fork slots, exactly 14 `yune_web_*` exports |
 | M53-AUDIT-03 | M53 | Complete - M52 guardrail evidence fresh and numerically consistent; regression-gate command canonical |
-| M53-AUDIT-04 | M53 | Complete - `README.md`/archived public claim drift corrected across performance ("faster than librime" scoped to `zhongguo` + abbreviation rows), oracle precedence (`jyut6ping3` vs TypeDuck-HK/librime `v1.1.2`), and TypeDuck-Windows frontend-validation scope |
+| M53-AUDIT-04 | M53 | Complete - `README.md`/archived public claim drift corrected across performance ("faster than librime" scoped to `zhongguo` + abbreviation rows), compatibility scope, oracle precedence (`jyut6ping3` vs TypeDuck-HK/librime `v1.1.2`), TypeDuck-Windows frontend-validation scope, ABI/drop-in wording, and Rust safety/lint-scope wording |
 | M53-AUDIT-05 | M53 | Complete - all engine-doc evidence links/anchors resolve and the 2026-06-30 dashboard visuals are adopted |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
@@ -1628,4 +1629,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-06-30 - M53 engine release-readiness audit is complete: the engine docs are release-ready for downstream engine consumers. A five-dimension audit (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness, public claim wording, link/evidence integrity) found the substantive invariants clean with no ABI/guardrail/link drift; the only real defects were public-facing claim drift in `README.md` (plus one linked archived report) across performance, oracle-precedence, and frontend-validation wording - stale M45-era "faster than librime" claims and a `127 MB` memory figure, Cantonese `jyut6ping3` conflated with the upstream 1.17.0 oracle instead of TypeDuck-HK/librime `v1.1.2`, and an overstated TypeDuck-Windows frontend claim - all corrected to contract-accurate, M52 (2026-06-30) lane-specific wording (faster only on `zhongguo` + the two abbreviation rows; native Track A memory `188.4 MB` vs librime `17.3 MB`). M52 remains the native Track A guardrail source of truth; the 188 MB memory reduction stays the deferred M54 candidate._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-06-30 - M53 engine release-readiness audit is complete: the engine docs are release-ready for downstream engine consumers. A five-dimension audit (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness, public claim wording, link/evidence integrity) found the substantive invariants clean with no ABI/guardrail/link drift; the only real defects were public-facing claim drift in `README.md` (plus one linked archived report) across performance, compatibility scope, oracle-precedence, frontend-validation, ABI/drop-in, and Rust safety/lint-scope wording. All are corrected to contract-accurate, M52 (2026-06-30) lane-specific wording (faster only on `zhongguo` + the two abbreviation rows; native Track A memory `188.4 MB` vs librime `17.3 MB`). M52 remains the native Track A guardrail source of truth; the 188 MB memory reduction stays the deferred M54 candidate._

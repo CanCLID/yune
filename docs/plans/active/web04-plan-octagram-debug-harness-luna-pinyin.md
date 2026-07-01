@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Status:** Reviewed - Task 0 green after native product-path fix; Tasks 1-5 not started. - **Track:** Web harness startup and memory (`apps/yune-web`). - **Created:** 2026-07-01 - **Updated:** 2026-07-01 (Task 0 native follow-up evidence recorded; review findings P1-P3 folded in; fail-closed evidence hardening added; review cleared) - **Type:** dogfooding/observability slice (data + app plumbing; no engine contract change).
+> **Status:** Reviewed - Task 0 green after native product-path fix; Tasks 1-5 not started. - **Track:** Web harness startup and memory (`apps/yune-web`). - **Created:** 2026-07-01 - **Updated:** 2026-07-01 (post-fix review P3s folded in: WEB-04 profile gate is now presence-only so an invalid `grammar/language` records a visible grammar deferral, with a focused regression; Task 0 checklist marked complete per follow-up evidence) - **Type:** dogfooding/observability slice (data + app plumbing; no engine contract change).
 
 **Goal:** Make the M54 native octagram grammar feature **observable and
 toggleable in the `yune-web` browser harness for `luna_pinyin`**, so the engine
@@ -152,17 +152,20 @@ octagram oracle top candidates for the WEB-04 rows, while plain `luna_pinyin`
 remains stable/null-grammar. See
 `docs/reports/evidence/web04-octagram-debug-harness/phase-0-native/followup-native-fix-2026-07-01.md`.
 
-- [ ] Assemble a native `luna_pinyin` shared-data dir with a dedicated octagram
+- [x] Assemble a native `luna_pinyin` shared-data dir with a dedicated octagram
   profile (`grammar/language` inline) and a pinned `.gram` (URL + checksum; not
-  committed).
-- [ ] Drive it with `cargo run -p yune-cli -- frontend --shared-data-dir <dir>
+  committed). *(Completed by the 2026-07-01 follow-up evidence.)*
+- [x] Drive it with `cargo run -p yune-cli -- frontend --shared-data-dir <dir>
   --user-data-dir <tmp> --schema luna_pinyin_octagram --sequence <inputs>` for
-  inputs where octagram is expected to change ranking.
-- [ ] Confirm the **deployed ABI path** produces octagram-ranked candidates that
+  inputs where octagram is expected to change ranking. *(Completed by the
+  2026-07-01 follow-up evidence.)*
+- [x] Confirm the **deployed ABI path** produces octagram-ranked candidates that
   match a same-run librime + octagram oracle capture (non-circular), and that a
   plain-`luna_pinyin` control still matches the M54 null-grammar behavior.
-- [ ] Record the pin, commands, and oracle comparison under
+  *(Completed by the 2026-07-01 follow-up evidence; accepted top-candidate gate.)*
+- [x] Record the pin, commands, and oracle comparison under
   `docs/reports/evidence/web04-octagram-debug-harness/phase-0-native/`.
+  *(Completed: `followup-native-fix-2026-07-01.md` / `.json`.)*
 
 **No-go:** Stop if the deployed native path does **not** reproduce librime's
 octagram ranking - that is an engine defect for a separate native milestone, not

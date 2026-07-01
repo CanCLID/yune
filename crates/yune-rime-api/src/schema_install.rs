@@ -871,11 +871,11 @@ fn is_upstream_luna_pinyin_profile(
 }
 
 fn is_web04_luna_pinyin_octagram_profile(schema_config: &Value, schema_id: &str) -> bool {
-    schema_id == "luna_pinyin_octagram"
-        && schema_octagram_language(schema_config)
-            .as_deref()
-            .and_then(validate_data_resource_id)
-            .is_some()
+    // Presence-only on purpose: an invalid `grammar/language` must still enter
+    // the Luna quality path so `load_schema_octagram_grammar` records a visible
+    // grammar deferral instead of the profile silently skipping the block.
+    // Resource-id validation stays in the loader, before any filesystem access.
+    schema_id == "luna_pinyin_octagram" && schema_octagram_language(schema_config).is_some()
 }
 
 fn spelling_algebra_for_dictionary(schema_config: &Value, name_space: &str) -> Vec<String> {

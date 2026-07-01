@@ -347,6 +347,28 @@ fn schema_octagram_loading_allows_named_web04_luna_pinyin_octagram_profile() {
 }
 
 #[test]
+fn web04_luna_pinyin_octagram_invalid_grammar_language_fails_visibly() {
+    let _guard = test_guard();
+    let (temp, shared, staging, user) = write_luna_octagram_test_runtime(
+        "resource-id-web04-grammar-invalid",
+        "luna_pinyin_octagram",
+        Some("../evil"),
+    );
+    setup_test_runtime_paths(&shared, &staging, &user);
+
+    let mut session = SessionState::default();
+    session
+        .engine
+        .set_schema("luna_pinyin_octagram", "luna_pinyin_octagram");
+    install_schema_translator_chain(&mut session, "luna_pinyin_octagram");
+
+    assert!(session.remaining_gear_deferrals.iter().any(|deferral| {
+        deferral.gear == "grammar" && deferral.current_yune_behavior.contains("InvalidResourceId")
+    }));
+    let _ = fs::remove_dir_all(temp);
+}
+
+#[test]
 fn schema_octagram_loading_does_not_sweep_random_luna_pinyin_family_schema() {
     let _guard = test_guard();
     let (temp, shared, staging, user) = write_luna_octagram_test_runtime(

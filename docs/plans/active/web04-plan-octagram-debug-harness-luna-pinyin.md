@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Status:** Reviewed - ready to execute; not started. - **Track:** Web harness startup and memory (`apps/yune-web`). - **Created:** 2026-07-01 - **Updated:** 2026-07-01 (review findings P1-P3 folded in; fail-closed evidence hardening added; review cleared) - **Type:** dogfooding/observability slice (data + app plumbing; no engine contract change).
+> **Status:** Reviewed - Task 0 no-go; browser work blocked pending native product-path fix. - **Track:** Web harness startup and memory (`apps/yune-web`). - **Created:** 2026-07-01 - **Updated:** 2026-07-01 (Task 0 native evidence recorded; review findings P1-P3 folded in; fail-closed evidence hardening added; review cleared) - **Type:** dogfooding/observability slice (data + app plumbing; no engine contract change).
 
 **Goal:** Make the M54 native octagram grammar feature **observable and
 toggleable in the `yune-web` browser harness for `luna_pinyin`**, so the engine
@@ -146,7 +146,10 @@ Out of scope:
 
 ## Task 0: Native Product-Path Validation (prerequisite gate)
 
-**Status:** Not started.
+**Status:** No-go (2026-07-01). The dedicated
+`luna_pinyin_octagram` native product path does not reproduce fresh librime +
+octagram oracle ranking; browser/UI and asset-plumbing work remain blocked. See
+`docs/reports/evidence/web04-octagram-debug-harness/phase-0-native/`.
 
 - [ ] Assemble a native `luna_pinyin` shared-data dir with a dedicated octagram
   profile (`grammar/language` inline) and a pinned `.gram` (URL + checksum; not

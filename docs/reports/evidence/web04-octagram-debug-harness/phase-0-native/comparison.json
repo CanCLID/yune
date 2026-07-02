@@ -1,0 +1,244 @@
+{
+  "verdict": "no-go",
+  "date": "2026-07-01",
+  "reason": "Dedicated luna_pinyin_octagram product path does not reproduce fresh librime octagram oracle ranking; browser work remains blocked.",
+  "model": {
+    "source": "lotem/rime-octagram-data",
+    "license": "LGPL-3.0",
+    "branch": "hant",
+    "commit": "bb8e1313552f0f27f2f968031dfaf4563e55d982",
+    "path": "zh-hant-t-essay-bgw.gram",
+    "raw_url": "https://raw.githubusercontent.com/lotem/rime-octagram-data/bb8e1313552f0f27f2f968031dfaf4563e55d982/zh-hant-t-essay-bgw.gram",
+    "bytes": 10513408,
+    "sha256": "574c99d100f422766c433c601ed6efd642e881d69a30df9fffb6f1695be550e3"
+  },
+  "temp_shared_data": {
+    "root": "target/web04-octagram-debug-harness/phase-0-native/shared",
+    "profile": "luna_pinyin_octagram.schema.yaml",
+    "profile_policy": "inline grammar/language; no shared grammar.yaml or hant node; plain luna_pinyin kept as control",
+    "plain_control_root": "target/web04-octagram-debug-harness/phase-0-native/shared-plain-control"
+  },
+  "fresh_librime_oracle": {
+    "base_capture_command": "powershell -ExecutionPolicy Bypass -File target/m54-native-octagram/capture-octagram-lotem.ps1 -RepoRoot .",
+    "custom_web04_capture": "Add-Type scripts/oracle-rime-probe.cs; RimeProbe.Capture(...) over WEB-04 inputs from target/m54-native-octagram/oracle-capture/lotem/{octagram,null-grammar}",
+    "octagram_json": {
+      "path": "target/web04-octagram-debug-harness/phase-0-native/oracle-output/fresh-librime-lotem-octagram-web04-inputs.json",
+      "bytes": 13710,
+      "sha256": "289a57b32bde77c77a9bd77e1bdd0b57ec77e56c79e70a63da9e5f693885197d"
+    },
+    "null_json": {
+      "path": "target/web04-octagram-debug-harness/phase-0-native/oracle-output/fresh-librime-lotem-null-web04-inputs.json",
+      "bytes": 13710,
+      "sha256": "e96247e1f8a20ab17b1effc13f196843e828387091070f058296132469d22259"
+    },
+    "comparison_json": {
+      "path": "target/web04-octagram-debug-harness/phase-0-native/oracle-output/fresh-librime-lotem-comparison-web04-inputs.json",
+      "bytes": 1344,
+      "sha256": "cc6e6937230fea1eb1834da171aaa55eba4544c85483d37601c7b457d98beea1"
+    }
+  },
+  "yune_product_path": {
+    "build_command": "cargo build -p yune-cli",
+    "command_shape": "target/debug/yune-cli.exe frontend --shared-data-dir <temp-shared> --user-data-dir <temp-user> --schema <schema> --sequence <input>",
+    "cargo_run_equivalent": "cargo run -p yune-cli -- frontend --shared-data-dir <temp-shared> --user-data-dir <temp-user> --schema <schema> --sequence <input>",
+    "summary_json": "target/web04-octagram-debug-harness/phase-0-native/yune-cli-output/direct-summary.json",
+    "plain_negative_control_json": "target/web04-octagram-debug-harness/phase-0-native/yune-cli-output/plain-negative-control-comparison.json"
+  },
+  "engine_observation": {
+    "schema_install_gate": "crates/yune-rime-api/src/schema_install.rs:457-475 attaches grammar/model only inside is_upstream_luna_pinyin_profile; lines 857-868 require schema/schema_id == luna_pinyin.",
+    "effect": "The dedicated schema_id luna_pinyin_octagram preserves default-off plain Luna but bypasses the current upstream Luna grammar/product-path gate."
+  },
+  "comparison": [
+    {
+      "input": "youhuiyong",
+      "octagram_visible_oracle_row": true,
+      "oracle_octagram_top5": [
+        "\u512a\u60e0\u7528",
+        "\u512a\u60e0",
+        "\u53c8\u6703",
+        "\u5e7d\u6703",
+        "\u6e38\u56de"
+      ],
+      "oracle_null_top5": [
+        "\u6709\u6703\u7528",
+        "\u512a\u60e0",
+        "\u53c8\u6703",
+        "\u5e7d\u6703",
+        "\u6e38\u56de"
+      ],
+      "yune_luna_pinyin_octagram_top5": [
+        "\u6709\u6703\u7528"
+      ],
+      "yune_plain_luna_pinyin_top5": [
+        "\u904a\u6232\u7528",
+        "\u6709\u6703\u7528",
+        "\u512a\u60e0\u7528",
+        "\u53c8\u6703\u7528",
+        "\u904a\u6232\u6c38"
+      ],
+      "yune_octagram_matches_oracle_top": false,
+      "yune_octagram_matches_oracle_top5": false,
+      "plain_control_stable_with_octagram_profile_present": true
+    },
+    {
+      "input": "jintianhuiyi",
+      "octagram_visible_oracle_row": true,
+      "oracle_octagram_top5": [
+        "\u4eca\u5929\u6703\u8b70",
+        "\u4eca\u5929\u6703",
+        "\u4eca\u5929",
+        "\u91d1\u7530",
+        "\u91d1\u5929"
+      ],
+      "oracle_null_top5": [
+        "\u4eca\u5929\u56de\u61b6",
+        "\u4eca\u5929\u6703",
+        "\u4eca\u5929",
+        "\u91d1\u7530",
+        "\u91d1\u5929"
+      ],
+      "yune_luna_pinyin_octagram_top5": [
+        "\u9032\u63d0\u6309\u6703\u4e00"
+      ],
+      "yune_plain_luna_pinyin_top5": [
+        "\u4eca\u5929\u56de\u61b6",
+        "\u4eca\u5929\u6703\u8b70",
+        "\u4eca\u5929\u6703\u4ee5",
+        "\u4eca\u5929\u6703\u4e00",
+        "\u4eca\u5929\u6703\u610f"
+      ],
+      "yune_octagram_matches_oracle_top": false,
+      "yune_octagram_matches_oracle_top5": false,
+      "plain_control_stable_with_octagram_profile_present": true
+    },
+    {
+      "input": "jintianwanshangyouhui",
+      "octagram_visible_oracle_row": true,
+      "oracle_octagram_top5": [
+        "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+        "\u4eca\u5929\u665a\u4e0a",
+        "\u4eca\u5929",
+        "\u91d1\u7530",
+        "\u91d1\u5929"
+      ],
+      "oracle_null_top5": [
+        "\u4eca\u5929\u665a\u4e0a\u512a\u60e0",
+        "\u4eca\u5929\u665a\u4e0a",
+        "\u4eca\u5929",
+        "\u91d1\u7530",
+        "\u91d1\u5929"
+      ],
+      "yune_luna_pinyin_octagram_top5": [
+        "\u9032\u63d0\u6309\u73a9\u4e0a\u6709\u6703"
+      ],
+      "yune_plain_luna_pinyin_top5": [
+        "\u4eca\u5929\u665a\u4e0a\u904a\u6232",
+        "\u4eca\u5929\u665a\u4e0a\u512a\u60e0",
+        "\u4eca\u5929\u665a\u4e0a\u53c8\u6703",
+        "\u4eca\u5929\u665a\u4e0a\u6709\u6232",
+        "\u4eca\u5929\u665a\u4e0a\u5e7d\u6703"
+      ],
+      "yune_octagram_matches_oracle_top": false,
+      "yune_octagram_matches_oracle_top5": false,
+      "plain_control_stable_with_octagram_profile_present": true
+    },
+    {
+      "input": "gegeguojiayougegeguojiadeguoge",
+      "octagram_visible_oracle_row": true,
+      "oracle_octagram_top5": [
+        "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+        "\u5404\u500b\u570b\u5bb6",
+        "\u5404\u500b",
+        "\u54e5\u54e5",
+        "\u500b\u500b"
+      ],
+      "oracle_null_top5": [
+        "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u5fb7\u570b\u500b",
+        "\u5404\u500b\u570b\u5bb6",
+        "\u5404\u500b",
+        "\u54e5\u54e5",
+        "\u500b\u500b"
+      ],
+      "yune_luna_pinyin_octagram_top5": [
+        "\u500b\u500b\u80a1\u54e6\u53ca\u554a\u6709\u500b\u500b\u80a1\u54e6\u53ca\u554a\u7684\u80a1\u54e6\u500b"
+      ],
+      "yune_plain_luna_pinyin_top5": [
+        "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u5fb7\u570b\u500b",
+        "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u6b4c",
+        "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u934b\u84cb",
+        "\u5404\u500b\u570b\u5bb6\u6709\u5404\u500b\u570b\u5bb6\u7684\u570b\u683c",
+        "\u5404\u500b\u570b\u5bb6\u53c8\u5404\u500b\u570b\u5bb6\u5fb7\u570b\u500b"
+      ],
+      "yune_octagram_matches_oracle_top": false,
+      "yune_octagram_matches_oracle_top5": false,
+      "plain_control_stable_with_octagram_profile_present": true
+    },
+    {
+      "input": "nihao",
+      "octagram_visible_oracle_row": false,
+      "oracle_octagram_top5": [
+        "\u4f60\u597d",
+        "\u59b3\u597d",
+        "\u9006\u865f",
+        "\u64ec\u597d",
+        "\u4f60"
+      ],
+      "oracle_null_top5": [
+        "\u4f60\u597d",
+        "\u59b3\u597d",
+        "\u9006\u865f",
+        "\u64ec\u597d",
+        "\u4f60"
+      ],
+      "yune_luna_pinyin_octagram_top5": [
+        "\u4f60\u54c8\u54e6"
+      ],
+      "yune_plain_luna_pinyin_top5": [
+        "\u4f60\u597d",
+        "\u59b3\u597d",
+        "\u9006\u865f",
+        "\u64ec\u597d",
+        "\u4f60\u865f"
+      ],
+      "yune_octagram_matches_oracle_top": false,
+      "yune_octagram_matches_oracle_top5": false,
+      "plain_control_stable_with_octagram_profile_present": true
+    },
+    {
+      "input": "zhongguo",
+      "octagram_visible_oracle_row": false,
+      "oracle_octagram_top5": [
+        "\u4e2d\u570b",
+        "\u7a2e\u904e",
+        "\u7a2e\u679c",
+        "\u5fe0\u679c",
+        "\u4e2d\u53e4"
+      ],
+      "oracle_null_top5": [
+        "\u4e2d\u570b",
+        "\u7a2e\u904e",
+        "\u7a2e\u679c",
+        "\u5fe0\u679c",
+        "\u4e2d\u53e4"
+      ],
+      "yune_luna_pinyin_octagram_top5": [
+        "\u4e2d\u570b\u5927\u9678",
+        "\u4e2d\u570b\u5167\u5730",
+        "\u4e2d\u570b\u9280\u884c",
+        "\u4e2d\u570b\u91cd\u6c7d"
+      ],
+      "yune_plain_luna_pinyin_top5": [
+        "\u4e2d\u570b\u5927\u9678",
+        "\u4e2d\u570b\u5167\u5730",
+        "\u4e2d\u570b\u9280\u884c",
+        "\u4e2d\u570b\u91cd\u6c7d"
+      ],
+      "yune_octagram_matches_oracle_top": false,
+      "yune_octagram_matches_oracle_top5": false,
+      "plain_control_stable_with_octagram_profile_present": true
+    }
+  ],
+  "plain_negative_control_all_match": true,
+  "third_party_gram_committed": false,
+  "browser_work_started": false
+}

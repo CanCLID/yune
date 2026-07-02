@@ -268,7 +268,7 @@ const createModule = require(jsArtifact);
 NODE
 }
 
-patch_textdecoder_resizable_memory() {
+patch_resizable_memory_browser_views() {
   JS_ARTIFACT=$1
 
   if ! NODE=$(find_tool node); then
@@ -276,7 +276,7 @@ patch_textdecoder_resizable_memory() {
     exit 1
   fi
 
-  # Chrome rejects TextDecoder views backed by growable WASM memory.
+  # Chrome rejects some Web API calls with views backed by growable WASM memory.
   JS_FOR_NODE=$(node_path "$JS_ARTIFACT")
   "$NODE" - "$JS_FOR_NODE" <<'NODE'
 const fs = require("fs");
@@ -297,6 +297,10 @@ const replacements = [
     "UTF16Decoder.decode(HEAPU16.subarray(idx,endIdx))",
     "UTF16Decoder.decode(HEAPU16.buffer instanceof ArrayBuffer&&!HEAPU16.buffer.resizable?HEAPU16.subarray(idx,endIdx):HEAPU16.slice(idx,endIdx))",
   ],
+  [
+    "var _random_get=(buffer,size)=>randomFill(HEAPU8.subarray(buffer,buffer+size));",
+    "var _random_get=(buffer,size)=>{var view=HEAPU8.subarray(buffer,buffer+size);if(view.buffer instanceof ArrayBuffer&&!view.buffer.resizable){return randomFill(view)}var copy=HEAPU8.slice(buffer,buffer+size);var result=randomFill(copy);HEAPU8.set(copy,buffer);return result};",
+  ],
 ];
 
 let applied = 0;
@@ -313,7 +317,7 @@ if (applied === 0) {
 }
 
 fs.writeFileSync(jsArtifact, source);
-console.log(`Yune web Emscripten JS glue patched for growable-memory TextDecoder compatibility (${applied} path(s)).`);
+console.log(`Yune web Emscripten JS glue patched for growable-memory browser API compatibility (${applied} path(s)).`);
 NODE
 }
 
@@ -388,7 +392,7 @@ JS_ARTIFACT="$ARTIFACT_DIR/yune-web.js"
 WASM_ARTIFACT="$ARTIFACT_DIR/yune-web.wasm"
 cp "$BROWSER_JS_ARTIFACT" "$JS_ARTIFACT"
 cp "$BROWSER_WASM_ARTIFACT" "$WASM_ARTIFACT"
-patch_textdecoder_resizable_memory "$JS_ARTIFACT"
+patch_resizable_memory_browser_views "$JS_ARTIFACT"
 
 if WASM_OPT=$(find_tool wasm-opt); then
   if "$WASM_OPT" -O3 --enable-bulk-memory --enable-exception-handling "$WASM_ARTIFACT" -o "$WASM_ARTIFACT.optimized" >/dev/null 2>&1; then

@@ -4,7 +4,7 @@
     "source": "yune-startup",
     "marker": {
       "phase": "startup:complete",
-      "totalMs": 585,
+      "totalMs": 570,
       "markers": [
         {
           "phase": "runtime:init:start",
@@ -16,19 +16,19 @@
         },
         {
           "phase": "wasm-glue:loaded",
-          "ms": 31
+          "ms": 30
         },
         {
           "phase": "wasm:module:create:start",
-          "ms": 31
+          "ms": 30
         },
         {
           "phase": "wasm:module:create:finish",
-          "ms": 47
+          "ms": 48
         },
         {
           "phase": "module:created",
-          "ms": 47,
+          "ms": 48,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -36,11 +36,11 @@
         },
         {
           "phase": "filesystem:mount:start",
-          "ms": 47
+          "ms": 48
         },
         {
           "phase": "filesystem:mount:finish",
-          "ms": 47,
+          "ms": 49,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -48,7 +48,7 @@
         },
         {
           "phase": "persistence:mounted",
-          "ms": 47,
+          "ms": 49,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -56,7 +56,7 @@
         },
         {
           "phase": "assets:load:start",
-          "ms": 47,
+          "ms": 49,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -64,7 +64,7 @@
         },
         {
           "phase": "assets:load:finish",
-          "ms": 268,
+          "ms": 267,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -72,7 +72,7 @@
         },
         {
           "phase": "assets:loaded",
-          "ms": 268,
+          "ms": 267,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -80,7 +80,7 @@
         },
         {
           "phase": "schema:select:start",
-          "ms": 268,
+          "ms": 267,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -88,7 +88,7 @@
         },
         {
           "phase": "schema:select:finish",
-          "ms": 575,
+          "ms": 561,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -96,7 +96,7 @@
         },
         {
           "phase": "startup-defaults:customize:start",
-          "ms": 575,
+          "ms": 561,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -104,7 +104,7 @@
         },
         {
           "phase": "startup-defaults:customize:finish",
-          "ms": 585,
+          "ms": 570,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -112,7 +112,7 @@
         },
         {
           "phase": "runtime:init:finish",
-          "ms": 585,
+          "ms": 570,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -120,7 +120,7 @@
         },
         {
           "phase": "runtime:initialized",
-          "ms": 585,
+          "ms": 570,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -193,7 +193,7 @@
     "source": "yune-startup",
     "marker": {
       "phase": "startup:complete",
-      "totalMs": 344,
+      "totalMs": 335,
       "markers": [
         {
           "phase": "runtime:init:start",
@@ -213,11 +213,11 @@
         },
         {
           "phase": "wasm:module:create:finish",
-          "ms": 12
+          "ms": 11
         },
         {
           "phase": "module:created",
-          "ms": 12,
+          "ms": 11,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -225,11 +225,11 @@
         },
         {
           "phase": "filesystem:mount:start",
-          "ms": 12
+          "ms": 11
         },
         {
           "phase": "filesystem:mount:finish",
-          "ms": 12,
+          "ms": 11,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -237,7 +237,7 @@
         },
         {
           "phase": "persistence:mounted",
-          "ms": 12,
+          "ms": 11,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -245,7 +245,7 @@
         },
         {
           "phase": "assets:load:start",
-          "ms": 12,
+          "ms": 11,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -253,7 +253,7 @@
         },
         {
           "phase": "assets:load:finish",
-          "ms": 67,
+          "ms": 64,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -261,7 +261,7 @@
         },
         {
           "phase": "assets:loaded",
-          "ms": 67,
+          "ms": 64,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -269,7 +269,7 @@
         },
         {
           "phase": "schema:select:start",
-          "ms": 67,
+          "ms": 64,
           "wasmMemory": {
             "currentBytes": 67108864,
             "peakBytes": 67108864
@@ -277,7 +277,7 @@
         },
         {
           "phase": "schema:select:finish",
-          "ms": 342,
+          "ms": 332,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -285,7 +285,7 @@
         },
         {
           "phase": "startup-defaults:customize:start",
-          "ms": 342,
+          "ms": 332,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -293,7 +293,7 @@
         },
         {
           "phase": "startup-defaults:customize:finish",
-          "ms": 344,
+          "ms": 335,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -301,7 +301,7 @@
         },
         {
           "phase": "runtime:init:finish",
-          "ms": 344,
+          "ms": 335,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -309,7 +309,7 @@
         },
         {
           "phase": "runtime:initialized",
-          "ms": 344,
+          "ms": 335,
           "wasmMemory": {
             "currentBytes": 134217728,
             "peakBytes": 134217728
@@ -380,8 +380,8 @@
   "resources": [
     {
       "name": "http://127.0.0.1:4174/worker.js?v=yune-web-wasm-heap-v1&schema=jyut6ping3",
-      "duration": -15.700000000186265,
-      "transferSize": 0
+      "duration": -14.5,
+      "transferSize": 300
     }
   ],
   "claimBoundary": "delivery cache and asset pruning only; not a browser startup speedup claim"

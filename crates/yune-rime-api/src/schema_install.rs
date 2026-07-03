@@ -20,7 +20,7 @@ use yune_core::{
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
     CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
     EchoTranslator, HistoryTranslator, OctagramGrammar, OctagramGrammarConfig,
-    OctagramGrammarParseError, ReverseLookupFilter, ReverseLookupTranslator,
+    OctagramGrammarParseError, PoetByteSource, ReverseLookupFilter, ReverseLookupTranslator,
     RimePrismRuntimePayload, RimeTableBinAdvancedDataOptions, SchemaListTranslator,
     SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary,
     TableDictionaryAdvancedData, TaggedFilter, Translator, UniquifierFilter,
@@ -375,7 +375,7 @@ fn install_schema_dictionary_translator_from_config(
     memory_probe_mark(format!(
         "m47:translator:{component_name}@{name_space}:dictionary:{probe_dictionary_name}:before_dictionary_load"
     ));
-    let (dictionary, compact_store, prism_payload, loaded_from_compiled) =
+    let (dictionary, compact_store, prism_payload, poet_source, loaded_from_compiled) =
         match load_schema_table_dictionary_with_compact_preference(
             schema_config,
             name_space,
@@ -385,11 +385,12 @@ fn install_schema_dictionary_translator_from_config(
                 compiled.dictionary,
                 compiled.compact_store,
                 compiled.prism_payload,
+                compiled.poet_source,
                 true,
             ),
             DictionaryLoadOutcome::SourceFallback { dictionary, reason } => {
                 record_dictionary_source_fallback(session, reason);
-                (Some(*dictionary), None, None, false)
+                (Some(*dictionary), None, None, None, false)
             }
             DictionaryLoadOutcome::NoUsablePath {
                 dictionary_id,
@@ -465,6 +466,9 @@ fn install_schema_dictionary_translator_from_config(
         }
         if !abbreviation_vocabulary.is_empty() {
             translator = translator.with_abbreviation_preset_vocabulary(abbreviation_vocabulary);
+        }
+        if let Some((source, checksum)) = poet_source {
+            translator = translator.with_upstream_sentence_poet_source(source, checksum);
         }
         match load_schema_octagram_grammar(schema_config) {
             Ok(Some(grammar)) => {
@@ -1463,6 +1467,26 @@ struct CompiledDictionary {
     dictionary: Option<TableDictionary>,
     compact_store: Option<CompactTableStore>,
     prism_payload: Option<RimePrismRuntimePayload>,
+    poet_source: Option<(Arc<dyn PoetByteSource>, u32)>,
+}
+
+#[derive(Debug)]
+struct CompiledPoetByteSource {
+    source: Arc<dyn CompactTableByteSource>,
+}
+
+impl PoetByteSource for CompiledPoetByteSource {
+    fn bytes(&self) -> &[u8] {
+        self.source.bytes()
+    }
+
+    fn storage_label(&self) -> &'static str {
+        self.source.storage_label()
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        self.source.mapping_mode()
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -1841,22 +1865,29 @@ fn load_schema_compiled_dictionary(
     let table_metadata = parse_rime_table_bin_metadata(table_source.bytes()).map_err(|error| {
         CompiledRejectReason::Invalid(format!("table metadata parse failed: {error:?}"))
     })?;
+    let mut compiled_poet_source = None;
     if let Some(poet_path) = selected_runtime_data_path(&poet_name) {
-        let poet_source = {
+        let loaded_poet_source = {
             let _trace = startup_trace::span("compiled_poet_load");
             load_compiled_data_byte_source(&poet_path, "poet")?
         };
-        let poet_summary =
-            parse_poet_bin_summary(poet_source.bytes(), table_metadata.dict_file_checksum)
-                .map_err(|error| {
-                    CompiledRejectReason::Invalid(format!("poet parse failed: {error:?}"))
-                })?;
+        let poet_summary = parse_poet_bin_summary(
+            loaded_poet_source.bytes(),
+            table_metadata.dict_file_checksum,
+        )
+        .map_err(|error| CompiledRejectReason::Invalid(format!("poet parse failed: {error:?}")))?;
         memory_probe_mark(format!(
             "m55:compiled_dictionary:{dictionary_name}:after_poet_summary_parse:poet_bytes={}:entries={}:vocabulary={}:abbreviation_vocabulary={}",
-            poet_source.bytes().len(),
+            loaded_poet_source.bytes().len(),
             poet_summary.entries,
             poet_summary.vocabulary_entries,
             poet_summary.abbreviation_vocabulary_entries
+        ));
+        compiled_poet_source = Some((
+            Arc::new(CompiledPoetByteSource {
+                source: loaded_poet_source,
+            }) as Arc<dyn PoetByteSource>,
+            table_metadata.dict_file_checksum,
         ));
     }
 
@@ -2025,6 +2056,7 @@ fn load_schema_compiled_dictionary(
         dictionary,
         compact_store,
         prism_payload,
+        poet_source: compiled_poet_source,
     })
 }
 
@@ -2121,7 +2153,7 @@ fn load_schema_preset_vocabulary(vocabulary_name: &str) -> Vec<yune_core::Preset
     yune_core::parse_rime_preset_vocabulary_entries(&source)
 }
 
-fn load_luna_pinyin_preset_vocabularies() -> (
+pub(crate) fn load_luna_pinyin_preset_vocabularies() -> (
     Vec<yune_core::PresetVocabularyEntry>,
     Vec<yune_core::PresetVocabularyEntry>,
 ) {

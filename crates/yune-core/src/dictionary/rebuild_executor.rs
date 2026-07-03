@@ -11,6 +11,8 @@ pub struct RimeDictRebuildSources<'a> {
     pub prism_artifact_stem: &'a str,
     pub table_dictionary: &'a TableDictionary,
     pub reverse_dictionary: &'a TableDictionary,
+    pub poet_vocabulary: &'a [crate::PresetVocabularyEntry],
+    pub poet_abbreviation_vocabulary: &'a [crate::PresetVocabularyEntry],
     pub syllabary: &'a [String],
     pub algebra_formulas: &'a [String],
     pub schema_file_checksum: u32,
@@ -50,8 +52,8 @@ pub fn execute_rebuild_plan(
             artifact_path(out_dir, sources.artifact_stem, "poet.bin"),
             build_poet_bin(
                 sources.table_dictionary.entries().iter().cloned(),
-                sources.table_dictionary.preset_vocabulary_entries(),
-                sources.table_dictionary.preset_vocabulary_entries(),
+                sources.poet_vocabulary,
+                sources.poet_abbreviation_vocabulary,
                 plan.dict_file_checksum,
             ),
         )?;

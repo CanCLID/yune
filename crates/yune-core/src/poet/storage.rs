@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::str;
+use std::sync::Arc;
 
 use crate::{PresetVocabularyEntry, TableEntry};
 
@@ -289,6 +290,453 @@ pub fn parse_poet_bin_dictionary_checksum(bytes: &[u8]) -> Result<u32, PoetBinPa
         return Err(PoetBinParseError::UnsupportedVersion);
     }
     read_u32(bytes, 12).ok_or(PoetBinParseError::TooShort)
+}
+
+pub trait PoetByteSource: fmt::Debug + Send + Sync {
+    fn bytes(&self) -> &[u8];
+
+    fn storage_label(&self) -> &'static str;
+
+    fn mapping_mode(&self) -> &'static str;
+}
+
+#[derive(Clone, Debug)]
+pub struct OwnedPoetBytes {
+    bytes: Arc<[u8]>,
+}
+
+impl OwnedPoetBytes {
+    #[must_use]
+    pub fn new(bytes: impl Into<Arc<[u8]>>) -> Self {
+        Self {
+            bytes: bytes.into(),
+        }
+    }
+}
+
+impl PoetByteSource for OwnedPoetBytes {
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "owned_bytes"
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct ByteBackedPoetStore {
+    source: Arc<dyn PoetByteSource>,
+    sections: PoetBinSections,
+}
+
+#[derive(Clone, Debug)]
+struct PoetBinSections {
+    entries: PoetBinSectionSummary,
+    entry_text_pool: PoetBinSectionSummary,
+    entry_code_pool: PoetBinSectionSummary,
+    entry_code_ranges: PoetBinSectionSummary,
+    vocabulary: VocabularySections,
+    abbreviation_vocabulary: VocabularySections,
+    character_codes: CharacterCodeSections,
+    abbreviation_character_codes: CharacterCodeSections,
+}
+
+#[derive(Clone, Debug)]
+struct VocabularySections {
+    rows: PoetBinSectionSummary,
+    text_pool: PoetBinSectionSummary,
+    chars: PoetBinSectionSummary,
+    first_codes: PoetBinSectionSummary,
+    first_code_text_pool: PoetBinSectionSummary,
+}
+
+#[derive(Clone, Debug)]
+struct CharacterCodeSections {
+    rows: PoetBinSectionSummary,
+    text_pool: PoetBinSectionSummary,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct VocabularyRow {
+    text_start: u32,
+    text_end: u32,
+    chars_start: u32,
+    chars_count: u32,
+    weight: f32,
+}
+
+impl ByteBackedPoetStore {
+    pub(super) fn from_source(
+        source: Arc<dyn PoetByteSource>,
+        expected_dictionary_checksum: u32,
+    ) -> Result<Self, PoetBinParseError> {
+        let summary = parse_poet_bin_summary(source.bytes(), expected_dictionary_checksum)?;
+        let sections = PoetBinSections::from_summary(&summary)?;
+        Ok(Self { source, sections })
+    }
+
+    pub(super) fn storage_label(&self) -> &'static str {
+        self.source.storage_label()
+    }
+
+    pub(super) fn mapping_mode(&self) -> &'static str {
+        self.source.mapping_mode()
+    }
+
+    pub(super) fn entry_count(&self) -> usize {
+        self.sections.entries.count as usize
+    }
+
+    pub(super) fn vocabulary_count(&self) -> usize {
+        self.sections.vocabulary.rows.count as usize
+    }
+
+    pub(super) fn abbreviation_vocabulary_count(&self) -> usize {
+        self.sections.abbreviation_vocabulary.rows.count as usize
+    }
+
+    pub(super) fn entry_code_id(&self, index: usize) -> u32 {
+        read_u32(self.bytes(), self.entry_row_offset(index) + 8)
+            .expect("poet entry code ids are validated during parse")
+    }
+
+    pub(super) fn entry_code(&self, index: usize) -> &str {
+        let code_id = self.entry_code_id(index);
+        let range_offset = row_offset(&self.sections.entry_code_ranges, code_id as usize);
+        let start = read_u32(self.bytes(), range_offset)
+            .expect("poet entry code ranges are validated during parse");
+        let end = read_u32(self.bytes(), range_offset + 4)
+            .expect("poet entry code ranges are validated during parse");
+        self.text_range(&self.sections.entry_code_pool, start, end)
+    }
+
+    pub(super) fn entry_text(&self, index: usize) -> &str {
+        let row = self.entry_row_offset(index);
+        let start = read_u32(self.bytes(), row).expect("poet entry text is validated during parse");
+        let end =
+            read_u32(self.bytes(), row + 4).expect("poet entry text is validated during parse");
+        self.text_range(&self.sections.entry_text_pool, start, end)
+    }
+
+    pub(super) fn entry_weight(&self, index: usize) -> f32 {
+        let bits = read_u32(self.bytes(), self.entry_row_offset(index) + 12)
+            .expect("poet entry weight is validated during parse");
+        f32::from_bits(bits)
+    }
+
+    pub(super) fn vocabulary_indices_for_first_code(
+        &self,
+        abbreviation: bool,
+        code: &str,
+    ) -> Vec<usize> {
+        let sections = self.vocabulary_sections(abbreviation);
+        let start = self.first_code_lower_bound(sections, code, 0, sections.first_codes.count);
+        let end = self.first_code_upper_bound(sections, code, start, sections.first_codes.count);
+        (start..end)
+            .map(|index| self.first_code_vocabulary_index(sections, index as usize))
+            .collect()
+    }
+
+    pub(super) fn vocabulary_text(&self, abbreviation: bool, index: usize) -> &str {
+        let sections = self.vocabulary_sections(abbreviation);
+        let row = self.vocabulary_row(sections, index);
+        self.text_range(&sections.text_pool, row.text_start, row.text_end)
+    }
+
+    pub(super) fn vocabulary_weight(&self, abbreviation: bool, index: usize) -> f32 {
+        self.vocabulary_row(self.vocabulary_sections(abbreviation), index)
+            .weight
+    }
+
+    pub(super) fn vocabulary_chars(&self, abbreviation: bool, index: usize) -> Vec<char> {
+        let sections = self.vocabulary_sections(abbreviation);
+        let row = self.vocabulary_row(sections, index);
+        (row.chars_start..row.chars_start + row.chars_count)
+            .map(|char_index| {
+                let offset = row_offset(&sections.chars, char_index as usize);
+                let scalar = read_u32(self.bytes(), offset)
+                    .expect("poet vocabulary chars are validated during parse");
+                char::from_u32(scalar).expect("poet vocabulary chars are validated during parse")
+            })
+            .collect()
+    }
+
+    pub(super) fn character_codes(&self, abbreviation: bool, ch: char) -> Vec<&str> {
+        let sections = if abbreviation {
+            &self.sections.abbreviation_character_codes
+        } else {
+            &self.sections.character_codes
+        };
+        let Some(row_index) = self.character_code_row_index(sections, ch) else {
+            return Vec::new();
+        };
+        let row = row_offset(&sections.rows, row_index);
+        let start = read_u32(self.bytes(), row + 4)
+            .expect("poet character code ranges are validated during parse");
+        let end = read_u32(self.bytes(), row + 8)
+            .expect("poet character code ranges are validated during parse");
+        self.len_strings(&sections.text_pool, start, end)
+    }
+
+    pub(super) fn memory_owner_rows(&self) -> Vec<crate::MemoryOwnerRow> {
+        vec![
+            crate::MemoryOwnerRow::new(
+                "poet.entries_by_code",
+                poet_byte_source_class(self.source.as_ref()),
+                self.entries_payload_bytes(),
+                self.entry_count(),
+                format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
+                "sentence model entries served from YUNE-POET/1 bytes",
+            ),
+            crate::MemoryOwnerRow::new(
+                "poet.vocabulary",
+                poet_byte_source_class(self.source.as_ref()),
+                self.vocabulary_payload_bytes(false),
+                self.vocabulary_count(),
+                format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
+                "normal preset vocabulary served from YUNE-POET/1 bytes",
+            ),
+            crate::MemoryOwnerRow::new(
+                "poet.abbreviation_vocabulary",
+                poet_byte_source_class(self.source.as_ref()),
+                self.vocabulary_payload_bytes(true),
+                self.abbreviation_vocabulary_count(),
+                format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
+                "abbreviation preset vocabulary served from YUNE-POET/1 bytes",
+            ),
+        ]
+    }
+
+    fn entries_payload_bytes(&self) -> usize {
+        section_len(&self.sections.entries)
+            .saturating_add(section_len(&self.sections.entry_text_pool))
+            .saturating_add(section_len(&self.sections.entry_code_pool))
+            .saturating_add(section_len(&self.sections.entry_code_ranges))
+            .saturating_add(section_len(&self.sections.character_codes.rows))
+            .saturating_add(section_len(&self.sections.character_codes.text_pool))
+            .saturating_add(section_len(
+                &self.sections.abbreviation_character_codes.rows,
+            ))
+            .saturating_add(section_len(
+                &self.sections.abbreviation_character_codes.text_pool,
+            ))
+    }
+
+    fn vocabulary_payload_bytes(&self, abbreviation: bool) -> usize {
+        let sections = self.vocabulary_sections(abbreviation);
+        section_len(&sections.rows)
+            .saturating_add(section_len(&sections.text_pool))
+            .saturating_add(section_len(&sections.chars))
+            .saturating_add(section_len(&sections.first_codes))
+            .saturating_add(section_len(&sections.first_code_text_pool))
+    }
+
+    fn bytes(&self) -> &[u8] {
+        self.source.bytes()
+    }
+
+    fn entry_row_offset(&self, index: usize) -> usize {
+        row_offset(&self.sections.entries, index)
+    }
+
+    fn vocabulary_sections(&self, abbreviation: bool) -> &VocabularySections {
+        if abbreviation {
+            &self.sections.abbreviation_vocabulary
+        } else {
+            &self.sections.vocabulary
+        }
+    }
+
+    fn vocabulary_row(&self, sections: &VocabularySections, index: usize) -> VocabularyRow {
+        let row = row_offset(&sections.rows, index);
+        VocabularyRow {
+            text_start: read_u32(self.bytes(), row)
+                .expect("poet vocabulary text is validated during parse"),
+            text_end: read_u32(self.bytes(), row + 4)
+                .expect("poet vocabulary text is validated during parse"),
+            chars_start: read_u32(self.bytes(), row + 8)
+                .expect("poet vocabulary chars are validated during parse"),
+            chars_count: read_u32(self.bytes(), row + 12)
+                .expect("poet vocabulary chars are validated during parse"),
+            weight: f32::from_bits(
+                read_u32(self.bytes(), row + 16)
+                    .expect("poet vocabulary weight is validated during parse"),
+            ),
+        }
+    }
+
+    fn first_code_vocabulary_index(&self, sections: &VocabularySections, index: usize) -> usize {
+        let row = row_offset(&sections.first_codes, index);
+        read_u32(self.bytes(), row + 8)
+            .expect("poet vocabulary first-code index is validated during parse") as usize
+    }
+
+    fn first_code_lower_bound(
+        &self,
+        sections: &VocabularySections,
+        value: &str,
+        start: u32,
+        end: u32,
+    ) -> u32 {
+        let mut low = start;
+        let mut high = end;
+        while low < high {
+            let mid = low + (high - low) / 2;
+            if self.first_code(sections, mid as usize) < value {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        low
+    }
+
+    fn first_code_upper_bound(
+        &self,
+        sections: &VocabularySections,
+        value: &str,
+        start: u32,
+        end: u32,
+    ) -> u32 {
+        let mut low = start;
+        let mut high = end;
+        while low < high {
+            let mid = low + (high - low) / 2;
+            if self.first_code(sections, mid as usize) <= value {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        low
+    }
+
+    fn first_code(&self, sections: &VocabularySections, index: usize) -> &str {
+        let row = row_offset(&sections.first_codes, index);
+        let start = read_u32(self.bytes(), row)
+            .expect("poet vocabulary first codes are validated during parse");
+        let end = read_u32(self.bytes(), row + 4)
+            .expect("poet vocabulary first codes are validated during parse");
+        self.text_range(&sections.first_code_text_pool, start, end)
+    }
+
+    fn character_code_row_index(
+        &self,
+        sections: &CharacterCodeSections,
+        ch: char,
+    ) -> Option<usize> {
+        let target = ch as u32;
+        let mut low = 0usize;
+        let mut high = sections.rows.count as usize;
+        while low < high {
+            let mid = low + (high - low) / 2;
+            let row = row_offset(&sections.rows, mid);
+            let scalar = read_u32(self.bytes(), row)
+                .expect("poet character codes are validated during parse");
+            match scalar.cmp(&target) {
+                std::cmp::Ordering::Less => low = mid + 1,
+                std::cmp::Ordering::Equal => return Some(mid),
+                std::cmp::Ordering::Greater => high = mid,
+            }
+        }
+        None
+    }
+
+    fn text_range(&self, section: &PoetBinSectionSummary, start: u32, end: u32) -> &str {
+        let pool = section_bytes(self.bytes(), section)
+            .expect("poet text pools are validated during parse");
+        str::from_utf8(&pool[start as usize..end as usize])
+            .expect("poet text ranges are validated during parse")
+    }
+
+    fn len_strings(&self, section: &PoetBinSectionSummary, start: u32, end: u32) -> Vec<&str> {
+        let pool = section_bytes(self.bytes(), section)
+            .expect("poet len-string pools are validated during parse");
+        let mut cursor = start as usize;
+        let end = end as usize;
+        let mut strings = Vec::new();
+        while cursor < end {
+            let len = read_u32(pool, cursor)
+                .expect("poet len-string lengths are validated during parse")
+                as usize;
+            cursor += 4;
+            let string_end = cursor + len;
+            strings.push(
+                str::from_utf8(&pool[cursor..string_end])
+                    .expect("poet len strings are validated during parse"),
+            );
+            cursor = string_end;
+        }
+        strings
+    }
+}
+
+impl PoetBinSections {
+    fn from_summary(summary: &PoetBinSummary) -> Result<Self, PoetBinParseError> {
+        let sections = &summary.sections;
+        Ok(Self {
+            entries: required_section(sections, SECTION_ENTRIES)?.clone(),
+            entry_text_pool: required_section(sections, SECTION_ENTRY_TEXT_POOL)?.clone(),
+            entry_code_pool: required_section(sections, SECTION_ENTRY_CODE_POOL)?.clone(),
+            entry_code_ranges: required_section(sections, SECTION_ENTRY_CODE_RANGES)?.clone(),
+            vocabulary: VocabularySections {
+                rows: required_section(sections, SECTION_VOCABULARY)?.clone(),
+                text_pool: required_section(sections, SECTION_VOCABULARY_TEXT_POOL)?.clone(),
+                chars: required_section(sections, SECTION_VOCABULARY_CHARS)?.clone(),
+                first_codes: required_section(sections, SECTION_VOCABULARY_FIRST_CODES)?.clone(),
+                first_code_text_pool: required_section(
+                    sections,
+                    SECTION_VOCABULARY_FIRST_CODE_TEXT_POOL,
+                )?
+                .clone(),
+            },
+            abbreviation_vocabulary: VocabularySections {
+                rows: required_section(sections, SECTION_ABBREVIATION_VOCABULARY)?.clone(),
+                text_pool: required_section(sections, SECTION_ABBREVIATION_VOCABULARY_TEXT_POOL)?
+                    .clone(),
+                chars: required_section(sections, SECTION_ABBREVIATION_VOCABULARY_CHARS)?.clone(),
+                first_codes: required_section(
+                    sections,
+                    SECTION_ABBREVIATION_VOCABULARY_FIRST_CODES,
+                )?
+                .clone(),
+                first_code_text_pool: required_section(
+                    sections,
+                    SECTION_ABBREVIATION_FIRST_CODE_TEXT_POOL,
+                )?
+                .clone(),
+            },
+            character_codes: CharacterCodeSections {
+                rows: required_section(sections, SECTION_CHARACTER_CODES)?.clone(),
+                text_pool: required_section(sections, SECTION_CHARACTER_CODE_TEXT_POOL)?.clone(),
+            },
+            abbreviation_character_codes: CharacterCodeSections {
+                rows: required_section(sections, SECTION_ABBREVIATION_CHARACTER_CODES)?.clone(),
+                text_pool: required_section(
+                    sections,
+                    SECTION_ABBREVIATION_CHARACTER_CODE_TEXT_POOL,
+                )?
+                .clone(),
+            },
+        })
+    }
+}
+
+fn section_len(section: &PoetBinSectionSummary) -> usize {
+    section.len as usize
+}
+
+fn poet_byte_source_class(source: &dyn PoetByteSource) -> crate::MemoryOwnerClass {
+    if source.mapping_mode() == "mmap" {
+        crate::MemoryOwnerClass::MmapFileBacked
+    } else {
+        crate::MemoryOwnerClass::HeapOwnedGuarded
+    }
 }
 
 struct CompiledPoetInputs {

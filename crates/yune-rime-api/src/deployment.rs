@@ -972,11 +972,21 @@ fn workspace_update_dictionary_artifact(
         let dictionary = dictionary.as_ref()?;
         let syllabary = dictionary_syllabary(dictionary);
         let algebra_formulas = schema_speller_algebra(schema_config);
+        let (poet_vocabulary, poet_abbreviation_vocabulary) = if dictionary_id == "luna_pinyin" {
+            crate::schema_install::load_luna_pinyin_preset_vocabularies()
+        } else {
+            (
+                dictionary.preset_vocabulary_entries().to_vec(),
+                dictionary.preset_vocabulary_entries().to_vec(),
+            )
+        };
         let sources = RimeDictRebuildSources {
             artifact_stem: &dictionary_id,
             prism_artifact_stem: &request.prism_id,
             table_dictionary: dictionary,
             reverse_dictionary: dictionary,
+            poet_vocabulary: &poet_vocabulary,
+            poet_abbreviation_vocabulary: &poet_abbreviation_vocabulary,
             syllabary: &syllabary,
             algebra_formulas: &algebra_formulas,
             schema_file_checksum: schema_checksum,

@@ -1,11 +1,12 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
 
 use crate::{
-    encode_octagram_key, make_sentences, make_sentences_with_grammar, null_grammar_score,
-    CandidateSource, DartsDoubleArray, Grammar, OctagramGrammar, OctagramGrammarConfig,
-    OctagramGrammarParseError, PresetVocabularyEntry, SentenceCodeSpan, StaticTableTranslator,
+    build_poet_bin, encode_octagram_key, make_sentences, make_sentences_with_grammar,
+    null_grammar_score, CandidateSource, DartsDoubleArray, Grammar, MemoryOwnerClass,
+    OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError, OwnedPoetBytes,
+    PoetByteSource, PresetVocabularyEntry, SentenceCodeSpan, StaticTableTranslator,
     TableDictionary, TableEntry, Translator, UpstreamSentenceModel, WordGraph, WordGraphEntry,
     UPSTREAM_NO_GRAMMAR_PENALTY,
 };
@@ -267,6 +268,93 @@ fn upstream_sentence_model_memory_profile_accounts_octagram_grammar_separately()
     assert_eq!(owner.storage, "DartsDoubleArray");
     assert!(owner.item_count > 0);
     assert!(owner.estimated_bytes > 0);
+}
+
+#[test]
+fn upstream_sentence_model_reads_candidates_from_byte_backed_poet_artifact() {
+    let entries = vec![
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+        TableEntry::new("d", "D", 100.0),
+        TableEntry::new("w", "W", 100.0),
+        TableEntry::new("x", "X", 100.0),
+        TableEntry::new("y", "Y", 100.0),
+        TableEntry::new("z", "Z", 100.0),
+    ];
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("AB", 1_000_000.0),
+        PresetVocabularyEntry::new("CD", 10.0),
+    ];
+    let abbreviation_vocabulary = vec![
+        PresetVocabularyEntry::new("WXYZ", 1_000_000.0),
+        PresetVocabularyEntry::new("WX", 10.0),
+    ];
+    let checksum = 0x1234_5678;
+    let heap_model = UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
+        entries.clone(),
+        &vocabulary,
+        &abbreviation_vocabulary,
+        10,
+    );
+    let bytes = build_poet_bin(entries, &vocabulary, &abbreviation_vocabulary, checksum);
+    let byte_model = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(bytes)) as Arc<dyn PoetByteSource>,
+        checksum,
+        10,
+    )
+    .expect("byte-backed poet artifact should load");
+
+    assert_eq!(
+        byte_model.candidates_for_input("ab"),
+        heap_model.candidates_for_input("ab")
+    );
+    let spans = [
+        SentenceCodeSpan::new(0, 1, "w"),
+        SentenceCodeSpan::new(1, 2, "x"),
+        SentenceCodeSpan::new(2, 3, "y"),
+        SentenceCodeSpan::new(3, 4, "z"),
+    ];
+    assert_eq!(
+        byte_model.candidates_for_code_spans_with_limit("wxyz", &spans, 5),
+        heap_model.candidates_for_code_spans_with_limit("wxyz", &spans, 5)
+    );
+
+    let owners = byte_model.memory_owner_rows();
+    let owner = |name: &str| {
+        owners
+            .iter()
+            .find(|row| row.owner == name)
+            .unwrap_or_else(|| panic!("missing memory owner {name}: {owners:?}"))
+    };
+    assert_eq!(
+        owner("poet.entries_by_code").class,
+        MemoryOwnerClass::MmapFileBacked
+    );
+    assert_eq!(
+        owner("poet.vocabulary").class,
+        MemoryOwnerClass::MmapFileBacked
+    );
+    assert_eq!(
+        owner("poet.abbreviation_vocabulary").class,
+        MemoryOwnerClass::MmapFileBacked
+    );
+    assert_eq!(
+        owner("poet.lookup_index").class,
+        MemoryOwnerClass::HeapOwnedGuarded
+    );
+}
+
+#[test]
+fn upstream_sentence_model_rejects_stale_poet_artifact_checksum() {
+    let bytes = build_poet_bin([TableEntry::new("a", "A", 100.0)], &[], &[], 0x1234_5678);
+    let result = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(OwnedPoetBytes::new(bytes)) as Arc<dyn PoetByteSource>,
+        0x8765_4321,
+        10,
+    );
+
+    assert!(result.is_err());
 }
 
 #[test]
@@ -876,5 +964,32 @@ impl Grammar for ContextBoostGrammar {
         } else {
             0.0
         }
+    }
+}
+
+#[derive(Debug)]
+struct TestMmapPoetBytes {
+    bytes: Arc<[u8]>,
+}
+
+impl TestMmapPoetBytes {
+    fn new(bytes: impl Into<Arc<[u8]>>) -> Self {
+        Self {
+            bytes: bytes.into(),
+        }
+    }
+}
+
+impl PoetByteSource for TestMmapPoetBytes {
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    fn storage_label(&self) -> &'static str {
+        "byte_backed"
+    }
+
+    fn mapping_mode(&self) -> &'static str {
+        "mmap"
     }
 }

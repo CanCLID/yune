@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::mem;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::comment_format::CommentFormat;
@@ -11,7 +11,7 @@ use crate::dictionary::{
     RimePrismBinPayload, RimePrismRuntimePayload, TableLookup,
 };
 use crate::filter::contains_extended_cjk;
-use crate::poet::{GrammarProvider, SentenceCodeSpan, UpstreamSentenceModel};
+use crate::poet::{GrammarProvider, PoetByteSource, SentenceCodeSpan, UpstreamSentenceModel};
 use crate::spelling_algebra::{ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
     Candidate, CandidateRequest, CandidateSource, Context, M37SentenceCandidateMetrics,
@@ -495,6 +495,7 @@ pub struct StaticTableTranslator {
     preset_vocabulary: Vec<PresetVocabularyEntry>,
     abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry>,
     upstream_sentence_grammar: GrammarProvider,
+    upstream_sentence_poet_source: Option<(Arc<dyn PoetByteSource>, u32)>,
     upstream_sentence_model: Option<UpstreamSentenceModel>,
 }
 
@@ -554,6 +555,7 @@ impl StaticTableTranslator {
             preset_vocabulary: Vec::new(),
             abbreviation_preset_vocabulary: Vec::new(),
             upstream_sentence_grammar: GrammarProvider::default(),
+            upstream_sentence_poet_source: None,
             upstream_sentence_model: None,
         }
     }
@@ -614,6 +616,7 @@ impl StaticTableTranslator {
             preset_vocabulary,
             abbreviation_preset_vocabulary,
             upstream_sentence_grammar: GrammarProvider::default(),
+            upstream_sentence_poet_source: None,
             upstream_sentence_model: None,
         }
     }
@@ -664,6 +667,7 @@ impl StaticTableTranslator {
             preset_vocabulary,
             abbreviation_preset_vocabulary,
             upstream_sentence_grammar: GrammarProvider::default(),
+            upstream_sentence_poet_source: None,
             upstream_sentence_model: None,
         }
     }
@@ -727,6 +731,7 @@ impl StaticTableTranslator {
             preset_vocabulary,
             abbreviation_preset_vocabulary,
             upstream_sentence_grammar: GrammarProvider::default(),
+            upstream_sentence_poet_source: None,
             upstream_sentence_model: None,
         }
     }
@@ -880,6 +885,16 @@ impl StaticTableTranslator {
     }
 
     #[must_use]
+    pub fn with_upstream_sentence_poet_source(
+        mut self,
+        source: Arc<dyn PoetByteSource>,
+        dictionary_checksum: u32,
+    ) -> Self {
+        self.upstream_sentence_poet_source = Some((source, dictionary_checksum));
+        self
+    }
+
+    #[must_use]
     pub fn with_upstream_sentence_model(mut self, max_candidates: usize) -> Self {
         let abbreviation_vocabulary = if self.abbreviation_preset_vocabulary.is_empty() {
             self.preset_vocabulary.as_slice()
@@ -890,7 +905,12 @@ impl StaticTableTranslator {
             && self.prism_payload.is_some()
             && self.single_letter_sentence_guard_enabled
             && !abbreviation_vocabulary.is_empty();
-        let model = if let Some(entries) = self.source_entries.take() {
+        let model = if let Some((source, dictionary_checksum)) =
+            self.upstream_sentence_poet_source.take()
+        {
+            UpstreamSentenceModel::from_poet_bin_source(source, dictionary_checksum, max_candidates)
+                .expect("validated poet artifact should load into sentence model")
+        } else if let Some(entries) = self.source_entries.take() {
             let table_entries = entries
                 .into_iter()
                 .map(|(code, candidate)| TableEntry::new(code, candidate.text, candidate.quality))

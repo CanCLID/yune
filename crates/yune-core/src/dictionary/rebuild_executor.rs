@@ -1,5 +1,6 @@
 use super::{build_prism_bin, build_reverse_bin, build_table_bin, RimeDictRebuildExecutionReport};
 use super::{RimeDictRebuildPlan, TableDictionary};
+use crate::build_poet_bin;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -44,6 +45,15 @@ pub fn execute_rebuild_plan(
         fs::write(
             artifact_path(out_dir, sources.artifact_stem, "table.bin"),
             build_table_bin(sources.table_dictionary, plan.dict_file_checksum),
+        )?;
+        fs::write(
+            artifact_path(out_dir, sources.artifact_stem, "poet.bin"),
+            build_poet_bin(
+                sources.table_dictionary.entries().iter().cloned(),
+                sources.table_dictionary.preset_vocabulary_entries(),
+                sources.table_dictionary.preset_vocabulary_entries(),
+                plan.dict_file_checksum,
+            ),
         )?;
     }
     if plan.rebuild_prism {

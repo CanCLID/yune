@@ -43,12 +43,14 @@
             pack_source_checksums: Vec::new(),
             schema_file_checksum: 0x2222_2222,
             table_dict_file_checksum: Some(0x1111_1111),
+            poet_dict_file_checksum: Some(0x1111_1111),
             prism: Some(RimePrismChecksumMetadata {
                 dict_file_checksum: 0x1111_1111,
                 schema_file_checksum: 0x2222_2222,
             }),
             reverse_dict_file_checksum: Some(0x1111_1111),
             prebuilt_table_available: false,
+            prebuilt_poet_available: false,
             prebuilt_prism_available: false,
             prebuilt_reverse_available: false,
             force_rebuild_table: false,
@@ -128,6 +130,61 @@
     }
 
     #[test]
+    fn rime_dict_rebuild_plan_rebuilds_table_artifact_set_when_poet_missing_or_stale() {
+        let input = RimeDictRebuildInput {
+            source_available: true,
+            source_dict_file_checksum: 0x1111_1111,
+            pack_source_checksums: Vec::new(),
+            schema_file_checksum: 0x2222_2222,
+            table_dict_file_checksum: Some(0x1111_1111),
+            poet_dict_file_checksum: None,
+            prism: Some(RimePrismChecksumMetadata {
+                dict_file_checksum: 0x1111_1111,
+                schema_file_checksum: 0x2222_2222,
+            }),
+            reverse_dict_file_checksum: Some(0x1111_1111),
+            prebuilt_table_available: false,
+            prebuilt_poet_available: false,
+            prebuilt_prism_available: false,
+            prebuilt_reverse_available: false,
+            force_rebuild_table: false,
+            force_rebuild_prism: false,
+        };
+        assert_eq!(
+            rime_dict_rebuild_plan(input.clone()),
+            Ok(RimeDictRebuildPlan {
+                dict_file_checksum: 0x1111_1111,
+                rebuild_table: true,
+                rebuild_prism: false,
+                rebuild_reverse: false,
+                report: RimeDictRebuildExecutionReport {
+                    table: RimeDictArtifactStatus::Rebuilt,
+                    prism: RimeDictArtifactStatus::ReusedFresh,
+                    reverse: RimeDictArtifactStatus::ReusedFresh,
+                },
+            })
+        );
+
+        assert_eq!(
+            rime_dict_rebuild_plan(RimeDictRebuildInput {
+                poet_dict_file_checksum: Some(0x3333_3333),
+                ..input
+            }),
+            Ok(RimeDictRebuildPlan {
+                dict_file_checksum: 0x1111_1111,
+                rebuild_table: true,
+                rebuild_prism: false,
+                rebuild_reverse: false,
+                report: RimeDictRebuildExecutionReport {
+                    table: RimeDictArtifactStatus::Rebuilt,
+                    prism: RimeDictArtifactStatus::ReusedFresh,
+                    reverse: RimeDictArtifactStatus::ReusedFresh,
+                },
+            })
+        );
+    }
+
+    #[test]
     fn rime_dict_rebuild_plan_reuses_prebuilt_when_source_is_missing() {
         let input = RimeDictRebuildInput {
             source_available: false,
@@ -135,12 +192,14 @@
             pack_source_checksums: Vec::new(),
             schema_file_checksum: 0x2222_2222,
             table_dict_file_checksum: Some(0x1111_1111),
+            poet_dict_file_checksum: Some(0x1111_1111),
             prism: Some(RimePrismChecksumMetadata {
                 dict_file_checksum: 0x1111_1111,
                 schema_file_checksum: 0x2222_2222,
             }),
             reverse_dict_file_checksum: Some(0x1111_1111),
             prebuilt_table_available: true,
+            prebuilt_poet_available: true,
             prebuilt_prism_available: true,
             prebuilt_reverse_available: true,
             force_rebuild_table: true,
@@ -181,12 +240,14 @@
             pack_source_checksums: vec![pack],
             schema_file_checksum: 0x2222_2222,
             table_dict_file_checksum: Some(primary),
+            poet_dict_file_checksum: Some(primary),
             prism: Some(RimePrismChecksumMetadata {
                 dict_file_checksum: primary,
                 schema_file_checksum: 0x2222_2222,
             }),
             reverse_dict_file_checksum: Some(primary),
             prebuilt_table_available: false,
+            prebuilt_poet_available: false,
             prebuilt_prism_available: false,
             prebuilt_reverse_available: false,
             force_rebuild_table: true,

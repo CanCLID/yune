@@ -11,11 +11,11 @@ use std::{
 
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
-    execute_rebuild_plan, memory_probe_mark, parse_rime_prism_bin_metadata,
-    parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata,
-    rime_checksum_bytes, rime_dict_rebuild_plan, rime_dict_source_checksum, RimeDictArtifactStatus,
-    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildSources,
-    RimePrismChecksumMetadata, TableDictionary,
+    execute_rebuild_plan, memory_probe_mark, parse_poet_bin_dictionary_checksum,
+    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata,
+    parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
+    rime_dict_source_checksum, RimeDictArtifactStatus, RimeDictRebuildExecutionReport,
+    RimeDictRebuildInput, RimeDictRebuildSources, RimePrismChecksumMetadata, TableDictionary,
 };
 
 use crate::{
@@ -858,26 +858,34 @@ fn workspace_update_dictionary_artifact(
         .unwrap_or(0);
 
     let table_path = staging_dir.join(format!("{dictionary_id}.table.bin"));
+    let poet_path = staging_dir.join(format!("{dictionary_id}.poet.bin"));
     let prism_path = staging_dir.join(format!("{}.prism.bin", request.prism_id));
     let reverse_path = staging_dir.join(format!("{dictionary_id}.reverse.bin"));
     let prebuilt_table_path = prebuilt_data_dir.join(format!("{dictionary_id}.table.bin"));
+    let prebuilt_poet_path = prebuilt_data_dir.join(format!("{dictionary_id}.poet.bin"));
     let prebuilt_prism_path = prebuilt_data_dir.join(format!("{}.prism.bin", request.prism_id));
     let prebuilt_reverse_path = prebuilt_data_dir.join(format!("{dictionary_id}.reverse.bin"));
 
     let table_dict_file_checksum = table_dict_file_checksum_from_path(&table_path);
     let table_exists = table_dict_file_checksum.is_some();
+    let poet_dict_file_checksum = poet_dict_file_checksum_from_path(&poet_path);
+    let poet_exists = poet_dict_file_checksum.is_some();
     let prism_metadata = prism_checksum_metadata_from_path(&prism_path);
     let reverse_dict_file_checksum = reverse_dict_file_checksum_from_path(&reverse_path);
     let reverse_exists = reverse_dict_file_checksum.is_some();
     memory_probe_mark(format!(
-        "m47:deploy:{dictionary_id}:after_staging_metadata:table={}:prism={}:reverse={}",
+        "m47:deploy:{dictionary_id}:after_staging_metadata:table={}:poet={}:prism={}:reverse={}",
         table_exists,
+        poet_exists,
         prism_metadata.is_some(),
         reverse_exists
     ));
 
     let prebuilt_table_dict_file_checksum = (!table_exists)
         .then(|| table_dict_file_checksum_from_path(&prebuilt_table_path))
+        .flatten();
+    let prebuilt_poet_dict_file_checksum = (!poet_exists)
+        .then(|| poet_dict_file_checksum_from_path(&prebuilt_poet_path))
         .flatten();
     let prebuilt_prism_metadata = (!prism_path.is_file())
         .then(|| prism_checksum_metadata_from_path(&prebuilt_prism_path))
@@ -886,8 +894,9 @@ fn workspace_update_dictionary_artifact(
         .then(|| reverse_dict_file_checksum_from_path(&prebuilt_reverse_path))
         .flatten();
     memory_probe_mark(format!(
-        "m47:deploy:{dictionary_id}:after_prebuilt_metadata:table_bytes={}:prism_bytes={}:reverse_bytes={}",
+        "m47:deploy:{dictionary_id}:after_prebuilt_metadata:table_bytes={}:poet_bytes={}:prism_bytes={}:reverse_bytes={}",
         file_size_bytes(&prebuilt_table_path).unwrap_or(0),
+        file_size_bytes(&prebuilt_poet_path).unwrap_or(0),
         file_size_bytes(&prebuilt_prism_path).unwrap_or(0),
         file_size_bytes(&prebuilt_reverse_path).unwrap_or(0)
     ));
@@ -900,10 +909,12 @@ fn workspace_update_dictionary_artifact(
         pack_source_checksums: pack_checksums,
         schema_file_checksum: schema_checksum,
         table_dict_file_checksum: table_dict_file_checksum.or(prebuilt_table_dict_file_checksum),
+        poet_dict_file_checksum: poet_dict_file_checksum.or(prebuilt_poet_dict_file_checksum),
         prism: prism_metadata.or(prebuilt_prism_metadata),
         reverse_dict_file_checksum: reverse_dict_file_checksum
             .or(prebuilt_reverse_dict_file_checksum),
         prebuilt_table_available: prebuilt_table_path.is_file(),
+        prebuilt_poet_available: prebuilt_poet_path.is_file(),
         prebuilt_prism_available: prebuilt_prism_path.is_file(),
         prebuilt_reverse_available: prebuilt_reverse_path.is_file(),
         force_rebuild_table: request.force_rebuild_table,
@@ -933,10 +944,12 @@ fn workspace_update_dictionary_artifact(
 
     if plan.report.table == RimeDictArtifactStatus::ReusedPrebuilt {
         copy_if_present(&prebuilt_table_path, &table_path)?;
+        copy_if_present(&prebuilt_poet_path, &poet_path)?;
         write_plan.rebuild_table = false;
         memory_probe_mark(format!(
-            "m47:deploy:{dictionary_id}:after_prebuilt_table_copy:bytes={}",
-            file_size_bytes(&table_path).unwrap_or(0)
+            "m47:deploy:{dictionary_id}:after_prebuilt_table_copy:table_bytes={}:poet_bytes={}",
+            file_size_bytes(&table_path).unwrap_or(0),
+            file_size_bytes(&poet_path).unwrap_or(0)
         ));
     }
     if plan.report.prism == RimeDictArtifactStatus::ReusedPrebuilt {
@@ -1006,6 +1019,10 @@ fn table_dict_file_checksum_from_path(path: &Path) -> Option<u32> {
     read_file_prefix(path, 68)
         .and_then(|bytes| parse_rime_table_bin_metadata(bytes).ok())
         .map(|metadata| metadata.dict_file_checksum)
+}
+
+fn poet_dict_file_checksum_from_path(path: &Path) -> Option<u32> {
+    read_file_prefix(path, 24).and_then(|bytes| parse_poet_bin_dictionary_checksum(&bytes).ok())
 }
 
 fn reverse_dict_file_checksum_from_path(path: &Path) -> Option<u32> {
@@ -1576,6 +1593,33 @@ pub(crate) fn prebuild_all_schemas() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn poet_dict_file_checksum_from_path_reads_generated_artifact_header() {
+        let root = std::env::temp_dir().join(format!(
+            "yune-poet-checksum-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock should be after Unix epoch")
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).expect("temp dir should be created");
+        let path = root.join("sample.poet.bin");
+        let bytes = yune_core::build_poet_bin(
+            [yune_core::TableEntry::new("a", "A", 1.0)],
+            &[],
+            &[],
+            0x1357_2468,
+        );
+        fs::write(&path, bytes).expect("poet artifact should be written");
+
+        assert_eq!(poet_dict_file_checksum_from_path(&path), Some(0x1357_2468));
+
+        fs::write(&path, b"not a poet").expect("bad bytes should be written");
+        assert_eq!(poet_dict_file_checksum_from_path(&path), None);
+
+        fs::remove_dir_all(root).expect("temp dir should be removed");
+    }
 
     #[test]
     fn empty_dictionary_namespace_yields_no_build_request() {

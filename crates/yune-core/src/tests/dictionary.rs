@@ -10,7 +10,7 @@ use serde_json::Value;
 use crate::dictionary::{parse_compact_table_bin_lookup, TableLookup};
 use crate::{
     build_prism_bin, build_reverse_bin, build_table_bin,
-    byte_backed_lookup_records_from_table_bin_bytes, execute_rebuild_plan,
+    byte_backed_lookup_records_from_table_bin_bytes, execute_rebuild_plan, parse_poet_bin_summary,
     parse_rime_prism_bin_payload, parse_rime_prism_runtime_payload,
     parse_rime_reverse_bin_dictionary, parse_rime_table_bin_advanced_data,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
@@ -828,8 +828,13 @@ fn rebuild_plan_executor_writes_only_requested_artifacts() {
     let report = execute_rebuild_plan(&plan, &sources, &root).expect("plan should execute");
     assert_eq!(report, plan.report);
     assert!(root.join("sample.table.bin").is_file());
+    assert!(root.join("sample.poet.bin").is_file());
     assert!(!root.join("sample.prism.bin").exists());
     assert!(root.join("sample.reverse.bin").is_file());
+    let poet_bytes = fs::read(root.join("sample.poet.bin")).expect("poet artifact should read");
+    let poet_summary =
+        parse_poet_bin_summary(&poet_bytes, 0x4444_4444).expect("poet artifact should parse");
+    assert_eq!(poet_summary.entries, dictionary.entries().len() as u32);
 
     fs::remove_dir_all(&root).expect("temp dir should be removed");
 }

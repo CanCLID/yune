@@ -218,9 +218,11 @@ pub struct RimeDictRebuildInput {
     pub pack_source_checksums: Vec<u32>,
     pub schema_file_checksum: u32,
     pub table_dict_file_checksum: Option<u32>,
+    pub poet_dict_file_checksum: Option<u32>,
     pub prism: Option<RimePrismChecksumMetadata>,
     pub reverse_dict_file_checksum: Option<u32>,
     pub prebuilt_table_available: bool,
+    pub prebuilt_poet_available: bool,
     pub prebuilt_prism_available: bool,
     pub prebuilt_reverse_available: bool,
     pub force_rebuild_table: bool,
@@ -269,7 +271,10 @@ pub fn rime_dict_rebuild_plan(
         let Some(table_checksum) = input.table_dict_file_checksum else {
             return missing_source_and_compiled(dict_file_checksum);
         };
-        if !input.prebuilt_table_available || !input.prebuilt_reverse_available {
+        if !input.prebuilt_table_available
+            || !input.prebuilt_poet_available
+            || !input.prebuilt_reverse_available
+        {
             return missing_source_and_compiled(table_checksum);
         }
         let prism_reusable = input.prebuilt_prism_available
@@ -280,8 +285,9 @@ pub fn rime_dict_rebuild_plan(
         if !prism_reusable {
             return missing_source_and_compiled(table_checksum);
         }
+        let poet_reusable = input.poet_dict_file_checksum == Some(table_checksum);
         let reverse_reusable = input.reverse_dict_file_checksum == Some(table_checksum);
-        if !reverse_reusable {
+        if !poet_reusable || !reverse_reusable {
             return missing_source_and_compiled(table_checksum);
         }
         return Ok(RimeDictRebuildPlan {
@@ -298,9 +304,11 @@ pub fn rime_dict_rebuild_plan(
     }
 
     let table_stale = input.table_dict_file_checksum != Some(dict_file_checksum);
+    let poet_stale = input.poet_dict_file_checksum != Some(dict_file_checksum);
     let mut rebuild_reverse = input.reverse_dict_file_checksum != Some(dict_file_checksum);
-    let mut rebuild_table = table_stale || rebuild_reverse || input.force_rebuild_table;
-    if input.table_dict_file_checksum.is_none() {
+    let mut rebuild_table =
+        table_stale || poet_stale || rebuild_reverse || input.force_rebuild_table;
+    if input.table_dict_file_checksum.is_none() || input.poet_dict_file_checksum.is_none() {
         rebuild_table = true;
     }
     if rebuild_table && input.reverse_dict_file_checksum.is_none() {

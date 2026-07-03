@@ -194,13 +194,7 @@ pub fn parse_poet_bin_summary(
     bytes: &[u8],
     expected_dictionary_checksum: u32,
 ) -> Result<PoetBinSummary, PoetBinParseError> {
-    if bytes.len() < HEADER_LEN {
-        return Err(PoetBinParseError::TooShort);
-    }
-    if &bytes[..MAGIC.len()] != MAGIC {
-        return Err(PoetBinParseError::UnsupportedVersion);
-    }
-    let dictionary_checksum = read_u32(bytes, 12).ok_or(PoetBinParseError::TooShort)?;
+    let dictionary_checksum = parse_poet_bin_dictionary_checksum(bytes)?;
     if dictionary_checksum != expected_dictionary_checksum {
         return Err(PoetBinParseError::ChecksumMismatch {
             expected: expected_dictionary_checksum,
@@ -285,6 +279,16 @@ pub fn parse_poet_bin_summary(
         abbreviation_vocabulary_entries: abbreviation_vocabulary.count,
         sections,
     })
+}
+
+pub fn parse_poet_bin_dictionary_checksum(bytes: &[u8]) -> Result<u32, PoetBinParseError> {
+    if bytes.len() < HEADER_LEN {
+        return Err(PoetBinParseError::TooShort);
+    }
+    if &bytes[..MAGIC.len()] != MAGIC {
+        return Err(PoetBinParseError::UnsupportedVersion);
+    }
+    read_u32(bytes, 12).ok_or(PoetBinParseError::TooShort)
 }
 
 struct CompiledPoetInputs {

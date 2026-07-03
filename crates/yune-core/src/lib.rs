@@ -95,11 +95,11 @@ pub use memory_probe::{
 };
 pub use poet::{
     build_poet_bin, encode_octagram_key, make_sentence, make_sentence_with_grammar, make_sentences,
-    make_sentences_with_grammar, null_grammar_score, parse_poet_bin_summary, Grammar,
-    GrammarProvider, NullGrammar, OctagramGrammar, OctagramGrammarConfig,
-    OctagramGrammarParseError, PoetBinParseError, PoetBinSectionSummary, PoetBinSummary,
-    SentenceCodeSpan, SentencePath, UpstreamSentenceModel, WordGraph, WordGraphEntry,
-    UPSTREAM_NO_GRAMMAR_PENALTY,
+    make_sentences_with_grammar, null_grammar_score, parse_poet_bin_dictionary_checksum,
+    parse_poet_bin_summary, Grammar, GrammarProvider, NullGrammar, OctagramGrammar,
+    OctagramGrammarConfig, OctagramGrammarParseError, PoetBinParseError, PoetBinSectionSummary,
+    PoetBinSummary, SentenceCodeSpan, SentencePath, UpstreamSentenceModel, WordGraph,
+    WordGraphEntry, UPSTREAM_NO_GRAMMAR_PENALTY,
 };
 pub use punctuation::{PunctuationDefinition, PunctuationProcessor, PunctuationTranslator};
 pub use state::{

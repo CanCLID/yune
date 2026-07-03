@@ -17,8 +17,8 @@ pub use octagram::{
     encode_octagram_key, OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError,
 };
 pub use storage::{
-    build_poet_bin, parse_poet_bin_summary, PoetBinParseError, PoetBinSectionSummary,
-    PoetBinSummary,
+    build_poet_bin, parse_poet_bin_dictionary_checksum, parse_poet_bin_summary, PoetBinParseError,
+    PoetBinSectionSummary, PoetBinSummary,
 };
 
 /// Upstream `grammar.h` null-grammar penalty (`ln(1e-6)`) used when no `.gram`

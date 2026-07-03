@@ -15,7 +15,7 @@ use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
     byte_backed_lookup_records_from_table_bin_byte_source, memory_probe_mark,
-    parse_rime_prism_runtime_payload, parse_rime_reverse_bin_dictionary,
+    parse_poet_bin_summary, parse_rime_prism_runtime_payload, parse_rime_reverse_bin_dictionary,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
     CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
@@ -1795,6 +1795,8 @@ fn load_schema_compiled_dictionary(
         .ok_or_else(|| CompiledRejectReason::Invalid("invalid prism resource id".to_owned()))?;
     let reverse_name = validate_data_resource_id(&format!("{dictionary_name}.reverse.bin"))
         .ok_or_else(|| CompiledRejectReason::Invalid("invalid reverse resource id".to_owned()))?;
+    let poet_name = validate_data_resource_id(&format!("{dictionary_name}.poet.bin"))
+        .ok_or_else(|| CompiledRejectReason::Invalid("invalid poet resource id".to_owned()))?;
     let Some(table_path) = selected_runtime_data_path(&table_name) else {
         return Err(CompiledRejectReason::Missing);
     };
@@ -1839,6 +1841,24 @@ fn load_schema_compiled_dictionary(
     let table_metadata = parse_rime_table_bin_metadata(table_source.bytes()).map_err(|error| {
         CompiledRejectReason::Invalid(format!("table metadata parse failed: {error:?}"))
     })?;
+    if let Some(poet_path) = selected_runtime_data_path(&poet_name) {
+        let poet_source = {
+            let _trace = startup_trace::span("compiled_poet_load");
+            load_compiled_data_byte_source(&poet_path, "poet")?
+        };
+        let poet_summary =
+            parse_poet_bin_summary(poet_source.bytes(), table_metadata.dict_file_checksum)
+                .map_err(|error| {
+                    CompiledRejectReason::Invalid(format!("poet parse failed: {error:?}"))
+                })?;
+        memory_probe_mark(format!(
+            "m55:compiled_dictionary:{dictionary_name}:after_poet_summary_parse:poet_bytes={}:entries={}:vocabulary={}:abbreviation_vocabulary={}",
+            poet_source.bytes().len(),
+            poet_summary.entries,
+            poet_summary.vocabulary_entries,
+            poet_summary.abbreviation_vocabulary_entries
+        ));
+    }
 
     if let Some(source_yaml) = source_yaml {
         let source_checksum = rime_dict_source_checksum(0, [source_yaml.as_bytes()], None);

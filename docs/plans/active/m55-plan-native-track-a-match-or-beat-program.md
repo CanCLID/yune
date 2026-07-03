@@ -5,7 +5,16 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Reviewed draft - not started. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (two-pass review folded in: executor self-containedness audit + repo-discipline/factual audit; 20 findings fixed). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Phase 0 blocked/no-go. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 0 baseline attempted; full-suite ratchet failed on inherited M52 37/59-char latency ceilings before any optimization). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+
+> **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
+> `docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/`. The first
+> fail-on-regression gate against `thresholds/m55-thresholds.csv` failed before
+> optimization on the inherited M52 long-input rows:
+> `ceshiyixiachangjushuruxingnengzenyang` observed `3.663x` over a `3.267x`
+> ceiling, and `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong`
+> observed `3.017x` over a `2.447x` ceiling. Per the no-loosening rule, Phases
+> 1-5 were not started.
 
 **Goal:** End the whack-a-mole pattern on the native Track A `luna_pinyin` lane
 and drive every tracked dimension — startup, session lifecycle, all eight

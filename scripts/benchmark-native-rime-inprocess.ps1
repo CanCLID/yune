@@ -208,7 +208,7 @@ function Write-TrackAComparison($Rows, $DestinationPath) {
     return @($Comparison)
 }
 
-function Invoke-TrackAThresholdCheck($ComparisonRows, $MemoryOwnerRows, $ThresholdPath, $DestinationPath, [switch]$Fail) {
+function Invoke-TrackAThresholdCheck($ComparisonRows, $SummaryRows, $MemoryOwnerRows, $ThresholdPath, $DestinationPath, [switch]$Fail) {
     if ([string]::IsNullOrWhiteSpace($ThresholdPath)) {
         if ($Fail) {
             throw "-FailOnRegression requires -TrackAThresholds"
@@ -256,6 +256,58 @@ function Invoke-TrackAThresholdCheck($ComparisonRows, $MemoryOwnerRows, $Thresho
                 continue
             }
             $Observed = [double]$Match.yune_librime_median_ratio_raw
+        } elseif ($Threshold.kind -eq "latency_absolute_us" -or $Threshold.kind -eq "memory_absolute_bytes") {
+            $Workload = $Threshold.workload
+            $Track = ""
+            if ($Workload -like "*/*") {
+                $Parts = $Workload.Split("/", 2)
+                $Track = $Parts[0]
+                $Workload = $Parts[1]
+            }
+            $Match = $SummaryRows |
+                Where-Object {
+                    ($Track -eq "" -or $_.track -eq $Track) -and
+                    $_.workload -eq $Workload -and
+                    $_.input -eq $Threshold.input -and
+                    $_.engine -eq "yune"
+                } |
+                Select-Object -First 1
+            if ($null -eq $Match) {
+                [pscustomobject]@{
+                    kind = $Threshold.kind
+                    workload = $Threshold.workload
+                    input = $Threshold.input
+                    metric = $Threshold.metric
+                    observed = ""
+                    ceiling = $Threshold.ceiling
+                    unit = $Threshold.unit
+                    status = "missing"
+                    notes = $Threshold.notes
+                }
+                continue
+            }
+            if ($Threshold.metric -eq "median_us") {
+                $Observed = [double]$Match.median_us
+            } elseif ($Threshold.metric -eq "max_peak_working_set_bytes") {
+                $Observed = [double]$Match.max_peak_working_set_bytes
+            } elseif ($Threshold.metric -eq "median_working_set_bytes") {
+                $Observed = [double]$Match.median_working_set_bytes
+            } elseif ($Threshold.metric -eq "median_private_bytes") {
+                $Observed = [double]$Match.median_private_bytes
+            } else {
+                [pscustomobject]@{
+                    kind = $Threshold.kind
+                    workload = $Threshold.workload
+                    input = $Threshold.input
+                    metric = $Threshold.metric
+                    observed = ""
+                    ceiling = $Threshold.ceiling
+                    unit = $Threshold.unit
+                    status = "unknown-metric"
+                    notes = $Threshold.notes
+                }
+                continue
+            }
         } elseif ($Threshold.kind -eq "memory_peak") {
             $Observed = [double]$ObservedPeak
         } else {
@@ -393,7 +445,7 @@ $CombinedRawLookupMicrobench | Export-Csv -LiteralPath (Join-Path $OutputRoot "r
 $CombinedMemoryOwnerProfile | Export-Csv -LiteralPath (Join-Path $OutputRoot "memory-owner-profile.csv") -NoTypeInformation -Encoding UTF8
 
 $TrackAComparison = Write-TrackAComparison $CombinedSummary (Join-Path $OutputRoot "summary-comparison.csv")
-Invoke-TrackAThresholdCheck $TrackAComparison $CombinedMemoryOwnerProfile $TrackAThresholds (Join-Path $OutputRoot "threshold-check.csv") -Fail:$($FailOnRegression.IsPresent)
+Invoke-TrackAThresholdCheck $TrackAComparison $CombinedSummary $CombinedMemoryOwnerProfile $TrackAThresholds (Join-Path $OutputRoot "threshold-check.csv") -Fail:$($FailOnRegression.IsPresent)
 
 $TrackBReadme = if ($SkipTrackB) { "skipped for this run." } else { "jyut6ping3_mobile, Yune Cantonese profile/product path." }
 $ThresholdReadme = if ([string]::IsNullOrWhiteSpace($TrackAThresholds)) { "not run." } else { "threshold-check.csv against $TrackAThresholds." }

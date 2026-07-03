@@ -1,6 +1,6 @@
-# M55 Phase 0 Baseline and Ratchet Attempt
+# M55 Phase 0 Baseline and Ratchet
 
-Status: blocked / no-go at Phase 0 gate.
+Status: green after null-grammar fast-path repair.
 
 Date: 2026-07-03.
 
@@ -34,7 +34,7 @@ Baseline command:
 powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -TrackAInputs "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru" -DeployProductBeforeBenchmark -OutputRoot docs\reports\evidence\m55-native-match-or-beat\phase-0-baseline\run-N
 ```
 
-Baseline runs:
+Initial baseline runs:
 
 - `run-1/`
 - `run-2/`
@@ -42,10 +42,12 @@ Baseline runs:
 
 Ratchet artifacts:
 
-- `noise-band.csv` records min/median/max/spread across the three baseline runs.
+- `noise-band.csv` records min/median/max/spread across the repaired fixed-path
+  baseline runs used to refresh the M55-added rows.
 - `../thresholds/m55-thresholds.csv` is the M55 working threshold file attempted here. It imports the six M52 rows unchanged and adds:
   - three current win rows: `zhongguo`, `cszysmsrsd`, `zybfshmsru`;
-  - startup/session absolute latency rows because their ratio bands exceeded the 10% stability target;
+  - startup/session latency rows, using an absolute latency row where the ratio
+    band exceeded the 10% stability target;
   - Track B product absolute regression rows for latency and memory.
 
 Gate command:
@@ -54,15 +56,62 @@ Gate command:
 powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -TrackAInputs "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru" -DeployProductBeforeBenchmark -TrackAThresholds docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv -FailOnRegression -OutputRoot docs\reports\evidence\m55-native-match-or-beat\phase-0-baseline\gate-run-1
 ```
 
-Gate result:
+Initial gate result:
 
 - `gate-run-1/threshold-check.csv` failed.
 - Failing inherited M52 rows:
   - `ceshiyixiachangjushuruxingnengzenyang`: observed `3.663x`, ceiling `3.267x`.
   - `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong`: observed `3.017x`, ceiling `2.447x`.
-- Because M55 forbids optimization before the Phase 0 ratchet is green, Phase 1 was not started.
-- Because the first real gate already failed, the synthetic-breach proof and second green gate run were not executed.
+- Diagnosis: M54 had routed plain null-grammar Luna through grammar-aware
+  sentence state. That preserved candidate output but added unnecessary grammar
+  context maintenance and duplicate-text scans to the default-off path.
+- Fix: restore the old null-grammar sentence path while keeping grammar-aware
+  context/deduplication for Octagram-backed paths.
+
+Diagnostic commands:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m55-native-match-or-beat\phase-0-diagnostics\m52-shape-current-main -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs n,ni,hao,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong -SkipTrackB -TrackAThresholds docs\reports\evidence\m52-track-a-guardrails-and-disposition\track-a-thresholds.csv -FailOnRegression
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot docs\reports\evidence\m55-native-match-or-beat\phase-0-diagnostics\m52-shape-null-grammar-fast-path -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs n,ni,hao,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong -SkipTrackB -TrackAThresholds docs\reports\evidence\m52-track-a-guardrails-and-disposition\track-a-thresholds.csv -FailOnRegression
+```
+
+Diagnostic result:
+
+- `phase-0-diagnostics/m52-shape-current-main/` failed the inherited M52 gate
+  on the same long rows.
+- `phase-0-diagnostics/m52-shape-null-grammar-fast-path/` passed the inherited
+  M52 gate after restoring the null-grammar fast path.
+
+Synthetic-breach proof:
+
+- Threshold copy:
+  `synthetic-breach-null-grammar-fast-path/m55-thresholds-synthetic-breach.csv`.
+- Run:
+  `synthetic-breach-null-grammar-fast-path/run-1/threshold-check.csv`.
+- Expected result: non-zero exit with one intentional failure for each
+  supported kind:
+  - `latency_ratio`
+  - `memory_peak`
+  - `latency_absolute_us`
+  - `memory_absolute_bytes`
+
+Final green gates:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -TrackAInputs "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru" -DeployProductBeforeBenchmark -TrackAThresholds docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv -FailOnRegression -OutputRoot docs\reports\evidence\m55-native-match-or-beat\phase-0-baseline\gate-run-5b-null-direct-take
+powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -TrackAInputs "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru" -DeployProductBeforeBenchmark -TrackAThresholds docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv -FailOnRegression -OutputRoot docs\reports\evidence\m55-native-match-or-beat\phase-0-baseline\gate-run-6-null-direct-take
+```
+
+Final gate result:
+
+- `gate-run-5b-null-direct-take/threshold-check.csv`: all rows pass.
+- `gate-run-6-null-direct-take/threshold-check.csv`: all rows pass.
+- Track B product assets were present and measured in both final gates.
+- `-SkipTrackB` was not used.
 
 Conclusion:
 
-M55 cannot proceed on this baseline without a reviewed plan decision. The current `main` baseline does not satisfy the inherited M52 long-input latency ceilings when run through the expanded M55 full-suite gate. Loosening those ceilings is explicitly forbidden by the active M55 plan, so this evidence records a Phase 0 no-go rather than a completed ratchet.
+Phase 0 is now green. The earlier no-go remains as diagnostic evidence, but it
+is superseded by the null-grammar fast-path repair plus the two final green
+full-suite gates above. Phase 1 may begin from this ratchet; no later M55 phase
+has started in this evidence bundle.

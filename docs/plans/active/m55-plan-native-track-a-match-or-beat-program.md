@@ -5,16 +5,15 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Phase 0 blocked/no-go. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 0 baseline attempted; full-suite ratchet failed on inherited M52 37/59-char latency ceilings before any optimization). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Phase 0 green; Phase 1 next. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 0 ratchet repaired after restoring the null-grammar fast path; two final full-suite gates green). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
 
 > **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
 > `docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/`. The first
-> fail-on-regression gate against `thresholds/m55-thresholds.csv` failed before
-> optimization on the inherited M52 long-input rows:
-> `ceshiyixiachangjushuruxingnengzenyang` observed `3.663x` over a `3.267x`
-> ceiling, and `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong`
-> observed `3.017x` over a `2.447x` ceiling. Per the no-loosening rule, Phases
-> 1-5 were not started.
+> fail-on-regression gate exposed an M54 null-grammar performance regression on
+> inherited M52 long-input rows. The fix restores the default-off null-grammar
+> sentence path while preserving Octagram grammar-aware state. Final Phase 0
+> gates `gate-run-5b-null-direct-take` and `gate-run-6-null-direct-take` pass
+> against `thresholds/m55-thresholds.csv`; Phases 1-5 remain not started.
 
 **Goal:** End the whack-a-mole pattern on the native Track A `luna_pinyin` lane
 and drive every tracked dimension — startup, session lifecycle, all eight
@@ -347,11 +346,16 @@ Read before starting: `AGENTS.md` (especially Verification Discipline),
 **Owner:** measurement coverage (the unguarded dimensions) and startup/session
 measurement stability. **No engine code changes in this phase.**
 
-- [ ] Pre-flight: read the script's `param()` block; if the upstream oracle
+**Execution note:** the first Phase 0 gate exposed a pre-existing M54 regression
+in the plain null-grammar Luna path. Restoring that default-off path was required
+before the measurement ratchet could become green; no Phase 1+ optimization
+owner has started.
+
+- [x] Pre-flight: read the script's `param()` block; if the upstream oracle
   root assert fails, provision it via `scripts/capture-upstream-luna-pinyin.ps1`
   (see Current Starting Point). If `apps/yune-web/source/public/schema` is
   absent, record Track B as blocked and use `-SkipTrackB`.
-- [ ] Run the full benchmark 3 times. Canonical per-run invocation (adjust only
+- [x] Run the full benchmark 3 times. Canonical per-run invocation (adjust only
   if the `param()` block has drifted — record any drift in the evidence
   README):
 
@@ -367,13 +371,13 @@ measurement stability. **No engine code changes in this phase.**
   the full 8-row suite. `-OutputRoot` must be the fresh `run-N` leaf (the
   script clears the directory it is given). Record the machine/toolchain
   fingerprint (OS build, CPU, `rustc -V`, release profile) in the README.
-- [ ] Compute per-dimension noise bands (min/median/max across the 3 runs) for:
+- [x] Compute per-dimension noise bands (min/median/max across the 3 runs) for:
   startup (`startup_warm_shared_assets_runtime_ready`), session
   (`session_create_select_destroy`), all 8 latency rows, Track A peak working
   set, Track A private-bytes proxy, and (if run) Track B absolutes (peak WS,
   median WS, private bytes key-sequence, key-sequence latency, startup,
   session). Commit as `phase-0-baseline/noise-band.csv`.
-- [ ] **Startup/session stability deliverable:** prior evidence shows the
+- [x] **Startup/session stability deliverable:** prior evidence shows the
   startup ratio swinging `0.935x -> 1.113x` across M52 runs. Attempt to harden
   (more in-run repetitions, warmup discipline, process isolation, high-priority
   scheduling). If the ratio band cannot be brought under `10%`, gate
@@ -381,23 +385,23 @@ measurement stability. **No engine code changes in this phase.**
   instead of ratios, and record that Tier M's startup criterion is the noise
   band per the Win Bars wording. Do not let a noisy ratio become either a false
   gate failure or a fake win.
-- [ ] Author `thresholds/m55-thresholds.csv` as a **superset** of the M52
+- [x] Author `thresholds/m55-thresholds.csv` as a **superset** of the M52
   artifact: keep the five M52 latency ceilings and the memory ceiling; add
   startup/session (ratio or absolute per the stability deliverable; workload
   ids as named, empty `input`), the three win rows at
   `min(0.95x, worst-of-3 x 1.20)`, and Track B absolutes (worst-of-3 x 1.10)
   if Track B ran.
-- [ ] Extend `Invoke-TrackAThresholdCheck` for the Track B absolute kinds
+- [x] Extend `Invoke-TrackAThresholdCheck` for the Track B absolute kinds
   (`latency_absolute_us`, `memory_absolute_bytes`, track encoded as a
   `track-b/` prefix on the `workload` field per the schema decision in Files
   And Responsibilities, fed from the combined summary rows). Startup/session
   and win-row ratios should need no script change (existing `latency_ratio`
   kind). Keep the M52 artifact working unchanged.
-- [ ] **Prove the gate can fail:** run once against a synthetic-breach copy of
+- [x] **Prove the gate can fail:** run once against a synthetic-breach copy of
   the artifact (one ceiling set below the observed value) and record the
   non-zero exit. A gate that has never failed is unverified tooling. Do this
   for one row of each `kind`.
-- [ ] Phase gate: full suite green against `m55-thresholds.csv` on two
+- [x] Phase gate: full suite green against `m55-thresholds.csv` on two
   consecutive runs; evidence + README recorded.
 
 **No-go:** if after the hardening attempt run-to-run noise still exceeds `10%`

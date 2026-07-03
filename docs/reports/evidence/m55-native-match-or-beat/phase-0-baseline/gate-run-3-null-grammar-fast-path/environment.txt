@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-03T22:20:56.1923125Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=93cb0281da6ac2c4b9c988ba66a421c7d09e662a
+yune_git_status_short= M crates/yune-core/src/poet/mod.rs | ?? docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/gate-run-2-null-grammar-fast-path/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/gate-run-3-null-grammar-fast-path/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-0-diagnostics/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\gate-run-3-null-grammar-fast-path
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

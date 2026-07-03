@@ -5,7 +5,7 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Phase 2 design recorded; implementation next. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 2 poet-storage design note is recorded; implementation has not started). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Phase 2 artifact contract in progress; runtime mmap wiring next. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 2 poet-storage design note is recorded; the safe Rust `YUNE-POET/1` artifact builder/parser contract has focused tests; deploy/mmap/runtime wiring has not started). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
 
 > **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
 > `docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/`. The first
@@ -21,7 +21,10 @@
 > than a release ceiling. Phase 1 release ratchet `ratchet-gate-1` is green
 > with `23` pass rows; the inherited 59-character row remains tight at
 > `2.447x`, exactly at the committed ceiling. Phase 2 design is recorded under
-> `phase-2-poet-storage/design-note.md`; implementation remains next.
+> `phase-2-poet-storage/design-note.md`; the first implementation slice adds
+> the `YUNE-POET/1` artifact builder/parser contract and corrupt-artifact tests
+> under `phase-2-poet-storage/artifact-contract-2026-07-03.md`. Runtime
+> deploy/mmap wiring remains next, so Phase 2 is not complete.
 
 **Goal:** End the whack-a-mole pattern on the native Track A `luna_pinyin` lane
 and drive every tracked dimension — startup, session lifecycle, all eight

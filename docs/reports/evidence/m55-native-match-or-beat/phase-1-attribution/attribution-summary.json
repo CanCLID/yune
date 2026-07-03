@@ -1,0 +1,15 @@
+﻿{
+    "phase0_unclassified_lower_bound_bytes":  106039183,
+    "diagnostic_attributed_prior_floor_bytes":  103380578,
+    "diagnostic_attribution_coverage_ratio":  0.9749,
+    "steady_working_set_bytes":  178417664,
+    "steady_private_bytes":  188846080,
+    "peak_working_set_bytes":  193585152,
+    "allocator_live_bytes":  146766086,
+    "named_heap_owner_bytes":  75037086,
+    "named_mmap_file_backed_bytes":  13044872,
+    "allocator_live_heap_not_in_owner_rows_bytes":  71729000,
+    "resident_loader_image_allocator_overhead_bytes":  18606706,
+    "transient_peak_delta_bytes":  15167488,
+    "release_allocator_probe_blocker":  "cargo test --release for native_memory_probe fails because the release crate graph uses panic=abort while the test harness requires unwind"
+}

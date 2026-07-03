@@ -1,0 +1,492 @@
+{
+  "after_create_session_owner_profile": [
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "lazy reverse-lookup dictionary is not retained until used",
+      "owner": "reverse_lookup.entries",
+      "session_id": 1,
+      "storage": "lazy_unloaded"
+    },
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "lazy reverse-comment side index is not retained until used",
+      "owner": "reverse_lookup.comments_index",
+      "session_id": 1,
+      "storage": "lazy_unloaded"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 40,
+      "item_count": 1,
+      "notes": "prefix/suffix/tag/comment-format state for the reverse lookup translator",
+      "owner": "reverse_lookup.config",
+      "session_id": 1,
+      "storage": "ReverseLookupTranslator"
+    },
+    {
+      "class": "shared",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "compact storage path does not retain a translator BTreeMap",
+      "owner": "translator.entries_by_code",
+      "session_id": 1,
+      "storage": "compact_table"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 13685,
+      "item_count": 424,
+      "notes": "canonical code list retained for prism lookup",
+      "owner": "compact_table.syllabary_codes",
+      "session_id": 1,
+      "storage": "Vec<String>"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 15757,
+      "item_count": 424,
+      "notes": "rsmarisa lookup side map retained on heap",
+      "owner": "compact_table.syllable_ids_by_code",
+      "session_id": 1,
+      "storage": "HashMap<String, usize>"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 13013460,
+      "item_count": 498564,
+      "notes": "rsmarisa table bytes are excluded from heap-owned branch triggers when mapped",
+      "owner": "compact_table.storage",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 13013460,
+      "item_count": 498564,
+      "notes": "candidate text payload; byte-backed rows overlap compact_table.storage",
+      "owner": "compact_table.candidate_text_payload",
+      "session_id": 1,
+      "storage": "byte_backed"
+    },
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 0,
+      "item_count": 498564,
+      "notes": "candidate raw comments/code payload; byte-backed rows overlap compact_table.storage",
+      "owner": "compact_table.candidate_comment_payload",
+      "session_id": 1,
+      "storage": "byte_backed"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 48,
+      "item_count": 0,
+      "notes": "retained phrase-code stems needed for lookup records and dictionary panels",
+      "owner": "compact_table.stems",
+      "session_id": 1,
+      "storage": "HashMap<String, Vec<String>>"
+    },
+    {
+      "class": "shared",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "no lookup-record payload retained for this compact table",
+      "owner": "compact_table.lookup_records",
+      "session_id": 1,
+      "storage": "none"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "retained correction/tolerance payload required by TypeDuck fuzzy input behavior",
+      "owner": "compact_table.corrections_tolerance",
+      "session_id": 1,
+      "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 24,
+      "item_count": 0,
+      "notes": "retained dictionary settings parsed from deployed dictionary metadata",
+      "owner": "compact_table.dict_settings",
+      "session_id": 1,
+      "storage": "BTreeMap<String, String>"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
+      "owner": "compact_table.preset_vocabulary",
+      "session_id": 1,
+      "storage": "Vec<PresetVocabularyEntry>"
+    },
+    {
+      "class": "shared",
+      "estimated_bytes": 0,
+      "item_count": 424,
+      "notes": "normal code membership delegated to compact storage lookup",
+      "owner": "translator.normal_codes",
+      "session_id": 1,
+      "storage": "compact_table.has_code"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 7168,
+      "item_count": 1792,
+      "notes": "prism double-array units are read directly from the byte source",
+      "owner": "prism.double_array_units",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 24244,
+      "item_count": 1166,
+      "notes": "prism spelling descriptors are read lazily from the byte source",
+      "owner": "prism.spelling_map",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 48,
+      "item_count": 0,
+      "notes": "parsed prism correction/tolerance payload retained on heap",
+      "owner": "prism.corrections_tolerance",
+      "session_id": 1,
+      "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "prism descriptor tips remain in the byte source",
+      "owner": "prism.tips_payload",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 18694662,
+      "item_count": 513353,
+      "notes": "sentence model entries cloned from table rows",
+      "owner": "poet.entries_by_code",
+      "session_id": 1,
+      "storage": "Vec<ModelEntry>"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 2660848,
+      "item_count": 332604,
+      "notes": "sorted code-range index used by M40 sentence lookup",
+      "owner": "poet.lookup_index",
+      "session_id": 1,
+      "storage": "SentenceLookupIndex"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 53644752,
+      "item_count": 421966,
+      "notes": "normal preset vocabulary used by upstream sentence graph",
+      "owner": "poet.vocabulary",
+      "session_id": 1,
+      "storage": "Vec<ModelVocabularyEntry>"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 1433,
+      "item_count": 11,
+      "notes": "abbreviation-only vocabulary used by M42 guard rows",
+      "owner": "poet.abbreviation_vocabulary",
+      "session_id": 1,
+      "storage": "Vec<ModelVocabularyEntry>"
+    },
+    {
+      "class": "overlap_estimate",
+      "estimated_bytes": 1654,
+      "item_count": 2,
+      "notes": "deployed YAML config is parsed transiently; retained bytes are reload signatures",
+      "owner": "schema.config",
+      "session_id": 1,
+      "storage": "schema_reload_signature"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 2599,
+      "item_count": 2,
+      "notes": "processor and segmentor state installed from the selected schema",
+      "owner": "schema.processors",
+      "session_id": 1,
+      "storage": "SessionState processors"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 24,
+      "item_count": 0,
+      "notes": "per-session learned entries; empty in clean native benchmark runs",
+      "owner": "session.userdb",
+      "session_id": 1,
+      "storage": "UserDb"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 3166,
+      "item_count": 1,
+      "notes": "active native session runtime shell excluding shared translator internals",
+      "owner": "runtime.session_state",
+      "session_id": 1,
+      "storage": "SessionState"
+    }
+  ],
+  "final_owner_profile": [
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "lazy reverse-lookup dictionary is not retained until used",
+      "owner": "reverse_lookup.entries",
+      "session_id": 1,
+      "storage": "lazy_unloaded"
+    },
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "lazy reverse-comment side index is not retained until used",
+      "owner": "reverse_lookup.comments_index",
+      "session_id": 1,
+      "storage": "lazy_unloaded"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 40,
+      "item_count": 1,
+      "notes": "prefix/suffix/tag/comment-format state for the reverse lookup translator",
+      "owner": "reverse_lookup.config",
+      "session_id": 1,
+      "storage": "ReverseLookupTranslator"
+    },
+    {
+      "class": "shared",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "compact storage path does not retain a translator BTreeMap",
+      "owner": "translator.entries_by_code",
+      "session_id": 1,
+      "storage": "compact_table"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 13685,
+      "item_count": 424,
+      "notes": "canonical code list retained for prism lookup",
+      "owner": "compact_table.syllabary_codes",
+      "session_id": 1,
+      "storage": "Vec<String>"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 15757,
+      "item_count": 424,
+      "notes": "rsmarisa lookup side map retained on heap",
+      "owner": "compact_table.syllable_ids_by_code",
+      "session_id": 1,
+      "storage": "HashMap<String, usize>"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 13013460,
+      "item_count": 498564,
+      "notes": "rsmarisa table bytes are excluded from heap-owned branch triggers when mapped",
+      "owner": "compact_table.storage",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 13013460,
+      "item_count": 498564,
+      "notes": "candidate text payload; byte-backed rows overlap compact_table.storage",
+      "owner": "compact_table.candidate_text_payload",
+      "session_id": 1,
+      "storage": "byte_backed"
+    },
+    {
+      "class": "shared_or_overlapping",
+      "estimated_bytes": 0,
+      "item_count": 498564,
+      "notes": "candidate raw comments/code payload; byte-backed rows overlap compact_table.storage",
+      "owner": "compact_table.candidate_comment_payload",
+      "session_id": 1,
+      "storage": "byte_backed"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 48,
+      "item_count": 0,
+      "notes": "retained phrase-code stems needed for lookup records and dictionary panels",
+      "owner": "compact_table.stems",
+      "session_id": 1,
+      "storage": "HashMap<String, Vec<String>>"
+    },
+    {
+      "class": "shared",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "no lookup-record payload retained for this compact table",
+      "owner": "compact_table.lookup_records",
+      "session_id": 1,
+      "storage": "none"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "retained correction/tolerance payload required by TypeDuck fuzzy input behavior",
+      "owner": "compact_table.corrections_tolerance",
+      "session_id": 1,
+      "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 24,
+      "item_count": 0,
+      "notes": "retained dictionary settings parsed from deployed dictionary metadata",
+      "owner": "compact_table.dict_settings",
+      "session_id": 1,
+      "storage": "BTreeMap<String, String>"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "retained preset vocabulary weights when the selected dictionary includes vocabulary packs",
+      "owner": "compact_table.preset_vocabulary",
+      "session_id": 1,
+      "storage": "Vec<PresetVocabularyEntry>"
+    },
+    {
+      "class": "shared",
+      "estimated_bytes": 0,
+      "item_count": 424,
+      "notes": "normal code membership delegated to compact storage lookup",
+      "owner": "translator.normal_codes",
+      "session_id": 1,
+      "storage": "compact_table.has_code"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 7168,
+      "item_count": 1792,
+      "notes": "prism double-array units are read directly from the byte source",
+      "owner": "prism.double_array_units",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 24244,
+      "item_count": 1166,
+      "notes": "prism spelling descriptors are read lazily from the byte source",
+      "owner": "prism.spelling_map",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "heap_owned_required",
+      "estimated_bytes": 48,
+      "item_count": 0,
+      "notes": "parsed prism correction/tolerance payload retained on heap",
+      "owner": "prism.corrections_tolerance",
+      "session_id": 1,
+      "storage": "Vec<RimeCorrectionEntry> + Vec<RimeToleranceRule>"
+    },
+    {
+      "class": "mmap_file_backed",
+      "estimated_bytes": 0,
+      "item_count": 0,
+      "notes": "prism descriptor tips remain in the byte source",
+      "owner": "prism.tips_payload",
+      "session_id": 1,
+      "storage": "byte_backed:mmap"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 18694662,
+      "item_count": 513353,
+      "notes": "sentence model entries cloned from table rows",
+      "owner": "poet.entries_by_code",
+      "session_id": 1,
+      "storage": "Vec<ModelEntry>"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 2660848,
+      "item_count": 332604,
+      "notes": "sorted code-range index used by M40 sentence lookup",
+      "owner": "poet.lookup_index",
+      "session_id": 1,
+      "storage": "SentenceLookupIndex"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 53644752,
+      "item_count": 421966,
+      "notes": "normal preset vocabulary used by upstream sentence graph",
+      "owner": "poet.vocabulary",
+      "session_id": 1,
+      "storage": "Vec<ModelVocabularyEntry>"
+    },
+    {
+      "class": "heap_owned_reducible",
+      "estimated_bytes": 1433,
+      "item_count": 11,
+      "notes": "abbreviation-only vocabulary used by M42 guard rows",
+      "owner": "poet.abbreviation_vocabulary",
+      "session_id": 1,
+      "storage": "Vec<ModelVocabularyEntry>"
+    },
+    {
+      "class": "overlap_estimate",
+      "estimated_bytes": 1654,
+      "item_count": 2,
+      "notes": "deployed YAML config is parsed transiently; retained bytes are reload signatures",
+      "owner": "schema.config",
+      "session_id": 1,
+      "storage": "schema_reload_signature"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 2599,
+      "item_count": 2,
+      "notes": "processor and segmentor state installed from the selected schema",
+      "owner": "schema.processors",
+      "session_id": 1,
+      "storage": "SessionState processors"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 24,
+      "item_count": 0,
+      "notes": "per-session learned entries; empty in clean native benchmark runs",
+      "owner": "session.userdb",
+      "session_id": 1,
+      "storage": "UserDb"
+    },
+    {
+      "class": "heap_owned_guarded",
+      "estimated_bytes": 3166,
+      "item_count": 1,
+      "notes": "active native session runtime shell excluding shared translator internals",
+      "owner": "runtime.session_state",
+      "session_id": 1,
+      "storage": "SessionState"
+    }
+  ]
+}

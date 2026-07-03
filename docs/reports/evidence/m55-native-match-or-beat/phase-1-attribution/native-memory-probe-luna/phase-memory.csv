@@ -1,0 +1,10 @@
+event_index,phase,working_set_bytes,working_set_mb,private_bytes,private_mb,peak_working_set_bytes,peak_working_set_mb,allocator_live_bytes,allocator_live_mb,allocator_high_water_bytes,allocator_high_water_mb,named_owner_bytes,clean_mmap_file_backed_estimate_bytes,conclusion
+,"baseline_process_start",4751360,4.5,794624,0.8,4751360,4.5,4573,0,9233,0,,,"Windows process baseline before temporary schema copy"
+,"after_temp_schema_copy",5906432,5.6,1011712,1,5906432,5.6,5713,0,9360,0,,,"temporary committed schema bundle copied into isolated runtime dirs"
+,"after_setup",6103040,5.8,1011712,1,6103040,5.8,7249,0,9360,0,,,"RimeApi setup complete"
+,"after_initialize",6111232,5.8,1011712,1,6111232,5.8,7327,0,9360,0,,,"RimeApi initialize complete"
+,"after_deploy_skipped",6115328,5.8,1011712,1,6115328,5.8,7830,0,9360,0,,,"deploy skipped; probe is using env-supplied prebuilt build artifacts"
+,"after_create_session",178171904,169.9,188846080,180.1,193585152,184.6,146731878,139.9,156592423,149.3,101097072,13044872,"create_session loaded the workspace default schema"
+,"after_select_schema",178180096,169.9,188846080,180.1,193585152,184.6,146731999,139.9,156592423,149.3,101097072,13044872,"select_schema applied requested active schema"
+,"after_typing_sequence",178417664,170.2,188846080,180.1,193585152,184.6,146766255,140,156592423,149.3,101097072,13044872,"typing path for sequence nihao"
+,"steady_after_esc",178417664,170.2,188846080,180.1,193585152,184.6,146766086,140,156592423,149.3,101097072,13044872,"steady sample after ESC clear"

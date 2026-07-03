@@ -5,7 +5,7 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Phase 0 green; Phase 1 next. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 0 ratchet repaired after restoring the null-grammar fast path; two final full-suite gates green). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Phase 1 green; Phase 2 next. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 1 attributes the prior unclassified floor to allocator-live, named mmap, process-overhead, and transient buckets; release ratchet `ratchet-gate-1` is green with 23 pass rows). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
 
 > **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
 > `docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/`. The first
@@ -13,7 +13,14 @@
 > inherited M52 long-input rows. The fix restores the default-off null-grammar
 > sentence path while preserving Octagram grammar-aware state. Final Phase 0
 > gates `gate-run-5b-null-direct-take` and `gate-run-6-null-direct-take` pass
-> against `thresholds/m55-thresholds.csv`; Phases 1-5 remain not started.
+> against `thresholds/m55-thresholds.csv`. Phase 1 attribution evidence is
+> recorded under `phase-1-attribution/`: the diagnostic Luna probe attributes
+> `97.49%` of the old `106,039,183 B` lower-bound floor to named buckets, but
+> the release allocator probe is blocked by the workspace's `panic=abort`
+> release strategy, so the allocator bucket is classification evidence rather
+> than a release ceiling. Phase 1 release ratchet `ratchet-gate-1` is green
+> with `23` pass rows; the inherited 59-character row remains tight at
+> `2.447x`, exactly at the committed ceiling.
 
 **Goal:** End the whack-a-mole pattern on the native Track A `luna_pinyin` lane
 and drive every tracked dimension — startup, session lifecycle, all eight
@@ -208,12 +215,18 @@ Three tiers. **Tier R is mandatory at every phase close. The program closes
   - 37-char `<=1.50x`, 59-char `<=1.50x`;
   - `n` `<=2.00x`, `ni` `<=2.00x`, `hao` `<=1.75x`;
   - `zhongguo`, `cszysmsrsd`, `zybfshmsru` still `<1.00x` (wins kept);
-  - Track A peak working set `<=60,000,000 B` — **provisional**: this number
-    is *not currently derivable from the named owners alone* (byte-backable
-    poet owners total `~72.3 MB`; `188.4 - 72.3 = ~116 MB` remains, so hitting
-    `60 MB` requires roughly half the unclassified floor to also fall). Phase 1
-    must either substantiate this bar with named reducible owners (executed in
-    Phase 2b) or revise it with committed justification.
+  - Track A peak working set `<=125,000,000 B` (revised by Phase 1 evidence).
+    The earlier provisional `60,000,000 B` bar is not substantiated: Phase 1
+    split the old `106,039,183 B` unclassified lower-bound proxy into
+    allocator-live bytes beyond named owner rows (`71,729,000 B`, diagnostic
+    test-local allocator), already byte-backed mapped rows (`13,044,872 B`),
+    process/runtime resident overhead (`18,606,706 B`), and a transient peak
+    delta (`15,167,488 B`). The evidence-backed post-Phase-2 projection is
+    roughly `188,600,320 - 72,370,289 = 116,230,031 B` peak before mmap
+    residency and remnant overhead; `125 MB` is the committed bounded-gap
+    memory bar. Phase 2b remains conditional: it may tighten toward
+    `110,000,000 B` only after adding subowner evidence for the allocator-live
+    bucket or bounding the transient peak.
 - **Tier S (match-or-beat — stretch record):** every latency ratio `<=1.00x`;
   Track A peak working set `<=26,000,000 B` (about `1.5x` the librime peer
   peak).
@@ -415,7 +428,7 @@ inside the noise band is how whack-a-mole starts.
 the lane and currently unnamed. **No engine behavior changes; instrumentation
 only.**
 
-- [ ] Extend the memory-owner profiling (`crates/yune-core/src/memory_owner.rs`
+- [x] Extend the memory-owner profiling (`crates/yune-core/src/memory_owner.rs`
   / `memory_probe.rs`) until at least `80%` of the unclassified floor is
   attributed to named owners. Allocator-level instrumentation (counting
   `#[global_allocator]`, allocator-reported live bytes vs OS working set) goes
@@ -424,19 +437,19 @@ only.**
   allocator retention/fragmentation, deploy/compile transients that never
   return to the OS, duplicated buffers across table/prism/poet loads,
   per-session state, mapped-file double counting.
-- [ ] Distinguish **steady-state residency** from **transient peak** (deploy /
+- [x] Distinguish **steady-state residency** from **transient peak** (deploy /
   first-selection spikes). The ratchet gates peak; the attribution table must
   show both.
-- [ ] Commit `phase-1-attribution/owner-budget.csv`: every named owner, bytes,
+- [x] Commit `phase-1-attribution/owner-budget.csv`: every named owner, bytes,
   `byte_class`, reducibility verdict (`byte-backable` / `shrinkable` /
   `transient-boundable` / `irreducible-overhead`), and the technique that would
   reduce it.
-- [ ] Derive and commit the **evidence-based memory targets**: the projected
+- [x] Derive and commit the **evidence-based memory targets**: the projected
   post-Phase-2 peak, the Phase 2b candidate list (top reducible owners), and
   the reachable floor. Update the Win Bars section of this plan in the same
   commit (the `60 MB` Tier M bar is explicitly provisional until this step),
   with one paragraph of justification per number.
-- [ ] Phase gate: full ratchet still green (instrumentation must not move the
+- [x] Phase gate: full ratchet still green (instrumentation must not move the
   numbers); attribution `>=80%`; budget table committed.
 
 **No-go:** if attribution stalls below `80%` after the candidate buckets are

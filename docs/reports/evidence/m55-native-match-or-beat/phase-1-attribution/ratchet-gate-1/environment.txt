@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-03T22:57:01.9244190Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=aa5eaa9a5b77acae8b321e1c048bfde908685724
+yune_git_status_short= M crates/yune-rime-api/tests/native_memory_probe.rs |  M docs/plans/active/m55-plan-native-track-a-match-or-beat-program.md | ?? docs/reports/evidence/m55-native-match-or-beat/phase-1-attribution/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-gate-1
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

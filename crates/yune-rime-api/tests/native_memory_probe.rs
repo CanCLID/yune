@@ -1,7 +1,8 @@
-// Evidence-only iOS-footprint proxy probe. Drives the native RimeApi (mmap
-// path) with prebuilt assets supplied via `prebuilt_data_dir` and records this
-// process's Windows working set, private bytes, peak working set, and a
-// test-local allocator live/high-water estimate. Run one schema per process:
+// Evidence-only footprint proxy probe. Drives the native RimeApi with either
+// the committed public schema bundle or an env-supplied shared/build data root
+// and records this process's Windows working set, private bytes, peak working
+// set, and a test-local allocator live/high-water estimate. Run one schema per
+// process:
 //   $env:YUNE_MEM_SCHEMA="jyut6ping3_mobile"
 //   $env:YUNE_MEM_DEFAULT="jyut6ping3_mobile"
 //   $env:YUNE_MEM_DISABLE_DICTIONARY_LOOKUP_RECORDS="1"
@@ -202,8 +203,18 @@ fn capture_phase(phase: impl Into<String>, conclusion: impl Into<String>) -> Pha
     }
 }
 
-fn public_schema_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema")
+fn source_shared_root() -> PathBuf {
+    std::env::var("YUNE_MEM_SHARED_DATA_DIR").map_or_else(
+        |_| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/yune-web/public/schema"),
+        PathBuf::from,
+    )
+}
+
+fn source_build_root() -> Option<PathBuf> {
+    std::env::var("YUNE_MEM_PREBUILT_BUILD_DIR")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .map(PathBuf::from)
 }
 
 fn copy_tree(source: &Path, destination: &Path) {
@@ -257,8 +268,11 @@ fn native_memory_probe_reports_working_set() {
     let root = std::env::temp_dir().join(format!("yune-mem-{schema}-{nanos}"));
     let shared = root.join("shared");
     let user = root.join("user");
-    copy_tree(&public_schema_root(), &shared);
+    copy_tree(&source_shared_root(), &shared);
     fs::create_dir_all(user.join("build")).expect("user build");
+    if let Some(source_build) = source_build_root() {
+        copy_tree(&source_build, &user.join("build"));
+    }
 
     if let Ok(default_schema) = std::env::var("YUNE_MEM_DEFAULT") {
         let path = shared.join("default.yaml");
@@ -334,7 +348,18 @@ fn native_memory_probe_reports_working_set() {
         "after_initialize",
         "RimeApi initialize complete",
     ));
-    assert_eq!(deploy(), TRUE, "deploy should succeed");
+    if std::env::var("YUNE_MEM_SKIP_DEPLOY").is_ok() {
+        phases.push(capture_phase(
+            "after_deploy_skipped",
+            "deploy skipped; probe is using env-supplied prebuilt build artifacts",
+        ));
+    } else {
+        assert_eq!(deploy(), TRUE, "deploy should succeed");
+        phases.push(capture_phase(
+            "after_deploy",
+            "deploy reused prebuilt assets; create_session has not run",
+        ));
+    }
     if disable_dictionary_lookup_records {
         let mut patched = 0usize;
         for name in ["jyut6ping3.schema.yaml", "jyut6ping3_mobile.schema.yaml"] {
@@ -377,11 +402,6 @@ fn native_memory_probe_reports_working_set() {
             "YUNE_MEM_DISABLE_LUNA_REVERSE_TRANSLATOR requested but no target deployed schema was present"
         );
     }
-    phases.push(capture_phase(
-        "after_deploy",
-        "deploy reused prebuilt assets; create_session has not run",
-    ));
-
     let session = create_session();
     assert_ne!(session, 0, "session");
     let create_session_owner_rows = memory_owner_rows();
@@ -398,12 +418,13 @@ fn native_memory_probe_reports_working_set() {
         "select_schema applied requested active schema",
     ));
 
-    for ch in "neihoumaa".chars() {
+    let sequence = std::env::var("YUNE_MEM_SEQUENCE").unwrap_or_else(|_| "neihoumaa".to_owned());
+    for ch in sequence.chars() {
         let _ = process_key(session, ch as i32, 0);
     }
     phases.push(capture_phase(
-        "after_typing_neihoumaa",
-        "realistic short Jyutping typing path",
+        "after_typing_sequence",
+        format!("typing path for sequence {sequence}"),
     ));
     let _ = process_key(session, 0xff1b, 0);
     phases.push(capture_phase(
@@ -421,7 +442,7 @@ fn native_memory_probe_reports_working_set() {
                 phase.clean_mmap_file_backed_estimate_bytes =
                     Some(create_session_owner_stats.mmap_file_backed_bytes);
             }
-            "after_select_schema" | "after_typing_neihoumaa" | "steady_after_esc" => {
+            "after_select_schema" | "after_typing_sequence" | "steady_after_esc" => {
                 phase.named_owner_bytes = Some(final_owner_stats.named_owner_bytes);
                 phase.clean_mmap_file_backed_estimate_bytes =
                     Some(final_owner_stats.mmap_file_backed_bytes);

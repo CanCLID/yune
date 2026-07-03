@@ -15,8 +15,10 @@ blockers; M53 re-verified the engine docs and public claims for
 release-readiness and corrected stale `README.md` public-claim wording; M54
 adds native octagram-compatible grammar support for the named upstream
 `luna_pinyin` target without implementing the librime C++ plugin ABI; WEB-04
-makes that path observable in `yune-web` through a default-off debug profile. No
-active numbered engine milestone is open in this roadmap.
+makes that path observable in `yune-web` through a default-off debug profile.
+**M55, the native Track A match-or-beat performance program, is the open engine
+milestone** — see
+[`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md).
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -133,10 +135,12 @@ change that changes the cost model without changing candidate output.
 
 This is the one gap that is large and structural rather than
 sub-perceptual-microsecond. It is not a wall: the technique that closes it is
-already proven in this repo. It is deferred, not blocked, and would open as an
-owner-evidenced performance-research milestone (tentatively **M55 native Track A
-structural memory research**), after the release-readiness audit, only with a
-fresh plan and a real win bar.
+already proven in this repo. **This sketch is now owned by the active M55
+plan**
+([`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md)),
+which preserves the design order below as its Phases 1-2 and adds the
+full-suite regression ratchet, the poet-graph latency phase, and the
+compile-time short-key index phase.
 
 Why the peak is `188.4 MB` versus librime's `17.3 MB`: at native `luna_pinyin`
 schema selection Yune loads the upstream sentence model into owned heap
@@ -184,9 +188,13 @@ portable technique that also lowers the Track B product, WASM, and iOS lanes.
 
 ## Authoritative Sequence
 
-1. **No active numbered engine milestone is open.** M54 is complete for native
-   octagram-compatible grammar support; M52 remains the current native
-   performance guardrail source of truth.
+1. **M55 native Track A match-or-beat program is the active engine
+   milestone.** It implements the Performance North Star for the native Track A
+   `luna_pinyin` lane behind a full-suite regression ratchet (every dimension
+   ceilinged, including currently-winning rows and Track B absolutes). M52
+   remains the historical guardrail floor until the M55 artifact supersedes it
+   at closeout. Plan:
+   [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md).
 2. **M53 engine release-readiness audit is complete.** The five-dimension audit
    (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness,
    public claim wording, link/evidence integrity) found the substantive
@@ -213,20 +221,37 @@ portable technique that also lowers the Track B product, WASM, and iOS lanes.
    [`reports/evidence/web04-octagram-debug-harness/`](./reports/evidence/web04-octagram-debug-harness/).
    Plan:
    [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md).
-5. **Future performance research is optional and must be owner-evidenced.** A
-   "surpass librime" milestone should start from the Performance North Star and
-   should not reuse M52's regression ceilings as a success bar. The concrete
-   candidate is the native Track A memory work sketched in
+5. **M55 opened from the Performance North Star.** The native Track A memory
+   work sketched in
    [Closing The 188 MB Native Track A Memory Gap](#closing-the-188-mb-native-track-a-memory-gap)
-   (tentatively M55), opened only with a fresh owner-evidenced plan.
-6. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
+   is now Phase 1-2 of the active M55 plan; the sketch's design order
+   (attribute the unclassified floor first, then byte-back the poet owners) is
+   preserved. M55 does not reuse M52's regression ceilings as its success bar —
+   they remain regression floors while M55 carries an explicit bounded-gap
+   completion bar (Tier M) and a match-or-beat stretch record (Tier S).
+6. **M56 engine productization hardening is drafted and queued behind M55.**
+   Three tracks driven by the repo's own incident history: structural
+   staleness-proofing + cold-start conformance (the WEB-02/M38/M41 bug class),
+   user-data lifecycle evidence, and an ABI abuse suite with unwind-guarded
+   exports (the workspace currently has zero `catch_unwind` boundaries). No
+   ABI widening, no behavior change on defined paths. Do not start engine-code
+   phases while M55 engine phases are in flight. Plan:
+   [`plans/active/m56-plan-engine-productization-hardening.md`](./plans/active/m56-plan-engine-productization-hardening.md).
+7. **WEB-05 harness control surface is drafted and may run in parallel.** The
+   "surface all controls" follow-up carved out of M21: expose every engine
+   control/diagnostic reachable through existing seams in the `yune-web`
+   playground, defaults unchanged, public demo unchanged, Playwright-evidenced.
+   Web-harness track; no engine changes, so it does not conflict with M55/M56.
+   Plan:
+   [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md).
+8. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
-7. **Future AI-native engine experiments** - later, and only after classic
+9. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-8. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
-   fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
-   row is explicitly selected as the target.
+10. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+    fresh owner evidence, and no TypeDuck-profile speed claim unless the
+    profile row is explicitly selected as the target.
 
 Trigger-gated, not scheduled: extracting the full processor pipeline from
 `yune-rime-api` into `yune-core` lands only when a real non-ABI consumer needs
@@ -261,6 +286,9 @@ and current decision rules.
 | M48-M52 | Complete | Current engine correctness, support-contract, and Track A guardrail closeouts; M52 is the current native performance source of truth. |
 | M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived public-claim wording to the contract-accurate M52 lane-specific record. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
 | M54 | Complete | Native octagram-compatible grammar support for the named upstream `luna_pinyin` target, with pinned lotem oracle data, RIME-LMDG validation evidence, external model checksums, clean-room Rust `.gram` parsing/scoring, null-grammar and TypeDuck regression gates, and no public C ABI change. Plan: [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md). |
+| M55 | Open | Native Track A match-or-beat program: full-suite regression ratchet (all dimensions ceilinged, wins locked), unclassified-memory attribution, byte-backed poet storage, poet-graph constant factors, compile-time short-key index. Tier M is the bounded-gap completion bar; Tier S is the match-or-beat stretch record. Plan: [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md). |
+| M56 | Drafted / queued | Engine productization hardening for the external Windows/iOS frontends: staleness-proofing + cold-start conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards; no ABI change, behavior-preserving. Queued behind M55's engine phases. Plan: [`plans/active/m56-plan-engine-productization-hardening.md`](./plans/active/m56-plan-engine-productization-hardening.md). |
+| WEB-05 | Drafted / parallel-capable | Harness control surface: expose every engine control/diagnostic reachable through existing seams in the `yune-web` playground (the M21-deferred "surface all controls" slice); defaults and public demo unchanged; Playwright-evidenced. Plan: [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md). |
 
 ## Scope Ledger
 

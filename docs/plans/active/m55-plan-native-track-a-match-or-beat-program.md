@@ -652,13 +652,20 @@ M55 ratchet green at 37-character `2.010x`, 59-character `1.570x`, Track B
 product key sequence `324.395 us`, and Track A peak `186,085,376 B`, with
 product-path candidate bytes unchanged. Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
+An incremental product-path access-volume follow-up shows the earlier full-input
+diagnostic did not measure the retained scratch product path: final-key owned
+graph rebuild is now only `88,900 ns` / `119,700 ns` on the 37-/59-character
+rows, while total sentence-model time is `10,449,600 ns` / `27,697,500 ns`.
+Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
 Tier M is still not met.
 
-**Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
-cost is graph work above the raw lookup (`891.0 us` translator vs `28.9 us`
-lookup). librime does the equivalent in `293.2 us`; the gap is constant
-factors (allocation, hashing, string handling, candidate materialization),
-not algorithm class.
+**Owner:** the sentence-lattice/scoring path. Earlier Phase 3R evidence showed
+the broad gap above raw lookup, but the incremental product-path diagnostic
+narrows the current owner after the prefix-state checkpoint: graph rebuild and
+storage access are no longer the dominant final-key cost. The next measured
+target is candidate extraction over retained incremental states, while keeping
+candidate output and scoring order byte-identical.
 
 Pre-requisite — fixture expansion (must land before any poet code change):
 
@@ -790,6 +797,10 @@ or must close as a measured no-go without broadening scope.
   (`2.173x` / `1.728x`), and the incremental prefix-state checkpoint is green
   (`2.010x` / `1.570x`), but all remain above the `<=1.50x` 37/59-character
   win bar.
+  A product-path access-volume follow-up shows that the next owner is candidate
+  extraction over retained incremental states rather than graph rebuild volume.
+  Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
   Non-landed local probes after that checkpoint are recorded in
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-rejected-probes-2026-07-04.md`;
   they did not replace the incremental prefix-state best-known checkpoint.

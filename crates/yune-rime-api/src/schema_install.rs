@@ -1884,28 +1884,31 @@ fn load_schema_compiled_dictionary(
         table_metadata.dict_file_checksum,
     );
     let mut compiled_poet_source = None;
-    if let Some(poet_path) = selected_runtime_data_path(&poet_name) {
-        let loaded_poet_source = {
-            let _trace = startup_trace::span("compiled_poet_load");
-            load_compiled_data_byte_source(&poet_path, "poet")?
-        };
-        let poet_summary =
-            parse_poet_bin_summary(loaded_poet_source.bytes(), poet_dictionary_checksum).map_err(
-                |error| CompiledRejectReason::Invalid(format!("poet parse failed: {error:?}")),
-            )?;
-        memory_probe_mark(format!(
+    if compiled_poet_consumption_enabled() {
+        if let Some(poet_path) = selected_runtime_data_path(&poet_name) {
+            let loaded_poet_source = {
+                let _trace = startup_trace::span("compiled_poet_load");
+                load_compiled_data_byte_source(&poet_path, "poet")?
+            };
+            let poet_summary =
+                parse_poet_bin_summary(loaded_poet_source.bytes(), poet_dictionary_checksum)
+                    .map_err(|error| {
+                        CompiledRejectReason::Invalid(format!("poet parse failed: {error:?}"))
+                    })?;
+            memory_probe_mark(format!(
             "m55:compiled_dictionary:{dictionary_name}:after_poet_summary_parse:poet_bytes={}:entries={}:vocabulary={}:abbreviation_vocabulary={}",
             loaded_poet_source.bytes().len(),
             poet_summary.entries,
             poet_summary.vocabulary_entries,
             poet_summary.abbreviation_vocabulary_entries
         ));
-        compiled_poet_source = Some((
-            Arc::new(CompiledPoetByteSource {
-                source: loaded_poet_source,
-            }) as Arc<dyn PoetByteSource>,
-            poet_dictionary_checksum,
-        ));
+            compiled_poet_source = Some((
+                Arc::new(CompiledPoetByteSource {
+                    source: loaded_poet_source,
+                }) as Arc<dyn PoetByteSource>,
+                poet_dictionary_checksum,
+            ));
+        }
     }
 
     if let Some(source_checksum) = source_checksum {
@@ -2066,6 +2069,10 @@ fn load_schema_compiled_dictionary(
         prism_payload,
         poet_source: compiled_poet_source,
     })
+}
+
+fn compiled_poet_consumption_enabled() -> bool {
+    matches!(std::env::var("YUNE_POET_BYTE_BACKED").as_deref(), Ok("1"))
 }
 
 fn is_known_upstream_luna_marisa_checksum(

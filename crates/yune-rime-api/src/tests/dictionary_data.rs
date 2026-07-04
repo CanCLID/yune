@@ -27,6 +27,38 @@ fn dictionary_data_prefers_fresh_compiled_payloads_and_matches_source_order() {
 }
 
 #[test]
+fn dictionary_data_ignores_compiled_poet_artifact_until_explicitly_enabled() {
+    let _guard = test_guard();
+    let _env_guard = EnvVarGuard::unset("YUNE_POET_BYTE_BACKED");
+    RimeCleanupAllSessions();
+
+    let root = unique_temp_dir("dictionary-data-poet-default-off");
+    let fixture = DictionaryDataFixture::new(&root, false);
+    fixture.write_luna_pinyin_compiled_artifact_fixture();
+    fixture.setup_runtime();
+    fixture.candidates_for_schema("luna_pinyin", "ba");
+    assert!(
+        !memory_owner_profile_has_poet_bin_storage(),
+        "present luna_pinyin.poet.bin must stay ignored unless YUNE_POET_BYTE_BACKED=1"
+    );
+    fixture.cleanup();
+    RimeCleanupAllSessions();
+
+    std::env::set_var("YUNE_POET_BYTE_BACKED", "1");
+    let root = unique_temp_dir("dictionary-data-poet-opt-in");
+    let fixture = DictionaryDataFixture::new(&root, false);
+    fixture.write_luna_pinyin_compiled_artifact_fixture();
+    fixture.setup_runtime();
+    fixture.candidates_for_schema("luna_pinyin", "ba");
+    assert!(
+        memory_owner_profile_has_poet_bin_storage(),
+        "YUNE_POET_BYTE_BACKED=1 should consume the validated luna_pinyin.poet.bin artifact"
+    );
+    fixture.cleanup();
+    RimeCleanupAllSessions();
+}
+
+#[test]
 fn dictionary_data_falls_back_to_source_when_compiled_is_missing_or_corrupt() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
@@ -441,6 +473,48 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
         .expect("source dictionary should be written");
     }
 
+    fn write_luna_pinyin_compiled_artifact_fixture(&self) {
+        fs::write(
+            self.staging.join("luna_pinyin.schema.yaml"),
+            "\
+schema:\n  schema_id: luna_pinyin\n  name: luna_pinyin\nengine:\n  translators:\n    - script_translator\ntranslator:\n  dictionary: luna_pinyin\n",
+        )
+        .expect("luna_pinyin schema should be written");
+        fs::write(
+            self.shared.join("luna_pinyin.dict.yaml"),
+            "\
+---\nname: luna_pinyin\nversion: '0.1'\nsort: by_weight\n...\n\n八\tba\t2\n爸\tba\t1\n",
+        )
+        .expect("luna_pinyin source dictionary should be written");
+        let source = fs::read_to_string(self.shared.join("luna_pinyin.dict.yaml"))
+            .expect("luna_pinyin source dictionary should be readable");
+        let checksum = yune_core::rime_dict_source_checksum(0, [source.as_bytes()], None);
+        let entries = [
+            yune_core::TableEntry::new("ba", "八", 2.0),
+            yune_core::TableEntry::new("ba", "爸", 1.0),
+        ];
+        fs::write(
+            self.shared.join("luna_pinyin.table.bin"),
+            compiled_table_for_entries_fixture(checksum, &[("ba", "八", 2.0), ("ba", "爸", 1.0)]),
+        )
+        .expect("luna_pinyin compiled table should be written");
+        fs::write(
+            self.shared.join("luna_pinyin.poet.bin"),
+            yune_core::build_poet_bin(entries, &[], &[], checksum),
+        )
+        .expect("luna_pinyin compiled poet should be written");
+        fs::write(
+            self.shared.join("luna_pinyin.prism.bin"),
+            compiled_prism_fixture(),
+        )
+        .expect("luna_pinyin compiled prism should be written");
+        fs::write(
+            self.shared.join("luna_pinyin.reverse.bin"),
+            compiled_reverse_fixture(),
+        )
+        .expect("luna_pinyin compiled reverse should be written");
+    }
+
     fn write_advanced_dictionary_schemas(&self) {
         self.write_schema_for_dictionary("advanced_source", "advanced_source");
         self.write_schema_for_dictionary("advanced_compiled", "advanced_compiled");
@@ -701,6 +775,47 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
         unsafe { RimeSetup(&reset_traits) };
         let _ = fs::remove_dir_all(self.root);
     }
+}
+
+struct EnvVarGuard {
+    key: &'static str,
+    previous: Option<std::ffi::OsString>,
+}
+
+impl EnvVarGuard {
+    fn unset(key: &'static str) -> Self {
+        let previous = std::env::var_os(key);
+        std::env::remove_var(key);
+        Self { key, previous }
+    }
+}
+
+impl Drop for EnvVarGuard {
+    fn drop(&mut self) {
+        match &self.previous {
+            Some(value) => std::env::set_var(self.key, value),
+            None => std::env::remove_var(self.key),
+        }
+    }
+}
+
+fn memory_owner_profile_has_poet_bin_storage() -> bool {
+    let json = crate::yune_m43_memory_owner_profile_json();
+    assert!(!json.is_null());
+    let text = unsafe { CStr::from_ptr(json) }
+        .to_string_lossy()
+        .into_owned();
+    unsafe { crate::yune_m37_metrics_free_string(json) };
+    let rows: Vec<serde_json::Value> =
+        serde_json::from_str(&text).expect("memory owner profile should parse");
+    rows.iter().any(|row| {
+        row["owner"]
+            .as_str()
+            .is_some_and(|owner| owner.starts_with("poet."))
+            && row["storage"]
+                .as_str()
+                .is_some_and(|storage| storage.starts_with("poet_bin:"))
+    })
 }
 
 fn compiled_table_fixture(checksum: u32) -> Vec<u8> {

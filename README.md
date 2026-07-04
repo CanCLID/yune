@@ -110,16 +110,16 @@ Yune is an active engine project.
   package/header, profile-ABI, and stock real-server IPC compatibility smoke
   through the named profile accessor, while interactive TSF typing and visible
   candidate UI remain Phase 2 product/frontend work.
-- **Current work:** milestones M38-M55 are complete or explicitly closed with
-  measured blockers. On the fair `luna_pinyin` lane, same-run against upstream
+- **Current work:** milestones M38-M54 are complete; M55 is reopened at Phase 2R.
+  On the fair `luna_pinyin` lane, same-run against upstream
   librime, latency is mixed and honestly measured: Yune is faster on `zhongguo`
   and both abbreviation rows and matches librime candidate output on every row,
   but is slower on short keys (`n`/`ni`/`hao`) and especially on the
-  37/59-character pinyin sentence rows after the M55 byte-backed poet storage
-  experiment. M55 reduces native Track A peak memory from the M52-era
-  `188.4 MB` to about `110.5 MB`, but the broader M55 ratchet is red on the two
-  long Luna rows plus one Track B product latency guard, so M52 remains the
-  standing green native performance gate.
+  37/59-character pinyin sentence rows. The M55 `YUNE-POET/1` byte-backed poet
+  experiment reduced Track A peak memory to about `110.5 MB` when enabled, but
+  failed the broader ratchet and is now default-off pending redesign. Step 0 of
+  the reopen re-verifies the standing M52 native performance gate green on main;
+  default Track A peak is back in the M52-era shape (`186.2 MB` in that run).
 - **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. It's
   a Yune engine demo, not a claim that browser-level performance is solved.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web
@@ -153,30 +153,28 @@ are exposed exclusively through `rime_get_typeduck_profile_api()`.
 
 The current native comparison is mixed, honest, and intentionally measured
 same-run against upstream `rime/librime 1.17.0`. Yune **matches librime
-candidate output on every row**. M55 proves a real storage improvement by
-byte-backing the Luna poet payloads and lowering Track A peak memory to about
-`110.5 MB`, but it closes partial/no-go because the full ratchet fails the
-37/59-character pinyin sentence rows and one Track B product latency guard.
+candidate output on every row**. M55 is reopened at Phase 2R: the `YUNE-POET/1`
+byte-backed Luna poet payloads proved a real flag-on memory improvement, but
+that access path is default-off until a redesign can pass the full M55 ratchet.
 
 ![Yune vs librime native latency ratios across all input dimensions](docs/reports/evidence/dashboard-visuals-2026-06-30/native-track-a-latency-ratios.svg)
 
-Current native Track A same-run ratios (M55 partial closeout, 2026-07-04; lower is better):
+Current native Track A same-run ratios (M55 reopen Step 0, 2026-07-04; lower is better):
 
 - **Faster than librime:** `zhongguo` `0.26x` (Yune saves ~126 us),
-  `cszysmsrsd` (10-char abbreviation) `0.49x` (~618 us), `zybfshmsru` (8-char
-  abbreviation) `0.69x` (~262 us). Yune matches librime candidate output on
+  `cszysmsrsd` (10-char abbreviation) `0.43x` (~687 us), `zybfshmsru` (8-char
+  abbreviation) `0.63x` (~309 us). Yune matches librime candidate output on
   these rows *and* beats its latency.
-- **Near parity:** startup `0.55x` and session `0.91x` in the final run, but
+- **Near parity:** startup `0.91x` and session `0.86x` in the Step 0 run, but
   startup/session remain noisy.
-- **Slower than librime:** the short keys `hao` `2.14x` (+13 us), `n` `2.78x`
-  (+37 us), and `ni` `3.06x` (+30 us) pass the M55 ratchet; the 37-character
-  row `5.96x` (+1,468 us) and 59-character row `4.03x` (+2,038 us) fail it.
-  Candidate output matches librime on every row.
-- **Memory improved but is not a new standing gate.** On the fair
-  `luna_pinyin` comparison, M55 lowers native Track A peak to `110.5 MB`.
-  However, because the latency ratchet is red, M55's threshold artifact is kept
-  as research/no-go evidence and M52 remains the standing green native
-  performance gate. The browser `luna_pinyin` gap (`64 MiB` vs My RIME `16 MiB`)
+- **Slower than librime but within the standing guard:** the short keys `hao`
+  `2.18x` (+14 us), `n` `2.89x` (+40 us), and `ni` `3.09x` (+30 us), plus the
+  37-character row `2.94x` (+574 us) and 59-character row `2.31x` (+871 us),
+  all pass the M52 thresholds. Candidate output matches librime on every row.
+- **Memory is default-off for byte-backed poet.** On the fair `luna_pinyin`
+  comparison, default Track A peak is `186.2 MB` in the Step 0 re-verification.
+  The `110.5 MB` Phase 2 result is retained as flag-on research/no-go evidence,
+  not a product-path claim. The browser `luna_pinyin` gap (`64 MiB` vs My RIME `16 MiB`)
   is a separate lane. The Jyutping product path is heavier still (`504 MB`
   historical native peak, `160 MiB` browser after WEB-03 byte-backing), but it
   is **not** a like-for-like comparison; Yune runs TypeDuck's multilingual

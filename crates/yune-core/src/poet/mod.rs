@@ -719,6 +719,20 @@ impl SentenceLookupSource for PoetModelStorage {
     }
 }
 
+impl SentenceLookupSource for OwnedPoetModelStorage {
+    fn entry_count(&self) -> usize {
+        self.entries_by_code.len()
+    }
+
+    fn entry_code_id(&self, index: usize) -> u32 {
+        self.entries_by_code[index].code_id
+    }
+
+    fn entry_code(&self, index: usize) -> &str {
+        self.entries_by_code[index].code(&self.entry_codes)
+    }
+}
+
 impl PoetModelStorage {
     fn entry_text(&self, index: usize) -> &str {
         match self {
@@ -830,6 +844,25 @@ impl OwnedPoetModelStorage {
             &self.abbreviation_character_codes
         } else {
             &self.character_codes
+        }
+    }
+
+    fn entries_for_code<'a>(
+        &'a self,
+        lookup_index: &SentenceLookupIndex,
+        code: &str,
+    ) -> Option<&'a [ModelEntry]> {
+        let range = lookup_index.entries_for_code_range(self, code)?;
+        Some(&self.entries_by_code[range])
+    }
+
+    fn normal_phrase_character_codes(
+        &self,
+        grammar: &GrammarProvider,
+    ) -> &HashMap<char, Vec<String>> {
+        match grammar {
+            GrammarProvider::Octagram(_) => &self.abbreviation_character_codes,
+            GrammarProvider::Null(_) => &self.character_codes,
         }
     }
 
@@ -1245,6 +1278,10 @@ impl UpstreamSentenceModel {
     }
 
     fn word_graph_for_input(&self, input: &str) -> WordGraph {
+        if let PoetModelStorage::Owned(storage) = &self.storage {
+            return self.word_graph_for_input_owned(storage, input);
+        }
+
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
         let mut graph = WordGraph::new();
         let boundaries = input
@@ -1374,6 +1411,133 @@ impl UpstreamSentenceModel {
                             .push(WordGraphEntry::new(
                                 vocabulary_text.clone(),
                                 vocabulary_weight,
+                            ));
+                        graph_edges += 1;
+                        if let Ok(end_index) = boundaries.binary_search(&end) {
+                            reachable[end_index] = true;
+                        }
+                    }
+                }
+            }
+        }
+        for edges in graph.values_mut() {
+            for entries in edges.values_mut() {
+                entries.sort_by(compare_word_graph_entry);
+                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+            }
+        }
+        crate::m37_record_upstream_sentence_model_scan(
+            code_prefix_checks,
+            table_entries_considered,
+            vocabulary_entries_considered,
+            graph_edges,
+        );
+        if let Some(rebuild_start) = rebuild_start {
+            let elapsed = rebuild_start.elapsed();
+            lookup_metrics.graph_rebuild_duration = elapsed;
+            lookup_metrics.incremental_discarded_rebuild_chars = input.chars().count();
+            crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
+        }
+        graph
+    }
+
+    fn word_graph_for_input_owned(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        input: &str,
+    ) -> WordGraph {
+        let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
+        let mut graph = WordGraph::new();
+        let boundaries = input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+            .collect::<Vec<_>>();
+        let mut reachable = vec![false; boundaries.len()];
+        if let Some(first) = reachable.first_mut() {
+            *first = true;
+        }
+        let mut code_prefix_checks = 0usize;
+        let mut table_entries_considered = 0usize;
+        let mut vocabulary_entries_considered = 0usize;
+        let mut graph_edges = 0usize;
+        let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
+        for (start_index, start) in boundaries.iter().copied().enumerate() {
+            if start >= input.len() {
+                continue;
+            }
+            if !reachable[start_index] {
+                lookup_metrics.unreachable_starts_skipped += 1;
+                continue;
+            }
+            lookup_metrics.reachable_starts_visited += 1;
+            let suffix = &input[start..];
+            lookup_metrics.phrase_index_walk_calls += 1;
+            let walk = self
+                .lookup_index
+                .walk_from(storage, input, &boundaries, start_index);
+            code_prefix_checks += walk.prefix_hits + walk.prefix_misses;
+            lookup_metrics.prefix_filter_hits += walk.prefix_hits;
+            lookup_metrics.prefix_filter_misses += walk.prefix_misses;
+            lookup_metrics.prefix_filter_early_breaks += walk.prefix_early_breaks;
+            lookup_metrics.exact_range_index_misses += walk.exact_range_misses;
+            lookup_metrics.phrase_index_nodes_visited += walk.nodes_visited;
+            lookup_metrics.phrase_index_entry_ranges_emitted += walk.entry_ranges_emitted;
+            for span in walk.spans {
+                let code = &input[start..span.end];
+                let Some(entries) = storage.entries_for_code(&self.lookup_index, code) else {
+                    lookup_metrics.exact_range_index_misses += 1;
+                    lookup_metrics.partition_point_fallback_calls += 1;
+                    continue;
+                };
+                lookup_metrics.exact_range_index_hits += 1;
+                let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                let mut inserted_edge = false;
+                for entry in bounded_entries {
+                    graph
+                        .entry(start)
+                        .or_default()
+                        .entry(span.end)
+                        .or_default()
+                        .push(WordGraphEntry::new(
+                            entry.text(&storage.entry_texts).to_owned(),
+                            upstream_dictionary_weight(f64::from(entry.weight)),
+                        ));
+                    graph_edges += 1;
+                    inserted_edge = true;
+                }
+                if inserted_edge {
+                    reachable[span.end_index] = true;
+                }
+                let vocabulary_entries =
+                    vocabulary_indices_for_first_code(&storage.vocabulary_first_codes, code);
+                for (_, index) in vocabulary_entries {
+                    let vocabulary_entry = &storage.vocabulary[*index];
+                    if !self.vocabulary_entry_matches_input_prefix_owned(
+                        storage,
+                        vocabulary_entry,
+                        suffix,
+                        code,
+                    ) {
+                        continue;
+                    }
+                    vocabulary_entries_considered += 1;
+                    for phrase_code in self.derive_matching_phrase_codes_owned(
+                        storage,
+                        vocabulary_entry,
+                        suffix,
+                        code,
+                    ) {
+                        let end = start + phrase_code.len();
+                        graph
+                            .entry(start)
+                            .or_default()
+                            .entry(end)
+                            .or_default()
+                            .push(WordGraphEntry::new(
+                                vocabulary_entry.text.clone(),
+                                upstream_dictionary_weight(f64::from(vocabulary_entry.weight)),
                             ));
                         graph_edges += 1;
                         if let Ok(end_index) = boundaries.binary_search(&end) {
@@ -1569,6 +1733,28 @@ impl UpstreamSentenceModel {
         codes
     }
 
+    fn derive_matching_phrase_codes_owned(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        entry: &ModelVocabularyEntry,
+        input: &str,
+        first_code: &str,
+    ) -> Vec<String> {
+        let mut codes = Vec::new();
+        let mut current = first_code.to_owned();
+        self.derive_matching_phrase_codes_from_owned(
+            storage,
+            &entry.chars,
+            input,
+            1,
+            &mut current,
+            &mut codes,
+        );
+        codes.sort();
+        codes.dedup();
+        codes
+    }
+
     fn derive_matching_phrase_codes_byte_backed(
         &self,
         chars: ByteBackedVocabularyChars<'_>,
@@ -1608,6 +1794,22 @@ impl UpstreamSentenceModel {
             1,
             first_code.len(),
             character_code_cache,
+        )
+    }
+
+    fn vocabulary_entry_matches_input_prefix_owned(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        entry: &ModelVocabularyEntry,
+        input: &str,
+        first_code: &str,
+    ) -> bool {
+        self.vocabulary_chars_match_input_prefix_from_owned(
+            storage,
+            &entry.chars,
+            input,
+            1,
+            first_code.len(),
         )
     }
 
@@ -1654,6 +1856,41 @@ impl UpstreamSentenceModel {
                     index + 1,
                     offset + next_code.len(),
                     character_code_cache,
+                )
+        })
+    }
+
+    fn vocabulary_chars_match_input_prefix_from_owned(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        chars: &[char],
+        input: &str,
+        index: usize,
+        offset: usize,
+    ) -> bool {
+        if index == chars.len() {
+            return offset <= input.len();
+        }
+        if offset >= input.len() {
+            return false;
+        }
+        let Some(remaining) = input.get(offset..) else {
+            return false;
+        };
+        let Some(next_codes) = storage
+            .normal_phrase_character_codes(&self.grammar)
+            .get(&chars[index])
+        else {
+            return false;
+        };
+        next_codes.iter().any(|next_code| {
+            remaining.starts_with(next_code)
+                && self.vocabulary_chars_match_input_prefix_from_owned(
+                    storage,
+                    chars,
+                    input,
+                    index + 1,
+                    offset + next_code.len(),
                 )
         })
     }
@@ -1717,6 +1954,44 @@ impl UpstreamSentenceModel {
                     current,
                     codes,
                     character_code_cache,
+                );
+            }
+            current.truncate(original_len);
+        }
+    }
+
+    fn derive_matching_phrase_codes_from_owned(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        chars: &[char],
+        input: &str,
+        index: usize,
+        current: &mut String,
+        codes: &mut Vec<String>,
+    ) {
+        if index == chars.len() {
+            if input.starts_with(current.as_str()) {
+                codes.push(current.clone());
+            }
+            return;
+        }
+        let Some(next_codes) = storage
+            .normal_phrase_character_codes(&self.grammar)
+            .get(&chars[index])
+        else {
+            return;
+        };
+        for next_code in next_codes {
+            let original_len = current.len();
+            current.push_str(next_code);
+            if input.starts_with(current.as_str()) {
+                self.derive_matching_phrase_codes_from_owned(
+                    storage,
+                    chars,
+                    input,
+                    index + 1,
+                    current,
+                    codes,
                 );
             }
             current.truncate(original_len);

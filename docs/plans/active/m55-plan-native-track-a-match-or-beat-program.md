@@ -5,15 +5,25 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Complete with measured no-go; closed partial at Phase 2. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Closed:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Reopened - Phase 2R. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03. - **Reopened:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
 
-> **Final closeout (2026-07-04):** M55 proved the memory owner and reduced final
-> Track A peak to `110,542,848 B`, but the final full ratchet remains red on the
+> **Reopen Step 0 (2026-07-04):** The Phase 2 no-go evidence remains valid, but
+> the closeout landing state was wrong: byte-backed poet consumption shipped
+> default-on with the M52 guard red. Step 0 makes `YUNE-POET/1` runtime
+> consumption explicit opt-in (`YUNE_POET_BYTE_BACKED=1`) while leaving deploy
+> emission/validation intact, restores the owned Luna sentence-model fast path,
+> and re-verifies the standing M52 gate green on main under
+> `docs/reports/evidence/m55-native-match-or-beat/reopen/step-0-m52-green/`.
+> Default Track A memory returns to the M52-era shape (`186,200,064 B` in that
+> run). The `~110.5 MB` byte-backed result is flag-on research/no-go evidence
+> until Phase 2R redesign proves the full M55 ratchet green twice.
+
+> **Historical closeout (2026-07-04):** M55 proved the memory owner and reduced
+> final Track A peak to `110,542,848 B`, but the final full ratchet remains red on the
 > 37-character Luna row (`5.964x`), 59-character Luna row (`4.030x`), and one
-> Track B product latency guard (`414.059 us` vs `375.253 us`). M52 remains the
-> standing green native Track A gate; M55's threshold artifact is retained as
-> research/no-go evidence only. Phase 3 and Phase 4 did not start. Final
-> evidence:
+> Track B product latency guard (`414.059 us` vs `375.253 us`). That result is
+> retained as the `YUNE-POET/1` flag-on no-go record. Phase 3 and Phase 4 did
+> not start. Historical evidence:
 > `docs/reports/evidence/m55-native-match-or-beat/final/partial-closeout-2026-07-04.md`.
 
 > **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
@@ -534,6 +544,35 @@ reasonable access-path work (offset tables, batched reads, small hot caches
 `<1 MB`), close partial with measured evidence and stop — do not trade past
 ceilings.
 
+## Phase 2R: Reopened Byte-Backed Poet Redesign
+
+**Status:** active. Phase 2R starts from the historical Phase 2 no-go evidence,
+but byte-backed poet consumption is default-off on main until the full M55
+ratchet is proven green with the redesigned flag-on path.
+
+- [x] **Step 0: recover main.** Gate runtime poet-byte consumption behind
+  `YUNE_POET_BYTE_BACKED=1` at `load_schema_compiled_dictionary`, preserve deploy
+  artifact emission/validation, restore the owned Luna sentence-model fast path,
+  commit the reviewer red run under
+  `final/review-m52-gate-verify/`, and re-run the standing M52 gate green under
+  `reopen/step-0-m52-green/`.
+- [ ] **Redesign the artifact as `YUNE-POET/2`.** Use a compiled index and
+  fixed-width headers; perform zero decode before candidate acceptance; reject
+  `YUNE-POET/1` loudly or rebuild instead of accepting it on the runtime path.
+- [ ] **Remove per-access synchronization and default-path overhead.** Resolve
+  an immutable snapshot per graph rebuild so flag-on byte-backed access does not
+  slow the flag-off owned path or the Track B product path.
+- [ ] **Flag-on evidence only.** Run byte-backed benchmarks behind
+  `YUNE_POET_BYTE_BACKED=1`; these runs are research evidence and must not gate
+  main until the default flip commit.
+- [ ] **Default flip gate.** Flip byte-backed poet consumption default-on only
+  in the commit where the full M55 ratchet is green with byte-backing enabled in
+  two consecutive same-run benchmark runs and Track A peak memory is
+  `<=125 MB`. Never loosen the ceilings or cite stale green runs.
+
+If Phase 2R cannot satisfy the default flip gate, keep `YUNE_POET_BYTE_BACKED`
+default-off and record the remaining no-go root cause before continuing.
+
 ## Phase 2b: Reduce The Top Named Owners From Phase 1 (conditional)
 
 **Owner:** whatever Phase 1's `owner-budget.csv` named as the largest
@@ -651,12 +690,12 @@ M55 would have closed **complete** if:
 - Dashboards, roadmap, requirements, and history reflected exactly the measured
   final state.
 
-Actual closeout: M55 closes **complete with measured no-go** at Phase 2. Phase 1
-proved the memory owner, Phase 2 reduced the final Track A peak to
-`110,542,848 B`, and candidate-output parity evidence is retained, but the
-final full ratchet is red on the 37-character Luna row, 59-character Luna row,
-and one Track B product latency guard. Therefore M55 does not hand over a new
-standing gate; M52 remains the green native Track A guardrail.
+Historical no-go record: the 2026-07-04 Phase 2 closeout proved the memory
+owner and reduced the flag-on Track A peak to `110,542,848 B`, but the full
+ratchet was red on the 37-character Luna row, 59-character Luna row, and one
+Track B product latency guard. M55 is now reopened at Phase 2R; the byte-backed
+poet path is default-off pending redesign, and the Step 0 evidence re-verifies
+the standing M52 guard green on main.
 ## Proposed Requirement IDs (add to `docs/requirements.md` at closeout only)
 
 (House style per `docs/requirements.md`: `<MILESTONE>-<TOPIC>-<NN>`.)
@@ -682,7 +721,7 @@ standing gate; M52 remains the green native Track A guardrail.
 ## Original Review Prompt
 
 > Historical prompt from plan approval, before closeout. Please review
-> `docs/plans/completed/m55-plan-native-track-a-match-or-beat-program.md`
+> `docs/plans/active/m55-plan-native-track-a-match-or-beat-program.md`
 > as the M55 plan record. Focus on: whether the full-suite ratchet actually
 > prevents the historical whack-a-mole pattern (all dimensions ceilinged,
 > including current wins and Track B absolutes, with the win-row re-baseline

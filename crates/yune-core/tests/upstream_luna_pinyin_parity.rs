@@ -422,6 +422,100 @@ fn capture_phase3r_incremental_product_access_volume_csv() {
 }
 
 #[test]
+#[ignore = "evidence capture: writes M55 Phase 3R per-key product-path CSV when YUNE_M55_PHASE3R_KEY_SEQUENCE_VOLUME_CSV is set"]
+fn capture_phase3r_incremental_key_sequence_volume_csv() {
+    let output = std::env::var("YUNE_M55_PHASE3R_KEY_SEQUENCE_VOLUME_CSV")
+        .expect("set YUNE_M55_PHASE3R_KEY_SEQUENCE_VOLUME_CSV to the output CSV path");
+    let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
+    let dictionary = m17_luna_dictionary_from_rows(&fixture);
+    let entries = dictionary.entries().to_vec();
+    let vocabulary = dictionary.preset_vocabulary_entries().to_vec();
+    let checksum = 0x4d55_3352;
+    let poet_bytes = build_poet_bin(entries, &vocabulary, &vocabulary, checksum);
+    let byte_backed_source = Arc::new(OwnedPoetBytes::new(poet_bytes)) as Arc<dyn PoetByteSource>;
+
+    let rows = [
+        (
+            "m55_37",
+            "ceshiyixiachangjushuruxingnengzenyang",
+            phase3r_owned_luna_sentence_engine(dictionary.clone()),
+            "owned",
+        ),
+        (
+            "m55_37",
+            "ceshiyixiachangjushuruxingnengzenyang",
+            phase3r_byte_backed_luna_sentence_engine(
+                dictionary.clone(),
+                byte_backed_source.clone(),
+                checksum,
+            ),
+            "byte_backed",
+        ),
+        (
+            "m55_59",
+            "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+            phase3r_owned_luna_sentence_engine(dictionary.clone()),
+            "owned",
+        ),
+        (
+            "m55_59",
+            "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+            phase3r_byte_backed_luna_sentence_engine(
+                dictionary,
+                byte_backed_source.clone(),
+                checksum,
+            ),
+            "byte_backed",
+        ),
+    ];
+
+    let mut csv = String::from(
+        "input_id,input,storage,key_index,prefix,key,candidates,model_calls,model_ns,graph_rebuild_calls,graph_rebuild_ns,incremental_reuse_hits,incremental_extend_ns,discarded_rebuild_chars,candidate_state_buckets,candidate_states_ranked,candidate_path_ns,candidate_merge_ns,index_probes,prefix_hits,prefix_misses,entry_ranges_emitted,table_entries_considered,vocabulary_index_probes,vocabulary_rows_examined,vocabulary_rows_accepted,graph_entries_inserted,graph_entry_text_bytes,code_span_rederivations,dp_states_created,dp_beam_evictions\n",
+    );
+    for (input_id, input, mut engine, storage) in rows {
+        for (key_index, prefix, key, metrics) in
+            phase3r_capture_incremental_product_key_metrics(&mut engine, input)
+        {
+            csv.push_str(&format!(
+                "{input_id},{input},{storage},{key_index},{prefix},{key},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+                metrics.upstream_sentence_model_candidates,
+                metrics.upstream_sentence_model_calls,
+                metrics.upstream_sentence_model_ns,
+                metrics.upstream_sentence_model_graph_rebuild_calls,
+                metrics.upstream_sentence_model_graph_rebuild_ns,
+                metrics.upstream_sentence_model_incremental_reuse_hits,
+                metrics.upstream_sentence_model_incremental_extend_ns,
+                metrics.upstream_sentence_model_incremental_discarded_rebuild_chars,
+                metrics.upstream_sentence_model_candidate_state_buckets,
+                metrics.upstream_sentence_model_candidate_states_ranked,
+                metrics.upstream_sentence_model_candidate_path_ns,
+                metrics.upstream_sentence_model_candidate_merge_ns,
+                metrics.upstream_sentence_model_code_prefix_checks,
+                metrics.upstream_sentence_model_prefix_filter_hits,
+                metrics.upstream_sentence_model_prefix_filter_misses,
+                metrics.upstream_sentence_model_phrase_index_entry_ranges_emitted,
+                metrics.upstream_sentence_model_table_entries_considered,
+                metrics.upstream_sentence_model_vocabulary_index_probes,
+                metrics.upstream_sentence_model_vocabulary_rows_examined,
+                metrics.upstream_sentence_model_vocabulary_entries_considered,
+                metrics.upstream_sentence_model_graph_entries_inserted,
+                metrics.upstream_sentence_model_graph_entry_text_bytes,
+                metrics.upstream_sentence_model_code_span_rederivations,
+                metrics.upstream_sentence_model_dp_states_created,
+                metrics.upstream_sentence_model_dp_beam_evictions
+            ));
+        }
+    }
+
+    let path = Path::new(&output);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .unwrap_or_else(|error| panic!("failed to create {}: {error}", parent.display()));
+    }
+    fs::write(path, csv).unwrap_or_else(|error| panic!("failed to write {output}: {error}"));
+}
+
+#[test]
 fn full_dictionary_selection_uses_all_exact_code_rows_and_essay_weights() {
     let fixture = fixture(SELECTION_FIXTURE);
     assert_upstream_oracle_header(&fixture);
@@ -908,6 +1002,30 @@ fn phase3r_capture_incremental_product_metrics(
     yune_core::m37_metrics_reset();
     yune_core::m37_metrics_enable(false);
     metrics
+}
+
+fn phase3r_capture_incremental_product_key_metrics(
+    engine: &mut Engine,
+    input: &str,
+) -> Vec<(usize, String, String, yune_core::M37MetricsSnapshot)> {
+    yune_core::m37_metrics_enable(false);
+    yune_core::m37_metrics_reset();
+
+    let mut rows = Vec::new();
+    let mut prefix = String::new();
+    for (index, key) in input.chars().enumerate() {
+        let key = key.to_string();
+        yune_core::m37_metrics_enable(true);
+        yune_core::m37_metrics_reset();
+        let _ = engine.process_key_sequence(&key);
+        let metrics = yune_core::m37_metrics_snapshot();
+        yune_core::m37_metrics_reset();
+        yune_core::m37_metrics_enable(false);
+
+        prefix.push_str(&key);
+        rows.push((index + 1, prefix.clone(), key, metrics));
+    }
+    rows
 }
 
 fn phase3r_owned_luna_sentence_engine(dictionary: TableDictionary) -> Engine {

@@ -334,13 +334,7 @@ fn collect_sentence_states(
                     {
                         continue;
                     }
-                    let mut next = source.clone();
-                    next.weight = candidate_weight;
-                    if grammar.is_some() {
-                        next.push_word(&entry.text);
-                    }
-                    next.text.push_str(&entry.text);
-                    next.word_lengths.push(end - start);
+                    let next = source.extended(&entry.text, candidate_weight, end - start, grammar);
                     if record_metrics {
                         dp_states_created += 1;
                     }
@@ -430,7 +424,7 @@ fn sentence_paths_from_states(
             .map(|state| SentencePath {
                 text: state.text,
                 weight: state.weight,
-                word_lengths: state.word_lengths,
+                word_lengths: state.word_lengths.into_vec(),
             })
             .collect();
     }
@@ -445,7 +439,7 @@ fn sentence_paths_from_states(
         paths.push(SentencePath {
             text: state.text,
             weight: state.weight,
-            word_lengths: state.word_lengths,
+            word_lengths: state.word_lengths.into_vec(),
         });
         if paths.len() == max_sentences {
             break;
@@ -467,7 +461,7 @@ fn abbreviation_sentence_paths_from_states(
             .map(|state| SentencePath {
                 text: state.text,
                 weight: state.weight,
-                word_lengths: state.word_lengths,
+                word_lengths: state.word_lengths.into_vec(),
             })
             .collect();
     }
@@ -482,7 +476,7 @@ fn abbreviation_sentence_paths_from_states(
         paths.push(SentencePath {
             text: state.text,
             weight: state.weight,
-            word_lengths: state.word_lengths,
+            word_lengths: state.word_lengths.into_vec(),
         });
         if paths.len() == max_sentences {
             break;
@@ -495,7 +489,7 @@ fn abbreviation_sentence_paths_from_states(
 struct PathState {
     text: String,
     weight: f64,
-    word_lengths: Vec<usize>,
+    word_lengths: PathWordLengths,
     recent_words: Vec<String>,
 }
 
@@ -504,12 +498,125 @@ impl PathState {
         self.recent_words.concat()
     }
 
-    fn push_word(&mut self, word: &str) {
-        if self.recent_words.len() == 2 {
-            self.recent_words.remove(0);
+    fn extended(
+        &self,
+        word: &str,
+        weight: f64,
+        word_length: usize,
+        grammar: Option<&dyn Grammar>,
+    ) -> Self {
+        let mut text = String::with_capacity(self.text.len() + word.len());
+        text.push_str(&self.text);
+        text.push_str(word);
+
+        let word_lengths = self.word_lengths.extended(word_length);
+
+        let mut recent_words = if grammar.is_some() {
+            self.recent_words.clone()
+        } else {
+            Vec::new()
+        };
+        if grammar.is_some() {
+            push_recent_word(&mut recent_words, word);
         }
-        self.recent_words.push(word.to_owned());
+
+        Self {
+            text,
+            weight,
+            word_lengths,
+            recent_words,
+        }
     }
+
+    fn push_word(&mut self, word: &str) {
+        push_recent_word(&mut self.recent_words, word);
+    }
+}
+
+const PATH_WORD_LENGTHS_INLINE_CAPACITY: usize = 16;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum PathWordLengths {
+    Inline {
+        len: u8,
+        values: [usize; PATH_WORD_LENGTHS_INLINE_CAPACITY],
+    },
+    Heap(Vec<usize>),
+}
+
+impl Default for PathWordLengths {
+    fn default() -> Self {
+        Self::Inline {
+            len: 0,
+            values: [0; PATH_WORD_LENGTHS_INLINE_CAPACITY],
+        }
+    }
+}
+
+impl PathWordLengths {
+    fn len(&self) -> usize {
+        match self {
+            Self::Inline { len, .. } => usize::from(*len),
+            Self::Heap(values) => values.len(),
+        }
+    }
+
+    fn as_slice(&self) -> &[usize] {
+        match self {
+            Self::Inline { len, values } => &values[..usize::from(*len)],
+            Self::Heap(values) => values,
+        }
+    }
+
+    fn push(&mut self, word_length: usize) {
+        match self {
+            Self::Inline { len, values }
+                if usize::from(*len) < PATH_WORD_LENGTHS_INLINE_CAPACITY =>
+            {
+                values[usize::from(*len)] = word_length;
+                *len += 1;
+            }
+            Self::Inline { len, values } => {
+                let mut heap = Vec::with_capacity(usize::from(*len) + 1);
+                heap.extend_from_slice(&values[..usize::from(*len)]);
+                heap.push(word_length);
+                *self = Self::Heap(heap);
+            }
+            Self::Heap(values) => values.push(word_length),
+        }
+    }
+
+    fn extended(&self, word_length: usize) -> Self {
+        let mut next = self.clone();
+        next.push(word_length);
+        next
+    }
+
+    fn into_vec(self) -> Vec<usize> {
+        match self {
+            Self::Inline { len, values } => values[..usize::from(len)].to_vec(),
+            Self::Heap(values) => values,
+        }
+    }
+}
+
+impl PartialOrd for PathWordLengths {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PathWordLengths {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.as_slice().cmp(other.as_slice())
+    }
+}
+
+fn push_recent_word(recent_words: &mut Vec<String>, word: &str) {
+    if recent_words.len() == 2 {
+        recent_words.remove(0);
+    }
+    recent_words.push(word.to_owned());
 }
 
 fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: usize) -> bool {
@@ -573,7 +680,8 @@ fn compare_abbreviation_path_state(left: &PathState, right: &PathState) -> Order
         .len()
         .cmp(&right.word_lengths.len())
         .then_with(|| {
-            singleton_word_count(&left.word_lengths).cmp(&singleton_word_count(&right.word_lengths))
+            singleton_word_count(left.word_lengths.as_slice())
+                .cmp(&singleton_word_count(right.word_lengths.as_slice()))
         })
         .then_with(|| right.word_lengths.cmp(&left.word_lengths))
         .then_with(|| {

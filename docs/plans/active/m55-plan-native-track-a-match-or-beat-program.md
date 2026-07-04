@@ -619,7 +619,10 @@ volume, reduce owned/default graph work, then re-land byte-backed poet on the
 lean graph. Phase 3R-2's first owned-path checkpoint rejects provably losing
 beam states before cloning and moves the default-owned long rows to
 37-character `2.407x` and 59-character `1.827x` while keeping M52 green, but
-Tier M is still not met.
+Tier M is still not met. The next Phase 3R-2 checkpoint reduces path-state
+materialization with exact-capacity text construction and inline word lengths;
+it keeps M52 green at 37-character `2.228x` and 59-character `1.856x`, with
+product-path candidate bytes unchanged. Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
 cost is graph work above the raw lookup (`891.0 us` translator vs `28.9 us`
@@ -716,8 +719,13 @@ or must close as a measured no-go without broadening scope.
   suite plus product-path CLI byte compare over `apps/yune-web/public/schema`,
   final keypress event, both benchmark rows, `jianli`, `biancheng`, and
   `zhongguo`.
+- [x] Reduce path-state materialization by building accepted state text with
+  exact capacity and keeping word-length histories inline for the common path.
+  Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-owned-inline-lengths/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
-  green but still above the `<=1.50x` 37/59-character win bar.
+  green and the path-state materialization checkpoint is green, but both remain
+  above the `<=1.50x` 37/59-character win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

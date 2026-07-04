@@ -1,0 +1,5 @@
+input_id,input,storage,candidates,graph_rebuild_calls,graph_rebuild_ns,index_probes,prefix_hits,prefix_misses,entry_ranges_emitted,theoretical_minimum_entries,table_entries_considered,vocabulary_index_probes,vocabulary_rows_examined,vocabulary_rows_accepted,graph_entries_inserted,graph_entry_text_bytes,code_span_rederivations,dp_states_created,dp_beam_evictions,allocation_count_lower_bound,allocation_bytes_lower_bound
+m55_37,ceshiyixiachangjushuruxingnengzenyang,owned,0,1,145000,49,38,11,13,91,91,13,10,5,96,312,0,5060,1700,96,312
+m55_37,ceshiyixiachangjushuruxingnengzenyang,byte_backed,0,1,220200,49,38,11,13,91,91,13,10,5,96,312,0,5060,1700,96,312
+m55_59,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,owned,0,1,119600,85,63,22,23,161,161,23,8,3,164,501,3,10853,4494,164,501
+m55_59,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,byte_backed,0,1,284200,85,63,22,23,161,161,23,8,3,164,501,3,10853,4494,164,501

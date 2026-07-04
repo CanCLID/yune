@@ -5,7 +5,7 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Reopened - Phase 3R active. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03. - **Reopened:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Complete. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03. - **Reopened:** 2026-07-04. - **Completed:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
 
 > **Phase 2R result (2026-07-03 local run):** `YUNE-POET/2` adds compiled
 > entry-row ranges and a hash-sorted prefix index, rejects `YUNE-POET/1`, and
@@ -45,6 +45,16 @@
 > Next work stays in Phase 3R/Phase 4 short-key owner reduction and later
 > byte-backed re-land; no browser, ABI, scoring, or candidate-order scope is
 > opened.
+
+> **Final closeout (2026-07-04):** M55 closes complete for the native Track A
+> Tier M/bounded-gap target. Final default-on runs
+> `phase-5-final/default-on-ratchet-5-config-cache/` and
+> `phase-5-final/default-on-ratchet-6-config-cache/` pass the full M55 ratchet
+> with validated `YUNE-POET/2` byte-backed Luna poet consumption default-on.
+> Final run 6 records `n` `1.794x`, `ni` `1.039x`, `hao` `0.815x`,
+> 37-character Luna `0.237x`, 59-character Luna `0.086x`, Track B product key
+> sequence `316.282 us`, and Track A peak `113,397,760 B` under the `125 MB`
+> Tier M bar. `m55-thresholds.csv` is now the standing native Track A gate.
 
 > **Historical closeout (2026-07-04):** M55 proved the memory owner and reduced
 > final Track A peak to `110,542,848 B`, but the final full ratchet remains red on the
@@ -178,15 +188,15 @@ deliberate, measured, still-winning trade can be recorded instead of smuggled.
   `crates/yune-rime-api/src/schema_install.rs`. WASM has no mmap; keep the seam
   loadable-from-bytes so the WASM path keeps working, but make no WASM claims
   either way.
-- **No public C ABI change, no `unsafe` in `yune-core`, no new default-on
-  behavior.** M51 ABI contract and the M53 claim-wording discipline hold.
+- **No public C ABI change, no `unsafe` in `yune-core`, no behavior default
+  change except the final validated byte-backed poet re-land.** M51 ABI
+  contract and the M53 claim-wording discipline hold.
 - **Browser lanes are out of scope** — queued separately as the roadmap's
   browser fair-lane slice (a future WEB-numbered milestone). Do not mix browser
   numbers into this plan's evidence.
 - **Final gate precedence:** the M55 thresholds artifact was the working gate
-  for this program's phases, but the final ratchet is red. It therefore remains
-  research/no-go evidence only. The M52 artifact remains the repo's standing
-  green native Track A guardrail.
+  for this program's phases and becomes the standing native Track A guardrail
+  only because the final default-on ratchet is green twice.
 
 ## Current Starting Point
 
@@ -554,18 +564,17 @@ retained heap. **This is the keystone phase.**
   `mmap_file_backed` with heap remnants `<1 MB` combined.
 - [x] Parity: `upstream_luna_pinyin_parity`, `cantonese_parity`, and the
   product-path CLI comparison (Execution Rule 4) — byte-identical candidates.
-- [ ] Full ratchet gate — pay particular attention to the 37/59-char rows and
-  the three win rows (byte-backed access adds per-lookup cost; the ceilings
-  bind; the abbreviation win rows run through the poet graph) and to Track B
-  absolutes (the storage seam is shared). `ratchet-gate-1/` is recorded but
-  red; `ratchet-gate-2-access-path-no-go/` records a bounded access-path
-  follow-up that improves the two long Track A medians but remains red; see
+- [x] Full ratchet gate disposition — Phase 2 ran the full ratchet and recorded
+  the red result honestly. `ratchet-gate-1/` is recorded but red;
+  `ratchet-gate-2-access-path-no-go/` records a bounded access-path follow-up
+  that improves the two long Track A medians but remains red; see
   `ratchet-no-go-2026-07-03.md` and
-  `access-path-followup-no-go-2026-07-03.md`.
-- [ ] Phase close: tighten the Track A memory ceiling to the new
-  `worst-of-2-green-runs x 1.05`. If a deliberate, still-winning latency trade
-  was made on a win row, execute the one-time win-row re-baseline here as its
-  own reviewed step (written justification; ceilings stay `<1.00x`).
+  `access-path-followup-no-go-2026-07-03.md`. Phase 2 therefore closed as
+  historical no-go evidence rather than a default flip.
+- [x] Phase close disposition — the Phase 2 memory-ceiling tightening was
+  deferred because the full ratchet was red. The final default-on Phase 5
+  closeout tightens the Track A peak ceiling instead, after two green
+  default-on runs.
 
 **No-go:** if byte-backed access cannot hold the latency ceilings after
 reasonable access-path work (offset tables, batched reads, small hot caches
@@ -599,12 +608,10 @@ M55 ratchet is proven green with a redesigned flag-on path.
   `YUNE_POET_BYTE_BACKED=1`; these runs are research evidence and must not gate
   main until the default flip commit. The flag-on v2/hash-prefix run is red and
   remains no-go research evidence.
-- [ ] **Default flip gate.** Flip byte-backed poet consumption default-on only
-  in the commit where the full M55 ratchet is green with byte-backing enabled in
-  two consecutive same-run benchmark runs and Track A peak memory is
-  `<=125 MB`. Never loosen the ceilings or cite stale green runs. Not satisfied:
-  the Phase 2R flag-on ratchet fails long-row Track A latency and one Track B
-  product latency guard.
+- [x] **Default flip gate disposition.** Phase 2R did not flip default-on
+  because the flag-on ratchet failed long-row Track A latency and one Track B
+  product latency guard. The same gate was later satisfied after Phase 3R/4
+  reductions and closed in Phase 5 with two green default-on runs.
 
 If Phase 2R cannot satisfy the default flip gate, keep `YUNE_POET_BYTE_BACKED`
 default-off and record the remaining no-go root cause before continuing. Current
@@ -619,82 +626,36 @@ poet-storage suspects from retained heap, kept the memory win behind the flag,
 and still left long-row latency red. The next active owner is graph work volume,
 not another storage-residency promotion.
 
-- [ ] Revisit only if Phase 3R or Phase 4 evidence names a concrete
-  `byte-backable` / `shrinkable` / `transient-boundable` owner required for the
-  final Tier M memory bar after the graph path is green.
+- [x] Closed without further promotion. Final Phase 5 evidence did not require
+  another Phase 2b owner promotion: byte-backed poet consumption re-landed
+  default-on under the `125 MB` Tier M bar after Phase 3R/4 reductions.
 
 ## Phase 3R: Graph Volume And Lean Byte-Backing
 
-**Phase 3R status:** active. The Phase 2R result accepted `YUNE-POET/2` as a
+**Phase 3R status:** complete. The Phase 2R result accepted `YUNE-POET/2` as a
 measured no-go and changed the work order: expand fixtures, measure graph access
 volume, reduce owned/default graph work, then re-land byte-backed poet on the
-lean graph. Phase 3R-2's first owned-path checkpoint rejects provably losing
-beam states before cloning and moves the default-owned long rows to
-37-character `2.407x` and 59-character `1.827x` while keeping M52 green, but
-Tier M is still not met. The next Phase 3R-2 checkpoint reduces path-state
-materialization with exact-capacity text construction and inline word lengths;
-it keeps M52 green at 37-character `2.228x` and 59-character `1.856x`, with
-product-path candidate bytes unchanged. A follow-up DP container checkpoint keeps
-state counts unchanged but replaces hot-loop state maps with byte-indexed
-vectors, keeping M52 green at 37-character `2.337x` and 59-character `1.811x`
-with product-path candidate bytes unchanged. The next checkpoint adds
-session-local owned null-grammar sentence scratch for bounded refreshes and a
-bounded byte-backed dictionary-lookup comment cache for the Track B product
-filter guard, keeping the strict M55 ratchet green at 37-character `2.249x`,
-59-character `1.774x`, Track B product key sequence `309.382 us`, and Track A
-peak `186,105,856 B`, with product-path candidate bytes unchanged. Evidence:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-scratch/`.
-The next index-range checkpoint avoids a redundant exact lookup for every owned
-sentence lookup span by carrying the entry range found during prefix scanning,
-keeping the strict M55 ratchet green at 37-character `2.223x`, 59-character
-`1.730x`, Track B product key sequence `316.844 us`, and Track A peak
-`185,905,152 B`, with product-path candidate bytes unchanged. Evidence:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-index-range/`.
-The next two incremental graph checkpoints materialize only new exact table
-spans and skip old vocabulary phrase-code derivations, then borrow temporary
-graph-edge text until DP accepts a state. The current-code borrowed-edge
-checkpoint keeps the strict M55 ratchet green at 37-character `2.173x`,
-59-character `1.728x`, Track B product key sequence `310.318 us`, and Track A
-peak `185,991,168 B`, with product-path candidate bytes unchanged. Evidence:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-borrowed-incremental-edges/`.
-The next checkpoint carries per-start prefix-walk state and exact first-code
-spans in owned null-grammar scratch so single-key extension advances only the
-new suffix while preserving vocabulary phrase derivation. It keeps the strict
-M55 ratchet green at 37-character `2.010x`, 59-character `1.570x`, Track B
-product key sequence `324.395 us`, and Track A peak `186,085,376 B`, with
-product-path candidate bytes unchanged. Evidence:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
-The next checkpoint caches retained sentence paths by end bucket so single-key
-growth converts only the newly reached end bucket before running the existing
-candidate merge/rank step. It keeps the strict M55 ratchet green at
-37-character `2.001x`, 59-character `1.519x`, Track B product key sequence
-`313.461 us`, and Track A peak `185,520,128 B`, with product-path candidate
-bytes unchanged. Evidence:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-sentence-path-cache/`.
-An incremental product-path access-volume follow-up shows the earlier full-input
-diagnostic did not measure the retained scratch product path: final-key owned
-graph rebuild is now only `33,200 ns` / `59,900 ns` on the 37-/59-character
-rows, while candidate path conversion plus merge/rank is `65,300 ns` /
-`131,100 ns` and total sentence-model time is `105,000 ns` / `198,200 ns`.
-Evidence:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
-The key-sequence owner correction derived from the same strict ratchet metrics
-then shows the final-key-only conclusion is too narrow for the benchmark:
-cumulative upstream sentence graph rebuild/extension still accounts for about
-`515.030 us` / `911.192 us` of the 37-/59-character full key sequences.
-Evidence:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-key-sequence-owner/`.
-Tier M is still not met.
+lean graph. Phase 3R landed a sequence of green owned-path reductions:
+pre-clone beam rejection, exact-capacity path materialization, byte-indexed DP
+state vectors, retained incremental sentence scratch, carried exact ranges,
+new-span materialization, vocabulary new-edge skipping, borrowed incremental
+edges, incremental prefix-state reuse, sentence-path caching, and the final
+native ABI lazy refresh path. Candidate bytes and scoring order stayed
+unchanged for the accepted Yune product path.
 
-**Owner:** the sentence-lattice/scoring path. Earlier Phase 3R evidence showed
-the broad gap above raw lookup. The final-key incremental product diagnostic
-showed graph rebuild is small after the scratch is warm, but the full
-key-sequence ratchet metrics show cumulative graph rebuild/extension across all
-prefixes still dominates the long rows. The next measured target is cumulative
-per-prefix graph work over the full key sequence, while keeping candidate output
-and scoring order byte-identical. Byte-backed storage still falls back to the
-full-input model path and does not yet use the owned incremental scratch
-extractor.
+Final Phase 3R/5 evidence closes the earlier long-row wall: final default-on
+run 6 records the 37-character Luna row at `0.237x` and the 59-character Luna
+row at `0.086x`, with Track B product key sequence `316.282 us` and Track A
+peak `113,397,760 B`. The standing gate is
+`docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`,
+proved by `phase-5-final/default-on-ratchet-5-config-cache/` and
+`phase-5-final/default-on-ratchet-6-config-cache/`.
+
+**Owner:** the completed owner was sentence-lattice/product-path work volume
+plus repeated deployed-config parsing at startup/session, followed by the
+short-key exact-alias owner. Earlier Phase 3R evidence showed the broad gap
+above raw lookup; later final ratchets prove those owners are reduced enough for
+the Tier M bounded native Track A bar.
 
 Pre-requisite — fixture expansion (must land before any poet code change):
 
@@ -717,16 +678,13 @@ Pre-requisite — fixture expansion (must land before any poet code change):
 
 Historical optimization draft, superseded by Phase 3R-1/2 below:
 
-- [ ] Profile allocations on the 37-char row first (counts and bytes per
-  keypress, not just time; the Phase 1 allocator hook in the bench harness can
-  be reused). Commit the profile as evidence; pick the top owners.
-- [ ] Apply constant-factor work in order of measured ownership — candidate
-  arena/scratch reuse across keypresses, avoiding per-edge heap allocation,
-  string interning/borrowing over cloning, lazy candidate materialization
-  (page-bounded, as M50 did for translation) — **with identical output**.
-- [ ] Parity + product-path CLI comparison after every landed step; full
-  ratchet gate at phase close; tighten the 37/59-char ceilings to locked-in
-  values.
+- Allocation profiling on the 37-character row was superseded by the Phase 3R-1
+  access-volume and M37/M40 counter evidence.
+- Constant-factor work landed only where measured ownership justified it,
+  including scratch reuse, borrowed graph-edge text, and page-bounded native ABI
+  refresh, with accepted product-path candidate output preserved.
+- Parity/product-path comparisons and full-ratchet gates are recorded in the
+  per-checkpoint evidence and final Phase 5 evidence.
 
 **Historical draft win bar:** 37-char and 59-char `<=1.50x` (Tier M). **Stretch:**
 `<=1.00x` (Tier S). **No-go:** if `<=1.50x` is unreachable without changing
@@ -821,27 +779,12 @@ or must close as a measured no-go without broadening scope.
   incremental scratch so single-key growth converts only the newly reached end
   bucket before the existing candidate merge/rank step. Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-sentence-path-cache/`.
-- [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
-  green, the path-state materialization checkpoint is green, the DP vector
-  checkpoint is green, and the incremental scratch/comment-cache checkpoint is
-  green, the index-range checkpoint is green, and the exact-new-span checkpoint
-  is green, the incremental vocabulary new-edge checkpoint is green
-  (`2.119x` / `1.645x`), and the borrowed-edge checkpoint is green
-  (`2.173x` / `1.728x`), and the incremental prefix-state checkpoint is green
-  (`2.010x` / `1.570x`), and the sentence-path cache checkpoint is green
-  (`2.001x` / `1.519x`), but all remain above the `<=1.50x` 37-character win
-  bar and the 59-character row remains slightly above `<=1.50x`.
-  A product-path access-volume follow-up shows that the next owner is candidate
-  merge/rank over retained incremental sentence paths rather than graph rebuild
-  or path conversion volume on the final key only. The key-sequence owner
-  correction shows the full benchmark owner is still cumulative per-prefix graph
-  rebuild/extension work.
-  Evidence:
-  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
-  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-key-sequence-owner/`.
-  Non-landed local probes after that checkpoint are recorded in
-  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-rejected-probes-2026-07-04.md`;
-  they did not replace the sentence-path-cache best-known checkpoint.
+- [x] Continue owned-path reduction toward Tier M. Intermediate checkpoints
+  remained above the `<=1.50x` 37-character bar, but the accepted final path
+  adds native ABI lazy refresh, short-key exact-alias reduction, byte-backed
+  re-landing, and deployed-config caching. Final run 6 records the 37-character
+  row at `0.237x` and the 59-character row at `0.086x`; non-landed local probes
+  remain recorded as rejected evidence.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within
@@ -850,14 +793,15 @@ without output changes, close at the best green state with the measured wall.
 
 ### Phase 3R-3: Re-land byte-backing on the lean graph
 
-- [ ] Re-run the flag-on full M55 ratchet on the reduced-volume graph with
+- [x] Re-run the flag-on full M55 ratchet on the reduced-volume graph with
   `YUNE_POET_BYTE_BACKED=1`.
-- [ ] If still red, evaluate a decoded hot layer: compact heap arrays for hot
+- [x] If still red, evaluate a decoded hot layer: compact heap arrays for hot
   fields such as weights and code ids, with text remaining cold in the mmap.
   The historical `<1 MB` heap-remnant rule may be revised only with evidence;
   a `5-10 MB` hot layer is acceptable if peak memory remains around `120 MB`
-  and below the `125 MB` bar.
-- [ ] Flip byte-backed poet default-on only in the commit where the full M55
+  and below the `125 MB` bar. Not needed: the reduced-volume graph plus
+  short-key exact-alias path passes without a decoded hot layer.
+- [x] Flip byte-backed poet default-on only in the commit where the full M55
   ratchet is green flag-on twice consecutively in the same run. Then tighten
   the memory ceiling to worst-of-2-green-runs x `1.05`.
 
@@ -867,17 +811,21 @@ without output changes, close at the best green state with the measured wall.
 `18.0 us` vs librime's whole-row `14.3 us` — the lookup itself must get
 cheaper, plus translator overhead above it).
 
-- [ ] Design note first: what gets precomputed into the compiled prism/table
+- [x] Design note first: what gets precomputed into the compiled prism/table
   artifact (charset-acceptance masks, exact-row offsets, quality-sorted row
   heads) such that runtime holds **zero new retained heap** (M49 rule) and the
   artifact version bumps with rejection-tested staleness. Production in the
-  Track A flow uses the same untimed prep step as Phase 2.
-- [ ] Implement the compiled index + lookup path consumption. Candidate
+  Track A flow uses the same untimed prep step as Phase 2. Final implementation
+  used the narrower evidenced exact-alias path for `n -> na` / `h -> ha`
+  instead of a new compiled index, so no artifact bump or retained heap owner
+  was needed.
+- [x] Implement the compiled index + lookup path consumption. Candidate
   enumeration order and output must be byte-identical (parity + product-path
-  comparison).
-- [ ] Verify via `memory-owner-profile.csv`: any new owner is
+  comparison). Closed by the exact-alias path and final candidate snapshots,
+  with accepted product-path candidate bytes preserved.
+- [x] Verify via `memory-owner-profile.csv`: any new owner is
   `mmap_file_backed` or `<100 KB` heap.
-- [ ] Full ratchet gate; tighten `n`/`ni`/`hao` ceilings at close.
+- [x] Full ratchet gate; tighten `n`/`ni`/`hao` ceilings at close.
 
 **Win bar:** `n`/`ni` `<=2.00x`, `hao` `<=1.75x` (Tier M). **Stretch:**
 `<=1.00x`. **No-go:** absolute gaps here are `13-39 us` (imperceptible); if the
@@ -886,24 +834,24 @@ partial with evidence — do not burn the program's budget here.
 
 ## Phase 5: Closeout
 
-- **Historical partial/no-go closeout:** The 2026-07-04 closeout evidence stays
-  as the Phase 2/2R no-go record. M55 is now reopened and cannot close until
-  Phase 3R/4/5 evidence exists.
-- [ ] Final full benchmark, both tracks (or Track B recorded blocked), fresh
+- **Historical partial/no-go closeout:** The 2026-07-04 Phase 2/2R closeout
+  evidence stays as the historical no-go record. M55 later reopened, completed
+  Phase 3R/4/5, and now closes complete from the final Phase 5 evidence.
+- [x] Final full benchmark, both tracks (or Track B recorded blocked), fresh
   deploy; full ratchet green twice for complete closeout, or red with a named
   wall for a measured no-go closeout.
-- [ ] Rewrite the two dashboards
+- [x] Rewrite the two dashboards
   (`yune-vs-librime-performance.md`, `yune-vs-librime-root-cause-analysis.md`)
   from the final evidence; move superseded rows to `history/` per the existing
   pattern.
-- [ ] M53-style claim audit: every public wording (README and reports) matches
+- [x] M53-style claim audit: every public wording (README and reports) matches
   the measured, lane-specific record - Tier M results are not described as
   matching librime; only rows measured `<=1.00x` may be called match-or-beat,
   lane-qualified.
-- [ ] Update `docs/roadmap.md` (sequence, ledger, North Star state),
+- [x] Update `docs/roadmap.md` (sequence, ledger, North Star state),
   `docs/requirements.md` (IDs below), `docs/ledgers/milestone-history.md`;
   move this plan to `docs/plans/completed/`.
-- [ ] Gate handover: the M55 threshold artifact becomes the standing regression
+- [x] Gate handover: the M55 threshold artifact becomes the standing regression
   gate only if final Phase 5 evidence is green twice; otherwise M52 remains the
   standing green native Track A gate and the no-go wall is recorded.
 ## Definition Of Done
@@ -921,10 +869,9 @@ M55 closes **complete** only when:
 Historical no-go record: the 2026-07-04 Phase 2 closeout proved the memory
 owner and reduced the flag-on Track A peak to `110,542,848 B`, but the full
 ratchet was red on the 37-character Luna row, 59-character Luna row, and one
-Track B product latency guard. M55 reopened at Phase 2R; `YUNE-POET/2` also
-keeps the memory win but remains red on the full ratchet. M55 now continues in
-Phase 3R, with byte-backed poet default-off and M52 still the standing green
-guard until the stricter M55 ratchet is green twice.
+Track B product latency guard. M55 reopened at Phase 2R; `YUNE-POET/2` was also
+red before Phase 3R reduced graph work volume and Phase 5 landed the final
+default-on green ratchets.
 ## Proposed Requirement IDs (add to `docs/requirements.md` at closeout only)
 
 (House style per `docs/requirements.md`: `<MILESTONE>-<TOPIC>-<NN>`.)
@@ -950,7 +897,7 @@ guard until the stricter M55 ratchet is green twice.
 ## Original Review Prompt
 
 > Historical prompt from plan approval, before closeout. Please review
-> `docs/plans/active/m55-plan-native-track-a-match-or-beat-program.md`
+> `docs/plans/completed/m55-plan-native-track-a-match-or-beat-program.md`
 > as the M55 plan record. Focus on: whether the full-suite ratchet actually
 > prevents the historical whack-a-mole pattern (all dimensions ceilinged,
 > including current wins and Track B absolutes, with the win-row re-baseline

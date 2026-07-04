@@ -1,0 +1,16 @@
+date_utc=2026-07-04T19:47:37.3899311Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=b0fb8cc90ca51af48e413a119fbd3fdc59b6ea49
+yune_git_status_short= M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M scripts/benchmark-native-rime-inprocess.ps1 | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-native-lazy-refresh-probe/candidate-snapshot-check/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-native-lazy-refresh-probe/flag-on-byte-backed-quick-check/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-short-key-alias-byte-backed-quick-check/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-3r-short-key-alias-byte-backed-quick-check
+managed_runtime=false
+deploy_product_before_benchmark=False
+skip_track_b=True
+track_a_thresholds=
+fail_on_regression=False
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=3
+session_iterations=10
+key_iterations=10

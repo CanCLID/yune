@@ -1,0 +1,25 @@
+engine,track,schema_id,input,candidate_index,candidate_count,page_size,page_no,is_last_page,highlighted_index,composition_preedit,text,comment
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,0,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,你個人經其實應該支援超場句子輸入先可以用,"
+1,你個人經其實應該支援超場句子輸入先可以用,nei5go3jan4ging1kei4sat6jing1goi1zi1wun4ciu1coeng4geoi3zi2syu1jap6sin1ho2ji5jung6,1,0,,,,composition,,,,,,,,,
+1,你個,nei5go3,1,0,,oth,ver,,,你的,,,your,,,,
+1,人,jan4,1,0,,n,,,,,,,person; people,انسانی,मानव,मानव,orang
+1,經,ging1,1,0,,adv v,,,,,,,pass through; via,منتقل,त्यहाँबाट जानु,से गुज़रना,melalui
+1,其實,kei4sat6,1,0,,oth,,,,,,,actually,اصل میں,वास्तवमा,असल में,faktanya
+1,應該,jing1goi1,1,0,,v,,,,,,,should,چاہیے,आवश्यक छ,चाहिए,sebaiknya
+1,支援,zi1wun4,1,0,,v,,,,,,,support,پکڑنا,समात्नु,सहारा देना,mendukung
+1,超,ciu1,1,0,,adj v,,,,,,,super; exceed,,,,super; melampaui
+1,場,coeng4,1,0,,n,,,,,,,venue,(measure),(measure),(measure),(kata bantu)
+1,句子,geoi3zi2,1,0,,n,,,,,,,sentence,جملہ,वाक्य,वाक्य,kalimat
+1,輸入,syu1jap6,1,0,,v,,,,,,,input,درآمد,आयात,आयात,impot
+1,先可以,sin1ho2ji5,1,0,,oth,ver,,,才可以,,,then can,,,,
+1,用,jung6,1,0,,v,,,,,,,use,استعمال کرنا,प्रयोग गर्न,उपयोग करना,menggunakan"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,1,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,你個,"
+1,你個,nei5go3,1,0,,oth,ver,,,你的,,,your,,,,"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,2,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,你,"
+1,你,nei5,1,0,,oth,,,,,,,you (singular),تم,तपाईं,आप,kamu"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,3,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,呢,"
+1,呢,nei1,2,0,,oth,ver,,,這,,,this,,,,
+0,呢,ne1,1,0,,part,,,,,,,(how about),(particle),,(particle),(imbuhan kata)
+0,呢,ni1,2,0,,oth,ver,,,這,,,this,,,,"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,4,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,尼,"
+1,尼,nei4,1,0,,n,,,,,,,nun,,,,kamu"

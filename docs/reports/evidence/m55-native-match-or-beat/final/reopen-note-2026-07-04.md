@@ -1,6 +1,11 @@
 # M55 Reopen Note - 2026-07-04
 
-M55 is reopened at Phase 2R. The earlier Phase 2 no-go call remains valid as
+Superseded status: this is a historical reopen record. The current M55 closeout
+is `../phase-5-final/closeout-2026-07-04.md`, which closes M55 green after the
+Phase 3R/4/5 follow-up work. Keep this file as evidence for the reopen point;
+do not treat it as the current milestone status.
+
+At the Phase 2R reopen point, the earlier Phase 2 no-go call remained valid as
 evidence for the `YUNE-POET/1` byte-backed poet access path: it reduced Track A
 memory, but could not hold the full M55 latency ratchet.
 
@@ -28,8 +33,8 @@ memory to the M52-era shape (`~186 MB` in this run). The `~110.5 MB` peak from
 the Phase 2 closeout is now treated as flag-on research/no-go evidence, not the
 default product path.
 
-Phase 2R must redesign the poet artifact/access path behind the flag. The flag
-may become default-on only in the commit where the full M55 ratchet is green
-with byte-backed poet enabled in two consecutive same-run benchmark runs and
-Track A memory is at or below `125 MB`. Until then, flag-on benchmark results
-are research evidence and must not gate main.
+At that point, Phase 2R had to redesign the poet artifact/access path behind
+the flag. The flag could become default-on only in the commit where the full M55
+ratchet was green with byte-backed poet enabled in two consecutive same-run
+benchmark runs and Track A memory was at or below `125 MB`. Until that happened,
+flag-on benchmark results were research evidence and did not gate main.

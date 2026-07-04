@@ -467,6 +467,7 @@ $CombinedSamples = @()
 $CombinedM37Metrics = @()
 $CombinedProductPathStatus = @()
 $CombinedStartupSessionTrace = @()
+$CombinedCandidateSnapshots = @()
 $CombinedRawLookupMicrobench = @()
 $CombinedMemoryOwnerProfile = @()
 foreach ($Summary in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter summary.csv) {
@@ -484,6 +485,9 @@ foreach ($Status in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter prod
 foreach ($Trace in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter startup_session_trace.csv) {
     $CombinedStartupSessionTrace += Import-Csv -LiteralPath $Trace.FullName
 }
+foreach ($Snapshot in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter candidate_snapshots.csv) {
+    $CombinedCandidateSnapshots += Import-Csv -LiteralPath $Snapshot.FullName
+}
 foreach ($RawLookup in Get-ChildItem -LiteralPath $OutputRoot -Recurse -Filter raw_lookup_microbench.csv) {
     $CombinedRawLookupMicrobench += Import-Csv -LiteralPath $RawLookup.FullName
 }
@@ -495,6 +499,7 @@ $CombinedSamples | Export-Csv -LiteralPath (Join-Path $OutputRoot "samples.csv")
 $CombinedM37Metrics | Export-Csv -LiteralPath (Join-Path $OutputRoot "m37_metrics.csv") -NoTypeInformation -Encoding UTF8
 $CombinedProductPathStatus | Export-Csv -LiteralPath (Join-Path $OutputRoot "product_path_status.csv") -NoTypeInformation -Encoding UTF8
 $CombinedStartupSessionTrace | Export-Csv -LiteralPath (Join-Path $OutputRoot "startup_session_trace.csv") -NoTypeInformation -Encoding UTF8
+$CombinedCandidateSnapshots | Export-Csv -LiteralPath (Join-Path $OutputRoot "candidate_snapshots.csv") -NoTypeInformation -Encoding UTF8
 $CombinedRawLookupMicrobench | Export-Csv -LiteralPath (Join-Path $OutputRoot "raw_lookup_microbench.csv") -NoTypeInformation -Encoding UTF8
 $CombinedMemoryOwnerProfile | Export-Csv -LiteralPath (Join-Path $OutputRoot "memory-owner-profile.csv") -NoTypeInformation -Encoding UTF8
 

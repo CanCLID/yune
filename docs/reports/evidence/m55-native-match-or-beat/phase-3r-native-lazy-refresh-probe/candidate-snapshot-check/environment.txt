@@ -1,0 +1,16 @@
+date_utc=2026-07-04T19:34:31.3954480Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=b0fb8cc90ca51af48e413a119fbd3fdc59b6ea49
+yune_git_status_short= M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M scripts/benchmark-native-rime-inprocess.ps1 | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-native-lazy-refresh-probe/candidate-snapshot-check/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\candidate-snapshot-check
+managed_runtime=false
+deploy_product_before_benchmark=False
+skip_track_b=True
+track_a_thresholds=
+fail_on_regression=False
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=1
+session_iterations=1
+key_iterations=1

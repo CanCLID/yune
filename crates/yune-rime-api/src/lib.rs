@@ -5,7 +5,8 @@ use std::{
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     ptr,
-    time::Instant,
+    sync::{Mutex, OnceLock},
+    time::{Instant, SystemTime},
 };
 
 use regex::Regex;
@@ -333,6 +334,18 @@ impl Default for ContextMenuSettings {
 pub(crate) enum ConfigOpenKind {
     Deployed,
     User,
+}
+
+#[derive(Clone)]
+struct RuntimeConfigCacheEntry {
+    modified: Option<SystemTime>,
+    len: u64,
+    root: Value,
+}
+
+fn runtime_config_cache() -> &'static Mutex<HashMap<PathBuf, RuntimeConfigCacheEntry>> {
+    static CACHE: OnceLock<Mutex<HashMap<PathBuf, RuntimeConfigCacheEntry>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 #[must_use]
@@ -2406,10 +2419,37 @@ pub(crate) fn load_runtime_config_root(config_id: &str, kind: ConfigOpenKind) ->
         return Value::Null;
     };
 
-    fs::read_to_string(selected_path)
+    let metadata = fs::metadata(&selected_path).ok();
+    let modified = metadata
+        .as_ref()
+        .and_then(|metadata| metadata.modified().ok());
+    let len = metadata.as_ref().map_or(0, fs::Metadata::len);
+    if let Some(root) = runtime_config_cache()
+        .lock()
+        .expect("runtime config cache should not be poisoned")
+        .get(&selected_path)
+        .filter(|entry| entry.modified == modified && entry.len == len)
+        .map(|entry| entry.root.clone())
+    {
+        return root;
+    }
+
+    let root = fs::read_to_string(&selected_path)
         .ok()
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
-        .unwrap_or(Value::Null)
+        .unwrap_or(Value::Null);
+    runtime_config_cache()
+        .lock()
+        .expect("runtime config cache should not be poisoned")
+        .insert(
+            selected_path,
+            RuntimeConfigCacheEntry {
+                modified,
+                len,
+                root: root.clone(),
+            },
+        );
+    root
 }
 
 fn runtime_config_roots(kind: ConfigOpenKind) -> Vec<String> {

@@ -51,6 +51,7 @@ fn main() {
         return;
     }
     let (samples, startup_traces) = run_benchmark(&engine, &options);
+    let candidate_snapshots = capture_candidate_snapshots(&engine, &options);
     write_samples(&options.output.join("samples.csv"), &samples);
     write_summary(&options.output.join("summary.csv"), &samples);
     write_m37_metrics(
@@ -64,6 +65,10 @@ fn main() {
     write_startup_session_trace(
         &options.output.join("startup_session_trace.csv"),
         &startup_traces,
+    );
+    write_candidate_snapshots(
+        &options.output.join("candidate_snapshots.csv"),
+        &candidate_snapshots,
     );
     write_product_path_status(&options.output.join("product_path_status.csv"), &options);
     write_raw_lookup_microbench(
@@ -437,6 +442,23 @@ struct StartupTraceEvent {
     working_set_before: Option<u64>,
     working_set_after: Option<u64>,
     peak_working_set_after: Option<u64>,
+}
+
+#[derive(Clone, Debug)]
+struct CandidateSnapshotRow {
+    engine: String,
+    track: String,
+    schema: String,
+    input: String,
+    candidate_index: usize,
+    candidate_count: usize,
+    page_size: c_int,
+    page_no: c_int,
+    is_last_page: Bool,
+    highlighted_index: c_int,
+    composition_preedit: String,
+    text: String,
+    comment: String,
 }
 
 fn run_benchmark(engine: &LoadedRime, options: &Options) -> (Vec<Sample>, Vec<StartupTraceSample>) {
@@ -818,6 +840,111 @@ fn read_context(api: &RimeApi, session_id: RimeSessionId) {
     );
 }
 
+fn capture_candidate_snapshots(
+    engine: &LoadedRime,
+    options: &Options,
+) -> Vec<CandidateSnapshotRow> {
+    let mut rows = Vec::new();
+    with_service(engine, options, |api| {
+        let session_id = require("create_session", api.create_session)();
+        assert_ne!(session_id, 0, "create_session returned 0");
+        select_schema(api, session_id, &options.schema);
+        set_default_options(api, session_id);
+        for input in &options.inputs {
+            rows.extend(capture_candidate_snapshot_for_input(
+                api, session_id, options, input,
+            ));
+        }
+        assert_eq!(
+            require("destroy_session", api.destroy_session)(session_id),
+            TRUE
+        );
+    });
+    rows
+}
+
+fn capture_candidate_snapshot_for_input(
+    api: &RimeApi,
+    session_id: RimeSessionId,
+    options: &Options,
+    input: &str,
+) -> Vec<CandidateSnapshotRow> {
+    require("clear_composition", api.clear_composition)(session_id);
+    let process_key = require("process_key", api.process_key);
+    for ch in input.chars() {
+        assert_ne!(
+            process_key(session_id, ch as c_int, 0),
+            0,
+            "process_key failed for {input}"
+        );
+    }
+
+    let mut context = RimeContext {
+        data_size: (mem::size_of::<RimeContext>() - mem::size_of::<c_int>()) as c_int,
+        composition: RimeComposition {
+            length: 0,
+            cursor_pos: 0,
+            sel_start: 0,
+            sel_end: 0,
+            preedit: ptr::null_mut(),
+        },
+        menu: RimeMenu {
+            page_size: 0,
+            page_no: 0,
+            is_last_page: 0,
+            highlighted_candidate_index: 0,
+            num_candidates: 0,
+            candidates: ptr::null_mut(),
+            select_keys: ptr::null_mut(),
+        },
+        commit_text_preview: ptr::null_mut(),
+        select_labels: ptr::null_mut(),
+    };
+    assert_eq!(
+        unsafe { require("get_context", api.get_context)(session_id, &mut context) },
+        TRUE
+    );
+
+    let composition_preedit = c_string_from_mut_ptr(context.composition.preedit);
+    let candidate_count = context.menu.num_candidates.max(0) as usize;
+    let rows = if context.menu.candidates.is_null() || candidate_count == 0 {
+        Vec::new()
+    } else {
+        unsafe { std::slice::from_raw_parts(context.menu.candidates, candidate_count) }
+            .iter()
+            .enumerate()
+            .map(|(candidate_index, candidate)| CandidateSnapshotRow {
+                engine: options.engine.clone(),
+                track: options.track.clone(),
+                schema: options.schema.clone(),
+                input: input.to_owned(),
+                candidate_index,
+                candidate_count,
+                page_size: context.menu.page_size,
+                page_no: context.menu.page_no,
+                is_last_page: context.menu.is_last_page,
+                highlighted_index: context.menu.highlighted_candidate_index,
+                composition_preedit: composition_preedit.clone(),
+                text: c_string_from_mut_ptr(candidate.text),
+                comment: c_string_from_mut_ptr(candidate.comment),
+            })
+            .collect()
+    };
+    assert_eq!(
+        unsafe { require("free_context", api.free_context)(&mut context) },
+        TRUE
+    );
+    rows
+}
+
+fn c_string_from_mut_ptr(value: *mut c_char) -> String {
+    if value.is_null() {
+        String::new()
+    } else {
+        unsafe { CStr::from_ptr(value).to_string_lossy().into_owned() }
+    }
+}
+
 fn read_status(api: &RimeApi, session_id: RimeSessionId) {
     let mut status = RimeStatus {
         data_size: (mem::size_of::<RimeStatus>() - mem::size_of::<c_int>()) as c_int,
@@ -1123,6 +1250,29 @@ fn write_startup_session_trace(path: &PathBuf, samples: &[StartupTraceSample]) {
         ));
     }
     fs::write(path, output).expect("startup/session trace CSV should be written");
+}
+
+fn write_candidate_snapshots(path: &PathBuf, rows: &[CandidateSnapshotRow]) {
+    let mut output = String::from("engine,track,schema_id,input,candidate_index,candidate_count,page_size,page_no,is_last_page,highlighted_index,composition_preedit,text,comment\n");
+    for row in rows {
+        output.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            csv(&row.engine),
+            csv(&row.track),
+            csv(&row.schema),
+            csv(&row.input),
+            row.candidate_index,
+            row.candidate_count,
+            row.page_size,
+            row.page_no,
+            row.is_last_page,
+            row.highlighted_index,
+            csv(&row.composition_preedit),
+            csv(&row.text),
+            csv(&row.comment),
+        ));
+    }
+    fs::write(path, output).expect("candidate snapshot CSV should be written");
 }
 
 fn write_metadata(path: &PathBuf, options: &Options) {

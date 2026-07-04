@@ -1,0 +1,16 @@
+date_utc=2026-07-04T19:55:39.7914480Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=b0fb8cc90ca51af48e413a119fbd3fdc59b6ea49
+yune_git_status_short= M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M scripts/benchmark-native-rime-inprocess.ps1 | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-native-lazy-refresh-probe/candidate-snapshot-check/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-native-lazy-refresh-probe/flag-on-byte-backed-quick-check/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-short-key-alias-byte-backed-full-ratchet-2/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-short-key-alias-byte-backed-full-ratchet/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-short-key-alias-byte-backed-quick-check/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-3r-short-key-alias-byte-backed-full-ratchet-2
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

@@ -30,6 +30,7 @@ key-sequence `313.461 us`.
 | Single-pass owned vocabulary phrase derivation | Focused upstream sentence-model tests and expanded Luna green-row parity passed. A 5/40/60 same-run release probe used the exact M55 Track A and Track B input sets. | Rejected because deriving phrase codes without the cheap precheck made non-matching vocabulary entries expensive and severely regressed the long rows: 37-char `2337.968 us` / `7.739x`; 59-char `4720.827 us` / `7.018x`. |
 | Transient per-composition vocabulary frontier | Focused upstream sentence-model tests and expanded Luna green-row parity passed. A fixture per-key diagnostic and a 5/40/60 same-run release probe used the exact M55 Track A and Track B input sets. | Rejected because the additional frontier bookkeeping outweighed any row filtering and regressed the long rows: 37-char `840.857 us` / `2.752x`; 59-char `1591.685 us` / `2.222x`. |
 | Transient normalized-weight cache | Focused upstream sentence-model tests and expanded Luna green-row parity passed. A 5/40/60 same-run release probe used the exact M55 Track A and Track B input sets. | Rejected because the linear cache lookup cost outweighed repeated `ln` avoidance and worsened both target rows: 37-char `588.311 us` / `2.058x`; 59-char `1012.225 us` / `1.551x`. |
+| Incremental `PathState` text hash precheck | Focused upstream sentence-model tests and expanded Luna green-row parity passed. A 5/40/60 same-run release probe used the exact M55 Track A and Track B input sets. | Rejected because added hash maintenance helped abbreviation win rows but worsened both target long rows: 37-char `595.595 us` / `2.096x`; 59-char `1049.936 us` / `1.607x`. |
 
 ## Decision
 
@@ -43,4 +44,5 @@ candidate/key clone avoidance in the cached sentence-path merge, or retaining
 a merged sentence-candidate map in scratch, or replacing owned vocabulary
 precheck-plus-derive with single-pass derivation, or adding a transient
 per-composition vocabulary frontier, or adding a transient normalized-weight
-cache to the incremental scratch.
+cache to the incremental scratch, or adding an incremental text hash to
+`PathState`.

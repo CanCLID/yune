@@ -796,6 +796,12 @@ fn set_default_options(api: &RimeApi, session_id: RimeSessionId) {
 }
 
 fn process_input_with_context(api: &RimeApi, session_id: RimeSessionId, input: &str) {
+    // Per-keypress observation is load-bearing for this metric: a real
+    // frontend reads the context after every keystroke to redraw the
+    // candidate menu, so the per-key median must include the work each
+    // keystroke forces. Reading context once per sequence lets a deferred or
+    // lazy engine amortize N keys into one refresh, and the metric stops
+    // measuring interactive latency (the M55 corrective lesson).
     require("clear_composition", api.clear_composition)(session_id);
     let process_key = require("process_key", api.process_key);
     for ch in input.chars() {
@@ -804,8 +810,8 @@ fn process_input_with_context(api: &RimeApi, session_id: RimeSessionId, input: &
             0,
             "process_key failed for {input}"
         );
+        read_context(api, session_id);
     }
-    read_context(api, session_id);
 }
 
 fn read_context(api: &RimeApi, session_id: RimeSessionId) {

@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1040" height="524" viewBox="0 0 1040 524" role="img" aria-labelledby="title desc">
-  <title id="title">Native Track A latency: M55 final Yune vs librime 1.17.0</title>
-  <desc id="desc">M55 corrective gate run D (context read per keypress), 2026-07-04. Bar = Yune median / same-run upstream librime median; lower is better. Rows below 1x are faster than librime in this gate. The long rows measure type-sequence then one context observation.</desc>
+  <title id="title">Native Track A latency: M55 corrective Yune vs librime 1.17.0</title>
+  <desc id="desc">M55 corrective gate run D (context read per keypress), 2026-07-04. Bar = Yune median / same-run upstream librime median; lower is better. Rows below 1x are faster than librime in this gate. Every keypress includes a context read for both engines.</desc>
   <rect width="1040" height="524" fill="#FCFCFD"/>
-  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Native Track A latency: M55 final Yune vs librime 1.17.0</text>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Native Track A latency: M55 corrective Yune vs librime 1.17.0</text>
   <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">M55 corrective gate run D (context read per keypress), 2026-07-04. Bar = Yune median / same-run upstream librime median; lower is better.</text>
-  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Rows below 1x are faster than librime in this gate. The long rows measure type-sequence then one context observation.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Rows below 1x are faster than librime in this gate. Every keypress includes a context read for both engines.</text>
   <line x1="270.0" y1="95" x2="270.0" y2="498" stroke="#E6E8F0" stroke-width="1"/>
   <text x="270.0" y="516" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0.0x</text>
   <line x1="387.5" y1="95" x2="387.5" y2="498" stroke="#E6E8F0" stroke-width="1"/>

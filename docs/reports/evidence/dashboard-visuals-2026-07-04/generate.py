@@ -244,10 +244,10 @@ session = find_summary("track-a-comparison", "session_create_select_destroy")
 
 svg_chart(
     "native-track-a-latency-ratios.svg",
-    "Native Track A latency: M55 final Yune vs librime 1.17.0",
+    "Native Track A latency: M55 corrective Yune vs librime 1.17.0",
     [
         "M55 corrective gate run D (context read per keypress), 2026-07-04. Bar = Yune median / same-run upstream librime median; lower is better.",
-        "Rows below 1x are faster than librime in this gate. The long rows measure type-sequence then one context observation.",
+        "Rows below 1x are faster than librime in this gate. Every keypress includes a context read for both engines.",
     ],
     [
         {

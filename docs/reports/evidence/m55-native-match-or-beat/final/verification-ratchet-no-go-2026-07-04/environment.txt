@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T02:34:00.0685403Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=43d620de4fe4e6cbfec734556fb40eff236d8c43
+yune_git_status_short=?? docs/reports/evidence/m55-native-match-or-beat/final/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\verification-ratchet-no-go-2026-07-04
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

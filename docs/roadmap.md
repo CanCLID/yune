@@ -9,16 +9,16 @@ plans, reports, and evidence folders.
 
 Current status: Phase 1 named-target compatibility is complete; M47's portable
 TypeDuck/Jyutping keyboard memory work is complete for the Windows proxy; M51
-froze the engine support contract and ABI boundaries; M52 froze native Track A
-`luna_pinyin` performance guardrails and dispositioned the remaining M50
-blockers; M53 re-verified the engine docs and public claims for
-release-readiness and corrected stale `README.md` public-claim wording; M54
-adds native octagram-compatible grammar support for the named upstream
-`luna_pinyin` target without implementing the librime C++ plugin ABI; WEB-04
-makes that path observable in `yune-web` through a default-off debug profile.
-**M55, the native Track A match-or-beat performance program, is the open engine
-milestone** — see
-[`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md).
+froze the engine support contract and ABI boundaries; M52 remains the standing
+green native Track A `luna_pinyin` performance guard; M53 re-verified the
+engine docs and public claims for release-readiness; M54 adds native
+octagram-compatible grammar support for the named upstream `luna_pinyin` target
+without implementing the librime C++ plugin ABI; WEB-04 makes that path
+observable in `yune-web` through a default-off debug profile. M55, the native
+Track A match-or-beat performance program, is closed partial/no-go at Phase 2:
+byte-backed poet storage reduces the final Track A peak to `110.5 MB`, but the
+broader M55 ratchet is red on the two long Luna rows and one Track B product
+latency guard, so M55 does not supersede M52.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -51,6 +51,9 @@ milestone** — see
   values are Windows proxies, not Apple `phys_footprint`.
 - [`plans/completed/m52-plan-track-a-guardrails-and-disposition.md`](./plans/completed/m52-plan-track-a-guardrails-and-disposition.md)
   - latest native Track A guardrail and blocker-disposition milestone.
+- [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md)
+  - native Track A match-or-beat research milestone, closed partial/no-go with
+    M52 left as the standing green gate.
 - [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md)
   - native octagram-compatible grammar support milestone.
 - [`plans/completed/m51-plan-engine-support-contract-abi-freeze.md`](./plans/completed/m51-plan-engine-support-contract-abi-freeze.md)
@@ -71,7 +74,7 @@ milestone** — see
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior remains complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. M54 adds native octagram-compatible grammar support for the named upstream `luna_pinyin` octagram target using pinned lotem oracle data, with RIME-LMDG kept as a pinned validation lane. M51 records supported targets, oracle precedence, default upstream ABI rules, profile ABI rules, `yune_web_*` export rules, storage expectations, and evidence-lane rules. Post-M51 cleanup documents and tests `rime_get_yune_windows_profile_api()` as a parallel accessor for the same current profile table. | Future engine work must preserve the contract or update it with named oracle/header evidence and focused tests. Full librime C++ plugin ABI support remains deferred. |
-| Engine performance | M52 is complete for native Track A guardrails and blocker disposition. The committed threshold artifact and fail-on-regression benchmark gate cover `n`, `ni`, `hao`, the 37-character Luna row, the existing 59-character Luna row, and full Luna peak memory. Final same-run rows are startup `24,139.200us` / `1.113x`, session `23,404.000us` / `1.001x`, `n` `60.300us` / `2.818x`, `ni` `44.950us` / `3.143x`, `hao` `24.967us` / `2.146x`, 37-character `895.178us` / `3.053x`, and 59-character `1,545.754us` / `2.247x`. Full Luna Track A memory is `188.4 MB` peak / `194.3 MB` max-summary private versus librime `17.3 MB` max peer peak; named owners include `poet.vocabulary` `53.6 MB`, `poet.entries_by_code` `18.7 MB`, and process unclassified lower bound `105.6 MB`. | Future native Track A work should only reopen these rows with a new owner-evidenced plan. M52 guardrails are regression ceilings, not a claim that `ni` or the 37-character row meet the strict `<=3.0x` target. |
+| Engine performance | M55 is closed partial/no-go for native Track A match-or-beat. Phase 1 attributed the old unclassified memory floor, and Phase 2 byte-backed the Luna poet payload owners, reducing final Track A peak to `110,542,848 B` (`110.5 MB`). The full M55 ratchet is red: 37-character Luna is `5.964x`, 59-character Luna is `4.030x`, and the Track B product long-row guard is `414.059us` against a `375.253us` ceiling. M52 remains the standing green native Track A regression gate. | Future native Track A work should only reopen these rows with a new owner-evidenced access-path/graph plan that preserves candidate output, avoids retained heap indexes and ABI widening, and does not loosen the M55 no-go evidence into a passing bar. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
 | Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04 adds a default-off `luna_pinyin_octagram` debug profile that fetches a pinned lotem `.gram` locally, delivers it only for the octagram profile, exposes delivered/fallback/checksum/schema-select high-water memory diagnostics, proves all four named ranking rows versus plain Luna in Playwright, and proves browser fail-closed behavior. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. Broader contextual suggestions or non-debug octagram product UX needs a new scoped plan. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
@@ -102,13 +105,21 @@ Do not summarize "M52 guardrails pass" as "Yune is faster than librime" or as
 "Track A meets every strict ratio target." The guardrail freezes the current
 measured state and fails on regression.
 
+M55's broader threshold artifact remains research/no-go evidence only:
+[`reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv).
+The final M55 run fails the 37-character Luna row, the 59-character Luna row,
+and one Track B product latency guard, so it does not supersede M52. The exact
+handoff decision is recorded in
+[`reports/evidence/m55-native-match-or-beat/final/partial-closeout-2026-07-04.md`](./reports/evidence/m55-native-match-or-beat/final/partial-closeout-2026-07-04.md).
+
 ## Performance North Star
 
 Broad, unqualified claims that "Yune is faster than librime" are not supported
-by current evidence. Current performance is lane-specific: startup/session are
-near parity, several tracked rows pass, and M52 freezes regression ceilings, but
-native Track A `ni`, the 37-character Luna row, and full Luna memory still trail
-same-run librime.
+by current evidence. Current performance is lane-specific: M55 reduced the
+native Track A memory peak but failed the broader full-suite ratchet, while M52
+remains the last green regression gate. The short-key rows remain above librime,
+the 37/59-character Luna rows are the current native latency no-go, and browser
+performance remains a separate evidence lane.
 
 A future milestone that aims to **surpass librime** must be scoped as
 performance research, not launch-readiness cleanup. It should:
@@ -133,69 +144,33 @@ change that changes the cost model without changing candidate output.
 
 ## Closing The 188 MB Native Track A Memory Gap
 
-This is the one gap that is large and structural rather than
-sub-perceptual-microsecond. It is not a wall: the technique that closes it is
-already proven in this repo. **This sketch is now owned by the active M55
-plan**
-([`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md)),
-which preserves the design order below as its Phases 1-2 and adds the
-full-suite regression ratchet, the poet-graph latency phase, and the
-compile-time short-key index phase.
+M55 tested this path and closed partial/no-go at Phase 2. The memory owner was
+real: Phase 1 attributed the old `105.6 MB` unclassified floor, and Phase 2
+compiled the upstream Luna poet payloads into `YUNE-POET/1` byte-backed storage
+served from mapped bytes. The final closeout run reports Track A peak
+`110,542,848 B`, down from the M52-era `188,383,232 B`.
 
-Why the peak is `188.4 MB` versus librime's `17.3 MB`: at native `luna_pinyin`
-schema selection Yune loads the upstream sentence model into owned heap
-structures - `poet.vocabulary` (`53.6 MB`, the full upstream Luna preset
-vocabulary that M48 had to load to fix `jianli`/`biancheng` over-segmentation),
-`poet.entries_by_code` (`18.7 MB`), and a process unclassified lower bound of
-`105.6 MB`. librime keeps the equivalent data mmap'd/paged from compiled files,
-so it never counts as dirty private memory. The gap is a storage-strategy
-difference, not an algorithmic defect.
+The tradeoff is also real. The byte-backed access path fails the broader M55
+latency ratchet: the 37-character Luna row is `5.964x`, the 59-character Luna
+row is `4.030x`, and the Track B product long-row guard is `414.059us` against
+a `375.253us` ceiling. Candidate output remains the non-negotiable constraint,
+and M55 did not add retained heap indexes, widen the public C ABI, or make a
+browser/product/platform performance claim.
 
-The proven precedent is **M47**: it byte-backed the TypeDuck table, prism, and
-lookup/comment payloads from mmap'd compiled storage - exactly librime's
-strategy - and cut the shipping `jyut6ping3_mobile` keyboard profile from about
-`298 MB` to about `67 MB` working set / `22 MB` private with the full dictionary
-retained. The same move applies to the poet sentence model.
+Current decision:
 
-Design sketch for the milestone, in order:
-
-1. **Attribute the `105.6 MB` unclassified lower bound first.** It is currently
-   a measured floor, not a named owner; you cannot reduce what you have not
-   named. Profile allocator/arena residency and deploy/compile transients before
-   touching poet code.
-2. **Byte-back `poet.vocabulary` and `poet.entries_by_code`.** Compile them into
-   an mmap-backed artifact served by offset (like the compiled table/prism), so
-   the OS pages them instead of holding owned `Vec`/`BTreeMap` heap. Target the
-   named `~72 MB` first.
-3. **Preserve candidate output exactly.** This path is oracle-sensitive - M48
-   fixed a real scoring bug here - so byte-backed access must produce identical
-   sentence ranking, gated by `upstream_luna_pinyin_parity` and `cantonese_parity`.
-4. **Respect the memory/latency tension.** Byte-backed or lazy access can add
-   per-lookup deserialization latency. Any change must stay within the M52
-   latency ceilings; measure both memory and latency in the same run. Memory
-   wins if they conflict, but the latency guardrail must still pass.
-
-Win bar (set before coding): a measured Track A peak reduction with named-owner
-movement toward the byte-backed floor - not a no-regression ceiling. Close as
-partial/no-go if the owner is not real or the parity/latency risk is
-unacceptable.
-
-Priority caveat: native `luna_pinyin` Track A is the oracle-comparison lane, not
-a shipping product profile (the shipping native target is TypeDuck/Jyutping,
-already in budget after M47). So this work is highest value when either native
-Luna becomes a shipping profile, or the byte-backed poet storage is built as a
-portable technique that also lowers the Track B product, WASM, and iOS lanes.
+1. **M52 remains the standing green native Track A gate.** M55's threshold CSV is
+   retained as research/no-go evidence and does not supersede the M52 guard.
+2. **M55 does not continue into Phase 3 or Phase 4.** The next native Track A
+   attempt needs fresh owner evidence for the byte-backed poet access path and
+   sentence graph constant factors, not another storage-only change.
+3. **Memory progress is recorded as structural evidence, not a launch claim.**
+   The `110.5 MB` final peak is useful, but no public match-or-beat or product
+   performance claim follows from a red full ratchet.
 
 ## Authoritative Sequence
 
-1. **M55 native Track A match-or-beat program is the active engine
-   milestone.** It implements the Performance North Star for the native Track A
-   `luna_pinyin` lane behind a full-suite regression ratchet (every dimension
-   ceilinged, including currently-winning rows and Track B absolutes). M52
-   remains the historical guardrail floor until the M55 artifact supersedes it
-   at closeout. Plan:
-   [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md).
-2. **M53 engine release-readiness audit is complete.** The five-dimension audit
+1. **M53 engine release-readiness audit is complete.** The five-dimension audit
    (support-contract consistency, ABI-wording-vs-code, M52 guardrail freshness,
    public claim wording, link/evidence integrity) found the substantive
    invariants clean with no ABI/guardrail/link drift; the only real defects were
@@ -206,53 +181,50 @@ portable technique that also lowers the Track B product, WASM, and iOS lanes.
    [`reports/evidence/m53-engine-release-readiness-audit/`](./reports/evidence/m53-engine-release-readiness-audit/).
    Plan:
    [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md).
-3. **M54 native octagram-compatible grammar support is complete.** Yune now
+2. **M54 native octagram-compatible grammar support is complete.** Yune now
    supports the named upstream `luna_pinyin` octagram target through a native
    Rust `Grammar` provider and logical `.gram` resource loading. Evidence:
    [`reports/evidence/m54-native-octagram-grammar-support/`](./reports/evidence/m54-native-octagram-grammar-support/).
    Plan:
    [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md).
-4. **WEB-04 octagram debug harness is complete.** The tracked `apps/yune-web`
-   harness now exposes `luna_pinyin_octagram` as a default-off profile, delivers the
-   pinned lotem `.gram` through `extraSharedAssets`, records diagnostics, and
-   proves all four octagram ranking rows against plain Luna, the plain-Luna
+3. **WEB-04 octagram debug harness is complete.** The tracked `apps/yune-web`
+   harness now exposes `luna_pinyin_octagram` as a default-off profile, delivers
+   the pinned lotem `.gram` through `extraSharedAssets`, records diagnostics,
+   and proves all four octagram ranking rows against plain Luna, the plain-Luna
    negative control, and missing-model fail-closed behavior in Playwright.
    Evidence:
    [`reports/evidence/web04-octagram-debug-harness/`](./reports/evidence/web04-octagram-debug-harness/).
    Plan:
    [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md).
-5. **M55 opened from the Performance North Star.** The native Track A memory
-   work sketched in
-   [Closing The 188 MB Native Track A Memory Gap](#closing-the-188-mb-native-track-a-memory-gap)
-   is now Phase 1-2 of the active M55 plan; the sketch's design order
-   (attribute the unclassified floor first, then byte-back the poet owners) is
-   preserved. M55 does not reuse M52's regression ceilings as its success bar —
-   they remain regression floors while M55 carries an explicit bounded-gap
-   completion bar (Tier M) and a match-or-beat stretch record (Tier S).
-6. **M56 engine productization hardening is drafted and queued behind M55.**
-   Three tracks driven by the repo's own incident history: structural
+4. **M55 native Track A match-or-beat program is closed partial/no-go.** It
+   proved the poet-storage memory owner and reduced final Track A peak to
+   `110.5 MB`, but the full ratchet fails the two long Luna rows and one Track B
+   product latency guard. M52 remains the standing green native Track A gate;
+   M55's threshold artifact is research/no-go evidence only. Evidence:
+   [`reports/evidence/m55-native-match-or-beat/`](./reports/evidence/m55-native-match-or-beat/).
+   Plan:
+   [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md).
+5. **M56 engine productization hardening is drafted and queued next for engine
+   work.** Three tracks driven by the repo's own incident history: structural
    staleness-proofing + cold-start conformance (the WEB-02/M38/M41 bug class),
    user-data lifecycle evidence, and an ABI abuse suite with unwind-guarded
-   exports (the workspace currently has zero `catch_unwind` boundaries). No
-   ABI widening, no behavior change on defined paths. Do not start engine-code
-   phases while M55 engine phases are in flight. Plan:
+   exports (the workspace currently has zero `catch_unwind` boundaries). No ABI
+   widening, no behavior change on defined paths. Plan:
    [`plans/active/m56-plan-engine-productization-hardening.md`](./plans/active/m56-plan-engine-productization-hardening.md).
-7. **WEB-05 harness control surface is drafted and may run in parallel.** The
+6. **WEB-05 harness control surface is drafted and may run in parallel.** The
    "surface all controls" follow-up carved out of M21: expose every engine
    control/diagnostic reachable through existing seams in the `yune-web`
    playground, defaults unchanged, public demo unchanged, Playwright-evidenced.
-   Web-harness track; no engine changes, so it does not conflict with M55/M56.
-   Plan:
+   Web-harness track; no engine changes, so it does not conflict with M56. Plan:
    [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md).
-8. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
+7. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
-9. **Future AI-native engine experiments** - later, and only after classic
+8. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-10. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
-    fresh owner evidence, and no TypeDuck-profile speed claim unless the
-    profile row is explicitly selected as the target.
-
+9. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+   fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
+   row is explicitly selected as the target.
 Trigger-gated, not scheduled: extracting the full processor pipeline from
 `yune-rime-api` into `yune-core` lands only when a real non-ABI consumer needs
 the full input path. Do not milestone that extraction speculatively.
@@ -268,7 +240,7 @@ and current decision rules.
 
 | Track | Scope | Current source of truth |
 | --- | --- | --- |
-| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, Track A guardrails, and TypeDuck/Jyutping profile storage | M52 plan/evidence, M50 plan/evidence, M47 plan/evidence, and performance reports. |
+| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, Track A guardrails, native Track A research no-go evidence, and TypeDuck/Jyutping profile storage | M55 partial/no-go evidence, M52 standing guardrail evidence, M50 plan/evidence, M47 plan/evidence, and performance reports. |
 | Web harness startup and memory | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, Chromium memory, compiled-asset contract, and debug-only octagram harness diagnostics | WEB-04 plan/evidence, WEB-03 plan/evidence, WEB-02 owner classification, WEB-01 measured no-go, M41 startup evidence, and browser reports. |
 | Core compatibility | Upstream behavior fixtures and standard ABI-observable behavior | Requirements, decisions, engine support contract, per-milestone plans, and the M53 release-readiness audit (`reports/evidence/m53-engine-release-readiness-audit/`). |
 | AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
@@ -286,8 +258,8 @@ and current decision rules.
 | M48-M52 | Complete | Current engine correctness, support-contract, and Track A guardrail closeouts; M52 is the current native performance source of truth. |
 | M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived public-claim wording to the contract-accurate M52 lane-specific record. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
 | M54 | Complete | Native octagram-compatible grammar support for the named upstream `luna_pinyin` target, with pinned lotem oracle data, RIME-LMDG validation evidence, external model checksums, clean-room Rust `.gram` parsing/scoring, null-grammar and TypeDuck regression gates, and no public C ABI change. Plan: [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md). |
-| M55 | Open | Native Track A match-or-beat program: full-suite regression ratchet (all dimensions ceilinged, wins locked), unclassified-memory attribution, byte-backed poet storage, poet-graph constant factors, compile-time short-key index. Tier M is the bounded-gap completion bar; Tier S is the match-or-beat stretch record. Plan: [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md). |
-| M56 | Drafted / queued | Engine productization hardening for the external Windows/iOS frontends: staleness-proofing + cold-start conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards; no ABI change, behavior-preserving. Queued behind M55's engine phases. Plan: [`plans/active/m56-plan-engine-productization-hardening.md`](./plans/active/m56-plan-engine-productization-hardening.md). |
+| M55 | Complete with measured no-go | Native Track A match-or-beat program closed at Phase 2: Phase 1 attributed the memory floor, Phase 2 byte-backed Luna poet storage and reduced final Track A peak to `110.5 MB`, but the full M55 ratchet fails the 37-character row, 59-character row, and one Track B product latency guard. M52 remains the standing green native Track A gate; M55 thresholds are research/no-go evidence only. Plan: [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md). |
+| M56 | Drafted / queued | Engine productization hardening for the external Windows/iOS frontends: staleness-proofing + cold-start conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards; no ABI change, behavior-preserving. Queued next after the M55 threshold-handoff decision. Plan: [`plans/active/m56-plan-engine-productization-hardening.md`](./plans/active/m56-plan-engine-productization-hardening.md). |
 | WEB-05 | Drafted / parallel-capable | Harness control surface: expose every engine control/diagnostic reachable through existing seams in the `yune-web` playground (the M21-deferred "surface all controls" slice); defaults and public demo unchanged; Playwright-evidenced. Plan: [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md). |
 
 ## Scope Ledger

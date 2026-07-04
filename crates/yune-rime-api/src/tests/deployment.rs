@@ -2033,7 +2033,12 @@ schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators
         reports[0].report.reverse,
         yune_core::RimeDictArtifactStatus::Rebuilt
     );
-    for file_name in ["luna.table.bin", "luna.prism.bin", "luna.reverse.bin"] {
+    for file_name in [
+        "luna.table.bin",
+        "luna.poet.bin",
+        "luna.prism.bin",
+        "luna.reverse.bin",
+    ] {
         assert!(user.join("build").join(file_name).is_file());
     }
     assert!(yune_core::parse_rime_table_bin_dictionary(
@@ -2347,7 +2352,12 @@ schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_t
     // SAFETY: traits points to a valid RimeTraits object with valid strings.
     unsafe { RimeDeployerInitialize(&traits) };
     assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
-    for file_name in ["luna.table.bin", "luna.prism.bin", "luna.reverse.bin"] {
+    for file_name in [
+        "luna.table.bin",
+        "luna.poet.bin",
+        "luna.prism.bin",
+        "luna.reverse.bin",
+    ] {
         fs::copy(
             user.join("build").join(file_name),
             shared.join("build").join(file_name),
@@ -2373,7 +2383,12 @@ schema:\n  schema_id: luna\n  name: Luna\nengine:\n  translators:\n    - table_t
         reports[0].report.reverse,
         yune_core::RimeDictArtifactStatus::ReusedPrebuilt
     );
-    for file_name in ["luna.table.bin", "luna.prism.bin", "luna.reverse.bin"] {
+    for file_name in [
+        "luna.table.bin",
+        "luna.poet.bin",
+        "luna.prism.bin",
+        "luna.reverse.bin",
+    ] {
         assert!(user.join("build").join(file_name).is_file());
     }
 

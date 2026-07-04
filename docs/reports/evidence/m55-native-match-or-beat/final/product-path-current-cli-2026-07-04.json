@@ -1,0 +1,135 @@
+{
+    "comparison":  "M55 final current-code product-path CLI check against Phase 2 product-path parity candidate lists",
+    "date":  "2026-07-04",
+    "schema":  "luna_pinyin",
+    "shared_data_dir":  "apps/yune-web/public/schema",
+    "command_shape":  "target\\debug\\yune-cli.exe frontend --shared-data-dir apps\\yune-web\\public\\schema --user-data-dir \u003cfresh-temp-dir\u003e --schema luna_pinyin --sequence \"\u003cinput\u003e \" --output json",
+    "expected_source":  "docs/reports/evidence/m55-native-match-or-beat/phase-2-poet-storage/product-path-parity-2026-07-03.json",
+    "user_data_policy":  "one fresh temporary user-data directory reused across rows; first row deploys/rebuilds, later rows reuse artifacts",
+    "rows":  [
+                 {
+                     "input":  "ceshiyixiachangjushuruxingnengzenyang",
+                     "sequence":  "ceshiyixiachangjushuruxingnengzenyang ",
+                     "candidate_event_index":  36,
+                     "trailing_commit_event_index":  37,
+                     "expected_top":  "測試一下長足輸入性能怎樣",
+                     "actual_top":  "測試一下長足輸入性能怎樣",
+                     "candidate_count":  5,
+                     "candidates_match":  true,
+                     "expected_candidates":  [
+                                                 "測試一下長足輸入性能怎樣",
+                                                 "測試一下長句輸入性能怎樣",
+                                                 "測試一下敞車輸入性能怎樣",
+                                                 "測試一下長局輸入性能怎樣",
+                                                 "測試一下長居輸入性能怎樣"
+                                             ],
+                     "actual_candidates":  [
+                                               "測試一下長足輸入性能怎樣",
+                                               "測試一下長句輸入性能怎樣",
+                                               "測試一下敞車輸入性能怎樣",
+                                               "測試一下長局輸入性能怎樣",
+                                               "測試一下長居輸入性能怎樣"
+                                           ],
+                     "trailing_commits":  "測試一下長足輸入性能怎樣"
+                 },
+                 {
+                     "input":  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+                     "sequence":  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong ",
+                     "candidate_event_index":  58,
+                     "trailing_commit_event_index":  59,
+                     "expected_top":  "這個引擎其實應該支持超長橘子樹肉菜能用",
+                     "actual_top":  "這個引擎其實應該支持超長橘子樹肉菜能用",
+                     "candidate_count":  5,
+                     "candidates_match":  true,
+                     "expected_candidates":  [
+                                                 "這個引擎其實應該支持超長橘子樹肉菜能用",
+                                                 "這個引擎其實應該支持超常橘子樹肉菜能用",
+                                                 "這個言情其實應該支持超長橘子樹肉菜能用",
+                                                 "這個言情其實應該支持超常橘子樹肉菜能用",
+                                                 "這個陰晴其實應該支持超長橘子樹肉菜能用"
+                                             ],
+                     "actual_candidates":  [
+                                               "這個引擎其實應該支持超長橘子樹肉菜能用",
+                                               "這個引擎其實應該支持超常橘子樹肉菜能用",
+                                               "這個言情其實應該支持超長橘子樹肉菜能用",
+                                               "這個言情其實應該支持超常橘子樹肉菜能用",
+                                               "這個陰晴其實應該支持超長橘子樹肉菜能用"
+                                           ],
+                     "trailing_commits":  "這個引擎其實應該支持超長橘子樹肉菜能用"
+                 },
+                 {
+                     "input":  "zhongguo",
+                     "sequence":  "zhongguo ",
+                     "candidate_event_index":  7,
+                     "trailing_commit_event_index":  8,
+                     "expected_top":  "中國大陸",
+                     "actual_top":  "中國大陸",
+                     "candidate_count":  4,
+                     "candidates_match":  true,
+                     "expected_candidates":  [
+                                                 "中國大陸",
+                                                 "中國內地",
+                                                 "中國銀行",
+                                                 "中國重汽"
+                                             ],
+                     "actual_candidates":  [
+                                               "中國大陸",
+                                               "中國內地",
+                                               "中國銀行",
+                                               "中國重汽"
+                                           ],
+                     "trailing_commits":  "中國大陸"
+                 },
+                 {
+                     "input":  "jianli",
+                     "sequence":  "jianli ",
+                     "candidate_event_index":  5,
+                     "trailing_commit_event_index":  6,
+                     "expected_top":  "建立",
+                     "actual_top":  "建立",
+                     "candidate_count":  5,
+                     "candidates_match":  true,
+                     "expected_candidates":  [
+                                                 "建立",
+                                                 "簡歷",
+                                                 "監理",
+                                                 "監利",
+                                                 "剪力"
+                                             ],
+                     "actual_candidates":  [
+                                               "建立",
+                                               "簡歷",
+                                               "監理",
+                                               "監利",
+                                               "剪力"
+                                           ],
+                     "trailing_commits":  "建立"
+                 },
+                 {
+                     "input":  "biancheng",
+                     "sequence":  "biancheng ",
+                     "candidate_event_index":  8,
+                     "trailing_commit_event_index":  9,
+                     "expected_top":  "變成",
+                     "actual_top":  "變成",
+                     "candidate_count":  5,
+                     "candidates_match":  true,
+                     "expected_candidates":  [
+                                                 "變成",
+                                                 "編程",
+                                                 "便成",
+                                                 "編成",
+                                                 "邊城"
+                                             ],
+                     "actual_candidates":  [
+                                               "變成",
+                                               "編程",
+                                               "便成",
+                                               "編成",
+                                               "邊城"
+                                           ],
+                     "trailing_commits":  "變成"
+                 }
+             ],
+    "verdict":  "green"
+}

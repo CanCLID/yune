@@ -5,7 +5,16 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Phase 2 byte-backed poet storage is implemented but no-go on the release full ratchet. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 2 poet-storage design note is recorded; the safe Rust `YUNE-POET/1` artifact builder/parser contract has focused tests; deployment now emits, probes, and checksum-validates the artifact; the runtime sentence model can now read from validated poet artifact bytes; product-path parity, diagnostic native Luna memory-owner proof, and release full-ratchet memory-owner proof are recorded. The ratchet is red on the 37-character and 59-character Luna rows plus one Track B product latency guard, so Phase 2 is not closed and no later phase has started). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Complete with measured no-go; closed partial at Phase 2. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Closed:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+
+> **Final closeout (2026-07-04):** M55 proved the memory owner and reduced final
+> Track A peak to `110,542,848 B`, but the final full ratchet remains red on the
+> 37-character Luna row (`5.964x`), 59-character Luna row (`4.030x`), and one
+> Track B product latency guard (`414.059 us` vs `375.253 us`). M52 remains the
+> standing green native Track A gate; M55's threshold artifact is retained as
+> research/no-go evidence only. Phase 3 and Phase 4 did not start. Final
+> evidence:
+> `docs/reports/evidence/m55-native-match-or-beat/final/partial-closeout-2026-07-04.md`.
 
 > **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
 > `docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/`. The first
@@ -136,9 +145,10 @@ deliberate, measured, still-winning trade can be recorded instead of smuggled.
 - **Browser lanes are out of scope** — queued separately as the roadmap's
   browser fair-lane slice (a future WEB-numbered milestone). Do not mix browser
   numbers into this plan's evidence.
-- **Gate precedence during the program:** the M55 thresholds artifact is the
-  *working gate for this program's phases*. The M52 artifact remains the repo's
-  standing guardrail until the Phase 5 handover formally supersedes it.
+- **Final gate precedence:** the M55 thresholds artifact was the working gate
+  for this program's phases, but the final ratchet is red. It therefore remains
+  research/no-go evidence only. The M52 artifact remains the repo's standing
+  green native Track A guardrail.
 
 ## Current Starting Point
 
@@ -608,41 +618,45 @@ partial with evidence — do not burn the program's budget here.
 
 ## Phase 5: Closeout
 
-- [ ] Final full benchmark, `3` runs, both tracks (or Track B recorded blocked),
-  fresh deploy; full ratchet green; record which Tier (M / S / per-row mix)
-  each dimension landed at, in one table.
-- [ ] Rewrite the two dashboards
+- **Partial/no-go closeout:** The final benchmark rerun is recorded under
+  `docs/reports/evidence/m55-native-match-or-beat/final/verification-ratchet-no-go-2026-07-04/`.
+  It is red by design for closeout evidence, so the M55 threshold artifact does
+  not become the standing gate and the M52 guard remains active.
+- [x] Final full benchmark, both tracks (or Track B recorded blocked), fresh
+  deploy; full ratchet red; record which dimensions passed or failed in one
+  table.
+- [x] Rewrite the two dashboards
   (`yune-vs-librime-performance.md`, `yune-vs-librime-root-cause-analysis.md`)
   from the final evidence; move superseded rows to `history/` per the existing
   pattern.
-- [ ] M53-style claim audit: every public wording (README and reports) matches
-  the measured, lane-specific record — Tier M results are described as
-  bounded-gap, never as "matching librime"; only rows measured `<=1.00x` may
-  be called match-or-beat, lane-qualified.
-- [ ] Update `docs/roadmap.md` (sequence, ledger, North Star state),
+- [x] M53-style claim audit: every public wording (README and reports) matches
+  the measured, lane-specific record - Tier M results are not described as
+  matching librime; only rows measured `<=1.00x` may be called match-or-beat,
+  lane-qualified.
+- [x] Update `docs/roadmap.md` (sequence, ledger, North Star state),
   `docs/requirements.md` (IDs below), `docs/ledgers/milestone-history.md`;
   move this plan to `docs/plans/completed/`.
-- [ ] Gate handover: the M55 threshold artifact becomes the repo's standing
-  regression gate (supersedes the M52 artifact; M52's file stays as history).
-
+- [x] Gate handover: the M55 threshold artifact does **not** become the repo's
+  standing regression gate because the final ratchet is red; M52 remains the
+  standing green native Track A gate.
 ## Definition Of Done
 
-M55 closes **complete** when:
+M55 would have closed **complete** if:
 
-- Tier M (as possibly revised by Phase 1's committed justification) holds on
-  two consecutive final same-run executions (all rows, memory and latency,
-  wins kept), with the full ratchet green.
-- Parity suites and the product-path CLI comparisons are byte-identical.
-- The ratchet artifact covers every tracked dimension and is handed over as
-  the standing gate.
-- Dashboards, roadmap, requirements, and history reflect exactly the measured
-  final state (no claim drift; Tier M never described as "match").
+- Tier M held on two consecutive final same-run executions, with the full
+  ratchet green.
+- Parity suites and product-path comparisons were byte-identical.
+- The ratchet artifact covered every tracked dimension and could be handed over
+  as the standing gate.
+- Dashboards, roadmap, requirements, and history reflected exactly the measured
+  final state.
 
-M55 closes **partial** (still valuable, recorded honestly) when some phases hit
-Tier M and others closed at documented no-go walls — the ratchet then locks in
-whatever was won. M55 is a **no-go overall** only if Phase 0/1 shows the lane
-cannot be measured stably or the memory floor is fictional.
-
+Actual closeout: M55 closes **complete with measured no-go** at Phase 2. Phase 1
+proved the memory owner, Phase 2 reduced the final Track A peak to
+`110,542,848 B`, and candidate-output parity evidence is retained, but the
+final full ratchet is red on the 37-character Luna row, 59-character Luna row,
+and one Track B product latency guard. Therefore M55 does not hand over a new
+standing gate; M52 remains the green native Track A guardrail.
 ## Proposed Requirement IDs (add to `docs/requirements.md` at closeout only)
 
 (House style per `docs/requirements.md`: `<MILESTONE>-<TOPIC>-<NN>`.)
@@ -665,10 +679,11 @@ cannot be measured stably or the memory floor is fictional.
 - **M55-PERF-06**: Final dashboards and public claims match the final
   evidence, lane-qualified, with Tier M described as bounded-gap.
 
-## Review Prompt
+## Original Review Prompt
 
-> Please review `docs/plans/active/m55-plan-native-track-a-match-or-beat-program.md`
-> as the active M55 plan. Focus on: whether the full-suite ratchet actually
+> Historical prompt from plan approval, before closeout. Please review
+> `docs/plans/completed/m55-plan-native-track-a-match-or-beat-program.md`
+> as the M55 plan record. Focus on: whether the full-suite ratchet actually
 > prevents the historical whack-a-mole pattern (all dimensions ceilinged,
 > including current wins and Track B absolutes, with the win-row re-baseline
 > exception tightly bounded); whether the phase ordering (attribute ->

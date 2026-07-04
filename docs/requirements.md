@@ -1243,6 +1243,33 @@ required evidence and closeout gates.
   stores oracle outputs, checksums/URLs, license notes, and small synthetic
   parser/scoring fixtures.
 
+### M55 Native Track A Match-Or-Beat Program
+
+**Status: complete with measured no-go.** M55 produced the full-suite native
+Track A ratchet, attributed the old memory floor, byte-backed the Luna poet
+payloads, and recorded a fresh final same-run benchmark. The final run reduces
+Track A peak memory to `110,542,848 B`, but fails the 37-character Luna row,
+the 59-character Luna row, and one Track B product latency guard. M52 remains
+the standing green native Track A gate; M55 thresholds are retained as
+research/no-go evidence only.
+
+- [x] **M55-PERF-01**: A full-suite same-run native ratchet artifact covers
+  startup, session lifecycle, Track A key rows including the two long Luna rows,
+  currently-winning rows, Track A memory, and Track B product absolute guards.
+- [x] **M55-PERF-02**: Phase 1 attributes the old `105.6 MB` unclassified lower
+  bound before optimization and records named owner movement.
+- [x] **M55-PERF-03**: Phase 2 serves `poet.vocabulary`,
+  `poet.entries_by_code`, and abbreviation vocabulary through byte-backed
+  poet storage while preserving candidate-output parity.
+- [x] **M55-PERF-04**: The final M55 closeout records the threshold-handoff
+  decision: M55 does not supersede M52 because the broader ratchet is red.
+- [x] **M55-PERF-05**: Phase 3/Phase 4 optimization is explicitly closed by the
+  Phase 2 measured no-go rather than continuing into graph or short-key work
+  without a passing access-path owner.
+- [x] **M55-PERF-06**: Reports, roadmap, requirements, milestone history, and
+  plan state are updated without public C ABI widening, retained heap indexes,
+  browser/product/platform performance claims, or M56/WEB-05 scope creep.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1401,6 +1428,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M54-OCTAGRAM-05 | M54 | Complete - support contract and roadmap distinguish native octagram support from deferred librime C++ plugin ABI support |
 | M54-OCTAGRAM-06 | M54 | Complete - octagram owner rows and final evidence record memory/timing scope without public performance claims |
 | M54-OCTAGRAM-07 | M54 | Complete - full third-party `.gram` models stay external; checked-in data is oracle output/provenance plus Yune-owned synthetic tests |
+| M55-PERF-01 | M55 | Complete - full-suite same-run ratchet artifact exists and records the final measured no-go rows |
+| M55-PERF-02 | M55 | Complete - Phase 1 attributes the old unclassified memory floor and records named owner movement |
+| M55-PERF-03 | M55 | Complete with measured no-go - poet payloads are byte-backed and parity-preserving, but the access path fails the long-row latency ratchet |
+| M55-PERF-04 | M55 | Complete - threshold handoff is explicit: M52 remains the standing green gate, M55 thresholds are research/no-go evidence |
+| M55-PERF-05 | M55 | Closed by Phase 2 no-go - Phase 3/Phase 4 optimization did not start after byte-backed access failed the full ratchet |
+| M55-PERF-06 | M55 | Complete - dashboards, roadmap, requirements, ledger, and plan state are updated without ABI/browser/product/platform scope widening |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -1698,9 +1731,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
 - M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
 - WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
-- Mapped to phases: 391
+- M55 native Track A match-or-beat requirements: 6 total, 4 complete, 1 complete with measured no-go, 1 closed by Phase 2 no-go, 0 active
+- Mapped to phases: 397
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-01 - WEB-04 is complete for the tracked `apps/yune-web` octagram debug harness: a default-off `luna_pinyin_octagram` profile loads a pinned, non-vendored lotem `.gram` through `extraSharedAssets`, exposes diagnostics, proves octagram ranking and fail-closed browser behavior in Playwright, and keeps the engine support contract/default ABI unchanged. M54 remains the native octagram engine milestone; WEB-04 is browser dogfooding/observability only._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M55 is complete with measured no-go: byte-backed native Luna poet storage reduces Track A peak to `110,542,848 B`, but the final full ratchet fails the 37-character Luna row, 59-character Luna row, and one Track B product latency guard. M52 remains the standing green native Track A gate; M55 thresholds are research/no-go evidence only._

@@ -790,6 +790,9 @@ or must close as a measured no-go without broadening scope.
   (`2.173x` / `1.728x`), and the incremental prefix-state checkpoint is green
   (`2.010x` / `1.570x`), but all remain above the `<=1.50x` 37/59-character
   win bar.
+  Non-landed local probes after that checkpoint are recorded in
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-rejected-probes-2026-07-04.md`;
+  they did not replace the incremental prefix-state best-known checkpoint.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

@@ -466,6 +466,44 @@ Alt\tab\t900
 }
 
 #[test]
+fn upstream_sentence_scratch_reuses_prefix_walk_state_for_single_key_extensions() {
+    let _guard = super::m37_metrics_test_guard();
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("ab", "AB", 100.0),
+        TableEntry::new("abc", "ABC", 100.0),
+        TableEntry::new("abcd", "ABCD", 100.0),
+        TableEntry::new("b", "B", 90.0),
+        TableEntry::new("c", "C", 90.0),
+        TableEntry::new("d", "D", 90.0),
+    ];
+    let model = UpstreamSentenceModel::from_table_entries(entries, &[], 10);
+    let mut scratch = UpstreamSentenceScratch::default();
+
+    let initial = model.candidates_for_input_with_limit_and_scratch("ab", 5, &mut scratch);
+    assert_eq!(initial[0].text, "AB");
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let third = model.candidates_for_input_with_limit_and_scratch("abc", 5, &mut scratch);
+    let fourth = model.candidates_for_input_with_limit_and_scratch("abcd", 5, &mut scratch);
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(third[0].text, "ABC");
+    assert_eq!(fourth[0].text, "ABCD");
+    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 2);
+    assert!(
+        metrics.upstream_sentence_model_code_prefix_checks <= 7,
+        "single-key extension should advance cached prefix ranges instead of replaying old prefixes: {metrics:?}"
+    );
+    assert!(
+        metrics.upstream_sentence_model_phrase_index_nodes_visited <= 4,
+        "only newly advanced prefix hits should be visited during cached extension: {metrics:?}"
+    );
+}
+
+#[test]
 fn upstream_sentence_model_accepts_owned_table_entry_stream() {
     let entries = [
         crate::TableEntry::new("ab", "A", 10.0),

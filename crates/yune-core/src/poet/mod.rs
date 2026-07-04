@@ -14,7 +14,7 @@ mod index;
 mod octagram;
 mod storage;
 
-use index::{SentenceLookupIndex, SentenceLookupSource};
+use index::{SentenceLookupIndex, SentenceLookupSource, SentencePrefixState};
 pub use octagram::{
     encode_octagram_key, OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError,
 };
@@ -873,6 +873,8 @@ pub struct UpstreamSentenceScratch {
     input: String,
     max_candidates: usize,
     states_by_end: Vec<Vec<PathState>>,
+    prefix_states_by_start: Vec<Option<SentencePrefixState>>,
+    exact_spans_by_start: Vec<Vec<CachedSentenceCodeSpan>>,
 }
 
 impl UpstreamSentenceScratch {
@@ -880,6 +882,8 @@ impl UpstreamSentenceScratch {
         self.input.clear();
         self.max_candidates = 0;
         self.states_by_end.clear();
+        self.prefix_states_by_start.clear();
+        self.exact_spans_by_start.clear();
     }
 
     fn is_ready_for(&self, input: &str, max_candidates: usize) -> bool {
@@ -887,8 +891,17 @@ impl UpstreamSentenceScratch {
             && self.max_candidates == max_candidates
             && input.starts_with(&self.input)
             && self.states_by_end.len() == self.input.len().saturating_add(1)
+            && self.prefix_states_by_start.len() == self.states_by_end.len()
+            && self.exact_spans_by_start.len() == self.states_by_end.len()
             && input.is_char_boundary(self.input.len())
     }
+}
+
+#[derive(Clone, Debug)]
+struct CachedSentenceCodeSpan {
+    end: usize,
+    end_index: usize,
+    entries: Range<usize>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -1448,6 +1461,12 @@ impl UpstreamSentenceModel {
             input.len(),
             self.grammar.scoring_grammar(),
         );
+        if let PoetModelStorage::Owned(storage) = &self.storage {
+            let (prefix_states, exact_spans) =
+                self.prefix_state_cache_for_input_end_owned(storage, input);
+            scratch.prefix_states_by_start = prefix_states;
+            scratch.exact_spans_by_start = exact_spans;
+        }
         scratch.input = input.to_owned();
         scratch.max_candidates = max_candidates;
         self.candidates_for_state_vec_with_limit(input, &scratch.states_by_end, max_candidates)
@@ -2055,6 +2074,55 @@ impl UpstreamSentenceModel {
         graph
     }
 
+    fn prefix_state_cache_for_input_end_owned(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        input: &str,
+    ) -> (
+        Vec<Option<SentencePrefixState>>,
+        Vec<Vec<CachedSentenceCodeSpan>>,
+    ) {
+        let boundaries = input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+            .collect::<Vec<_>>();
+        let mut prefix_states = vec![None; boundaries.len()];
+        let mut exact_spans = vec![Vec::new(); boundaries.len()];
+        let root = self.lookup_index.root_prefix_state();
+        for (start_index, start) in boundaries.iter().copied().enumerate() {
+            if start == input.len() {
+                prefix_states[start_index] = Some(root);
+                continue;
+            }
+            let mut state = Some(root);
+            for (end_index, end) in boundaries.iter().copied().enumerate().skip(start_index + 1) {
+                let code = &input[start..end];
+                state = state.and_then(|current| {
+                    self.lookup_index
+                        .advance_prefix_state(storage, current, code)
+                });
+                if let Some(current) = state {
+                    if let Some(span) = self
+                        .lookup_index
+                        .span_for_prefix_state(storage, current, code, end, end_index)
+                    {
+                        exact_spans[start_index].push(CachedSentenceCodeSpan {
+                            end: span.end,
+                            end_index: span.end_index,
+                            entries: span.entries,
+                        });
+                    }
+                }
+                if state.is_none() {
+                    break;
+                }
+            }
+            prefix_states[start_index] = state;
+        }
+        (prefix_states, exact_spans)
+    }
+
     fn extend_owned_scratch(
         &self,
         storage: &OwnedPoetModelStorage,
@@ -2072,7 +2140,16 @@ impl UpstreamSentenceModel {
             .map(|(index, _)| index)
             .chain(std::iter::once(input.len()))
             .collect::<Vec<_>>();
-        boundaries.binary_search(&previous_len).ok()?;
+        let previous_end_index = boundaries.binary_search(&previous_len).ok()?;
+        if boundaries.len() != previous_end_index.saturating_add(2) {
+            return None;
+        }
+        if scratch.prefix_states_by_start.len() != previous_end_index.saturating_add(1) {
+            return None;
+        }
+        if scratch.exact_spans_by_start.len() != previous_end_index.saturating_add(1) {
+            return None;
+        }
         scratch
             .states_by_end
             .resize_with(input.len().saturating_add(1), Vec::new);
@@ -2097,6 +2174,9 @@ impl UpstreamSentenceModel {
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
         let record_volume_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+        let root_prefix_state = self.lookup_index.root_prefix_state();
+        let mut next_prefix_states = vec![None; boundaries.len()];
+        let mut next_exact_spans = vec![Vec::new(); boundaries.len()];
         let mut seen_code_spans = record_volume_metrics.then(HashMap::<&str, usize>::new);
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
 
@@ -2111,17 +2191,60 @@ impl UpstreamSentenceModel {
             lookup_metrics.reachable_starts_visited += 1;
             let suffix = &input[start..];
             lookup_metrics.phrase_index_walk_calls += 1;
-            let walk = self
-                .lookup_index
-                .walk_from(storage, input, &boundaries, start_index);
-            code_prefix_checks += walk.prefix_hits + walk.prefix_misses;
-            lookup_metrics.prefix_filter_hits += walk.prefix_hits;
-            lookup_metrics.prefix_filter_misses += walk.prefix_misses;
-            lookup_metrics.prefix_filter_early_breaks += walk.prefix_early_breaks;
-            lookup_metrics.exact_range_index_misses += walk.exact_range_misses;
-            lookup_metrics.phrase_index_nodes_visited += walk.nodes_visited;
-            lookup_metrics.phrase_index_entry_ranges_emitted += walk.entry_ranges_emitted;
-            for span in walk.spans {
+            let mut spans = scratch
+                .exact_spans_by_start
+                .get(start_index)
+                .cloned()
+                .unwrap_or_default();
+            let previous_prefix_state = if start == previous_len {
+                Some(root_prefix_state)
+            } else {
+                scratch
+                    .prefix_states_by_start
+                    .get(start_index)
+                    .copied()
+                    .flatten()
+            };
+            let end = input.len();
+            let end_index = boundaries.len() - 1;
+            let code = &input[start..end];
+            if let Some(prefix_state) = previous_prefix_state {
+                match self
+                    .lookup_index
+                    .advance_prefix_state(storage, prefix_state, code)
+                {
+                    Some(prefix_state) => {
+                        next_prefix_states[start_index] = Some(prefix_state);
+                        lookup_metrics.prefix_filter_hits += 1;
+                        lookup_metrics.phrase_index_nodes_visited += 1;
+                        code_prefix_checks += 1;
+                        match self.lookup_index.span_for_prefix_state(
+                            storage,
+                            prefix_state,
+                            code,
+                            end,
+                            end_index,
+                        ) {
+                            Some(span) => spans.push(CachedSentenceCodeSpan {
+                                end: span.end,
+                                end_index: span.end_index,
+                                entries: span.entries,
+                            }),
+                            None => lookup_metrics.exact_range_index_misses += 1,
+                        }
+                    }
+                    None => {
+                        lookup_metrics.prefix_filter_misses += 1;
+                        lookup_metrics.prefix_filter_early_breaks += 1;
+                        code_prefix_checks += 1;
+                    }
+                }
+            } else {
+                lookup_metrics.prefix_filter_misses += 1;
+                lookup_metrics.prefix_filter_early_breaks += 1;
+                code_prefix_checks += 1;
+            }
+            for span in &spans {
                 let code = &input[start..span.end];
                 if let Some(seen_code_spans) = seen_code_spans.as_mut() {
                     let derivations = seen_code_spans.entry(code).or_default();
@@ -2131,6 +2254,7 @@ impl UpstreamSentenceModel {
                     *derivations += 1;
                 }
                 lookup_metrics.exact_range_index_hits += 1;
+                lookup_metrics.phrase_index_entry_ranges_emitted += 1;
                 if span.end > previous_len {
                     let entries = &storage.entries_by_code[span.entries.clone()];
                     let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
@@ -2216,7 +2340,10 @@ impl UpstreamSentenceModel {
                     }
                 }
             }
+            next_exact_spans[start_index] = spans;
         }
+        next_prefix_states[boundaries.len() - 1] = Some(root_prefix_state);
+        next_exact_spans[boundaries.len() - 1] = Vec::new();
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
                 entries.sort_by(compare_borrowed_word_graph_entry);
@@ -2288,6 +2415,8 @@ impl UpstreamSentenceModel {
         }
 
         scratch.input = input.to_owned();
+        scratch.prefix_states_by_start = next_prefix_states;
+        scratch.exact_spans_by_start = next_exact_spans;
         Some(self.candidates_for_state_vec_with_limit(
             input,
             &scratch.states_by_end,

@@ -645,6 +645,13 @@ checkpoint keeps the strict M55 ratchet green at 37-character `2.173x`,
 59-character `1.728x`, Track B product key sequence `310.318 us`, and Track A
 peak `185,991,168 B`, with product-path candidate bytes unchanged. Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-borrowed-incremental-edges/`.
+The next checkpoint carries per-start prefix-walk state and exact first-code
+spans in owned null-grammar scratch so single-key extension advances only the
+new suffix while preserving vocabulary phrase derivation. It keeps the strict
+M55 ratchet green at 37-character `2.010x`, 59-character `1.570x`, Track B
+product key sequence `324.395 us`, and Track A peak `186,085,376 B`, with
+product-path candidate bytes unchanged. Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
 Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
@@ -770,13 +777,18 @@ or must close as a measured no-go without broadening scope.
 - [x] In incremental owned sentence graph extension, borrow temporary graph-edge
   text and clone only when DP materializes an accepted `PathState`. Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-borrowed-incremental-edges/`.
+- [x] In incremental owned sentence graph extension, carry prefix-walk state and
+  exact first-code spans across single-key growth so graph construction advances
+  only the new suffix while preserving preset-vocabulary derivation. Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
   green, the path-state materialization checkpoint is green, the DP vector
   checkpoint is green, and the incremental scratch/comment-cache checkpoint is
   green, the index-range checkpoint is green, and the exact-new-span checkpoint
   is green, the incremental vocabulary new-edge checkpoint is green
   (`2.119x` / `1.645x`), and the borrowed-edge checkpoint is green
-  (`2.173x` / `1.728x`), but all remain above the `<=1.50x` 37/59-character
+  (`2.173x` / `1.728x`), and the incremental prefix-state checkpoint is green
+  (`2.010x` / `1.570x`), but all remain above the `<=1.50x` 37/59-character
   win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all

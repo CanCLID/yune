@@ -31,6 +31,12 @@ pub(super) struct SentencePhraseWalk {
     pub(super) entry_ranges_emitted: usize,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct SentencePrefixState {
+    range_start: usize,
+    range_end: usize,
+}
+
 pub(super) trait SentenceLookupSource {
     fn entry_count(&self) -> usize;
 
@@ -105,6 +111,48 @@ impl SentenceLookupIndex {
             }
         }
         walk
+    }
+
+    pub(super) fn root_prefix_state(&self) -> SentencePrefixState {
+        SentencePrefixState {
+            range_start: 0,
+            range_end: self.ranges.len(),
+        }
+    }
+
+    pub(super) fn advance_prefix_state(
+        &self,
+        source: &impl SentenceLookupSource,
+        state: SentencePrefixState,
+        prefix: &str,
+    ) -> Option<SentencePrefixState> {
+        let (range_start, range_end) =
+            self.prefix_range(source, prefix, state.range_start, state.range_end);
+        (range_start < range_end).then_some(SentencePrefixState {
+            range_start,
+            range_end,
+        })
+    }
+
+    pub(super) fn span_for_prefix_state(
+        &self,
+        source: &impl SentenceLookupSource,
+        state: SentencePrefixState,
+        code: &str,
+        end: usize,
+        end_index: usize,
+    ) -> Option<SentenceCodeSpan> {
+        if state.range_start >= state.range_end
+            || self.range_code(source, state.range_start) != code
+        {
+            return None;
+        }
+        let range = self.ranges[state.range_start];
+        Some(SentenceCodeSpan {
+            end,
+            end_index,
+            entries: range.start as usize..range.end as usize,
+        })
     }
 
     fn find_exact_range(

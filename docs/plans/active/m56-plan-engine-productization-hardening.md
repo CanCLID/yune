@@ -5,7 +5,7 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Drafted - queued behind M55 (both modify engine internals and share gates; do not run concurrently with M55 phases that touch `yune-core`/`yune-rime-api`). - **Track:** Engine robustness and compatibility. - **Created:** 2026-07-03 - **Type:** hardening milestone (tests, guards, and structural staleness-proofing; no new features, no ABI widening, no behavior change on the happy path).
+> **Status:** Ready to execute - M55 is complete under the corrective re-baseline, and its `m55-thresholds.csv` is the standing native ratchet for M56 closeout. - **Track:** Engine robustness and compatibility. - **Created:** 2026-07-03 - **Type:** hardening milestone (tests, guards, and structural staleness-proofing; no new features, no ABI widening, no behavior change on the happy path).
 
 **Goal:** Make the engine safe for two external frontends (Windows and iOS,
 developed in separate repos) to build on: **(1)** compiled-asset staleness can
@@ -88,8 +88,8 @@ bars. The repo's own history picks the targets:
   test-only dependency). `cargo-fuzz`/nightly fuzzing is a stretch goal, not a
   gate.
 - **Performance is guarded, not improved, here.** M55 owns performance. M56
-  closes with one full run of the standing regression ratchet (M52's artifact,
-  or M55's if already handed over) to prove hardening cost nothing measurable.
+  closes with one full run of the M55 corrective standing regression ratchet
+  to prove hardening cost nothing measurable.
 - **Browser/harness surfacing is out of scope** — the companion WEB-05
   harness control-surface milestone owns exposing these diagnostics in
   `yune-web`; it may run in parallel (different track, different evidence
@@ -97,7 +97,7 @@ bars. The repo's own history picks the targets:
 
 ## Current Starting Point
 
-Verified repo facts (2026-07-03):
+Verified repo facts (reviewed for execution readiness 2026-07-04):
 
 - User-data machinery already exists and is non-trivial: **all modules under
   `crates/yune-rime-api/src/userdb/`** (`file_store.rs`, `record.rs`,
@@ -120,7 +120,7 @@ Verified repo facts (2026-07-03):
   compact table storage, compiled prism (`Rime::Prism`-shaped, stale-rejection
   precedent from the WEB-02 fix), reverse-lookup assets, octagram `.gram`
   loading (M54, logical-resource-id validated), userdb file store, and the
-  M55-introduced poet artifact (if M55 has landed by execution time).
+  M55-introduced `YUNE-POET/2` poet artifact (explicit opt-in at runtime).
 - The full quality gate and parity suites
   (`upstream_luna_pinyin_parity`, `cantonese_parity`,
   `cargo test -p yune-rime-api --test yune_web`) are the standing engine
@@ -137,9 +137,13 @@ M56 closes **complete** when all of the following hold, each with committed
 evidence:
 
 1. **Staleness:** every artifact kind in the Phase 0 inventory has (a) a
-   version/validity check, (b) a stale-injection test proving loud
-   rejection-and-rebuild (or hard error where rebuild is impossible), and
-   (c) coverage in the cold-start conformance test. Zero silent fallbacks.
+   version/validity check and (b) a stale-injection real-path test proving
+   loud rejection-and-rebuild (or hard error where rebuild is impossible).
+   Cold/warm conformance coverage is required for artifacts exercised by the
+   two named product paths below (`luna_pinyin`, TypeDuck `jyut6ping3`);
+   artifact kinds outside those paths, such as optional `.gram` or explicit
+   opt-in poet storage, get artifact-specific stale-injection coverage rather
+   than fictional cold-start coverage. Zero silent fallbacks.
 2. **Cold-start conformance:** a standing test drives deploy → schema select →
    key sequence → candidates from **empty** shared/user dirs for both named
    profiles (`luna_pinyin`, TypeDuck `jyut6ping3`) and asserts non-empty,
@@ -181,8 +185,14 @@ ABI, `packages/yune-web-runtime`.
   (`phase-0-inventory/`, `phase-1-staleness/`, `phase-2-user-data/`,
   `phase-3-abi-abuse/`, `final/`).
 - Create: `crates/yune-rime-api/src/ffi_guard.rs` (or similar owning module) —
-  the standardized unwind-guard wrapper; applied in `lib.rs`/`api_table.rs`
-  export bodies.
+  the standardized unwind-guard wrapper; applied to every
+  `#[no_mangle] extern "C"` export discovered by the Phase 0 ABI ledger, not
+  only the obvious `lib.rs`/`api_table.rs` bodies. Current exports span
+  `config_api.rs`, `runtime.rs`, `deployment.rs`, `web_runtime.rs`,
+  `levers.rs`, `userdb.rs`, `candidate_api.rs`, `context_api.rs`,
+  `ffi_memory.rs`, `key_table.rs`, `modules.rs`, `notifications.rs`,
+  `schema_api.rs`, `schema_selection.rs`, `session.rs`, `api_table.rs`, and
+  `lib.rs`.
 - Create: `crates/yune-rime-api/tests/cold_start_conformance.rs` and
   `crates/yune-rime-api/tests/abi_abuse.rs` (proptest dev-dependency).
 - Modify: artifact load paths that lack validity checks (locations determined
@@ -392,26 +402,29 @@ ledger is authoritative):
 ## Phase 4: Closeout
 
 - [ ] One full standing-ratchet benchmark run — green, committed under
-  `final/`; hardening must cost nothing measurable. Verbatim (adjust only the
-  thresholds path to M55's artifact if the M55 handover has landed):
+  `final/`; hardening must cost nothing measurable. M55 has handed over the
+  standing native Track A gate, so use its corrective per-key thresholds and
+  include Track B product handling:
 
   ```powershell
   powershell -ExecutionPolicy Bypass -File scripts/benchmark-native-rime-inprocess.ps1 `
+    -OutputRoot docs\reports\evidence\m56-productization-hardening\final\ratchet-run `
+    -Iterations 9 -SessionIterations 60 -KeyIterations 80 `
     -TrackAInputs "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru" `
-    -TrackAThresholds docs\reports\evidence\m52-track-a-guardrails-and-disposition\track-a-thresholds.csv `
-    -FailOnRegression `
-    -OutputRoot docs\reports\evidence\m56-productization-hardening\final\ratchet-run
+    -TrackBInputs "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung" `
+    -DeployProductBeforeBenchmark `
+    -TrackAThresholds docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv `
+    -FailOnRegression
   ```
 
   The explicit `-TrackAInputs` is load-bearing: the script's default input
   list omits `n`, which the threshold artifact gates — omitting the switch
   makes the closeout run fail on a missing row. (`-OutputRoot` must be a
-  fresh leaf dir — the script clears its target.) If the M55 handover has
-  landed, swap in M55's thresholds path **and** match that artifact's Track B
-  handling: its `track-b/` rows need the Track B run
-  (`-DeployProductBeforeBenchmark`, machine-local
-  `apps/yune-web/source/public/schema` present) or a recorded Track B blocker
-  per the M55 plan's rules.
+  fresh leaf dir — the script clears its target.) The M55 threshold artifact
+  includes `track-b/` rows, so `-DeployProductBeforeBenchmark` and the
+  machine-local `apps/yune-web/source/public/schema` checkout are required; if
+  that checkout is unavailable, record it as an environmental blocker rather
+  than closing the ratchet.
 - [ ] Full quality gate + parity suites, commands listed verbatim.
 - [ ] Support-contract, `docs/roadmap.md`, `docs/requirements.md`,
   `docs/ledgers/milestone-history.md` updated; plan moved to

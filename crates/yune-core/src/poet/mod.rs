@@ -2158,22 +2158,25 @@ impl UpstreamSentenceModel {
                     lookup_metrics.vocabulary_index_probes += 1;
                     lookup_metrics.vocabulary_rows_examined += vocabulary_entries.len();
                 }
+                let minimum_new_phrase_code_len = previous_len.saturating_sub(start);
                 for (_, index) in vocabulary_entries {
                     let vocabulary_entry = &storage.vocabulary[*index];
-                    if !self.vocabulary_entry_matches_input_prefix_owned(
+                    if !self.vocabulary_entry_matches_input_prefix_owned_after(
                         storage,
                         vocabulary_entry,
                         suffix,
                         code,
+                        minimum_new_phrase_code_len,
                     ) {
                         continue;
                     }
                     vocabulary_entries_considered += 1;
-                    for phrase_code in self.derive_matching_phrase_codes_owned(
+                    for phrase_code in self.derive_matching_phrase_codes_owned_after(
                         storage,
                         vocabulary_entry,
                         suffix,
                         code,
+                        minimum_new_phrase_code_len,
                     ) {
                         let end = start + phrase_code.len();
                         let Ok(end_index) = boundaries.binary_search(&end) else {
@@ -2455,15 +2458,27 @@ impl UpstreamSentenceModel {
         input: &str,
         first_code: &str,
     ) -> Vec<String> {
+        self.derive_matching_phrase_codes_owned_after(storage, entry, input, first_code, 0)
+    }
+
+    fn derive_matching_phrase_codes_owned_after(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        entry: &ModelVocabularyEntry,
+        input: &str,
+        first_code: &str,
+        minimum_code_len: usize,
+    ) -> Vec<String> {
         let mut codes = Vec::new();
         let mut current = first_code.to_owned();
-        self.derive_matching_phrase_codes_from_owned(
-            storage,
+        derive_matching_phrase_codes_from_owned_after(
+            storage.normal_phrase_character_codes(&self.grammar),
             &entry.chars,
             input,
             1,
             &mut current,
             &mut codes,
+            minimum_code_len,
         );
         codes.sort();
         codes.dedup();
@@ -2519,12 +2534,24 @@ impl UpstreamSentenceModel {
         input: &str,
         first_code: &str,
     ) -> bool {
+        self.vocabulary_entry_matches_input_prefix_owned_after(storage, entry, input, first_code, 0)
+    }
+
+    fn vocabulary_entry_matches_input_prefix_owned_after(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        entry: &ModelVocabularyEntry,
+        input: &str,
+        first_code: &str,
+        minimum_code_len: usize,
+    ) -> bool {
         self.vocabulary_chars_match_input_prefix_from_owned(
             storage,
             &entry.chars,
             input,
             1,
             first_code.len(),
+            minimum_code_len,
         )
     }
 
@@ -2582,9 +2609,10 @@ impl UpstreamSentenceModel {
         input: &str,
         index: usize,
         offset: usize,
+        minimum_code_len: usize,
     ) -> bool {
         if index == chars.len() {
-            return offset <= input.len();
+            return offset <= input.len() && offset > minimum_code_len;
         }
         if offset >= input.len() {
             return false;
@@ -2606,6 +2634,7 @@ impl UpstreamSentenceModel {
                     input,
                     index + 1,
                     offset + next_code.len(),
+                    minimum_code_len,
                 )
         })
     }
@@ -2669,44 +2698,6 @@ impl UpstreamSentenceModel {
                     current,
                     codes,
                     character_code_cache,
-                );
-            }
-            current.truncate(original_len);
-        }
-    }
-
-    fn derive_matching_phrase_codes_from_owned(
-        &self,
-        storage: &OwnedPoetModelStorage,
-        chars: &[char],
-        input: &str,
-        index: usize,
-        current: &mut String,
-        codes: &mut Vec<String>,
-    ) {
-        if index == chars.len() {
-            if input.starts_with(current.as_str()) {
-                codes.push(current.clone());
-            }
-            return;
-        }
-        let Some(next_codes) = storage
-            .normal_phrase_character_codes(&self.grammar)
-            .get(&chars[index])
-        else {
-            return;
-        };
-        for next_code in next_codes {
-            let original_len = current.len();
-            current.push_str(next_code);
-            if input.starts_with(current.as_str()) {
-                self.derive_matching_phrase_codes_from_owned(
-                    storage,
-                    chars,
-                    input,
-                    index + 1,
-                    current,
-                    codes,
                 );
             }
             current.truncate(original_len);
@@ -3080,4 +3071,40 @@ fn compare_model_entry(left: &OwnedModelEntry, right: &OwnedModelEntry) -> Order
         .partial_cmp(&left.weight)
         .unwrap_or(Ordering::Equal)
         .then_with(|| left.text.cmp(&right.text))
+}
+
+fn derive_matching_phrase_codes_from_owned_after(
+    character_codes: &HashMap<char, Vec<String>>,
+    chars: &[char],
+    input: &str,
+    index: usize,
+    current: &mut String,
+    codes: &mut Vec<String>,
+    minimum_code_len: usize,
+) {
+    if index == chars.len() {
+        if current.len() > minimum_code_len && input.starts_with(current.as_str()) {
+            codes.push(current.clone());
+        }
+        return;
+    }
+    let Some(next_codes) = character_codes.get(&chars[index]) else {
+        return;
+    };
+    for next_code in next_codes {
+        let original_len = current.len();
+        current.push_str(next_code);
+        if input.starts_with(current.as_str()) {
+            derive_matching_phrase_codes_from_owned_after(
+                character_codes,
+                chars,
+                input,
+                index + 1,
+                current,
+                codes,
+                minimum_code_len,
+            );
+        }
+        current.truncate(original_len);
+    }
 }

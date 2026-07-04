@@ -756,12 +756,17 @@ or must close as a measured no-go without broadening scope.
   entries only for spans that extend beyond the previous input while preserving
   retained scratch reachability and candidate bytes. Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-exact-new-span/`.
+- [x] In incremental owned sentence graph extension, skip vocabulary phrase-code
+  derivation when all matching phrase codes end at or before the retained
+  previous input. Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-new-vocabulary-edges/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
   green, the path-state materialization checkpoint is green, the DP vector
   checkpoint is green, and the incremental scratch/comment-cache checkpoint is
   green, the index-range checkpoint is green, and the exact-new-span checkpoint
-  is green (`2.214x` / `1.708x`), but all remain above the `<=1.50x`
-  37/59-character win bar.
+  is green, and the incremental vocabulary new-edge checkpoint is green
+  (`2.119x` / `1.645x`), but all remain above the `<=1.50x` 37/59-character
+  win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

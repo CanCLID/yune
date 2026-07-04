@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T11:57:48.2310598Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=297c887f856e9ff11ed7d168cdb73ad96eaf1968
+yune_git_status_short= M crates/yune-core/src/poet/mod.rs | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-new-vocabulary-edges/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\m55-ratchet
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

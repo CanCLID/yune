@@ -28,6 +28,7 @@ key-sequence `313.461 us`.
 | Avoid candidate/key clones during cached sentence-path merge | Product-path candidate parity was green. Focused sentence scratch tests, expanded Luna green-row parity, `cargo fmt --check`, `cargo clippy -p yune-core --all-targets -- -D warnings`, and a full strict M55 ratchet passed the broad ceilings. A repeat 5/40/60 probe checked stability. | Rejected because it was mixed and not a clean replacement for the current best: the full strict run improved 37-char to `565.259 us` / `1.970x` but worsened 59-char to `1058.349 us` / `1.621x`; the repeat probe was also worse than the current best at 37-char `584.446 us` / `2.027x` and 59-char `1028.647 us` / `1.563x`. |
 | Retain a merged sentence-candidate map in scratch | Product-path candidate parity was green. Focused sentence scratch tests, expanded Luna green-row parity, `cargo fmt --check`, and `cargo clippy -p yune-core --all-targets -- -D warnings` passed. A small same-run release probe was run. | Rejected before strict ratchet because it was worse than the current best across the target rows and short keys: 37-char `598.986 us` / `2.074x`, 59-char `1072.942 us` / `1.624x`, `n`/`ni`/`hao` `2.854x` / `3.071x` / `2.168x`. |
 | Single-pass owned vocabulary phrase derivation | Focused upstream sentence-model tests and expanded Luna green-row parity passed. A 5/40/60 same-run release probe used the exact M55 Track A and Track B input sets. | Rejected because deriving phrase codes without the cheap precheck made non-matching vocabulary entries expensive and severely regressed the long rows: 37-char `2337.968 us` / `7.739x`; 59-char `4720.827 us` / `7.018x`. |
+| Transient per-composition vocabulary frontier | Focused upstream sentence-model tests and expanded Luna green-row parity passed. A fixture per-key diagnostic and a 5/40/60 same-run release probe used the exact M55 Track A and Track B input sets. | Rejected because the additional frontier bookkeeping outweighed any row filtering and regressed the long rows: 37-char `840.857 us` / `2.752x`; 59-char `1591.685 us` / `2.222x`. |
 
 ## Decision
 
@@ -39,4 +40,5 @@ byte-indexed temporary borrowed graph storage, final-end-only candidate
 emission, sentence-end bucket-only candidate merge iteration, simple
 candidate/key clone avoidance in the cached sentence-path merge, or retaining
 a merged sentence-candidate map in scratch, or replacing owned vocabulary
-precheck-plus-derive with single-pass derivation.
+precheck-plus-derive with single-pass derivation, or adding a transient
+per-composition vocabulary frontier.

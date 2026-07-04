@@ -5,12 +5,12 @@ Date: 2026-07-04
 Verdict: no new green checkpoint. All code and generated raw evidence from
 these local probes was reverted or removed. The current best committed owned
 path remains
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-sentence-path-cache/`.
 
-Baseline for comparison: the `phase-3r-incremental-prefix-state` same-run M55
-ratchet recorded 37-char `2.010x`, 59-char `1.570x`, `n` `2.708x`, `ni`
-`2.952x`, `hao` `2.039x`, Track A peak `186,085,376 B`, and Track B product
-key-sequence `324.395 us`.
+Baseline for comparison: the `phase-3r-sentence-path-cache` same-run M55
+ratchet recorded 37-char `2.001x`, 59-char `1.519x`, `n` `2.667x`, `ni`
+`2.979x`, `hao` `2.026x`, Track A peak `185,520,128 B`, and Track B product
+key-sequence `313.461 us`.
 
 ## Rejected Probes
 
@@ -25,6 +25,7 @@ key-sequence `324.395 us`.
 | Byte-indexed vector storage for the temporary borrowed incremental graph | Focused scratch tests passed and a correct full strict M55 ratchet passed the broad ceilings. | Rejected because it was not monotonic on the target rows: 37-char improved to `574.900 us` / `1.991x`, but 59-char worsened to `1059.812 us` / `1.612x`; short rows also worsened. |
 | Final-end-only null-grammar candidate emission | A small same-run release probe was run after focused scratch tests had passed. | Rejected because it was not monotonic versus the baseline: 59-char improved to `1026.242 us` / `1.557x`, but 37-char worsened to `582.586 us` / `2.055x`; `n`/`ni`/`hao` also worsened to `2.812x` / `3.024x` / `2.080x`. |
 | Iterate non-empty sentence-end buckets during candidate merge | Focused sentence scratch tests and expanded Luna green-row parity passed. A small same-run release probe was run. | Rejected before strict ratchet because it was not monotonic versus the current best: 59-char improved to `1046.441 us` / `1.552x`, but 37-char worsened to `596.543 us` / `2.032x`; short rows also remained above Tier M. |
+| Avoid candidate/key clones during cached sentence-path merge | Product-path candidate parity was green. Focused sentence scratch tests, expanded Luna green-row parity, `cargo fmt --check`, `cargo clippy -p yune-core --all-targets -- -D warnings`, and a full strict M55 ratchet passed the broad ceilings. A repeat 5/40/60 probe checked stability. | Rejected because it was mixed and not a clean replacement for the current best: the full strict run improved 37-char to `565.259 us` / `1.970x` but worsened 59-char to `1058.349 us` / `1.621x`; the repeat probe was also worse than the current best at 37-char `584.446 us` / `2.027x` and 59-char `1028.647 us` / `1.563x`. |
 
 ## Decision
 
@@ -33,4 +34,5 @@ look for a new measured owner instead of repeating cached vocabulary lookup,
 scratch candidate extraction, duplicate prechecks, full-rank beam prechecks,
 cached-span vector moves, simple `PathWordLengths` capacity tuning, or
 byte-indexed temporary borrowed graph storage, final-end-only candidate
-emission, or sentence-end bucket-only candidate merge iteration.
+emission, sentence-end bucket-only candidate merge iteration, or simple
+candidate/key clone avoidance in the cached sentence-path merge.

@@ -2123,11 +2123,11 @@ impl UpstreamSentenceModel {
                     *derivations += 1;
                 }
                 lookup_metrics.exact_range_index_hits += 1;
-                let entries = &storage.entries_by_code[span.entries.clone()];
-                let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                let mut inserted_edge = false;
                 if span.end > previous_len {
+                    let entries = &storage.entries_by_code[span.entries.clone()];
+                    let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                    table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                    let mut inserted_edge = false;
                     for entry in bounded_entries {
                         let text = entry.text(&storage.entry_texts);
                         if record_volume_metrics {
@@ -2148,11 +2148,9 @@ impl UpstreamSentenceModel {
                         }
                         inserted_edge = true;
                     }
-                } else {
-                    inserted_edge = true;
-                }
-                if inserted_edge {
-                    reachable[span.end_index] = true;
+                    if inserted_edge {
+                        reachable[span.end_index] = true;
+                    }
                 }
                 let vocabulary_entries =
                     vocabulary_indices_for_first_code(&storage.vocabulary_first_codes, code);

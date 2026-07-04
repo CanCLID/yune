@@ -752,11 +752,16 @@ or must close as a measured no-go without broadening scope.
 - [x] Carry exact owned entry ranges out of the sentence prefix walk so graph
   construction does not repeat an exact lookup for every emitted span. Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-index-range/`.
+- [x] In incremental owned sentence graph extension, materialize exact table
+  entries only for spans that extend beyond the previous input while preserving
+  retained scratch reachability and candidate bytes. Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-exact-new-span/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
   green, the path-state materialization checkpoint is green, the DP vector
   checkpoint is green, and the incremental scratch/comment-cache checkpoint is
-  green, and the index-range checkpoint is green, but all remain above the
-  `<=1.50x` 37/59-character win bar.
+  green, the index-range checkpoint is green, and the exact-new-span checkpoint
+  is green (`2.214x` / `1.708x`), but all remain above the `<=1.50x`
+  37/59-character win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

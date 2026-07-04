@@ -1,0 +1,11 @@
+engine,track,schema_id,workload,input,samples,operations,median_us,p95_us,p99_us,max_us,median_working_set_bytes,max_peak_working_set_bytes,median_private_bytes,max_peak_pagefile_bytes
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ceshiyixiachangjushuruxingnengzenyang,80,2960,624.265,641.743,686.346,686.346,179494912,185675776,193966080,202375168
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,cszysmsrsd,80,800,464.730,475.650,479.030,479.030,181698560,185675776,196186112,202375168
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,80,240,24.300,25.233,29.300,29.300,177405952,185675776,192045056,202375168
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,n,80,80,57.800,62.300,66.100,66.100,176201728,185675776,190758912,202375168
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,80,160,43.500,45.300,58.950,58.950,176648192,185675776,191254528,202375168
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,80,4720,1100.529,1182.769,1232.380,1232.380,180285440,185675776,194764800,202375168
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,80,640,44.487,45.950,48.412,48.412,178663424,185675776,193339392,202375168
+yune,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zybfshmsru,80,800,465.530,486.630,510.080,510.080,182472704,185675776,196927488,202375168
+yune,track-a-comparison,luna_pinyin,session_create_select_destroy,,60,60,22798.400,23245.300,30516.200,30516.200,176037888,185675776,190758912,202375168
+yune,track-a-comparison,luna_pinyin,startup_warm_shared_assets_runtime_ready,,9,9,22349.700,2765311.800,2765311.800,2765311.800,175562752,185675776,190754816,202375168

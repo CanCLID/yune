@@ -60,8 +60,7 @@ New focused regressions:
 
 This slice does not satisfy the Phase 2 closeout by itself. Remaining gates:
 
-- Run product-path CLI candidate byte comparisons for the 37-char row, 59-char row, and fixture sentences.
-- Capture a real Luna `memory-owner-profile.csv` proving the large poet owners moved to mmap-backed storage with combined heap remnants below the Phase 2 target.
-- Run `upstream_luna_pinyin_parity` and `cantonese_parity`.
+- Product-path CLI candidate byte comparisons are now recorded in `product-path-parity-2026-07-03.md` and `product-path-parity-2026-07-03.json`.
+- Diagnostic native Luna memory-owner proof is now recorded in `memory-owner-proof-2026-07-03.md` and `native-memory-probe-luna-runtime/`; the release full-ratchet `memory-owner-profile.csv` remains required before Phase 2 closeout.
 - Run the full M55 ratchet gate and tighten the memory ceiling only after two green runs.
 - Record any latency tradeoffs, especially on 37/59-char and win rows.

@@ -5,7 +5,7 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Phase 2 runtime byte-backed poet reads in progress; product-path parity and full ratchet remain. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 2 poet-storage design note is recorded; the safe Rust `YUNE-POET/1` artifact builder/parser contract has focused tests; deployment now emits, probes, and checksum-validates the artifact; the runtime sentence model can now read from validated poet artifact bytes, with product-path parity, real Luna memory-owner proof, and full ratchet still required before Phase 2 closeout). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Phase 2 runtime byte-backed poet reads in progress; release memory-owner profile and full ratchet remain. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 2 poet-storage design note is recorded; the safe Rust `YUNE-POET/1` artifact builder/parser contract has focused tests; deployment now emits, probes, and checksum-validates the artifact; the runtime sentence model can now read from validated poet artifact bytes; product-path parity and diagnostic native Luna memory-owner proof are recorded, with the release full-ratchet memory profile still required before Phase 2 closeout). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
 
 > **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
 > `docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/`. The first
@@ -27,9 +27,13 @@
 > validation slice is recorded under
 > `phase-2-poet-storage/deploy-validation-2026-07-03.md`. Runtime byte-backed
 > read progress is recorded under
-> `phase-2-poet-storage/runtime-byte-backed-2026-07-03.md`; product-path
-> parity, real Luna memory-owner proof, and the full ratchet remain, so Phase 2
-> is not complete.
+> `phase-2-poet-storage/runtime-byte-backed-2026-07-03.md`. Product-path
+> parity is recorded under
+> `phase-2-poet-storage/product-path-parity-2026-07-03.md`, and diagnostic
+> native Luna memory-owner proof is recorded under
+> `phase-2-poet-storage/memory-owner-proof-2026-07-03.md`. The release
+> full-ratchet memory profile and full ratchet remain, so Phase 2 is not
+> complete.
 
 **Goal:** End the whack-a-mole pattern on the native Track A `luna_pinyin` lane
 and drive every tracked dimension — startup, session lifecycle, all eight

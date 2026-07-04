@@ -1,0 +1,120 @@
+{
+  "comparison": "M55 Phase 2 product-path candidate parity",
+  "before_commit": "261f22f9",
+  "current_commit": "f236f6b4",
+  "schema": "luna_pinyin",
+  "shared_data_dir": "apps/yune-web/public/schema",
+  "user_data_policy": "fresh empty user-data directory per commit lane; first CLI invocation deploys/rebuilds, later invocations reuse that lane's freshly built product artifacts",
+  "candidate_event_policy": "documented sequences include a trailing space; the trailing space commits and leaves no menu, so comparison uses the final composing event where context.input equals the requested input",
+  "poet_bin_bytes": {
+    "before": 53029606,
+    "current": 28542082
+  },
+  "rows": [
+    {
+      "input": "ceshiyixiachangjushuruxingnengzenyang",
+      "sequence": "ceshiyixiachangjushuruxingnengzenyang ",
+      "candidate_event_index": 36,
+      "trailing_event_index": 37,
+      "before_top": "測試一下長足輸入性能怎樣",
+      "current_top": "測試一下長足輸入性能怎樣",
+      "top_matches": true,
+      "candidates_match": true,
+      "trailing_commit_matches": true,
+      "candidate_count": 5,
+      "before_poet_bin_bytes": 53029606,
+      "current_poet_bin_bytes": 28542082,
+      "candidates": [
+        "測試一下長足輸入性能怎樣",
+        "測試一下長句輸入性能怎樣",
+        "測試一下敞車輸入性能怎樣",
+        "測試一下長局輸入性能怎樣",
+        "測試一下長居輸入性能怎樣"
+      ]
+    },
+    {
+      "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+      "sequence": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong ",
+      "candidate_event_index": 58,
+      "trailing_event_index": 59,
+      "before_top": "這個引擎其實應該支持超長橘子樹肉菜能用",
+      "current_top": "這個引擎其實應該支持超長橘子樹肉菜能用",
+      "top_matches": true,
+      "candidates_match": true,
+      "trailing_commit_matches": true,
+      "candidate_count": 5,
+      "before_poet_bin_bytes": 53029606,
+      "current_poet_bin_bytes": 28542082,
+      "candidates": [
+        "這個引擎其實應該支持超長橘子樹肉菜能用",
+        "這個引擎其實應該支持超常橘子樹肉菜能用",
+        "這個言情其實應該支持超長橘子樹肉菜能用",
+        "這個言情其實應該支持超常橘子樹肉菜能用",
+        "這個陰晴其實應該支持超長橘子樹肉菜能用"
+      ]
+    },
+    {
+      "input": "zhongguo",
+      "sequence": "zhongguo ",
+      "candidate_event_index": 7,
+      "trailing_event_index": 8,
+      "before_top": "中國大陸",
+      "current_top": "中國大陸",
+      "top_matches": true,
+      "candidates_match": true,
+      "trailing_commit_matches": true,
+      "candidate_count": 4,
+      "before_poet_bin_bytes": 53029606,
+      "current_poet_bin_bytes": 28542082,
+      "candidates": [
+        "中國大陸",
+        "中國內地",
+        "中國銀行",
+        "中國重汽"
+      ]
+    },
+    {
+      "input": "jianli",
+      "sequence": "jianli ",
+      "candidate_event_index": 5,
+      "trailing_event_index": 6,
+      "before_top": "建立",
+      "current_top": "建立",
+      "top_matches": true,
+      "candidates_match": true,
+      "trailing_commit_matches": true,
+      "candidate_count": 5,
+      "before_poet_bin_bytes": 53029606,
+      "current_poet_bin_bytes": 28542082,
+      "candidates": [
+        "建立",
+        "簡歷",
+        "監理",
+        "監利",
+        "剪力"
+      ]
+    },
+    {
+      "input": "biancheng",
+      "sequence": "biancheng ",
+      "candidate_event_index": 8,
+      "trailing_event_index": 9,
+      "before_top": "變成",
+      "current_top": "變成",
+      "top_matches": true,
+      "candidates_match": true,
+      "trailing_commit_matches": true,
+      "candidate_count": 5,
+      "before_poet_bin_bytes": 53029606,
+      "current_poet_bin_bytes": 28542082,
+      "candidates": [
+        "變成",
+        "編程",
+        "便成",
+        "編成",
+        "邊城"
+      ]
+    }
+  ],
+  "verdict": "green"
+}

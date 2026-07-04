@@ -18,11 +18,11 @@ use index::{SentenceLookupIndex, SentenceLookupSource};
 pub use octagram::{
     encode_octagram_key, OctagramGrammar, OctagramGrammarConfig, OctagramGrammarParseError,
 };
-use storage::ByteBackedPoetStore;
 pub use storage::{
     build_poet_bin, parse_poet_bin_dictionary_checksum, parse_poet_bin_summary, OwnedPoetBytes,
     PoetBinParseError, PoetBinSectionSummary, PoetBinSummary, PoetByteSource,
 };
+use storage::{ByteBackedPoetStore, VocabularyCharsRange};
 
 /// Upstream `grammar.h` null-grammar penalty (`ln(1e-6)`) used when no `.gram`
 /// language model is configured.
@@ -34,6 +34,31 @@ const MAX_WORD_GRAPH_ENTRIES_PER_SPAN: usize = 7;
 const MAX_DERIVED_PHRASE_CODES_PER_VOCABULARY_ENTRY: usize = 16;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
+
+#[derive(Clone, Copy)]
+struct ByteBackedVocabularyChars<'a> {
+    storage: &'a ByteBackedPoetStore,
+    abbreviation: bool,
+    range: VocabularyCharsRange,
+}
+
+impl ByteBackedVocabularyChars<'_> {
+    fn char_at(&self, index: usize) -> char {
+        self.storage
+            .vocabulary_char_at(self.abbreviation, self.range, index)
+    }
+
+    fn len(&self) -> usize {
+        self.range.count as usize
+    }
+}
+
+struct ByteBackedPhraseDerivation<'a, 'b> {
+    chars: ByteBackedVocabularyChars<'a>,
+    input: &'b str,
+    codes: &'b mut Vec<String>,
+    character_code_cache: &'b mut CharacterCodeCache,
+}
 
 pub trait Grammar {
     fn query(&self, context: &str, word: &str, is_rear: bool) -> f64;
@@ -1237,6 +1262,7 @@ impl UpstreamSentenceModel {
         let mut graph_edges = 0usize;
         let mut vocabulary_chars = Vec::new();
         let mut character_code_cache = CharacterCodeCache::new();
+        let mut vocabulary_indices_cache = HashMap::<&str, Vec<usize>>::new();
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
         for (start_index, start) in boundaries.iter().copied().enumerate() {
             if start >= input.len() {
@@ -1288,26 +1314,57 @@ impl UpstreamSentenceModel {
                 if inserted_edge {
                     reachable[span.end_index] = true;
                 }
-                let vocabulary_entries =
-                    self.storage.vocabulary_indices_for_first_code(false, code);
-                for index in vocabulary_entries {
-                    self.storage
-                        .vocabulary_chars_into(false, index, &mut vocabulary_chars);
-                    if !self.vocabulary_entry_matches_input_prefix(
-                        &vocabulary_chars,
-                        suffix,
-                        code,
-                        &mut character_code_cache,
-                    ) {
-                        continue;
-                    }
+                let vocabulary_entries = vocabulary_indices_cache
+                    .entry(code)
+                    .or_insert_with(|| self.storage.vocabulary_indices_for_first_code(false, code));
+                for index in vocabulary_entries.iter().copied() {
+                    let phrase_codes = match &self.storage {
+                        PoetModelStorage::ByteBacked(storage) => {
+                            let chars = ByteBackedVocabularyChars {
+                                storage,
+                                abbreviation: false,
+                                range: storage.vocabulary_chars_range(false, index),
+                            };
+                            if !self.vocabulary_entry_matches_input_prefix_byte_backed(
+                                chars,
+                                suffix,
+                                code,
+                                &mut character_code_cache,
+                            ) {
+                                continue;
+                            }
+                            self.derive_matching_phrase_codes_byte_backed(
+                                chars,
+                                suffix,
+                                code,
+                                &mut character_code_cache,
+                            )
+                        }
+                        _ => {
+                            self.storage
+                                .vocabulary_chars_into(false, index, &mut vocabulary_chars);
+                            if !self.vocabulary_entry_matches_input_prefix(
+                                &vocabulary_chars,
+                                suffix,
+                                code,
+                                &mut character_code_cache,
+                            ) {
+                                continue;
+                            }
+                            self.derive_matching_phrase_codes(
+                                &vocabulary_chars,
+                                suffix,
+                                code,
+                                &mut character_code_cache,
+                            )
+                        }
+                    };
                     vocabulary_entries_considered += 1;
-                    for phrase_code in self.derive_matching_phrase_codes(
-                        &vocabulary_chars,
-                        suffix,
-                        code,
-                        &mut character_code_cache,
-                    ) {
+                    let vocabulary_text = self.storage.vocabulary_text(false, index).to_owned();
+                    let vocabulary_weight = upstream_dictionary_weight(f64::from(
+                        self.storage.vocabulary_weight(false, index),
+                    ));
+                    for phrase_code in phrase_codes {
                         let end = start + phrase_code.len();
                         graph
                             .entry(start)
@@ -1315,10 +1372,8 @@ impl UpstreamSentenceModel {
                             .entry(end)
                             .or_default()
                             .push(WordGraphEntry::new(
-                                self.storage.vocabulary_text(false, index).to_owned(),
-                                upstream_dictionary_weight(f64::from(
-                                    self.storage.vocabulary_weight(false, index),
-                                )),
+                                vocabulary_text.clone(),
+                                vocabulary_weight,
                             ));
                         graph_edges += 1;
                         if let Ok(end_index) = boundaries.binary_search(&end) {
@@ -1514,6 +1569,32 @@ impl UpstreamSentenceModel {
         codes
     }
 
+    fn derive_matching_phrase_codes_byte_backed(
+        &self,
+        chars: ByteBackedVocabularyChars<'_>,
+        input: &str,
+        first_code: &str,
+        character_code_cache: &mut CharacterCodeCache,
+    ) -> Vec<String> {
+        let mut codes = Vec::new();
+        let mut current = first_code.to_owned();
+        let mut derivation = ByteBackedPhraseDerivation {
+            chars,
+            input,
+            codes: &mut codes,
+            character_code_cache,
+        };
+        self.derive_matching_phrase_codes_from_byte_backed(
+            &mut derivation,
+            1,
+            first_code.len(),
+            &mut current,
+        );
+        codes.sort();
+        codes.dedup();
+        codes
+    }
+
     fn vocabulary_entry_matches_input_prefix(
         &self,
         chars: &[char],
@@ -1525,6 +1606,22 @@ impl UpstreamSentenceModel {
             chars,
             input,
             1,
+            first_code.len(),
+            character_code_cache,
+        )
+    }
+
+    fn vocabulary_entry_matches_input_prefix_byte_backed(
+        &self,
+        chars: ByteBackedVocabularyChars<'_>,
+        input: &str,
+        first_code: &str,
+        character_code_cache: &mut CharacterCodeCache,
+    ) -> bool {
+        self.vocabulary_chars_match_input_prefix_from_byte_backed(
+            chars,
+            1,
+            input,
             first_code.len(),
             character_code_cache,
         )
@@ -1561,6 +1658,37 @@ impl UpstreamSentenceModel {
         })
     }
 
+    fn vocabulary_chars_match_input_prefix_from_byte_backed(
+        &self,
+        chars: ByteBackedVocabularyChars<'_>,
+        index: usize,
+        input: &str,
+        offset: usize,
+        character_code_cache: &mut CharacterCodeCache,
+    ) -> bool {
+        if index == chars.len() {
+            return offset <= input.len();
+        }
+        if offset >= input.len() {
+            return false;
+        }
+        let Some(remaining) = input.get(offset..) else {
+            return false;
+        };
+        let ch = chars.char_at(index);
+        let next_codes = self.normal_phrase_character_codes_cached(ch, character_code_cache);
+        next_codes.iter().any(|next_code| {
+            remaining.starts_with(next_code)
+                && self.vocabulary_chars_match_input_prefix_from_byte_backed(
+                    chars,
+                    index + 1,
+                    input,
+                    offset + next_code.len(),
+                    character_code_cache,
+                )
+        })
+    }
+
     fn derive_matching_phrase_codes_from(
         &self,
         chars: &[char],
@@ -1591,6 +1719,42 @@ impl UpstreamSentenceModel {
                     character_code_cache,
                 );
             }
+            current.truncate(original_len);
+        }
+    }
+
+    fn derive_matching_phrase_codes_from_byte_backed(
+        &self,
+        derivation: &mut ByteBackedPhraseDerivation<'_, '_>,
+        index: usize,
+        offset: usize,
+        current: &mut String,
+    ) {
+        if index == derivation.chars.len() {
+            derivation.codes.push(current.clone());
+            return;
+        }
+        if offset >= derivation.input.len() {
+            return;
+        }
+        let Some(remaining) = derivation.input.get(offset..) else {
+            return;
+        };
+        let ch = derivation.chars.char_at(index);
+        let next_codes =
+            self.normal_phrase_character_codes_cached(ch, derivation.character_code_cache);
+        for next_code in next_codes.iter() {
+            if !remaining.starts_with(next_code) {
+                continue;
+            }
+            let original_len = current.len();
+            current.push_str(next_code);
+            self.derive_matching_phrase_codes_from_byte_backed(
+                derivation,
+                index + 1,
+                offset + next_code.len(),
+                current,
+            );
             current.truncate(original_len);
         }
     }

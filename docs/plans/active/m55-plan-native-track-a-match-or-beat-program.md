@@ -38,8 +38,15 @@
 > down to `110198784 B` and the named poet payload owners are
 > `mmap_file_backed`, but the gate is red on the 37-character row (`6.289x`
 > vs `3.267x`), the 59-character row (`4.333x` vs `2.447x`), and one Track B
-> product latency guard (`378.449 us` vs `375.253 us`). Phase 2 is therefore
-> not complete, no ceiling was tightened, and Phase 3/4 have not started.
+> product latency guard (`378.449 us` vs `375.253 us`). Follow-up bounded
+> access-path work is recorded in
+> `phase-2-poet-storage/access-path-followup-no-go-2026-07-03.md` and
+> `phase-2-poet-storage/ratchet-gate-2-access-path-no-go/`: the 37-character
+> and 59-character Yune medians improved to `1637.727 us` and `2581.449 us`,
+> but the gate is still red (`5.618x` vs `3.267x`, `3.870x` vs `2.447x`) and
+> the Track B product latency guard remains red (`387.059 us` vs
+> `375.253 us`). Phase 2 is therefore partial/no-go, no ceiling was tightened,
+> and Phase 3/4 have not started.
 
 **Goal:** End the whack-a-mole pattern on the native Track A `luna_pinyin` lane
 and drive every tracked dimension — startup, session lifecycle, all eight
@@ -503,7 +510,10 @@ retained heap. **This is the keystone phase.**
   the three win rows (byte-backed access adds per-lookup cost; the ceilings
   bind; the abbreviation win rows run through the poet graph) and to Track B
   absolutes (the storage seam is shared). `ratchet-gate-1/` is recorded but
-  red; see `ratchet-no-go-2026-07-03.md`.
+  red; `ratchet-gate-2-access-path-no-go/` records a bounded access-path
+  follow-up that improves the two long Track A medians but remains red; see
+  `ratchet-no-go-2026-07-03.md` and
+  `access-path-followup-no-go-2026-07-03.md`.
 - [ ] Phase close: tighten the Track A memory ceiling to the new
   `worst-of-2-green-runs x 1.05`. If a deliberate, still-winning latency trade
   was made on a win row, execute the one-time win-row re-baseline here as its

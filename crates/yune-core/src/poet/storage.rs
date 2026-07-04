@@ -370,6 +370,12 @@ struct VocabularyRow {
     weight: f32,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct VocabularyCharsRange {
+    pub(super) start: u32,
+    pub(super) count: u32,
+}
+
 impl ByteBackedPoetStore {
     pub(super) fn from_source(
         source: Arc<dyn PoetByteSource>,
@@ -471,6 +477,32 @@ impl ByteBackedPoetStore {
                 char::from_u32(scalar).expect("poet vocabulary chars are validated during parse"),
             );
         }
+    }
+
+    pub(super) fn vocabulary_chars_range(
+        &self,
+        abbreviation: bool,
+        index: usize,
+    ) -> VocabularyCharsRange {
+        let row = self.vocabulary_row(self.vocabulary_sections(abbreviation), index);
+        VocabularyCharsRange {
+            start: row.chars_start,
+            count: row.chars_count,
+        }
+    }
+
+    pub(super) fn vocabulary_char_at(
+        &self,
+        abbreviation: bool,
+        range: VocabularyCharsRange,
+        index: usize,
+    ) -> char {
+        debug_assert!(index < range.count as usize);
+        let sections = self.vocabulary_sections(abbreviation);
+        let offset = row_offset(&sections.chars, range.start as usize + index);
+        let scalar = read_u32(self.bytes(), offset)
+            .expect("poet vocabulary chars are validated during parse");
+        char::from_u32(scalar).expect("poet vocabulary chars are validated during parse")
     }
 
     pub(super) fn character_codes(&self, abbreviation: bool, ch: char) -> Vec<&str> {

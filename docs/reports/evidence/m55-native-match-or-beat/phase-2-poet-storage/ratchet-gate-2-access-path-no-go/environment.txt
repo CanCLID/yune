@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T02:17:36.0883712Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=ed3e1bcb41e0c22cb131cf54ba1f2df00445911a
+yune_git_status_short= M crates/yune-core/src/poet/mod.rs |  M crates/yune-core/src/poet/storage.rs |  M docs/plans/active/m55-plan-native-track-a-match-or-beat-program.md | ?? docs/reports/evidence/m55-native-match-or-beat/phase-2-poet-storage/access-path-followup-no-go-2026-07-03.md | ?? docs/reports/evidence/m55-native-match-or-beat/phase-2-poet-storage/ratchet-gate-2-access-path-no-go/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-gate-2-access-path-no-go
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

@@ -11,14 +11,15 @@ Current status: Phase 1 named-target compatibility is complete; M47's portable
 TypeDuck/Jyutping keyboard memory work is complete for the Windows proxy; M51
 froze the engine support contract and ABI boundaries; M52 remains the standing
 green native Track A `luna_pinyin` performance guard and was re-verified green
-on main in the M55 reopen Step 0 evidence; M53 re-verified the engine docs and
+on main in the M55 reopen Step 0 and Phase 2R default-off evidence; M53
+re-verified the engine docs and
 public claims for release-readiness; M54 adds native octagram-compatible grammar
 support for the named upstream `luna_pinyin` target without implementing the
 librime C++ plugin ABI; WEB-04 makes that path observable in `yune-web` through
 a default-off debug profile. M55, the native Track A match-or-beat performance
-program, is reopened at Phase 2R: the `YUNE-POET/1` byte-backed poet path is
-default-off pending redesign, and its `110.5 MB` flag-on memory result remains
-research/no-go evidence until the full M55 ratchet is green with byte-backing.
+program, is reopened with Phase 2R measured no-go: the `YUNE-POET/2` flag-on
+path keeps the memory win but still fails the full M55 ratchet, so byte-backed
+poet consumption remains default-off.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -52,8 +53,8 @@ research/no-go evidence until the full M55 ratchet is green with byte-backing.
 - [`plans/completed/m52-plan-track-a-guardrails-and-disposition.md`](./plans/completed/m52-plan-track-a-guardrails-and-disposition.md)
   - latest native Track A guardrail and blocker-disposition milestone.
 - [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md)
-  - reopened native Track A match-or-beat research milestone; Phase 2R owns the
-    byte-backed poet redesign while M52 remains the standing green gate.
+  - reopened native Track A match-or-beat research milestone; Phase 2R has
+    measured `YUNE-POET/2` as no-go while M52 remains the standing green gate.
 - [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md)
   - native octagram-compatible grammar support milestone.
 - [`plans/completed/m51-plan-engine-support-contract-abi-freeze.md`](./plans/completed/m51-plan-engine-support-contract-abi-freeze.md)
@@ -74,7 +75,7 @@ research/no-go evidence until the full M55 ratchet is green with byte-backing.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Core compatibility | Phase 1 named-target upstream behavior remains complete for `luna_pinyin` and common-schema basics against upstream librime `1.17.0`. M54 adds native octagram-compatible grammar support for the named upstream `luna_pinyin` octagram target using pinned lotem oracle data, with RIME-LMDG kept as a pinned validation lane. M51 records supported targets, oracle precedence, default upstream ABI rules, profile ABI rules, `yune_web_*` export rules, storage expectations, and evidence-lane rules. Post-M51 cleanup documents and tests `rime_get_yune_windows_profile_api()` as a parallel accessor for the same current profile table. | Future engine work must preserve the contract or update it with named oracle/header evidence and focused tests. Full librime C++ plugin ABI support remains deferred. |
-| Engine performance | M55 is reopened at Phase 2R for native Track A match-or-beat. Phase 1 attributed the old unclassified memory floor, and Phase 2 proved a flag-on `YUNE-POET/1` memory win (`110.5 MB`) but failed the full M55 ratchet. Step 0 makes byte-backed poet consumption default-off, restores the owned Luna fast path, and re-verifies M52 green on main: 37-character Luna `2.940x` vs `3.267x`, 59-character Luna `2.310x` vs `2.447x`, Track A peak `186,200,064 B` vs `198,000,000 B`. | Phase 2R must redesign the poet artifact/access path behind `YUNE_POET_BYTE_BACKED=1`; default-on requires two consecutive full M55 ratchet passes and Track A memory `<=125 MB`, with no ceiling loosening or ABI widening. |
+| Engine performance | M55 is reopened at Phase 2R for native Track A match-or-beat. Phase 1 attributed the old unclassified memory floor, Phase 2 proved a flag-on `YUNE-POET/1` memory win (`110.5 MB`) but failed the full M55 ratchet, and Phase 2R measured `YUNE-POET/2` with a compiled prefix index as still no-go: Track A peak `113,090,560 B` passes the memory bar, but the 37-character Luna row is `5.395x` vs `3.267x`, the 59-character row is `3.733x` vs `2.447x`, and one Track B product latency guard is `378.274 us` vs `375.253 us`. Default-off M52 remains green in the Phase 2R rerun: 37-character Luna `3.038x` vs `3.267x`, 59-character Luna `2.272x` vs `2.447x`, Track A peak `185,823,232 B` vs `198,000,000 B`. | Byte-backed poet consumption remains default-off. Any further M55 work needs a new explicitly scoped design that moves the long-row graph/scoring constant factor; default-on still requires two consecutive full M55 ratchet passes and Track A memory `<=125 MB`, with no ceiling loosening or ABI widening. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
 | Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04 adds a default-off `luna_pinyin_octagram` debug profile that fetches a pinned lotem `.gram` locally, delivers it only for the octagram profile, exposes delivered/fallback/checksum/schema-select high-water memory diagnostics, proves all four named ranking rows versus plain Luna in Playwright, and proves browser fail-closed behavior. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. Broader contextual suggestions or non-debug octagram product UX needs a new scoped plan. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
@@ -107,21 +108,24 @@ Do not summarize "M52 guardrails pass" as "Yune is faster than librime" or as
 "Track A meets every strict ratio target." The guardrail freezes the current
 measured state and fails on regression.
 
-M55's broader threshold artifact remains research/no-go evidence only until
-Phase 2R proves a redesigned flag-on path:
+M55's broader threshold artifact remains research/no-go evidence only. Phase 2R
+tested a redesigned `YUNE-POET/2` flag-on path and it is still red:
 [`reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv).
 The historical Phase 2 closeout run fails the 37-character Luna row, the
 59-character Luna row, and one Track B product latency guard, so it does not
 supersede M52. The reopen correction is recorded in
 [`reports/evidence/m55-native-match-or-beat/final/reopen-note-2026-07-04.md`](./reports/evidence/m55-native-match-or-beat/final/reopen-note-2026-07-04.md).
+The Phase 2R result is recorded in
+[`reports/evidence/m55-native-match-or-beat/phase-2r-poet-v2/README.md`](./reports/evidence/m55-native-match-or-beat/phase-2r-poet-v2/README.md).
 
 ## Performance North Star
 
 Broad, unqualified claims that "Yune is faster than librime" are not supported
 by current evidence. Current performance is lane-specific: M55's flag-on
-`YUNE-POET/1` path reduced native Track A memory peak but failed the broader
-full-suite ratchet, so it is default-off while Phase 2R redesigns it. M52 remains
-the green native Track A regression gate, freshly re-verified on main. The
+`YUNE-POET/1` and `YUNE-POET/2` paths reduced native Track A memory peak but
+failed the broader full-suite ratchet, so byte-backed poet consumption remains
+default-off. M52 remains the green native Track A regression gate, freshly
+re-verified on main. The
 short-key rows remain above librime, the 37/59-character Luna rows pass the M52
 guard but remain the key native latency research targets, and browser performance
 remains a separate evidence lane.
@@ -149,7 +153,7 @@ change that changes the cost model without changing candidate output.
 
 ## Closing The 188 MB Native Track A Memory Gap
 
-M55 tested this path and is reopened at Phase 2R. The memory owner was real:
+M55 tested this path and is reopened with Phase 2R measured no-go. The memory owner was real:
 Phase 1 attributed the old `105.6 MB` unclassified floor, and Phase 2 compiled
 the upstream Luna poet payloads into `YUNE-POET/1` byte-backed storage served
 from mapped bytes. The historical flag-on closeout run reports Track A peak
@@ -160,16 +164,22 @@ broader M55 latency ratchet: the 37-character Luna row is `5.964x`, the
 59-character Luna row is `4.030x`, and the Track B product long-row guard is
 `414.059us` against a `375.253us` ceiling. Step 0 therefore makes runtime poet
 byte consumption default-off and restores the owned Luna fast path. The current
-default path re-verifies M52 green with Track A peak `186,200,064 B`.
+default path re-verifies M52 green with Track A peak `185,823,232 B`.
+Phase 2R then tested `YUNE-POET/2` with compiled entry-row ranges and a
+hash-sorted prefix index. It keeps Track A peak at `113,090,560 B` flag-on, but
+still fails the 37-character row (`5.395x`), the 59-character row (`3.733x`),
+and one Track B product guard (`378.274us`), so it does not flip default-on.
 
 Current decision:
 
 1. **M52 remains the standing green native Track A gate.** M55's threshold CSV is
    retained as research/no-go evidence and does not supersede the M52 guard
-   until Phase 2R passes its stricter default-flip gate.
-2. **M55 continues at Phase 2R, not Phase 3 or Phase 4.** The next work must
-   redesign byte-backed poet as `YUNE-POET/2`, remove flag-on access-path
-   overhead, and prove the full M55 ratchet green twice before default-on.
+   until a future byte-backed design passes the stricter default-flip gate.
+2. **M55 stays default-off after the Phase 2R no-go.** `YUNE-POET/2` removed
+   the retained byte-backed lookup index and preserved the memory win, but did
+   not meet the full ratchet. Any next work must be a new scoped design for the
+   long-row graph/scoring constant factor and must prove the full M55 ratchet
+   green twice before default-on.
 3. **Memory progress is recorded as structural evidence, not a launch claim.**
    The `110.5 MB` peak is useful flag-on evidence, but no public match-or-beat
    or product performance claim follows from a red full ratchet.
@@ -202,11 +212,11 @@ Current decision:
    [`reports/evidence/web04-octagram-debug-harness/`](./reports/evidence/web04-octagram-debug-harness/).
    Plan:
    [`plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md`](./plans/completed/web04-plan-octagram-debug-harness-luna-pinyin.md).
-4. **M55 native Track A match-or-beat program is reopened at Phase 2R.** It
-   proved the poet-storage memory owner and reduced flag-on Track A peak to
-   `110.5 MB`, but the `YUNE-POET/1` access path failed the full ratchet. Step 0
-   makes byte-backed poet default-off, restores M52 green on main, and keeps
-   Phase 2R active for a `YUNE-POET/2` redesign. Evidence:
+4. **M55 native Track A match-or-beat program is reopened with Phase 2R no-go.**
+   It proved the poet-storage memory owner and reduced flag-on Track A peak to
+   `110.5 MB` with `YUNE-POET/1` and `113.1 MB` with `YUNE-POET/2`, but both
+   access paths fail the full ratchet. Step 0 makes byte-backed poet
+   default-off, and the Phase 2R default-off rerun keeps M52 green. Evidence:
    [`reports/evidence/m55-native-match-or-beat/`](./reports/evidence/m55-native-match-or-beat/).
    Plan:
    [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md).
@@ -264,8 +274,8 @@ and current decision rules.
 | M48-M52 | Complete | Current engine correctness, support-contract, and Track A guardrail closeouts; M52 is the current native performance source of truth. |
 | M53 | Complete | Engine release-readiness audit (docs/evidence only): five-dimension consistency/ABI/guardrail/claim/link audit with adversarial verification; substantive invariants clean, no drift; corrected stale `README.md`/archived public-claim wording to the contract-accurate M52 lane-specific record. Plan: [`plans/completed/m53-plan-engine-release-readiness-audit.md`](./plans/completed/m53-plan-engine-release-readiness-audit.md). |
 | M54 | Complete | Native octagram-compatible grammar support for the named upstream `luna_pinyin` target, with pinned lotem oracle data, RIME-LMDG validation evidence, external model checksums, clean-room Rust `.gram` parsing/scoring, null-grammar and TypeDuck regression gates, and no public C ABI change. Plan: [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md). |
-| M55 | Reopened - Phase 2R | Native Track A match-or-beat program reopened after the Phase 2 no-go closeout landed byte-backed poet default-on with M52 red. Step 0 makes `YUNE-POET/1` consumption default-off, preserves deploy emission/validation, restores the owned Luna fast path, and re-verifies M52 green on main. Phase 2R owns a `YUNE-POET/2` redesign; default-on requires two full M55 ratchet passes and Track A memory `<=125 MB`. Plan: [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md). |
-| M56 | Drafted / queued | Engine productization hardening for the external Windows/iOS frontends: staleness-proofing + cold-start conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards; no ABI change, behavior-preserving. Queued behind active M55 engine-internal Phase 2R work unless explicitly rescheduled. Plan: [`plans/active/m56-plan-engine-productization-hardening.md`](./plans/active/m56-plan-engine-productization-hardening.md). |
+| M55 | Reopened - Phase 2R no-go/default-off | Native Track A match-or-beat program reopened after the Phase 2 no-go closeout landed byte-backed poet default-on with M52 red. Step 0 makes `YUNE-POET/1` consumption default-off, preserves deploy emission/validation, restores the owned Luna fast path, and re-verifies M52 green on main. Phase 2R implements `YUNE-POET/2` with a compiled prefix index, but the flag-on full ratchet is still red, so byte-backed poet remains default-off; default-on still requires two full M55 ratchet passes and Track A memory `<=125 MB`. Plan: [`plans/active/m55-plan-native-track-a-match-or-beat-program.md`](./plans/active/m55-plan-native-track-a-match-or-beat-program.md). |
+| M56 | Drafted / queued | Engine productization hardening for the external Windows/iOS frontends: staleness-proofing + cold-start conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards; no ABI change, behavior-preserving. With M55 Phase 2R recorded as no-go/default-off, M56 is the next drafted engine plan unless M55 is explicitly resumed with a new design. Plan: [`plans/active/m56-plan-engine-productization-hardening.md`](./plans/active/m56-plan-engine-productization-hardening.md). |
 | WEB-05 | Drafted / parallel-capable | Harness control surface: expose every engine control/diagnostic reachable through existing seams in the `yune-web` playground (the M21-deferred "surface all controls" slice); defaults and public demo unchanged; Playwright-evidenced. Plan: [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md). |
 
 ## Scope Ledger

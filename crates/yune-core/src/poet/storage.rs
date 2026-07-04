@@ -1,5 +1,7 @@
-use std::collections::HashMap;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
+use std::ops::Range;
 use std::str;
 use std::sync::Arc;
 
@@ -10,7 +12,7 @@ use super::{
     ModelEntry, ModelStringPool, ModelStringRange, ModelVocabularyEntry, OwnedModelEntry,
 };
 
-const MAGIC: &[u8; 12] = b"YUNE-POET/1\0";
+const MAGIC: &[u8; 12] = b"YUNE-POET/2\0";
 const HEADER_LEN: usize = 24;
 const SECTION_DIR_ENTRY_LEN: usize = 20;
 
@@ -32,9 +34,12 @@ const SECTION_CHARACTER_CODES: u32 = 15;
 const SECTION_CHARACTER_CODE_TEXT_POOL: u32 = 16;
 const SECTION_ABBREVIATION_CHARACTER_CODES: u32 = 17;
 const SECTION_ABBREVIATION_CHARACTER_CODE_TEXT_POOL: u32 = 18;
+const SECTION_ENTRY_ROW_RANGES: u32 = 19;
+const SECTION_CODE_PREFIX_INDEX: u32 = 20;
 
 const ENTRY_STRIDE: u32 = 16;
 const RANGE_STRIDE: u32 = 8;
+const PREFIX_INDEX_STRIDE: u32 = 32;
 const VOCABULARY_STRIDE: u32 = 20;
 const FIRST_CODE_STRIDE: u32 = 12;
 const CHAR_CODE_STRIDE: u32 = 12;
@@ -136,6 +141,20 @@ pub fn build_poet_bin(
         SECTION_ENTRY_CODE_RANGES,
         RANGE_STRIDE,
         encode_ranges(&compiled.entry_codes.ranges),
+    );
+    append_section(
+        &mut bytes,
+        &mut sections,
+        SECTION_ENTRY_ROW_RANGES,
+        RANGE_STRIDE,
+        encode_entry_row_ranges(&compiled.entry_row_ranges),
+    );
+    append_section(
+        &mut bytes,
+        &mut sections,
+        SECTION_CODE_PREFIX_INDEX,
+        PREFIX_INDEX_STRIDE,
+        encode_prefix_index(&compiled.entry_code_prefix_index),
     );
     append_vocabulary_sections(
         &mut bytes,
@@ -242,6 +261,8 @@ pub fn parse_poet_bin_summary(
     let abbreviation_vocabulary = required_section(&sections, SECTION_ABBREVIATION_VOCABULARY)?;
 
     validate_entries(bytes, &sections)?;
+    validate_entry_row_ranges(bytes, &sections)?;
+    validate_prefix_index(bytes, &sections)?;
     validate_vocabulary(
         bytes,
         &sections,
@@ -340,6 +361,8 @@ struct PoetBinSections {
     entry_text_pool: PoetBinSectionSummary,
     entry_code_pool: PoetBinSectionSummary,
     entry_code_ranges: PoetBinSectionSummary,
+    entry_row_ranges: PoetBinSectionSummary,
+    prefix_index: PoetBinSectionSummary,
     vocabulary: VocabularySections,
     abbreviation_vocabulary: VocabularySections,
     character_codes: CharacterCodeSections,
@@ -374,6 +397,33 @@ struct VocabularyRow {
 pub(super) struct VocabularyCharsRange {
     pub(super) start: u32,
     pub(super) count: u32,
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct ByteBackedCodeSpan {
+    pub(super) end: usize,
+    pub(super) end_index: usize,
+    pub(super) entries: Range<usize>,
+}
+
+#[derive(Clone, Debug, Default)]
+pub(super) struct ByteBackedPrefixWalk {
+    pub(super) spans: Vec<ByteBackedCodeSpan>,
+    pub(super) prefix_hits: usize,
+    pub(super) prefix_misses: usize,
+    pub(super) prefix_early_breaks: usize,
+    pub(super) exact_range_misses: usize,
+    pub(super) nodes_visited: usize,
+    pub(super) entry_ranges_emitted: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct PrefixIndexRow {
+    hash: u64,
+    prefix_start: u32,
+    prefix_end: u32,
+    entry_start: u32,
+    entry_end: u32,
 }
 
 impl ByteBackedPoetStore {
@@ -433,6 +483,45 @@ impl ByteBackedPoetStore {
         let bits = read_u32(self.bytes(), self.entry_row_offset(index) + 12)
             .expect("poet entry weight is validated during parse");
         f32::from_bits(bits)
+    }
+
+    pub(super) fn entries_for_code_range(&self, code: &str) -> Option<Range<usize>> {
+        let row = self.prefix_index_row(code.as_bytes())?;
+        if row.entry_start == row.entry_end {
+            return None;
+        }
+        Some(row.entry_start as usize..row.entry_end as usize)
+    }
+
+    pub(super) fn walk_from_prefix_index(
+        &self,
+        input: &str,
+        boundaries: &[usize],
+        start_index: usize,
+    ) -> ByteBackedPrefixWalk {
+        let mut walk = ByteBackedPrefixWalk::default();
+        let start = boundaries[start_index];
+        for (end_index, end) in boundaries.iter().copied().enumerate().skip(start_index + 1) {
+            let prefix = &input.as_bytes()[start..end];
+            let Some(row) = self.prefix_index_row(prefix) else {
+                walk.prefix_misses += 1;
+                walk.prefix_early_breaks += 1;
+                break;
+            };
+            walk.prefix_hits += 1;
+            walk.nodes_visited += 1;
+            if row.entry_start < row.entry_end {
+                walk.entry_ranges_emitted += 1;
+                walk.spans.push(ByteBackedCodeSpan {
+                    end,
+                    end_index,
+                    entries: row.entry_start as usize..row.entry_end as usize,
+                });
+            } else {
+                walk.exact_range_misses += 1;
+            }
+        }
+        walk
     }
 
     pub(super) fn vocabulary_indices_for_first_code(
@@ -530,7 +619,16 @@ impl ByteBackedPoetStore {
                 self.entries_payload_bytes(),
                 self.entry_count(),
                 format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
-                "sentence model entries served from YUNE-POET/1 bytes",
+                "sentence model entries served from YUNE-POET/2 bytes",
+            ),
+            crate::MemoryOwnerRow::new(
+                "poet.prefix_index",
+                poet_byte_source_class(self.source.as_ref()),
+                section_len(&self.sections.entry_row_ranges)
+                    .saturating_add(section_len(&self.sections.prefix_index)),
+                self.sections.prefix_index.count as usize,
+                format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
+                "compiled prefix and exact-row ranges served from YUNE-POET/2 bytes",
             ),
             crate::MemoryOwnerRow::new(
                 "poet.vocabulary",
@@ -538,7 +636,7 @@ impl ByteBackedPoetStore {
                 self.vocabulary_payload_bytes(false),
                 self.vocabulary_count(),
                 format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
-                "normal preset vocabulary served from YUNE-POET/1 bytes",
+                "normal preset vocabulary served from YUNE-POET/2 bytes",
             ),
             crate::MemoryOwnerRow::new(
                 "poet.abbreviation_vocabulary",
@@ -546,7 +644,7 @@ impl ByteBackedPoetStore {
                 self.vocabulary_payload_bytes(true),
                 self.abbreviation_vocabulary_count(),
                 format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
-                "abbreviation preset vocabulary served from YUNE-POET/1 bytes",
+                "abbreviation preset vocabulary served from YUNE-POET/2 bytes",
             ),
         ]
     }
@@ -686,6 +784,54 @@ impl ByteBackedPoetStore {
         None
     }
 
+    fn prefix_index_row(&self, prefix: &[u8]) -> Option<PrefixIndexRow> {
+        let hash = hash_prefix_key(prefix);
+        let mut low = 0usize;
+        let mut high = self.sections.prefix_index.count as usize;
+        while low < high {
+            let mid = low + (high - low) / 2;
+            let row = self.prefix_index_row_at(mid);
+            match row.hash.cmp(&hash) {
+                Ordering::Less => low = mid + 1,
+                Ordering::Equal => high = mid,
+                Ordering::Greater => high = mid,
+            }
+        }
+        let mut index = low;
+        while index < self.sections.prefix_index.count as usize {
+            let row = self.prefix_index_row_at(index);
+            if row.hash != hash {
+                break;
+            }
+            if self.prefix_index_key(row) == prefix {
+                return Some(row);
+            }
+            index += 1;
+        }
+        None
+    }
+
+    fn prefix_index_row_at(&self, index: usize) -> PrefixIndexRow {
+        let row = row_offset(&self.sections.prefix_index, index);
+        PrefixIndexRow {
+            hash: read_u64(self.bytes(), row).expect("poet prefix index is validated during parse"),
+            prefix_start: read_u32(self.bytes(), row + 8)
+                .expect("poet prefix index is validated during parse"),
+            prefix_end: read_u32(self.bytes(), row + 12)
+                .expect("poet prefix index is validated during parse"),
+            entry_start: read_u32(self.bytes(), row + 24)
+                .expect("poet prefix index is validated during parse"),
+            entry_end: read_u32(self.bytes(), row + 28)
+                .expect("poet prefix index is validated during parse"),
+        }
+    }
+
+    fn prefix_index_key(&self, row: PrefixIndexRow) -> &[u8] {
+        let pool = section_bytes(self.bytes(), &self.sections.entry_code_pool)
+            .expect("poet code pool is validated during parse");
+        &pool[row.prefix_start as usize..row.prefix_end as usize]
+    }
+
     fn text_range(&self, section: &PoetBinSectionSummary, start: u32, end: u32) -> &str {
         let pool = section_bytes(self.bytes(), section)
             .expect("poet text pools are validated during parse");
@@ -723,6 +869,8 @@ impl PoetBinSections {
             entry_text_pool: required_section(sections, SECTION_ENTRY_TEXT_POOL)?.clone(),
             entry_code_pool: required_section(sections, SECTION_ENTRY_CODE_POOL)?.clone(),
             entry_code_ranges: required_section(sections, SECTION_ENTRY_CODE_RANGES)?.clone(),
+            entry_row_ranges: required_section(sections, SECTION_ENTRY_ROW_RANGES)?.clone(),
+            prefix_index: required_section(sections, SECTION_CODE_PREFIX_INDEX)?.clone(),
             vocabulary: VocabularySections {
                 rows: required_section(sections, SECTION_VOCABULARY)?.clone(),
                 text_pool: required_section(sections, SECTION_VOCABULARY_TEXT_POOL)?.clone(),
@@ -782,6 +930,8 @@ struct CompiledPoetInputs {
     entries_by_code: Vec<ModelEntry>,
     entry_texts: ModelStringPool,
     entry_codes: ModelStringPool,
+    entry_row_ranges: Vec<(u32, u32)>,
+    entry_code_prefix_index: Vec<PrefixIndexBuildRow>,
     vocabulary: Vec<ModelVocabularyEntry>,
     vocabulary_first_codes: Vec<(String, usize)>,
     abbreviation_vocabulary: Vec<ModelVocabularyEntry>,
@@ -834,6 +984,8 @@ fn compile_poet_inputs(
     }
     owned_entries.sort_by(compare_model_entry_by_code);
     let (entries_by_code, entry_texts, entry_codes) = pack_owned_model_entries(owned_entries);
+    let entry_row_ranges = build_entry_row_ranges(&entries_by_code, entry_codes.ranges.len());
+    let entry_code_prefix_index = build_prefix_index(&entry_codes, &entry_row_ranges);
     let (vocabulary, vocabulary_first_codes) =
         build_model_vocabulary_index(vocabulary, &character_codes);
     let (abbreviation_vocabulary, abbreviation_vocabulary_first_codes) =
@@ -842,6 +994,8 @@ fn compile_poet_inputs(
         entries_by_code,
         entry_texts,
         entry_codes,
+        entry_row_ranges,
+        entry_code_prefix_index,
         vocabulary,
         vocabulary_first_codes,
         abbreviation_vocabulary,
@@ -941,6 +1095,145 @@ fn encode_ranges(ranges: &[ModelStringRange]) -> Vec<u8> {
     for range in ranges {
         put_u32_extend(&mut bytes, range.start);
         put_u32_extend(&mut bytes, range.end);
+    }
+    bytes
+}
+
+fn encode_entry_row_ranges(ranges: &[(u32, u32)]) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(ranges.len() * RANGE_STRIDE as usize);
+    for (start, end) in ranges {
+        put_u32_extend(&mut bytes, *start);
+        put_u32_extend(&mut bytes, *end);
+    }
+    bytes
+}
+
+#[derive(Clone, Debug)]
+struct PrefixIndexBuildRow {
+    hash: u64,
+    prefix_start: u32,
+    prefix_end: u32,
+    code_start: u32,
+    code_end: u32,
+    entry_start: u32,
+    entry_end: u32,
+}
+
+#[derive(Clone, Debug)]
+struct PrefixIndexAccumulator {
+    prefix_start: u32,
+    prefix_end: u32,
+    code_start: u32,
+    code_end: u32,
+    entry_start: u32,
+    entry_end: u32,
+}
+
+fn build_entry_row_ranges(entries: &[ModelEntry], code_count: usize) -> Vec<(u32, u32)> {
+    let mut ranges = vec![(0, 0); code_count];
+    let mut start = 0usize;
+    while start < entries.len() {
+        let code_id = entries[start].code_id as usize;
+        let mut end = start + 1;
+        while end < entries.len() && entries[end].code_id as usize == code_id {
+            end += 1;
+        }
+        ranges[code_id] = (
+            u32::try_from(start).expect("poet entry row start exceeds u32"),
+            u32::try_from(end).expect("poet entry row end exceeds u32"),
+        );
+        start = end;
+    }
+    ranges
+}
+
+fn build_prefix_index(
+    entry_codes: &ModelStringPool,
+    entry_row_ranges: &[(u32, u32)],
+) -> Vec<PrefixIndexBuildRow> {
+    let mut prefixes = BTreeMap::<String, PrefixIndexAccumulator>::new();
+    for (code_id, range) in entry_codes.ranges.iter().copied().enumerate() {
+        let code = entry_codes.string(range);
+        for prefix_end in code
+            .char_indices()
+            .map(|(offset, ch)| offset + ch.len_utf8())
+        {
+            let prefix = &code[..prefix_end];
+            let absolute_prefix_end = range.start + prefix_end as u32;
+            let (entry_start, entry_end) = if prefix_end == code.len() {
+                entry_row_ranges[code_id]
+            } else {
+                (0, 0)
+            };
+            prefixes
+                .entry(prefix.to_owned())
+                .and_modify(|existing| {
+                    existing.code_start = existing.code_start.min(code_id as u32);
+                    existing.code_end = existing.code_end.max(code_id as u32 + 1);
+                    if entry_start != entry_end {
+                        existing.entry_start = entry_start;
+                        existing.entry_end = entry_end;
+                    }
+                })
+                .or_insert(PrefixIndexAccumulator {
+                    prefix_start: range.start,
+                    prefix_end: absolute_prefix_end,
+                    code_start: code_id as u32,
+                    code_end: code_id as u32 + 1,
+                    entry_start,
+                    entry_end,
+                });
+        }
+    }
+    let mut rows = prefixes
+        .into_values()
+        .map(|row| PrefixIndexBuildRow {
+            hash: hash_prefix_key(
+                entry_codes
+                    .string(ModelStringRange {
+                        start: row.prefix_start,
+                        end: row.prefix_end,
+                    })
+                    .as_bytes(),
+            ),
+            prefix_start: row.prefix_start,
+            prefix_end: row.prefix_end,
+            code_start: row.code_start,
+            code_end: row.code_end,
+            entry_start: row.entry_start,
+            entry_end: row.entry_end,
+        })
+        .collect::<Vec<_>>();
+    rows.sort_by(|left, right| {
+        left.hash.cmp(&right.hash).then_with(|| {
+            let left_key = entry_codes
+                .string(ModelStringRange {
+                    start: left.prefix_start,
+                    end: left.prefix_end,
+                })
+                .as_bytes();
+            let right_key = entry_codes
+                .string(ModelStringRange {
+                    start: right.prefix_start,
+                    end: right.prefix_end,
+                })
+                .as_bytes();
+            left_key.cmp(right_key)
+        })
+    });
+    rows
+}
+
+fn encode_prefix_index(rows: &[PrefixIndexBuildRow]) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(rows.len() * PREFIX_INDEX_STRIDE as usize);
+    for row in rows {
+        put_u64_extend(&mut bytes, row.hash);
+        put_u32_extend(&mut bytes, row.prefix_start);
+        put_u32_extend(&mut bytes, row.prefix_end);
+        put_u32_extend(&mut bytes, row.code_start);
+        put_u32_extend(&mut bytes, row.code_end);
+        put_u32_extend(&mut bytes, row.entry_start);
+        put_u32_extend(&mut bytes, row.entry_end);
     }
     bytes
 }
@@ -1045,6 +1338,106 @@ fn validate_entries(
             SECTION_ENTRY_CODE_RANGES,
         ))?;
         validate_text_range(code_pool, start, end, SECTION_ENTRY_CODE_POOL)?;
+    }
+    Ok(())
+}
+
+fn validate_entry_row_ranges(
+    bytes: &[u8],
+    sections: &[PoetBinSectionSummary],
+) -> Result<(), PoetBinParseError> {
+    let entries = required_section(sections, SECTION_ENTRIES)?;
+    let code_ranges = required_section(sections, SECTION_ENTRY_CODE_RANGES)?;
+    let row_ranges = required_section(sections, SECTION_ENTRY_ROW_RANGES)?;
+    require_stride(row_ranges, RANGE_STRIDE)?;
+    if row_ranges.count != code_ranges.count {
+        return Err(PoetBinParseError::InvalidSectionShape(
+            SECTION_ENTRY_ROW_RANGES,
+        ));
+    }
+    let mut previous_end = 0u32;
+    for index in 0..row_ranges.count as usize {
+        let row = row_offset(row_ranges, index);
+        let start = read_u32(bytes, row).ok_or(PoetBinParseError::SectionOutOfBounds(
+            SECTION_ENTRY_ROW_RANGES,
+        ))?;
+        let end = read_u32(bytes, row + 4).ok_or(PoetBinParseError::SectionOutOfBounds(
+            SECTION_ENTRY_ROW_RANGES,
+        ))?;
+        if start > end || end > entries.count || start < previous_end {
+            return Err(PoetBinParseError::InvalidSectionShape(
+                SECTION_ENTRY_ROW_RANGES,
+            ));
+        }
+        previous_end = end;
+    }
+    Ok(())
+}
+
+fn validate_prefix_index(
+    bytes: &[u8],
+    sections: &[PoetBinSectionSummary],
+) -> Result<(), PoetBinParseError> {
+    let prefix_index = required_section(sections, SECTION_CODE_PREFIX_INDEX)?;
+    require_stride(prefix_index, PREFIX_INDEX_STRIDE)?;
+    let code_pool = section_bytes(bytes, required_section(sections, SECTION_ENTRY_CODE_POOL)?)?;
+    let code_ranges = required_section(sections, SECTION_ENTRY_CODE_RANGES)?;
+    let entries = required_section(sections, SECTION_ENTRIES)?;
+    let mut previous_key: Option<&[u8]> = None;
+    for index in 0..prefix_index.count as usize {
+        let row = row_offset(prefix_index, index);
+        let hash = read_u64(bytes, row).ok_or(PoetBinParseError::SectionOutOfBounds(
+            SECTION_CODE_PREFIX_INDEX,
+        ))?;
+        let prefix_start = read_u32(bytes, row + 8).ok_or(
+            PoetBinParseError::SectionOutOfBounds(SECTION_CODE_PREFIX_INDEX),
+        )?;
+        let prefix_end = read_u32(bytes, row + 12).ok_or(PoetBinParseError::SectionOutOfBounds(
+            SECTION_CODE_PREFIX_INDEX,
+        ))?;
+        let code_start = read_u32(bytes, row + 16).ok_or(PoetBinParseError::SectionOutOfBounds(
+            SECTION_CODE_PREFIX_INDEX,
+        ))?;
+        let code_end = read_u32(bytes, row + 20).ok_or(PoetBinParseError::SectionOutOfBounds(
+            SECTION_CODE_PREFIX_INDEX,
+        ))?;
+        let entry_start = read_u32(bytes, row + 24).ok_or(
+            PoetBinParseError::SectionOutOfBounds(SECTION_CODE_PREFIX_INDEX),
+        )?;
+        let entry_end = read_u32(bytes, row + 28).ok_or(PoetBinParseError::SectionOutOfBounds(
+            SECTION_CODE_PREFIX_INDEX,
+        ))?;
+        validate_text_range(
+            code_pool,
+            prefix_start,
+            prefix_end,
+            SECTION_CODE_PREFIX_INDEX,
+        )?;
+        if prefix_start == prefix_end
+            || code_start >= code_end
+            || code_end > code_ranges.count
+            || entry_start > entry_end
+            || entry_end > entries.count
+        {
+            return Err(PoetBinParseError::InvalidSectionShape(
+                SECTION_CODE_PREFIX_INDEX,
+            ));
+        }
+        let key = &code_pool[prefix_start as usize..prefix_end as usize];
+        if hash != hash_prefix_key(key) {
+            return Err(PoetBinParseError::InvalidSectionShape(
+                SECTION_CODE_PREFIX_INDEX,
+            ));
+        }
+        if previous_key.is_some_and(|previous| {
+            let previous_hash = hash_prefix_key(previous);
+            previous_hash > hash || (previous_hash == hash && previous >= key)
+        }) {
+            return Err(PoetBinParseError::InvalidSectionShape(
+                SECTION_CODE_PREFIX_INDEX,
+            ));
+        }
+        previous_key = Some(key);
     }
     Ok(())
 }
@@ -1272,6 +1665,27 @@ fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(raw.try_into().ok()?))
 }
 
+fn read_u64(bytes: &[u8], offset: usize) -> Option<u64> {
+    let end = offset.checked_add(8)?;
+    let raw = bytes.get(offset..end)?;
+    Some(u64::from_le_bytes(raw.try_into().ok()?))
+}
+
+fn put_u64_extend(bytes: &mut Vec<u8>, value: u64) {
+    bytes.extend_from_slice(&value.to_le_bytes());
+}
+
+fn hash_prefix_key(bytes: &[u8]) -> u64 {
+    const FNV_OFFSET: u64 = 0xcbf29ce484222325;
+    const FNV_PRIME: u64 = 0x100000001b3;
+    let mut hash = FNV_OFFSET;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    hash
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1294,11 +1708,33 @@ mod tests {
         let bytes = sample_poet_bin();
         let summary = parse_poet_bin_summary(&bytes, 0xAABBCCDD).expect("poet bin should parse");
 
+        assert_eq!(&bytes[..12], b"YUNE-POET/2\0");
         assert_eq!(summary.dictionary_checksum, 0xAABBCCDD);
         assert_eq!(summary.entries, 3);
         assert_eq!(summary.vocabulary_entries, 1);
         assert_eq!(summary.abbreviation_vocabulary_entries, 1);
-        assert_eq!(summary.sections.len(), 18);
+        assert!(summary.sections.iter().any(|section| section.id == 19));
+        assert!(summary.sections.iter().any(|section| section.id == 20));
+        assert_eq!(
+            summary
+                .sections
+                .iter()
+                .find(|section| section.id == 20)
+                .map(|section| section.stride),
+            Some(32)
+        );
+        assert_eq!(summary.sections.len(), 20);
+    }
+
+    #[test]
+    fn poet_bin_rejects_legacy_v1_artifact() {
+        let mut bytes = sample_poet_bin();
+        bytes[..12].copy_from_slice(b"YUNE-POET/1\0");
+
+        assert_eq!(
+            parse_poet_bin_summary(&bytes, 0xAABBCCDD),
+            Err(PoetBinParseError::UnsupportedVersion),
+        );
     }
 
     #[test]

@@ -1265,15 +1265,17 @@ path, and re-verifies the standing M52 native Track A gate green on main.
 - [x] **M55-PERF-04**: The final M55 closeout records the threshold-handoff
   decision: M55 does not supersede M52 because the broader ratchet is red.
 - [x] **M55-PERF-05**: Phase 3/Phase 4 optimization remains deferred by the
-  Phase 2 measured no-go; M55 continues at Phase 2R before any default flip,
-  graph work, or short-key work.
+  Phase 2 and Phase 2R measured no-go results; any default flip, graph work, or
+  short-key work needs a new explicit M55 continuation design.
 - [x] **M55-PERF-06**: Reports, roadmap, requirements, milestone history, and
   plan state are updated to the reopen state without public C ABI widening,
   retained heap indexes, browser/product/platform performance claims, or
   M56/WEB-05 scope creep.
-- [ ] **M55-PERF-07**: Phase 2R redesigns poet storage as `YUNE-POET/2` with a
+- [x] **M55-PERF-07**: Phase 2R redesigns poet storage as `YUNE-POET/2` with a
   compiled index, fixed-width headers, zero decode before candidate acceptance,
-  and loud rejection or rebuild of `YUNE-POET/1` on the runtime path.
+  and loud rejection or rebuild of `YUNE-POET/1` on the runtime path; measured
+  evidence records this design as no-go for the default flip because the long
+  Track A rows and one Track B guard remain red.
 - [ ] **M55-PERF-08**: Byte-backed poet consumption becomes default-on only in a
   commit where the full M55 ratchet is green with byte-backing enabled in two
   consecutive same-run benchmark runs and Track A memory is `<=125 MB`.
@@ -1440,9 +1442,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M55-PERF-02 | M55 | Complete - Phase 1 attributes the old unclassified memory floor and records named owner movement |
 | M55-PERF-03 | M55 | Complete with measured no-go - flag-on `YUNE-POET/1` poet payloads are byte-backed and parity-preserving, but the access path fails the long-row latency ratchet and is default-off |
 | M55-PERF-04 | M55 | Complete - threshold handoff is explicit: M52 remains the standing green gate, M55 thresholds are research/no-go evidence |
-| M55-PERF-05 | M55 | Complete - Phase 3/Phase 4 remain deferred; M55 continues at Phase 2R after the Phase 2 no-go |
+| M55-PERF-05 | M55 | Complete - Phase 3/Phase 4 remain deferred after Phase 2 and Phase 2R no-go evidence |
 | M55-PERF-06 | M55 | Complete - dashboards, roadmap, requirements, ledger, and plan state are updated to the reopen state without ABI/browser/product/platform scope widening |
-| M55-PERF-07 | M55 | Active - Phase 2R must redesign poet storage as `YUNE-POET/2` with compiled index, fixed-width headers, zero decode before acceptance, and v1 rejection or rebuild |
+| M55-PERF-07 | M55 | Complete with measured no-go - Phase 2R redesigned poet storage as `YUNE-POET/2` with compiled index and v1 rejection, but the flag-on full ratchet remains red |
 | M55-PERF-08 | M55 | Active - default-on requires two full M55 ratchet green runs with byte-backing enabled and Track A memory `<=125 MB` |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
@@ -1741,10 +1743,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M53 engine release-readiness audit requirements: 5 total, 5 complete, 0 active
 - M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
 - WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
-- M55 native Track A match-or-beat requirements: 8 total, 5 complete, 1 complete with measured no-go, 2 active
+- M55 native Track A match-or-beat requirements: 8 total, 5 complete, 2 complete with measured no-go, 1 active
 - Mapped to phases: 399
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M55 is reopened at Phase 2R. The historical flag-on `YUNE-POET/1` path reduces Track A peak to `110,542,848 B` but fails the full ratchet, so Step 0 makes runtime byte-backed poet consumption default-off and re-verifies M52 green on main while Phase 2R redesign remains active._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M55 remains reopened after Phase 2R no-go. The historical flag-on `YUNE-POET/1` path reduces Track A peak to `110,542,848 B`, and the Phase 2R `YUNE-POET/2` path reduces it to `113,090,560 B`, but both fail the full ratchet, so runtime byte-backed poet consumption stays default-off and M52 remains the standing green native Track A guard._

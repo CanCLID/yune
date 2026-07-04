@@ -1,0 +1,339 @@
+﻿{
+    "comparison":  "M55 Phase 2R product-path candidate parity: default-off owned path versus flag-on YUNE-POET/2",
+    "schema":  "luna_pinyin",
+    "shared_data_dir":  "apps/yune-web/public/schema",
+    "candidate_event_policy":  "sequences include a trailing space; comparison uses the final composing event where context.input equals the requested input and also compares trailing commit text",
+    "default_off":  {
+                        "label":  "default-off",
+                        "flag_on":  false,
+                        "user_data_dir":  "C:\\Users\\laubonghaudoi\\AppData\\Local\\Temp\\yune-m55-phase2r-default-off-e6766286cd5048ae961865d6a53cd755",
+                        "poet_bin_bytes":  31417186,
+                        "rows":  [
+                                     {
+                                         "input":  "ceshiyixiachangjushuruxingnengzenyang",
+                                         "sequence":  "ceshiyixiachangjushuruxingnengzenyang ",
+                                         "candidate_event_index":  36,
+                                         "trailing_event_index":  37,
+                                         "candidates":  [
+                                                            "測試一下長足輸入性能怎樣",
+                                                            "測試一下長句輸入性能怎樣",
+                                                            "測試一下敞車輸入性能怎樣",
+                                                            "測試一下長局輸入性能怎樣",
+                                                            "測試一下長居輸入性能怎樣"
+                                                        ],
+                                         "comments":  [
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          ""
+                                                      ],
+                                         "trailing_commits":  [
+                                                                  null
+                                                              ]
+                                     },
+                                     {
+                                         "input":  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+                                         "sequence":  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong ",
+                                         "candidate_event_index":  58,
+                                         "trailing_event_index":  59,
+                                         "candidates":  [
+                                                            "這個引擎其實應該支持超長橘子樹肉菜能用",
+                                                            "這個引擎其實應該支持超常橘子樹肉菜能用",
+                                                            "這個言情其實應該支持超長橘子樹肉菜能用",
+                                                            "這個言情其實應該支持超常橘子樹肉菜能用",
+                                                            "這個陰晴其實應該支持超長橘子樹肉菜能用"
+                                                        ],
+                                         "comments":  [
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          ""
+                                                      ],
+                                         "trailing_commits":  [
+                                                                  null
+                                                              ]
+                                     },
+                                     {
+                                         "input":  "zhongguo",
+                                         "sequence":  "zhongguo ",
+                                         "candidate_event_index":  7,
+                                         "trailing_event_index":  8,
+                                         "candidates":  [
+                                                            "中國大陸",
+                                                            "中國內地",
+                                                            "中國銀行",
+                                                            "中國重汽"
+                                                        ],
+                                         "comments":  [
+                                                          "",
+                                                          "zhongguoneidi",
+                                                          "zhongguoyinhang",
+                                                          "zhongguozhongqi"
+                                                      ],
+                                         "trailing_commits":  [
+                                                                  null
+                                                              ]
+                                     },
+                                     {
+                                         "input":  "jianli",
+                                         "sequence":  "jianli ",
+                                         "candidate_event_index":  5,
+                                         "trailing_event_index":  6,
+                                         "candidates":  [
+                                                            "建立",
+                                                            "簡歷",
+                                                            "監理",
+                                                            "監利",
+                                                            "剪力"
+                                                        ],
+                                         "comments":  [
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          ""
+                                                      ],
+                                         "trailing_commits":  [
+                                                                  null
+                                                              ]
+                                     },
+                                     {
+                                         "input":  "biancheng",
+                                         "sequence":  "biancheng ",
+                                         "candidate_event_index":  8,
+                                         "trailing_event_index":  9,
+                                         "candidates":  [
+                                                            "變成",
+                                                            "編程",
+                                                            "便成",
+                                                            "編成",
+                                                            "邊城"
+                                                        ],
+                                         "comments":  [
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          "",
+                                                          ""
+                                                      ],
+                                         "trailing_commits":  [
+                                                                  null
+                                                              ]
+                                     }
+                                 ]
+                    },
+    "flag_on_v2":  {
+                       "label":  "flag-on-v2",
+                       "flag_on":  true,
+                       "user_data_dir":  "C:\\Users\\laubonghaudoi\\AppData\\Local\\Temp\\yune-m55-phase2r-flag-on-v2-a2b01d885d8245738771eed2edcebe66",
+                       "poet_bin_bytes":  31417186,
+                       "rows":  [
+                                    {
+                                        "input":  "ceshiyixiachangjushuruxingnengzenyang",
+                                        "sequence":  "ceshiyixiachangjushuruxingnengzenyang ",
+                                        "candidate_event_index":  36,
+                                        "trailing_event_index":  37,
+                                        "candidates":  [
+                                                           "測試一下長足輸入性能怎樣",
+                                                           "測試一下長句輸入性能怎樣",
+                                                           "測試一下敞車輸入性能怎樣",
+                                                           "測試一下長局輸入性能怎樣",
+                                                           "測試一下長居輸入性能怎樣"
+                                                       ],
+                                        "comments":  [
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         ""
+                                                     ],
+                                        "trailing_commits":  [
+                                                                 null
+                                                             ]
+                                    },
+                                    {
+                                        "input":  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+                                        "sequence":  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong ",
+                                        "candidate_event_index":  58,
+                                        "trailing_event_index":  59,
+                                        "candidates":  [
+                                                           "這個引擎其實應該支持超長橘子樹肉菜能用",
+                                                           "這個引擎其實應該支持超常橘子樹肉菜能用",
+                                                           "這個言情其實應該支持超長橘子樹肉菜能用",
+                                                           "這個言情其實應該支持超常橘子樹肉菜能用",
+                                                           "這個陰晴其實應該支持超長橘子樹肉菜能用"
+                                                       ],
+                                        "comments":  [
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         ""
+                                                     ],
+                                        "trailing_commits":  [
+                                                                 null
+                                                             ]
+                                    },
+                                    {
+                                        "input":  "zhongguo",
+                                        "sequence":  "zhongguo ",
+                                        "candidate_event_index":  7,
+                                        "trailing_event_index":  8,
+                                        "candidates":  [
+                                                           "中國大陸",
+                                                           "中國內地",
+                                                           "中國銀行",
+                                                           "中國重汽"
+                                                       ],
+                                        "comments":  [
+                                                         "",
+                                                         "zhongguoneidi",
+                                                         "zhongguoyinhang",
+                                                         "zhongguozhongqi"
+                                                     ],
+                                        "trailing_commits":  [
+                                                                 null
+                                                             ]
+                                    },
+                                    {
+                                        "input":  "jianli",
+                                        "sequence":  "jianli ",
+                                        "candidate_event_index":  5,
+                                        "trailing_event_index":  6,
+                                        "candidates":  [
+                                                           "建立",
+                                                           "簡歷",
+                                                           "監理",
+                                                           "監利",
+                                                           "剪力"
+                                                       ],
+                                        "comments":  [
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         ""
+                                                     ],
+                                        "trailing_commits":  [
+                                                                 null
+                                                             ]
+                                    },
+                                    {
+                                        "input":  "biancheng",
+                                        "sequence":  "biancheng ",
+                                        "candidate_event_index":  8,
+                                        "trailing_event_index":  9,
+                                        "candidates":  [
+                                                           "變成",
+                                                           "編程",
+                                                           "便成",
+                                                           "編成",
+                                                           "邊城"
+                                                       ],
+                                        "comments":  [
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         "",
+                                                         ""
+                                                     ],
+                                        "trailing_commits":  [
+                                                                 null
+                                                             ]
+                                    }
+                                ]
+                   },
+    "rows":  [
+                 {
+                     "input":  "ceshiyixiachangjushuruxingnengzenyang",
+                     "default_candidate_event_index":  36,
+                     "flag_on_candidate_event_index":  36,
+                     "candidate_count":  5,
+                     "default_top":  "測試一下長足輸入性能怎樣",
+                     "flag_on_top":  "測試一下長足輸入性能怎樣",
+                     "candidates_match":  true,
+                     "comments_match":  true,
+                     "trailing_commit_matches":  true,
+                     "candidates":  [
+                                        "測試一下長足輸入性能怎樣",
+                                        "測試一下長句輸入性能怎樣",
+                                        "測試一下敞車輸入性能怎樣",
+                                        "測試一下長局輸入性能怎樣",
+                                        "測試一下長居輸入性能怎樣"
+                                    ]
+                 },
+                 {
+                     "input":  "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+                     "default_candidate_event_index":  58,
+                     "flag_on_candidate_event_index":  58,
+                     "candidate_count":  5,
+                     "default_top":  "這個引擎其實應該支持超長橘子樹肉菜能用",
+                     "flag_on_top":  "這個引擎其實應該支持超長橘子樹肉菜能用",
+                     "candidates_match":  true,
+                     "comments_match":  true,
+                     "trailing_commit_matches":  true,
+                     "candidates":  [
+                                        "這個引擎其實應該支持超長橘子樹肉菜能用",
+                                        "這個引擎其實應該支持超常橘子樹肉菜能用",
+                                        "這個言情其實應該支持超長橘子樹肉菜能用",
+                                        "這個言情其實應該支持超常橘子樹肉菜能用",
+                                        "這個陰晴其實應該支持超長橘子樹肉菜能用"
+                                    ]
+                 },
+                 {
+                     "input":  "zhongguo",
+                     "default_candidate_event_index":  7,
+                     "flag_on_candidate_event_index":  7,
+                     "candidate_count":  4,
+                     "default_top":  "中國大陸",
+                     "flag_on_top":  "中國大陸",
+                     "candidates_match":  true,
+                     "comments_match":  true,
+                     "trailing_commit_matches":  true,
+                     "candidates":  [
+                                        "中國大陸",
+                                        "中國內地",
+                                        "中國銀行",
+                                        "中國重汽"
+                                    ]
+                 },
+                 {
+                     "input":  "jianli",
+                     "default_candidate_event_index":  5,
+                     "flag_on_candidate_event_index":  5,
+                     "candidate_count":  5,
+                     "default_top":  "建立",
+                     "flag_on_top":  "建立",
+                     "candidates_match":  true,
+                     "comments_match":  true,
+                     "trailing_commit_matches":  true,
+                     "candidates":  [
+                                        "建立",
+                                        "簡歷",
+                                        "監理",
+                                        "監利",
+                                        "剪力"
+                                    ]
+                 },
+                 {
+                     "input":  "biancheng",
+                     "default_candidate_event_index":  8,
+                     "flag_on_candidate_event_index":  8,
+                     "candidate_count":  5,
+                     "default_top":  "變成",
+                     "flag_on_top":  "變成",
+                     "candidates_match":  true,
+                     "comments_match":  true,
+                     "trailing_commit_matches":  true,
+                     "candidates":  [
+                                        "變成",
+                                        "編程",
+                                        "便成",
+                                        "編成",
+                                        "邊城"
+                                    ]
+                 }
+             ]
+}

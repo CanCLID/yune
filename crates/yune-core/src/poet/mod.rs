@@ -755,7 +755,10 @@ impl PoetModelStorage {
         lookup_index: &SentenceLookupIndex,
         code: &str,
     ) -> Option<Range<usize>> {
-        lookup_index.entries_for_code_range(self, code)
+        match self {
+            Self::ByteBacked(storage) => storage.entries_for_code_range(code),
+            _ => lookup_index.entries_for_code_range(self, code),
+        }
     }
 
     fn vocabulary_indices_for_first_code(&self, abbreviation: bool, code: &str) -> Vec<usize> {
@@ -974,14 +977,9 @@ impl UpstreamSentenceModel {
             source,
             expected_dictionary_checksum,
         )?));
-        let index_start = crate::m37_metrics_enabled().then(Instant::now);
-        let lookup_index = SentenceLookupIndex::build(&storage);
-        if let Some(index_start) = index_start {
-            crate::m37_record_upstream_sentence_model_index_build(index_start.elapsed());
-        }
         Ok(Self {
             storage,
-            lookup_index,
+            lookup_index: SentenceLookupIndex::default(),
             max_candidates: max_candidates.max(1),
             grammar: GrammarProvider::default(),
         })
@@ -1069,16 +1067,6 @@ impl UpstreamSentenceModel {
     #[must_use]
     pub fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
         let mut rows = self.storage.memory_owner_rows(&self.lookup_index);
-        if matches!(self.storage, PoetModelStorage::ByteBacked(_)) {
-            rows.push(MemoryOwnerRow::new(
-                "poet.lookup_index",
-                MemoryOwnerClass::HeapOwnedGuarded,
-                self.lookup_index.estimated_retained_bytes(),
-                self.lookup_index.range_count(),
-                "SentenceLookupIndex",
-                "small sorted code-range index over byte-backed poet entries",
-            ));
-        }
         if let GrammarProvider::Octagram(grammar) = &self.grammar {
             rows.push(grammar.memory_owner_row());
         }
@@ -1281,6 +1269,9 @@ impl UpstreamSentenceModel {
         if let PoetModelStorage::Owned(storage) = &self.storage {
             return self.word_graph_for_input_owned(storage, input);
         }
+        if let PoetModelStorage::ByteBacked(storage) = &self.storage {
+            return self.word_graph_for_input_byte_backed(storage, input);
+        }
 
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
         let mut graph = WordGraph::new();
@@ -1298,8 +1289,8 @@ impl UpstreamSentenceModel {
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
         let mut vocabulary_chars = Vec::new();
-        let mut character_code_cache = CharacterCodeCache::new();
         let mut vocabulary_indices_cache = HashMap::<&str, Vec<usize>>::new();
+        let mut character_code_cache = CharacterCodeCache::new();
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
         for (start_index, start) in boundaries.iter().copied().enumerate() {
             if start >= input.len() {
@@ -1400,6 +1391,140 @@ impl UpstreamSentenceModel {
                     let vocabulary_text = self.storage.vocabulary_text(false, index).to_owned();
                     let vocabulary_weight = upstream_dictionary_weight(f64::from(
                         self.storage.vocabulary_weight(false, index),
+                    ));
+                    for phrase_code in phrase_codes {
+                        let end = start + phrase_code.len();
+                        graph
+                            .entry(start)
+                            .or_default()
+                            .entry(end)
+                            .or_default()
+                            .push(WordGraphEntry::new(
+                                vocabulary_text.clone(),
+                                vocabulary_weight,
+                            ));
+                        graph_edges += 1;
+                        if let Ok(end_index) = boundaries.binary_search(&end) {
+                            reachable[end_index] = true;
+                        }
+                    }
+                }
+            }
+        }
+        for edges in graph.values_mut() {
+            for entries in edges.values_mut() {
+                entries.sort_by(compare_word_graph_entry);
+                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+            }
+        }
+        crate::m37_record_upstream_sentence_model_scan(
+            code_prefix_checks,
+            table_entries_considered,
+            vocabulary_entries_considered,
+            graph_edges,
+        );
+        if let Some(rebuild_start) = rebuild_start {
+            let elapsed = rebuild_start.elapsed();
+            lookup_metrics.graph_rebuild_duration = elapsed;
+            lookup_metrics.incremental_discarded_rebuild_chars = input.chars().count();
+            crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
+        }
+        graph
+    }
+
+    fn word_graph_for_input_byte_backed(
+        &self,
+        storage: &ByteBackedPoetStore,
+        input: &str,
+    ) -> WordGraph {
+        let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
+        let mut graph = WordGraph::new();
+        let boundaries = input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+            .collect::<Vec<_>>();
+        let mut reachable = vec![false; boundaries.len()];
+        if let Some(first) = reachable.first_mut() {
+            *first = true;
+        }
+        let mut code_prefix_checks = 0usize;
+        let mut table_entries_considered = 0usize;
+        let mut vocabulary_entries_considered = 0usize;
+        let mut graph_edges = 0usize;
+        let mut character_code_cache = CharacterCodeCache::new();
+        let mut vocabulary_indices_cache = HashMap::<&str, Vec<usize>>::new();
+        let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
+        for (start_index, start) in boundaries.iter().copied().enumerate() {
+            if start >= input.len() {
+                continue;
+            }
+            if !reachable[start_index] {
+                lookup_metrics.unreachable_starts_skipped += 1;
+                continue;
+            }
+            lookup_metrics.reachable_starts_visited += 1;
+            let suffix = &input[start..];
+            lookup_metrics.phrase_index_walk_calls += 1;
+            let walk = storage.walk_from_prefix_index(input, &boundaries, start_index);
+            code_prefix_checks += walk.prefix_hits + walk.prefix_misses;
+            lookup_metrics.prefix_filter_hits += walk.prefix_hits;
+            lookup_metrics.prefix_filter_misses += walk.prefix_misses;
+            lookup_metrics.prefix_filter_early_breaks += walk.prefix_early_breaks;
+            lookup_metrics.exact_range_index_misses += walk.exact_range_misses;
+            lookup_metrics.phrase_index_nodes_visited += walk.nodes_visited;
+            lookup_metrics.phrase_index_entry_ranges_emitted += walk.entry_ranges_emitted;
+            for span in walk.spans {
+                lookup_metrics.exact_range_index_hits += 1;
+                let code = &input[start..span.end];
+                let bounded_entries = span.entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                table_entries_considered += span.entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                let mut inserted_edge = false;
+                for entry_index in bounded_entries {
+                    graph
+                        .entry(start)
+                        .or_default()
+                        .entry(span.end)
+                        .or_default()
+                        .push(WordGraphEntry::new(
+                            storage.entry_text(entry_index).to_owned(),
+                            upstream_dictionary_weight(f64::from(
+                                storage.entry_weight(entry_index),
+                            )),
+                        ));
+                    graph_edges += 1;
+                    inserted_edge = true;
+                }
+                if inserted_edge {
+                    reachable[span.end_index] = true;
+                }
+                let vocabulary_entries = vocabulary_indices_cache
+                    .entry(code)
+                    .or_insert_with(|| storage.vocabulary_indices_for_first_code(false, code));
+                for index in vocabulary_entries.iter().copied() {
+                    let chars = ByteBackedVocabularyChars {
+                        storage,
+                        abbreviation: false,
+                        range: storage.vocabulary_chars_range(false, index),
+                    };
+                    if !self.vocabulary_entry_matches_input_prefix_byte_backed(
+                        chars,
+                        suffix,
+                        code,
+                        &mut character_code_cache,
+                    ) {
+                        continue;
+                    }
+                    vocabulary_entries_considered += 1;
+                    let phrase_codes = self.derive_matching_phrase_codes_byte_backed(
+                        chars,
+                        suffix,
+                        code,
+                        &mut character_code_cache,
+                    );
+                    let vocabulary_text = storage.vocabulary_text(false, index).to_owned();
+                    let vocabulary_weight = upstream_dictionary_weight(f64::from(
+                        storage.vocabulary_weight(false, index),
                     ));
                     for phrase_code in phrase_codes {
                         let end = start + phrase_code.len();

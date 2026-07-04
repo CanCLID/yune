@@ -339,9 +339,13 @@ fn upstream_sentence_model_reads_candidates_from_byte_backed_poet_artifact() {
         owner("poet.abbreviation_vocabulary").class,
         MemoryOwnerClass::MmapFileBacked
     );
+    assert!(
+        owners.iter().all(|row| row.owner != "poet.lookup_index"),
+        "byte-backed YUNE-POET/2 must use compiled index storage, not a retained heap lookup index: {owners:?}"
+    );
     assert_eq!(
-        owner("poet.lookup_index").class,
-        MemoryOwnerClass::HeapOwnedGuarded
+        owner("poet.prefix_index").class,
+        MemoryOwnerClass::MmapFileBacked
     );
 }
 

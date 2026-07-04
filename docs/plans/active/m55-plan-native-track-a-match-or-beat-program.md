@@ -5,7 +5,18 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Reopened - Phase 2R. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03. - **Reopened:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Reopened - Phase 2R no-go/default-off. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03. - **Reopened:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+
+> **Phase 2R result (2026-07-03 local run):** `YUNE-POET/2` adds compiled
+> entry-row ranges and a hash-sorted prefix index, rejects `YUNE-POET/1`, and
+> removes the retained byte-backed `poet.lookup_index`. Flag-on evidence under
+> `docs/reports/evidence/m55-native-match-or-beat/phase-2r-poet-v2/ratchet-gate-3-hash-prefix-index/`
+> keeps the memory win (`113,090,560 B`) but fails the 37-character Luna row
+> (`5.395x` vs `3.267x`), the 59-character Luna row (`3.733x` vs `2.447x`),
+> and one Track B product guard (`378.274 us` vs `375.253 us`). Default-off
+> evidence under
+> `docs/reports/evidence/m55-native-match-or-beat/phase-2r-poet-v2/default-off-m52-full-rerun-3/`
+> keeps the standing M52 gate green (`185,823,232 B` peak). No default flip.
 
 > **Reopen Step 0 (2026-07-04):** The Phase 2 no-go evidence remains valid, but
 > the closeout landing state was wrong: byte-backed poet consumption shipped
@@ -546,9 +557,9 @@ ceilings.
 
 ## Phase 2R: Reopened Byte-Backed Poet Redesign
 
-**Status:** active. Phase 2R starts from the historical Phase 2 no-go evidence,
-but byte-backed poet consumption is default-off on main until the full M55
-ratchet is proven green with the redesigned flag-on path.
+**Status:** measured no-go. Phase 2R starts from the historical Phase 2 no-go
+evidence, but byte-backed poet consumption is default-off on main until the full
+M55 ratchet is proven green with a redesigned flag-on path.
 
 - [x] **Step 0: recover main.** Gate runtime poet-byte consumption behind
   `YUNE_POET_BYTE_BACKED=1` at `load_schema_compiled_dictionary`, preserve deploy
@@ -556,22 +567,33 @@ ratchet is proven green with the redesigned flag-on path.
   commit the reviewer red run under
   `final/review-m52-gate-verify/`, and re-run the standing M52 gate green under
   `reopen/step-0-m52-green/`.
-- [ ] **Redesign the artifact as `YUNE-POET/2`.** Use a compiled index and
+- [x] **Redesign the artifact as `YUNE-POET/2`.** Use a compiled index and
   fixed-width headers; perform zero decode before candidate acceptance; reject
   `YUNE-POET/1` loudly or rebuild instead of accepting it on the runtime path.
-- [ ] **Remove per-access synchronization and default-path overhead.** Resolve
+  Implemented as compiled entry-row ranges plus a 32-byte hash-sorted prefix
+  index; evidence is recorded under
+  `phase-2r-poet-v2/ratchet-gate-3-hash-prefix-index/`.
+- [x] **Remove per-access synchronization and default-path overhead.** Resolve
   an immutable snapshot per graph rebuild so flag-on byte-backed access does not
-  slow the flag-off owned path or the Track B product path.
-- [ ] **Flag-on evidence only.** Run byte-backed benchmarks behind
+  slow the flag-off owned path or the Track B product path. The byte-backed
+  path no longer builds a retained `poet.lookup_index`, and the default-off M52
+  proof is recorded under `phase-2r-poet-v2/default-off-m52-full-rerun-3/`.
+- [x] **Flag-on evidence only.** Run byte-backed benchmarks behind
   `YUNE_POET_BYTE_BACKED=1`; these runs are research evidence and must not gate
-  main until the default flip commit.
+  main until the default flip commit. The flag-on v2/hash-prefix run is red and
+  remains no-go research evidence.
 - [ ] **Default flip gate.** Flip byte-backed poet consumption default-on only
   in the commit where the full M55 ratchet is green with byte-backing enabled in
   two consecutive same-run benchmark runs and Track A peak memory is
-  `<=125 MB`. Never loosen the ceilings or cite stale green runs.
+  `<=125 MB`. Never loosen the ceilings or cite stale green runs. Not satisfied:
+  the Phase 2R flag-on ratchet fails long-row Track A latency and one Track B
+  product latency guard.
 
 If Phase 2R cannot satisfy the default flip gate, keep `YUNE_POET_BYTE_BACKED`
-default-off and record the remaining no-go root cause before continuing.
+default-off and record the remaining no-go root cause before continuing. Current
+Phase 2R no-go root cause: the v2 compiled prefix index removes the named
+residency owner but does not reduce byte-backed long-row graph/scoring cost
+enough to meet the ratchet.
 
 ## Phase 2b: Reduce The Top Named Owners From Phase 1 (conditional)
 
@@ -693,9 +715,9 @@ M55 would have closed **complete** if:
 Historical no-go record: the 2026-07-04 Phase 2 closeout proved the memory
 owner and reduced the flag-on Track A peak to `110,542,848 B`, but the full
 ratchet was red on the 37-character Luna row, 59-character Luna row, and one
-Track B product latency guard. M55 is now reopened at Phase 2R; the byte-backed
-poet path is default-off pending redesign, and the Step 0 evidence re-verifies
-the standing M52 guard green on main.
+Track B product latency guard. M55 reopened at Phase 2R; `YUNE-POET/2` also
+keeps the memory win but remains red on the full ratchet, so the byte-backed
+poet path stays default-off and the standing M52 guard remains green on main.
 ## Proposed Requirement IDs (add to `docs/requirements.md` at closeout only)
 
 (House style per `docs/requirements.md`: `<MILESTONE>-<TOPIC>-<NN>`.)

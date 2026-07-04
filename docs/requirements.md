@@ -1245,44 +1245,58 @@ required evidence and closeout gates.
 
 ### M55 Native Track A Match-Or-Beat Program
 
-**Status: complete.** M55 produced the full-suite native Track A ratchet,
-attributed the old memory floor, byte-backed the Luna poet payloads, recorded
-the historical Phase 2/2R no-go evidence, then reopened and closed the remaining
-Phase 3R/4/5 gates. The final default-on product path consumes validated
-`YUNE-POET/2` byte-backed Luna poet bytes, preserves accepted Yune product-path
-candidate output, passes the full M55 ratchet twice, and keeps Track A peak
-under the `125 MB` Tier M bar.
+**Status: complete with corrected claims (partial against the original
+Tier M bars).** M55 produced the full-suite native Track A ratchet, attributed
+the old memory floor, built `YUNE-POET/2` byte-backed poet storage, expanded
+the oracle sentence fixtures, and landed real graph/DP reductions. The
+2026-07-04 corrective review then found three of the final closeout's headline
+mechanisms were measurement artifacts (a benchmark-shape key deferral,
+benchmark-input short-key aliases, and an uninvalidated process-global config
+cache); they were removed, the benchmark now reads context after every
+keypress, byte-backed poet returned to explicit opt-in, and the standing gate
+was re-derived from honest per-key runs. Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/`.
 
 - [x] **M55-PERF-01**: A full-suite same-run native ratchet artifact covers
   startup, session lifecycle, Track A key rows including the two long Luna rows,
   currently-winning rows, Track A memory, and Track B product absolute guards,
-  with both historical no-go rows and final green rows preserved as evidence.
+  with historical no-go rows, the pre-corrective rows, and the corrective
+  re-baseline all preserved as evidence.
 - [x] **M55-PERF-02**: Phase 1 attributes the old `105.6 MB` unclassified lower
   bound before optimization and records named owner movement.
 - [x] **M55-PERF-03**: Phase 2/2R serves `poet.vocabulary`,
   `poet.entries_by_code`, and abbreviation vocabulary through byte-backed poet
-  storage while preserving candidate-output parity; the final `YUNE-POET/2`
-  path is default-on after the full ratchet is green twice.
-- [x] **M55-PERF-04**: The final M55 closeout records the threshold-handoff
-  decision: M55 supersedes M52 as the standing native Track A gate because the
-  broader ratchet is green twice.
+  storage while preserving candidate-output parity; after the corrective
+  re-baseline the `YUNE-POET/2` path is **explicit opt-in**
+  (`YUNE_POET_BYTE_BACKED=1`, `~113 MB` peak) because it fails the honest
+  per-key long-row ceilings until the incremental sentence scratch is ported
+  to byte-backed storage.
+- [x] **M55-PERF-04**: The standing native Track A gate is the corrective
+  per-key `m55-thresholds.csv` (2026-07-04). The pre-corrective M55 artifact
+  and the M52 artifact are batch-shaped history: the benchmark metric changed
+  (context read per keypress), so their ceilings are not comparable.
 - [x] **M55-PERF-05**: Phase 3R expands oracle sentence fixtures, records
   graph/access-volume diagnostics for owned and byte-backed builders, and
-  reduces owned-path long-row graph work while preserving byte-identical
-  candidate output and the existing ratchet rows. Final run 6 reports
-  37-character Luna `0.237x` and 59-character Luna `0.086x`.
+  reduces owned-path long-row graph work with byte-identical candidate output.
+  Honest per-key state: 37-character Luna `~1.97x`, 59-character Luna
+  `~1.53x` (the closeout's `0.237x`/`0.086x` were artifacts of the reverted
+  key deferral under a read-once benchmark shape).
 - [x] **M55-PERF-06**: Reports, roadmap, requirements, milestone history, and
-  plan state are updated to the final closeout state without public C ABI widening,
+  plan state reflect the corrected record without public C ABI widening,
   retained heap indexes, browser/product/platform performance claims, or
-  M56/WEB-05 scope creep.
+  M56/WEB-05 scope creep; candidate-page divergence vs librime on the
+  benchmark rows (`n`, `zhongguo`, both sentence tops - pre-existing) is
+  disclosed, not hidden behind self-referential parity fixtures.
 - [x] **M55-PERF-07**: Phase 2R redesigns poet storage as `YUNE-POET/2` with a
   compiled index, fixed-width headers, zero decode before candidate acceptance,
   and loud rejection or rebuild of `YUNE-POET/1` on the runtime path; measured
-  Phase 2R evidence records the pre-Phase-3R design as no-go, and final Phase 5
-  evidence re-lands it after graph/startup owners are reduced.
-- [x] **M55-PERF-08**: Byte-backed poet consumption becomes default-on only in a
-  commit where the full M55 ratchet is green with byte-backing enabled in two
-  consecutive same-run benchmark runs and Track A memory is `<=125 MB`.
+  Phase 2R and corrective evidence record it as no-go for default-on until the
+  scratch-port owner lands.
+- [x] **M55-PERF-08**: The default-on flip rule stands, but the 2026-07-04
+  flip is **reversed**: its two "green" flag-on ratchets were contaminated by
+  the key deferral and short-key aliases. Any future flip requires the full
+  corrective per-key ratchet green twice with byte-backing enabled and Track A
+  memory `<=125 MB`.
 
 ## Out of Scope
 
@@ -1442,14 +1456,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M54-OCTAGRAM-05 | M54 | Complete - support contract and roadmap distinguish native octagram support from deferred librime C++ plugin ABI support |
 | M54-OCTAGRAM-06 | M54 | Complete - octagram owner rows and final evidence record memory/timing scope without public performance claims |
 | M54-OCTAGRAM-07 | M54 | Complete - full third-party `.gram` models stay external; checked-in data is oracle output/provenance plus Yune-owned synthetic tests |
-| M55-PERF-01 | M55 | Complete - full-suite same-run ratchet artifact exists and records historical no-go rows plus the final green rows |
+| M55-PERF-01 | M55 | Complete - full-suite same-run ratchet artifact exists; historical no-go rows, pre-corrective rows, and the 2026-07-04 corrective per-key re-baseline all preserved |
 | M55-PERF-02 | M55 | Complete - Phase 1 attributes the old unclassified memory floor and records named owner movement |
-| M55-PERF-03 | M55 | Complete - `YUNE-POET/2` poet payloads are byte-backed, parity-preserving, and default-on after the final full ratchet is green twice |
-| M55-PERF-04 | M55 | Complete - threshold handoff is explicit: M55 supersedes M52 as the standing native Track A gate |
-| M55-PERF-05 | M55 | Complete - Phase 3R fixture expansion, graph/access-volume diagnostics, and graph-volume reduction close the long-row Tier M bars |
-| M55-PERF-06 | M55 | Complete - dashboards, roadmap, requirements, ledger, and plan state are updated to the final closeout state without ABI/browser/product/platform scope widening |
-| M55-PERF-07 | M55 | Complete - Phase 2R redesigned poet storage as `YUNE-POET/2`; Phase 5 re-lands it default-on after graph/startup owners are reduced |
-| M55-PERF-08 | M55 | Complete - default-on is backed by two flag-on green ratchets and two final default-on green ratchets with Track A memory under `125 MB` |
+| M55-PERF-03 | M55 | Complete (corrected) - `YUNE-POET/2` poet payloads are byte-backed and parity-preserving; explicit opt-in, not default-on, until the incremental scratch is ported to byte-backed storage |
+| M55-PERF-04 | M55 | Complete (corrected) - the corrective per-key `m55-thresholds.csv` is the standing native Track A gate; the pre-corrective M55 artifact and M52 artifact are batch-shaped history |
+| M55-PERF-05 | M55 | Complete (corrected) - fixture expansion and graph-volume reduction are real; honest per-key long rows are `~1.97x`/`~1.53x`, not the reverted deferral's `0.237x`/`0.086x` |
+| M55-PERF-06 | M55 | Complete (corrected) - docs reflect the corrected record; pre-existing candidate-page divergence vs librime is disclosed |
+| M55-PERF-07 | M55 | Complete (corrected) - `YUNE-POET/2` redesign landed; default-on re-land is a named future owner (scratch port), not achieved |
+| M55-PERF-08 | M55 | Reversed - the default-on flip's supporting ratchets were contaminated (key deferral + short-key aliases); flip reversed in the corrective series; the rule itself stands for any future flip |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |

@@ -5,7 +5,25 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Complete. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03. - **Reopened:** 2026-07-04. - **Completed:** 2026-07-04. - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Complete under the 2026-07-04 corrective re-baseline. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03. - **Reopened:** 2026-07-04. - **Completed:** 2026-07-04 (pre-corrective closeout retracted the same day). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+
+> **Corrective addendum (2026-07-04, supersedes the closeout claims below where
+> they conflict):** an independent review found the final closeout's headline
+> numbers were measurement artifacts: (1) a `RimeProcessKey` key deferral
+> amortized N keys into one flush under the benchmark's read-once shape (probe
+> evidence: 59-char `1.519x -> 0.004x` from that commit alone); (2) hardcoded
+> `n -> na` / `h -> ha` short-key aliases special-cased benchmark inputs; (3)
+> an uninvalidated process-global config cache turned the startup metric into
+> a cache-hit measurement and was a staleness hazard. All three were reverted;
+> the benchmark now reads context after **every keypress**; byte-backed poet
+> returned to explicit opt-in (the owned path holds the latency ceilings,
+> byte-backed does not until the incremental scratch is ported); and the
+> standing gate was re-derived from honest per-key runs (green twice:
+> `corrective-2026-07-04/gate-run-d`, `gate-run-e`). The real M55 wins stand:
+> 37-char `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `2.433x`, `hao`
+> `1.574x`, startup `0.895x`, session `0.864x`, Track B guards improved,
+> `YUNE-POET/2` built and parity-preserving (opt-in `113.2 MB`). Full record:
+> `docs/reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md`.
 
 > **Phase 2R result (2026-07-03 local run):** `YUNE-POET/2` adds compiled
 > entry-row ranges and a hash-sorted prefix index, rejects `YUNE-POET/1`, and

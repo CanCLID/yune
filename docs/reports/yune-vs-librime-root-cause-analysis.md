@@ -1,34 +1,45 @@
 # Current Yune Root-Cause Dashboard
 
-Date: 2026-07-04
+Date: 2026-07-04 (corrective re-baseline)
 
 This report keeps only the current root-cause read. Older milestone narratives,
 WEB-01/WEB-02/WEB-03 closeout detail, and superseded measurements remain in
 [`history/2026-06-28-yune-vs-librime-root-cause-analysis-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-root-cause-analysis-pre-current-dashboard.md).
 
-The native lane was refreshed by the M55 final default-on ratchets on
-2026-07-04. Browser rows are carried forward from the 2026-06-28 Playwright
-run.
+The native lane was re-baselined by the 2026-07-04 M55 **corrective series**:
+the benchmark now reads context after every keypress (the interactive shape),
+and three pre-corrective closeout mechanisms — a `luna_pinyin` key deferral, a
+process-global config cache, and benchmark-input short-key aliases — were
+identified as measurement artifacts and reverted. Full analysis:
+[`evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md).
+Browser rows are carried forward from the 2026-06-28 Playwright run.
 
 ## Technical Summary
 
-- **Current native guardrail owner**: M55 is now the standing native Track A
-  regression gate. It extends M52 with the current win rows, Track B product
-  absolutes, byte-backed memory ceiling, and Tier M caps for the short-key and
-  long Luna rows.
-- **Current native memory disposition**: validated `YUNE-POET/2` byte-backed
-  poet storage is default-on. Final run 6 reports Track A peak
-  `113,397,760 B`, under the tightened `118,831,104 B` ceiling and the `125 MB`
-  Tier M bar.
-- **Current native latency disposition**: the former long-row byte-backed
-  access blocker is resolved by the Phase 3R lazy/graph-volume work. The final
-  default-on gate reports 37-character Luna `0.237x` and 59-character Luna
-  `0.086x`. The `n` row remains above librime at `1.794x`, but it is inside
-  the Tier M `<=2.00x` bar.
-- **Current startup/session owner**: repeated deployed YAML parsing during
-  schema application was the final closeout instability. A metadata-validated
-  runtime config cache reduces final startup/session medians to about `6.6 ms`
-  for Track A without changing ABI or schema semantics.
+- **Current native guardrail owner**: the corrective per-key
+  `m55-thresholds.csv` is the standing native Track A gate — startup, session,
+  all eight key rows, Track A peak memory, win rows locked `<1.00x`, and
+  Track B product absolutes. Green twice consecutively (`gate-run-d/`,
+  `gate-run-e/`). M52's artifact and the pre-corrective M55 artifact are
+  batch-shaped history (the metric changed).
+- **Current native latency disposition**: real M55 graph/DP-reduction work
+  improved the long rows ~35% versus the pre-M55 record (37-char `1.913x`,
+  59-char `1.528x`) and the short keys (`ni` `2.433x`, `hao` `1.574x`), while
+  startup (`0.895x`) and session (`0.864x`) are measured faster than librime,
+  run-noisy. Yune remains slower on short keys and both sentence rows; the
+  pre-corrective `0.237x`/`0.086x` rows were deferral artifacts and carry no
+  claim.
+- **Current native memory disposition**: the shipping default is the owned
+  poet path at `185.7 MB` peak — the latency ceilings bind. `YUNE-POET/2`
+  byte-backed storage works, preserves parity, and measures `~113.2 MB`, but
+  only as an explicit opt-in (`YUNE_POET_BYTE_BACKED=1`) because the
+  incremental sentence scratch only operates on owned storage; byte-backed
+  long rows measure `4.6x`/`3.2x` per-key.
+- **Current correctness disclosure**: Yune's first candidate page differs from
+  librime on `n` and `zhongguo` (completion ranking) and on both long-sentence
+  top candidates (lattice; 37-char top `長足` vs librime `長句`). These are
+  pre-existing gaps surfaced by the M55 Phase 3R-0 oracle fixture expansion
+  (13 named blocked rows), now ranked the top native diagnostic target.
 - **Current browser fair memory owner**: the fair `luna_pinyin` browser gap is
   `64.0 MiB` Yune public demo versus `16.0 MiB` My RIME (carried 2026-06-28).
 
@@ -36,95 +47,99 @@ run.
 
 | Area | Current root cause | Evidence | Current status |
 | --- | --- | --- | --- |
-| Native Track A standing guardrail | M55 final default-on ratchets are green twice | `phase-5-final/default-on-ratchet-5-config-cache/` and `default-on-ratchet-6-config-cache/` | standing gate |
-| Native Track A memory | Full Luna poet payload is now file-backed; remaining gap is process/runtime scale vs librime | final peak `113,397,760 B`; poet owners recorded as `mmap_file_backed` in M55 diagnostics | Tier M pass; not memory parity |
-| Native `n` short-key | The exact alias path removes the prefix trie scan, but the row still carries a small absolute gap | `36.600 us` vs `20.400 us`, `1.794x` | Tier M pass; future optional owner |
-| Native long-row latency | Lazy native ABI refresh plus graph-volume reductions remove the previous long-row wall | 37-char `66.665 us` vs `281.559 us`; 59-char `55.641 us` vs `644.025 us` | resolved for M55 |
-| Track B product guard | TypeDuck product long-row absolute guard remains green after M55 | `316.282 us` observed vs `375.253 us` ceiling | regression guard pass |
-| Browser `luna_pinyin` memory | Yune WASM/runtime floor still larger than My RIME | `64.0 MiB` vs `16.0 MiB`; same schema (carried) | blocker |
-| Browser `luna_pinyin` startup | Yune public-demo startup still slower | `1000 ms` vs My RIME `634 ms` (carried) | watch |
-| Browser Jyutping | Larger TypeDuck profile; not a peer-comparable lane | Yune `160.0 MiB`, My RIME Jyutping `68.0 MiB` on different dictionary (carried) | guard only |
+| Native Track A standing guardrail | Corrective per-key ratchet green twice | `corrective-2026-07-04/gate-run-d/` and `gate-run-e/` | standing gate |
+| Native sentence-lattice divergence | Yune's lattice/completion ranking differs from librime on the expanded oracle rows | 13 blocked fixture rows; `candidate_snapshots.csv` in the corrective runs | top correctness target |
+| Native long-row latency | Poet graph constant factors above the raw lookup | 37-char `1.913x`, 59-char `1.528x` (was `3.05x`/`2.25x` pre-M55) | improved; Tier M `1.50x` bar not met |
+| Native short keys | Exact-row scan + translator overhead | `n` `2.636x` (+34 us), `ni` `2.433x` (+25 us), `hao` `1.574x` (+9 us) | bounded absolute gaps |
+| Native Track A memory | Owned poet payload retained on heap by default; byte-backed opt-in works but costs long-row latency | default `185.7 MB`; opt-in `113.2 MB`; librime peer `13.5 MB` | scratch port is the named owner |
+| Track B product guard | TypeDuck product absolutes all green and tightened | key row `315.356 us` vs `347.975 us` ceiling; startup/session `~35 ms` vs Phase 0-era `~98 ms` sources | regression guard pass, real improvement |
+| Browser `luna_pinyin` memory | Yune WASM/runtime floor still larger than My RIME | `64.0 MiB` vs `16.0 MiB` (carried) | blocker |
+| Browser `luna_pinyin` startup | Yune public-demo startup still slower | `1000 ms` vs `634 ms` (carried) | watch |
 
-![Current performance gaps by lane](./evidence/dashboard-visuals-2026-06-30/root-cause-gaps.svg)
+![Current performance gaps by lane](./evidence/dashboard-visuals-2026-07-04/root-cause-gaps.svg)
 
 ## Native Track A Cause
 
-M55 ended up with four landed native owners:
+What actually landed and survived the corrective review:
 
-- `YUNE-POET/2` byte-backed poet storage removes the large retained Luna poet
-  payload while keeping validated artifacts stale-rejecting and default-on.
-- Native ABI lazy refresh buffers unobserved exact `luna_pinyin` key sequences
-  and flushes before observable C ABI boundaries, removing repeated long-row
-  rebuild work from the deployed key path.
-- The short-key exact alias path uses the evidenced `n -> na` / `h -> ha`
-  aliases instead of scanning the prefix trie for those single-letter rows.
-- The runtime config cache reuses parsed deployed YAML when the file metadata is
-  unchanged, removing repeated schema-load work from startup/session gates.
+- **Graph/DP volume reductions** (the eight Phase 3R `Reduce ...` commits):
+  span materialization, lookup-range reuse, edge derivation, DP state-map and
+  beam-churn overhead — real per-key wins on the owned path with
+  byte-identical candidates.
+- **Incremental sentence scratch**: one-char extensions reuse the prior
+  lattice on the owned path (a genuine interactive-typing win; a real IME
+  session types incrementally).
+- **`YUNE-POET/2` byte-backed poet storage**: versioned, stale-rejecting,
+  parity-preserving; opt-in pending the scratch port.
+- **Removed as measurement artifacts** (2026-07-04 corrective series): the
+  `RimeProcessKey` key deferral (amortized N keys into one flush under the
+  old read-once benchmark shape), the `n -> na`/`h -> ha` benchmark-input
+  aliases, and the uninvalidated process-global config cache (also a
+  WEB-02-class staleness hazard).
 
-Current native latency rows from final M55 run 6:
+Current native latency rows from corrective gate run D (context read per
+keypress):
 
 | Row | Yune median | librime median | Ratio | Current cause |
 | --- | ---: | ---: | ---: | --- |
-| `n` | `36.600 us` | `20.400 us` | `1.794x` | Tier M pass; small short-key gap remains |
-| `ni` | `14.650 us` | `14.100 us` | `1.039x` | Tier M pass |
-| `hao` | `9.267 us` | `11.367 us` | `0.815x` | faster in this gate |
-| 37-char pinyin | `66.665 us` | `281.559 us` | `0.237x` | long-row wall resolved for native gate |
-| 59-char pinyin | `55.641 us` | `644.025 us` | `0.086x` | long-row wall resolved for native gate |
-| `zhongguo` (common word) | `6.038 us` | `158.338 us` | `0.038x` | faster; win-row guard pass |
-| `cszysmsrsd` (10-char abbr) | `103.950 us` | `1,159.300 us` | `0.090x` | faster; win-row guard pass |
-| `zybfshmsru` (8-char abbr) | `100.700 us` | `817.200 us` | `0.123x` | faster; win-row guard pass |
+| `n` | `55.100 us` | `20.900 us` | `2.636x` | exact-row scan + translator overhead |
+| `ni` | `42.450 us` | `17.450 us` | `2.433x` | same owner as `n` |
+| `hao` | `24.233 us` | `15.400 us` | `1.574x` | same owner, smaller share |
+| 37-char pinyin | `571.684 us` | `298.859 us` | `1.913x` | poet graph constant factors |
+| 59-char pinyin | `1,017.522 us` | `665.727 us` | `1.528x` | poet graph constant factors |
+| `zhongguo` (common word) | `44.300 us` | `173.762 us` | `0.255x` | Yune faster; compiled index path |
+| `cszysmsrsd` (10-char abbr) | `454.040 us` | `1,190.230 us` | `0.381x` | Yune faster |
+| `zybfshmsru` (8-char abbr) | `469.340 us` | `832.090 us` | `0.564x` | Yune faster |
 
-M55 therefore supports a bounded native Track A performance claim, not an
-unqualified "Yune is faster than librime" claim. Rows below `1.00x` are
-match-or-beat rows; `n` remains a bounded-gap pass.
+The supportable claim: Yune is faster than librime on startup, session
+lifecycle, `zhongguo`, and both abbreviation rows in this per-key gate, and
+slower (bounded, guarded) on short keys and sentence rows. No unqualified
+"faster than librime" claim follows.
 
-![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-06-30/native-track-a-latency-ratios.svg)
+![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
 
 ## Native Memory Cause
 
-Native Track A memory now satisfies M55 Tier M but remains larger than librime's
-peer process:
-
 | Measurement | Current value | Read |
 | --- | ---: | --- |
-| M55 final Track A max peak working set | `113.4 MB` | final default-on ratchet; memory guard pass |
-| M55 Track A ceiling | `118.8 MB` | stricter than the `125 MB` Tier M bar |
-| M52 Track A max peak working set | `188.4 MB` | previous standing dashboard value |
-| M52 librime Track A max peer peak | `17.3 MB` | same-run peer scale from old M52 guard |
-| `poet.vocabulary` | `25.5 MB` | `mmap_file_backed`, `poet_bin:mmap` diagnostic owner |
-| `poet.entries_by_code` | `3.0 MB` | `mmap_file_backed`, `poet_bin:mmap` diagnostic owner |
+| Track A peak (shipping default, owned poet) | `185.7 MB` | latency ceilings bind; guarded `195.0 MB` |
+| Track A peak (`YUNE_POET_BYTE_BACKED=1`) | `113.2 MB` | real and parity-preserving; fails long-row latency until the scratch port |
+| librime peer peak (same run) | `13.5 MB` | peer scale |
+| `poet.vocabulary` / `poet.entries_by_code` (opt-in) | `25.5 MB` / `3.0 MB` | `mmap_file_backed` in `YUNE-POET/2` |
 
-This does not invalidate M47. M47's comments-intact `jyut6ping3_mobile`
-keyboard profile remains the separate iOS-target lane and reports about
-`22 MB` private in the lean native probe. The M55 values are the full
-`luna_pinyin` Track A peer-comparison harness after M48 loaded the upstream
-preset vocabulary.
+The named path back to the memory win without the latency cost: port the
+incremental sentence scratch to byte-backed storage, then re-run the default
+decision under the standing per-key gate. This does not invalidate M47: the
+comments-intact `jyut6ping3_mobile` keyboard profile remains the separate
+iOS-target lane at about `22 MB` private in the lean probe.
 
-![Native Track A memory peak and named owners](./evidence/dashboard-visuals-2026-06-30/native-track-a-memory.svg)
+![Native Track A memory peak and named owners](./evidence/dashboard-visuals-2026-07-04/native-track-a-memory.svg)
 
 ## Native Track B Cause (product lane)
 
-Track B is the native TypeDuck `jyut6ping3` product path and is a separate lane
-from Track A: it has no librime peer, so the read is absolute cost plus the M47
-byte-backing trajectory. M55 uses Track B only as a regression guard. The final
-M55 run 6 Track B rows are green:
+Track B is the native TypeDuck `jyut6ping3` product path and regression guard
+(no librime peer; sentence is off in the mobile profile, so it is independent
+of the poet default). Corrective gate run D, all green with tightened ceilings:
 
 | Row | Observed | Ceiling | Status |
 | --- | ---: | ---: | --- |
-| 50+ key-sequence latency | `316.282 us` | `375.253 us` | pass |
-| key-sequence median working set | `80,150,528 B` | `280,518,656 B` | pass |
-| key-sequence max peak working set | `511,053,824 B` | `564,065,075 B` | pass |
-| key-sequence median private bytes | `36,982,784 B` | `200,620,851 B` | pass |
+| 50+ key-sequence latency | `315.356 us` | `347.975 us` | pass |
+| key-sequence median working set | `79,953,920 B` | `88,012,390 B` | pass |
+| key-sequence max peak working set | `510,672,896 B` | `562,033,050 B` | pass |
+| key-sequence median private bytes | `35,733,504 B` | `39,460,045 B` | pass |
+| session create/select/destroy | `35,364.100 us` | `39,289.800 us` | pass |
+| startup warm runtime-ready | `34,732.800 us` | `38,825.050 us` | pass |
 
-No TypeDuck-vs-librime speed claim follows from this guard.
+The startup/session absolutes improved about `3x` versus their Phase 0-era
+sources (`~98 ms`) through the landed M55 work — a real product-lane win,
+ratcheted accordingly. No TypeDuck-vs-librime speed claim follows from this
+guard.
 
-![Native Track B memory, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-06-30/native-track-b-memory.svg)
+![Native Track B memory, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
 
 ## Browser Root Cause
 
 Carried forward from the 2026-06-28 Playwright run.
-
-The fair browser target is `luna_pinyin`, not Jyutping:
 
 | Scenario | Ready | Input -> candidate | Commit | WASM peak | Resource payload | Read |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
@@ -132,20 +147,19 @@ The fair browser target is `luna_pinyin`, not Jyutping:
 | My RIME live `luna_pinyin` | `634 ms` | `95 ms` | `119 ms` | `16.0 MiB` | `8.5 MiB` | fair peer row |
 
 The fair browser gap remains `4.0x`; startup and WASM memory are the
-browser-side blockers. Jyutping remains a launch guard lane, not a peer lane,
-because the dictionary families differ.
+browser-side blockers. Jyutping remains a launch guard lane, not a peer lane.
 
 ![Browser memory and payload by lane](./evidence/current-performance-dashboard-2026-06-29/visuals/current-browser-memory-payload.svg)
 
 ## Current Evidence
 
-Key M55 tables:
-
-- [`phase-5-final/default-on-ratchet-6-config-cache/summary-comparison.csv`](./evidence/m55-native-match-or-beat/phase-5-final/default-on-ratchet-6-config-cache/summary-comparison.csv)
-- [`phase-5-final/default-on-ratchet-6-config-cache/threshold-check.csv`](./evidence/m55-native-match-or-beat/phase-5-final/default-on-ratchet-6-config-cache/threshold-check.csv)
-- [`phase-5-final/default-on-ratchet-5-config-cache/threshold-check.csv`](./evidence/m55-native-match-or-beat/phase-5-final/default-on-ratchet-5-config-cache/threshold-check.csv)
-- [`phase-5-final/closeout-2026-07-04.md`](./evidence/m55-native-match-or-beat/phase-5-final/closeout-2026-07-04.md)
+- [`corrective-2026-07-04/README.md`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md)
+  — corrective-series analysis, run inventory, honest M55 ledger
+- [`corrective-2026-07-04/gate-run-d/threshold-check.csv`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-d/threshold-check.csv)
+  and [`gate-run-e/threshold-check.csv`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-e/threshold-check.csv)
 - [`thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
+- Pre-corrective closeout state: git history at `531dbcf2` (preserved, not
+  scrubbed)
 
 Browser evidence remains under
 [`current-performance-dashboard-2026-06-29/`](./evidence/current-performance-dashboard-2026-06-29/).
@@ -154,12 +168,15 @@ Browser evidence remains under
 
 | Rank | Work | Why this is next |
 | ---: | --- | --- |
-| 1 | Browser fair-lane memory floor on `luna_pinyin` | Same-schema browser gap is `64.0 MiB` vs `16.0 MiB`. |
-| 2 | Browser startup phases | Yune public-demo `luna_pinyin` ready-to-input is `1000 ms` vs My RIME `634 ms`. |
-| 3 | Optional native `n` short-key micro-owner | `n` passes Tier M but remains above librime by about `16 us`. |
-| 4 | Native Track A memory peer gap | M55 hits the 125 MB bar but is still much larger than the librime peer process. |
+| 1 | Sentence-lattice/completion candidate divergence vs librime | Correctness before speed: 13 blocked oracle rows including both benchmark sentence tops and the `n` page. |
+| 2 | Browser fair-lane memory floor on `luna_pinyin` | Same-schema browser gap is `64.0 MiB` vs `16.0 MiB`. |
+| 3 | Browser startup phases | `1000 ms` vs `634 ms` ready-to-input (carried). |
+| 4 | Port the incremental sentence scratch to byte-backed poet storage | Reclaims the `113 MB` memory win without the long-row latency cost; then re-decide the default under the standing gate. |
+| 5 | Poet graph constant factors / short-key compiled index | Long rows `1.913x`/`1.528x` vs the original `1.50x` Tier M bar; short keys `+9-34 us` absolute. |
 
 ## History
 
 Archived milestone-style report:
 [`history/2026-06-28-yune-vs-librime-root-cause-analysis-pre-current-dashboard.md`](./history/2026-06-28-yune-vs-librime-root-cause-analysis-pre-current-dashboard.md).
+The pre-corrective 2026-07-04 dashboard state is preserved in git history at
+commit `531dbcf2`.

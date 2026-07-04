@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T01:10:41.7891787Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=e4e5dd334ec64c0414447b63283e77e0d4bea022
+yune_git_status_short= M crates/yune-core/src/poet/mod.rs |  M crates/yune-core/src/poet/storage.rs |  M crates/yune-rime-api/benches/native_inprocess_benchmark.rs |  M crates/yune-rime-api/src/schema_install.rs |  M scripts/benchmark-native-rime-inprocess.ps1 | ?? docs/reports/evidence/m55-native-match-or-beat/phase-2-poet-storage/long-row-smoke/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-2-poet-storage/ratchet-gate-1/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-2-poet-storage/track-a-deploy-smoke/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-gate-1
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

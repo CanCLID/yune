@@ -1865,17 +1865,34 @@ fn load_schema_compiled_dictionary(
     let table_metadata = parse_rime_table_bin_metadata(table_source.bytes()).map_err(|error| {
         CompiledRejectReason::Invalid(format!("table metadata parse failed: {error:?}"))
     })?;
+    let source_checksum =
+        source_yaml.map(|source| rime_dict_source_checksum(0, [source.as_bytes()], None));
+    let table_checksum = rime_table_bin_dict_file_checksum(table_source.bytes());
+    let known_upstream_marisa_luna_compact = is_known_upstream_luna_marisa_compact_table(
+        dictionary_name,
+        prefer_compact,
+        table_metadata.string_table_size,
+        source_checksum,
+        table_checksum,
+    );
+    let poet_dictionary_checksum = compiled_poet_expected_dictionary_checksum(
+        dictionary_name,
+        prefer_compact,
+        table_metadata.string_table_size,
+        source_checksum,
+        table_checksum,
+        table_metadata.dict_file_checksum,
+    );
     let mut compiled_poet_source = None;
     if let Some(poet_path) = selected_runtime_data_path(&poet_name) {
         let loaded_poet_source = {
             let _trace = startup_trace::span("compiled_poet_load");
             load_compiled_data_byte_source(&poet_path, "poet")?
         };
-        let poet_summary = parse_poet_bin_summary(
-            loaded_poet_source.bytes(),
-            table_metadata.dict_file_checksum,
-        )
-        .map_err(|error| CompiledRejectReason::Invalid(format!("poet parse failed: {error:?}")))?;
+        let poet_summary =
+            parse_poet_bin_summary(loaded_poet_source.bytes(), poet_dictionary_checksum).map_err(
+                |error| CompiledRejectReason::Invalid(format!("poet parse failed: {error:?}")),
+            )?;
         memory_probe_mark(format!(
             "m55:compiled_dictionary:{dictionary_name}:after_poet_summary_parse:poet_bytes={}:entries={}:vocabulary={}:abbreviation_vocabulary={}",
             loaded_poet_source.bytes().len(),
@@ -1887,20 +1904,11 @@ fn load_schema_compiled_dictionary(
             Arc::new(CompiledPoetByteSource {
                 source: loaded_poet_source,
             }) as Arc<dyn PoetByteSource>,
-            table_metadata.dict_file_checksum,
+            poet_dictionary_checksum,
         ));
     }
 
-    if let Some(source_yaml) = source_yaml {
-        let source_checksum = rime_dict_source_checksum(0, [source_yaml.as_bytes()], None);
-        let table_checksum = rime_table_bin_dict_file_checksum(table_source.bytes());
-        let known_upstream_marisa_luna_compact = prefer_compact
-            && is_known_upstream_luna_marisa_checksum(
-                dictionary_name,
-                table_metadata.string_table_size,
-                source_checksum,
-                table_checksum,
-            );
+    if let Some(source_checksum) = source_checksum {
         if table_checksum != Some(source_checksum) && !known_upstream_marisa_luna_compact {
             return Err(CompiledRejectReason::Stale);
         }
@@ -2074,6 +2082,45 @@ fn is_known_upstream_luna_marisa_checksum(
         && string_table_size == UPSTREAM_LUNA_PINYIN_STRING_TABLE_SIZE
         && source_checksum == UPSTREAM_LUNA_PINYIN_SOURCE_CHECKSUM
         && table_checksum == Some(UPSTREAM_LUNA_PINYIN_MARISA_TABLE_CHECKSUM)
+}
+
+fn is_known_upstream_luna_marisa_compact_table(
+    dictionary_name: &str,
+    prefer_compact: bool,
+    string_table_size: u32,
+    source_checksum: Option<u32>,
+    table_checksum: Option<u32>,
+) -> bool {
+    source_checksum.is_some_and(|source_checksum| {
+        prefer_compact
+            && is_known_upstream_luna_marisa_checksum(
+                dictionary_name,
+                string_table_size,
+                source_checksum,
+                table_checksum,
+            )
+    })
+}
+
+fn compiled_poet_expected_dictionary_checksum(
+    dictionary_name: &str,
+    prefer_compact: bool,
+    string_table_size: u32,
+    source_checksum: Option<u32>,
+    table_checksum: Option<u32>,
+    table_metadata_checksum: u32,
+) -> u32 {
+    if is_known_upstream_luna_marisa_compact_table(
+        dictionary_name,
+        prefer_compact,
+        string_table_size,
+        source_checksum,
+        table_checksum,
+    ) {
+        source_checksum.unwrap_or(table_metadata_checksum)
+    } else {
+        table_metadata_checksum
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -2674,4 +2721,50 @@ fn recognizer_pattern_matches(pattern: &MatcherPattern, input: &str) -> bool {
 
 fn config_scalar_f32(value: &Value) -> Option<f32> {
     config_scalar_double(value).map(|number| number as f32)
+}
+
+#[cfg(test)]
+mod compiled_poet_checksum_tests {
+    use super::compiled_poet_expected_dictionary_checksum;
+
+    #[test]
+    fn upstream_luna_marisa_poet_uses_source_checksum() {
+        assert_eq!(
+            compiled_poet_expected_dictionary_checksum(
+                "luna_pinyin",
+                true,
+                1_574_520,
+                Some(0x16ad_0e3e),
+                Some(0xb967_cfef),
+                0xb967_cfef,
+            ),
+            0x16ad_0e3e
+        );
+    }
+
+    #[test]
+    fn normal_compiled_poet_uses_table_metadata_checksum() {
+        assert_eq!(
+            compiled_poet_expected_dictionary_checksum(
+                "luna_pinyin",
+                true,
+                1_574_520,
+                Some(0x16ad_0e3e),
+                Some(0x16ad_0e3e),
+                0x16ad_0e3e,
+            ),
+            0x16ad_0e3e
+        );
+        assert_eq!(
+            compiled_poet_expected_dictionary_checksum(
+                "other_dict",
+                true,
+                1_574_520,
+                Some(0x16ad_0e3e),
+                Some(0xb967_cfef),
+                0xb967_cfef,
+            ),
+            0xb967_cfef
+        );
+    }
 }

@@ -453,17 +453,24 @@ impl ByteBackedPoetStore {
             .weight
     }
 
-    pub(super) fn vocabulary_chars(&self, abbreviation: bool, index: usize) -> Vec<char> {
+    pub(super) fn vocabulary_chars_into(
+        &self,
+        abbreviation: bool,
+        index: usize,
+        out: &mut Vec<char>,
+    ) {
+        out.clear();
         let sections = self.vocabulary_sections(abbreviation);
         let row = self.vocabulary_row(sections, index);
-        (row.chars_start..row.chars_start + row.chars_count)
-            .map(|char_index| {
-                let offset = row_offset(&sections.chars, char_index as usize);
-                let scalar = read_u32(self.bytes(), offset)
-                    .expect("poet vocabulary chars are validated during parse");
-                char::from_u32(scalar).expect("poet vocabulary chars are validated during parse")
-            })
-            .collect()
+        out.reserve(row.chars_count as usize);
+        for char_index in row.chars_start..row.chars_start + row.chars_count {
+            let offset = row_offset(&sections.chars, char_index as usize);
+            let scalar = read_u32(self.bytes(), offset)
+                .expect("poet vocabulary chars are validated during parse");
+            out.push(
+                char::from_u32(scalar).expect("poet vocabulary chars are validated during parse"),
+            );
+        }
     }
 
     pub(super) fn character_codes(&self, abbreviation: bool, ch: char) -> Vec<&str> {

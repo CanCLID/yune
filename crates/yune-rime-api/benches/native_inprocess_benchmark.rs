@@ -42,6 +42,14 @@ fn main() {
     if options.deploy_before_benchmark {
         deploy_workspace(&engine, &options);
     }
+    if options.deploy_only {
+        write_metadata(&options.output.join("metadata.txt"), &options);
+        println!("engine={}", options.engine);
+        println!("schema={}", options.schema);
+        println!("track={}", options.track);
+        println!("deploy_only=true");
+        return;
+    }
     let (samples, startup_traces) = run_benchmark(&engine, &options);
     write_samples(&options.output.join("samples.csv"), &samples);
     write_summary(&options.output.join("summary.csv"), &samples);
@@ -92,6 +100,7 @@ struct Options {
     session_iterations: usize,
     key_iterations: usize,
     deploy_before_benchmark: bool,
+    deploy_only: bool,
 }
 
 impl Options {
@@ -137,6 +146,7 @@ impl Options {
             .parse()
             .expect("key iterations should be usize"),
             deploy_before_benchmark: take_flag(&mut args, "--deploy-before-benchmark"),
+            deploy_only: take_flag(&mut args, "--deploy-only"),
         }
     }
 }
@@ -659,7 +669,20 @@ fn deploy_workspace(engine: &LoadedRime, options: &Options) {
     unsafe {
         require("deployer_initialize", api.deployer_initialize)(&traits.traits);
     }
-    assert_eq!(require("deploy", api.deploy)(), TRUE);
+    let installation_update = CString::new("installation_update").expect("task name is valid");
+    assert_eq!(
+        require("run_task", api.run_task)(installation_update.as_ptr()),
+        TRUE
+    );
+    let default_file = CString::new("default.yaml").expect("config file is valid");
+    let version_key = CString::new("config_version").expect("version key is valid");
+    assert_eq!(
+        require("deploy_config_file", api.deploy_config_file)(
+            default_file.as_ptr(),
+            version_key.as_ptr(),
+        ),
+        TRUE
+    );
     let schema_file =
         CString::new(format!("{}.schema.yaml", options.schema)).expect("schema file is valid");
     assert_eq!(
@@ -1119,6 +1142,7 @@ fn write_metadata(path: &PathBuf, options: &Options) {
             "deploy_before_benchmark={}",
             options.deploy_before_benchmark
         ),
+        format!("deploy_only={}", options.deploy_only),
         "managed_runtime=false".to_owned(),
     ]
     .join("\n");

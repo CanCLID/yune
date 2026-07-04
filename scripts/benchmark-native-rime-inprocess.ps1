@@ -158,6 +158,37 @@ function Run-NativeBench(
     Invoke-Logged "$OutputName-native-inprocess" $BenchArgs $LogPath (($RunRoot, $ExtraPath) -join ";")
 }
 
+function Invoke-DeployPrep(
+    $EngineName,
+    $Track,
+    $Schema,
+    $RunRoot,
+    $ExtraPath,
+    $OutputName
+) {
+    $PrepOutput = Join-Path $WorkRoot "$OutputName-deploy-prep-output"
+    Clear-DirectoryUnder $WorkRoot $PrepOutput
+    $LogPath = Join-Path $OutputRoot "$OutputName-deploy-prep.log"
+    $BenchArgs = @(
+        "bench", "-p", "yune-rime-api", "--bench", "native_inprocess_benchmark", "--",
+        "--engine", $EngineName,
+        "--track", $Track,
+        "--schema", $Schema,
+        "--dll", (Join-Path $RunRoot "rime.dll"),
+        "--shared", (Join-Path $RunRoot "shared"),
+        "--user", (Join-Path $RunRoot "user"),
+        "--build", (Join-Path $RunRoot "user\build"),
+        "--output", $PrepOutput,
+        "--inputs", "deploy-prep",
+        "--iterations", "1",
+        "--session-iterations", "1",
+        "--key-iterations", "1",
+        "--deploy-before-benchmark",
+        "--deploy-only"
+    )
+    Invoke-Logged "$OutputName-deploy-prep" $BenchArgs $LogPath (($RunRoot, $ExtraPath) -join ";")
+}
+
 function Write-TrackAComparison($Rows, $DestinationPath) {
     $YuneRows = @{}
     $LibrimeRows = @{}
@@ -373,9 +404,11 @@ if (-not $SkipTrackB) {
     $TrackBProductRun = Prepare-ProductRun "track-b-yune-product" $YuneDll
 }
 
+$TrackADeployPrepCommand = "cargo bench -p yune-rime-api --bench native_inprocess_benchmark -- --engine yune --track track-a-comparison --schema luna_pinyin --dll $(Join-Path $TrackAYuneRun 'rime.dll') --shared $(Join-Path $TrackAYuneRun 'shared') --user $(Join-Path $TrackAYuneRun 'user') --build $(Join-Path $TrackAYuneRun 'user\build') --deploy-before-benchmark --deploy-only"
 $BenchmarkCommand = "powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot $OutputRoot -Iterations $Iterations -SessionIterations $SessionIterations -KeyIterations $KeyIterations -TrackAInputs $TrackAInputs -TrackBInputs $TrackBInputs$(if ($DeployProductBeforeBenchmark) { ' -DeployProductBeforeBenchmark' } else { '' })$(if ($SkipTrackB) { ' -SkipTrackB' } else { '' })$(if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) { " -TrackAThresholds $TrackAThresholds" } else { '' })$(if ($FailOnRegression) { ' -FailOnRegression' } else { '' })"
 $Commands = @(
     "cargo build --release -p yune-rime-api",
+    $TrackADeployPrepCommand,
     $BenchmarkCommand
 )
 $Commands | Set-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
@@ -402,6 +435,27 @@ $Identity = @(
 )
 $Identity | Set-Content -LiteralPath (Join-Path $OutputRoot "environment.txt") -Encoding UTF8
 
+$TrackAYuneBuild = Join-Path $TrackAYuneRun "user\build"
+$TrackAOriginalBuild = Join-Path $WorkRoot "track-a-yune-original-build"
+$TrackAGeneratedPoet = Join-Path $WorkRoot "track-a-yune-luna_pinyin.poet.bin"
+Clear-DirectoryUnder $WorkRoot $TrackAOriginalBuild
+Copy-DirectoryContents $TrackAYuneBuild $TrackAOriginalBuild
+Invoke-DeployPrep "yune" "track-a-comparison" "luna_pinyin" $TrackAYuneRun $UpstreamDistLib "track-a-yune"
+Assert-Path (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") "Track A Yune poet artifact after deploy prep"
+Copy-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") -Destination $TrackAGeneratedPoet -Force
+Clear-DirectoryUnder $WorkRoot $TrackAYuneBuild
+Copy-DirectoryContents $TrackAOriginalBuild $TrackAYuneBuild
+Copy-Item -LiteralPath $TrackAGeneratedPoet -Destination (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") -Force
+$TrackATable = Get-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.table.bin")
+$TrackAPoet = Get-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin")
+@(
+    "track_a_deploy_prep=separate_process",
+    "restored_oracle_build_artifacts=true",
+    "poet_artifact=$(Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin")",
+    "poet_bytes=$($TrackAPoet.Length)",
+    "table_artifact=$(Join-Path $TrackAYuneBuild "luna_pinyin.table.bin")",
+    "table_bytes=$($TrackATable.Length)"
+) | Set-Content -LiteralPath (Join-Path $OutputRoot "track-a-yune-deploy-prep-artifacts.txt") -Encoding UTF8
 Run-NativeBench "yune" "track-a-comparison" "luna_pinyin" $TrackAYuneRun $UpstreamDistLib $TrackAInputs "track-a-yune"
 Run-NativeBench "librime-1.17.0" "track-a-comparison" "luna_pinyin" $TrackALibrimeRun (($UpstreamDistLib, $UpstreamBin, $UpstreamDistBin) -join ";") $TrackAInputs "track-a-librime-1.17.0"
 if (-not $SkipTrackB) {

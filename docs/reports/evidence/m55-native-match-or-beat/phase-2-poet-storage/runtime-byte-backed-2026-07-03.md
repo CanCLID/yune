@@ -56,11 +56,31 @@ New focused regressions:
 - `upstream_sentence_model_rejects_stale_poet_artifact_checksum`
   - Proves the runtime constructor rejects a poet artifact whose dictionary checksum does not match the expected compiled-table checksum.
 
+## Follow-Up Ratchet No-Go
+
+The release full-ratchet gate is now recorded under
+`ratchet-gate-1/`, with the summary in
+`ratchet-no-go-2026-07-03.md`. The run proves the named poet payload owners
+move to `mmap_file_backed` in the release benchmark path, with Track A peak
+working-set high-water at `110198784` bytes, but the full ratchet remains red:
+
+- 37-character Luna row: `6.289x` observed, `3.267x` ceiling.
+- 59-character Luna row: `4.333x` observed, `2.447x` ceiling.
+- Track B product long row: `378.449 us` observed, `375.253 us` ceiling.
+
+Phase 2 is therefore still not closed and no memory ceiling was tightened.
+
 ## Remaining Phase 2 Gates
 
 This slice does not satisfy the Phase 2 closeout by itself. Remaining gates:
 
-- Product-path CLI candidate byte comparisons are now recorded in `product-path-parity-2026-07-03.md` and `product-path-parity-2026-07-03.json`.
-- Diagnostic native Luna memory-owner proof is now recorded in `memory-owner-proof-2026-07-03.md` and `native-memory-probe-luna-runtime/`; the release full-ratchet `memory-owner-profile.csv` remains required before Phase 2 closeout.
-- Run the full M55 ratchet gate and tighten the memory ceiling only after two green runs.
-- Record any latency tradeoffs, especially on 37/59-char and win rows.
+- Product-path CLI candidate byte comparisons are recorded in
+  `product-path-parity-2026-07-03.md` and
+  `product-path-parity-2026-07-03.json`.
+- Diagnostic native Luna memory-owner proof is recorded in
+  `memory-owner-proof-2026-07-03.md` and `native-memory-probe-luna-runtime/`.
+- Release full-ratchet memory-owner proof is recorded in `ratchet-gate-1/`,
+  but the gate is red, so Phase 2 remains no-go.
+- Run a new full M55 ratchet gate only after follow-up access-path work or an
+  explicit partial/no-go rescope decision.
+- Tighten the memory ceiling only after two green runs.

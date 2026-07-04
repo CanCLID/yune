@@ -5,7 +5,7 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Phase 2 runtime byte-backed poet reads in progress; release memory-owner profile and full ratchet remain. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 2 poet-storage design note is recorded; the safe Rust `YUNE-POET/1` artifact builder/parser contract has focused tests; deployment now emits, probes, and checksum-validates the artifact; the runtime sentence model can now read from validated poet artifact bytes; product-path parity and diagnostic native Luna memory-owner proof are recorded, with the release full-ratchet memory profile still required before Phase 2 closeout). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
+> **Status:** Phase 2 byte-backed poet storage is implemented but no-go on the release full ratchet. - **Track:** Engine performance (native Track A `luna_pinyin` comparison lane). - **Created:** 2026-07-03 - **Updated:** 2026-07-03 (Phase 2 poet-storage design note is recorded; the safe Rust `YUNE-POET/1` artifact builder/parser contract has focused tests; deployment now emits, probes, and checksum-validates the artifact; the runtime sentence model can now read from validated poet artifact bytes; product-path parity, diagnostic native Luna memory-owner proof, and release full-ratchet memory-owner proof are recorded. The ratchet is red on the 37-character and 59-character Luna rows plus one Track B product latency guard, so Phase 2 is not closed and no later phase has started). - **Type:** performance research program (multi-phase; storage/algorithm work behind a full-suite regression ratchet; no ABI change, no behavior change).
 
 > **Execution checkpoint (2026-07-03):** Phase 0 evidence is recorded under
 > `docs/reports/evidence/m55-native-match-or-beat/phase-0-baseline/`. The first
@@ -32,8 +32,14 @@
 > `phase-2-poet-storage/product-path-parity-2026-07-03.md`, and diagnostic
 > native Luna memory-owner proof is recorded under
 > `phase-2-poet-storage/memory-owner-proof-2026-07-03.md`. The release
-> full-ratchet memory profile and full ratchet remain, so Phase 2 is not
-> complete.
+> full-ratchet run is recorded under
+> `phase-2-poet-storage/ratchet-gate-1/`, with the no-go summary in
+> `phase-2-poet-storage/ratchet-no-go-2026-07-03.md`: Track A peak memory is
+> down to `110198784 B` and the named poet payload owners are
+> `mmap_file_backed`, but the gate is red on the 37-character row (`6.289x`
+> vs `3.267x`), the 59-character row (`4.333x` vs `2.447x`), and one Track B
+> product latency guard (`378.449 us` vs `375.253 us`). Phase 2 is therefore
+> not complete, no ceiling was tightened, and Phase 3/4 have not started.
 
 **Goal:** End the whack-a-mole pattern on the native Track A `luna_pinyin` lane
 and drive every tracked dimension — startup, session lifecycle, all eight
@@ -483,20 +489,21 @@ retained heap. **This is the keystone phase.**
   benchmark flow** (the untimed Yune deploy/compile prep step — see Files And
   Responsibilities (b); the Track A run root is otherwise librime-built and
   would never contain the artifact).
-- [ ] Compile `poet.vocabulary` and `poet.entries_by_code` into the mmap-backed
+- [x] Compile `poet.vocabulary` and `poet.entries_by_code` into the mmap-backed
   artifact at schema-compile/deploy time; serve lookups by offset with zero
   retained heap copies of entry payloads.
-- [ ] Add a stale/corrupt-artifact rejection test (wrong version, truncated
+- [x] Add a stale/corrupt-artifact rejection test (wrong version, truncated
   file) — the WEB-02 lesson: silent fallback to source-loading is how a memory
   win silently un-lands. Fallback must be loud (rebuild) and tested.
-- [ ] Verify in `memory-owner-profile.csv` that the two owners moved to
+- [x] Verify in `memory-owner-profile.csv` that the two owners moved to
   `mmap_file_backed` with heap remnants `<1 MB` combined.
-- [ ] Parity: `upstream_luna_pinyin_parity`, `cantonese_parity`, and the
+- [x] Parity: `upstream_luna_pinyin_parity`, `cantonese_parity`, and the
   product-path CLI comparison (Execution Rule 4) — byte-identical candidates.
 - [ ] Full ratchet gate — pay particular attention to the 37/59-char rows and
   the three win rows (byte-backed access adds per-lookup cost; the ceilings
   bind; the abbreviation win rows run through the poet graph) and to Track B
-  absolutes (the storage seam is shared).
+  absolutes (the storage seam is shared). `ratchet-gate-1/` is recorded but
+  red; see `ratchet-no-go-2026-07-03.md`.
 - [ ] Phase close: tighten the Track A memory ceiling to the new
   `worst-of-2-green-runs x 1.05`. If a deliberate, still-winning latency trade
   was made on a win row, execute the one-time win-row re-baseline here as its

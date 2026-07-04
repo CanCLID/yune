@@ -32,6 +32,7 @@ const UPSTREAM_DICT_ENTRY_WEIGHT_SCALE: f64 = 18.420680743952367;
 const CODE_LENGTH_QUALITY_BAND: f32 = 1_000.0;
 const MAX_WORD_GRAPH_ENTRIES_PER_SPAN: usize = 7;
 const MAX_DERIVED_PHRASE_CODES_PER_VOCABULARY_ENTRY: usize = 16;
+type CharacterCodeCache = HashMap<char, Arc<[String]>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
 
 pub trait Grammar {
@@ -750,11 +751,14 @@ impl PoetModelStorage {
         }
     }
 
-    fn vocabulary_chars(&self, abbreviation: bool, index: usize) -> Vec<char> {
+    fn vocabulary_chars_into(&self, abbreviation: bool, index: usize, out: &mut Vec<char>) {
+        out.clear();
         match self {
-            Self::Empty => Vec::new(),
-            Self::Owned(storage) => storage.vocabulary(abbreviation)[index].chars.clone(),
-            Self::ByteBacked(storage) => storage.vocabulary_chars(abbreviation, index),
+            Self::Empty => {}
+            Self::Owned(storage) => {
+                out.extend_from_slice(&storage.vocabulary(abbreviation)[index].chars)
+            }
+            Self::ByteBacked(storage) => storage.vocabulary_chars_into(abbreviation, index, out),
         }
     }
 
@@ -1231,6 +1235,8 @@ impl UpstreamSentenceModel {
         let mut table_entries_considered = 0usize;
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
+        let mut vocabulary_chars = Vec::new();
+        let mut character_code_cache = CharacterCodeCache::new();
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
         for (start_index, start) in boundaries.iter().copied().enumerate() {
             if start >= input.len() {
@@ -1285,12 +1291,23 @@ impl UpstreamSentenceModel {
                 let vocabulary_entries =
                     self.storage.vocabulary_indices_for_first_code(false, code);
                 for index in vocabulary_entries {
-                    let chars = self.storage.vocabulary_chars(false, index);
-                    if !self.vocabulary_entry_matches_input_prefix(&chars, suffix, code) {
+                    self.storage
+                        .vocabulary_chars_into(false, index, &mut vocabulary_chars);
+                    if !self.vocabulary_entry_matches_input_prefix(
+                        &vocabulary_chars,
+                        suffix,
+                        code,
+                        &mut character_code_cache,
+                    ) {
                         continue;
                     }
                     vocabulary_entries_considered += 1;
-                    for phrase_code in self.derive_matching_phrase_codes(&chars, suffix, code) {
+                    for phrase_code in self.derive_matching_phrase_codes(
+                        &vocabulary_chars,
+                        suffix,
+                        code,
+                        &mut character_code_cache,
+                    ) {
                         let end = start + phrase_code.len();
                         graph
                             .entry(start)
@@ -1378,6 +1395,7 @@ impl UpstreamSentenceModel {
         let mut table_entries_considered = 0usize;
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
+        let mut vocabulary_chars = Vec::new();
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
         for (start_index, start) in boundaries.iter().copied().enumerate() {
             if start >= input.len() {
@@ -1420,10 +1438,15 @@ impl UpstreamSentenceModel {
                     .storage
                     .vocabulary_indices_for_first_code(true, span.code);
                 for index in vocabulary_entries {
-                    let chars = self.storage.vocabulary_chars(true, index);
+                    self.storage
+                        .vocabulary_chars_into(true, index, &mut vocabulary_chars);
                     vocabulary_entries_considered += 1;
-                    for (_phrase_code, phrase_end, phrase_end_index) in
-                        self.derive_matching_phrase_codes_from_spans(&chars, &spans_by_start, *span)
+                    for (_phrase_code, phrase_end, phrase_end_index) in self
+                        .derive_matching_phrase_codes_from_spans(
+                            &vocabulary_chars,
+                            &spans_by_start,
+                            *span,
+                        )
                     {
                         graph
                             .entry(start)
@@ -1474,10 +1497,18 @@ impl UpstreamSentenceModel {
         chars: &[char],
         input: &str,
         first_code: &str,
+        character_code_cache: &mut CharacterCodeCache,
     ) -> Vec<String> {
         let mut codes = Vec::new();
         let mut current = first_code.to_owned();
-        self.derive_matching_phrase_codes_from(chars, input, 1, &mut current, &mut codes);
+        self.derive_matching_phrase_codes_from(
+            chars,
+            input,
+            1,
+            &mut current,
+            &mut codes,
+            character_code_cache,
+        );
         codes.sort();
         codes.dedup();
         codes
@@ -1488,8 +1519,15 @@ impl UpstreamSentenceModel {
         chars: &[char],
         input: &str,
         first_code: &str,
+        character_code_cache: &mut CharacterCodeCache,
     ) -> bool {
-        self.vocabulary_chars_match_input_prefix_from(chars, input, 1, first_code.len())
+        self.vocabulary_chars_match_input_prefix_from(
+            chars,
+            input,
+            1,
+            first_code.len(),
+            character_code_cache,
+        )
     }
 
     fn vocabulary_chars_match_input_prefix_from(
@@ -1498,6 +1536,7 @@ impl UpstreamSentenceModel {
         input: &str,
         index: usize,
         offset: usize,
+        character_code_cache: &mut CharacterCodeCache,
     ) -> bool {
         if index == chars.len() {
             return offset <= input.len();
@@ -1508,7 +1547,8 @@ impl UpstreamSentenceModel {
         let Some(remaining) = input.get(offset..) else {
             return false;
         };
-        let next_codes = self.normal_phrase_character_codes(chars[index]);
+        let next_codes =
+            self.normal_phrase_character_codes_cached(chars[index], character_code_cache);
         next_codes.iter().any(|next_code| {
             remaining.starts_with(next_code)
                 && self.vocabulary_chars_match_input_prefix_from(
@@ -1516,6 +1556,7 @@ impl UpstreamSentenceModel {
                     input,
                     index + 1,
                     offset + next_code.len(),
+                    character_code_cache,
                 )
         })
     }
@@ -1527,6 +1568,7 @@ impl UpstreamSentenceModel {
         index: usize,
         current: &mut String,
         codes: &mut Vec<String>,
+        character_code_cache: &mut CharacterCodeCache,
     ) {
         if index == chars.len() {
             if input.starts_with(current.as_str()) {
@@ -1534,12 +1576,20 @@ impl UpstreamSentenceModel {
             }
             return;
         }
-        let next_codes = self.normal_phrase_character_codes(chars[index]);
-        for next_code in next_codes {
+        let next_codes =
+            self.normal_phrase_character_codes_cached(chars[index], character_code_cache);
+        for next_code in next_codes.iter() {
             let original_len = current.len();
             current.push_str(next_code);
             if input.starts_with(current.as_str()) {
-                self.derive_matching_phrase_codes_from(chars, input, index + 1, current, codes);
+                self.derive_matching_phrase_codes_from(
+                    chars,
+                    input,
+                    index + 1,
+                    current,
+                    codes,
+                    character_code_cache,
+                );
             }
             current.truncate(original_len);
         }
@@ -1550,6 +1600,24 @@ impl UpstreamSentenceModel {
             GrammarProvider::Octagram(_) => self.storage.character_codes(true, ch),
             GrammarProvider::Null(_) => self.storage.character_codes(false, ch),
         }
+    }
+
+    fn normal_phrase_character_codes_cached(
+        &self,
+        ch: char,
+        cache: &mut CharacterCodeCache,
+    ) -> Arc<[String]> {
+        if let Some(codes) = cache.get(&ch) {
+            return Arc::clone(codes);
+        }
+        let codes: Arc<[String]> = self
+            .normal_phrase_character_codes(ch)
+            .into_iter()
+            .map(ToOwned::to_owned)
+            .collect::<Vec<_>>()
+            .into();
+        cache.insert(ch, Arc::clone(&codes));
+        codes
     }
 
     fn derive_matching_phrase_codes_from_spans(

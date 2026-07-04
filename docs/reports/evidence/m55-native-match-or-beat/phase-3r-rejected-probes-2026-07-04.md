@@ -22,10 +22,12 @@ key-sequence `324.395 us`.
 | Full-rank null-grammar beam precheck before `PathState` construction | Focused scratch tests passed; debug access-volume capture was run. | Rejected before release ratchet because constructed DP states and beam evictions were unchanged: 37-char `5,060` / `1,700`; 59-char `10,853` / `4,494`. |
 | Moving cached exact-span vectors out of scratch instead of cloning them | Product-path candidate parity was green. A strict-ratchet attempt was discarded because its Track A list accidentally included an extra typo input; the target rows from that discarded run were still inspected. | Rejected because the inspected target rows worsened: 37-char `591.157 us` / `2.082x`; 59-char `1030.937 us` / `1.580x`; short rows also worsened. |
 | Smaller `PathWordLengths` inline capacity | Capacity `8` and `12` short probes were promising, so capacity `12` received a correct full strict M55 ratchet. Product-path candidate parity was green and the broad ceilings passed. | Rejected because the correct strict run still worsened long-row ratios versus the baseline: 37-char `585.938 us` / `2.052x`; 59-char `1029.234 us` / `1.590x`. |
+| Byte-indexed vector storage for the temporary borrowed incremental graph | Focused scratch tests passed and a correct full strict M55 ratchet passed the broad ceilings. | Rejected because it was not monotonic on the target rows: 37-char improved to `574.900 us` / `1.991x`, but 59-char worsened to `1059.812 us` / `1.612x`; short rows also worsened. |
 
 ## Decision
 
 These probes do not justify a checkpoint commit. Future Phase 3R work should
 look for a new measured owner instead of repeating cached vocabulary lookup,
 scratch candidate extraction, duplicate prechecks, full-rank beam prechecks,
-cached-span vector moves, or simple `PathWordLengths` capacity tuning.
+cached-span vector moves, simple `PathWordLengths` capacity tuning, or
+byte-indexed temporary borrowed graph storage.

@@ -2072,7 +2072,7 @@ fn load_schema_compiled_dictionary(
 }
 
 fn compiled_poet_consumption_enabled() -> bool {
-    !matches!(std::env::var("YUNE_POET_BYTE_BACKED").as_deref(), Ok("0"))
+    matches!(std::env::var("YUNE_POET_BYTE_BACKED").as_deref(), Ok("1"))
 }
 
 fn is_known_upstream_luna_marisa_checksum(

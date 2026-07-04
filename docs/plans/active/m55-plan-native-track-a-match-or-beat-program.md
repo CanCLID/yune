@@ -666,16 +666,23 @@ rows, while candidate path conversion plus merge/rank is `65,300 ns` /
 `131,100 ns` and total sentence-model time is `105,000 ns` / `198,200 ns`.
 Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
+The key-sequence owner correction derived from the same strict ratchet metrics
+then shows the final-key-only conclusion is too narrow for the benchmark:
+cumulative upstream sentence graph rebuild/extension still accounts for about
+`515.030 us` / `911.192 us` of the 37-/59-character full key sequences.
+Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-key-sequence-owner/`.
 Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path. Earlier Phase 3R evidence showed
-the broad gap above raw lookup, but the incremental product-path diagnostic
-narrows the current owner after the prefix-state checkpoint: graph rebuild and
-storage access are no longer the dominant final-key cost. The next measured
-target is candidate extraction over retained incremental states, while keeping
-candidate output and scoring order byte-identical. Byte-backed storage still
-falls back to the full-input model path and does not yet use the owned
-incremental scratch extractor.
+the broad gap above raw lookup. The final-key incremental product diagnostic
+showed graph rebuild is small after the scratch is warm, but the full
+key-sequence ratchet metrics show cumulative graph rebuild/extension across all
+prefixes still dominates the long rows. The next measured target is cumulative
+per-prefix graph work over the full key sequence, while keeping candidate output
+and scoring order byte-identical. Byte-backed storage still falls back to the
+full-input model path and does not yet use the owned incremental scratch
+extractor.
 
 Pre-requisite — fixture expansion (must land before any poet code change):
 
@@ -814,12 +821,15 @@ or must close as a measured no-go without broadening scope.
   bar and the 59-character row remains slightly above `<=1.50x`.
   A product-path access-volume follow-up shows that the next owner is candidate
   merge/rank over retained incremental sentence paths rather than graph rebuild
-  or path conversion volume.
+  or path conversion volume on the final key only. The key-sequence owner
+  correction shows the full benchmark owner is still cumulative per-prefix graph
+  rebuild/extension work.
   Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-key-sequence-owner/`.
   Non-landed local probes after that checkpoint are recorded in
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-rejected-probes-2026-07-04.md`;
-  they did not replace the incremental prefix-state best-known checkpoint.
+  they did not replace the sentence-path-cache best-known checkpoint.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

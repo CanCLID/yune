@@ -1,0 +1,6 @@
+input,samples,op_count_median,process_key_us_per_op,translator_us_per_op,upstream_model_us_per_op,graph_rebuild_us_per_op,candidate_path_us_per_op,candidate_merge_us_per_op,prefix_checks_per_op,graph_edges_per_op,states_ranked_per_op,candidates_stored_per_op,context_page_clones_per_op
+ceshiyixiachangjushuruxingnengzenyang,80,37,575.724,572.234,524.012,515.030,0.000,0.000,10.324,10.838,0.000,6.730,0.135
+zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,80,59,991.538,987.667,925.330,911.192,0.000,0.000,16.237,11.305,0.000,6.356,0.085
+n,80,1,53.200,51.200,0.000,0.000,0.000,0.000,0.000,0.000,0.000,7.000,5.000
+ni,80,2,40.800,38.625,0.000,0.000,0.000,0.000,0.000,0.000,0.000,7.000,2.500
+hao,80,3,22.517,20.267,0.000,0.000,0.000,0.000,0.000,0.000,0.000,7.000,1.667

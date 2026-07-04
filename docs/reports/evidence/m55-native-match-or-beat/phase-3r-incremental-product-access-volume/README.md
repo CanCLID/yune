@@ -4,7 +4,7 @@ Date: 2026-07-04
 
 Verdict: diagnostic only. This is not a green performance checkpoint and does
 not replace the current best committed ratchet:
-`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-sentence-path-cache/`.
 
 ## Why This Capture Exists
 
@@ -56,20 +56,24 @@ total sentence-model time: owned graph rebuild is about `0.033 ms` on the
 about `0.105 ms` and `0.198 ms`. Candidate path conversion plus merge/rank is
 about `0.065 ms` on the 37-char row and `0.131 ms` on the 59-char row.
 
-The landed sentence-path cache moved path conversion out of the dominant owner:
+The landed sentence-path cache moved path conversion out of the final-key owner:
 path conversion fell from `27,900 ns` / `57,800 ns` in the previous capture to
-`2,400 ns` / `3,800 ns`. The next Phase 3R-2 target is therefore the remaining
-candidate merge/rank cost over retained incremental states. Byte-backed storage
-does not use the owned incremental scratch path today, which is why its
-candidate extraction counters are zero and its graph/DP counts remain much
-higher.
+`2,400 ns` / `3,800 ns`. On the final key alone, the remaining measured owned
+extractor cost is candidate merge/rank over retained incremental states.
+
+This final-key-only owner is not the whole strict benchmark owner. The follow-up
+key-sequence owner correction in
+`../phase-3r-key-sequence-owner/` shows that cumulative graph rebuild/extension
+still dominates the full long-row key sequence. Byte-backed storage does not
+use the owned incremental scratch path today, which is why its candidate
+extraction counters are zero and its graph/DP counts remain much higher.
 
 ## Rejected Follow-Up Probe
 
 A local final-end-only candidate-emission probe was rejected and removed. It
 improved the 59-char quick probe to `1.557x` but worsened the 37-char row to
 `2.055x` and also worsened `n`/`ni`/`hao`. The current best remains
-`phase-3r-incremental-prefix-state`.
+`phase-3r-sentence-path-cache`.
 
 A local sentence-end bucket-only merge probe was also rejected and removed. It
 improved the 59-char quick probe to `1.552x` but worsened the 37-char row to

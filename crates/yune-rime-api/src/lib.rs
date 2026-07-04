@@ -1162,10 +1162,6 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
-    let deferred_luna_ascii_char = deferred_luna_ascii_char(session, keycode, mask);
-    if deferred_luna_ascii_char.is_none() {
-        flush_deferred_luna_ascii_input(session);
-    }
 
     if is_ascii_composer_modifier_key(keycode) && (mask == 0 || mask == K_RELEASE_MASK) {
         if let Some(commit) = process_ascii_composer_modifier_switch_key(session, keycode, mask) {
@@ -1202,15 +1198,6 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
     let Some(key_event) = key_event_from_rime_keycode(keycode, mask) else {
         return FALSE;
     };
-    if deferred_luna_ascii_char.is_some()
-        && session.has_deferred_luna_ascii_input()
-        && session
-            .key_binder
-            .as_ref()
-            .is_some_and(|processor| processor.has_binding(&key_event))
-    {
-        flush_deferred_luna_ascii_input(session);
-    }
     if (mask == K_CONTROL_MASK || mask == K_LOCK_MASK || mask == K_ALT_MASK || mask == K_SUPER_MASK)
         && (0x20..=0x7e).contains(&keycode)
         && !(('0' as c_int)..=('9' as c_int)).contains(&keycode)
@@ -1237,14 +1224,6 @@ pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask
             append_unread_commit(session, commit);
         }
         return TRUE;
-    }
-
-    if let Some(ch) = deferred_luna_ascii_char {
-        if should_defer_luna_ascii_key_event(session, key_event, ch) {
-            session.defer_luna_ascii_input(ch);
-            return TRUE;
-        }
-        flush_deferred_luna_ascii_input(session);
     }
 
     let was_composing = !session.engine.context().composition.input.is_empty();
@@ -1320,7 +1299,6 @@ pub extern "C" fn RimeCommitComposition(session_id: RimeSessionId) -> Bool {
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
-    flush_deferred_luna_ascii_input(session);
     let Some(commit) = session.engine.commit_composition() else {
         return FALSE;
     };
@@ -1342,7 +1320,6 @@ pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
         .lock()
         .expect("session registry should not be poisoned");
     if let Some(session) = registry.get_session_mut(session_id) {
-        session.clear_deferred_luna_ascii_input();
         session.engine.clear_composition();
         session.paging = false;
         update_session_segment_tags(session);
@@ -1362,7 +1339,6 @@ pub extern "C" fn RimeGetInput(session_id: RimeSessionId) -> *const c_char {
     let Some(session) = registry.get_session_mut(session_id) else {
         return ptr::null();
     };
-    flush_deferred_luna_ascii_input(session);
     let Ok(input) = CString::new(session.engine.context().composition.input.as_str()) else {
         return ptr::null();
     };
@@ -1397,7 +1373,6 @@ pub unsafe extern "C" fn RimeSetInput(session_id: RimeSessionId, input: *const c
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
-    session.clear_deferred_luna_ascii_input();
     session.engine.set_input(input);
     session.input_buffer = None;
     update_session_segment_tags(session);
@@ -1414,10 +1389,9 @@ pub extern "C" fn RimeGetCaretPos(session_id: RimeSessionId) -> usize {
     let mut registry = sessions()
         .lock()
         .expect("session registry should not be poisoned");
-    registry.get_session_mut(session_id).map_or(0, |session| {
-        flush_deferred_luna_ascii_input(session);
-        session.engine.context().composition.caret
-    })
+    registry
+        .get_session_mut(session_id)
+        .map_or(0, |session| session.engine.context().composition.caret)
 }
 
 #[no_mangle]
@@ -1430,7 +1404,6 @@ pub extern "C" fn RimeSetCaretPos(session_id: RimeSessionId, caret_pos: usize) {
         .lock()
         .expect("session registry should not be poisoned");
     if let Some(session) = registry.get_session_mut(session_id) {
-        flush_deferred_luna_ascii_input(session);
         session.engine.set_caret_pos(caret_pos);
     }
 }
@@ -1636,7 +1609,6 @@ pub unsafe extern "C" fn RimeSimulateKeySequence(
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
-    flush_deferred_luna_ascii_input(session);
 
     for key_event in key_events {
         match process_session_key_event(session_id, session, key_event) {
@@ -1789,7 +1761,6 @@ fn select_candidate_or_switch(
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
-    flush_deferred_luna_ascii_input(session);
     let Some(index) = index(session) else {
         return FALSE;
     };
@@ -1806,36 +1777,6 @@ fn select_candidate_or_switch(
     update_session_segment_tags(session);
     append_unread_commit(session, commit);
     TRUE
-}
-
-fn deferred_luna_ascii_char(session: &SessionState, keycode: c_int, mask: c_int) -> Option<char> {
-    if mask != 0 {
-        return None;
-    }
-    let ch = char::from_u32(keycode as u32)?;
-    if !ch.is_ascii_lowercase() {
-        return None;
-    }
-    let status = session.engine.status();
-    if status.schema_id != "luna_pinyin" || status.is_ascii_mode {
-        return None;
-    }
-    if session.ascii_composer_pressed_switch_key.is_some() || session.chord_composer.is_some() {
-        return None;
-    }
-    Some(ch)
-}
-
-fn should_defer_luna_ascii_key_event(
-    session: &SessionState,
-    key_event: KeyEvent,
-    ch: char,
-) -> bool {
-    if key_event.code != KeyCode::Character(ch) || !key_event.modifiers.is_empty() {
-        return false;
-    }
-    let context = session.engine.context();
-    !context.composition.input.is_empty() || context.candidates.is_empty()
 }
 
 fn apply_schema_list_candidate(session: &mut SessionState, candidate_index: usize) -> bool {

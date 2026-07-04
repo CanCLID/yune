@@ -113,7 +113,6 @@ pub(crate) struct SessionState {
     pub(crate) schema_reload_watch_signature: Option<String>,
     pub(crate) paging: bool,
     pub(crate) user_dict_name: Option<String>,
-    deferred_luna_ascii_input: String,
     pub(crate) last_active_time: u64,
 }
 
@@ -151,34 +150,8 @@ impl SessionState {
             schema_reload_watch_signature: None,
             paging: false,
             user_dict_name: None,
-            deferred_luna_ascii_input: String::new(),
             last_active_time: session_activity_now(),
         }
-    }
-
-    pub(crate) fn has_deferred_luna_ascii_input(&self) -> bool {
-        !self.deferred_luna_ascii_input.is_empty()
-    }
-
-    pub(crate) fn defer_luna_ascii_input(&mut self, ch: char) {
-        self.deferred_luna_ascii_input.push(ch);
-        self.input_buffer = None;
-    }
-
-    pub(crate) fn clear_deferred_luna_ascii_input(&mut self) {
-        self.deferred_luna_ascii_input.clear();
-    }
-
-    fn flush_deferred_luna_ascii_input(&mut self) -> bool {
-        if self.deferred_luna_ascii_input.is_empty() {
-            return false;
-        }
-        let mut input = self.engine.context().composition.input.clone();
-        input.push_str(&self.deferred_luna_ascii_input);
-        self.deferred_luna_ascii_input.clear();
-        self.engine.set_input(input);
-        self.input_buffer = None;
-        true
     }
 
     pub(crate) fn set_user_dict_name(&mut self, dict_name: impl Into<String>) {
@@ -296,7 +269,6 @@ pub(crate) fn with_session(
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
-    flush_deferred_luna_ascii_input(session);
 
     bool_from(action(session))
 }
@@ -308,7 +280,6 @@ pub(crate) fn session_candidates_snapshot(
         .lock()
         .expect("session registry should not be poisoned");
     let session = registry.get_session_mut(session_id)?;
-    flush_deferred_luna_ascii_input(session);
     Some(session.engine.context().candidates.clone())
 }
 
@@ -319,7 +290,6 @@ pub(crate) fn session_complete_candidates_snapshot(
         .lock()
         .expect("session registry should not be poisoned");
     let session = registry.get_session_mut(session_id)?;
-    flush_deferred_luna_ascii_input(session);
     session.engine.ensure_complete_candidate_list();
     Some(session.engine.context().candidates.clone())
 }
@@ -334,7 +304,6 @@ pub(crate) fn session_inspector_snapshot(
         .lock()
         .expect("session registry should not be poisoned");
     let session = registry.get_session_mut(session_id)?;
-    flush_deferred_luna_ascii_input(session);
     Some((
         session.engine.inspector_snapshot(),
         session.engine.context().candidates.clone(),
@@ -354,7 +323,6 @@ pub(crate) fn session_web_diagnostics_snapshot(
         .lock()
         .expect("session registry should not be poisoned");
     let session = registry.get_session_mut(session_id)?;
-    flush_deferred_luna_ascii_input(session);
     Some(SessionWebDiagnosticsSnapshot {
         storage: session.engine.storage_diagnostics(),
         memory_owner_rows: session.engine.memory_owner_rows(),
@@ -376,15 +344,6 @@ pub(crate) fn remaining_gear_deferrals_snapshot(
         .expect("session registry should not be poisoned");
     let session = registry.get_session_mut(session_id)?;
     Some(session.remaining_gear_deferrals.clone())
-}
-
-pub(crate) fn flush_deferred_luna_ascii_input(session: &mut SessionState) -> bool {
-    let flushed = session.flush_deferred_luna_ascii_input();
-    if flushed {
-        crate::update_session_segment_tags(session);
-        crate::sync_chord_composer_context_update(session);
-    }
-    flushed
 }
 
 pub(crate) fn session_activity_now() -> u64 {

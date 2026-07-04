@@ -799,6 +799,51 @@ C	ef	1000
 }
 
 #[test]
+fn bounded_engine_reuses_owned_upstream_sentence_states_for_growing_null_grammar_input() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: incremental_upstream_sentence
+version: "0.1"
+sort: by_weight
+...
+
+A	a	100
+B	b	100
+C	c	100
+"#,
+    )
+    .expect("incremental upstream sentence dictionary should parse");
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::from_dictionary(dictionary)
+            .with_completion(false)
+            .with_sentence(true)
+            .with_upstream_sentence_model(10),
+    );
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    engine
+        .process_key_sequence("abc")
+        .expect("key sequence should parse");
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(engine.context().candidates[0].text, "ABC");
+    assert_eq!(metrics.full_list_fallback_count, 0);
+    assert_eq!(metrics.upstream_sentence_model_calls, 2);
+    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 1);
+    assert_eq!(
+        metrics.upstream_sentence_model_incremental_discarded_rebuild_chars, 2,
+        "the first sentence-model call builds the scratch for `ab`; the `abc` refresh should extend it"
+    );
+}
+
+#[test]
 fn compact_abbreviation_translator_uses_preset_vocabulary_for_full_pinyin_sentence_ranking() {
     let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports_packs_and_vocabulary(

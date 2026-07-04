@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T09:48:54.0984139Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=f015e786600a91ca5e4a0374c5a1239d98148f06
+yune_git_status_short= M crates/yune-core/src/engine.rs |  M crates/yune-core/src/lib.rs |  M crates/yune-core/src/poet/mod.rs |  M crates/yune-core/src/tests/poet.rs |  M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-scratch/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\probe-short
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m52-track-a-guardrails-and-disposition\track-a-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=3
+session_iterations=20
+key_iterations=30

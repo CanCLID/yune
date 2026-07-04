@@ -279,6 +279,24 @@ fn make_sentences_by_end(
         .collect()
 }
 
+fn sentence_paths_by_end_from_states(
+    states_by_end: &[Vec<PathState>],
+    max_sentences: usize,
+    dedupe_text: bool,
+) -> BTreeMap<usize, Vec<SentencePath>> {
+    states_by_end
+        .iter()
+        .enumerate()
+        .filter(|(end, states)| *end > 0 && !states.is_empty())
+        .map(|(end, states)| {
+            (
+                end,
+                sentence_paths_from_states(states.clone(), max_sentences, dedupe_text),
+            )
+        })
+        .collect()
+}
+
 fn make_abbreviation_sentences_by_end(
     graph: &WordGraph,
     max_sentences: usize,
@@ -307,6 +325,19 @@ fn collect_sentence_states(
     total_length: usize,
     grammar: Option<&dyn Grammar>,
 ) -> BTreeMap<usize, Vec<PathState>> {
+    collect_sentence_state_vec(graph, max_sentences, total_length, grammar)
+        .into_iter()
+        .enumerate()
+        .filter(|(_, states)| !states.is_empty())
+        .collect()
+}
+
+fn collect_sentence_state_vec(
+    graph: &WordGraph,
+    max_sentences: usize,
+    total_length: usize,
+    grammar: Option<&dyn Grammar>,
+) -> Vec<Vec<PathState>> {
     let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
     let mut dp_states_created = 0usize;
     let mut dp_beam_evictions = 0usize;
@@ -364,10 +395,6 @@ fn collect_sentence_states(
         crate::m37_record_upstream_sentence_model_dp(dp_states_created, dp_beam_evictions);
     }
     states_by_end
-        .into_iter()
-        .enumerate()
-        .filter(|(_, states)| !states.is_empty())
-        .collect()
 }
 
 fn beam_rejects_by_weight(
@@ -834,6 +861,29 @@ pub struct UpstreamSentenceModel {
 }
 
 #[derive(Clone, Debug, Default)]
+pub struct UpstreamSentenceScratch {
+    input: String,
+    max_candidates: usize,
+    states_by_end: Vec<Vec<PathState>>,
+}
+
+impl UpstreamSentenceScratch {
+    pub(crate) fn clear(&mut self) {
+        self.input.clear();
+        self.max_candidates = 0;
+        self.states_by_end.clear();
+    }
+
+    fn is_ready_for(&self, input: &str, max_candidates: usize) -> bool {
+        !self.input.is_empty()
+            && self.max_candidates == max_candidates
+            && input.starts_with(&self.input)
+            && self.states_by_end.len() == self.input.len().saturating_add(1)
+            && input.is_char_boundary(self.input.len())
+    }
+}
+
+#[derive(Clone, Debug, Default)]
 enum PoetModelStorage {
     #[default]
     Empty,
@@ -1249,6 +1299,46 @@ impl UpstreamSentenceModel {
     }
 
     #[must_use]
+    pub fn candidates_for_input_with_limit_and_scratch(
+        &self,
+        input: &str,
+        max_candidates: usize,
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> Vec<Candidate> {
+        if input.is_empty() {
+            scratch.clear();
+            return Vec::new();
+        }
+
+        let max_candidates = max_candidates.max(1).min(self.max_candidates);
+        if self.grammar.scoring_grammar().is_some() {
+            scratch.clear();
+            return self.candidates_for_input_with_limit(input, max_candidates);
+        }
+
+        let PoetModelStorage::Owned(storage) = &self.storage else {
+            scratch.clear();
+            return self.candidates_for_input_with_limit(input, max_candidates);
+        };
+
+        if !scratch.is_ready_for(input, max_candidates) {
+            return self.rebuild_owned_scratch(input, max_candidates, scratch);
+        }
+        if scratch.input.len() == input.len() {
+            return self.candidates_for_state_vec_with_limit(
+                input,
+                &scratch.states_by_end,
+                max_candidates,
+            );
+        }
+
+        match self.extend_owned_scratch(storage, input, max_candidates, scratch) {
+            Some(candidates) => candidates,
+            None => self.rebuild_owned_scratch(input, max_candidates, scratch),
+        }
+    }
+
+    #[must_use]
     pub fn candidates_for_code_spans_with_limit(
         &self,
         input: &str,
@@ -1281,6 +1371,15 @@ impl UpstreamSentenceModel {
             input.len(),
             self.grammar.scoring_grammar(),
         );
+        self.candidates_for_sentences_by_end_with_limit(input, &sentences_by_end, max_candidates)
+    }
+
+    fn candidates_for_sentences_by_end_with_limit(
+        &self,
+        input: &str,
+        sentences_by_end: &BTreeMap<usize, Vec<SentencePath>>,
+        max_candidates: usize,
+    ) -> Vec<Candidate> {
         let mut candidates = HashMap::new();
         for end in input
             .char_indices()
@@ -1319,6 +1418,40 @@ impl UpstreamSentenceModel {
         candidates.sort_by(compare_sentence_candidate);
         candidates.truncate(max_candidates);
         candidates
+    }
+
+    fn candidates_for_state_vec_with_limit(
+        &self,
+        input: &str,
+        states_by_end: &[Vec<PathState>],
+        max_candidates: usize,
+    ) -> Vec<Candidate> {
+        let max_candidates = max_candidates.max(1).min(self.max_candidates);
+        let sentences_by_end = sentence_paths_by_end_from_states(
+            states_by_end,
+            max_candidates,
+            self.grammar.scoring_grammar().is_some(),
+        );
+        self.candidates_for_sentences_by_end_with_limit(input, &sentences_by_end, max_candidates)
+    }
+
+    fn rebuild_owned_scratch(
+        &self,
+        input: &str,
+        max_candidates: usize,
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> Vec<Candidate> {
+        scratch.clear();
+        let graph = self.word_graph_for_input(input);
+        scratch.states_by_end = collect_sentence_state_vec(
+            &graph,
+            max_candidates,
+            input.len(),
+            self.grammar.scoring_grammar(),
+        );
+        scratch.input = input.to_owned();
+        scratch.max_candidates = max_candidates;
+        self.candidates_for_state_vec_with_limit(input, &scratch.states_by_end, max_candidates)
     }
 
     fn candidates_for_abbreviation_graph_with_limit(
@@ -1930,6 +2063,248 @@ impl UpstreamSentenceModel {
             crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
         }
         graph
+    }
+
+    fn extend_owned_scratch(
+        &self,
+        storage: &OwnedPoetModelStorage,
+        input: &str,
+        max_candidates: usize,
+        scratch: &mut UpstreamSentenceScratch,
+    ) -> Option<Vec<Candidate>> {
+        let previous_len = scratch.input.len();
+        if previous_len >= input.len() || !input.starts_with(&scratch.input) {
+            scratch.clear();
+            return None;
+        }
+        let boundaries = input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+            .collect::<Vec<_>>();
+        boundaries.binary_search(&previous_len).ok()?;
+        scratch
+            .states_by_end
+            .resize_with(input.len().saturating_add(1), Vec::new);
+
+        let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
+        let extend_start = rebuild_start;
+        let mut graph = WordGraph::new();
+        let mut reachable = vec![false; boundaries.len()];
+        for (index, boundary) in boundaries.iter().copied().enumerate() {
+            if boundary <= previous_len
+                && scratch
+                    .states_by_end
+                    .get(boundary)
+                    .is_some_and(|states| !states.is_empty())
+            {
+                reachable[index] = true;
+            }
+        }
+
+        let mut code_prefix_checks = 0usize;
+        let mut table_entries_considered = 0usize;
+        let mut vocabulary_entries_considered = 0usize;
+        let mut graph_edges = 0usize;
+        let record_volume_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+        let mut seen_code_spans = record_volume_metrics.then(HashMap::<&str, usize>::new);
+        let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
+
+        for (start_index, start) in boundaries.iter().copied().enumerate() {
+            if start >= input.len() {
+                continue;
+            }
+            if !reachable[start_index] {
+                lookup_metrics.unreachable_starts_skipped += 1;
+                continue;
+            }
+            lookup_metrics.reachable_starts_visited += 1;
+            let suffix = &input[start..];
+            lookup_metrics.phrase_index_walk_calls += 1;
+            let walk = self
+                .lookup_index
+                .walk_from(storage, input, &boundaries, start_index);
+            code_prefix_checks += walk.prefix_hits + walk.prefix_misses;
+            lookup_metrics.prefix_filter_hits += walk.prefix_hits;
+            lookup_metrics.prefix_filter_misses += walk.prefix_misses;
+            lookup_metrics.prefix_filter_early_breaks += walk.prefix_early_breaks;
+            lookup_metrics.exact_range_index_misses += walk.exact_range_misses;
+            lookup_metrics.phrase_index_nodes_visited += walk.nodes_visited;
+            lookup_metrics.phrase_index_entry_ranges_emitted += walk.entry_ranges_emitted;
+            for span in walk.spans {
+                let code = &input[start..span.end];
+                if let Some(seen_code_spans) = seen_code_spans.as_mut() {
+                    let derivations = seen_code_spans.entry(code).or_default();
+                    if *derivations > 0 {
+                        lookup_metrics.code_span_rederivations += 1;
+                    }
+                    *derivations += 1;
+                }
+                let Some(entries) = storage.entries_for_code(&self.lookup_index, code) else {
+                    lookup_metrics.exact_range_index_misses += 1;
+                    lookup_metrics.partition_point_fallback_calls += 1;
+                    continue;
+                };
+                lookup_metrics.exact_range_index_hits += 1;
+                let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                let mut inserted_edge = false;
+                if span.end > previous_len {
+                    for entry in bounded_entries {
+                        let text = entry.text(&storage.entry_texts);
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entry_text_bytes += text.len();
+                        }
+                        graph
+                            .entry(start)
+                            .or_default()
+                            .entry(span.end)
+                            .or_default()
+                            .push(WordGraphEntry::new(
+                                text.to_owned(),
+                                upstream_dictionary_weight(f64::from(entry.weight)),
+                            ));
+                        graph_edges += 1;
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entries_inserted += 1;
+                        }
+                        inserted_edge = true;
+                    }
+                } else {
+                    inserted_edge = true;
+                }
+                if inserted_edge {
+                    reachable[span.end_index] = true;
+                }
+                let vocabulary_entries =
+                    vocabulary_indices_for_first_code(&storage.vocabulary_first_codes, code);
+                if record_volume_metrics {
+                    lookup_metrics.vocabulary_index_probes += 1;
+                    lookup_metrics.vocabulary_rows_examined += vocabulary_entries.len();
+                }
+                for (_, index) in vocabulary_entries {
+                    let vocabulary_entry = &storage.vocabulary[*index];
+                    if !self.vocabulary_entry_matches_input_prefix_owned(
+                        storage,
+                        vocabulary_entry,
+                        suffix,
+                        code,
+                    ) {
+                        continue;
+                    }
+                    vocabulary_entries_considered += 1;
+                    for phrase_code in self.derive_matching_phrase_codes_owned(
+                        storage,
+                        vocabulary_entry,
+                        suffix,
+                        code,
+                    ) {
+                        let end = start + phrase_code.len();
+                        let Ok(end_index) = boundaries.binary_search(&end) else {
+                            continue;
+                        };
+                        if end <= previous_len {
+                            reachable[end_index] = true;
+                            continue;
+                        }
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entry_text_bytes += vocabulary_entry.text.len();
+                        }
+                        graph
+                            .entry(start)
+                            .or_default()
+                            .entry(end)
+                            .or_default()
+                            .push(WordGraphEntry::new(
+                                vocabulary_entry.text.clone(),
+                                upstream_dictionary_weight(f64::from(vocabulary_entry.weight)),
+                            ));
+                        graph_edges += 1;
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entries_inserted += 1;
+                        }
+                        reachable[end_index] = true;
+                    }
+                }
+            }
+        }
+        for edges in graph.values_mut() {
+            for entries in edges.values_mut() {
+                entries.sort_by(compare_word_graph_entry);
+                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+            }
+        }
+
+        let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+        let mut dp_states_created = 0usize;
+        let mut dp_beam_evictions = 0usize;
+        let beam_width = max_candidates * 3;
+        for (start, edges) in &graph {
+            if *start > input.len() {
+                continue;
+            }
+            if scratch
+                .states_by_end
+                .get(*start)
+                .map_or(true, Vec::is_empty)
+            {
+                continue;
+            }
+            for (end, entries) in edges {
+                if *end <= previous_len || *end > input.len() {
+                    continue;
+                }
+                let (source_slice, destination_slice) = scratch.states_by_end.split_at_mut(*end);
+                let source_states = &source_slice[*start];
+                if source_states.is_empty() {
+                    continue;
+                }
+                let destination = &mut destination_slice[0];
+                for source in source_states {
+                    for entry in entries {
+                        let candidate_weight = source.weight + null_grammar_score(entry.weight);
+                        if beam_rejects_by_weight(Some(destination), beam_width, candidate_weight) {
+                            continue;
+                        }
+                        let next =
+                            source.extended(&entry.text, candidate_weight, end - start, None);
+                        if record_metrics {
+                            dp_states_created += 1;
+                        }
+                        let evicted = insert_state(destination, next, beam_width);
+                        if record_metrics && evicted {
+                            dp_beam_evictions += 1;
+                        }
+                    }
+                }
+            }
+        }
+        if record_metrics {
+            crate::m37_record_upstream_sentence_model_dp(dp_states_created, dp_beam_evictions);
+        }
+
+        crate::m37_record_upstream_sentence_model_scan(
+            code_prefix_checks,
+            table_entries_considered,
+            vocabulary_entries_considered,
+            graph_edges,
+        );
+        if let Some(rebuild_start) = rebuild_start {
+            let elapsed = rebuild_start.elapsed();
+            lookup_metrics.graph_rebuild_duration = elapsed;
+            lookup_metrics.incremental_reuse_hits = 1;
+            if let Some(extend_start) = extend_start {
+                lookup_metrics.incremental_extend_duration = extend_start.elapsed();
+            }
+            crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
+        }
+
+        scratch.input = input.to_owned();
+        Some(self.candidates_for_state_vec_with_limit(
+            input,
+            &scratch.states_by_end,
+            max_candidates,
+        ))
     }
 
     fn word_graph_for_code_spans(&self, input: &str, spans: &[SentenceCodeSpan]) -> WordGraph {

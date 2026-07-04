@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
 
+use crate::poet::UpstreamSentenceScratch;
 use crate::{
     build_poet_bin, encode_octagram_key, make_sentences, make_sentences_with_grammar,
     null_grammar_score, CandidateSource, DartsDoubleArray, Grammar, MemoryOwnerClass,
@@ -268,6 +269,35 @@ fn upstream_sentence_model_memory_profile_accounts_octagram_grammar_separately()
     assert_eq!(owner.storage, "DartsDoubleArray");
     assert!(owner.item_count > 0);
     assert!(owner.estimated_bytes > 0);
+}
+
+#[test]
+fn upstream_sentence_scratch_is_not_used_for_octagram_grammar_model() {
+    let _guard = super::m37_metrics_test_guard();
+    let entries = [
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+    ];
+    let grammar = OctagramGrammar::from_bytes(
+        &synthetic_octagram_gram(&[("AB", 42), ("ABC$", 99)]),
+        OctagramGrammarConfig::default(),
+    )
+    .expect("synthetic octagram grammar should parse");
+    let model = UpstreamSentenceModel::from_table_entries(entries, &[], 10).with_grammar(grammar);
+    let mut scratch = UpstreamSentenceScratch::default();
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let first = model.candidates_for_input_with_limit_and_scratch("ab", 5, &mut scratch);
+    let second = model.candidates_for_input_with_limit_and_scratch("abc", 5, &mut scratch);
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(first[0].text, "AB");
+    assert_eq!(second[0].text, "ABC");
+    assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 0);
+    assert_eq!(metrics.upstream_sentence_model_graph_rebuild_calls, 2);
 }
 
 #[test]

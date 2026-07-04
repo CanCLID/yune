@@ -3,10 +3,12 @@ use super::{
     Context, DictionaryLookupRecord, MemoryOwnerClass, MemoryOwnerRow, TableDictionary,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     mem,
-    sync::OnceLock,
+    sync::{Mutex, OnceLock},
 };
+
+const DICTIONARY_LOOKUP_COMMENT_CACHE_CAPACITY: usize = 512;
 
 pub struct UniquifierFilter;
 
@@ -72,6 +74,7 @@ impl CandidateFilter for CharsetFilter {
 
 pub struct DictionaryLookupFilter {
     records: DictionaryLookupRecordSource,
+    comment_cache: Option<Mutex<LookupCommentCache>>,
 }
 
 enum DictionaryLookupRecordSource {
@@ -103,6 +106,7 @@ impl DictionaryLookupFilter {
         }
         Self {
             records: DictionaryLookupRecordSource::Eager(dictionary.lookup_records),
+            comment_cache: None,
         }
     }
 
@@ -110,10 +114,30 @@ impl DictionaryLookupFilter {
     pub fn from_byte_backed_records(records: ByteBackedDictionaryLookupRecords) -> Self {
         Self {
             records: DictionaryLookupRecordSource::ByteBacked(records),
+            comment_cache: Some(Mutex::new(LookupCommentCache::new(
+                DICTIONARY_LOOKUP_COMMENT_CACHE_CAPACITY,
+            ))),
         }
     }
 
     fn comment_for_candidate(&self, candidate: &Candidate) -> Option<String> {
+        let Some(comment_cache) = &self.comment_cache else {
+            return self.compute_comment_for_candidate(candidate);
+        };
+        let key = LookupCommentCacheKey::from_candidate(candidate);
+        if let Ok(cache) = comment_cache.lock() {
+            if let Some(comment) = cache.get(&key) {
+                return comment;
+            }
+        }
+        let comment = self.compute_comment_for_candidate(candidate);
+        if let Ok(mut cache) = comment_cache.lock() {
+            cache.insert(key, comment.clone());
+        }
+        comment
+    }
+
+    fn compute_comment_for_candidate(&self, candidate: &Candidate) -> Option<String> {
         if candidate.source == CandidateSource::Sentence {
             if let Some(records) = self.sentence_lookup_records(&candidate.text) {
                 let mut comment = String::new();
@@ -139,7 +163,9 @@ impl DictionaryLookupFilter {
         let primary_indices = records
             .iter()
             .enumerate()
-            .filter_map(|(index, record)| lookup_codes.contains(&record.code).then_some(index))
+            .filter_map(|(index, record)| {
+                lookup_codes.contains(record.code.as_str()).then_some(index)
+            })
             .collect::<Vec<_>>();
         let mut comment = String::from(comment_prefix);
         comment.push('\u{000c}');
@@ -201,6 +227,93 @@ impl DictionaryLookupFilter {
     }
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct LookupCommentCacheKey {
+    text: String,
+    comment: String,
+    sentence: bool,
+}
+
+impl LookupCommentCacheKey {
+    fn from_candidate(candidate: &Candidate) -> Self {
+        Self {
+            text: candidate.text.clone(),
+            comment: candidate.comment.clone(),
+            sentence: candidate.source == CandidateSource::Sentence,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct LookupCommentCache {
+    capacity: usize,
+    entries: HashMap<LookupCommentCacheKey, Option<String>>,
+    order: VecDeque<LookupCommentCacheKey>,
+}
+
+impl LookupCommentCache {
+    fn new(capacity: usize) -> Self {
+        Self {
+            capacity,
+            entries: HashMap::with_capacity(capacity.min(64)),
+            order: VecDeque::with_capacity(capacity.min(64)),
+        }
+    }
+
+    fn get(&self, key: &LookupCommentCacheKey) -> Option<Option<String>> {
+        self.entries.get(key).cloned()
+    }
+
+    fn insert(&mut self, key: LookupCommentCacheKey, comment: Option<String>) {
+        if self.capacity == 0 {
+            return;
+        }
+        if let Some(existing) = self.entries.get_mut(&key) {
+            *existing = comment;
+            return;
+        }
+        while self.entries.len() >= self.capacity {
+            let Some(oldest) = self.order.pop_front() else {
+                break;
+            };
+            self.entries.remove(&oldest);
+        }
+        self.order.push_back(key.clone());
+        self.entries.insert(key, comment);
+    }
+
+    fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    fn estimated_bytes(&self) -> usize {
+        mem::size_of::<Self>()
+            .saturating_add(
+                self.entries
+                    .keys()
+                    .map(|key| key.text.len().saturating_add(key.comment.len()))
+                    .sum::<usize>(),
+            )
+            .saturating_add(
+                self.entries
+                    .values()
+                    .filter_map(Option::as_ref)
+                    .map(String::len)
+                    .sum::<usize>(),
+            )
+            .saturating_add(
+                self.entries
+                    .capacity()
+                    .saturating_mul(mem::size_of::<(LookupCommentCacheKey, Option<String>)>()),
+            )
+            .saturating_add(
+                self.order
+                    .capacity()
+                    .saturating_mul(mem::size_of::<LookupCommentCacheKey>()),
+            )
+    }
+}
+
 fn dictionary_lookup_comment_parts(comment: &str) -> (&str, &str) {
     if let Some((prefix, lookup_comment)) = comment.split_once('\u{000c}') {
         return (prefix, lookup_comment);
@@ -211,11 +324,10 @@ fn dictionary_lookup_comment_parts(comment: &str) -> (&str, &str) {
     ("", comment)
 }
 
-fn split_lookup_codes(comment: &str) -> HashSet<String> {
+fn split_lookup_codes(comment: &str) -> HashSet<&str> {
     comment
         .split(['\u{000c}', ';', ' ', '\t'])
         .filter(|code| !code.is_empty())
-        .map(ToOwned::to_owned)
         .collect()
 }
 
@@ -242,7 +354,7 @@ impl CandidateFilter for DictionaryLookupFilter {
     }
 
     fn memory_owner_rows(&self) -> Vec<MemoryOwnerRow> {
-        match &self.records {
+        let mut rows = match &self.records {
             DictionaryLookupRecordSource::Eager(records_by_text) => vec![MemoryOwnerRow::new(
                 "dictionary_lookup_filter.lookup_records",
                 MemoryOwnerClass::HeapOwnedRequired,
@@ -266,7 +378,24 @@ impl CandidateFilter for DictionaryLookupFilter {
                 ),
                 "TypeDuck dictionary-panel records decoded on demand from the compiled lookup payload",
             )],
+        };
+        if let Some(cache) = &self.comment_cache {
+            if let Ok(cache) = cache.lock() {
+                if cache.len() > 0 {
+                    rows.push(MemoryOwnerRow::new(
+                        "dictionary_lookup_filter.comment_cache",
+                        MemoryOwnerClass::HeapOwnedGuarded,
+                        cache.estimated_bytes(),
+                        cache.len(),
+                        format!(
+                            "bounded HashMap comment cache; capacity={DICTIONARY_LOOKUP_COMMENT_CACHE_CAPACITY}"
+                        ),
+                        "hot decoded TypeDuck dictionary-panel comments for byte-backed lookup records",
+                    ));
+                }
+            }
         }
+        rows
     }
 }
 

@@ -7,6 +7,7 @@ use crate::punctuation::{
     punctuation_candidate_comment, PunctuationProcessor, PunctuationProcessorResult,
 };
 use crate::AiContext;
+use crate::TranslatorScratch;
 use crate::{
     parse_key_sequence, AiDecision, AiResult, Candidate, CandidateFilter, CandidateRanker,
     CandidateRequest, CandidateSource, CommitRecord, Composition, Context, EchoTranslator,
@@ -22,6 +23,9 @@ pub struct Engine {
     options: HashMap<String, bool>,
     properties: HashMap<String, String>,
     translators: Vec<Arc<dyn Translator>>,
+    any_translator_uses_scratch: bool,
+    translator_uses_scratch: Vec<bool>,
+    translator_scratch: Vec<TranslatorScratch>,
     punctuation_processor: Option<PunctuationProcessor>,
     filters: Vec<Box<dyn CandidateFilter>>,
     last_filter_audit: Vec<FilterAuditRecord>,
@@ -163,6 +167,9 @@ impl Default for Engine {
             options: HashMap::new(),
             properties: HashMap::new(),
             translators: vec![Arc::new(EchoTranslator)],
+            any_translator_uses_scratch: false,
+            translator_uses_scratch: vec![false],
+            translator_scratch: vec![TranslatorScratch::default()],
             punctuation_processor: None,
             filters: Vec::new(),
             last_filter_audit: Vec::new(),
@@ -194,7 +201,12 @@ impl Engine {
             .iter()
             .position(|existing| existing.name() == "echo_translator")
             .unwrap_or(self.translators.len());
+        let uses_scratch = translator.uses_translate_scratch();
         self.translators.insert(insert_at, translator);
+        self.any_translator_uses_scratch |= uses_scratch;
+        self.translator_uses_scratch.insert(insert_at, uses_scratch);
+        self.translator_scratch
+            .insert(insert_at, TranslatorScratch::default());
         self.refresh_candidates();
     }
 
@@ -204,11 +216,17 @@ impl Engine {
 
     pub fn reset_translators(&mut self) {
         self.translators = vec![Arc::new(EchoTranslator)];
+        self.any_translator_uses_scratch = false;
+        self.translator_uses_scratch = vec![false];
+        self.translator_scratch = vec![TranslatorScratch::default()];
         self.refresh_candidates();
     }
 
     pub fn clear_translators(&mut self) {
         self.translators.clear();
+        self.any_translator_uses_scratch = false;
+        self.translator_uses_scratch.clear();
+        self.translator_scratch.clear();
         self.refresh_candidates();
     }
 
@@ -1333,6 +1351,22 @@ impl Engine {
             })
     }
 
+    fn sync_translator_scratch_state(&mut self) {
+        if self.translator_uses_scratch.len() != self.translators.len() {
+            self.translator_uses_scratch = self
+                .translators
+                .iter()
+                .map(|translator| translator.uses_translate_scratch())
+                .collect();
+            self.any_translator_uses_scratch =
+                self.translator_uses_scratch.iter().any(|enabled| *enabled);
+        }
+        if self.translator_scratch.len() != self.translators.len() {
+            self.translator_scratch
+                .resize_with(self.translators.len(), TranslatorScratch::default);
+        }
+    }
+
     fn refresh_candidates_with_request(&mut self, request: CandidateRequest) {
         let input = self.context.composition.input.clone();
         if request.limit.is_some() {
@@ -1349,21 +1383,63 @@ impl Engine {
         let (mut candidates, candidate_list_complete) = if request.limit.is_some() {
             let mut candidates = Vec::new();
             let mut candidate_list_complete = true;
-            for translator in &self.translators {
-                let translator_start = Instant::now();
-                let result = translator.translate_with_context_and_request(
-                    &input,
-                    &self.status,
-                    &self.options,
-                    &self.context,
-                    request,
-                );
-                crate::m37_record_translator(translator_start.elapsed());
-                candidate_list_complete &= result.is_complete;
-                candidates.extend(result.candidates);
+            if self.any_translator_uses_scratch {
+                self.sync_translator_scratch_state();
+                for index in 0..self.translators.len() {
+                    let translator = &self.translators[index];
+                    let scratch = &mut self.translator_scratch[index];
+                    let translator_start = Instant::now();
+                    let result = if self.translator_uses_scratch[index] {
+                        translator.translate_with_context_and_request_with_scratch(
+                            &input,
+                            &self.status,
+                            &self.options,
+                            &self.context,
+                            request,
+                            scratch,
+                        )
+                    } else {
+                        translator.translate_with_context_and_request(
+                            &input,
+                            &self.status,
+                            &self.options,
+                            &self.context,
+                            request,
+                        )
+                    };
+                    crate::m37_record_translator(translator_start.elapsed());
+                    candidate_list_complete &= result.is_complete;
+                    candidates.extend(result.candidates);
+                }
+            } else {
+                for translator in &self.translators {
+                    let translator_start = Instant::now();
+                    let result = translator.translate_with_context_and_request(
+                        &input,
+                        &self.status,
+                        &self.options,
+                        &self.context,
+                        request,
+                    );
+                    crate::m37_record_translator(translator_start.elapsed());
+                    candidate_list_complete &= result.is_complete;
+                    candidates.extend(result.candidates);
+                }
             }
             (candidates, candidate_list_complete)
         } else {
+            if self.any_translator_uses_scratch {
+                self.sync_translator_scratch_state();
+                for (uses_scratch, scratch) in self
+                    .translator_uses_scratch
+                    .iter()
+                    .zip(self.translator_scratch.iter_mut())
+                {
+                    if *uses_scratch {
+                        scratch.clear();
+                    }
+                }
+            }
             crate::m37_record_full_list_translation();
             (
                 self.translators

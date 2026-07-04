@@ -310,6 +310,48 @@ ni1,2,0,,oth,ver,,,this,,,this,,,,\t{}\n",
 }
 
 #[test]
+fn dictionary_lookup_filter_reports_bounded_byte_backed_comment_cache() {
+    let dictionary_yaml = format!(
+        "---\n\
+name: typeduck_lookup\n\
+version: \"0.1\"\n\
+sort: original\n\
+...\n\
+\n\
+nei5,1,0,,oth,,,,,,,you (singular),tm,nepali,hindi,kamu\t{}\n",
+        "\u{4f60}",
+    );
+    let dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(&dictionary_yaml)
+        .expect("TypeDuck code-first lookup rows should parse");
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let byte_backed = byte_backed_lookup_records_from_table_bin_bytes(table_bytes)
+        .expect("compiled lookup payload should parse")
+        .expect("compiled lookup payload should be present");
+    let filter = DictionaryLookupFilter::from_byte_backed_records(byte_backed);
+
+    let mut candidates = vec![Candidate {
+        text: "\u{4f60}".to_owned(),
+        comment: "\u{000c}nei5".to_owned(),
+        preedit: None,
+        source: CandidateSource::Table,
+        quality: 1.0,
+    }];
+    filter.apply(&mut candidates);
+    let first_comment = candidates[0].comment.clone();
+    filter.apply(&mut candidates);
+
+    assert_eq!(candidates[0].comment, first_comment);
+    let cache_owner = filter
+        .memory_owner_rows()
+        .into_iter()
+        .find(|row| row.owner == "dictionary_lookup_filter.comment_cache")
+        .expect("byte-backed lookup filter should report its bounded hot cache after use");
+    assert_eq!(cache_owner.class, MemoryOwnerClass::HeapOwnedGuarded);
+    assert!(cache_owner.item_count <= 512);
+    assert!(cache_owner.estimated_bytes < 64 * 1024);
+}
+
+#[test]
 fn dictionary_lookup_filter_marks_combined_lookup_codes_as_primary() {
     let dictionary = TableDictionary::parse_rime_dict_yaml(
         r#"

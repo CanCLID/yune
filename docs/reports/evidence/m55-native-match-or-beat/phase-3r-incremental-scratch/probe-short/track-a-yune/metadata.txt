@@ -1,0 +1,14 @@
+engine=yune
+track=track-a-comparison
+schema=luna_pinyin
+dll=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\probe-short\track-a-yune\rime.dll
+shared=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\probe-short\track-a-yune\shared
+user=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\probe-short\track-a-yune\user
+build=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\probe-short\track-a-yune\user\build
+inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+iterations=3
+session_iterations=20
+key_iterations=30
+deploy_before_benchmark=false
+deploy_only=false
+managed_runtime=false

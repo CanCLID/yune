@@ -625,7 +625,14 @@ it keeps M52 green at 37-character `2.228x` and 59-character `1.856x`, with
 product-path candidate bytes unchanged. A follow-up DP container checkpoint keeps
 state counts unchanged but replaces hot-loop state maps with byte-indexed
 vectors, keeping M52 green at 37-character `2.337x` and 59-character `1.811x`
-with product-path candidate bytes unchanged. Tier M is still not met.
+with product-path candidate bytes unchanged. The next checkpoint adds
+session-local owned null-grammar sentence scratch for bounded refreshes and a
+bounded byte-backed dictionary-lookup comment cache for the Track B product
+filter guard, keeping the strict M55 ratchet green at 37-character `2.249x`,
+59-character `1.774x`, Track B product key sequence `309.382 us`, and Track A
+peak `186,105,856 B`, with product-path candidate bytes unchanged. Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-scratch/`.
+Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
 cost is graph work above the raw lookup (`891.0 us` translator vs `28.9 us`
@@ -730,10 +737,16 @@ or must close as a measured no-go without broadening scope.
   vectors during `collect_sentence_states` and converting back to the existing
   map return shape after propagation. Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-dp-vector/`.
+- [x] Reuse owned null-grammar upstream sentence DP states across bounded
+  key-by-key refreshes when the input extends the previous sentence-model input
+  without failing any full M55 ratchet row. The same checkpoint restores the
+  Track B product guard with a bounded byte-backed lookup-filter comment cache.
+  Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-scratch/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
-  green, the path-state materialization checkpoint is green, and the DP vector
-  checkpoint is green, but all remain above the `<=1.50x` 37/59-character win
-  bar.
+  green, the path-state materialization checkpoint is green, the DP vector
+  checkpoint is green, and the incremental scratch/comment-cache checkpoint is
+  green, but all remain above the `<=1.50x` 37/59-character win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

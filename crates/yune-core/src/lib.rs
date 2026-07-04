@@ -157,6 +157,23 @@ pub trait Translator: Send + Sync {
         TranslationResult::complete(self.translate_with_context(input, status, options, context))
     }
 
+    fn uses_translate_scratch(&self) -> bool {
+        false
+    }
+
+    fn translate_with_context_and_request_with_scratch(
+        &self,
+        input: &str,
+        status: &Status,
+        options: &HashMap<String, bool>,
+        context: &Context,
+        request: CandidateRequest,
+        scratch: &mut TranslatorScratch,
+    ) -> TranslationResult {
+        scratch.clear();
+        self.translate_with_context_and_request(input, status, options, context, request)
+    }
+
     fn spelling_algebra_debug(&self, _input: &str) -> Option<SpellingAlgebraDebug> {
         None
     }
@@ -171,6 +188,17 @@ pub trait Translator: Send + Sync {
 
     fn storage_diagnostics(&self) -> Vec<StorageDiagnosticsRow> {
         Vec::new()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct TranslatorScratch {
+    pub(crate) upstream_sentence: poet::UpstreamSentenceScratch,
+}
+
+impl TranslatorScratch {
+    fn clear(&mut self) {
+        self.upstream_sentence.clear();
     }
 }
 

@@ -17,7 +17,7 @@ use crate::{
     Candidate, CandidateRequest, CandidateSource, Context, M37SentenceCandidateMetrics,
     MemoryOwnerClass, MemoryOwnerRow, PresetVocabularyEntry, RimeCorrectionEntry,
     RimeToleranceRule, SpellingAlgebraDebug, Status, StorageDiagnosticsRow, TableDictionary,
-    TableDictionaryParseError, TableEntry, TranslationResult, Translator,
+    TableDictionaryParseError, TableEntry, TranslationResult, Translator, TranslatorScratch,
 };
 
 const TYPEDUCK_CORRECTION_CREDIBILITY: f32 = -16.118_095; // log(1e-7)
@@ -1690,6 +1690,7 @@ impl StaticTableTranslator {
     fn bounded_candidates_for_lookup_codes(
         &self,
         request: BoundedLookupRequest<'_>,
+        scratch: Option<&mut TranslatorScratch>,
     ) -> TranslationResult {
         let BoundedLookupRequest {
             input,
@@ -1855,16 +1856,19 @@ impl StaticTableTranslator {
         if selected.is_empty() && self.enable_sentence {
             if let Some(model) = &self.upstream_sentence_model {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
-                let mut candidates = model
-                    .candidates_for_input_with_limit(
+                let sentence_limit = limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT);
+                let mut candidates = if let Some(scratch) = scratch {
+                    model.candidates_for_input_with_limit_and_scratch(
                         input,
-                        limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT),
+                        sentence_limit,
+                        &mut scratch.upstream_sentence,
                     )
-                    .into_iter()
-                    .filter(|candidate| {
-                        !filter_by_charset || !contains_extended_cjk(&candidate.text)
-                    })
-                    .collect::<Vec<_>>();
+                } else {
+                    model.candidates_for_input_with_limit(input, sentence_limit)
+                }
+                .into_iter()
+                .filter(|candidate| !filter_by_charset || !contains_extended_cjk(&candidate.text))
+                .collect::<Vec<_>>();
                 if let Some(start) = model_start {
                     crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
                 }
@@ -2498,15 +2502,71 @@ impl StaticTableTranslator {
                 segment_tags,
             ));
         }
-        self.bounded_candidates_for_lookup_codes(BoundedLookupRequest {
-            input,
-            lookup_code,
-            lookup_specs: &expanded_lookup_codes,
-            filter_by_charset,
-            segment_tags,
-            limit,
-            include_full_count: request.include_debug_full_count,
-        })
+        self.bounded_candidates_for_lookup_codes(
+            BoundedLookupRequest {
+                input,
+                lookup_code,
+                lookup_specs: &expanded_lookup_codes,
+                filter_by_charset,
+                segment_tags,
+                limit,
+                include_full_count: request.include_debug_full_count,
+            },
+            None,
+        )
+    }
+
+    fn translated_candidates_for_segment_with_request_and_scratch(
+        &self,
+        input: &str,
+        filter_by_charset: bool,
+        segment_tags: Option<&[String]>,
+        request: CandidateRequest,
+        scratch: &mut TranslatorScratch,
+    ) -> TranslationResult {
+        let Some(limit) = request.limit.filter(|limit| *limit > 0) else {
+            scratch.clear();
+            crate::m37_record_full_list_fallback();
+            return TranslationResult::complete(self.translated_candidates_for_segment(
+                input,
+                filter_by_charset,
+                segment_tags,
+            ));
+        };
+        let accepts_segment = segment_tags
+            .map(|tags| self.accepts_segment_tags(tags))
+            .unwrap_or_else(|| self.accepts_default_segment());
+        if !accepts_segment {
+            scratch.clear();
+            return TranslationResult::complete(Vec::new());
+        }
+
+        let Some(lookup_code) = self.lookup_code(input) else {
+            scratch.clear();
+            return TranslationResult::complete(Vec::new());
+        };
+        let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
+        if !self.bounded_request_supported(&expanded_lookup_codes) {
+            scratch.clear();
+            crate::m37_record_full_list_fallback();
+            return TranslationResult::complete(self.translated_candidates_for_segment(
+                input,
+                filter_by_charset,
+                segment_tags,
+            ));
+        }
+        self.bounded_candidates_for_lookup_codes(
+            BoundedLookupRequest {
+                input,
+                lookup_code,
+                lookup_specs: &expanded_lookup_codes,
+                filter_by_charset,
+                segment_tags,
+                limit,
+                include_full_count: request.include_debug_full_count,
+            },
+            Some(scratch),
+        )
     }
 
     fn sentence_candidate(
@@ -3036,6 +3096,10 @@ impl Translator for StaticTableTranslator {
         "static_table_translator"
     }
 
+    fn uses_translate_scratch(&self) -> bool {
+        self.upstream_sentence_model.is_some()
+    }
+
     fn translate(&self, input: &str) -> Vec<Candidate> {
         self.translated_candidates(input, false)
     }
@@ -3083,6 +3147,27 @@ impl Translator for StaticTableTranslator {
             filter_by_charset,
             Some(&context.segment_tags),
             request,
+        )
+    }
+
+    fn translate_with_context_and_request_with_scratch(
+        &self,
+        input: &str,
+        _status: &Status,
+        options: &HashMap<String, bool>,
+        context: &Context,
+        request: CandidateRequest,
+        scratch: &mut TranslatorScratch,
+    ) -> TranslationResult {
+        let filter_by_charset = (self.enable_charset_filter
+            && !options.get("extended_charset").copied().unwrap_or(false))
+            || request.filter_extended_cjk;
+        self.translated_candidates_for_segment_with_request_and_scratch(
+            input,
+            filter_by_charset,
+            Some(&context.segment_tags),
+            request,
+            scratch,
         )
     }
 

@@ -1740,14 +1740,8 @@ impl StaticTableTranslator {
                 has_full_exact_candidate = true;
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
-                let entry_code =
-                    if short_key_exact_alias_for_prefix(spec_lookup_code) == Some(fetch_code) {
-                        Cow::Borrowed(fetch_code)
-                    } else {
-                        Cow::Borrowed(spec_lookup_code)
-                    };
                 let pending = PendingLookupCandidateRef {
-                    entry_code,
+                    entry_code: Cow::Borrowed(spec_lookup_code),
                     lookup_code: spec_lookup_code,
                     candidate,
                     correction_distance: lookup_spec.correction_distance,
@@ -1775,23 +1769,11 @@ impl StaticTableTranslator {
             if record_track_b {
                 crate::m37_record_track_b_exact_lookup(exact_elapsed);
             }
-            let skip_short_key_prefix_lookup = record_short_key
-                && exact_candidates == 0
-                && lookup_spec.correction_distance.is_none()
-                && fetch_code == spec_lookup_code
-                && short_key_exact_alias_for_prefix(spec_lookup_code).is_some_and(|alias| {
-                    lookup_specs.iter().any(|spec| {
-                        spec.code == alias
-                            && spec.lookup_code == spec_lookup_code
-                            && spec.correction_distance.is_none()
-                    })
-                });
             if lookup_spec.correction_distance.is_none()
                 && self.enable_completion
                 && !spec_lookup_code.is_empty()
                 && fetch_code == spec_lookup_code
                 && !(can_stop_after_window && selected.len() >= limit)
-                && !skip_short_key_prefix_lookup
             {
                 let prefix_start = LookupTimer::start();
                 let mut prefix_candidates = 0;
@@ -2815,14 +2797,6 @@ impl StaticTableTranslator {
 
 pub(crate) fn is_m44_track_a_short_key_prefix(input: &str) -> bool {
     matches!(input, "h" | "ha" | "hao" | "n" | "ni")
-}
-
-fn short_key_exact_alias_for_prefix(input: &str) -> Option<&'static str> {
-    match input {
-        "h" => Some("ha"),
-        "n" => Some("na"),
-        _ => None,
-    }
 }
 
 fn is_m44_track_b_short_key_prefix(input: &str) -> bool {

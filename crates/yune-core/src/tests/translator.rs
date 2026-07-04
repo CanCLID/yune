@@ -869,12 +869,6 @@ Y	li	30000
     let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
     let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
         .expect("test prism should parse");
-    let n_resolved = prism
-        .lookup_canonical_codes("n", &syllabary)
-        .into_iter()
-        .map(|code| (code.code.to_owned(), code.abbreviation))
-        .collect::<Vec<_>>();
-    assert_eq!(n_resolved, [("na".to_owned(), true)]);
     let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
         .with_sentence(true)
         .with_spelling_algebra(&formulas)
@@ -1085,85 +1079,6 @@ HAO2	haob	60
     assert!(metrics.short_key_sort_rank_ns > 0);
     assert!(metrics.short_key_comment_quality_ns > 0);
     assert!(metrics.short_key_first_page_materialize_ns > 0);
-}
-
-#[test]
-fn bounded_short_luna_single_letter_prefix_uses_canonical_exact_alias_page() {
-    let _guard = super::m37_metrics_test_guard();
-    let dictionary = TableDictionary::parse_rime_dict_yaml(
-        r#"
----
-name: short_key_alias_page
-version: "0.1"
-sort: by_weight
-...
-
-NA1	na	100
-NA2	na	99
-NA3	na	98
-NA4	na	97
-NA5	na	96
-NA6	na	95
-NA7	na	94
-NIA1	nia	200
-HA1	ha	100
-HA2	ha	99
-HA3	ha	98
-HA4	ha	97
-HA5	ha	96
-HA6	ha	95
-HA7	ha	94
-HOU1	hou	200
-"#,
-    )
-    .expect("dictionary should parse");
-    let syllabary = ["ha", "hou", "na", "nia"].map(str::to_owned);
-    let formulas = vec![
-        "derive/^na$/n/abbrev".to_owned(),
-        "derive/^ha$/h/abbrev".to_owned(),
-    ];
-    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
-        .expect("test prism should parse");
-    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
-        .with_completion(true)
-        .with_sentence(false);
-
-    for (input, expected) in [
-        ("n", ["NA1", "NA2", "NA3", "NA4", "NA5"]),
-        ("h", ["HA1", "HA2", "HA3", "HA4", "HA5"]),
-    ] {
-        crate::m37_metrics_enable(true);
-        crate::m37_metrics_reset();
-        let result = translator.translate_with_context_and_request(
-            input,
-            &Status::default(),
-            &HashMap::new(),
-            &Context::default(),
-            CandidateRequest::bounded(7),
-        );
-        let metrics = crate::m37_metrics_snapshot();
-        crate::m37_metrics_enable(false);
-
-        assert_eq!(
-            result
-                .candidates
-                .iter()
-                .take(5)
-                .map(|candidate| candidate.text.as_str())
-                .collect::<Vec<_>>(),
-            expected
-        );
-        assert_eq!(
-            metrics.prefix_lookup_calls, 0,
-            "{input} should use the evidenced exact alias page instead of scanning the prefix trie; exact={}, prefix={}, prism_codes={}, short_rows={}",
-            metrics.exact_lookup_candidates,
-            metrics.prefix_lookup_candidates,
-            metrics.prism_lookup_codes,
-            metrics.short_key_candidate_rows_scanned
-        );
-        assert!(metrics.exact_lookup_calls >= 2);
-        assert_eq!(metrics.short_key_candidate_rows_scanned, 7);
-    }
 }
 
 #[test]

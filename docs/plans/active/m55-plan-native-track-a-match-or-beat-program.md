@@ -632,6 +632,12 @@ filter guard, keeping the strict M55 ratchet green at 37-character `2.249x`,
 59-character `1.774x`, Track B product key sequence `309.382 us`, and Track A
 peak `186,105,856 B`, with product-path candidate bytes unchanged. Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-scratch/`.
+The next index-range checkpoint avoids a redundant exact lookup for every owned
+sentence lookup span by carrying the entry range found during prefix scanning,
+keeping the strict M55 ratchet green at 37-character `2.223x`, 59-character
+`1.730x`, Track B product key sequence `316.844 us`, and Track A peak
+`185,905,152 B`, with product-path candidate bytes unchanged. Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-index-range/`.
 Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
@@ -743,10 +749,14 @@ or must close as a measured no-go without broadening scope.
   Track B product guard with a bounded byte-backed lookup-filter comment cache.
   Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-scratch/`.
+- [x] Carry exact owned entry ranges out of the sentence prefix walk so graph
+  construction does not repeat an exact lookup for every emitted span. Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-index-range/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
   green, the path-state materialization checkpoint is green, the DP vector
   checkpoint is green, and the incremental scratch/comment-cache checkpoint is
-  green, but all remain above the `<=1.50x` 37/59-character win bar.
+  green, and the index-range checkpoint is green, but all remain above the
+  `<=1.50x` 37/59-character win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

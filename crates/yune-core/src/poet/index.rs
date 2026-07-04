@@ -17,6 +17,7 @@ struct SentenceCodeRange {
 pub(super) struct SentenceCodeSpan {
     pub(super) end: usize,
     pub(super) end_index: usize,
+    pub(super) entries: Range<usize>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -91,12 +92,14 @@ impl SentenceLookupIndex {
             range_end = next_end;
             walk.prefix_hits += 1;
             walk.nodes_visited += 1;
-            if self
-                .find_exact_range(source, code, range_start, range_end)
-                .is_some()
-            {
+            if self.range_code(source, range_start) == code {
+                let range = self.ranges[range_start];
                 walk.entry_ranges_emitted += 1;
-                walk.spans.push(SentenceCodeSpan { end, end_index });
+                walk.spans.push(SentenceCodeSpan {
+                    end,
+                    end_index,
+                    entries: range.start as usize..range.end as usize,
+                });
             } else {
                 walk.exact_range_misses += 1;
             }

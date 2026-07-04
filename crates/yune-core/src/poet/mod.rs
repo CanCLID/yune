@@ -1061,15 +1061,6 @@ impl OwnedPoetModelStorage {
         }
     }
 
-    fn entries_for_code<'a>(
-        &'a self,
-        lookup_index: &SentenceLookupIndex,
-        code: &str,
-    ) -> Option<&'a [ModelEntry]> {
-        let range = lookup_index.entries_for_code_range(self, code)?;
-        Some(&self.entries_by_code[range])
-    }
-
     fn normal_phrase_character_codes(
         &self,
         grammar: &GrammarProvider,
@@ -1618,14 +1609,9 @@ impl UpstreamSentenceModel {
                     }
                     *derivations += 1;
                 }
-                let Some(entries) = self.entries_for_code_range(code) else {
-                    lookup_metrics.exact_range_index_misses += 1;
-                    lookup_metrics.partition_point_fallback_calls += 1;
-                    continue;
-                };
                 lookup_metrics.exact_range_index_hits += 1;
-                let bounded_entries = entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                let bounded_entries = span.entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                table_entries_considered += span.entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 let mut inserted_edge = false;
                 for entry_index in bounded_entries {
                     let text = self.storage.entry_text(entry_index);
@@ -1965,12 +1951,8 @@ impl UpstreamSentenceModel {
                     }
                     *derivations += 1;
                 }
-                let Some(entries) = storage.entries_for_code(&self.lookup_index, code) else {
-                    lookup_metrics.exact_range_index_misses += 1;
-                    lookup_metrics.partition_point_fallback_calls += 1;
-                    continue;
-                };
                 lookup_metrics.exact_range_index_hits += 1;
+                let entries = &storage.entries_by_code[span.entries.clone()];
                 let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 let mut inserted_edge = false;
@@ -2140,12 +2122,8 @@ impl UpstreamSentenceModel {
                     }
                     *derivations += 1;
                 }
-                let Some(entries) = storage.entries_for_code(&self.lookup_index, code) else {
-                    lookup_metrics.exact_range_index_misses += 1;
-                    lookup_metrics.partition_point_fallback_calls += 1;
-                    continue;
-                };
                 lookup_metrics.exact_range_index_hits += 1;
+                let entries = &storage.entries_by_code[span.entries.clone()];
                 let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 let mut inserted_edge = false;

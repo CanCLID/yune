@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T11:15:54.7396969Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=3ed58f09d4fdee98e59b7483ffd9c51567c2b2f5
+yune_git_status_short= M crates/yune-core/src/poet/index.rs |  M crates/yune-core/src/poet/mod.rs | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-index-range/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\m55-ratchet
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

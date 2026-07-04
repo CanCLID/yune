@@ -638,6 +638,13 @@ keeping the strict M55 ratchet green at 37-character `2.223x`, 59-character
 `1.730x`, Track B product key sequence `316.844 us`, and Track A peak
 `185,905,152 B`, with product-path candidate bytes unchanged. Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-index-range/`.
+The next two incremental graph checkpoints materialize only new exact table
+spans and skip old vocabulary phrase-code derivations, then borrow temporary
+graph-edge text until DP accepts a state. The current-code borrowed-edge
+checkpoint keeps the strict M55 ratchet green at 37-character `2.173x`,
+59-character `1.728x`, Track B product key sequence `310.318 us`, and Track A
+peak `185,991,168 B`, with product-path candidate bytes unchanged. Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-borrowed-incremental-edges/`.
 Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
@@ -760,12 +767,16 @@ or must close as a measured no-go without broadening scope.
   derivation when all matching phrase codes end at or before the retained
   previous input. Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-new-vocabulary-edges/`.
+- [x] In incremental owned sentence graph extension, borrow temporary graph-edge
+  text and clone only when DP materializes an accepted `PathState`. Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-borrowed-incremental-edges/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
   green, the path-state materialization checkpoint is green, the DP vector
   checkpoint is green, and the incremental scratch/comment-cache checkpoint is
   green, the index-range checkpoint is green, and the exact-new-span checkpoint
-  is green, and the incremental vocabulary new-edge checkpoint is green
-  (`2.119x` / `1.645x`), but all remain above the `<=1.50x` 37/59-character
+  is green, the incremental vocabulary new-edge checkpoint is green
+  (`2.119x` / `1.645x`), and the borrowed-edge checkpoint is green
+  (`2.173x` / `1.728x`), but all remain above the `<=1.50x` 37/59-character
   win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all

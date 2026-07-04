@@ -127,6 +127,14 @@ impl WordGraphEntry {
 
 pub type WordGraph = BTreeMap<usize, BTreeMap<usize, Vec<WordGraphEntry>>>;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct BorrowedWordGraphEntry<'a> {
+    text: &'a str,
+    weight: f64,
+}
+
+type BorrowedWordGraph<'a> = BTreeMap<usize, BTreeMap<usize, Vec<BorrowedWordGraphEntry<'a>>>>;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SentenceCodeSpan {
     pub start: usize,
@@ -2071,7 +2079,7 @@ impl UpstreamSentenceModel {
 
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
         let extend_start = rebuild_start;
-        let mut graph = WordGraph::new();
+        let mut graph = BorrowedWordGraph::new();
         let mut reachable = vec![false; boundaries.len()];
         for (index, boundary) in boundaries.iter().copied().enumerate() {
             if boundary <= previous_len
@@ -2138,10 +2146,10 @@ impl UpstreamSentenceModel {
                             .or_default()
                             .entry(span.end)
                             .or_default()
-                            .push(WordGraphEntry::new(
-                                text.to_owned(),
-                                upstream_dictionary_weight(f64::from(entry.weight)),
-                            ));
+                            .push(BorrowedWordGraphEntry {
+                                text,
+                                weight: upstream_dictionary_weight(f64::from(entry.weight)),
+                            });
                         graph_edges += 1;
                         if record_volume_metrics {
                             lookup_metrics.graph_entries_inserted += 1;
@@ -2194,10 +2202,12 @@ impl UpstreamSentenceModel {
                             .or_default()
                             .entry(end)
                             .or_default()
-                            .push(WordGraphEntry::new(
-                                vocabulary_entry.text.clone(),
-                                upstream_dictionary_weight(f64::from(vocabulary_entry.weight)),
-                            ));
+                            .push(BorrowedWordGraphEntry {
+                                text: vocabulary_entry.text.as_str(),
+                                weight: upstream_dictionary_weight(f64::from(
+                                    vocabulary_entry.weight,
+                                )),
+                            });
                         graph_edges += 1;
                         if record_volume_metrics {
                             lookup_metrics.graph_entries_inserted += 1;
@@ -2209,7 +2219,7 @@ impl UpstreamSentenceModel {
         }
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
-                entries.sort_by(compare_word_graph_entry);
+                entries.sort_by(compare_borrowed_word_graph_entry);
                 entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
             }
         }
@@ -2245,8 +2255,7 @@ impl UpstreamSentenceModel {
                         if beam_rejects_by_weight(Some(destination), beam_width, candidate_weight) {
                             continue;
                         }
-                        let next =
-                            source.extended(&entry.text, candidate_weight, end - start, None);
+                        let next = source.extended(entry.text, candidate_weight, end - start, None);
                         if record_metrics {
                             dp_states_created += 1;
                         }
@@ -3057,6 +3066,17 @@ fn compare_word_graph_entry(left: &WordGraphEntry, right: &WordGraphEntry) -> Or
         .partial_cmp(&left.weight)
         .unwrap_or(Ordering::Equal)
         .then_with(|| left.text.cmp(&right.text))
+}
+
+fn compare_borrowed_word_graph_entry(
+    left: &BorrowedWordGraphEntry<'_>,
+    right: &BorrowedWordGraphEntry<'_>,
+) -> Ordering {
+    right
+        .weight
+        .partial_cmp(&left.weight)
+        .unwrap_or(Ordering::Equal)
+        .then_with(|| left.text.cmp(right.text))
 }
 
 fn compare_model_entry_by_code(left: &OwnedModelEntry, right: &OwnedModelEntry) -> Ordering {

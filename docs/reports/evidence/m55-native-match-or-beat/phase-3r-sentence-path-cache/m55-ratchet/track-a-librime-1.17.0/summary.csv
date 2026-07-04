@@ -1,0 +1,11 @@
+engine,track,schema_id,workload,input,samples,operations,median_us,p95_us,p99_us,max_us,median_working_set_bytes,max_peak_working_set_bytes,median_private_bytes,max_peak_pagefile_bytes
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ceshiyixiachangjushuruxingnengzenyang,80,2960,287.868,301.684,329.614,329.614,15310848,15872000,4923392,6594560
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,cszysmsrsd,80,800,1183.650,1241.760,1271.100,1271.100,16084992,17461248,6021120,7544832
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,hao,80,240,11.467,13.033,16.000,16.000,11997184,13758464,4878336,6524928
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,n,80,80,20.700,22.100,40.100,40.100,11735040,13524992,4276224,6455296
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,ni,80,160,14.050,14.600,17.650,17.650,11948032,13758464,4579328,6524928
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,80,4720,652.797,685.341,750.337,750.337,17088512,17461248,6189056,6934528
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zhongguo,80,640,165.275,198.812,314.025,314.025,13041664,13824000,4763648,6594560
+librime-1.17.0,track-a-comparison,luna_pinyin,key_sequence_process_with_context,zybfshmsru,80,800,831.180,848.900,902.130,902.130,16072704,17461248,6164480,7548928
+librime-1.17.0,track-a-comparison,luna_pinyin,session_create_select_destroy,,60,60,23004.000,30061.000,57393.800,57393.800,10481664,13524992,3330048,6455296
+librime-1.17.0,track-a-comparison,luna_pinyin,startup_warm_shared_assets_runtime_ready,,9,9,23804.800,49962.000,49962.000,49962.000,10960896,13434880,3809280,6246400

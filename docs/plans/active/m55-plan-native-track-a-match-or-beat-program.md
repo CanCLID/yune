@@ -652,11 +652,18 @@ M55 ratchet green at 37-character `2.010x`, 59-character `1.570x`, Track B
 product key sequence `324.395 us`, and Track A peak `186,085,376 B`, with
 product-path candidate bytes unchanged. Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
+The next checkpoint caches retained sentence paths by end bucket so single-key
+growth converts only the newly reached end bucket before running the existing
+candidate merge/rank step. It keeps the strict M55 ratchet green at
+37-character `2.001x`, 59-character `1.519x`, Track B product key sequence
+`313.461 us`, and Track A peak `185,520,128 B`, with product-path candidate
+bytes unchanged. Evidence:
+`docs/reports/evidence/m55-native-match-or-beat/phase-3r-sentence-path-cache/`.
 An incremental product-path access-volume follow-up shows the earlier full-input
 diagnostic did not measure the retained scratch product path: final-key owned
-graph rebuild is now only `32,600 ns` / `47,800 ns` on the 37-/59-character
-rows, while candidate path conversion plus merge/rank is `91,400 ns` /
-`172,900 ns` and total sentence-model time is `137,700 ns` / `233,800 ns`.
+graph rebuild is now only `33,200 ns` / `59,900 ns` on the 37-/59-character
+rows, while candidate path conversion plus merge/rank is `65,300 ns` /
+`131,100 ns` and total sentence-model time is `105,000 ns` / `198,200 ns`.
 Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
 Tier M is still not met.
@@ -791,6 +798,10 @@ or must close as a measured no-go without broadening scope.
   exact first-code spans across single-key growth so graph construction advances
   only the new suffix while preserving preset-vocabulary derivation. Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
+- [x] Cache retained sentence paths by end bucket in owned null-grammar
+  incremental scratch so single-key growth converts only the newly reached end
+  bucket before the existing candidate merge/rank step. Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-sentence-path-cache/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
   green, the path-state materialization checkpoint is green, the DP vector
   checkpoint is green, and the incremental scratch/comment-cache checkpoint is
@@ -798,10 +809,12 @@ or must close as a measured no-go without broadening scope.
   is green, the incremental vocabulary new-edge checkpoint is green
   (`2.119x` / `1.645x`), and the borrowed-edge checkpoint is green
   (`2.173x` / `1.728x`), and the incremental prefix-state checkpoint is green
-  (`2.010x` / `1.570x`), but all remain above the `<=1.50x` 37/59-character
-  win bar.
+  (`2.010x` / `1.570x`), and the sentence-path cache checkpoint is green
+  (`2.001x` / `1.519x`), but all remain above the `<=1.50x` 37-character win
+  bar and the 59-character row remains slightly above `<=1.50x`.
   A product-path access-volume follow-up shows that the next owner is candidate
-  extraction over retained incremental states rather than graph rebuild volume.
+  merge/rank over retained incremental sentence paths rather than graph rebuild
+  or path conversion volume.
   Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
   Non-landed local probes after that checkpoint are recorded in

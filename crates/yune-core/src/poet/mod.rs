@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::mem;
 use std::ops::Range;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use crate::{
     Candidate, CandidateSource, MemoryOwnerClass, MemoryOwnerRow, PresetVocabularyEntry,
@@ -287,20 +287,19 @@ fn make_sentences_by_end(
         .collect()
 }
 
-fn sentence_paths_by_end_from_states(
+fn sentence_paths_vec_by_end_from_states(
     states_by_end: &[Vec<PathState>],
     max_sentences: usize,
     dedupe_text: bool,
-) -> BTreeMap<usize, Vec<SentencePath>> {
+) -> Vec<Vec<SentencePath>> {
     states_by_end
         .iter()
-        .enumerate()
-        .filter(|(end, states)| *end > 0 && !states.is_empty())
-        .map(|(end, states)| {
-            (
-                end,
-                sentence_paths_from_states(states.clone(), max_sentences, dedupe_text),
-            )
+        .map(|states| {
+            if states.is_empty() {
+                Vec::new()
+            } else {
+                sentence_paths_from_states(states.clone(), max_sentences, dedupe_text)
+            }
         })
         .collect()
 }
@@ -873,6 +872,7 @@ pub struct UpstreamSentenceScratch {
     input: String,
     max_candidates: usize,
     states_by_end: Vec<Vec<PathState>>,
+    sentence_paths_by_end: Vec<Vec<SentencePath>>,
     prefix_states_by_start: Vec<Option<SentencePrefixState>>,
     exact_spans_by_start: Vec<Vec<CachedSentenceCodeSpan>>,
 }
@@ -882,6 +882,7 @@ impl UpstreamSentenceScratch {
         self.input.clear();
         self.max_candidates = 0;
         self.states_by_end.clear();
+        self.sentence_paths_by_end.clear();
         self.prefix_states_by_start.clear();
         self.exact_spans_by_start.clear();
     }
@@ -891,6 +892,7 @@ impl UpstreamSentenceScratch {
             && self.max_candidates == max_candidates
             && input.starts_with(&self.input)
             && self.states_by_end.len() == self.input.len().saturating_add(1)
+            && self.sentence_paths_by_end.len() == self.states_by_end.len()
             && self.prefix_states_by_start.len() == self.states_by_end.len()
             && self.exact_spans_by_start.len() == self.states_by_end.len()
             && input.is_char_boundary(self.input.len())
@@ -1337,10 +1339,11 @@ impl UpstreamSentenceModel {
             return self.rebuild_owned_scratch(input, max_candidates, scratch);
         }
         if scratch.input.len() == input.len() {
-            return self.candidates_for_state_vec_with_limit(
+            return self.candidates_for_cached_sentence_paths_with_limit(
                 input,
-                &scratch.states_by_end,
+                scratch,
                 max_candidates,
+                Duration::ZERO,
             );
         }
 
@@ -1432,39 +1435,83 @@ impl UpstreamSentenceModel {
         candidates
     }
 
-    fn candidates_for_state_vec_with_limit(
+    fn candidates_for_sentence_path_vec_with_limit(
         &self,
         input: &str,
-        states_by_end: &[Vec<PathState>],
+        sentence_paths_by_end: &[Vec<SentencePath>],
         max_candidates: usize,
     ) -> Vec<Candidate> {
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
+        let mut candidates = HashMap::new();
+        for end in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .filter(|index| *index > 0)
+            .chain(std::iter::once(input.len()))
+        {
+            let Some(sentences) = sentence_paths_by_end.get(end) else {
+                continue;
+            };
+            if sentences.is_empty() {
+                continue;
+            }
+            for sentence in sentences {
+                let candidate = Candidate {
+                    text: sentence.text.clone(),
+                    comment: String::new(),
+                    preedit: None,
+                    source: if end < input.len() {
+                        CandidateSource::PartialTable {
+                            consumed: end,
+                            recompose_on_default: false,
+                        }
+                    } else {
+                        CandidateSource::Sentence
+                    },
+                    quality: end as f32 * CODE_LENGTH_QUALITY_BAND + sentence.weight as f32,
+                };
+                match candidates.get(&candidate.text) {
+                    Some(existing)
+                        if compare_sentence_candidate(&candidate, existing) != Ordering::Less => {}
+                    _ => {
+                        candidates.insert(candidate.text.clone(), candidate);
+                    }
+                }
+            }
+        }
+        let mut candidates = candidates.into_values().collect::<Vec<_>>();
+        candidates.sort_by(compare_sentence_candidate);
+        candidates.truncate(max_candidates);
+        candidates
+    }
+
+    fn candidates_for_cached_sentence_paths_with_limit(
+        &self,
+        input: &str,
+        scratch: &UpstreamSentenceScratch,
+        max_candidates: usize,
+        path_duration: Duration,
+    ) -> Vec<Candidate> {
         let record_candidate_extraction = cfg!(debug_assertions) && crate::m37_metrics_enabled();
         let (state_bucket_count, states_ranked) = if record_candidate_extraction {
             (
-                states_by_end
+                scratch
+                    .states_by_end
                     .iter()
                     .filter(|states| !states.is_empty())
                     .count(),
-                states_by_end.iter().map(Vec::len).sum(),
+                scratch.states_by_end.iter().map(Vec::len).sum(),
             )
         } else {
             (0, 0)
         };
-        let path_start = record_candidate_extraction.then(Instant::now);
-        let sentences_by_end = sentence_paths_by_end_from_states(
-            states_by_end,
-            max_candidates,
-            self.grammar.scoring_grammar().is_some(),
-        );
-        let path_duration = path_start.map(|start| start.elapsed());
         let merge_start = record_candidate_extraction.then(Instant::now);
-        let candidates = self.candidates_for_sentences_by_end_with_limit(
+        let candidates = self.candidates_for_sentence_path_vec_with_limit(
             input,
-            &sentences_by_end,
+            &scratch.sentence_paths_by_end,
             max_candidates,
         );
-        if let (Some(path_duration), Some(merge_start)) = (path_duration, merge_start) {
+        if let Some(merge_start) = merge_start {
             crate::m37_record_upstream_sentence_model_candidate_extraction(
                 state_bucket_count,
                 states_ranked,
@@ -1495,9 +1542,21 @@ impl UpstreamSentenceModel {
             scratch.prefix_states_by_start = prefix_states;
             scratch.exact_spans_by_start = exact_spans;
         }
+        let path_start = crate::m37_metrics_enabled().then(Instant::now);
+        scratch.sentence_paths_by_end = sentence_paths_vec_by_end_from_states(
+            &scratch.states_by_end,
+            max_candidates,
+            self.grammar.scoring_grammar().is_some(),
+        );
+        let path_duration = path_start.map_or(Duration::ZERO, |start| start.elapsed());
         scratch.input = input.to_owned();
         scratch.max_candidates = max_candidates;
-        self.candidates_for_state_vec_with_limit(input, &scratch.states_by_end, max_candidates)
+        self.candidates_for_cached_sentence_paths_with_limit(
+            input,
+            scratch,
+            max_candidates,
+            path_duration,
+        )
     }
 
     fn candidates_for_abbreviation_graph_with_limit(
@@ -2445,10 +2504,20 @@ impl UpstreamSentenceModel {
         scratch.input = input.to_owned();
         scratch.prefix_states_by_start = next_prefix_states;
         scratch.exact_spans_by_start = next_exact_spans;
-        Some(self.candidates_for_state_vec_with_limit(
+        scratch
+            .sentence_paths_by_end
+            .resize_with(scratch.states_by_end.len(), Vec::new);
+        let path_start = crate::m37_metrics_enabled().then(Instant::now);
+        if let Some(states) = scratch.states_by_end.get(input.len()) {
+            scratch.sentence_paths_by_end[input.len()] =
+                sentence_paths_from_states(states.clone(), max_candidates, false);
+        }
+        let path_duration = path_start.map_or(Duration::ZERO, |start| start.elapsed());
+        Some(self.candidates_for_cached_sentence_paths_with_limit(
             input,
-            &scratch.states_by_end,
+            scratch,
             max_candidates,
+            path_duration,
         ))
     }
 

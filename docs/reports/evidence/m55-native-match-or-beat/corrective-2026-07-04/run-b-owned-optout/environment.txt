@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T22:13:17.0558086Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=9e548b4e4b7c2fa29f06ef44340fd3a061e28ec2
+yune_git_status_short= M README.md |  M docs/reports/yune-vs-librime-performance.md |  M docs/reports/yune-vs-librime-root-cause-analysis.md | ?? docs/reports/evidence/dashboard-visuals-2026-07-04/ | ?? docs/reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-5-final/review-verify-run/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\run-b-owned-optout
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=
+fail_on_regression=False
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

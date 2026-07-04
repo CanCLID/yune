@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="524" viewBox="0 0 1040 524" role="img" aria-labelledby="title desc">
+  <title id="title">Native Track A latency: M55 final Yune vs librime 1.17.0</title>
+  <desc id="desc">M55 corrective gate run D (context read per keypress), 2026-07-04. Bar = Yune median / same-run upstream librime median; lower is better. Rows below 1x are faster than librime in this gate. The long rows measure type-sequence then one context observation.</desc>
+  <rect width="1040" height="524" fill="#FCFCFD"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Native Track A latency: M55 final Yune vs librime 1.17.0</text>
+  <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">M55 corrective gate run D (context read per keypress), 2026-07-04. Bar = Yune median / same-run upstream librime median; lower is better.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Rows below 1x are faster than librime in this gate. The long rows measure type-sequence then one context observation.</text>
+  <line x1="270.0" y1="95" x2="270.0" y2="498" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="270.0" y="516" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0.0x</text>
+  <line x1="387.5" y1="95" x2="387.5" y2="498" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="387.5" y="516" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0.5x</text>
+  <line x1="505.0" y1="95" x2="505.0" y2="498" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="505.0" y="516" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">1.0x</text>
+  <line x1="622.5" y1="95" x2="622.5" y2="498" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="622.5" y="516" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">1.5x</text>
+  <line x1="740.0" y1="95" x2="740.0" y2="498" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="740.0" y="516" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">2.0x</text>
+  <line x1="505.0" y1="93" x2="505.0" y2="498" stroke="#1F2430" stroke-width="2"/>
+  <text x="509.0" y="89" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="600" fill="#1F2430">1x parity</text>
+  <line x1="740.0" y1="93" x2="740.0" y2="498" stroke="#1F2430" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="744.0" y="89" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="600" fill="#1F2430">M55 short-key ceiling</text>
+  <text x="28" y="109" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">Key-sequence with context latency</text>
+  <text x="258" y="134" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">zhongguo (common word)</text>
+  <rect x="270" y="120" width="59.9" height="18" rx="2" fill="#A3D576" stroke="#386411" stroke-width="1"/>
+  <text x="335.9" y="134" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">0.255x</text>
+  <text x="385.9" y="134" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune -129.5 us</text>
+  <text x="258" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">59-char pinyin</text>
+  <rect x="270" y="154" width="359.1" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="635.1" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">1.528x</text>
+  <text x="685.1" y="168" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune +351.8 us</text>
+  <text x="258" y="202" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">cszysmsrsd (10-char abbr)</text>
+  <rect x="270" y="188" width="89.5" height="18" rx="2" fill="#A3D576" stroke="#386411" stroke-width="1"/>
+  <text x="365.5" y="202" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">0.381x</text>
+  <text x="415.5" y="202" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune -736.2 us</text>
+  <text x="258" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">zybfshmsru (8-char abbr)</text>
+  <rect x="270" y="222" width="132.5" height="18" rx="2" fill="#A3D576" stroke="#386411" stroke-width="1"/>
+  <text x="408.5" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">0.564x</text>
+  <text x="458.5" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune -362.8 us</text>
+  <text x="258" y="270" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">37-char pinyin</text>
+  <rect x="270" y="256" width="449.6" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="725.6" y="270" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">1.913x</text>
+  <text x="775.6" y="270" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune +272.8 us</text>
+  <text x="258" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">hao (short key)</text>
+  <rect x="270" y="290" width="369.9" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="645.9" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">1.574x</text>
+  <text x="695.9" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune +8.8 us</text>
+  <text x="258" y="338" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">ni (short key)</text>
+  <rect x="270" y="324" width="571.8" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="847.8" y="338" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">2.433x</text>
+  <text x="897.8" y="338" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune +25.0 us</text>
+  <text x="258" y="372" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">n (short key)</text>
+  <rect x="270" y="358" width="619.5" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="895.5" y="372" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">2.636x</text>
+  <text x="945.5" y="372" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">Yune +34.2 us</text>
+  <line x1="28" y1="394" x2="1012" y2="394" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="28" y="417" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">One-time lifecycle</text>
+  <text x="258" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">startup warm runtime-ready</text>
+  <rect x="270" y="428" width="210.3" height="18" rx="2" fill="#A3D576" stroke="#386411" stroke-width="1"/>
+  <text x="486.3" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">0.895x</text>
+  <text x="536.3" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">22,428.1 vs 25,061.5 us</text>
+  <text x="258" y="476" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">session create/select/destroy</text>
+  <rect x="270" y="462" width="203.0" height="18" rx="2" fill="#A3D576" stroke="#386411" stroke-width="1"/>
+  <text x="479.0" y="476" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">0.864x</text>
+  <text x="529.0" y="476" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">22,468.4 vs 26,019.7 us</text>
+</svg>

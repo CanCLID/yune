@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="438" viewBox="0 0 1040 438" role="img" aria-labelledby="title desc">
+  <title id="title">Native Track A memory: corrective high-water and owners</title>
+  <desc id="desc">M55 corrective gate run D (owned poet default), 2026-07-04. MB are decimal process proxies. The byte-backed opt-in row is from corrective run A; it fails the long-row latency ceilings until the incremental sentence scratch is ported to byte-backed storage.</desc>
+  <rect width="1040" height="438" fill="#FCFCFD"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Native Track A memory: corrective high-water and owners</text>
+  <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">M55 corrective gate run D (owned poet default), 2026-07-04. MB are decimal process proxies.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">The byte-backed opt-in row is from corrective run A; it fails the long-row latency ceilings until</text>
+  <text x="28" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">the incremental sentence scratch is ported to byte-backed storage.</text>
+  <line x1="270.0" y1="111" x2="270.0" y2="412" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="270.0" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0 MB</text>
+  <line x1="387.5" y1="111" x2="387.5" y2="412" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="387.5" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">50 MB</text>
+  <line x1="505.0" y1="111" x2="505.0" y2="412" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="505.0" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">100 MB</text>
+  <line x1="622.5" y1="111" x2="622.5" y2="412" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="622.5" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">150 MB</text>
+  <line x1="740.0" y1="111" x2="740.0" y2="412" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="740.0" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">200 MB</text>
+  <line x1="728.3" y1="109" x2="728.3" y2="412" stroke="#1F2430" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="732.3" y="105" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="600" fill="#1F2430">corrective ceiling</text>
+  <text x="28" y="125" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">Peak working set, same-run lanes</text>
+  <text x="258" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Yune Track A peak (owned default)</text>
+  <rect x="270" y="136" width="436.5" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="712.5" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">185.7 MB</text>
+  <text x="776.5" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">below 195.0 MB corrective ceiling</text>
+  <text x="258" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Yune opt-in byte-backed peak</text>
+  <rect x="270" y="170" width="266.0" height="18" rx="2" fill="#7FB1D6" stroke="#355E80" stroke-width="1"/>
+  <text x="542.0" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">113.2 MB</text>
+  <text x="606.0" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">YUNE_POET_BYTE_BACKED=1; latency-blocked</text>
+  <text x="258" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">librime max peer peak</text>
+  <rect x="270" y="204" width="40.5" height="18" rx="2" fill="#BFC6D4" stroke="#868EA0" stroke-width="1"/>
+  <text x="316.5" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">17.2 MB</text>
+  <text x="373.5" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">same-run peer scale</text>
+  <line x1="28" y1="240" x2="1012" y2="240" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="28" y="263" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">Named Yune owner diagnostics (owned default)</text>
+  <text x="258" y="288" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">process unclassified lower bound</text>
+  <rect x="270" y="274" width="248.9" height="18" rx="2" fill="#C7B3E0" stroke="#5E4B86" stroke-width="1"/>
+  <text x="524.9" y="288" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">105.9 MB</text>
+  <text x="588.9" y="288" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">remaining process floor</text>
+  <text x="258" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">poet.vocabulary</text>
+  <rect x="270" y="308" width="126.1" height="18" rx="2" fill="#C7B3E0" stroke="#5E4B86" stroke-width="1"/>
+  <text x="402.1" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">53.6 MB</text>
+  <text x="459.1" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">heap-owned; mmap-backed under the opt-in</text>
+  <text x="258" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">poet.entries_by_code</text>
+  <rect x="270" y="342" width="43.9" height="18" rx="2" fill="#C7B3E0" stroke="#5E4B86" stroke-width="1"/>
+  <text x="319.9" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">18.7 MB</text>
+  <text x="376.9" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">heap-owned; mmap-backed under the opt-in</text>
+  <text x="258" y="390" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">compact_table.storage</text>
+  <rect x="270" y="376" width="30.6" height="18" rx="2" fill="#7FB1D6" stroke="#355E80" stroke-width="1"/>
+  <text x="306.6" y="390" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">13.0 MB</text>
+  <text x="363.6" y="390" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">mmap file-backed</text>
+</svg>

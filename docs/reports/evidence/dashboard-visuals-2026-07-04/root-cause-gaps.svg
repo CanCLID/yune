@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="260" viewBox="0 0 1040 260" role="img" aria-labelledby="title desc">
+  <title id="title">Current performance gaps by lane (Yune / peer ratio)</title>
+  <desc id="desc">Native Track A refreshed by the M55 corrective gate run D (per-keypress reads), 2026-07-04; browser rows carried from 2026-06-28/29. Lower is better. Product guard rows are omitted when there is no same-run librime peer.</desc>
+  <rect width="1040" height="260" fill="#FCFCFD"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Current performance gaps by lane (Yune / peer ratio)</text>
+  <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Native Track A refreshed by the M55 corrective gate run D (per-keypress reads), 2026-07-04; browser rows carried from 2026-06-28/29.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">Lower is better. Product guard rows are omitted when there is no same-run librime peer.</text>
+  <line x1="270.0" y1="95" x2="270.0" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="270.0" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0x</text>
+  <line x1="337.1" y1="95" x2="337.1" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="337.1" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">1x</text>
+  <line x1="404.3" y1="95" x2="404.3" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="404.3" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">2x</text>
+  <line x1="471.4" y1="95" x2="471.4" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="471.4" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">3x</text>
+  <line x1="538.6" y1="95" x2="538.6" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="538.6" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">4x</text>
+  <line x1="605.7" y1="95" x2="605.7" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="605.7" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">5x</text>
+  <line x1="672.9" y1="95" x2="672.9" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="672.9" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">6x</text>
+  <line x1="740.0" y1="95" x2="740.0" y2="234" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="740.0" y="252" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">7x</text>
+  <line x1="337.1" y1="93" x2="337.1" y2="234" stroke="#1F2430" stroke-width="2" stroke-dasharray="4 4"/>
+  <text x="341.1" y="89" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="600" fill="#1F2430">1x parity</text>
+  <text x="258" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native Track A peak memory</text>
+  <rect x="270" y="96" width="723.8" height="18" rx="2" fill="#F2C879" stroke="#9C7B1E" stroke-width="1"/>
+  <text x="999.8" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">10.78x</text>
+  <text x="1049.8" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">185.7 vs 17.2 MB</text>
+  <text x="258" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Luna memory</text>
+  <rect x="270" y="130" width="268.6" height="18" rx="2" fill="#F0986E" stroke="#804126" stroke-width="1"/>
+  <text x="544.6" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">4.00x</text>
+  <text x="587.6" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">64.0 vs 16.0 MiB; blocker</text>
+  <text x="258" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Native n latency</text>
+  <rect x="270" y="164" width="177.0" height="18" rx="2" fill="#F2C879" stroke="#9C7B1E" stroke-width="1"/>
+  <text x="453.0" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">2.636x</text>
+  <text x="503.0" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">bounded-gap; not match-or-beat</text>
+  <text x="258" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">Browser Luna startup</text>
+  <rect x="270" y="198" width="105.9" height="18" rx="2" fill="#F2C879" stroke="#9C7B1E" stroke-width="1"/>
+  <text x="381.9" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">1.58x</text>
+  <text x="424.9" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">1000 vs 634 ms; watch</text>
+</svg>

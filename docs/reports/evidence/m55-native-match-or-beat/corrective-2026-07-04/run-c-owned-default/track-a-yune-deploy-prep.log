@@ -1,0 +1,4 @@
+﻿engine=yune
+schema=luna_pinyin
+track=track-a-comparison
+deploy_only=true

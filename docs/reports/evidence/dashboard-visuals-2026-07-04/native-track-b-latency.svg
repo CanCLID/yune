@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="226" viewBox="0 0 1040 226" role="img" aria-labelledby="title desc">
+  <title id="title">Native Track B latency: M55 product guard</title>
+  <desc id="desc">M55 corrective gate run D. TypeDuck jyut6ping3_mobile latency rows are absolute product guardrails. No TypeDuck-vs-librime speed claim follows from this lane.</desc>
+  <rect width="1040" height="226" fill="#FCFCFD"/>
+  <text x="28" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2430">Native Track B latency: M55 product guard</text>
+  <text x="28" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">M55 corrective gate run D. TypeDuck jyut6ping3_mobile latency rows are absolute product guardrails.</text>
+  <text x="28" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#6F768A">No TypeDuck-vs-librime speed claim follows from this lane.</text>
+  <line x1="270.0" y1="95" x2="270.0" y2="200" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="270.0" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">0k us</text>
+  <line x1="376.8" y1="95" x2="376.8" y2="200" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="376.8" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">25k us</text>
+  <line x1="483.6" y1="95" x2="483.6" y2="200" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="483.6" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">50k us</text>
+  <line x1="590.5" y1="95" x2="590.5" y2="200" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="590.5" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">75k us</text>
+  <line x1="697.3" y1="95" x2="697.3" y2="200" stroke="#E6E8F0" stroke-width="1"/>
+  <text x="697.3" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A" text-anchor="middle">100k us</text>
+  <text x="258" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">key-sequence latency</text>
+  <rect x="270" y="96" width="2.0" height="18" rx="2" fill="#7FB1D6" stroke="#355E80" stroke-width="1"/>
+  <text x="278.0" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">315.4 us</text>
+  <text x="342.0" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">below 375.3 us guard</text>
+  <text x="258" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">session create/select/destroy</text>
+  <rect x="270" y="130" width="151.1" height="18" rx="2" fill="#7FB1D6" stroke="#355E80" stroke-width="1"/>
+  <text x="427.1" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">35,364.1 us</text>
+  <text x="512.1" y="144" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">below 109.8k us guard</text>
+  <text x="258" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#1F2430" text-anchor="end">startup warm runtime-ready</text>
+  <rect x="270" y="164" width="148.4" height="18" rx="2" fill="#7FB1D6" stroke="#355E80" stroke-width="1"/>
+  <text x="424.4" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1F2430">34,732.8 us</text>
+  <text x="509.4" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#6F768A">below 107.1k us guard</text>
+</svg>

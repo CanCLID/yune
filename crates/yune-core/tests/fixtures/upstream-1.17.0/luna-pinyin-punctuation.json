@@ -325,6 +325,7 @@
       "schema_name": "朙月拼音",
       "scenario": "punctuation_period",
       "label": "period_commit",
+      "rime_get_input": null,
       "is_composing": false,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -340,13 +341,15 @@
       "page_size": 0,
       "page_no": 0,
       "is_last_page": false,
-      "selected_candidates": []
+      "selected_candidates": [],
+      "processed": 1
     },
     {
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "scenario": "symbol_fh",
       "label": "symbols",
+      "rime_get_input": "/fh",
       "is_composing": true,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -395,6 +398,7 @@
       "schema_name": "朙月拼音",
       "scenario": "symbol_no_match",
       "label": "no_match",
+      "rime_get_input": "/notasymbol",
       "is_composing": true,
       "is_ascii_mode": false,
       "is_full_shape": false,

@@ -1,9 +1,10 @@
-use std::{fs, path::Path};
+use std::{fs, path::Path, sync::Arc};
 
 use serde_json::Value;
 use yune_core::{
-    CandidateSource, Engine, PunctuationDefinition, PunctuationProcessor, PunctuationTranslator,
-    ReverseLookupTranslator, SimplifierFilter, StaticTableTranslator, TableDictionary, Translator,
+    build_poet_bin, CandidateSource, Engine, OwnedPoetBytes, PoetByteSource, PunctuationDefinition,
+    PunctuationProcessor, PunctuationTranslator, ReverseLookupTranslator, SimplifierFilter,
+    StaticTableTranslator, TableDictionary, Translator, UpstreamSentenceModel,
 };
 
 const FIXTURE_ROOT: &str = "tests/fixtures/upstream-1.17.0";
@@ -15,6 +16,7 @@ const PUNCTUATION_FIXTURE: &str = "luna-pinyin-punctuation.json";
 const M18_PUNCTUATION_FIXTURE: &str = "m18-punctuation-processor.json";
 const OPTIONS_FIXTURE: &str = "luna-pinyin-options.json";
 const SENTENCE_FIXTURE: &str = "luna-pinyin-sentence.json";
+const SENTENCE_EXPANDED_FIXTURE: &str = "luna-pinyin-sentence-expanded.json";
 const LATTICE_FIXTURE: &str = "luna-pinyin-lattice.json";
 
 #[test]
@@ -155,6 +157,180 @@ fn zhongguo_phrase_mechanics_matches_upstream_sentence_fixture() {
             "top candidate should come from the M17 upstream sentence path for {input}"
         );
     }
+}
+
+#[test]
+fn expanded_sentence_fixture_covers_phase3r_rows() {
+    let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
+    assert_upstream_oracle_header(&fixture);
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "m55_phase3r_luna_sentence_expansion"
+    );
+
+    let snapshots = fixture["snapshots"]
+        .as_array()
+        .expect("expanded sentence fixture should contain snapshots");
+    assert!(
+        snapshots.len() >= 10,
+        "Phase 3R-0 must add at least ten expanded sentence snapshots"
+    );
+    for required in [
+        "sentence_completion_shijian",
+        "sentence_completion_beijing",
+        "sentence_benchmark_37",
+        "sentence_benchmark_59",
+    ] {
+        assert!(
+            snapshots
+                .iter()
+                .any(|snapshot| snapshot["scenario"] == required),
+            "expanded sentence fixture should include {required}"
+        );
+    }
+}
+
+#[test]
+fn expanded_sentence_green_rows_match_upstream_before_graph_work() {
+    let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
+    assert_expanded_sentence_scenario_matches(&fixture, "sentence_completion_shijian");
+}
+
+macro_rules! blocked_expanded_sentence_row {
+    ($name:ident, $scenario:literal) => {
+        #[test]
+        #[ignore = "blocked: Phase 3R-0 captured upstream row exposes pre-existing sentence-lattice mismatch"]
+        fn $name() {
+            panic!(
+                "blocked: {scenario} is oracle-captured in luna-pinyin-sentence-expanded.json but current Yune does not match it before Phase 3R graph work",
+                scenario = $scenario
+            );
+        }
+    };
+}
+
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_phrase_zhongguoren,
+    "sentence_phrase_zhongguoren"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_phrase_beijingshi,
+    "sentence_phrase_beijingshi"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_phrase_rengongzhineng,
+    "sentence_phrase_rengongzhineng"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_phrase_bianchengyuyan,
+    "sentence_phrase_bianchengyuyan"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_phrase_ceshiyixia,
+    "sentence_phrase_ceshiyixia"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_mixed_woxiangqubeijing,
+    "sentence_mixed_woxiangqubeijing"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_mixed_jintiantianqihenhao,
+    "sentence_mixed_jintiantianqihenhao"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_completion_beijing,
+    "sentence_completion_beijing"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_benchmark_37,
+    "sentence_benchmark_37"
+);
+blocked_expanded_sentence_row!(
+    blocked_phase3r_sentence_benchmark_59,
+    "sentence_benchmark_59"
+);
+
+#[test]
+#[ignore = "evidence capture: writes M55 Phase 3R access-volume CSV when YUNE_M55_PHASE3R_VOLUME_CSV is set"]
+fn capture_phase3r_access_volume_csv() {
+    let output = std::env::var("YUNE_M55_PHASE3R_VOLUME_CSV")
+        .expect("set YUNE_M55_PHASE3R_VOLUME_CSV to the output CSV path");
+    let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
+    let dictionary = m17_luna_dictionary_from_rows(&fixture);
+    let entries = dictionary.entries().to_vec();
+    let vocabulary = dictionary.preset_vocabulary_entries().to_vec();
+    let checksum = 0x4d55_3352;
+    let owned_model = UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 100);
+    let poet_bytes = build_poet_bin(entries, &vocabulary, &vocabulary, checksum);
+    let byte_backed_model = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(OwnedPoetBytes::new(poet_bytes)) as Arc<dyn PoetByteSource>,
+        checksum,
+        100,
+    )
+    .expect("byte-backed poet fixture model should parse");
+
+    let rows = [
+        (
+            "m55_37",
+            "ceshiyixiachangjushuruxingnengzenyang",
+            &owned_model,
+            "owned",
+        ),
+        (
+            "m55_37",
+            "ceshiyixiachangjushuruxingnengzenyang",
+            &byte_backed_model,
+            "byte_backed",
+        ),
+        (
+            "m55_59",
+            "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+            &owned_model,
+            "owned",
+        ),
+        (
+            "m55_59",
+            "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+            &byte_backed_model,
+            "byte_backed",
+        ),
+    ];
+
+    let mut csv = String::from(
+        "input_id,input,storage,candidates,graph_rebuild_calls,graph_rebuild_ns,index_probes,prefix_hits,prefix_misses,entry_ranges_emitted,theoretical_minimum_entries,table_entries_considered,vocabulary_index_probes,vocabulary_rows_examined,vocabulary_rows_accepted,graph_entries_inserted,graph_entry_text_bytes,code_span_rederivations,dp_states_created,dp_beam_evictions,allocation_count_lower_bound,allocation_bytes_lower_bound\n",
+    );
+    for (input_id, input, model, storage) in rows {
+        let metrics = phase3r_capture_metrics(model, input);
+        csv.push_str(&format!(
+            "{input_id},{input},{storage},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            metrics.upstream_sentence_model_candidates,
+            metrics.upstream_sentence_model_graph_rebuild_calls,
+            metrics.upstream_sentence_model_graph_rebuild_ns,
+            metrics.upstream_sentence_model_code_prefix_checks,
+            metrics.upstream_sentence_model_prefix_filter_hits,
+            metrics.upstream_sentence_model_prefix_filter_misses,
+            metrics.upstream_sentence_model_phrase_index_entry_ranges_emitted,
+            metrics.upstream_sentence_model_table_entries_considered,
+            metrics.upstream_sentence_model_table_entries_considered,
+            metrics.upstream_sentence_model_vocabulary_index_probes,
+            metrics.upstream_sentence_model_vocabulary_rows_examined,
+            metrics.upstream_sentence_model_vocabulary_entries_considered,
+            metrics.upstream_sentence_model_graph_entries_inserted,
+            metrics.upstream_sentence_model_graph_entry_text_bytes,
+            metrics.upstream_sentence_model_code_span_rederivations,
+            metrics.upstream_sentence_model_dp_states_created,
+            metrics.upstream_sentence_model_dp_beam_evictions,
+            metrics.upstream_sentence_model_graph_entries_inserted,
+            metrics.upstream_sentence_model_graph_entry_text_bytes
+        ));
+    }
+
+    let path = Path::new(&output);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .unwrap_or_else(|error| panic!("failed to create {}: {error}", parent.display()));
+    }
+    fs::write(path, csv).unwrap_or_else(|error| panic!("failed to write {output}: {error}"));
 }
 
 #[test]
@@ -567,6 +743,60 @@ fn selected_candidates(snapshot: &Value) -> &[Value] {
     snapshot["selected_candidates"]
         .as_array()
         .expect("selected candidates should be an array")
+}
+
+fn scenario_input(fixture: &Value, scenario_name: &str) -> String {
+    let scenario = fixture["scenarios"]
+        .as_array()
+        .expect("fixture scenarios should be an array")
+        .iter()
+        .find(|scenario| scenario["name"] == scenario_name)
+        .unwrap_or_else(|| panic!("missing scenario {scenario_name}"));
+    scenario["actions"]
+        .as_array()
+        .expect("scenario actions should be an array")
+        .iter()
+        .find(|action| action["type"] == "input")
+        .and_then(|action| action["text"].as_str())
+        .unwrap_or_else(|| panic!("missing input action for {scenario_name}"))
+        .to_owned()
+}
+
+fn assert_expanded_sentence_scenario_matches(fixture: &Value, scenario_name: &str) {
+    let expected = snapshot(fixture, scenario_name, "page_1");
+    let input = scenario_input(fixture, scenario_name);
+    let mut engine = m17_luna_sentence_engine(m17_luna_dictionary_from_rows(fixture));
+    engine
+        .process_key_sequence(&input)
+        .expect("key sequence should parse");
+    assert_engine_snapshot_matches(&engine, expected, None);
+    assert_highlighted_commit_preview_matches(&engine, expected);
+    for (actual, expected_candidate) in engine
+        .context()
+        .candidates
+        .iter()
+        .zip(selected_candidates(expected))
+    {
+        assert_eq!(
+            actual.comment.as_str(),
+            expected_candidate["comment"].as_str().unwrap_or_default(),
+            "candidate comment should match for {input} {}",
+            actual.text
+        );
+    }
+}
+
+fn phase3r_capture_metrics(
+    model: &UpstreamSentenceModel,
+    input: &str,
+) -> yune_core::M37MetricsSnapshot {
+    yune_core::m37_metrics_enable(true);
+    yune_core::m37_metrics_reset();
+    let _candidates = model.candidates_for_input(input);
+    let metrics = yune_core::m37_metrics_snapshot();
+    yune_core::m37_metrics_reset();
+    yune_core::m37_metrics_enable(false);
+    metrics
 }
 
 fn selected_texts(snapshot: &Value) -> Vec<String> {

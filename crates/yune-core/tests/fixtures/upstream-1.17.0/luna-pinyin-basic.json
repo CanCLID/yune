@@ -90,6 +90,7 @@
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "input": "ni",
+      "rime_get_input": "ni",
       "processed": [
         1,
         1
@@ -134,6 +135,7 @@
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "input": "hao",
+      "rime_get_input": "hao",
       "processed": [
         1,
         1,
@@ -179,6 +181,7 @@
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "input": "zhong",
+      "rime_get_input": "zhong",
       "processed": [
         1,
         1,
@@ -226,6 +229,7 @@
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "input": "guo",
+      "rime_get_input": "guo",
       "processed": [
         1,
         1,
@@ -271,6 +275,7 @@
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "input": "zhongguo",
+      "rime_get_input": "zhong guo",
       "processed": [
         1,
         1,

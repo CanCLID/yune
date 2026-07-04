@@ -77,6 +77,13 @@ pub struct M37MetricsSnapshot {
     pub upstream_sentence_model_table_entries_considered: u64,
     pub upstream_sentence_model_vocabulary_entries_considered: u64,
     pub upstream_sentence_model_graph_edges: u64,
+    pub upstream_sentence_model_vocabulary_index_probes: u64,
+    pub upstream_sentence_model_vocabulary_rows_examined: u64,
+    pub upstream_sentence_model_graph_entries_inserted: u64,
+    pub upstream_sentence_model_graph_entry_text_bytes: u64,
+    pub upstream_sentence_model_code_span_rederivations: u64,
+    pub upstream_sentence_model_dp_states_created: u64,
+    pub upstream_sentence_model_dp_beam_evictions: u64,
     pub upstream_sentence_model_index_build_calls: u64,
     pub upstream_sentence_model_index_build_ns: u64,
     pub upstream_sentence_model_exact_range_index_hits: u64,
@@ -155,6 +162,11 @@ pub struct M40SentenceLookupMetrics {
     pub prefix_filter_hits: usize,
     pub prefix_filter_misses: usize,
     pub prefix_filter_early_breaks: usize,
+    pub vocabulary_index_probes: usize,
+    pub vocabulary_rows_examined: usize,
+    pub graph_entries_inserted: usize,
+    pub graph_entry_text_bytes: usize,
+    pub code_span_rederivations: usize,
     pub reachable_starts_visited: usize,
     pub unreachable_starts_skipped: usize,
     pub phrase_index_walk_calls: usize,
@@ -241,6 +253,13 @@ struct M37Metrics {
     upstream_sentence_model_table_entries_considered: AtomicU64,
     upstream_sentence_model_vocabulary_entries_considered: AtomicU64,
     upstream_sentence_model_graph_edges: AtomicU64,
+    upstream_sentence_model_vocabulary_index_probes: AtomicU64,
+    upstream_sentence_model_vocabulary_rows_examined: AtomicU64,
+    upstream_sentence_model_graph_entries_inserted: AtomicU64,
+    upstream_sentence_model_graph_entry_text_bytes: AtomicU64,
+    upstream_sentence_model_code_span_rederivations: AtomicU64,
+    upstream_sentence_model_dp_states_created: AtomicU64,
+    upstream_sentence_model_dp_beam_evictions: AtomicU64,
     upstream_sentence_model_index_build_calls: AtomicU64,
     upstream_sentence_model_index_build_ns: AtomicU64,
     upstream_sentence_model_exact_range_index_hits: AtomicU64,
@@ -446,6 +465,27 @@ pub fn m37_metrics_reset() {
         .store(0, Ordering::Relaxed);
     metrics
         .upstream_sentence_model_graph_edges
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_vocabulary_index_probes
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_vocabulary_rows_examined
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_graph_entries_inserted
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_graph_entry_text_bytes
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_code_span_rederivations
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_dp_states_created
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_dp_beam_evictions
         .store(0, Ordering::Relaxed);
     metrics
         .upstream_sentence_model_index_build_calls
@@ -704,6 +744,27 @@ pub fn m37_metrics_snapshot() -> M37MetricsSnapshot {
             .load(Ordering::Relaxed),
         upstream_sentence_model_graph_edges: metrics
             .upstream_sentence_model_graph_edges
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_vocabulary_index_probes: metrics
+            .upstream_sentence_model_vocabulary_index_probes
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_vocabulary_rows_examined: metrics
+            .upstream_sentence_model_vocabulary_rows_examined
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_graph_entries_inserted: metrics
+            .upstream_sentence_model_graph_entries_inserted
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_graph_entry_text_bytes: metrics
+            .upstream_sentence_model_graph_entry_text_bytes
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_code_span_rederivations: metrics
+            .upstream_sentence_model_code_span_rederivations
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_dp_states_created: metrics
+            .upstream_sentence_model_dp_states_created
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_dp_beam_evictions: metrics
+            .upstream_sentence_model_dp_beam_evictions
             .load(Ordering::Relaxed),
         upstream_sentence_model_index_build_calls: metrics
             .upstream_sentence_model_index_build_calls
@@ -1260,6 +1321,26 @@ pub fn m37_record_upstream_sentence_model_lookup_index(record: M40SentenceLookup
             record.prefix_filter_early_breaks as u64,
         );
         add(
+            &metrics.upstream_sentence_model_vocabulary_index_probes,
+            record.vocabulary_index_probes as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_vocabulary_rows_examined,
+            record.vocabulary_rows_examined as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_graph_entries_inserted,
+            record.graph_entries_inserted as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_graph_entry_text_bytes,
+            record.graph_entry_text_bytes as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_code_span_rederivations,
+            record.code_span_rederivations as u64,
+        );
+        add(
             &metrics.upstream_sentence_model_reachable_starts_visited,
             record.reachable_starts_visited as u64,
         );
@@ -1301,6 +1382,20 @@ pub fn m37_record_upstream_sentence_model_lookup_index(record: M40SentenceLookup
         add(
             &metrics.upstream_sentence_model_incremental_discarded_rebuild_chars,
             record.incremental_discarded_rebuild_chars as u64,
+        );
+    }
+}
+
+pub fn m37_record_upstream_sentence_model_dp(states_created: usize, beam_evictions: usize) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        add(
+            &metrics.upstream_sentence_model_dp_states_created,
+            states_created as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_dp_beam_evictions,
+            beam_evictions as u64,
         );
     }
 }

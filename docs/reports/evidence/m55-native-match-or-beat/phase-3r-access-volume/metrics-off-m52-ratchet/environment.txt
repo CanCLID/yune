@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T07:24:30.5565727Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=55fb174d48f27c8515d235a3d11747c140f14eaf
+yune_git_status_short= M crates/yune-core/src/lib.rs |  M crates/yune-core/src/m37_metrics.rs |  M crates/yune-core/src/poet/mod.rs |  M crates/yune-core/src/tests/poet.rs |  M crates/yune-core/tests/fixtures/upstream-1.17.0/README.md |  M crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-actions.json |  M crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json |  M crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-options.json |  M crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-punctuation.json |  M crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-reverse-lookup.json |  M crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-selection.json |  M crates/yune-core/tests/fixtures/upstream-1.17.0/oracle-manifest.json |  M crates/yune-core/tests/oracle_fixture_provenance.rs |  M crates/yune-core/tests/upstream_luna_pinyin_parity.rs |  M docs/plans/active/m55-plan-native-track-a-match-or-beat-program.md |  M docs/requirements.md |  M docs/roadmap.md |  M scripts/capture-upstream-luna-pinyin.ps1 | ?? crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-access-volume/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-fixture-expansion/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\metrics-off-m52-ratchet
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m52-track-a-guardrails-and-disposition\track-a-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

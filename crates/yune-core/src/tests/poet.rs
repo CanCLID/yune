@@ -400,6 +400,10 @@ Alt\tab\t900
     assert!(metrics.upstream_sentence_model_prefix_filter_hits >= 3);
     assert!(metrics.upstream_sentence_model_prefix_filter_misses >= 1);
     assert!(metrics.upstream_sentence_model_prefix_filter_early_breaks >= 1);
+    assert!(metrics.upstream_sentence_model_vocabulary_index_probes >= 3);
+    assert_eq!(metrics.upstream_sentence_model_vocabulary_rows_examined, 0);
+    assert!(metrics.upstream_sentence_model_graph_entries_inserted >= 3);
+    assert!(metrics.upstream_sentence_model_graph_entry_text_bytes >= 3);
     assert!(metrics.upstream_sentence_model_reachable_starts_visited >= 3);
     assert!(metrics.upstream_sentence_model_unreachable_starts_skipped >= 1);
     assert!(metrics.upstream_sentence_model_phrase_index_walk_calls >= 1);
@@ -412,6 +416,8 @@ Alt\tab\t900
     assert!(metrics.upstream_sentence_model_graph_rebuild_calls >= 1);
     assert!(metrics.upstream_sentence_model_graph_rebuild_ns > 0);
     assert_eq!(metrics.upstream_sentence_model_incremental_reuse_hits, 0);
+    assert!(metrics.upstream_sentence_model_dp_states_created >= 3);
+    assert_eq!(metrics.upstream_sentence_model_dp_beam_evictions, 0);
 
     assert_eq!(
         reset_metrics.upstream_sentence_model_exact_range_index_hits,
@@ -421,6 +427,11 @@ Alt\tab\t900
         reset_metrics.upstream_sentence_model_phrase_index_walk_calls,
         0
     );
+    assert_eq!(
+        reset_metrics.upstream_sentence_model_graph_entries_inserted,
+        0
+    );
+    assert_eq!(reset_metrics.upstream_sentence_model_dp_states_created, 0);
     assert_eq!(reset_metrics.upstream_sentence_model_graph_rebuild_calls, 0);
 }
 

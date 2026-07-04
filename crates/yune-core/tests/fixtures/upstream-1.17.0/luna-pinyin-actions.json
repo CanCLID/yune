@@ -383,6 +383,7 @@
       "schema_name": "朙月拼音",
       "scenario": "paging_ni",
       "label": "page_1",
+      "rime_get_input": "ni",
       "is_composing": true,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -431,6 +432,7 @@
       "schema_name": "朙月拼音",
       "scenario": "paging_ni",
       "label": "page_2",
+      "rime_get_input": "ni",
       "is_composing": true,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -479,6 +481,7 @@
       "schema_name": "朙月拼音",
       "scenario": "paging_ni",
       "label": "page_1_again",
+      "rime_get_input": "ni",
       "is_composing": true,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -527,6 +530,7 @@
       "schema_name": "朙月拼音",
       "scenario": "select_ni_second",
       "label": "before_select",
+      "rime_get_input": "ni",
       "is_composing": true,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -575,6 +579,7 @@
       "schema_name": "朙月拼音",
       "scenario": "select_ni_second",
       "label": "after_select_2",
+      "rime_get_input": null,
       "is_composing": false,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -590,13 +595,15 @@
       "page_size": 0,
       "page_no": 0,
       "is_last_page": false,
-      "selected_candidates": []
+      "selected_candidates": [],
+      "processed": 1
     },
     {
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "scenario": "commit_ni_space",
       "label": "before_space",
+      "rime_get_input": "ni",
       "is_composing": true,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -645,6 +652,7 @@
       "schema_name": "朙月拼音",
       "scenario": "commit_ni_space",
       "label": "after_space",
+      "rime_get_input": null,
       "is_composing": false,
       "is_ascii_mode": false,
       "is_full_shape": false,
@@ -660,7 +668,8 @@
       "page_size": 0,
       "page_no": 0,
       "is_last_page": false,
-      "selected_candidates": []
+      "selected_candidates": [],
+      "processed": 1
     }
   ]
 }

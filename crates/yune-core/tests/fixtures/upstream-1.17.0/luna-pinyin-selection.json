@@ -507,6 +507,7 @@
       "schema_id": "luna_pinyin",
       "schema_name": "朙月拼音",
       "input": "ni",
+      "rime_get_input": "ni",
       "processed": [
         1,
         1

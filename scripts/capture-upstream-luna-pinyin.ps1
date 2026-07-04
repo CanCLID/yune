@@ -1,7 +1,8 @@
 param(
     [string]$OracleRoot,
     [string]$Output,
-    [string]$ScenarioInput
+    [string]$ScenarioInput,
+    [string]$SentenceExpandedOutput
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,6 +28,10 @@ $ActionsOutput = Join-Path $FixtureRoot "luna-pinyin-actions.json"
 $ReverseOutput = Join-Path $FixtureRoot "luna-pinyin-reverse-lookup.json"
 $PunctuationOutput = Join-Path $FixtureRoot "luna-pinyin-punctuation.json"
 $OptionsOutput = Join-Path $FixtureRoot "luna-pinyin-options.json"
+if ([string]::IsNullOrWhiteSpace($SentenceExpandedOutput)) {
+    $SentenceExpandedOutput = Join-Path $FixtureRoot "luna-pinyin-sentence-expanded.json"
+}
+$SentenceExpandedOutput = [System.IO.Path]::GetFullPath($SentenceExpandedOutput)
 $Extract = Join-Path $OracleRoot "extract"
 $Shared = Join-Path $OracleRoot "rime-shared"
 $User = Join-Path $OracleRoot "rime-user"
@@ -220,6 +225,105 @@ if ($UseDefaultScenarioInput -or -not (Test-Path -LiteralPath $ScenarioInput)) {
         { "type": "key", "keycode": 47, "mask": 0, "label": "full_shape_slash" },
         { "type": "snapshot", "label": "full_shape_slash_snapshot" }
       ]
+    },
+    {
+      "name": "sentence_phrase_zhongguoren",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["zhong", "guo", "ren"],
+      "actions": [
+        { "type": "input", "text": "zhongguoren" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_phrase_beijingshi",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["bei", "jing", "shi"],
+      "actions": [
+        { "type": "input", "text": "beijingshi" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_phrase_rengongzhineng",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["ren", "gong", "zhi", "neng"],
+      "actions": [
+        { "type": "input", "text": "rengongzhineng" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_phrase_bianchengyuyan",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["bian", "cheng", "yu", "yan"],
+      "actions": [
+        { "type": "input", "text": "bianchengyuyan" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_phrase_ceshiyixia",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["ce", "shi", "yi", "xia"],
+      "actions": [
+        { "type": "input", "text": "ceshiyixia" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_mixed_woxiangqubeijing",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["wo", "xiang", "qu", "bei", "jing"],
+      "actions": [
+        { "type": "input", "text": "woxiangqubeijing" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_mixed_jintiantianqihenhao",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["jin", "tian", "qi", "hen", "hao"],
+      "actions": [
+        { "type": "input", "text": "jintiantianqihenhao" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_completion_shijian",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["shi", "jian"],
+      "actions": [
+        { "type": "input", "text": "shijian" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_completion_beijing",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["bei", "jing"],
+      "actions": [
+        { "type": "input", "text": "beijing" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_benchmark_37",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["ce", "shi", "yi", "xia", "chang", "ju", "shu", "ru", "xing", "neng", "zen", "yang"],
+      "actions": [
+        { "type": "input", "text": "ceshiyixiachangjushuruxingnengzenyang" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "sentence_benchmark_59",
+      "fixture": "m55_sentence_expansion",
+      "tested_codes": ["zhe", "ge", "yin", "qing", "qi", "shi", "ying", "gai", "zhi", "chi", "chao", "chang", "ju", "zi", "shu", "ru", "cai", "neng", "yong"],
+      "actions": [
+        { "type": "input", "text": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
     }
   ]
 }
@@ -261,6 +365,7 @@ const actionsOutput = process.env.OUTPUT_ACTIONS;
 const reverseOutput = process.env.OUTPUT_REVERSE;
 const punctuationOutput = process.env.OUTPUT_PUNCTUATION;
 const optionsOutput = process.env.OUTPUT_OPTIONS;
+const sentenceExpandedOutput = process.env.OUTPUT_SENTENCE_EXPANDED;
 const readUtf8 = (file) => fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
 const gitHead = (rel) => cp.execFileSync('git', ['-C', path.join(root, rel), 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const rowsForTerms = (file, terms) => readUtf8(file)
@@ -273,6 +378,13 @@ const rowsForExactCode = (file, code) => readUtf8(file)
   .filter((line) => {
     const fields = line.split('\t');
     return fields.length >= 2 && fields[1] === code;
+  });
+const rowsForExactCodes = (file, codes) => readUtf8(file)
+  .split(/\r?\n/)
+  .filter(Boolean)
+  .filter((line) => {
+    const fields = line.split('\t');
+    return fields.length >= 2 && codes.has(fields[1].replace(/\s+/g, ''));
   });
 const termsFromRows = (rows) => new Set(rows.map((line) => line.split('\t')[0]));
 const termsFromSnapshots = (snapshots) => {
@@ -461,6 +573,63 @@ writeJson(optionsOutput, fixtureForSnapshots(optionSnapshots, 'option_action_seq
     symbols: symbolFhEntries
   }
 }));
+
+const sentenceScenarios = scenarioInput.scenarios.filter((scenario) =>
+  scenario.fixture === 'm55_sentence_expansion'
+);
+const sentenceScenarioNames = new Set(sentenceScenarios.map((scenario) => scenario.name));
+const sentenceSnapshots = scenarioSnapshots.filter((snapshot) =>
+  sentenceScenarioNames.has(snapshot.scenario)
+);
+const sentenceInput = (scenario) =>
+  (scenario.actions || []).find((action) => action.type === 'input')?.text || '';
+const sentenceCodes = new Set();
+for (const scenario of sentenceScenarios) {
+  for (const code of scenario.tested_codes || []) {
+    sentenceCodes.add(code);
+  }
+  const input = sentenceInput(scenario);
+  if (input) sentenceCodes.add(input);
+}
+const sentenceDictionaryRows = rowsForExactCodes(lunaDict, sentenceCodes);
+const sentenceTerms = new Set([
+  ...termsFromRows(sentenceDictionaryRows),
+  ...termsFromSnapshots(sentenceSnapshots)
+]);
+const sentenceVocabularyRows = rowsForTerms(essayTxt, sentenceTerms);
+const sentenceExpandedOracle = {
+  ...oracle,
+  capture_date: '2026-07-04',
+  capture_command: 'powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json -SentenceExpandedOutput crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json'
+};
+writeJson(sentenceExpandedOutput, {
+  oracle: sentenceExpandedOracle,
+  schema: 'luna_pinyin',
+  module_list: ['default'],
+  scenarios: sentenceScenarios,
+  capture: {
+    schema_data: 'rime/rime-luna-pinyin',
+    schema_data_commit: gitHead('schema-src/rime-luna-pinyin'),
+    dependency_repositories: dependencyRepositories,
+    source_row_policy: 'm55_phase3r_luna_sentence_expansion',
+    dictionary: 'luna_pinyin.dict.yaml',
+    vocabulary: 'essay.txt',
+    source_dictionary_file: 'rime-luna-pinyin/luna_pinyin.dict.yaml',
+    essay_vocabulary_file: 'rime-essay/essay.txt',
+    grammar_model: null,
+    grammar_fallback_penalty: -13.815510557964274,
+    input_sequence: sentenceScenarios.map(sentenceInput),
+    tested_codes: Array.from(sentenceCodes).sort(),
+    in_scope_candidate_texts: Array.from(sentenceTerms).sort(),
+    source_row_counts: {
+      dictionary: sentenceDictionaryRows.length,
+      essay: sentenceVocabularyRows.length
+    },
+    source_dictionary_rows_for_tested_codes: sentenceDictionaryRows,
+    essay_vocabulary_rows_for_candidates: sentenceVocabularyRows
+  },
+  snapshots: sentenceSnapshots
+});
 '@ | Set-Content -LiteralPath $Composer -Encoding UTF8
 
 $env:ORACLE_ROOT = $OracleRoot
@@ -470,8 +639,10 @@ $env:OUTPUT_ACTIONS = $ActionsOutput
 $env:OUTPUT_REVERSE = $ReverseOutput
 $env:OUTPUT_PUNCTUATION = $PunctuationOutput
 $env:OUTPUT_OPTIONS = $OptionsOutput
+$env:OUTPUT_SENTENCE_EXPANDED = $SentenceExpandedOutput
 node $Composer
 if ($LASTEXITCODE -ne 0) {
     throw "fixture composer failed with exit code $LASTEXITCODE"
 }
 Write-Host "Wrote $Output"
+Write-Host "Wrote $SentenceExpandedOutput"

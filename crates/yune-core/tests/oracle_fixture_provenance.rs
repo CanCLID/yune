@@ -181,8 +181,8 @@ fn upstream_luna_pinyin_fixtures_have_non_circular_source_provenance() {
     fixture_files.sort();
     assert_eq!(
         fixture_files.len(),
-        8,
-        "M17 closeout should keep the full upstream luna_pinyin fixture set checked in"
+        9,
+        "M17/M55 should keep the full upstream luna_pinyin fixture set checked in"
     );
 
     for path in fixture_files {
@@ -1293,7 +1293,9 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
                 "full_shape_slash_snapshot",
             );
         }
-        "m17_upstream_luna_sentence_language_model" | "m17_upstream_luna_sentence_lattice" => {
+        "m17_upstream_luna_sentence_language_model"
+        | "m17_upstream_luna_sentence_lattice"
+        | "m55_phase3r_luna_sentence_expansion" => {
             assert_eq!(
                 fixture["capture"]["source_dictionary_file"],
                 "rime-luna-pinyin/luna_pinyin.dict.yaml",
@@ -1344,6 +1346,18 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
             if fixture["capture"]["source_row_policy"] == "m17_upstream_luna_sentence_lattice" {
                 assert_snapshot(path, fixture, "sentence_lattice_zhongguo", "page_1");
                 assert_snapshot(path, fixture, "sentence_lattice_zhongguo", "page_2");
+            }
+            if fixture["capture"]["source_row_policy"] == "m55_phase3r_luna_sentence_expansion" {
+                assert_snapshot(path, fixture, "sentence_completion_shijian", "page_1");
+                assert_snapshot(path, fixture, "sentence_completion_beijing", "page_1");
+                assert_snapshot(path, fixture, "sentence_benchmark_37", "page_1");
+                assert_snapshot(path, fixture, "sentence_benchmark_59", "page_1");
+                assert!(
+                    fixture["snapshots"]
+                        .as_array()
+                        .is_some_and(|snapshots| snapshots.len() >= 10),
+                    "{path:?} should include at least ten Phase 3R sentence snapshots"
+                );
             }
         }
         "upstream_deployer_compiled_prism_artifact" => {

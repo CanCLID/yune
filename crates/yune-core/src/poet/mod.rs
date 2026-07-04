@@ -307,6 +307,9 @@ fn collect_sentence_states(
     total_length: usize,
     grammar: Option<&dyn Grammar>,
 ) -> BTreeMap<usize, Vec<PathState>> {
+    let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+    let mut dp_states_created = 0usize;
+    let mut dp_beam_evictions = 0usize;
     let mut states: BTreeMap<usize, Vec<PathState>> = BTreeMap::new();
     states.insert(0, vec![PathState::default()]);
     for (start, edges) in graph {
@@ -330,12 +333,22 @@ fn collect_sentence_states(
                     }
                     next.text.push_str(&entry.text);
                     next.word_lengths.push(end - start);
-                    insert_state(states.entry(*end).or_default(), next, max_sentences * 3);
+                    if record_metrics {
+                        dp_states_created += 1;
+                    }
+                    let evicted =
+                        insert_state(states.entry(*end).or_default(), next, max_sentences * 3);
+                    if record_metrics && evicted {
+                        dp_beam_evictions += 1;
+                    }
                 }
             }
         }
     }
 
+    if record_metrics {
+        crate::m37_record_upstream_sentence_model_dp(dp_states_created, dp_beam_evictions);
+    }
     states
 }
 
@@ -476,7 +489,7 @@ impl PathState {
     }
 }
 
-fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: usize) {
+fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: usize) -> bool {
     if let Some(existing_index) = states
         .iter()
         .position(|existing| has_same_future_grammar_state(existing, &candidate))
@@ -484,7 +497,7 @@ fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: u
         if compare_path_state(&candidate, &states[existing_index]) == Ordering::Less {
             states.remove(existing_index);
         } else {
-            return;
+            return false;
         }
     }
     let index = states
@@ -493,7 +506,9 @@ fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: u
     states.insert(index, candidate);
     if states.len() > beam_width {
         states.pop();
+        return true;
     }
+    false
 }
 
 fn insert_abbreviation_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: usize) {
@@ -1288,6 +1303,8 @@ impl UpstreamSentenceModel {
         let mut table_entries_considered = 0usize;
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
+        let record_volume_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+        let mut seen_code_spans = record_volume_metrics.then(HashMap::<&str, usize>::new);
         let mut vocabulary_chars = Vec::new();
         let mut vocabulary_indices_cache = HashMap::<&str, Vec<usize>>::new();
         let mut character_code_cache = CharacterCodeCache::new();
@@ -1315,6 +1332,13 @@ impl UpstreamSentenceModel {
             lookup_metrics.phrase_index_entry_ranges_emitted += walk.entry_ranges_emitted;
             for span in walk.spans {
                 let code = &input[start..span.end];
+                if let Some(seen_code_spans) = seen_code_spans.as_mut() {
+                    let derivations = seen_code_spans.entry(code).or_default();
+                    if *derivations > 0 {
+                        lookup_metrics.code_span_rederivations += 1;
+                    }
+                    *derivations += 1;
+                }
                 let Some(entries) = self.entries_for_code_range(code) else {
                     lookup_metrics.exact_range_index_misses += 1;
                     lookup_metrics.partition_point_fallback_calls += 1;
@@ -1325,18 +1349,25 @@ impl UpstreamSentenceModel {
                 table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 let mut inserted_edge = false;
                 for entry_index in bounded_entries {
+                    let text = self.storage.entry_text(entry_index);
+                    if record_volume_metrics {
+                        lookup_metrics.graph_entry_text_bytes += text.len();
+                    }
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
                         .push(WordGraphEntry::new(
-                            self.storage.entry_text(entry_index).to_owned(),
+                            text.to_owned(),
                             upstream_dictionary_weight(f64::from(
                                 self.storage.entry_weight(entry_index),
                             )),
                         ));
                     graph_edges += 1;
+                    if record_volume_metrics {
+                        lookup_metrics.graph_entries_inserted += 1;
+                    }
                     inserted_edge = true;
                 }
                 if inserted_edge {
@@ -1345,6 +1376,10 @@ impl UpstreamSentenceModel {
                 let vocabulary_entries = vocabulary_indices_cache
                     .entry(code)
                     .or_insert_with(|| self.storage.vocabulary_indices_for_first_code(false, code));
+                if record_volume_metrics {
+                    lookup_metrics.vocabulary_index_probes += 1;
+                    lookup_metrics.vocabulary_rows_examined += vocabulary_entries.len();
+                }
                 for index in vocabulary_entries.iter().copied() {
                     let phrase_codes = match &self.storage {
                         PoetModelStorage::ByteBacked(storage) => {
@@ -1394,6 +1429,9 @@ impl UpstreamSentenceModel {
                     ));
                     for phrase_code in phrase_codes {
                         let end = start + phrase_code.len();
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entry_text_bytes += vocabulary_text.len();
+                        }
                         graph
                             .entry(start)
                             .or_default()
@@ -1404,6 +1442,9 @@ impl UpstreamSentenceModel {
                                 vocabulary_weight,
                             ));
                         graph_edges += 1;
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entries_inserted += 1;
+                        }
                         if let Ok(end_index) = boundaries.binary_search(&end) {
                             reachable[end_index] = true;
                         }
@@ -1452,6 +1493,8 @@ impl UpstreamSentenceModel {
         let mut table_entries_considered = 0usize;
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
+        let record_volume_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+        let mut seen_code_spans = record_volume_metrics.then(HashMap::<&str, usize>::new);
         let mut character_code_cache = CharacterCodeCache::new();
         let mut vocabulary_indices_cache = HashMap::<&str, Vec<usize>>::new();
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
@@ -1477,22 +1520,36 @@ impl UpstreamSentenceModel {
             for span in walk.spans {
                 lookup_metrics.exact_range_index_hits += 1;
                 let code = &input[start..span.end];
+                if let Some(seen_code_spans) = seen_code_spans.as_mut() {
+                    let derivations = seen_code_spans.entry(code).or_default();
+                    if *derivations > 0 {
+                        lookup_metrics.code_span_rederivations += 1;
+                    }
+                    *derivations += 1;
+                }
                 let bounded_entries = span.entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 table_entries_considered += span.entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 let mut inserted_edge = false;
                 for entry_index in bounded_entries {
+                    let text = storage.entry_text(entry_index);
+                    if record_volume_metrics {
+                        lookup_metrics.graph_entry_text_bytes += text.len();
+                    }
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
                         .push(WordGraphEntry::new(
-                            storage.entry_text(entry_index).to_owned(),
+                            text.to_owned(),
                             upstream_dictionary_weight(f64::from(
                                 storage.entry_weight(entry_index),
                             )),
                         ));
                     graph_edges += 1;
+                    if record_volume_metrics {
+                        lookup_metrics.graph_entries_inserted += 1;
+                    }
                     inserted_edge = true;
                 }
                 if inserted_edge {
@@ -1501,6 +1558,10 @@ impl UpstreamSentenceModel {
                 let vocabulary_entries = vocabulary_indices_cache
                     .entry(code)
                     .or_insert_with(|| storage.vocabulary_indices_for_first_code(false, code));
+                if record_volume_metrics {
+                    lookup_metrics.vocabulary_index_probes += 1;
+                    lookup_metrics.vocabulary_rows_examined += vocabulary_entries.len();
+                }
                 for index in vocabulary_entries.iter().copied() {
                     let chars = ByteBackedVocabularyChars {
                         storage,
@@ -1528,6 +1589,9 @@ impl UpstreamSentenceModel {
                     ));
                     for phrase_code in phrase_codes {
                         let end = start + phrase_code.len();
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entry_text_bytes += vocabulary_text.len();
+                        }
                         graph
                             .entry(start)
                             .or_default()
@@ -1538,6 +1602,9 @@ impl UpstreamSentenceModel {
                                 vocabulary_weight,
                             ));
                         graph_edges += 1;
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entries_inserted += 1;
+                        }
                         if let Ok(end_index) = boundaries.binary_search(&end) {
                             reachable[end_index] = true;
                         }
@@ -1586,6 +1653,8 @@ impl UpstreamSentenceModel {
         let mut table_entries_considered = 0usize;
         let mut vocabulary_entries_considered = 0usize;
         let mut graph_edges = 0usize;
+        let record_volume_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+        let mut seen_code_spans = record_volume_metrics.then(HashMap::<&str, usize>::new);
         let mut lookup_metrics = crate::M40SentenceLookupMetrics::default();
         for (start_index, start) in boundaries.iter().copied().enumerate() {
             if start >= input.len() {
@@ -1610,6 +1679,13 @@ impl UpstreamSentenceModel {
             lookup_metrics.phrase_index_entry_ranges_emitted += walk.entry_ranges_emitted;
             for span in walk.spans {
                 let code = &input[start..span.end];
+                if let Some(seen_code_spans) = seen_code_spans.as_mut() {
+                    let derivations = seen_code_spans.entry(code).or_default();
+                    if *derivations > 0 {
+                        lookup_metrics.code_span_rederivations += 1;
+                    }
+                    *derivations += 1;
+                }
                 let Some(entries) = storage.entries_for_code(&self.lookup_index, code) else {
                     lookup_metrics.exact_range_index_misses += 1;
                     lookup_metrics.partition_point_fallback_calls += 1;
@@ -1620,16 +1696,23 @@ impl UpstreamSentenceModel {
                 table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
                 let mut inserted_edge = false;
                 for entry in bounded_entries {
+                    let text = entry.text(&storage.entry_texts);
+                    if record_volume_metrics {
+                        lookup_metrics.graph_entry_text_bytes += text.len();
+                    }
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
                         .push(WordGraphEntry::new(
-                            entry.text(&storage.entry_texts).to_owned(),
+                            text.to_owned(),
                             upstream_dictionary_weight(f64::from(entry.weight)),
                         ));
                     graph_edges += 1;
+                    if record_volume_metrics {
+                        lookup_metrics.graph_entries_inserted += 1;
+                    }
                     inserted_edge = true;
                 }
                 if inserted_edge {
@@ -1637,6 +1720,10 @@ impl UpstreamSentenceModel {
                 }
                 let vocabulary_entries =
                     vocabulary_indices_for_first_code(&storage.vocabulary_first_codes, code);
+                if record_volume_metrics {
+                    lookup_metrics.vocabulary_index_probes += 1;
+                    lookup_metrics.vocabulary_rows_examined += vocabulary_entries.len();
+                }
                 for (_, index) in vocabulary_entries {
                     let vocabulary_entry = &storage.vocabulary[*index];
                     if !self.vocabulary_entry_matches_input_prefix_owned(
@@ -1655,6 +1742,9 @@ impl UpstreamSentenceModel {
                         code,
                     ) {
                         let end = start + phrase_code.len();
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entry_text_bytes += vocabulary_entry.text.len();
+                        }
                         graph
                             .entry(start)
                             .or_default()
@@ -1665,6 +1755,9 @@ impl UpstreamSentenceModel {
                                 upstream_dictionary_weight(f64::from(vocabulary_entry.weight)),
                             ));
                         graph_edges += 1;
+                        if record_volume_metrics {
+                            lookup_metrics.graph_entries_inserted += 1;
+                        }
                         if let Ok(end_index) = boundaries.binary_search(&end) {
                             reachable[end_index] = true;
                         }

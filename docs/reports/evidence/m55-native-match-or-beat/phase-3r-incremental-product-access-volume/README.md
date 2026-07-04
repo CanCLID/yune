@@ -20,6 +20,11 @@ metrics disabled, enabling and resetting metrics, and then processing only the
 final key. The CSV therefore captures the final-keypress work for the 37-char
 and 59-char M55 rows on both owned and byte-backed storage.
 
+The harness explicitly sets `schema_id: luna_pinyin` and `enable_sentence:
+true`, matching the native Luna bounded-refresh product path. Without those
+settings the core helper either falls back to full-input model capture or skips
+the upstream sentence model under bounded refresh, which is not the M55 path.
+
 ## Reproduction
 
 From the repository root:
@@ -36,24 +41,26 @@ Captured output:
 
 ## Key Rows
 
-| input | storage | model_ns | graph_rebuild_ns | graph_entries_inserted | dp_states_created | dp_beam_evictions |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| 37-char | owned | `10,449,600` | `88,900` | `96` | `5,060` | `1,700` |
-| 37-char | byte-backed | `11,386,400` | `209,400` | `96` | `5,060` | `1,700` |
-| 59-char | owned | `27,697,500` | `119,700` | `164` | `10,853` | `4,494` |
-| 59-char | byte-backed | `27,046,500` | `260,200` | `164` | `10,853` | `4,494` |
+| input | storage | model_ns | graph_rebuild_ns | candidate_state_buckets | candidate_states_ranked | candidate_path_ns | candidate_merge_ns | graph_entries_inserted | dp_states_created | dp_beam_evictions |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 37-char | owned | `137,700` | `32,600` | `14` | `188` | `27,300` | `64,100` | `7` | `27` | `12` |
+| 37-char | byte-backed | `372,700` | `159,600` | `0` | `0` | `0` | `0` | `96` | `319` | `130` |
+| 59-char | owned | `233,800` | `47,800` | `24` | `338` | `46,000` | `126,900` | `7` | `35` | `20` |
+| 59-char | byte-backed | `660,000` | `244,100` | `0` | `0` | `0` | `0` | `164` | `609` | `269` |
 
 ## Owner Update
 
-The incremental final-key graph rebuild itself is now small compared with total
-sentence-model time: owned graph rebuild is about `0.089 ms` on the 37-char row
-and `0.120 ms` on the 59-char row, while total owned model time is about
-`10.450 ms` and `27.698 ms`.
+The owned incremental final-key graph rebuild itself is now small compared with
+total sentence-model time: owned graph rebuild is about `0.033 ms` on the
+37-char row and `0.048 ms` on the 59-char row, while total owned model time is
+about `0.138 ms` and `0.234 ms`. Candidate path conversion plus merge/rank is
+about `0.091 ms` on the 37-char row and `0.173 ms` on the 59-char row.
 
 This changes the next Phase 3R-2 target from graph construction volume to the
 candidate extraction path over retained incremental states. Byte-backed storage
-still adds graph-rebuild cost, but that cost is not the dominant owner at this
-checkpoint.
+does not use the owned incremental scratch path today, which is why its
+candidate extraction counters are zero and its graph/DP counts remain much
+higher.
 
 ## Rejected Follow-Up Probe
 
@@ -61,3 +68,7 @@ A local final-end-only candidate-emission probe was rejected and removed. It
 improved the 59-char quick probe to `1.557x` but worsened the 37-char row to
 `2.055x` and also worsened `n`/`ni`/`hao`. The current best remains
 `phase-3r-incremental-prefix-state`.
+
+A local sentence-end bucket-only merge probe was also rejected and removed. It
+improved the 59-char quick probe to `1.552x` but worsened the 37-char row to
+`2.032x`.

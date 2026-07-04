@@ -1439,12 +1439,40 @@ impl UpstreamSentenceModel {
         max_candidates: usize,
     ) -> Vec<Candidate> {
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
+        let record_candidate_extraction = cfg!(debug_assertions) && crate::m37_metrics_enabled();
+        let (state_bucket_count, states_ranked) = if record_candidate_extraction {
+            (
+                states_by_end
+                    .iter()
+                    .filter(|states| !states.is_empty())
+                    .count(),
+                states_by_end.iter().map(Vec::len).sum(),
+            )
+        } else {
+            (0, 0)
+        };
+        let path_start = record_candidate_extraction.then(Instant::now);
         let sentences_by_end = sentence_paths_by_end_from_states(
             states_by_end,
             max_candidates,
             self.grammar.scoring_grammar().is_some(),
         );
-        self.candidates_for_sentences_by_end_with_limit(input, &sentences_by_end, max_candidates)
+        let path_duration = path_start.map(|start| start.elapsed());
+        let merge_start = record_candidate_extraction.then(Instant::now);
+        let candidates = self.candidates_for_sentences_by_end_with_limit(
+            input,
+            &sentences_by_end,
+            max_candidates,
+        );
+        if let (Some(path_duration), Some(merge_start)) = (path_duration, merge_start) {
+            crate::m37_record_upstream_sentence_model_candidate_extraction(
+                state_bucket_count,
+                states_ranked,
+                path_duration,
+                merge_start.elapsed(),
+            );
+        }
+        candidates
     }
 
     fn rebuild_owned_scratch(

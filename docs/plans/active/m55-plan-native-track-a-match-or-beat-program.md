@@ -654,8 +654,9 @@ product-path candidate bytes unchanged. Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-prefix-state/`.
 An incremental product-path access-volume follow-up shows the earlier full-input
 diagnostic did not measure the retained scratch product path: final-key owned
-graph rebuild is now only `88,900 ns` / `119,700 ns` on the 37-/59-character
-rows, while total sentence-model time is `10,449,600 ns` / `27,697,500 ns`.
+graph rebuild is now only `32,600 ns` / `47,800 ns` on the 37-/59-character
+rows, while candidate path conversion plus merge/rank is `91,400 ns` /
+`172,900 ns` and total sentence-model time is `137,700 ns` / `233,800 ns`.
 Evidence:
 `docs/reports/evidence/m55-native-match-or-beat/phase-3r-incremental-product-access-volume/`.
 Tier M is still not met.
@@ -665,7 +666,9 @@ the broad gap above raw lookup, but the incremental product-path diagnostic
 narrows the current owner after the prefix-state checkpoint: graph rebuild and
 storage access are no longer the dominant final-key cost. The next measured
 target is candidate extraction over retained incremental states, while keeping
-candidate output and scoring order byte-identical.
+candidate output and scoring order byte-identical. Byte-backed storage still
+falls back to the full-input model path and does not yet use the owned
+incremental scratch extractor.
 
 Pre-requisite — fixture expansion (must land before any poet code change):
 

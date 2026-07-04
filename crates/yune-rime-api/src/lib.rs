@@ -448,6 +448,10 @@ pub const M37_METRIC_FIELDS: &[&str] = &[
     "upstream_sentence_model_incremental_reuse_hits",
     "upstream_sentence_model_incremental_extend_ns",
     "upstream_sentence_model_incremental_discarded_rebuild_chars",
+    "upstream_sentence_model_candidate_state_buckets",
+    "upstream_sentence_model_candidate_states_ranked",
+    "upstream_sentence_model_candidate_path_ns",
+    "upstream_sentence_model_candidate_merge_ns",
     "prefix_fallback_calls",
     "prefix_fallback_ns",
     "prefix_fallback_views_visited",
@@ -743,6 +747,22 @@ pub extern "C" fn yune_m37_metrics_snapshot_json() -> *mut c_char {
     metric!(
         "upstream_sentence_model_incremental_discarded_rebuild_chars",
         metrics.upstream_sentence_model_incremental_discarded_rebuild_chars
+    );
+    metric!(
+        "upstream_sentence_model_candidate_state_buckets",
+        metrics.upstream_sentence_model_candidate_state_buckets
+    );
+    metric!(
+        "upstream_sentence_model_candidate_states_ranked",
+        metrics.upstream_sentence_model_candidate_states_ranked
+    );
+    metric!(
+        "upstream_sentence_model_candidate_path_ns",
+        metrics.upstream_sentence_model_candidate_path_ns
+    );
+    metric!(
+        "upstream_sentence_model_candidate_merge_ns",
+        metrics.upstream_sentence_model_candidate_merge_ns
     );
     metric!("prefix_fallback_calls", metrics.prefix_fallback_calls);
     metric!("prefix_fallback_ns", metrics.prefix_fallback_ns);

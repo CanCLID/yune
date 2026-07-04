@@ -102,6 +102,10 @@ pub struct M37MetricsSnapshot {
     pub upstream_sentence_model_incremental_reuse_hits: u64,
     pub upstream_sentence_model_incremental_extend_ns: u64,
     pub upstream_sentence_model_incremental_discarded_rebuild_chars: u64,
+    pub upstream_sentence_model_candidate_state_buckets: u64,
+    pub upstream_sentence_model_candidate_states_ranked: u64,
+    pub upstream_sentence_model_candidate_path_ns: u64,
+    pub upstream_sentence_model_candidate_merge_ns: u64,
     pub prefix_fallback_calls: u64,
     pub prefix_fallback_ns: u64,
     pub prefix_fallback_views_visited: u64,
@@ -278,6 +282,10 @@ struct M37Metrics {
     upstream_sentence_model_incremental_reuse_hits: AtomicU64,
     upstream_sentence_model_incremental_extend_ns: AtomicU64,
     upstream_sentence_model_incremental_discarded_rebuild_chars: AtomicU64,
+    upstream_sentence_model_candidate_state_buckets: AtomicU64,
+    upstream_sentence_model_candidate_states_ranked: AtomicU64,
+    upstream_sentence_model_candidate_path_ns: AtomicU64,
+    upstream_sentence_model_candidate_merge_ns: AtomicU64,
     prefix_fallback_calls: AtomicU64,
     prefix_fallback_ns: AtomicU64,
     prefix_fallback_views_visited: AtomicU64,
@@ -540,6 +548,18 @@ pub fn m37_metrics_reset() {
         .store(0, Ordering::Relaxed);
     metrics
         .upstream_sentence_model_incremental_discarded_rebuild_chars
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_candidate_state_buckets
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_candidate_states_ranked
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_candidate_path_ns
+        .store(0, Ordering::Relaxed);
+    metrics
+        .upstream_sentence_model_candidate_merge_ns
         .store(0, Ordering::Relaxed);
     metrics.prefix_fallback_calls.store(0, Ordering::Relaxed);
     metrics.prefix_fallback_ns.store(0, Ordering::Relaxed);
@@ -819,6 +839,18 @@ pub fn m37_metrics_snapshot() -> M37MetricsSnapshot {
             .load(Ordering::Relaxed),
         upstream_sentence_model_incremental_discarded_rebuild_chars: metrics
             .upstream_sentence_model_incremental_discarded_rebuild_chars
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_candidate_state_buckets: metrics
+            .upstream_sentence_model_candidate_state_buckets
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_candidate_states_ranked: metrics
+            .upstream_sentence_model_candidate_states_ranked
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_candidate_path_ns: metrics
+            .upstream_sentence_model_candidate_path_ns
+            .load(Ordering::Relaxed),
+        upstream_sentence_model_candidate_merge_ns: metrics
+            .upstream_sentence_model_candidate_merge_ns
             .load(Ordering::Relaxed),
         prefix_fallback_calls: metrics.prefix_fallback_calls.load(Ordering::Relaxed),
         prefix_fallback_ns: metrics.prefix_fallback_ns.load(Ordering::Relaxed),
@@ -1396,6 +1428,33 @@ pub fn m37_record_upstream_sentence_model_dp(states_created: usize, beam_evictio
         add(
             &metrics.upstream_sentence_model_dp_beam_evictions,
             beam_evictions as u64,
+        );
+    }
+}
+
+pub fn m37_record_upstream_sentence_model_candidate_extraction(
+    state_buckets: usize,
+    states_ranked: usize,
+    path_duration: Duration,
+    merge_duration: Duration,
+) {
+    if m37_metrics_enabled() {
+        let metrics = metrics();
+        add(
+            &metrics.upstream_sentence_model_candidate_state_buckets,
+            state_buckets as u64,
+        );
+        add(
+            &metrics.upstream_sentence_model_candidate_states_ranked,
+            states_ranked as u64,
+        );
+        add_duration(
+            &metrics.upstream_sentence_model_candidate_path_ns,
+            path_duration,
+        );
+        add_duration(
+            &metrics.upstream_sentence_model_candidate_merge_ns,
+            merge_duration,
         );
     }
 }

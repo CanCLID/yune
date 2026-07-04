@@ -395,6 +395,12 @@ fn m37_metrics_exports_snapshot_json_for_loaded_benchmarks() {
             incremental_discarded_rebuild_chars: 4,
         },
     );
+    yune_core::m37_record_upstream_sentence_model_candidate_extraction(
+        7,
+        11,
+        std::time::Duration::from_nanos(41),
+        std::time::Duration::from_nanos(43),
+    );
 
     let json = crate::yune_m37_metrics_snapshot_json();
     assert!(!json.is_null());
@@ -434,6 +440,10 @@ fn m37_metrics_exports_snapshot_json_for_loaded_benchmarks() {
     assert!(json_text.contains("\"upstream_sentence_model_incremental_reuse_hits\":0"));
     assert!(json_text.contains("\"upstream_sentence_model_incremental_extend_ns\":0"));
     assert!(json_text.contains("\"upstream_sentence_model_incremental_discarded_rebuild_chars\":4"));
+    assert!(json_text.contains("\"upstream_sentence_model_candidate_state_buckets\":7"));
+    assert!(json_text.contains("\"upstream_sentence_model_candidate_states_ranked\":11"));
+    assert!(json_text.contains("\"upstream_sentence_model_candidate_path_ns\":41"));
+    assert!(json_text.contains("\"upstream_sentence_model_candidate_merge_ns\":43"));
     for field in [
         "abbreviation_span_discovery_calls",
         "abbreviation_span_discovery_ns",

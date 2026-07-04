@@ -382,17 +382,21 @@ fn capture_phase3r_incremental_product_access_volume_csv() {
     ];
 
     let mut csv = String::from(
-        "input_id,input,storage,candidates,model_calls,model_ns,graph_rebuild_calls,graph_rebuild_ns,index_probes,prefix_hits,prefix_misses,entry_ranges_emitted,table_entries_considered,vocabulary_index_probes,vocabulary_rows_examined,vocabulary_rows_accepted,graph_entries_inserted,graph_entry_text_bytes,code_span_rederivations,dp_states_created,dp_beam_evictions\n",
+        "input_id,input,storage,candidates,model_calls,model_ns,graph_rebuild_calls,graph_rebuild_ns,candidate_state_buckets,candidate_states_ranked,candidate_path_ns,candidate_merge_ns,index_probes,prefix_hits,prefix_misses,entry_ranges_emitted,table_entries_considered,vocabulary_index_probes,vocabulary_rows_examined,vocabulary_rows_accepted,graph_entries_inserted,graph_entry_text_bytes,code_span_rederivations,dp_states_created,dp_beam_evictions\n",
     );
     for (input_id, input, mut engine, storage) in rows {
         let metrics = phase3r_capture_incremental_product_metrics(&mut engine, input);
         csv.push_str(&format!(
-            "{input_id},{input},{storage},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            "{input_id},{input},{storage},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             metrics.upstream_sentence_model_candidates,
             metrics.upstream_sentence_model_calls,
             metrics.upstream_sentence_model_ns,
             metrics.upstream_sentence_model_graph_rebuild_calls,
             metrics.upstream_sentence_model_graph_rebuild_ns,
+            metrics.upstream_sentence_model_candidate_state_buckets,
+            metrics.upstream_sentence_model_candidate_states_ranked,
+            metrics.upstream_sentence_model_candidate_path_ns,
+            metrics.upstream_sentence_model_candidate_merge_ns,
             metrics.upstream_sentence_model_code_prefix_checks,
             metrics.upstream_sentence_model_prefix_filter_hits,
             metrics.upstream_sentence_model_prefix_filter_misses,
@@ -907,7 +911,16 @@ fn phase3r_capture_incremental_product_metrics(
 }
 
 fn phase3r_owned_luna_sentence_engine(dictionary: TableDictionary) -> Engine {
-    m17_luna_sentence_engine(dictionary)
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.add_translator(
+        StaticTableTranslator::from_dictionary(dictionary)
+            .with_charset_filter(true)
+            .with_sentence(true)
+            .with_upstream_sentence_model(100),
+    );
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine
 }
 
 fn phase3r_byte_backed_luna_sentence_engine(
@@ -916,10 +929,12 @@ fn phase3r_byte_backed_luna_sentence_engine(
     checksum: u32,
 ) -> Engine {
     let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
     engine.clear_translators();
     engine.add_translator(
         StaticTableTranslator::from_dictionary(dictionary)
             .with_charset_filter(true)
+            .with_sentence(true)
             .with_upstream_sentence_poet_source(source, checksum)
             .with_upstream_sentence_model(100),
     );

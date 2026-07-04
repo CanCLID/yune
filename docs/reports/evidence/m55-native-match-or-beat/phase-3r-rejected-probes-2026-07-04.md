@@ -26,6 +26,7 @@ key-sequence `313.461 us`.
 | Final-end-only null-grammar candidate emission | A small same-run release probe was run after focused scratch tests had passed. | Rejected because it was not monotonic versus the baseline: 59-char improved to `1026.242 us` / `1.557x`, but 37-char worsened to `582.586 us` / `2.055x`; `n`/`ni`/`hao` also worsened to `2.812x` / `3.024x` / `2.080x`. |
 | Iterate non-empty sentence-end buckets during candidate merge | Focused sentence scratch tests and expanded Luna green-row parity passed. A small same-run release probe was run. | Rejected before strict ratchet because it was not monotonic versus the current best: 59-char improved to `1046.441 us` / `1.552x`, but 37-char worsened to `596.543 us` / `2.032x`; short rows also remained above Tier M. |
 | Avoid candidate/key clones during cached sentence-path merge | Product-path candidate parity was green. Focused sentence scratch tests, expanded Luna green-row parity, `cargo fmt --check`, `cargo clippy -p yune-core --all-targets -- -D warnings`, and a full strict M55 ratchet passed the broad ceilings. A repeat 5/40/60 probe checked stability. | Rejected because it was mixed and not a clean replacement for the current best: the full strict run improved 37-char to `565.259 us` / `1.970x` but worsened 59-char to `1058.349 us` / `1.621x`; the repeat probe was also worse than the current best at 37-char `584.446 us` / `2.027x` and 59-char `1028.647 us` / `1.563x`. |
+| Retain a merged sentence-candidate map in scratch | Product-path candidate parity was green. Focused sentence scratch tests, expanded Luna green-row parity, `cargo fmt --check`, and `cargo clippy -p yune-core --all-targets -- -D warnings` passed. A small same-run release probe was run. | Rejected before strict ratchet because it was worse than the current best across the target rows and short keys: 37-char `598.986 us` / `2.074x`, 59-char `1072.942 us` / `1.624x`, `n`/`ni`/`hao` `2.854x` / `3.071x` / `2.168x`. |
 
 ## Decision
 
@@ -34,5 +35,6 @@ look for a new measured owner instead of repeating cached vocabulary lookup,
 scratch candidate extraction, duplicate prechecks, full-rank beam prechecks,
 cached-span vector moves, simple `PathWordLengths` capacity tuning, or
 byte-indexed temporary borrowed graph storage, final-end-only candidate
-emission, sentence-end bucket-only candidate merge iteration, or simple
-candidate/key clone avoidance in the cached sentence-path merge.
+emission, sentence-end bucket-only candidate merge iteration, simple
+candidate/key clone avoidance in the cached sentence-path merge, or retaining
+a merged sentence-candidate map in scratch.

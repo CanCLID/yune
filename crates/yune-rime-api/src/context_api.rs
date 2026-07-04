@@ -7,8 +7,9 @@ use std::{
 
 use crate::{
     apply_visible_switch_radio_defaults, bool_from, clear_commit, clear_context, clear_status,
-    context_has_commit_text_preview, context_has_select_labels, free_rime_candidates, sessions,
-    Bool, RimeCandidate, RimeCommit, RimeContext, RimeSessionId, RimeStatus, FALSE, TRUE,
+    context_has_commit_text_preview, context_has_select_labels, flush_deferred_luna_ascii_input,
+    free_rime_candidates, sessions, Bool, RimeCandidate, RimeCommit, RimeContext, RimeSessionId,
+    RimeStatus, FALSE, TRUE,
 };
 
 struct M37GetContextTimer(Option<Instant>);
@@ -107,6 +108,7 @@ pub unsafe extern "C" fn RimeGetContext(
         let Some(session) = registry.get_session_mut(session_id) else {
             return FALSE;
         };
+        flush_deferred_luna_ascii_input(session);
         apply_visible_switch_radio_defaults(session);
         let composition_input = session.engine.context().composition.input.clone();
         let menu_settings = session.menu_settings.clone();
@@ -325,6 +327,7 @@ pub unsafe extern "C" fn RimeGetStatus(session_id: RimeSessionId, status: *mut R
     let Some(session) = registry.get_session_mut(session_id) else {
         return FALSE;
     };
+    flush_deferred_luna_ascii_input(session);
     let mut snapshot = session.engine.status();
     if session
         .chord_composer

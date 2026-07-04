@@ -155,6 +155,7 @@ pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &st
     session.navigator_delimiters = " ".to_owned();
     session.navigator_syllable_jump_position = NavigatorSyllableJumpPosition::AfterDelimiter;
     session.paging = false;
+    session.clear_deferred_luna_ascii_input();
     {
         let _trace = startup_trace::span("schema_switch_options");
         restore_switcher_saved_options(session, &schema_config);
@@ -186,6 +187,7 @@ pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &st
         session.reload_userdb_from_store();
     }
     session.engine.clear_composition();
+    session.clear_deferred_luna_ascii_input();
     session.input_buffer = None;
     session.unread_commit = None;
     session.schema_reload_watch_signature =

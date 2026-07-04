@@ -317,6 +317,111 @@ fn gets_and_sets_input_and_caret_position() {
 }
 
 #[test]
+fn plain_luna_lowercase_keys_defer_until_observed_context() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let session_id = RimeCreateSession();
+    {
+        let mut registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get_mut(&session_id)
+            .expect("session should exist");
+        session.engine.set_schema("luna_pinyin", "Luna Pinyin");
+        session.engine.clear_translators();
+        session
+            .engine
+            .add_translator(StaticTableTranslator::new([("ni", "NI")]));
+    }
+
+    assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as i32, 0), TRUE);
+    {
+        let registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get(&session_id)
+            .expect("session should exist");
+        assert_eq!(session.engine.context().composition.input, "");
+        assert!(session.has_deferred_luna_ascii_input());
+    }
+
+    let input = RimeGetInput(session_id);
+    assert!(!input.is_null());
+    // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
+    let input = unsafe { CStr::from_ptr(input) };
+    assert_eq!(input.to_str(), Ok("ni"));
+
+    let mut context = empty_context();
+    // SAFETY: `context` points to writable storage initialized with positive `data_size`.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.menu.num_candidates, 1);
+    // SAFETY: `context.menu.candidates` points to an initialized candidate.
+    let first_candidate = unsafe { *context.menu.candidates };
+    // SAFETY: candidate text is a valid NUL-terminated string owned by context.
+    let first_candidate_text = unsafe { CStr::from_ptr(first_candidate.text) };
+    assert_eq!(first_candidate_text.to_str(), Ok("NI"));
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
+    {
+        let registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let session = registry
+            .sessions
+            .get(&session_id)
+            .expect("session should exist");
+        assert_eq!(session.engine.context().composition.input, "ni");
+        assert!(!session.has_deferred_luna_ascii_input());
+    }
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn non_plain_luna_profiles_keep_eager_lowercase_processing() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+
+    for schema_id in ["luna_pinyin_octagram", "jyut6ping3_mobile"] {
+        let session_id = RimeCreateSession();
+        {
+            let mut registry = crate::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get_mut(&session_id)
+                .expect("session should exist");
+            session.engine.set_schema(schema_id, schema_id);
+            session.engine.clear_translators();
+            session
+                .engine
+                .add_translator(StaticTableTranslator::new([("n", "N")]));
+        }
+
+        assert_eq!(RimeProcessKey(session_id, 'n' as i32, 0), TRUE);
+        {
+            let registry = crate::sessions()
+                .lock()
+                .expect("session registry should not be poisoned");
+            let session = registry
+                .sessions
+                .get(&session_id)
+                .expect("session should exist");
+            assert_eq!(session.engine.context().composition.input, "n");
+            assert!(!session.has_deferred_luna_ascii_input());
+        }
+
+        assert_eq!(RimeDestroySession(session_id), TRUE);
+    }
+}
+
+#[test]
 fn get_context_uses_page_snapshot_without_full_candidate_clone() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

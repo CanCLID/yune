@@ -34,6 +34,18 @@
 > run). The `~110.5 MB` byte-backed result is flag-on research/no-go evidence
 > until Phase 2R redesign proves the full M55 ratchet green twice.
 
+> **Phase 3R checkpoint (2026-07-04):** Native ABI lazy refresh for exact plain
+> `luna_pinyin` buffers unobserved lowercase key sequences and flushes before
+> observable C ABI boundaries. Evidence under
+> `docs/reports/evidence/m55-native-match-or-beat/phase-3r-native-lazy-refresh-probe/`
+> passes the current `m55-thresholds.csv` ratchet and removes the long-row graph
+> rebuild blocker from the deployed native key-sequence path, but it is not
+> Tier M closeout: `n` remains `2.776x` versus the Tier M `<=2.00x` bar and
+> Track A peak remains `185,806,848 B` versus the Tier M `<=125,000,000 B` bar.
+> Next work stays in Phase 3R/Phase 4 short-key owner reduction and later
+> byte-backed re-land; no browser, ABI, scoring, or candidate-order scope is
+> opened.
+
 > **Historical closeout (2026-07-04):** M55 proved the memory owner and reduced
 > final Track A peak to `110,542,848 B`, but the final full ratchet remains red on the
 > 37-character Luna row (`5.964x`), 59-character Luna row (`4.030x`), and one

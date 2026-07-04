@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T19:09:00.2708467Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=79862240ed8628168ef1842a3494cd66f61d1c83
+yune_git_status_short= M crates/yune-rime-api/src/context_api.rs |  M crates/yune-rime-api/src/lib.rs |  M crates/yune-rime-api/src/schema_selection.rs |  M crates/yune-rime-api/src/session.rs |  M crates/yune-rime-api/src/tests/session_api.rs | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-native-lazy-refresh-probe/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\m55-ratchet
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

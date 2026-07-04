@@ -313,23 +313,31 @@ fn collect_sentence_states(
     let mut states: BTreeMap<usize, Vec<PathState>> = BTreeMap::new();
     states.insert(0, vec![PathState::default()]);
     for (start, edges) in graph {
-        let Some(source_states) = states.get(start).cloned() else {
+        let Some(source_states) = states.remove(start) else {
             continue;
         };
         for (end, entries) in edges {
             for source in &source_states {
                 for entry in entries {
-                    let mut next = source.clone();
-                    if let Some(grammar) = grammar {
-                        next.weight += entry.weight
+                    let candidate_weight = if let Some(grammar) = grammar {
+                        source.weight
+                            + entry.weight
                             + grammar.query(
                                 &source.grammar_context(),
                                 &entry.text,
                                 *end == total_length,
-                            );
-                        next.push_word(&entry.text);
+                            )
                     } else {
-                        next.weight += null_grammar_score(entry.weight);
+                        source.weight + null_grammar_score(entry.weight)
+                    };
+                    if beam_rejects_by_weight(states.get(end), max_sentences * 3, candidate_weight)
+                    {
+                        continue;
+                    }
+                    let mut next = source.clone();
+                    next.weight = candidate_weight;
+                    if grammar.is_some() {
+                        next.push_word(&entry.text);
                     }
                     next.text.push_str(&entry.text);
                     next.word_lengths.push(end - start);
@@ -344,12 +352,27 @@ fn collect_sentence_states(
                 }
             }
         }
+        states.insert(*start, source_states);
     }
 
     if record_metrics {
         crate::m37_record_upstream_sentence_model_dp(dp_states_created, dp_beam_evictions);
     }
     states
+}
+
+fn beam_rejects_by_weight(
+    states: Option<&Vec<PathState>>,
+    beam_width: usize,
+    candidate_weight: f64,
+) -> bool {
+    let Some(states) = states else {
+        return false;
+    };
+    states.len() >= beam_width
+        && states
+            .last()
+            .is_some_and(|worst| candidate_weight < worst.weight)
 }
 
 fn collect_abbreviation_sentence_states(

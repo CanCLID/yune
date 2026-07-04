@@ -1,0 +1,7 @@
+﻿"kind","workload","input","metric","observed","ceiling","unit","status","notes"
+"latency_ratio","key_sequence_process_with_context","n","yune_librime_median_ratio","2.894","3.050","x","pass","M52 phase-0 baseline plus small run-noise headroom; one-letter Track A row."
+"latency_ratio","key_sequence_process_with_context","ni","yune_librime_median_ratio","3.180","3.223","x","pass","M52 phase-0 baseline plus small run-noise headroom; bounded-microsecond disposition row."
+"latency_ratio","key_sequence_process_with_context","hao","yune_librime_median_ratio","2.171","2.287","x","pass","M52 phase-0 baseline plus small run-noise headroom; short normal Track A row."
+"latency_ratio","key_sequence_process_with_context","ceshiyixiachangjushuruxingnengzenyang","yune_librime_median_ratio","2.407","3.267","x","pass","M52 phase-0 baseline plus small run-noise headroom; 37-character Luna row."
+"latency_ratio","key_sequence_process_with_context","zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong","yune_librime_median_ratio","1.827","2.447","x","pass","M52 phase-0 baseline plus small run-noise headroom; existing 59-character Luna row promoted into the gate."
+"memory_peak","","","track_a_peak_working_set_bytes","185860096","198000000","bytes","pass","M52 phase-0 Track A peak working-set high-water plus small run-noise headroom."

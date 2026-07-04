@@ -616,10 +616,10 @@ not another storage-residency promotion.
 **Phase 3R status:** active. The Phase 2R result accepted `YUNE-POET/2` as a
 measured no-go and changed the work order: expand fixtures, measure graph access
 volume, reduce owned/default graph work, then re-land byte-backed poet on the
-lean graph. Current same-run reference: owned/default 37-character `3.038x`,
-59-character `2.272x`, Track A peak `185.8 MB`; flag-on byte-backed
-37-character `5.395x`, 59-character `3.733x`, Track A peak `113.1 MB`, and
-Track B product latency `378.274 us` vs `375.253 us`.
+lean graph. Phase 3R-2's first owned-path checkpoint rejects provably losing
+beam states before cloning and moves the default-owned long rows to
+37-character `2.407x` and 59-character `1.827x` while keeping M52 green, but
+Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
 cost is graph work above the raw lookup (`891.0 us` translator vs `28.9 us`
@@ -704,18 +704,20 @@ Decision rule:
 This is default-path work: no flag. Every landed step must be full-ratchet green
 or must close as a measured no-go without broadening scope.
 
-- [ ] Pick mechanisms from Phase 3R-1 evidence. Candidate mechanisms are
-  span-driven construction from the syllabification span set, per-span
-  memoization within a rebuild, incremental reuse of unchanged graph prefixes
-  across keypresses, and deferred materialization.
-- [ ] Study `word_graph_for_code_spans` as the in-repo span-fed construction
+- [x] Pick the first mechanism from Phase 3R-1 evidence: pre-clone rejection of
+  candidates whose weight is strictly below the current worst retained state
+  when the destination beam is already full.
+- [x] Study `word_graph_for_code_spans` as the in-repo span-fed construction
   precedent before implementing a new path.
-- [ ] Do not touch scoring, beam behavior, ordering (`compare_path_state`), or
-  weight arithmetic. No pruning shortcuts.
-- [ ] After every landed step, prove byte-identical output via both parity
-  suites plus product-path CLI byte compare over `apps/yune-web/public/schema`,
+- [x] For the first checkpoint, do not touch scoring, beam width, ordering
+  (`compare_path_state`), or weight arithmetic. The rejected candidates are only
+  states the existing beam rule would discard.
+- [x] For the first checkpoint, prove byte-identical output via the Luna parity
+  suite plus product-path CLI byte compare over `apps/yune-web/public/schema`,
   final keypress event, both benchmark rows, `jianli`, `biancheng`, and
   `zhongguo`.
+- [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
+  green but still above the `<=1.50x` 37/59-character win bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

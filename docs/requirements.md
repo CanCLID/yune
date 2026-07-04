@@ -1253,8 +1253,10 @@ Track A peak memory to `110,542,848 B`, but fails the 37-character Luna row, the
 makes byte-backed poet consumption default-off, restores the owned Luna fast
 path, and re-verifies the standing M52 native Track A gate green on main.
 Phase 2R measured `YUNE-POET/2` as no-go for the default flip; M55 now continues
-in Phase 3R with oracle fixture expansion, graph access-volume diagnostics, and
-owned-path graph volume reduction before byte-backed poet is reconsidered.
+in Phase 3R. Fixture expansion and graph access-volume diagnostics are landed,
+and the first owned-path beam-rejection checkpoint is green but still short of
+Tier M, so owned-path graph reduction remains active before byte-backed poet is
+reconsidered.
 
 - [x] **M55-PERF-01**: A full-suite same-run native ratchet artifact covers
   startup, session lifecycle, Track A key rows including the two long Luna rows,
@@ -1270,7 +1272,10 @@ owned-path graph volume reduction before byte-backed poet is reconsidered.
 - [ ] **M55-PERF-05**: Phase 3R expands oracle sentence fixtures, records
   graph/access-volume diagnostics for owned and byte-backed builders, and
   reduces owned-path long-row graph work while preserving byte-identical
-  candidate output and the existing ratchet rows.
+  candidate output and the existing ratchet rows. First checkpoint evidence
+  moves the default-owned 37-character row to `2.407x` and the 59-character row
+  to `1.827x`, but Phase 3R remains active until both are `<=1.50x` or a
+  measured no-go is recorded.
 - [x] **M55-PERF-06**: Reports, roadmap, requirements, milestone history, and
   plan state are updated to the reopen state without public C ABI widening,
   retained heap indexes, browser/product/platform performance claims, or

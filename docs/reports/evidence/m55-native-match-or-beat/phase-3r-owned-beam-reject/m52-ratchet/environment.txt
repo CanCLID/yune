@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-04T07:51:31.6845001Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=2506a95d58e4d4c089295141ef998e2801e615dc
+yune_git_status_short= M crates/yune-core/src/poet/mod.rs | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-owned-beam-reject/ | ?? docs/reports/evidence/m55-native-match-or-beat/phase-3r-owned-state-take/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\m52-ratchet
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m52-track-a-guardrails-and-disposition\track-a-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

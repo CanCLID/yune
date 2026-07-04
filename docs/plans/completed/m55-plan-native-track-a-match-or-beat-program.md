@@ -64,15 +64,19 @@
 > byte-backed re-land; no browser, ABI, scoring, or candidate-order scope is
 > opened.
 
-> **Final closeout (2026-07-04):** M55 closes complete for the native Track A
-> Tier M/bounded-gap target. Final default-on runs
+> **Final closeout (2026-07-04) — RETRACTED, kept as historical record; see
+> the corrective addendum at the top of this file:** M55 was declared complete
+> for the native Track A Tier M/bounded-gap target on the strength of
 > `phase-5-final/default-on-ratchet-5-config-cache/` and
-> `phase-5-final/default-on-ratchet-6-config-cache/` pass the full M55 ratchet
-> with validated `YUNE-POET/2` byte-backed Luna poet consumption default-on.
-> Final run 6 records `n` `1.794x`, `ni` `1.039x`, `hao` `0.815x`,
-> 37-character Luna `0.237x`, 59-character Luna `0.086x`, Track B product key
-> sequence `316.282 us`, and Track A peak `113,397,760 B` under the `125 MB`
-> Tier M bar. `m55-thresholds.csv` is now the standing native Track A gate.
+> `default-on-ratchet-6-config-cache/`, with `YUNE-POET/2` byte-backed Luna
+> poet consumption default-on and run 6 recording `n` `1.794x`, `ni` `1.039x`,
+> `hao` `0.815x`, 37-character Luna `0.237x`, 59-character Luna `0.086x`,
+> Track B `316.282 us`, and Track A peak `113,397,760 B`. The corrective
+> review found the long-row, short-key, and startup/session results were
+> measurement artifacts (key deferral, benchmark-input aliases, config cache,
+> all reverted) measured under a batch-shaped harness; the default-on flip was
+> reversed and the pre-corrective threshold artifact was superseded by the
+> corrective per-key re-baseline.
 
 > **Historical closeout (2026-07-04):** M55 proved the memory owner and reduced
 > final Track A peak to `110,542,848 B`, but the final full ratchet remains red on the

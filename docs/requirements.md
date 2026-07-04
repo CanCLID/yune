@@ -1767,4 +1767,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M55 is complete. The final default-on `YUNE-POET/2` path passes the full native Track A ratchet twice, keeps Track A peak under the `125 MB` Tier M bar, and hands over M55 thresholds as the standing native Track A guard._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M55 is complete under the corrective re-baseline: the pre-corrective default-on closeout was retracted (measurement artifacts reverted; `YUNE-POET/2` is explicit opt-in), the benchmark reads context per keypress, and the corrective `m55-thresholds.csv` is the standing native Track A gate, green twice (`corrective-2026-07-04/gate-run-d`, `gate-run-e`) with the shipping default at `185.7 MB` and the opt-in byte-backed path at `113.2 MB` (latency-blocked)._

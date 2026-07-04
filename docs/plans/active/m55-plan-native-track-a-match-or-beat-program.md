@@ -622,7 +622,10 @@ beam states before cloning and moves the default-owned long rows to
 Tier M is still not met. The next Phase 3R-2 checkpoint reduces path-state
 materialization with exact-capacity text construction and inline word lengths;
 it keeps M52 green at 37-character `2.228x` and 59-character `1.856x`, with
-product-path candidate bytes unchanged. Tier M is still not met.
+product-path candidate bytes unchanged. A follow-up DP container checkpoint keeps
+state counts unchanged but replaces hot-loop state maps with byte-indexed
+vectors, keeping M52 green at 37-character `2.337x` and 59-character `1.811x`
+with product-path candidate bytes unchanged. Tier M is still not met.
 
 **Owner:** the sentence-lattice/scoring path — `~96%` of the 37-char row's
 cost is graph work above the raw lookup (`891.0 us` translator vs `28.9 us`
@@ -723,9 +726,14 @@ or must close as a measured no-go without broadening scope.
   exact capacity and keeping word-length histories inline for the common path.
   Evidence:
   `docs/reports/evidence/m55-native-match-or-beat/phase-3r-owned-inline-lengths/`.
+- [x] Reduce DP state container overhead by using byte-indexed per-end state
+  vectors during `collect_sentence_states` and converting back to the existing
+  map return shape after propagation. Evidence:
+  `docs/reports/evidence/m55-native-match-or-beat/phase-3r-dp-vector/`.
 - [ ] Continue owned-path reduction toward Tier M. The first checkpoint is
-  green and the path-state materialization checkpoint is green, but both remain
-  above the `<=1.50x` 37/59-character win bar.
+  green, the path-state materialization checkpoint is green, and the DP vector
+  checkpoint is green, but all remain above the `<=1.50x` 37/59-character win
+  bar.
 
 **Win bar:** owned-path 37-character `<=1.50x` and 59-character `<=1.50x`; all
 other ratchet rows green, win rows stay `<1.00x`, short keys stay within

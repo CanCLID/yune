@@ -310,13 +310,22 @@ fn collect_sentence_states(
     let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
     let mut dp_states_created = 0usize;
     let mut dp_beam_evictions = 0usize;
-    let mut states: BTreeMap<usize, Vec<PathState>> = BTreeMap::new();
-    states.insert(0, vec![PathState::default()]);
+    let mut states_by_end = vec![Vec::<PathState>::new(); total_length.saturating_add(1)];
+    if let Some(start_states) = states_by_end.first_mut() {
+        start_states.push(PathState::default());
+    }
     for (start, edges) in graph {
-        let Some(source_states) = states.remove(start) else {
+        if *start > total_length {
             continue;
         };
+        let source_states = std::mem::take(&mut states_by_end[*start]);
+        if source_states.is_empty() {
+            continue;
+        }
         for (end, entries) in edges {
+            if *end > total_length {
+                continue;
+            }
             for source in &source_states {
                 for entry in entries {
                     let candidate_weight = if let Some(grammar) = grammar {
@@ -330,29 +339,35 @@ fn collect_sentence_states(
                     } else {
                         source.weight + null_grammar_score(entry.weight)
                     };
-                    if beam_rejects_by_weight(states.get(end), max_sentences * 3, candidate_weight)
-                    {
+                    if beam_rejects_by_weight(
+                        Some(&states_by_end[*end]),
+                        max_sentences * 3,
+                        candidate_weight,
+                    ) {
                         continue;
                     }
                     let next = source.extended(&entry.text, candidate_weight, end - start, grammar);
                     if record_metrics {
                         dp_states_created += 1;
                     }
-                    let evicted =
-                        insert_state(states.entry(*end).or_default(), next, max_sentences * 3);
+                    let evicted = insert_state(&mut states_by_end[*end], next, max_sentences * 3);
                     if record_metrics && evicted {
                         dp_beam_evictions += 1;
                     }
                 }
             }
         }
-        states.insert(*start, source_states);
+        states_by_end[*start] = source_states;
     }
 
     if record_metrics {
         crate::m37_record_upstream_sentence_model_dp(dp_states_created, dp_beam_evictions);
     }
-    states
+    states_by_end
+        .into_iter()
+        .enumerate()
+        .filter(|(_, states)| !states.is_empty())
+        .collect()
 }
 
 fn beam_rejects_by_weight(

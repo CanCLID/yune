@@ -1,4 +1,4 @@
-# M58 Jyutping Candidate Reachability & Admission Parity Repair Plan
+# M58 Jyutping Candidate Reachability & Over-Admission Gate Repair Plan
 
 > **For agentic workers:** execute one phase at a time. This plan is written as
 > a review packet: before implementing, have another reviewer challenge the
@@ -6,8 +6,8 @@
 > the TypeDuck `jyut6ping3` profile against TypeDuck-HK/librime `v1.1.2`; that
 > fork is the correctness oracle for every candidate claim here.
 
-> **Status:** Draft for review (v4, 2026-07-05 — v3 rewrite + a third review
-> round, verified). v4 refinements: the admission divergence is **bidirectional**
+> **Status:** Ready for execution (v4 plus final review tightening, 2026-07-05).
+> v4 refinements: the admission divergence is **bidirectional**
 > and fixed by two orthogonal mechanisms — Leg A = the *gate* (over-admission);
 > derived-form matching = a deferred *admission-depth* lane (under-admission,
 > proven present in the flagship `ngohaig` case, not just `nri`). Assertions are
@@ -45,8 +45,11 @@
 > rather than any blanket flood removal.
 
 **Goal:** Make Yune's TypeDuck/Jyutping candidate output match the
-TypeDuck/librime `v1.1.2` oracle for multi-syllable composition, in two parts of
-differing confidence:
+TypeDuck/librime `v1.1.2` oracle for the M58-owned multi-syllable composition
+claims: `beingo` reachability/full-capture disposition, the non-syllable
+single-letter over-admission gate, and the pinned non-regression rows. The
+under-admission-depth lane remains named-deferred unless deliberately pulled
+into scope.
 
 - **Reachability (confirmed):** for a composition with a complete-syllable
   leading parse (`beingo`→`bei`), emit the **full** exact leading-parse set so
@@ -286,13 +289,21 @@ same-initial completions. This is consistent with every checked-in capture:
 | Input | Complete-syllable prefixes | Gate drops | Result vs oracle |
 | --- | --- | --- | --- |
 | `ngohaig` | `ngo`, `ng` (both survive) | single-letter `n` | `你`/`能`/`男` gone (oracle has none); `ngo`/`ng` groups kept ✓ |
-| `beingo` | `bei` | single-letter `b` | `b`-flood gone; `bei` set kept ✓ (`b` is not a syllable, so the oracle likely has no `b`-group — the capture confirms) |
+| `beingo` | `bei`, `be` (capture-decided) | single-letter `b` | `b`-flood gone; `bei` set kept ✓; `be` rows (`啤`/`唄`) are complete-syllable shorter-prefix rows, so the full capture decides whether they stay, need a refined gate, or become a recorded disposition |
 | `nri` / bare `n` | *none* (`n`/`nr`/`nri` are not syllables) | nothing (no longer complete-syllable prefix) | flood preserved → `m21_nri` golden safe ✓ |
 | `mgoi` / bare `m` | `m` (`m` *is* a syllable) | nothing (`m` is the longest complete-syllable prefix) | `m`-abbreviation rows preserved ✓ |
 
 The gate keys on **is-a-complete-syllable**, not **is-single-letter** — so `m`
 (a syllable) is kept while `n`/`b` (not syllables) are dropped only when a longer
 syllable contributes.
+
+`beingo` therefore has one capture trap of its own: `be` is a complete syllable
+and Yune currently emits `啤`/`唄` through that shorter prefix. If the full oracle
+capture omits those rows (or includes an abbreviated-tail word that the current
+legs do not own), win bar 2 cannot silently pass. The executor must either fix
+that set-level divergence with a scoped refined gate or record an explicit
+disposition tied to the capture; do not improvise a broad "drop complete
+syllables" rule.
 
 Constraints (verified pinned behaviors — do **not** regress):
 
@@ -369,19 +380,21 @@ executor chooses. Either way:
 ## Win Bars
 
 Assertions are **directional and per-input** — full set+order equality is
-claimed **only for `beingo`** (safe from the algebra-interleave trap, since
-`ng`-insertion only affects vowel-initial codes so the `bei`-set has no
-under-admission). M58 closes when:
+targeted **only for `beingo`**, and even there the capture decides whether any
+complete-syllable shorter-prefix or abbreviated-tail rows need a refined gate or
+an explicit disposition. M58 closes when:
 
 1. **(Leg B) 畀 reachable for `beingo`** — the full exact `bei*` set (incl the
    third `bei2` = 畀) emits, on the compiled Compact+prism product path (assert 畀
    absent pre-fix, present post-fix). Cap raise bounded and tone-scoped; target
    survives all three caps.
-2. **`beingo` full equality (set + order)** — Yune matches the full `beingo`
-   capture (`is_last_page:true`, recorded product options). If ordering diverges
-   (the oracle interleaves by frequency; Yune sorts `consumed_input_len`-desc then
-   quality), the divergence is either fixed or **recorded with an explicit
-   disposition** — it does not silently pass.
+2. **`beingo` full equality target (set + order)** — Yune matches the full
+   `beingo` capture (`is_last_page:true`, recorded product options), or any
+   remaining set/order divergence is fixed or **recorded with an explicit
+   disposition**. Pre-named risks: `be` rows (`啤`/`唄`) may survive the gate as
+   complete-syllable shorter-prefix rows, and abbreviation-tail rows may appear
+   in the oracle. Neither case may silently pass or trigger an unscoped gate
+   change.
 3. **`ngohaig` directional** (its complete admission model is the adopted
    `ngohaigo` capture, case[4] `default_combined`; `ngohaig` itself is captured
    full too or the proxy limit is stated): (i) **over-admission gone** — none of
@@ -492,8 +505,8 @@ deferred, pinned narrow, unless deliberately pulled in as Leg C); flipping the
 - [ ] **Leg B (unconditional).** Raise the per-fetch cap for leading-parse fetch
       codes, bounded to the oracle-observed max and tone-scoped; if the 256/64
       caps are the binding truncation for the target character, raise those
-      (bounded) too. Keep caps on non-leading-parse codes unless the capture says
-      otherwise.
+      (bounded) too. Keep caps on non-leading-parse codes unless a win-bar
+      capture-match requires a scoped exception.
 - [ ] Add a compiled-path test: `beingo` emits 畀 (absent pre-fix, present
       post-fix) and the toned input does not flood wrong-tone families.
 - [ ] **Leg A = the gate (per the Phase 0 over-admission diff).** Drop the

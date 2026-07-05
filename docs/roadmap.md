@@ -270,12 +270,24 @@ Current decision:
    [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/).
    Plan:
    [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md).
-8. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
+8. **M58 Jyutping exact-before-fuzzy candidate order is drafted for review.**
+   Verified engine bug in the TypeDuck `jyut6ping3` product: in a multi-syllable
+   composition, exact first-syllable characters are crowded out by same-initial
+   fuzzy/partial-prefix candidates (`beingo` shows `b`-initial 不/本/部/報 before
+   all `bei` characters, so 畀 is unreachable). Root cause: `valid_lookup_prefixes`
+   emits partial-syllable prefixes and the single-letter `starts_with`
+   prefix-fallback admits all same-initial characters mid-composition. The
+   checked-in TypeDuck `v1.1.2` oracle fixtures confirm the oracle shows exact
+   matches only, no same-initial fuzzy (`m` → 唔/五; `ngohaig` → 我係個/我係/我喺/我),
+   so M58 restricts prefix-fallback to complete-syllable prefixes to match the
+   oracle candidate set.
+   Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
+9. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
-9. **Future AI-native engine experiments** - later, and only after classic
+10. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-10. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+11. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
    fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
    row is explicitly selected as the target.
 Trigger-gated, not scheduled: extracting the full processor pipeline from
@@ -315,6 +327,7 @@ and current decision rules.
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, all 14 Phase 1 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior unchanged, public demo debug/admin controls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
+| M58 | Drafted / review | Jyutping exact-before-fuzzy candidate order (TypeDuck `jyut6ping3` product). In a multi-syllable composition, exact first-syllable characters are crowded out by same-initial fuzzy/partial-prefix candidates — verified: `beingo` (畀我) shows `b`-initial 不/本/部/報 before all `bei` characters, so 畀 is unreachable and the user must type `bei` alone. Root cause: `valid_lookup_prefixes` emits partial-syllable prefixes (`b`, `be`) and the single-letter `starts_with` prefix-fallback admits all same-initial characters mid-composition. Oracle check (checked-in TypeDuck `v1.1.2` fixtures) confirms the oracle shows exact matches only and no same-initial fuzzy (`m` → 唔/五; `ngohaig` → 我係個/我係/我喺/我). Plan: restrict prefix-fallback to complete-syllable prefixes so Yune's candidate set matches the oracle. Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
 
 ## Scope Ledger
 

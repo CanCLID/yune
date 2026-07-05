@@ -494,35 +494,106 @@ public static class RimeProbe {
         foreach (var ch in input) {
           processed.Add(RimeProcessKey(session, (int)ch, 0));
         }
-        var ctx = new RimeContext { data_size = Marshal.SizeOf(typeof(RimeContext)) - sizeof(int) };
         var status = new RimeStatus { data_size = Marshal.SizeOf(typeof(RimeStatus)) - sizeof(int) };
-        if (RimeGetContext(session, ref ctx) == 0) {
-          throw new Exception("RimeGetContext failed for " + input);
-        }
         if (RimeGetStatus(session, ref status) == 0) {
           throw new Exception("RimeGetStatus failed for " + input);
         }
 
-        var candidates = ReadCandidates(ctx, identity);
+        // Page through every candidate page so the capture is not truncated to
+        // page 0. Page_Down is XK_Page_Down (0xff56). For an oracle capture we
+        // must never silently duplicate a page: if Page_Down is not handled or
+        // the page does not advance (a repeated page_no), stop and record a hard
+        // pagination_error instead of producing a plausible-but-wrong blob.
+        // Existing page-0 fields (selected_candidates, page_size, is_last_page)
+        // are preserved; all_candidates/pages/global_index are new.
+        const int PageDownKeycode = 0xff56;
+        const int MaxPages = 200;
+        var pages = new List<Dictionary<string, object>>();
+        var allCandidates = new List<Dictionary<string, object>>();
+        var seenPageNos = new HashSet<int>();
+        List<Dictionary<string, object>> firstPageCandidates = null;
+        string preedit = null;
+        string commitPreview = null;
+        string rimeInput = null;
+        int highlighted = 0;
+        int firstPageSize = 0;
+        bool firstPageIsLast = true;
+        bool capturedAllPages = false;
+        string paginationError = null;
+        int globalIndex = 0;
+        for (int pageIndex = 0; ; pageIndex++) {
+          if (pageIndex >= MaxPages) {
+            paginationError = "max_pages_reached_" + MaxPages;
+            break;
+          }
+          var ctx = new RimeContext { data_size = Marshal.SizeOf(typeof(RimeContext)) - sizeof(int) };
+          if (RimeGetContext(session, ref ctx) == 0) {
+            throw new Exception("RimeGetContext failed for " + input);
+          }
+          int thisPageNo = ctx.menu.page_no;
+          if (seenPageNos.Contains(thisPageNo)) {
+            paginationError = "page_down_did_not_advance_at_page_" + thisPageNo;
+            RimeFreeContext(ref ctx);
+            break;
+          }
+          seenPageNos.Add(thisPageNo);
+          var pageCandidates = ReadCandidates(ctx, identity);
+          foreach (var cand in pageCandidates) {
+            cand["global_index"] = globalIndex++;
+          }
+          if (pageIndex == 0) {
+            firstPageCandidates = pageCandidates;
+            preedit = S(ctx.composition.preedit);
+            commitPreview = S(ctx.commit_text_preview);
+            rimeInput = CurrentInput(session, ctx);
+            highlighted = ctx.menu.highlighted_candidate_index;
+            firstPageSize = ctx.menu.page_size;
+            firstPageIsLast = ctx.menu.is_last_page != 0;
+          }
+          var pageRec = new Dictionary<string, object>();
+          pageRec["page_no"] = thisPageNo;
+          pageRec["page_size"] = ctx.menu.page_size;
+          pageRec["is_last_page"] = ctx.menu.is_last_page != 0;
+          pageRec["candidates"] = pageCandidates;
+          pages.Add(pageRec);
+          allCandidates.AddRange(pageCandidates);
+          bool lastPage = ctx.menu.is_last_page != 0;
+          bool empty = ctx.menu.num_candidates == 0;
+          RimeFreeContext(ref ctx);
+          if (lastPage || empty) {
+            capturedAllPages = lastPage;
+            break;
+          }
+          int pageDownHandled = RimeProcessKey(session, PageDownKeycode, 0);
+          if (pageDownHandled == 0) {
+            paginationError = "page_down_not_handled_at_page_" + thisPageNo;
+            break;
+          }
+        }
 
         var result = new Dictionary<string, object>();
         result["schema_id"] = S(status.schema_id);
         result["schema_name"] = S(status.schema_name);
         result["input"] = input;
-        result["rime_get_input"] = CurrentInput(session, ctx);
+        result["rime_get_input"] = rimeInput;
         result["processed"] = processed;
         result["is_composing"] = status.is_composing != 0;
         result["is_ascii_mode"] = status.is_ascii_mode != 0;
-        result["preedit"] = S(ctx.composition.preedit);
-        result["commit_text_preview"] = S(ctx.commit_text_preview);
-        result["highlighted_candidate_index"] = ctx.menu.highlighted_candidate_index;
-        result["page_size"] = ctx.menu.page_size;
-        result["page_no"] = ctx.menu.page_no;
-        result["is_last_page"] = ctx.menu.is_last_page != 0;
-        result["selected_candidates"] = candidates;
+        result["preedit"] = preedit;
+        result["commit_text_preview"] = commitPreview;
+        result["highlighted_candidate_index"] = highlighted;
+        result["page_size"] = firstPageSize;
+        result["page_no"] = 0;
+        result["is_last_page"] = firstPageIsLast;
+        result["selected_candidates"] = firstPageCandidates;
+        result["pages"] = pages;
+        result["all_candidates"] = allCandidates;
+        result["captured_all_pages"] = capturedAllPages;
+        if (paginationError != null) {
+          result["pagination_error"] = paginationError;
+        }
         results.Add(result);
         RimeFreeStatus(ref status);
-        RimeFreeContext(ref ctx);
       }
       RimeDestroySession(session);
       session = UIntPtr.Zero;

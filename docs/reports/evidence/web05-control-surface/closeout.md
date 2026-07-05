@@ -7,7 +7,7 @@ Scope: `apps/yune-web` only. WEB-05 did not change `crates/` or
 
 ## Evidence Files
 
-- `controls-ledger.md`: 108-row raw control/diagnostic inventory, including 14
+- `controls-ledger.md`: 108-row raw control/diagnostic inventory, including 13
   `surface` rows with explicit public-demo posture and 2 deferred rows.
 - `yune-web-spec-rebaseline-audit.md`: separates WEB-05 selector/helper
   maintenance from behavior assertion changes in `yune-web.spec.ts`.
@@ -66,8 +66,8 @@ from the built public demo:
 
 Allowed public-demo rows remain product-shaped controls or references:
 `ascii_punct`, deploy status, `ascii_punct` optionChanged-backed UI state,
-hotkey reference, free-form dictionary exclude editor, and inspector render
-fields. Deploy-cache details, raw responses, injected-assets diagnostics, and
+free-form dictionary exclude editor, and inspector render fields. Deploy-cache
+details, raw responses, injected-assets diagnostics, and
 detailed action-error history remain hidden and no longer run their WEB-05 data
 pulls in public-demo mode.
 

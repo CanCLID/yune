@@ -216,13 +216,6 @@ export default function YuneControlSurface({
 		</header>
 
 		<div className="yd-control-grid">
-			<section className="yd-control-card" data-yune-hotkey-reference>
-				<h4>{text.hotkeysTitle}</h4>
-				<ul>
-					{text.hotkeys.map((hotkey) => <li key={hotkey}>{hotkey}</li>)}
-				</ul>
-			</section>
-
 			{!IS_PUBLIC_DEMO && <>
 				<section className="yd-control-card">
 					<h4>{text.deployTitle}</h4>

@@ -28,8 +28,7 @@ Public-demo posture is explicit for every `surface` row. `allowed` means the row
 | S3 | Manual "Redeploy now" button | worker `customize()` + `deploy()` (auto-only today) | hidden | Deploy exists with no explicit trigger; needed for staleness/dogfood debugging, but manual admin controls must not grow the public demo. |
 | S4 | Persistence-diagnostics inspector section | adapter `emitPersistenceDiagnostic` markers (already on `<html>` dataset + `__YUNE_WEB_DEBUG__`) | hidden | Rich persisted-vs-deployed config snapshots reachable only via console today; would have caught the M41 deploy-skip regression visually. |
 | S5 | Deploy-cache stamp viewer + force-invalidate | adapter `.yune-deploy-stamp.json` / `isDeployCacheFresh` (cache-hit/miss already emitted as diagnostic) | hidden | Only current invalidation is the full hard reset; a scoped "invalidate deploy cache" is the missing middle, but cache invalidation is admin/debug power. |
-| S6 | `optionChanged` observer (dataset sync + `ascii_punct` UI sync) | engine `option` notifications -> `optionChanged` listener | allowed | WEB-05 records all option flips in `data-yune-option-*` datasets and wires visible two-way UI sync for the new `ascii_punct` control only. Other hotkey flips remain represented by their existing controls/status where present; no broad "all hotkeys visibly sync" claim. |
-| S7 | Key-binder hotkey reference panel | schema `key_binder` bindings (Ctrl+Shift+2 ascii, Ctrl+Shift+3 full-shape, Ctrl+period ascii-punct, Ctrl+Shift+1/space variant cycle) | allowed | Real engine controls that nothing documented. The panel is a reference, not proof that every hotkey has a new WEB-05 UI state consumer. |
+| S6 | `optionChanged` observer (dataset sync + `ascii_punct` UI sync) | engine `option` notifications -> `optionChanged` listener | allowed | WEB-05 records all option flips in `data-yune-option-*` datasets and wires visible two-way UI sync for the new `ascii_punct` control only. Other engine option changes remain represented by their existing controls/status where present; no broad "all shortcuts visibly sync" claim. |
 | S8 | Free-form `dictionary_exclude` editor | `customize({dictionaryExclude: string[]})` (UI today = canned one-char preset per schema) | allowed | Seam accepts an arbitrary list; expose a real list editor, keep the preset as a quick option. |
 | S9 | Injected-assets manifest diagnostic | worker `extraSharedAssets` writes (path-validated) | hidden | List what was written into the shared data dir per deploy (name/bytes); cheap staleness/debug aid, WEB-04-pattern data attributes. |
 | S10 | Inspector render gaps: candidate `preedit` + `ai_confidence`; prediction `weight_threshold`/`above_threshold`; `segment.source` | already parsed into runtime types, simply not rendered | allowed | Zero new plumbing; render-only additions to existing inspector panels. |
@@ -88,7 +87,7 @@ Diagnostics with UI/dataset: startup `initialized` (+heap seed), `schemaChanged`
 
 ## Appendix A: raw inventory table
 
-The table below is the raw 108-row inventory behind the grouped sections above. `Public demo` is precise for the 14 `surface` rows; other rows are marked as `pre-existing`, `n/a`, or `hidden` where the row is only a gating/mechanism record.
+The table below is the raw 108-row inventory behind the grouped sections above. `Public demo` is precise for the 13 `surface` rows; other rows are marked as `pre-existing`, `n/a`, or `hidden` where the row is only a gating/mechanism record.
 
 | Row | Name | Seam | Current surfaced location | Public demo | Disposition | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -97,8 +96,8 @@ The table below is the raw 108-row inventory behind the grouped sections above. 
 | A003 | Manual redeploy | `customize()` + `deploy()` worker actions | Auto-deploy only | hidden | surface | Admin/debug control; gate from public demo. |
 | A004 | Persistence diagnostics panel | `yune-persistence` diagnostics; debug helper | Dataset and console only | hidden | surface | Display persisted/deployed settings in dev harness. |
 | A005 | Deploy-cache viewer/invalidate | `.yune-deploy-stamp.json`; cache-hit/miss diagnostics | Dataset/console only | hidden | surface | Scoped invalidation stays dev-harness-only. |
-| A006 | `optionChanged` observer | Engine notification -> `optionChanged` listener | Dataset consumer plus `ascii_punct` UI consumer | allowed | surface | WEB-05 syncs all optionChanged events to datasets and uses `useRimeOption` for the new `ascii_punct` UI. Other hotkey flips are not newly UI-synchronized by WEB-05. |
-| A007 | Key-binder hotkey reference | Schema `key_binder` bindings | Not surfaced | allowed | surface | Product-shaped reference for existing controls. |
+| A006 | `optionChanged` observer | Engine notification -> `optionChanged` listener | Dataset consumer plus `ascii_punct` UI consumer | allowed | surface | WEB-05 syncs all optionChanged events to datasets and uses `useRimeOption` for the new `ascii_punct` UI. Other option changes are not newly UI-synchronized by WEB-05. |
+| A007 | Key-binder hotkey reference | Schema `key_binder` bindings | Not surfaced | n/a | no-surface | Removed from the WEB-05 surface after manual review: the browser harness does not implement these advertised shortcuts reliably, Shift already covers ASCII mode, and a non-working reference is worse than no reference. |
 | A008 | Free-form `dictionary_exclude` editor | `customize({ dictionaryExclude })` | Canned preset toggle only | allowed | surface | Keep preset and add explicit list editor. |
 | A009 | Injected-assets manifest | Worker `extraSharedAssets` write path | Not surfaced | hidden | surface | Diagnostic asset list; gate from public demo. |
 | A010 | Inspector render gaps | Runtime-parsed debug/candidate fields | Partially rendered inspector | allowed | surface | Render candidate preedit, AI confidence, threshold, above-threshold, and segment source. |
@@ -204,5 +203,5 @@ The table below is the raw 108-row inventory behind the grouped sections above. 
 ## Phase 0 gate
 
 Ledger committed; no code changes in this phase (typecheck untouched).
-Counts: 14 `surface` rows, ~75 already-surfaced, 2 deferred (1 runtime-lane,
-1 engine-lane), 8 no-surface, 5 gating/mechanism rows.
+Counts: 13 retained `surface` rows, ~75 already-surfaced, 2 deferred (1 runtime-lane,
+1 engine-lane), 9 no-surface, 5 gating/mechanism rows.

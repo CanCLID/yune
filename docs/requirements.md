@@ -1000,9 +1000,10 @@ diagnostics needed by external frontend teams without changing `crates/` or
 - [x] **WEB05-SURFACE-01**: A committed controls ledger enumerates every engine
   control/diagnostic reachable through existing seams, fully dispositioned as
   surfaced, already surfaced, engine-lane deferred, runtime-lane deferred, or
-  deliberately no-surface. The final ledger has 108 raw rows, 14 `surface`
-  rows, and two named deferred rows.
-- [x] **WEB05-SURFACE-02**: Every WEB-05 `surface` row is operable in the dev
+  deliberately no-surface. The final ledger has 108 raw rows, 13 retained
+  `surface` rows, the unsupported key-binder shortcut reference classified
+  `no-surface`, and two named deferred rows.
+- [x] **WEB05-SURFACE-02**: Every retained WEB-05 `surface` row is operable in the dev
   harness with localized labels and observable `data-*` state through existing
   worker/action/listener seams. Dev-power controls are gated out of the public
   demo via the shared `IS_PUBLIC_DEMO` constant; defaults remain behavior
@@ -1573,8 +1574,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
 | WEB04-OCTAGRAM-04 | WEB-04 | Complete - WEB-04 Playwright evidence proves delivered octagram profile plus all-row ranking changes versus plain Luna, plain Luna negative control, and missing-model fail-closed behavior |
 | WEB04-OCTAGRAM-05 | WEB-04 | Complete - no `crates/`, `packages/yune-web-runtime`, default ABI, or support-contract widening is part of the browser harness slice |
-| WEB05-SURFACE-01 | WEB-05 | Complete - 108-row controls ledger fully dispositions existing web-harness controls/diagnostics with public-demo posture for all 14 surface rows |
-| WEB05-SURFACE-02 | WEB-05 | Complete - every surface row is operable in the dev harness through existing seams with localized labels, observable state, and shared `IS_PUBLIC_DEMO` gating for dev-power controls |
+| WEB05-SURFACE-01 | WEB-05 | Complete - 108-row controls ledger fully dispositions existing web-harness controls/diagnostics with public-demo posture for all 13 retained surface rows and `no-surface` disposition for the unsupported key-binder shortcut reference |
+| WEB05-SURFACE-02 | WEB-05 | Complete - every retained surface row is operable in the dev harness through existing seams with localized labels, observable state, and shared `IS_PUBLIC_DEMO` gating for dev-power controls |
 | WEB05-SURFACE-03 | WEB-05 | Complete - parent-baseline same-WASM default behavior and public-demo hidden-control/data-surface Playwright evidence are recorded; `debug.storage` and `get_option` remain named deferred rows, with deploy-cache persisted-config and Extended charset browser-effect follow-ups named |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
@@ -1877,4 +1878,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - WEB-05 corrective closeout: the web harness control surface has a 108-row ledger, all 14 surface rows implemented through existing `apps/yune-web` seams, parent-baseline same-WASM default behavior evidence, public-demo hidden-control/data-surface evidence, two named deferred rows (`debug.storage` runtime parser gap and `get_option` engine export gap), and named follow-ups for persisted-config deploy-cache freshness plus current Extended charset browser-effect N/A._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - WEB-05 corrective closeout: the web harness control surface has a 108-row ledger, 13 retained surface rows implemented through existing `apps/yune-web` seams, the unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior evidence, public-demo hidden-control/data-surface evidence, two named deferred rows (`debug.storage` runtime parser gap and `get_option` engine export gap), and named follow-ups for persisted-config deploy-cache freshness plus current Extended charset browser-effect N/A._

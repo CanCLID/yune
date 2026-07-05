@@ -296,10 +296,6 @@ test("WEB-05 option controls synchronize through optionChanged", async ({
     )
     .toBe("true");
   await expect(asciiPunct).toBeChecked();
-  await expect(page.locator("[data-yune-hotkey-reference]")).toContainText(
-    /Ctrl/i,
-  );
-
   const editor = page.locator("[data-yune-dictionary-exclude-editor]");
   await expect(editor).toBeVisible();
   await editor.fill("alpha,beta");

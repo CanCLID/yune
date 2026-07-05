@@ -4,7 +4,7 @@
 > otherwise execute the checkboxes directly, in order. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Complete - WEB-05 closed on 2026-07-05 with the Phase 0 controls ledger review-expanded (108 raw rows, 14 surface rows with public-demo gates, 2 named deferred rows), all Phase 1 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior evidence unchanged, and public-demo hidden-control evidence recorded under `docs/reports/evidence/web05-control-surface/`. - **Track:** Web harness (`apps/yune-web`). - **Created:** 2026-07-03 - **Type:** dogfooding/observability slice (app plumbing + UI only; no engine contract change, no default-behavior change).
+> **Status:** Complete - WEB-05 closed on 2026-07-05 with the Phase 0 controls ledger review-expanded (108 raw rows, 13 surface rows with public-demo gates, 2 named deferred rows, and the unsupported key-binder reference classified `no-surface`), all retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior evidence unchanged, and public-demo hidden-control evidence recorded under `docs/reports/evidence/web05-control-surface/`. - **Track:** Web harness (`apps/yune-web`). - **Created:** 2026-07-03 - **Type:** dogfooding/observability slice (app plumbing + UI only; no engine contract change, no default-behavior change).
 
 > **Corrective addendum (2026-07-05):** The WEB-05 closeout evidence was
 > tightened after review. The default-behavior baseline is now captured from

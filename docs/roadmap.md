@@ -272,22 +272,26 @@ Current decision:
    [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/).
    Plan:
    [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md).
-8. **M58 Jyutping exact-before-fuzzy candidate order is drafted for review
-   (plan v2 after two review rounds + code/fixture verification).** Verified
-   engine bug in the TypeDuck `jyut6ping3` product on the compiled product path:
-   for `beingo` (畀我), the wanted 畀 (`bei2`) is unreachable. The **confirmed
-   core** is a per-fetch cap of 2 (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`,
-   Compact+prism path only) that truncates each exact toned code, so 畀 (third
-   `bei2`) never emits though the oracle emits the full exact set (`ng`→19,
-   `hou6`→13). A second, **capture-gated** issue is a same-initial `b` flood: the
-   oracle floods for an unparseable head (`nri`, pinned green by `m21_nri`) and
-   *sometimes* for a complete syllable too (`m` → exact + `m*` tail in one
-   option/page config), so whether Yune's `beingo` flood is a divergence needs a
-   full paginated capture, not the page-0-only fixtures. M58 lifts the cap
-   (bounded to the oracle max) for leading-parse codes decided via the
-   `valid_lookup_prefixes`/`sentence_lookup_specs` lookup path (not segment tags),
-   suppresses the flood only if the capture confirms it, keeps `m21_nri` green,
-   and re-proves the Track B latency ratchet.
+8. **M58 Jyutping candidate reachability & admission parity is drafted for review
+   (plan v3 after two review rounds + two code/fixture verification passes).**
+   Verified engine bug in the TypeDuck `jyut6ping3` product on the compiled
+   product path: for `beingo` (畀我) the wanted 畀 (`bei2`) is unreachable. A
+   verification pass **falsified** the earlier "oracle emits exact-only, suppress
+   the flood" model: a complete in-repo capture
+   (`jyut6ping3-m21-closeout.json` case[4], `ngohaigo`, `is_last_page:true`, 49
+   cands) shows the oracle emits a **rich multi-group ordered list** (phrase →
+   ngo-set + `o`-algebra → 午安 `ng5on1` → 19-char ng-set), not exact-only. The
+   two real divergences: **(reachability, confirmed)** a per-fetch cap of 2
+   (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`; plus 256 pending / 64 output
+   caps, Compact+prism only) truncates the exact set so 畀 never emits; and
+   **(admission, capture-gated)** Yune admits `n`+vowel codes (你/能/男…) the
+   oracle omits and drops `ng`-algebra vowel rows (安 `on1`…) the oracle keeps —
+   both from `original_code_allows_prefix_fallback` matching the raw code against
+   the single input letter. M58 lifts the caps (bounded, tone-scoped, all three)
+   to make 畀 reachable, then — only if the full capture diff shows it — fixes the
+   specific admission divergence without trimming the oracle's own groups; keeps
+   `m21_nri` green (first-6 only; full-depth `nri` parity deferred) and re-proves
+   the Track B ratchet + `web03` tripwire.
    Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
 9. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
@@ -334,7 +338,7 @@ and current decision rules.
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
-| M58 | Drafted / review (v2) | Jyutping exact-before-fuzzy candidate order (TypeDuck `jyut6ping3` product). Verified on the compiled product path: for `beingo` (畀我) the wanted 畀 (`bei2`) is unreachable. **Confirmed core (Leg B):** a per-fetch cap of 2 (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`, Compact+prism path only) truncates each exact toned code so 畀 (third `bei2`) never emits, though the oracle emits the full exact set (`ng`→19, `hou6`→13); not positional "burying" (the sort already places `bei*` ahead of the flood). **Capture-gated (Leg A):** Yune also appends a same-initial `b` flood, but the oracle floods for an unparseable head (`nri`, pinned green by `m21_nri`) **and sometimes for a complete syllable** (`m` → exact + `m*` tail in one option/page config) — so whether `beingo`'s flood is a divergence needs a full paginated capture, not the page-0-only fixtures. Plan: lift the cap (bounded to oracle max) for leading-parse codes decided via the `valid_lookup_prefixes`/`sentence_lookup_specs` lookup path (not segment tags); suppress the flood only if the capture confirms it; keep `m21_nri` green; re-prove the Track B ratchet; test on the compiled path. Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
+| M58 | Drafted / review (v3) | Jyutping candidate reachability & admission parity (TypeDuck `jyut6ping3` product). Verified on the compiled product path: for `beingo` (畀我) the wanted 畀 (`bei2`) is unreachable. A verification pass **falsified** the v1/v2 "oracle is exact-only, suppress the flood" model — the complete in-repo capture `jyut6ping3-m21-closeout.json` case[4] (`ngohaigo`, `is_last_page:true`, 49 cands) shows the oracle emits a **rich multi-group ordered list** (phrase → ngo-set + `o`-algebra → 午安 `ng5on1` → 19-char ng-set). Two real divergences: **(reachability, Leg B, confirmed)** a per-fetch cap of 2 (plus 256 pending / 64 output caps, Compact+prism only) truncates the exact set so 畀 never emits; **(admission, Leg A, capture-gated)** Yune admits `n`+vowel codes (你/能/男…) the oracle omits and drops `ng`-algebra vowel rows (安 `on1`…) it keeps — both from `original_code_allows_prefix_fallback` matching the raw code against the single input letter. Plan: lift the caps (bounded, tone-scoped, all three) to make 畀 reachable; then only if the full-capture diff shows it, fix the specific admission divergence without trimming the oracle's groups; keep `m21_nri` green (first-6; full-depth `nri` parity deferred); re-prove the Track B ratchet + `web03` tripwire; test on the compiled path. Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
 
 ## Scope Ledger
 

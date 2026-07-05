@@ -273,19 +273,21 @@ Current decision:
    Plan:
    [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md).
 8. **M58 Jyutping exact-before-fuzzy candidate order is drafted for review
-   (plan v2 after review).** Verified engine bug in the TypeDuck `jyut6ping3`
-   product on the compiled product path: for `beingo` (畀我), the wanted 畀
-   (`bei2`) is unreachable. Two independent defects: (A) a same-initial `b`
-   flood is appended even though the head `bei` is a complete leading parse
-   (the oracle shows none there); (B) a per-fetch cap of 2
-   (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`) truncates each toned code,
-   so 畀 (third `bei2`) never emits — this cap fires only on the Compact+prism
-   product path. The oracle is **parse-state-conditional**, not "no fuzzy ever":
-   a complete leading syllable (`m` → 唔/五; `ngohaig` → 我係個/我係/我喺/我) shows
-   exact only, but an unparseable head (`nri`, correction off) *does* flood
-   (pinned green by `m21_nri`). M58 suppresses the flood **only** for a complete
-   leading parse and lifts the cap for leading-parse codes, keeping the `nri`
-   flood and re-proving the Track B latency ratchet.
+   (plan v2 after two review rounds + code/fixture verification).** Verified
+   engine bug in the TypeDuck `jyut6ping3` product on the compiled product path:
+   for `beingo` (畀我), the wanted 畀 (`bei2`) is unreachable. The **confirmed
+   core** is a per-fetch cap of 2 (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`,
+   Compact+prism path only) that truncates each exact toned code, so 畀 (third
+   `bei2`) never emits though the oracle emits the full exact set (`ng`→19,
+   `hou6`→13). A second, **capture-gated** issue is a same-initial `b` flood: the
+   oracle floods for an unparseable head (`nri`, pinned green by `m21_nri`) and
+   *sometimes* for a complete syllable too (`m` → exact + `m*` tail in one
+   option/page config), so whether Yune's `beingo` flood is a divergence needs a
+   full paginated capture, not the page-0-only fixtures. M58 lifts the cap
+   (bounded to the oracle max) for leading-parse codes decided via the
+   `valid_lookup_prefixes`/`sentence_lookup_specs` lookup path (not segment tags),
+   suppresses the flood only if the capture confirms it, keeps `m21_nri` green,
+   and re-proves the Track B latency ratchet.
    Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
 9. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
@@ -332,7 +334,7 @@ and current decision rules.
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
-| M58 | Drafted / review (v2) | Jyutping exact-before-fuzzy candidate order (TypeDuck `jyut6ping3` product). Verified on the compiled product path: for `beingo` (畀我) the wanted 畀 (`bei2`) is unreachable via **two independent defects** — (A) a same-initial `b` flood is appended even though `bei` is a complete leading parse (oracle shows none there), and (B) a per-fetch cap of 2 (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`, Compact+prism path only) truncates each toned code so 畀, the third `bei2`, never emits — not a positional "burying" (the sort already places `bei*` ahead of the flood). The oracle is **parse-state-conditional**: complete leading syllable → exact only (`m` → 唔/五; `ngohaig` → 我係個/我係/我喺/我), but an unparseable head → flood is oracle-correct (`nri`, correction off, pinned green by `m21_nri`). Plan: suppress the flood **only** for a complete leading parse (Leg A) and lift the cap for leading-parse codes (Leg B), keeping the `nri` flood and re-proving the Track B latency ratchet; test Defect B on the compiled path. Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
+| M58 | Drafted / review (v2) | Jyutping exact-before-fuzzy candidate order (TypeDuck `jyut6ping3` product). Verified on the compiled product path: for `beingo` (畀我) the wanted 畀 (`bei2`) is unreachable. **Confirmed core (Leg B):** a per-fetch cap of 2 (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`, Compact+prism path only) truncates each exact toned code so 畀 (third `bei2`) never emits, though the oracle emits the full exact set (`ng`→19, `hou6`→13); not positional "burying" (the sort already places `bei*` ahead of the flood). **Capture-gated (Leg A):** Yune also appends a same-initial `b` flood, but the oracle floods for an unparseable head (`nri`, pinned green by `m21_nri`) **and sometimes for a complete syllable** (`m` → exact + `m*` tail in one option/page config) — so whether `beingo`'s flood is a divergence needs a full paginated capture, not the page-0-only fixtures. Plan: lift the cap (bounded to oracle max) for leading-parse codes decided via the `valid_lookup_prefixes`/`sentence_lookup_specs` lookup path (not segment tags); suppress the flood only if the capture confirms it; keep `m21_nri` green; re-prove the Track B ratchet; test on the compiled path. Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
 
 ## Scope Ledger
 

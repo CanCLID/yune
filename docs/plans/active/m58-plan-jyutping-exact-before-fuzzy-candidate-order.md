@@ -6,10 +6,16 @@
 > the TypeDuck `jyut6ping3` profile against TypeDuck-HK/librime `v1.1.2`; that
 > fork is the correctness oracle for every candidate claim here.
 
-> **Status:** Draft for review (v3, 2026-07-05 — rewritten after two review
-> rounds + two code/fixture verification passes). - **Track:** Engine behavioral
-> correctness (TypeDuck/Jyutping product lane). - **Created:** 2026-07-05. -
-> **Type:** bug-fix milestone. No ABI widening, no new performance claim.
+> **Status:** Draft for review (v4, 2026-07-05 — v3 rewrite + a third review
+> round, verified). v4 refinements: the admission divergence is **bidirectional**
+> and fixed by two orthogonal mechanisms — Leg A = the *gate* (over-admission);
+> derived-form matching = a deferred *admission-depth* lane (under-admission,
+> proven present in the flagship `ngohaig` case, not just `nri`). Assertions are
+> **directional and per-input** (`beingo` full set+order; `ngohaig` directional),
+> order parity is in the model, and capture provenance is recorded. - **Track:**
+> Engine behavioral correctness (TypeDuck/Jyutping product lane). - **Created:**
+> 2026-07-05. - **Type:** bug-fix milestone. No ABI widening, no new performance
+> claim.
 
 > **Amendment note (v3 — the model changed).** v1/v2 framed the bug as "Yune
 > emits a same-initial fuzzy flood the oracle never shows; suppress it." An
@@ -237,7 +243,9 @@ first and closes the user-facing bug on its own.**
 
 ### Leg B (unconditional, first) — make the exact leading-parse set reachable
 
-Raise the per-fetch cap for the recognized leading-parse fetch codes so the full
+Raise the per-fetch cap for the **leading-parse fetch codes** — the fetch codes
+of *every* complete-syllable prefix spec (plural: the multi-parse model means
+`ngohaig` has both `ngo` and `ng`), each scoped to its own tone — so the full
 exact set (incl 畀) emits, matching the oracle. Requirements:
 
 - **Bounded, not `usize::MAX`.** Fixtures bound the exact set at ~13 per single
@@ -256,50 +264,78 @@ exact set (incl 畀) emits, matching the oracle. Requirements:
 - **Re-prove the gates** (Win Bars): the Track B latency ratchet **and** the
   `web03` `prefix_fallback_views_visited ≤ 5000/6000` tripwire.
 
-### Leg A (capture-gated hypothesis) — admission parity, not flood removal
+### Leg A (capture-gated) — suppress over-admission (the gate)
 
-Diff Yune's full output against the complete oracle captures (Phase 0/1) and fix
-the **specific admission divergence**, preserving the oracle's own multi-group
-output. Do **not** "stop at the exact set" — that drops oracle-correct groups
-(ngo-set, `o`-algebra, 午安, ng-set for `ngohaigo`).
+The admission divergence has **two directions**, and they are fixed by
+**different, orthogonal** mechanisms — do not present them as alternatives for
+one defect:
 
-Decision matrix from the `beingo`/`ngohaig` full captures:
+- **Over-admission** (Yune emits codes the oracle omits — `ngohaig`'s `你`/`能`/
+  `男`/`女`/`內`/`呢`, all admitted via the single-letter `n` prefix). Fixed by
+  **the gate**.
+- **Under-admission** (Yune omits codes the oracle emits — see the
+  admission-depth lane below). Fixed by **derived-form matching**. Deferred.
 
-| Full capture shows | Leg A action |
-| --- | --- |
-| Yune admits codes absent from the oracle (e.g. `ngohaig`'s `nei`/`nang`) | Suppress *those* admissions — fix the mis-scoped single-letter `starts_with` so it matches the oracle's admitted set (likely: match the derived/`ng`-inserted form, or gate the degenerate single-first-letter expansion when a longer complete-syllable prefix already contributes) |
-| Yune's `beingo` output equals the full capture once the cap is lifted | No Leg A needed — Reachability was the whole bug (a valid close) |
-| Yune *under*-emits vs the oracle (drops algebra rows) | That is the `nri` divergence — see nri contract; scope full-depth admission parity as its own follow-up if it recurs for `beingo` |
+**Leg A = the gate.** Drop a prefix that is **not itself a complete syllable**
+when a **longer complete-syllable prefix already contributes**. Detect
+"complete-syllable prefix" via the lookup path — a prefix whose own spelling maps
+to an exact syllable code (`valid_lookup_prefixes`/`sentence_lookup_specs`,
+`mod.rs:2328`/`:1164`), as opposed to a bare letter that only expands to
+same-initial completions. This is consistent with every checked-in capture:
 
-Constraints on any Leg A change (verified pinned behaviors — do **not** regress):
+| Input | Complete-syllable prefixes | Gate drops | Result vs oracle |
+| --- | --- | --- | --- |
+| `ngohaig` | `ngo`, `ng` (both survive) | single-letter `n` | `你`/`能`/`男` gone (oracle has none); `ngo`/`ng` groups kept ✓ |
+| `beingo` | `bei` | single-letter `b` | `b`-flood gone; `bei` set kept ✓ (`b` is not a syllable, so the oracle likely has no `b`-group — the capture confirms) |
+| `nri` / bare `n` | *none* (`n`/`nr`/`nri` are not syllables) | nothing (no longer complete-syllable prefix) | flood preserved → `m21_nri` golden safe ✓ |
+| `mgoi` / bare `m` | `m` (`m` *is* a syllable) | nothing (`m` is the longest complete-syllable prefix) | `m`-abbreviation rows preserved ✓ |
+
+The gate keys on **is-a-complete-syllable**, not **is-single-letter** — so `m`
+(a syllable) is kept while `n`/`b` (not syllables) are dropped only when a longer
+syllable contributes.
+
+Constraints (verified pinned behaviors — do **not** regress):
 
 - Keep shorter **complete-syllable** prefixes contributing:
   `static_table_translator_prefix_fallback_preserves_full_match`
   (`tests/filter.rs:641-657`) and m24 `jigaajiusihaa` requiring 而家 (`ji4gaa1`)
-  at index 1 (`cantonese_parity.rs:1769`) both pin this. Leg A may only touch the
-  **degenerate single-letter / out-of-oracle** admissions, never complete-syllable
-  shorter prefixes.
-- Leading-parse detection, if needed, must reuse `valid_lookup_prefixes` /
-  `sentence_lookup_specs` (the lookup path) with an explicit longest-first
-  tiebreak — **not** a segmentor span API (none exists) and **not**
-  `complete_syllable_prefix_count` (a prediction-view classifier). Remember the
-  oracle keeps multiple parse groups, so this is for *admission scoping*, not for
-  collapsing to one parse.
+  at index 1 (`cantonese_parity.rs:1769`) both pin this. The gate only drops the
+  non-syllable single-letter prefix, never a complete-syllable shorter prefix.
+- Leading-parse/complete-syllable detection reuses the lookup path (`mod.rs:2328`/
+  `:1164`) — **not** a segmentor span API (none exists) and **not**
+  `complete_syllable_prefix_count` (a prediction-view classifier). The oracle
+  keeps multiple parse groups, so this is *admission scoping*, not collapsing to
+  one parse.
+- The gate alone cannot achieve full `ngohaig` equality — Yune will still miss
+  the oracle's 11 `o`-code rows and 午安 (under-admission, below). So `ngohaig`
+  uses **directional** assertions, not full equality (Win Bars).
 
-### The `nri` / bare-`n` contract (pin narrow, defer full-depth)
+### The admission-depth lane (under-admission — deferred, not `nri`-specific)
 
-Yune already diverges from the oracle at rank 8 for `nri`/bare `n` (drops the
-`ng`-algebra vowel rows). This is **pre-existing and out of M58's core scope**:
+Yune's admit rule `original_code_allows_prefix_fallback` (`mod.rs:2881`) matches
+the candidate's **raw** dictionary code against the input letter, so it **drops
+every code reachable only via the `ng`-insertion / abbreviation algebra**. This
+under-admission is **not confined to `nri`** — the adopted `ngohaigo` capture
+proves it appears in the flagship case too:
 
-- **Pin what is true:** keep the `m21_nri` golden as-is (first-6, Owned storage)
-  and state explicitly that it covers only the first page-worth, not full-depth
-  parity.
-- **Name the gap:** full-depth `nri`/bare-`n` parity (admitting the `ng`-inserted
-  vowel rows) is a **deferred** divergence with its own root cause (the raw-vs-
-  derived admit rule). Do not silently claim `nri` parity.
-- **Do not regress it:** Leg A must not make `nri` worse. If the Defect A admit-
-  rule fix (derived-form matching) happens to also admit the oracle's vowel rows,
-  capture and pin that as a bonus — but it is not a close condition.
+- `nri` / bare `n`: the oracle's vowel rows (安 `on1`, 屋 `uk1`, 愛 `oi3`, …
+  ranks 8+) — Yune drops all 14.
+- `ngohaig`(`o`): the oracle's **11 `o`-code rows** (柯 屙 哦 阿 痾 啊 珂 疴 軻 嚄
+  婀, interleaved in the `ngo`-set) — raw code `o` ≠ lookup `ngo`, multi-char
+  branch is exact-equal only → Yune emits **zero**. Plus 午安 (`ng5on1`), admitted
+  by the oracle via ng-full + on-abbreviated — a **third** admission mechanism no
+  leg touches.
+
+Disposition: this whole lane (both `nri` vowel rows and `ngohaig` `o`-codes/午安)
+is **deferred** with a single named root cause — the raw-vs-derived admit rule —
+**or** deliberately pulled into scope as a Leg C (derived-form matching) if the
+executor chooses. Either way:
+
+- **Pin what is true:** keep the `m21_nri` golden (first-6, Owned) and state it
+  covers only the first page-worth, not full-depth parity.
+- **Do not silently claim parity** for `nri` or `ngohaig` full-depth.
+- **Do not regress it:** the gate must not drop any oracle-present row; if
+  derived-form matching is pulled in, capture and pin the newly-admitted rows.
 
 ## Decided Calls
 
@@ -311,37 +347,61 @@ Yune already diverges from the oracle at rank 8 for `nri`/bare `n` (drops the
 - **The oracle is multi-group, not exact-only.** For a parseable input it emits
   phrase + syllable-set(s) + algebra + alt-parse words in a stable order. The fix
   targets reachability + admission set membership, never "trim to exact."
-- **Leg B is the confirmed core; Leg A is capture-gated** and may be out of scope
-  (a valid close) if the full `beingo` capture matches Yune post-Leg-B.
-- **Leg B raise is bounded and tone-scoped, sized against all three caps.**
+- **Leg B is the confirmed core; Leg A (the gate) is capture-gated.** "No Leg A"
+  requires *both* the `beingo` and `ngohaig` diffs clean — and `ngohaig`'s
+  over-admission is already proven, so a `beingo`-only match cannot close Leg A
+  globally.
+- **Over- and under-admission are orthogonal.** The gate fixes over-admission
+  (你/能/男); derived-form matching fixes under-admission (o-codes, `nri` vowel
+  rows). Not alternatives for one defect.
+- **Leg B raise is bounded and tone-scoped (per-tone), sized against all three
+  caps.**
 - **Defect B is compiled-path-only.** Reproduce/test on Compact+prism.
-- **`nri` full-depth parity is deferred**, pinned narrow (golden first-6).
+- **The admission-depth lane is deferred** (both `nri` vowel rows and `ngohaig`
+  `o`-codes/午安), pinned narrow (`m21_nri` golden first-6); may be pulled in as
+  an explicit Leg C.
+- **Order parity is in the model.** The oracle interleaves by frequency; Yune
+  sorts `consumed_input_len`-desc then quality — assert order for `beingo`,
+  record it elsewhere.
 - **Product lane only.** Upstream `luna_pinyin` Track A is out of scope unless a
   fixture shows the same defect there.
 
 ## Win Bars
 
-M58 closes when:
+Assertions are **directional and per-input** — full set+order equality is
+claimed **only for `beingo`** (safe from the algebra-interleave trap, since
+`ng`-insertion only affects vowel-initial codes so the `bei`-set has no
+under-admission). M58 closes when:
 
 1. **(Leg B) 畀 reachable for `beingo`** — the full exact `bei*` set (incl the
-   third `bei2` = 畀) emits and matches the `beingo` capture, on the compiled
-   Compact+prism product path (assert 畀 absent pre-fix, present post-fix). The
-   cap raise is bounded and tone-scoped; the target survives all three caps.
-2. **Full paginated captures exist** (`is_last_page:true`, product options,
-   `captured_all_pages:true`) for `beingo` and a toned input; the existing
-   complete `ngohaigo` capture is adopted; the Leg A disposition is recorded from
-   the diff — either (a) Yune matches the full capture post-Leg-B → no Leg A
-   (valid close), or (b) a specific out-of-oracle admission is found → Leg A
-   suppresses exactly that, and Yune then matches the capture.
-3. For `諮議局`/`zi` (pinned by exact ASCII keystrokes stated in Phase 0), Yune
-   matches the full oracle capture (completion ordering per Phase 3).
-4. **`m21_nri` stays green** and the plan states it covers only first-6 (Owned);
-   full-depth `nri` parity is documented as deferred, and Leg A does not regress
-   `nri`.
-5. Oracle-driven tests assert candidate set/order from the full captured TypeDuck
-   bytes (not from Yune); Defect-B coverage runs on the compiled product path; a
-   named non-Cantonese control input is included.
-6. **No Track B latency regression and no `web03` tripwire break**, both
+   third `bei2` = 畀) emits, on the compiled Compact+prism product path (assert 畀
+   absent pre-fix, present post-fix). Cap raise bounded and tone-scoped; target
+   survives all three caps.
+2. **`beingo` full equality (set + order)** — Yune matches the full `beingo`
+   capture (`is_last_page:true`, recorded product options). If ordering diverges
+   (the oracle interleaves by frequency; Yune sorts `consumed_input_len`-desc then
+   quality), the divergence is either fixed or **recorded with an explicit
+   disposition** — it does not silently pass.
+3. **`ngohaig` directional** (its complete admission model is the adopted
+   `ngohaigo` capture, case[4] `default_combined`; `ngohaig` itself is captured
+   full too or the proxy limit is stated): (i) **over-admission gone** — none of
+   `你`/`能`/`男`/`女`/`內`/`呢` appear (Leg A gate); (ii) **no oracle row lost** —
+   every oracle-present row Yune previously emitted is still present. The 11
+   `o`-codes + 午安 remain missing → named in the deferred admission-depth lane,
+   **not** asserted present.
+4. **Toned-scope regression pinned** — adopt `fork-parity-06` (`neix`→0, checked
+   in) as the tone-scoping oracle; `neix` stays empty post-Leg-B is a named row,
+   and the toned input does not flood wrong-tone families.
+5. **`zi`/`諮議局` diff-first** (keystrokes stated in Phase 0) — Yune matches the
+   full capture where achievable; any completion admission-depth surprise is given
+   the same directional/deferred treatment, not pre-committed full equality.
+6. **`m21_nri` stays green**, stated to cover only first-6 (Owned); full-depth
+   `nri`/`ngohaig` admission-depth parity documented deferred; the gate does not
+   regress `nri`.
+7. Oracle-driven tests assert candidate set **and order** from the full captured
+   TypeDuck bytes (not from Yune); Defect-B coverage runs on the compiled product
+   path; a named non-Cantonese control input is included.
+8. **No Track B latency regression and no `web03` tripwire break**, both
    re-proven: the `benchmark-native-rime-inprocess` command in
    [roadmap.md §Current Guardrails](../../roadmap.md) with
    `-TrackBInputs neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung`,
@@ -350,14 +410,18 @@ M58 closes when:
    `scripts/benchmark-native-rime-inprocess-macos.sh`); and
    `web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion`
    (`prefix_fallback_views_visited ≤ 5000/6000`) still passing.
-7. `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+9. `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
    and the focused tests pass.
 
-Leg A being out of scope (case 2a) is a **valid close** — Leg B alone fixes the
-user-facing bug. Close partial/no-go only if 畀 cannot be made reachable within
-the Track B ratchet + `web03` tripwire, or if matching the full capture would
-regress a pinned view (leading-syllable commit, the filter.rs/m24 shorter-prefix
-behaviors, completion, or the `nri` first-6 golden).
+**Dispositions are per-input and per-direction.** "No Leg A needed" requires
+*both* the `beingo` **and** `ngohaig` diffs clean — and the `ngohaig`
+over-admission is already proven from checked-in bytes, so a `beingo`-only match
+cannot close Leg A globally. Leg B alone closing the **headline 畀 bug** is a
+valid milestone close only if (2)/(4)/(8) hold **and** `ngohaig`'s remaining
+divergence is explicitly named+deferred, never read as "no divergence anywhere."
+Close partial/no-go only if 畀 cannot be made reachable within the Track B
+ratchet + `web03` tripwire, or if a fix would regress a pinned view (leading
+commit, filter.rs/m24 shorter-prefix, completion, or the `nri` first-6 golden).
 
 ## Scope
 
@@ -367,41 +431,56 @@ capture-gated); full paginated oracle captures + tests; re-proving the Track B
 ratchet and `web03` tripwire; a completion-ordering decision for `zi`.
 
 Out of scope: ABI changes; `luna_pinyin` Track A; performance rebaselining
-(beyond re-proving the gates); broad translator refactors; **full-depth `nri`/
-bare-`n` completion parity** (deferred, pinned narrow); flipping the
+(beyond re-proving the gates); broad translator refactors; the **admission-depth
+lane** (under-admission — `nri` vowel rows *and* `ngohaig` `o`-codes/午安 —
+deferred, pinned narrow, unless deliberately pulled in as Leg C); flipping the
 `prefix_fallback` YAML key.
 
 ## Phases
 
 ### Phase 0: Freeze the ground truth (captures are the design input)
 - [ ] Record the failing Yune candidate order (paged, compiled Compact+prism
-      product path) for `beingo`, `諮議局`, `zi`, a **toned** input (`beix` =
-      `bei2` or `bei2ngo`), and the `be`/`bein`/`being` intermediates, under
+      product path) for `beingo`, `諮議局`, `zi`, a **letter-to-tone** input
+      (adopt `fork-parity-06`'s `neix`→0 as the oracle; add a `bei`-tone analog
+      if the schema defines one), and the `be`/`bein`/`being` intermediates, under
       `docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-0/`. Pin the
       `beingo` fingerprint (exactly two per `bei*`, 畀 absent) and confirm 畀
       *is* present for bare `bei`.
 - [ ] **Adopt existing complete oracle captures; do not re-derive them.** The
-      `ngohaigo` ground truth is `jyut6ping3-m21-closeout.json` case[4]
-      (`is_last_page:true`, 49 cands, multi-group); the `nri`/bare-`n` flood is
-      `jyut6ping3-m14-completion-correction.json`. Reference these directly.
+      complete admission model is `jyut6ping3-m21-closeout.json` case[4]
+      (input `ngohaigo`, `is_last_page:true`, 49 cands, multi-group); the
+      `nri`/bare-`n` flood is `jyut6ping3-m14-completion-correction.json`; the
+      tone-scoping oracle is `jyut6ping3-fork-parity-06-letter-to-tone.json`
+      (`neix`→0 already checked in). Reference these directly.
+- [ ] **Record adopted-capture provenance and mirror it on the Yune side.** The
+      corpus contains **same-input contradictions** by option/variant — e.g. bare
+      `m` is 2 rows in `fork-parity-01` but 50 rows (flood) in `m21-closeout`
+      case[2]; `ngohaigo` case[4] is `default_combined` while case[7] is
+      `simplification_on`. So for every adopted capture, record its variant and
+      options and configure the Yune diff to the **same** options; otherwise the
+      diff compares apples to oranges.
 - [ ] **Capture the still-missing full oracle lists** (`is_last_page:true`,
       shipping `jyut6ping3_mobile` options — page-fill matters, a page-0-only
-      capture cannot conclude anything) for `beingo`, `zi`, the toned input, and
-      the exact ASCII keystrokes for `諮議局` (state the literal keystrokes in the
-      fixture). **Reject any row where `captured_all_pages != true` or
-      `pagination_error` is present.** Pagination groundwork is implemented in
-      `scripts/oracle-rime-probe.cs` (`CaptureWithIdentity` loops on `Page_Down`
-      `0xff56`, emitting `pages`/`all_candidates`/`captured_all_pages`) — the
-      Windows session must compile-verify it and the executor must add a reusable
-      capture preset (there is no `-Fixture M58` mode) or record the exact
-      invocation, so the capture is reproducible. If capture is unavailable,
-      block — do not proceed on Yune-defined expectations.
-- [ ] **Define the divergence by diff.** For `beingo` and `ngohaig`, diff Yune's
-      full output against the complete oracle: list codes Yune admits that the
-      oracle omits, and codes the oracle admits that Yune omits. This diff — not
-      an "exact only" assumption — is the Leg A specification.
+      capture cannot conclude anything) for `beingo`, **full `ngohaig`** (note:
+      `ngohaig` ≠ `ngohaigo` — the dangling `g` changes the phrase group and tail,
+      so either capture it or state the `ngohaigo`-proxy assumption and its
+      limits), `zi`, the toned input, and the exact ASCII keystrokes for `諮議局`
+      (state the literal keystrokes in the fixture). **Reject any row where
+      `captured_all_pages != true` or `pagination_error` is present.** Pagination
+      groundwork is implemented in `scripts/oracle-rime-probe.cs`
+      (`CaptureWithIdentity` loops on `Page_Down` `0xff56`, emitting
+      `pages`/`all_candidates`/`captured_all_pages`) — the Windows session must
+      compile-verify it and the executor must add a reusable capture preset (there
+      is no `-Fixture M58` mode) or record the exact invocation. If capture is
+      unavailable, block — do not proceed on Yune-defined expectations.
+- [ ] **Define the divergence by diff, per direction.** For `beingo` and
+      `ngohaig`, diff Yune's full output (at the recorded options) against the
+      complete oracle: (i) **over-admission** — codes Yune admits the oracle omits
+      (→ Leg A gate); (ii) **under-admission** — codes the oracle admits Yune omits
+      (→ admission-depth lane, deferred); (iii) **order** — where the two disagree
+      on ranking. This diff, not an "exact only" assumption, is the spec.
 - [ ] Pick a **named non-Cantonese control** input with a known oracle behavior
-      and record it (Win Bar 5).
+      and record it (Win Bar 7).
 
 ### Phase 1: Instrument prefix selection and admission
 - [ ] Add a dev-only diagnostic that reports, per input, the specs
@@ -417,13 +496,17 @@ bare-`n` completion parity** (deferred, pinned narrow); flipping the
       otherwise.
 - [ ] Add a compiled-path test: `beingo` emits 畀 (absent pre-fix, present
       post-fix) and the toned input does not flood wrong-tone families.
-- [ ] **Leg A (only per the Phase 0 diff).** If the diff shows a specific
-      out-of-oracle admission, scope the fix to exactly those codes (fix the
-      raw-vs-derived / degenerate-single-letter mis-scope), preserving all
-      oracle-present groups. Do not touch complete-syllable shorter prefixes
-      (filter.rs/m24) or the `nri` path beyond not regressing it.
-- [ ] Add real-path tests asserting Yune matches the full captures for `beingo`
-      (and `ngohaig` if Leg A landed) and the control; `m21_nri` stays green.
+- [ ] **Leg A = the gate (per the Phase 0 over-admission diff).** Drop the
+      non-syllable single-letter prefix when a longer complete-syllable prefix
+      contributes (kills `ngohaig`'s `你`/`能`/`男`, `beingo`'s `b`-flood;
+      preserves `nri` flood and `mgoi`/`m` abbreviations). Complete-syllable
+      detection via the lookup path (`mod.rs:2328`/`:1164`). Do not touch
+      complete-syllable shorter prefixes (filter.rs/m24). Leave the
+      under-admission (o-codes, `nri` vowel rows) to the deferred admission-depth
+      lane unless deliberately pulling in derived-form matching as Leg C.
+- [ ] Add real-path tests: `beingo` **full set+order** equality vs its capture;
+      `ngohaig` **directional** (no over-admission rows; no oracle row lost); the
+      control input; `neix` stays empty (tone-scope); `m21_nri` stays green.
 
 ### Phase 3: Completion ordering decision (`zi`)
 - [ ] With the `zi` capture, decide whether completion candidates
@@ -447,14 +530,22 @@ bare-`n` completion parity** (deferred, pinned narrow); flipping the
   never "exact only"? Any "stop at the exact set" language is a v1/v2 relapse.
 - Is Leg B (the confirmed core) tested on the **compiled Compact+prism path**,
   bounded, tone-scoped, and sized against **all three** caps (2 / 256 / 64)?
-- Is Leg A defined by the **capture diff** (specific out-of-oracle admissions),
-  not a blanket flood removal, and does it leave complete-syllable shorter
-  prefixes (filter.rs/m24) intact?
-- Is "leading parse" pinned to the **lookup path** (`valid_lookup_prefixes` /
-  `sentence_lookup_specs` + explicit tiebreak), never a segmentor span or the
+- Are **over- and under-admission** kept orthogonal — Leg A is the **gate**
+  (fixes over-admission `你`/`能`/`男`), and derived-form matching is the deferred
+  admission-depth lane (fixes `o`-codes, `nri` vowel rows), **not** two options
+  for one defect?
+- Are assertions **directional and per-input** — `beingo` full set+order,
+  `ngohaig` directional (no over-admission, no oracle row lost, the 11 `o`-codes/
+  午安 named-deferred not asserted-present)?
+- Does Leg A leave complete-syllable shorter prefixes (filter.rs/m24) intact and
+  key on **is-a-complete-syllable**, not is-single-letter (so `m` survives)?
+- Is "complete-syllable prefix" detected via the **lookup path**
+  (`valid_lookup_prefixes`/`sentence_lookup_specs`), never a segmentor span or the
   luna-only sentence model?
-- Is the `nri` contract honest — golden first-6 only, full-depth parity
-  **deferred**, not regressed?
+- Is capture **provenance** recorded (variant/options — `ngohaigo` case[4] is
+  `default_combined`) and mirrored on the Yune side of the diff?
+- Is **order parity** handled — asserted for `beingo`, recorded elsewhere (the
+  oracle interleaves by frequency; Yune sorts by consumed-length-then-quality)?
 - Are the Track B ratchet (with `-DeployProductBeforeBenchmark`) and the `web03`
   `prefix_fallback_views_visited` tripwire both re-run, not assumed?
 - Are all expectations from `is_last_page:true` captures, not from Yune?
@@ -464,6 +555,9 @@ bare-`n` completion parity** (deferred, pinned narrow); flipping the
 - Do not change `luna_pinyin` Track A behavior.
 - Do not "trim to the exact set" — the oracle emits a rich multi-group list.
 - Do not drop complete-syllable shorter prefixes (filter.rs / m24 pin them).
-- Do not claim full-depth `nri`/bare-`n` parity; it is deferred and unpinned.
+- Do not claim full-depth admission parity (`nri` vowel rows or `ngohaig`
+  `o`-codes/午安); that lane is deferred and unpinned.
+- Do not assert full set+order equality for `ngohaig` (unachievable by the gate
+  alone — under-admission remains); use directional assertions.
 - Do not flip the `prefix_fallback` YAML key as a shortcut.
 - Do not assert candidate order from Yune; assert it from the TypeDuck oracle.

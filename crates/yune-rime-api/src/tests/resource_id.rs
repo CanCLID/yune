@@ -350,16 +350,35 @@ grammar:
                 .current_yune_behavior
                 .contains("left on NullGrammar: ParseRejected")
     }));
-    let grammar_boosted_sentence = "\u{00e4}\u{00bb}\u{0160}\u{00e5}\u{00a4}\u{00a9}\u{00e6}\u{0153}\u{0192}\u{00e8}\u{00ad}\u{00b0}";
-    assert!(
-        session
-            .engine
-            .context()
-            .candidates
-            .iter()
-            .filter(|candidate| candidate.source == CandidateSource::Sentence)
-            .all(|candidate| candidate.text != grammar_boosted_sentence),
-        "corrupt grammar must not silently produce the grammar-boosted sentence"
+    let corrupt_sentence_texts: Vec<String> = session
+        .engine
+        .context()
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.source == CandidateSource::Sentence)
+        .map(|candidate| candidate.text.clone())
+        .collect();
+
+    // A corrupt .gram must behave exactly like an absent .gram: candidate
+    // texts identical to the null-grammar control. Asserting the absence of
+    // one specific sentence is not a valid discriminator, because the
+    // null-grammar abbreviation path can legitimately compose it too.
+    fs::remove_file(shared.join("m54_test.gram")).expect("remove corrupt gram");
+    let mut control = SessionState::default();
+    control.engine.set_schema("luna_pinyin", "luna_pinyin");
+    install_schema_translator_chain(&mut control, "luna_pinyin");
+    control.engine.process_sequence("jtyh");
+    let control_sentence_texts: Vec<String> = control
+        .engine
+        .context()
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.source == CandidateSource::Sentence)
+        .map(|candidate| candidate.text.clone())
+        .collect();
+    assert_eq!(
+        corrupt_sentence_texts, control_sentence_texts,
+        "corrupt grammar must produce exactly the null-grammar (absent-gram) sentence candidates"
     );
     let _ = fs::remove_dir_all(temp);
 }

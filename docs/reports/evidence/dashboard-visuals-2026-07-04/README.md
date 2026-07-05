@@ -18,6 +18,11 @@ Browser visualizations are not regenerated here; M55 did not remeasure the
 browser lane, so browser charts remain carried from
 `../current-performance-dashboard-2026-06-29/visuals/`.
 
+These are the single-platform (Windows) visuals. The Windows-vs-macOS
+cross-platform Track A latency chart (post-M57) lives in
+[`../dashboard-visuals-2026-07-05-cross-platform/`](../dashboard-visuals-2026-07-05-cross-platform/)
+(matplotlib generator).
+
 Re-run:
 
 ```powershell

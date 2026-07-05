@@ -1,0 +1,85 @@
+engine,track,schema_id,input,candidate_index,candidate_count,page_size,page_no,is_last_page,highlighted_index,composition_preedit,text,comment
+librime-1.17.0,track-a-comparison,luna_pinyin,n,0,5,5,0,0,0,n,你,
+librime-1.17.0,track-a-comparison,luna_pinyin,n,1,5,5,0,0,0,n,那,
+librime-1.17.0,track-a-comparison,luna_pinyin,n,2,5,5,0,0,0,n,呢,
+librime-1.17.0,track-a-comparison,luna_pinyin,n,3,5,5,0,0,0,n,能,
+librime-1.17.0,track-a-comparison,luna_pinyin,n,4,5,5,0,0,0,n,年,
+librime-1.17.0,track-a-comparison,luna_pinyin,ni,0,5,5,0,0,0,ni,你,
+librime-1.17.0,track-a-comparison,luna_pinyin,ni,1,5,5,0,0,0,ni,擬,
+librime-1.17.0,track-a-comparison,luna_pinyin,ni,2,5,5,0,0,0,ni,尼,
+librime-1.17.0,track-a-comparison,luna_pinyin,ni,3,5,5,0,0,0,ni,泥,
+librime-1.17.0,track-a-comparison,luna_pinyin,ni,4,5,5,0,0,0,ni,呢,
+librime-1.17.0,track-a-comparison,luna_pinyin,hao,0,5,5,0,0,0,hao,好,
+librime-1.17.0,track-a-comparison,luna_pinyin,hao,1,5,5,0,0,0,hao,號,
+librime-1.17.0,track-a-comparison,luna_pinyin,hao,2,5,5,0,0,0,hao,浩,
+librime-1.17.0,track-a-comparison,luna_pinyin,hao,3,5,5,0,0,0,hao,豪,
+librime-1.17.0,track-a-comparison,luna_pinyin,hao,4,5,5,0,0,0,hao,耗,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhongguo,0,5,5,0,0,0,zhong guo,中國,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhongguo,1,5,5,0,0,0,zhong guo,種過,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhongguo,2,5,5,0,0,0,zhong guo,種果,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhongguo,3,5,5,0,0,0,zhong guo,忠果,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhongguo,4,5,5,0,0,0,zhong guo,中古,
+librime-1.17.0,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,0,5,5,0,0,0,ce shi yi xia chang ju shu ru xing neng zen yang,測試一下長句輸入性能怎樣,
+librime-1.17.0,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,1,5,5,0,0,0,ce shi yi xia chang ju shu ru xing neng zen yang,測試一下,
+librime-1.17.0,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,2,5,5,0,0,0,ce shi yi xia chang ju shu ru xing neng zen yang,測試儀,
+librime-1.17.0,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,3,5,5,0,0,0,ce shi yi xia chang ju shu ru xing neng zen yang,測試,
+librime-1.17.0,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,4,5,5,0,0,0,ce shi yi xia chang ju shu ru xing neng zen yang,側室,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,0,5,5,0,0,0,zhe ge yin qing qi shi ying gai zhi chi chao chang ju zi shu ru cai neng yong,這個引擎其實應該支持超長句子輸入才能用,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,1,5,5,0,0,0,zhe ge yin qing qi shi ying gai zhi chi chao chang ju zi shu ru cai neng yong,這個,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,2,5,5,0,0,0,zhe ge yin qing qi shi ying gai zhi chi chao chang ju zi shu ru cai neng yong,這歌,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,3,5,5,0,0,0,zhe ge yin qing qi shi ying gai zhi chi chao chang ju zi shu ru cai neng yong,這格,
+librime-1.17.0,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,4,5,5,0,0,0,zhe ge yin qing qi shi ying gai zhi chi chao chang ju zi shu ru cai neng yong,這,
+librime-1.17.0,track-a-comparison,luna_pinyin,cszysmsrsd,0,5,5,0,0,0,c s z y s m s r s d,重商主義什麼是認識到,
+librime-1.17.0,track-a-comparison,luna_pinyin,cszysmsrsd,1,5,5,0,0,0,c s z y s m s r s d,重商主義,
+librime-1.17.0,track-a-comparison,luna_pinyin,cszysmsrsd,2,5,5,0,0,0,c s z y s m s r s d,催生作用,
+librime-1.17.0,track-a-comparison,luna_pinyin,cszysmsrsd,3,5,5,0,0,0,c s z y s m s r s d,產生爭議,
+librime-1.17.0,track-a-comparison,luna_pinyin,cszysmsrsd,4,5,5,0,0,0,c s z y s m s r s d,測試資源,
+librime-1.17.0,track-a-comparison,luna_pinyin,zybfshmsru,0,5,5,0,0,0,z y b f sh m s ru,自有辦法什麼收入,
+librime-1.17.0,track-a-comparison,luna_pinyin,zybfshmsru,1,5,5,0,0,0,z y b f sh m s ru,自有辦法,
+librime-1.17.0,track-a-comparison,luna_pinyin,zybfshmsru,2,5,5,0,0,0,z y b f sh m s ru,重要部分,
+librime-1.17.0,track-a-comparison,luna_pinyin,zybfshmsru,3,5,5,0,0,0,z y b f sh m s ru,晝夜不分,
+librime-1.17.0,track-a-comparison,luna_pinyin,zybfshmsru,4,5,5,0,0,0,z y b f sh m s ru,主要部分,
+yune,track-a-comparison,luna_pinyin,n,0,5,5,0,0,0,n,那,na
+yune,track-a-comparison,luna_pinyin,n,1,5,5,0,0,0,n,拿,na
+yune,track-a-comparison,luna_pinyin,n,2,5,5,0,0,0,n,哪,na
+yune,track-a-comparison,luna_pinyin,n,3,5,5,0,0,0,n,納,na
+yune,track-a-comparison,luna_pinyin,n,4,5,5,0,0,0,n,娜,na
+yune,track-a-comparison,luna_pinyin,ni,0,5,5,0,0,0,ni,你,ni
+yune,track-a-comparison,luna_pinyin,ni,1,5,5,0,0,0,ni,擬,ni
+yune,track-a-comparison,luna_pinyin,ni,2,5,5,0,0,0,ni,尼,ni
+yune,track-a-comparison,luna_pinyin,ni,3,5,5,0,0,0,ni,泥,ni
+yune,track-a-comparison,luna_pinyin,ni,4,5,5,0,0,0,ni,呢,ni
+yune,track-a-comparison,luna_pinyin,hao,0,5,5,0,0,0,hao,好,hao
+yune,track-a-comparison,luna_pinyin,hao,1,5,5,0,0,0,hao,號,hao
+yune,track-a-comparison,luna_pinyin,hao,2,5,5,0,0,0,hao,浩,hao
+yune,track-a-comparison,luna_pinyin,hao,3,5,5,0,0,0,hao,豪,hao
+yune,track-a-comparison,luna_pinyin,hao,4,5,5,0,0,0,hao,耗,hao
+yune,track-a-comparison,luna_pinyin,zhongguo,0,4,5,0,0,0,zhongguo,中國大陸,zhongguodalu
+yune,track-a-comparison,luna_pinyin,zhongguo,1,4,5,0,0,0,zhongguo,中國內地,zhongguoneidi
+yune,track-a-comparison,luna_pinyin,zhongguo,2,4,5,0,0,0,zhongguo,中國銀行,zhongguoyinhang
+yune,track-a-comparison,luna_pinyin,zhongguo,3,4,5,0,0,0,zhongguo,中國重汽,zhongguozhongqi
+yune,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,0,5,5,0,1,0,ceshiyixiachangjushuruxingnengzenyang,測試一下長足輸入性能怎樣,
+yune,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,1,5,5,0,1,0,ceshiyixiachangjushuruxingnengzenyang,測試一下長句輸入性能怎樣,
+yune,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,2,5,5,0,1,0,ceshiyixiachangjushuruxingnengzenyang,測試一下敞車輸入性能怎樣,
+yune,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,3,5,5,0,1,0,ceshiyixiachangjushuruxingnengzenyang,測試一下長局輸入性能怎樣,
+yune,track-a-comparison,luna_pinyin,ceshiyixiachangjushuruxingnengzenyang,4,5,5,0,1,0,ceshiyixiachangjushuruxingnengzenyang,測試一下長居輸入性能怎樣,
+yune,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,0,5,5,0,1,0,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,這個引擎其實應該支持超長橘子樹肉菜能用,
+yune,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,1,5,5,0,1,0,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,這個引擎其實應該支持超常橘子樹肉菜能用,
+yune,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,2,5,5,0,1,0,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,這個言情其實應該支持超長橘子樹肉菜能用,
+yune,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,3,5,5,0,1,0,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,這個言情其實應該支持超常橘子樹肉菜能用,
+yune,track-a-comparison,luna_pinyin,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,4,5,5,0,1,0,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,這個陰晴其實應該支持超長橘子樹肉菜能用,
+yune,track-a-comparison,luna_pinyin,cszysmsrsd,0,5,5,0,1,0,cszysmsrsd,重商主義什麼少女時代,
+yune,track-a-comparison,luna_pinyin,cszysmsrsd,1,5,5,0,1,0,cszysmsrsd,造山作用什麼少女時代,
+yune,track-a-comparison,luna_pinyin,cszysmsrsd,2,5,5,0,1,0,cszysmsrsd,重商主義什麼是認識到,
+yune,track-a-comparison,luna_pinyin,cszysmsrsd,3,5,5,0,1,0,cszysmsrsd,催生作用什麼少女時代,
+yune,track-a-comparison,luna_pinyin,cszysmsrsd,4,5,5,0,1,0,cszysmsrsd,重商主義什麼是認識的,
+yune,track-a-comparison,luna_pinyin,zybfshmsru,0,5,5,0,1,0,zybfshmsru,專業並不是美少女,
+yune,track-a-comparison,luna_pinyin,zybfshmsru,1,5,5,0,1,0,zybfshmsru,只有並不是美少女,
+yune,track-a-comparison,luna_pinyin,zybfshmsru,2,5,5,0,1,0,zybfshmsru,這樣並不是美少女,
+yune,track-a-comparison,luna_pinyin,zybfshmsru,3,5,5,0,1,0,zybfshmsru,主要並不是美少女,
+yune,track-a-comparison,luna_pinyin,zybfshmsru,4,5,5,0,1,0,zybfshmsru,只要並不是美少女,
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,0,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,你個人經其實應該支援超場句子輸入先可以用,"1,你個人經其實應該支援超場句子輸入先可以用,nei5go3jan4ging1kei4sat6jing1goi1zi1wun4ciu1coeng4geoi3zi2syu1jap6sin1ho2ji5jung6,1,0,,,,composition,,,,,,,,,1,你個,nei5go3,1,0,,oth,ver,,,你的,,,your,,,,1,人,jan4,1,0,,n,,,,,,,person; people,انسانی,मानव,मानव,orang1,經,ging1,1,0,,adv v,,,,,,,pass through; via,منتقل,त्यहाँबाट जानु,से गुज़रना,melalui1,其實,kei4sat6,1,0,,oth,,,,,,,actually,اصل میں,वास्तवमा,असल में,faktanya1,應該,jing1goi1,1,0,,v,,,,,,,should,چاہیے,आवश्यक छ,चाहिए,sebaiknya1,支援,zi1wun4,1,0,,v,,,,,,,support,پکڑنا,समात्नु,सहारा देना,mendukung1,超,ciu1,1,0,,adj v,,,,,,,super; exceed,,,,super; melampaui1,場,coeng4,1,0,,n,,,,,,,venue,(measure),(measure),(measure),(kata bantu)1,句子,geoi3zi2,1,0,,n,,,,,,,sentence,جملہ,वाक्य,वाक्य,kalimat1,輸入,syu1jap6,1,0,,v,,,,,,,input,درآمد,आयात,आयात,impot1,先可以,sin1ho2ji5,1,0,,oth,ver,,,才可以,,,then can,,,,1,用,jung6,1,0,,v,,,,,,,use,استعمال کرنا,प्रयोग गर्न,उपयोग करना,menggunakan"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,1,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,你個,"1,你個,nei5go3,1,0,,oth,ver,,,你的,,,your,,,,"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,2,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,你,"1,你,nei5,1,0,,oth,,,,,,,you (singular),تم,तपाईं,आप,kamu"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,3,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,呢,"1,呢,nei1,2,0,,oth,ver,,,這,,,this,,,,0,呢,ne1,1,0,,part,,,,,,,(how about),(particle),,(particle),(imbuhan kata)0,呢,ni1,2,0,,oth,ver,,,這,,,this,,,,"
+yune,track-b-product,jyut6ping3_mobile,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,4,5,5,0,0,0,neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung,尼,"1,尼,nei4,1,0,,n,,,,,,,nun,,,,kamu"

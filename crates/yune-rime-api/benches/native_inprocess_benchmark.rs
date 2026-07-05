@@ -1098,8 +1098,90 @@ fn current_memory_sample() -> MemorySample {
 }
 
 #[cfg(not(windows))]
+#[cfg(not(target_os = "macos"))]
 fn current_memory_sample() -> MemorySample {
     MemorySample::default()
+}
+
+#[cfg(target_os = "macos")]
+fn current_memory_sample() -> MemorySample {
+    let task_info = macos_proc_task_info();
+    MemorySample {
+        working_set: task_info.map(|info| info.pti_resident_size),
+        peak_working_set: macos_peak_resident_bytes()
+            .or_else(|| task_info.map(|info| info.pti_resident_size)),
+        private: None,
+        pagefile: None,
+        peak_pagefile: None,
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+#[allow(clippy::struct_field_names)]
+struct MacosProcTaskInfo {
+    pti_virtual_size: u64,
+    pti_resident_size: u64,
+    pti_total_user: u64,
+    pti_total_system: u64,
+    pti_threads_user: u64,
+    pti_threads_system: u64,
+    pti_policy: i32,
+    pti_faults: i32,
+    pti_pageins: i32,
+    pti_cow_faults: i32,
+    pti_messages_sent: i32,
+    pti_messages_received: i32,
+    pti_syscalls_mach: i32,
+    pti_syscalls_unix: i32,
+    pti_csw: i32,
+    pti_threadnum: i32,
+    pti_numrunning: i32,
+    pti_priority: i32,
+}
+
+#[cfg(target_os = "macos")]
+fn macos_proc_task_info() -> Option<MacosProcTaskInfo> {
+    const PROC_PIDTASKINFO: c_int = 4;
+
+    extern "C" {
+        fn proc_pidinfo(
+            pid: c_int,
+            flavor: c_int,
+            arg: u64,
+            buffer: *mut c_void,
+            buffersize: c_int,
+        ) -> c_int;
+    }
+
+    let mut info = MacosProcTaskInfo::default();
+    let size = mem::size_of::<MacosProcTaskInfo>();
+    let written = unsafe {
+        proc_pidinfo(
+            libc::getpid(),
+            PROC_PIDTASKINFO,
+            0,
+            (&mut info as *mut MacosProcTaskInfo).cast::<c_void>(),
+            size as c_int,
+        )
+    };
+    if written == size as c_int {
+        Some(info)
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_peak_resident_bytes() -> Option<u64> {
+    let mut usage = unsafe { mem::zeroed::<libc::rusage>() };
+    let ok = unsafe { libc::getrusage(libc::RUSAGE_SELF, &mut usage) };
+    if ok == 0 && usage.ru_maxrss > 0 {
+        Some(usage.ru_maxrss as u64)
+    } else {
+        None
+    }
 }
 
 fn write_samples(path: &PathBuf, samples: &[Sample]) {

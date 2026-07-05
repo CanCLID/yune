@@ -123,6 +123,46 @@ slower (bounded, guarded) on short keys and sentence rows. No unqualified
 
 ![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
 
+## Native Track A Cause — Windows vs macOS
+
+M57 confirmed the earlier macOS anomaly was a Yune-side construction bug (the
+target-scoped checksum gate), not a librime contradiction. With that repaired,
+the two lanes compare directly. **The comparison is machine-vs-machine** — a
+Windows x86 desktop (gate run D) vs an Apple Silicon MacBook Air (M57
+full-pass-1; full-pass-2 for the range) — not OS-vs-OS.
+
+| Dimension | Win ratio | mac ratio | Yune Win → mac | librime Win → mac | root-cause read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| startup | `0.895x` | `0.576x` | `22.4 → 18.1 ms` | `25.1 → 31.5 ms` | Yune faster on both; run-noisy |
+| session | `0.864x` | `0.626x` | `22.5 → 18.8 ms` | `26.0 → 30.1 ms` | Yune faster on both; run-noisy |
+| `zhongguo` † | `0.255x` | `0.388x` | `44 → 43 us` | `174 → 111 us` | Yune win; librime abs noisy on mac |
+| `cszysmsrsd` | `0.381x` | `0.503x` | `454 → 420 us` | `1,190 → 834 us` | Yune win on both |
+| `zybfshmsru` | `0.564x` | `0.799x` | `469 → 461 us` | `832 → 577 us` | Yune win on both |
+| `hao` † | `1.574x` | `1.697x` | `24 → 26 us` | `15 → 15 us` | near-noise short key |
+| `ni` † | `2.433x` | `2.522x` | `42 → 46 us` | `17 → 18 us` | near-noise short key |
+| `n` † | `2.636x` | `2.385x` | `55 → 65 us` | `21 → 27 us` | near-noise short key |
+| 59-char | `1.528x` | `2.346x` | `1,018 → 944 us` | `666 → 402 us` | Yune ~same; librime faster on mac |
+| 37-char | `1.913x` | `2.936x` | `572 → 513 us` | `299 → 175 us` | Yune ~same; librime faster on mac |
+
+`†` the macOS ratio here is noise-affected (shown directional only): for
+`hao`/`ni`/`n` librime's absolute sits at the microbenchmark noise floor
+(single-digit-to-low-tens of `us`), and for `zhongguo` librime's own median
+swings run-to-run (`111 → 264 us`).
+
+![Native Track A latency ratio, Windows vs macOS](./evidence/dashboard-visuals-2026-07-05-cross-platform/native-track-a-latency-windows-vs-macos.svg)
+
+**Root cause of the cross-platform ratio difference.** It is not a Yune
+regression: Yune's own per-key cost is essentially unchanged across the two
+machines (37-char `572 → 513 us`, `cszysmsrsd` `454 → 420 us`). The sentence-row
+ratio *widens* on macOS because **librime speeds up more on Apple Silicon**
+(37-char `299 → 175 us`), and the ratio divides by librime. The plausible
+mechanism (inferred, not yet profiled on both engines): Yune's poet hot path —
+`HashMap`/SipHash probes and `memcmp` walks over the owned sentence model — is
+more memory-latency-bound, which gains less from a faster core than librime's
+lighter, more cache-friendly path. The short-key rows carry no reliable
+cross-platform signal because librime's absolute there sits at the
+microbenchmark noise floor.
+
 ## Native Memory Cause
 
 | Measurement | Current value | Read |

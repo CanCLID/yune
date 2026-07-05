@@ -112,6 +112,67 @@ The visualization below is regenerated from the corrective gate run D:
 
 ![Native Track A latency across all input dimensions, Yune vs librime 1.17.0](./evidence/dashboard-visuals-2026-07-04/native-track-a-latency-ratios.svg)
 
+## Native Track A — Windows vs macOS (cross-platform, post-M57)
+
+With M57's macOS repair landed, macOS is a fair Track A lane and can be shown
+next to the Windows standing gate. **This is a two-machine comparison** — a
+Windows x86 desktop (M55 corrective gate run D) versus an Apple Silicon MacBook
+Air (M57 full-pass-1; full-pass-2 gives the reproducibility range) — so any
+difference is dominated by hardware and toolchain, not by the OS name.
+
+| Dimension | Yune Win | librime Win | Win ratio | Yune mac | librime mac | mac ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| startup (runtime-ready) | `22,428 us` | `25,062 us` | `0.895x` | `18,111 us` | `31,463 us` | `0.576x` |
+| session lifecycle | `22,468 us` | `26,020 us` | `0.864x` | `18,818 us` | `30,066 us` | `0.626x` |
+| `zhongguo` (common word) † | `44.3 us` | `173.8 us` | `0.255x` | `42.9 us` | `110.6 us` | `0.388x` (`0.16–0.39x`) |
+| `cszysmsrsd` (10-char abbr) | `454.0 us` | `1,190.2 us` | `0.381x` | `419.8 us` | `834.0 us` | `0.503x` |
+| `zybfshmsru` (8-char abbr) | `469.3 us` | `832.1 us` | `0.564x` | `461.0 us` | `576.7 us` | `0.799x` |
+| `hao` (short key) † | `24.2 us` | `15.4 us` | `1.574x` | `26.0 us` | `15.3 us` | `1.697x` (`1.15–1.70x`) |
+| `ni` (short key) † | `42.5 us` | `17.5 us` | `2.433x` | `46.1 us` | `18.3 us` | `2.522x` (`2.52–4.10x`) |
+| `n` (short key) † | `55.1 us` | `20.9 us` | `2.636x` | `64.5 us` | `27.0 us` | `2.385x` (`2.39–4.32x`) |
+| 59-char pinyin | `1,017.5 us` | `665.7 us` | `1.528x` | `943.7 us` | `402.3 us` | `2.346x` |
+| 37-char pinyin | `571.7 us` | `298.9 us` | `1.913x` | `512.6 us` | `174.6 us` | `2.936x` |
+
+`†` the macOS *ratio* on these rows is noise-affected and shown as a range
+(pass-1↔pass-2): for `hao`/`ni`/`n` librime's absolute sits at the
+microbenchmark noise floor (single-digit-to-low-tens of `us`), and for
+`zhongguo` librime's own median swings run-to-run (`111 → 264 us`). Only the
+sentence, abbreviation, and lifecycle rows have a stable enough librime baseline
+to compare cross-platform.
+
+![Native Track A latency ratio, Windows vs macOS](./evidence/dashboard-visuals-2026-07-05-cross-platform/native-track-a-latency-windows-vs-macos.svg)
+
+How to read the cross-platform rows:
+
+- **Yune's own per-key latency is comparable across the two machines** and
+  reproduces between the macOS passes — 37-char `572 us` (Win) → `513 us` (mac);
+  `cszysmsrsd` `454 us` → `420 us`; `zybfshmsru` `469 us` → `461 us`. Yune is
+  not slower on macOS.
+- **The ratio widens on the sentence rows** (37-char `1.913x` → `2.936x`)
+  because **librime is faster on the Apple Silicon machine** (37-char librime
+  `299 us` (Win) → `175 us` (mac)), not because Yune slowed down. Dividing by a
+  faster librime inflates the ratio.
+- **The win rows stay wins on both machines** (`zhongguo`, `cszysmsrsd`,
+  `zybfshmsru` all `<1.00x`), and startup/session stay faster than librime on
+  both (run-noisy, as flagged).
+- **Candidate parity holds on macOS post-M57**: Yune matches librime's first
+  page on `ni`, `hao`, and both abbreviation rows; `zhongguo`, `n`, and the two
+  long-sentence tops differ (for `zhongguo` only the top candidate matches — the
+  rest of the page differs) — the same pre-existing lattice/completion gaps
+  disclosed for Windows, not a macOS regression.
+
+**Memory (indicative only — the counters differ across platforms).** Windows
+reports working-set / private bytes; macOS reports resident size. Track A peak:
+Yune `185.7 MB` (Win working set) / `~228 MB` (mac resident); librime `17.2 MB`
+(Win) / `~16 MB` (mac) — the same order-of-magnitude peer-scale direction on
+both (`~11x` Win, `~14x` mac), but the absolute megabytes are not directly
+comparable.
+
+**Track B (TypeDuck `jyut6ping3` product) on macOS post-M57.** Key-sequence
+latency `~289 us` (mac) vs `315 us` (Win); session/startup `~29 ms` (mac) vs
+`~35 ms` (Win). Track B memory is not compared cross-platform (macOS resident
+plus deploy/compile transient is not the Windows working-set metric).
+
 ## Native Track A Guardrails
 
 Corrective gate run D against the standing artifact (run E and the M56

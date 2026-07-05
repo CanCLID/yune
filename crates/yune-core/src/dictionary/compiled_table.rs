@@ -12,7 +12,7 @@ use crate::dictionary::source::{
 use crate::CandidateSource;
 use crate::{MemoryOwnerClass, MemoryOwnerRow};
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt;
 use std::mem;
 use std::ops::Range;
@@ -434,6 +434,21 @@ impl CompactTableStore {
                 ..
             } => syllable_ids_by_code.len(),
         }
+    }
+
+    #[must_use]
+    pub fn distinct_code_count(&self) -> usize {
+        self.all_codes()
+            .map(|code| code.into_owned())
+            .collect::<BTreeSet<_>>()
+            .len()
+    }
+
+    #[must_use]
+    pub fn expanded_entry_count(&self) -> usize {
+        self.all_codes()
+            .map(|code| self.exact_candidate_count(code.as_ref()))
+            .sum()
     }
 
     #[must_use]

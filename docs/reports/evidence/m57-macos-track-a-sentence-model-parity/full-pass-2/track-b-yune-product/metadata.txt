@@ -1,0 +1,14 @@
+engine=yune
+track=track-b-product
+schema=jyut6ping3_mobile
+dll=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-2/track-b-yune-product/libyune_rime_api.dylib
+shared=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-2/track-b-yune-product/shared
+user=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-2/track-b-yune-product/user
+build=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-2/track-b-yune-product/user/build
+inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80
+deploy_before_benchmark=true
+deploy_only=false
+managed_runtime=false

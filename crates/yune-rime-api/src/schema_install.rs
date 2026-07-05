@@ -2085,14 +2085,19 @@ fn is_known_upstream_luna_marisa_checksum(
     source_checksum: u32,
     table_checksum: Option<u32>,
 ) -> bool {
-    const UPSTREAM_LUNA_PINYIN_SOURCE_CHECKSUM: u32 = 0x16ad_0e3e;
-    const UPSTREAM_LUNA_PINYIN_MARISA_TABLE_CHECKSUM: u32 = 0xb967_cfef;
+    const UPSTREAM_LUNA_PINYIN_MARISA_CHECKSUMS: &[(u32, u32)] =
+        &[(0x16ad_0e3e, 0xb967_cfef), (0xb3d4_e98e, 0x29d5_6c89)];
     const UPSTREAM_LUNA_PINYIN_STRING_TABLE_SIZE: u32 = 1_574_520;
 
     dictionary_name == "luna_pinyin"
         && string_table_size == UPSTREAM_LUNA_PINYIN_STRING_TABLE_SIZE
-        && source_checksum == UPSTREAM_LUNA_PINYIN_SOURCE_CHECKSUM
-        && table_checksum == Some(UPSTREAM_LUNA_PINYIN_MARISA_TABLE_CHECKSUM)
+        && table_checksum.is_some_and(|table_checksum| {
+            UPSTREAM_LUNA_PINYIN_MARISA_CHECKSUMS
+                .iter()
+                .any(|(known_source, known_table)| {
+                    source_checksum == *known_source && table_checksum == *known_table
+                })
+        })
 }
 
 fn is_known_upstream_luna_marisa_compact_table(
@@ -2749,6 +2754,21 @@ mod compiled_poet_checksum_tests {
                 0xb967_cfef,
             ),
             0x16ad_0e3e
+        );
+    }
+
+    #[test]
+    fn macos_upstream_luna_marisa_poet_uses_source_checksum() {
+        assert_eq!(
+            compiled_poet_expected_dictionary_checksum(
+                "luna_pinyin",
+                true,
+                1_574_520,
+                Some(0xb3d4_e98e),
+                Some(0x29d5_6c89),
+                0x29d5_6c89,
+            ),
+            0xb3d4_e98e
         );
     }
 

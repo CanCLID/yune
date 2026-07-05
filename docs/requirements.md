@@ -1329,6 +1329,40 @@ Evidence:
   regression pass with tight headroom on short-key and 37-char dimensions, not
   a new faster baseline.
 
+### M57 macOS Track A Sentence-Model Parity And Verification Repair
+
+**Status: complete.** M57 repairs the macOS Track A verification bundle by
+making upstream Luna compact compiled-table sentence-model construction
+platform-stable for the known target payloads. Evidence:
+`docs/reports/evidence/m57-macos-track-a-sentence-model-parity/`.
+
+- [x] **M57-PARITY-01**: The macOS failure is classified as a Yune-side
+  compiled-table construction defect, not a macOS librime oracle contradiction.
+  The before evidence records the bad owner shape (`poet.entries_by_code`
+  `191,984`, `poet.lookup_index` `31,262`, `poet.abbreviation_vocabulary`
+  `421,966`) and wrong abbreviation candidates.
+- [x] **M57-PARITY-02**: Yune accepts the macOS upstream `luna_pinyin` MARISA
+  checksum pair (`0xb3d4e98e` / `0x29d56c89`) only behind the existing target
+  gates: dictionary `luna_pinyin`, MARISA string-table size `1,574,520`, and
+  the known source/table checksum tuple.
+- [x] **M57-PARITY-03**: The repair preserves ABI and profile boundaries: no
+  default `RimeApi` widening, no TypeDuck profile ABI widening, and no WEB-05
+  or control-surface behavior change.
+- [x] **M57-PARITY-04**: Real compiled-table regression coverage exists. The
+  focused tests cover synthetic MARISA enumeration diagnostics and a committed
+  real compiled Luna table fixture; the schema-install unit test covers the
+  macOS upstream Luna MARISA checksum pair.
+- [x] **M57-PARITY-05**: Post-fix macOS evidence restores the expected compact
+  sentence-model shape: `stored_entries=498,564`,
+  `compact_all_codes_count=332,604`,
+  `compact_expanded_table_entries=513,353`, `poet.entries_by_code=513,353`,
+  `poet.lookup_index=332,604`, and `poet.abbreviation_vocabulary=11`.
+- [x] **M57-PARITY-06**: Closeout includes two full macOS native verification
+  passes with recomputed `summary-comparison.csv`, candidate snapshots matching
+  local librime for `cszysmsrsd` and `zybfshmsru`, full quality checks for the
+  touched engine path, and an explicit WEB-03 guard disposition as not-run due
+  missing local `public-demo/dist/schema` fixtures.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1501,6 +1535,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M56-HARDEN-04 | M56 | Complete - all discovered C ABI exports are guard-inventory tested and ABI abuse tests pass |
 | M56-HARDEN-05 | M56 | Complete - support contract documents staleness, user-data, crash/poison, threading, and release panic policies |
 | M56-HARDEN-06 | M56 | Complete - full quality gate, parity suites, and standing M55 ratchet closeout evidence are recorded under the M56 evidence root; ratchet pass is guarded with tight headroom rather than a performance-win claim |
+| M57-PARITY-01 | M57 | Complete - macOS failure classified as Yune-side compiled-table sentence-model construction defect with before counters and wrong candidates preserved |
+| M57-PARITY-02 | M57 | Complete - macOS upstream Luna MARISA checksum pair accepted only under the existing target-scoped `luna_pinyin` gate |
+| M57-PARITY-03 | M57 | Complete - no default ABI, TypeDuck profile ABI, WEB-05, or control-surface widening |
+| M57-PARITY-04 | M57 | Complete - synthetic MARISA, real compiled Luna fixture, and checksum-pair regression coverage added |
+| M57-PARITY-05 | M57 | Complete - post-fix macOS compact model shape restored with `332,604` codes, `513,353` expanded entries, and 11-entry abbreviation vocabulary |
+| M57-PARITY-06 | M57 | Complete - two full macOS native passes, recomputed summaries, candidate snapshots, quality checks, and WEB-03 fixture disposition recorded |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -1800,9 +1840,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
-- Mapped to phases: 405
+- M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
+- Mapped to phases: 411
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M56 is complete: productization hardening added loud compiled-artifact staleness handling, isolated cold/warm conformance for `luna_pinyin` and TypeDuck `jyut6ping3`, user-data lifecycle coverage, guarded C ABI exports, ABI abuse tests, session-registry poison recovery, and the retained release `panic = "abort"` strategy. The corrected closeout keeps optional poet storage out of the default product schema payload, and the M55 corrective `m55-thresholds.csv` remains the standing native Track A gate._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - M57 is complete: macOS Track A accepts the known upstream Luna MARISA checksum pair under the existing target gate, restores compact sentence-model construction and abbreviation-row candidate parity, records two full macOS native verification passes, and keeps the M55 corrective `m55-thresholds.csv` as the standing native Track A gate._

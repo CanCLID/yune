@@ -1,6 +1,7 @@
 # Current Yune Root-Cause Dashboard
 
-Date: 2026-07-04 (corrective re-baseline)
+Date: 2026-07-05 (M57 macOS verification repair; standing gate remains the
+2026-07-04 corrective re-baseline)
 
 This report keeps only the current root-cause read. Older milestone narratives,
 WEB-01/WEB-02/WEB-03 closeout detail, and superseded measurements remain in
@@ -13,6 +14,16 @@ process-global config cache, and benchmark-input short-key aliases — were
 identified as measurement artifacts and reverted. Full analysis:
 [`evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md).
 Browser rows are carried forward from the 2026-06-28 Playwright run.
+
+M57 repaired a macOS-only Track A verification defect in Yune's compiled-table
+sentence-model construction. The local macOS librime oracle was correct; Yune
+was accepting the Windows upstream Luna MARISA checksum pair but not the macOS
+pair (`0xb3d4e98e` / `0x29d56c89`), which pushed the macOS bundle into a
+defective model shape. After M57, macOS Luna stays on compact
+`rsmarisa_byte_backed` storage, reports `332,604` compact codes and `513,353`
+expanded sentence entries, restores the 11-entry abbreviation vocabulary, and
+matches librime first pages for `cszysmsrsd` and `zybfshmsru`. Evidence:
+[`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
 
 ## Technical Summary
 
@@ -43,6 +54,10 @@ Browser rows are carried forward from the 2026-06-28 Playwright run.
   top candidates (lattice; see the captured candidate snapshots). These are
   pre-existing gaps surfaced by the M55 Phase 3R-0 oracle fixture expansion
   (13 named blocked rows), now ranked the top native diagnostic target.
+- **macOS verification disclosure**: the 2026-07-04 macOS rerun initially
+  exposed a Yune-side construction defect, not a librime oracle contradiction.
+  M57 fixed that platform-specific defect and produced two clean macOS native
+  verification passes. This does not alter the standing Windows corrective gate.
 - **Current browser fair memory owner**: the fair `luna_pinyin` browser gap is
   `64.0 MiB` Yune public demo versus `16.0 MiB` My RIME (carried 2026-06-28).
 
@@ -51,6 +66,7 @@ Browser rows are carried forward from the 2026-06-28 Playwright run.
 | Area | Current root cause | Evidence | Current status |
 | --- | --- | --- | --- |
 | Native Track A standing guardrail | Corrective per-key ratchet green twice and M56 closeout ratchet green | `corrective-2026-07-04/gate-run-d/`, `gate-run-e/`, and `m56-productization-hardening/final/ratchet-run/` | standing gate |
+| macOS Track A verification bundle | M57 accepts the macOS upstream Luna MARISA checksum pair and restores compact sentence-model construction | `m57-macos-track-a-sentence-model-parity/full-pass-1/` and `full-pass-2/` | repaired comparability defect |
 | Native sentence-lattice divergence | Yune's lattice/completion ranking differs from librime on the expanded oracle rows | 13 blocked fixture rows; `candidate_snapshots.csv` in the corrective runs | top correctness target |
 | Native long-row latency | Poet graph constant factors above the raw lookup | 37-char `1.913x`, 59-char `1.528x` (was `3.05x`/`2.25x` pre-M55) | improved; Tier M `1.50x` bar not met |
 | Native short keys | Exact-row scan + translator overhead | `n` `2.636x` (+34 us), `ni` `2.433x` (+25 us), `hao` `1.574x` (+9 us) | bounded absolute gaps |
@@ -168,6 +184,9 @@ browser-side blockers. Jyutping remains a launch guard lane, not a peer lane.
   and [`gate-run-e/threshold-check.csv`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-e/threshold-check.csv)
 - [`m56-productization-hardening/final/ratchet-run/threshold-check.csv`](./evidence/m56-productization-hardening/final/ratchet-run/threshold-check.csv)
   - latest green closeout proof against the standing M55 threshold artifact
+- [`m57-macos-track-a-sentence-model-parity/README.md`](./evidence/m57-macos-track-a-sentence-model-parity/README.md)
+  - macOS compiled-table sentence-model repair, before/after counters, two full
+    macOS native verification passes
 - [`thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
 - Pre-corrective closeout state: git history at `531dbcf2` (preserved, not
   scrubbed)

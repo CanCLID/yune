@@ -425,6 +425,24 @@ fn compact_table_lookup_resolves_marisa_backed_upstream_table_entries() {
     assert!(all_codes.contains("zhongguo"));
     assert!(all_codes.contains("zhongguorenmin"));
     assert!(!all_codes.contains("zhongguorenmi"));
+    assert_eq!(compact.distinct_code_count(), 7);
+    assert_eq!(compact.stored_entry_count(), 9);
+    assert_eq!(compact.expanded_entry_count(), 11);
+}
+
+#[test]
+fn compact_table_real_luna_compiled_fixture_enumerates_stored_entries() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../apps/yune-web/public/schema/luna_pinyin.table.bin");
+    let bytes = fs::read(path).expect("real Luna compiled table fixture should be present");
+    let advanced = parse_rime_table_bin_advanced_data(&bytes)
+        .expect("real Luna compiled table advanced data should parse");
+    let compact = CompactTableStore::from_table_bin_bytes(bytes, advanced)
+        .expect("real Luna compiled table should parse as compact storage");
+
+    assert_eq!(compact.storage_label(), "byte_backed");
+    assert_eq!(compact.stored_entry_count(), 70_805);
+    assert_eq!(compact.expanded_entry_count(), compact.stored_entry_count());
 }
 
 #[test]

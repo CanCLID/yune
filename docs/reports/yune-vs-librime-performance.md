@@ -1,6 +1,7 @@
 # Current Yune Performance Dashboard
 
-Date: 2026-07-04 (corrective re-baseline)
+Date: 2026-07-05 (M57 macOS verification repair; standing gate remains the
+2026-07-04 corrective re-baseline)
 
 This dashboard shows the current benchmark state only. Older milestone closeout
 narrative and superseded benchmark rows remain in
@@ -15,6 +16,15 @@ comparable** to the rows below. The pre-corrective M55 closeout numbers
 (`0.237x`/`0.086x` long rows, `0.286x` startup) were artifacts of a since-
 reverted key deferral and config cache measured under that batch shape; see
 [`evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/).
+
+**macOS verification note:** M57 fixed a macOS-only Yune sentence-model
+construction defect in the Track A verification bundle. The macOS
+`rime_deployer`-compiled upstream Luna MARISA table uses checksum pair
+`0xb3d4e98e` / `0x29d56c89`; after M57, Yune accepts that target-scoped pair,
+keeps compact storage active, and restores the expected model shape
+(`332,604` compact codes, `513,353` expanded sentence entries, 11-row
+abbreviation vocabulary). Evidence:
+[`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
 
 ## Technical Summary
 
@@ -37,6 +47,13 @@ reverted key deferral and config cache measured under that batch shape; see
   ceilings.
   The M52 artifact and the pre-corrective M55 artifact are batch-shaped
   history.
+- **macOS verification repair**: M57 repaired the macOS Track A bundle so it is
+  no longer a false contradiction of the M55 corrective record. The two full
+  macOS passes now keep Luna on `rsmarisa_byte_backed` storage, report
+  `compact_all_codes_count=332604` and
+  `compact_expanded_table_entries=513353`, and match local librime first-page
+  candidates for `cszysmsrsd` and `zybfshmsru`. This is a comparability repair,
+  not a new cross-platform performance headline.
 - **Native memory disposition**: the shipping default is the owned poet path
   at `185.7 MB` Track A peak (the latency ceilings bind). The `YUNE-POET/2`
   byte-backed path is a working, parity-preserving **opt-in**
@@ -60,6 +77,9 @@ reverted key deferral and config cache measured under that batch shape; see
 
 Corrective evidence root (decision runs, gate runs, README):
 [`evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/).
+
+M57 macOS verification repair evidence:
+[`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
 
 Standing gate artifact:
 [`evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv).
@@ -203,3 +223,5 @@ Older milestone closeout detail remains in:
 - The pre-corrective 2026-07-04 dashboard state (batch-shaped M55 closeout
   numbers) is preserved in git history at commit `531dbcf2` and analyzed in
   [`evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md).
+- M57 macOS Track A verification repair:
+  [`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).

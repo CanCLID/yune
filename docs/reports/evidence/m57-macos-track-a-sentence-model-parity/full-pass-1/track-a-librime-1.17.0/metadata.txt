@@ -1,0 +1,14 @@
+engine=librime-1.17.0
+track=track-a-comparison
+schema=luna_pinyin
+dll=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-1/track-a-librime-1.17.0/librime.1.17.0.dylib
+shared=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-1/track-a-librime-1.17.0/shared
+user=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-1/track-a-librime-1.17.0/user
+build=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/full-pass-1/track-a-librime-1.17.0/user/build
+inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+iterations=9
+session_iterations=60
+key_iterations=80
+deploy_before_benchmark=false
+deploy_only=false
+managed_runtime=false

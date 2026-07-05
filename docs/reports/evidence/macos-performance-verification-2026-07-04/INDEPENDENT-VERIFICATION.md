@@ -109,12 +109,15 @@ reached). Both platforms take the *same* code path (`checksum_status =
 accepted_upstream_marisa_import_checksum`, `source_fallback = false`,
 `selected_storage = rsmarisa_byte_backed`); the only difference is the table
 **bytes** (same `stored_entries = 498,564`, different `table_checksum` —
-`rime_deployer` serialized a byte-different MARISA of the same content), and
-Yune's compact full-code enumeration yields a truncated model from the
-macOS-built table. With `YUNE_POET_BYTE_BACKED=1` the model is **identically**
-broken, so it is the shared model-construction-from-table path, not the
-owned-vs-byte-backed poet choice. Tracked by
-[M57](../../../plans/active/m57-plan-macos-track-a-sentence-model-parity.md).
+`rime_deployer` serialized a byte-different MARISA of the same content). With
+`YUNE_POET_BYTE_BACKED=1` the model is **identically** broken, so it is the
+shared model-construction-from-table path, not the owned-vs-byte-backed poet
+choice. M57 later traced the construction mismatch to target-scoped checksum
+recognition: Yune accepted the Windows upstream Luna MARISA checksum pair but
+not the macOS pair. The completed repair and evidence are under
+[`M57`](../../../plans/completed/m57-plan-macos-track-a-sentence-model-parity.md)
+and
+[`m57-macos-track-a-sentence-model-parity/`](../m57-macos-track-a-sentence-model-parity/).
 
 The profile below explains *where* the resulting extra work is spent — it is the
 symptom, not the cause. `sample` on a symboled release dylib (opt-level=3, LTO,

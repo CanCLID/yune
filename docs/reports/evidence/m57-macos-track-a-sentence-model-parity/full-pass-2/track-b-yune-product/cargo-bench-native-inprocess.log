@@ -1,0 +1,23 @@
+warning: output filename collision at /Users/laufei/Documents/GitHub/yune/target/release/deps/libyune_rime_api.rlib
+  |
+  = note: the lib target `yune_rime_api` in package `yune-rime-api v0.1.0 (/Users/laufei/Documents/GitHub/yune/crates/yune-rime-api)` has the same output filename as the lib target `yune_rime_api` in package `yune-rime-api v0.1.0 (/Users/laufei/Documents/GitHub/yune/crates/yune-rime-api)`
+  = note: this may become a hard error in the future; see <https://github.com/rust-lang/cargo/issues/6313>
+  = help: consider changing their names to be unique or compiling them separately
+warning: output filename collision at /Users/laufei/Documents/GitHub/yune/target/release/deps/libyune_rime_api.dylib
+  |
+  = note: the lib target `yune_rime_api` in package `yune-rime-api v0.1.0 (/Users/laufei/Documents/GitHub/yune/crates/yune-rime-api)` has the same output filename as the lib target `yune_rime_api` in package `yune-rime-api v0.1.0 (/Users/laufei/Documents/GitHub/yune/crates/yune-rime-api)`
+  = note: this may become a hard error in the future; see <https://github.com/rust-lang/cargo/issues/6313>
+  = help: consider changing their names to be unique or compiling them separately
+warning: output filename collision at /Users/laufei/Documents/GitHub/yune/target/release/deps/libyune_rime_api.dylib.dSYM
+  |
+  = note: the lib target `yune_rime_api` in package `yune-rime-api v0.1.0 (/Users/laufei/Documents/GitHub/yune/crates/yune-rime-api)` has the same output filename as the lib target `yune_rime_api` in package `yune-rime-api v0.1.0 (/Users/laufei/Documents/GitHub/yune/crates/yune-rime-api)`
+  = note: this may become a hard error in the future; see <https://github.com/rust-lang/cargo/issues/6313>
+  = help: consider changing their names to be unique or compiling them separately
+   Compiling yune-rime-api v0.1.0 (/Users/laufei/Documents/GitHub/yune/crates/yune-rime-api)
+    Finished `bench` profile [optimized] target(s) in 21.49s
+     Running benches/native_inprocess_benchmark.rs (target/release/deps/native_inprocess_benchmark-ef992a3eca9781e7)
+engine=yune
+schema=jyut6ping3_mobile
+track=track-b-product
+samples=149
+summary=/Users/laufei/Documents/GitHub/yune/docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-2/track-b-yune-product/summary.csv

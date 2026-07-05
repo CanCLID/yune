@@ -30,8 +30,11 @@ ABI exports are guarded by an abuse-suite-ratcheted panic boundary without ABI
 widening. The corrected M56 closeout keeps optional poet storage out of the
 default product schema payload. Independent macOS native verification then
 exposed a Yune-side Track A sentence-model construction anomaly in the long and
-abbreviation rows; M57 is drafted to repair that platform/comparability defect
-before treating the macOS bundle as a replacement performance verdict.
+abbreviation rows; M57 repaired that platform/comparability defect by accepting
+the macOS upstream Luna MARISA checksum pair through the target-scoped compact
+compiled-table path, restoring the expected sentence-model owner shape, and
+proving two full macOS native verification passes. The macOS bundle is now valid
+evidence for the repaired rows, not a new general performance verdict.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -73,6 +76,8 @@ before treating the macOS bundle as a replacement performance verdict.
   - engine productization hardening milestone for staleness-proofing,
     cold/warm product-path conformance, user-data lifecycle, and ABI crash
     policy.
+- [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md)
+  - macOS Track A sentence-model parity and verification repair milestone.
 - [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md)
   - native octagram-compatible grammar support milestone.
 - [`plans/completed/m51-plan-engine-support-contract-abi-freeze.md`](./plans/completed/m51-plan-engine-support-contract-abi-freeze.md)
@@ -92,7 +97,7 @@ before treating the macOS bundle as a replacement performance verdict.
 
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
-| Engine performance | M55 is closed under the 2026-07-04 corrective re-baseline. Real wins: 37-char Luna `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `3.14x -> 2.433x`, `hao` `2.15x -> 1.574x`, startup `0.895x` and session `0.864x` (faster than librime, run-noisy), win rows locked `<1.00x`, Track B guard rows all green with startup/session ~3x better than their Phase 0 sources. Removed as measurement artifacts: the `luna_pinyin` key deferral, the `n`/`h` benchmark-input aliases, and the uninvalidated config cache; the benchmark now reads context per keypress. Byte-backed `YUNE-POET/2` poet storage is an explicit opt-in (`113.2 MB`, latency-blocked) while the shipping default stays owned (`185.7 MB`) — the latency ceilings bind. The 2026-07-04 macOS verification bundle found a Yune-side sentence-model/model-shape anomaly in the 37-char, 59-char, `cszysmsrsd`, and `zybfshmsru` rows; it is diagnostic evidence for M57, not a replacement for the M55 standing gate. | The corrective `m55-thresholds.csv` is the standing native Track A gate (green twice: `corrective-2026-07-04/gate-run-d`, `gate-run-e`; latest M56 closeout ratchet also green). M57 is drafted to fix the macOS Track A sentence-model construction and abbreviation-path defect, then re-run the macOS bundle. Future engine performance work: port the incremental sentence scratch to byte-backed storage (reclaims the memory win), then poet graph constants / short keys — each with fresh owner evidence and no ABI widening. |
+| Engine performance | M55 is closed under the 2026-07-04 corrective re-baseline. Real wins: 37-char Luna `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `3.14x -> 2.433x`, `hao` `2.15x -> 1.574x`, startup `0.895x` and session `0.864x` (faster than librime, run-noisy), win rows locked `<1.00x`, Track B guard rows all green with startup/session ~3x better than their Phase 0 sources. Removed as measurement artifacts: the `luna_pinyin` key deferral, the `n`/`h` benchmark-input aliases, and the uninvalidated config cache; the benchmark now reads context per keypress. Byte-backed `YUNE-POET/2` poet storage is an explicit opt-in (`113.2 MB`, latency-blocked) while the shipping default stays owned (`185.7 MB`) - the latency ceilings bind. M57 repaired the macOS Track A verification anomaly in the 37-char, 59-char, `cszysmsrsd`, and `zybfshmsru` rows by restoring compact compiled-table sentence-model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary). | The corrective `m55-thresholds.csv` remains the standing native Track A gate (green twice: `corrective-2026-07-04/gate-run-d`, `gate-run-e`; latest M56 closeout ratchet also green). M57's two macOS passes are comparability evidence for the repaired macOS bundle, not a replacement performance gate. Future engine performance work: port the incremental sentence scratch to byte-backed storage (reclaims the memory win), then poet graph constants / short keys - each with fresh owner evidence and no ABI widening. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
 | Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04 adds a default-off `luna_pinyin_octagram` debug profile that fetches a pinned lotem `.gram` locally, delivers it only for the octagram profile, exposes delivered/fallback/checksum/schema-select high-water memory diagnostics, proves all four named ranking rows versus plain Luna in Playwright, and proves browser fail-closed behavior. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. Broader contextual suggestions or non-debug octagram product UX needs a new scoped plan. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
@@ -247,15 +252,20 @@ Current decision:
    Web-harness track; no engine changes, so it does not conflict with M56. Plan:
    [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md).
 7. **M57 macOS Track A sentence-model parity and verification repair is
-   drafted for review.** The independent macOS rerun found that local librime
-   stays oracle-shaped, but Yune builds a different Luna sentence-model shape:
-   `poet.entries_by_code` drops from the Windows corrective `513,353` owner
-   shape to `191,984`, `poet.abbreviation_vocabulary` expands from the 11-row
+   complete.** The independent macOS rerun found that local librime stayed
+   oracle-shaped, but Yune built a different Luna sentence-model shape:
+   `poet.entries_by_code` dropped from the Windows corrective `513,353` owner
+   shape to `191,984`, `poet.abbreviation_vocabulary` expanded from the 11-row
    M42 target set to the full `421,966` vocabulary, the two abbreviation rows
-   skip abbreviation discovery, and the long rows explode graph work. M57 fixes
-   the Yune-side construction/abbreviation-path defect and reruns the macOS
-   evidence bundle. Plan:
-   [`plans/active/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/active/m57-plan-macos-track-a-sentence-model-parity.md).
+   skipped abbreviation discovery, and the long rows exploded graph work. M57
+   fixed the Yune-side construction defect by accepting the macOS upstream Luna
+   MARISA checksum pair (`0xb3d4e98e` / `0x29d56c89`) behind the existing
+   target gate, restored compact model counts (`332,604` codes, `513,353`
+   expanded entries, 11-row abbreviation vocabulary), and produced two full
+   macOS native verification passes. Evidence:
+   [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/).
+   Plan:
+   [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md).
 8. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
@@ -279,7 +289,7 @@ and current decision rules.
 
 | Track | Scope | Current source of truth |
 | --- | --- | --- |
-| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, Track A guardrails, M55 final evidence, M57 macOS Track A sentence-model repair, historical native Track A research no-go evidence, and TypeDuck/Jyutping profile storage | M57 active plan, M55 final threshold/evidence, M52 historical guardrail evidence, M50 plan/evidence, M47 plan/evidence, and performance reports. |
+| Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, Track A guardrails, M55 final evidence, M57 macOS Track A sentence-model repair, historical native Track A research no-go evidence, and TypeDuck/Jyutping profile storage | M57 completed plan/evidence, M55 final threshold/evidence, M52 historical guardrail evidence, M50 plan/evidence, M47 plan/evidence, and performance reports. |
 | Web harness startup and memory | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, Chromium memory, compiled-asset contract, and debug-only octagram harness diagnostics | WEB-04 plan/evidence, WEB-03 plan/evidence, WEB-02 owner classification, WEB-01 measured no-go, M41 startup evidence, and browser reports. |
 | Core compatibility | Upstream behavior fixtures, standard ABI-observable behavior, staleness policy, user-data lifecycle, and ABI crash/threading/poison policy | Requirements, decisions, engine support contract, per-milestone plans, M53 release-readiness audit (`reports/evidence/m53-engine-release-readiness-audit/`), and M56 productization evidence. |
 | AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
@@ -299,7 +309,7 @@ and current decision rules.
 | M54 | Complete | Native octagram-compatible grammar support for the named upstream `luna_pinyin` target, with pinned lotem oracle data, RIME-LMDG validation evidence, external model checksums, clean-room Rust `.gram` parsing/scoring, null-grammar and TypeDuck regression gates, and no public C ABI change. Plan: [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md). |
 | M55 | Complete (corrective re-baseline) | Native Track A performance program, closed 2026-07-04 after a corrective review. Real: 37-char `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `2.433x`, `hao` `1.574x`, startup `0.895x`, session `0.864x`, win rows locked `<1.00x`, Track B guards green and tightened (~3x better startup/session absolutes), `YUNE-POET/2` byte-backed poet built (opt-in `113.2 MB`, latency-blocked; default owned `185.7 MB`). Retracted as measurement artifacts: the pre-corrective `0.237x`/`0.086x`/`0.286x` rows (key deferral, benchmark-input aliases, uninvalidated config cache - all reverted; benchmark now reads context per keypress). Corrective gate green twice. Corrective record: [`reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/). Plan: [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md). |
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
-| M57 | Drafted / review | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows explode graph work, abbreviation rows skip M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reports the full `421,966` vocabulary instead of the 11-row target set. Plan: fix platform-stable sentence-model construction first, add abbreviation-route protection only if correct construction still leaves candidate parity broken, then rerun the macOS native evidence bundle. Plan: [`plans/active/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/active/m57-plan-macos-track-a-sentence-model-parity.md). |
+| M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | In progress (Phase 0 complete) | Harness control surface: expose every engine control/diagnostic reachable through existing seams in the `yune-web` playground (the M21-deferred "surface all controls" slice); defaults and public demo unchanged; Playwright-evidenced. Plan: [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md). |
 
 ## Scope Ledger

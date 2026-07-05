@@ -1,0 +1,14 @@
+engine=yune
+track=track-a-comparison
+schema=luna_pinyin
+dll=/Users/laufei/Documents/GitHub/yune/target/release/libyune_rime_api.dylib
+shared=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/run-2/track-a-yune/shared
+user=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/run-2/track-a-yune/user
+build=/Users/laufei/Documents/GitHub/yune/target/macos-performance-verification/native-inprocess/run-2/track-a-yune/user/build
+inputs=ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+iterations=1
+session_iterations=1
+key_iterations=1
+deploy_before_benchmark=false
+deploy_only=false
+managed_runtime=false

@@ -1,0 +1,21 @@
+kind,workload,input,observed_ratio,expected,status
+latency_direction,key_sequence_process_with_context,ceshiyixiachangjushuruxingnengzenyang,2.695,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,cszysmsrsd,0.456,yune faster than librime,confirmed
+latency_direction,key_sequence_process_with_context,hao,1.152,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,n,4.320,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,ni,4.103,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,2.100,yune slower than librime,confirmed
+latency_direction,key_sequence_process_with_context,zhongguo,0.162,yune faster than librime,confirmed
+latency_direction,key_sequence_process_with_context,zybfshmsru,0.695,yune faster than librime,confirmed
+latency_noise_caveat,startup_warm_shared_assets_runtime_ready,,0.608,report says measured faster on Windows but run-noisy/platform-specific,confirmed-on-this-run
+latency_noise_caveat,session_create_select_destroy,,0.615,report says measured faster on Windows but run-noisy/platform-specific,confirmed-on-this-run
+candidate_snapshot,candidate_first_page,ceshiyixiachangjushuruxingnengzenyang,,first page may differ as disclosed,confirmed
+candidate_snapshot,candidate_first_page,cszysmsrsd,,first page matches,confirmed
+candidate_snapshot,candidate_first_page,hao,,first page matches,confirmed
+candidate_snapshot,candidate_first_page,n,,first page may differ as disclosed,confirmed
+candidate_snapshot,candidate_first_page,ni,,first page matches,confirmed
+candidate_snapshot,candidate_first_page,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,,first page may differ as disclosed,confirmed
+candidate_snapshot,candidate_first_page,zhongguo,,first page may differ as disclosed,confirmed
+candidate_snapshot,candidate_first_page,zybfshmsru,,first page matches,confirmed
+memory_direction,track-a-peak-resident,,14.089,Yune Track A peak resident memory remains above librime on native peer lane,confirmed
+browser,browser-peer-dashboard,,,browser rows are carried evidence,not-rerun

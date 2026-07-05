@@ -6,10 +6,10 @@
 > reviewer challenge the root-cause chain, the proposed fix, and the evidence
 > gates.
 
-> **Status:** Draft for review. - **Track:** Engine performance correctness and
-> cross-platform verification. - **Created:** 2026-07-04. - **Type:** bug-fix
-> milestone plus verification repair. No ABI widening, no product behavior
-> expansion, no browser live-site comparison.
+> **Status:** Complete. - **Track:** Engine performance correctness and
+> cross-platform verification. - **Created:** 2026-07-04. - **Closed:**
+> 2026-07-05. - **Type:** bug-fix milestone plus verification repair. No ABI
+> widening, no product behavior expansion, no browser live-site comparison.
 
 **Goal:** Make native Track A `luna_pinyin` sentence-model behavior and
 performance evidence platform-honest on macOS by fixing the Yune-side
@@ -31,6 +31,42 @@ specific portability/comparability failure:
 
 Until this is fixed, the macOS verification bundle is useful diagnostic
 evidence but **not** a valid contradiction of the Windows M55 corrective claim.
+
+## Closeout Summary
+
+M57 fixed the macOS-only Track A construction defect without widening ABI or
+changing TypeDuck profile surfaces. The root cause was target recognition, not
+raw MARISA traversal: macOS `rime_deployer` emits a valid upstream
+`luna_pinyin` MARISA table with source/table checksum pair `0xb3d4e98e` /
+`0x29d56c89`, while Yune's known upstream Luna compact-table acceptance path
+recognized only the Windows pair `0x16ad0e3e` / `0xb967cfef`. The repaired path
+accepts both pairs only under the existing `luna_pinyin` target gate and
+MARISA string-table size `1,574,520`.
+
+Post-fix macOS evidence restores the expected compact model shape:
+`stored_entries=498,564`, `compact_all_codes_count=332,604`,
+`compact_expanded_table_entries=513,353`, `poet.entries_by_code=513,353`,
+`poet.lookup_index=332,604`, and `poet.abbreviation_vocabulary=11`.
+Candidate snapshots for `cszysmsrsd` and `zybfshmsru` match local librime
+`1.17.0` in both full macOS passes. The optional WEB-03 TypeDuck guard was not
+run as an engine guard because the local `apps/yune-web/public-demo/dist/schema`
+fixture directory is absent and the test panics before engine execution.
+
+Evidence:
+`docs/reports/evidence/m57-macos-track-a-sentence-model-parity/`.
+
+Implementation notes:
+
+- `crates/yune-rime-api/src/schema_install.rs` recognizes the macOS upstream
+  Luna MARISA checksum pair for compiled-table model construction.
+- `crates/yune-core/src/dictionary/compiled_table.rs` exposes Rust-only compact
+  enumeration counters for diagnostics and benchmark evidence.
+- `crates/yune-rime-api/benches/native_inprocess_benchmark.rs` records compact
+  `all_codes()` and expanded-entry counts in `product_path_status.csv`.
+- Regression coverage includes synthetic MARISA enumeration, a committed real
+  compiled Luna table fixture, and schema-install checksum-pair tests.
+
+---
 
 ---
 
@@ -443,7 +479,7 @@ assets exist.
 
 ## Phase 4: Re-Run macOS Verification
 
-- [ ] Run:
+- [x] Run:
 
 ```bash
 cargo fmt --check
@@ -451,8 +487,8 @@ cargo build --release -p yune-rime-api
 cargo clippy -p yune-rime-api --bench native_inprocess_benchmark -- -D warnings
 ```
 
-- [ ] Run focused tests added by this milestone.
-- [ ] If local web assets are available, run the existing TypeDuck/web guard:
+- [x] Run focused tests added by this milestone.
+- [x] If local web assets are available, run the existing TypeDuck/web guard:
 
 ```bash
 cargo test -p yune-rime-api --test yune_web \
@@ -463,45 +499,47 @@ cargo test -p yune-rime-api --test yune_web \
       If the assets are absent, record it as not-run because of fixture setup.
       Do not infer whether the M57-class defect does or does not affect the
       byte-backed TypeDuck product lane from a setup panic.
-- [ ] Run two full macOS native verification passes using the same input and
+      Closeout: local assets are absent (`apps/yune-web/public-demo/dist/schema`
+      is missing), so this is recorded as not-run due fixture setup.
+- [x] Run two full macOS native verification passes using the same input and
       iteration shape as the M55 corrective gate:
 
 ```bash
 scripts/benchmark-native-rime-inprocess-macos.sh \
-  --output-root docs/reports/evidence/m57-macos-track-a-sentence-model-parity/run-1 \
+  --output-root docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-1 \
   --iterations 9 \
   --session-iterations 60 \
   --key-iterations 80
 
 scripts/benchmark-native-rime-inprocess-macos.sh \
-  --output-root docs/reports/evidence/m57-macos-track-a-sentence-model-parity/run-2 \
+  --output-root docs/reports/evidence/m57-macos-track-a-sentence-model-parity/full-pass-2 \
   --iterations 9 \
   --session-iterations 60 \
   --key-iterations 80
 ```
 
-- [ ] Recompute `summary-comparison.csv` from raw CSVs.
-- [ ] Write `macos-verdict.md` classifying each report claim as confirmed,
+- [x] Recompute `summary-comparison.csv` from raw CSVs.
+- [x] Write `macos-verdict.md` classifying each report claim as confirmed,
       platform-specific, contradicted, or not re-run.
-- [ ] Explicitly state whether Windows M55 standing ratchet was re-run. If not,
+- [x] Explicitly state whether Windows M55 standing ratchet was re-run. If not,
       do not claim Windows guardrails passed.
 
 ## Phase 5: Documentation And Closeout
 
-- [ ] Update the macOS verification report/evidence README with:
+- [x] Update the macOS verification report/evidence README with:
       - the original failing symptom
       - root cause
       - fix
       - before/after candidate snapshots
       - before/after graph counters
       - remaining platform-specific caveats
-- [ ] Update `docs/reports/yune-vs-librime-performance.md` only if the public
+- [x] Update `docs/reports/yune-vs-librime-performance.md` only if the public
       claim text needs qualification.
-- [ ] Update `docs/reports/yune-vs-librime-root-cause-analysis.md` only if the
+- [x] Update `docs/reports/yune-vs-librime-root-cause-analysis.md` only if the
       owner story changes.
-- [ ] Update `docs/roadmap.md`, `docs/requirements.md`, and
+- [x] Update `docs/roadmap.md`, `docs/requirements.md`, and
       `docs/ledgers/milestone-history.md` on closeout.
-- [ ] Move this plan to `docs/plans/completed/` only when evidence is complete.
+- [x] Move this plan to `docs/plans/completed/` only when evidence is complete.
 
 ## Review Checklist For Claude
 

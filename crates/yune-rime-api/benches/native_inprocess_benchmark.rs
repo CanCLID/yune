@@ -1388,11 +1388,10 @@ fn write_metadata(path: &PathBuf, options: &Options) {
 }
 
 fn write_product_path_status(path: &PathBuf, options: &Options) {
-    let mut output = String::from("engine,track,schema_id,dictionary_id,prism_id,source_path,table_path,prism_path,reverse_path,source_checksum,table_checksum,checksum_status,table_parse,prism_parse,reverse_parse,compiled_ready,selected_storage,table_format,table_mapping_mode,prism_mapping_mode,source_fallback,byte_source_len,stored_entries,table_heap_mirror_bytes,prism_heap_mirror_bytes,rsmarisa_probe_path,rsmarisa_status,rsmarisa_mapping_mode,rsmarisa_num_tries,rsmarisa_num_keys,rsmarisa_sample_key\n");
+    let mut output = String::from("engine,track,schema_id,dictionary_id,prism_id,source_path,table_path,prism_path,reverse_path,source_checksum,table_checksum,checksum_status,table_parse,prism_parse,reverse_parse,compiled_ready,selected_storage,table_format,table_mapping_mode,prism_mapping_mode,source_fallback,byte_source_len,stored_entries,compact_all_codes_count,compact_expanded_table_entries,compact_expansion_status,table_heap_mirror_bytes,prism_heap_mirror_bytes,rsmarisa_probe_path,rsmarisa_status,rsmarisa_mapping_mode,rsmarisa_num_tries,rsmarisa_num_keys,rsmarisa_sample_key\n");
     for (dictionary_id, prism_id) in status_dictionary_requests(options) {
         let status = ProductPathStatus::inspect(options, dictionary_id, prism_id);
-        output.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+        let fields = [
             csv(&options.engine),
             csv(&options.track),
             csv(&options.schema),
@@ -1404,35 +1403,42 @@ fn write_product_path_status(path: &PathBuf, options: &Options) {
             csv(&display_optional_path(status.reverse_path.as_ref())),
             status.source_checksum.map_or_else(
                 || "unavailable".to_owned(),
-                |value| format!("{value:#010x}")
+                |value| format!("{value:#010x}"),
             ),
             status.table_checksum.map_or_else(
                 || "unavailable".to_owned(),
-                |value| format!("{value:#010x}")
+                |value| format!("{value:#010x}"),
             ),
             csv(&status.checksum_status),
             csv(&status.table_parse),
             csv(&status.prism_parse),
             csv(&status.reverse_parse),
-            status.compiled_ready,
+            status.compiled_ready.to_string(),
             csv(&status.selected_storage),
             csv(&status.table_format),
             csv(&status.table_mapping_mode),
             csv(&status.prism_mapping_mode),
-            status.source_fallback,
-            status.byte_source_len,
-            status.stored_entries,
-            status.table_heap_mirror_bytes,
-            status.prism_heap_mirror_bytes,
+            status.source_fallback.to_string(),
+            status.byte_source_len.to_string(),
+            status.stored_entries.to_string(),
+            status.compact_all_codes_count,
+            status.compact_expanded_table_entries,
+            csv(&status.compact_expansion_status),
+            status.table_heap_mirror_bytes.to_string(),
+            status.prism_heap_mirror_bytes.to_string(),
             csv(&display_optional_path(status.rsmarisa_probe_path.as_ref())),
             csv(&status.rsmarisa_status),
             csv(&status.rsmarisa_mapping_mode),
-            status.rsmarisa_num_tries
+            status
+                .rsmarisa_num_tries
                 .map_or_else(|| "unavailable".to_owned(), |value| value.to_string()),
-            status.rsmarisa_num_keys
+            status
+                .rsmarisa_num_keys
                 .map_or_else(|| "unavailable".to_owned(), |value| value.to_string()),
-            csv(&status.rsmarisa_sample_key)
-        ));
+            csv(&status.rsmarisa_sample_key),
+        ];
+        output.push_str(&fields.join(","));
+        output.push('\n');
     }
     fs::write(path, output).expect("product path status CSV should be written");
 }
@@ -1482,6 +1488,9 @@ struct ProductPathStatus<'a> {
     source_fallback: bool,
     byte_source_len: usize,
     stored_entries: usize,
+    compact_all_codes_count: String,
+    compact_expanded_table_entries: String,
+    compact_expansion_status: String,
     table_heap_mirror_bytes: usize,
     prism_heap_mirror_bytes: usize,
     rsmarisa_probe_path: Option<PathBuf>,
@@ -1512,15 +1521,23 @@ impl<'a> ProductPathStatus<'a> {
         let table_checksum = table_bytes
             .as_ref()
             .and_then(rime_table_bin_dict_file_checksum);
-        let table_has_marisa = table_bytes
+        let string_table_size = table_bytes
             .as_ref()
-            .is_some_and(|bytes| string_table_range(bytes).is_some());
-        let accepts_upstream_marisa_checksum = options.engine == "yune"
-            && options.track == "track-a-comparison"
-            && dictionary_id == "luna_pinyin"
-            && table_has_marisa
-            && source_checksum.is_some()
-            && table_checksum.is_some();
+            .and_then(|bytes| string_table_range(bytes).map(|(_, size)| size));
+        let table_has_marisa = string_table_size.is_some();
+        let accepts_upstream_marisa_checksum = source_checksum.is_some_and(|source_checksum| {
+            table_checksum.is_some_and(|table_checksum| {
+                string_table_size.is_some_and(|string_table_size| {
+                    accepts_upstream_luna_marisa_checksum(
+                        options,
+                        dictionary_id,
+                        string_table_size,
+                        source_checksum,
+                        table_checksum,
+                    )
+                })
+            })
+        });
         let checksum_status = match (source_checksum, table_checksum) {
             (Some(source), Some(table)) if source == table => "fresh",
             (Some(_), Some(_)) if accepts_upstream_marisa_checksum => {
@@ -1597,6 +1614,14 @@ impl<'a> ProductPathStatus<'a> {
                 0,
             )
         };
+        let compact_expansion = if compiled_ready {
+            table_bytes.as_ref().map_or_else(
+                || CompactExpansionInspection::unavailable("missing_table"),
+                |bytes| inspect_compact_expansion(bytes, stored_entries),
+            )
+        } else {
+            CompactExpansionInspection::unavailable("compiled_not_ready")
+        };
 
         Self {
             dictionary_id,
@@ -1619,6 +1644,9 @@ impl<'a> ProductPathStatus<'a> {
             source_fallback: !compiled_ready,
             byte_source_len,
             stored_entries,
+            compact_all_codes_count: compact_expansion.all_codes_count,
+            compact_expanded_table_entries: compact_expansion.expanded_table_entries,
+            compact_expansion_status: compact_expansion.status,
             table_heap_mirror_bytes,
             prism_heap_mirror_bytes,
             rsmarisa_probe_path: rsmarisa.payload_path,
@@ -1629,6 +1657,87 @@ impl<'a> ProductPathStatus<'a> {
             rsmarisa_sample_key: rsmarisa.sample_key,
         }
     }
+}
+
+struct CompactExpansionInspection {
+    all_codes_count: String,
+    expanded_table_entries: String,
+    status: String,
+}
+
+impl CompactExpansionInspection {
+    fn unavailable(status: impl Into<String>) -> Self {
+        Self {
+            all_codes_count: "unavailable".to_owned(),
+            expanded_table_entries: "unavailable".to_owned(),
+            status: status.into(),
+        }
+    }
+}
+
+fn inspect_compact_expansion(bytes: &[u8], stored_entries: usize) -> CompactExpansionInspection {
+    let advanced = match parse_rime_table_bin_advanced_data(bytes) {
+        Ok(advanced) => advanced,
+        Err(error) => {
+            return CompactExpansionInspection::unavailable(format!(
+                "advanced_parse_failed:{error:?}"
+            ));
+        }
+    };
+    let store = match CompactTableStore::from_table_bin_bytes(Vec::from(bytes), advanced) {
+        Ok(store) => store,
+        Err(error) => {
+            return CompactExpansionInspection::unavailable(format!(
+                "compact_parse_failed:{error:?}"
+            ));
+        }
+    };
+    let all_codes_count = store.distinct_code_count();
+    let expanded_table_entries = store.expanded_entry_count();
+    let status = if expanded_table_entries >= stored_entries {
+        format!(
+            "ok:expanded_minus_stored={}",
+            expanded_table_entries - stored_entries
+        )
+    } else {
+        format!(
+            "under_expanded:stored_minus_expanded={}",
+            stored_entries - expanded_table_entries
+        )
+    };
+    let status = if stored_entries == 0 && expanded_table_entries == 0 {
+        "ok".to_owned()
+    } else {
+        status
+    };
+
+    CompactExpansionInspection {
+        all_codes_count: all_codes_count.to_string(),
+        expanded_table_entries: expanded_table_entries.to_string(),
+        status,
+    }
+}
+
+fn accepts_upstream_luna_marisa_checksum(
+    options: &Options,
+    dictionary_id: &str,
+    string_table_size: usize,
+    source_checksum: u32,
+    table_checksum: u32,
+) -> bool {
+    const UPSTREAM_LUNA_PINYIN_MARISA_CHECKSUMS: &[(u32, u32)] =
+        &[(0x16ad_0e3e, 0xb967_cfef), (0xb3d4_e98e, 0x29d5_6c89)];
+    const UPSTREAM_LUNA_PINYIN_STRING_TABLE_SIZE: usize = 1_574_520;
+
+    options.engine == "yune"
+        && options.track == "track-a-comparison"
+        && dictionary_id == "luna_pinyin"
+        && string_table_size == UPSTREAM_LUNA_PINYIN_STRING_TABLE_SIZE
+        && UPSTREAM_LUNA_PINYIN_MARISA_CHECKSUMS
+            .iter()
+            .any(|(known_source, known_table)| {
+                source_checksum == *known_source && table_checksum == *known_table
+            })
 }
 
 struct RsmarisaProbeStatus {

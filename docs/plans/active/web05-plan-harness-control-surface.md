@@ -4,7 +4,7 @@
 > otherwise execute the checkboxes directly, in order. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Drafted - may start any time; runs in parallel with M55/M56 (different track, no engine changes). - **Track:** Web harness (`apps/yune-web`). - **Created:** 2026-07-03 - **Type:** dogfooding/observability slice (app plumbing + UI only; no engine contract change, no default-behavior change).
+> **Status:** In progress - Phase 0 controls ledger committed (2026-07-05, `docs/reports/evidence/web05-control-surface/controls-ledger.md`: 14 surface rows, 2 named deferred rows); running on the Windows machine in parallel with M57 (macOS). Phase 1 next. - **Track:** Web harness (`apps/yune-web`). - **Created:** 2026-07-03 - **Type:** dogfooding/observability slice (app plumbing + UI only; no engine contract change, no default-behavior change).
 
 **Goal:** Make the `yune-web` playground the shared debugging surface for the
 external Windows/iOS frontend teams: **every engine control and diagnostic the

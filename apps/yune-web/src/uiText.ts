@@ -25,6 +25,7 @@ export const uiText = {
   yue: {
     header: {
       home: "yune-web 首頁",
+      product: "yune-web",
       title: "新韻輸入法引擎",
       footer: "yune-web 公開示範。Yune 同上游衍生資源按上游條款授權。",
       provenance: "來源記錄",
@@ -106,6 +107,7 @@ export const uiText = {
       customizeConfigId: "配置 ID",
       customizeKey: "鍵",
       customizeValue: "值",
+      customizeWarning: "警告：任意 customize 會修改已部署設定，只應用於本機除錯。",
       apply: "套用",
       debugUrlsTitle: "除錯網址",
       errorHistoryTitle: "錯誤歷史",
@@ -255,6 +257,7 @@ export const uiText = {
   en: {
     header: {
       home: "yune-web home",
+      product: "yune-web",
       title: "Yune Input Engine",
       footer:
         "yune-web public demo. Yune and upstream-derived assets are licensed under their upstream terms.",
@@ -337,6 +340,8 @@ export const uiText = {
       customizeConfigId: "Config ID",
       customizeKey: "Key",
       customizeValue: "Value",
+      customizeWarning:
+        "Warning: arbitrary customize calls modify deployed config; use this only for local debugging.",
       apply: "Apply",
       debugUrlsTitle: "Debug URLs",
       errorHistoryTitle: "Error history",

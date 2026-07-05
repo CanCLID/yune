@@ -4,86 +4,12 @@
     "source": "yune-startup",
     "marker": {
       "phase": "startup:complete",
-      "totalMs": 10165,
+      "totalMs": 459,
       "markers": [
         {
-          "phase": "worker:start",
+          "phase": "runtime:init:start",
           "ms": 0
         },
-        {
-          "phase": "wasm-glue:loaded",
-          "ms": 5
-        },
-        {
-          "phase": "module:created",
-          "ms": 16
-        },
-        {
-          "phase": "persistence:mounted",
-          "ms": 16
-        },
-        {
-          "phase": "assets:loaded",
-          "ms": 129
-        },
-        {
-          "phase": "runtime:initialized",
-          "ms": 10165
-        }
-      ],
-      "assetVersion": "m25-dogfood-v1",
-      "schema": "jyut6ping3_mobile",
-      "wasmBuildProfile": "release",
-      "wasmGlue": "yune-typeduck.js",
-      "wasmBinary": "yune-typeduck.wasm",
-      "loadedSharedAssets": [
-        "default.custom.yaml",
-        "common.yaml",
-        "common.custom.yaml",
-        "include.yaml",
-        "template.yaml",
-        "jyut6ping3.schema.yaml",
-        "jyut6ping3_mobile_longpress.schema.yaml",
-        "jyut6ping3_mobile_10keys.schema.yaml",
-        "jyut6ping3_scolar.schema.yaml",
-        "jyut6ping3_scolar.dict.yaml",
-        "luna_pinyin.schema.yaml",
-        "luna_pinyin.dict.yaml",
-        "luna_pinyin_yune_reverse.dict.yaml",
-        "loengfan.schema.yaml",
-        "loengfan.dict.yaml",
-        "loengfan_longpress.schema.yaml",
-        "cangjie3.schema.yaml",
-        "cangjie3.dict.yaml",
-        "cangjie5.schema.yaml",
-        "cangjie5.dict.yaml",
-        "opencc/hk2s.json",
-        "opencc/HKVariantsRev.ocd2",
-        "opencc/HKVariantsRevPhrases.ocd2",
-        "opencc/TSCharacters.ocd2",
-        "opencc/TSPhrases.ocd2",
-        "jyut6ping3.table.bin",
-        "jyut6ping3.reverse.bin",
-        "jyut6ping3_mobile.prism.bin",
-        "jyut6ping3_scolar.table.bin",
-        "jyut6ping3_scolar.reverse.bin",
-        "jyut6ping3_scolar.prism.bin",
-        "cangjie5.table.bin",
-        "cangjie5.reverse.bin",
-        "cangjie5.prism.bin",
-        "luna_pinyin.table.bin",
-        "luna_pinyin.reverse.bin",
-        "luna_pinyin.prism.bin"
-      ]
-    }
-  },
-  "startupAfterReload": {
-    "type": "diagnostic",
-    "source": "yune-startup",
-    "marker": {
-      "phase": "startup:complete",
-      "totalMs": 10433,
-      "markers": [
         {
           "phase": "worker:start",
           "ms": 0
@@ -93,27 +19,130 @@
           "ms": 4
         },
         {
-          "phase": "module:created",
+          "phase": "wasm:module:create:start",
+          "ms": 4
+        },
+        {
+          "phase": "wasm:module:create:finish",
           "ms": 15
+        },
+        {
+          "phase": "module:created",
+          "ms": 15,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "filesystem:mount:start",
+          "ms": 15
+        },
+        {
+          "phase": "filesystem:mount:finish",
+          "ms": 15,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
         },
         {
           "phase": "persistence:mounted",
-          "ms": 15
+          "ms": 15,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:start",
+          "ms": 15,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:finish",
+          "ms": 162,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
         },
         {
           "phase": "assets:loaded",
-          "ms": 91
+          "ms": 162,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:start",
+          "ms": 162,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:finish",
+          "ms": 449,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:start",
+          "ms": 449,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:finish",
+          "ms": 459,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "runtime:init:finish",
+          "ms": 459,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
         },
         {
           "phase": "runtime:initialized",
-          "ms": 10433
+          "ms": 459,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
         }
       ],
-      "assetVersion": "m25-dogfood-v1",
+      "m27EvidenceVersion": "m27-startup-v1",
+      "publicDemo": false,
+      "assetVersion": "yune-web-wasm-heap-v2",
       "schema": "jyut6ping3_mobile",
+      "wasmMemory": {
+        "currentBytes": 134217728,
+        "peakBytes": 134217728
+      },
       "wasmBuildProfile": "release",
-      "wasmGlue": "yune-typeduck.js",
-      "wasmBinary": "yune-typeduck.wasm",
+      "wasmGlue": "yune-web.js",
+      "wasmBinary": "yune-web.wasm",
+      "loadedExplicitAssets": [
+        "default.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3.dict.yaml"
+      ],
       "loadedSharedAssets": [
         "default.custom.yaml",
         "common.yaml",
@@ -121,20 +150,24 @@
         "include.yaml",
         "template.yaml",
         "jyut6ping3.schema.yaml",
-        "jyut6ping3_mobile_longpress.schema.yaml",
-        "jyut6ping3_mobile_10keys.schema.yaml",
+        "jyut6ping3_mobile.schema.yaml",
         "jyut6ping3_scolar.schema.yaml",
         "jyut6ping3_scolar.dict.yaml",
-        "luna_pinyin.schema.yaml",
-        "luna_pinyin.dict.yaml",
-        "luna_pinyin_yune_reverse.dict.yaml",
         "loengfan.schema.yaml",
         "loengfan.dict.yaml",
-        "loengfan_longpress.schema.yaml",
         "cangjie3.schema.yaml",
         "cangjie3.dict.yaml",
         "cangjie5.schema.yaml",
         "cangjie5.dict.yaml",
+        "luna_pinyin.dict.yaml",
+        "luna_pinyin_yune_reverse.dict.yaml",
+        "luna_pinyin_yune_reverse.table.bin",
+        "luna_pinyin_yune_reverse.reverse.bin",
+        "luna_pinyin_yune_reverse.prism.bin",
+        "opencc/t2hkf.json",
+        "opencc/HKVariantsFull.txt",
+        "opencc/t2s.json",
+        "opencc/t2tw.json",
         "opencc/hk2s.json",
         "opencc/HKVariantsRev.ocd2",
         "opencc/HKVariantsRevPhrases.ocd2",
@@ -145,13 +178,190 @@
         "jyut6ping3_mobile.prism.bin",
         "jyut6ping3_scolar.table.bin",
         "jyut6ping3_scolar.reverse.bin",
-        "jyut6ping3_scolar.prism.bin",
-        "cangjie5.table.bin",
-        "cangjie5.reverse.bin",
-        "cangjie5.prism.bin",
-        "luna_pinyin.table.bin",
-        "luna_pinyin.reverse.bin",
-        "luna_pinyin.prism.bin"
+        "jyut6ping3_scolar.prism.bin"
+      ]
+    }
+  },
+  "startupAfterReload": {
+    "type": "diagnostic",
+    "source": "yune-startup",
+    "marker": {
+      "phase": "startup:complete",
+      "totalMs": 446,
+      "markers": [
+        {
+          "phase": "runtime:init:start",
+          "ms": 0
+        },
+        {
+          "phase": "worker:start",
+          "ms": 0
+        },
+        {
+          "phase": "wasm-glue:loaded",
+          "ms": 4
+        },
+        {
+          "phase": "wasm:module:create:start",
+          "ms": 4
+        },
+        {
+          "phase": "wasm:module:create:finish",
+          "ms": 12
+        },
+        {
+          "phase": "module:created",
+          "ms": 12,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "filesystem:mount:start",
+          "ms": 12
+        },
+        {
+          "phase": "filesystem:mount:finish",
+          "ms": 12,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "persistence:mounted",
+          "ms": 12,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:start",
+          "ms": 12,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:finish",
+          "ms": 134,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:loaded",
+          "ms": 134,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:start",
+          "ms": 134,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:finish",
+          "ms": 442,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:start",
+          "ms": 442,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:finish",
+          "ms": 446,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "runtime:init:finish",
+          "ms": 446,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "runtime:initialized",
+          "ms": 446,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        }
+      ],
+      "m27EvidenceVersion": "m27-startup-v1",
+      "publicDemo": false,
+      "assetVersion": "yune-web-wasm-heap-v2",
+      "schema": "jyut6ping3_mobile",
+      "wasmMemory": {
+        "currentBytes": 134217728,
+        "peakBytes": 134217728
+      },
+      "wasmBuildProfile": "release",
+      "wasmGlue": "yune-web.js",
+      "wasmBinary": "yune-web.wasm",
+      "loadedExplicitAssets": [
+        "default.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3.dict.yaml"
+      ],
+      "loadedSharedAssets": [
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "jyut6ping3.schema.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3_scolar.schema.yaml",
+        "jyut6ping3_scolar.dict.yaml",
+        "loengfan.schema.yaml",
+        "loengfan.dict.yaml",
+        "cangjie3.schema.yaml",
+        "cangjie3.dict.yaml",
+        "cangjie5.schema.yaml",
+        "cangjie5.dict.yaml",
+        "luna_pinyin.dict.yaml",
+        "luna_pinyin_yune_reverse.dict.yaml",
+        "luna_pinyin_yune_reverse.table.bin",
+        "luna_pinyin_yune_reverse.reverse.bin",
+        "luna_pinyin_yune_reverse.prism.bin",
+        "opencc/t2hkf.json",
+        "opencc/HKVariantsFull.txt",
+        "opencc/t2s.json",
+        "opencc/t2tw.json",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+        "jyut6ping3.table.bin",
+        "jyut6ping3.reverse.bin",
+        "jyut6ping3_mobile.prism.bin",
+        "jyut6ping3_scolar.table.bin",
+        "jyut6ping3_scolar.reverse.bin",
+        "jyut6ping3_scolar.prism.bin"
       ]
     }
   },
@@ -159,12 +369,12 @@
     "type": "diagnostic",
     "source": "yune-persistence",
     "marker": {
-      "phase": "deploy:cache-hit",
+      "phase": "deploy:cache-miss",
       "reason": "deploy",
       "schemaId": "jyut6ping3_mobile",
       "userDataDir": "/rime",
-      "timestamp": "2026-06-21T23:54:37.781Z",
-      "assetVersion": "m25-dogfood-v1",
+      "timestamp": "2026-07-05T17:02:00.205Z",
+      "assetVersion": "yune-web-wasm-heap-v2",
       "persistedConfig": {
         "path": "/rime/jyut6ping3_mobile.custom.yaml",
         "exists": true,
@@ -183,30 +393,37 @@
           "cangjie/dictionary": "cangjie5",
           "cangjie/tips": "【倉頡五代】"
         },
-        "bytes": 621
+        "bytes": 539
       },
       "deployedConfig": {
         "path": "/rime/build/jyut6ping3_mobile.schema.yaml",
         "exists": true,
-        "pageSize": "7",
+        "pageSize": "6",
         "settings": {
-          "menu/page_size": "7",
-          "translator/enable_completion": "false",
-          "translator/enable_correction": "true",
-          "translator/enable_sentence": "false",
-          "translator/enable_user_dict": "false",
-          "translator/encode_commit_history": "false",
-          "translator/combine_candidates": "false",
+          "menu/page_size": "6",
+          "translator/enable_completion": "true",
+          "translator/enable_correction": "false",
+          "translator/enable_sentence": "true",
+          "translator/enable_user_dict": "true",
+          "translator/encode_commit_history": "true",
+          "translator/combine_candidates": "true",
           "translator/prediction_never_first": "true",
           "translator/prediction_weight_threshold": "0",
           "translator/dictionary_exclude": "[]",
-          "cangjie/dictionary": "cangjie5",
-          "cangjie/tips": "【倉頡五代】"
+          "cangjie/dictionary": null,
+          "cangjie/tips": null
         },
-        "bytes": 10028
+        "bytes": 9198
       }
     }
   },
-  "warmReloadElapsedMs": 41407,
-  "resources": []
+  "warmReloadElapsedMs": 2195,
+  "resources": [
+    {
+      "name": "http://127.0.0.1:5173/worker.js?v=yune-web-wasm-heap-v1&schema=jyut6ping3",
+      "duration": -35.39999997615814,
+      "transferSize": 300
+    }
+  ],
+  "cachePolicyFollowUp": "WEB05-FOLLOWUP-DEPLOY-CACHE-PERSISTED-CUSTOM-CONFIG: cache remains stale after a persisted page-size config because freshness rejects any persisted custom config and the pre-deploy schema snapshot still has menu/page_size=6."
 }

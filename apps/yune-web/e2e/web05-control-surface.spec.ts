@@ -20,6 +20,12 @@ const controlsEvidencePath = path.join(evidenceRoot, "control-surface-evidence.j
 const publicDemoEvidencePath = path.join(evidenceRoot, "public-demo-gating-evidence.json");
 const CAPTURE_BASELINE = process.env.WEB05_CAPTURE_BASELINE === "1";
 const RUN_PUBLIC_DEMO_E2E = process.env.WEB05_PUBLIC_DEMO_E2E === "1";
+const CAPTURE_LABEL = process.env.WEB05_CAPTURE_LABEL ?? null;
+const SOURCE_COMMIT = process.env.WEB05_SOURCE_COMMIT ?? null;
+const WASM_PATH = process.env.WEB05_WASM_PATH ?? null;
+
+test.describe.configure({ mode: "serial" });
+test.setTimeout(TIMEOUT_MS);
 
 type CandidateSnapshot = {
   text: string | null;
@@ -32,6 +38,17 @@ type SmokeSnapshot = {
   input: string;
   preedit: string;
   candidates: CandidateSnapshot[];
+};
+
+type DefaultBehaviorEvidence = {
+  sourceLabel: string | null;
+  sourceCommit: string | null;
+  appUrl: string;
+  capturedAt: string;
+  wasmPath: string | null;
+  wasmSha256: string | null;
+  appVersion: string | null;
+  snapshots: SmokeSnapshot[];
 };
 
 const smokeCases = [
@@ -48,7 +65,17 @@ async function readJson<T>(file: string): Promise<T> {
   return JSON.parse(await readFile(file, "utf8")) as T;
 }
 
-async function appHash(): Promise<string | null> {
+async function runtimeArtifact(): Promise<{
+  wasmPath: string | null;
+  wasmSha256: string | null;
+}> {
+  if (WASM_PATH) {
+    const data = await readFile(WASM_PATH);
+    return {
+      wasmPath: WASM_PATH,
+      wasmSha256: createHash("sha256").update(data).digest("hex"),
+    };
+  }
   const candidates = [
     path.join(repoRoot, "apps", "yune-web", "public", "yune-web.wasm"),
     path.join(repoRoot, "target", "wasm32-unknown-emscripten", "debug", "yune-web.wasm"),
@@ -56,12 +83,15 @@ async function appHash(): Promise<string | null> {
   for (const file of candidates) {
     try {
       const data = await readFile(file);
-      return createHash("sha256").update(data).digest("hex");
+      return {
+        wasmPath: file,
+        wasmSha256: createHash("sha256").update(data).digest("hex"),
+      };
     } catch {
       // Try the next known runtime artifact location.
     }
   }
-  return null;
+  return { wasmPath: null, wasmSha256: null };
 }
 
 async function openApp(page: Page, url = APP_URL): Promise<void> {
@@ -141,11 +171,7 @@ async function typeAndSnapshot(
   return { schema, input, preedit, candidates };
 }
 
-async function captureDefaultBehavior(page: Page): Promise<{
-  wasmSha256: string | null;
-  appVersion: string | null;
-  snapshots: SmokeSnapshot[];
-}> {
+async function captureDefaultBehavior(page: Page): Promise<DefaultBehaviorEvidence> {
   await openApp(page);
   const snapshots: SmokeSnapshot[] = [];
   for (const smokeCase of smokeCases) {
@@ -154,8 +180,14 @@ async function captureDefaultBehavior(page: Page): Promise<{
       snapshots.push(await typeAndSnapshot(page, smokeCase.schema, input));
     }
   }
+  const artifact = await runtimeArtifact();
   return {
-    wasmSha256: await appHash(),
+    sourceLabel: CAPTURE_LABEL,
+    sourceCommit: SOURCE_COMMIT,
+    appUrl: APP_URL,
+    capturedAt: new Date().toISOString(),
+    wasmPath: artifact.wasmPath,
+    wasmSha256: artifact.wasmSha256,
     appVersion: await page.evaluate(
       () => document.documentElement.dataset.yuneRimeVersion ?? null,
     ),
@@ -173,7 +205,9 @@ test("WEB-05 same-WASM default behavior baseline/post comparison", async ({
   }
   const baseline = await readJson<typeof current>(baselinePath);
   await writeJson(postPath, current);
-  expect(current).toEqual(baseline);
+  expect(current.wasmSha256).toBe(baseline.wasmSha256);
+  expect(current.appVersion).toBe(baseline.appVersion);
+  expect(current.snapshots).toEqual(baseline.snapshots);
 });
 
 test("WEB-05 deploy and diagnostics controls expose observable state", async ({
@@ -297,6 +331,9 @@ test("WEB-05 dev-power controls are visible only in the harness", async ({
   await expect(page.locator("[data-yune-raw-response-viewer]")).toBeVisible();
   await expect(page.locator("[data-yune-freeform-set-option]")).toBeVisible();
   await expect(page.locator("[data-yune-freeform-customize]")).toBeVisible();
+  await expect(page.locator("[data-yune-freeform-customize-warning]")).toContainText(
+    /deployed config|已部署設定/i,
+  );
   await expect(page.locator("[data-yune-debug-url-reference]")).toBeVisible();
 
   await page.locator("[data-yune-freeform-customize] input").first().fill("");
@@ -324,5 +361,29 @@ test("WEB-05 public demo hides debug and admin controls", async ({ page }) => {
   for (const selector of hiddenSelectors) {
     await expect(page.locator(selector)).toHaveCount(0);
   }
-  await writeJson(publicDemoEvidencePath, { hiddenSelectors });
+  const forbiddenActions = [
+    "deployCacheSnapshot",
+    "injectedAssetsManifest",
+    "invalidateDeployCache",
+  ];
+  const publicDataSurface = await page.evaluate(() => {
+    const root = document.documentElement;
+    const rawActions = root.dataset.yuneActionDiagnostics;
+    const actionDiagnostics = rawActions ? JSON.parse(rawActions) as { action?: string }[] : [];
+    return {
+      lastActionResult: root.dataset.yuneLastActionResult ?? null,
+      deployCacheFresh: root.dataset.yuneDeployCacheFresh ?? null,
+      actionNames: actionDiagnostics.map((diagnostic) => diagnostic.action ?? ""),
+    };
+  });
+  expect(publicDataSurface.lastActionResult).toBeNull();
+  expect(publicDataSurface.deployCacheFresh).toBeNull();
+  for (const action of forbiddenActions) {
+    expect(publicDataSurface.actionNames).not.toContain(action);
+  }
+  await writeJson(publicDemoEvidencePath, {
+    hiddenSelectors,
+    forbiddenActions,
+    publicDataSurface,
+  });
 });

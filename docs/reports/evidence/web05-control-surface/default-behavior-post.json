@@ -1,4 +1,9 @@
 {
+  "sourceLabel": "web05-corrective-on-db034e01",
+  "sourceCommit": "db034e01-plus-web05-corrective-worktree",
+  "appUrl": "http://127.0.0.1:5173",
+  "capturedAt": "2026-07-05T17:10:22.102Z",
+  "wasmPath": "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\apps\\yune-web\\public\\yune-web.wasm",
   "wasmSha256": "cb05289d6a72562ed349d82e94eec0e5681f40fe681aa823107670be3c68dc22",
   "appVersion": "yune-web-wasm-heap-v1",
   "snapshots": [

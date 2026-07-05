@@ -28,8 +28,8 @@ Public-demo posture is explicit for every `surface` row. `allowed` means the row
 | S3 | Manual "Redeploy now" button | worker `customize()` + `deploy()` (auto-only today) | hidden | Deploy exists with no explicit trigger; needed for staleness/dogfood debugging, but manual admin controls must not grow the public demo. |
 | S4 | Persistence-diagnostics inspector section | adapter `emitPersistenceDiagnostic` markers (already on `<html>` dataset + `__YUNE_WEB_DEBUG__`) | hidden | Rich persisted-vs-deployed config snapshots reachable only via console today; would have caught the M41 deploy-skip regression visually. |
 | S5 | Deploy-cache stamp viewer + force-invalidate | adapter `.yune-deploy-stamp.json` / `isDeployCacheFresh` (cache-hit/miss already emitted as diagnostic) | hidden | Only current invalidation is the full hard reset; a scoped "invalidate deploy cache" is the missing middle, but cache invalidation is admin/debug power. |
-| S6 | `optionChanged` observer (dataset + UI sync) | engine `option` notifications -> `optionChanged` listener (zero consumers today) | allowed | Engine-initiated option flips (incl. hotkeys) are invisible; wire via the existing-but-unused `useRimeOption` hook (`hooks.ts:58`). |
-| S7 | Key-binder hotkey reference panel | schema `key_binder` bindings (Ctrl+Shift+2 ascii, Ctrl+Shift+3 full-shape, Ctrl+period ascii-punct, Ctrl+Shift+1/space variant cycle) | allowed | Real, persisted engine controls that nothing documents; pairs with S6 so flips are visible. |
+| S6 | `optionChanged` observer (dataset sync + `ascii_punct` UI sync) | engine `option` notifications -> `optionChanged` listener | allowed | WEB-05 records all option flips in `data-yune-option-*` datasets and wires visible two-way UI sync for the new `ascii_punct` control only. Other hotkey flips remain represented by their existing controls/status where present; no broad "all hotkeys visibly sync" claim. |
+| S7 | Key-binder hotkey reference panel | schema `key_binder` bindings (Ctrl+Shift+2 ascii, Ctrl+Shift+3 full-shape, Ctrl+period ascii-punct, Ctrl+Shift+1/space variant cycle) | allowed | Real engine controls that nothing documented. The panel is a reference, not proof that every hotkey has a new WEB-05 UI state consumer. |
 | S8 | Free-form `dictionary_exclude` editor | `customize({dictionaryExclude: string[]})` (UI today = canned one-char preset per schema) | allowed | Seam accepts an arbitrary list; expose a real list editor, keep the preset as a quick option. |
 | S9 | Injected-assets manifest diagnostic | worker `extraSharedAssets` writes (path-validated) | hidden | List what was written into the shared data dir per deploy (name/bytes); cheap staleness/debug aid, WEB-04-pattern data attributes. |
 | S10 | Inspector render gaps: candidate `preedit` + `ai_confidence`; prediction `weight_threshold`/`above_threshold`; `segment.source` | already parsed into runtime types, simply not rendered | allowed | Zero new plumbing; render-only additions to existing inspector panels. |
@@ -69,7 +69,7 @@ Diagnostics with UI/dataset: startup `initialized` (+heap seed), `schemaChanged`
 
 - App-side demo flag: `IS_PUBLIC_DEMO` in `consts.ts`, derived from `import.meta.env.VITE_YUNE_PUBLIC_DEMO === "1"`. WEB-05 gates the new dev-power controls on this shared constant. Do not use `import.meta.env.DEV` for visible-control gating.
 - Worker-side demo define: `YUNE_PUBLIC_DEMO_BUILD` (esbuild define in `public-demo/build.mjs:83`).
-- Observed posture: several debug surfaces (`__YUNE_WEB_DEBUG__`, the `data-yune-*` action/persistence datasets, inspector, userdb viewer) ship ungated in the demo today. Pre-existing, out of WEB-05 scope to change; WEB-05 adds no *new* ungated debug surface regardless.
+- Observed posture: several debug surfaces (`__YUNE_WEB_DEBUG__`, the pre-existing action/persistence diagnostics datasets, inspector, userdb viewer) ship ungated in the demo today. Pre-existing, out of WEB-05 scope to change. WEB-05 gates its new raw action-result dataset and skips its deploy-cache/injected-assets remote pulls when `IS_PUBLIC_DEMO`, so hidden UI cards do not leave a new public data surface behind.
 
 ## 6. Inventory corrections & observations
 
@@ -97,7 +97,7 @@ The table below is the raw 108-row inventory behind the grouped sections above. 
 | A003 | Manual redeploy | `customize()` + `deploy()` worker actions | Auto-deploy only | hidden | surface | Admin/debug control; gate from public demo. |
 | A004 | Persistence diagnostics panel | `yune-persistence` diagnostics; debug helper | Dataset and console only | hidden | surface | Display persisted/deployed settings in dev harness. |
 | A005 | Deploy-cache viewer/invalidate | `.yune-deploy-stamp.json`; cache-hit/miss diagnostics | Dataset/console only | hidden | surface | Scoped invalidation stays dev-harness-only. |
-| A006 | `optionChanged` observer | Engine notification -> `optionChanged` listener | Listener exists; no UI consumer | allowed | surface | Use existing `useRimeOption` path. |
+| A006 | `optionChanged` observer | Engine notification -> `optionChanged` listener | Dataset consumer plus `ascii_punct` UI consumer | allowed | surface | WEB-05 syncs all optionChanged events to datasets and uses `useRimeOption` for the new `ascii_punct` UI. Other hotkey flips are not newly UI-synchronized by WEB-05. |
 | A007 | Key-binder hotkey reference | Schema `key_binder` bindings | Not surfaced | allowed | surface | Product-shaped reference for existing controls. |
 | A008 | Free-form `dictionary_exclude` editor | `customize({ dictionaryExclude })` | Canned preset toggle only | allowed | surface | Keep preset and add explicit list editor. |
 | A009 | Injected-assets manifest | Worker `extraSharedAssets` write path | Not surfaced | hidden | surface | Diagnostic asset list; gate from public demo. |
@@ -148,7 +148,7 @@ The table below is the raw 108-row inventory behind the grouped sections above. 
 | A054 | `zh_hans` option | Output-standard mapper | Toolbar/preferences | pre-existing | already-surfaced | Luna simplified output path. |
 | A055 | `zh_hant_hk` option | Output-standard mapper | Toolbar/preferences | pre-existing | already-surfaced | Luna HK output path. |
 | A056 | `zh_hant_tw` option | Output-standard mapper | Toolbar/preferences | pre-existing | already-surfaced | Luna Taiwan output path. |
-| A057 | Extended charset | `setOption("extended_charset")` | Preferences session section | pre-existing | already-surfaced | Existing live option. |
+| A057 | Extended charset | `setOption("extended_charset")` | Preferences session section | pre-existing | already-surfaced | Visible pre-WEB-05 live option. Corrective audit records current `cangjie5` browser schema as effect-N/A because it has no `charset_filter`/`cjk_minifier` gear; see `WEB05-FOLLOWUP-EXTENDED-CHARSET-BROWSER-EFFECT`. |
 | A058 | Disabled mode | `setOption("disabled")` | Preferences session section | pre-existing | already-surfaced | Existing live option. |
 | A059 | Inspector option | `setOption("yune_inspector")` | Inspector TRACE toggle | pre-existing | already-surfaced | Enables debug payloads. |
 | A060 | Inspector panel visibility | React state + inspector option | Inspector gate | pre-existing | already-surfaced | Existing panel shell. |

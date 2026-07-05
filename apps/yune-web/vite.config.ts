@@ -8,6 +8,12 @@ import type { UserConfig } from "vite";
 
 export default {
 	plugins: [react()],
+	resolve: {
+		dedupe: ["react", "react-dom"],
+	},
+	optimizeDeps: {
+		entries: ["index.html"],
+	},
 	css: {
 		postcss: {
 			plugins: [

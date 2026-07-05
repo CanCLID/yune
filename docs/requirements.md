@@ -247,7 +247,7 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 
 - [x] **M22-PLAY-01**: The internal TypeDuck-Web playground has an opt-in read-only engine inspector showing segment tags, candidate source/quality/ preedit/comment details, spelling-algebra expansion, filter audit, prediction score/threshold data, and AI staging state.
 - [x] **M22-PLAY-02**: The inspector is off by default, preserves classic candidate response identity when disabled, has committed browser evidence, and does not change the default `RimeApi`, `RimeCandidate`, or ABI layout files.
-- [x] **M22-PLAY-03**: Remaining browser-safe controls (`traditionalization`, `extended_charset`, `disabled`, `dictionary_exclude`, and any `ascii_punct` exposure after M18) are exposed only when they clear the M20 honesty gate with real browser before/after evidence; otherwise they are documented as browser-surface N/A. M22 exposes the first four controls with status/candidate/persisted-config evidence and keeps `ascii_punct` absent.
+- [x] **M22-PLAY-03**: Remaining browser-safe controls (`traditionalization`, `extended_charset`, `disabled`, `dictionary_exclude`, and any `ascii_punct` exposure after M18) are exposed only when they clear the M20 honesty gate with real browser before/after evidence; otherwise they are documented as browser-surface N/A. Corrective WEB-05 evidence keeps `dictionary_exclude` and `disabled` browser-visible, keeps `ascii_punct` absent from M22-era claims, and records current `extended_charset` as visible but effect-N/A for the shipped `cangjie5` browser schema because no `charset_filter`/`cjk_minifier` gear is installed.
 - [x] **M22-PLAY-04**: The playground loads `jyut6ping3_mobile`, `cangjie5`, and `luna_pinyin` through a real schema switcher with reverse lookup for the new schemas, using generated or provenance-stamped compiled artifacts with measured browser asset sizes.
 
 ## M24 TypeDuck-Web Dogfooding Requirements
@@ -1008,10 +1008,13 @@ diagnostics needed by external frontend teams without changing `crates/` or
   demo via the shared `IS_PUBLIC_DEMO` constant; defaults remain behavior
   compatible with the pre-WEB-05 harness.
 - [x] **WEB05-SURFACE-03**: Playwright evidence covers each control group plus
-  a same-WASM default-behavior negative control; public-demo build evidence
-  proves the new debug/admin controls are absent. The remaining deferred rows
-  are `debug.storage` (runtime parser gap) and engine option read-back
-  (`get_option` web export gap).
+  a same-WASM default-behavior negative control captured from parent
+  `a87c6b88`; public-demo build evidence proves the new debug/admin controls
+  are absent and do not leave new raw action-result, deploy-cache, or
+  injected-assets data pulls behind. The remaining deferred rows are
+  `debug.storage` (runtime parser gap) and engine option read-back
+  (`get_option` web export gap); named follow-ups cover persisted-config deploy
+  cache freshness and the current Extended charset browser-effect N/A row.
 
 ## M46 Jyutping Native And WASM Memory Attribution Requirements
 
@@ -1572,10 +1575,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WEB04-OCTAGRAM-05 | WEB-04 | Complete - no `crates/`, `packages/yune-web-runtime`, default ABI, or support-contract widening is part of the browser harness slice |
 | WEB05-SURFACE-01 | WEB-05 | Complete - 108-row controls ledger fully dispositions existing web-harness controls/diagnostics with public-demo posture for all 14 surface rows |
 | WEB05-SURFACE-02 | WEB-05 | Complete - every surface row is operable in the dev harness through existing seams with localized labels, observable state, and shared `IS_PUBLIC_DEMO` gating for dev-power controls |
-| WEB05-SURFACE-03 | WEB-05 | Complete - same-WASM default behavior and public-demo hidden-control Playwright evidence are recorded; `debug.storage` and `get_option` remain named deferred rows |
+| WEB05-SURFACE-03 | WEB-05 | Complete - parent-baseline same-WASM default behavior and public-demo hidden-control/data-surface Playwright evidence are recorded; `debug.storage` and `get_option` remain named deferred rows, with deploy-cache persisted-config and Extended charset browser-effect follow-ups named |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
-| M22-PLAY-03 | M22 Bucket 1 | Complete - traditionalization, disabled, extended_charset, and dictionary_exclude have browser evidence; ascii_punct remains absent without browser-visible before/after evidence |
+| M22-PLAY-03 | M22 Bucket 1 | Complete with corrective note - disabled and dictionary_exclude have current browser-visible evidence; extended_charset is visible but current cangjie5 browser-effect N/A without charset_filter/cjk_minifier; ascii_punct remains absent from M22-era browser-effect claims |
 | M22-PLAY-04 | M22 Bucket 3 | Complete - jyut6ping3_mobile, cangjie5, and luna_pinyin load through a real schema switcher; cangjie5 and luna_pinyin reverse lookup are active with measured browser asset sizes |
 | M24-DOGFOOD-REQ-01 | M24 | Complete - issue-scoped M24 browser evidence and startup asset markers are recorded |
 | M24-DOGFOOD-REQ-02 | M24 | Complete - comment controls are hidden and compound candidate details live in the dictionary panel |
@@ -1874,4 +1877,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - WEB-05 is complete: the web harness control surface now has a 108-row ledger, all 14 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior evidence, public-demo hidden-control evidence, and two named deferred rows (`debug.storage` runtime parser gap and `get_option` engine export gap)._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - WEB-05 corrective closeout: the web harness control surface has a 108-row ledger, all 14 surface rows implemented through existing `apps/yune-web` seams, parent-baseline same-WASM default behavior evidence, public-demo hidden-control/data-surface evidence, two named deferred rows (`debug.storage` runtime parser gap and `get_option` engine export gap), and named follow-ups for persisted-config deploy-cache freshness plus current Extended charset browser-effect N/A._

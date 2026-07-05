@@ -116,6 +116,10 @@ export default function YuneControlSurface({
 		if (!isEngineReady) {
 			return;
 		}
+		if (IS_PUBLIC_DEMO) {
+			refreshDiagnostics();
+			return;
+		}
 		try {
 			const [nextCache, nextAssets] = await Promise.all([
 				Rime.deployCacheSnapshot(),
@@ -319,6 +323,9 @@ export default function YuneControlSurface({
 
 				<section className="yd-control-card" data-yune-freeform-customize>
 					<h4>{text.customizeTitle}</h4>
+					<p className="yd-control-warning" data-yune-freeform-customize-warning>
+						{text.customizeWarning}
+					</p>
 					<label className="yd-field">
 						<span className="yd-field-label">{text.customizeConfigId}</span>
 						<input

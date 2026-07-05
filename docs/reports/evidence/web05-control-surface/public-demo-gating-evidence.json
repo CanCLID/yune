@@ -9,5 +9,33 @@
     "[data-yune-freeform-customize]",
     "[data-yune-debug-url-reference]",
     "[data-yune-action-error-history]"
-  ]
+  ],
+  "forbiddenActions": [
+    "deployCacheSnapshot",
+    "injectedAssetsManifest",
+    "invalidateDeployCache"
+  ],
+  "publicDataSurface": {
+    "lastActionResult": null,
+    "deployCacheFresh": null,
+    "actionNames": [
+      "setOption",
+      "setOption",
+      "setOption",
+      "customize",
+      "getUserdbSnapshot",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "setOption",
+      "getUserdbSnapshot"
+    ]
+  }
 }

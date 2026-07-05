@@ -1,5 +1,5 @@
 import type { Actions, ListenerArgsMap, Message, RimeSchemaId } from "./types";
-import { isRimeSchemaId } from "./consts";
+import { IS_PUBLIC_DEMO, isRimeSchemaId } from "./consts";
 
 type ListenerPayload = {
 	[K in keyof ListenerArgsMap]: {
@@ -227,6 +227,9 @@ function appendActionErrorDiagnostic(diagnostic: ActionErrorDiagnostic) {
 }
 
 function appendLastActionResult(action: keyof Actions, result: unknown) {
+	if (IS_PUBLIC_DEMO) {
+		return;
+	}
 	const payload = { action, result, recordedAt: new Date().toISOString() };
 	document.documentElement.dataset["yuneLastActionResult"] = stringifyUnknown(payload);
 	if (action === "deployCacheSnapshot" || action === "invalidateDeployCache") {

@@ -1,56 +1,56 @@
 {
-  "url": "https://yune-web.pages.dev",
+  "url": "http://127.0.0.1:4173",
   "title": "yune-web",
-  "header": "韻\n新韻輸入法引擎 yune-web\nPUBLIC\nTheme Switcher\n○ THEME",
+  "header": "韻\nyune-web\n新韻輸入法引擎\n粵\nEn",
   "themeBefore": "light",
   "themeAfter": "dark",
   "publicControls": {
-    "schemaSwitcherVisible": 0,
+    "schemaSwitcherVisible": 1,
     "unsupportedOpenccVisible": 0,
     "aiDefaultChecked": false
   },
   "layout": {
     "input": {
       "x": 24,
-      "y": 232.5,
+      "y": 264.5,
       "width": 649.453125,
       "height": 220,
       "right": 673.453125,
-      "bottom": 452.5
+      "bottom": 484.5
     },
     "candidatePanel": {
       "x": 39,
-      "y": 245,
+      "y": 325.5,
       "width": 640,
-      "height": 416.1875,
+      "height": 195.1875,
       "right": 679,
-      "bottom": 661.1875
+      "bottom": 520.6875
     },
     "candidateListPane": {
       "x": 40,
-      "y": 246,
+      "y": 326.5,
       "width": 403.796875,
-      "height": 414.1875,
+      "height": 193.1875,
       "right": 443.796875,
-      "bottom": 660.1875
+      "bottom": 519.6875
     },
     "dictionaryPane": {
       "x": 443.796875,
-      "y": 246,
+      "y": 326.5,
       "width": 234.203125,
-      "height": 414.1875,
+      "height": 193.1875,
       "right": 678,
-      "bottom": 660.1875
+      "bottom": 519.6875
     }
   },
   "metrics": {
-    "lookup": "24ms",
-    "ai": "off",
-    "candidates": "6/6",
-    "userdb": "0 rows"
+    "lookup": "10ms",
+    "ai": "關",
+    "candidates": "1/1",
+    "userdb": "0 列"
   },
   "userdb": {
-    "rowCountText": "rows\n0"
+    "rowCountText": "列數\n0"
   },
   "inspector": {
     "collapsedVerified": true,

@@ -1,4 +1,9 @@
 {
+  "sourceLabel": "parent-a87c6b88",
+  "sourceCommit": "a87c6b88a9702a48a13d42dde74498ff03f56b01",
+  "appUrl": "http://127.0.0.1:5174",
+  "capturedAt": "2026-07-05T16:07:04.308Z",
+  "wasmPath": "C:\\yune-web05-parent-a87c6b88\\apps\\yune-web\\public\\yune-web.wasm",
   "wasmSha256": "cb05289d6a72562ed349d82e94eec0e5681f40fe681aa823107670be3c68dc22",
   "appVersion": "yune-web-wasm-heap-v1",
   "snapshots": [

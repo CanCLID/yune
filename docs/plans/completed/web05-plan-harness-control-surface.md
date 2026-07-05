@@ -6,6 +6,18 @@
 
 > **Status:** Complete - WEB-05 closed on 2026-07-05 with the Phase 0 controls ledger review-expanded (108 raw rows, 14 surface rows with public-demo gates, 2 named deferred rows), all Phase 1 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior evidence unchanged, and public-demo hidden-control evidence recorded under `docs/reports/evidence/web05-control-surface/`. - **Track:** Web harness (`apps/yune-web`). - **Created:** 2026-07-03 - **Type:** dogfooding/observability slice (app plumbing + UI only; no engine contract change, no default-behavior change).
 
+> **Corrective addendum (2026-07-05):** The WEB-05 closeout evidence was
+> tightened after review. The default-behavior baseline is now captured from
+> parent `a87c6b88a9702a48a13d42dde74498ff03f56b01` with the same WASM bytes,
+> public-demo evidence covers both hidden selectors and WEB-05 raw/cache/asset
+> data-surface absence, and `yune-web.spec.ts` assertion changes are audited in
+> `docs/reports/evidence/web05-control-surface/yune-web-spec-rebaseline-audit.md`.
+> Named follow-ups remain for persisted-config deploy-cache freshness and the
+> current Extended charset browser-effect N/A row. The corrective pass also
+> constrained the harness Vite optimizer so a machine-local
+> `apps/yune-web/source/node_modules` checkout cannot supply a second React
+> dependency tree to the harness dev server.
+
 **Goal:** Make the `yune-web` playground the shared debugging surface for the
 external Windows/iOS frontend teams: **every engine control and diagnostic the
 existing web ABI already exposes** becomes reachable and observable in the

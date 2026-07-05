@@ -602,6 +602,7 @@ export default function App() {
 					<a className="yd-brand" href="/" aria-label={text.header.home}>
 						<span className="yd-brand-mark">韻</span>
 						<span className="yd-brand-copy">
+							<span className="yd-brand-product">{text.header.product}</span>
 							<span className="yd-brand-title">{text.header.title}</span>
 						</span>
 					</a>

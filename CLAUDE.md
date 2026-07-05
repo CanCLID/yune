@@ -19,10 +19,14 @@ reads RIME-format schema/dictionary YAML and exposes the same librime-shaped C
 ABI, but is idiomatic safe Rust internally. Correctness is defined by an
 **external oracle** (real librime), never by Yune itself. It is a drop-in
 replacement **for named targets** — upstream `luna_pinyin`/common schemas
-against `rime/librime 1.17.0`, and the TypeDuck `jyut6ping3` profile against
-TypeDuck-HK/librime `v1.1.2` — **not** a bit-for-bit or every-schema librime
-clone. Scope is target-driven: a librime feature is implemented only when a
-named target needs it (see [AGENTS.md](AGENTS.md) and
+against `rime/librime 1.17.0`, canonical Cantonese/Jyutping candidate behavior
+against upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`, and
+TypeDuck multilingual/comment/profile behavior against TypeDuck-HK/librime
+`v1.1.2` as a profile lane with grandfathered fixture-backed candidate guards —
+**not** a bit-for-bit or every-schema librime clone. The preferred future
+TypeDuck profile id is `jyut6ping3_typeduck`, pending M58 blast-radius audit and
+explicit sign-off. Scope is target-driven: a librime feature is implemented only
+when a named target needs it (see [AGENTS.md](AGENTS.md) and
 [docs/contracts/engine-support-contract.md](docs/contracts/engine-support-contract.md)).
 
 ## Commands
@@ -33,7 +37,7 @@ Rust (workspace = `crates/yune-core`, `yune-rime-api`, `yune-cli`):
 cargo build
 cargo test --workspace                                          # all Rust tests
 cargo test -p yune-core --test upstream_luna_pinyin_parity      # upstream 1.17.0 oracle parity
-cargo test -p yune-core --test cantonese_parity                 # TypeDuck v1.1.2 oracle parity
+cargo test -p yune-core --test cantonese_parity                 # TypeDuck profile v1.1.2 parity
 cargo test -p yune-rime-api --test yune_web                     # yune-web WASM/adapter ABI contract
 cargo test -p yune-core --test upstream_luna_pinyin_parity -- <substring>   # single test by name
 cargo fmt --check
@@ -117,10 +121,12 @@ Where to add behavior: see [docs/conventions.md §3](docs/conventions.md)
   **requires updating `scripts/yune-web-exports.txt`** or the WASM build silently
   drops it.
 - **Tests are oracle-driven and non-circular.** Capture expected bytes from the
-  external oracle (upstream librime / TypeDuck v1.1.2) into a checked-in fixture,
-  run Yune's real production path, assert it matches. **Never derive expected
-  values from Yune.** Unsupported behavior is a named `#[ignore = "blocked:
-  ..."]` test with a `panic!()` body — no silent gaps.
+  external oracle/reference for that lane: upstream librime for default and
+  canonical behavior, TypeDuck v1.1.2 for explicit TypeDuck profile fixtures, or
+  another decision-backed hybrid fixture where a plan says so. Store those bytes
+  in a checked-in fixture, run Yune's real production path, and assert it
+  matches. **Never derive expected values from Yune.** Unsupported behavior is a
+  named `#[ignore = "blocked: ..."]` test with a `panic!()` body — no silent gaps.
 - **`unsafe_code = "forbid"`** workspace-wide. `yune-core` inherits this (no
   `unsafe` allowed). The ABI/FFI crates (`yune-rime-api`, `yune-cli`) use
   explicit local lint tables with `unsafe_code = "allow"`; keep all FFI pointer

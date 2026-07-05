@@ -72,7 +72,25 @@ Requirements for the next validation milestone before AI-native product work.
 
 Requirements for the next integration milestone. These requirements turn the Phase 6 TypeDuck-Web validation and the seed Rust adapter into a browser-usable path before AI-native product work begins.
 
-**M9 completed real-assets validation.** The build-out (WASM export contract, TS bridge, browser filesystem) landed, and the WASM artifact now builds as loadable Emscripten `yune-typeduck.js`/`.wasm` with a Node smoke for one `yune_typeduck_*` call plus one `FS` operation. A post-review audit found the first WI-4 browser matrix used the placeholder echo path for candidate evidence. HR-1 proves the patched TypeDuck-Web worker can load real `jyut6ping3_mobile` assets and render `nei` candidates (`你`, `呢`, `尼`) in a real browser. HR-2 resolves the startup `setOption` export/wrapper/adapter gap, HR-3 proves browser `deploy()` returns true with real assets after adding the plain `jyut6ping3.schema.yaml` preload, and HR-4 proves live-worker persistence sync plus real reload survival. HR-5 reruns the full browser matrix against real assets, including paging, deletion, phrase commit, dictionary-panel rendering, and zero warning/error console entries after the post-review pure-modifier delete-path fix. Rich dictionary-comment byte parity is committed in `cantonese_parity`; the browser-shaped native rich-comment test also asserts the full real-assets path when local v1.1.2 oracle build assets are present. HR-6 locks the shared reverse-lookup joiner and schema-prompt bytes against the TypeDuck v1.1.2 oracle. HR-7 closes M9 with **GO WITH CONDITIONS** for gated AI-native frontend exposure.
+**M9 completed real-assets validation.** The build-out (WASM export contract,
+TS bridge, browser filesystem) landed, and the WASM artifact now builds as
+loadable Emscripten `yune-typeduck.js`/`.wasm` with a Node smoke for one
+`yune_typeduck_*` call plus one `FS` operation. A post-review audit found the
+first WI-4 browser matrix used the placeholder echo path for candidate evidence.
+HR-1 proves the patched TypeDuck-Web worker can load real `jyut6ping3_mobile`
+assets and render `nei` candidates (`你`, `呢`, `尼`) in a real browser.
+HR-2 resolves the startup `setOption` export/wrapper/adapter gap, HR-3 proves
+browser `deploy()` returns true with real assets after adding the plain
+`jyut6ping3.schema.yaml` preload, and HR-4 proves live-worker persistence sync
+plus real reload survival. HR-5 reruns the full browser matrix against real
+assets, including paging, deletion, phrase commit, dictionary-panel rendering,
+and zero warning/error console entries after the post-review pure-modifier
+delete-path fix. Rich dictionary-comment byte parity is committed in
+`cantonese_parity`; the browser-shaped native rich-comment test also asserts the
+full real-assets path when local v1.1.2 oracle build assets are present. HR-6
+locks the shared reverse-lookup joiner and schema-prompt bytes against the
+TypeDuck v1.1.2 oracle. HR-7 closes M9 with **GO WITH CONDITIONS** for gated
+AI-native frontend exposure.
 
 ### WASM Build And Export Contract
 
@@ -98,7 +116,13 @@ Requirements for the next integration milestone. These requirements turn the Pha
 
 - [x] **TYPEDUCK-E2E-01**: The upstream TypeDuck-Web repository is cloned or vendored in a reproducible test location, and its current librime/WASM bridge seam is identified.
 - [x] **TYPEDUCK-E2E-02**: TypeDuck-Web is patched or configured so its input-engine binding calls the Yune TypeScript bridge instead of the original librime bridge, with candidate text/comment/highlight mapped from the runtime response shape.
-- [x] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers composition, candidate paging, selection, deletion, commit output, deploy, customize, persistence smoke flows, and dictionary-panel rendering, with PASS evidence recorded from the HR-5 real-assets matrix. Rich dictionary-comment byte parity is committed in `cantonese_parity`; the browser-shaped native rich-comment test is explicitly skipped unless local v1.1.2 oracle build assets are present.
+- [x] **TYPEDUCK-E2E-03**: Real TypeDuck-Web browser validation covers
+  composition, candidate paging, selection, deletion, commit output, deploy,
+  customize, persistence smoke flows, and dictionary-panel rendering, with PASS
+  evidence recorded from the HR-5 real-assets matrix. Rich dictionary-comment
+  byte parity is committed in `cantonese_parity`; the browser-shaped native
+  rich-comment test is explicitly skipped unless local v1.1.2 oracle build
+  assets are present.
 - [x] **TYPEDUCK-E2E-04**: Integration findings end with a go/no-go recommendation for exposing AI-native behavior through real frontends; HR-7 records **GO WITH CONDITIONS**.
 
 ## M12 Upstream Oracle And Behavioral Parity Requirements
@@ -122,7 +146,18 @@ Requirements for the next integration milestone. These requirements turn the Pha
 
 ## TypeDuck-Windows Native IME Contract Requirements
 
-**Status: complete as a TypeDuck compatibility profile.** A first pass landed (Phases 11-16), M9 web validation is complete, and the archived pre-M12 native Windows package smoke has been superseded by current M10 T1/T2 profile package, build/link, packaged lifecycle evidence, and stock TypeDuck-Windows real-server IPC smoke evidence against `rime_get_typeduck_profile_api()`. The shared comment requirement is covered for the current v1.1.2 oracle slices; captured Cantonese engine fixtures are active, and the M10 T3 smoke now proves key input/output through the native TypeDuck-Windows/weasel IPC path. This T3 proof is a stock server/client IPC smoke, not an interactive TSF typing or visible candidate-panel rendering smoke; those move to the Phase 2 Windows product/frontend track. These requirements target that native path and no longer define Yune's active core oracle milestone.
+**Status: complete as a TypeDuck compatibility profile.** A first pass landed
+(Phases 11-16), M9 web validation is complete, and the archived pre-M12 native
+Windows package smoke has been superseded by current M10 T1/T2 profile package,
+build/link, packaged lifecycle evidence, and stock TypeDuck-Windows real-server
+IPC smoke evidence against `rime_get_typeduck_profile_api()`. The shared comment
+requirement is covered for the current v1.1.2 oracle slices; captured Cantonese
+engine fixtures are active, and the M10 T3 smoke now proves key input/output
+through the native TypeDuck-Windows/weasel IPC path. This T3 proof is a stock
+server/client IPC smoke, not an interactive TSF typing or visible panel
+rendering smoke; those move to the Phase 2 Windows product/frontend track.
+These requirements target that native path and no longer define Yune's active
+core oracle milestone.
 
 - [x] **WIN-TEST-01**: Windows `cargo test --workspace` has a trustworthy green baseline, including portable signature timestamp shape and test-only poison-lock recovery.
 - [x] **WIN-ABI-01**: `config_list_append_{string,bool,int,double}` helper behavior is implemented and exposed through the named, opt-in M19 TypeDuck-profile accessor; the default upstream `rime_get_api()` does not expose these fork-only slots.
@@ -215,7 +250,12 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 - [x] **TYPEDUCK-PARITY-04**: `combine_candidates` (candidate grouping) and `show_full_code` (cangjie preedit algebra) are implemented and pass the captured goldens through Yune's real engine path.
 - [x] **TYPEDUCK-PARITY-05**: `enable_sentence`, completion ranking, and correction/tolerance tuning are refined to pass the captured goldens.
 - [x] **TYPEDUCK-PARITY-06**: OpenCC `hk2s` coverage is expanded from the built-in slice to the full conversion data the jyut6ping3 simplifier needs.
-- [x] **TYPEDUCK-PARITY-07**: The TypeDuck-Web browser matrix passes for the app-exposed `jyut6ping3_mobile` surface plus M13 AI, while deploy-only variants (`common:/separate_candidates`, `common:/show_full_code`), schema-menu UI hiding, correction UI detail, and per-entry userdb pronunciation are explicitly documented as browser/userdb inspection limits backed by M14/M15 oracle evidence.
+- [x] **TYPEDUCK-PARITY-07**: The TypeDuck-Web browser matrix passes for the
+  app-exposed `jyut6ping3_mobile` surface plus M13 AI, while deploy-only variants
+  (`common:/separate_candidates`, `common:/show_full_code`), schema-menu UI
+  hiding, correction UI detail, and per-entry userdb pronunciation are explicitly
+  documented as browser/userdb inspection limits backed by M14/M15 oracle
+  evidence.
 
 ## Fork Parity Backlog — Cantonese engine-parity (complete)
 
@@ -297,7 +337,12 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 **Status: complete.** M28 closed segment-aware partial candidate selection as a separate engine-correctness milestone after M27. The v1.1.2 oracle remains authoritative where it diverges from the user-feel target.
 
 - [x] **M28-PARTIAL-REQ-01**: Git history and code evidence classify the `caksijathaacoenggeoizi` -> select `測` behavior as previously missing support, not a recent regression. Evidence: `apps/yune-web/e2e/results/m28-partial-selection/history-classification.md`.
-- [x] **M28-PARTIAL-REQ-02**: TypeDuck-HK/librime `v1.1.2` oracle fixture captures partial-selection behavior for `caksijathaacoenggeoizi`, including first committed text, remaining input/preedit, next candidates, and final oracle flow. Evidence: `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json` and `apps/yune-web/e2e/results/m28-partial-selection/oracle-capture.md`.
+- [x] **M28-PARTIAL-REQ-02**: TypeDuck-HK/librime `v1.1.2` oracle fixture
+  captures partial-selection behavior for `caksijathaacoenggeoizi`, including
+  first committed text, remaining input/preedit, next candidates, and final
+  oracle flow. Evidence:
+  `crates/yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-m28-partial-selection.json`
+  and `apps/yune-web/e2e/results/m28-partial-selection/oracle-capture.md`.
 - [x] **M28-PARTIAL-REQ-03**: Native `yune-core` and `yune-rime-api` tests cover segment-aware partial commit/recomposition and preserve FORK-PARITY-03 userdb pronunciation recovery: whole-sentence commits keep full primary codes, while true partial commits record only the consumed span. Evidence: `crates/yune-core/tests/cantonese_parity.rs`, `crates/yune-rime-api/tests/typeduck_web.rs`, and `apps/yune-web/e2e/results/m28-partial-selection/task-5-gates.md`.
 - [x] **M28-PARTIAL-REQ-04**: TypeDuck-Web browser evidence proves selecting `測` does not commit raw `sijathaacoenggeoizi`, continues through the captured component flow, and records that the user-feel `測試一下長句子` target is not the TypeDuck v1.1.2 oracle flow. Evidence: `apps/yune-web/e2e/results/m28-partial-selection/browser-partial-selection.json` and `apps/yune-web/e2e/results/m28-partial-selection/browser-evidence.md`.
 - [x] **M28-PARTIAL-REQ-05**: Full compatibility gates remain green: `cargo fmt --check`, workspace clippy, upstream `luna_pinyin`, `cantonese_parity`, `typeduck_web`, workspace tests, frontend benchmarks, TypeScript runtime tests/build, TypeDuck-Web build/evidence, patch checks, and `git diff --check`. Evidence: `apps/yune-web/e2e/results/m28-partial-selection/task-5-gates.md`.
@@ -308,7 +353,7 @@ Deferred beyond the TypeDuck-Web browser integration milestone. Tracked but not 
 
 - [x] **M28F-UPSTREAM-REQ-01**: Space/default-confirm for `caksijathaacoenggeoizi` commits only the consumed prefix candidate and keeps the remaining input composing; it never commits `測sijathaacoenggeoizi`.
 - [x] **M28F-UPSTREAM-REQ-02**: A checked-in hybrid upstream-librime-engine Jyutping fixture captures `caksijathaacoenggeoizi` composition/ranking with provenance: upstream engine repository/tag/commit, pinned Jyutping schema/dictionary source repository/commit, upstream deploy command, capture command, options, and candidate rows. The fixture contains no local absolute paths and lives outside the pure `upstream-1.17.0` fixture family.
-- [x] **M28F-UPSTREAM-REQ-03**: `docs/decisions.md` records a narrow decision that this Jyutping long-composition/ranking slice follows the captured-and-accepted hybrid fixture over TypeDuck v1.1.2 when they disagree, while TypeDuck v1.1.2 remains the compatibility oracle for profile ABI/comment surfaces and the hybrid fixture explicitly excludes dictionary-comment payloads.
+- [x] **M28F-UPSTREAM-REQ-03**: `docs/decisions.md` recorded a narrow historical decision that this Jyutping long-composition/ranking slice followed the captured-and-accepted hybrid fixture over TypeDuck v1.1.2 when they disagreed, while TypeDuck v1.1.2 remained the compatibility oracle for profile ABI/comment surfaces and the hybrid fixture explicitly excluded dictionary-comment payloads. For future canonical `jyut6ping3` candidate claims, the 2026-07-05 D-31 amendment now requires upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`.
 - [x] **M28F-UPSTREAM-REQ-04**: Native tests follow the accepted captured ordering for this case: sentence/lattice candidate first when enabled, fixture-captured fallback rows after it, and no invented phrase-prefix row when upstream did not capture one.
 - [x] **M28F-UPSTREAM-REQ-05**: TypeDuck-Web browser evidence covers auto-composition off plus Space/default-confirm, and auto-composition on plus first-page ranking, without raw-tail commits.
 - [x] **M28F-UPSTREAM-REQ-06**: Full compatibility gates remain green: Rust fmt/clippy/tests, upstream `luna_pinyin`, `cantonese_parity`, `typeduck_web`, TypeScript runtime tests/build, TypeDuck-Web build/evidence, patch checks if source changes, and `git diff --check`.
@@ -1235,13 +1280,15 @@ required evidence and closeout gates.
   and exactly 14 `yune_web_*` exports.
 - [x] **M53-AUDIT-03**: M52 guardrail evidence is fresh and numerically
   consistent across the docs, with the manual regression-gate command canonical.
-- [x] **M53-AUDIT-04**: Public claims are contract-accurate; `README.md` (and one
-  linked archived report) claim drift across performance wording (broad "faster
-  than librime" scoped to `zhongguo` + the two abbreviation rows), compatibility
-  scope, oracle precedence (`jyut6ping3` measured against TypeDuck-HK/librime
-  `v1.1.2`, not upstream 1.17.0), frontend-validation scope (TypeDuck-Windows
+- [x] **M53-AUDIT-04**: Public claims were contract-accurate for the 2026-06-30
+  M53 closeout; `README.md` (and one linked archived report) claim drift across
+  performance wording (broad "faster than librime" scoped to `zhongguo` + the
+  two abbreviation rows), compatibility scope, then-current oracle precedence
+  for the TypeDuck profile lane, frontend-validation scope (TypeDuck-Windows
   limited to backend/profile/IPC smoke), ABI/drop-in wording, and Rust
-  safety/lint-scope wording is corrected.
+  safety/lint-scope wording was corrected. The 2026-07-05 D-31 amendment
+  supersedes that older `jyut6ping3` oracle framing for future canonical
+  candidate behavior.
 - [x] **M53-AUDIT-05**: All engine-doc evidence links and anchors resolve and
   the 2026-06-30 dashboard visuals are adopted.
 
@@ -1390,6 +1437,49 @@ platform-stable for the known target payloads. Evidence:
   local librime for `cszysmsrsd` and `zybfshmsru`, full quality checks for the
   touched engine path, and an explicit WEB-03 guard disposition as not-run due
   missing local `public-demo/dist/schema` fixtures.
+
+### M58 Canonical Jyutping Oracle And TypeDuck Profile Disposition
+
+**Status: drafted / not started.** M58 is being rewritten around the
+2026-07-05 oracle decision: candidate ordering, segmentation, fallback, and
+completion for canonical Cantonese/Jyutping use upstream `rime/librime 1.17.0`
+with pinned `rime/rime-cantonese`, while TypeDuck multilingual behavior is a
+separate profile/data lane. Historical M14-M28 TypeDuck fixtures remain
+grandfathered TypeDuck-profile regression guards, including fixture-backed
+candidate behavior.
+
+- [ ] **M58-JYUTPING-01**: Canonical `jyut6ping3` candidate behavior is captured
+  from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`
+  schema/data before any candidate reachability or admission code changes, using
+  a named upstream capture harness, mirrored page size/options, and
+  `captured_all_pages: true`.
+- [ ] **M58-JYUTPING-02**: Schema identity split direction is not implemented
+  until the executor inventories the `jyut6ping3` / `jyut6ping3_mobile` blast
+  radius and records explicit user sign-off. The preferred proposal remains
+  canonical `jyut6ping3` plus TypeDuck `jyut6ping3_typeduck`, but it is a gated
+  choice rather than an assumed edit.
+- [ ] **M58-JYUTPING-03**: Every M58 oracle fixture and compiled artifact records
+  schema source repository, source commit, upstream engine/oracle version, and
+  Yune-facing schema id, plus page size and option set.
+- [ ] **M58-JYUTPING-04**: Candidate reachability/admission fixes are derived
+  from canonical `rime/rime-cantonese` upstream-librime captures, not from
+  TypeDuck-HK/librime v1.1.2 candidate ordering, unless the fix is explicitly
+  scoped as TypeDuck-profile-only.
+- [ ] **M58-JYUTPING-05**: TypeDuck-only multilingual comments, dictionary lookup
+  payloads, profile controls, display/comment behavior, and grandfathered
+  M14-M28 profile candidate guards remain regression guarded without widening
+  canonical candidate behavior.
+- [ ] **M58-JYUTPING-06**: The shipped-product `beingo` / 畀 reachability report
+  receives an explicit disposition in both the canonical and TypeDuck/profile
+  lanes; M58 cannot close merely because the bug is TypeDuck-profile-only.
+- [ ] **M58-JYUTPING-07**: Schema-install profile predicates and product identity
+  blast radius are audited before any schema-id split, especially
+  `is_typeduck_jyut6ping3_profile`,
+  `is_yune_web_launch_byte_backed_profile`, Track B/M55 threshold names,
+  WEB-03/public-demo manifests, and userdb dictionary-name persistence.
+- [ ] **M58-JYUTPING-08**: If canonical upstream captures cannot be produced or
+  if they contradict the planned reachability/admission fix, M58 stops for an
+  explicit decision rather than substituting TypeDuck v1.1.2 candidate output.
 
 ## Out of Scope
 
@@ -1540,7 +1630,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M53-AUDIT-01 | M53 | Complete - support-contract consistency verified across contract, conventions, roadmap, requirements, and ledger |
 | M53-AUDIT-02 | M53 | Complete - ABI wording matches code: default upstream `rime_get_api()`/`RimeCandidate`, profile-only fork slots, exactly 14 `yune_web_*` exports |
 | M53-AUDIT-03 | M53 | Complete - M52 guardrail evidence fresh and numerically consistent; regression-gate command canonical |
-| M53-AUDIT-04 | M53 | Complete - `README.md`/archived public claim drift corrected across performance ("faster than librime" scoped to `zhongguo` + abbreviation rows), compatibility scope, oracle precedence (`jyut6ping3` vs TypeDuck-HK/librime `v1.1.2`), TypeDuck-Windows frontend-validation scope, ABI/drop-in wording, and Rust safety/lint-scope wording |
+| M53-AUDIT-04 | M53 | Complete - `README.md`/archived public claim drift corrected for the 2026-06-30 release-readiness state across performance ("faster than librime" scoped to `zhongguo` + abbreviation rows), compatibility scope, then-current TypeDuck profile oracle precedence, TypeDuck-Windows frontend-validation scope, ABI/drop-in wording, and Rust safety/lint-scope wording; future canonical `jyut6ping3` candidate claims follow the 2026-07-05 D-31 `rime-cantonese` amendment |
 | M53-AUDIT-05 | M53 | Complete - all engine-doc evidence links/anchors resolve and the 2026-06-30 dashboard visuals are adopted |
 | M54-OCTAGRAM-01 | M54 | Complete - lotem canonical and RIME-LMDG validation lanes are pinned with commits, checksums, license notes, and manifests |
 | M54-OCTAGRAM-02 | M54 | Complete - native Rust `OctagramGrammar` loads and scores `.gram` data behind the existing `Grammar` provider path |
@@ -1569,6 +1659,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M57-PARITY-04 | M57 | Complete - synthetic MARISA, real compiled Luna fixture, and checksum-pair regression coverage added |
 | M57-PARITY-05 | M57 | Complete - post-fix macOS compact model shape restored with `332,604` codes, `513,353` expanded entries, and 11-entry abbreviation vocabulary |
 | M57-PARITY-06 | M57 | Complete - two full macOS native passes, recomputed summaries, candidate snapshots, quality checks, and WEB-03 fixture disposition recorded |
+| M58-JYUTPING-01 | M58 | Draft - canonical `jyut6ping3` candidate behavior must be captured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese` before implementation, using complete all-pages capture and mirrored options |
+| M58-JYUTPING-02 | M58 | Draft - schema identity split direction is a Phase 3 sign-off gate; `jyut6ping3_typeduck` remains the preferred TypeDuck id proposal, not an assumed edit |
+| M58-JYUTPING-03 | M58 | Draft - M58 fixtures and artifacts must record schema source repository, commit, oracle version, Yune-facing schema id, page size, and option set |
+| M58-JYUTPING-04 | M58 | Draft - canonical candidate reachability/admission fixes must derive from canonical upstream-librime captures, while TypeDuck-profile-only fixes must be explicitly scoped |
+| M58-JYUTPING-05 | M58 | Draft - TypeDuck multilingual comment/profile behavior and grandfathered M14-M28 profile candidate guards remain profile-lane guarded without defining canonical candidate behavior |
+| M58-JYUTPING-06 | M58 | Draft - shipped-product `beingo` / 畀 reachability report must receive canonical and TypeDuck/profile lane dispositions before closeout |
+| M58-JYUTPING-07 | M58 | Draft - schema-install profile predicates, `jyut6ping3_mobile`, Track B/M55, WEB-03, and userdb blast radius must be audited before any id split |
+| M58-JYUTPING-08 | M58 | Draft - missing or contradictory canonical captures stop the milestone for explicit decision |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -1610,7 +1708,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M28-PARTIAL-REQ-05 | M28 | Complete - compatibility and integration gates remain green |
 | M28F-UPSTREAM-REQ-01 | M28 follow-up | Complete - Space/default-confirm uses scoped consumed-span recomposition |
 | M28F-UPSTREAM-REQ-02 | M28 follow-up | Complete - hybrid upstream-engine Jyutping fixture with pinned source-YAML provenance and no local paths |
-| M28F-UPSTREAM-REQ-03 | M28 follow-up | Complete - narrow decision for accepted hybrid fixture, live-site exclusion, and comment-scope exclusion |
+| M28F-UPSTREAM-REQ-03 | M28 follow-up | Complete - historical narrow decision for accepted hybrid fixture, live-site exclusion, and comment-scope exclusion; future canonical `jyut6ping3` candidate claims follow the 2026-07-05 D-31 `rime-cantonese` amendment |
 | M28F-UPSTREAM-REQ-04 | M28 follow-up | Complete - native ordering tests follow the accepted upstream-Jyutping fixture and preserve TypeDuck profile guards |
 | M28F-UPSTREAM-REQ-05 | M28 follow-up | Complete - TypeDuck-Web browser evidence for Space/default-confirm and ranking |
 | M28F-UPSTREAM-REQ-06 | M28 follow-up | Complete - full compatibility and integration gates |
@@ -1872,10 +1970,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
+- M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 0 complete, 8 draft
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
-- Mapped to phases: 414
+- Mapped to phases: 422
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - WEB-05 corrective closeout: the web harness control surface has a 108-row ledger, 13 retained surface rows implemented through existing `apps/yune-web` seams, the unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior evidence, public-demo hidden-control/data-surface evidence, two named deferred rows (`debug.storage` runtime parser gap and `get_option` engine export gap), and named follow-ups for persisted-config deploy-cache freshness plus current Extended charset browser-effect N/A._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - M58 oracle/schema split: canonical `jyut6ping3` candidate behavior uses upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; `jyut6ping3_typeduck` is the preferred future id direction pending Phase 3 blast-radius sign-off._

@@ -102,10 +102,14 @@ default, with explicit ABI/FFI exceptions in `yune-rime-api` and `yune-cli`.
 
 Yune is an active engine project.
 
-- **Compatibility baseline:** Phase 1 is complete. Yune matches its oracle on
-  the captured fixture suites for each named target: Mandarin `luna_pinyin`
-  against upstream `rime/librime 1.17.0`, and Cantonese `jyut6ping3` against
-  TypeDuck-HK/librime `v1.1.2` through the TypeDuck profile. The M55 expanded
+- **Compatibility baseline:** Phase 1 is complete for its captured named
+  target suites. Mandarin `luna_pinyin` is measured against upstream
+  `rime/librime 1.17.0`; TypeDuck Cantonese profile behavior is measured
+  against TypeDuck-HK/librime `v1.1.2` through the TypeDuck profile. Per the
+  2026-07-05 D-31 amendment, canonical `jyut6ping3` candidate ordering,
+  segmentation, fallback, and completion now use upstream `rime/librime
+  1.17.0` plus pinned `rime/rime-cantonese`; M58 owns the fresh canonical
+  capture. The M55 expanded
   oracle sentence fixtures also surfaced known, recorded gaps: Yune's first
   candidate page currently differs from librime on some single-letter
   completion rankings and some long-sentence top candidates (13 named blocked
@@ -138,13 +142,21 @@ Yune's compatibility is target-driven, not checklist-driven.
 
 - Default core oracle: upstream `rime/librime 1.17.0`
   (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`).
+- Canonical Cantonese/Jyutping candidate oracle: upstream
+  `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; M58 owns the
+  Yune-facing id/provenance split for this lane.
 - TypeDuck profile oracle: TypeDuck-HK/librime `v1.1.2`
-  (`74cb52b78fb2411137a7643f6c8bc6517acfde69`).
+  (`74cb52b78fb2411137a7643f6c8bc6517acfde69`) for profile/display/comment
+  behavior, multilingual dictionary lookup payloads, fork-only ABI/profile
+  controls, and historical fixture-backed profile candidate guards. The
+  preferred future TypeDuck multilingual profile id is `jyut6ping3_typeduck`,
+  pending M58's schema/profile blast-radius audit and explicit user sign-off.
 
 **Rules:**
 
 - Preserve upstream-observable behavior for named targets.
-- Isolate TypeDuck fork behavior behind the TypeDuck profile surface.
+- Isolate TypeDuck fork behavior behind the TypeDuck profile surface; do not
+  use TypeDuck v1.1.2 ordering to define canonical `jyut6ping3` candidates.
 - Add librime features only when a named target needs them.
 - Keep expected bytes non-circular: always capture them from the relevant oracle,
   never derive them from Yune itself.

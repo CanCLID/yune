@@ -4,6 +4,13 @@
 
 > **Status:** Complete - **Closed:** 2026-06-30 - **Track:** Core compatibility / engine release-readiness. - **Created:** 2026-06-30 - **Type:** docs/evidence consistency audit (no code, no ABI, no perf bar).
 
+> **Pre-M58 supersession note (2026-07-05):** M53's public-claim audit remains
+> valid as a 2026-06-30 historical closeout. Current canonical `jyut6ping3`
+> candidate ordering, segmentation, fallback, and completion claims now follow
+> the updated D-31 rime-cantonese lane; TypeDuck v1.1.2 remains profile-only
+> for TypeDuck multilingual/comment/profile behavior and grandfathered
+> fixture-backed profile candidate guards.
+
 **Closeout:** M53 closed on 2026-06-30. The engine docs are release-ready for
 downstream engine consumers. A five-dimension parallel audit (support-contract
 consistency, ABI-wording-vs-code, M52 guardrail freshness, public claim wording,

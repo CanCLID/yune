@@ -4,6 +4,19 @@
 >
 > The single source of truth for _what the Cantonese librime forks changed versus upstream `rime/librime`, and what Yune has done about each change._ Every claim here is measured against the pinned upstream oracle **`rime/librime 1.17.0`** (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`), not against the fork's own (older) base. Roadmap/requirements defer to this file for fork-improvement status.
 
+> **Pre-M58 schema-identity note (2026-07-05):** this ledger remains the source
+> for TypeDuck/Cantoboard fork improvements and TypeDuck-profile behavior. It is
+> not the canonical `jyut6ping3` candidate-order oracle for new claims. Future
+> canonical candidate ordering, segmentation, fallback, and completion claims use
+> upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`. Historical
+> M14-M28 TypeDuck fixtures remain grandfathered profile-lane regression guards,
+> including fixture-backed candidate ordering, composition, prefix-fallback,
+> prediction-count, and partial-selection behavior. In particular, M21-GAP-01
+> and M21-GAP-02 remain authorized TypeDuck-profile candidate claims until a
+> later signed-off migration supersedes them. `jyut6ping3_typeduck` is the
+> preferred future TypeDuck profile id, but the id direction is gated on M58's
+> schema/profile blast-radius audit and explicit user sign-off.
+
 ## Sources & method
 
 - **Source inventory (what the forks changed):** [`CANTOBOARD_LIBRIME_REBASE_SUMMARY.md`](../provenance/forks/CANTOBOARD_LIBRIME_REBASE_SUMMARY.md) (Cantoboard's 18 master commits + side-branches, and which TypeDuck adopted) and [`REBASE_SUMMARY_SINCE_D8BC266D.md`](../provenance/forks/REBASE_SUMMARY_SINCE_D8BC266D.md) (the full TypeDuck delta `d8bc266d..v1.1.2`). These are **LLM-generated provenance notes**; every row below was re-verified against the on-disk fork source and live upstream 1.17.0.
@@ -55,7 +68,7 @@ Use this table before deciding whether to port a fork change. The ledger tracks 
 
 1. **Two of the team's "six improvements" are NOT fork deltas vs 1.17.0.** **F2** (`santai`→身體/身體健康 prefix prediction) and **F4** (auto-compose only as fallback) are upstream-default behaviors the fork merely keeps on. So is `max_corrections=4` and `fix_schema_list_order`. Yune gets these from tracking 1.17.0 — preserve them by _not regressing_, not by porting fork code.
 2. **The real fork deltas to preserve** are **F1** (Cantonese algebra), **F5** (`DictionaryLookupFilter` plugin), **F6 / `combine_candidates`** (engine), plus `show_full_code`, `hide_lone_schema`, `letter_to_tone`, the full 容錯 ruleset, and the Cantoboard-origin correction/user-phrase fixes.
-3. **FORK-PARITY-01..07 are preserved.** The production Cantonese algebra now runs on the real ~127k-entry `jyut6ping3` dictionary; `PreferUserPhrase`, per-entry userdb pronunciation recovery, `hide_lone_schema`, correction fidelity, letter-tone preedit, and TypeDuck full-/half-width labels are implemented and tested.
+3. **FORK-PARITY-01..07 are preserved.** The TypeDuck-profile Cantonese algebra now runs on the real ~127k-entry historical `jyut6ping3` dictionary; `PreferUserPhrase`, per-entry userdb pronunciation recovery, `hide_lone_schema`, correction fidelity, letter-tone preedit, and TypeDuck full-/half-width labels are implemented and tested. This is profile-lane evidence, not canonical `rime-cantonese` candidate-order evidence.
 4. **F08 is intentionally scoped, not full fork-ranking byte parity.** Yune follows upstream `1.17.0` ranking semantics, preserves long-entry completion (for example, `santai` can surface `身體健康`), and exposes profile controls for raw-weight prediction thresholds and prediction-never-first behavior.
 5. **F09 is a UI-side decision.** `display_languages` gloss-column selection belongs in TypeDuck-Web; the engine emits stable lookup payloads without adding a language-filtering engine branch.
 6. **`show_full_code` is a fork _engine_ addition** (upstream `translator_commons`/ `table_translator` have no such option) — Yune ported it correctly; don't relabel it as "an upstream option."

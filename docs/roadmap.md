@@ -272,30 +272,20 @@ Current decision:
    [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/).
    Plan:
    [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md).
-8. **M58 Jyutping candidate reachability & over-admission gate is ready for
-   execution (plan v4 plus final review tightening).**
-   Verified engine bug in the TypeDuck `jyut6ping3` product on the compiled
-   product path: for `beingo` (畀我) the wanted 畀 (`bei2`) is unreachable. A
-   verification pass **falsified** the earlier "oracle emits exact-only, suppress
-   the flood" model: a complete in-repo capture
-   (`jyut6ping3-m21-closeout.json` case[4], `ngohaigo`, `is_last_page:true`, 49
-   cands) shows the oracle emits a **rich multi-group ordered list** (phrase →
-   ngo-set + `o`-algebra → 午安 `ng5on1` → 19-char ng-set), not exact-only. The
-   two real divergences: **(reachability, confirmed)** a per-fetch cap of 2
-   (`MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE`; plus 256 pending / 64 output
-   caps, Compact+prism only) truncates the exact set so 畀 never emits; and
-   **(admission, capture-gated)** Yune admits `n`+vowel codes (你/能/男…) the
-   oracle omits and drops `ng`-algebra vowel rows (安 `on1`…) the oracle keeps —
-   both from `original_code_allows_prefix_fallback` matching the raw code against
-   the single input letter. M58 lifts the caps (bounded, tone-scoped, all three)
-   to make 畀 reachable, then fixes the over-admission via a **gate** (drop the
-   non-syllable single-letter prefix when a longer complete-syllable prefix
-   contributes) — the under-admission (Yune also drops the oracle's `o`-code/vowel
-   algebra rows, proven in the `ngohaig` flagship too) is deferred as
-   `M58-FU-ADMISSION-DEPTH`. Assertions are directional/per-input (`beingo`
-   full-capture target with set/order divergences explicitly fixed or
-   dispositioned; `ngohaig` directional); keeps `m21_nri` green (first-6 only)
-   and re-proves the Track B ratchet + `web03` tripwire.
+8. **M58 Jyutping candidate reachability is paused for oracle/schema rewrite.**
+   The previous v4 plan used TypeDuck-HK/librime v1.1.2 as the candidate-order
+   oracle for `jyut6ping3`; that premise is superseded for new canonical
+   claims. Canonical Cantonese/Jyutping candidate ordering, segmentation,
+   fallback, and completion must be captured from upstream `rime/librime 1.17.0`
+   plus pinned `rime/rime-cantonese`. Historical M14-M28 TypeDuck fixtures
+   remain TypeDuck-profile regression guards, including fixture-backed candidate
+   behavior such as M21-GAP-01/02. M58 must also disposition the shipped
+   `beingo` / 畀 bug in the TypeDuck/profile lane if canonical rime-cantonese
+   does not reproduce it. The preferred schema split is canonical `jyut6ping3`
+   plus TypeDuck `jyut6ping3_typeduck`, but M58 must first audit
+   `jyut6ping3_mobile`, profile predicates, Track B/M55, WEB-03/public-demo
+   assets, and userdb persistence before requesting explicit id-direction
+   sign-off.
    Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
 9. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
@@ -342,7 +332,7 @@ and current decision rules.
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
-| M58 | Ready for execution | Jyutping candidate reachability & over-admission gate (TypeDuck `jyut6ping3` product). Verified on the compiled product path: for `beingo` (畀我) the wanted 畀 (`bei2`) is unreachable. A verification pass **falsified** the v1/v2 "oracle is exact-only, suppress the flood" model — the complete in-repo capture `jyut6ping3-m21-closeout.json` case[4] (`ngohaigo`, `is_last_page:true`, 49 cands) shows the oracle emits a **rich multi-group ordered list** (phrase → ngo-set + `o`-algebra → 午安 `ng5on1` → 19-char ng-set). Two real divergences: **(reachability, Leg B, confirmed)** a per-fetch cap of 2 (plus 256 pending / 64 output caps, Compact+prism only) truncates the exact set so 畀 never emits; **(admission, split)** Yune admits `n`+vowel codes (你/能/男…) the oracle omits, owned by the M58 gate, and drops `ng`-algebra vowel rows (安 `on1`…) plus `ngohaig` `o`-code/午安 rows the oracle keeps, deferred as `M58-FU-ADMISSION-DEPTH`. Plan: lift the caps (bounded, tone-scoped, all three) to make 畀 reachable; fix the non-syllable single-letter over-admission gate if the full-capture diff requires it; explicitly fix or disposition any `beingo` set/order divergence such as `be` rows (`啤`/`唄`); keep `m21_nri` green (first-6 only); re-prove the Track B ratchet + `web03` tripwire; test on the compiled path. Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
+| M58 | Draft rewrite / paused | Canonical Jyutping candidate reachability/admission work must be re-based on upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; the earlier TypeDuck-v1.1.2 canonical-ordering plan is superseded. Historical M14-M28 TypeDuck fixtures remain profile-lane regression guards, and the shipped `beingo` / 畀 report must receive a TypeDuck/profile disposition if canonical captures do not cover it. The preferred id direction is canonical `jyut6ping3` plus TypeDuck `jyut6ping3_typeduck`, but no id split may land before the Phase 3 blast-radius audit and explicit user sign-off. Preflight claim audit: [`reports/evidence/m58-preflight-claim-audit/`](./reports/evidence/m58-preflight-claim-audit/). Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
 
 ## Scope Ledger
 
@@ -353,6 +343,7 @@ only when an engine target needs them; nothing here commits to a timeline.
 | --- | --- | --- |
 | `luna_pinyin` core versus upstream `1.17.0`, including completed M17 null-grammar sentence/lattice, M18 punctuation processor slices, completed M42 abbreviation sentence parity for `cszysmsrsd`/`zybfshmsru`, completed M48 `jianli`/`biancheng` over-segmentation parity, and completed M54 native octagram-compatible grammar support for the named upstream target | Broader learned `.gram`/octagram behavior, contextual translation, and plugin-backed gears beyond the named M54 target | Bit-for-bit parity with librime internals |
 | Common RIME schemas added through explicit breadth milestones | Further schema breadth only with fresh oracle fixtures and owning tests | Unbounded schema checklist work |
+| Canonical Cantonese/Jyutping candidate behavior: upstream `rime/librime 1.17.0` + pinned `rime/rime-cantonese`; exact Yune-facing id direction gated by M58 Phase 3 sign-off | TypeDuck multilingual comments/profile/display behavior and grandfathered profile candidate guards under current shipped ids until a signed-off split; preferred future id `jyut6ping3_typeduck` | Using bare `schema_id: jyut6ping3` as provenance when schema sources differ; renaming product ids without blast-radius/userdb evidence |
 | Native engine performance guardrails for startup, session lifecycle, lookup, lazy/page-bounded translation, context export, memory, and allocation | Frontend/application delivery evidence and platform packaging | Claiming application-visible wins from native engine evidence |
 | AI-native layer on the compatible deterministic base | Richer AI experiments after the classic engine path is competitive | Replacing or altering classic input paths by default |
 

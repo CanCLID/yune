@@ -56,7 +56,23 @@ Yune is a Rust input-method engine fronted by a single **librime-shaped C ABI**.
 
 **Direction is upstream-oracle-first.** M9 browser validation is complete, M11's core/CLI AI layer is complete, and M12 closed the upstream oracle refresh plus the first expanded upstream behavioral parity gate. The current baseline is upstream `rime/librime 1.17.0` for default core behavior. M10 TypeDuck-Windows is complete as a TypeDuck compatibility profile through the named M19 ABI surface. See `docs/roadmap.md`, `docs/plans/completed/m12-plan-upstream-oracle-refresh.md`, and `docs/plans/completed/m12-plan-upstream-behavioral-parity-closeout.md`.
 
-**Behavior oracle.** The default compatibility oracle is upstream `rime/librime 1.17.0` (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`). The TypeDuck fork (`https://github.com/TypeDuck-HK/librime`, tag `v1.1.2`, commit `74cb52b78fb2411137a7643f6c8bc6517acfde69`) is a TypeDuck compatibility-profile oracle only. If upstream and TypeDuck disagree, upstream wins for core Yune; TypeDuck behavior must be isolated behind a named TypeDuck-profile test, fixture, adapter, or ABI note. These are referenced repositories, **NOT local checkout paths**. librime is never linked or called at runtime.
+**Behavior oracle.** The default compatibility oracle is upstream `rime/librime
+1.17.0` (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`). Canonical
+Cantonese/Jyutping candidate ordering, segmentation, fallback, and completion
+use that upstream engine with pinned `rime/rime-cantonese`; M58 owns the final
+Yune-facing id/provenance split.
+
+The TypeDuck fork (`https://github.com/TypeDuck-HK/librime`, tag `v1.1.2`,
+commit `74cb52b78fb2411137a7643f6c8bc6517acfde69`) is a TypeDuck
+compatibility-profile oracle only for multilingual comments, dictionary lookup
+payloads, display/profile behavior, fork-only ABI/profile controls, and
+historical fixture-backed profile candidate guards. The preferred future
+profile id is `jyut6ping3_typeduck`, pending M58's schema/profile blast-radius
+audit and explicit user sign-off. If the profile and canonical lanes disagree
+on ordering, segmentation, fallback, or completion, new canonical
+`jyut6ping3` claims follow upstream unless a later explicit decision scopes a
+profile-only expectation. These are referenced repositories, **NOT local
+checkout paths**. librime is never linked or called at runtime.
 
 **AI-native input is an explicitly separate layer** above librime compatibility - not part of M9, M12, or the TypeDuck compatibility profile. `crates/yune-core/src/ai/` owns `AiCandidateProvider`, `MockAiProvider`, `LocalModelProvider`, `AiWorker`, staged input-keyed results, `AiContext` snapshots, `AiPrivacyPolicy`, and `MemoryStore`; the direct `yune-cli run` path can opt into `--ai-provider mock` or `--ai-provider local`. M13 exposes the local provider through the web harness now canonical as `yune-web`, default-off, using a provider-free first pass (`yune_web_process_key`) and a Rust/WASM second pass (`yune_web_stage_ai`) requested by the browser worker after classic rendering. TypeDuck-Windows and other native frontends currently keep AI off; native AI exposure is future product work. AI context defaults to sensitive, remote providers are blocked before invocation under sensitive context, and AI memory writes are suppressed under the same policy. AI memory uses `.ai-memory` / `.ai-memory.txt` namespace helpers rather than librime `*.userdb` files. Remote model backends and additional frontend exposure remain future explicit/default-off work.
 
@@ -125,7 +141,7 @@ yune/
 |   |       |-- upstream_luna_pinyin_parity.rs
 |   |       |                          # Oracle parity vs upstream 1.17.0
 |   |       |-- oracle_fixture_provenance.rs
-|   |       |-- cantonese_parity.rs    # Oracle parity vs captured TypeDuck v1.1.2
+|   |       |-- cantonese_parity.rs    # TypeDuck profile parity vs captured v1.1.2
 |   |       |-- fixtures/upstream-1.17.0/
 |   |       |                          # Captured upstream fixtures + provenance README
 |   |       `-- fixtures/typeduck-v1.1.2/  # Captured TypeDuck profile fixture + README
@@ -250,14 +266,38 @@ Public re-exports stay centralized in crate facades; use module roots (`dictiona
 cargo test --workspace                              # all Rust tests
 cargo test -p yune-rime-api --test yune_web     # yune-web ABI/adapter contract
 cargo test -p yune-core --test upstream_luna_pinyin_parity # upstream 1.17.0 oracle parity
-cargo test -p yune-core --test cantonese_parity     # v1.1.2 oracle parity
+cargo test -p yune-core --test cantonese_parity     # TypeDuck profile v1.1.2 parity
 cargo clippy --workspace --all-targets -- -D warnings
 npm test  # (in packages/yune-web-runtime) -> vitest run
 ```
 
-**Oracle-driven, NON-circular parity.** Compatibility tests capture expected bytes/behavior from the **external oracle** (upstream librime / TypeDuck fork v1.1.2) into a checked-in fixture, then run Yune's **real production path** and assert it reproduces the oracle output. **Never derive the expected value from Yune itself.** Canonical example: `upstream_luna_pinyin_parity.rs` uses official upstream `rime/librime 1.17.0` release-binary fixtures for `luna_pinyin`. Curated mechanics fixtures feed captured upstream dictionary/vocabulary rows through Yune's real `TableDictionary` and `StaticTableTranslator` path. Full selection fixtures must include every competing upstream dictionary row for the tested code plus relevant `essay.txt` rows for every in-scope candidate so ranking cannot silently use default/zero essay weights. Any behavior affected by menu state, paging, selection, commit, filters, or options must drive Yune's real `Engine` path or an equivalent full-pipeline harness; translator-direct output is only mechanics coverage. `oracle_fixture_provenance.rs` scans all upstream `luna_pinyin` JSON files for oracle identity, schema repository commits, capture commands, source-row policies, and absence of local absolute cache paths. Unsupported upstream behavior stays as an ignored test with a blocker string and `panic!()` body, not as undocumented absence. TypeDuck profile example: `cantonese_parity.rs` feeds raw TypeDuck TSV source rows through the real `DictionaryLookupFilter` and compares the emitted comment against the golden `tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json` (each comment begins with the panel marker `\u{000c}\r1,`). A companion test locks the fixture's pinned engine/tag/commit metadata.
+**Oracle-driven, NON-circular parity.** Compatibility tests capture expected
+bytes/behavior from the external reference into a checked-in fixture, then run
+Yune's **real production path** and assert it reproduces that output. **Never
+derive the expected value from Yune itself.** Canonical example:
+`upstream_luna_pinyin_parity.rs` uses official upstream `rime/librime 1.17.0`
+release-binary fixtures for `luna_pinyin`. Curated mechanics fixtures feed
+captured upstream dictionary/vocabulary rows through Yune's real
+`TableDictionary` and `StaticTableTranslator` path. Full selection fixtures must
+include every competing upstream dictionary row for the tested code plus
+relevant `essay.txt` rows for every in-scope candidate so ranking cannot
+silently use default/zero essay weights. Any behavior affected by menu state,
+paging, selection, commit, filters, or options must drive Yune's real `Engine`
+path or an equivalent full-pipeline harness; translator-direct output is only
+mechanics coverage. `oracle_fixture_provenance.rs` scans all upstream
+`luna_pinyin` JSON files for oracle identity, schema repository commits, capture
+commands, source-row policies, and absence of local absolute cache paths.
+Unsupported upstream behavior stays as an ignored test with a blocker string and
+`panic!()` body, not as undocumented absence.
 
-**TypeDuck rich-comment E2E reproducibility.** The browser-shaped `yune_web_adapter_real_assets_emit_oracle_dictionary_panel_comments` integration test may use local TypeDuck v1.1.2 oracle build artifacts under `target/typeduck-oracle/v1.1.2/rime-user/build` to prove the full `jyut6ping3_mobile` runtime path emits the rich `\f\r1,.../\r0,...` comment payload. That `target/` tree is ignored local oracle state, so the test must emit an explicit skip reason when those build assets are absent and must never silently pass against a degraded three-column fallback. The committed clean-checkout byte-parity guarantee is still `cargo test -p yune-core --test cantonese_parity`.
+TypeDuck profile example: `cantonese_parity.rs` feeds raw TypeDuck TSV source
+rows through the real `DictionaryLookupFilter` and compares the emitted comment
+against the golden
+`tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json` (each comment
+begins with the panel marker `\u{000c}\r1,`). A companion test locks the
+fixture's pinned engine/tag/commit metadata.
+
+**TypeDuck rich-comment E2E reproducibility.** The browser-shaped `yune_web_adapter_real_assets_emit_oracle_dictionary_panel_comments` integration test may use local TypeDuck v1.1.2 oracle build artifacts under `target/typeduck-oracle/v1.1.2/rime-user/build` to prove the full TypeDuck profile runtime path emits the rich `\f\r1,.../\r0,...` comment payload. That `target/` tree is ignored local oracle state, so the test must emit an explicit skip reason when those build assets are absent and must never silently pass against a degraded three-column fallback. The committed clean-checkout byte-parity guarantee for the TypeDuck profile lane is still `cargo test -p yune-core --test cantonese_parity`; it is not canonical `jyut6ping3` ordering coverage.
 
 **`#[ignore]` must carry a documented blocker.** A blocked behavior gets a _named_ test marked `#[ignore = "blocked: <what is missing>"]` whose body `panic!()`s - never silently drop a slice. The reason names the precise blocker, usually a missing oracle fixture. As of M24, `cantonese_parity.rs` has no ignored cases; the remaining ignored parity blockers live in the M19 breadth tests such as `upstream_cangjie_parity.rs`, `upstream_double_pinyin_parity.rs`, and `upstream_zhuyin_parity.rs`.
 
@@ -278,7 +318,15 @@ No coverage tooling/threshold is configured. Browser-level E2E for `yune-web` is
 
 ## 8. Integrations
 
-**librime oracle (validation-only, no runtime dependency).** Core Yune targets upstream `github.com/rime/librime @ 1.17.0`. TypeDuck-Web/Windows profile tests may target `github.com/TypeDuck-HK/librime @ v1.1.2`. Golden fixture directories must name the oracle, e.g. `upstream-1.17.0/` or `typeduck-v1.1.2/`. Never derive expected bytes from Yune, and never link or call librime at runtime.
+**librime oracle (validation-only, no runtime dependency).** Core Yune targets
+upstream `github.com/rime/librime @ 1.17.0`. Canonical `jyut6ping3` candidate
+behavior additionally names pinned `rime/rime-cantonese` schema/data.
+TypeDuck-Web/Windows profile tests may target
+`github.com/TypeDuck-HK/librime @ v1.1.2` for profile/display/comment behavior
+and grandfathered profile candidate guards. Golden fixture directories must name
+the oracle and schema source, e.g.
+`upstream-1.17.0/`, `rime-cantonese`, or `typeduck-v1.1.2/`. Never derive
+expected bytes from Yune, and never link or call librime at runtime.
 
 **yune-web / Emscripten / IDBFS.** The `yune_web_*` adapter (`web_runtime.rs`) exports 14 functions over the `rime_get_api()`/`rime_levers_get_api()` tables and the Yune-owned AI sidecar. The TS runtime consumes the WASM module via Emscripten `cwrap`/`UTF8ToString`. **Browser persistence** uses an Emscripten **IDBFS** mount over a virtual data dir, flushed with `FS.syncfs`: `packages/.../src/filesystem.ts` defines `prepareYuneWebFilesystem` (writes `default.yaml`, `<schema>.schema.yaml`, `<dict>.dict.yaml`, `build/`) and explicit sync boundaries (`syncFromPersistenceBeforeInit`; `syncToPersistenceAfterMutation` / `deployAndSync` / `customizeAndSync` / `syncAfterUserDataChange`). The upstream-derived seam adapter translates Yune's `YuneWebResponse` (`handled`, `commits`, `context.preedit`, `context.candidates`) into the upstream `RimeResult` shape and parses key strings (`a`, `{BackSpace}`, `{Release+Enter}`) via `keyEventToRimeKey`; M13 maps `enableAI` to the runtime-only `set_ai_enabled` flag and requests `stage_ai` as a serialized second action. Source labels for AI rows come from engine snapshot data aligned to the rendered page, not from `RimeCandidate`; patch scope is intentionally minimal.
 
@@ -298,7 +346,7 @@ No coverage tooling/threshold is configured. Browser-level E2E for `yune-web` is
 
 **TypeDuck-Windows ABI/package work is complete as a TypeDuck compatibility profile.** A pre-M12 package smoke built `rime.dll`/`rime.lib`/headers and checked a TypeDuck fork-only slot, but that old smoke is archived evidence only and is not valid against the default upstream `rime_get_api()` table. M19 added the named `rime_get_typeduck_profile_api()` accessor for the list-append fork slots, and the Yune Windows package/header lane exposes the same current profile shape through `rime_get_yune_windows_profile_api()`. M10 completed the current profile package/header smoke, packaged DLL dynamic-loader lifecycle, TypeDuck-Windows x64 build/link evidence, and stock TypeDuckServer/TestTypeDuckIPC real-server IPC smoke through that profile surface. The default table and `RimeCandidate` remain upstream-shaped. Future TypeDuck-Windows modernization is Phase 2 product/frontend work, not a reason to widen the default ABI.
 
-**TypeDuck `jyut6ping3` fork-parity arc is closed with explicit browser limits.** HR-6 added oracle coverage for the reverse-lookup `"; "` joiner (`comments.join("; ")` in `filter/mod.rs`) and schema-name-in-prompt parity, so those are byte-locked. The remaining Cantonese/Jyutping gaps were tracked by M14-M16, not loose backlog: M14 captured TypeDuck-HK/librime `v1.1.2` goldens, M15 implemented dictionary-driven engine behavior, and M16 committed TypeDuck-Web browser evidence for the app-exposed `jyut6ping3_mobile` surface plus M13 AI. The active `cantonese_parity` cases now cover options (`combine_candidates`/`show_full_code`/ `enable_sentence`), completion, and correction against M14 fixtures. Deploy-only schema variants, schema-menu hiding, correction UI detail, and per-entry userdb pronunciation are documented browser/userdb inspection limits; do not turn those into unqualified browser claims without a new TypeDuck-Web UI or native inspection surface.
+**TypeDuck `jyut6ping3` fork-parity arc is closed with explicit browser limits.** HR-6 added oracle coverage for the reverse-lookup `"; "` joiner (`comments.join("; ")` in `filter/mod.rs`) and schema-name-in-prompt parity, so those are byte-locked for the TypeDuck profile lane. The remaining TypeDuck-profile Cantonese/Jyutping gaps were tracked by M14-M16, not loose backlog: M14 captured TypeDuck-HK/librime `v1.1.2` goldens, M15 implemented dictionary-driven profile behavior, and M16 committed TypeDuck-Web browser evidence for the app-exposed `jyut6ping3_mobile` surface plus M13 AI. The active `cantonese_parity` cases now cover profile options (`combine_candidates`/`show_full_code`/ `enable_sentence`), completion, correction, and grandfathered profile candidate behavior against M14-M28 fixtures. New canonical `jyut6ping3` candidate ordering/fallback/completion claims now belong to the D-31 `rime-cantonese` lane and M58 capture. Deploy-only schema variants, schema-menu hiding, correction UI detail, and per-entry userdb pronunciation are documented browser/userdb inspection limits; do not turn those into unqualified browser claims without a new TypeDuck-Web UI or native inspection surface.
 
 **Profile isolation is a live guardrail.** TypeDuck `v1.1.2` heuristics may live in shared core types only when installed or configured by a named TypeDuck profile, or when separate upstream oracle evidence proves the same behavior is global. A `TYPEDUCK_*` constant in shared translator code that affects default upstream schemas is a red flag: thread it through typed translator config / schema-profile install wiring, or rename it neutrally only after proving it is not profile-specific. M23 applied this to the M21-GAP-01 sentence word penalty: `TYPEDUCK_SENTENCE_WORD_PENALTY = 21.0` is now threaded through typed translator config and installed only for the `jyut6ping3` TypeDuck profile, so default upstream schemas such as `luna_pinyin` do not inherit it.
 

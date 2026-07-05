@@ -71,7 +71,7 @@ matches librime first pages for `cszysmsrsd` and `zybfshmsru`. Evidence:
 | Native long-row latency | Poet graph constant factors above the raw lookup | 37-char `1.913x`, 59-char `1.528x` (was `3.05x`/`2.25x` pre-M55) | improved; Tier M `1.50x` bar not met |
 | Native short keys | Exact-row scan + translator overhead | `n` `2.636x` (+34 us), `ni` `2.433x` (+25 us), `hao` `1.574x` (+9 us) | bounded absolute gaps |
 | Native Track A memory | Owned poet payload retained on heap by default; byte-backed opt-in works but costs long-row latency | default `185.7 MB`; opt-in `113.2 MB`; librime peer `13.5 MB` | scratch port is the named owner |
-| Track B product guard | TypeDuck product absolutes all green and tightened | key row `315.356 us` vs `347.975 us` ceiling; startup/session `~35 ms` vs Phase 0-era `~98 ms` sources | regression guard pass, real improvement |
+| Track B product guard | TypeDuck profile/product absolutes all green and tightened; not canonical `rime-cantonese` candidate evidence | key row `315.356 us` vs `347.975 us` ceiling; startup/session `~35 ms` vs Phase 0-era `~98 ms` sources | regression guard pass, real improvement |
 | Browser `luna_pinyin` memory | Yune WASM/runtime floor still larger than My RIME | `64.0 MiB` vs `16.0 MiB` (carried) | blocker |
 | Browser `luna_pinyin` startup | Yune public-demo startup still slower | `1000 ms` vs `634 ms` (carried) | watch |
 
@@ -182,9 +182,13 @@ iOS-target lane at about `22 MB` private in the lean probe.
 
 ## Native Track B Cause (product lane)
 
-Track B is the native TypeDuck `jyut6ping3` product path and regression guard
-(no librime peer; sentence is off in the mobile profile, so it is independent
-of the poet default). Corrective gate run D, all green with tightened ceilings:
+Track B is the native TypeDuck profile product path and regression guard (no
+librime peer; sentence is off in the mobile profile, so it is independent of
+the poet default). Current evidence uses historical `jyut6ping3_mobile` asset
+names; it should be read as TypeDuck profile evidence and future schema-split
+work should present that lane as `jyut6ping3_typeduck` only after the M58
+blast-radius sign-off. It is not canonical `rime-cantonese` candidate-order
+oracle evidence. Corrective gate run D, all green with tightened ceilings:
 
 | Row | Observed | Ceiling | Status |
 | --- | ---: | ---: | --- |
@@ -200,7 +204,7 @@ sources (`~98 ms`) through the landed M55 work — a real product-lane win,
 ratcheted accordingly. No TypeDuck-vs-librime speed claim follows from this
 guard.
 
-![Native Track B memory, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
+![Native Track B memory, TypeDuck profile product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
 
 ## Browser Root Cause
 

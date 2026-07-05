@@ -12,6 +12,15 @@
 
 ---
 
+> **Pre-M58 supersession note (2026-07-05):** this completed plan preserves the
+> historical M28 follow-up decision and evidence. Its embedded D-31 text below
+> predates the rime-cantonese/TypeDuck schema split and remains valid for this
+> historical hybrid fixture. New canonical `jyut6ping3` candidate ordering,
+> segmentation, fallback, and completion claims must follow the 2026-07-05 D-31
+> amendment: upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`.
+> TypeDuck multilingual/profile behavior, including grandfathered M14-M28
+> candidate guards, remains profile-scoped until a signed-off schema split.
+
 ## Why This Follow-up Exists
 
 Manual dogfooding after M28 found two remaining problems for `caksijathaacoenggeoizi`:

@@ -168,10 +168,13 @@ Yune `185.7 MB` (Win working set) / `~228 MB` (mac resident); librime `17.2 MB`
 both (`~11x` Win, `~14x` mac), but the absolute megabytes are not directly
 comparable.
 
-**Track B (TypeDuck `jyut6ping3` product) on macOS post-M57.** Key-sequence
+**Track B (TypeDuck profile product path) on macOS post-M57.** Key-sequence
 latency `~289 us` (mac) vs `315 us` (Win); session/startup `~29 ms` (mac) vs
 `~35 ms` (Win). Track B memory is not compared cross-platform (macOS resident
-plus deploy/compile transient is not the Windows working-set metric).
+plus deploy/compile transient is not the Windows working-set metric). This is
+TypeDuck profile/product guard evidence, not canonical `rime-cantonese`
+candidate-order oracle evidence. The preferred future TypeDuck multilingual id
+is `jyut6ping3_typeduck`, pending the M58 schema/profile blast-radius sign-off.
 
 ## Native Track A Guardrails
 
@@ -230,11 +233,15 @@ interchangeable memory claims.
 
 ![Native Track A memory peak and named owners](./evidence/dashboard-visuals-2026-07-04/native-track-a-memory.svg)
 
-## Native Track B (TypeDuck `jyut6ping3` product)
+## Native Track B (TypeDuck Profile Product Path)
 
-Track B is the native TypeDuck/Jyutping product path and regression guard lane
-(no librime peer). It is mode-independent for the poet default (sentence is off
-in the mobile profile). Corrective gate run D:
+Track B is the native TypeDuck/Jyutping profile product path and regression
+guard lane (no librime peer). Current evidence uses historical
+`jyut6ping3_mobile` asset names; it should be read as TypeDuck profile evidence
+and future schema-split work should present that lane as
+`jyut6ping3_typeduck` only after the M58 blast-radius sign-off.
+It is mode-independent for the poet default (sentence is off in the mobile
+profile). Corrective gate run D:
 
 | Dimension | Observed | Ceiling | Status |
 | --- | ---: | ---: | --- |
@@ -245,9 +252,9 @@ in the mobile profile). Corrective gate run D:
 | session create/select/destroy | `35,364.100 us` | `39,289.800 us` | pass (~3x better than the Phase 0-era `99.8 ms` source baseline) |
 | startup warm runtime-ready | `34,732.800 us` | `38,825.050 us` | pass (~3x better than the Phase 0-era `97.4 ms` source baseline) |
 
-![Native Track B memory, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
+![Native Track B memory, TypeDuck profile product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
 
-![Native Track B lifecycle latency, TypeDuck jyut6ping3 product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-latency.svg)
+![Native Track B lifecycle latency, TypeDuck profile product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-latency.svg)
 
 ## Browser Peer Dashboard
 

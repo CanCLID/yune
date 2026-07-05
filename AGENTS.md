@@ -14,10 +14,17 @@ oracle before it is accepted.
 **Goal shape - target-driven, not feature-complete:** the oracle is a behavioral
 floor, not a feature checklist. Success means the named targets behave correctly
 versus the oracle: upstream `luna_pinyin` and common-schema behavior against
-upstream `rime/librime 1.17.0`, plus the TypeDuck `jyut6ping3` profile against
-TypeDuck-HK/librime `v1.1.2`. Bit-for-bit librime feature parity is an explicit
-non-goal. A librime feature is implemented only when a named target needs it.
-See `decisions.md` D-24 (oracle precedence) and D-25 (target-driven scope).
+upstream `rime/librime 1.17.0`; canonical `jyut6ping3` candidate ordering,
+segmentation, fallback, and completion against upstream `rime/librime 1.17.0`
+plus pinned `rime/rime-cantonese`; and TypeDuck multilingual/comment/profile
+behavior against TypeDuck-HK/librime `v1.1.2` as a profile lane with
+grandfathered fixture-backed candidate guards. `jyut6ping3_typeduck` is the
+preferred future TypeDuck profile id, but the schema-id direction must not be
+implemented before M58's blast-radius audit and explicit user sign-off.
+Bit-for-bit librime feature parity is an explicit non-goal. A librime feature is
+implemented only when a named target needs it. See `decisions.md` D-24 (oracle
+precedence), D-25 (target-driven scope), and D-31 (canonical Jyutping versus
+TypeDuck profile split).
 
 ## Current State
 
@@ -71,10 +78,14 @@ See `decisions.md` D-24 (oracle precedence) and D-25 (target-driven scope).
 
 - **Compatibility oracle:** upstream <https://github.com/rime/librime>
   `1.17.0` at `33e78140250125871856cdc5b42ddc6a5fcd3cd4` is the default core
-  oracle. TypeDuck-HK/librime `v1.1.2` at
+  oracle. Canonical Cantonese/Jyutping candidate behavior uses that upstream
+  engine with pinned <https://github.com/rime/rime-cantonese>. TypeDuck-HK/librime `v1.1.2` at
   `74cb52b78fb2411137a7643f6c8bc6517acfde69` is profile-only for TypeDuck
-  compatibility. These are referenced upstream/fork repositories, not local
-  checkout paths.
+  multilingual/comment/profile behavior and historical fixture-backed profile
+  candidate guards. The preferred future TypeDuck profile id is
+  `jyut6ping3_typeduck`, pending M58's schema/profile blast-radius audit and
+  explicit user sign-off. These are referenced upstream/fork repositories, not
+  local checkout paths.
 - **Idiomatic Rust over a C++ clone:** preserve librime-observable behavior at
   the ABI boundary; keep internals clean, typed Rust.
 - **Own each slice:** new behavior gets an owning module and owning tests; keep

@@ -13,8 +13,13 @@ Yune supports named targets, not full librime feature parity.
 
 - Upstream `luna_pinyin` and common-schema behavior targets are measured
   against upstream `rime/librime 1.17.0`.
-- TypeDuck `jyut6ping3` profile behavior is measured against
-  TypeDuck-HK/librime `v1.1.2`.
+- Canonical Cantonese/Jyutping candidate ordering, segmentation, fallback, and
+  completion are measured against upstream `rime/librime 1.17.0` plus pinned
+  `rime/rime-cantonese`; M58 owns the final Yune-facing id/provenance split.
+- TypeDuck multilingual/profile behavior is measured against
+  TypeDuck-HK/librime `v1.1.2` under current shipped profile ids until a
+  signed-off schema split. `jyut6ping3_typeduck` is the preferred future
+  TypeDuck profile id.
 - Broad librime feature parity is not a goal.
 - New behavior needs a named target and an oracle fixture before it can become
   required behavior.
@@ -41,10 +46,14 @@ Support rules:
 ## Compatibility Oracles
 
 The default oracle for core Yune behavior is upstream `rime/librime 1.17.0`.
-TypeDuck-HK/librime `v1.1.2` is a profile-only oracle for TypeDuck
-compatibility. If the upstream oracle and TypeDuck fork disagree, upstream
-behavior wins for default core behavior unless the behavior is explicitly
-installed behind a named TypeDuck profile test, fixture, adapter, or ABI note.
+Canonical `jyut6ping3` candidate behavior uses that upstream engine with pinned
+`rime/rime-cantonese`. TypeDuck-HK/librime `v1.1.2` is a profile-only oracle
+for TypeDuck compatibility: multilingual comments, dictionary lookup payloads,
+display/profile behavior, fork-only ABI/profile controls, and grandfathered
+profile candidate guards from historical M14-M28 fixtures. If the upstream
+oracle and TypeDuck fork disagree on candidate ordering, segmentation,
+fallback, or completion, new canonical `jyut6ping3` claims follow upstream
+unless a later explicit decision scopes a TypeDuck-profile-only candidate claim.
 
 The oracle repositories are source references. Yune does not link or call
 librime at runtime.
@@ -151,9 +160,10 @@ adding ABI fields or changing named happy-path behavior.
 ### Compiled Artifact Staleness
 
 Compiled artifacts are valid only when their magic/version/shape checks pass.
-For the named product paths (`luna_pinyin` and TypeDuck `jyut6ping3`), cold and
-warm deploy/select/type conformance tests must keep candidate output pinned to
-the relevant oracle fixtures.
+For the named product paths (`luna_pinyin`, canonical Jyutping once M58 pins its
+schema identity, and the TypeDuck profile lane under current or future signed-off
+ids), cold and warm deploy/select/type conformance tests must keep output pinned
+to the relevant oracle fixtures for that lane.
 
 Policy:
 

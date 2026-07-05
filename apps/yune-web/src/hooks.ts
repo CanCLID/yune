@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, Language, PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS, normalizeOutputStandard } from "./consts";
+import { CHINESE_TYPEFACE_BY_ID, DEFAULT_PREFERENCES, IS_PUBLIC_DEMO, Language, PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS, normalizeOutputStandard } from "./consts";
 import Rime, { subscribe } from "./rime";
 import { notify } from "./toast";
 import { isUiLanguage } from "./uiText";
@@ -55,30 +55,48 @@ export function useLoading(): [boolean, (asyncTask: () => Promise<void>) => void
 	return [pendingCount > 0, runAsyncTask, startAsyncTask];
 }
 
-export function useRimeOption(option: string, defaultValue: boolean, deployStatus: number, localStorageKey?: string): [boolean, DispatchWithoutAction] {
+export function useRimeOption(option: string, defaultValue: boolean, deployStatus: number, localStorageKey?: string, enabled = true): [boolean, DispatchWithoutAction] {
 	// eslint-disable-next-line react-hooks/rules-of-hooks
 	const [value, setValue] = localStorageKey ? useLocalStorageValue(localStorageKey, { defaultValue }) : useState(defaultValue);
 
 	useEffect(() => {
+		if (!enabled) {
+			return;
+		}
 		async function setOption() {
 			try {
 				await Rime.setOption(option, value);
+				writeOptionDataset(option, value);
 			}
 			catch {
 				notify("error", "套用選項", "applying the option");
 			}
 		}
 		void setOption();
-	}, [option, value, deployStatus]);
+	}, [enabled, option, value, deployStatus]);
 
 	useEffect(() =>
 		subscribe("optionChanged", (rimeOption, rimeValue) => {
 			if (rimeOption === option) {
+				writeOptionDataset(option, rimeValue);
 				setValue(rimeValue);
 			}
 		}), [option, setValue]);
 
 	return [value, useCallback(() => setValue(value => !value), [setValue])];
+}
+
+function writeOptionDataset(option: string, value: boolean) {
+	document.documentElement.dataset[optionDatasetKey(option)] = String(value);
+	document.documentElement.dataset["yuneLastOptionChanged"] = `${option}:${value}`;
+}
+
+function optionDatasetKey(option: string): string {
+	return `yuneOption${option
+		.split(/[_-]+/)
+		.filter(Boolean)
+		.map(part => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+		.join("")}`;
 }
 
 export function usePreferences() {
@@ -243,10 +261,7 @@ function parseActiveSchema(value: string, defaultValue: RimeSchemaId): RimeSchem
 	if (value === "jyut6ping3_mobile") {
 		return "jyut6ping3";
 	}
-	const schemaOptions =
-		import.meta.env.VITE_YUNE_PUBLIC_DEMO === "1"
-			? PUBLIC_SCHEMA_OPTIONS
-			: SCHEMA_OPTIONS;
+	const schemaOptions = IS_PUBLIC_DEMO ? PUBLIC_SCHEMA_OPTIONS : SCHEMA_OPTIONS;
 	return schemaOptions.some(option => option.id === value) ? value as RimeSchemaId : defaultValue;
 }
 

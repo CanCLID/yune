@@ -244,13 +244,17 @@ Current decision:
    [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/).
    Plan:
    [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md).
-6. **WEB-05 harness control surface is in progress (Windows machine, parallel
-   to M57 on macOS); Phase 0 controls ledger is committed.** The
-   "surface all controls" follow-up carved out of M21: expose every engine
-   control/diagnostic reachable through existing seams in the `yune-web`
-   playground, defaults unchanged, public demo unchanged, Playwright-evidenced.
-   Web-harness track; no engine changes, so it does not conflict with M56. Plan:
-   [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md).
+6. **WEB-05 harness control surface is complete.** The "surface all controls"
+   follow-up carved out of M21 now exposes every engine control/diagnostic
+   reachable through existing `apps/yune-web` seams in the playground, with
+   dev-power controls gated out of the public demo by the shared
+   `IS_PUBLIC_DEMO` constant. Same-WASM Playwright evidence proves default
+   smoke behavior unchanged; demo-mode evidence proves the new debug/admin
+   controls are absent from the public demo. No engine or web-runtime package
+   changes. Evidence:
+   [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/).
+   Plan:
+   [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md).
 7. **M57 macOS Track A sentence-model parity and verification repair is
    complete.** The independent macOS rerun found that local librime stayed
    oracle-shaped, but Yune built a different Luna sentence-model shape:
@@ -290,7 +294,7 @@ and current decision rules.
 | Track | Scope | Current source of truth |
 | --- | --- | --- |
 | Engine performance | Native engine startup, schema/session lifecycle, mmap-backed `rsmarisa` marisa-table lookup, lazy/page-bounded translation, context export, memory, allocation, Track A guardrails, M55 final evidence, M57 macOS Track A sentence-model repair, historical native Track A research no-go evidence, and TypeDuck/Jyutping profile storage | M57 completed plan/evidence, M55 final threshold/evidence, M52 historical guardrail evidence, M50 plan/evidence, M47 plan/evidence, and performance reports. |
-| Web harness startup and memory | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, Chromium memory, compiled-asset contract, and debug-only octagram harness diagnostics | WEB-04 plan/evidence, WEB-03 plan/evidence, WEB-02 owner classification, WEB-01 measured no-go, M41 startup evidence, and browser reports. |
+| Web harness startup and memory | Tracked `apps/yune-web/` production build, public-demo dist, browser shell, asset/cache delivery, worker/WASM startup, persistence, schema selection, first key-to-paint, Chromium memory, compiled-asset contract, debug-only octagram harness diagnostics, and WEB-05 control/diagnostic surface | WEB-05 plan/evidence, WEB-04 plan/evidence, WEB-03 plan/evidence, WEB-02 owner classification, WEB-01 measured no-go, M41 startup evidence, and browser reports. |
 | Core compatibility | Upstream behavior fixtures, standard ABI-observable behavior, staleness policy, user-data lifecycle, and ABI crash/threading/poison policy | Requirements, decisions, engine support contract, per-milestone plans, M53 release-readiness audit (`reports/evidence/m53-engine-release-readiness-audit/`), and M56 productization evidence. |
 | AI-native engine research | Default-off AI behavior layered above the deterministic engine | Future explicit engine experiments only. |
 | Historical record | Completed milestone outcomes and reference/provenance pointers | Milestone history ledger. |
@@ -310,7 +314,7 @@ and current decision rules.
 | M55 | Complete (corrective re-baseline) | Native Track A performance program, closed 2026-07-04 after a corrective review. Real: 37-char `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `2.433x`, `hao` `1.574x`, startup `0.895x`, session `0.864x`, win rows locked `<1.00x`, Track B guards green and tightened (~3x better startup/session absolutes), `YUNE-POET/2` byte-backed poet built (opt-in `113.2 MB`, latency-blocked; default owned `185.7 MB`). Retracted as measurement artifacts: the pre-corrective `0.237x`/`0.086x`/`0.286x` rows (key deferral, benchmark-input aliases, uninvalidated config cache - all reverted; benchmark now reads context per keypress). Corrective gate green twice. Corrective record: [`reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/`](./reports/evidence/m55-native-match-or-beat/corrective-2026-07-04/). Plan: [`plans/completed/m55-plan-native-track-a-match-or-beat-program.md`](./plans/completed/m55-plan-native-track-a-match-or-beat-program.md). |
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
-| WEB-05 | In progress (Phase 0 complete) | Harness control surface: expose every engine control/diagnostic reachable through existing seams in the `yune-web` playground (the M21-deferred "surface all controls" slice); defaults and public demo unchanged; Playwright-evidenced. Plan: [`plans/active/web05-plan-harness-control-surface.md`](./plans/active/web05-plan-harness-control-surface.md). |
+| WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, all 14 Phase 1 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior unchanged, public demo debug/admin controls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
 
 ## Scope Ledger
 

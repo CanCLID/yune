@@ -1,0 +1,154 @@
+{
+  "wasmSha256": "cb05289d6a72562ed349d82e94eec0e5681f40fe681aa823107670be3c68dc22",
+  "appVersion": "yune-web-wasm-heap-v1",
+  "snapshots": [
+    {
+      "schema": "jyut6ping3",
+      "input": "ngo",
+      "preedit": "ngo",
+      "candidates": [
+        {
+          "text": "我",
+          "source": null,
+          "rowText": "1.ngo5我I, meⓘ"
+        },
+        {
+          "text": "外",
+          "source": null,
+          "rowText": "2.ngoi6外outsideⓘ"
+        },
+        {
+          "text": "外國",
+          "source": null,
+          "rowText": "3.ngoi6 gwok3外國foreign countryⓘ"
+        },
+        {
+          "text": "岸",
+          "source": null,
+          "rowText": "4.ngon6岸shoreⓘ"
+        },
+        {
+          "text": "礙",
+          "source": null,
+          "rowText": "5.ngoi6礙hinderⓘ"
+        },
+        {
+          "text": "呆",
+          "source": null,
+          "rowText": "6.ngoi4呆stagnateⓘ"
+        }
+      ]
+    },
+    {
+      "schema": "jyut6ping3",
+      "input": "santai",
+      "preedit": "santai",
+      "candidates": [
+        {
+          "text": "身體",
+          "source": null,
+          "rowText": "1.san1 tai2身體bodyⓘ"
+        },
+        {
+          "text": "神體",
+          "source": null,
+          "rowText": "2.san4 tai2神體"
+        },
+        {
+          "text": "新",
+          "source": null,
+          "rowText": "3.san1新newⓘ"
+        },
+        {
+          "text": "身",
+          "source": null,
+          "rowText": "4.san1身bodyⓘ"
+        },
+        {
+          "text": "神",
+          "source": null,
+          "rowText": "5.san4神godⓘ"
+        },
+        {
+          "text": "晨",
+          "source": null,
+          "rowText": "6.san4晨early morningⓘ"
+        }
+      ]
+    },
+    {
+      "schema": "luna_pinyin",
+      "input": "ni",
+      "preedit": "ni",
+      "candidates": [
+        {
+          "text": "你",
+          "source": null,
+          "rowText": "1.你ni"
+        },
+        {
+          "text": "擬",
+          "source": null,
+          "rowText": "2.擬ni"
+        },
+        {
+          "text": "尼",
+          "source": null,
+          "rowText": "3.尼ni"
+        },
+        {
+          "text": "泥",
+          "source": null,
+          "rowText": "4.泥ni"
+        },
+        {
+          "text": "呢",
+          "source": null,
+          "rowText": "5.呢ni"
+        },
+        {
+          "text": "妳",
+          "source": null,
+          "rowText": "6.妳ni"
+        }
+      ]
+    },
+    {
+      "schema": "luna_pinyin",
+      "input": "hao",
+      "preedit": "hao",
+      "candidates": [
+        {
+          "text": "好",
+          "source": null,
+          "rowText": "1.好hao"
+        },
+        {
+          "text": "號",
+          "source": null,
+          "rowText": "2.號hao"
+        },
+        {
+          "text": "浩",
+          "source": null,
+          "rowText": "3.浩hao"
+        },
+        {
+          "text": "豪",
+          "source": null,
+          "rowText": "4.豪hao"
+        },
+        {
+          "text": "耗",
+          "source": null,
+          "rowText": "5.耗hao"
+        },
+        {
+          "text": "郝",
+          "source": null,
+          "rowText": "6.郝hao"
+        }
+      ]
+    }
+  ]
+}

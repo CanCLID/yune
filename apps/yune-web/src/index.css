@@ -1403,6 +1403,118 @@
 	margin-top: 18px;
 }
 
+.yd-control-surface {
+	display: grid;
+	gap: 14px;
+	margin-top: 18px;
+}
+
+.yd-control-surface-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.yd-control-surface-header h3,
+.yd-control-card h4 {
+	margin: 0;
+	font-size: 0.95rem;
+	font-weight: 700;
+}
+
+.yd-control-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 12px;
+}
+
+.yd-control-card {
+	border: 1px solid color-mix(in srgb, var(--ink3) 22%, transparent);
+	border-radius: 8px;
+	padding: 12px;
+	display: grid;
+	gap: 10px;
+	background: color-mix(in srgb, var(--paper) 88%, white);
+}
+
+.yd-control-card ul,
+.yd-control-card ol {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.yd-button-row {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.yd-compact-facts {
+	margin: 0;
+	display: grid;
+	gap: 6px;
+}
+
+.yd-compact-facts div {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.yd-compact-facts dt {
+	color: color-mix(in srgb, var(--ink2) 72%, var(--ink3));
+}
+
+.yd-compact-facts dd {
+	margin: 0;
+	text-align: right;
+	overflow-wrap: anywhere;
+}
+
+.yd-diagnostic-list {
+	max-height: 180px;
+	overflow: auto;
+	font-size: 0.78rem;
+	line-height: 1.45;
+	overflow-wrap: anywhere;
+}
+
+.yd-raw-inline {
+	max-height: 180px;
+	overflow: auto;
+	margin: 0;
+	padding: 8px;
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--ink) 7%, var(--paper));
+	font-size: 0.75rem;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+.yd-muted {
+	margin: 0;
+	color: color-mix(in srgb, var(--ink2) 72%, var(--ink3));
+	font-size: 0.85rem;
+}
+
+.yd-text-input,
+.yd-textarea {
+	width: 100%;
+	border: 1px solid color-mix(in srgb, var(--ink3) 28%, transparent);
+	border-radius: 6px;
+	background: var(--paper);
+	color: var(--ink);
+	padding: 8px 10px;
+	font: inherit;
+}
+
+.yd-textarea {
+	min-height: 84px;
+	resize: vertical;
+}
+
 .yd-field {
 	display: grid;
 	gap: 7px;

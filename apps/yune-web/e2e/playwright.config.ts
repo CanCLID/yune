@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: ".",
   testMatch: [
     "yune-web.spec.ts",
+    "web05-control-surface.spec.ts",
     "yune-web-startup-benchmark.spec.ts",
     "yune-web-comparator-benchmark.spec.ts",
     "yune-web-wasm-attribution.spec.ts",

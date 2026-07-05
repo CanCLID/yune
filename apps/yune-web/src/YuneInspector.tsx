@@ -1,7 +1,9 @@
 import { uiText } from "./uiText";
 
-import type { YuneInspectorDebug } from "./types";
+import type { RimeResult, YuneInspectorDebug } from "./types";
 import type { UiLanguage } from "./uiText";
+
+type InspectorCandidate = Extract<RimeResult, { isComposing: true }>["candidates"][number];
 
 function formatScore(value: number | null | undefined) {
 	if (value === null || value === undefined) {
@@ -28,9 +30,11 @@ function summary(debug?: YuneInspectorDebug) {
 
 export default function YuneInspector({
 	debug,
+	candidates,
 	uiLanguage,
 }: {
 	debug?: YuneInspectorDebug;
+	candidates: InspectorCandidate[];
 	uiLanguage: UiLanguage;
 }) {
 	const values = summary(debug);
@@ -51,8 +55,11 @@ export default function YuneInspector({
 						<div className="yd-chip-row" data-yune-inspector-segments>
 							{debug.segments.length
 								? debug.segments.map((segment, index) =>
-									<span key={`${segment.tag}-${index}`} className="yd-square-chip">
-										{segment.tag} {segment.start}-{segment.end}
+									<span
+										key={`${segment.tag}-${index}`}
+										className="yd-square-chip"
+										data-yune-inspector-segment-source={segment.source}>
+										{segment.tag} {segment.start}-{segment.end} {segment.source}
 									</span>)
 								: debug.segment_tags.map(tag =>
 									<span key={tag} className="yd-square-chip">{tag}</span>)}
@@ -88,6 +95,8 @@ export default function YuneInspector({
 									<th>{text.source}</th>
 									<th>{text.text}</th>
 									<th>{text.quality}</th>
+									<th>{text.threshold}</th>
+									<th>{text.aboveThreshold}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -96,6 +105,28 @@ export default function YuneInspector({
 										<td data-yune-inspector-source>{candidate.source}</td>
 										<td>{candidate.text}</td>
 										<td>{formatScore(candidate.quality)}</td>
+										<td data-yune-inspector-prediction-threshold>{formatScore(candidate.threshold)}</td>
+										<td data-yune-inspector-prediction-above-threshold>{String(candidate.above_threshold ?? "-")}</td>
+									</tr>)}
+							</tbody>
+						</table>
+						<h3>{text.candidatesShort}</h3>
+						<table className="yd-inspector-table" data-yune-inspector-candidates>
+							<thead>
+								<tr>
+									<th>{text.text}</th>
+									<th>{text.source}</th>
+									<th>{text.preedit}</th>
+									<th>{text.aiConfidence}</th>
+								</tr>
+							</thead>
+							<tbody>
+								{candidates.slice(0, 8).map((candidate, index) =>
+									<tr key={`${candidate.text}-${index}`}>
+										<td>{candidate.text}</td>
+										<td>{candidate.source ?? "-"}</td>
+										<td data-yune-inspector-candidate-preedit>{candidate.preedit ?? "-"}</td>
+										<td data-yune-inspector-candidate-ai-confidence>{formatScore(candidate.aiConfidence)}</td>
 									</tr>)}
 							</tbody>
 						</table>

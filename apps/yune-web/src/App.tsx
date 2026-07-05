@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import CandidatePanel from "./CandidatePanel";
 import { NO_AUTO_FILL, OUTPUT_STANDARD_ENGINE_OPTIONS, normalizeOutputStandard, outputOptionForStandard } from "./consts";
-import { useLoading, usePreferences } from "./hooks";
+import { useLoading, usePreferences, useRimeOption } from "./hooks";
 import Preferences from "./Preferences";
 import Rime, { subscribe } from "./rime";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -10,6 +10,7 @@ import Toolbar from "./Toolbar";
 import { notify, setToastLanguage, ToastViewport } from "./toast";
 import UiLanguageSwitcher from "./UiLanguageSwitcher";
 import { schemaText, uiText } from "./uiText";
+import YuneControlSurface from "./YuneControlSurface";
 import YuneInspector from "./YuneInspector";
 import YuneStatusStrip from "./YuneStatusStrip";
 import YuneUserdbViewer from "./YuneUserdbViewer";
@@ -20,6 +21,8 @@ import type {
 	YuneWebUserdbSnapshot,
 	YuneInspectorDebug,
 	YuneStatusSnapshot,
+	RimeDeployStatus,
+	RimeResult,
 } from "./types";
 import type { UiLanguage } from "./uiText";
 
@@ -34,6 +37,7 @@ interface YuneMetrics {
 }
 
 type EngineStartupState = "starting" | "ready" | "failed";
+type InspectorCandidate = Extract<RimeResult, { isComposing: true }>["candidates"][number];
 type DeployPreferenceSet = Pick<
 	RimePreferences,
 	| "pageSize"
@@ -164,6 +168,7 @@ export default function App() {
 	const [debouncedLoading, setDebouncedLoading] = useState(loading);
 	const loadingIndicatorTimeout = useRef<ReturnType<typeof setTimeout>>();
 	const [engineStartupState, setEngineStartupState] = useState<EngineStartupState>("starting");
+	const [deployStatusLabel, setDeployStatusLabel] = useState<RimeDeployStatus | "idle">("idle");
 	const isEngineReady = engineStartupState === "ready";
 
 	useEffect(() => {
@@ -209,6 +214,7 @@ export default function App() {
 	useEffect(() => {
 		let pending: PromiseWithResolvers<void> | undefined;
 		return subscribe("deployStatusChanged", (status) => {
+			setDeployStatusLabel(status);
 			switch (status) {
 				case "start":
 					pending?.resolve();
@@ -236,6 +242,7 @@ export default function App() {
 	const [inspectorDebug, setInspectorDebug] = useState<
 		YuneInspectorDebug | undefined
 	>();
+	const [inspectorCandidates, setInspectorCandidates] = useState<InspectorCandidate[]>([]);
 	const [engineStatus, setEngineStatus] = useState<
 		YuneStatusSnapshot | undefined
 	>();
@@ -290,6 +297,12 @@ export default function App() {
 	const text = uiText[uiLanguage];
 	const outputStandardValue = normalizeOutputStandard(outputStandard, "hong_kong_traditional");
 	const composePlaceholder = schemaText[uiLanguage][activeSchema].label;
+	const [isAsciiPunct, toggleAsciiPunct] = useRimeOption("ascii_punct", false, deployStatus, "isAsciiPunct", isEngineReady);
+	const setIsAsciiPunct = useCallback((checked: boolean) => {
+		if (checked !== isAsciiPunct) {
+			toggleAsciiPunct();
+		}
+	}, [isAsciiPunct, toggleAsciiPunct]);
 	const toggleAsciiMode = useCallback(() => {
 		setIsAsciiMode(value => !value);
 	}, [setIsAsciiMode]);
@@ -321,6 +334,7 @@ export default function App() {
 					type = "warning";
 				}
 				setInspectorDebug(undefined);
+				setInspectorCandidates([]);
 				setEngineStatus(undefined);
 				setMetrics(current => ({
 					wasmHeapBytes: current.wasmHeapBytes,
@@ -653,6 +667,7 @@ export default function App() {
 									deployStatus={deployStatus}
 									aiStatus={aiStatus}
 									onInspectorDebug={setInspectorDebug}
+									onInspectorCandidates={setInspectorCandidates}
 									onStatus={setEngineStatus}
 									onUserdbChange={refreshUserdbAfterCommit}
 									onMetrics={updateMetrics}
@@ -691,12 +706,23 @@ export default function App() {
 						{isInspectorEnabled && (
 							<YuneInspector
 								debug={inspectorDebug}
+								candidates={inspectorCandidates}
 								uiLanguage={uiLanguage}
 							/>
 						)}
 					</section>
+					<YuneControlSurface
+						uiLanguage={uiLanguage}
+						isEngineReady={isEngineReady}
+						deployStatus={deployStatusLabel}
+						refreshSignal={deployStatus}
+						onDeployMutation={updateDeployStatus}
+					/>
 				</section>
-				<Preferences {...preferences} />
+				<Preferences
+					{...preferences}
+					isAsciiPunct={isAsciiPunct}
+					setIsAsciiPunct={setIsAsciiPunct} />
 			</main>
 			<footer className="yd-app-footer">
 				<span>{text.header.footer}</span>

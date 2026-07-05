@@ -1,4 +1,4 @@
-import { PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS } from "./consts";
+import { IS_PUBLIC_DEMO, PUBLIC_SCHEMA_OPTIONS, SCHEMA_OPTIONS } from "./consts";
 import { schemaText, uiText } from "./uiText";
 
 import type { RimeSchemaId } from "./types";
@@ -16,10 +16,7 @@ export default function SchemaSwitcher({
 	uiLanguage: UiLanguage;
 	compact?: boolean;
 }) {
-	const schemaOptions =
-		import.meta.env.VITE_YUNE_PUBLIC_DEMO === "1"
-			? PUBLIC_SCHEMA_OPTIONS
-			: SCHEMA_OPTIONS;
+	const schemaOptions = IS_PUBLIC_DEMO ? PUBLIC_SCHEMA_OPTIONS : SCHEMA_OPTIONS;
 	const active = schemaOptions.find(schema => schema.id === activeSchema) ?? schemaOptions[0];
 	const text = uiText[uiLanguage].toolbar;
 

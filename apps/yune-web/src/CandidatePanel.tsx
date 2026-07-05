@@ -101,6 +101,7 @@ export default function CandidatePanel({
 	deployStatus,
 	aiStatus,
 	onInspectorDebug,
+	onInspectorCandidates,
 	onStatus,
 	onUserdbChange,
 	onMetrics,
@@ -112,6 +113,7 @@ export default function CandidatePanel({
 	deployStatus: number;
 	aiStatus: number;
 	onInspectorDebug?(debug: YuneInspectorDebug | undefined): void;
+	onInspectorCandidates?(candidates: Extract<RimeResult, { isComposing: true }>["candidates"]): void;
 	onStatus?(status: YuneStatusSnapshot | undefined): void;
 	onUserdbChange?(): void;
 	onMetrics?(metrics: MetricUpdate): void;
@@ -146,6 +148,7 @@ export default function CandidatePanel({
 				const responseReceivedAt = nowMs();
 				const responseMappingStartedAt = nowMs();
 				onInspectorDebug?.(result.isComposing ? result.debug : undefined);
+				onInspectorCandidates?.(result.isComposing ? result.candidates : []);
 				onStatus?.(result.status);
 				if (!result.success) {
 					type = "warning";
@@ -225,7 +228,7 @@ export default function CandidatePanel({
 			}
 			textArea.focus();
 		})();
-	}, [hideDictionary, insert, onInspectorDebug, onMetrics, onStatus, onUserdbChange, prefs.pageSize, textArea]);
+	}, [hideDictionary, insert, onInspectorCandidates, onInspectorDebug, onMetrics, onStatus, onUserdbChange, prefs.pageSize, textArea]);
 
 	const processKey = useCallback((input: string, key?: string, keydownAt?: number) => {
 		const classicResult = Rime.processKey(input);

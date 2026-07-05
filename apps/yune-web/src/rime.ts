@@ -97,6 +97,7 @@ const YUNE_WEB_WORKER_VERSION = "yune-web-wasm-heap-v1";
 const debugWindow = window as DebugWindow;
 debugWindow.__YUNE_RIME_VERSION__ = YUNE_WEB_WORKER_VERSION;
 document.documentElement.dataset["yuneRimeVersion"] = YUNE_WEB_WORKER_VERSION;
+document.documentElement.dataset["yuneDeployStatus"] = "idle";
 installDebugHelpers();
 const worker = new Worker(workerUrl());
 worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
@@ -113,6 +114,9 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 	if (type === "listener") {
 		const { name, args } = data;
 		lastListenerArgs[name] = args as never;
+		if (name === "deployStatusChanged") {
+			document.documentElement.dataset["yuneDeployStatus"] = String(args[0]);
+		}
 		if (name === "initialized") {
 			document.documentElement.dataset["yuneInitialized"] = String(args[0]);
 		}
@@ -122,6 +126,10 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 		}
 		if (name === "grammarDiagnosticChanged") {
 			document.documentElement.dataset["yuneGrammarDiagnostic"] = JSON.stringify(args[0]);
+		}
+		if (name === "optionChanged") {
+			document.documentElement.dataset["yuneLastOptionChanged"] = `${args[0]}:${args[1]}`;
+			document.documentElement.dataset[optionDatasetKey(String(args[0]))] = String(args[1]);
 		}
 		for (const listener of listeners[name]) {
 			// @ts-expect-error Unactionable
@@ -154,6 +162,7 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 			running = null;
 		}
 		if (type === "success") {
+			appendLastActionResult(currentMessage.name, data.result);
 			resolve(data.result);
 		}
 		else {
@@ -169,6 +178,14 @@ worker.addEventListener("message", ({ data }: MessageEvent<Payload>) => {
 
 function nowMs() {
 	return performance.timeOrigin + performance.now();
+}
+
+function optionDatasetKey(option: string): string {
+	return `yuneOption${option
+		.split(/[_-]+/)
+		.filter(Boolean)
+		.map(part => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+		.join("")}`;
 }
 
 function postMessage(message: Message) {
@@ -207,6 +224,15 @@ function appendActionErrorDiagnostic(diagnostic: ActionErrorDiagnostic) {
 	document.documentElement.dataset["yuneLastActionError"] = JSON.stringify(diagnostic);
 	document.documentElement.dataset["yuneActionErrors"] = JSON.stringify(latest);
 	console.error("YUNE_WORKER_ACTION_ERROR", diagnostic);
+}
+
+function appendLastActionResult(action: keyof Actions, result: unknown) {
+	const payload = { action, result, recordedAt: new Date().toISOString() };
+	document.documentElement.dataset["yuneLastActionResult"] = stringifyUnknown(payload);
+	if (action === "deployCacheSnapshot" || action === "invalidateDeployCache") {
+		const cache = result as { cacheFresh?: unknown };
+		document.documentElement.dataset["yuneDeployCacheFresh"] = String(cache.cacheFresh ?? "");
+	}
 }
 
 function serializeError(error: unknown): SerializedError {
@@ -311,7 +337,11 @@ const allActions: (keyof Actions)[] = [
 	"deleteCandidate",
 	"flipPage",
 	"customize",
+	"customizeValue",
 	"deploy",
+	"deployCacheSnapshot",
+	"invalidateDeployCache",
+	"injectedAssetsManifest",
 ];
 
 const Rime = {} as Actions;

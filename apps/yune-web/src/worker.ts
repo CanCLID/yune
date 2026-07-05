@@ -14,7 +14,6 @@ import {
   grammarModelRequestForSchema,
   type GrammarModelDiagnostic,
 } from "./octagram";
-import { isRimeSchemaId } from "./consts";
 
 // Yune integration imports
 import {
@@ -27,6 +26,9 @@ import {
   flipPage,
   deploy as deployYuneRuntime,
   customize,
+  customizeValue,
+  deployCacheSnapshot,
+  invalidateDeployCache,
   setOption,
   type YunePersistenceDiagnostic,
 } from "./yune-integration/adapter.js";
@@ -62,6 +64,13 @@ interface CreateYuneWebModuleOptions {
 }
 
 type CreateYuneWebModule = (options: CreateYuneWebModuleOptions) => Promise<YuneWebBrowserModule>;
+
+function isRimeSchemaId(value: string | null): value is RimeSchemaId {
+  return value === "jyut6ping3"
+    || value === "cangjie5"
+    || value === "luna_pinyin"
+    || value === "luna_pinyin_octagram";
+}
 
 interface PlaygroundSchema {
   runtimeId: RimeSchemaId | "jyut6ping3_mobile";
@@ -201,6 +210,9 @@ const actions: Actions = {
     const result = await customize(preferences);
     return result;
   },
+  async customizeValue(configId, key, value) {
+    return customizeValue(configId, key, value);
+  },
   async deploy() {
     dispatch("deployStatusChanged", "start");
     try {
@@ -214,6 +226,24 @@ const actions: Actions = {
       dispatch("deployStatusChanged", "failure");
       throw error;
     }
+  },
+  async deployCacheSnapshot() {
+    return deployCacheSnapshot();
+  },
+  async invalidateDeployCache() {
+    return invalidateDeployCache();
+  },
+  async injectedAssetsManifest() {
+    return {
+      schemaId: activeSchemaId,
+      assets: loadedExtraSharedAssets.map((asset) => ({
+        path: asset.path,
+        bytes: typeof asset.content === "string"
+          ? new TextEncoder().encode(asset.content).byteLength
+          : asset.content.length,
+        kind: typeof asset.content === "string" ? "text" : "binary",
+      })),
+    };
   },
 };
 

@@ -989,6 +989,30 @@ performance improvement. Evidence:
   `packages/yune-web-runtime`, default `rime_get_api()`, and the support
   contract unchanged; it is browser harness dogfooding/observability only.
 
+## WEB-05 Harness Control Surface Requirements
+
+**Status: complete.** WEB-05 surfaces the existing web-harness controls and
+diagnostics needed by external frontend teams without changing `crates/` or
+`packages/yune-web-runtime`. Evidence:
+`docs/reports/evidence/web05-control-surface/`; plan:
+[`docs/plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md).
+
+- [x] **WEB05-SURFACE-01**: A committed controls ledger enumerates every engine
+  control/diagnostic reachable through existing seams, fully dispositioned as
+  surfaced, already surfaced, engine-lane deferred, runtime-lane deferred, or
+  deliberately no-surface. The final ledger has 108 raw rows, 14 `surface`
+  rows, and two named deferred rows.
+- [x] **WEB05-SURFACE-02**: Every WEB-05 `surface` row is operable in the dev
+  harness with localized labels and observable `data-*` state through existing
+  worker/action/listener seams. Dev-power controls are gated out of the public
+  demo via the shared `IS_PUBLIC_DEMO` constant; defaults remain behavior
+  compatible with the pre-WEB-05 harness.
+- [x] **WEB05-SURFACE-03**: Playwright evidence covers each control group plus
+  a same-WASM default-behavior negative control; public-demo build evidence
+  proves the new debug/admin controls are absent. The remaining deferred rows
+  are `debug.storage` (runtime parser gap) and engine option read-back
+  (`get_option` web export gap).
+
 ## M46 Jyutping Native And WASM Memory Attribution Requirements
 
 **Status: complete with measured no-go.** M46 is tracked in
@@ -1546,6 +1570,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
 | WEB04-OCTAGRAM-04 | WEB-04 | Complete - WEB-04 Playwright evidence proves delivered octagram profile plus all-row ranking changes versus plain Luna, plain Luna negative control, and missing-model fail-closed behavior |
 | WEB04-OCTAGRAM-05 | WEB-04 | Complete - no `crates/`, `packages/yune-web-runtime`, default ABI, or support-contract widening is part of the browser harness slice |
+| WEB05-SURFACE-01 | WEB-05 | Complete - 108-row controls ledger fully dispositions existing web-harness controls/diagnostics with public-demo posture for all 14 surface rows |
+| WEB05-SURFACE-02 | WEB-05 | Complete - every surface row is operable in the dev harness through existing seams with localized labels, observable state, and shared `IS_PUBLIC_DEMO` gating for dev-power controls |
+| WEB05-SURFACE-03 | WEB-05 | Complete - same-WASM default behavior and public-demo hidden-control Playwright evidence are recorded; `debug.storage` and `get_option` remain named deferred rows |
 | M22-PLAY-01 | M22 Bucket 2 | Complete - opt-in read-only inspector exposes engine debug data in the TypeDuck-Web playground |
 | M22-PLAY-02 | M22 Bucket 2 | Complete - inspector is default-off, response-identity tested, browser-evidenced, and ABI-layout neutral |
 | M22-PLAY-03 | M22 Bucket 1 | Complete - traditionalization, disabled, extended_charset, and dictionary_exclude have browser evidence; ascii_punct remains absent without browser-visible before/after evidence |
@@ -1841,9 +1868,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
-- Mapped to phases: 411
+- WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
+- Mapped to phases: 414
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - M57 is complete: macOS Track A accepts the known upstream Luna MARISA checksum pair under the existing target gate, restores compact sentence-model construction and abbreviation-row candidate parity, records two full macOS native verification passes, and keeps the M55 corrective `m55-thresholds.csv` as the standing native Track A gate._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - WEB-05 is complete: the web harness control surface now has a 108-row ledger, all 14 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior evidence, public-demo hidden-control evidence, and two named deferred rows (`debug.storage` runtime parser gap and `get_option` engine export gap)._

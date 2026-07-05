@@ -42,7 +42,10 @@ export interface Actions {
   deleteCandidate(index: number): Promise<RimeResult>;
   flipPage(backward: boolean): Promise<RimeResult>;
   customize(preferences: RimePreferences): Promise<boolean>;
+  customizeValue(configId: string, key: string, value: string): Promise<boolean>;
   deploy(): Promise<boolean>;
+  deployCacheSnapshot(): Promise<YuneDeployCacheSnapshot>;
+  invalidateDeployCache(): Promise<YuneDeployCacheSnapshot>;
 }
 
 /**
@@ -139,6 +142,7 @@ type PersistenceSyncReason =
 type PersistenceDiagnosticPhase =
   | "deploy:cache-hit"
   | "deploy:cache-miss"
+  | "deploy:cache-invalidated"
   | "runtime:init:start"
   | "runtime:init:finish"
   | "rime:init:start"
@@ -193,6 +197,15 @@ interface DeployStamp {
   dictionaryId: string;
   assetSignature: string;
   customConfigSignature: string;
+}
+
+export interface YuneDeployCacheSnapshot {
+  schemaId: string;
+  dictionaryId: string;
+  cacheFresh: boolean;
+  deployedSchemaExists: boolean;
+  actualStamp: Partial<DeployStamp> | null;
+  expectedStamp: DeployStamp;
 }
 
 interface CustomPatchEntry {
@@ -489,6 +502,25 @@ export async function deploy(): Promise<boolean> {
   return deployed;
 }
 
+export async function deployCacheSnapshot(): Promise<YuneDeployCacheSnapshot> {
+  if (currentFs === null || currentPrepareOptions === null) {
+    throw new Error("Yune runtime not initialized");
+  }
+  return currentDeployCacheSnapshot();
+}
+
+export async function invalidateDeployCache(): Promise<YuneDeployCacheSnapshot> {
+  if (currentFs === null || currentPrepareOptions === null) {
+    throw new Error("Yune runtime not initialized");
+  }
+  prepareYuneWebDeployFilesystem(currentFs, currentPrepareOptions);
+  invalidateDeployedSchema(currentFs, currentPrepareOptions);
+  writeInvalidDeployStamp(currentFs, currentPrepareOptions);
+  emitPersistenceDiagnostic(currentFs, currentPrepareOptions, "deploy:cache-invalidated", "deploy");
+  await syncCurrentStateToPersistence("deploy");
+  return currentDeployCacheSnapshot();
+}
+
 /**
  * Customize preferences using Yune runtime and sync persistence
  *
@@ -596,6 +628,20 @@ export async function customize(preferences: RimePreferences): Promise<boolean> 
     await syncCurrentStateToPersistence("customize");
   }
 
+  return success;
+}
+
+export async function customizeValue(configId: string, key: string, value: string): Promise<boolean> {
+  if (currentRuntime === null) {
+    throw new Error("Yune runtime not initialized");
+  }
+  if (configId.trim().length === 0 || key.trim().length === 0) {
+    throw new Error("Yune customizeValue requires a config ID and key");
+  }
+  const success = currentRuntime.customize(configId, key, value);
+  if (success && currentFs !== null && currentPrepareOptions !== null) {
+    await syncCurrentStateToPersistence("customize");
+  }
   return success;
 }
 
@@ -805,6 +851,52 @@ function writeDeployStamp(
     `${JSON.stringify(expectedDeployStamp(fs, options, extraSharedAssets, assetVersion), null, 2)}\n`,
     { flags: "w" },
   );
+}
+
+function writeInvalidDeployStamp(
+  fs: YuneWebFilesystem,
+  options: PrepareYuneWebFilesystemOptions,
+): void {
+  const path = deployStampPath(options);
+  ensureVirtualDirectory(fs, path.split("/").slice(0, -1).join("/"));
+  fs.writeFile(
+    path,
+    `${JSON.stringify({
+      version: 1,
+      assetVersion: "invalidated",
+      schemaId: options.schemaId,
+      dictionaryId: options.dictionaryId,
+      assetSignature: "invalidated",
+      customConfigSignature: "invalidated",
+      invalidatedAt: new Date().toISOString(),
+      reason: "WEB-05 manual deploy-cache invalidation",
+    }, null, 2)}\n`,
+    { flags: "w" },
+  );
+}
+
+function currentDeployCacheSnapshot(): YuneDeployCacheSnapshot {
+  if (currentFs === null || currentPrepareOptions === null) {
+    throw new Error("Yune runtime not initialized");
+  }
+  return {
+    schemaId: currentPrepareOptions.schemaId,
+    dictionaryId: currentPrepareOptions.dictionaryId,
+    cacheFresh: isDeployCacheFresh(
+      currentFs,
+      currentPrepareOptions,
+      currentExtraSharedAssets,
+      currentAssetVersion,
+    ),
+    deployedSchemaExists: deployedSchemaExists(currentFs, currentPrepareOptions),
+    actualStamp: readDeployStamp(currentFs, currentPrepareOptions),
+    expectedStamp: expectedDeployStamp(
+      currentFs,
+      currentPrepareOptions,
+      currentExtraSharedAssets,
+      currentAssetVersion,
+    ),
+  };
 }
 
 function expectedDeployStamp(

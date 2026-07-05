@@ -1,6 +1,8 @@
 import type { CandidateEntry } from "./CandidateInfo";
 import type { Preferences, RimeSchemaId } from "./types";
 
+export const IS_PUBLIC_DEMO = import.meta.env.VITE_YUNE_PUBLIC_DEMO === "1";
+
 export enum Language {
   Eng = "eng",
   Hin = "hin",

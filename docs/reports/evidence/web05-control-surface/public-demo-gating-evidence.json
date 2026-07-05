@@ -1,0 +1,13 @@
+{
+  "hiddenSelectors": [
+    "[data-yune-control-redeploy]",
+    "[data-yune-control-invalidate-deploy-cache]",
+    "[data-yune-persistence-diagnostics-panel]",
+    "[data-yune-injected-assets]",
+    "[data-yune-raw-response-viewer]",
+    "[data-yune-freeform-set-option]",
+    "[data-yune-freeform-customize]",
+    "[data-yune-debug-url-reference]",
+    "[data-yune-action-error-history]"
+  ]
+}

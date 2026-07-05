@@ -4,14 +4,14 @@
 > otherwise execute the checkboxes directly, in order. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** In progress - Phase 0 controls ledger committed (2026-07-05, `docs/reports/evidence/web05-control-surface/controls-ledger.md`: 14 surface rows, 2 named deferred rows); running on the Windows machine in parallel with M57 (macOS). Phase 1 next. - **Track:** Web harness (`apps/yune-web`). - **Created:** 2026-07-03 - **Type:** dogfooding/observability slice (app plumbing + UI only; no engine contract change, no default-behavior change).
+> **Status:** Complete - WEB-05 closed on 2026-07-05 with the Phase 0 controls ledger review-expanded (108 raw rows, 14 surface rows with public-demo gates, 2 named deferred rows), all Phase 1 surface rows implemented through existing `apps/yune-web` seams, same-WASM default behavior evidence unchanged, and public-demo hidden-control evidence recorded under `docs/reports/evidence/web05-control-surface/`. - **Track:** Web harness (`apps/yune-web`). - **Created:** 2026-07-03 - **Type:** dogfooding/observability slice (app plumbing + UI only; no engine contract change, no default-behavior change).
 
 **Goal:** Make the `yune-web` playground the shared debugging surface for the
 external Windows/iOS frontend teams: **every engine control and diagnostic the
 existing web ABI already exposes** becomes reachable and observable in the
 harness, so an engine bug can be reproduced with a URL + a few clicks instead
 of a native debug build. When M56 lands its new diagnostics (staleness,
-recovery, crash policy), this surface is where they become visible — but this
+recovery, crash policy), this surface is where they become visible â€” but this
 plan is **not** blocked on M56.
 
 **Origin:** this is the "surface all controls" follow-up explicitly carved out
@@ -24,7 +24,7 @@ controls was deferred as a new milestone).
 - **No engine changes** (`crates/` untouched) and **no
   `packages/yune-web-runtime` changes, period.** A control that would require
   either becomes a named deferred row in the ledger (engine-lane or
-  runtime-lane), not scope creep — the WEB-04 precedent: work through the
+  runtime-lane), not scope creep â€” the WEB-04 precedent: work through the
   existing adapter/worker seams only.
 - **Default behavior unchanged.** Every new control starts at the current
   default; the negative control (existing e2e suite green, unchanged
@@ -32,13 +32,13 @@ controls was deferred as a new milestone).
 - **Public demo stays product-shaped.** Debug controls are dev-harness-only;
   the public demo build must not grow debug surface (the WEB-04 review's
   public-demo-leak lesson: `SCHEMA_OPTIONS`-style registries render unfiltered
-  in the demo build). **The gating mechanism, named precisely — there is no
+  in the demo build). **The gating mechanism, named precisely â€” there is no
   single "dev flag" today:** the demo is identified by
   `import.meta.env.VITE_YUNE_PUBLIC_DEMO === "1"` (inline checks exist in
   `src/SchemaSwitcher.tsx` and `src/hooks.ts`) and by the esbuild define
   `YUNE_PUBLIC_DEMO_BUILD` set in `public-demo/build.mjs`. Hoist one shared
   `IS_PUBLIC_DEMO` constant into `src/consts.ts` from the `VITE_` check and
-  gate every new control on it. Do **not** use `import.meta.env.DEV` — that
+  gate every new control on it. Do **not** use `import.meta.env.DEV` â€” that
   would hide the controls from the production *harness* build, which is the
   opposite of the goal.
 - **Browser-visible claims need real-browser (Playwright) evidence**, per the
@@ -54,45 +54,45 @@ Verified repo facts (2026-07-03):
   through `apps/yune-web/src/rime.ts` listeners and surfaced in
   `App.tsx`/`Preferences.tsx`.
 - WEB-04 established the diagnostic-surface pattern end to end: worker
-  diagnostic → `grammarDiagnosticChanged` listener → `<html>` dataset +
-  inspector metric with `data-*` attributes → Playwright assertions. Reuse
+  diagnostic â†’ `grammarDiagnosticChanged` listener â†’ `<html>` dataset +
+  inspector metric with `data-*` attributes â†’ Playwright assertions. Reuse
   this pattern; do not invent a parallel one.
 - The engine-side web ABI is the 14 `yune_web_*` exports
-  (`crates/yune-rime-api/src/web_runtime.rs`) — read-only reference for what
+  (`crates/yune-rime-api/src/web_runtime.rs`) â€” read-only reference for what
   is *reachable*; changing it is out of scope (a new export requires
   `scripts/yune-web-exports.txt` and is engine-lane work).
 - Subtree guides override root for this area: `apps/yune-web/AGENTS.md`;
   browser smoke expectations: `apps/yune-web/e2e/yune-browser-smoke.md`.
-- UI text goes through `apps/yune-web/src/uiText.ts` (per-language tables) —
+- UI text goes through `apps/yune-web/src/uiText.ts` (per-language tables) â€”
   the WEB-04 review flagged hardcoded English literals as a defect pattern;
   all new labels are uiText entries from the start.
 
 ## Phase 0: Controls Ledger (read-only)
 
-- [ ] Enumerate every control/diagnostic reachable through the existing
+- [x] Enumerate every control/diagnostic reachable through the existing
   seams: worker actions, `yune_web_*` exports and their option/config
   parameters, schema switches (`switches:` in the deployed schemas), engine
   options (`set_option` names used anywhere in the repo), deploy/redeploy
   triggers, userdb tools, memory/status snapshots, and existing diagnostics.
-- [ ] Commit `docs/reports/evidence/web05-control-surface/controls-ledger.md`
+- [x] Commit `docs/reports/evidence/web05-control-surface/controls-ledger.md`
   with one row per control: name, seam, currently surfaced? (where),
   disposition (`surface` / `already-surfaced` / `engine-lane-deferred` with
   the missing export named).
-- [ ] Phase gate: ledger committed; typecheck untouched.
+- [x] Phase gate: ledger committed; typecheck untouched.
 
 ## Phase 1: Surface The Controls
 
 Work the ledger top-down; for each `surface` row:
 
-- [ ] Add the control to the playground UI (Preferences/inspector as
+- [x] Add the control to the playground UI (Preferences/inspector as
   appropriate), wired through the existing worker action protocol; labels via
   `uiText.ts` (all languages); state observable via `data-*` attributes
   following the WEB-04 diagnostic pattern.
-- [ ] Keep dev-only controls out of the public demo build (build-flag gate),
+- [x] Keep dev-only controls out of the public demo build (build-flag gate),
   and keep every default identical to today.
-- [ ] Group related controls (schema/options/deploy/userdb/diagnostics) —
+- [x] Group related controls (schema/options/deploy/userdb/diagnostics) â€”
   one inspector section per group, not one-off widgets.
-- [ ] Gate per batch — exact invocations (`apps/yune-web` has no vitest
+- [x] Gate per batch â€” exact invocations (`apps/yune-web` has no vitest
   dependency or `test` script of its own; the e2e suite is the separate
   `apps/yune-web/e2e` subpackage and needs the dev server on
   `localhost:5173`):
@@ -107,17 +107,17 @@ Work the ledger top-down; for each `surface` row:
 
 ## Phase 2: Evidence + Closeout
 
-- [ ] Playwright evidence: for each control group, a test that flips the
+- [x] Playwright evidence: for each control group, a test that flips the
   control and asserts the observable engine effect (option state, candidate
   change, diagnostic value), plus the **negative control**: default settings
   produce byte-identical candidate behavior to the pre-WEB-05 harness for the
   standing smoke inputs. **Both the baseline and post-change runs must be
-  captured against the same built WASM commit** — if M55/M56 engine work lands
+  captured against the same built WASM commit** â€” if M55/M56 engine work lands
   mid-milestone, re-capture the baseline on the new WASM before attributing
   any diff to WEB-05.
-- [ ] Public-demo build evidence: the demo contains no new debug surface
+- [x] Public-demo build evidence: the demo contains no new debug surface
   (assert absence via the built bundle or a demo-mode Playwright pass).
-- [ ] Record evidence under `docs/reports/evidence/web05-control-surface/`;
+- [x] Record evidence under `docs/reports/evidence/web05-control-surface/`;
   update roadmap/requirements/milestone-history; move this plan to
   `docs/plans/completed/`.
 

@@ -10,6 +10,7 @@ import { candidateLayoutText, displayLanguageText, outputStandardText, showRoman
 
 import type { ShowRomanization } from "./consts";
 import type { PreferencesWithSetter } from "./types";
+import { useEffect } from "react";
 
 const DICTIONARY_EXCLUDE_BY_SCHEMA = {
 	jyut6ping3: ["你"],
@@ -21,9 +22,19 @@ const DICTIONARY_EXCLUDE_BY_SCHEMA = {
 const thresholdRange = { min: 0, max: 200000, step: 1000 } as const;
 const languageOrder = Object.values(Language);
 
-export default function Preferences(prefs: PreferencesWithSetter) {
+type PreferencesProps = PreferencesWithSetter & {
+	isAsciiPunct: boolean;
+	setIsAsciiPunct(checked: boolean): void;
+};
+
+export default function Preferences(prefs: PreferencesProps) {
 	const outputStandard = normalizeOutputStandard(prefs.outputStandard, "hong_kong_traditional");
 	const text = uiText[prefs.uiLanguage].settings;
+	const dictionaryExcludeText = prefs.dictionaryExclude.join("\n");
+
+	useEffect(() => {
+		document.documentElement.dataset["yuneDictionaryExcludeCount"] = String(prefs.dictionaryExclude.length);
+	}, [prefs.dictionaryExclude.length]);
 
 	function toggleDisplayLanguage(language: Language, checked: boolean) {
 		const nextLanguages = new Set(prefs.displayLanguages);
@@ -46,6 +57,15 @@ export default function Preferences(prefs: PreferencesWithSetter) {
 		if (window.confirm(text.hardResetConfirm)) {
 			void resetYuneWebStorage();
 		}
+	}
+
+	function setDictionaryExcludeText(value: string) {
+		prefs.setDictionaryExclude(
+			value
+				.split(/\r?\n|,/)
+				.map(item => item.trim())
+				.filter(Boolean),
+		);
 	}
 
 	return <section className="yd-preferences" data-yune-preferences>
@@ -84,6 +104,17 @@ export default function Preferences(prefs: PreferencesWithSetter) {
 				<Toggle label={text.predictionNeverFirst} description={text.predictionNeverFirstDescription} checked={prefs.predictionNeverFirst} setChecked={prefs.setPredictionNeverFirst} />
 				<Range label={text.predictionThreshold} description={text.predictionThresholdDescription} min={thresholdRange.min} max={thresholdRange.max} step={thresholdRange.step} value={prefs.predictionThreshold} setValue={prefs.setPredictionThreshold} />
 				<Toggle label={text.dictionaryExclude} description={text.dictionaryExcludeDescription} checked={prefs.dictionaryExclude.length > 0} setChecked={checked => prefs.setDictionaryExclude(checked ? [...DICTIONARY_EXCLUDE_BY_SCHEMA[prefs.activeSchema]] : [])} />
+				<label className="yd-field">
+					<span className="yd-field-label">{text.dictionaryExcludeEditor}</span>
+					<span className="yd-field-description">{text.dictionaryExcludeEditorDescription}</span>
+					<input
+						type="text"
+						className="yd-text-input"
+						data-yune-dictionary-exclude-editor
+						data-yune-dictionary-exclude-count={prefs.dictionaryExclude.length}
+						value={dictionaryExcludeText}
+						onChange={event => setDictionaryExcludeText(event.currentTarget.value)} />
+				</label>
 				<div className="yd-field yd-field-row yd-field-row--split">
 					<span className="yd-field-copy">
 						<span className="yd-field-label">{text.hardReset}</span>
@@ -173,6 +204,18 @@ export default function Preferences(prefs: PreferencesWithSetter) {
 				description={text.sessionDescription}>
 				<Toggle label={text.asciiMode} description={text.asciiModeDescription} checked={prefs.isAsciiMode} setChecked={prefs.setIsAsciiMode} />
 				<Toggle label={text.fullShape} description={text.fullShapeDescription} checked={prefs.isFullShape} setChecked={prefs.setIsFullShape} />
+				<label className="yd-field yd-field-row yd-field-row--split">
+					<span className="yd-field-copy">
+						<span className="yd-field-label">{text.asciiPunct}</span>
+						<span className="yd-field-description">{text.asciiPunctDescription}</span>
+					</span>
+					<input
+						type="checkbox"
+						className="yd-check yd-toggle"
+						data-yune-control-ascii-punct
+						checked={prefs.isAsciiPunct}
+						onChange={event => prefs.setIsAsciiPunct(event.currentTarget.checked)} />
+				</label>
 				<div className="yd-field">
 					<div className="yd-field-label">{text.outputStandard}</div>
 					<div className="grid gap-1">

@@ -50,6 +50,35 @@ export interface YuneWebMemorySnapshot {
 	peakWasmHeapBytes: number;
 }
 
+export interface YuneDeployStampSnapshot {
+	version?: number;
+	assetVersion?: string;
+	schemaId?: string;
+	dictionaryId?: string;
+	assetSignature?: string;
+	customConfigSignature?: string;
+	invalidatedAt?: string;
+	reason?: string;
+}
+
+export interface YuneDeployCacheSnapshot {
+	schemaId: string;
+	dictionaryId: string;
+	cacheFresh: boolean;
+	deployedSchemaExists: boolean;
+	actualStamp: YuneDeployStampSnapshot | null;
+	expectedStamp: YuneDeployStampSnapshot;
+}
+
+export interface YuneInjectedAssetManifest {
+	schemaId: RimeSchemaId;
+	assets: {
+		path: string;
+		bytes: number;
+		kind: "text" | "binary";
+	}[];
+}
+
 export interface Actions {
 	setOption(option: string, value: boolean): Promise<void>;
 	selectSchema(schemaId: RimeSchemaId): Promise<boolean>;
@@ -61,7 +90,11 @@ export interface Actions {
 	deleteCandidate(index: number): Promise<RimeResult>;
 	flipPage(backward: boolean): Promise<RimeResult>;
 	customize(preferences: Partial<RimePreferences>): Promise<boolean>;
+	customizeValue(configId: string, key: string, value: string): Promise<boolean>;
 	deploy(): Promise<boolean>;
+	deployCacheSnapshot(): Promise<YuneDeployCacheSnapshot>;
+	invalidateDeployCache(): Promise<YuneDeployCacheSnapshot>;
+	injectedAssetsManifest(): Promise<YuneInjectedAssetManifest>;
 }
 
 interface InputBuffer {

@@ -311,18 +311,20 @@ pub(crate) fn copy_c_string_with_strncpy_semantics(
 /// `RimeGetContext`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeFreeContext(context: *mut RimeContext) -> Bool {
-    let _m37_timer = M37FreeContextTimer::start();
-    if context.is_null() {
-        return FALSE;
-    }
-    // SAFETY: `context` is non-null and points to caller-owned storage.
-    if unsafe { (*context).data_size } <= 0 {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        let _m37_timer = M37FreeContextTimer::start();
+        if context.is_null() {
+            return FALSE;
+        }
+        // SAFETY: `context` is non-null and points to caller-owned storage.
+        if unsafe { (*context).data_size } <= 0 {
+            return FALSE;
+        }
 
-    free_context_fields(context);
-    clear_context(context);
-    TRUE
+        free_context_fields(context);
+        clear_context(context);
+        TRUE
+    })
 }
 
 /// Releases nested allocations returned in a `RimeStatus`.
@@ -333,17 +335,19 @@ pub unsafe extern "C" fn RimeFreeContext(context: *mut RimeContext) -> Bool {
 /// `RimeGetStatus`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeFreeStatus(status: *mut RimeStatus) -> Bool {
-    if status.is_null() {
-        return FALSE;
-    }
-    // SAFETY: `status` is non-null and points to caller-owned storage.
-    if unsafe { (*status).data_size } <= 0 {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if status.is_null() {
+            return FALSE;
+        }
+        // SAFETY: `status` is non-null and points to caller-owned storage.
+        if unsafe { (*status).data_size } <= 0 {
+            return FALSE;
+        }
 
-    free_status_fields(status);
-    clear_status(status);
-    TRUE
+        free_status_fields(status);
+        clear_status(status);
+        TRUE
+    })
 }
 
 /// Releases nested allocations returned in a `RimeCommit`.
@@ -354,16 +358,18 @@ pub unsafe extern "C" fn RimeFreeStatus(status: *mut RimeStatus) -> Bool {
 /// `RimeGetCommit`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeFreeCommit(commit: *mut RimeCommit) -> Bool {
-    if commit.is_null() {
-        return FALSE;
-    }
-    // SAFETY: `commit` is non-null and `text`, when non-null, was returned by
-    // `CString::into_raw` while populating the commit.
-    unsafe {
-        if !(*commit).text.is_null() {
-            drop(CString::from_raw((*commit).text));
+    crate::ffi_guard::guard(FALSE, || {
+        if commit.is_null() {
+            return FALSE;
         }
-    }
-    clear_commit(commit);
-    TRUE
+        // SAFETY: `commit` is non-null and `text`, when non-null, was returned by
+        // `CString::into_raw` while populating the commit.
+        unsafe {
+            if !(*commit).text.is_null() {
+                drop(CString::from_raw((*commit).text));
+            }
+        }
+        clear_commit(commit);
+        TRUE
+    })
 }

@@ -75,23 +75,25 @@ unsafe fn levers_schema_info_ptr(
 
 #[no_mangle]
 pub extern "C" fn RimeSwitcherSettingsInit() -> *mut RimeSwitcherSettings {
-    let settings = Box::into_raw(Box::new(RimeSwitcherSettings { placeholder: 0 }));
-    switcher_available_schema_registry()
-        .lock()
-        .expect("switcher available schema registry should not be poisoned")
-        .insert(settings as usize, Some(deployed_levers_schema_infos()));
-    switcher_selection_registry()
-        .lock()
-        .expect("switcher selection registry should not be poisoned")
-        .insert(settings as usize, Some(deployed_selected_schema_ids()));
-    switcher_hotkeys_registry()
-        .lock()
-        .expect("switcher hotkeys registry should not be poisoned")
-        .insert(
-            settings as usize,
-            deployed_switcher_hotkeys().map(|hotkeys| cstring_from_lossless_str(&hotkeys)),
-        );
-    settings
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        let settings = Box::into_raw(Box::new(RimeSwitcherSettings { placeholder: 0 }));
+        switcher_available_schema_registry()
+            .lock()
+            .expect("switcher available schema registry should not be poisoned")
+            .insert(settings as usize, Some(deployed_levers_schema_infos()));
+        switcher_selection_registry()
+            .lock()
+            .expect("switcher selection registry should not be poisoned")
+            .insert(settings as usize, Some(deployed_selected_schema_ids()));
+        switcher_hotkeys_registry()
+            .lock()
+            .expect("switcher hotkeys registry should not be poisoned")
+            .insert(
+                settings as usize,
+                deployed_switcher_hotkeys().map(|hotkeys| cstring_from_lossless_str(&hotkeys)),
+            );
+        settings
+    })
 }
 
 /// Returns the deployed schema list through the librime levers module API.
@@ -105,19 +107,21 @@ pub unsafe extern "C" fn RimeLeversGetAvailableSchemaList(
     settings: *mut RimeSwitcherSettings,
     list: *mut RimeSchemaList,
 ) -> Bool {
-    if settings.is_null() || list.is_null() {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if settings.is_null() || list.is_null() {
+            return FALSE;
+        }
 
-    clear_schema_list(list);
-    let available_schema_infos = switcher_available_schema_registry()
-        .lock()
-        .expect("switcher available schema registry should not be poisoned")
-        .get(&(settings as usize))
-        .cloned()
-        .flatten()
-        .unwrap_or_else(deployed_levers_schema_infos);
-    populate_levers_schema_list(list, available_schema_infos)
+        clear_schema_list(list);
+        let available_schema_infos = switcher_available_schema_registry()
+            .lock()
+            .expect("switcher available schema registry should not be poisoned")
+            .get(&(settings as usize))
+            .cloned()
+            .flatten()
+            .unwrap_or_else(deployed_levers_schema_infos);
+        populate_levers_schema_list(list, available_schema_infos)
+    })
 }
 
 /// Returns the deployed switcher selection through the librime levers module API.
@@ -131,19 +135,21 @@ pub unsafe extern "C" fn RimeLeversGetSelectedSchemaList(
     settings: *mut RimeSwitcherSettings,
     list: *mut RimeSchemaList,
 ) -> Bool {
-    if settings.is_null() || list.is_null() {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if settings.is_null() || list.is_null() {
+            return FALSE;
+        }
 
-    clear_schema_list(list);
-    let selected_schema_ids = switcher_selection_registry()
-        .lock()
-        .expect("switcher selection registry should not be poisoned")
-        .get(&(settings as usize))
-        .cloned()
-        .flatten()
-        .unwrap_or_else(deployed_selected_schema_ids);
-    populate_schema_id_list(list, selected_schema_ids)
+        clear_schema_list(list);
+        let selected_schema_ids = switcher_selection_registry()
+            .lock()
+            .expect("switcher selection registry should not be poisoned")
+            .get(&(settings as usize))
+            .cloned()
+            .flatten()
+            .unwrap_or_else(deployed_selected_schema_ids);
+        populate_schema_id_list(list, selected_schema_ids)
+    })
 }
 
 /// Returns the schema id from a levers schema-info pointer.
@@ -154,7 +160,9 @@ pub unsafe extern "C" fn RimeLeversGetSelectedSchemaList(
 /// schema-list item's `reserved` field while that list is still alive.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversGetSchemaId(info: *mut RimeSchemaInfo) -> *const c_char {
-    unsafe { levers_schema_info_ptr(info, |info| non_empty_cstring_ptr(&info.schema_id)) }
+    crate::ffi_guard::guard(std::ptr::null(), || unsafe {
+        levers_schema_info_ptr(info, |info| non_empty_cstring_ptr(&info.schema_id))
+    })
 }
 
 /// Returns the schema name from a levers schema-info pointer.
@@ -164,7 +172,9 @@ pub unsafe extern "C" fn RimeLeversGetSchemaId(info: *mut RimeSchemaInfo) -> *co
 /// `info` follows the same lifetime rules as `RimeLeversGetSchemaId`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversGetSchemaName(info: *mut RimeSchemaInfo) -> *const c_char {
-    unsafe { levers_schema_info_ptr(info, |info| non_empty_cstring_ptr(&info.name)) }
+    crate::ffi_guard::guard(std::ptr::null(), || unsafe {
+        levers_schema_info_ptr(info, |info| non_empty_cstring_ptr(&info.name))
+    })
 }
 
 /// Returns the schema version from a levers schema-info pointer.
@@ -174,11 +184,11 @@ pub unsafe extern "C" fn RimeLeversGetSchemaName(info: *mut RimeSchemaInfo) -> *
 /// `info` follows the same lifetime rules as `RimeLeversGetSchemaId`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversGetSchemaVersion(info: *mut RimeSchemaInfo) -> *const c_char {
-    unsafe {
+    crate::ffi_guard::guard(std::ptr::null(), || unsafe {
         levers_schema_info_ptr(info, |info| {
             info.version.as_ref().and_then(non_empty_cstring_ptr)
         })
-    }
+    })
 }
 
 /// Returns the schema author from a levers schema-info pointer.
@@ -188,11 +198,11 @@ pub unsafe extern "C" fn RimeLeversGetSchemaVersion(info: *mut RimeSchemaInfo) -
 /// `info` follows the same lifetime rules as `RimeLeversGetSchemaId`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversGetSchemaAuthor(info: *mut RimeSchemaInfo) -> *const c_char {
-    unsafe {
+    crate::ffi_guard::guard(std::ptr::null(), || unsafe {
         levers_schema_info_ptr(info, |info| {
             info.author.as_ref().and_then(non_empty_cstring_ptr)
         })
-    }
+    })
 }
 
 /// Returns the schema description from a levers schema-info pointer.
@@ -204,11 +214,11 @@ pub unsafe extern "C" fn RimeLeversGetSchemaAuthor(info: *mut RimeSchemaInfo) ->
 pub unsafe extern "C" fn RimeLeversGetSchemaDescription(
     info: *mut RimeSchemaInfo,
 ) -> *const c_char {
-    unsafe {
+    crate::ffi_guard::guard(std::ptr::null(), || unsafe {
         levers_schema_info_ptr(info, |info| {
             info.description.as_ref().and_then(non_empty_cstring_ptr)
         })
-    }
+    })
 }
 
 /// Returns the schema config file path from a levers schema-info pointer.
@@ -218,11 +228,11 @@ pub unsafe extern "C" fn RimeLeversGetSchemaDescription(
 /// `info` follows the same lifetime rules as `RimeLeversGetSchemaId`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversGetSchemaFilePath(info: *mut RimeSchemaInfo) -> *const c_char {
-    unsafe {
+    crate::ffi_guard::guard(std::ptr::null(), || unsafe {
         levers_schema_info_ptr(info, |info| {
             info.file_path.as_ref().and_then(non_empty_cstring_ptr)
         })
-    }
+    })
 }
 
 /// Selects schema IDs on the opaque switcher settings object.
@@ -238,27 +248,29 @@ pub unsafe extern "C" fn RimeLeversSelectSchemas(
     schema_id_list: *const *const c_char,
     count: c_int,
 ) -> Bool {
-    if settings.is_null() || (count > 0 && schema_id_list.is_null()) {
-        return FALSE;
-    }
-
-    let count = usize::try_from(count).unwrap_or(0);
-    let mut selected_schema_ids = Vec::with_capacity(count);
-    for index in 0..count {
-        // SAFETY: callers promise `schema_id_list` has `count` readable entries
-        // when count is positive.
-        let schema_id = unsafe { *schema_id_list.add(index) };
-        let Some(schema_id) = (unsafe { c_string_key(schema_id) }) else {
+    crate::ffi_guard::guard(FALSE, || {
+        if settings.is_null() || (count > 0 && schema_id_list.is_null()) {
             return FALSE;
-        };
-        selected_schema_ids.push(schema_id);
-    }
+        }
 
-    switcher_selection_registry()
-        .lock()
-        .expect("switcher selection registry should not be poisoned")
-        .insert(settings as usize, Some(selected_schema_ids));
-    TRUE
+        let count = usize::try_from(count).unwrap_or(0);
+        let mut selected_schema_ids = Vec::with_capacity(count);
+        for index in 0..count {
+            // SAFETY: callers promise `schema_id_list` has `count` readable entries
+            // when count is positive.
+            let schema_id = unsafe { *schema_id_list.add(index) };
+            let Some(schema_id) = (unsafe { c_string_key(schema_id) }) else {
+                return FALSE;
+            };
+            selected_schema_ids.push(schema_id);
+        }
+
+        switcher_selection_registry()
+            .lock()
+            .expect("switcher selection registry should not be poisoned")
+            .insert(settings as usize, Some(selected_schema_ids));
+        TRUE
+    })
 }
 
 /// Returns switcher hotkeys from the deployed default config.
@@ -271,16 +283,18 @@ pub unsafe extern "C" fn RimeLeversSelectSchemas(
 pub unsafe extern "C" fn RimeLeversGetHotkeys(
     settings: *mut RimeSwitcherSettings,
 ) -> *const c_char {
-    if settings.is_null() {
-        return ptr::null();
-    }
+    crate::ffi_guard::guard(std::ptr::null(), || {
+        if settings.is_null() {
+            return ptr::null();
+        }
 
-    switcher_hotkeys_registry()
-        .lock()
-        .expect("switcher hotkeys registry should not be poisoned")
-        .get(&(settings as usize))
-        .and_then(Option::as_ref)
-        .map_or(ptr::null(), |hotkeys| hotkeys.as_ptr())
+        switcher_hotkeys_registry()
+            .lock()
+            .expect("switcher hotkeys registry should not be poisoned")
+            .get(&(settings as usize))
+            .and_then(Option::as_ref)
+            .map_or(ptr::null(), |hotkeys| hotkeys.as_ptr())
+    })
 }
 
 /// Matches librime's currently unimplemented switcher hotkey mutation path.
@@ -294,7 +308,7 @@ pub unsafe extern "C" fn RimeLeversSetHotkeys(
     _settings: *mut RimeSwitcherSettings,
     _hotkeys: *const c_char,
 ) -> Bool {
-    FALSE
+    crate::ffi_guard::guard(FALSE, || FALSE)
 }
 
 /// Frees schema-list storage returned by levers schema-list APIs.
@@ -304,8 +318,10 @@ pub unsafe extern "C" fn RimeLeversSetHotkeys(
 /// `list` follows the same ownership rules as `RimeFreeSchemaList`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversSchemaListDestroy(list: *mut RimeSchemaList) {
-    // SAFETY: ownership rules match `RimeFreeSchemaList`.
-    unsafe { RimeFreeSchemaList(list) };
+    crate::ffi_guard::guard_void(|| {
+        // SAFETY: ownership rules match `RimeFreeSchemaList`.
+        unsafe { RimeFreeSchemaList(list) };
+    });
 }
 
 /// Initializes levers custom settings for a deployed config id.
@@ -318,27 +334,29 @@ pub unsafe extern "C" fn RimeLeversCustomSettingsInit(
     config_id: *const c_char,
     generator_id: *const c_char,
 ) -> *mut RimeCustomSettings {
-    let Some(config_id) = (unsafe { c_string_key(config_id) }) else {
-        return ptr::null_mut();
-    };
-    let Some(config_id) = validate_config_resource_id(&config_id) else {
-        return ptr::null_mut();
-    };
-    let Some(generator_id) = (unsafe { c_string_key(generator_id) }) else {
-        return ptr::null_mut();
-    };
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        let Some(config_id) = (unsafe { c_string_key(config_id) }) else {
+            return ptr::null_mut();
+        };
+        let Some(config_id) = validate_config_resource_id(&config_id) else {
+            return ptr::null_mut();
+        };
+        let Some(generator_id) = (unsafe { c_string_key(generator_id) }) else {
+            return ptr::null_mut();
+        };
 
-    Box::into_raw(Box::new(LeverCustomSettings {
-        config_id,
-        generator_id,
-        config: ConfigState::default(),
-        custom_config: ConfigState {
-            root: Value::Null,
-            cstring_borrows: Vec::new(),
-        },
-        modified: false,
-    }))
-    .cast::<RimeCustomSettings>()
+        Box::into_raw(Box::new(LeverCustomSettings {
+            config_id,
+            generator_id,
+            config: ConfigState::default(),
+            custom_config: ConfigState {
+                root: Value::Null,
+                cstring_borrows: Vec::new(),
+            },
+            modified: false,
+        }))
+        .cast::<RimeCustomSettings>()
+    })
 }
 
 /// Releases levers custom settings storage.
@@ -349,11 +367,13 @@ pub unsafe extern "C" fn RimeLeversCustomSettingsInit(
 /// `RimeLeversCustomSettingsInit`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversCustomSettingsDestroy(settings: *mut RimeCustomSettings) {
-    if settings.is_null() {
-        return;
-    }
-    // SAFETY: settings pointers are allocated by `RimeLeversCustomSettingsInit`.
-    unsafe { drop(Box::from_raw(settings.cast::<LeverCustomSettings>())) };
+    crate::ffi_guard::guard_void(|| {
+        if settings.is_null() {
+            return;
+        }
+        // SAFETY: settings pointers are allocated by `RimeLeversCustomSettingsInit`.
+        unsafe { drop(Box::from_raw(settings.cast::<LeverCustomSettings>())) };
+    });
 }
 
 /// Loads deployed and user custom config data for levers custom settings.
@@ -364,30 +384,33 @@ pub unsafe extern "C" fn RimeLeversCustomSettingsDestroy(settings: *mut RimeCust
 /// `RimeLeversCustomSettingsInit`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversLoadSettings(settings: *mut RimeCustomSettings) -> Bool {
-    let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
-        return FALSE;
-    };
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
+            return FALSE;
+        };
 
-    settings.config.root = load_runtime_config_root(&settings.config_id, ConfigOpenKind::Deployed);
-    settings.config.cstring_borrows.clear();
-    settings.modified = false;
+        settings.config.root =
+            load_runtime_config_root(&settings.config_id, ConfigOpenKind::Deployed);
+        settings.config.cstring_borrows.clear();
+        settings.modified = false;
 
-    let path = custom_config_path(&settings.config_id);
-    let loaded = fs::read_to_string(path)
-        .ok()
-        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok());
-    match loaded {
-        Some(root) => {
-            settings.custom_config.root = root;
-            settings.custom_config.cstring_borrows.clear();
-            TRUE
+        let path = custom_config_path(&settings.config_id);
+        let loaded = fs::read_to_string(path)
+            .ok()
+            .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok());
+        match loaded {
+            Some(root) => {
+                settings.custom_config.root = root;
+                settings.custom_config.cstring_borrows.clear();
+                TRUE
+            }
+            None => {
+                settings.custom_config.root = Value::Null;
+                settings.custom_config.cstring_borrows.clear();
+                FALSE
+            }
         }
-        None => {
-            settings.custom_config.root = Value::Null;
-            settings.custom_config.cstring_borrows.clear();
-            FALSE
-        }
-    }
+    })
 }
 
 /// Saves modified levers custom settings to `<config>.custom.yaml`.
@@ -398,34 +421,36 @@ pub unsafe extern "C" fn RimeLeversLoadSettings(settings: *mut RimeCustomSetting
 /// `RimeLeversCustomSettingsInit`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversSaveSettings(settings: *mut RimeCustomSettings) -> Bool {
-    let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
-        return FALSE;
-    };
-    if !settings.modified {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
+            return FALSE;
+        };
+        if !settings.modified {
+            return FALSE;
+        }
 
-    write_config_signature(
-        &mut settings.custom_config.root,
-        "customization",
-        &settings.generator_id,
-    );
-    let path = custom_config_path(&settings.config_id);
-    let Some(parent) = path.parent() else {
-        return FALSE;
-    };
-    if fs::create_dir_all(parent).is_err() {
-        return FALSE;
-    }
-    let Ok(yaml) = serde_yaml::to_string(&settings.custom_config.root) else {
-        return FALSE;
-    };
-    if fs::write(path, yaml).is_err() {
-        return FALSE;
-    }
+        write_config_signature(
+            &mut settings.custom_config.root,
+            "customization",
+            &settings.generator_id,
+        );
+        let path = custom_config_path(&settings.config_id);
+        let Some(parent) = path.parent() else {
+            return FALSE;
+        };
+        if fs::create_dir_all(parent).is_err() {
+            return FALSE;
+        }
+        let Ok(yaml) = serde_yaml::to_string(&settings.custom_config.root) else {
+            return FALSE;
+        };
+        if fs::write(path, yaml).is_err() {
+            return FALSE;
+        }
 
-    settings.modified = false;
-    TRUE
+        settings.modified = false;
+        TRUE
+    })
 }
 
 /// Writes a boolean levers custom setting under the literal `patch` key.
@@ -439,7 +464,9 @@ pub unsafe extern "C" fn RimeLeversCustomizeBool(
     key: *const c_char,
     value: Bool,
 ) -> Bool {
-    unsafe { levers_customize_value(settings, key, Value::Bool(value != FALSE)) }
+    crate::ffi_guard::guard(FALSE, || unsafe {
+        levers_customize_value(settings, key, Value::Bool(value != FALSE))
+    })
 }
 
 /// Writes an integer levers custom setting under the literal `patch` key.
@@ -453,7 +480,9 @@ pub unsafe extern "C" fn RimeLeversCustomizeInt(
     key: *const c_char,
     value: c_int,
 ) -> Bool {
-    unsafe { levers_customize_value(settings, key, Value::Number(Number::from(value))) }
+    crate::ffi_guard::guard(FALSE, || unsafe {
+        levers_customize_value(settings, key, Value::Number(Number::from(value)))
+    })
 }
 
 /// Writes a floating-point levers custom setting under the literal `patch` key.
@@ -467,10 +496,12 @@ pub unsafe extern "C" fn RimeLeversCustomizeDouble(
     key: *const c_char,
     value: f64,
 ) -> Bool {
-    let Ok(value) = serde_yaml::to_value(value) else {
-        return FALSE;
-    };
-    unsafe { levers_customize_value(settings, key, value) }
+    crate::ffi_guard::guard(FALSE, || {
+        let Ok(value) = serde_yaml::to_value(value) else {
+            return FALSE;
+        };
+        unsafe { levers_customize_value(settings, key, value) }
+    })
 }
 
 /// Writes a string levers custom setting under the literal `patch` key.
@@ -484,10 +515,12 @@ pub unsafe extern "C" fn RimeLeversCustomizeString(
     key: *const c_char,
     value: *const c_char,
 ) -> Bool {
-    let Some(value) = (unsafe { c_string_key(value) }) else {
-        return FALSE;
-    };
-    unsafe { levers_customize_value(settings, key, Value::String(value)) }
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(value) = (unsafe { c_string_key(value) }) else {
+            return FALSE;
+        };
+        unsafe { levers_customize_value(settings, key, Value::String(value)) }
+    })
 }
 
 /// Writes a list/map config item as a levers custom setting.
@@ -502,15 +535,17 @@ pub unsafe extern "C" fn RimeLeversCustomizeItem(
     key: *const c_char,
     value: *mut RimeConfig,
 ) -> Bool {
-    let item = if value.is_null() {
-        Value::Null
-    } else {
-        match unsafe { config_state_mut(value) } {
-            Some(value_state) => value_state.root.clone(),
-            None => Value::Null,
-        }
-    };
-    unsafe { levers_customize_value(settings, key, item) }
+    crate::ffi_guard::guard(FALSE, || {
+        let item = if value.is_null() {
+            Value::Null
+        } else {
+            match unsafe { config_state_mut(value) } {
+                Some(value_state) => value_state.root.clone(),
+                None => Value::Null,
+            }
+        };
+        unsafe { levers_customize_value(settings, key, item) }
+    })
 }
 
 /// Reports whether the custom settings file has not yet been customized.
@@ -521,18 +556,20 @@ pub unsafe extern "C" fn RimeLeversCustomizeItem(
 /// `RimeLeversCustomSettingsInit`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversIsFirstRun(settings: *mut RimeCustomSettings) -> Bool {
-    let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
-        return FALSE;
-    };
-    let root = fs::read_to_string(custom_config_path(&settings.config_id))
-        .ok()
-        .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok());
-    bool_from(
-        root.as_ref()
-            .and_then(|root| find_config_value(root, "customization"))
-            .and_then(Value::as_mapping)
-            .is_none(),
-    )
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
+            return FALSE;
+        };
+        let root = fs::read_to_string(custom_config_path(&settings.config_id))
+            .ok()
+            .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok());
+        bool_from(
+            root.as_ref()
+                .and_then(|root| find_config_value(root, "customization"))
+                .and_then(Value::as_mapping)
+                .is_none(),
+        )
+    })
 }
 
 /// Reports whether custom settings have unsaved mutations.
@@ -543,10 +580,12 @@ pub unsafe extern "C" fn RimeLeversIsFirstRun(settings: *mut RimeCustomSettings)
 /// `RimeLeversCustomSettingsInit`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeLeversSettingsIsModified(settings: *mut RimeCustomSettings) -> Bool {
-    let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
-        return FALSE;
-    };
-    bool_from(settings.modified)
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
+            return FALSE;
+        };
+        bool_from(settings.modified)
+    })
 }
 
 /// Copies the loaded deployed config into a caller-owned `RimeConfig`.
@@ -559,13 +598,15 @@ pub unsafe extern "C" fn RimeLeversSettingsGetConfig(
     settings: *mut RimeCustomSettings,
     config: *mut RimeConfig,
 ) -> Bool {
-    if config.is_null() {
-        return FALSE;
-    }
-    let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
-        return FALSE;
-    };
-    unsafe { install_config_root(config, settings.config.root.clone()) }
+    crate::ffi_guard::guard(FALSE, || {
+        if config.is_null() {
+            return FALSE;
+        }
+        let Some(settings) = (unsafe { levers_custom_settings_mut(settings) }) else {
+            return FALSE;
+        };
+        unsafe { install_config_root(config, settings.config.root.clone()) }
+    })
 }
 
 unsafe fn levers_custom_settings_mut(

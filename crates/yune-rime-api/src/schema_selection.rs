@@ -29,14 +29,16 @@ pub unsafe extern "C" fn RimeGetCurrentSchema(
     schema_id: *mut c_char,
     buffer_size: usize,
 ) -> Bool {
-    if schema_id.is_null() {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if schema_id.is_null() {
+            return FALSE;
+        }
 
-    with_session(session_id, |session| {
-        let current_schema = session.engine.status().schema_id;
-        copy_c_string_with_strncpy_semantics(&current_schema, schema_id, buffer_size);
-        true
+        with_session(session_id, |session| {
+            let current_schema = session.engine.status().schema_id;
+            copy_c_string_with_strncpy_semantics(&current_schema, schema_id, buffer_size);
+            true
+        })
     })
 }
 
@@ -51,42 +53,44 @@ pub unsafe extern "C" fn RimeSelectSchema(
     session_id: RimeSessionId,
     schema_id: *const c_char,
 ) -> Bool {
-    let _trace = startup_trace::span("schema_select");
-    if schema_id.is_null() {
-        return FALSE;
-    }
-    // SAFETY: callers promise that `schema_id` is a valid nul-terminated
-    // string.
-    let schema_id = unsafe { CStr::from_ptr(schema_id) }
-        .to_string_lossy()
-        .into_owned();
+    crate::ffi_guard::guard(FALSE, || {
+        let _trace = startup_trace::span("schema_select");
+        if schema_id.is_null() {
+            return FALSE;
+        }
+        // SAFETY: callers promise that `schema_id` is a valid nul-terminated
+        // string.
+        let schema_id = unsafe { CStr::from_ptr(schema_id) }
+            .to_string_lossy()
+            .into_owned();
 
-    let selected = with_session(session_id, |session| {
-        if let Some(signature) = same_schema_idle_reload_signature(session, &schema_id) {
-            if session.schema_reload_signature.as_deref() != Some(signature.as_str()) {
+        let selected = with_session(session_id, |session| {
+            if let Some(signature) = same_schema_idle_reload_signature(session, &schema_id) {
+                if session.schema_reload_signature.as_deref() != Some(signature.as_str()) {
+                    apply_schema_to_session(session, &schema_id);
+                }
+            } else {
                 apply_schema_to_session(session, &schema_id);
             }
-        } else {
-            apply_schema_to_session(session, &schema_id);
+            true
+        });
+        if selected == TRUE {
+            let status = sessions()
+                .lock()
+                .expect("session registry should not be poisoned")
+                .sessions
+                .get(&session_id)
+                .map(|session| session.engine.status());
+            if let Some(status) = status {
+                notify(
+                    session_id,
+                    "schema",
+                    &format!("{}/{}", status.schema_id, status.schema_name),
+                );
+            }
         }
-        true
-    });
-    if selected == TRUE {
-        let status = sessions()
-            .lock()
-            .expect("session registry should not be poisoned")
-            .sessions
-            .get(&session_id)
-            .map(|session| session.engine.status());
-        if let Some(status) = status {
-            notify(
-                session_id,
-                "schema",
-                &format!("{}/{}", status.schema_id, status.schema_name),
-            );
-        }
-    }
-    selected
+        selected
+    })
 }
 
 fn same_schema_idle_reload_signature(session: &SessionState, schema_id: &str) -> Option<String> {

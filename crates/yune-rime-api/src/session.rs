@@ -4,13 +4,14 @@ use std::{
     os::raw::c_int,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Mutex, OnceLock,
+        OnceLock,
     },
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use yune_core::{Engine, KeyEvent};
 
+use crate::ffi_guard::RecoveringMutex;
 use crate::{
     apply_schema_to_session, bool_from, deployed_schema_list_entries, userdb, AffixSegmentor,
     AsciiModeSwitchStyle, Bool, ChordComposerProcessor, ContextMenuSettings, EditorBindingAction,
@@ -197,9 +198,9 @@ impl Default for SessionState {
     }
 }
 
-pub(crate) fn sessions() -> &'static Mutex<SessionRegistry> {
-    static SESSIONS: OnceLock<Mutex<SessionRegistry>> = OnceLock::new();
-    SESSIONS.get_or_init(|| Mutex::new(SessionRegistry::default()))
+pub(crate) fn sessions() -> &'static RecoveringMutex<SessionRegistry> {
+    static SESSIONS: OnceLock<RecoveringMutex<SessionRegistry>> = OnceLock::new();
+    SESSIONS.get_or_init(|| RecoveringMutex::new(SessionRegistry::default()))
 }
 
 pub(crate) fn service_started() -> &'static AtomicBool {
@@ -209,50 +210,60 @@ pub(crate) fn service_started() -> &'static AtomicBool {
 
 #[no_mangle]
 pub extern "C" fn RimeCreateSession() -> RimeSessionId {
-    let _trace = crate::startup_trace::span("session_create");
-    sessions()
-        .lock()
-        .expect("session registry should not be poisoned")
-        .create_session()
+    crate::ffi_guard::guard(0, || {
+        let _trace = crate::startup_trace::span("session_create");
+        sessions()
+            .lock()
+            .expect("session registry should not be poisoned")
+            .create_session()
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeFindSession(session_id: RimeSessionId) -> Bool {
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    bool_from(registry.find_session(session_id))
+    crate::ffi_guard::guard(FALSE, || {
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        bool_from(registry.find_session(session_id))
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeDestroySession(session_id: RimeSessionId) -> Bool {
-    let _trace = crate::startup_trace::span("session_destroy");
-    bool_from(
-        session_id != 0
-            && sessions()
-                .lock()
-                .expect("session registry should not be poisoned")
-                .sessions
-                .remove(&session_id)
-                .is_some(),
-    )
+    crate::ffi_guard::guard(FALSE, || {
+        let _trace = crate::startup_trace::span("session_destroy");
+        bool_from(
+            session_id != 0
+                && sessions()
+                    .lock()
+                    .expect("session registry should not be poisoned")
+                    .sessions
+                    .remove(&session_id)
+                    .is_some(),
+        )
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeCleanupAllSessions() {
-    sessions()
-        .lock()
-        .expect("session registry should not be poisoned")
-        .sessions
-        .clear();
+    crate::ffi_guard::guard_void(|| {
+        sessions()
+            .lock()
+            .expect("session registry should not be poisoned")
+            .sessions
+            .clear();
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn RimeCleanupStaleSessions() {
-    sessions()
-        .lock()
-        .expect("session registry should not be poisoned")
-        .cleanup_stale_sessions();
+    crate::ffi_guard::guard_void(|| {
+        sessions()
+            .lock()
+            .expect("session registry should not be poisoned")
+            .cleanup_stale_sessions();
+    });
 }
 
 pub(crate) fn with_session(

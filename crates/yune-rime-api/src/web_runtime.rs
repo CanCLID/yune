@@ -54,63 +54,65 @@ pub unsafe extern "C" fn yune_web_init(
     user_data_dir: *const c_char,
     schema_id: *const c_char,
 ) -> *mut YuneWebState {
-    let Some(shared_data_dir) = cstring_from_ptr(shared_data_dir) else {
-        return ptr::null_mut();
-    };
-    let Some(user_data_dir) = cstring_from_ptr(user_data_dir) else {
-        return ptr::null_mut();
-    };
-    let Some(schema_id) = cstring_from_ptr(schema_id) else {
-        return ptr::null_mut();
-    };
-    let Some(api) = api_table() else {
-        return ptr::null_mut();
-    };
-    let Some(setup) = api.setup else {
-        return ptr::null_mut();
-    };
-    let Some(initialize) = api.initialize else {
-        return ptr::null_mut();
-    };
-    let Some(create_session) = api.create_session else {
-        return ptr::null_mut();
-    };
-    let Some(select_schema) = api.select_schema else {
-        return ptr::null_mut();
-    };
-    if !has_preloaded_runtime_assets(&shared_data_dir, &user_data_dir, &schema_id) {
-        return ptr::null_mut();
-    }
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        let Some(shared_data_dir) = cstring_from_ptr(shared_data_dir) else {
+            return ptr::null_mut();
+        };
+        let Some(user_data_dir) = cstring_from_ptr(user_data_dir) else {
+            return ptr::null_mut();
+        };
+        let Some(schema_id) = cstring_from_ptr(schema_id) else {
+            return ptr::null_mut();
+        };
+        let Some(api) = api_table() else {
+            return ptr::null_mut();
+        };
+        let Some(setup) = api.setup else {
+            return ptr::null_mut();
+        };
+        let Some(initialize) = api.initialize else {
+            return ptr::null_mut();
+        };
+        let Some(create_session) = api.create_session else {
+            return ptr::null_mut();
+        };
+        let Some(select_schema) = api.select_schema else {
+            return ptr::null_mut();
+        };
+        if !has_preloaded_runtime_assets(&shared_data_dir, &user_data_dir, &schema_id) {
+            return ptr::null_mut();
+        }
 
-    let mut traits = empty_traits();
-    traits.shared_data_dir = shared_data_dir.as_ptr();
-    traits.user_data_dir = user_data_dir.as_ptr();
+        let mut traits = empty_traits();
+        traits.shared_data_dir = shared_data_dir.as_ptr();
+        traits.user_data_dir = user_data_dir.as_ptr();
 
-    unsafe { setup(&traits) };
-    unsafe { initialize(&traits) };
+        unsafe { setup(&traits) };
+        unsafe { initialize(&traits) };
 
-    let session_id = create_session();
-    if session_id == 0 {
-        finalize_api(api);
-        return ptr::null_mut();
-    }
+        let session_id = create_session();
+        if session_id == 0 {
+            finalize_api(api);
+            return ptr::null_mut();
+        }
 
-    if unsafe { select_schema(session_id, schema_id.as_ptr()) } != TRUE {
-        destroy_session(api, session_id);
-        finalize_api(api);
-        return ptr::null_mut();
-    }
+        if unsafe { select_schema(session_id, schema_id.as_ptr()) } != TRUE {
+            destroy_session(api, session_id);
+            finalize_api(api);
+            return ptr::null_mut();
+        }
 
-    Box::into_raw(Box::new(YuneWebState {
-        session_id,
-        shared_data_dir,
-        user_data_dir,
-        schema_id,
-        initialized: true,
-        ai_enabled: false,
-        ai_provider: None,
-        inspector_enabled: false,
-    }))
+        Box::into_raw(Box::new(YuneWebState {
+            session_id,
+            shared_data_dir,
+            user_data_dir,
+            schema_id,
+            initialized: true,
+            ai_enabled: false,
+            ai_provider: None,
+            inspector_enabled: false,
+        }))
+    })
 }
 
 /// # Safety
@@ -121,19 +123,21 @@ pub unsafe extern "C" fn yune_web_process_key(
     keycode: c_int,
     mask: c_int,
 ) -> *mut YuneWebResponse {
-    operate(state, |api, state| {
-        let Some(process_key) = api.process_key else {
-            return response(
-                FALSE,
-                vec![],
-                None,
-                None,
-                Some("process_key API unavailable"),
-            );
-        };
-        let session_id = state.session_id;
-        let handled = process_key(session_id, keycode, mask);
-        response_from_session(api, session_id, handled, None, state.inspector_enabled)
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        operate(state, |api, state| {
+            let Some(process_key) = api.process_key else {
+                return response(
+                    FALSE,
+                    vec![],
+                    None,
+                    None,
+                    Some("process_key API unavailable"),
+                );
+            };
+            let session_id = state.session_id;
+            let handled = process_key(session_id, keycode, mask);
+            response_from_session(api, session_id, handled, None, state.inspector_enabled)
+        })
     })
 }
 
@@ -144,19 +148,21 @@ pub unsafe extern "C" fn yune_web_select_candidate(
     state: *mut YuneWebState,
     index: usize,
 ) -> *mut YuneWebResponse {
-    operate(state, |api, state| {
-        let Some(select_candidate) = api.select_candidate_on_current_page else {
-            return response(
-                FALSE,
-                vec![],
-                None,
-                None,
-                Some("select_candidate_on_current_page API unavailable"),
-            );
-        };
-        let session_id = state.session_id;
-        let handled = select_candidate(session_id, index);
-        response_from_session(api, session_id, handled, None, state.inspector_enabled)
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        operate(state, |api, state| {
+            let Some(select_candidate) = api.select_candidate_on_current_page else {
+                return response(
+                    FALSE,
+                    vec![],
+                    None,
+                    None,
+                    Some("select_candidate_on_current_page API unavailable"),
+                );
+            };
+            let session_id = state.session_id;
+            let handled = select_candidate(session_id, index);
+            response_from_session(api, session_id, handled, None, state.inspector_enabled)
+        })
     })
 }
 
@@ -167,19 +173,21 @@ pub unsafe extern "C" fn yune_web_delete_candidate(
     state: *mut YuneWebState,
     index: usize,
 ) -> *mut YuneWebResponse {
-    operate(state, |api, state| {
-        let Some(delete_candidate) = api.delete_candidate_on_current_page else {
-            return response(
-                FALSE,
-                vec![],
-                None,
-                None,
-                Some("delete_candidate_on_current_page API unavailable"),
-            );
-        };
-        let session_id = state.session_id;
-        let handled = delete_candidate(session_id, index);
-        response_from_session(api, session_id, handled, None, state.inspector_enabled)
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        operate(state, |api, state| {
+            let Some(delete_candidate) = api.delete_candidate_on_current_page else {
+                return response(
+                    FALSE,
+                    vec![],
+                    None,
+                    None,
+                    Some("delete_candidate_on_current_page API unavailable"),
+                );
+            };
+            let session_id = state.session_id;
+            let handled = delete_candidate(session_id, index);
+            response_from_session(api, session_id, handled, None, state.inspector_enabled)
+        })
     })
 }
 
@@ -190,19 +198,21 @@ pub unsafe extern "C" fn yune_web_flip_page(
     state: *mut YuneWebState,
     backward: Bool,
 ) -> *mut YuneWebResponse {
-    operate(state, |api, state| {
-        let Some(change_page) = api.change_page else {
-            return response(
-                FALSE,
-                vec![],
-                None,
-                None,
-                Some("change_page API unavailable"),
-            );
-        };
-        let session_id = state.session_id;
-        let handled = change_page(session_id, backward);
-        response_from_session(api, session_id, handled, None, state.inspector_enabled)
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        operate(state, |api, state| {
+            let Some(change_page) = api.change_page else {
+                return response(
+                    FALSE,
+                    vec![],
+                    None,
+                    None,
+                    Some("change_page API unavailable"),
+                );
+            };
+            let session_id = state.session_id;
+            let handled = change_page(session_id, backward);
+            response_from_session(api, session_id, handled, None, state.inspector_enabled)
+        })
     })
 }
 
@@ -210,38 +220,40 @@ pub unsafe extern "C" fn yune_web_flip_page(
 /// `state` must be null or a live pointer returned by `yune_web_init`.
 #[no_mangle]
 pub unsafe extern "C" fn yune_web_deploy(state: *mut YuneWebState) -> Bool {
-    if state.is_null() {
-        return FALSE;
-    }
-    let Some(api) = api_table() else {
-        return FALSE;
-    };
-    let Some(deployer_initialize) = api.deployer_initialize else {
-        return FALSE;
-    };
-    let Some(deploy_schema) = api.deploy_schema else {
-        return FALSE;
-    };
-    let state = unsafe { &*state };
-    if !state.initialized || state.session_id == 0 {
-        return FALSE;
-    }
-    let mut traits = empty_traits();
-    traits.shared_data_dir = state.shared_data_dir.as_ptr();
-    traits.user_data_dir = state.user_data_dir.as_ptr();
-    unsafe { deployer_initialize(&traits) };
-    let Ok(schema_file) =
-        CString::new(format!("{}.schema.yaml", state.schema_id.to_string_lossy()))
-    else {
-        return FALSE;
-    };
-    if deploy_schema(schema_file.as_ptr()) != TRUE {
-        return FALSE;
-    }
-    let Some(select_schema) = api.select_schema else {
-        return FALSE;
-    };
-    unsafe { select_schema(state.session_id, state.schema_id.as_ptr()) }
+    crate::ffi_guard::guard(FALSE, || {
+        if state.is_null() {
+            return FALSE;
+        }
+        let Some(api) = api_table() else {
+            return FALSE;
+        };
+        let Some(deployer_initialize) = api.deployer_initialize else {
+            return FALSE;
+        };
+        let Some(deploy_schema) = api.deploy_schema else {
+            return FALSE;
+        };
+        let state = unsafe { &*state };
+        if !state.initialized || state.session_id == 0 {
+            return FALSE;
+        }
+        let mut traits = empty_traits();
+        traits.shared_data_dir = state.shared_data_dir.as_ptr();
+        traits.user_data_dir = state.user_data_dir.as_ptr();
+        unsafe { deployer_initialize(&traits) };
+        let Ok(schema_file) =
+            CString::new(format!("{}.schema.yaml", state.schema_id.to_string_lossy()))
+        else {
+            return FALSE;
+        };
+        if deploy_schema(schema_file.as_ptr()) != TRUE {
+            return FALSE;
+        }
+        let Some(select_schema) = api.select_schema else {
+            return FALSE;
+        };
+        unsafe { select_schema(state.session_id, state.schema_id.as_ptr()) }
+    })
 }
 
 /// # Safety
@@ -253,71 +265,73 @@ pub unsafe extern "C" fn yune_web_customize(
     key: *const c_char,
     value: *const c_char,
 ) -> Bool {
-    if state.is_null() {
-        return FALSE;
-    }
-    let Some(config_id) = cstring_from_ptr(config_id) else {
-        return FALSE;
-    };
-    let Some(key) = cstring_from_ptr(key) else {
-        return FALSE;
-    };
-    let Some(value) = cstring_from_ptr(value) else {
-        return FALSE;
-    };
-    let levers = rime_levers_get_api().cast::<RimeLeversApi>();
-    if levers.is_null() {
-        return FALSE;
-    }
-    let levers = unsafe { &*levers };
-    let Some(init) = levers.custom_settings_init else {
-        return FALSE;
-    };
-    let Some(destroy) = levers.custom_settings_destroy else {
-        return FALSE;
-    };
-    let Some(load) = levers.load_settings else {
-        return FALSE;
-    };
-    let Some(save) = levers.save_settings else {
-        return FALSE;
-    };
-    let Some(customize_string) = levers.customize_string else {
-        return FALSE;
-    };
-    let generator = CString::new("yune-web").expect("static generator is valid CString");
-    let settings = unsafe { init(config_id.as_ptr(), generator.as_ptr()) };
-    if settings.is_null() {
-        return FALSE;
-    }
-    unsafe { load(settings) };
-    let key_string = key.as_c_str().to_string_lossy();
-    let value_string = value.as_c_str().to_string_lossy();
-    let customized = if key_string == "translator/dictionary_exclude" {
-        let Some(exclude_list) = dictionary_exclude_config_value(&value_string) else {
-            unsafe { destroy(settings) };
-            return FALSE;
-        };
-        let Some(customize_item) = levers.customize_item else {
-            unsafe { destroy(settings) };
-            return FALSE;
-        };
-        let mut config = RimeConfig {
-            ptr: ptr::null_mut(),
-        };
-        if unsafe { install_config_root(&mut config, exclude_list) } != TRUE {
-            unsafe { destroy(settings) };
+    crate::ffi_guard::guard(FALSE, || {
+        if state.is_null() {
             return FALSE;
         }
-        let customized = unsafe { customize_item(settings, key.as_ptr(), &mut config) } == TRUE;
-        let _ = unsafe { crate::RimeConfigClose(&mut config) };
-        customized
-    } else {
-        (unsafe { customize_string(settings, key.as_ptr(), value.as_ptr()) }) == TRUE
-    };
-    let saved = customized && unsafe { save(settings) } == TRUE;
-    unsafe { destroy(settings) };
-    bool_to_rime(saved)
+        let Some(config_id) = cstring_from_ptr(config_id) else {
+            return FALSE;
+        };
+        let Some(key) = cstring_from_ptr(key) else {
+            return FALSE;
+        };
+        let Some(value) = cstring_from_ptr(value) else {
+            return FALSE;
+        };
+        let levers = rime_levers_get_api().cast::<RimeLeversApi>();
+        if levers.is_null() {
+            return FALSE;
+        }
+        let levers = unsafe { &*levers };
+        let Some(init) = levers.custom_settings_init else {
+            return FALSE;
+        };
+        let Some(destroy) = levers.custom_settings_destroy else {
+            return FALSE;
+        };
+        let Some(load) = levers.load_settings else {
+            return FALSE;
+        };
+        let Some(save) = levers.save_settings else {
+            return FALSE;
+        };
+        let Some(customize_string) = levers.customize_string else {
+            return FALSE;
+        };
+        let generator = CString::new("yune-web").expect("static generator is valid CString");
+        let settings = unsafe { init(config_id.as_ptr(), generator.as_ptr()) };
+        if settings.is_null() {
+            return FALSE;
+        }
+        unsafe { load(settings) };
+        let key_string = key.as_c_str().to_string_lossy();
+        let value_string = value.as_c_str().to_string_lossy();
+        let customized = if key_string == "translator/dictionary_exclude" {
+            let Some(exclude_list) = dictionary_exclude_config_value(&value_string) else {
+                unsafe { destroy(settings) };
+                return FALSE;
+            };
+            let Some(customize_item) = levers.customize_item else {
+                unsafe { destroy(settings) };
+                return FALSE;
+            };
+            let mut config = RimeConfig {
+                ptr: ptr::null_mut(),
+            };
+            if unsafe { install_config_root(&mut config, exclude_list) } != TRUE {
+                unsafe { destroy(settings) };
+                return FALSE;
+            }
+            let customized = unsafe { customize_item(settings, key.as_ptr(), &mut config) } == TRUE;
+            let _ = unsafe { crate::RimeConfigClose(&mut config) };
+            customized
+        } else {
+            (unsafe { customize_string(settings, key.as_ptr(), value.as_ptr()) }) == TRUE
+        };
+        let saved = customized && unsafe { save(settings) } == TRUE;
+        unsafe { destroy(settings) };
+        bool_to_rime(saved)
+    })
 }
 
 /// # Safety
@@ -328,158 +342,173 @@ pub unsafe extern "C" fn yune_web_set_option(
     option: *const c_char,
     value: Bool,
 ) -> Bool {
-    if state.is_null() {
-        return FALSE;
-    }
-    let Some(option) = cstring_from_ptr(option) else {
-        return FALSE;
-    };
-    let state = unsafe { &mut *state };
-    if !state.initialized || state.session_id == 0 {
-        return FALSE;
-    }
-    if option.as_c_str().to_str().ok() == Some(INSPECTOR_OPTION) {
-        state.inspector_enabled = value != FALSE;
-        return TRUE;
-    }
-    let Some(api) = api_table() else {
-        return FALSE;
-    };
-    let Some(set_option) = api.set_option else {
-        return FALSE;
-    };
-    unsafe {
-        set_option(
-            state.session_id,
-            option.as_ptr(),
-            bool_to_rime(value != FALSE),
-        )
-    };
-    TRUE
+    crate::ffi_guard::guard(FALSE, || {
+        if state.is_null() {
+            return FALSE;
+        }
+        let Some(option) = cstring_from_ptr(option) else {
+            return FALSE;
+        };
+        let state = unsafe { &mut *state };
+        if !state.initialized || state.session_id == 0 {
+            return FALSE;
+        }
+        if option.as_c_str().to_str().ok() == Some(INSPECTOR_OPTION) {
+            state.inspector_enabled = value != FALSE;
+            return TRUE;
+        }
+        let Some(api) = api_table() else {
+            return FALSE;
+        };
+        let Some(set_option) = api.set_option else {
+            return FALSE;
+        };
+        unsafe {
+            set_option(
+                state.session_id,
+                option.as_ptr(),
+                bool_to_rime(value != FALSE),
+            )
+        };
+        TRUE
+    })
 }
 
 /// # Safety
 /// `state` must be live.
 #[no_mangle]
 pub unsafe extern "C" fn yune_web_set_ai_enabled(state: *mut YuneWebState, enabled: Bool) -> Bool {
-    if state.is_null() {
-        return FALSE;
-    }
-    let state = unsafe { &mut *state };
-    if !state.initialized || state.session_id == 0 {
-        return FALSE;
-    }
-    state.ai_enabled = enabled != FALSE;
-    if state.ai_enabled {
-        return TRUE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if state.is_null() {
+            return FALSE;
+        }
+        let state = unsafe { &mut *state };
+        if !state.initialized || state.session_id == 0 {
+            return FALSE;
+        }
+        state.ai_enabled = enabled != FALSE;
+        if state.ai_enabled {
+            return TRUE;
+        }
 
-    let cleared = with_session(state.session_id, |session| {
-        let input = session.engine.context().composition.input.clone();
-        session
-            .engine
-            .stage_ai_result(AiResult::off(input, AiOffReason::Privacy));
-        true
-    });
-    if cleared == TRUE {
-        state.ai_provider = None;
-    }
-    cleared
+        let cleared = with_session(state.session_id, |session| {
+            let input = session.engine.context().composition.input.clone();
+            session
+                .engine
+                .stage_ai_result(AiResult::off(input, AiOffReason::Privacy));
+            true
+        });
+        if cleared == TRUE {
+            state.ai_provider = None;
+        }
+        cleared
+    })
 }
 
 /// # Safety
 /// `state` must be a live pointer returned by `yune_web_init`.
 #[no_mangle]
 pub unsafe extern "C" fn yune_web_stage_ai(state: *mut YuneWebState) -> *mut YuneWebResponse {
-    if state.is_null() {
-        return ptr::null_mut();
-    }
-    let Some(api) = api_table() else {
-        return response(FALSE, vec![], None, None, Some("RimeApi unavailable"));
-    };
-    let state = unsafe { &mut *state };
-    if !state.initialized || state.session_id == 0 {
-        return response(
-            FALSE,
-            vec![],
-            None,
-            None,
-            Some("YuneWeb state is not initialized"),
-        );
-    }
-    let session_id = state.session_id;
-    if !state.ai_enabled {
-        return response_from_session(api, session_id, TRUE, None, state.inspector_enabled);
-    }
-
-    let provider = state
-        .ai_provider
-        .get_or_insert_with(browser_local_model_provider)
-        .clone();
-    let staged = with_session(session_id, |session| {
-        let input = session.engine.context().composition.input.clone();
-        let result = if AiPrivacyPolicy.allows_provider(session.engine.context(), provider.kind()) {
-            provider.provide(session.engine.context(), AI_BUDGET)
-        } else {
-            AiResult::off(input, AiOffReason::Privacy)
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        if state.is_null() {
+            return ptr::null_mut();
+        }
+        let Some(api) = api_table() else {
+            return response(FALSE, vec![], None, None, Some("RimeApi unavailable"));
         };
-        session.engine.stage_ai_result(result);
-        true
-    });
-    if staged != TRUE {
-        return response(FALSE, vec![], None, None, Some("session unavailable"));
-    }
+        let state = unsafe { &mut *state };
+        if !state.initialized || state.session_id == 0 {
+            return response(
+                FALSE,
+                vec![],
+                None,
+                None,
+                Some("YuneWeb state is not initialized"),
+            );
+        }
+        let session_id = state.session_id;
+        if !state.ai_enabled {
+            return response_from_session(api, session_id, TRUE, None, state.inspector_enabled);
+        }
 
-    response_from_session(api, session_id, TRUE, None, state.inspector_enabled)
+        let provider = state
+            .ai_provider
+            .get_or_insert_with(browser_local_model_provider)
+            .clone();
+        let staged = with_session(session_id, |session| {
+            let input = session.engine.context().composition.input.clone();
+            let result =
+                if AiPrivacyPolicy.allows_provider(session.engine.context(), provider.kind()) {
+                    provider.provide(session.engine.context(), AI_BUDGET)
+                } else {
+                    AiResult::off(input, AiOffReason::Privacy)
+                };
+            session.engine.stage_ai_result(result);
+            true
+        });
+        if staged != TRUE {
+            return response(FALSE, vec![], None, None, Some("session unavailable"));
+        }
+
+        response_from_session(api, session_id, TRUE, None, state.inspector_enabled)
+    })
 }
 
 /// # Safety
 /// `state` must be null or an unfreed pointer returned by `yune_web_init`.
 #[no_mangle]
 pub unsafe extern "C" fn yune_web_cleanup(state: *mut YuneWebState) {
-    if state.is_null() {
-        return;
-    }
-    let mut state = unsafe { Box::from_raw(state) };
-    if let Some(api) = api_table() {
-        if state.initialized {
-            destroy_session(api, state.session_id);
-            finalize_api(api);
-            state.initialized = false;
-            state.ai_enabled = false;
-            state.ai_provider = None;
-            state.inspector_enabled = false;
+    crate::ffi_guard::guard_void(|| {
+        if state.is_null() {
+            return;
         }
-    }
+        let mut state = unsafe { Box::from_raw(state) };
+        if let Some(api) = api_table() {
+            if state.initialized {
+                destroy_session(api, state.session_id);
+                finalize_api(api);
+                state.initialized = false;
+                state.ai_enabled = false;
+                state.ai_provider = None;
+                state.inspector_enabled = false;
+            }
+        }
+    });
 }
 
 /// # Safety
 /// `response` must be null or a live pointer returned by a YuneWeb operation.
 #[no_mangle]
 pub unsafe extern "C" fn yune_web_response_json(response: *const YuneWebResponse) -> *const c_char {
-    if response.is_null() {
-        return ptr::null();
-    }
-    unsafe { (*response).json.as_ptr() }
+    crate::ffi_guard::guard(std::ptr::null(), || {
+        if response.is_null() {
+            return ptr::null();
+        }
+        unsafe { (*response).json.as_ptr() }
+    })
 }
 
 /// # Safety
 /// `response` must be null or a live pointer returned by a YuneWeb operation.
 #[no_mangle]
 pub unsafe extern "C" fn yune_web_response_handled(response: *const YuneWebResponse) -> Bool {
-    if response.is_null() {
-        return FALSE;
-    }
-    unsafe { (*response).handled }
+    crate::ffi_guard::guard(FALSE, || {
+        if response.is_null() {
+            return FALSE;
+        }
+        unsafe { (*response).handled }
+    })
 }
 
 /// # Safety
 /// `response` must be null or an unfreed pointer returned by a YuneWeb operation.
 #[no_mangle]
 pub unsafe extern "C" fn yune_web_free_response(response: *mut YuneWebResponse) {
-    if !response.is_null() {
-        drop(unsafe { Box::from_raw(response) });
-    }
+    crate::ffi_guard::guard_void(|| {
+        if !response.is_null() {
+            drop(unsafe { Box::from_raw(response) });
+        }
+    });
 }
 
 fn operate(

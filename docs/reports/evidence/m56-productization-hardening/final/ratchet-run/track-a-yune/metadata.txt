@@ -1,0 +1,14 @@
+engine=yune
+track=track-a-comparison
+schema=luna_pinyin
+dll=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-run\track-a-yune\rime.dll
+shared=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-run\track-a-yune\shared
+user=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-run\track-a-yune\user
+build=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-run\track-a-yune\user\build
+inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+iterations=9
+session_iterations=60
+key_iterations=80
+deploy_before_benchmark=false
+deploy_only=false
+managed_runtime=false

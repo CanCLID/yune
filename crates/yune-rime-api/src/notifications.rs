@@ -21,11 +21,13 @@ pub extern "C" fn RimeSetNotificationHandler(
     handler: Option<RimeNotificationHandler>,
     context_object: *mut c_void,
 ) {
-    let mut state = notification_state()
-        .lock()
-        .expect("notification state should not be poisoned");
-    state.handler = handler;
-    state.context_object = context_object as usize;
+    crate::ffi_guard::guard_void(|| {
+        let mut state = notification_state()
+            .lock()
+            .expect("notification state should not be poisoned");
+        state.handler = handler;
+        state.context_object = context_object as usize;
+    });
 }
 
 pub(crate) fn notify(session_id: RimeSessionId, message_type: &str, message_value: &str) {

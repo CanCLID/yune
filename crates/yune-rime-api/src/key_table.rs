@@ -1515,27 +1515,31 @@ const INPUT_METHOD_KEY_NAMES: &[(&[u8], c_int)] = &[
 /// `name` must be null or point to a valid NUL-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn RimeGetModifierByName(name: *const c_char) -> c_int {
-    let Some(name) = c_name(name) else {
-        return 0;
-    };
-    MODIFIERS
-        .iter()
-        .find_map(|(index, modifier)| {
-            (name == *modifier).then_some(1_i32.checked_shl(*index as u32).unwrap_or(0))
-        })
-        .unwrap_or(0)
+    crate::ffi_guard::guard(0, || {
+        let Some(name) = c_name(name) else {
+            return 0;
+        };
+        MODIFIERS
+            .iter()
+            .find_map(|(index, modifier)| {
+                (name == *modifier).then_some(1_i32.checked_shl(*index as u32).unwrap_or(0))
+            })
+            .unwrap_or(0)
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeGetModifierName(modifier: c_int) -> *const c_char {
-    if modifier == 0 {
-        return ptr::null();
-    }
-    let first_bit = modifier.trailing_zeros() as usize;
-    MODIFIERS
-        .iter()
-        .find_map(|(index, name)| (*index == first_bit).then_some(name.as_ptr().cast()))
-        .unwrap_or(ptr::null())
+    crate::ffi_guard::guard(std::ptr::null(), || {
+        if modifier == 0 {
+            return ptr::null();
+        }
+        let first_bit = modifier.trailing_zeros() as usize;
+        MODIFIERS
+            .iter()
+            .find_map(|(index, name)| (*index == first_bit).then_some(name.as_ptr().cast()))
+            .unwrap_or(ptr::null())
+    })
 }
 
 /// Returns the X11 keysym for a librime key name.
@@ -1545,15 +1549,19 @@ pub extern "C" fn RimeGetModifierName(modifier: c_int) -> *const c_char {
 /// `name` must be null or point to a valid NUL-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn RimeGetKeycodeByName(name: *const c_char) -> c_int {
-    let Some(name) = c_name(name) else {
-        return XK_VOID_SYMBOL;
-    };
-    lookup_keycode(name).unwrap_or(XK_VOID_SYMBOL)
+    crate::ffi_guard::guard(0, || {
+        let Some(name) = c_name(name) else {
+            return XK_VOID_SYMBOL;
+        };
+        lookup_keycode(name).unwrap_or(XK_VOID_SYMBOL)
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeGetKeyName(keycode: c_int) -> *const c_char {
-    lookup_key_name(keycode).map_or(ptr::null(), |name| name.as_ptr().cast())
+    crate::ffi_guard::guard(std::ptr::null(), || {
+        lookup_key_name(keycode).map_or(ptr::null(), |name| name.as_ptr().cast())
+    })
 }
 
 fn lookup_keycode(name: &[u8]) -> Option<c_int> {

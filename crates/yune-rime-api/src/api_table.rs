@@ -205,20 +205,22 @@ fn build_rime_api() -> RimeApi {
 
 #[no_mangle]
 pub extern "C" fn rime_get_api() -> *mut RimeApi {
-    api_entry()
+    crate::ffi_guard::guard(std::ptr::null_mut(), api_entry)
 }
 
 #[no_mangle]
 pub extern "C" fn rime_get_typeduck_profile_api() -> *mut RimeTypeDuckProfileApi {
-    typeduck_profile_api_entry()
+    crate::ffi_guard::guard(std::ptr::null_mut(), typeduck_profile_api_entry)
 }
 
 #[no_mangle]
 pub extern "C" fn rime_get_yune_windows_profile_api() -> *mut RimeYuneWindowsProfileApi {
-    yune_windows_profile_api_entry()
+    crate::ffi_guard::guard(std::ptr::null_mut(), yune_windows_profile_api_entry)
 }
 
 #[no_mangle]
 pub extern "C" fn rime_levers_get_api() -> *mut RimeCustomApi {
-    levers_api_entry().cast::<RimeCustomApi>()
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        levers_api_entry().cast::<RimeCustomApi>()
+    })
 }

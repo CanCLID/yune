@@ -1298,6 +1298,37 @@ was re-derived from honest per-key runs. Evidence:
   corrective per-key ratchet green twice with byte-backing enabled and Track A
   memory `<=125 MB`.
 
+### M56 Engine Productization Hardening
+
+**Status: complete.** M56 hardens the engine as a product dependency for
+external frontends without ABI widening or defined happy-path behavior changes.
+The corrected closeout preserves the WEB-03 launch product schema payload:
+optional poet storage is not shipped as default `*.poet.bin` assets.
+Evidence:
+`docs/reports/evidence/m56-productization-hardening/`.
+
+- [x] **M56-HARDEN-01**: Every compiled/persistent artifact kind from the
+  Phase 0 ledger has version/validity checking with loud rejection or rebuild,
+  stale-injection coverage, or an explicit artifact-specific disposition.
+- [x] **M56-HARDEN-02**: Standing cold/warm conformance tests deploy from
+  isolated temp shared/user dirs, then run a second deploy over the same temp
+  output to prove table/prism/reverse reuse for `luna_pinyin` and TypeDuck
+  `jyut6ping3`, with measured runtime recorded. The warm test does not depend
+  on newly committed product binaries or `*.poet.bin` payloads.
+- [x] **M56-HARDEN-03**: The user-data lifecycle ledger is fully
+  dispositioned: learning, persistence, recovery, format freeze, and sync
+  surface rows are tested or contracted, with zero silent gaps.
+- [x] **M56-HARDEN-04**: Every discovered `extern "C"` export is unwind-guarded
+  by test-enforced inventory; the ABI abuse suite passes with zero panic
+  escapes, conservative failure returns, and post-poison happy-path recovery.
+- [x] **M56-HARDEN-05**: Yune-defined staleness, recovery, crash/poison,
+  threading, and release panic policies are documented in the engine support
+  contract with enforcing tests cited in evidence.
+- [x] **M56-HARDEN-06**: Closeout passes the full quality gate, parity suites,
+  and the standing M55 corrective native ratchet. The ratchet is a guarded
+  regression pass with tight headroom on short-key and 37-char dimensions, not
+  a new faster baseline.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1464,6 +1495,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M55-PERF-06 | M55 | Complete (corrected) - docs reflect the corrected record; pre-existing candidate-page divergence vs librime is disclosed |
 | M55-PERF-07 | M55 | Complete (corrected) - `YUNE-POET/2` redesign landed; default-on re-land is a named future owner (scratch port), not achieved |
 | M55-PERF-08 | M55 | Reversed - the default-on flip's supporting ratchets were contaminated (key deferral + short-key aliases); flip reversed in the corrective series; the rule itself stands for any future flip |
+| M56-HARDEN-01 | M56 | Complete - artifact inventory rows have loud stale/corrupt handling or explicit artifact-specific dispositions |
+| M56-HARDEN-02 | M56 | Complete - cold/warm conformance tests cover `luna_pinyin` and TypeDuck `jyut6ping3` product paths using isolated temp deploy output, not new committed product binaries |
+| M56-HARDEN-03 | M56 | Complete - user-data learning, persistence, recovery, format-freeze, and sync rows are tested or contracted |
+| M56-HARDEN-04 | M56 | Complete - all discovered C ABI exports are guard-inventory tested and ABI abuse tests pass |
+| M56-HARDEN-05 | M56 | Complete - support contract documents staleness, user-data, crash/poison, threading, and release panic policies |
+| M56-HARDEN-06 | M56 | Complete - full quality gate, parity suites, and standing M55 ratchet closeout evidence are recorded under the M56 evidence root; ratchet pass is guarded with tight headroom rather than a performance-win claim |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -1762,9 +1799,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M54 native octagram grammar support requirements: 7 total, 7 complete, 0 active
 - WEB-04 octagram debug harness requirements: 5 total, 5 complete, 0 active
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
-- Mapped to phases: 399
+- M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
+- Mapped to phases: 405
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M55 is complete under the corrective re-baseline: the pre-corrective default-on closeout was retracted (measurement artifacts reverted; `YUNE-POET/2` is explicit opt-in), the benchmark reads context per keypress, and the corrective `m55-thresholds.csv` is the standing native Track A gate, green twice (`corrective-2026-07-04/gate-run-d`, `gate-run-e`) with the shipping default at `185.7 MB` and the opt-in byte-backed path at `113.2 MB` (latency-blocked)._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-04 - M56 is complete: productization hardening added loud compiled-artifact staleness handling, isolated cold/warm conformance for `luna_pinyin` and TypeDuck `jyut6ping3`, user-data lifecycle coverage, guarded C ABI exports, ABI abuse tests, session-registry poison recovery, and the retained release `panic = "abort"` strategy. The corrected closeout keeps optional poet storage out of the default product schema payload, and the M55 corrective `m55-thresholds.csv` remains the standing native Track A gate._

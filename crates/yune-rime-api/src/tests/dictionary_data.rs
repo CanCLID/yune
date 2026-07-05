@@ -59,7 +59,7 @@ fn dictionary_data_ignores_compiled_poet_artifact_until_explicitly_enabled() {
 }
 
 #[test]
-fn dictionary_data_falls_back_to_source_when_compiled_is_missing_or_corrupt() {
+fn dictionary_data_falls_back_to_source_when_compiled_is_missing() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     let root = unique_temp_dir("dictionary-data-fallback");
@@ -74,22 +74,41 @@ fn dictionary_data_falls_back_to_source_when_compiled_is_missing_or_corrupt() {
         ]
     );
 
+    fixture.cleanup();
+}
+
+#[test]
+fn dictionary_data_rejects_corrupt_compiled_artifacts_without_source_fallback() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("dictionary-data-corrupt-compiled");
+    let fixture = DictionaryDataFixture::new(&root, true);
+    fixture.setup_runtime();
     fs::write(fixture.shared.join("luna.table.bin"), [0xff, 0x00]).expect("corrupt table written");
     fs::write(fixture.shared.join("luna.prism.bin"), [0xff, 0x00]).expect("corrupt prism written");
     fs::write(fixture.shared.join("luna.reverse.bin"), [0xff, 0x00])
         .expect("corrupt reverse written");
-    assert_eq!(
-        fixture.candidates_for_schema("luna", "ba")[..2],
-        [
-            ("八".to_owned(), "ba".to_owned()),
-            ("爸".to_owned(), "ba".to_owned())
-        ]
-    );
+
+    let candidates = fixture.candidates_for_schema("luna", "ba");
+
+    assert_eq!(candidates, [("ba".to_owned(), "echo".to_owned())]);
     let deferrals =
         remaining_gear_deferrals_snapshot(fixture.last_session_id()).expect("session should exist");
-    assert!(deferrals
-        .iter()
-        .any(|deferral| deferral.gear == "dictionary_source_fallback"));
+    assert!(
+        deferrals.iter().any(|deferral| {
+            deferral.gear == "dictionary_load"
+                && deferral
+                    .current_yune_behavior
+                    .contains("CompiledRejected")
+        }),
+        "corrupt compiled artifacts must be a visible load failure, not silent source fallback: {deferrals:?}"
+    );
+    assert!(
+        !deferrals
+            .iter()
+            .any(|deferral| deferral.gear == "dictionary_source_fallback"),
+        "corrupt compiled artifacts must not source-fallback silently: {deferrals:?}"
+    );
     fixture.cleanup();
 }
 
@@ -139,7 +158,7 @@ fn dictionary_data_rejects_unsafe_resource_ids_before_lookup() {
 }
 
 #[test]
-fn dictionary_data_malformed_payloads_are_schema_visible_fallbacks() {
+fn dictionary_data_malformed_payloads_are_schema_visible_failures() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     let cases: Vec<(&str, Vec<u8>)> = vec![
@@ -157,12 +176,16 @@ fn dictionary_data_malformed_payloads_are_schema_visible_fallbacks() {
         fixture.setup_runtime();
         fs::write(fixture.shared.join("luna.table.bin"), table_bytes)
             .expect("malformed table written");
-        assert_eq!(
-            fixture.candidates_for_schema("luna", "ba")[..2],
-            [
-                ("八".to_owned(), "ba".to_owned()),
-                ("爸".to_owned(), "ba".to_owned())
-            ]
+        let candidates = fixture.candidates_for_schema("luna", "ba");
+        assert_eq!(candidates, [("ba".to_owned(), "echo".to_owned())]);
+        let deferrals = remaining_gear_deferrals_snapshot(fixture.last_session_id())
+            .expect("session should exist");
+        assert!(
+            deferrals.iter().any(|deferral| {
+                deferral.gear == "dictionary_load"
+                    && deferral.current_yune_behavior.contains("CompiledRejected")
+            }),
+            "case {case} expected visible compiled rejection in {deferrals:?}"
         );
         fixture.cleanup();
     }
@@ -401,18 +424,13 @@ fn dictionary_data_malformed_correction_tolerance_sections_fail_closed() {
         fs::write(fixture.shared.join("luna.prism.bin"), prism_bytes)
             .expect("malformed prism should be written");
 
-        assert_eq!(
-            fixture.candidates_for_schema("luna", "ba")[..2],
-            [
-                ("八".to_owned(), "ba".to_owned()),
-                ("爸".to_owned(), "ba".to_owned())
-            ]
-        );
+        let candidates = fixture.candidates_for_schema("luna", "ba");
+        assert_eq!(candidates, [("ba".to_owned(), "echo".to_owned())]);
         let deferrals = remaining_gear_deferrals_snapshot(fixture.last_session_id())
             .expect("session should exist");
         assert!(
             deferrals.iter().any(|deferral| {
-                deferral.gear == "dictionary_source_fallback"
+                deferral.gear == "dictionary_load"
                     && deferral.current_yune_behavior.contains(expected_reason)
             }),
             "case {case} expected {expected_reason} in {deferrals:?}"

@@ -11,11 +11,12 @@ use std::{
 
 use serde_yaml::{Mapping, Number, Value};
 use yune_core::{
-    execute_rebuild_plan, memory_probe_mark, parse_poet_bin_dictionary_checksum,
-    parse_rime_prism_bin_metadata, parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata,
-    parse_rime_table_bin_metadata, rime_checksum_bytes, rime_dict_rebuild_plan,
-    rime_dict_source_checksum, RimeDictArtifactStatus, RimeDictRebuildExecutionReport,
-    RimeDictRebuildInput, RimeDictRebuildSources, RimePrismChecksumMetadata, TableDictionary,
+    byte_backed_lookup_records_from_table_bin_bytes, execute_rebuild_plan, memory_probe_mark,
+    parse_poet_bin_dictionary_checksum, parse_rime_prism_bin_metadata,
+    parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata,
+    rime_checksum_bytes, rime_dict_rebuild_plan, rime_dict_source_checksum, RimeDictArtifactStatus,
+    RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildSources,
+    RimePrismChecksumMetadata, TableDictionary,
 };
 
 use crate::{
@@ -36,46 +37,54 @@ use crate::{
 /// `traits` follows the same preconditions as `RimeSetup`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeInitialize(traits: *const RimeTraits) {
-    let _trace = crate::startup_trace::span("runtime_initialize");
-    // SAFETY: forwarded preconditions are identical to `RimeSetup`.
-    unsafe { RimeSetup(traits) };
-    service_started().store(true, Ordering::SeqCst);
+    crate::ffi_guard::guard_void(|| {
+        let _trace = crate::startup_trace::span("runtime_initialize");
+        // SAFETY: forwarded preconditions are identical to `RimeSetup`.
+        unsafe { RimeSetup(traits) };
+        service_started().store(true, Ordering::SeqCst);
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn RimeFinalize() {
-    let _trace = crate::startup_trace::span("runtime_finalize");
-    RimeCleanupAllSessions();
-    service_started().store(false, Ordering::SeqCst);
+    crate::ffi_guard::guard_void(|| {
+        let _trace = crate::startup_trace::span("runtime_finalize");
+        RimeCleanupAllSessions();
+        service_started().store(false, Ordering::SeqCst);
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn RimeStartMaintenance(full_check: Bool) -> Bool {
-    let _ = clean_old_log_files();
-    if !run_installation_update() {
-        return FALSE;
-    }
-    if full_check == FALSE && !detect_modifications() {
-        return FALSE;
-    }
-    crate::notify(0, "deploy", "start");
-    let success = run_workspace_maintenance_tasks();
-    crate::notify(0, "deploy", if success { "success" } else { "failure" });
-    bool_from(success)
+    crate::ffi_guard::guard(FALSE, || {
+        let _ = clean_old_log_files();
+        if !run_installation_update() {
+            return FALSE;
+        }
+        if full_check == FALSE && !detect_modifications() {
+            return FALSE;
+        }
+        crate::notify(0, "deploy", "start");
+        let success = run_workspace_maintenance_tasks();
+        crate::notify(0, "deploy", if success { "success" } else { "failure" });
+        bool_from(success)
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeStartMaintenanceOnWorkspaceChange() -> Bool {
-    RimeStartMaintenance(FALSE)
+    crate::ffi_guard::guard(FALSE, || RimeStartMaintenance(FALSE))
 }
 
 #[no_mangle]
 pub extern "C" fn RimeIsMaintenancing() -> Bool {
-    FALSE
+    crate::ffi_guard::guard(FALSE, || FALSE)
 }
 
 #[no_mangle]
-pub extern "C" fn RimeJoinMaintenanceThread() {}
+pub extern "C" fn RimeJoinMaintenanceThread() {
+    crate::ffi_guard::guard_void(|| {});
+}
 
 /// Initializes deployer state using the same trait handling as `RimeSetup`.
 ///
@@ -84,35 +93,41 @@ pub extern "C" fn RimeJoinMaintenanceThread() {}
 /// `traits` follows the same preconditions as `RimeSetup`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeDeployerInitialize(traits: *const RimeTraits) {
-    // SAFETY: forwarded preconditions are identical to `RimeSetup`.
-    unsafe { RimeSetup(traits) };
+    crate::ffi_guard::guard_void(|| {
+        // SAFETY: forwarded preconditions are identical to `RimeSetup`.
+        unsafe { RimeSetup(traits) };
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn RimePrebuildAllSchemas() -> Bool {
-    bool_from(prebuild_all_schemas())
+    crate::ffi_guard::guard(FALSE, || bool_from(prebuild_all_schemas()))
 }
 
 #[no_mangle]
 pub extern "C" fn RimeDeployWorkspace() -> Bool {
-    memory_probe_mark("m47:deploy_workspace:start");
-    if !run_installation_update() {
-        return FALSE;
-    }
-    memory_probe_mark("m47:deploy_workspace:after_installation_update");
-    if !run_workspace_maintenance_tasks() {
-        return FALSE;
-    }
-    memory_probe_mark("m47:deploy_workspace:after_workspace_maintenance");
-    TRUE
+    crate::ffi_guard::guard(FALSE, || {
+        memory_probe_mark("m47:deploy_workspace:start");
+        if !run_installation_update() {
+            return FALSE;
+        }
+        memory_probe_mark("m47:deploy_workspace:after_installation_update");
+        if !run_workspace_maintenance_tasks() {
+            return FALSE;
+        }
+        memory_probe_mark("m47:deploy_workspace:after_workspace_maintenance");
+        TRUE
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeDeploySchema(schema_file: *const c_char) -> Bool {
-    let Some(schema_file) = optional_c_string(schema_file) else {
-        return FALSE;
-    };
-    bool_from(deploy_schema_file(&schema_file))
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(schema_file) = optional_c_string(schema_file) else {
+            return FALSE;
+        };
+        bool_from(deploy_schema_file(&schema_file))
+    })
 }
 
 #[no_mangle]
@@ -120,64 +135,70 @@ pub extern "C" fn RimeDeployConfigFile(
     file_name: *const c_char,
     version_key: *const c_char,
 ) -> Bool {
-    let Some(file_name) = optional_c_string(file_name) else {
-        return FALSE;
-    };
-    let Some(version_key) = optional_c_string(version_key) else {
-        return FALSE;
-    };
-    bool_from(deploy_config_file(&file_name, &version_key))
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(file_name) = optional_c_string(file_name) else {
+            return FALSE;
+        };
+        let Some(version_key) = optional_c_string(version_key) else {
+            return FALSE;
+        };
+        bool_from(deploy_config_file(&file_name, &version_key))
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeSyncUserData() -> Bool {
-    RimeCleanupAllSessions();
-    crate::notify(0, "deploy", "start");
-    let installation_synced = run_installation_update();
-    let configs_synced = backup_config_files();
-    let user_dicts_synced = sync_all_user_dicts();
-    let success = installation_synced && configs_synced && user_dicts_synced;
-    crate::notify(0, "deploy", if success { "success" } else { "failure" });
-    bool_from(success)
+    crate::ffi_guard::guard(FALSE, || {
+        RimeCleanupAllSessions();
+        crate::notify(0, "deploy", "start");
+        let installation_synced = run_installation_update();
+        let configs_synced = backup_config_files();
+        let user_dicts_synced = sync_all_user_dicts();
+        let success = installation_synced && configs_synced && user_dicts_synced;
+        crate::notify(0, "deploy", if success { "success" } else { "failure" });
+        bool_from(success)
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
-    let Some(task_name) = optional_c_string(task_name) else {
-        return FALSE;
-    };
-    if task_name == "user_dict_sync" {
-        return bool_from(sync_all_user_dicts());
-    }
-    if task_name == "backup_config_files" {
-        return bool_from(backup_config_files());
-    }
-    if task_name == "installation_update" {
-        return bool_from(run_installation_update());
-    }
-    if task_name == "clean_old_log_files" {
-        return bool_from(clean_old_log_files());
-    }
-    if task_name == "cleanup_trash" {
-        return bool_from(cleanup_trash());
-    }
-    if task_name == "workspace_update" {
-        return bool_from(workspace_update());
-    }
-    if let Some(schema_id) = task_name.strip_prefix("workspace_update:") {
-        let Some(schema_id) = validate_data_resource_id(schema_id) else {
+    crate::ffi_guard::guard(FALSE, || {
+        let Some(task_name) = optional_c_string(task_name) else {
             return FALSE;
         };
-        let mut built = HashSet::new();
-        return bool_from(workspace_update_schema(&schema_id, false, &mut built));
-    }
-    if task_name == "user_dict_upgrade" {
-        return bool_from(user_dict_upgrade());
-    }
-    if task_name == "prebuild_all_schemas" {
-        return bool_from(prebuild_all_schemas());
-    }
-    FALSE
+        if task_name == "user_dict_sync" {
+            return bool_from(sync_all_user_dicts());
+        }
+        if task_name == "backup_config_files" {
+            return bool_from(backup_config_files());
+        }
+        if task_name == "installation_update" {
+            return bool_from(run_installation_update());
+        }
+        if task_name == "clean_old_log_files" {
+            return bool_from(clean_old_log_files());
+        }
+        if task_name == "cleanup_trash" {
+            return bool_from(cleanup_trash());
+        }
+        if task_name == "workspace_update" {
+            return bool_from(workspace_update());
+        }
+        if let Some(schema_id) = task_name.strip_prefix("workspace_update:") {
+            let Some(schema_id) = validate_data_resource_id(schema_id) else {
+                return FALSE;
+            };
+            let mut built = HashSet::new();
+            return bool_from(workspace_update_schema(&schema_id, false, &mut built));
+        }
+        if task_name == "user_dict_upgrade" {
+            return bool_from(user_dict_upgrade());
+        }
+        if task_name == "prebuild_all_schemas" {
+            return bool_from(prebuild_all_schemas());
+        }
+        FALSE
+    })
 }
 
 pub(crate) fn run_installation_update() -> bool {
@@ -714,7 +735,23 @@ fn workspace_update_dictionary_artifacts(schema_id: &str, schema_config: &Value)
                     dictionary_id: request.dictionary_id,
                     report,
                 }),
-            None => success = false,
+            None => {
+                success = false;
+                if validate_data_resource_id(&request.dictionary_id).is_some() {
+                    dictionary_rebuild_reports()
+                        .lock()
+                        .expect("dictionary rebuild reports should not be poisoned")
+                        .push(WorkspaceDictionaryRebuildReport {
+                            schema_id: schema_id.to_owned(),
+                            dictionary_id: request.dictionary_id,
+                            report: RimeDictRebuildExecutionReport {
+                                table: RimeDictArtifactStatus::MissingSourceAndCompiled,
+                                prism: RimeDictArtifactStatus::MissingSourceAndCompiled,
+                                reverse: RimeDictArtifactStatus::MissingSourceAndCompiled,
+                            },
+                        });
+                }
+            }
         }
     }
     success
@@ -900,6 +937,14 @@ fn workspace_update_dictionary_artifact(
         file_size_bytes(&prebuilt_prism_path).unwrap_or(0),
         file_size_bytes(&prebuilt_reverse_path).unwrap_or(0)
     ));
+    let typeduck_lookup_table_missing = request.typeduck_lookup_filter
+        && if table_exists {
+            !table_has_typeduck_lookup_records(&table_path, source_yaml.as_deref())
+        } else if prebuilt_table_path.is_file() {
+            !table_has_typeduck_lookup_records(&prebuilt_table_path, source_yaml.as_deref())
+        } else {
+            true
+        };
 
     let schema_checksum =
         schema_dictionary_checksum(schema_config_signature(schema_config, &dictionary_id));
@@ -910,6 +955,7 @@ fn workspace_update_dictionary_artifact(
         schema_file_checksum: schema_checksum,
         table_dict_file_checksum: table_dict_file_checksum.or(prebuilt_table_dict_file_checksum),
         poet_dict_file_checksum: poet_dict_file_checksum.or(prebuilt_poet_dict_file_checksum),
+        poet_required: crate::schema_install::compiled_poet_consumption_enabled(),
         prism: prism_metadata.or(prebuilt_prism_metadata),
         reverse_dict_file_checksum: reverse_dict_file_checksum
             .or(prebuilt_reverse_dict_file_checksum),
@@ -917,7 +963,7 @@ fn workspace_update_dictionary_artifact(
         prebuilt_poet_available: prebuilt_poet_path.is_file(),
         prebuilt_prism_available: prebuilt_prism_path.is_file(),
         prebuilt_reverse_available: prebuilt_reverse_path.is_file(),
-        force_rebuild_table: request.force_rebuild_table,
+        force_rebuild_table: request.force_rebuild_table || typeduck_lookup_table_missing,
         force_rebuild_prism: request.force_rebuild_prism,
     };
     let plan = match rime_dict_rebuild_plan(input) {
@@ -1078,6 +1124,55 @@ fn read_file_prefix(path: &Path, byte_count: usize) -> Option<Vec<u8>> {
 
 fn file_size_bytes(path: &Path) -> Option<u64> {
     fs::metadata(path).ok().map(|metadata| metadata.len())
+}
+
+fn table_has_typeduck_lookup_records(path: &Path, source_yaml: Option<&str>) -> bool {
+    let source_sample = source_yaml.and_then(first_typeduck_lookup_source_text);
+    fs::read(path)
+        .ok()
+        .and_then(|bytes| byte_backed_lookup_records_from_table_bin_bytes(bytes).ok())
+        .flatten()
+        .is_some_and(|records| {
+            source_sample
+                .as_ref()
+                .map_or(records.record_count() > 0, |text| {
+                    records
+                        .records_for_text(text)
+                        .is_some_and(|records| !records.is_empty())
+                })
+        })
+}
+
+fn first_typeduck_lookup_source_text(dictionary_yaml: &str) -> Option<String> {
+    let mut in_body = false;
+    let mut comments_enabled = true;
+
+    for line in dictionary_yaml.lines() {
+        let line = line.trim_end();
+        if !in_body {
+            if line.trim() == "..." {
+                in_body = true;
+            }
+            continue;
+        }
+        if line.trim().is_empty() {
+            continue;
+        }
+        if comments_enabled && line.starts_with('#') {
+            if line == "# no comment" {
+                comments_enabled = false;
+            }
+            continue;
+        }
+        let Some((payload, text)) = line.split_once('\t') else {
+            continue;
+        };
+        if !text.is_empty() && payload.matches(',').count() >= 2 {
+            return Some(text.to_owned());
+        }
+    }
+
+    None
 }
 
 fn schema_config_signature(schema_config: &Value, dictionary_id: &str) -> Vec<u8> {

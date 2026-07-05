@@ -14,12 +14,14 @@ use crate::{
 /// `RimeFreeSchemaList`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeGetSchemaList(schema_list: *mut RimeSchemaList) -> Bool {
-    if schema_list.is_null() {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if schema_list.is_null() {
+            return FALSE;
+        }
 
-    clear_schema_list(schema_list);
-    populate_schema_list(schema_list, deployed_schema_list_entries())
+        clear_schema_list(schema_list);
+        populate_schema_list(schema_list, deployed_schema_list_entries())
+    })
 }
 
 fn populate_schema_list(schema_list: *mut RimeSchemaList, entries: Vec<(String, String)>) -> Bool {

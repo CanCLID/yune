@@ -310,6 +310,61 @@ grammar:
 }
 
 #[test]
+fn schema_octagram_loading_rejects_corrupt_gram_without_silent_grammar_success() {
+    let _guard = test_guard();
+    let temp = unique_temp_dir("resource-id-grammar-corrupt");
+    let shared = temp.join("shared");
+    let staging = temp.join("staging");
+    let user = temp.join("user");
+    fs::create_dir_all(&shared).expect("create shared dir");
+    fs::create_dir_all(&staging).expect("create staging dir");
+    fs::create_dir_all(&user).expect("create user dir");
+    fs::write(
+        staging.join("luna_pinyin.schema.yaml"),
+        "\
+schema:
+  schema_id: luna_pinyin
+engine:
+  translators:
+    - script_translator
+translator:
+  dictionary: luna_pinyin
+grammar:
+  language: m54_test
+",
+    )
+    .expect("write schema");
+    write_luna_test_dictionary(&shared);
+    fs::write(shared.join("m54_test.gram"), b"not a Rime::Grammar payload")
+        .expect("write corrupt gram");
+    setup_test_runtime_paths(&shared, &staging, &user);
+
+    let mut session = SessionState::default();
+    session.engine.set_schema("luna_pinyin", "luna_pinyin");
+    install_schema_translator_chain(&mut session, "luna_pinyin");
+    session.engine.process_sequence("jtyh");
+
+    assert!(session.remaining_gear_deferrals.iter().any(|deferral| {
+        deferral.gear == "grammar"
+            && deferral
+                .current_yune_behavior
+                .contains("left on NullGrammar: ParseRejected")
+    }));
+    let grammar_boosted_sentence = "\u{00e4}\u{00bb}\u{0160}\u{00e5}\u{00a4}\u{00a9}\u{00e6}\u{0153}\u{0192}\u{00e8}\u{00ad}\u{00b0}";
+    assert!(
+        session
+            .engine
+            .context()
+            .candidates
+            .iter()
+            .filter(|candidate| candidate.source == CandidateSource::Sentence)
+            .all(|candidate| candidate.text != grammar_boosted_sentence),
+        "corrupt grammar must not silently produce the grammar-boosted sentence"
+    );
+    let _ = fs::remove_dir_all(temp);
+}
+
+#[test]
 fn schema_octagram_loading_allows_named_web04_luna_pinyin_octagram_profile() {
     let _guard = test_guard();
     let (temp, shared, staging, user) = write_luna_octagram_test_runtime(

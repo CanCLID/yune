@@ -1774,7 +1774,7 @@ fn load_schema_dictionary_by_name(
     match compiled {
         Ok(compiled) => DictionaryLoadOutcome::Compiled(Box::new(compiled)),
         Err(reason) => match source_yaml {
-            Some(dictionary_yaml) => {
+            Some(dictionary_yaml) if reason == CompiledRejectReason::Missing => {
                 let parsed = {
                     let _trace = startup_trace::span("source_dictionary_parse_if_any");
                     parse_schema_source_dictionary(schema_config, name_space, &dictionary_yaml)
@@ -1790,6 +1790,10 @@ fn load_schema_dictionary_by_name(
                     },
                 }
             }
+            Some(_) => DictionaryLoadOutcome::NoUsablePath {
+                dictionary_id: dictionary_name,
+                reason: DictionaryLoadFailure::CompiledRejected(reason),
+            },
             None => {
                 let failure = if reason == CompiledRejectReason::Missing {
                     DictionaryLoadFailure::SourceMissing
@@ -2071,7 +2075,7 @@ fn load_schema_compiled_dictionary(
     })
 }
 
-fn compiled_poet_consumption_enabled() -> bool {
+pub(crate) fn compiled_poet_consumption_enabled() -> bool {
     matches!(std::env::var("YUNE_POET_BYTE_BACKED").as_deref(), Ok("1"))
 }
 
@@ -2304,14 +2308,13 @@ fn record_dictionary_source_fallback(session: &mut SessionState, reason: Compile
     session
         .remaining_gear_deferrals
         .push(RemainingGearDeferral {
-        gear: "dictionary_source_fallback".to_owned(),
-        observed_librime_role: "compiled dictionary reject with source fallback".to_owned(),
-        current_yune_behavior,
-        scope_decision:
-            "prefer source dictionary when compiled data is missing, stale, unsupported, or invalid"
+            gear: "dictionary_source_fallback".to_owned(),
+            observed_librime_role: "compiled dictionary reject with source fallback".to_owned(),
+            current_yune_behavior,
+            scope_decision: "prefer source dictionary only when compiled data is missing"
                 .to_owned(),
-        target_phase: "04-compiled-dictionary-data".to_owned(),
-    });
+            target_phase: "04-compiled-dictionary-data".to_owned(),
+        });
 }
 
 fn record_dictionary_load_failure(

@@ -1,6 +1,6 @@
 # Engine Support Contract
 
-Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI.
+Status: Active since M51; unchanged by M52 (performance guardrails only, no ABI/export/storage boundary change); re-verified against the code by the M53 release-readiness audit; updated by M54 to add named native octagram-compatible grammar support without changing the public C ABI; updated by M56 to add productization hardening policies for compiled-artifact staleness, user-data lifecycle, ABI crash behavior, threading, poison recovery, and release panic strategy without widening the ABI.
 
 This contract defines Yune's launch-facing engine support boundary. It is a
 contract for engine behavior, storage, ABI shape, and evidence lanes; it is not
@@ -142,6 +142,88 @@ readiness:
 Retained heap indexes are allowed only with owner evidence proving they are
 small enough for the target. A retained prefix/vocabulary index must not be
 introduced silently as a compatibility or latency shortcut.
+
+## Productization Hardening Contract
+
+M56 defines product-facing hardening behavior for external frontends without
+adding ABI fields or changing named happy-path behavior.
+
+### Compiled Artifact Staleness
+
+Compiled artifacts are valid only when their magic/version/shape checks pass.
+For the named product paths (`luna_pinyin` and TypeDuck `jyut6ping3`), cold and
+warm deploy/select/type conformance tests must keep candidate output pinned to
+the relevant oracle fixtures.
+
+Policy:
+
+- missing compiled artifacts may rebuild from source where the deployment path
+  owns source assets;
+- present but corrupt, truncated, stale, or unsupported compiled artifacts must
+  fail loudly or rebuild on the real deployment path;
+- source fallback must not silently mask a present bad artifact;
+- optional poet byte-backed storage is controlled by `YUNE_POET_BYTE_BACKED=1`
+  and is not part of the default product payload; a missing or stale
+  `*.poet.bin` must not force default table/prism/reverse rebuilds when that
+  opt-in is disabled;
+- optional artifact kinds outside the named product paths, such as `.gram`, get
+  artifact-specific stale-injection tests rather than fictional product-path
+  coverage.
+
+### User Data Lifecycle
+
+User-data behavior is supported as Yune-defined product behavior unless an
+oracle fixture explicitly pins librime behavior for a row.
+
+Policy:
+
+- learning effects must survive session recreation and full RIME reinitialize
+  over the same user directory;
+- the current file-store format is frozen by tests; any future format change
+  needs a migration test and an updated contract row;
+- corrupt committed user stores fail closed for learned data while preserving
+  ordinary table candidates;
+- backup/restore and partial sync failure must preserve local usability and
+  report failed peers rather than silently treating a partial merge as fully
+  successful.
+
+### ABI Crash, Threading, And Poison Recovery
+
+Every discovered `#[no_mangle] extern "C"` export in `yune-rime-api` enters
+through the standardized FFI guard. In unwind-capable test/dev builds, a panic
+inside an ABI entry point returns the slot's conservative failure value
+(`FALSE`, `0`, or null pointer/string-slice) instead of unwinding across the C
+boundary. Arbitrary dangling non-null pointers remain caller undefined
+behavior; no C ABI guard can make those safe.
+
+The threading promise is intentionally narrow: process-global runtime/session
+state is internally synchronized, and cross-thread calls using valid session
+ids are tolerated without panicking, but M56 does not promise parallel progress,
+wait-free behavior, or safe aliasing of caller-owned mutable objects across
+threads.
+
+If the process-global session registry mutex is poisoned in an unwind build,
+the public ABI path recovers the poisoned guard and must keep a follow-up
+ordinary lifecycle call usable. This is a recovery policy for Yune's own
+process state, not a guarantee that an interrupted caller-owned operation was
+semantically completed. Exhaustive poisoning of every process-global registry
+and runtime-path lock remains future hardening unless a later frontend exposes
+a concrete product risk.
+
+### Release Panic Strategy
+
+The workspace release profile remains:
+
+```toml
+[profile.release]
+panic = "abort"
+```
+
+Release `cdylib` artifacts therefore still abort if a panic is reachable. M56's
+release guarantee is the no-reachable-panic abuse suite plus guarded
+debug/test behavior, not cross-language unwinding in shipped builds. Flipping a
+future release artifact to unwind requires separate binary-size, latency, WASM,
+and product evidence plus a contract update.
 
 ## Behavior And Performance Evidence Contract
 

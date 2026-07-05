@@ -22,6 +22,7 @@ rsmarisa = "0.4.2"
 
 [dev-dependencies]
 libloading = "0.8"
+proptest = "1"
 
 [lints.rust]
 unsafe_code = "allow"

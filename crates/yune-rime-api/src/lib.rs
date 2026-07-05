@@ -29,6 +29,7 @@ mod config_api;
 mod config_compiler;
 mod context_api;
 mod deployment;
+mod ffi_guard;
 mod ffi_memory;
 mod key_table;
 mod levers;
@@ -489,416 +490,424 @@ pub const M37_METRIC_FIELDS: &[&str] = &[
 
 #[no_mangle]
 pub extern "C" fn yune_m37_metrics_enable(enabled: Bool) {
-    yune_core::m37_metrics_enable(enabled != FALSE);
+    crate::ffi_guard::guard_void(|| {
+        yune_core::m37_metrics_enable(enabled != FALSE);
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn yune_m37_metrics_reset() {
-    yune_core::m37_metrics_reset();
+    crate::ffi_guard::guard_void(|| {
+        yune_core::m37_metrics_reset();
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn yune_m37_metrics_snapshot_json() -> *mut c_char {
-    let metrics = yune_core::m37_metrics_snapshot();
-    let mut json = serde_json::Map::new();
-    macro_rules! metric {
-        ($name:literal, $value:expr) => {
-            json.insert($name.to_owned(), serde_json::Value::from($value));
-        };
-    }
-    metric!("process_key_calls", metrics.process_key_calls);
-    metric!("process_key_ns", metrics.process_key_ns);
-    metric!("translator_calls", metrics.translator_calls);
-    metric!("translator_ns", metrics.translator_ns);
-    metric!("lookup_views_visited", metrics.lookup_views_visited);
-    metric!(
-        "owned_candidates_materialized",
-        metrics.owned_candidates_materialized
-    );
-    metric!(
-        "owned_candidate_materialization_ns",
-        metrics.owned_candidate_materialization_ns
-    );
-    metric!("candidates_sorted", metrics.candidates_sorted);
-    metric!("candidate_sort_ns", metrics.candidate_sort_ns);
-    metric!("userdb_merge_ns", metrics.userdb_merge_ns);
-    metric!("filter_pipeline_ns", metrics.filter_pipeline_ns);
-    metric!("ranker_pipeline_ns", metrics.ranker_pipeline_ns);
-    metric!("ai_merge_ns", metrics.ai_merge_ns);
-    metric!("candidates_stored", metrics.candidates_stored);
-    metric!(
-        "context_full_snapshot_candidates_cloned",
-        metrics.context_full_snapshot_candidates_cloned
-    );
-    metric!(
-        "context_page_snapshot_candidates_cloned",
-        metrics.context_page_snapshot_candidates_cloned
-    );
-    metric!("abi_get_context_calls", metrics.abi_get_context_calls);
-    metric!("abi_get_context_ns", metrics.abi_get_context_ns);
-    metric!("abi_candidates_exported", metrics.abi_candidates_exported);
-    metric!("abi_free_context_calls", metrics.abi_free_context_calls);
-    metric!("abi_free_context_ns", metrics.abi_free_context_ns);
-    metric!(
-        "candidate_request_bounded_calls",
-        metrics.candidate_request_bounded_calls
-    );
-    metric!(
-        "candidate_request_unbounded_calls",
-        metrics.candidate_request_unbounded_calls
-    );
-    metric!(
-        "candidate_request_page_limit_total",
-        metrics.candidate_request_page_limit_total
-    );
-    metric!(
-        "candidate_request_surplus_total",
-        metrics.candidate_request_surplus_total
-    );
-    metric!("bounded_iterator_calls", metrics.bounded_iterator_calls);
-    metric!(
-        "bounded_iterator_limit_total",
-        metrics.bounded_iterator_limit_total
-    );
-    metric!(
-        "bounded_iterator_selected_total",
-        metrics.bounded_iterator_selected_total
-    );
-    metric!(
-        "bounded_iterator_full_count_total",
-        metrics.bounded_iterator_full_count_total
-    );
-    metric!(
-        "full_list_translation_calls",
-        metrics.full_list_translation_calls
-    );
-    metric!("full_list_fallback_count", metrics.full_list_fallback_count);
-    metric!("exact_lookup_calls", metrics.exact_lookup_calls);
-    metric!("exact_lookup_ns", metrics.exact_lookup_ns);
-    metric!("exact_lookup_candidates", metrics.exact_lookup_candidates);
-    metric!("prefix_lookup_calls", metrics.prefix_lookup_calls);
-    metric!("prefix_lookup_ns", metrics.prefix_lookup_ns);
-    metric!("prefix_lookup_candidates", metrics.prefix_lookup_candidates);
-    metric!("heap_exact_lookup_calls", metrics.heap_exact_lookup_calls);
-    metric!("heap_prefix_lookup_calls", metrics.heap_prefix_lookup_calls);
-    metric!(
-        "no_marisa_compact_exact_lookup_calls",
-        metrics.no_marisa_compact_exact_lookup_calls
-    );
-    metric!(
-        "no_marisa_compact_prefix_lookup_calls",
-        metrics.no_marisa_compact_prefix_lookup_calls
-    );
-    metric!(
-        "rsmarisa_exact_lookup_calls",
-        metrics.rsmarisa_exact_lookup_calls
-    );
-    metric!(
-        "rsmarisa_prefix_lookup_calls",
-        metrics.rsmarisa_prefix_lookup_calls
-    );
-    metric!("prism_lookup_calls", metrics.prism_lookup_calls);
-    metric!("prism_lookup_ns", metrics.prism_lookup_ns);
-    metric!("prism_lookup_codes", metrics.prism_lookup_codes);
-    metric!("abi_c_string_allocations", metrics.abi_c_string_allocations);
-    metric!("abi_c_string_bytes", metrics.abi_c_string_bytes);
-    metric!(
-        "abi_c_string_allocation_ns",
-        metrics.abi_c_string_allocation_ns
-    );
-    metric!("sentence_candidate_calls", metrics.sentence_candidate_calls);
-    metric!("sentence_candidate_ns", metrics.sentence_candidate_ns);
-    metric!(
-        "sentence_substrings_considered",
-        metrics.sentence_substrings_considered
-    );
-    metric!(
-        "sentence_exact_lookup_calls",
-        metrics.sentence_exact_lookup_calls
-    );
-    metric!("sentence_exact_lookup_ns", metrics.sentence_exact_lookup_ns);
-    metric!(
-        "sentence_exact_lookup_candidates",
-        metrics.sentence_exact_lookup_candidates
-    );
-    metric!(
-        "sentence_prefix_lookup_calls",
-        metrics.sentence_prefix_lookup_calls
-    );
-    metric!(
-        "sentence_prefix_lookup_ns",
-        metrics.sentence_prefix_lookup_ns
-    );
-    metric!(
-        "sentence_prefix_lookup_candidates",
-        metrics.sentence_prefix_lookup_candidates
-    );
-    metric!(
-        "sentence_entry_matches_collected",
-        metrics.sentence_entry_matches_collected
-    );
-    metric!("sentence_path_clones", metrics.sentence_path_clones);
-    metric!(
-        "sentence_path_replacements",
-        metrics.sentence_path_replacements
-    );
-    metric!("sentence_paths_pruned", metrics.sentence_paths_pruned);
-    metric!("sentence_max_live_paths", metrics.sentence_max_live_paths);
-    metric!(
-        "sentence_result_candidates",
-        metrics.sentence_result_candidates
-    );
-    metric!(
-        "upstream_sentence_model_calls",
-        metrics.upstream_sentence_model_calls
-    );
-    metric!(
-        "upstream_sentence_model_ns",
-        metrics.upstream_sentence_model_ns
-    );
-    metric!(
-        "upstream_sentence_model_candidates",
-        metrics.upstream_sentence_model_candidates
-    );
-    metric!(
-        "upstream_sentence_model_code_prefix_checks",
-        metrics.upstream_sentence_model_code_prefix_checks
-    );
-    metric!(
-        "upstream_sentence_model_table_entries_considered",
-        metrics.upstream_sentence_model_table_entries_considered
-    );
-    metric!(
-        "upstream_sentence_model_vocabulary_entries_considered",
-        metrics.upstream_sentence_model_vocabulary_entries_considered
-    );
-    metric!(
-        "upstream_sentence_model_graph_edges",
-        metrics.upstream_sentence_model_graph_edges
-    );
-    metric!(
-        "upstream_sentence_model_index_build_calls",
-        metrics.upstream_sentence_model_index_build_calls
-    );
-    metric!(
-        "upstream_sentence_model_index_build_ns",
-        metrics.upstream_sentence_model_index_build_ns
-    );
-    metric!(
-        "upstream_sentence_model_exact_range_index_hits",
-        metrics.upstream_sentence_model_exact_range_index_hits
-    );
-    metric!(
-        "upstream_sentence_model_exact_range_index_misses",
-        metrics.upstream_sentence_model_exact_range_index_misses
-    );
-    metric!(
-        "upstream_sentence_model_prefix_filter_hits",
-        metrics.upstream_sentence_model_prefix_filter_hits
-    );
-    metric!(
-        "upstream_sentence_model_prefix_filter_misses",
-        metrics.upstream_sentence_model_prefix_filter_misses
-    );
-    metric!(
-        "upstream_sentence_model_prefix_filter_early_breaks",
-        metrics.upstream_sentence_model_prefix_filter_early_breaks
-    );
-    metric!(
-        "upstream_sentence_model_reachable_starts_visited",
-        metrics.upstream_sentence_model_reachable_starts_visited
-    );
-    metric!(
-        "upstream_sentence_model_unreachable_starts_skipped",
-        metrics.upstream_sentence_model_unreachable_starts_skipped
-    );
-    metric!(
-        "upstream_sentence_model_phrase_index_walk_calls",
-        metrics.upstream_sentence_model_phrase_index_walk_calls
-    );
-    metric!(
-        "upstream_sentence_model_phrase_index_nodes_visited",
-        metrics.upstream_sentence_model_phrase_index_nodes_visited
-    );
-    metric!(
-        "upstream_sentence_model_phrase_index_entry_ranges_emitted",
-        metrics.upstream_sentence_model_phrase_index_entry_ranges_emitted
-    );
-    metric!(
-        "upstream_sentence_model_partition_point_fallback_calls",
-        metrics.upstream_sentence_model_partition_point_fallback_calls
-    );
-    metric!(
-        "upstream_sentence_model_graph_rebuild_calls",
-        metrics.upstream_sentence_model_graph_rebuild_calls
-    );
-    metric!(
-        "upstream_sentence_model_graph_rebuild_ns",
-        metrics.upstream_sentence_model_graph_rebuild_ns
-    );
-    metric!(
-        "upstream_sentence_model_incremental_reuse_hits",
-        metrics.upstream_sentence_model_incremental_reuse_hits
-    );
-    metric!(
-        "upstream_sentence_model_incremental_extend_ns",
-        metrics.upstream_sentence_model_incremental_extend_ns
-    );
-    metric!(
-        "upstream_sentence_model_incremental_discarded_rebuild_chars",
-        metrics.upstream_sentence_model_incremental_discarded_rebuild_chars
-    );
-    metric!(
-        "upstream_sentence_model_candidate_state_buckets",
-        metrics.upstream_sentence_model_candidate_state_buckets
-    );
-    metric!(
-        "upstream_sentence_model_candidate_states_ranked",
-        metrics.upstream_sentence_model_candidate_states_ranked
-    );
-    metric!(
-        "upstream_sentence_model_candidate_path_ns",
-        metrics.upstream_sentence_model_candidate_path_ns
-    );
-    metric!(
-        "upstream_sentence_model_candidate_merge_ns",
-        metrics.upstream_sentence_model_candidate_merge_ns
-    );
-    metric!("prefix_fallback_calls", metrics.prefix_fallback_calls);
-    metric!("prefix_fallback_ns", metrics.prefix_fallback_ns);
-    metric!(
-        "prefix_fallback_views_visited",
-        metrics.prefix_fallback_views_visited
-    );
-    metric!(
-        "prefix_fallback_candidates",
-        metrics.prefix_fallback_candidates
-    );
-    metric!("dynamic_correction_calls", metrics.dynamic_correction_calls);
-    metric!("dynamic_correction_ns", metrics.dynamic_correction_ns);
-    metric!(
-        "dynamic_correction_codes_considered",
-        metrics.dynamic_correction_codes_considered
-    );
-    metric!(
-        "dynamic_correction_candidates",
-        metrics.dynamic_correction_candidates
-    );
-    metric!(
-        "abbreviation_span_discovery_calls",
-        metrics.abbreviation_span_discovery_calls
-    );
-    metric!(
-        "abbreviation_span_discovery_ns",
-        metrics.abbreviation_span_discovery_ns
-    );
-    metric!(
-        "abbreviation_span_candidates_considered",
-        metrics.abbreviation_span_candidates_considered
-    );
-    metric!(
-        "abbreviation_span_codes_emitted",
-        metrics.abbreviation_span_codes_emitted
-    );
-    metric!(
-        "abbreviation_model_has_code_calls",
-        metrics.abbreviation_model_has_code_calls
-    );
-    metric!(
-        "abbreviation_model_has_code_ns",
-        metrics.abbreviation_model_has_code_ns
-    );
-    metric!(
-        "abbreviation_code_span_graph_build_ns",
-        metrics.abbreviation_code_span_graph_build_ns
-    );
-    metric!(
-        "abbreviation_sentence_ranking_ns",
-        metrics.abbreviation_sentence_ranking_ns
-    );
-    metric!(
-        "abbreviation_preedit_format_ns",
-        metrics.abbreviation_preedit_format_ns
-    );
-    metric!(
-        "abbreviation_candidate_format_ns",
-        metrics.abbreviation_candidate_format_ns
-    );
-    metric!(
-        "short_key_candidate_rows_scanned",
-        metrics.short_key_candidate_rows_scanned
-    );
-    metric!(
-        "short_key_candidates_materialized",
-        metrics.short_key_candidates_materialized
-    );
-    metric!(
-        "short_key_candidates_cloned",
-        metrics.short_key_candidates_cloned
-    );
-    metric!("short_key_filter_ns", metrics.short_key_filter_ns);
-    metric!("short_key_sort_rank_ns", metrics.short_key_sort_rank_ns);
-    metric!(
-        "short_key_comment_quality_ns",
-        metrics.short_key_comment_quality_ns
-    );
-    metric!(
-        "short_key_first_page_materialize_ns",
-        metrics.short_key_first_page_materialize_ns
-    );
-    metric!(
-        "track_b_spelling_expansions_considered",
-        metrics.track_b_spelling_expansions_considered
-    );
-    metric!(
-        "track_b_spelling_expansion_ns",
-        metrics.track_b_spelling_expansion_ns
-    );
-    metric!(
-        "track_b_exact_lookup_calls",
-        metrics.track_b_exact_lookup_calls
-    );
-    metric!("track_b_exact_lookup_ns", metrics.track_b_exact_lookup_ns);
-    metric!(
-        "track_b_prefix_lookup_calls",
-        metrics.track_b_prefix_lookup_calls
-    );
-    metric!("track_b_prefix_lookup_ns", metrics.track_b_prefix_lookup_ns);
-    metric!(
-        "track_b_candidates_materialized",
-        metrics.track_b_candidates_materialized
-    );
-    metric!(
-        "track_b_first_page_materialize_ns",
-        metrics.track_b_first_page_materialize_ns
-    );
-    let json = serde_json::Value::Object(json);
-    CString::new(json.to_string()).map_or(ptr::null_mut(), CString::into_raw)
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        let metrics = yune_core::m37_metrics_snapshot();
+        let mut json = serde_json::Map::new();
+        macro_rules! metric {
+            ($name:literal, $value:expr) => {
+                json.insert($name.to_owned(), serde_json::Value::from($value));
+            };
+        }
+        metric!("process_key_calls", metrics.process_key_calls);
+        metric!("process_key_ns", metrics.process_key_ns);
+        metric!("translator_calls", metrics.translator_calls);
+        metric!("translator_ns", metrics.translator_ns);
+        metric!("lookup_views_visited", metrics.lookup_views_visited);
+        metric!(
+            "owned_candidates_materialized",
+            metrics.owned_candidates_materialized
+        );
+        metric!(
+            "owned_candidate_materialization_ns",
+            metrics.owned_candidate_materialization_ns
+        );
+        metric!("candidates_sorted", metrics.candidates_sorted);
+        metric!("candidate_sort_ns", metrics.candidate_sort_ns);
+        metric!("userdb_merge_ns", metrics.userdb_merge_ns);
+        metric!("filter_pipeline_ns", metrics.filter_pipeline_ns);
+        metric!("ranker_pipeline_ns", metrics.ranker_pipeline_ns);
+        metric!("ai_merge_ns", metrics.ai_merge_ns);
+        metric!("candidates_stored", metrics.candidates_stored);
+        metric!(
+            "context_full_snapshot_candidates_cloned",
+            metrics.context_full_snapshot_candidates_cloned
+        );
+        metric!(
+            "context_page_snapshot_candidates_cloned",
+            metrics.context_page_snapshot_candidates_cloned
+        );
+        metric!("abi_get_context_calls", metrics.abi_get_context_calls);
+        metric!("abi_get_context_ns", metrics.abi_get_context_ns);
+        metric!("abi_candidates_exported", metrics.abi_candidates_exported);
+        metric!("abi_free_context_calls", metrics.abi_free_context_calls);
+        metric!("abi_free_context_ns", metrics.abi_free_context_ns);
+        metric!(
+            "candidate_request_bounded_calls",
+            metrics.candidate_request_bounded_calls
+        );
+        metric!(
+            "candidate_request_unbounded_calls",
+            metrics.candidate_request_unbounded_calls
+        );
+        metric!(
+            "candidate_request_page_limit_total",
+            metrics.candidate_request_page_limit_total
+        );
+        metric!(
+            "candidate_request_surplus_total",
+            metrics.candidate_request_surplus_total
+        );
+        metric!("bounded_iterator_calls", metrics.bounded_iterator_calls);
+        metric!(
+            "bounded_iterator_limit_total",
+            metrics.bounded_iterator_limit_total
+        );
+        metric!(
+            "bounded_iterator_selected_total",
+            metrics.bounded_iterator_selected_total
+        );
+        metric!(
+            "bounded_iterator_full_count_total",
+            metrics.bounded_iterator_full_count_total
+        );
+        metric!(
+            "full_list_translation_calls",
+            metrics.full_list_translation_calls
+        );
+        metric!("full_list_fallback_count", metrics.full_list_fallback_count);
+        metric!("exact_lookup_calls", metrics.exact_lookup_calls);
+        metric!("exact_lookup_ns", metrics.exact_lookup_ns);
+        metric!("exact_lookup_candidates", metrics.exact_lookup_candidates);
+        metric!("prefix_lookup_calls", metrics.prefix_lookup_calls);
+        metric!("prefix_lookup_ns", metrics.prefix_lookup_ns);
+        metric!("prefix_lookup_candidates", metrics.prefix_lookup_candidates);
+        metric!("heap_exact_lookup_calls", metrics.heap_exact_lookup_calls);
+        metric!("heap_prefix_lookup_calls", metrics.heap_prefix_lookup_calls);
+        metric!(
+            "no_marisa_compact_exact_lookup_calls",
+            metrics.no_marisa_compact_exact_lookup_calls
+        );
+        metric!(
+            "no_marisa_compact_prefix_lookup_calls",
+            metrics.no_marisa_compact_prefix_lookup_calls
+        );
+        metric!(
+            "rsmarisa_exact_lookup_calls",
+            metrics.rsmarisa_exact_lookup_calls
+        );
+        metric!(
+            "rsmarisa_prefix_lookup_calls",
+            metrics.rsmarisa_prefix_lookup_calls
+        );
+        metric!("prism_lookup_calls", metrics.prism_lookup_calls);
+        metric!("prism_lookup_ns", metrics.prism_lookup_ns);
+        metric!("prism_lookup_codes", metrics.prism_lookup_codes);
+        metric!("abi_c_string_allocations", metrics.abi_c_string_allocations);
+        metric!("abi_c_string_bytes", metrics.abi_c_string_bytes);
+        metric!(
+            "abi_c_string_allocation_ns",
+            metrics.abi_c_string_allocation_ns
+        );
+        metric!("sentence_candidate_calls", metrics.sentence_candidate_calls);
+        metric!("sentence_candidate_ns", metrics.sentence_candidate_ns);
+        metric!(
+            "sentence_substrings_considered",
+            metrics.sentence_substrings_considered
+        );
+        metric!(
+            "sentence_exact_lookup_calls",
+            metrics.sentence_exact_lookup_calls
+        );
+        metric!("sentence_exact_lookup_ns", metrics.sentence_exact_lookup_ns);
+        metric!(
+            "sentence_exact_lookup_candidates",
+            metrics.sentence_exact_lookup_candidates
+        );
+        metric!(
+            "sentence_prefix_lookup_calls",
+            metrics.sentence_prefix_lookup_calls
+        );
+        metric!(
+            "sentence_prefix_lookup_ns",
+            metrics.sentence_prefix_lookup_ns
+        );
+        metric!(
+            "sentence_prefix_lookup_candidates",
+            metrics.sentence_prefix_lookup_candidates
+        );
+        metric!(
+            "sentence_entry_matches_collected",
+            metrics.sentence_entry_matches_collected
+        );
+        metric!("sentence_path_clones", metrics.sentence_path_clones);
+        metric!(
+            "sentence_path_replacements",
+            metrics.sentence_path_replacements
+        );
+        metric!("sentence_paths_pruned", metrics.sentence_paths_pruned);
+        metric!("sentence_max_live_paths", metrics.sentence_max_live_paths);
+        metric!(
+            "sentence_result_candidates",
+            metrics.sentence_result_candidates
+        );
+        metric!(
+            "upstream_sentence_model_calls",
+            metrics.upstream_sentence_model_calls
+        );
+        metric!(
+            "upstream_sentence_model_ns",
+            metrics.upstream_sentence_model_ns
+        );
+        metric!(
+            "upstream_sentence_model_candidates",
+            metrics.upstream_sentence_model_candidates
+        );
+        metric!(
+            "upstream_sentence_model_code_prefix_checks",
+            metrics.upstream_sentence_model_code_prefix_checks
+        );
+        metric!(
+            "upstream_sentence_model_table_entries_considered",
+            metrics.upstream_sentence_model_table_entries_considered
+        );
+        metric!(
+            "upstream_sentence_model_vocabulary_entries_considered",
+            metrics.upstream_sentence_model_vocabulary_entries_considered
+        );
+        metric!(
+            "upstream_sentence_model_graph_edges",
+            metrics.upstream_sentence_model_graph_edges
+        );
+        metric!(
+            "upstream_sentence_model_index_build_calls",
+            metrics.upstream_sentence_model_index_build_calls
+        );
+        metric!(
+            "upstream_sentence_model_index_build_ns",
+            metrics.upstream_sentence_model_index_build_ns
+        );
+        metric!(
+            "upstream_sentence_model_exact_range_index_hits",
+            metrics.upstream_sentence_model_exact_range_index_hits
+        );
+        metric!(
+            "upstream_sentence_model_exact_range_index_misses",
+            metrics.upstream_sentence_model_exact_range_index_misses
+        );
+        metric!(
+            "upstream_sentence_model_prefix_filter_hits",
+            metrics.upstream_sentence_model_prefix_filter_hits
+        );
+        metric!(
+            "upstream_sentence_model_prefix_filter_misses",
+            metrics.upstream_sentence_model_prefix_filter_misses
+        );
+        metric!(
+            "upstream_sentence_model_prefix_filter_early_breaks",
+            metrics.upstream_sentence_model_prefix_filter_early_breaks
+        );
+        metric!(
+            "upstream_sentence_model_reachable_starts_visited",
+            metrics.upstream_sentence_model_reachable_starts_visited
+        );
+        metric!(
+            "upstream_sentence_model_unreachable_starts_skipped",
+            metrics.upstream_sentence_model_unreachable_starts_skipped
+        );
+        metric!(
+            "upstream_sentence_model_phrase_index_walk_calls",
+            metrics.upstream_sentence_model_phrase_index_walk_calls
+        );
+        metric!(
+            "upstream_sentence_model_phrase_index_nodes_visited",
+            metrics.upstream_sentence_model_phrase_index_nodes_visited
+        );
+        metric!(
+            "upstream_sentence_model_phrase_index_entry_ranges_emitted",
+            metrics.upstream_sentence_model_phrase_index_entry_ranges_emitted
+        );
+        metric!(
+            "upstream_sentence_model_partition_point_fallback_calls",
+            metrics.upstream_sentence_model_partition_point_fallback_calls
+        );
+        metric!(
+            "upstream_sentence_model_graph_rebuild_calls",
+            metrics.upstream_sentence_model_graph_rebuild_calls
+        );
+        metric!(
+            "upstream_sentence_model_graph_rebuild_ns",
+            metrics.upstream_sentence_model_graph_rebuild_ns
+        );
+        metric!(
+            "upstream_sentence_model_incremental_reuse_hits",
+            metrics.upstream_sentence_model_incremental_reuse_hits
+        );
+        metric!(
+            "upstream_sentence_model_incremental_extend_ns",
+            metrics.upstream_sentence_model_incremental_extend_ns
+        );
+        metric!(
+            "upstream_sentence_model_incremental_discarded_rebuild_chars",
+            metrics.upstream_sentence_model_incremental_discarded_rebuild_chars
+        );
+        metric!(
+            "upstream_sentence_model_candidate_state_buckets",
+            metrics.upstream_sentence_model_candidate_state_buckets
+        );
+        metric!(
+            "upstream_sentence_model_candidate_states_ranked",
+            metrics.upstream_sentence_model_candidate_states_ranked
+        );
+        metric!(
+            "upstream_sentence_model_candidate_path_ns",
+            metrics.upstream_sentence_model_candidate_path_ns
+        );
+        metric!(
+            "upstream_sentence_model_candidate_merge_ns",
+            metrics.upstream_sentence_model_candidate_merge_ns
+        );
+        metric!("prefix_fallback_calls", metrics.prefix_fallback_calls);
+        metric!("prefix_fallback_ns", metrics.prefix_fallback_ns);
+        metric!(
+            "prefix_fallback_views_visited",
+            metrics.prefix_fallback_views_visited
+        );
+        metric!(
+            "prefix_fallback_candidates",
+            metrics.prefix_fallback_candidates
+        );
+        metric!("dynamic_correction_calls", metrics.dynamic_correction_calls);
+        metric!("dynamic_correction_ns", metrics.dynamic_correction_ns);
+        metric!(
+            "dynamic_correction_codes_considered",
+            metrics.dynamic_correction_codes_considered
+        );
+        metric!(
+            "dynamic_correction_candidates",
+            metrics.dynamic_correction_candidates
+        );
+        metric!(
+            "abbreviation_span_discovery_calls",
+            metrics.abbreviation_span_discovery_calls
+        );
+        metric!(
+            "abbreviation_span_discovery_ns",
+            metrics.abbreviation_span_discovery_ns
+        );
+        metric!(
+            "abbreviation_span_candidates_considered",
+            metrics.abbreviation_span_candidates_considered
+        );
+        metric!(
+            "abbreviation_span_codes_emitted",
+            metrics.abbreviation_span_codes_emitted
+        );
+        metric!(
+            "abbreviation_model_has_code_calls",
+            metrics.abbreviation_model_has_code_calls
+        );
+        metric!(
+            "abbreviation_model_has_code_ns",
+            metrics.abbreviation_model_has_code_ns
+        );
+        metric!(
+            "abbreviation_code_span_graph_build_ns",
+            metrics.abbreviation_code_span_graph_build_ns
+        );
+        metric!(
+            "abbreviation_sentence_ranking_ns",
+            metrics.abbreviation_sentence_ranking_ns
+        );
+        metric!(
+            "abbreviation_preedit_format_ns",
+            metrics.abbreviation_preedit_format_ns
+        );
+        metric!(
+            "abbreviation_candidate_format_ns",
+            metrics.abbreviation_candidate_format_ns
+        );
+        metric!(
+            "short_key_candidate_rows_scanned",
+            metrics.short_key_candidate_rows_scanned
+        );
+        metric!(
+            "short_key_candidates_materialized",
+            metrics.short_key_candidates_materialized
+        );
+        metric!(
+            "short_key_candidates_cloned",
+            metrics.short_key_candidates_cloned
+        );
+        metric!("short_key_filter_ns", metrics.short_key_filter_ns);
+        metric!("short_key_sort_rank_ns", metrics.short_key_sort_rank_ns);
+        metric!(
+            "short_key_comment_quality_ns",
+            metrics.short_key_comment_quality_ns
+        );
+        metric!(
+            "short_key_first_page_materialize_ns",
+            metrics.short_key_first_page_materialize_ns
+        );
+        metric!(
+            "track_b_spelling_expansions_considered",
+            metrics.track_b_spelling_expansions_considered
+        );
+        metric!(
+            "track_b_spelling_expansion_ns",
+            metrics.track_b_spelling_expansion_ns
+        );
+        metric!(
+            "track_b_exact_lookup_calls",
+            metrics.track_b_exact_lookup_calls
+        );
+        metric!("track_b_exact_lookup_ns", metrics.track_b_exact_lookup_ns);
+        metric!(
+            "track_b_prefix_lookup_calls",
+            metrics.track_b_prefix_lookup_calls
+        );
+        metric!("track_b_prefix_lookup_ns", metrics.track_b_prefix_lookup_ns);
+        metric!(
+            "track_b_candidates_materialized",
+            metrics.track_b_candidates_materialized
+        );
+        metric!(
+            "track_b_first_page_materialize_ns",
+            metrics.track_b_first_page_materialize_ns
+        );
+        let json = serde_json::Value::Object(json);
+        CString::new(json.to_string()).map_or(ptr::null_mut(), CString::into_raw)
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn yune_m43_memory_owner_profile_json() -> *mut c_char {
-    let registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let rows = registry
-        .sessions
-        .iter()
-        .flat_map(|(session_id, session)| session_memory_owner_rows(*session_id, session))
-        .map(|(session_id, row)| {
-            serde_json::json!({
-                "session_id": session_id,
-                "owner": row.owner,
-                "class": row.class.as_str(),
-                "estimated_bytes": row.estimated_bytes,
-                "item_count": row.item_count,
-                "storage": row.storage,
-                "notes": row.notes,
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        let registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let rows = registry
+            .sessions
+            .iter()
+            .flat_map(|(session_id, session)| session_memory_owner_rows(*session_id, session))
+            .map(|(session_id, row)| {
+                serde_json::json!({
+                    "session_id": session_id,
+                    "owner": row.owner,
+                    "class": row.class.as_str(),
+                    "estimated_bytes": row.estimated_bytes,
+                    "item_count": row.item_count,
+                    "storage": row.storage,
+                    "notes": row.notes,
+                })
             })
-        })
-        .collect::<Vec<_>>();
-    CString::new(serde_json::Value::Array(rows).to_string())
-        .map_or(ptr::null_mut(), CString::into_raw)
+            .collect::<Vec<_>>();
+        CString::new(serde_json::Value::Array(rows).to_string())
+            .map_or(ptr::null_mut(), CString::into_raw)
+    })
 }
 
 fn session_memory_owner_rows(
@@ -1054,27 +1063,31 @@ fn estimate_navigator_bindings_bytes(bindings: &NavigatorBindings) -> usize {
 
 #[no_mangle]
 pub extern "C" fn yune_startup_trace_begin() {
-    startup_trace::begin_startup_trace(None);
+    crate::ffi_guard::guard_void(|| {
+        startup_trace::begin_startup_trace(None);
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn yune_startup_trace_finish_json() -> *mut c_char {
-    let events = startup_trace::finish_startup_trace();
-    let json = serde_json::Value::Array(
-        events
-            .into_iter()
-            .map(|event| {
-                serde_json::json!({
-                    "name": event.name,
-                    "micros": event.micros,
-                    "working_set_before": event.working_set_before,
-                    "working_set_after": event.working_set_after,
-                    "peak_working_set_after": event.peak_working_set_after,
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        let events = startup_trace::finish_startup_trace();
+        let json = serde_json::Value::Array(
+            events
+                .into_iter()
+                .map(|event| {
+                    serde_json::json!({
+                        "name": event.name,
+                        "micros": event.micros,
+                        "working_set_before": event.working_set_before,
+                        "working_set_after": event.working_set_after,
+                        "peak_working_set_after": event.peak_working_set_after,
+                    })
                 })
-            })
-            .collect(),
-    );
-    CString::new(json.to_string()).map_or(ptr::null_mut(), CString::into_raw)
+                .collect(),
+        );
+        CString::new(json.to_string()).map_or(ptr::null_mut(), CString::into_raw)
+    })
 }
 
 /// Releases strings returned by `yune_m37_metrics_snapshot_json`.
@@ -1085,255 +1098,277 @@ pub extern "C" fn yune_startup_trace_finish_json() -> *mut c_char {
 /// `yune_m37_metrics_snapshot_json` that has not already been freed.
 #[no_mangle]
 pub unsafe extern "C" fn yune_m37_metrics_free_string(value: *mut c_char) {
-    if !value.is_null() {
-        // SAFETY: callers pass a pointer returned by `CString::into_raw` above.
-        unsafe { drop(CString::from_raw(value)) };
-    }
+    crate::ffi_guard::guard_void(|| {
+        if !value.is_null() {
+            // SAFETY: callers pass a pointer returned by `CString::into_raw` above.
+            unsafe { drop(CString::from_raw(value)) };
+        }
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn RimeGetVersion() -> *const c_char {
-    RIME_VERSION_BYTES.as_ptr().cast::<c_char>()
+    crate::ffi_guard::guard(std::ptr::null(), || {
+        RIME_VERSION_BYTES.as_ptr().cast::<c_char>()
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeProcessKey(session_id: RimeSessionId, keycode: c_int, mask: c_int) -> Bool {
-    let _m37_timer = M37ProcessKeyTimer::start();
-    if session_id == 0
-        || (mask != 0
-            && !((mask == K_CONTROL_MASK
-                && (matches!(
-                    keycode,
-                    XK_BACKSPACE | XK_DELETE | XK_LEFT | XK_RIGHT | XK_UP | XK_DOWN | XK_RETURN
-                ) || (('0' as c_int)..=('9' as c_int)).contains(&keycode)
-                    || (0x20..=0x7e).contains(&keycode)
-                    || (XK_KP_0..=XK_KP_9).contains(&keycode)))
-                || (mask == K_SHIFT_MASK && keycode == XK_RETURN)
-                || (mask == K_SHIFT_MASK && keycode == XK_BACKSPACE)
-                || (mask == K_SHIFT_MASK && keycode == XK_DELETE)
-                || (mask == K_SHIFT_MASK && keycode == XK_ESCAPE)
-                || (mask == K_SHIFT_MASK
-                    && matches!(keycode, XK_LEFT | XK_RIGHT | XK_UP | XK_DOWN))
-                || (mask == K_SHIFT_MASK
-                    && matches!(keycode, XK_KP_LEFT | XK_KP_RIGHT | XK_KP_UP | XK_KP_DOWN))
-                || (mask == K_SHIFT_MASK && (XK_KP_0..=XK_KP_9).contains(&keycode))
-                || (mask == K_SHIFT_MASK
-                    && matches!(keycode, XK_HOME | XK_END | XK_KP_HOME | XK_KP_END))
-                || (mask == K_SHIFT_MASK && (0x20..=0x7e).contains(&keycode))
-                || (mask == K_LOCK_MASK && (0x20..=0x7e).contains(&keycode))
-                || (mask == K_ALT_MASK && (0x20..=0x7e).contains(&keycode))
-                || (mask == K_SUPER_MASK && (0x20..=0x7e).contains(&keycode))
-                || (mask == (K_CONTROL_MASK | K_SHIFT_MASK)
-                    && (keycode == XK_RETURN
-                        || (('0' as c_int)..=('9' as c_int)).contains(&keycode)
-                        || (XK_KP_0..=XK_KP_9).contains(&keycode)
-                        || (0x20..=0x7e).contains(&keycode)))
-                || ((mask & K_RELEASE_MASK) != 0
-                    && (mask
-                        & !(K_RELEASE_MASK
-                            | K_CONTROL_MASK
-                            | K_SHIFT_MASK
-                            | K_LOCK_MASK
-                            | K_ALT_MASK
-                            | K_SUPER_MASK))
-                        == 0
-                    && (0x20..=0x7e).contains(&keycode))
-                || (mask == K_RELEASE_MASK && (0x20..=0x7e).contains(&keycode))
-                || (mask == K_RELEASE_MASK && is_ascii_composer_modifier_key(keycode))))
-    {
-        return FALSE;
-    }
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let Some(session) = registry.get_session_mut(session_id) else {
-        return FALSE;
-    };
-
-    if is_ascii_composer_modifier_key(keycode) && (mask == 0 || mask == K_RELEASE_MASK) {
-        if let Some(commit) = process_ascii_composer_modifier_switch_key(session, keycode, mask) {
-            append_unread_commit(session, commit);
+    crate::ffi_guard::guard(FALSE, || {
+        let _m37_timer = M37ProcessKeyTimer::start();
+        if session_id == 0
+            || (mask != 0
+                && !((mask == K_CONTROL_MASK
+                    && (matches!(
+                        keycode,
+                        XK_BACKSPACE | XK_DELETE | XK_LEFT | XK_RIGHT | XK_UP | XK_DOWN | XK_RETURN
+                    ) || (('0' as c_int)..=('9' as c_int)).contains(&keycode)
+                        || (0x20..=0x7e).contains(&keycode)
+                        || (XK_KP_0..=XK_KP_9).contains(&keycode)))
+                    || (mask == K_SHIFT_MASK && keycode == XK_RETURN)
+                    || (mask == K_SHIFT_MASK && keycode == XK_BACKSPACE)
+                    || (mask == K_SHIFT_MASK && keycode == XK_DELETE)
+                    || (mask == K_SHIFT_MASK && keycode == XK_ESCAPE)
+                    || (mask == K_SHIFT_MASK
+                        && matches!(keycode, XK_LEFT | XK_RIGHT | XK_UP | XK_DOWN))
+                    || (mask == K_SHIFT_MASK
+                        && matches!(keycode, XK_KP_LEFT | XK_KP_RIGHT | XK_KP_UP | XK_KP_DOWN))
+                    || (mask == K_SHIFT_MASK && (XK_KP_0..=XK_KP_9).contains(&keycode))
+                    || (mask == K_SHIFT_MASK
+                        && matches!(keycode, XK_HOME | XK_END | XK_KP_HOME | XK_KP_END))
+                    || (mask == K_SHIFT_MASK && (0x20..=0x7e).contains(&keycode))
+                    || (mask == K_LOCK_MASK && (0x20..=0x7e).contains(&keycode))
+                    || (mask == K_ALT_MASK && (0x20..=0x7e).contains(&keycode))
+                    || (mask == K_SUPER_MASK && (0x20..=0x7e).contains(&keycode))
+                    || (mask == (K_CONTROL_MASK | K_SHIFT_MASK)
+                        && (keycode == XK_RETURN
+                            || (('0' as c_int)..=('9' as c_int)).contains(&keycode)
+                            || (XK_KP_0..=XK_KP_9).contains(&keycode)
+                            || (0x20..=0x7e).contains(&keycode)))
+                    || ((mask & K_RELEASE_MASK) != 0
+                        && (mask
+                            & !(K_RELEASE_MASK
+                                | K_CONTROL_MASK
+                                | K_SHIFT_MASK
+                                | K_LOCK_MASK
+                                | K_ALT_MASK
+                                | K_SUPER_MASK))
+                            == 0
+                        && (0x20..=0x7e).contains(&keycode))
+                    || (mask == K_RELEASE_MASK && (0x20..=0x7e).contains(&keycode))
+                    || (mask == K_RELEASE_MASK && is_ascii_composer_modifier_key(keycode))))
+        {
+            return FALSE;
         }
-        update_session_segment_tags(session);
-        return FALSE;
-    }
-    if session.ascii_composer_pressed_switch_key.is_some() {
-        session.ascii_composer_pressed_switch_key = None;
-    }
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let Some(session) = registry.get_session_mut(session_id) else {
+            return FALSE;
+        };
 
-    if keycode == XK_EISU_TOGGLE && mask == 0 {
-        if let Some(commit) = process_ascii_composer_switch_key(session, keycode) {
-            if let Some(commit) = commit {
+        if is_ascii_composer_modifier_key(keycode) && (mask == 0 || mask == K_RELEASE_MASK) {
+            if let Some(commit) = process_ascii_composer_modifier_switch_key(session, keycode, mask)
+            {
                 append_unread_commit(session, commit);
             }
             update_session_segment_tags(session);
-            return TRUE;
+            return FALSE;
         }
-        return FALSE;
-    }
-    if keycode == XK_CAPS_LOCK && mask == 0 {
-        if let Some(commit) = process_ascii_composer_caps_lock_switch_key(session) {
-            if let Some(commit) = commit {
-                append_unread_commit(session, commit);
-            }
-            update_session_segment_tags(session);
-            return TRUE;
+        if session.ascii_composer_pressed_switch_key.is_some() {
+            session.ascii_composer_pressed_switch_key = None;
         }
-        return FALSE;
-    }
 
-    let Some(key_event) = key_event_from_rime_keycode(keycode, mask) else {
-        return FALSE;
-    };
-    if (mask == K_CONTROL_MASK || mask == K_LOCK_MASK || mask == K_ALT_MASK || mask == K_SUPER_MASK)
-        && (0x20..=0x7e).contains(&keycode)
-        && !(('0' as c_int)..=('9' as c_int)).contains(&keycode)
-        && !session_has_modified_printable_binding(session, key_event)
-        && !session_chord_composer_accepts_printable(session, key_event)
-    {
-        return FALSE;
-    }
-
-    match process_ascii_composer_processor(session, key_event) {
-        AsciiComposerProcessResult::Noop => {}
-        AsciiComposerProcessResult::Accepted(commit) => {
-            if let Some(commit) = commit {
-                append_unread_commit(session, commit);
-            }
-            update_session_segment_tags(session);
-            return TRUE;
-        }
-        AsciiComposerProcessResult::Rejected => return FALSE,
-    }
-
-    if let Some(commits) = process_key_binder_processor(session_id, session, key_event) {
-        for commit in commits {
-            append_unread_commit(session, commit);
-        }
-        return TRUE;
-    }
-
-    let was_composing = !session.engine.context().composition.input.is_empty();
-    if !was_composing
-        && (mask == K_CONTROL_MASK || mask == (K_CONTROL_MASK | K_SHIFT_MASK))
-        && matches!(
-            key_event.code,
-            KeyCode::Character('0'..='9') | KeyCode::KeypadDigit('0'..='9')
-        )
-    {
-        return FALSE;
-    }
-    let mut accepted = false;
-    if let Some(selector_accepted) = process_selector_layout_key(session, key_event, keycode, mask)
-    {
-        accepted = selector_accepted;
-    } else if let Some(navigator_accepted) = process_navigator_configured_key(session, key_event) {
-        accepted = navigator_accepted;
-    } else if let Some(navigator_accepted) = process_navigator_delimiter_key(session, key_event) {
-        accepted = navigator_accepted;
-    } else {
-        match key_event.code {
-            KeyCode::PreviousPage => {
-                let page_size = session_menu_page_size(session);
-                if session.engine.change_page_by(page_size, true) {
-                    session.paging = true;
-                    accepted = true;
+        if keycode == XK_EISU_TOGGLE && mask == 0 {
+            if let Some(commit) = process_ascii_composer_switch_key(session, keycode) {
+                if let Some(commit) = commit {
+                    append_unread_commit(session, commit);
                 }
+                update_session_segment_tags(session);
+                return TRUE;
             }
-            KeyCode::NextPage => {
-                let page_size = session_menu_page_size(session);
-                if session.engine.change_page_by(page_size, false) {
-                    session.paging = true;
-                    accepted = true;
+            return FALSE;
+        }
+        if keycode == XK_CAPS_LOCK && mask == 0 {
+            if let Some(commit) = process_ascii_composer_caps_lock_switch_key(session) {
+                if let Some(commit) = commit {
+                    append_unread_commit(session, commit);
                 }
+                update_session_segment_tags(session);
+                return TRUE;
             }
-            _ => match process_session_key_event(session_id, session, key_event) {
-                SessionKeyProcessResult::Noop => {
-                    if let Some(commit) = process_shape_processor(session, key_event) {
+            return FALSE;
+        }
+
+        let Some(key_event) = key_event_from_rime_keycode(keycode, mask) else {
+            return FALSE;
+        };
+        if (mask == K_CONTROL_MASK
+            || mask == K_LOCK_MASK
+            || mask == K_ALT_MASK
+            || mask == K_SUPER_MASK)
+            && (0x20..=0x7e).contains(&keycode)
+            && !(('0' as c_int)..=('9' as c_int)).contains(&keycode)
+            && !session_has_modified_printable_binding(session, key_event)
+            && !session_chord_composer_accepts_printable(session, key_event)
+        {
+            return FALSE;
+        }
+
+        match process_ascii_composer_processor(session, key_event) {
+            AsciiComposerProcessResult::Noop => {}
+            AsciiComposerProcessResult::Accepted(commit) => {
+                if let Some(commit) = commit {
+                    append_unread_commit(session, commit);
+                }
+                update_session_segment_tags(session);
+                return TRUE;
+            }
+            AsciiComposerProcessResult::Rejected => return FALSE,
+        }
+
+        if let Some(commits) = process_key_binder_processor(session_id, session, key_event) {
+            for commit in commits {
+                append_unread_commit(session, commit);
+            }
+            return TRUE;
+        }
+
+        let was_composing = !session.engine.context().composition.input.is_empty();
+        if !was_composing
+            && (mask == K_CONTROL_MASK || mask == (K_CONTROL_MASK | K_SHIFT_MASK))
+            && matches!(
+                key_event.code,
+                KeyCode::Character('0'..='9') | KeyCode::KeypadDigit('0'..='9')
+            )
+        {
+            return FALSE;
+        }
+        let mut accepted = false;
+        if let Some(selector_accepted) =
+            process_selector_layout_key(session, key_event, keycode, mask)
+        {
+            accepted = selector_accepted;
+        } else if let Some(navigator_accepted) =
+            process_navigator_configured_key(session, key_event)
+        {
+            accepted = navigator_accepted;
+        } else if let Some(navigator_accepted) = process_navigator_delimiter_key(session, key_event)
+        {
+            accepted = navigator_accepted;
+        } else {
+            match key_event.code {
+                KeyCode::PreviousPage => {
+                    let page_size = session_menu_page_size(session);
+                    if session.engine.change_page_by(page_size, true) {
+                        session.paging = true;
+                        accepted = true;
+                    }
+                }
+                KeyCode::NextPage => {
+                    let page_size = session_menu_page_size(session);
+                    if session.engine.change_page_by(page_size, false) {
+                        session.paging = true;
+                        accepted = true;
+                    }
+                }
+                _ => match process_session_key_event(session_id, session, key_event) {
+                    SessionKeyProcessResult::Noop => {
+                        if let Some(commit) = process_shape_processor(session, key_event) {
+                            append_unread_commit(session, commit);
+                            return TRUE;
+                        }
+                        return FALSE;
+                    }
+                    SessionKeyProcessResult::Accepted => accepted = true,
+                    SessionKeyProcessResult::Commit(commit) => {
                         append_unread_commit(session, commit);
                         return TRUE;
                     }
-                    return FALSE;
-                }
-                SessionKeyProcessResult::Accepted => accepted = true,
-                SessionKeyProcessResult::Commit(commit) => {
-                    append_unread_commit(session, commit);
-                    return TRUE;
-                }
-                SessionKeyProcessResult::RejectedCommit(commit) => {
-                    append_unread_commit(session, commit);
-                    return FALSE;
-                }
-            },
+                    SessionKeyProcessResult::RejectedCommit(commit) => {
+                        append_unread_commit(session, commit);
+                        return FALSE;
+                    }
+                },
+            }
         }
-    }
 
-    apply_visible_switch_radio_defaults(session);
-    bool_from(
-        accepted || matches!(key_event.code, KeyCode::Character(ch) if ch != ' ') || was_composing,
-    )
+        apply_visible_switch_radio_defaults(session);
+        bool_from(
+            accepted
+                || matches!(key_event.code, KeyCode::Character(ch) if ch != ' ')
+                || was_composing,
+        )
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeCommitComposition(session_id: RimeSessionId) -> Bool {
-    if session_id == 0 {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if session_id == 0 {
+            return FALSE;
+        }
 
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let Some(session) = registry.get_session_mut(session_id) else {
-        return FALSE;
-    };
-    let Some(commit) = session.engine.commit_composition() else {
-        return FALSE;
-    };
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let Some(session) = registry.get_session_mut(session_id) else {
+            return FALSE;
+        };
+        let Some(commit) = session.engine.commit_composition() else {
+            return FALSE;
+        };
 
-    session.paging = false;
-    update_session_segment_tags(session);
-    sync_chord_composer_context_update(session);
-    append_unread_commit(session, commit);
-    TRUE
+        session.paging = false;
+        update_session_segment_tags(session);
+        sync_chord_composer_context_update(session);
+        append_unread_commit(session, commit);
+        TRUE
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeClearComposition(session_id: RimeSessionId) {
-    if session_id == 0 {
-        return;
-    }
+    crate::ffi_guard::guard_void(|| {
+        if session_id == 0 {
+            return;
+        }
 
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    if let Some(session) = registry.get_session_mut(session_id) {
-        session.engine.clear_composition();
-        session.paging = false;
-        update_session_segment_tags(session);
-        sync_chord_composer_context_update(session);
-    }
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        if let Some(session) = registry.get_session_mut(session_id) {
+            session.engine.clear_composition();
+            session.paging = false;
+            update_session_segment_tags(session);
+            sync_chord_composer_context_update(session);
+        }
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn RimeGetInput(session_id: RimeSessionId) -> *const c_char {
-    if session_id == 0 {
-        return ptr::null();
-    }
+    crate::ffi_guard::guard(std::ptr::null(), || {
+        if session_id == 0 {
+            return ptr::null();
+        }
 
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let Some(session) = registry.get_session_mut(session_id) else {
-        return ptr::null();
-    };
-    let Ok(input) = CString::new(session.engine.context().composition.input.as_str()) else {
-        return ptr::null();
-    };
-    session.input_buffer = Some(input);
-    session
-        .input_buffer
-        .as_ref()
-        .map_or(ptr::null(), |input| input.as_ptr())
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let Some(session) = registry.get_session_mut(session_id) else {
+            return ptr::null();
+        };
+        let Ok(input) = CString::new(session.engine.context().composition.input.as_str()) else {
+            return ptr::null();
+        };
+        session.input_buffer = Some(input);
+        session
+            .input_buffer
+            .as_ref()
+            .map_or(ptr::null(), |input| input.as_ptr())
+    })
 }
 
 /// Sets the current raw composition input for a session.
@@ -1344,55 +1379,61 @@ pub extern "C" fn RimeGetInput(session_id: RimeSessionId) -> *const c_char {
 /// is rejected.
 #[no_mangle]
 pub unsafe extern "C" fn RimeSetInput(session_id: RimeSessionId, input: *const c_char) -> Bool {
-    if session_id == 0 || input.is_null() {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if session_id == 0 || input.is_null() {
+            return FALSE;
+        }
 
-    // SAFETY: `input` is non-null and caller promises a valid NUL-terminated C
-    // string.
-    let Ok(input) = unsafe { CStr::from_ptr(input) }.to_str() else {
-        return FALSE;
-    };
+        // SAFETY: `input` is non-null and caller promises a valid NUL-terminated C
+        // string.
+        let Ok(input) = unsafe { CStr::from_ptr(input) }.to_str() else {
+            return FALSE;
+        };
 
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let Some(session) = registry.get_session_mut(session_id) else {
-        return FALSE;
-    };
-    session.engine.set_input(input);
-    session.input_buffer = None;
-    update_session_segment_tags(session);
-    sync_chord_composer_context_update(session);
-    TRUE
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let Some(session) = registry.get_session_mut(session_id) else {
+            return FALSE;
+        };
+        session.engine.set_input(input);
+        session.input_buffer = None;
+        update_session_segment_tags(session);
+        sync_chord_composer_context_update(session);
+        TRUE
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeGetCaretPos(session_id: RimeSessionId) -> usize {
-    if session_id == 0 {
-        return 0;
-    }
+    crate::ffi_guard::guard(0, || {
+        if session_id == 0 {
+            return 0;
+        }
 
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    registry
-        .get_session_mut(session_id)
-        .map_or(0, |session| session.engine.context().composition.caret)
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        registry
+            .get_session_mut(session_id)
+            .map_or(0, |session| session.engine.context().composition.caret)
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeSetCaretPos(session_id: RimeSessionId, caret_pos: usize) {
-    if session_id == 0 {
-        return;
-    }
+    crate::ffi_guard::guard_void(|| {
+        if session_id == 0 {
+            return;
+        }
 
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    if let Some(session) = registry.get_session_mut(session_id) {
-        session.engine.set_caret_pos(caret_pos);
-    }
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        if let Some(session) = registry.get_session_mut(session_id) {
+            session.engine.set_caret_pos(caret_pos);
+        }
+    });
 }
 
 /// Sets a session-scoped runtime option.
@@ -1407,26 +1448,28 @@ pub unsafe extern "C" fn RimeSetOption(
     option: *const c_char,
     value: Bool,
 ) {
-    if option.is_null() {
-        return;
-    }
-    // SAFETY: callers promise that `option` is a valid nul-terminated string.
-    let option = unsafe { CStr::from_ptr(option) }
-        .to_string_lossy()
-        .into_owned();
-    if with_session(session_id, |session| {
-        session.engine.set_option(option.clone(), value != FALSE);
-        update_session_segment_tags(session);
-        true
-    }) == TRUE
-    {
-        let message_value = if value != FALSE {
-            option
-        } else {
-            format!("!{option}")
-        };
-        notify(session_id, "option", &message_value);
-    }
+    crate::ffi_guard::guard_void(|| {
+        if option.is_null() {
+            return;
+        }
+        // SAFETY: callers promise that `option` is a valid nul-terminated string.
+        let option = unsafe { CStr::from_ptr(option) }
+            .to_string_lossy()
+            .into_owned();
+        if with_session(session_id, |session| {
+            session.engine.set_option(option.clone(), value != FALSE);
+            update_session_segment_tags(session);
+            true
+        }) == TRUE
+        {
+            let message_value = if value != FALSE {
+                option
+            } else {
+                format!("!{option}")
+            };
+            notify(session_id, "option", &message_value);
+        }
+    });
 }
 
 /// Returns the current value of a session-scoped runtime option.
@@ -1436,13 +1479,15 @@ pub unsafe extern "C" fn RimeSetOption(
 /// `option` must be either null or point to a valid, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn RimeGetOption(session_id: RimeSessionId, option: *const c_char) -> Bool {
-    if option.is_null() {
-        return FALSE;
-    }
-    // SAFETY: callers promise that `option` is a valid nul-terminated string.
-    let option = unsafe { CStr::from_ptr(option) };
-    with_session(session_id, |session| {
-        session.engine.get_option(&option.to_string_lossy())
+    crate::ffi_guard::guard(FALSE, || {
+        if option.is_null() {
+            return FALSE;
+        }
+        // SAFETY: callers promise that `option` is a valid nul-terminated string.
+        let option = unsafe { CStr::from_ptr(option) };
+        with_session(session_id, |session| {
+            session.engine.get_option(&option.to_string_lossy())
+        })
     })
 }
 
@@ -1458,24 +1503,26 @@ pub unsafe extern "C" fn RimeSetProperty(
     property: *const c_char,
     value: *const c_char,
 ) {
-    if property.is_null() || value.is_null() {
-        return;
-    }
-    // SAFETY: callers promise that both pointers are valid nul-terminated
-    // strings.
-    let property = unsafe { CStr::from_ptr(property) }
-        .to_string_lossy()
-        .into_owned();
-    let value = unsafe { CStr::from_ptr(value) }
-        .to_string_lossy()
-        .into_owned();
-    if with_session(session_id, |session| {
-        session.engine.set_property(property.clone(), value.clone());
-        true
-    }) == TRUE
-    {
-        notify(session_id, "property", &format!("{property}={value}"));
-    }
+    crate::ffi_guard::guard_void(|| {
+        if property.is_null() || value.is_null() {
+            return;
+        }
+        // SAFETY: callers promise that both pointers are valid nul-terminated
+        // strings.
+        let property = unsafe { CStr::from_ptr(property) }
+            .to_string_lossy()
+            .into_owned();
+        let value = unsafe { CStr::from_ptr(value) }
+            .to_string_lossy()
+            .into_owned();
+        if with_session(session_id, |session| {
+            session.engine.set_property(property.clone(), value.clone());
+            true
+        }) == TRUE
+        {
+            notify(session_id, "property", &format!("{property}={value}"));
+        }
+    });
 }
 
 /// Copies a session-scoped string property into caller-provided storage.
@@ -1492,21 +1539,24 @@ pub unsafe extern "C" fn RimeGetProperty(
     value: *mut c_char,
     buffer_size: usize,
 ) -> Bool {
-    if property.is_null() || value.is_null() {
-        return FALSE;
-    }
-    // SAFETY: callers promise that `property` is a valid nul-terminated string.
-    let property = unsafe { CStr::from_ptr(property) };
-
-    with_session(session_id, |session| {
-        let Some(property_value) = session.engine.get_property(&property.to_string_lossy()) else {
-            return false;
-        };
-        if property_value.is_empty() {
-            return false;
+    crate::ffi_guard::guard(FALSE, || {
+        if property.is_null() || value.is_null() {
+            return FALSE;
         }
-        copy_c_string_with_strncpy_semantics(property_value, value, buffer_size);
-        true
+        // SAFETY: callers promise that `property` is a valid nul-terminated string.
+        let property = unsafe { CStr::from_ptr(property) };
+
+        with_session(session_id, |session| {
+            let Some(property_value) = session.engine.get_property(&property.to_string_lossy())
+            else {
+                return false;
+            };
+            if property_value.is_empty() {
+                return false;
+            }
+            copy_c_string_with_strncpy_semantics(property_value, value, buffer_size);
+            true
+        })
     })
 }
 
@@ -1523,8 +1573,10 @@ pub unsafe extern "C" fn RimeGetStateLabel(
     option_name: *const c_char,
     state: Bool,
 ) -> *const c_char {
-    // SAFETY: forwarded preconditions match `RimeGetStateLabelAbbreviated`.
-    unsafe { RimeGetStateLabelAbbreviated(session_id, option_name, state, FALSE).str }
+    crate::ffi_guard::guard(std::ptr::null(), || {
+        // SAFETY: forwarded preconditions match `RimeGetStateLabelAbbreviated`.
+        unsafe { RimeGetStateLabelAbbreviated(session_id, option_name, state, FALSE).str }
+    })
 }
 
 /// Returns a switch state label slice from the selected schema config.
@@ -1541,29 +1593,37 @@ pub unsafe extern "C" fn RimeGetStateLabelAbbreviated(
     state: Bool,
     abbreviated: Bool,
 ) -> RimeStringSlice {
-    let Some(option_name) = (unsafe { c_string_key(option_name) }) else {
-        return empty_string_slice();
-    };
-    let Some(label) =
-        state_label_for_session(session_id, &option_name, state, abbreviated != FALSE)
-    else {
-        return empty_string_slice();
-    };
-    let Ok(cached_label) = CString::new(label.value) else {
-        return empty_string_slice();
-    };
+    crate::ffi_guard::guard(
+        RimeStringSlice {
+            str: std::ptr::null(),
+            length: 0,
+        },
+        || {
+            let Some(option_name) = (unsafe { c_string_key(option_name) }) else {
+                return empty_string_slice();
+            };
+            let Some(label) =
+                state_label_for_session(session_id, &option_name, state, abbreviated != FALSE)
+            else {
+                return empty_string_slice();
+            };
+            let Ok(cached_label) = CString::new(label.value) else {
+                return empty_string_slice();
+            };
 
-    let mut cache = state_label_cache()
-        .lock()
-        .expect("state label cache should not be poisoned");
-    *cache = Some(cached_label);
-    let Some(cached_label) = cache.as_ref() else {
-        return empty_string_slice();
-    };
-    RimeStringSlice {
-        str: cached_label.as_ptr(),
-        length: label.length,
-    }
+            let mut cache = state_label_cache()
+                .lock()
+                .expect("state label cache should not be poisoned");
+            *cache = Some(cached_label);
+            let Some(cached_label) = cache.as_ref() else {
+                return empty_string_slice();
+            };
+            RimeStringSlice {
+                str: cached_label.as_ptr(),
+                length: label.length,
+            }
+        },
+    )
 }
 
 /// Processes a librime-style key sequence against a session.
@@ -1578,40 +1638,44 @@ pub unsafe extern "C" fn RimeSimulateKeySequence(
     session_id: RimeSessionId,
     key_sequence: *const c_char,
 ) -> Bool {
-    if session_id == 0 || key_sequence.is_null() {
-        return FALSE;
-    }
-    // SAFETY: callers promise that `key_sequence` is a valid nul-terminated
-    // string.
-    let Ok(key_sequence) = unsafe { CStr::from_ptr(key_sequence) }.to_str() else {
-        return FALSE;
-    };
-    let Ok(key_events) = parse_key_sequence(key_sequence) else {
-        return FALSE;
-    };
-
-    let mut registry = sessions()
-        .lock()
-        .expect("session registry should not be poisoned");
-    let Some(session) = registry.get_session_mut(session_id) else {
-        return FALSE;
-    };
-
-    for key_event in key_events {
-        match process_session_key_event(session_id, session, key_event) {
-            SessionKeyProcessResult::Commit(commit)
-            | SessionKeyProcessResult::RejectedCommit(commit) => {
-                append_unread_commit(session, commit)
-            }
-            SessionKeyProcessResult::Noop | SessionKeyProcessResult::Accepted => {}
+    crate::ffi_guard::guard(FALSE, || {
+        if session_id == 0 || key_sequence.is_null() {
+            return FALSE;
         }
-    }
-    TRUE
+        // SAFETY: callers promise that `key_sequence` is a valid nul-terminated
+        // string.
+        let Ok(key_sequence) = unsafe { CStr::from_ptr(key_sequence) }.to_str() else {
+            return FALSE;
+        };
+        let Ok(key_events) = parse_key_sequence(key_sequence) else {
+            return FALSE;
+        };
+
+        let mut registry = sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let Some(session) = registry.get_session_mut(session_id) else {
+            return FALSE;
+        };
+
+        for key_event in key_events {
+            match process_session_key_event(session_id, session, key_event) {
+                SessionKeyProcessResult::Commit(commit)
+                | SessionKeyProcessResult::RejectedCommit(commit) => {
+                    append_unread_commit(session, commit)
+                }
+                SessionKeyProcessResult::Noop | SessionKeyProcessResult::Accepted => {}
+            }
+        }
+        TRUE
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeSelectCandidate(session_id: RimeSessionId, index: usize) -> Bool {
-    select_candidate_or_switch(session_id, |_session| Some(index))
+    crate::ffi_guard::guard(FALSE, || {
+        select_candidate_or_switch(session_id, |_session| Some(index))
+    })
 }
 
 #[no_mangle]
@@ -1619,14 +1683,18 @@ pub extern "C" fn RimeSelectCandidateOnCurrentPage(
     session_id: RimeSessionId,
     index: usize,
 ) -> Bool {
-    select_candidate_or_switch(session_id, |session| {
-        candidate_index_on_current_page(session, index)
+    crate::ffi_guard::guard(FALSE, || {
+        select_candidate_or_switch(session_id, |session| {
+            candidate_index_on_current_page(session, index)
+        })
     })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeDeleteCandidate(session_id: RimeSessionId, index: usize) -> Bool {
-    with_session(session_id, |session| session.engine.delete_candidate(index))
+    crate::ffi_guard::guard(FALSE, || {
+        with_session(session_id, |session| session.engine.delete_candidate(index))
+    })
 }
 
 #[no_mangle]
@@ -1634,18 +1702,22 @@ pub extern "C" fn RimeDeleteCandidateOnCurrentPage(
     session_id: RimeSessionId,
     index: usize,
 ) -> Bool {
-    with_session(session_id, |session| {
-        let Some(global_index) = candidate_index_on_current_page(session, index) else {
-            return false;
-        };
-        session.engine.delete_candidate(global_index)
+    crate::ffi_guard::guard(FALSE, || {
+        with_session(session_id, |session| {
+            let Some(global_index) = candidate_index_on_current_page(session, index) else {
+                return false;
+            };
+            session.engine.delete_candidate(global_index)
+        })
     })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeHighlightCandidate(session_id: RimeSessionId, index: usize) -> Bool {
-    with_session(session_id, |session| {
-        highlight_candidate_clamped_like_librime(session, index)
+    crate::ffi_guard::guard(FALSE, || {
+        with_session(session_id, |session| {
+            highlight_candidate_clamped_like_librime(session, index)
+        })
     })
 }
 
@@ -1654,33 +1726,37 @@ pub extern "C" fn RimeHighlightCandidateOnCurrentPage(
     session_id: RimeSessionId,
     index: usize,
 ) -> Bool {
-    with_session(session_id, |session| {
-        let Some(global_index) = candidate_index_on_current_page(session, index) else {
-            return false;
-        };
-        highlight_candidate_clamped_like_librime(session, global_index)
+    crate::ffi_guard::guard(FALSE, || {
+        with_session(session_id, |session| {
+            let Some(global_index) = candidate_index_on_current_page(session, index) else {
+                return false;
+            };
+            highlight_candidate_clamped_like_librime(session, global_index)
+        })
     })
 }
 
 #[no_mangle]
 pub extern "C" fn RimeChangePage(session_id: RimeSessionId, backward: Bool) -> Bool {
-    with_session(session_id, |session| {
-        if session.engine.context().candidates.is_empty() {
-            return false;
-        }
+    crate::ffi_guard::guard(FALSE, || {
+        with_session(session_id, |session| {
+            if session.engine.context().candidates.is_empty() {
+                return false;
+            }
 
-        let page_size = session_menu_page_size(session);
-        let current_index = session.engine.context().highlighted;
-        let next_index = if backward != FALSE {
-            current_index.saturating_sub(page_size)
-        } else {
-            current_index + page_size
-        };
-        let changed = highlight_candidate_clamped_like_librime(session, next_index);
-        if changed {
-            session.paging = true;
-        }
-        changed
+            let page_size = session_menu_page_size(session);
+            let current_index = session.engine.context().highlighted;
+            let next_index = if backward != FALSE {
+                current_index.saturating_sub(page_size)
+            } else {
+                current_index + page_size
+            };
+            let changed = highlight_candidate_clamped_like_librime(session, next_index);
+            if changed {
+                session.paging = true;
+            }
+            changed
+        })
     })
 }
 

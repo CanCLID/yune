@@ -20,7 +20,10 @@ Browser rows are carried forward from the 2026-06-28 Playwright run.
   `m55-thresholds.csv` is the standing native Track A gate — startup, session,
   all eight key rows, Track A peak memory, win rows locked `<1.00x`, and
   Track B product absolutes. Green twice consecutively (`gate-run-d/`,
-  `gate-run-e/`). M52's artifact and the pre-corrective M55 artifact are
+  `gate-run-e/`) and re-run green at M56 closeout under
+  `m56-productization-hardening/final/ratchet-run/`. The M56 run passes with
+  limited short-key and 37-char headroom and is a guard proof, not a
+  performance rebaseline. M52's artifact and the pre-corrective M55 artifact are
   batch-shaped history (the metric changed).
 - **Current native latency disposition**: real M55 graph/DP-reduction work
   improved the long rows ~35% versus the pre-M55 record (37-char `1.913x`,
@@ -30,14 +33,14 @@ Browser rows are carried forward from the 2026-06-28 Playwright run.
   pre-corrective `0.237x`/`0.086x` rows were deferral artifacts and carry no
   claim.
 - **Current native memory disposition**: the shipping default is the owned
-  poet path at `185.7 MB` peak — the latency ceilings bind. `YUNE-POET/2`
+  poet path at `185.7 MB` peak - the latency ceilings bind. `YUNE-POET/2`
   byte-backed storage works, preserves parity, and measures `~113.2 MB`, but
   only as an explicit opt-in (`YUNE_POET_BYTE_BACKED=1`) because the
   incremental sentence scratch only operates on owned storage; byte-backed
   long rows measure `4.6x`/`3.2x` per-key.
 - **Current correctness disclosure**: Yune's first candidate page differs from
   librime on `n` and `zhongguo` (completion ranking) and on both long-sentence
-  top candidates (lattice; 37-char top `長足` vs librime `長句`). These are
+  top candidates (lattice; see the captured candidate snapshots). These are
   pre-existing gaps surfaced by the M55 Phase 3R-0 oracle fixture expansion
   (13 named blocked rows), now ranked the top native diagnostic target.
 - **Current browser fair memory owner**: the fair `luna_pinyin` browser gap is
@@ -47,7 +50,7 @@ Browser rows are carried forward from the 2026-06-28 Playwright run.
 
 | Area | Current root cause | Evidence | Current status |
 | --- | --- | --- | --- |
-| Native Track A standing guardrail | Corrective per-key ratchet green twice | `corrective-2026-07-04/gate-run-d/` and `gate-run-e/` | standing gate |
+| Native Track A standing guardrail | Corrective per-key ratchet green twice and M56 closeout ratchet green | `corrective-2026-07-04/gate-run-d/`, `gate-run-e/`, and `m56-productization-hardening/final/ratchet-run/` | standing gate |
 | Native sentence-lattice divergence | Yune's lattice/completion ranking differs from librime on the expanded oracle rows | 13 blocked fixture rows; `candidate_snapshots.csv` in the corrective runs | top correctness target |
 | Native long-row latency | Poet graph constant factors above the raw lookup | 37-char `1.913x`, 59-char `1.528x` (was `3.05x`/`2.25x` pre-M55) | improved; Tier M `1.50x` bar not met |
 | Native short keys | Exact-row scan + translator overhead | `n` `2.636x` (+34 us), `ni` `2.433x` (+25 us), `hao` `1.574x` (+9 us) | bounded absolute gaps |
@@ -55,6 +58,12 @@ Browser rows are carried forward from the 2026-06-28 Playwright run.
 | Track B product guard | TypeDuck product absolutes all green and tightened | key row `315.356 us` vs `347.975 us` ceiling; startup/session `~35 ms` vs Phase 0-era `~98 ms` sources | regression guard pass, real improvement |
 | Browser `luna_pinyin` memory | Yune WASM/runtime floor still larger than My RIME | `64.0 MiB` vs `16.0 MiB` (carried) | blocker |
 | Browser `luna_pinyin` startup | Yune public-demo startup still slower | `1000 ms` vs `634 ms` (carried) | watch |
+
+M56 closeout ratchet read: all standing rows pass, but the process-key rows
+show measured guard-path cost rather than a zero-overhead result (`n` `2.785x`,
+`ni` `2.573x`, `hao` `1.677x`, 37-char `1.981x`, 59-char `1.525x`). Future
+hardening should treat the short-key rows and 37-char row as tight regression
+guards.
 
 ![Current performance gaps by lane](./evidence/dashboard-visuals-2026-07-04/root-cause-gaps.svg)
 
@@ -154,9 +163,11 @@ browser-side blockers. Jyutping remains a launch guard lane, not a peer lane.
 ## Current Evidence
 
 - [`corrective-2026-07-04/README.md`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/README.md)
-  — corrective-series analysis, run inventory, honest M55 ledger
+  - corrective-series analysis, run inventory, honest M55 ledger
 - [`corrective-2026-07-04/gate-run-d/threshold-check.csv`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-d/threshold-check.csv)
   and [`gate-run-e/threshold-check.csv`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-e/threshold-check.csv)
+- [`m56-productization-hardening/final/ratchet-run/threshold-check.csv`](./evidence/m56-productization-hardening/final/ratchet-run/threshold-check.csv)
+  - latest green closeout proof against the standing M55 threshold artifact
 - [`thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
 - Pre-corrective closeout state: git history at `531dbcf2` (preserved, not
   scrubbed)

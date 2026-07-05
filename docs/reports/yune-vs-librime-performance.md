@@ -30,8 +30,13 @@ reverted key deferral and config cache measured under that batch shape; see
   [`m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
   is the standing native gate (all dimensions ceilinged, wins locked
   `<1.00x`, Track B absolutes included), green twice consecutively
-  (`gate-run-d/`, `gate-run-e/`). The M52 artifact and the pre-corrective M55
-  artifact are batch-shaped history.
+  (`gate-run-d/`, `gate-run-e/`) and re-run green at M56 closeout under
+  [`m56-productization-hardening/final/ratchet-run/`](./evidence/m56-productization-hardening/final/ratchet-run/).
+  The M56 run is a guard proof, not a performance rebaseline: some short-key
+  and sentence-row ratios drift upward but remain inside the committed
+  ceilings.
+  The M52 artifact and the pre-corrective M55 artifact are batch-shaped
+  history.
 - **Native memory disposition**: the shipping default is the owned poet path
   at `185.7 MB` Track A peak (the latency ceilings bind). The `YUNE-POET/2`
   byte-backed path is a working, parity-preserving **opt-in**
@@ -42,7 +47,7 @@ reverted key deferral and config cache measured under that batch shape; see
 - **Candidate-output disclosure**: Yune matches librime's first candidate page
   on `ni`, `hao`, and both abbreviation rows; it **differs** on `n` and
   `zhongguo` (completion ranking) and on both long-sentence top candidates
-  (sentence lattice; e.g. 37-char top `長足` vs librime `長句`). These are
+  (sentence lattice; see the captured candidate snapshots). These are
   pre-existing gaps exposed by the M55 Phase 3R-0 oracle fixtures (13 rows are
   named blocked `#[ignore]` tests), not regressions from the corrective
   series. The oracle parity suites pass on their captured rows.
@@ -60,7 +65,9 @@ Standing gate artifact:
 [`evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv).
 
 Consecutive green gate runs: `gate-run-d/` and `gate-run-e/` under the
-corrective root. Browser rows are carried from
+corrective root. Latest closeout proof:
+[`evidence/m56-productization-hardening/final/ratchet-run/threshold-check.csv`](./evidence/m56-productization-hardening/final/ratchet-run/threshold-check.csv).
+Browser rows are carried from
 [`evidence/current-performance-dashboard-2026-06-29/`](./evidence/current-performance-dashboard-2026-06-29/).
 
 ## Native Track A
@@ -87,7 +94,8 @@ The visualization below is regenerated from the corrective gate run D:
 
 ## Native Track A Guardrails
 
-Corrective gate run D against the standing artifact (run E repeats green):
+Corrective gate run D against the standing artifact (run E and the M56
+closeout ratchet repeat green):
 
 | Guard | Observed | Ceiling | Status |
 | --- | ---: | ---: | --- |
@@ -103,6 +111,13 @@ Corrective gate run D against the standing artifact (run E repeats green):
 | session median | `22,468.400 us` | `25,470.280 us` | pass |
 | Track A peak working set | `185,749,504 B` | `195,028,378 B` | pass |
 | Track B product long-row latency | `315.356 us` | `347.975 us` | pass |
+
+M56 closeout ratchet read: all `23` rows pass, but the short-key rows still
+have limited headroom (`n` `2.785x` / `2.890x`, `ni` `2.573x` / `2.666x`,
+`hao` `1.677x` / `1.731x`, 37-char `1.981x` / `2.094x`, 59-char `1.525x` /
+`1.625x`, Track B long row `320.820 us` / `347.975 us`). This is attributed to the added M56
+guard surface on the real `process_key`/context-read path plus same-machine run
+noise; do not summarize it as "no measurable performance cost."
 
 Manual standing gate command shape:
 

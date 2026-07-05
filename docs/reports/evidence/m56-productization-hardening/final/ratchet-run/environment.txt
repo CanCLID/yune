@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-05T04:38:14.3835283Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=b93ef6eb386b07735f4a16521ea406d8da77dad5
+yune_git_status_short= M Cargo.lock |  M apps/yune-web/package.json |  M apps/yune-web/public/schema-asset-manifest.json |  M crates/yune-core/src/dictionary/compiled.rs |  M crates/yune-core/src/tests/facade_tests/dictionary_artifacts.rs |  M crates/yune-rime-api/Cargo.toml |  M crates/yune-rime-api/src/api_table.rs |  M crates/yune-rime-api/src/candidate_api.rs |  M crates/yune-rime-api/src/config_api.rs |  M crates/yune-rime-api/src/context_api.rs |  M crates/yune-rime-api/src/deployment.rs |  M crates/yune-rime-api/src/ffi_memory.rs |  M crates/yune-rime-api/src/key_table.rs |  M crates/yune-rime-api/src/levers.rs |  M crates/yune-rime-api/src/lib.rs |  M crates/yune-rime-api/src/modules.rs |  M crates/yune-rime-api/src/notifications.rs |  M crates/yune-rime-api/src/runtime.rs |  M crates/yune-rime-api/src/schema_api.rs |  M crates/yune-rime-api/src/schema_install.rs |  M crates/yune-rime-api/src/schema_selection.rs |  M crates/yune-rime-api/src/session.rs |  M crates/yune-rime-api/src/tests/deployment.rs |  M crates/yune-rime-api/src/tests/dictionary_data.rs |  M crates/yune-rime-api/src/tests/resource_id.rs |  M crates/yune-rime-api/src/tests/session_api.rs |  M crates/yune-rime-api/src/tests/userdb.rs |  M crates/yune-rime-api/src/userdb.rs |  M crates/yune-rime-api/src/web_runtime.rs |  M docs/contracts/engine-support-contract.md |  M docs/ledgers/milestone-history.md |  D docs/plans/active/m56-plan-engine-productization-hardening.md |  M docs/reports/yune-vs-librime-performance.md |  M docs/reports/yune-vs-librime-root-cause-analysis.md |  M docs/requirements.md |  M docs/roadmap.md | ?? apps/yune-web/scripts/check-schema-asset-manifest.mjs | ?? crates/yune-rime-api/src/ffi_guard.rs | ?? crates/yune-rime-api/tests/abi_abuse.rs | ?? crates/yune-rime-api/tests/cold_start_conformance.rs | ?? docs/plans/completed/m56-plan-engine-productization-hardening.md | ?? docs/reports/evidence/m56-productization-hardening/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-run
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

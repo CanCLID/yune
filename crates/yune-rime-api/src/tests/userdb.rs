@@ -187,6 +187,74 @@ fn userdb_learning_persists_session_commits_and_reloads_candidates() {
 }
 
 #[test]
+fn userdb_learning_survives_full_rime_reinitialize() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("userdb-learning-reinitialize");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("learn.schema.yaml"),
+        "schema:\n  schema_id: learn\n  name: Learn\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: learn\n",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("learn.dict.yaml"),
+        "---\nname: learn\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nni\t\u{4f60}\t10\n",
+    )
+    .expect("dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeInitialize(&traits) };
+
+    let schema = CString::new("learn").expect("schema id should be valid");
+    let session_id = RimeCreateSession();
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(RimeProcessKey(session_id, 'n' as c_int, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as c_int, 0), TRUE);
+    assert_eq!(RimeCommitComposition(session_id), TRUE);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    assert!(user.join("learn.userdb").is_file());
+
+    RimeFinalize();
+    // SAFETY: traits points to valid storage and strings still live for the call.
+    unsafe { RimeInitialize(&traits) };
+    let reloaded_session = RimeCreateSession();
+    assert_eq!(
+        unsafe { RimeSelectSchema(reloaded_session, schema.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(RimeProcessKey(reloaded_session, 'n' as c_int, 0), TRUE);
+    assert_eq!(RimeProcessKey(reloaded_session, 'i' as c_int, 0), TRUE);
+    let candidates =
+        super::super::session_candidates_snapshot(reloaded_session).expect("session should exist");
+    assert!(
+        candidates
+            .iter()
+            .any(|candidate| candidate.source == CandidateSource::UserTable
+                && candidate.text == "\u{4f60}"),
+        "full Rime reinitialize should reload learned userdb candidates: {candidates:?}"
+    );
+
+    assert_eq!(RimeDestroySession(reloaded_session), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn userdb_rejects_malformed_logical_names_before_store_creation() {
     let _guard = test_guard();
     let root = unique_temp_dir("userdb-invalid-names");
@@ -247,6 +315,129 @@ fn userdb_rejects_malformed_logical_names_before_store_creation() {
         before
     );
 
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn userdb_file_store_format_freeze_and_bad_import_rollback() {
+    let _guard = test_guard();
+    let root = unique_temp_dir("userdb-format-freeze");
+    let user = root.join("user");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    let import = root.join("import.txt");
+    fs::write(&import, "\u{65b0}\txin\t3\n\u{8bcd}\tci\t4\n")
+        .expect("table import should be written");
+
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let dict = CString::new("freeze").expect("dict name should be valid");
+    let import_c = CString::new(import.to_string_lossy().as_ref()).expect("path is valid");
+    // SAFETY: pointers reference valid NUL-terminated strings for the call.
+    assert_eq!(
+        unsafe { RimeLeversImportUserDict(dict.as_ptr(), import_c.as_ptr()) },
+        2
+    );
+
+    let store_path = user.join("freeze.userdb");
+    let stored = fs::read_to_string(&store_path).expect("store should be readable");
+    assert_eq!(
+        stored,
+        "# yune userdb\n/db_name\tfreeze\n/db_type\tuserdb\n/tick\t1\n/user_id\tunknown\n/rime_version\t0.1.0\nci \t\u{8bcd}\tc=4 d=4 t=1\nxin \t\u{65b0}\tc=3 d=3 t=1\n"
+    );
+
+    let bad_import = root.join("bad-import.txt");
+    fs::write(&bad_import, "\u{574f}\tbad\tnot-a-number\n").expect("bad import should be written");
+    let bad_import_c = CString::new(bad_import.to_string_lossy().as_ref()).expect("path is valid");
+    // SAFETY: pointers reference valid NUL-terminated strings for the call.
+    assert_eq!(
+        unsafe { RimeLeversImportUserDict(dict.as_ptr(), bad_import_c.as_ptr()) },
+        -1
+    );
+    assert_eq!(
+        fs::read_to_string(&store_path).expect("store should remain readable"),
+        stored,
+        "bad imports must fail before mutating the committed store"
+    );
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn userdb_corrupt_committed_store_fails_closed_but_keeps_table_candidates() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("userdb-corrupt-committed");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("learn.schema.yaml"),
+        "schema:\n  schema_id: learn\n  name: Learn\nengine:\n  translators:\n    - table_translator\ntranslator:\n  dictionary: learn\n",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("learn.dict.yaml"),
+        "---\nname: learn\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nni\t\u{4f60}\t10\n",
+    )
+    .expect("dictionary should be written");
+    fs::write(
+        user.join("learn.userdb"),
+        "# yune userdb\n/db_name\tlearn\n/db_type\tuserdb\n/tick\tnot-a-tick\nni \t\u{4f60}\tc=9 d=9 t=1\n",
+    )
+    .expect("corrupt committed store should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let upgrade = CString::new("user_dict_upgrade").expect("task name should be valid");
+    assert_eq!(
+        RimeRunTask(upgrade.as_ptr()),
+        FALSE,
+        "corrupt committed stores without a validated snapshot fail closed"
+    );
+
+    let schema = CString::new("learn").expect("schema id should be valid");
+    let session_id = RimeCreateSession();
+    assert_eq!(
+        unsafe { RimeSelectSchema(session_id, schema.as_ptr()) },
+        TRUE
+    );
+    assert_eq!(RimeProcessKey(session_id, 'n' as c_int, 0), TRUE);
+    assert_eq!(RimeProcessKey(session_id, 'i' as c_int, 0), TRUE);
+    let candidates =
+        super::super::session_candidates_snapshot(session_id).expect("session should exist");
+    assert!(
+        candidates
+            .iter()
+            .any(|candidate| candidate.source == CandidateSource::Table
+                && candidate.text == "\u{4f60}"),
+        "table candidates should remain available after corrupt userdb rejection: {candidates:?}"
+    );
+    assert!(
+        candidates
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::UserTable),
+        "corrupt userdb rows must not leak into runtime candidates: {candidates:?}"
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.
     unsafe { RimeSetup(&reset_traits) };
@@ -338,6 +529,73 @@ fn userdb_recovery_interrupted_temp_write_keeps_last_committed_store_readable() 
     // SAFETY: reset traits points to valid storage.
     unsafe { RimeSetup(&reset_traits) };
     let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn userdb_sync_partial_peer_failure_merges_valid_snapshots_and_reports_failure() {
+    let _guard = test_guard();
+    let root = unique_temp_dir("rime-sync-partial-failure");
+    let user = root.join("user");
+    let bad_peer = user.join("sync").join("bad-peer");
+    let good_peer = user.join("sync").join("good-peer");
+    fs::create_dir_all(&user).expect("user dir should be created");
+    fs::create_dir_all(&bad_peer).expect("bad peer sync dir should be created");
+    fs::create_dir_all(&good_peer).expect("good peer sync dir should be created");
+    fs::write(
+        user.join("luna_pinyin.userdb"),
+        "# yune userdb\n/db_name\tluna_pinyin\n/db_type\tuserdb\n/tick\t1\nni hao \t\u{4f60}\u{597d}\tc=1 d=1 t=1\n",
+    )
+    .expect("local user dict should be written");
+    fs::write(
+        bad_peer.join("luna_pinyin.userdb.txt"),
+        "/db_name\t../bad\n/db_type\tuserdb\nni hao \t\u{4f60}\u{597d}\tc=9 d=9 t=9\n",
+    )
+    .expect("bad peer snapshot should be written");
+    fs::write(
+        good_peer.join("luna_pinyin.userdb.txt"),
+        "/db_name\tluna_pinyin\n/db_type\tuserdb\n/tick\t4\n/user_id\tgood-peer\nzhong guo \t\u{4e2d}\u{56fd}\tc=2 d=2 t=4\n",
+    )
+    .expect("good peer snapshot should be written");
+
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    assert_eq!(
+        RimeSyncUserData(),
+        FALSE,
+        "sync should report partial failure when one peer snapshot is invalid"
+    );
+    let merged = fs::read_to_string(user.join("luna_pinyin.userdb"))
+        .expect("merged dict should be readable");
+    assert!(merged.contains("ni hao \t\u{4f60}\u{597d}\tc=1 d=1 t=1"));
+    assert!(merged.contains("zhong guo \t\u{4e2d}\u{56fd}\tc=2 d=2 t=4"));
+    assert!(
+        !merged.contains("c=9 d=9 t=9"),
+        "invalid peer snapshot must not be merged: {merged}"
+    );
+
+    let installation_metadata = fs::read_to_string(user.join("installation.yaml"))
+        .expect("installation metadata should be written during sync");
+    let installation_metadata: Value =
+        serde_yaml::from_str(&installation_metadata).expect("installation metadata should parse");
+    let installation_id = find_config_value(&installation_metadata, "installation_id")
+        .and_then(Value::as_str)
+        .expect("installation id should be available");
+    assert!(
+        user.join("sync")
+            .join(installation_id)
+            .join("luna_pinyin.userdb.txt")
+            .is_file(),
+        "partial sync should still write a current-device backup"
+    );
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
 
 #[test]

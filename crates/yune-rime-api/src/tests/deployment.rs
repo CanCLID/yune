@@ -2071,6 +2071,39 @@ schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators
         yune_core::RimeDictArtifactStatus::ReusedFresh
     );
 
+    fs::write(user.join("build").join("luna.table.bin"), [0xff, 0x00])
+        .expect("corrupt table should be written");
+    fs::write(user.join("build").join("luna.prism.bin"), [0xff, 0x00])
+        .expect("corrupt prism should be written");
+    fs::write(user.join("build").join("luna.reverse.bin"), [0xff, 0x00])
+        .expect("corrupt reverse should be written");
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let rebuilt_after_corruption = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        rebuilt_after_corruption[0].report.table,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert_eq!(
+        rebuilt_after_corruption[0].report.prism,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert_eq!(
+        rebuilt_after_corruption[0].report.reverse,
+        yune_core::RimeDictArtifactStatus::Rebuilt
+    );
+    assert!(yune_core::parse_rime_table_bin_dictionary(
+        fs::read(user.join("build").join("luna.table.bin")).expect("rebuilt table should read")
+    )
+    .is_ok());
+    assert!(yune_core::parse_rime_prism_bin_payload(
+        fs::read(user.join("build").join("luna.prism.bin")).expect("rebuilt prism should read")
+    )
+    .is_ok());
+    assert!(yune_core::parse_rime_reverse_bin_dictionary(
+        fs::read(user.join("build").join("luna.reverse.bin")).expect("rebuilt reverse should read")
+    )
+    .is_ok());
+
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.
     unsafe { RimeSetup(&reset_traits) };
@@ -2433,7 +2466,26 @@ schema:\n  schema_id: missing\n  name: Missing\nengine:\n  translators:\n    - t
     // SAFETY: traits points to a valid RimeTraits object with valid strings.
     unsafe { RimeDeployerInitialize(&traits) };
     assert_eq!(RimeRunTask(workspace_task.as_ptr()), FALSE);
-    assert!(workspace_dictionary_rebuild_reports().is_empty());
+    let reports = workspace_dictionary_rebuild_reports();
+    assert!(
+        reports.iter().any(|report| {
+            report.schema_id == "missing"
+                && report.dictionary_id == "missing"
+                && report.report.table
+                    == yune_core::RimeDictArtifactStatus::MissingSourceAndCompiled
+                && report.report.prism
+                    == yune_core::RimeDictArtifactStatus::MissingSourceAndCompiled
+                && report.report.reverse
+                    == yune_core::RimeDictArtifactStatus::MissingSourceAndCompiled
+        }),
+        "missing dictionary should be reported explicitly: {reports:?}"
+    );
+    assert!(
+        reports
+            .iter()
+            .all(|report| report.dictionary_id != "../secret"),
+        "unsafe dictionary id must not be recorded as an artifact request: {reports:?}"
+    );
 
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.

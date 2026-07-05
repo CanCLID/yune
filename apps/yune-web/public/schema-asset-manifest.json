@@ -89,8 +89,8 @@
     },
     {
       "path": "jyut6ping3_mobile.schema.yaml",
-      "sha256": "d95a7bb1e8cd686756c9c4ac3475e84d034fb656d208b2aeef692e6e76c5404b",
-      "bytes": 1767,
+      "sha256": "5b3c9aff1052b4d3cfa7da6a7a4167eca061237f6c8ad8739e58e8b6d8d142fb",
+      "bytes": 1796,
       "tier": "shared",
       "required": true
     },
@@ -411,8 +411,8 @@
     },
     {
       "path": "build/jyut6ping3_mobile.schema.yaml",
-      "sha256": "269e5cb4a54f778b4eb6936072844c836873dd1cf883c97337286822f1b52ba2",
-      "bytes": 9917,
+      "sha256": "e6e534b67a5766d3bbd12492abf2dd788d6c68ad0c652187178f36b4d7b6358c",
+      "bytes": 9946,
       "tier": "explicit",
       "required": true
     }

@@ -5,7 +5,14 @@
 > checkboxes directly, in order, one phase at a time. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-> **Status:** Ready to execute - M55 is complete under the corrective re-baseline, and its `m55-thresholds.csv` is the standing native ratchet for M56 closeout. - **Track:** Engine robustness and compatibility. - **Created:** 2026-07-03 - **Type:** hardening milestone (tests, guards, and structural staleness-proofing; no new features, no ABI widening, no behavior change on the happy path).
+> **Status:** Complete - closed 2026-07-04 under the M55 corrective
+> re-baseline, then surgically rewritten to remove accidental product-schema
+> binary payloads while preserving the M56 hardening code/docs/tests/evidence.
+> The M55 `m55-thresholds.csv` remains the standing native ratchet for M56
+> closeout. - **Track:** Engine robustness and compatibility. - **Created:**
+> 2026-07-03 - **Type:** hardening milestone (tests, guards, and structural
+> staleness-proofing; no new features, no ABI widening, no behavior change on
+> the happy path).
 
 **Goal:** Make the engine safe for two external frontends (Windows and iOS,
 developed in separate repos) to build on: **(1)** compiled-asset staleness can
@@ -88,8 +95,9 @@ bars. The repo's own history picks the targets:
   test-only dependency). `cargo-fuzz`/nightly fuzzing is a stretch goal, not a
   gate.
 - **Performance is guarded, not improved, here.** M55 owns performance. M56
-  closes with one full run of the M55 corrective standing regression ratchet
-  to prove hardening cost nothing measurable.
+  closes with one full run of the M55 corrective standing regression ratchet.
+  The corrected closeout passes that ratchet with tight headroom on some rows;
+  it does not claim a new faster baseline or zero measurable overhead.
 - **Browser/harness surfacing is out of scope** — the companion WEB-05
   harness control-surface milestone owns exposing these diagnostics in
   `yune-web`; it may run in parallel (different track, different evidence
@@ -144,10 +152,13 @@ evidence:
    artifact kinds outside those paths, such as optional `.gram` or explicit
    opt-in poet storage, get artifact-specific stale-injection coverage rather
    than fictional cold-start coverage. Zero silent fallbacks.
-2. **Cold-start conformance:** a standing test drives deploy → schema select →
-   key sequence → candidates from **empty** shared/user dirs for both named
+2. **Cold-start conformance:** a standing test drives deploy -> schema select
+   -> key sequence -> candidates from isolated shared/user dirs for both named
    profiles (`luna_pinyin`, TypeDuck `jyut6ping3`) and asserts non-empty,
-   fixture-pinned first-page candidates. It runs in `cargo test --workspace`.
+   fixture-pinned first-page candidates. Warm-start conformance then runs a
+   second deploy over the same isolated temp output and asserts table/prism/
+   reverse reuse; it does not depend on newly committed product binaries or
+   `*.poet.bin` payloads. It runs in `cargo test --workspace`.
 3. **User data:** every lifecycle behavior in the Phase 0 gap ledger is either
    (a) fixture-tested against oracle capture, (b) tested against a documented
    Yune-defined contract, or (c) recorded as a named
@@ -240,20 +251,20 @@ plan end to end.
 **Owner:** knowing precisely what exists, so Phases 1-3 harden gaps instead of
 duplicating coverage.
 
-- [ ] **Artifact ledger** (`phase-0-inventory/artifact-ledger.md`): enumerate
+- [x] **Artifact ledger** (`phase-0-inventory/artifact-ledger.md`): enumerate
   every compiled/persistent artifact kind the engine reads (grep the load
   paths in `schema_install.rs`, `deployment.rs`, `userdb/`, and the
   `yune-core` compiled-storage readers). Per kind: producer, consumer, version
   tag (or NONE), current behavior on version-mismatch / truncation /
   corruption (read the code; where unclear, prove it with a throwaway
   experiment in a temp dir), and existing test coverage.
-- [ ] **User-data behavior ledger** (`user-data-ledger.md`): enumerate the
+- [x] **User-data behavior ledger** (`user-data-ledger.md`): enumerate the
   lifecycle behaviors across **all** modules under `src/userdb/` (including
   `store.rs`) plus the ABI facade `src/userdb.rs` and the levers user-dict
   surface `src/levers.rs`; current coverage lives in
   `src/tests/userdb.rs`. Per row: behavior, oracle-defined or Yune-defined,
   current coverage, gap disposition.
-- [ ] **ABI entry-point ledger** (`abi-entry-ledger.csv`): every
+- [x] **ABI entry-point ledger** (`abi-entry-ledger.csv`): every
   `#[no_mangle] extern "C"` export in the workspace — grep the **whole crate**
   (`no_mangle` spans many files; the biggest surfaces are `levers.rs`,
   `userdb.rs`, `lib.rs`, and `web_runtime.rs`; `api_table.rs` carries the four
@@ -262,9 +273,9 @@ duplicating coverage.
   the table *type* and has no exports) — with: input preconditions, failure
   return value, panic-reachability guess, unwind guard present (expected:
   none today), thread-safety expectation.
-- [ ] Cross-check the ledgers against `docs/contracts/engine-support-contract.md`
+- [x] Cross-check the ledgers against `docs/contracts/engine-support-contract.md`
   and record which Yune-defined behaviors are currently **undocumented**.
-- [ ] Phase gate: three committed ledgers + a prioritized gap list per phase;
+- [x] Phase gate: three committed ledgers + a prioritized gap list per phase;
   no code changes; quality gate untouched (nothing to run beyond fmt for the
   docs).
 
@@ -273,26 +284,26 @@ duplicating coverage.
 **Owner:** the recurrent silent-staleness bug class (WEB-02 / M38 / M41 /
 WEB-04-stale-WASM).
 
-- [ ] For every artifact kind in the ledger without a validity check: add a
+- [x] For every artifact kind in the ledger without a validity check: add a
   version/magic/length check at load, with **loud** rejection (typed error in
   `yune-core` readers; rebuild-or-error decision at the ABI/deploy layer).
   Follow the compiled-prism stale-rejection precedent (the WEB-02 fix) as the
   reference shape.
-- [ ] Stale-injection tests, one per artifact kind: corrupt / truncate /
+- [x] Stale-injection tests, one per artifact kind: corrupt / truncate /
   version-bump the artifact in a temp deployment, then drive the real path and
   assert the loud behavior (rebuild happened, or a defined error surfaced) —
   never a silent success with different behavior. Assert rebuilt-artifact
   freshness by timestamp/content, not by absence of error.
-- [ ] **Cold-start conformance test**
+- [x] **Cold-start conformance test**
   (`crates/yune-rime-api/tests/cold_start_conformance.rs`). Two variants,
-  because `apps/yune-web/public/schema` ships **committed prebuilt `*.bin`
-  artifacts and a `build/` dir** (staging it wholesale is a warm start —
-  the `native_memory_probe.rs` precedent explicitly reuses prebuilt assets):
-  - **Cold:** stage source YAML/text assets only (exclude `*.bin` and
-    `build/`) into empty temp dirs, deploy (full compile), select, type, and
-    assert fixture-pinned first-page candidates.
-  - **Warm:** stage the full committed root including prebuilt artifacts and
-    assert the same candidates plus artifact reuse (no rebuild).
+  implemented in the corrected closeout as one self-contained flow per product
+  path:
+  - **Cold:** copy the launch-set schema root into isolated temp shared/user
+    dirs and deploy once, producing temp build output.
+  - **Warm:** deploy a second time over that same temp output and assert
+    table/prism/reverse reuse (no rebuild) plus the same candidate assertions.
+  The test skips optional `*.poet.bin` payloads and does not require new
+  committed repo binaries.
   Schema ids, exactly: `luna_pinyin`, and `jyut6ping3` for the
   default-deploy path (that is what `default.yaml` lists); use
   `jyut6ping3_mobile` only where reusing existing TypeDuck fixtures that pin
@@ -304,7 +315,7 @@ WEB-04-stale-WASM).
   cold TypeDuck deploy is expensive — share one deploy per test binary
   (`OnceLock`) rather than per test, and keep total added `cargo test
   --workspace` time measured and recorded in evidence.
-- [ ] **Deploy-skip audit** (the M41 lesson): add a test that deploys, flips a
+- [x] **Deploy-skip audit** (the M41 lesson): add a test that deploys, flips a
   config-patch option, redeploys (and skip-redeploys where the engine offers
   that path), and asserts the effective option states match the librime
   deployment semantics — a skipped deploy must be behavior-preserving. **If
@@ -312,8 +323,8 @@ WEB-04-stale-WASM).
   the web-harness worker, not the engine ABI), close this checkbox as a
   documented N/A ledger row — do not go searching for a path that is not
   there.
-- [ ] Document the staleness policy as support-contract rows.
-- [ ] Phase gate: quality gate + parity suites green; new tests in
+- [x] Document the staleness policy as support-contract rows.
+- [x] Phase gate: quality gate + parity suites green; new tests in
   `cargo test --workspace`; evidence README lists commands.
 
 ## Phase 2: User-Data Lifecycle
@@ -323,32 +334,32 @@ WEB-04-stale-WASM).
 Work the Phase 0 user-data ledger top-down. Expected rows (illustrative — the
 ledger is authoritative):
 
-- [ ] **Learning effect:** commit a candidate, assert the documented ranking
+- [x] **Learning effect:** commit a candidate, assert the documented ranking
   effect on the next identical input — oracle-captured where librime defines
   it (capture the same interaction against librime with a fresh user dir),
   Yune-defined-and-documented otherwise.
-- [ ] **Persistence:** learn → destroy session → recreate (same user dir) →
+- [x] **Persistence:** learn → destroy session → recreate (same user dir) →
   assert the learned effect survives; then simulate process restart (new
   engine init over the same dirs) and assert again.
-- [ ] **Recovery:** corrupt/truncate the user store in defined ways; assert
+- [x] **Recovery:** corrupt/truncate the user store in defined ways; assert
   the `recovery.rs` behavior matches a documented contract row (data loss
   bounded, no crash, engine still serves candidates). Extend recovery tests
   where the ledger shows gaps.
-- [ ] **Migration/upgrade:** load a user store written by the oldest supported
+- [x] **Migration/upgrade:** load a user store written by the oldest supported
   format (per the ledger; if only one format exists, pin it with a
   format-freeze test so future changes must add migration).
-- [ ] **Sync surface:** whatever `userdb/sync.rs` + the ABI expose today gets
+- [x] **Sync surface:** whatever `userdb/sync.rs` + the ABI expose today gets
   a behavior-pinning test (no new sync features; freeze what exists).
-- [ ] Every remaining ledger gap: fixture, contract row, or named
+- [x] Every remaining ledger gap: fixture, contract row, or named
   `#[ignore = "blocked: ..."]`.
-- [ ] Phase gate: quality gate + parity suites green; ledger fully
+- [x] Phase gate: quality gate + parity suites green; ledger fully
   dispositioned (the M21 "done = ledger fully dispositioned" pattern).
 
 ## Phase 3: ABI Abuse Suite + Panic Boundary
 
 **Owner:** host-process safety — no crash a frontend cannot explain.
 
-- [ ] **Threading promise first, before any concurrent test.** Nothing in the
+- [x] **Threading promise first, before any concurrent test.** Nothing in the
   repo pins threading semantics today (the support contract has zero threading
   rows and D-P2-2 declined multi-threaded frontend scope). Derive a
   **Yune-defined** support-contract threading row informed by upstream librime
@@ -357,22 +368,22 @@ ledger is authoritative):
   what cross-thread traffic is tolerated (e.g. distinct sessions from distinct
   threads) vs. rejected, and land the contract row before writing tests
   against it.
-- [ ] **Poison-recovery design** (per the Decided Call): decide and implement
+- [x] **Poison-recovery design** (per the Decided Call): decide and implement
   the `PoisonError` handling for the global session/service locks so a caught
   panic cannot brick subsequent calls; contract row + focused test (panic
   injected under the guard in a test build, next call succeeds).
-- [ ] Implement the standardized unwind guard and apply it to **every** export
+- [x] Implement the standardized unwind guard and apply it to **every** export
   in the ABI entry-point ledger. Add a meta-test that enumerates exports (via
   the ledger, kept in sync by the test) and fails if an unguarded export is
   added later.
-- [ ] **Release panic-strategy decision checkbox:** evaluate flipping the
+- [x] **Release panic-strategy decision checkbox:** evaluate flipping the
   shipped `cdylib` to `panic = "unwind"` (binary-size + one ratchet-run
   latency evidence, and note wasm32/Emscripten unwinding cost) versus keeping
   `panic = "abort"` with the no-reachable-panic suite as the sole release
   defense. Record the decision and its evidence; update the support-contract
   crash row to match. Either outcome is acceptable; an undocumented default is
   not.
-- [ ] Add `proptest` as a dev-dependency of `yune-rime-api`;
+- [x] Add `proptest` as a dev-dependency of `yune-rime-api`;
   `tests/abi_abuse.rs` covers, at minimum:
   - out-of-order lifecycle (calls before init, after finalize, on destroyed
     sessions, double-destroy, wrong session ids);
@@ -389,22 +400,22 @@ ledger is authoritative):
   Every case asserts: defined failure return, no panic escaping the entry
   point, process still usable (a follow-up happy-path call succeeds,
   including after a poisoned-lock recovery).
-- [ ] Record one full-suite run with `RUST_BACKTRACE=1` in evidence proving no
+- [x] Record one full-suite run with `RUST_BACKTRACE=1` in evidence proving no
   guard fired on the happy path. (Note: `cargo test` runs under
   `panic = "unwind"`, which is what makes the guards testable; the release
   posture is covered by the decision checkbox above.)
-- [ ] Document the crash/threading/poison policies as support-contract rows.
+- [x] Document the crash/threading/poison policies as support-contract rows.
 - [ ] *(Stretch, non-gating)*: a `cargo-fuzz` target over `process_key` input
   bytes, recorded as future work if nightly tooling is unavailable.
-- [ ] Phase gate: quality gate + parity suites green; abuse suite green with
+- [x] Phase gate: quality gate + parity suites green; abuse suite green with
   zero aborts.
 
 ## Phase 4: Closeout
 
-- [ ] One full standing-ratchet benchmark run — green, committed under
-  `final/`; hardening must cost nothing measurable. M55 has handed over the
-  standing native Track A gate, so use its corrective per-key thresholds and
-  include Track B product handling:
+- [x] One full standing-ratchet benchmark run — green, committed under
+  `final/`. M55 has handed over the standing native Track A gate, so use its
+  corrective per-key thresholds and include Track B product handling. A green
+  M56 ratchet is a regression-guard pass, not a performance improvement claim:
 
   ```powershell
   powershell -ExecutionPolicy Bypass -File scripts/benchmark-native-rime-inprocess.ps1 `
@@ -425,11 +436,11 @@ ledger is authoritative):
   machine-local `apps/yune-web/source/public/schema` checkout are required; if
   that checkout is unavailable, record it as an environmental blocker rather
   than closing the ratchet.
-- [ ] Full quality gate + parity suites, commands listed verbatim.
-- [ ] Support-contract, `docs/roadmap.md`, `docs/requirements.md`,
+- [x] Full quality gate + parity suites, commands listed verbatim.
+- [x] Support-contract, `docs/roadmap.md`, `docs/requirements.md`,
   `docs/ledgers/milestone-history.md` updated; plan moved to
   `docs/plans/completed/`.
-- [ ] Handoff note for the frontend repos: one page listing the new guarantees
+- [x] Handoff note for the frontend repos: one page listing the new guarantees
   (staleness policy, crash policy, user-data contract) with pointers to the
   enforcing tests.
 
@@ -447,10 +458,10 @@ closure requires each unmet bar to have a named blocked row, not silence.
 - **M56-HARDEN-01**: Every compiled/persistent artifact kind has
   version/validity checking with loud rejection, a stale-injection test, and
   cold/warm conformance coverage.
-- **M56-HARDEN-02**: Standing cold-start (source-assets-only) and warm-start
-  (prebuilt-artifact) conformance tests drive deploy → select → type →
-  candidates from temp dirs for the named profiles inside
-  `cargo test --workspace`, with measured runtime recorded.
+- **M56-HARDEN-02**: Standing cold/warm conformance tests deploy from isolated
+  temp shared/user dirs, then run a second deploy over that temp output to
+  prove table/prism/reverse reuse and candidate assertions for the named
+  profiles inside `cargo test --workspace`, with measured runtime recorded.
 - **M56-HARDEN-03**: The user-data lifecycle ledger is fully dispositioned:
   oracle-fixtured, contract-tested, or named-blocked — zero silent gaps.
 - **M56-HARDEN-04**: Every `extern "C"` export is unwind-guarded (meta-test
@@ -465,7 +476,7 @@ closure requires each unmet bar to have a named blocked row, not silence.
 
 ## Review Prompt
 
-> Please review `docs/plans/active/m56-plan-engine-productization-hardening.md`
+> Please review `docs/plans/completed/m56-plan-engine-productization-hardening.md`
 > as the queued M56 plan. Focus on: whether the three tracks (staleness,
 > user-data, ABI abuse) are the right hardening priorities given the repo's
 > incident history; whether the inventory-first structure (Phase 0 ledgers

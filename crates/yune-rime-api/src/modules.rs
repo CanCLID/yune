@@ -41,26 +41,28 @@ pub(crate) fn levers_module() -> *mut RimeModule {
 /// returned by `RimeFindModule`.
 #[no_mangle]
 pub unsafe extern "C" fn RimeRegisterModule(module: *mut RimeModule) -> Bool {
-    if module.is_null() {
-        return FALSE;
-    }
+    crate::ffi_guard::guard(FALSE, || {
+        if module.is_null() {
+            return FALSE;
+        }
 
-    // SAFETY: callers promise `module` points to a valid RimeModule.
-    let module_ref = unsafe { &*module };
-    if module_ref.module_name.is_null() {
-        return FALSE;
-    }
+        // SAFETY: callers promise `module` points to a valid RimeModule.
+        let module_ref = unsafe { &*module };
+        if module_ref.module_name.is_null() {
+            return FALSE;
+        }
 
-    // SAFETY: callers promise `module_name` is a valid NUL-terminated C string.
-    let module_name = unsafe { CStr::from_ptr(module_ref.module_name) }
-        .to_string_lossy()
-        .into_owned();
-    module_registry()
-        .lock()
-        .expect("module registry should not be poisoned")
-        .modules_by_name
-        .insert(module_name, module as usize);
-    TRUE
+        // SAFETY: callers promise `module_name` is a valid NUL-terminated C string.
+        let module_name = unsafe { CStr::from_ptr(module_ref.module_name) }
+            .to_string_lossy()
+            .into_owned();
+        module_registry()
+            .lock()
+            .expect("module registry should not be poisoned")
+            .modules_by_name
+            .insert(module_name, module as usize);
+        TRUE
+    })
 }
 
 /// Finds a registered process-wide module by name.
@@ -71,23 +73,25 @@ pub unsafe extern "C" fn RimeRegisterModule(module: *mut RimeModule) -> Bool {
 /// string.
 #[no_mangle]
 pub unsafe extern "C" fn RimeFindModule(module_name: *const c_char) -> *mut RimeModule {
-    if module_name.is_null() {
-        return ptr::null_mut();
-    }
+    crate::ffi_guard::guard(std::ptr::null_mut(), || {
+        if module_name.is_null() {
+            return ptr::null_mut();
+        }
 
-    // SAFETY: callers promise `module_name` is a valid NUL-terminated C string.
-    let module_name = unsafe { CStr::from_ptr(module_name) }.to_string_lossy();
-    let registered = module_registry()
-        .lock()
-        .expect("module registry should not be poisoned")
-        .modules_by_name
-        .get(module_name.as_ref())
-        .copied();
-    if let Some(module) = registered {
-        return module as *mut RimeModule;
-    }
-    if module_name == "levers" {
-        return levers_module();
-    }
-    ptr::null_mut()
+        // SAFETY: callers promise `module_name` is a valid NUL-terminated C string.
+        let module_name = unsafe { CStr::from_ptr(module_name) }.to_string_lossy();
+        let registered = module_registry()
+            .lock()
+            .expect("module registry should not be poisoned")
+            .modules_by_name
+            .get(module_name.as_ref())
+            .copied();
+        if let Some(module) = registered {
+            return module as *mut RimeModule;
+        }
+        if module_name == "levers" {
+            return levers_module();
+        }
+        ptr::null_mut()
+    })
 }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::sessions;
 
 #[test]
 fn finalize_clears_sessions_but_preserves_notification_handler() {
@@ -51,6 +52,26 @@ fn creates_finds_and_destroys_sessions() {
     assert_eq!(RimeFindSession(session_id), TRUE);
     assert_eq!(RimeDestroySession(session_id), TRUE);
     assert_eq!(RimeFindSession(session_id), FALSE);
+}
+
+#[test]
+fn session_registry_poison_recovery_preserves_followup_happy_path() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+
+    let poisoned = std::thread::spawn(|| {
+        let _registry = sessions()
+            .lock()
+            .expect("session registry should recover poison for ABI callers");
+        panic!("m56 deliberate session-registry poison");
+    })
+    .join();
+    assert!(poisoned.is_err());
+
+    let session_id = RimeCreateSession();
+    assert_ne!(session_id, 0);
+    assert_eq!(RimeFindSession(session_id), TRUE);
+    assert_eq!(RimeDestroySession(session_id), TRUE);
 }
 
 #[test]

@@ -2,12 +2,15 @@ use std::{
     collections::BTreeMap,
     ffi::CString,
     fs, mem,
-    os::raw::{c_int, c_void},
+    os::raw::c_int,
     path::{Path, PathBuf},
     ptr,
     sync::{Mutex, MutexGuard, OnceLock},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+#[cfg(windows)]
+use std::os::raw::c_void;
 
 use serde_yaml::Value;
 use yune_core::{

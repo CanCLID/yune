@@ -54,31 +54,58 @@ owner's original word). The complete leading-syllable family appears
 mid-composition identical to the bare-syllable list, phrase rows prepended —
 the owner requirement **is** canonical oracle parity; nothing needs inventing.
 
+**Comparator note (139, not 136 — resolves the review's High finding):** the
+`bei` family is **139 single-character rows**. A tone-ignored "romanization
+first syllable == `bei`" classifier matches only **136** of them — it drops
+`啤/be1`, `唄/be6`, `𠹇/be1`, which the oracle nonetheless returns in the `bei`
+list. For the **canonical lane the comparator is the oracle's own ordered
+single-character list (all 139), not a romanization filter** — otherwise the
+win bar would silently not require those 3 reachable. The romanization
+classifier is retained only for the **profile** lane (where `bei` legitimately
+spans bei1–bei6). Note also that the two captures store romanization
+differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
+`"1,比,bei2,…"` — so the diff harness and any classifier reused from `c4336cd9`
+(CSV-shaped) must handle both formats.
+
 ## Current State (what exists, what is broken)
 
 - **Yune has no canonical Jyutping lane.** M58 captured the canonical oracle
   (phase-1) but its "Yune canonical diff" phase was skipped — no staged
-  canonical schema, no Yune-side run, no diff has ever been made. The shipped
-  product is the TypeDuck-derived schema.
-- **`c4336cd9` delivered profile-lane reachability** (verified byte-exact:
-  `beingo` page 1 unchanged, 畀@6, 匕@20; `zijiguk` 諮@34 — TypeDuck-profile
-  numbers) via the right mechanism family: fixed caps deleted, bounded typing
-  requests limit-driven (per-fetch 3, pending 4×limit, output = limit),
-  unbounded complete-list path uncapped plus
-  `leading_single_syllable_prefix_candidates` injection, selector page-turn
-  completion.
+  canonical schema, no Yune-side run, no diff has ever been made — every
+  committed `cantonese_parity` oracle is a `typeduck-v1.1.2` fixture
+  (shipped-dict provenance is confirmed in Phase 1; see below).
+- **`c4336cd9` delivered profile-lane reachability** via the right mechanism
+  family: fixed caps deleted, bounded typing requests limit-driven (per-fetch
+  3, pending 4×limit, output = limit), unbounded complete-list path uncapped
+  plus `leading_single_syllable_prefix_candidates` injection, selector
+  page-turn completion. **What is actually test-backed** (resolves the review's
+  Medium finding): `beingo` → 畀@6 is guarded (`cantonese_parity.rs` ~`:1922`,
+  `:1947`) and `zijiguk` → 諮 is guarded *as reachable by paging on the
+  byte-backed product path* (`yune_web.rs` ~`:3000`, `:3117`, both green).
+  **Not test-backed:** `beingo` → 匕 has **no** Yune-side guard (no `匕` /
+  `U+5315` assertion exists in any `*.rs`), and the `諮@34` index is a
+  *profile* number from an **uncommitted scratch capture** (the committed
+  profile capture has bare-`zi` 諮@27, and the `zijiguk` test asserts
+  reachability, not an index). Add a `beingo` → 匕 reachability guard and stop
+  citing `匕@20` / `諮@34` as established until pinned.
 - **But it broke the standing gate.** Two consistent ratchet runs fail Track A
   **luna** rows — `ni` 3.95–4.03x (ceiling 2.666), `hao` 3.33–3.43x (1.731),
   `zhongguo` win row 0.855–0.899 (ceiling 0.323; still <1.00x but ~3× worse) —
   plus Track B 359–362 µs (ceiling 347.975). Recorded as a "residual" and
   pushed. Per the M55 corrective's standing rule, threshold breaches are **not
   landable**; this is Phase 0.
-- **Likely regression owner (hypothesis to verify first):** the bounded-path
-  rewrite keys on `bounds_compact_fallback_expansion()` — *every*
-  Compact+prism translator — so **luna's bounded path changed even though luna
-  never uses prefix-fallback**. The fix is likely to scope the new bounded
-  machinery to prefix-fallback-enabled translators and restore luna's prior
-  path.
+- **Regression owner (hypothesis — requires measured attribution before any
+  fix; resolves the review's Medium finding):** the bounded-path rewrite keys
+  on `bounds_compact_fallback_expansion()`, which has **7 call sites**
+  (`translator/mod.rs` `:1028` def, `:1938`, `:1964`, `:2292`, `:2712`,
+  `:2783`, `:2851`) — *every* Compact+prism translator, and it gates more than
+  the prefix-fallback path (e.g. `max_candidates_per_span` at `:2851`, the
+  sentence path). So luna's bounded path plausibly changed even though luna
+  never uses prefix-fallback — **but this is not yet attributed.** Phase 0 must
+  localize the regression per call site (m37 metrics / bisection over the
+  `c4336cd9` diff) **before** choosing a fix; the likely-but-unconfirmed remedy
+  is to scope the new bounded machinery to prefix-fallback-enabled translators
+  and restore luna's prior path.
 - New `starts_with("jyut6ping3")` schema-string gates were added in
   `engine.rs` (~`:1429`) and `processors/selector.rs` (~`:183`) — the wart
   class the conventions warn about grew; cleanup is in scope (typed config).
@@ -87,11 +114,11 @@ the owner requirement **is** canonical oracle parity; nothing needs inventing.
 
 ### Phase 0 — BLOCKING: restore the standing ratchet to green
 - [ ] Root-cause the Track A luna regression from `c4336cd9` (start with the
-      scoping hypothesis above; the committed
-      `long-composition-corrective-ratchet*/m37_metrics.csv` runs are the
-      profiling base). Fix without losing the delivered profile-lane
-      reachability behavior (匕@20 / 諮@34 profile rows and the M58 anchors
-      stay green).
+      scoping hypothesis above, but attribute per call site before fixing; the
+      committed `long-composition-corrective-ratchet*/m37_metrics.csv` runs are
+      the profiling base). Fix without losing the delivered profile-lane
+      reachability behavior (the guarded rows — `beingo` → 畀@6 and `zijiguk` →
+      諮 reachable — plus the M58 anchors stay green).
 - [ ] Fix or explain the Track B miss (359–362 vs 348 µs) the same way — the
       ceiling stands; no re-baselining.
 - [ ] Ratchet green **twice** on fresh evidence leaves with the full standing
@@ -106,8 +133,17 @@ the owner requirement **is** canonical oracle parity; nothing needs inventing.
       as a Yune-loadable shared-data dir for **validation only** — the shipped
       product and the schema-id split decision remain untouched and
       sign-off-gated (D-31 amendment). `import_tables` is supported
-      (`dictionary/source.rs:753`); verify the full schema loads/deploys and
+      (`dictionary/source.rs:753`), **but that is necessary, not sufficient**
+      (review Medium/low): verify the full lane — schema YAML semantics,
+      spelling algebra + prism build, filters/options, segmentation, and
+      dictionary payload/`import_tables` merge — actually loads and deploys, and
       stop with a named blocker if any rime-cantonese feature is missing.
+- [ ] **Confirm the shipped `jyut6ping3.dict.yaml` provenance first.** It stores
+      plain `char\tcode\tweight` (no multilingual CSV comments), which looks
+      rime-cantonese-derived rather than TypeDuck-derived; if it already *is*
+      the pinned rime-cantonese dict, the canonical lane is closer than "never
+      diffed" implies and Phase 1's scope shrinks accordingly. Record the
+      finding either way.
 - [ ] **Defuse the profile-predicate landmine before any diff:**
       `is_typeduck_jyut6ping3_profile` (`schema_install.rs`) matches
       `schema_id jyut6ping3*` + dictionary `jyut6ping3` — the canonical lane
@@ -142,11 +178,13 @@ the owner requirement **is** canonical oracle parity; nothing needs inventing.
       3. `zijiguk`: **諮議局 first**; named row **諮 @ 227** reachable by
          paging, selectable, remainder recomposes;
       4. one ≥15-char control with a large leading family (depth×length case);
-      5. comparators pinned: classifier = single character whose romanization
-         first syllable (tone-ignored) equals the leading syllable; comparator
-         = ordered subsequence of Yune's paged output; full-list equality only
-         where the diff shows it achievable — every remaining divergence
-         recorded and named, none silently passed.
+      5. comparators pinned: for the **canonical lane the classifier is the
+         oracle's own ordered single-character list from the capture (all 139
+         for `bei`), not a romanization filter** (the romanization filter drops
+         `啤/唄/𠹇` and yields 136 — see the Comparator note); comparator = that
+         oracle list as an ordered subsequence of Yune's paged output;
+         full-list equality only where the diff shows it achievable — every
+         remaining divergence recorded and named, none silently passed.
 - [ ] Page-driven assertions only (no initial-materialization-window pins);
       compiled-path tests where caps/limits are storage-gated.
 
@@ -198,8 +236,9 @@ the owner requirement **is** canonical oracle parity; nothing needs inventing.
 - Are the win-bar numbers (匕@34, 諮@227, first pages, 139-single family)
   asserted from the committed canonical capture bytes with the pinned
   comparators?
-- Are profile-lane guards (匕@20, 諮@34 profile, M58 anchors, e2e) still green
-  and unchanged?
+- Are the actual profile-lane guards (`beingo` → 畀@6, `zijiguk` → 諮
+  reachable, the M58 anchors, e2e) still green and unchanged — and was the new
+  `beingo` → 匕 guard added rather than assumed?
 - Is every remaining canonical divergence named in the closeout, none silently
   passed?
 - Were the string gates replaced with typed config, and no new ones added?

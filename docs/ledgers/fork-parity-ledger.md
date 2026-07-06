@@ -17,11 +17,16 @@
 > preferred future TypeDuck profile id, but the id direction is gated on M58's
 > schema/profile blast-radius audit and explicit user sign-off.
 
-> **M58 closeout note (2026-07-05):** M58 fixes the current `yune-web`
-> TypeDuck/profile product-lane `beingo` / 畀 first-page reachability issue by
-> adjusting tracked public schema data and regenerated launch assets. This is a
-> scoped product-lane disposition, not a new fork-engine parity row and not a
-> canonical `rime-cantonese` candidate-order claim. Evidence:
+> **M58 corrective closeout note (2026-07-06):** M58 fixes the current
+> `yune-web` TypeDuck/profile product-lane `beingo` / 畀 and `zi` / 諮
+> reachability issues by preserving TypeDuck/profile-ranked paging. The
+> corrective fix restores the tracked public `畀	bei2	200000` row to TypeDuck
+> source order/weight, retains one TypeDuck/profile page of candidates for short
+> `jyut6ping3_mobile` reported/profile inputs, and keeps the targets reachable
+> by browser paging rather than first-page promotion. This is a scoped
+> product-lane disposition, not a
+> new fork-engine parity row and not a canonical `rime-cantonese`
+> candidate-order claim. Evidence:
 > [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](../reports/evidence/m58-jyutping-exact-before-fuzzy/).
 
 ## Sources & method

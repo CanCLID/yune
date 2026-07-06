@@ -163,6 +163,32 @@ fn upstream_octagram_fixtures_have_non_circular_source_provenance_and_verificati
 }
 
 #[test]
+fn m58_canonical_cantonese_capture_has_sanitized_provenance() {
+    let path = repo_root()
+        .join("docs")
+        .join("reports")
+        .join("evidence")
+        .join("m58-jyutping-exact-before-fuzzy")
+        .join("phase-1")
+        .join("canonical-rime-cantonese-capture.json");
+    let capture = read_json(&path);
+    assert_eq!(capture["milestone"], "M58", "{path:?}");
+    assert_eq!(capture["canonical"], true, "{path:?}");
+    assert_eq!(capture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(capture["oracle"]["version"], "1.17.0", "{path:?}");
+    assert_eq!(
+        capture["oracle"]["commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert_eq!(
+        capture["schema"]["source_repo"], "rime/rime-cantonese",
+        "{path:?}"
+    );
+    assert_eq!(capture["reported_case"]["input"], "zijiguk", "{path:?}");
+    assert_no_local_absolute_paths(&path, &capture);
+}
+
+#[test]
 fn upstream_luna_pinyin_fixtures_have_non_circular_source_provenance() {
     let root = fixture_root("upstream-1.17.0");
     let mut fixture_files = fs::read_dir(&root)

@@ -1,0 +1,16 @@
+{
+  "title": "yune-web",
+  "publicDemo": true,
+  "exposedOutputStandards": [
+    "opencc_traditional",
+    "hong_kong_traditional",
+    "taiwan_traditional",
+    "mainland_simplified"
+  ],
+  "exposedSchemaControls": [
+    "schema switcher",
+    "cangjie lookup"
+  ],
+  "hiddenUnsupportedControls": [],
+  "aiDefault": "off"
+}

@@ -34,6 +34,8 @@ const MAX_SENTENCE_CANDIDATES_PER_SPAN: usize = 6;
 const MAX_PREFIX_FALLBACK_CANDIDATES: usize = 64;
 const MAX_PREFIX_FALLBACK_PENDING_CANDIDATES: usize = 256;
 const MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE: usize = 2;
+const TYPEDUCK_PROFILE_REACHABILITY_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE: usize = 3;
+const TYPEDUCK_PROFILE_REACHABILITY_PREFIX_FALLBACK_MAX_INPUT_CHARS: usize = 6;
 /// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture
 /// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
 /// jyut6ping3 TypeDuck profile.
@@ -2229,7 +2231,12 @@ impl StaticTableTranslator {
         } else {
             usize::MAX
         };
-        let per_fetch_cap = if bound_expansion {
+        let per_fetch_cap = if bound_expansion
+            && input.chars().count()
+                <= TYPEDUCK_PROFILE_REACHABILITY_PREFIX_FALLBACK_MAX_INPUT_CHARS
+        {
+            TYPEDUCK_PROFILE_REACHABILITY_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE
+        } else if bound_expansion {
             MAX_PREFIX_FALLBACK_CANDIDATES_PER_FETCH_CODE
         } else {
             usize::MAX

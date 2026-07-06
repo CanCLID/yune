@@ -37,9 +37,10 @@ proving two full macOS native verification passes. The macOS bundle is now valid
 evidence for the repaired rows, not a new general performance verdict. M58 then
 rebased canonical Jyutping candidate claims on upstream `rime/librime 1.17.0`
 plus pinned `rime/rime-cantonese`, confirmed the reported `zijiguk` / `諮議局`
-case is first under the canonical oracle, fixed the current `yune-web`
-TypeDuck/profile `beingo` page-size-6 standalone `畀` reachability bug, and
-kept the schema-id split audit-only pending explicit sign-off.
+case is first under the canonical oracle, fixed current `yune-web`
+TypeDuck/profile `beingo` / 畀 and `zi` / 諮 reachability by preserving
+short-input profile-ranked paging, and kept the schema-id split audit-only
+pending explicit sign-off.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -283,9 +284,10 @@ Current decision:
    1.17.0` plus pinned `rime/rime-cantonese`, not TypeDuck-HK/librime v1.1.2.
    The user-specified `zijiguk` input for `諮議局` captures `諮議局` as the first
    canonical candidate, so no canonical admission issue is reproduced. The
-   shipped/current `yune-web` TypeDuck/profile lane still had a page-size-6
-   `beingo` reachability bug; M58 fixes it in the tracked public schema/assets
-   so standalone `畀` appears on the first page. Historical M14-M28 TypeDuck
+   shipped/current `yune-web` TypeDuck/profile lane still had page-navigation
+   reachability bugs for `beingo` / 畀 and `zi` / 諮; M58 fixes them by retaining
+   enough TypeDuck/profile-ranked candidates for page-size-6 browser paging
+   without promoting the targets onto the first page. Historical M14-M28 TypeDuck
    fixtures remain profile-lane regression guards. The preferred schema split
    remains canonical `jyut6ping3` plus TypeDuck `jyut6ping3_typeduck`, but no
    id split or userdb/cache-key migration landed; Phase 3 records the blast
@@ -338,7 +340,7 @@ and current decision rules.
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
-| M58 | Complete | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile `beingo` lane now surfaces standalone `畀` on the page-size-6 first page after the tracked public dictionary row and compiled schema assets were regenerated. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
+| M58 | Complete | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile lane now reaches `beingo` / 畀 at TypeDuck/profile index 6 and `zi` / 諮 at index 27 through page-size-6 browser paging without first-page promotion; the public dictionary row is restored to the TypeDuck source `畀	bei2	200000` value/order and compiled schema assets were regenerated. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
 
 ## Scope Ledger
 

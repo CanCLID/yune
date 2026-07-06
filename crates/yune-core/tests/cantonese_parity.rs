@@ -29,8 +29,8 @@ const WINDOWS_BOUNDARY_NGOHAIG_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-windows-boundary-ngohaig.json");
 const M28_UPSTREAM_JYUTPING_COMPOSITION_ORACLE: &str =
     include_str!("fixtures/upstream-jyutping/jyutping-m28-followup-composition.json");
-const M58_TYPEDUCK_PROFILE_BEINGO_ORACLE: &str = include_str!(
-    "../../../docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/typeduck-profile-beingo-capture.json"
+const M58_TYPEDUCK_PROFILE_REACHABILITY_ORACLE: &str = include_str!(
+    "../../../docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/typeduck-profile-reachability-capture.json"
 );
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
@@ -92,9 +92,9 @@ fn m24_dogfooding_fixture() -> Value {
         .expect("TypeDuck v1.1.2 M24 dogfooding fixture should be valid JSON")
 }
 
-fn m58_typeduck_profile_beingo_fixture() -> Value {
-    serde_json::from_str(M58_TYPEDUCK_PROFILE_BEINGO_ORACLE)
-        .expect("M58 TypeDuck/profile beingo fixture should be valid JSON")
+fn m58_typeduck_profile_reachability_fixture() -> Value {
+    serde_json::from_str(M58_TYPEDUCK_PROFILE_REACHABILITY_ORACLE)
+        .expect("M58 TypeDuck/profile reachability fixture should be valid JSON")
 }
 
 fn m28_partial_selection_fixture() -> Value {
@@ -1271,15 +1271,86 @@ fn m24_dogfooding_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
         .unwrap_or_else(|| panic!("M24 dogfooding fixture should capture input {input}"))
 }
 
-fn m58_typeduck_profile_beingo_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
+fn m58_typeduck_profile_reachability_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
     fixture["cases"]
         .as_array()
-        .expect("M58 TypeDuck/profile beingo cases should be an array")
+        .expect("M58 TypeDuck/profile reachability cases should be an array")
         .iter()
         .find(|case| case["variant"] == "smoke" && case["input"] == input)
         .unwrap_or_else(|| {
-            panic!("M58 TypeDuck/profile beingo fixture should capture input {input}")
+            panic!("M58 TypeDuck/profile reachability fixture should capture input {input}")
         })
+}
+
+fn captured_candidate_index(case: &Value, text: &str) -> usize {
+    case["all_candidates"]
+        .as_array()
+        .or_else(|| case["selected_candidates"].as_array())
+        .expect("captured case should include candidate rows")
+        .iter()
+        .position(|candidate| candidate["text"] == text)
+        .unwrap_or_else(|| panic!("captured case should include candidate text {text}"))
+}
+
+fn engine_candidate_texts(engine: &Engine) -> Vec<&str> {
+    engine
+        .context()
+        .candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect()
+}
+
+fn assert_profile_target_reachable_at_oracle_rank(
+    input: &str,
+    target: &str,
+    expected_first: Option<&str>,
+) {
+    let fixture = m58_typeduck_profile_reachability_fixture();
+    let expected = m58_typeduck_profile_reachability_case(&fixture, input);
+    assert_eq!(
+        expected["captured_all_pages"], true,
+        "TypeDuck/profile reachability fixture must be all-pages for {input}"
+    );
+    let oracle_index = captured_candidate_index(expected, target);
+    let oracle_page_size = expected["page_size"]
+        .as_u64()
+        .expect("captured case should record page size") as usize;
+    assert!(oracle_index < oracle_page_size);
+
+    let mut engine = yune_web_jyut6ping3_mobile_engine();
+    engine.set_input(input);
+    let initial = engine_candidate_texts(&engine);
+    if let Some(expected_first) = expected_first {
+        assert_eq!(
+            initial.first().copied(),
+            Some(expected_first),
+            "current yune-web profile should preserve the leading TypeDuck/profile row for {input}"
+        );
+    }
+    assert!(
+        !initial.iter().take(6).any(|candidate| *candidate == target),
+        "current yune-web profile must not promote {target} into the first page for {input}; initial candidates were {initial:?}"
+    );
+    assert!(
+        initial.len() > oracle_index,
+        "initial bounded product refresh should retain the TypeDuck/profile first-page oracle span for {input}; needed index {oracle_index}, got {} rows",
+        initial.len()
+    );
+    assert_eq!(
+        engine.context().candidates[oracle_index].text, target,
+        "current yune-web profile should reach {target} at the TypeDuck/profile oracle rank for {input}"
+    );
+}
+
+fn dictionary_row_for_text_and_code<'a>(dictionary: &'a str, text: &str, code: &str) -> &'a str {
+    dictionary
+        .lines()
+        .find(|line| {
+            let mut fields = line.split('\t');
+            fields.next() == Some(text) && fields.next() == Some(code)
+        })
+        .unwrap_or_else(|| panic!("dictionary should contain row for {text}\t{code}"))
 }
 
 fn candidate_count(case: &Value) -> usize {
@@ -1394,6 +1465,7 @@ fn typeduck_jyut6ping3_mobile_engine_with_options(
         translator = translator.with_corrections([RimeCorrectionEntry::new("nri", "nei")]);
     }
     let mut engine = Engine::new();
+    engine.set_schema("jyut6ping3_mobile", "Jyutping");
     engine.add_translator(translator);
     engine.add_filter(DictionaryLookupFilter::new(lookup_dictionary));
     engine
@@ -1432,6 +1504,7 @@ fn yune_web_jyut6ping3_mobile_engine() -> Engine {
         .with_prediction_candidate_limit(1)
         .with_prefix_fallback(true);
     let mut engine = Engine::new();
+    engine.set_schema("jyut6ping3_mobile", "Jyutping");
     engine.add_translator(translator);
     engine.add_filter(DictionaryLookupFilter::new(lookup_dictionary));
     engine
@@ -1828,8 +1901,8 @@ fn m21_closeout_rows_match_typeduck_v112_real_dictionary_goldens() {
 }
 
 #[test]
-fn m58_profile_beingo_lane_matches_typeduck_v112_capture() {
-    let fixture = m58_typeduck_profile_beingo_fixture();
+fn m58_profile_reachability_fixture_records_typeduck_v112_positions() {
+    let fixture = m58_typeduck_profile_reachability_fixture();
     assert_eq!(fixture["oracle"]["engine"], "TypeDuck-HK/librime");
     assert_eq!(fixture["schema"], "jyut6ping3_mobile");
     assert_eq!(
@@ -1837,65 +1910,46 @@ fn m58_profile_beingo_lane_matches_typeduck_v112_capture() {
         "typeduck_v112_binary_smoke"
     );
 
-    for input in ["bei", "being", "beingo", "beix", "beixngoxx"] {
-        let expected = m58_typeduck_profile_beingo_case(&fixture, input);
+    for input in ["bei", "being", "beingo", "beix", "beixngoxx", "zi"] {
+        let expected = m58_typeduck_profile_reachability_case(&fixture, input);
         assert_eq!(
             expected["captured_all_pages"], true,
             "fixture should be all-pages for input {input}"
         );
     }
 
-    let beingo = m58_typeduck_profile_beingo_case(&fixture, "beingo");
-    assert!(candidate_count(beingo) > 6);
+    let beingo = m58_typeduck_profile_reachability_case(&fixture, "beingo");
+    assert_eq!(captured_candidate_index(beingo, "\u{7540}"), 6);
     assert_eq!(selected_candidate_text(beingo, 0), "\u{4ffe}\u{6211}");
-    assert_eq!(selected_candidate_text(beingo, 6), "\u{7540}");
 
-    let beixngoxx = m58_typeduck_profile_beingo_case(&fixture, "beixngoxx");
-    assert!(candidate_count(beixngoxx) > 3);
+    let beixngoxx = m58_typeduck_profile_reachability_case(&fixture, "beixngoxx");
+    assert_eq!(captured_candidate_index(beixngoxx, "\u{7540}"), 3);
     assert_eq!(selected_candidate_text(beixngoxx, 0), "\u{4ffe}\u{6211}");
-    assert_eq!(selected_candidate_text(beixngoxx, 3), "\u{7540}");
+
+    let zi = m58_typeduck_profile_reachability_case(&fixture, "zi");
+    assert_eq!(captured_candidate_index(zi, "\u{8aee}"), 27);
 }
 
 #[test]
-fn m58_current_yune_web_profile_surfaces_beingo_report_candidates() {
-    for input in ["bei", "being", "beix", "beixngoxx", "beingo"] {
-        let mut engine = yune_web_jyut6ping3_mobile_engine();
-        engine.set_input(input);
+fn m58_yune_web_public_dictionary_keeps_typeduck_profile_bei_row() {
+    let source = typeduck_public_schema_asset("jyut6ping3.dict.yaml");
+    let public = yune_web_public_schema_asset("jyut6ping3.dict.yaml");
 
-        let first_page = engine
-            .context()
-            .candidates
-            .iter()
-            .take(6)
-            .map(|candidate| candidate.text.as_str())
-            .collect::<Vec<_>>();
-        if input == "being" {
-            assert_eq!(
-                first_page,
-                vec![
-                    "\u{4ffe}\u{6211}",
-                    "\u{60b2}\u{54c0}",
-                    "\u{5099}\u{6848}",
-                    "\u{5f7c}\u{5cb8}",
-                    "\u{88ab}\u{611b}",
-                    "\u{5f7c}\u{5cb8}\u{82b1}",
-                ],
-                "current yune-web profile should preserve the being first page snapshot"
-            );
-        } else {
-            assert!(
-                first_page.contains(&"\u{7540}"),
-                "current yune-web profile should surface standalone \u{7540} on the page-size-6 first page for {input}, got {first_page:?}"
-            );
-        }
-        if input == "beingo" || input == "beixngoxx" {
-            assert_eq!(
-                first_page.first().copied(),
-                Some("\u{4ffe}\u{6211}"),
-                "current yune-web profile should keep the bei-ngo phrase first for {input}, got {first_page:?}"
-            );
-        }
-    }
+    assert_eq!(
+        dictionary_row_for_text_and_code(&public, "\u{7540}", "bei2"),
+        dictionary_row_for_text_and_code(&source, "\u{7540}", "bei2"),
+        "current yune-web public dictionary must not invent a ranking override for standalone \u{7540}"
+    );
+}
+
+#[test]
+fn m58_current_yune_web_profile_reaches_beingo_bei_at_typeduck_rank() {
+    assert_profile_target_reachable_at_oracle_rank("beingo", "\u{7540}", Some("\u{4ffe}\u{6211}"));
+}
+
+#[test]
+fn m58_current_yune_web_profile_reaches_zi_advice_at_typeduck_rank() {
+    assert_profile_target_reachable_at_oracle_rank("zi", "\u{8aee}", Some("\u{81ea}"));
 }
 
 #[test]

@@ -269,8 +269,8 @@ fn page_snapshot_clones_only_visible_candidates_for_page_reads() {
 }
 
 #[test]
-fn typeduck_product_refresh_keeps_ordinary_rows_bounded_until_full_access() {
-    let dictionary = bounded_refresh_dictionary();
+fn typeduck_product_refresh_keeps_profile_page_bounded_until_full_access() {
+    let dictionary = bounded_refresh_dictionary_with_rows(80);
     let mut engine = Engine::new();
     engine.set_schema("jyut6ping3_mobile", "Jyutping");
     engine.add_translator(
@@ -285,14 +285,14 @@ fn typeduck_product_refresh_keeps_ordinary_rows_bounded_until_full_access() {
     engine.set_input("n");
 
     let bounded_len = engine.context().candidates.len();
-    assert!(
-        bounded_len < 31,
-        "product refresh should retain a bounded ordinary window"
+    assert_eq!(
+        bounded_len, 51,
+        "product refresh should retain one TypeDuck/profile page-sized window plus raw echo"
     );
     assert!(!engine.snapshot().candidate_list_complete);
     assert_eq!(engine.context().candidates[0].text, "candidate-00");
 
-    assert!(engine.highlight_candidate(25));
+    assert!(engine.highlight_candidate(55));
     assert!(
         engine.context().candidates.len() > bounded_len,
         "out-of-window product access should force a complete refresh"
@@ -336,6 +336,10 @@ fn bounded_refresh_completes_before_candidate_deletion() {
 }
 
 fn bounded_refresh_dictionary() -> String {
+    bounded_refresh_dictionary_with_rows(30)
+}
+
+fn bounded_refresh_dictionary_with_rows(row_count: usize) -> String {
     let mut dictionary = String::from(
         r#"
 ---
@@ -346,7 +350,7 @@ sort: by_weight
 
 "#,
     );
-    for index in 0..30 {
+    for index in 0..row_count {
         let first = char::from(b'a' + (index / 26) as u8);
         let second = char::from(b'a' + (index % 26) as u8);
         dictionary.push_str(&format!(

@@ -41,6 +41,8 @@ pub struct Engine {
 
 const DEFAULT_PAGE_SIZE: usize = 5;
 const BOUNDED_REFRESH_SURPLUS: usize = 15;
+const TYPEDUCK_PROFILE_REACHABILITY_SURPLUS: usize = 45;
+const TYPEDUCK_PROFILE_REACHABILITY_MAX_INPUT_CHARS: usize = 6;
 const M44_SHORT_KEY_REFRESH_SURPLUS: usize = 2;
 const TYPEDUCK_E_SQUARED: f32 = 7.389_056;
 const TYPEDUCK_EXP_E_SQUARED: f32 = 1618.178;
@@ -1327,6 +1329,10 @@ impl Engine {
             } else {
                 0
             }
+        } else if self.status.schema_id == "jyut6ping3_mobile"
+            && input.chars().count() <= TYPEDUCK_PROFILE_REACHABILITY_MAX_INPUT_CHARS
+        {
+            TYPEDUCK_PROFILE_REACHABILITY_SURPLUS
         } else {
             BOUNDED_REFRESH_SURPLUS
         };

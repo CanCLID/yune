@@ -11,7 +11,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$RepoRoot = [System.IO.Path]::GetFullPath((Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
 if ([string]::IsNullOrWhiteSpace($OracleRoot)) {
     $OracleRoot = Join-Path $RepoRoot "target\upstream-oracle\1.17.0"
 }
@@ -97,6 +97,19 @@ function Git-Head([string]$Path) {
 
 function File-Sha256([string]$Path) {
     (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+function Convert-ToEvidencePath([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $Path
+    }
+    $FullPath = [System.IO.Path]::GetFullPath($Path)
+    $RootPath = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+    if ($FullPath.StartsWith($RootPath + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $FullPath.StartsWith($RootPath + [System.IO.Path]::AltDirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $FullPath.Substring($RootPath.Length + 1).Replace("\", "/")
+    }
+    return $FullPath
 }
 
 $RequiredPaths = @(
@@ -192,9 +205,9 @@ $Evidence = [ordered]@{
         engine = "rime/librime"
         version = "1.17.0"
         commit = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
-        dll = $RimeDll
+        dll = Convert-ToEvidencePath $RimeDll
         dll_sha256 = $ActualRimeDllSha256
-        deployer = $RimeDeployer
+        deployer = Convert-ToEvidencePath $RimeDeployer
         deployer_sha256 = $ActualRimeDeployerSha256
     }
     schema = [ordered]@{
@@ -210,7 +223,7 @@ $Evidence = [ordered]@{
         page_sizes_observed = @($Pages)
     }
     commands = [ordered]@{
-        deploy = "rime_deployer.exe --build $User $Shared $Build"
+        deploy = "rime_deployer.exe --build $(Convert-ToEvidencePath $User) $(Convert-ToEvidencePath $Shared) $(Convert-ToEvidencePath $Build)"
         capture = if ($AllowMissingReportedCase) { "scripts/capture-upstream-rime-cantonese.ps1 -AllowMissingReportedCase" } else { "scripts/capture-upstream-rime-cantonese.ps1 -ReportedCaseInput $ReportedCaseInput" }
     }
     inputs = @($Inputs)

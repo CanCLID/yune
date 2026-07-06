@@ -96,7 +96,7 @@
     },
     {
       "path": "jyut6ping3.dict.yaml",
-      "sha256": "514ccb6facb998ffd056fd2e58f6fad81f5acb1e5d69c4fdf6c48be78777bd2d",
+      "sha256": "b0abf4fbcbf18b8cf05f4689ea05a12be6cf301f29a7316699e2b1ab9c24d172",
       "bytes": 3467039,
       "tier": "explicit",
       "required": true
@@ -320,21 +320,21 @@
     },
     {
       "path": "jyut6ping3.table.bin",
-      "sha256": "a62b28253dbedd7b670d35af928464d5ac1530a99b4e7ed71a7d3de7f5c3bc25",
+      "sha256": "2171814199c053e9c51a1a17a8a525d2d3af76e945f025a4850790f327f2af12",
       "bytes": 15248382,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3.reverse.bin",
-      "sha256": "ca5552f6cb4afbf90a6c66240fd057cfab98e79dd51cc8b77a23a3dd60bf8dd8",
+      "sha256": "081085514b906a8e8d7d809468afa8226636b1e3d1a3c14fe70c58a987c9cba5",
       "bytes": 3592525,
       "tier": "shared",
       "required": true
     },
     {
       "path": "jyut6ping3_mobile.prism.bin",
-      "sha256": "00aa3b52b5aa20cb2192f6deb5795571764747ae33ccccbca343fd42a073c772",
+      "sha256": "2f3bd1e1927831e5aa45229f0436fa919d32251d7f2c5ad8b0f52df21cdb0c55",
       "bytes": 19354757,
       "tier": "shared",
       "required": true

@@ -32,8 +32,9 @@ M58 has three lanes that must not be collapsed:
    valid TypeDuck-profile regression guards, including fixture-backed candidate
    ordering/composition/prediction/prefix-fallback behavior such as
    M21-GAP-01 and M21-GAP-02. The reported shipped-product `beingo` / 畀
-   reachability bug must receive an explicit TypeDuck-lane disposition; M58 may
-   not close by saying the issue is "TypeDuck-only" and walking away.
+   reachability bug, plus the corrective `zi` / 諮 shipped-lane report, must
+   receive explicit TypeDuck-lane dispositions; M58 may not close by saying the
+   issue is "TypeDuck-only" and walking away.
 3. **Schema identity safety.** `rime/rime-cantonese` and TypeDuck-HK/schema both
    use `schema_id: jyut6ping3`, so schema id alone is invalid provenance. The
    preferred future direction is for the plain `jyut6ping3` id to resolve to
@@ -58,8 +59,8 @@ bug report:
 1. Capture canonical upstream-librime behavior for the reported Jyutping
    reachability/admission cases using pinned `rime/rime-cantonese`.
 2. Diff Yune's canonical lane against that capture on the real compiled path.
-3. Classify the `beingo` / 畀 report in both the canonical lane and the shipped
-   TypeDuck/profile lane.
+3. Classify the `beingo` / 畀 and `zi` / 諮 reports in both the canonical lane
+   and the shipped TypeDuck/profile lane.
 4. Implement only a narrow candidate reachability/admission fix supported by
    fresh evidence for the lane it affects.
 5. Inventory schema/profile identity predicates and product blast radius before
@@ -245,12 +246,20 @@ Closeout result:
 - Canonical `rime-cantonese` captures do not reproduce a `zijiguk` /
   `諮議局` issue: `諮議局` is the first candidate.
 - Canonical `beingo` already reaches standalone `畀` on page 1.
-- The current `yune-web` TypeDuck/profile product path did reproduce the
-  page-size-6 `beingo` issue: standalone `畀` fell just past the first page.
-- M58 fixes only that product/profile lane by moving and reweighting the
-  tracked public `畀	bei2` row, regenerating compiled public schema assets, and
-  adding source-backed plus byte-backed focused guards. TypeDuck v1.1.2 remains
-  profile-only evidence and is not promoted to canonical candidate behavior.
+- The corrective user decision added `zi` as a shipped-lane repro for standalone
+  `諮`; it is not a replacement for the canonical `zijiguk` capture.
+- The current `yune-web` TypeDuck/profile product path did reproduce bounded
+  reachability issues: standalone `畀` for `beingo` was at TypeDuck/profile
+  index 6, and standalone `諮` for `zi` was at TypeDuck/profile index 27.
+- The first closeout's `畀	bei2	600000` public-dictionary promotion was
+  superseded. M58 fixes only the product/profile lane by restoring
+  `畀	bei2	200000` to TypeDuck source order/weight, retaining one
+  TypeDuck/profile page for short `jyut6ping3_mobile` reported/profile inputs,
+  widening prefix fallback only on that short-input bounded-expansion path to
+  keep `比` / `俾` / `畀` in source order, regenerating compiled public schema
+  assets, and adding source-backed, byte-backed, and browser focused guards.
+  TypeDuck v1.1.2 remains profile-only evidence and is not promoted to
+  canonical candidate behavior.
 
 ## Phase 3 - Schema/Profile Identity Safety And Sign-Off Gate
 
@@ -315,10 +324,12 @@ Closeout implementation:
 
 - No canonical runtime ordering fix was made because the canonical captures did
   not show an M58-owned canonical divergence.
-- No translator fallback cap was raised, so the M55 Track B threshold ratchet
-  was not required by the implementation diff.
-- The only product behavior change is in tracked `apps/yune-web/public/schema`
-  and regenerated public schema binaries/manifests for `jyut6ping3`.
+- The corrective product behavior change raises TypeDuck/profile candidate
+  retention for short `jyut6ping3_mobile` inputs and widens prefix fallback
+  breadth from 2 to 3 per fetch code only on that short-input bounded-expansion
+  path, so the M55 Track B product ratchet is required at closeout.
+- Product asset changes are limited to the restored tracked public dictionary
+  row and regenerated public schema binaries/manifests for `jyut6ping3`.
 
 ## Phase 5 - Verification And Closeout
 
@@ -330,8 +341,8 @@ Minimum gates, adjusted by touched files:
 - focused canonical Jyutping parity tests created from Phase 1 captures
 - focused TypeDuck profile regression tests for multilingual comments/profile
   behavior and grandfathered candidate behavior touched by the fix
-- focused shipped/profile `beingo` / 畀 regression evidence or explicit no-fix
-  decision evidence
+- focused shipped/profile `beingo` / 畀 and `zi` / 諮 regression evidence or
+  explicit no-fix decision evidence
 - if `apps/yune-web` schema lists, assets, or UI are touched:
   - `npm.cmd --prefix apps/yune-web run typecheck`
   - focused Playwright schema-selection or candidate-output evidence
@@ -341,7 +352,7 @@ Minimum gates, adjusted by touched files:
   - any WEB-03/Track-B tripwire named by the implementation diff
 - `git diff --check`
 
-Closeout gate results:
+Corrective closeout gate results:
 
 - `cargo fmt --check` - pass.
 - `cargo clippy --workspace --all-targets -- -D warnings` - pass.
@@ -350,16 +361,21 @@ Closeout gate results:
 - `cargo test -p yune-core --test cantonese_parity` - pass.
 - `cargo test -p yune-rime-api --test yune_web` - pass.
 - `cargo test -p yune-core --test cantonese_parity m58 -- --nocapture` - pass.
-- `cargo test -p yune-rime-api --test yune_web m58_yune_web_browser_app_assets_surface_beingo_standalone_bei_first_page -- --nocapture` - pass.
-- `cargo test -p yune-core --lib m37_metrics_test_enable_is_thread_local -- --nocapture` - pass.
-- `cargo test -p yune-rime-api --test yune_web web03_regenerates_public_schema_compiled_assets_from_clean_rebuild -- --ignored --nocapture` - pass.
+- `cargo test -p yune-rime-api --test yune_web m58 -- --nocapture` - pass.
+- `cargo test -p yune-core --test oracle_fixture_provenance m58_canonical_cantonese_capture_has_sanitized_provenance -- --nocapture` - pass.
+- `cargo test -p yune-core --lib typeduck_product_refresh_keeps_profile_page_bounded_until_full_access -- --nocapture` - pass.
+- `cargo test -p yune-rime-api --test yune_web web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion -- --nocapture` - pass.
+- `cargo test -p yune-rime-api --test yune_web web03_regenerates_public_schema_compiled_assets_from_clean_rebuild -- --ignored --nocapture` - pass and applied rebuilt public assets/manifests.
+- `scripts/yune-web-wasm-build.sh` through Emscripten - pass.
 - `npm.cmd --prefix apps/yune-web run check:schema-manifest` - pass.
 - `npm.cmd --prefix apps/yune-web run typecheck` - pass.
 - `npm.cmd --prefix apps/yune-web run build` - pass.
 - `npm.cmd --prefix apps/yune-web run build:public` - pass.
 - `npm.cmd --prefix packages/yune-web-runtime test` - pass.
 - `npm.cmd --prefix packages/yune-web-runtime run build` - pass.
-- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep M58 --workers=1` - pass against a local Vite server.
+- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep M58 --workers=1` - pass, evidence in `phase-2b/browser-corrective/`.
+- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M31 PUBLIC" --workers=1` - pass, evidence in `phase-2b/public-demo-corrective/`.
+- M55 product ratchet with `-DeployProductBeforeBenchmark` - pass, evidence in `phase-2b/m55-product-ratchet-corrective-final-pass2/`.
 - `git diff --check` - pass.
 
 Verification fixes and scoped skips:
@@ -370,17 +386,20 @@ Verification fixes and scoped skips:
   nondeterminism with thread-scoped `cfg(test)` enablement plus
   `m37_metrics_test_enable_is_thread_local`.
 - The generated, ignored `target/typeduck-oracle/v1.1.2` TypeDuck capture tree
-  was moved aside before final `yune_web` verification because legacy
+  was moved aside before byte-backed `yune_web` verification because legacy
   `write_browser_real_assets` auto-selects that local path when present. The
-  committed evidence remains `typeduck-profile-beingo-capture.json`.
-- The M55 Track B ratchet was not run because no translator fallback cap,
-  product-path performance threshold, or benchmark threshold changed.
-- The full Playwright suite was not run; the browser-visible M58 claim is
-  covered by the focused real-browser `--grep M58` candidate-output gate.
+  committed TypeDuck/profile evidence is
+  `typeduck-profile-reachability-capture.json`.
+- The M55 Track B ratchet passed for the corrective follow-up because the
+  product-path candidate cap changed.
+- The full Playwright suite is not required for M58; the browser-visible M58
+  claim is covered by the focused real-browser `--grep M58` candidate-output
+  gate and public-demo smoke is covered by the M31 PUBLIC gate because public
+  schema assets/manifests were regenerated.
 
-Closeout docs must update:
+Closeout docs updated:
 
-- this plan, moved to completed only if all closeout gates pass;
+- this completed plan;
 - `docs/roadmap.md`;
 - `docs/requirements.md`;
 - `docs/ledgers/milestone-history.md`;
@@ -396,8 +415,8 @@ M58 can close only when all of these are true:
 - TypeDuck v1.1.2 is absent from canonical candidate-order expected outputs.
 - Historical TypeDuck profile fixtures remain valid or are explicitly
   superseded by a new profile-lane decision.
-- The shipped `beingo` / 畀 report has an explicit disposition in both the
-  canonical and TypeDuck/profile lanes.
+- The shipped `beingo` / 畀 and `zi` / 諮 reports have explicit dispositions in
+  both the canonical and TypeDuck/profile lanes.
 - Any candidate reachability/admission code change is justified by a lane-owned
   capture diff and guarded by an oracle fixture.
 - Schema/profile predicate risks are inventoried, and schema-id direction is

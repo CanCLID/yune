@@ -792,6 +792,36 @@ function candidateTexts(state: CandidatePanelSnapshot): (string | null)[] {
   return state.candidates.map((candidate) => candidate.text);
 }
 
+async function pageDownUntilCandidate(
+  page: Page,
+  expectedText: string,
+  maxPageTurns: number,
+): Promise<{ pageTurns: number; state: CandidatePanelSnapshot }> {
+  let previousTexts = candidateTexts(
+    await readCandidatePanelSnapshot(page, false),
+  );
+  for (let pageTurns = 1; pageTurns <= maxPageTurns; pageTurns += 1) {
+    await page.keyboard.press("PageDown");
+    await expect
+      .poll(
+        async () =>
+          candidateTexts(await readCandidatePanelSnapshot(page, false)),
+        { timeout: 5000 },
+      )
+      .not.toEqual(previousTexts);
+    const state = await readCandidatePanelSnapshot(page, false);
+    const texts = candidateTexts(state);
+    if (texts.includes(expectedText)) {
+      return { pageTurns, state };
+    }
+    previousTexts = texts;
+  }
+  const state = await readCandidatePanelSnapshot(page, false);
+  throw new Error(
+    `candidate ${expectedText} was not reachable after ${maxPageTurns} PageDown events; last page was ${JSON.stringify(candidateTexts(state))}`,
+  );
+}
+
 async function selectVisibleCandidateByText(
   page: Page,
   text: string,
@@ -1609,28 +1639,63 @@ test.describe("yune-web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
-  test("M58 yune-web TypeDuck profile surfaces beingo standalone bei first page @smoke", async ({
+  test("M58 yune-web TypeDuck profile reaches oracle-ranked reported candidates @smoke", async ({
     page,
   }) => {
-    const state = await typeCompositionAndWaitForCandidate(
+    const beingoFirst = await typeCompositionAndWaitForTopCandidate(
       page,
       "beingo",
-      "\u7540",
+      "\u4ffe\u6211",
     );
-    const texts = candidateTexts(state);
+    const beingoFirstTexts = candidateTexts(beingoFirst);
+    expect(beingoFirstTexts.slice(0, 6)).not.toContain("\u7540");
+    const beingoReach = await pageDownUntilCandidate(page, "\u7540", 1);
+    const beingoReachTexts = candidateTexts(beingoReach.state);
+    expect(beingoReach.pageTurns).toBe(1);
+    expect(beingoReachTexts[0]).toBe("\u7540");
+    await takeEvidenceScreenshot(page, "m58-profile-reachability-beingo");
 
-    expect(texts[0]).toBe("\u4ffe\u6211");
-    expect(texts.slice(0, 6)).toContain("\u7540");
-    await saveJsonEvidence("m58-beingo-first-page.json", {
-      input: "beingo",
-      firstPageCandidateTexts: texts.slice(0, 6),
-      expectedFirstCandidate: "\u4ffe\u6211",
-      requiredReachableCandidate: "\u7540",
+    const ziFirst = await typeCompositionAndWaitForTopCandidate(
+      page,
+      "zi",
+      "\u81ea",
+    );
+    const ziFirstTexts = candidateTexts(ziFirst);
+    expect(ziFirstTexts.slice(0, 6)).not.toContain("\u8aee");
+    const ziReach = await pageDownUntilCandidate(page, "\u8aee", 4);
+    const ziReachTexts = candidateTexts(ziReach.state);
+    expect(ziReach.pageTurns).toBe(4);
+    expect(ziReachTexts).toContain("\u8aee");
+    await takeEvidenceScreenshot(page, "m58-profile-reachability-zi");
+
+    await saveJsonEvidence("m58-profile-reachability.json", {
       source:
-        "M58 TypeDuck/profile product lane: current yune-web jyut6ping3_mobile browser assets.",
-      state,
+        "M58 TypeDuck/profile product lane: current yune-web jyut6ping3_mobile browser assets, preserving TypeDuck-profile candidate rank reachability without first-page promotion.",
+      cases: [
+        {
+          input: "beingo",
+          expectedFirstCandidate: "\u4ffe\u6211",
+          targetCandidate: "\u7540",
+          typeduckProfileIndex: 6,
+          firstPageCandidateTexts: beingoFirstTexts.slice(0, 6),
+          pageTurnsToTarget: beingoReach.pageTurns,
+          targetPageCandidateTexts: beingoReachTexts,
+          firstPageState: beingoFirst,
+          targetPageState: beingoReach.state,
+        },
+        {
+          input: "zi",
+          expectedFirstCandidate: "\u81ea",
+          targetCandidate: "\u8aee",
+          typeduckProfileIndex: 27,
+          firstPageCandidateTexts: ziFirstTexts.slice(0, 6),
+          pageTurnsToTarget: ziReach.pageTurns,
+          targetPageCandidateTexts: ziReachTexts,
+          firstPageState: ziFirst,
+          targetPageState: ziReach.state,
+        },
+      ],
     });
-    await takeEvidenceScreenshot(page, "m58-beingo-first-page");
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 

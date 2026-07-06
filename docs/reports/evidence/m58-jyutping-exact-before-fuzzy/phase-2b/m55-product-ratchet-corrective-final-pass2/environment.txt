@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-06T03:34:29.6874716Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=7ec445332b7925d0b90f4ae532fca31196f07fd1
+yune_git_status_short= M apps/yune-web/e2e/yune-web.spec.ts |  M apps/yune-web/public-demo/schema-asset-manifest.json |  M apps/yune-web/public/schema-asset-manifest.json |  M apps/yune-web/public/schema/jyut6ping3.dict.yaml |  M apps/yune-web/public/schema/jyut6ping3.reverse.bin |  M apps/yune-web/public/schema/jyut6ping3.table.bin |  M apps/yune-web/public/schema/jyut6ping3_mobile.prism.bin |  M crates/yune-core/src/engine.rs |  M crates/yune-core/src/tests/engine.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-core/tests/cantonese_parity.rs |  M crates/yune-core/tests/oracle_fixture_provenance.rs |  M crates/yune-rime-api/tests/yune_web.rs |  M docs/ledgers/fork-parity-ledger.md |  M docs/ledgers/milestone-history.md |  M docs/plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md |  M docs/reports/evidence/m58-jyutping-exact-before-fuzzy/README.md |  M docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-1/canonical-rime-cantonese-capture.json |  M docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/README.md |  M docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/yune-web-beingo-disposition.json |  M docs/requirements.md |  M docs/roadmap.md |  M scripts/capture-upstream-rime-cantonese.ps1 | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/browser-corrective/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-rerun/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/public-demo-corrective/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/typeduck-profile-reachability-capture.json | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/web03-corrective-rebuild/ | ?? docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/yune-web-reachability-disposition.json
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\m55-product-ratchet-corrective-final-pass2
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

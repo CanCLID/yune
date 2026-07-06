@@ -1,0 +1,388 @@
+{
+  "startup": {
+    "type": "diagnostic",
+    "source": "yune-startup",
+    "marker": {
+      "phase": "startup:complete",
+      "totalMs": 939,
+      "markers": [
+        {
+          "phase": "runtime:init:start",
+          "ms": 0
+        },
+        {
+          "phase": "worker:start",
+          "ms": 0
+        },
+        {
+          "phase": "wasm-glue:loaded",
+          "ms": 8
+        },
+        {
+          "phase": "wasm:module:create:start",
+          "ms": 8
+        },
+        {
+          "phase": "wasm:module:create:finish",
+          "ms": 70
+        },
+        {
+          "phase": "module:created",
+          "ms": 70,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "filesystem:mount:start",
+          "ms": 70
+        },
+        {
+          "phase": "filesystem:mount:finish",
+          "ms": 70,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "persistence:mounted",
+          "ms": 70,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:start",
+          "ms": 70,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:finish",
+          "ms": 591,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:loaded",
+          "ms": 591,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:start",
+          "ms": 591,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:finish",
+          "ms": 930,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:start",
+          "ms": 930,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:finish",
+          "ms": 939,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "runtime:init:finish",
+          "ms": 939,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "runtime:initialized",
+          "ms": 939,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        }
+      ],
+      "m27EvidenceVersion": "m27-startup-v1",
+      "m31EvidenceVersion": "web03-three-schema-launch-v1",
+      "publicDemo": true,
+      "assetVersion": "yune-web-wasm-heap-v2",
+      "schema": "jyut6ping3_mobile",
+      "wasmMemory": {
+        "currentBytes": 134217728,
+        "peakBytes": 134217728
+      },
+      "wasmBuildProfile": "release",
+      "wasmGlue": "yune-web.js",
+      "wasmBinary": "yune-web.wasm",
+      "assetCache": {
+        "hits": 1,
+        "misses": 39,
+        "unavailable": false
+      },
+      "loadedExplicitAssets": [
+        "default.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3.dict.yaml"
+      ],
+      "loadedSharedAssets": [
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "jyut6ping3.schema.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3_scolar.schema.yaml",
+        "jyut6ping3_scolar.dict.yaml",
+        "loengfan.schema.yaml",
+        "loengfan.dict.yaml",
+        "cangjie3.schema.yaml",
+        "cangjie3.dict.yaml",
+        "cangjie5.schema.yaml",
+        "cangjie5.dict.yaml",
+        "luna_pinyin.dict.yaml",
+        "luna_pinyin_yune_reverse.dict.yaml",
+        "luna_pinyin_yune_reverse.table.bin",
+        "luna_pinyin_yune_reverse.reverse.bin",
+        "luna_pinyin_yune_reverse.prism.bin",
+        "opencc/t2hkf.json",
+        "opencc/HKVariantsFull.txt",
+        "opencc/t2s.json",
+        "opencc/t2tw.json",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+        "jyut6ping3.table.bin",
+        "jyut6ping3.reverse.bin",
+        "jyut6ping3_mobile.prism.bin",
+        "jyut6ping3_scolar.table.bin",
+        "jyut6ping3_scolar.reverse.bin",
+        "jyut6ping3_scolar.prism.bin"
+      ]
+    }
+  },
+  "reloadStartup": {
+    "type": "diagnostic",
+    "source": "yune-startup",
+    "marker": {
+      "phase": "startup:complete",
+      "totalMs": 432,
+      "markers": [
+        {
+          "phase": "runtime:init:start",
+          "ms": 0
+        },
+        {
+          "phase": "worker:start",
+          "ms": 0
+        },
+        {
+          "phase": "wasm-glue:loaded",
+          "ms": 7
+        },
+        {
+          "phase": "wasm:module:create:start",
+          "ms": 7
+        },
+        {
+          "phase": "wasm:module:create:finish",
+          "ms": 27
+        },
+        {
+          "phase": "module:created",
+          "ms": 27,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "filesystem:mount:start",
+          "ms": 27
+        },
+        {
+          "phase": "filesystem:mount:finish",
+          "ms": 27,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "persistence:mounted",
+          "ms": 27,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:start",
+          "ms": 27,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:load:finish",
+          "ms": 124,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "assets:loaded",
+          "ms": 124,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:start",
+          "ms": 124,
+          "wasmMemory": {
+            "currentBytes": 67108864,
+            "peakBytes": 67108864
+          }
+        },
+        {
+          "phase": "schema:select:finish",
+          "ms": 432,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:start",
+          "ms": 432,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "startup-defaults:customize:finish",
+          "ms": 432,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "runtime:init:finish",
+          "ms": 432,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        },
+        {
+          "phase": "runtime:initialized",
+          "ms": 432,
+          "wasmMemory": {
+            "currentBytes": 134217728,
+            "peakBytes": 134217728
+          }
+        }
+      ],
+      "m27EvidenceVersion": "m27-startup-v1",
+      "m31EvidenceVersion": "web03-three-schema-launch-v1",
+      "publicDemo": true,
+      "assetVersion": "yune-web-wasm-heap-v2",
+      "schema": "jyut6ping3_mobile",
+      "wasmMemory": {
+        "currentBytes": 134217728,
+        "peakBytes": 134217728
+      },
+      "wasmBuildProfile": "release",
+      "wasmGlue": "yune-web.js",
+      "wasmBinary": "yune-web.wasm",
+      "assetCache": {
+        "hits": 40,
+        "misses": 0,
+        "unavailable": false
+      },
+      "loadedExplicitAssets": [
+        "default.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3.dict.yaml"
+      ],
+      "loadedSharedAssets": [
+        "default.custom.yaml",
+        "common.yaml",
+        "common.custom.yaml",
+        "include.yaml",
+        "template.yaml",
+        "jyut6ping3.schema.yaml",
+        "jyut6ping3_mobile.schema.yaml",
+        "jyut6ping3_scolar.schema.yaml",
+        "jyut6ping3_scolar.dict.yaml",
+        "loengfan.schema.yaml",
+        "loengfan.dict.yaml",
+        "cangjie3.schema.yaml",
+        "cangjie3.dict.yaml",
+        "cangjie5.schema.yaml",
+        "cangjie5.dict.yaml",
+        "luna_pinyin.dict.yaml",
+        "luna_pinyin_yune_reverse.dict.yaml",
+        "luna_pinyin_yune_reverse.table.bin",
+        "luna_pinyin_yune_reverse.reverse.bin",
+        "luna_pinyin_yune_reverse.prism.bin",
+        "opencc/t2hkf.json",
+        "opencc/HKVariantsFull.txt",
+        "opencc/t2s.json",
+        "opencc/t2tw.json",
+        "opencc/hk2s.json",
+        "opencc/HKVariantsRev.ocd2",
+        "opencc/HKVariantsRevPhrases.ocd2",
+        "opencc/TSCharacters.ocd2",
+        "opencc/TSPhrases.ocd2",
+        "jyut6ping3.table.bin",
+        "jyut6ping3.reverse.bin",
+        "jyut6ping3_mobile.prism.bin",
+        "jyut6ping3_scolar.table.bin",
+        "jyut6ping3_scolar.reverse.bin",
+        "jyut6ping3_scolar.prism.bin"
+      ]
+    }
+  },
+  "resources": [
+    {
+      "name": "http://127.0.0.1:8788/worker.js?v=yune-web-wasm-heap-v1&schema=jyut6ping3",
+      "duration": -26.800000000745058,
+      "transferSize": 300
+    }
+  ],
+  "claimBoundary": "delivery cache and asset pruning only; not a browser startup speedup claim"
+}

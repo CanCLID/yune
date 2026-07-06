@@ -1443,8 +1443,10 @@ platform-stable for the known target payloads. Evidence:
 **Status: complete.** M58 rebases canonical Cantonese/Jyutping candidate
 behavior on upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`,
 keeps TypeDuck multilingual behavior as a separate profile/data lane, fixes the
-current `yune-web` TypeDuck/profile `beingo` / 畀 first-page reachability bug,
-and records the schema-id blast-radius audit without implementing a rename.
+current `yune-web` TypeDuck/profile `beingo` / 畀 and `zi` / 諮 reachability
+reports by preserving short-input TypeDuck/profile-ranked paging, and records
+the schema-id
+blast-radius audit without implementing a rename.
 
 - [x] **M58-JYUTPING-01**: Canonical `jyut6ping3` candidate behavior is captured
   from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`
@@ -1467,9 +1469,10 @@ and records the schema-id blast-radius audit without implementing a rename.
   payloads, profile controls, display/comment behavior, and grandfathered
   M14-M28 profile candidate guards remain regression guarded without widening
   canonical candidate behavior.
-- [x] **M58-JYUTPING-06**: The shipped-product `beingo` / 畀 reachability report
-  receives an explicit disposition in both the canonical and TypeDuck/profile
-  lanes; M58 cannot close merely because the bug is TypeDuck-profile-only.
+- [x] **M58-JYUTPING-06**: The shipped-product `beingo` / 畀 and `zi` / 諮
+  reachability reports receive explicit dispositions in both the canonical and
+  TypeDuck/profile lanes; M58 cannot close merely because a shipped-lane bug is
+  TypeDuck-profile-only.
 - [x] **M58-JYUTPING-07**: Schema-install profile predicates and product identity
   blast radius are audited before any schema-id split, especially
   `is_typeduck_jyut6ping3_profile`,
@@ -1660,9 +1663,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M58-JYUTPING-01 | M58 | Complete - all-pages canonical upstream `rime-cantonese` captures produced with upstream `rime/librime 1.17.0`, pinned schema commit, page size 5, mirrored options, and `captured_all_pages: true` |
 | M58-JYUTPING-02 | M58 | Complete - schema id split was not implemented; preferred `jyut6ping3` plus `jyut6ping3_typeduck` direction remains sign-off gated after blast-radius audit |
 | M58-JYUTPING-03 | M58 | Complete - Phase 0/1/2b evidence records schema repos/commits, oracle versions, Yune-facing ids, page sizes, option state, and regenerated public schema manifest hashes |
-| M58-JYUTPING-04 | M58 | Complete - canonical `zijiguk` and `beingo` captures did not require a canonical fix; the landed `beingo` fix is explicitly scoped to the current TypeDuck/profile yune-web product lane |
+| M58-JYUTPING-04 | M58 | Complete - canonical `zijiguk` and `beingo` captures did not require a canonical fix; the landed `beingo` / 畀 and `zi` / 諮 reachability fix is explicitly scoped to the current TypeDuck/profile yune-web product lane |
 | M58-JYUTPING-05 | M58 | Complete - TypeDuck multilingual/comment/profile behavior and grandfathered M14-M28 candidate guards remain profile-lane fixtures and are not promoted to canonical `rime-cantonese` expected output |
-| M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀 is dispositioned in canonical and TypeDuck/profile lanes; yune-web first page now includes standalone 畀 |
+| M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀 and `zi` / 諮 are dispositioned in canonical and TypeDuck/profile lanes; yune-web reaches each target at its TypeDuck/profile rank through page navigation without first-page promotion |
 | M58-JYUTPING-07 | M58 | Complete - schema predicates, `jyut6ping3_mobile`, Track B/M55 names, WEB-03/public-demo manifests, and userdb key blast radius audited before any id split |
 | M58-JYUTPING-08 | M58 | Complete - canonical captures succeeded and were not substituted with TypeDuck v1.1.2 candidate output |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
@@ -1975,4 +1978,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - M58 complete: canonical `jyut6ping3` candidate behavior captured from upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; current `yune-web` `beingo` now surfaces standalone 畀 on page 1; `jyut6ping3_typeduck` remains the preferred future id direction pending explicit sign-off._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-06 - M58 corrective closeout: canonical `jyut6ping3` candidate behavior captured from upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; current `yune-web` reaches `beingo` / 畀 and `zi` / 諮 at TypeDuck/profile ranks through page navigation without first-page promotion; `jyut6ping3_typeduck` remains the preferred future id direction pending explicit sign-off._

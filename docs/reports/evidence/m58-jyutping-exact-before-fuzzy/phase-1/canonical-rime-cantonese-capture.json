@@ -6,9 +6,9 @@
                    "engine":  "rime/librime",
                    "version":  "1.17.0",
                    "commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
-                   "dll":  "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\upstream-oracle\\1.17.0\\extract\\dist\\lib\\rime.dll",
+                         "dll":  "target/upstream-oracle/1.17.0/extract/dist/lib/rime.dll",
                    "dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
-                   "deployer":  "C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\upstream-oracle\\1.17.0\\extract\\dist\\bin\\rime_deployer.exe",
+                         "deployer":  "target/upstream-oracle/1.17.0/extract/dist/bin/rime_deployer.exe",
                    "deployer_sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071"
                },
     "schema":  {
@@ -36,7 +36,7 @@
                                             ]
                 },
     "commands":  {
-                     "deploy":  "rime_deployer.exe --build C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\upstream-oracle\\1.17.0\\m58-rime-cantonese-user C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\upstream-oracle\\1.17.0\\m58-rime-cantonese-shared C:\\Users\\laubonghaudoi\\Documents\\GitHub\\yune\\target\\upstream-oracle\\1.17.0\\m58-rime-cantonese-user\\build",
+                         "deploy":  "rime_deployer.exe --build target/upstream-oracle/1.17.0/m58-rime-cantonese-user target/upstream-oracle/1.17.0/m58-rime-cantonese-shared target/upstream-oracle/1.17.0/m58-rime-cantonese-user/build",
                      "capture":  "scripts/capture-upstream-rime-cantonese.ps1 -ReportedCaseInput zijiguk"
                  },
     "inputs":  [

@@ -10,6 +10,8 @@ __build_info:
     jyut6ping3_mobile.schema: 1731663569
     template: 1731663570
     template.custom: 0
+yune:
+  profile: typeduck_jyutping
 dictionary_lookup_filter:
   dictionary: jyut6ping3_scolar
 engine:

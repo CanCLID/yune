@@ -31,7 +31,9 @@ const MAX_ABBREVIATION_SENTENCE_TOTAL_SPANS: usize = 4096;
 const MAX_SENTENCE_ALIAS_LOOKUP_BYTES: usize = 12;
 const MAX_SENTENCE_ALIAS_LOOKUP_CODES: usize = 64;
 const MAX_SENTENCE_CANDIDATES_PER_SPAN: usize = 6;
-const PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE: usize = 3;
+const PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE: usize = 2;
+const PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE: usize = 3;
+const PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS: usize = 7;
 const PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER: usize = 4;
 /// Yune-internal heuristic calibrated to the M21 TypeDuck v1.1.2 sentence-composition fixture
 /// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
@@ -2055,12 +2057,7 @@ impl StaticTableTranslator {
             candidate.source == CandidateSource::Table
                 && source_code_syllable_count(&candidate.comment).is_some_and(|count| count > 1)
         });
-        let has_strict_lookup_prefix =
-            self.valid_lookup_prefixes(lookup_code)
-                .iter()
-                .any(|prefix| {
-                    prefix.consumed_lookup_len < lookup_code.len() && prefix.input_prefix.len() > 1
-                });
+        let has_strict_lookup_prefix = false;
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
@@ -2303,7 +2300,13 @@ impl StaticTableTranslator {
             })
             .unwrap_or(usize::MAX);
         let per_fetch_cap = bounded_limit
-            .map(|_| PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE)
+            .map(|_| {
+                if input.chars().count() <= PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS {
+                    PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE
+                } else {
+                    PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE
+                }
+            })
             .unwrap_or(usize::MAX);
         for prefix_spec in &prefixes {
             let prefix = prefix_spec.input_prefix;
@@ -2514,6 +2517,15 @@ impl StaticTableTranslator {
         for end in boundaries {
             let prefix = &lookup_code[..end];
             let mut seen_fetch_codes = HashSet::new();
+            if self.storage.has_code(prefix) {
+                seen_fetch_codes.insert(prefix.to_owned());
+                prefixes.push(LookupPrefixSpec {
+                    input_prefix: prefix,
+                    fetch_code: prefix.to_owned(),
+                    consumed_lookup_len: end,
+                });
+                continue;
+            }
             for spec in self.sentence_lookup_specs(prefix) {
                 if !self.storage.has_code(&spec.code) || !seen_fetch_codes.insert(spec.code.clone())
                 {
@@ -2580,12 +2592,6 @@ impl StaticTableTranslator {
         let has_full_exact_candidate = candidates
             .iter()
             .any(|candidate| candidate.source == CandidateSource::Table);
-        let has_strict_lookup_prefix =
-            self.valid_lookup_prefixes(lookup_code)
-                .iter()
-                .any(|prefix| {
-                    prefix.consumed_lookup_len < lookup_code.len() && prefix.input_prefix.len() > 1
-                });
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
@@ -2646,6 +2652,16 @@ impl StaticTableTranslator {
         }
 
         if self.prefix_fallback && !has_correction_lookup {
+            let has_strict_lookup_prefix = !candidates.is_empty()
+                && !used_sentence
+                && !has_full_exact_candidate
+                && self
+                    .valid_lookup_prefixes(lookup_code)
+                    .iter()
+                    .any(|prefix| {
+                        prefix.consumed_lookup_len < lookup_code.len()
+                            && prefix.input_prefix.len() > 1
+                    });
             // Full exact rows may coexist with a valid leading prefix; prefix lookup plus
             // the existing candidate set keeps the fallback benign for normal full matches.
             let should_add_prefix_fallback = candidates.is_empty()

@@ -1,0 +1,1035 @@
+{
+  "generated_at": "2026-07-06T16:51:56.267Z",
+  "scope": "M59 frozen pre-fix canonical diff. Do not use TypeDuck profile output as acceptance oracle.",
+  "yune_commands": {
+    "canonical_jyutping_shared_data_dir": "target/m59-canonical-yune-load/shared",
+    "canonical_jyutping_user_data_dir": "target/m59-canonical-yune-load/user",
+    "luna_shared_data_dir": "apps/yune-web/public/schema",
+    "page_down_key": "{Page_Down}",
+    "moboyi_sequence": "moboyi3{Page_Down}{Page_Down}{Page_Down}5{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}1"
+  },
+  "jyutping": {
+    "oracle": {
+      "engine": "rime/librime",
+      "engine_version": "1.17.0",
+      "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+      "schema_data_commit": "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0"
+    },
+    "rows": {
+      "bei": {
+        "upstream_first_page": [
+          {
+            "text": "畀",
+            "comment": "bei2"
+          },
+          {
+            "text": "比",
+            "comment": "bei2"
+          },
+          {
+            "text": "被",
+            "comment": "bei6"
+          },
+          {
+            "text": "鼻",
+            "comment": "bei6"
+          },
+          {
+            "text": "避",
+            "comment": "bei6"
+          }
+        ],
+        "yune_first_page": [
+          {
+            "text": "碑",
+            "comment": "bei1"
+          },
+          {
+            "text": "悲",
+            "comment": "bei1"
+          },
+          {
+            "text": "卑",
+            "comment": "bei1"
+          },
+          {
+            "text": "陂",
+            "comment": "bei1;bei3"
+          },
+          {
+            "text": "蓖",
+            "comment": "bei1;bei3;bei6"
+          }
+        ],
+        "upstream_target_positions": {
+          "spoon_bi": {
+            "text": "匕",
+            "index0": 31,
+            "page_no": 6,
+            "index_on_page": 1,
+            "candidate": {
+              "index": 1,
+              "text": "匕",
+              "comment": "bei3",
+              "global_index": 31
+            }
+          }
+        },
+        "yune_target_positions": {
+          "spoon_bi": {
+            "text": "匕",
+            "page_no": 8,
+            "index_on_page": 2,
+            "index0": 42,
+            "candidate": {
+              "text": "匕",
+              "comment": "bei2;bei3;bei6"
+            }
+          }
+        }
+      },
+      "beingo": {
+        "upstream_first_page": [
+          {
+            "text": "比我",
+            "comment": "bei2 ngo5"
+          },
+          {
+            "text": "被我",
+            "comment": "bei6 ngo5"
+          },
+          {
+            "text": "畀我",
+            "comment": "bei2 ngo5"
+          },
+          {
+            "text": "畀",
+            "comment": "bei2"
+          },
+          {
+            "text": "比",
+            "comment": "bei2"
+          }
+        ],
+        "yune_first_page": [
+          {
+            "text": "彼岸",
+            "comment": "bei2ngon6"
+          },
+          {
+            "text": "彼岸花",
+            "comment": "bei2ngon6faa1"
+          },
+          {
+            "text": "畀我",
+            "comment": "bei2ngo5"
+          },
+          {
+            "text": "畀我啊",
+            "comment": "bei2ngo5aa2"
+          },
+          {
+            "text": "畀我考起",
+            "comment": "bei2ngo5haau2hei2"
+          }
+        ],
+        "upstream_target_positions": {
+          "spoon_bi": {
+            "text": "匕",
+            "index0": 34,
+            "page_no": 6,
+            "index_on_page": 4,
+            "candidate": {
+              "index": 4,
+              "text": "匕",
+              "comment": "bei3",
+              "global_index": 34
+            }
+          },
+          "bei_give": {
+            "text": "畀",
+            "index0": 3,
+            "page_no": 0,
+            "index_on_page": 3,
+            "candidate": {
+              "index": 3,
+              "text": "畀",
+              "comment": "bei2",
+              "global_index": 3
+            }
+          }
+        },
+        "yune_target_positions": {
+          "spoon_bi": {
+            "text": "匕",
+            "found": false
+          },
+          "bei_give": {
+            "text": "畀",
+            "found": false
+          }
+        }
+      },
+      "zijiguk": {
+        "upstream_first_page": [
+          {
+            "text": "諮議局",
+            "comment": "zi1 ji5 guk6"
+          },
+          {
+            "text": "子怡",
+            "comment": "zi2 ji4"
+          },
+          {
+            "text": "自已",
+            "comment": "zi6 ji5"
+          },
+          {
+            "text": "旨意",
+            "comment": "zi2 ji3"
+          },
+          {
+            "text": "之二",
+            "comment": "zi1 ji6"
+          }
+        ],
+        "yune_first_page": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ "
+          }
+        ],
+        "upstream_target_positions": {
+          "consult_council": {
+            "text": "諮議局",
+            "index0": 0,
+            "page_no": 0,
+            "index_on_page": 0,
+            "candidate": {
+              "index": 0,
+              "text": "諮議局",
+              "comment": "zi1 ji5 guk6",
+              "global_index": 0
+            }
+          },
+          "consult": {
+            "text": "諮",
+            "index0": 227,
+            "page_no": 45,
+            "index_on_page": 2,
+            "candidate": {
+              "index": 2,
+              "text": "諮",
+              "comment": "zi1",
+              "global_index": 227
+            }
+          }
+        },
+        "yune_target_positions": {
+          "consult_council": {
+            "text": "諮議局",
+            "found": false
+          },
+          "consult": {
+            "text": "諮",
+            "found": false
+          }
+        }
+      }
+    }
+  },
+  "luna_pinyin": {
+    "oracle": "upstream librime 1.17.0 + rime-luna-pinyin from phase-1 capture",
+    "ziyiju_pages": [
+      {
+        "page_no": 0,
+        "upstream": [
+          {
+            "text": "諮議局",
+            "comment": null
+          },
+          {
+            "text": "自已",
+            "comment": null
+          },
+          {
+            "text": "子怡",
+            "comment": null
+          },
+          {
+            "text": "紫衣",
+            "comment": null
+          },
+          {
+            "text": "恣意",
+            "comment": null
+          }
+        ],
+        "yune": [
+          {
+            "text": "諮議局",
+            "comment": ""
+          },
+          {
+            "text": "子一句",
+            "comment": ""
+          },
+          {
+            "text": "字一句",
+            "comment": ""
+          },
+          {
+            "text": "自一句",
+            "comment": ""
+          },
+          {
+            "text": "子依據",
+            "comment": ""
+          }
+        ]
+      },
+      {
+        "page_no": 1,
+        "upstream": [
+          {
+            "text": "自縊",
+            "comment": null
+          },
+          {
+            "text": "字義",
+            "comment": null
+          },
+          {
+            "text": "自以",
+            "comment": null
+          },
+          {
+            "text": "字意",
+            "comment": null
+          },
+          {
+            "text": "諮議",
+            "comment": null
+          }
+        ],
+        "yune": []
+      },
+      {
+        "page_no": 2,
+        "upstream": [
+          {
+            "text": "訾議",
+            "comment": null
+          },
+          {
+            "text": "緇衣",
+            "comment": null
+          },
+          {
+            "text": "呲呲",
+            "comment": null
+          },
+          {
+            "text": "自抑",
+            "comment": null
+          },
+          {
+            "text": "子衣",
+            "comment": null
+          }
+        ],
+        "yune": []
+      },
+      {
+        "page_no": 3,
+        "upstream": [
+          {
+            "text": "子",
+            "comment": null
+          },
+          {
+            "text": "字",
+            "comment": null
+          },
+          {
+            "text": "自",
+            "comment": null
+          },
+          {
+            "text": "紫",
+            "comment": null
+          },
+          {
+            "text": "資",
+            "comment": null
+          }
+        ],
+        "yune": []
+      },
+      {
+        "page_no": 4,
+        "upstream": [
+          {
+            "text": "茲",
+            "comment": null
+          },
+          {
+            "text": "仔",
+            "comment": null
+          },
+          {
+            "text": "姿",
+            "comment": null
+          },
+          {
+            "text": "梓",
+            "comment": null
+          },
+          {
+            "text": "籽",
+            "comment": null
+          }
+        ],
+        "yune": []
+      },
+      {
+        "page_no": 5,
+        "upstream": [
+          {
+            "text": "滋",
+            "comment": null
+          },
+          {
+            "text": "漬",
+            "comment": null
+          },
+          {
+            "text": "孜",
+            "comment": null
+          },
+          {
+            "text": "諮",
+            "comment": null
+          },
+          {
+            "text": "緇",
+            "comment": null
+          }
+        ],
+        "yune": []
+      }
+    ],
+    "ziyiju_target_positions": {
+      "upstream_consult": {
+        "text": "諮",
+        "page_no": 5,
+        "index_on_page": 3,
+        "candidate": {
+          "text": "諮",
+          "comment": null
+        }
+      },
+      "yune_consult": {
+        "text": "諮",
+        "found": false
+      }
+    },
+    "moboyi_selection": {
+      "upstream_expected": {
+        "first_page": [
+          {
+            "text": "莫博弈",
+            "comment": null
+          },
+          {
+            "text": "麼波",
+            "comment": null
+          },
+          {
+            "text": "莫",
+            "comment": null
+          },
+          {
+            "text": "摸",
+            "comment": null
+          },
+          {
+            "text": "魔",
+            "comment": null
+          }
+        ],
+        "after_select_mo": [
+          {
+            "text": "博弈",
+            "comment": null
+          },
+          {
+            "text": "博奕",
+            "comment": null
+          },
+          {
+            "text": "薄衣",
+            "comment": null
+          },
+          {
+            "text": "薄意",
+            "comment": null
+          },
+          {
+            "text": "駁議",
+            "comment": null
+          }
+        ],
+        "boyi_page4_before_select": [
+          {
+            "text": "波",
+            "comment": null
+          },
+          {
+            "text": "博",
+            "comment": null
+          },
+          {
+            "text": "播",
+            "comment": null
+          },
+          {
+            "text": "撥",
+            "comment": null
+          },
+          {
+            "text": "伯",
+            "comment": null
+          }
+        ],
+        "after_select_bo": [
+          {
+            "text": "一",
+            "comment": null
+          },
+          {
+            "text": "以",
+            "comment": null
+          },
+          {
+            "text": "已",
+            "comment": null
+          },
+          {
+            "text": "億",
+            "comment": null
+          },
+          {
+            "text": "易",
+            "comment": null
+          }
+        ],
+        "yi_page32_before_select": [
+          {
+            "text": "洢",
+            "comment": null
+          },
+          {
+            "text": "晹",
+            "comment": null
+          },
+          {
+            "text": "壱",
+            "comment": null
+          },
+          {
+            "text": "齮",
+            "comment": null
+          },
+          {
+            "text": "銕",
+            "comment": null
+          }
+        ],
+        "final_commit": "莫伯洢"
+      },
+      "yune_final_commits": [
+        "脈搏一"
+      ],
+      "yune_final_context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "yune_events": [
+        {
+          "index": 0,
+          "key": "m",
+          "commits": [],
+          "input": "m",
+          "page_no": 0,
+          "candidates": [
+            {
+              "text": "嗎",
+              "comment": "ma"
+            },
+            {
+              "text": "嘛",
+              "comment": "ma"
+            },
+            {
+              "text": "馬",
+              "comment": "ma"
+            },
+            {
+              "text": "媽",
+              "comment": "ma"
+            },
+            {
+              "text": "罵",
+              "comment": "ma"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "key": "o",
+          "commits": [],
+          "input": "mo",
+          "page_no": 0,
+          "candidates": [
+            {
+              "text": "莫",
+              "comment": "mo"
+            },
+            {
+              "text": "摸",
+              "comment": "mo"
+            },
+            {
+              "text": "魔",
+              "comment": "mo"
+            },
+            {
+              "text": "末",
+              "comment": "mo"
+            },
+            {
+              "text": "膜",
+              "comment": "mo"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "key": "b",
+          "commits": [],
+          "input": "mob",
+          "page_no": 0,
+          "candidates": [
+            {
+              "text": "模板",
+              "comment": "moban"
+            },
+            {
+              "text": "莫泊桑",
+              "comment": "mobosang"
+            },
+            {
+              "text": "抹脖子",
+              "comment": "mobozi"
+            },
+            {
+              "text": "摸不着",
+              "comment": "mobuzhao"
+            },
+            {
+              "text": "摸不着頭腦",
+              "comment": "mobuzhaotounao"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "key": "o",
+          "commits": [],
+          "input": "mobo",
+          "page_no": 0,
+          "candidates": [
+            {
+              "text": "莫泊桑",
+              "comment": "mobosang"
+            },
+            {
+              "text": "抹脖子",
+              "comment": "mobozi"
+            },
+            {
+              "text": "麼波",
+              "comment": "mobo"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "key": "y",
+          "commits": [],
+          "input": "moboy",
+          "page_no": 0,
+          "candidates": [
+            {
+              "text": "脈搏",
+              "comment": ""
+            },
+            {
+              "text": "漠北",
+              "comment": ""
+            },
+            {
+              "text": "脈波",
+              "comment": ""
+            },
+            {
+              "text": "無波",
+              "comment": ""
+            },
+            {
+              "text": "沒播",
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "key": "i",
+          "commits": [],
+          "input": "moboyi",
+          "page_no": 0,
+          "candidates": [
+            {
+              "text": "脈搏一",
+              "comment": ""
+            },
+            {
+              "text": "漠北一",
+              "comment": ""
+            },
+            {
+              "text": "脈搏以",
+              "comment": ""
+            },
+            {
+              "text": "漠北以",
+              "comment": ""
+            },
+            {
+              "text": "脈波一",
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "key": "3",
+          "commits": [
+            "脈搏一"
+          ],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 7,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 8,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 9,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 10,
+          "key": "5",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 11,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 12,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 13,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 14,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 15,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 16,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 17,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 18,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 19,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 20,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 21,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 22,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 23,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 24,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 25,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 26,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 27,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 28,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 29,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 30,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 31,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 32,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 33,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 34,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 35,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 36,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 37,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 38,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 39,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 40,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 41,
+          "key": "Page_Down",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        },
+        {
+          "index": 42,
+          "key": "1",
+          "commits": [],
+          "input": "",
+          "page_no": 0,
+          "candidates": []
+        }
+      ]
+    }
+  }
+}

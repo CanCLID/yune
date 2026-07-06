@@ -1,0 +1,139 @@
+{
+  "schema": "luna_pinyin",
+  "scenarios": [
+    {
+      "name": "m59_ziyiju_pages",
+      "actions": [
+        { "type": "input", "text": "ziyiju" },
+        { "type": "snapshot", "label": "page_1" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_2" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_3" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_4" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_5" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_6" }
+      ]
+    },
+    {
+      "name": "m59_ziyiju_select_zi_consult",
+      "actions": [
+        { "type": "input", "text": "ziyiju" },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_6_before_select" },
+        { "type": "key", "keycode": 52, "mask": 0, "label": "after_select_zi_consult" }
+      ]
+    },
+    {
+      "name": "m59_ziyiju_sentence_disabled_pages",
+      "actions": [
+        { "type": "set_option", "option": "translator/enable_sentence", "value": 0 },
+        { "type": "input", "text": "ziyiju" },
+        { "type": "snapshot", "label": "page_1" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_2" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_3" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_4" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_5" },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_6" }
+      ]
+    },
+    {
+      "name": "m59_moboyi_select_mo_bo_yi",
+      "actions": [
+        { "type": "input", "text": "moboyi" },
+        { "type": "snapshot", "label": "moboyi_page_1" },
+        { "type": "key", "keycode": 51, "mask": 0, "label": "after_select_mo" },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "boyi_page_4_before_select" },
+        { "type": "key", "keycode": 53, "mask": 0, "label": "after_select_bo" },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "yi_page_32_before_select" },
+        { "type": "key", "keycode": 49, "mask": 0, "label": "after_select_yi" }
+      ]
+    },
+    {
+      "name": "m59_control_mo",
+      "actions": [
+        { "type": "input", "text": "mo" },
+        { "type": "snapshot", "label": "page_1" }
+      ]
+    },
+    {
+      "name": "m59_control_boyi_page4",
+      "actions": [
+        { "type": "input", "text": "boyi" },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_4" }
+      ]
+    },
+    {
+      "name": "m59_control_yi_page32",
+      "actions": [
+        { "type": "input", "text": "yi" },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0 },
+        { "type": "key", "keycode": 65366, "mask": 0, "label": "page_32" }
+      ]
+    }
+  ]
+}

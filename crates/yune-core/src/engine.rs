@@ -17,9 +17,17 @@ use crate::{
     UserDbCommitMetadata, UserDbLookupRequest, UserDbLookupResult,
 };
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SchemaBehaviorProfile {
+    #[default]
+    Standard,
+    TypeduckJyutping,
+}
+
 pub struct Engine {
     context: Context,
     status: Status,
+    schema_profile: SchemaBehaviorProfile,
     options: HashMap<String, bool>,
     properties: HashMap<String, String>,
     translators: Vec<Arc<dyn Translator>>,
@@ -165,6 +173,7 @@ impl Default for Engine {
         Self {
             context: Context::default(),
             status: Status::default(),
+            schema_profile: SchemaBehaviorProfile::default(),
             options: HashMap::new(),
             properties: HashMap::new(),
             translators: vec![Arc::new(EchoTranslator)],
@@ -300,6 +309,17 @@ impl Engine {
     pub fn set_schema(&mut self, id: impl Into<String>, name: impl Into<String>) {
         self.status.schema_id = id.into();
         self.status.schema_name = name.into();
+        self.schema_profile = SchemaBehaviorProfile::default();
+    }
+
+    pub fn set_schema_behavior_profile(&mut self, profile: SchemaBehaviorProfile) {
+        self.schema_profile = profile;
+        self.refresh_candidates();
+    }
+
+    #[must_use]
+    pub fn schema_behavior_profile(&self) -> SchemaBehaviorProfile {
+        self.schema_profile
     }
 
     pub fn set_userdb(&mut self, userdb: UserDb) {
@@ -1328,7 +1348,7 @@ impl Engine {
             } else {
                 0
             }
-        } else if self.status.schema_id == "jyut6ping3_mobile" {
+        } else if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping {
             TYPEDUCK_PROFILE_REACHABILITY_SURPLUS
         } else {
             BOUNDED_REFRESH_SURPLUS
@@ -1341,7 +1361,7 @@ impl Engine {
         let schema_allows_bounded = if self.status.schema_id == "luna_pinyin" {
             !self.context.composition.input.is_empty()
         } else {
-            self.status.schema_id.starts_with("jyut6ping3")
+            self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping
         };
         schema_allows_bounded
             && self.rankers.is_empty()
@@ -1429,7 +1449,9 @@ impl Engine {
                     candidates.extend(result.candidates);
                 }
             }
-            if self.status.schema_id.starts_with("jyut6ping3") && input.chars().count() > 2 {
+            if self.schema_profile == SchemaBehaviorProfile::TypeduckJyutping
+                && input.chars().count() > 2
+            {
                 candidate_list_complete = false;
             }
             (candidates, candidate_list_complete)

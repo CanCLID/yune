@@ -1,0 +1,1122 @@
+[
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_pages",
+    "label": "page_1",
+    "rime_get_input": "zi yi ju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 8,
+    "cursor_pos": 8,
+    "preedit": "zi yi ju",
+    "commit_text_preview": "諮議局",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "諮議局",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "自已",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "子怡",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "紫衣",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "恣意",
+        "comment": null
+      }
+    ]
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_pages",
+    "label": "page_2",
+    "rime_get_input": "zi yiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 7,
+    "cursor_pos": 7,
+    "preedit": "zi yiju",
+    "commit_text_preview": "自縊ju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 1,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "自縊",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "字義",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "自以",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "字意",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "諮議",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_pages",
+    "label": "page_3",
+    "rime_get_input": "zi yiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 7,
+    "cursor_pos": 7,
+    "preedit": "zi yiju",
+    "commit_text_preview": "訾議ju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 2,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "訾議",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "緇衣",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "呲呲",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "自抑",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "子衣",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_pages",
+    "label": "page_4",
+    "rime_get_input": "ziyiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 6,
+    "cursor_pos": 6,
+    "preedit": "ziyiju",
+    "commit_text_preview": "子yiju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 3,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "子",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "字",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "自",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "紫",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "資",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_pages",
+    "label": "page_5",
+    "rime_get_input": "ziyiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 6,
+    "cursor_pos": 6,
+    "preedit": "ziyiju",
+    "commit_text_preview": "茲yiju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 4,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "茲",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "仔",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "姿",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "梓",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "籽",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_pages",
+    "label": "page_6",
+    "rime_get_input": "ziyiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 6,
+    "cursor_pos": 6,
+    "preedit": "ziyiju",
+    "commit_text_preview": "滋yiju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 5,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "滋",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "漬",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "孜",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "諮",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "緇",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_select_zi_consult",
+    "label": "page_6_before_select",
+    "rime_get_input": "ziyiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 6,
+    "cursor_pos": 6,
+    "preedit": "ziyiju",
+    "commit_text_preview": "滋yiju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 5,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "滋",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "漬",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "孜",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "諮",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "緇",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_select_zi_consult",
+    "label": "after_select_zi_consult",
+    "rime_get_input": "諮yi ju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 8,
+    "cursor_pos": 8,
+    "preedit": "諮yi ju",
+    "commit_text_preview": "諮一句",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "一句",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "依據",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "一局",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "一舉",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "一具",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_sentence_disabled_pages",
+    "label": "page_1",
+    "rime_get_input": "zi yi ju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 8,
+    "cursor_pos": 8,
+    "preedit": "zi yi ju",
+    "commit_text_preview": "諮議局",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "諮議局",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "自已",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "子怡",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "紫衣",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "恣意",
+        "comment": null
+      }
+    ]
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_sentence_disabled_pages",
+    "label": "page_2",
+    "rime_get_input": "zi yiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 7,
+    "cursor_pos": 7,
+    "preedit": "zi yiju",
+    "commit_text_preview": "自縊ju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 1,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "自縊",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "字義",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "自以",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "字意",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "諮議",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_sentence_disabled_pages",
+    "label": "page_3",
+    "rime_get_input": "zi yiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 7,
+    "cursor_pos": 7,
+    "preedit": "zi yiju",
+    "commit_text_preview": "訾議ju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 2,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "訾議",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "緇衣",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "呲呲",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "自抑",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "子衣",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_sentence_disabled_pages",
+    "label": "page_4",
+    "rime_get_input": "ziyiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 6,
+    "cursor_pos": 6,
+    "preedit": "ziyiju",
+    "commit_text_preview": "子yiju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 3,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "子",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "字",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "自",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "紫",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "資",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_sentence_disabled_pages",
+    "label": "page_5",
+    "rime_get_input": "ziyiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 6,
+    "cursor_pos": 6,
+    "preedit": "ziyiju",
+    "commit_text_preview": "茲yiju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 4,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "茲",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "仔",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "姿",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "梓",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "籽",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_ziyiju_sentence_disabled_pages",
+    "label": "page_6",
+    "rime_get_input": "ziyiju",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 6,
+    "cursor_pos": 6,
+    "preedit": "ziyiju",
+    "commit_text_preview": "滋yiju",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 5,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "滋",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "漬",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "孜",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "諮",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "緇",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_moboyi_select_mo_bo_yi",
+    "label": "moboyi_page_1",
+    "rime_get_input": "mo bo yi",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 8,
+    "cursor_pos": 8,
+    "preedit": "mo bo yi",
+    "commit_text_preview": "莫博弈",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "莫博弈",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "麼波",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "莫",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "摸",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "魔",
+        "comment": null
+      }
+    ]
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_moboyi_select_mo_bo_yi",
+    "label": "after_select_mo",
+    "rime_get_input": "莫bo yi",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 8,
+    "cursor_pos": 8,
+    "preedit": "莫bo yi",
+    "commit_text_preview": "莫博弈",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "博弈",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "博奕",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "薄衣",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "薄意",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "駁議",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_moboyi_select_mo_bo_yi",
+    "label": "boyi_page_4_before_select",
+    "rime_get_input": "莫boyi",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 7,
+    "cursor_pos": 7,
+    "preedit": "莫boyi",
+    "commit_text_preview": "莫波yi",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 3,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "波",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "博",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "播",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "撥",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "伯",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_moboyi_select_mo_bo_yi",
+    "label": "after_select_bo",
+    "rime_get_input": "莫伯yi",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 8,
+    "cursor_pos": 8,
+    "preedit": "莫伯yi",
+    "commit_text_preview": "莫伯一",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "一",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "以",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "已",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "億",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "易",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_moboyi_select_mo_bo_yi",
+    "label": "yi_page_32_before_select",
+    "rime_get_input": "莫伯yi",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 8,
+    "cursor_pos": 8,
+    "preedit": "莫伯yi",
+    "commit_text_preview": "莫伯洢",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 31,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "洢",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "晹",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "壱",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "齮",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "銕",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_moboyi_select_mo_bo_yi",
+    "label": "after_select_yi",
+    "rime_get_input": null,
+    "is_composing": false,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 0,
+    "cursor_pos": 0,
+    "preedit": null,
+    "commit_text_preview": null,
+    "commit_text": "莫伯洢",
+    "highlighted_candidate_index": 0,
+    "page_size": 0,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_control_mo",
+    "label": "page_1",
+    "rime_get_input": "mo",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 2,
+    "cursor_pos": 2,
+    "preedit": "mo",
+    "commit_text_preview": "莫",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "莫",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "摸",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "魔",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "末",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "膜",
+        "comment": null
+      }
+    ]
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_control_boyi_page4",
+    "label": "page_4",
+    "rime_get_input": "boyi",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 4,
+    "cursor_pos": 4,
+    "preedit": "boyi",
+    "commit_text_preview": "波yi",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 3,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "波",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "博",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "播",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "撥",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "伯",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  },
+  {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "scenario": "m59_control_yi_page32",
+    "label": "page_32",
+    "rime_get_input": "yi",
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false,
+    "composition_length": 2,
+    "cursor_pos": 2,
+    "preedit": "yi",
+    "commit_text_preview": "洢",
+    "commit_text": null,
+    "highlighted_candidate_index": 0,
+    "page_size": 5,
+    "page_no": 31,
+    "is_last_page": false,
+    "selected_candidates": [
+      {
+        "index": 0,
+        "text": "洢",
+        "comment": null
+      },
+      {
+        "index": 1,
+        "text": "晹",
+        "comment": null
+      },
+      {
+        "index": 2,
+        "text": "壱",
+        "comment": null
+      },
+      {
+        "index": 3,
+        "text": "齮",
+        "comment": null
+      },
+      {
+        "index": 4,
+        "text": "銕",
+        "comment": null
+      }
+    ],
+    "processed": 1
+  }
+]

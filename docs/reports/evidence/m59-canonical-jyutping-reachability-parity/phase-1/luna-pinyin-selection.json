@@ -1,0 +1,3005 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "capture_date": "2026-06-19",
+    "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json"
+  },
+  "schema": "luna_pinyin",
+  "module_list": [
+    "default"
+  ],
+  "case_name": "single_code_ni_full_dictionary_selection",
+  "input_sequence": [
+    "ni"
+  ],
+  "capture": {
+    "schema_data": "rime/rime-luna-pinyin",
+    "schema_data_commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    },
+    "dictionary": "luna_pinyin.dict.yaml",
+    "vocabulary": "essay.txt",
+    "source_row_policy": "all_rows_for_exact_code_plus_relevant_essay_rows",
+    "tested_code": "ni",
+    "source_dictionary_file": "rime-luna-pinyin/luna_pinyin.dict.yaml",
+    "essay_vocabulary_file": "rime-essay/essay.txt",
+    "in_scope_candidate_texts": [
+      "㘈",
+      "㞾",
+      "㠜",
+      "㥾",
+      "㦐",
+      "㩘",
+      "㪒",
+      "㮏",
+      "㲻",
+      "㵫",
+      "㹸",
+      "䁥",
+      "䕥",
+      "䘌",
+      "䘦",
+      "䘽",
+      "䛏",
+      "䝚",
+      "䦧",
+      "䦵",
+      "䵑",
+      "䵒",
+      "伱",
+      "伲",
+      "你",
+      "倪",
+      "儗",
+      "児",
+      "兒",
+      "匿",
+      "呢",
+      "坭",
+      "埿",
+      "堄",
+      "妮",
+      "妳",
+      "婗",
+      "嫟",
+      "嬺",
+      "孨",
+      "孴",
+      "尼",
+      "屔",
+      "屰",
+      "嶷",
+      "怩",
+      "惄",
+      "愵",
+      "慝",
+      "懝",
+      "抳",
+      "拟",
+      "掜",
+      "掿",
+      "搦",
+      "搻",
+      "擬",
+      "旎",
+      "昵",
+      "暱",
+      "柅",
+      "棿",
+      "檷",
+      "氼",
+      "泥",
+      "淣",
+      "溺",
+      "狋",
+      "狔",
+      "猊",
+      "痆",
+      "睨",
+      "祢",
+      "禰",
+      "秜",
+      "籾",
+      "糑",
+      "縌",
+      "聣",
+      "聻",
+      "胒",
+      "腝",
+      "腻",
+      "膩",
+      "臡",
+      "苨",
+      "薾",
+      "薿",
+      "蚭",
+      "蜺",
+      "衵",
+      "袮",
+      "觬",
+      "譺",
+      "貎",
+      "跜",
+      "輗",
+      "迡",
+      "逆",
+      "郳",
+      "鈮",
+      "鉨",
+      "鑈",
+      "铌",
+      "隬",
+      "霓",
+      "馜",
+      "鬩",
+      "鯢",
+      "鲵",
+      "鷊",
+      "麑",
+      "麛",
+      "齯",
+      "𠆵",
+      "𠒰",
+      "𠱘",
+      "𠸺",
+      "𠽬",
+      "𡎳",
+      "𡎿",
+      "𡞭",
+      "𡣁",
+      "𡥦",
+      "𡥨",
+      "𡫸",
+      "𡬗",
+      "𢅟",
+      "𢘝",
+      "𢚮",
+      "𢛜",
+      "𢣚",
+      "𢦱",
+      "𣘗",
+      "𣡋",
+      "𣢞",
+      "𣭙",
+      "𣲷",
+      "𤙌",
+      "𤦤",
+      "𥄽",
+      "𥇄",
+      "𥜦",
+      "𥜬",
+      "𥷄",
+      "𥺜",
+      "𦆦",
+      "𦤽",
+      "𦦃",
+      "𦮾",
+      "𦰫",
+      "𧃩",
+      "𧈞",
+      "𧏾",
+      "𧖷",
+      "𧵼",
+      "𧺰",
+      "𨀀",
+      "𨋗",
+      "𨒫",
+      "𨺙",
+      "𨽦",
+      "𩈢",
+      "𩉹",
+      "𩋪",
+      "𩍦",
+      "𩚮",
+      "𩚯",
+      "𩩢",
+      "𩯨",
+      "𩰞",
+      "𩱄",
+      "𩸦",
+      "𩸧",
+      "𩺝",
+      "𩺱",
+      "𩾆",
+      "𪏵",
+      "𪏸",
+      "𪐌",
+      "𪙛",
+      "𫐐"
+    ],
+    "source_row_counts": {
+      "dictionary": 182,
+      "essay": 93
+    },
+    "source_dictionary_rows_all_for_code": [
+      "㘈\tni",
+      "㞾\tni",
+      "㠜\tni",
+      "㥾\tni",
+      "㦐\tni",
+      "㩘\tni",
+      "㪒\tni",
+      "㮏\tni",
+      "㲻\tni",
+      "㵫\tni",
+      "㹸\tni",
+      "䁥\tni",
+      "䕥\tni",
+      "䘌\tni",
+      "䘦\tni",
+      "䘽\tni",
+      "䛏\tni",
+      "䝚\tni",
+      "䦧\tni",
+      "䦵\tni",
+      "䵑\tni",
+      "䵒\tni",
+      "伱\tni",
+      "伲\tni",
+      "你\tni",
+      "倪\tni",
+      "儗\tni",
+      "児\tni",
+      "兒\tni\t0%",
+      "匿\tni",
+      "呢\tni\t1.03%",
+      "坭\tni",
+      "埿\tni",
+      "堄\tni",
+      "妮\tni",
+      "妳\tni\t100%",
+      "婗\tni",
+      "嫟\tni",
+      "嬺\tni",
+      "孨\tni",
+      "孴\tni",
+      "尼\tni",
+      "屔\tni",
+      "屰\tni",
+      "嶷\tni",
+      "怩\tni",
+      "惄\tni",
+      "愵\tni",
+      "慝\tni",
+      "懝\tni",
+      "抳\tni",
+      "拟\tni",
+      "掜\tni",
+      "掿\tni",
+      "搦\tni",
+      "搻\tni",
+      "擬\tni",
+      "旎\tni",
+      "昵\tni",
+      "暱\tni",
+      "柅\tni",
+      "棿\tni",
+      "檷\tni",
+      "氼\tni",
+      "泥\tni",
+      "淣\tni",
+      "溺\tni\t95%",
+      "狋\tni",
+      "狔\tni",
+      "猊\tni",
+      "痆\tni",
+      "睨\tni",
+      "祢\tni",
+      "禰\tni",
+      "秜\tni",
+      "籾\tni",
+      "糑\tni",
+      "縌\tni",
+      "聣\tni",
+      "聻\tni",
+      "胒\tni",
+      "腝\tni",
+      "腻\tni",
+      "膩\tni",
+      "臡\tni",
+      "苨\tni",
+      "薾\tni",
+      "薿\tni",
+      "蚭\tni",
+      "蜺\tni",
+      "衵\tni",
+      "袮\tni",
+      "觬\tni",
+      "譺\tni",
+      "貎\tni",
+      "跜\tni",
+      "輗\tni",
+      "迡\tni",
+      "逆\tni",
+      "郳\tni",
+      "鈮\tni",
+      "鉨\tni",
+      "鑈\tni",
+      "铌\tni",
+      "隬\tni",
+      "霓\tni",
+      "馜\tni",
+      "鬩\tni",
+      "鯢\tni",
+      "鲵\tni",
+      "鷊\tni",
+      "麑\tni",
+      "麛\tni",
+      "齯\tni",
+      "𠆵\tni",
+      "𠒰\tni",
+      "𠱘\tni",
+      "𠸺\tni",
+      "𠽬\tni",
+      "𡎳\tni",
+      "𡎿\tni",
+      "𡞭\tni",
+      "𡣁\tni",
+      "𡥦\tni",
+      "𡥨\tni",
+      "𡫸\tni",
+      "𡬗\tni",
+      "𢅟\tni",
+      "𢘝\tni",
+      "𢚮\tni",
+      "𢛜\tni",
+      "𢣚\tni",
+      "𢦱\tni",
+      "𣘗\tni",
+      "𣡋\tni",
+      "𣢞\tni",
+      "𣭙\tni",
+      "𣲷\tni",
+      "𤙌\tni",
+      "𤦤\tni",
+      "𥄽\tni",
+      "𥇄\tni",
+      "𥜦\tni",
+      "𥜬\tni",
+      "𥷄\tni",
+      "𥺜\tni",
+      "𦆦\tni",
+      "𦤽\tni",
+      "𦦃\tni",
+      "𦮾\tni",
+      "𦰫\tni",
+      "𧃩\tni",
+      "𧈞\tni",
+      "𧏾\tni",
+      "𧖷\tni",
+      "𧵼\tni",
+      "𧺰\tni",
+      "𨀀\tni",
+      "𨋗\tni",
+      "𨒫\tni",
+      "𨺙\tni",
+      "𨽦\tni",
+      "𩈢\tni",
+      "𩉹\tni",
+      "𩋪\tni",
+      "𩍦\tni",
+      "𩚮\tni",
+      "𩚯\tni",
+      "𩩢\tni",
+      "𩯨\tni",
+      "𩰞\tni",
+      "𩱄\tni",
+      "𩸦\tni",
+      "𩸧\tni",
+      "𩺝\tni",
+      "𩺱\tni",
+      "𩾆\tni",
+      "𪏵\tni",
+      "𪏸\tni",
+      "𪐌\tni",
+      "𪙛\tni",
+      "𫐐\tni"
+    ],
+    "essay_vocabulary_rows_for_candidates": [
+      "伱\t807",
+      "伲\t565",
+      "你\t972978",
+      "倪\t1660",
+      "儗\t408",
+      "児\t633",
+      "兒\t16366",
+      "匿\t753",
+      "呢\t242959",
+      "坭\t611",
+      "埿\t294",
+      "堄\t325",
+      "妮\t1922",
+      "妳\t2085",
+      "婗\t459",
+      "嫟\t384",
+      "嬺\t277",
+      "孨\t394",
+      "孴\t289",
+      "尼\t3288",
+      "屔\t234",
+      "屰\t378",
+      "嶷\t572",
+      "怩\t464",
+      "惄\t343",
+      "愵\t261",
+      "慝\t459",
+      "懝\t290",
+      "抳\t397",
+      "拟\t0",
+      "掜\t294",
+      "掿\t276",
+      "搦\t450",
+      "搻\t336",
+      "擬\t3654",
+      "旎\t619",
+      "昵\t111",
+      "暱\t842",
+      "柅\t357",
+      "棿\t436",
+      "檷\t3",
+      "氼\t438",
+      "泥\t2738",
+      "淣\t356",
+      "溺\t786",
+      "狋\t264",
+      "狔\t371",
+      "猊\t524",
+      "痆\t348",
+      "睨\t632",
+      "祢\t0",
+      "禰\t800",
+      "秜\t230",
+      "籾\t274",
+      "糑\t210",
+      "縌\t509",
+      "聻\t319",
+      "胒\t385",
+      "腝\t375",
+      "腻\t0",
+      "膩\t1799",
+      "臡\t292",
+      "苨\t425",
+      "薾\t399",
+      "薿\t392",
+      "蚭\t241",
+      "蜺\t103",
+      "衵\t289",
+      "袮\t735",
+      "觬\t269",
+      "譺\t290",
+      "貎\t389",
+      "跜\t247",
+      "輗\t2",
+      "迡\t489",
+      "逆\t1737",
+      "郳\t366",
+      "鈮\t629",
+      "鉨\t672",
+      "鑈\t284",
+      "铌\t0",
+      "隬\t452",
+      "霓\t785",
+      "馜\t305",
+      "鬩\t603",
+      "鯢\t577",
+      "鲵\t0",
+      "鷊\t304",
+      "麑\t373",
+      "麛\t312",
+      "齯\t315",
+      "𣲷\t1",
+      "𫐐\t0"
+    ],
+    "essay_row_absent": []
+  },
+  "cases": [
+    {
+      "schema_id": "luna_pinyin",
+      "schema_name": "朙月拼音",
+      "input": "ni",
+      "rime_get_input": "ni",
+      "processed": [
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ni",
+      "commit_text_preview": "你",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null,
+          "global_index": 0
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null,
+          "global_index": 1
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "comment": null,
+          "global_index": 2
+        },
+        {
+          "index": 3,
+          "text": "泥",
+          "comment": null,
+          "global_index": 3
+        },
+        {
+          "index": 4,
+          "text": "呢",
+          "comment": null,
+          "global_index": 4
+        }
+      ],
+      "pages": [
+        {
+          "page_no": 0,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "你",
+              "comment": null,
+              "global_index": 0
+            },
+            {
+              "index": 1,
+              "text": "擬",
+              "comment": null,
+              "global_index": 1
+            },
+            {
+              "index": 2,
+              "text": "尼",
+              "comment": null,
+              "global_index": 2
+            },
+            {
+              "index": 3,
+              "text": "泥",
+              "comment": null,
+              "global_index": 3
+            },
+            {
+              "index": 4,
+              "text": "呢",
+              "comment": null,
+              "global_index": 4
+            }
+          ]
+        },
+        {
+          "page_no": 1,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "妳",
+              "comment": null,
+              "global_index": 5
+            },
+            {
+              "index": 1,
+              "text": "妮",
+              "comment": null,
+              "global_index": 6
+            },
+            {
+              "index": 2,
+              "text": "膩",
+              "comment": null,
+              "global_index": 7
+            },
+            {
+              "index": 3,
+              "text": "逆",
+              "comment": null,
+              "global_index": 8
+            },
+            {
+              "index": 4,
+              "text": "倪",
+              "comment": null,
+              "global_index": 9
+            }
+          ]
+        },
+        {
+          "page_no": 2,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "暱",
+              "comment": null,
+              "global_index": 10
+            },
+            {
+              "index": 1,
+              "text": "伱",
+              "comment": null,
+              "global_index": 11
+            },
+            {
+              "index": 2,
+              "text": "禰",
+              "comment": null,
+              "global_index": 12
+            },
+            {
+              "index": 3,
+              "text": "霓",
+              "comment": null,
+              "global_index": 13
+            },
+            {
+              "index": 4,
+              "text": "匿",
+              "comment": null,
+              "global_index": 14
+            }
+          ]
+        },
+        {
+          "page_no": 3,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "溺",
+              "comment": null,
+              "global_index": 15
+            },
+            {
+              "index": 1,
+              "text": "袮",
+              "comment": null,
+              "global_index": 16
+            },
+            {
+              "index": 2,
+              "text": "鉨",
+              "comment": null,
+              "global_index": 17
+            },
+            {
+              "index": 3,
+              "text": "児",
+              "comment": null,
+              "global_index": 18
+            },
+            {
+              "index": 4,
+              "text": "睨",
+              "comment": null,
+              "global_index": 19
+            }
+          ]
+        },
+        {
+          "page_no": 4,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "鈮",
+              "comment": null,
+              "global_index": 20
+            },
+            {
+              "index": 1,
+              "text": "旎",
+              "comment": null,
+              "global_index": 21
+            },
+            {
+              "index": 2,
+              "text": "坭",
+              "comment": null,
+              "global_index": 22
+            },
+            {
+              "index": 3,
+              "text": "鬩",
+              "comment": null,
+              "global_index": 23
+            },
+            {
+              "index": 4,
+              "text": "鯢",
+              "comment": null,
+              "global_index": 24
+            }
+          ]
+        },
+        {
+          "page_no": 5,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "嶷",
+              "comment": null,
+              "global_index": 25
+            },
+            {
+              "index": 1,
+              "text": "伲",
+              "comment": null,
+              "global_index": 26
+            },
+            {
+              "index": 2,
+              "text": "猊",
+              "comment": null,
+              "global_index": 27
+            },
+            {
+              "index": 3,
+              "text": "縌",
+              "comment": null,
+              "global_index": 28
+            },
+            {
+              "index": 4,
+              "text": "迡",
+              "comment": null,
+              "global_index": 29
+            }
+          ]
+        },
+        {
+          "page_no": 6,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "怩",
+              "comment": null,
+              "global_index": 30
+            },
+            {
+              "index": 1,
+              "text": "婗",
+              "comment": null,
+              "global_index": 31
+            },
+            {
+              "index": 2,
+              "text": "慝",
+              "comment": null,
+              "global_index": 32
+            },
+            {
+              "index": 3,
+              "text": "隬",
+              "comment": null,
+              "global_index": 33
+            },
+            {
+              "index": 4,
+              "text": "搦",
+              "comment": null,
+              "global_index": 34
+            }
+          ]
+        },
+        {
+          "page_no": 7,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "氼",
+              "comment": null,
+              "global_index": 35
+            },
+            {
+              "index": 1,
+              "text": "棿",
+              "comment": null,
+              "global_index": 36
+            },
+            {
+              "index": 2,
+              "text": "苨",
+              "comment": null,
+              "global_index": 37
+            },
+            {
+              "index": 3,
+              "text": "儗",
+              "comment": null,
+              "global_index": 38
+            },
+            {
+              "index": 4,
+              "text": "薾",
+              "comment": null,
+              "global_index": 39
+            }
+          ]
+        },
+        {
+          "page_no": 8,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "抳",
+              "comment": null,
+              "global_index": 40
+            },
+            {
+              "index": 1,
+              "text": "孨",
+              "comment": null,
+              "global_index": 41
+            },
+            {
+              "index": 2,
+              "text": "薿",
+              "comment": null,
+              "global_index": 42
+            },
+            {
+              "index": 3,
+              "text": "貎",
+              "comment": null,
+              "global_index": 43
+            },
+            {
+              "index": 4,
+              "text": "胒",
+              "comment": null,
+              "global_index": 44
+            }
+          ]
+        },
+        {
+          "page_no": 9,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "嫟",
+              "comment": null,
+              "global_index": 45
+            },
+            {
+              "index": 1,
+              "text": "屰",
+              "comment": null,
+              "global_index": 46
+            },
+            {
+              "index": 2,
+              "text": "腝",
+              "comment": null,
+              "global_index": 47
+            },
+            {
+              "index": 3,
+              "text": "麑",
+              "comment": null,
+              "global_index": 48
+            },
+            {
+              "index": 4,
+              "text": "狔",
+              "comment": null,
+              "global_index": 49
+            }
+          ]
+        },
+        {
+          "page_no": 10,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "郳",
+              "comment": null,
+              "global_index": 50
+            },
+            {
+              "index": 1,
+              "text": "柅",
+              "comment": null,
+              "global_index": 51
+            },
+            {
+              "index": 2,
+              "text": "淣",
+              "comment": null,
+              "global_index": 52
+            },
+            {
+              "index": 3,
+              "text": "痆",
+              "comment": null,
+              "global_index": 53
+            },
+            {
+              "index": 4,
+              "text": "惄",
+              "comment": null,
+              "global_index": 54
+            }
+          ]
+        },
+        {
+          "page_no": 11,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "搻",
+              "comment": null,
+              "global_index": 55
+            },
+            {
+              "index": 1,
+              "text": "堄",
+              "comment": null,
+              "global_index": 56
+            },
+            {
+              "index": 2,
+              "text": "聻",
+              "comment": null,
+              "global_index": 57
+            },
+            {
+              "index": 3,
+              "text": "齯",
+              "comment": null,
+              "global_index": 58
+            },
+            {
+              "index": 4,
+              "text": "麛",
+              "comment": null,
+              "global_index": 59
+            }
+          ]
+        },
+        {
+          "page_no": 12,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "馜",
+              "comment": null,
+              "global_index": 60
+            },
+            {
+              "index": 1,
+              "text": "鷊",
+              "comment": null,
+              "global_index": 61
+            },
+            {
+              "index": 2,
+              "text": "埿",
+              "comment": null,
+              "global_index": 62
+            },
+            {
+              "index": 3,
+              "text": "掜",
+              "comment": null,
+              "global_index": 63
+            },
+            {
+              "index": 4,
+              "text": "臡",
+              "comment": null,
+              "global_index": 64
+            }
+          ]
+        },
+        {
+          "page_no": 13,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "懝",
+              "comment": null,
+              "global_index": 65
+            },
+            {
+              "index": 1,
+              "text": "譺",
+              "comment": null,
+              "global_index": 66
+            },
+            {
+              "index": 2,
+              "text": "孴",
+              "comment": null,
+              "global_index": 67
+            },
+            {
+              "index": 3,
+              "text": "衵",
+              "comment": null,
+              "global_index": 68
+            },
+            {
+              "index": 4,
+              "text": "鑈",
+              "comment": null,
+              "global_index": 69
+            }
+          ]
+        },
+        {
+          "page_no": 14,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "嬺",
+              "comment": null,
+              "global_index": 70
+            },
+            {
+              "index": 1,
+              "text": "掿",
+              "comment": null,
+              "global_index": 71
+            },
+            {
+              "index": 2,
+              "text": "籾",
+              "comment": null,
+              "global_index": 72
+            },
+            {
+              "index": 3,
+              "text": "觬",
+              "comment": null,
+              "global_index": 73
+            },
+            {
+              "index": 4,
+              "text": "狋",
+              "comment": null,
+              "global_index": 74
+            }
+          ]
+        },
+        {
+          "page_no": 15,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "愵",
+              "comment": null,
+              "global_index": 75
+            },
+            {
+              "index": 1,
+              "text": "跜",
+              "comment": null,
+              "global_index": 76
+            },
+            {
+              "index": 2,
+              "text": "蚭",
+              "comment": null,
+              "global_index": 77
+            },
+            {
+              "index": 3,
+              "text": "屔",
+              "comment": null,
+              "global_index": 78
+            },
+            {
+              "index": 4,
+              "text": "秜",
+              "comment": null,
+              "global_index": 79
+            }
+          ]
+        },
+        {
+          "page_no": 16,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "糑",
+              "comment": null,
+              "global_index": 80
+            },
+            {
+              "index": 1,
+              "text": "昵",
+              "comment": null,
+              "global_index": 81
+            },
+            {
+              "index": 2,
+              "text": "蜺",
+              "comment": null,
+              "global_index": 82
+            },
+            {
+              "index": 3,
+              "text": "檷",
+              "comment": null,
+              "global_index": 83
+            },
+            {
+              "index": 4,
+              "text": "輗",
+              "comment": null,
+              "global_index": 84
+            }
+          ]
+        },
+        {
+          "page_no": 17,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𣲷",
+              "comment": null,
+              "global_index": 85
+            },
+            {
+              "index": 1,
+              "text": "㘈",
+              "comment": null,
+              "global_index": 86
+            },
+            {
+              "index": 2,
+              "text": "㞾",
+              "comment": null,
+              "global_index": 87
+            },
+            {
+              "index": 3,
+              "text": "㠜",
+              "comment": null,
+              "global_index": 88
+            },
+            {
+              "index": 4,
+              "text": "㥾",
+              "comment": null,
+              "global_index": 89
+            }
+          ]
+        },
+        {
+          "page_no": 18,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "㦐",
+              "comment": null,
+              "global_index": 90
+            },
+            {
+              "index": 1,
+              "text": "㩘",
+              "comment": null,
+              "global_index": 91
+            },
+            {
+              "index": 2,
+              "text": "㪒",
+              "comment": null,
+              "global_index": 92
+            },
+            {
+              "index": 3,
+              "text": "㮏",
+              "comment": null,
+              "global_index": 93
+            },
+            {
+              "index": 4,
+              "text": "㲻",
+              "comment": null,
+              "global_index": 94
+            }
+          ]
+        },
+        {
+          "page_no": 19,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "㵫",
+              "comment": null,
+              "global_index": 95
+            },
+            {
+              "index": 1,
+              "text": "㹸",
+              "comment": null,
+              "global_index": 96
+            },
+            {
+              "index": 2,
+              "text": "䁥",
+              "comment": null,
+              "global_index": 97
+            },
+            {
+              "index": 3,
+              "text": "䕥",
+              "comment": null,
+              "global_index": 98
+            },
+            {
+              "index": 4,
+              "text": "䘌",
+              "comment": null,
+              "global_index": 99
+            }
+          ]
+        },
+        {
+          "page_no": 20,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "䘦",
+              "comment": null,
+              "global_index": 100
+            },
+            {
+              "index": 1,
+              "text": "䘽",
+              "comment": null,
+              "global_index": 101
+            },
+            {
+              "index": 2,
+              "text": "䛏",
+              "comment": null,
+              "global_index": 102
+            },
+            {
+              "index": 3,
+              "text": "䝚",
+              "comment": null,
+              "global_index": 103
+            },
+            {
+              "index": 4,
+              "text": "䦧",
+              "comment": null,
+              "global_index": 104
+            }
+          ]
+        },
+        {
+          "page_no": 21,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "䦵",
+              "comment": null,
+              "global_index": 105
+            },
+            {
+              "index": 1,
+              "text": "䵑",
+              "comment": null,
+              "global_index": 106
+            },
+            {
+              "index": 2,
+              "text": "䵒",
+              "comment": null,
+              "global_index": 107
+            },
+            {
+              "index": 3,
+              "text": "兒",
+              "comment": null,
+              "global_index": 108
+            },
+            {
+              "index": 4,
+              "text": "拟",
+              "comment": null,
+              "global_index": 109
+            }
+          ]
+        },
+        {
+          "page_no": 22,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "祢",
+              "comment": null,
+              "global_index": 110
+            },
+            {
+              "index": 1,
+              "text": "聣",
+              "comment": null,
+              "global_index": 111
+            },
+            {
+              "index": 2,
+              "text": "腻",
+              "comment": null,
+              "global_index": 112
+            },
+            {
+              "index": 3,
+              "text": "铌",
+              "comment": null,
+              "global_index": 113
+            },
+            {
+              "index": 4,
+              "text": "鲵",
+              "comment": null,
+              "global_index": 114
+            }
+          ]
+        },
+        {
+          "page_no": 23,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𠆵",
+              "comment": null,
+              "global_index": 115
+            },
+            {
+              "index": 1,
+              "text": "𠒰",
+              "comment": null,
+              "global_index": 116
+            },
+            {
+              "index": 2,
+              "text": "𠱘",
+              "comment": null,
+              "global_index": 117
+            },
+            {
+              "index": 3,
+              "text": "𠸺",
+              "comment": null,
+              "global_index": 118
+            },
+            {
+              "index": 4,
+              "text": "𠽬",
+              "comment": null,
+              "global_index": 119
+            }
+          ]
+        },
+        {
+          "page_no": 24,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𡎳",
+              "comment": null,
+              "global_index": 120
+            },
+            {
+              "index": 1,
+              "text": "𡎿",
+              "comment": null,
+              "global_index": 121
+            },
+            {
+              "index": 2,
+              "text": "𡞭",
+              "comment": null,
+              "global_index": 122
+            },
+            {
+              "index": 3,
+              "text": "𡣁",
+              "comment": null,
+              "global_index": 123
+            },
+            {
+              "index": 4,
+              "text": "𡥦",
+              "comment": null,
+              "global_index": 124
+            }
+          ]
+        },
+        {
+          "page_no": 25,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𡥨",
+              "comment": null,
+              "global_index": 125
+            },
+            {
+              "index": 1,
+              "text": "𡫸",
+              "comment": null,
+              "global_index": 126
+            },
+            {
+              "index": 2,
+              "text": "𡬗",
+              "comment": null,
+              "global_index": 127
+            },
+            {
+              "index": 3,
+              "text": "𢅟",
+              "comment": null,
+              "global_index": 128
+            },
+            {
+              "index": 4,
+              "text": "𢘝",
+              "comment": null,
+              "global_index": 129
+            }
+          ]
+        },
+        {
+          "page_no": 26,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𢚮",
+              "comment": null,
+              "global_index": 130
+            },
+            {
+              "index": 1,
+              "text": "𢛜",
+              "comment": null,
+              "global_index": 131
+            },
+            {
+              "index": 2,
+              "text": "𢣚",
+              "comment": null,
+              "global_index": 132
+            },
+            {
+              "index": 3,
+              "text": "𢦱",
+              "comment": null,
+              "global_index": 133
+            },
+            {
+              "index": 4,
+              "text": "𣘗",
+              "comment": null,
+              "global_index": 134
+            }
+          ]
+        },
+        {
+          "page_no": 27,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𣡋",
+              "comment": null,
+              "global_index": 135
+            },
+            {
+              "index": 1,
+              "text": "𣢞",
+              "comment": null,
+              "global_index": 136
+            },
+            {
+              "index": 2,
+              "text": "𣭙",
+              "comment": null,
+              "global_index": 137
+            },
+            {
+              "index": 3,
+              "text": "𤙌",
+              "comment": null,
+              "global_index": 138
+            },
+            {
+              "index": 4,
+              "text": "𤦤",
+              "comment": null,
+              "global_index": 139
+            }
+          ]
+        },
+        {
+          "page_no": 28,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𥄽",
+              "comment": null,
+              "global_index": 140
+            },
+            {
+              "index": 1,
+              "text": "𥇄",
+              "comment": null,
+              "global_index": 141
+            },
+            {
+              "index": 2,
+              "text": "𥜦",
+              "comment": null,
+              "global_index": 142
+            },
+            {
+              "index": 3,
+              "text": "𥜬",
+              "comment": null,
+              "global_index": 143
+            },
+            {
+              "index": 4,
+              "text": "𥷄",
+              "comment": null,
+              "global_index": 144
+            }
+          ]
+        },
+        {
+          "page_no": 29,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𥺜",
+              "comment": null,
+              "global_index": 145
+            },
+            {
+              "index": 1,
+              "text": "𦆦",
+              "comment": null,
+              "global_index": 146
+            },
+            {
+              "index": 2,
+              "text": "𦤽",
+              "comment": null,
+              "global_index": 147
+            },
+            {
+              "index": 3,
+              "text": "𦦃",
+              "comment": null,
+              "global_index": 148
+            },
+            {
+              "index": 4,
+              "text": "𦮾",
+              "comment": null,
+              "global_index": 149
+            }
+          ]
+        },
+        {
+          "page_no": 30,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𦰫",
+              "comment": null,
+              "global_index": 150
+            },
+            {
+              "index": 1,
+              "text": "𧃩",
+              "comment": null,
+              "global_index": 151
+            },
+            {
+              "index": 2,
+              "text": "𧈞",
+              "comment": null,
+              "global_index": 152
+            },
+            {
+              "index": 3,
+              "text": "𧏾",
+              "comment": null,
+              "global_index": 153
+            },
+            {
+              "index": 4,
+              "text": "𧖷",
+              "comment": null,
+              "global_index": 154
+            }
+          ]
+        },
+        {
+          "page_no": 31,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𧵼",
+              "comment": null,
+              "global_index": 155
+            },
+            {
+              "index": 1,
+              "text": "𧺰",
+              "comment": null,
+              "global_index": 156
+            },
+            {
+              "index": 2,
+              "text": "𨀀",
+              "comment": null,
+              "global_index": 157
+            },
+            {
+              "index": 3,
+              "text": "𨋗",
+              "comment": null,
+              "global_index": 158
+            },
+            {
+              "index": 4,
+              "text": "𨒫",
+              "comment": null,
+              "global_index": 159
+            }
+          ]
+        },
+        {
+          "page_no": 32,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𨺙",
+              "comment": null,
+              "global_index": 160
+            },
+            {
+              "index": 1,
+              "text": "𨽦",
+              "comment": null,
+              "global_index": 161
+            },
+            {
+              "index": 2,
+              "text": "𩈢",
+              "comment": null,
+              "global_index": 162
+            },
+            {
+              "index": 3,
+              "text": "𩉹",
+              "comment": null,
+              "global_index": 163
+            },
+            {
+              "index": 4,
+              "text": "𩋪",
+              "comment": null,
+              "global_index": 164
+            }
+          ]
+        },
+        {
+          "page_no": 33,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𩍦",
+              "comment": null,
+              "global_index": 165
+            },
+            {
+              "index": 1,
+              "text": "𩚮",
+              "comment": null,
+              "global_index": 166
+            },
+            {
+              "index": 2,
+              "text": "𩚯",
+              "comment": null,
+              "global_index": 167
+            },
+            {
+              "index": 3,
+              "text": "𩩢",
+              "comment": null,
+              "global_index": 168
+            },
+            {
+              "index": 4,
+              "text": "𩯨",
+              "comment": null,
+              "global_index": 169
+            }
+          ]
+        },
+        {
+          "page_no": 34,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𩰞",
+              "comment": null,
+              "global_index": 170
+            },
+            {
+              "index": 1,
+              "text": "𩱄",
+              "comment": null,
+              "global_index": 171
+            },
+            {
+              "index": 2,
+              "text": "𩸦",
+              "comment": null,
+              "global_index": 172
+            },
+            {
+              "index": 3,
+              "text": "𩸧",
+              "comment": null,
+              "global_index": 173
+            },
+            {
+              "index": 4,
+              "text": "𩺝",
+              "comment": null,
+              "global_index": 174
+            }
+          ]
+        },
+        {
+          "page_no": 35,
+          "page_size": 5,
+          "is_last_page": false,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𩺱",
+              "comment": null,
+              "global_index": 175
+            },
+            {
+              "index": 1,
+              "text": "𩾆",
+              "comment": null,
+              "global_index": 176
+            },
+            {
+              "index": 2,
+              "text": "𪏵",
+              "comment": null,
+              "global_index": 177
+            },
+            {
+              "index": 3,
+              "text": "𪏸",
+              "comment": null,
+              "global_index": 178
+            },
+            {
+              "index": 4,
+              "text": "𪐌",
+              "comment": null,
+              "global_index": 179
+            }
+          ]
+        },
+        {
+          "page_no": 36,
+          "page_size": 5,
+          "is_last_page": true,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "𪙛",
+              "comment": null,
+              "global_index": 180
+            },
+            {
+              "index": 1,
+              "text": "𫐐",
+              "comment": null,
+              "global_index": 181
+            }
+          ]
+        }
+      ],
+      "all_candidates": [
+        {
+          "index": 0,
+          "text": "你",
+          "comment": null,
+          "global_index": 0
+        },
+        {
+          "index": 1,
+          "text": "擬",
+          "comment": null,
+          "global_index": 1
+        },
+        {
+          "index": 2,
+          "text": "尼",
+          "comment": null,
+          "global_index": 2
+        },
+        {
+          "index": 3,
+          "text": "泥",
+          "comment": null,
+          "global_index": 3
+        },
+        {
+          "index": 4,
+          "text": "呢",
+          "comment": null,
+          "global_index": 4
+        },
+        {
+          "index": 0,
+          "text": "妳",
+          "comment": null,
+          "global_index": 5
+        },
+        {
+          "index": 1,
+          "text": "妮",
+          "comment": null,
+          "global_index": 6
+        },
+        {
+          "index": 2,
+          "text": "膩",
+          "comment": null,
+          "global_index": 7
+        },
+        {
+          "index": 3,
+          "text": "逆",
+          "comment": null,
+          "global_index": 8
+        },
+        {
+          "index": 4,
+          "text": "倪",
+          "comment": null,
+          "global_index": 9
+        },
+        {
+          "index": 0,
+          "text": "暱",
+          "comment": null,
+          "global_index": 10
+        },
+        {
+          "index": 1,
+          "text": "伱",
+          "comment": null,
+          "global_index": 11
+        },
+        {
+          "index": 2,
+          "text": "禰",
+          "comment": null,
+          "global_index": 12
+        },
+        {
+          "index": 3,
+          "text": "霓",
+          "comment": null,
+          "global_index": 13
+        },
+        {
+          "index": 4,
+          "text": "匿",
+          "comment": null,
+          "global_index": 14
+        },
+        {
+          "index": 0,
+          "text": "溺",
+          "comment": null,
+          "global_index": 15
+        },
+        {
+          "index": 1,
+          "text": "袮",
+          "comment": null,
+          "global_index": 16
+        },
+        {
+          "index": 2,
+          "text": "鉨",
+          "comment": null,
+          "global_index": 17
+        },
+        {
+          "index": 3,
+          "text": "児",
+          "comment": null,
+          "global_index": 18
+        },
+        {
+          "index": 4,
+          "text": "睨",
+          "comment": null,
+          "global_index": 19
+        },
+        {
+          "index": 0,
+          "text": "鈮",
+          "comment": null,
+          "global_index": 20
+        },
+        {
+          "index": 1,
+          "text": "旎",
+          "comment": null,
+          "global_index": 21
+        },
+        {
+          "index": 2,
+          "text": "坭",
+          "comment": null,
+          "global_index": 22
+        },
+        {
+          "index": 3,
+          "text": "鬩",
+          "comment": null,
+          "global_index": 23
+        },
+        {
+          "index": 4,
+          "text": "鯢",
+          "comment": null,
+          "global_index": 24
+        },
+        {
+          "index": 0,
+          "text": "嶷",
+          "comment": null,
+          "global_index": 25
+        },
+        {
+          "index": 1,
+          "text": "伲",
+          "comment": null,
+          "global_index": 26
+        },
+        {
+          "index": 2,
+          "text": "猊",
+          "comment": null,
+          "global_index": 27
+        },
+        {
+          "index": 3,
+          "text": "縌",
+          "comment": null,
+          "global_index": 28
+        },
+        {
+          "index": 4,
+          "text": "迡",
+          "comment": null,
+          "global_index": 29
+        },
+        {
+          "index": 0,
+          "text": "怩",
+          "comment": null,
+          "global_index": 30
+        },
+        {
+          "index": 1,
+          "text": "婗",
+          "comment": null,
+          "global_index": 31
+        },
+        {
+          "index": 2,
+          "text": "慝",
+          "comment": null,
+          "global_index": 32
+        },
+        {
+          "index": 3,
+          "text": "隬",
+          "comment": null,
+          "global_index": 33
+        },
+        {
+          "index": 4,
+          "text": "搦",
+          "comment": null,
+          "global_index": 34
+        },
+        {
+          "index": 0,
+          "text": "氼",
+          "comment": null,
+          "global_index": 35
+        },
+        {
+          "index": 1,
+          "text": "棿",
+          "comment": null,
+          "global_index": 36
+        },
+        {
+          "index": 2,
+          "text": "苨",
+          "comment": null,
+          "global_index": 37
+        },
+        {
+          "index": 3,
+          "text": "儗",
+          "comment": null,
+          "global_index": 38
+        },
+        {
+          "index": 4,
+          "text": "薾",
+          "comment": null,
+          "global_index": 39
+        },
+        {
+          "index": 0,
+          "text": "抳",
+          "comment": null,
+          "global_index": 40
+        },
+        {
+          "index": 1,
+          "text": "孨",
+          "comment": null,
+          "global_index": 41
+        },
+        {
+          "index": 2,
+          "text": "薿",
+          "comment": null,
+          "global_index": 42
+        },
+        {
+          "index": 3,
+          "text": "貎",
+          "comment": null,
+          "global_index": 43
+        },
+        {
+          "index": 4,
+          "text": "胒",
+          "comment": null,
+          "global_index": 44
+        },
+        {
+          "index": 0,
+          "text": "嫟",
+          "comment": null,
+          "global_index": 45
+        },
+        {
+          "index": 1,
+          "text": "屰",
+          "comment": null,
+          "global_index": 46
+        },
+        {
+          "index": 2,
+          "text": "腝",
+          "comment": null,
+          "global_index": 47
+        },
+        {
+          "index": 3,
+          "text": "麑",
+          "comment": null,
+          "global_index": 48
+        },
+        {
+          "index": 4,
+          "text": "狔",
+          "comment": null,
+          "global_index": 49
+        },
+        {
+          "index": 0,
+          "text": "郳",
+          "comment": null,
+          "global_index": 50
+        },
+        {
+          "index": 1,
+          "text": "柅",
+          "comment": null,
+          "global_index": 51
+        },
+        {
+          "index": 2,
+          "text": "淣",
+          "comment": null,
+          "global_index": 52
+        },
+        {
+          "index": 3,
+          "text": "痆",
+          "comment": null,
+          "global_index": 53
+        },
+        {
+          "index": 4,
+          "text": "惄",
+          "comment": null,
+          "global_index": 54
+        },
+        {
+          "index": 0,
+          "text": "搻",
+          "comment": null,
+          "global_index": 55
+        },
+        {
+          "index": 1,
+          "text": "堄",
+          "comment": null,
+          "global_index": 56
+        },
+        {
+          "index": 2,
+          "text": "聻",
+          "comment": null,
+          "global_index": 57
+        },
+        {
+          "index": 3,
+          "text": "齯",
+          "comment": null,
+          "global_index": 58
+        },
+        {
+          "index": 4,
+          "text": "麛",
+          "comment": null,
+          "global_index": 59
+        },
+        {
+          "index": 0,
+          "text": "馜",
+          "comment": null,
+          "global_index": 60
+        },
+        {
+          "index": 1,
+          "text": "鷊",
+          "comment": null,
+          "global_index": 61
+        },
+        {
+          "index": 2,
+          "text": "埿",
+          "comment": null,
+          "global_index": 62
+        },
+        {
+          "index": 3,
+          "text": "掜",
+          "comment": null,
+          "global_index": 63
+        },
+        {
+          "index": 4,
+          "text": "臡",
+          "comment": null,
+          "global_index": 64
+        },
+        {
+          "index": 0,
+          "text": "懝",
+          "comment": null,
+          "global_index": 65
+        },
+        {
+          "index": 1,
+          "text": "譺",
+          "comment": null,
+          "global_index": 66
+        },
+        {
+          "index": 2,
+          "text": "孴",
+          "comment": null,
+          "global_index": 67
+        },
+        {
+          "index": 3,
+          "text": "衵",
+          "comment": null,
+          "global_index": 68
+        },
+        {
+          "index": 4,
+          "text": "鑈",
+          "comment": null,
+          "global_index": 69
+        },
+        {
+          "index": 0,
+          "text": "嬺",
+          "comment": null,
+          "global_index": 70
+        },
+        {
+          "index": 1,
+          "text": "掿",
+          "comment": null,
+          "global_index": 71
+        },
+        {
+          "index": 2,
+          "text": "籾",
+          "comment": null,
+          "global_index": 72
+        },
+        {
+          "index": 3,
+          "text": "觬",
+          "comment": null,
+          "global_index": 73
+        },
+        {
+          "index": 4,
+          "text": "狋",
+          "comment": null,
+          "global_index": 74
+        },
+        {
+          "index": 0,
+          "text": "愵",
+          "comment": null,
+          "global_index": 75
+        },
+        {
+          "index": 1,
+          "text": "跜",
+          "comment": null,
+          "global_index": 76
+        },
+        {
+          "index": 2,
+          "text": "蚭",
+          "comment": null,
+          "global_index": 77
+        },
+        {
+          "index": 3,
+          "text": "屔",
+          "comment": null,
+          "global_index": 78
+        },
+        {
+          "index": 4,
+          "text": "秜",
+          "comment": null,
+          "global_index": 79
+        },
+        {
+          "index": 0,
+          "text": "糑",
+          "comment": null,
+          "global_index": 80
+        },
+        {
+          "index": 1,
+          "text": "昵",
+          "comment": null,
+          "global_index": 81
+        },
+        {
+          "index": 2,
+          "text": "蜺",
+          "comment": null,
+          "global_index": 82
+        },
+        {
+          "index": 3,
+          "text": "檷",
+          "comment": null,
+          "global_index": 83
+        },
+        {
+          "index": 4,
+          "text": "輗",
+          "comment": null,
+          "global_index": 84
+        },
+        {
+          "index": 0,
+          "text": "𣲷",
+          "comment": null,
+          "global_index": 85
+        },
+        {
+          "index": 1,
+          "text": "㘈",
+          "comment": null,
+          "global_index": 86
+        },
+        {
+          "index": 2,
+          "text": "㞾",
+          "comment": null,
+          "global_index": 87
+        },
+        {
+          "index": 3,
+          "text": "㠜",
+          "comment": null,
+          "global_index": 88
+        },
+        {
+          "index": 4,
+          "text": "㥾",
+          "comment": null,
+          "global_index": 89
+        },
+        {
+          "index": 0,
+          "text": "㦐",
+          "comment": null,
+          "global_index": 90
+        },
+        {
+          "index": 1,
+          "text": "㩘",
+          "comment": null,
+          "global_index": 91
+        },
+        {
+          "index": 2,
+          "text": "㪒",
+          "comment": null,
+          "global_index": 92
+        },
+        {
+          "index": 3,
+          "text": "㮏",
+          "comment": null,
+          "global_index": 93
+        },
+        {
+          "index": 4,
+          "text": "㲻",
+          "comment": null,
+          "global_index": 94
+        },
+        {
+          "index": 0,
+          "text": "㵫",
+          "comment": null,
+          "global_index": 95
+        },
+        {
+          "index": 1,
+          "text": "㹸",
+          "comment": null,
+          "global_index": 96
+        },
+        {
+          "index": 2,
+          "text": "䁥",
+          "comment": null,
+          "global_index": 97
+        },
+        {
+          "index": 3,
+          "text": "䕥",
+          "comment": null,
+          "global_index": 98
+        },
+        {
+          "index": 4,
+          "text": "䘌",
+          "comment": null,
+          "global_index": 99
+        },
+        {
+          "index": 0,
+          "text": "䘦",
+          "comment": null,
+          "global_index": 100
+        },
+        {
+          "index": 1,
+          "text": "䘽",
+          "comment": null,
+          "global_index": 101
+        },
+        {
+          "index": 2,
+          "text": "䛏",
+          "comment": null,
+          "global_index": 102
+        },
+        {
+          "index": 3,
+          "text": "䝚",
+          "comment": null,
+          "global_index": 103
+        },
+        {
+          "index": 4,
+          "text": "䦧",
+          "comment": null,
+          "global_index": 104
+        },
+        {
+          "index": 0,
+          "text": "䦵",
+          "comment": null,
+          "global_index": 105
+        },
+        {
+          "index": 1,
+          "text": "䵑",
+          "comment": null,
+          "global_index": 106
+        },
+        {
+          "index": 2,
+          "text": "䵒",
+          "comment": null,
+          "global_index": 107
+        },
+        {
+          "index": 3,
+          "text": "兒",
+          "comment": null,
+          "global_index": 108
+        },
+        {
+          "index": 4,
+          "text": "拟",
+          "comment": null,
+          "global_index": 109
+        },
+        {
+          "index": 0,
+          "text": "祢",
+          "comment": null,
+          "global_index": 110
+        },
+        {
+          "index": 1,
+          "text": "聣",
+          "comment": null,
+          "global_index": 111
+        },
+        {
+          "index": 2,
+          "text": "腻",
+          "comment": null,
+          "global_index": 112
+        },
+        {
+          "index": 3,
+          "text": "铌",
+          "comment": null,
+          "global_index": 113
+        },
+        {
+          "index": 4,
+          "text": "鲵",
+          "comment": null,
+          "global_index": 114
+        },
+        {
+          "index": 0,
+          "text": "𠆵",
+          "comment": null,
+          "global_index": 115
+        },
+        {
+          "index": 1,
+          "text": "𠒰",
+          "comment": null,
+          "global_index": 116
+        },
+        {
+          "index": 2,
+          "text": "𠱘",
+          "comment": null,
+          "global_index": 117
+        },
+        {
+          "index": 3,
+          "text": "𠸺",
+          "comment": null,
+          "global_index": 118
+        },
+        {
+          "index": 4,
+          "text": "𠽬",
+          "comment": null,
+          "global_index": 119
+        },
+        {
+          "index": 0,
+          "text": "𡎳",
+          "comment": null,
+          "global_index": 120
+        },
+        {
+          "index": 1,
+          "text": "𡎿",
+          "comment": null,
+          "global_index": 121
+        },
+        {
+          "index": 2,
+          "text": "𡞭",
+          "comment": null,
+          "global_index": 122
+        },
+        {
+          "index": 3,
+          "text": "𡣁",
+          "comment": null,
+          "global_index": 123
+        },
+        {
+          "index": 4,
+          "text": "𡥦",
+          "comment": null,
+          "global_index": 124
+        },
+        {
+          "index": 0,
+          "text": "𡥨",
+          "comment": null,
+          "global_index": 125
+        },
+        {
+          "index": 1,
+          "text": "𡫸",
+          "comment": null,
+          "global_index": 126
+        },
+        {
+          "index": 2,
+          "text": "𡬗",
+          "comment": null,
+          "global_index": 127
+        },
+        {
+          "index": 3,
+          "text": "𢅟",
+          "comment": null,
+          "global_index": 128
+        },
+        {
+          "index": 4,
+          "text": "𢘝",
+          "comment": null,
+          "global_index": 129
+        },
+        {
+          "index": 0,
+          "text": "𢚮",
+          "comment": null,
+          "global_index": 130
+        },
+        {
+          "index": 1,
+          "text": "𢛜",
+          "comment": null,
+          "global_index": 131
+        },
+        {
+          "index": 2,
+          "text": "𢣚",
+          "comment": null,
+          "global_index": 132
+        },
+        {
+          "index": 3,
+          "text": "𢦱",
+          "comment": null,
+          "global_index": 133
+        },
+        {
+          "index": 4,
+          "text": "𣘗",
+          "comment": null,
+          "global_index": 134
+        },
+        {
+          "index": 0,
+          "text": "𣡋",
+          "comment": null,
+          "global_index": 135
+        },
+        {
+          "index": 1,
+          "text": "𣢞",
+          "comment": null,
+          "global_index": 136
+        },
+        {
+          "index": 2,
+          "text": "𣭙",
+          "comment": null,
+          "global_index": 137
+        },
+        {
+          "index": 3,
+          "text": "𤙌",
+          "comment": null,
+          "global_index": 138
+        },
+        {
+          "index": 4,
+          "text": "𤦤",
+          "comment": null,
+          "global_index": 139
+        },
+        {
+          "index": 0,
+          "text": "𥄽",
+          "comment": null,
+          "global_index": 140
+        },
+        {
+          "index": 1,
+          "text": "𥇄",
+          "comment": null,
+          "global_index": 141
+        },
+        {
+          "index": 2,
+          "text": "𥜦",
+          "comment": null,
+          "global_index": 142
+        },
+        {
+          "index": 3,
+          "text": "𥜬",
+          "comment": null,
+          "global_index": 143
+        },
+        {
+          "index": 4,
+          "text": "𥷄",
+          "comment": null,
+          "global_index": 144
+        },
+        {
+          "index": 0,
+          "text": "𥺜",
+          "comment": null,
+          "global_index": 145
+        },
+        {
+          "index": 1,
+          "text": "𦆦",
+          "comment": null,
+          "global_index": 146
+        },
+        {
+          "index": 2,
+          "text": "𦤽",
+          "comment": null,
+          "global_index": 147
+        },
+        {
+          "index": 3,
+          "text": "𦦃",
+          "comment": null,
+          "global_index": 148
+        },
+        {
+          "index": 4,
+          "text": "𦮾",
+          "comment": null,
+          "global_index": 149
+        },
+        {
+          "index": 0,
+          "text": "𦰫",
+          "comment": null,
+          "global_index": 150
+        },
+        {
+          "index": 1,
+          "text": "𧃩",
+          "comment": null,
+          "global_index": 151
+        },
+        {
+          "index": 2,
+          "text": "𧈞",
+          "comment": null,
+          "global_index": 152
+        },
+        {
+          "index": 3,
+          "text": "𧏾",
+          "comment": null,
+          "global_index": 153
+        },
+        {
+          "index": 4,
+          "text": "𧖷",
+          "comment": null,
+          "global_index": 154
+        },
+        {
+          "index": 0,
+          "text": "𧵼",
+          "comment": null,
+          "global_index": 155
+        },
+        {
+          "index": 1,
+          "text": "𧺰",
+          "comment": null,
+          "global_index": 156
+        },
+        {
+          "index": 2,
+          "text": "𨀀",
+          "comment": null,
+          "global_index": 157
+        },
+        {
+          "index": 3,
+          "text": "𨋗",
+          "comment": null,
+          "global_index": 158
+        },
+        {
+          "index": 4,
+          "text": "𨒫",
+          "comment": null,
+          "global_index": 159
+        },
+        {
+          "index": 0,
+          "text": "𨺙",
+          "comment": null,
+          "global_index": 160
+        },
+        {
+          "index": 1,
+          "text": "𨽦",
+          "comment": null,
+          "global_index": 161
+        },
+        {
+          "index": 2,
+          "text": "𩈢",
+          "comment": null,
+          "global_index": 162
+        },
+        {
+          "index": 3,
+          "text": "𩉹",
+          "comment": null,
+          "global_index": 163
+        },
+        {
+          "index": 4,
+          "text": "𩋪",
+          "comment": null,
+          "global_index": 164
+        },
+        {
+          "index": 0,
+          "text": "𩍦",
+          "comment": null,
+          "global_index": 165
+        },
+        {
+          "index": 1,
+          "text": "𩚮",
+          "comment": null,
+          "global_index": 166
+        },
+        {
+          "index": 2,
+          "text": "𩚯",
+          "comment": null,
+          "global_index": 167
+        },
+        {
+          "index": 3,
+          "text": "𩩢",
+          "comment": null,
+          "global_index": 168
+        },
+        {
+          "index": 4,
+          "text": "𩯨",
+          "comment": null,
+          "global_index": 169
+        },
+        {
+          "index": 0,
+          "text": "𩰞",
+          "comment": null,
+          "global_index": 170
+        },
+        {
+          "index": 1,
+          "text": "𩱄",
+          "comment": null,
+          "global_index": 171
+        },
+        {
+          "index": 2,
+          "text": "𩸦",
+          "comment": null,
+          "global_index": 172
+        },
+        {
+          "index": 3,
+          "text": "𩸧",
+          "comment": null,
+          "global_index": 173
+        },
+        {
+          "index": 4,
+          "text": "𩺝",
+          "comment": null,
+          "global_index": 174
+        },
+        {
+          "index": 0,
+          "text": "𩺱",
+          "comment": null,
+          "global_index": 175
+        },
+        {
+          "index": 1,
+          "text": "𩾆",
+          "comment": null,
+          "global_index": 176
+        },
+        {
+          "index": 2,
+          "text": "𪏵",
+          "comment": null,
+          "global_index": 177
+        },
+        {
+          "index": 3,
+          "text": "𪏸",
+          "comment": null,
+          "global_index": 178
+        },
+        {
+          "index": 4,
+          "text": "𪐌",
+          "comment": null,
+          "global_index": 179
+        },
+        {
+          "index": 0,
+          "text": "𪙛",
+          "comment": null,
+          "global_index": 180
+        },
+        {
+          "index": 1,
+          "text": "𫐐",
+          "comment": null,
+          "global_index": 181
+        }
+      ],
+      "captured_all_pages": true
+    }
+  ]
+}

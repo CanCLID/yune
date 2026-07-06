@@ -1,0 +1,251 @@
+{
+  "schema_id": "jyut6ping3",
+  "sequence": "bei",
+  "events": [
+    {
+      "index": 0,
+      "key": "b",
+      "keycode": 98,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "b",
+        "caret": 1,
+        "preedit": "b",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "巴",
+            "comment": "baa1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "爸",
+            "comment": "baa1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "吧",
+            "comment": "baa1;baa6",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "叭",
+            "comment": "baa1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "粑",
+            "comment": "baa1",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "e",
+      "keycode": 101,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "be",
+        "caret": 2,
+        "preedit": "be",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "啤",
+            "comment": "be1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嚊",
+            "comment": "be6;bei6",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "碑",
+            "comment": "bei1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "悲",
+            "comment": "bei1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "卑",
+            "comment": "bei1",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "bei",
+        "caret": 3,
+        "preedit": "bei",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "碑",
+            "comment": "bei1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "悲",
+            "comment": "bei1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "卑",
+            "comment": "bei1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "陂",
+            "comment": "bei1;bei3",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "蓖",
+            "comment": "bei1;bei3;bei6",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": [],
+  "context": {
+    "input": "bei",
+    "caret": 3,
+    "preedit": "bei",
+    "highlighted": 0,
+    "last_commit": null,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": [
+      {
+        "text": "碑",
+        "comment": "bei1",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "悲",
+        "comment": "bei1",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "卑",
+        "comment": "bei1",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "陂",
+        "comment": "bei1;bei3",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "蓖",
+        "comment": "bei1;bei3;bei6",
+        "source": "",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "jyut6ping3",
+    "schema_name": "粵語拼音",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}

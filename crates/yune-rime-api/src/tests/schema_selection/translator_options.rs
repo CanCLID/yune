@@ -983,6 +983,109 @@ dadan\t大单
 }
 
 #[test]
+fn jyutping_typeduck_profile_requires_explicit_yune_profile_marker() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("schema-typeduck-profile-marker");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("jyut6ping3.schema.yaml"),
+        "\
+schema:
+  schema_id: jyut6ping3
+  name: Canonical Jyutping
+engine:
+  translators:
+    - table_translator
+    - echo_translator
+translator:
+  dictionary: jyut6ping3
+  enable_completion: false
+  enable_sentence: false
+",
+    )
+    .expect("canonical schema config should be written");
+    fs::write(
+        staging.join("jyut6ping3_profile.schema.yaml"),
+        "\
+yune:
+  profile: typeduck_jyutping
+schema:
+  schema_id: jyut6ping3_profile
+  name: TypeDuck Jyutping
+engine:
+  translators:
+    - table_translator
+    - echo_translator
+translator:
+  dictionary: jyut6ping3
+  enable_completion: false
+  enable_sentence: false
+",
+    )
+    .expect("profile schema config should be written");
+    fs::write(
+        shared.join("jyut6ping3.dict.yaml"),
+        "\
+---
+name: jyut6ping3
+version: '0.1'
+sort: by_weight
+columns: [text, code, weight]
+...
+
+BEI\tbei\t100
+",
+    )
+    .expect("dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    // SAFETY: traits points to valid storage and strings live for the call.
+    unsafe { RimeSetup(&traits) };
+
+    let session_id = RimeCreateSession();
+    let canonical = CString::new("jyut6ping3").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(unsafe { RimeSelectSchema(session_id, canonical.as_ptr()) }, TRUE);
+    for ch in "beingo".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+    assert_eq!(
+        current_candidate_pairs(session_id),
+        [("beingo".to_owned(), "echo".to_owned())],
+        "canonical jyut6ping3 must not inherit TypeDuck prefix fallback from its schema id"
+    );
+
+    RimeClearComposition(session_id);
+    let profile = CString::new("jyut6ping3_profile").expect("schema id should be valid");
+    // SAFETY: schema id is a valid NUL-terminated string.
+    assert_eq!(unsafe { RimeSelectSchema(session_id, profile.as_ptr()) }, TRUE);
+    for ch in "beingo".chars() {
+        assert_eq!(RimeProcessKey(session_id, ch as c_int, 0), TRUE);
+    }
+    let profile_candidates = current_candidate_pairs(session_id);
+    assert_eq!(
+        profile_candidates[0],
+        ("BEI".to_owned(), "bei".to_owned()),
+        "explicit TypeDuck profile marker should keep TypeDuck prefix fallback"
+    );
+
+    assert_eq!(RimeDestroySession(session_id), TRUE);
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn select_schema_applies_librime_translator_initial_quality() {
     let _guard = test_guard();
     RimeCleanupAllSessions();

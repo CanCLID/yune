@@ -49,7 +49,7 @@ pub use dictionary::{
     TableDictionaryAdvancedData, TableDictionaryParseError, TableEncoder, TableEncoderFormulaError,
     TableEncodingRule, TableEntry,
 };
-pub use engine::Engine;
+pub use engine::{Engine, SchemaBehaviorProfile};
 pub use filter::{
     CharsetFilter, DictionaryLookupFilter, ReverseLookupFilter, SimplifierFilter, SingleCharFilter,
     TaggedFilter, UniquifierFilter,

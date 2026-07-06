@@ -1,0 +1,3917 @@
+{
+  "schema_id": "jyut6ping3",
+  "sequence": "zijiguk{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}",
+  "events": [
+    {
+      "index": 0,
+      "key": "z",
+      "keycode": 122,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "z",
+        "caret": 1,
+        "preedit": "z",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "楂",
+            "comment": "zaa1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "揸",
+            "comment": "zaa1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "渣",
+            "comment": "zaa1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "咱",
+            "comment": "zaa1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "咋",
+            "comment": "zaa1;zaa2;zaa3;zaa6;zaak3;zaak6",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zi",
+        "caret": 2,
+        "preedit": "zi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知",
+            "comment": "zi1;zi3",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "之",
+            "comment": "zi1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "支",
+            "comment": "zi1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "吱",
+            "comment": "zi1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "枝",
+            "comment": "zi1",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "j",
+      "keycode": 106,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zij",
+        "caret": 3,
+        "preedit": "zij",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "滋陰",
+            "comment": "zi1jam1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "知音",
+            "comment": "zi1jam1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "子音",
+            "comment": "zi2jam1",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "自淫",
+            "comment": "zi6jam4",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "字音表",
+            "comment": "zi6jam1biu2",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 3,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "ziji",
+        "caret": 4,
+        "preedit": "ziji",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "旨意",
+            "comment": "zi2ji3",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "指意",
+            "comment": "zi2ji3",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "致意",
+            "comment": "zi3ji3",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "恣意",
+            "comment": "zi3ji3",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "自貽伊戚",
+            "comment": "zi6ji4ji1cik1",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 4,
+      "key": "g",
+      "keycode": 103,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijig",
+        "caret": 5,
+        "preedit": "zijig",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而嘅咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 5,
+      "key": "u",
+      "keycode": 117,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijigu",
+        "caret": 6,
+        "preedit": "zijigu",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而估咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 6,
+      "key": "k",
+      "keycode": 107,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 7,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 8,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 9,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 10,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 11,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 12,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 13,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 14,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 15,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 16,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 17,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 18,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 19,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 20,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 21,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 22,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 23,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 24,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 25,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 26,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 27,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 28,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 29,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 30,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 31,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 32,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 33,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 34,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 35,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 36,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 37,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 38,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 39,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 40,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 41,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 42,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 43,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 44,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 45,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 46,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 47,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 48,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 49,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 50,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 51,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 52,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 53,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 54,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 55,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 56,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 57,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 58,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 59,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 60,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 61,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 62,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 63,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 64,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 65,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 66,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 67,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 68,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 69,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 70,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 71,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 72,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 73,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 74,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 75,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 76,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 77,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 78,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 79,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 80,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 81,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 82,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 83,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 84,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 85,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 86,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 87,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 88,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 89,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 90,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 91,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 92,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 93,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 94,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 95,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 96,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "zijiguk",
+        "caret": 7,
+        "preedit": "zijiguk",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "知而焗咁",
+            "comment": " ☯ ",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "jyut6ping3",
+        "schema_name": "粵語拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": [],
+  "context": {
+    "input": "zijiguk",
+    "caret": 7,
+    "preedit": "zijiguk",
+    "highlighted": 0,
+    "last_commit": null,
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": true,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": [
+      {
+        "text": "知而焗咁",
+        "comment": " ☯ ",
+        "source": "",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "jyut6ping3",
+    "schema_name": "粵語拼音",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}

@@ -21,10 +21,10 @@ use yune_core::{
     CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
     EchoTranslator, HistoryTranslator, OctagramGrammar, OctagramGrammarConfig,
     OctagramGrammarParseError, PoetByteSource, ReverseLookupFilter, ReverseLookupTranslator,
-    RimePrismRuntimePayload, RimeTableBinAdvancedDataOptions, SchemaListTranslator,
-    SimplifierFilter, SingleCharFilter, StaticTableTranslator, SwitchTranslator, TableDictionary,
-    TableDictionaryAdvancedData, TaggedFilter, Translator, UniquifierFilter,
-    TYPEDUCK_SENTENCE_WORD_PENALTY,
+    RimePrismRuntimePayload, RimeTableBinAdvancedDataOptions, SchemaBehaviorProfile,
+    SchemaListTranslator, SimplifierFilter, SingleCharFilter, StaticTableTranslator,
+    SwitchTranslator, TableDictionary, TableDictionaryAdvancedData, TaggedFilter, Translator,
+    UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -166,6 +166,13 @@ pub(crate) fn schema_reload_signature(schema_config: &Value) -> String {
         }
     }
     parts.join("\n---\n")
+}
+
+pub(crate) fn schema_behavior_profile_from_config(schema_config: &Value) -> SchemaBehaviorProfile {
+    match schema_yune_profile(schema_config).as_deref() {
+        Some("typeduck_jyutping") => SchemaBehaviorProfile::TypeduckJyutping,
+        _ => SchemaBehaviorProfile::Standard,
+    }
 }
 
 pub(crate) fn schema_component_prescription(component: &str) -> (&str, Option<&str>) {
@@ -840,9 +847,13 @@ fn is_typeduck_jyut6ping3_profile(schema_config: &Value, dictionary_name: Option
     if dictionary_name != Some("jyut6ping3") {
         return false;
     }
-    find_config_value(schema_config, "schema/schema_id")
+    schema_behavior_profile_from_config(schema_config) == SchemaBehaviorProfile::TypeduckJyutping
+}
+
+fn schema_yune_profile(schema_config: &Value) -> Option<String> {
+    find_config_value(schema_config, "yune/profile")
+        .or_else(|| find_config_value(schema_config, "yune_profile"))
         .and_then(config_scalar_string)
-        .is_some_and(|schema_id| schema_id == "jyut6ping3" || schema_id.starts_with("jyut6ping3_"))
 }
 
 fn is_yune_web_launch_byte_backed_profile(

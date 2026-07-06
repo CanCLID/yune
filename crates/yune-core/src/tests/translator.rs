@@ -1142,6 +1142,49 @@ H7	hao	40
 }
 
 #[test]
+fn bounded_compact_luna_request_does_not_probe_strict_prefixes_without_prefix_fallback() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: luna_compact_prefix_probe
+version: "0.1"
+sort: by_weight
+...
+
+ZHONGGUO	zhongguo	100
+ZHONG	zhong	90
+GUO	guo	80
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["zhong", "guo"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 2))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_sentence(false);
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let result = translator.translate_with_context_and_request(
+        "zhongguo",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(5).with_debug_full_count(true),
+    );
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(result.candidates[0].text, "ZHONGGUO");
+    assert_eq!(
+        metrics.prism_lookup_calls, 1,
+        "bounded compact Luna requests should expand the requested spelling once, not probe every strict prefix"
+    );
+}
+
+#[test]
 fn short_luna_key_refresh_falls_back_when_filter_surplus_underfills_first_page() {
     let _guard = super::m37_metrics_test_guard();
     let mut engine = Engine::new();
@@ -1307,6 +1350,79 @@ HAU	hau	100
             "bounded Track B short-prefix pruning must preserve full translation order for {input}"
         );
     }
+}
+
+#[test]
+fn bounded_long_prefix_fallback_keeps_two_candidates_per_fetch_code() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: long_prefix_cap
+version: "0.1"
+sort: by_weight
+...
+
+FULL	abcdefghij	100
+AB1	ab	90
+AB2	ab	89
+AB3	ab	88
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["ab", "cd", "ef", "gh", "ij"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 5))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_prefix_fallback(true)
+        .with_sentence(false);
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let result = translator.translate_with_context_and_request(
+        "abcdefghij",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(8).with_debug_full_count(true),
+    );
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    let prefix_candidates = result
+        .candidates
+        .iter()
+        .filter(|candidate| {
+            matches!(
+                candidate.source,
+                CandidateSource::PartialTable {
+                    recompose_on_default: true,
+                    ..
+                }
+            )
+        })
+        .map(|candidate| candidate.text.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        metrics.prism_lookup_calls, 9,
+        "bounded prefix fallback should scan strict prefixes once and skip prism expansion for exact prefix codes"
+    );
+    assert_eq!(
+        prefix_candidates,
+        ["AB1", "AB2"],
+        "long compact prefix fallback should keep the M55 two-candidate per-fetch cap"
+    );
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let _ = translator.translate("abcdefghij");
+    let full_metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(
+        full_metrics.prism_lookup_calls, 18,
+        "full prefix fallback should not duplicate strict-prefix scans when a full exact candidate already enables fallback"
+    );
 }
 
 #[test]

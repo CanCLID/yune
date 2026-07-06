@@ -3,6 +3,9 @@
 
 __include: template:/
 
+yune:
+  profile: typeduck_jyutping
+
 schema:
   schema_id: jyut6ping3_mobile
   name: 粵語拼音

@@ -1,6 +1,7 @@
 use crate::{
     AiConfidence, AiContext, AiOffReason, AiResult, Candidate, CandidateRanker, CandidateSource,
-    Context, Engine, MockAiRanker, RerankResult, StaticTableTranslator, Translator, UserDb,
+    Context, Engine, MockAiRanker, RerankResult, SchemaBehaviorProfile, StaticTableTranslator,
+    Translator, UserDb,
 };
 
 struct CommentTranslator;
@@ -273,6 +274,7 @@ fn typeduck_product_refresh_keeps_profile_page_bounded_until_full_access() {
     let dictionary = bounded_refresh_dictionary_with_rows(80);
     let mut engine = Engine::new();
     engine.set_schema("jyut6ping3_mobile", "Jyutping");
+    engine.set_schema_behavior_profile(SchemaBehaviorProfile::TypeduckJyutping);
     engine.add_translator(
         StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
             .expect("dictionary should parse")
@@ -298,6 +300,32 @@ fn typeduck_product_refresh_keeps_profile_page_bounded_until_full_access() {
         "out-of-window product access should force a complete refresh"
     );
     assert!(engine.snapshot().candidate_list_complete);
+}
+
+#[test]
+fn canonical_jyutping_id_does_not_enable_typeduck_refresh_without_profile_marker() {
+    let dictionary = bounded_refresh_dictionary_with_rows(80);
+    let mut engine = Engine::new();
+    engine.set_schema("jyut6ping3", "Jyutping");
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false)
+            .with_prediction_candidate_limit(1)
+            .with_prefix_fallback(true),
+    );
+
+    engine.set_input("n");
+
+    assert!(
+        engine.snapshot().candidate_list_complete,
+        "canonical jyut6ping3 should not get TypeDuck/profile bounded paging from its schema id alone"
+    );
+    assert!(
+        engine.context().candidates.len() > 31,
+        "canonical jyut6ping3 should retain the full candidate list unless an explicit profile marker is set"
+    );
 }
 
 #[test]

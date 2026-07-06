@@ -1,0 +1,1585 @@
+{
+  "schema_id": "luna_pinyin",
+  "sequence": "moboyi3{Page_Down}{Page_Down}{Page_Down}5{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}1",
+  "events": [
+    {
+      "index": 0,
+      "key": "m",
+      "keycode": 109,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "m",
+        "caret": 1,
+        "preedit": "m",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "嗎",
+            "comment": "ma",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嘛",
+            "comment": "ma",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "馬",
+            "comment": "ma",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "媽",
+            "comment": "ma",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "罵",
+            "comment": "ma",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "mo",
+        "caret": 2,
+        "preedit": "mo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "莫",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "魔",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "末",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "膜",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "b",
+      "keycode": 98,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "mob",
+        "caret": 3,
+        "preedit": "mob",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "模板",
+            "comment": "moban",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "莫泊桑",
+            "comment": "mobosang",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "抹脖子",
+            "comment": "mobozi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸不着",
+            "comment": "mobuzhao",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸不着頭腦",
+            "comment": "mobuzhaotounao",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 3,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "mobo",
+        "caret": 4,
+        "preedit": "mobo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "莫泊桑",
+            "comment": "mobosang",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "抹脖子",
+            "comment": "mobozi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "麼波",
+            "comment": "mobo",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 4,
+      "key": "y",
+      "keycode": 121,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "moboy",
+        "caret": 5,
+        "preedit": "moboy",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "脈搏",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "漠北",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "脈波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "無波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "沒播",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 5,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "moboyi",
+        "caret": 6,
+        "preedit": "moboyi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "脈搏一",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "漠北一",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "脈搏以",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "漠北以",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "脈波一",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 6,
+      "key": "3",
+      "keycode": 51,
+      "mask": 0,
+      "handled": false,
+      "commits": [
+        "脈搏一"
+      ],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 7,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 8,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 9,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 10,
+      "key": "5",
+      "keycode": 53,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 11,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 12,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 13,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 14,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 15,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 16,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 17,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 18,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 19,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 20,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 21,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 22,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 23,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 24,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 25,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 26,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 27,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 28,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 29,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 30,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 31,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 32,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 33,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 34,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 35,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 36,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 37,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 38,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 39,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 40,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 41,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 42,
+      "key": "1",
+      "keycode": 49,
+      "mask": 0,
+      "handled": false,
+      "commits": [],
+      "context": {
+        "input": "",
+        "caret": 0,
+        "preedit": "",
+        "highlighted": 0,
+        "last_commit": "脈搏一",
+        "page_size": 0,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": []
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": false,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": [
+    "脈搏一"
+  ],
+  "context": {
+    "input": "",
+    "caret": 0,
+    "preedit": "",
+    "highlighted": 0,
+    "last_commit": "脈搏一",
+    "page_size": 0,
+    "page_no": 0,
+    "is_last_page": false,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": []
+  },
+  "status": {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "is_disabled": false,
+    "is_composing": false,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}

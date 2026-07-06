@@ -1,19 +1,22 @@
-# M59 Canonical Jyutping Composition Reachability & Parity Plan
+# M59 Canonical Composition Reachability & Parity Plan
 
 > **For agentic workers:** execute one phase at a time. **Phase 0 is blocking
 > and urgent: `main` is currently RED on the standing M55 ratchet** (two
 > consistent failing runs recorded by `c4336cd9`'s own evidence). No other M59
 > work lands before the gate is green again. This plan supersedes the earlier
 > draft `m59-plan-composition-single-character-reachability.md` (deleted): the
-> owner re-prioritized on 2026-07-06 — **the canonical lane (Yune +
-> `rime/rime-cantonese` versus upstream `rime/librime 1.17.0` +
-> `rime/rime-cantonese`) is the primary target**; the TypeDuck profile lane
-> becomes a regression guard, not the acceptance driver.
+> owner re-prioritized on 2026-07-06 — **canonical behavior is the acceptance
+> driver**. The initial target is Yune + `rime/rime-cantonese` versus upstream
+> `rime/librime 1.17.0` + pinned `rime/rime-cantonese`; the same
+> oracle-first reachability rule is now explicitly in scope for the named
+> upstream `luna_pinyin` rows captured from upstream `rime/librime 1.17.0`.
+> The TypeDuck profile lane becomes a regression guard, not the acceptance
+> driver.
 
 > **Status:** Draft for review. - **Track:** Engine behavioral correctness
-> (canonical Jyutping lane first; TypeDuck profile guarded). - **Created:**
-> 2026-07-06. - **Type:** perf-corrective + canonical parity milestone. No ABI
-> widening, no new performance claim.
+> (canonical Jyutping + upstream Luna reachability; TypeDuck profile guarded).
+> - **Created:** 2026-07-06. - **Type:** perf-corrective + canonical parity
+> milestone. No ABI widening, no new performance claim.
 
 ## Owner Requirement (verbatim, 2026-07-05/06)
 
@@ -22,19 +25,27 @@
 > should be able to select any single character to achieve any character
 > combination matching the input syllable.
 
-Plus the 2026-07-06 priority: *"I want to make sure that the original behavior,
-i.e. yune+rime-cantonese matches the librime+rime-cantonese behavior. TypeDuck
-behavior matters but we should prioritize the canonical comparison first."*
+Plus the 2026-07-06 priorities:
 
-Engineering translation, canonical lane, any composition length:
+- *"I want to make sure that the original behavior, i.e.
+  yune+rime-cantonese matches the librime+rime-cantonese behavior. TypeDuck
+  behavior matters but we should prioritize the canonical comparison first."*
+- For upstream `luna_pinyin`, typing `ziyiju` or `moboyi` must allow the owner
+  to choose leading single characters page by page, including composing the
+  non-lexicon phrase `莫伯洢` from `莫` + `伯` + `洢` after typing `moboyi`.
+
+Engineering translation, canonical lanes, any composition length:
 
 1. Every dictionary single character whose code matches the **leading complete
    syllable** must be reachable by paging, in the oracle's order — **no
    promotion to earlier pages** (owner-explicit).
 2. Selecting it commits its span and recomposes the remainder (M28 semantics).
-3. Acceptance numbers come from the **canonical capture**
-   (`phase-1/canonical-rime-cantonese-capture.json`), never from the TypeDuck
-   phase-2b captures and never from Yune itself.
+3. Acceptance numbers come from the relevant **upstream oracle captures**:
+   pinned `rime-cantonese` captures for canonical Jyutping and upstream
+   `luna_pinyin` captures for Luna. They never come from TypeDuck phase-2b
+   captures and never from Yune itself.
+4. This is **not** a blanket all-schema claim. M59 covers the named canonical
+   Jyutping and upstream Luna rows whose behavior is captured and diffed.
 
 ## Canonical Oracle Facts (verified from the committed M58 phase-1 capture)
 
@@ -58,14 +69,40 @@ the owner requirement **is** canonical oracle parity; nothing needs inventing.
 `bei` family is **139 single-character rows**. A tone-ignored "romanization
 first syllable == `bei`" classifier matches only **136** of them — it drops
 `啤/be1`, `唄/be6`, `𠹇/be1`, which the oracle nonetheless returns in the `bei`
-list. For the **canonical lane the comparator is the oracle's own ordered
-single-character list (all 139), not a romanization filter** — otherwise the
-win bar would silently not require those 3 reachable. The romanization
+list. For the **canonical Jyutping lane**, the comparator is the oracle's own
+ordered single-character list (all 139), not a romanization filter — otherwise
+the win bar would silently not require those 3 reachable. The romanization
 classifier is retained only for the **profile** lane (where `bei` legitimately
 spans bei1–bei6). Note also that the two captures store romanization
 differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
 `"1,比,bei2,…"` — so the diff harness and any classifier reused from `c4336cd9`
 (CSV-shaped) must handle both formats.
+
+## Upstream Luna Oracle Facts (scratch-verified; Phase 1 must commit)
+
+Oracle: upstream `rime/librime 1.17.0` (`33e78140…`) + upstream
+`rime-luna-pinyin` / `rime-essay` / `rime-stroke`, page size **5**. These
+rows were verified locally on 2026-07-06 with the existing
+`scripts/capture-upstream-luna-pinyin.ps1` harness; Phase 1 must regenerate
+and commit the evidence before Phase 3 treats them as win bars.
+
+| Input / action | Oracle behavior |
+| --- | --- |
+| `ziyiju` page 1 | `諮議局`, `自已`, `子怡`, `紫衣`, `恣意` |
+| `ziyiju` page 2 | `自縊`, `字義`, `自以`, `字意`, `諮議` |
+| `ziyiju` page 4 | leading `zi` singles begin: `子`, `字`, `自`, `紫`, `資` |
+| `ziyiju` page 6 | includes standalone `諮` at overall index **28** (`滋`, `漬`, `孜`, `諮`, `緇`) |
+| `moboyi` page 1 | `莫博弈`, `麼波`, `莫`, `摸`, `魔`; selecting `莫` leaves `boyi` |
+| `boyi` after selecting `莫` | page 4 = `波`, `博`, `播`, `撥`, `伯`; selecting `伯` leaves `yi` |
+| `yi` after selecting `莫伯` | page 32 = `洢`, `晹`, `壱`, `齮`, `銕`; selecting `洢` commits `莫伯洢` |
+
+`莫伯洢` is not a dictionary/essay phrase row; the point is arbitrary phrase
+composition from single-character rows. The individual characters are
+dictionary-backed (`伯\tbo`, `洢\tyi`, `莫\tmo`). For `ziyiju`,
+`translator/enable_sentence` on/off produced the same upstream candidate pages;
+the browser "Auto-composition" toggle maps to that setting, so the observed
+toggle no-op on this row is not itself a bug. Yune still must match the
+upstream pages in both toggle states where captured.
 
 ## Current State (what exists, what is broken)
 
@@ -74,6 +111,14 @@ differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
   canonical schema, no Yune-side run, no diff has ever been made — every
   committed `cantonese_parity` oracle is a `typeduck-v1.1.2` fixture
   (shipped-dict provenance is confirmed in Phase 1; see below).
+- **Yune also misses upstream Luna partial-selection reachability.** Current
+  product-path `luna_pinyin` over `ziyiju` exposes only the short first-page
+  phrase list and marks it as last, while upstream has additional pages and
+  standalone `zi` rows. Current product-path `moboyi` commits `脈搏一` from a
+  five-row final page (`脈搏一`, `漠北一`, `脈搏以`, `漠北以`, `脈波一`) instead
+  of exposing upstream's `莫` / `伯` / `洢` page-by-page selection flow. This is
+  a canonical upstream Luna gap, not a TypeDuck profile issue and not an
+  `auto_composition` toggle issue.
 - **`c4336cd9` delivered profile-lane reachability** via the right mechanism
   family: fixed caps deleted, bounded typing requests limit-driven (per-fetch
   3, pending 4×limit, output = limit), unbounded complete-list path uncapped
@@ -155,21 +200,31 @@ differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
       not assumed.
 - [ ] Mirror the capture options exactly (page size **5**, option set) on the
       Yune side; record provenance both sides.
+- [ ] Capture the upstream `luna_pinyin` rows with the existing
+      `scripts/capture-upstream-luna-pinyin.ps1` harness, page size **5**, and
+      committed provenance: `ziyiju` all pages through standalone `諮`,
+      `moboyi` page flow through `莫` -> `伯` -> `洢` -> commit `莫伯洢`,
+      bare/component controls (`mo`, `boyi`, `yi`) sufficient to pin the named
+      row indexes, and `translator/enable_sentence` on/off for `ziyiju` to
+      prove the browser Auto-composition toggle is not the acceptance driver.
 
 ### Phase 2 — The canonical diff (the phase M58 skipped)
-- [ ] Run Yune over the staged canonical lane for every phase-1 captured input
-      (compiled path where applicable) and diff ordered output against the
-      capture, classified per direction: **reachability** (row exists in
-      capture, unreachable in Yune at any page), **admission overage/underage**
-      (set membership), **order-only**. The diff — not any prior model — is
-      the Phase 3 spec.
+- [ ] Run Yune over the staged canonical Jyutping lane for every phase-1
+      captured input (compiled path where applicable) **and** over the captured
+      upstream `luna_pinyin` rows. Diff ordered output against the captures,
+      classified per direction: **reachability** (row exists in capture,
+      unreachable in Yune at any page), **selection/recomposition** (row exists
+      but selecting it commits the wrong span or fails to recompose the
+      remainder), **admission overage/underage** (set membership),
+      **order-only**. The diff — not any prior model — is the Phase 3 spec.
 - [ ] Freeze the diff as committed evidence before fixing anything.
 
 ### Phase 3 — Fix canonical behavior per the diff
 - [ ] Implement the narrowest fixes the diff proves, reusing the `c4336cd9`
       mechanism family where it fits (limit-driven bounded caps, uncapped
-      complete-list, leading-syllable injection) — scoped so luna/Track A is
-      untouched.
+      complete-list, leading-syllable injection) — scoped so Luna changes are
+      only the oracle-backed reachability/selection changes captured above and
+      Track A stays under the standing ratchet ceilings.
 - [ ] Win bars (canonical numbers, from the capture):
       1. `beingo` first page = 比我 被我 畀我 畀 比 (page size 5; no
          promotion);
@@ -178,12 +233,21 @@ differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
       3. `zijiguk`: **諮議局 first**; named row **諮 @ 227** reachable by
          paging, selectable, remainder recomposes;
       4. one ≥15-char control with a large leading family (depth×length case);
-      5. comparators pinned: for the **canonical lane the classifier is the
+      5. `luna_pinyin` `ziyiju`: page 1 = `諮議局 自已 子怡 紫衣 恣意`,
+         paging reaches `子 字 自 紫 資`, and standalone **諮 @ 28** is
+         reachable/selectable without relying on `translator/enable_sentence`;
+      6. `luna_pinyin` `moboyi`: no exact phrase row is required; the upstream
+         selection flow works and Yune must match it — select `莫` from
+         `moboyi`, page to/select `伯` from `boyi`, page to/select **洢 @ 155**
+         from `yi`, commit `莫伯洢`;
+      7. comparators pinned: for the **canonical Jyutping lane**, use the
          oracle's own ordered single-character list from the capture (all 139
-         for `bei`), not a romanization filter** (the romanization filter drops
+         for `bei`), not a romanization filter (the romanization filter drops
          `啤/唄/𠹇` and yields 136 — see the Comparator note); comparator = that
-         oracle list as an ordered subsequence of Yune's paged output;
-         full-list equality only where the diff shows it achievable — every
+         oracle list as an ordered subsequence of Yune's paged output. For
+         Luna, compare against the upstream page/action snapshots, including
+         page-number movement and post-selection remainder/commit state.
+         Full-list equality only where the diff shows it achievable — every
          remaining divergence recorded and named, none silently passed.
 - [ ] Page-driven assertions only (no initial-materialization-window pins);
       compiled-path tests where caps/limits are storage-gated.
@@ -196,12 +260,17 @@ differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
       `selector.rs` with typed config (no schema-string gates in core).
 - [ ] Gates: `cargo fmt --check`; `cargo clippy --workspace --all-targets --
       -D warnings`; `cargo test --workspace` (serial re-run of named suites per
-      AGENTS.md discipline); WEB-03 long-input tripwire; the M55 ratchet green
+      AGENTS.md discipline); `cargo test -p yune-core --test
+      upstream_luna_pinyin_parity`; `cargo test -p yune-core --test
+      cantonese_parity`; focused M59 Luna reachability/selection tests for
+      `ziyiju` and `moboyi`; WEB-03 long-input tripwire; the M55 ratchet green
       on a fresh leaf; the first-page-turn materialization guard (budget p95 ≤
       50 ms on the standing bench machine, tighten-only, owner sign-off
       required to loosen — canonical `zijiguk` completes 416+ rows in one
-      materialization, so this measures the real worst case).
-- [ ] Close: evidence README (before/after diffs, canonical + profile),
+      materialization, and upstream `yi` reaches `洢` at page 32, so this
+      measures the real worst case class).
+- [ ] Close: evidence README (before/after diffs, canonical Jyutping + upstream
+      Luna + profile),
       roadmap/requirements/milestone-history updates; record follow-up IDs in
       the roadmap deferred section — `M59-FU-TAIL-ADMISSION` (profile fuzzy
       tail: Yune 192 rows vs oracle 124 for profile `zijiguk`) and
@@ -211,12 +280,17 @@ differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
 
 ## Decided Calls
 
-- **Canonical lane is the acceptance driver; TypeDuck profile is a guard.**
-  Acceptance numbers come from `canonical-rime-cantonese-capture.json` only.
+- **Canonical captures are the acceptance driver; TypeDuck profile is a guard.**
+  Jyutping acceptance numbers come from
+  `canonical-rime-cantonese-capture.json`; Luna acceptance numbers come from
+  committed upstream `luna_pinyin` captures.
 - **Phase 0 blocks everything.** Red main is standing debt; ceilings are the
   gate; no residual-tolerance policy.
 - **No promotion, ever** (owner-explicit): oracle order preserved; the fix is
   reachability by paging.
+- **Upstream Luna is in scope for named rows.** `ziyiju` and `moboyi` are
+  canonical `luna_pinyin` reachability targets; the browser Auto-composition
+  toggle is not the acceptance driver for those rows.
 - **Validation lane, not product shipping.** The schema-id split /
   canonical-in-product decision stays separately gated (D-31 amendment).
 - **Diff-first.** Phase 3 fixes only what the frozen Phase 2 diff proves;
@@ -229,13 +303,16 @@ differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
 ## Review Checklist For Claude
 
 - Was Phase 0 actually closed green (twice, fresh leaves, full command) before
-  any canonical work landed?
-- Does the canonical lane run free of TypeDuck-calibrated shims unless the
-  diff proves the oracle behavior needs an equivalent (typed-config
+  any Phase 1+ behavior work landed?
+- Does the canonical Jyutping lane run free of TypeDuck-calibrated shims unless
+  the diff proves the oracle behavior needs an equivalent (typed-config
   installed, not schema-string-gated)?
 - Are the win-bar numbers (匕@34, 諮@227, first pages, 139-single family)
   asserted from the committed canonical capture bytes with the pinned
   comparators?
+- Are the Luna win bars (`ziyiju` standalone `諮@28`; `moboyi` -> `莫` ->
+  `伯` -> `洢@155` -> commit `莫伯洢`) asserted from committed upstream
+  `luna_pinyin` captures, with sentence-on/off evidence for `ziyiju`?
 - Are the actual profile-lane guards (`beingo` → 畀@6, `zijiguk` → 諮
   reachable, the M58 anchors, e2e) still green and unchanged — and was the new
   `beingo` → 匕 guard added rather than assumed?
@@ -249,5 +326,9 @@ differently — canonical is plain `"bei2"`, the TypeDuck fixtures are CSV
 - No canonical-lane product shipping or schema-id rename in M59.
 - No re-ranking/promotion beyond oracle order in either lane.
 - No re-baselining of the M55 ratchet ceilings.
-- No sentence-path cap changes; no admission changes to the profile fuzzy tail
-  (deferred as `M59-FU-TAIL-ADMISSION`).
+- No unmeasured sentence-path cap changes; if the Luna diff proves a
+  sentence/partial-parse cap owner, change it only with oracle evidence and
+  ratchet proof. No admission changes to the profile fuzzy tail (deferred as
+  `M59-FU-TAIL-ADMISSION`).
+- No blanket all-schema guarantee beyond the captured canonical Jyutping and
+  upstream Luna rows.

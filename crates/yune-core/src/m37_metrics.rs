@@ -1,3 +1,5 @@
+#[cfg(test)]
+use std::cell::Cell;
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     OnceLock,
@@ -326,13 +328,30 @@ fn metrics() -> &'static M37Metrics {
     METRICS.get_or_init(M37Metrics::default)
 }
 
+#[cfg(test)]
+thread_local! {
+    static TEST_THREAD_METRICS_ENABLED: Cell<bool> = const { Cell::new(false) };
+}
+
 #[must_use]
 pub fn m37_metrics_enabled() -> bool {
-    metrics().enabled.load(Ordering::Relaxed)
+    let enabled = metrics().enabled.load(Ordering::Relaxed);
+    #[cfg(test)]
+    {
+        enabled && TEST_THREAD_METRICS_ENABLED.with(Cell::get)
+    }
+    #[cfg(not(test))]
+    {
+        enabled
+    }
 }
 
 pub fn m37_metrics_enable(enabled: bool) {
     metrics().enabled.store(enabled, Ordering::Relaxed);
+    #[cfg(test)]
+    {
+        TEST_THREAD_METRICS_ENABLED.with(|flag| flag.set(enabled));
+    }
 }
 
 pub fn m37_metrics_reset() {

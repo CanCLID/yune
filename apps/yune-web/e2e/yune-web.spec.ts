@@ -1609,6 +1609,31 @@ test.describe("yune-web Browser E2E", () => {
     expect(consoleFailures(consoleErrors)).toEqual([]);
   });
 
+  test("M58 yune-web TypeDuck profile surfaces beingo standalone bei first page @smoke", async ({
+    page,
+  }) => {
+    const state = await typeCompositionAndWaitForCandidate(
+      page,
+      "beingo",
+      "\u7540",
+    );
+    const texts = candidateTexts(state);
+
+    expect(texts[0]).toBe("\u4ffe\u6211");
+    expect(texts.slice(0, 6)).toContain("\u7540");
+    await saveJsonEvidence("m58-beingo-first-page.json", {
+      input: "beingo",
+      firstPageCandidateTexts: texts.slice(0, 6),
+      expectedFirstCandidate: "\u4ffe\u6211",
+      requiredReachableCandidate: "\u7540",
+      source:
+        "M58 TypeDuck/profile product lane: current yune-web jyut6ping3_mobile browser assets.",
+      state,
+    });
+    await takeEvidenceScreenshot(page, "m58-beingo-first-page");
+    expect(consoleFailures(consoleErrors)).toEqual([]);
+  });
+
   test("UI language switcher localizes labels and persists @bilingual", async ({
     page,
   }) => {

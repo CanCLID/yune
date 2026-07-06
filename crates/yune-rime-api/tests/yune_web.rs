@@ -2904,6 +2904,79 @@ fn yune_web_adapter_real_assets_emit_oracle_dictionary_panel_comments() {
 }
 
 #[test]
+fn m58_yune_web_browser_app_assets_surface_beingo_standalone_bei_first_page() {
+    let _guard = test_guard();
+    let runtime = YuneWebRuntime::create_with_schema(
+        "m58-browser-app-beingo-first-page",
+        "jyut6ping3_mobile",
+    );
+    runtime.write_browser_app_assets();
+
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    for input in ["bei", "being", "beix", "beixngoxx", "beingo"] {
+        let state = unsafe {
+            yune_web_init(
+                runtime.shared_c.as_ptr(),
+                runtime.user_c.as_ptr(),
+                runtime.schema_id_c.as_ptr(),
+            )
+        };
+        assert!(!state.is_null());
+        assert_eq!(
+            unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+            TRUE
+        );
+
+        let composing = process_input(state, input);
+        let candidates = composing["context"]["candidates"]
+            .as_array()
+            .expect("candidate page should be an array");
+        let first_page = candidates
+            .iter()
+            .take(6)
+            .map(|candidate| {
+                candidate["text"]
+                    .as_str()
+                    .expect("candidate text should be a string")
+            })
+            .collect::<Vec<_>>();
+        if input == "being" {
+            assert_eq!(
+                first_page,
+                vec![
+                    "\u{6bd4}\u{4e94}",
+                    "\u{6bd4}",
+                    "\u{88ab}",
+                    "\u{7540}",
+                    "\u{5099}",
+                    "\u{60b2}",
+                ],
+                "browser-app jyut6ping3_mobile assets should preserve the byte-backed being first page snapshot"
+            );
+        } else {
+            assert!(
+                first_page.contains(&"\u{7540}"),
+                "browser-app jyut6ping3_mobile assets should surface standalone \u{7540} on the page-size-6 first page for {input}, got {first_page:?}"
+            );
+        }
+        if input == "beingo" || input == "beixngoxx" {
+            assert_eq!(
+                first_page.first().copied(),
+                Some("\u{4ffe}\u{6211}"),
+                "browser-app jyut6ping3_mobile assets should keep the bei-ngo phrase first for {input}, got {first_page:?}"
+            );
+        }
+        assert_schema_storage_byte_backed(
+            "jyut6ping3_mobile",
+            &composing["context"]["debug"]["storage"],
+        );
+
+        unsafe { yune_web_cleanup(state) };
+    }
+    runtime.remove();
+}
+
+#[test]
 fn yune_web_adapter_browser_app_assets_enrich_visible_lookup_candidates() {
     let _guard = test_guard();
     let runtime = YuneWebRuntime::create_with_schema(

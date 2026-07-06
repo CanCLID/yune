@@ -9,10 +9,10 @@
 > canonical candidate oracle. Run one phase at a time, preserve evidence, and
 > stop at any oracle/provenance contradiction.
 
-> **Status:** Draft rewrite / not ready for implementation until Phase 0 and
-> Phase 1 complete. **Track:** core compatibility plus schema/profile identity
-> safety. **Created:** 2026-07-05. **Type:** oracle/provenance repair before
-> any candidate-behavior fix.
+> **Status:** Complete. **Track:** core compatibility plus schema/profile
+> identity safety. **Created:** 2026-07-05. **Completed:** 2026-07-05.
+> **Type:** oracle/provenance repair plus scoped TypeDuck/profile product-lane
+> fix.
 >
 > **Preflight claim audit:** see
 > [`../../reports/evidence/m58-preflight-claim-audit/README.md`](../../reports/evidence/m58-preflight-claim-audit/README.md)
@@ -126,8 +126,8 @@ Deliverables:
 
 | Lane | Current / proposed Yune-facing id | Source repo | Source commit | Oracle engine | Owns |
 | --- | --- | --- | --- | --- | --- |
-| Canonical | current/proposed `jyut6ping3` pending Phase 3 sign-off | `rime/rime-cantonese` | TBD | upstream `rime/librime 1.17.0` | new canonical candidate ordering, segmentation, fallback, completion |
-| TypeDuck shipped/profile | current `jyut6ping3` / `jyut6ping3_mobile`; proposed `jyut6ping3_typeduck` pending Phase 3 sign-off | `TypeDuck-HK/schema` | TBD | TypeDuck-HK/librime v1.1.2 for profile fixtures; hybrid upstream-engine fixture where D-31 applies | multilingual comments, lookup payloads, profile/display behavior, grandfathered profile candidate guards, shipped bug disposition |
+| Canonical | current/proposed `jyut6ping3` pending Phase 3 sign-off | `rime/rime-cantonese` | `c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0` | upstream `rime/librime 1.17.0` | new canonical candidate ordering, segmentation, fallback, completion |
+| TypeDuck shipped/profile | current `jyut6ping3` / `jyut6ping3_mobile`; proposed `jyut6ping3_typeduck` pending Phase 3 sign-off | `TypeDuck-HK/schema` | `1bed1ae6a0ab48055f073774d7dfd152a171c548` | TypeDuck-HK/librime v1.1.2 for profile fixtures; hybrid upstream-engine fixture where D-31 applies | multilingual comments, lookup payloads, profile/display behavior, grandfathered profile candidate guards, shipped bug disposition |
 
 Stop conditions:
 
@@ -143,6 +143,14 @@ Stop conditions:
 
 Capture full ordered candidate output from upstream `rime/librime 1.17.0` with
 pinned `rime/rime-cantonese`, not TypeDuck-HK/librime.
+
+Current capture mechanism: `scripts/capture-upstream-rime-cantonese.ps1` stages
+upstream `rime-cantonese` plus dependencies under `target/upstream-oracle/1.17.0`
+and uses `scripts/oracle-rime-probe.cs` through upstream `rime.dll`. The harness
+validates and records the expected upstream `rime.dll` and `rime_deployer.exe`
+SHA-256s before capture. Final all-pages evidence lives under
+`docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-1/`, including the
+user-specified reported-case input `zijiguk` for `諮議局`.
 
 Capture rules:
 
@@ -165,8 +173,8 @@ Minimum canonical inputs:
   do not reuse the old TypeDuck first-6 truncation as oracle truth.
 - `mgoi` or another common valid multi-syllable control, if Phase 0 identifies
   it as load-bearing for segmentation.
-- The reported "諮議局" case, but Phase 0 must first record the exact ASCII
-  keystrokes; do not guess or derive them from Yune output.
+- The reported `諮議局` case, captured from user-specified exact ASCII
+  keystrokes `zijiguk`; expected output is not derived from Yune.
 
 Stop conditions:
 
@@ -232,6 +240,18 @@ Required work:
 M58 cannot close as complete by treating the original report as a harmless
 "TypeDuck-only" no-go.
 
+Closeout result:
+
+- Canonical `rime-cantonese` captures do not reproduce a `zijiguk` /
+  `諮議局` issue: `諮議局` is the first candidate.
+- Canonical `beingo` already reaches standalone `畀` on page 1.
+- The current `yune-web` TypeDuck/profile product path did reproduce the
+  page-size-6 `beingo` issue: standalone `畀` fell just past the first page.
+- M58 fixes only that product/profile lane by moving and reweighting the
+  tracked public `畀	bei2` row, regenerating compiled public schema assets, and
+  adding source-backed plus byte-backed focused guards. TypeDuck v1.1.2 remains
+  profile-only evidence and is not promoted to canonical candidate behavior.
+
 ## Phase 3 - Schema/Profile Identity Safety And Sign-Off Gate
 
 M58 must make schema identity risk explicit before any rename/split lands. The
@@ -291,6 +311,15 @@ Guardrails:
 - Do not change profile predicates without tests that prove both canonical and
   TypeDuck/profile lanes select the intended behavior.
 
+Closeout implementation:
+
+- No canonical runtime ordering fix was made because the canonical captures did
+  not show an M58-owned canonical divergence.
+- No translator fallback cap was raised, so the M55 Track B threshold ratchet
+  was not required by the implementation diff.
+- The only product behavior change is in tracked `apps/yune-web/public/schema`
+  and regenerated public schema binaries/manifests for `jyut6ping3`.
+
 ## Phase 5 - Verification And Closeout
 
 Minimum gates, adjusted by touched files:
@@ -311,6 +340,43 @@ Minimum gates, adjusted by touched files:
   - the standing M55 ratchet with the current `m55-thresholds.csv`
   - any WEB-03/Track-B tripwire named by the implementation diff
 - `git diff --check`
+
+Closeout gate results:
+
+- `cargo fmt --check` - pass.
+- `cargo clippy --workspace --all-targets -- -D warnings` - pass.
+- `cargo test --workspace` - pass.
+- `cargo test -p yune-core --test upstream_luna_pinyin_parity` - pass.
+- `cargo test -p yune-core --test cantonese_parity` - pass.
+- `cargo test -p yune-rime-api --test yune_web` - pass.
+- `cargo test -p yune-core --test cantonese_parity m58 -- --nocapture` - pass.
+- `cargo test -p yune-rime-api --test yune_web m58_yune_web_browser_app_assets_surface_beingo_standalone_bei_first_page -- --nocapture` - pass.
+- `cargo test -p yune-core --lib m37_metrics_test_enable_is_thread_local -- --nocapture` - pass.
+- `cargo test -p yune-rime-api --test yune_web web03_regenerates_public_schema_compiled_assets_from_clean_rebuild -- --ignored --nocapture` - pass.
+- `npm.cmd --prefix apps/yune-web run check:schema-manifest` - pass.
+- `npm.cmd --prefix apps/yune-web run typecheck` - pass.
+- `npm.cmd --prefix apps/yune-web run build` - pass.
+- `npm.cmd --prefix apps/yune-web run build:public` - pass.
+- `npm.cmd --prefix packages/yune-web-runtime test` - pass.
+- `npm.cmd --prefix packages/yune-web-runtime run build` - pass.
+- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep M58 --workers=1` - pass against a local Vite server.
+- `git diff --check` - pass.
+
+Verification fixes and scoped skips:
+
+- The required workspace gate exposed a pre-existing M37 metric test-isolation
+  issue: enabling metrics in one unit-test thread let unrelated parallel tests
+  emit into the same process-global snapshot. M58 fixed that test-only
+  nondeterminism with thread-scoped `cfg(test)` enablement plus
+  `m37_metrics_test_enable_is_thread_local`.
+- The generated, ignored `target/typeduck-oracle/v1.1.2` TypeDuck capture tree
+  was moved aside before final `yune_web` verification because legacy
+  `write_browser_real_assets` auto-selects that local path when present. The
+  committed evidence remains `typeduck-profile-beingo-capture.json`.
+- The M55 Track B ratchet was not run because no translator fallback cap,
+  product-path performance threshold, or benchmark threshold changed.
+- The full Playwright suite was not run; the browser-visible M58 claim is
+  covered by the focused real-browser `--grep M58` candidate-output gate.
 
 Closeout docs must update:
 

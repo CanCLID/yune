@@ -29,6 +29,9 @@ const WINDOWS_BOUNDARY_NGOHAIG_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-windows-boundary-ngohaig.json");
 const M28_UPSTREAM_JYUTPING_COMPOSITION_ORACLE: &str =
     include_str!("fixtures/upstream-jyutping/jyutping-m28-followup-composition.json");
+const M58_TYPEDUCK_PROFILE_BEINGO_ORACLE: &str = include_str!(
+    "../../../docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/typeduck-profile-beingo-capture.json"
+);
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
 const FORK_PARITY_02_PREFER_USER_PHRASE_ORACLE: &str =
@@ -87,6 +90,11 @@ fn m21_closeout_fixture() -> Value {
 fn m24_dogfooding_fixture() -> Value {
     serde_json::from_str(M24_DOGFOODING_ORACLE)
         .expect("TypeDuck v1.1.2 M24 dogfooding fixture should be valid JSON")
+}
+
+fn m58_typeduck_profile_beingo_fixture() -> Value {
+    serde_json::from_str(M58_TYPEDUCK_PROFILE_BEINGO_ORACLE)
+        .expect("M58 TypeDuck/profile beingo fixture should be valid JSON")
 }
 
 fn m28_partial_selection_fixture() -> Value {
@@ -1263,6 +1271,17 @@ fn m24_dogfooding_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
         .unwrap_or_else(|| panic!("M24 dogfooding fixture should capture input {input}"))
 }
 
+fn m58_typeduck_profile_beingo_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
+    fixture["cases"]
+        .as_array()
+        .expect("M58 TypeDuck/profile beingo cases should be an array")
+        .iter()
+        .find(|case| case["variant"] == "smoke" && case["input"] == input)
+        .unwrap_or_else(|| {
+            panic!("M58 TypeDuck/profile beingo fixture should capture input {input}")
+        })
+}
+
 fn candidate_count(case: &Value) -> usize {
     case["selected_candidates"]
         .as_array()
@@ -1338,9 +1357,18 @@ fn typeduck_public_schema_asset(relative_path: &str) -> String {
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
 }
 
-fn typeduck_jyut6ping3_mobile_engine_with_sentence(
+fn yune_web_public_schema_asset(relative_path: &str) -> String {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../apps/yune-web/public/schema")
+        .join(relative_path);
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
+}
+
+fn typeduck_jyut6ping3_mobile_engine_with_options(
     enable_correction: bool,
     enable_sentence: bool,
+    combine_candidates: bool,
 ) -> Engine {
     let translator_dictionary = TableDictionary::parse_rime_dict_yaml(
         &typeduck_public_schema_asset("jyut6ping3.dict.yaml"),
@@ -1358,7 +1386,7 @@ fn typeduck_jyut6ping3_mobile_engine_with_sentence(
         .with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY)
         .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
         .with_comment_format(&["xform/^/\u{000c}/".to_owned()])
-        .with_combine_candidates(true)
+        .with_combine_candidates(combine_candidates)
         .with_prediction_never_first(true)
         .with_prediction_candidate_limit(1)
         .with_prefix_fallback(true);
@@ -1371,8 +1399,42 @@ fn typeduck_jyut6ping3_mobile_engine_with_sentence(
     engine
 }
 
+fn typeduck_jyut6ping3_mobile_engine_with_sentence(
+    enable_correction: bool,
+    enable_sentence: bool,
+) -> Engine {
+    typeduck_jyut6ping3_mobile_engine_with_options(enable_correction, enable_sentence, true)
+}
+
 fn typeduck_jyut6ping3_mobile_engine(enable_correction: bool) -> Engine {
     typeduck_jyut6ping3_mobile_engine_with_sentence(enable_correction, true)
+}
+
+fn yune_web_jyut6ping3_mobile_engine() -> Engine {
+    let translator_dictionary = TableDictionary::parse_rime_dict_yaml(
+        &yune_web_public_schema_asset("jyut6ping3.dict.yaml"),
+    )
+    .expect("current yune-web jyut6ping3 dictionary should parse");
+    let lookup_dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(
+        &yune_web_public_schema_asset("jyut6ping3_scolar.dict.yaml"),
+    )
+    .expect("current yune-web jyut6ping3_scolar lookup dictionary should parse");
+    let translator = StaticTableTranslator::from_dictionary(translator_dictionary)
+        .with_completion(true)
+        .with_correction(false)
+        .with_dynamic_correction_lookup(true)
+        .with_sentence(true)
+        .with_sentence_word_penalty(TYPEDUCK_SENTENCE_WORD_PENALTY)
+        .with_spelling_algebra(&jyut6ping3_mobile_spelling_algebra())
+        .with_comment_format(&["xform/^/\u{000c}/".to_owned()])
+        .with_combine_candidates(true)
+        .with_prediction_never_first(true)
+        .with_prediction_candidate_limit(1)
+        .with_prefix_fallback(true);
+    let mut engine = Engine::new();
+    engine.add_translator(translator);
+    engine.add_filter(DictionaryLookupFilter::new(lookup_dictionary));
+    engine
 }
 
 fn jyut6ping3_mobile_spelling_algebra() -> Vec<String> {
@@ -1763,6 +1825,77 @@ fn m21_closeout_rows_match_typeduck_v112_real_dictionary_goldens() {
         hk2s_engine.context().candidates[0].text,
         selected_candidate_text(expected_hk2s, 0)
     );
+}
+
+#[test]
+fn m58_profile_beingo_lane_matches_typeduck_v112_capture() {
+    let fixture = m58_typeduck_profile_beingo_fixture();
+    assert_eq!(fixture["oracle"]["engine"], "TypeDuck-HK/librime");
+    assert_eq!(fixture["schema"], "jyut6ping3_mobile");
+    assert_eq!(
+        fixture["capture"]["source_row_policy"],
+        "typeduck_v112_binary_smoke"
+    );
+
+    for input in ["bei", "being", "beingo", "beix", "beixngoxx"] {
+        let expected = m58_typeduck_profile_beingo_case(&fixture, input);
+        assert_eq!(
+            expected["captured_all_pages"], true,
+            "fixture should be all-pages for input {input}"
+        );
+    }
+
+    let beingo = m58_typeduck_profile_beingo_case(&fixture, "beingo");
+    assert!(candidate_count(beingo) > 6);
+    assert_eq!(selected_candidate_text(beingo, 0), "\u{4ffe}\u{6211}");
+    assert_eq!(selected_candidate_text(beingo, 6), "\u{7540}");
+
+    let beixngoxx = m58_typeduck_profile_beingo_case(&fixture, "beixngoxx");
+    assert!(candidate_count(beixngoxx) > 3);
+    assert_eq!(selected_candidate_text(beixngoxx, 0), "\u{4ffe}\u{6211}");
+    assert_eq!(selected_candidate_text(beixngoxx, 3), "\u{7540}");
+}
+
+#[test]
+fn m58_current_yune_web_profile_surfaces_beingo_report_candidates() {
+    for input in ["bei", "being", "beix", "beixngoxx", "beingo"] {
+        let mut engine = yune_web_jyut6ping3_mobile_engine();
+        engine.set_input(input);
+
+        let first_page = engine
+            .context()
+            .candidates
+            .iter()
+            .take(6)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        if input == "being" {
+            assert_eq!(
+                first_page,
+                vec![
+                    "\u{4ffe}\u{6211}",
+                    "\u{60b2}\u{54c0}",
+                    "\u{5099}\u{6848}",
+                    "\u{5f7c}\u{5cb8}",
+                    "\u{88ab}\u{611b}",
+                    "\u{5f7c}\u{5cb8}\u{82b1}",
+                ],
+                "current yune-web profile should preserve the being first page snapshot"
+            );
+        } else {
+            assert!(
+                first_page.contains(&"\u{7540}"),
+                "current yune-web profile should surface standalone \u{7540} on the page-size-6 first page for {input}, got {first_page:?}"
+            );
+        }
+        if input == "beingo" || input == "beixngoxx" {
+            assert_eq!(
+                first_page.first().copied(),
+                Some("\u{4ffe}\u{6211}"),
+                "current yune-web profile should keep the bei-ngo phrase first for {input}, got {first_page:?}"
+            );
+        }
+    }
 }
 
 #[test]

@@ -34,7 +34,12 @@ abbreviation rows; M57 repaired that platform/comparability defect by accepting
 the macOS upstream Luna MARISA checksum pair through the target-scoped compact
 compiled-table path, restoring the expected sentence-model owner shape, and
 proving two full macOS native verification passes. The macOS bundle is now valid
-evidence for the repaired rows, not a new general performance verdict.
+evidence for the repaired rows, not a new general performance verdict. M58 then
+rebased canonical Jyutping candidate claims on upstream `rime/librime 1.17.0`
+plus pinned `rime/rime-cantonese`, confirmed the reported `zijiguk` / `諮議局`
+case is first under the canonical oracle, fixed the current `yune-web`
+TypeDuck/profile `beingo` page-size-6 standalone `畀` reachability bug, and
+kept the schema-id split audit-only pending explicit sign-off.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -272,21 +277,22 @@ Current decision:
    [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/).
    Plan:
    [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md).
-8. **M58 Jyutping candidate reachability is paused for oracle/schema rewrite.**
-   The previous v4 plan used TypeDuck-HK/librime v1.1.2 as the candidate-order
-   oracle for `jyut6ping3`; that premise is superseded for new canonical
-   claims. Canonical Cantonese/Jyutping candidate ordering, segmentation,
-   fallback, and completion must be captured from upstream `rime/librime 1.17.0`
-   plus pinned `rime/rime-cantonese`. Historical M14-M28 TypeDuck fixtures
-   remain TypeDuck-profile regression guards, including fixture-backed candidate
-   behavior such as M21-GAP-01/02. M58 must also disposition the shipped
-   `beingo` / 畀 bug in the TypeDuck/profile lane if canonical rime-cantonese
-   does not reproduce it. The preferred schema split is canonical `jyut6ping3`
-   plus TypeDuck `jyut6ping3_typeduck`, but M58 must first audit
-   `jyut6ping3_mobile`, profile predicates, Track B/M55, WEB-03/public-demo
-   assets, and userdb persistence before requesting explicit id-direction
-   sign-off.
-   Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
+8. **M58 Jyutping oracle rebase and TypeDuck/profile bug disposition is
+   complete.** Canonical Cantonese/Jyutping candidate ordering, segmentation,
+   fallback, and completion are now evidenced from upstream `rime/librime
+   1.17.0` plus pinned `rime/rime-cantonese`, not TypeDuck-HK/librime v1.1.2.
+   The user-specified `zijiguk` input for `諮議局` captures `諮議局` as the first
+   canonical candidate, so no canonical admission issue is reproduced. The
+   shipped/current `yune-web` TypeDuck/profile lane still had a page-size-6
+   `beingo` reachability bug; M58 fixes it in the tracked public schema/assets
+   so standalone `畀` appears on the first page. Historical M14-M28 TypeDuck
+   fixtures remain profile-lane regression guards. The preferred schema split
+   remains canonical `jyut6ping3` plus TypeDuck `jyut6ping3_typeduck`, but no
+   id split or userdb/cache-key migration landed; Phase 3 records the blast
+   radius pending explicit sign-off. Evidence:
+   [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/).
+   Plan:
+   [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
 9. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
@@ -332,7 +338,7 @@ and current decision rules.
 | M56 | Complete | Engine productization hardening for external Windows/iOS frontend consumers: staleness-proofing + isolated cold/warm conformance, user-data lifecycle evidence, ABI abuse suite + panic-boundary guards, session-registry poison recovery, and explicit release `panic = "abort"` policy; no ABI change, behavior-preserving on defined happy paths, and no new default product `*.poet.bin` payloads. Evidence: [`reports/evidence/m56-productization-hardening/`](./reports/evidence/m56-productization-hardening/). Plan: [`plans/completed/m56-plan-engine-productization-hardening.md`](./plans/completed/m56-plan-engine-productization-hardening.md). |
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
-| M58 | Draft rewrite / paused | Canonical Jyutping candidate reachability/admission work must be re-based on upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; the earlier TypeDuck-v1.1.2 canonical-ordering plan is superseded. Historical M14-M28 TypeDuck fixtures remain profile-lane regression guards, and the shipped `beingo` / 畀 report must receive a TypeDuck/profile disposition if canonical captures do not cover it. The preferred id direction is canonical `jyut6ping3` plus TypeDuck `jyut6ping3_typeduck`, but no id split may land before the Phase 3 blast-radius audit and explicit user sign-off. Preflight claim audit: [`reports/evidence/m58-preflight-claim-audit/`](./reports/evidence/m58-preflight-claim-audit/). Plan: [`plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/active/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
+| M58 | Complete | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile `beingo` lane now surfaces standalone `畀` on the page-size-6 first page after the tracked public dictionary row and compiled schema assets were regenerated. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
 
 ## Scope Ledger
 

@@ -12,3 +12,22 @@ fn m37_metrics_test_guard() -> MutexGuard<'static, ()> {
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
+
+#[test]
+fn m37_metrics_test_enable_is_thread_local() {
+    let _guard = m37_metrics_test_guard();
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+
+    let worker = std::thread::spawn(|| {
+        assert!(!crate::m37_metrics_enabled());
+        crate::m37_record_lookup_view();
+    });
+    worker.join().expect("test metrics worker should not panic");
+
+    crate::m37_record_lookup_view();
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(metrics.lookup_views_visited, 1);
+}

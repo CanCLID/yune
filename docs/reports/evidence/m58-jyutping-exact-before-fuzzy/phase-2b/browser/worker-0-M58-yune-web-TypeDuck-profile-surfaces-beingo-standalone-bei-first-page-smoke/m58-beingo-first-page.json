@@ -1,0 +1,62 @@
+{
+  "input": "beingo",
+  "firstPageCandidateTexts": [
+    "俾我",
+    "比",
+    "被",
+    "畀",
+    "備",
+    "悲"
+  ],
+  "expectedFirstCandidate": "俾我",
+  "requiredReachableCandidate": "畀",
+  "source": "M58 TypeDuck/profile product lane: current yune-web jyut6ping3_mobile browser assets.",
+  "state": {
+    "aiEnabled": false,
+    "inputValue": "",
+    "candidates": [
+      {
+        "index": 0,
+        "text": "俾我",
+        "note": "give me",
+        "source": null,
+        "rowText": "1.bei2 ngo5俾我give meⓘ"
+      },
+      {
+        "index": 1,
+        "text": "比",
+        "note": "compare",
+        "source": null,
+        "rowText": "2.bei2比compareⓘ"
+      },
+      {
+        "index": 2,
+        "text": "被",
+        "note": "by",
+        "source": null,
+        "rowText": "3.bei6被byⓘ"
+      },
+      {
+        "index": 3,
+        "text": "畀",
+        "note": "give",
+        "source": null,
+        "rowText": "4.bei2畀giveⓘ"
+      },
+      {
+        "index": 4,
+        "text": "備",
+        "note": "prepare",
+        "source": null,
+        "rowText": "5.bei6備prepareⓘ"
+      },
+      {
+        "index": 5,
+        "text": "悲",
+        "note": "sadness",
+        "source": null,
+        "rowText": "6.bei1悲sadnessⓘ"
+      }
+    ]
+  }
+}

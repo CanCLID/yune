@@ -1440,44 +1440,42 @@ platform-stable for the known target payloads. Evidence:
 
 ### M58 Canonical Jyutping Oracle And TypeDuck Profile Disposition
 
-**Status: drafted / not started.** M58 is being rewritten around the
-2026-07-05 oracle decision: candidate ordering, segmentation, fallback, and
-completion for canonical Cantonese/Jyutping use upstream `rime/librime 1.17.0`
-with pinned `rime/rime-cantonese`, while TypeDuck multilingual behavior is a
-separate profile/data lane. Historical M14-M28 TypeDuck fixtures remain
-grandfathered TypeDuck-profile regression guards, including fixture-backed
-candidate behavior.
+**Status: complete.** M58 rebases canonical Cantonese/Jyutping candidate
+behavior on upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`,
+keeps TypeDuck multilingual behavior as a separate profile/data lane, fixes the
+current `yune-web` TypeDuck/profile `beingo` / 畀 first-page reachability bug,
+and records the schema-id blast-radius audit without implementing a rename.
 
-- [ ] **M58-JYUTPING-01**: Canonical `jyut6ping3` candidate behavior is captured
+- [x] **M58-JYUTPING-01**: Canonical `jyut6ping3` candidate behavior is captured
   from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`
   schema/data before any candidate reachability or admission code changes, using
   a named upstream capture harness, mirrored page size/options, and
   `captured_all_pages: true`.
-- [ ] **M58-JYUTPING-02**: Schema identity split direction is not implemented
+- [x] **M58-JYUTPING-02**: Schema identity split direction is not implemented
   until the executor inventories the `jyut6ping3` / `jyut6ping3_mobile` blast
   radius and records explicit user sign-off. The preferred proposal remains
   canonical `jyut6ping3` plus TypeDuck `jyut6ping3_typeduck`, but it is a gated
   choice rather than an assumed edit.
-- [ ] **M58-JYUTPING-03**: Every M58 oracle fixture and compiled artifact records
+- [x] **M58-JYUTPING-03**: Every M58 oracle fixture and compiled artifact records
   schema source repository, source commit, upstream engine/oracle version, and
   Yune-facing schema id, plus page size and option set.
-- [ ] **M58-JYUTPING-04**: Candidate reachability/admission fixes are derived
+- [x] **M58-JYUTPING-04**: Candidate reachability/admission fixes are derived
   from canonical `rime/rime-cantonese` upstream-librime captures, not from
   TypeDuck-HK/librime v1.1.2 candidate ordering, unless the fix is explicitly
   scoped as TypeDuck-profile-only.
-- [ ] **M58-JYUTPING-05**: TypeDuck-only multilingual comments, dictionary lookup
+- [x] **M58-JYUTPING-05**: TypeDuck-only multilingual comments, dictionary lookup
   payloads, profile controls, display/comment behavior, and grandfathered
   M14-M28 profile candidate guards remain regression guarded without widening
   canonical candidate behavior.
-- [ ] **M58-JYUTPING-06**: The shipped-product `beingo` / 畀 reachability report
+- [x] **M58-JYUTPING-06**: The shipped-product `beingo` / 畀 reachability report
   receives an explicit disposition in both the canonical and TypeDuck/profile
   lanes; M58 cannot close merely because the bug is TypeDuck-profile-only.
-- [ ] **M58-JYUTPING-07**: Schema-install profile predicates and product identity
+- [x] **M58-JYUTPING-07**: Schema-install profile predicates and product identity
   blast radius are audited before any schema-id split, especially
   `is_typeduck_jyut6ping3_profile`,
   `is_yune_web_launch_byte_backed_profile`, Track B/M55 threshold names,
   WEB-03/public-demo manifests, and userdb dictionary-name persistence.
-- [ ] **M58-JYUTPING-08**: If canonical upstream captures cannot be produced or
+- [x] **M58-JYUTPING-08**: If canonical upstream captures cannot be produced or
   if they contradict the planned reachability/admission fix, M58 stops for an
   explicit decision rather than substituting TypeDuck v1.1.2 candidate output.
 
@@ -1659,14 +1657,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M57-PARITY-04 | M57 | Complete - synthetic MARISA, real compiled Luna fixture, and checksum-pair regression coverage added |
 | M57-PARITY-05 | M57 | Complete - post-fix macOS compact model shape restored with `332,604` codes, `513,353` expanded entries, and 11-entry abbreviation vocabulary |
 | M57-PARITY-06 | M57 | Complete - two full macOS native passes, recomputed summaries, candidate snapshots, quality checks, and WEB-03 fixture disposition recorded |
-| M58-JYUTPING-01 | M58 | Draft - canonical `jyut6ping3` candidate behavior must be captured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese` before implementation, using complete all-pages capture and mirrored options |
-| M58-JYUTPING-02 | M58 | Draft - schema identity split direction is a Phase 3 sign-off gate; `jyut6ping3_typeduck` remains the preferred TypeDuck id proposal, not an assumed edit |
-| M58-JYUTPING-03 | M58 | Draft - M58 fixtures and artifacts must record schema source repository, commit, oracle version, Yune-facing schema id, page size, and option set |
-| M58-JYUTPING-04 | M58 | Draft - canonical candidate reachability/admission fixes must derive from canonical upstream-librime captures, while TypeDuck-profile-only fixes must be explicitly scoped |
-| M58-JYUTPING-05 | M58 | Draft - TypeDuck multilingual comment/profile behavior and grandfathered M14-M28 profile candidate guards remain profile-lane guarded without defining canonical candidate behavior |
-| M58-JYUTPING-06 | M58 | Draft - shipped-product `beingo` / 畀 reachability report must receive canonical and TypeDuck/profile lane dispositions before closeout |
-| M58-JYUTPING-07 | M58 | Draft - schema-install profile predicates, `jyut6ping3_mobile`, Track B/M55, WEB-03, and userdb blast radius must be audited before any id split |
-| M58-JYUTPING-08 | M58 | Draft - missing or contradictory canonical captures stop the milestone for explicit decision |
+| M58-JYUTPING-01 | M58 | Complete - all-pages canonical upstream `rime-cantonese` captures produced with upstream `rime/librime 1.17.0`, pinned schema commit, page size 5, mirrored options, and `captured_all_pages: true` |
+| M58-JYUTPING-02 | M58 | Complete - schema id split was not implemented; preferred `jyut6ping3` plus `jyut6ping3_typeduck` direction remains sign-off gated after blast-radius audit |
+| M58-JYUTPING-03 | M58 | Complete - Phase 0/1/2b evidence records schema repos/commits, oracle versions, Yune-facing ids, page sizes, option state, and regenerated public schema manifest hashes |
+| M58-JYUTPING-04 | M58 | Complete - canonical `zijiguk` and `beingo` captures did not require a canonical fix; the landed `beingo` fix is explicitly scoped to the current TypeDuck/profile yune-web product lane |
+| M58-JYUTPING-05 | M58 | Complete - TypeDuck multilingual/comment/profile behavior and grandfathered M14-M28 candidate guards remain profile-lane fixtures and are not promoted to canonical `rime-cantonese` expected output |
+| M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀 is dispositioned in canonical and TypeDuck/profile lanes; yune-web first page now includes standalone 畀 |
+| M58-JYUTPING-07 | M58 | Complete - schema predicates, `jyut6ping3_mobile`, Track B/M55 names, WEB-03/public-demo manifests, and userdb key blast radius audited before any id split |
+| M58-JYUTPING-08 | M58 | Complete - canonical captures succeeded and were not substituted with TypeDuck v1.1.2 candidate output |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -1970,11 +1968,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M55 native Track A match-or-beat requirements: 8 total, 8 complete, 0 active
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
-- M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 0 complete, 8 draft
+- M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
 - Mapped to phases: 422
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - M58 oracle/schema split: canonical `jyut6ping3` candidate behavior uses upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; `jyut6ping3_typeduck` is the preferred future id direction pending Phase 3 blast-radius sign-off._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-05 - M58 complete: canonical `jyut6ping3` candidate behavior captured from upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; current `yune-web` `beingo` now surfaces standalone 畀 on page 1; `jyut6ping3_typeduck` remains the preferred future id direction pending explicit sign-off._

@@ -1,0 +1,55 @@
+{
+  "milestone": "M58",
+  "lane": "TypeDuck/profile product lane",
+  "input": "beingo",
+  "status": "fixed",
+  "canonical_disposition": {
+    "oracle": "rime/librime 1.17.0 + rime/rime-cantonese",
+    "capture": "../phase-1/canonical-rime-cantonese-capture.json",
+    "first_candidates": ["比我", "被我", "畀我", "畀", "比"],
+    "standalone_bei_index": 3,
+    "notes": "Canonical rime-cantonese already reaches standalone 畀 on page 1."
+  },
+  "profile_oracle_disposition": {
+    "oracle": "TypeDuck-HK/librime v1.1.2 profile lane",
+    "capture": "typeduck-profile-beingo-capture.json",
+    "first_candidates": ["俾我", "比", "被", "備", "俾", "避", "畀", "鼻"],
+    "standalone_bei_index": 6,
+    "notes": "Profile-only evidence; not used as canonical jyut6ping3 candidate oracle."
+  },
+  "product_fix": {
+    "source_asset": "apps/yune-web/public/schema/jyut6ping3.dict.yaml",
+    "changed_row": "畀\\tbei2\\t600000",
+    "previous_weight": 200000,
+    "final_weight": 600000,
+    "source_backed_first_page": ["俾我", "比", "被", "畀", "備", "俾"],
+    "byte_backed_browser_app_first_page": ["俾我", "比", "被", "畀", "備", "悲"],
+    "nearby_guarded_inputs": ["bei", "being", "beix", "beixngoxx", "beingo"],
+    "source_backed_being_first_page": ["俾我", "悲哀", "備案", "彼岸", "被愛", "彼岸花"],
+    "byte_backed_being_first_page": ["比五", "比", "被", "畀", "備", "悲"],
+    "compiled_assets_regenerated": [
+      "apps/yune-web/public/schema/jyut6ping3.table.bin",
+      "apps/yune-web/public/schema/jyut6ping3.reverse.bin",
+      "apps/yune-web/public/schema/jyut6ping3_mobile.prism.bin"
+    ],
+    "schema_manifests_regenerated": [
+      "apps/yune-web/public/schema-asset-manifest.json",
+      "apps/yune-web/public-demo/schema-asset-manifest.json"
+    ]
+  },
+  "focused_gates": [
+    "cargo test -p yune-core --test cantonese_parity m58 -- --nocapture",
+    "cargo test -p yune-core --test cantonese_parity m58_current_yune_web_profile_surfaces_beingo_report_candidates -- --nocapture",
+    "cargo test -p yune-rime-api --test yune_web m58_yune_web_browser_app_assets_surface_beingo_standalone_bei_first_page -- --nocapture",
+    "cargo test -p yune-rime-api --test yune_web web03_regenerates_public_schema_compiled_assets_from_clean_rebuild -- --ignored --nocapture",
+    "npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep M58 --workers=1"
+  ],
+  "browser_evidence": {
+    "state": "browser/worker-0-M58-yune-web-TypeDuck-profile-surfaces-beingo-standalone-bei-first-page-smoke/m58-beingo-first-page.json",
+    "screenshot": "browser/worker-0-M58-yune-web-TypeDuck-profile-surfaces-beingo-standalone-bei-first-page-smoke/screenshot-m58-beingo-first-page.png"
+  },
+  "verification_notes": [
+    "No translator fallback cap, product-path performance threshold, or benchmark threshold changed; M55 Track B ratchet was not required.",
+    "The generated ignored target/typeduck-oracle/v1.1.2 capture tree was moved aside before final yune_web verification so legacy tests used the tracked browser-app asset lane."
+  ]
+}

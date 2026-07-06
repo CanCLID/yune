@@ -507,7 +507,7 @@ public static class RimeProbe {
         // Existing page-0 fields (selected_candidates, page_size, is_last_page)
         // are preserved; all_candidates/pages/global_index are new.
         const int PageDownKeycode = 0xff56;
-        const int MaxPages = 200;
+        const int MaxPages = 2000;
         var pages = new List<Dictionary<string, object>>();
         var allCandidates = new List<Dictionary<string, object>>();
         var seenPageNos = new HashSet<int>();

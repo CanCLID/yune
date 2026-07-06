@@ -17,6 +17,13 @@
 > preferred future TypeDuck profile id, but the id direction is gated on M58's
 > schema/profile blast-radius audit and explicit user sign-off.
 
+> **M58 closeout note (2026-07-05):** M58 fixes the current `yune-web`
+> TypeDuck/profile product-lane `beingo` / 畀 first-page reachability issue by
+> adjusting tracked public schema data and regenerated launch assets. This is a
+> scoped product-lane disposition, not a new fork-engine parity row and not a
+> canonical `rime-cantonese` candidate-order claim. Evidence:
+> [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](../reports/evidence/m58-jyutping-exact-before-fuzzy/).
+
 ## Sources & method
 
 - **Source inventory (what the forks changed):** [`CANTOBOARD_LIBRIME_REBASE_SUMMARY.md`](../provenance/forks/CANTOBOARD_LIBRIME_REBASE_SUMMARY.md) (Cantoboard's 18 master commits + side-branches, and which TypeDuck adopted) and [`REBASE_SUMMARY_SINCE_D8BC266D.md`](../provenance/forks/REBASE_SUMMARY_SINCE_D8BC266D.md) (the full TypeDuck delta `d8bc266d..v1.1.2`). These are **LLM-generated provenance notes**; every row below was re-verified against the on-disk fork source and live upstream 1.17.0.

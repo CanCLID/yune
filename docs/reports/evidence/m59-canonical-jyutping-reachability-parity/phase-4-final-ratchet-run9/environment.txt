@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-06T21:26:05.8125659Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=5d3dba2ad13ce6b31d798f7745f6212a25435096
+yune_git_status_short= M crates/yune-core/src/engine.rs |  M crates/yune-core/src/filter/mod.rs |  M crates/yune-core/src/poet/mod.rs |  M crates/yune-core/src/state.rs |  M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs |  M crates/yune-core/tests/cantonese_parity.rs |  M crates/yune-core/tests/upstream_luna_pinyin_parity.rs |  M crates/yune-rime-api/src/lib.rs |  M crates/yune-rime-api/src/processors/selector.rs |  M crates/yune-rime-api/src/schema_install.rs |  M crates/yune-rime-api/src/schema_selection.rs |  M crates/yune-rime-api/tests/frontend_client/composition_dictionary_userdb.rs |  M crates/yune-rime-api/tests/typeduck_windows_boundary.rs |  M docs/ledgers/milestone-history.md |  D docs/plans/active/m59-plan-canonical-jyutping-reachability-parity.md |  M docs/reports/evidence/m59-canonical-jyutping-reachability-parity/README.md |  M docs/requirements.md |  M docs/roadmap.md | ?? crates/yune-core/src/translator/m59_canonical_jyutping.rs | ?? crates/yune-core/src/translator/m59_canonical_jyutping.tsv | ?? docs/plans/active/m60-plan-schema-general-single-character-reachability.md | ?? docs/plans/completed/m59-plan-canonical-jyutping-reachability-parity.md | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-3/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run1/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run2/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run3/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run4/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run5/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run6/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run7/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run8/ | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-4-final-ratchet-run9/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-4-final-ratchet-run9
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

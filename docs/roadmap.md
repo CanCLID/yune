@@ -40,7 +40,10 @@ plus pinned `rime/rime-cantonese`, confirmed the reported `zijiguk` / `諮議局
 case is first under the canonical oracle, fixed current `yune-web`
 TypeDuck/profile `beingo` / 畀 and `zi` / 諮 reachability by preserving
 short-input profile-ranked paging, and kept the schema-id split audit-only
-pending explicit sign-off.
+pending explicit sign-off. M59 then restored the standing ratchet, committed
+canonical Jyutping and upstream Luna capture/diff evidence, and fixed only the
+named oracle-backed reachability/selection rows (`beingo`, `zijiguk`, `ziyiju`,
+`moboyi`) while leaving TypeDuck profile behavior as regression guards.
 
 > **Compatibility oracle.** Upstream librime latest stable is the default
 > behavior reference for user-visible schema semantics, standard ABI contracts,
@@ -84,6 +87,8 @@ pending explicit sign-off.
     policy.
 - [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md)
   - macOS Track A sentence-model parity and verification repair milestone.
+- [`plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/completed/m59-plan-canonical-jyutping-reachability-parity.md)
+  - completed canonical Jyutping + upstream Luna reachability/parity milestone.
 - [`plans/completed/m54-plan-native-octagram-grammar-support.md`](./plans/completed/m54-plan-native-octagram-grammar-support.md)
   - native octagram-compatible grammar support milestone.
 - [`plans/completed/m51-plan-engine-support-contract-abi-freeze.md`](./plans/completed/m51-plan-engine-support-contract-abi-freeze.md)
@@ -104,6 +109,7 @@ pending explicit sign-off.
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
 | Engine performance | M55 is closed under the 2026-07-04 corrective re-baseline. Real wins: 37-char Luna `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `3.14x -> 2.433x`, `hao` `2.15x -> 1.574x`, startup `0.895x` and session `0.864x` (faster than librime, run-noisy), win rows locked `<1.00x`, Track B guard rows all green with startup/session ~3x better than their Phase 0 sources. Removed as measurement artifacts: the `luna_pinyin` key deferral, the `n`/`h` benchmark-input aliases, and the uninvalidated config cache; the benchmark now reads context per keypress. Byte-backed `YUNE-POET/2` poet storage is an explicit opt-in (`113.2 MB`, latency-blocked) while the shipping default stays owned (`185.7 MB`) - the latency ceilings bind. M57 repaired the macOS Track A verification anomaly in the 37-char, 59-char, `cszysmsrsd`, and `zybfshmsru` rows by restoring compact compiled-table sentence-model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary). | The corrective `m55-thresholds.csv` remains the standing native Track A gate (green twice: `corrective-2026-07-04/gate-run-d`, `gate-run-e`; latest M56 closeout ratchet also green). M57's two macOS passes are comparability evidence for the repaired macOS bundle, not a replacement performance gate. Future engine performance work: port the incremental sentence scratch to byte-backed storage (reclaims the memory win), then poet graph constants / short keys - each with fresh owner evidence and no ABI widening. |
+| Core compatibility reachability | M59 is complete for its named targets: the red M55/Track B ratchet is restored, canonical `rime-cantonese` and named upstream `luna_pinyin` captures/diffs are committed, canonical `beingo`/`zijiguk` and Luna `ziyiju`/`moboyi` reachability/selection are guarded, and TypeDuck profile output remains regression-only. | Future schema-general reachability work should define a capability-driven contract so phonetic schemas inherit single-character paging/recomposition when oracle evidence proves the schema supports it; shape-code and plugin-dependent schemas need explicit N/A/blocker classifications instead of silent overclaims. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
 | Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04 adds a default-off `luna_pinyin_octagram` debug profile that fetches a pinned lotem `.gram` locally, delivers it only for the octagram profile, exposes delivered/fallback/checksum/schema-select high-water memory diagnostics, proves all four named ranking rows versus plain Luna in Playwright, and proves browser fail-closed behavior. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. Broader contextual suggestions or non-debug octagram product UX needs a new scoped plan. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
@@ -300,12 +306,21 @@ Current decision:
    [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/).
    Plan:
    [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md).
-9. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
+9. **M59 canonical composition reachability and parity is complete.** M59
+   repaired the red standing M55/Track B ratchet, produced committed canonical
+   Jyutping and upstream Luna captures/diffs, and fixed only the oracle-backed
+   reachability and selection/recomposition gaps for canonical `beingo` /
+   `zijiguk` and upstream Luna `ziyiju` / `moboyi`. It explicitly excludes the
+   future all-schema guarantee and any product schema-id split. Evidence:
+   [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/).
+   Plan:
+   [`plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/completed/m59-plan-canonical-jyutping-reachability-parity.md).
+10. **Future browser fair-lane memory slice** - the fair `luna_pinyin` browser
    high-water floor or another freshly measured owner, only with a new scoped
    plan.
-10. **Future AI-native engine experiments** - later, and only after classic
+11. **Future AI-native engine experiments** - later, and only after classic
    engine performance is no longer dominated by avoidable pipeline costs.
-11. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
+12. **Future TypeDuck/profile-storage slices** - only with a new scoped plan,
    fresh owner evidence, and no TypeDuck-profile speed claim unless the profile
    row is explicitly selected as the target.
 Trigger-gated, not scheduled: extracting the full processor pipeline from
@@ -346,6 +361,7 @@ and current decision rules.
 | M57 | Complete | macOS Track A sentence-model parity and verification repair. The 2026-07-04 macOS rerun found a Yune-side model-shape defect, not an oracle/librime contradiction: long rows exploded graph work, abbreviation rows skipped M42 abbreviation discovery, and `poet.abbreviation_vocabulary` reported the full `421,966` vocabulary instead of the 11-row target set. M57 accepts the macOS upstream Luna MARISA checksum pair under the existing target gate, restores compact model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary), and records two full macOS native passes. Evidence: [`reports/evidence/m57-macos-track-a-sentence-model-parity/`](./reports/evidence/m57-macos-track-a-sentence-model-parity/). Plan: [`plans/completed/m57-plan-macos-track-a-sentence-model-parity.md`](./plans/completed/m57-plan-macos-track-a-sentence-model-parity.md). |
 | WEB-05 | Complete | Harness control surface: 108-row control/diagnostic ledger, 13 retained Phase 1 surface rows implemented through existing `apps/yune-web` seams, unsupported key-binder shortcut reference classified `no-surface`, parent-baseline same-WASM default behavior unchanged, public demo debug/admin controls plus WEB-05 raw/cache/asset data pulls gated hidden, and `debug.storage` plus `get_option` read-back deferred to their proper runtime/engine lanes. Named follow-ups: persisted-config deploy-cache freshness and current Extended charset browser-effect N/A. Evidence: [`reports/evidence/web05-control-surface/`](./reports/evidence/web05-control-surface/). Plan: [`plans/completed/web05-plan-harness-control-surface.md`](./plans/completed/web05-plan-harness-control-surface.md). |
 | M58 | Complete for reachability; perf residual recorded | Canonical Jyutping candidate behavior was recaptured from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; TypeDuck-HK/librime v1.1.2 remains profile-only for multilingual/comment/profile and grandfathered candidate guards. The reported `zijiguk` / `諮議局` case is canonical-first and does not reproduce a canonical issue. The shipped/current `yune-web` TypeDuck/profile lane now reaches `beingo` / 畀 at TypeDuck/profile index 6 and `zi` / 諮 at index 27 through page-size-6 browser paging without first-page promotion; the post-closeout long-composition corrective also lets `zijiguk` page to standalone `諮`, select it, commit only `諮`, and recompose `jiguk`. The public dictionary row is restored to the TypeDuck source `畀	bei2	200000` value/order and compiled schema assets were regenerated. The standing M55/Track B ratchet failed twice after the long-composition follow-up (`ni`, `hao`, `zhongguo`, and Track B long-Jyutping latency), so that performance residual is recorded separately from the candidate-behavior closeout. No schema id split landed; the `jyut6ping3_typeduck` direction remains sign-off gated after the blast-radius audit. Evidence: [`reports/evidence/m58-jyutping-exact-before-fuzzy/`](./reports/evidence/m58-jyutping-exact-before-fuzzy/). Plan: [`plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md`](./plans/completed/m58-plan-jyutping-exact-before-fuzzy-candidate-order.md). |
+| M59 | Complete | Canonical composition reachability and parity for the named target rows: standing ratchet restored, canonical `rime-cantonese` and upstream `luna_pinyin` captures/diffs committed, canonical `beingo` / `zijiguk` and Luna `ziyiju` / `moboyi` paging/selection gaps fixed, TypeDuck profile behavior kept guard-only, and `jyut6ping3*` schema-string paging gates replaced with typed profile/config flags. Evidence: [`reports/evidence/m59-canonical-jyutping-reachability-parity/`](./reports/evidence/m59-canonical-jyutping-reachability-parity/). Plan: [`plans/completed/m59-plan-canonical-jyutping-reachability-parity.md`](./plans/completed/m59-plan-canonical-jyutping-reachability-parity.md). |
 
 ## Scope Ledger
 

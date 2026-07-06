@@ -1,0 +1,806 @@
+﻿{
+  "schema_id": "luna_pinyin",
+  "sequence": "moboyi{Down}{Down} {Page_Down}{Page_Down}{Page_Down}",
+  "events": [
+    {
+      "index": 0,
+      "key": "m",
+      "keycode": 109,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "m",
+        "caret": 1,
+        "preedit": "m",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "沒",
+            "comment": "mei",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嗎",
+            "comment": "ma",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "麼",
+            "comment": "me",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "買",
+            "comment": "mai",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嘛",
+            "comment": "ma",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "mo",
+        "caret": 2,
+        "preedit": "mo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "莫",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "魔",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "末",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "膜",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "b",
+      "keycode": 98,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "mob",
+        "caret": 3,
+        "preedit": "mob",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "模板",
+            "comment": "moban",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸不着",
+            "comment": "mobuzhao",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸不着頭腦",
+            "comment": "mobuzhaotounao",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "莫泊桑",
+            "comment": "mobosang",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "抹脖子",
+            "comment": "mobozi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 3,
+      "key": "o",
+      "keycode": 111,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "mobo",
+        "caret": 4,
+        "preedit": "mobo",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "麼波",
+            "comment": "mobo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "莫泊桑",
+            "comment": "mobosang",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "抹脖子",
+            "comment": "mobozi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 4,
+      "key": "y",
+      "keycode": 121,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "moboy",
+        "caret": 5,
+        "preedit": "moboy",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "脈搏",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "漠北",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "脈波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "無波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "沒播",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 5,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "moboyi",
+        "caret": 6,
+        "preedit": "moboyi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "莫博弈",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "麼波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "莫",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "魔",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 6,
+      "key": "Down",
+      "keycode": 65364,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "moboyi",
+        "caret": 6,
+        "preedit": "moboyi",
+        "highlighted": 1,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "莫博弈",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "麼波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "莫",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "魔",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 7,
+      "key": "Down",
+      "keycode": 65364,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "moboyi",
+        "caret": 6,
+        "preedit": "moboyi",
+        "highlighted": 2,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "莫博弈",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "麼波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "莫",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "摸",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "魔",
+            "comment": "mo",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 8,
+      "key": "space",
+      "keycode": 32,
+      "mask": 0,
+      "handled": true,
+      "commits": ["莫"],
+      "context": {
+        "input": "boyi",
+        "caret": 4,
+        "preedit": "boyi",
+        "highlighted": 0,
+        "last_commit": "莫",
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "博弈",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "博奕",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "薄衣",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "薄意",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "駁議",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 9,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "boyi",
+        "caret": 4,
+        "preedit": "boyi",
+        "highlighted": 0,
+        "last_commit": "莫",
+        "page_size": 5,
+        "page_no": 1,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "博易",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "鉑銥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "薄儀",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "鉢衣",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "伯夷",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 10,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "boyi",
+        "caret": 4,
+        "preedit": "boyi",
+        "highlighted": 0,
+        "last_commit": "莫",
+        "page_size": 5,
+        "page_no": 2,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "伯彝",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "伯益",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "柏翳",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "猼訑",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "駮議",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 11,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "boyi",
+        "caret": 4,
+        "preedit": "boyi",
+        "highlighted": 0,
+        "last_commit": "莫",
+        "page_size": 5,
+        "page_no": 3,
+        "is_last_page": true,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "波",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "博",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "播",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "撥",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "伯",
+            "comment": "",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": ["莫"],
+  "context": {
+    "input": "boyi",
+    "caret": 4,
+    "preedit": "boyi",
+    "highlighted": 0,
+    "last_commit": "莫",
+    "page_size": 5,
+    "page_no": 3,
+    "is_last_page": true,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": [
+      {
+        "text": "波",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "博",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "播",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "撥",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "伯",
+        "comment": "",
+        "source": "",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}

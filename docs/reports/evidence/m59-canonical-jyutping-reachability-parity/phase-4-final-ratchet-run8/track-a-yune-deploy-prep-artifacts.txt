@@ -1,0 +1,6 @@
+﻿track_a_deploy_prep=separate_process
+restored_oracle_build_artifacts=true
+poet_artifact=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-4-final-ratchet-run8\track-a-yune\user\build\luna_pinyin.poet.bin
+poet_bytes=31417186
+table_artifact=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\phase-4-final-ratchet-run8\track-a-yune\user\build\luna_pinyin.table.bin
+table_bytes=13013460

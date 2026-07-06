@@ -1,0 +1,201 @@
+﻿[
+    {
+        "schema_id":  "luna_pinyin",
+        "schema_name":  "朙月拼音",
+        "scenario":  "m59_control_boyi_pages_1_to_4",
+        "label":  "page_1",
+        "rime_get_input":  "bo yi",
+        "is_composing":  true,
+        "is_ascii_mode":  false,
+        "is_full_shape":  false,
+        "is_simplified":  false,
+        "is_traditional":  false,
+        "is_ascii_punct":  false,
+        "composition_length":  5,
+        "cursor_pos":  5,
+        "preedit":  "bo yi",
+        "commit_text_preview":  "博弈",
+        "commit_text":  null,
+        "highlighted_candidate_index":  0,
+        "page_size":  5,
+        "page_no":  0,
+        "is_last_page":  false,
+        "selected_candidates":  [
+                                    {
+                                        "index":  0,
+                                        "text":  "博弈",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  1,
+                                        "text":  "博奕",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  2,
+                                        "text":  "薄衣",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  3,
+                                        "text":  "薄意",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  4,
+                                        "text":  "駁議",
+                                        "comment":  null
+                                    }
+                                ]
+    },
+    {
+        "schema_id":  "luna_pinyin",
+        "schema_name":  "朙月拼音",
+        "scenario":  "m59_control_boyi_pages_1_to_4",
+        "label":  "page_2",
+        "rime_get_input":  "bo yi",
+        "is_composing":  true,
+        "is_ascii_mode":  false,
+        "is_full_shape":  false,
+        "is_simplified":  false,
+        "is_traditional":  false,
+        "is_ascii_punct":  false,
+        "composition_length":  5,
+        "cursor_pos":  5,
+        "preedit":  "bo yi",
+        "commit_text_preview":  "博易",
+        "commit_text":  null,
+        "highlighted_candidate_index":  0,
+        "page_size":  5,
+        "page_no":  1,
+        "is_last_page":  false,
+        "selected_candidates":  [
+                                    {
+                                        "index":  0,
+                                        "text":  "博易",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  1,
+                                        "text":  "鉑銥",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  2,
+                                        "text":  "薄儀",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  3,
+                                        "text":  "鉢衣",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  4,
+                                        "text":  "伯夷",
+                                        "comment":  null
+                                    }
+                                ],
+        "processed":  1
+    },
+    {
+        "schema_id":  "luna_pinyin",
+        "schema_name":  "朙月拼音",
+        "scenario":  "m59_control_boyi_pages_1_to_4",
+        "label":  "page_3",
+        "rime_get_input":  "bo yi",
+        "is_composing":  true,
+        "is_ascii_mode":  false,
+        "is_full_shape":  false,
+        "is_simplified":  false,
+        "is_traditional":  false,
+        "is_ascii_punct":  false,
+        "composition_length":  5,
+        "cursor_pos":  5,
+        "preedit":  "bo yi",
+        "commit_text_preview":  "伯彝",
+        "commit_text":  null,
+        "highlighted_candidate_index":  0,
+        "page_size":  5,
+        "page_no":  2,
+        "is_last_page":  false,
+        "selected_candidates":  [
+                                    {
+                                        "index":  0,
+                                        "text":  "伯彝",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  1,
+                                        "text":  "伯益",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  2,
+                                        "text":  "柏翳",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  3,
+                                        "text":  "猼訑",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  4,
+                                        "text":  "駮議",
+                                        "comment":  null
+                                    }
+                                ],
+        "processed":  1
+    },
+    {
+        "schema_id":  "luna_pinyin",
+        "schema_name":  "朙月拼音",
+        "scenario":  "m59_control_boyi_pages_1_to_4",
+        "label":  "page_4",
+        "rime_get_input":  "boyi",
+        "is_composing":  true,
+        "is_ascii_mode":  false,
+        "is_full_shape":  false,
+        "is_simplified":  false,
+        "is_traditional":  false,
+        "is_ascii_punct":  false,
+        "composition_length":  4,
+        "cursor_pos":  4,
+        "preedit":  "boyi",
+        "commit_text_preview":  "波yi",
+        "commit_text":  null,
+        "highlighted_candidate_index":  0,
+        "page_size":  5,
+        "page_no":  3,
+        "is_last_page":  false,
+        "selected_candidates":  [
+                                    {
+                                        "index":  0,
+                                        "text":  "波",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  1,
+                                        "text":  "博",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  2,
+                                        "text":  "播",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  3,
+                                        "text":  "撥",
+                                        "comment":  null
+                                    },
+                                    {
+                                        "index":  4,
+                                        "text":  "伯",
+                                        "comment":  null
+                                    }
+                                ],
+        "processed":  1
+    }
+]

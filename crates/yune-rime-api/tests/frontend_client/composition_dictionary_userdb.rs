@@ -315,6 +315,166 @@ schema:\n  schema_id: luna\n  name: Luna\nmenu:\n  page_size: 2\n  alternative_s
 }
 
 #[test]
+fn frontend_style_luna_pinyin_m59_reachability_uses_schema_installed_paging() {
+    let _guard = test_guard();
+    let api = rime_get_api();
+    assert!(!api.is_null());
+    let api = unsafe { &*api };
+
+    let setup = api.setup.expect("frontend requires setup");
+    let cleanup_all_sessions = api
+        .cleanup_all_sessions
+        .expect("frontend requires cleanup_all_sessions");
+    cleanup_all_sessions();
+
+    let create_session = api
+        .create_session
+        .expect("frontend requires create_session");
+    let destroy_session = api
+        .destroy_session
+        .expect("frontend requires destroy_session");
+    let process_key = api.process_key.expect("frontend requires process_key");
+    let select_schema = api.select_schema.expect("frontend requires select_schema");
+    let get_input = api.get_input.expect("frontend requires get_input");
+    let get_context = api.get_context.expect("frontend requires get_context");
+    let free_context = api.free_context.expect("frontend requires free_context");
+    let get_commit = api.get_commit.expect("frontend requires get_commit");
+    let free_commit = api.free_commit.expect("frontend requires free_commit");
+    let change_page = api.change_page.expect("frontend requires change_page");
+    let select_candidate_on_current_page = api
+        .select_candidate_on_current_page
+        .expect("frontend requires select_candidate_on_current_page");
+
+    let root = unique_temp_dir("m59-luna-installed-paging");
+    let shared = root.join("shared");
+    let user = root.join("user");
+    let staging = user.join("build");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::create_dir_all(&staging).expect("staging dir should be created");
+    fs::write(
+        staging.join("luna_pinyin.schema.yaml"),
+        "\
+schema:\n  schema_id: luna_pinyin\n  name: Luna Pinyin\nmenu:\n  page_size: 5\nengine:\n  translators:\n    - script_translator\ntranslator:\n  dictionary: luna_pinyin\n  enable_sentence: true\n",
+    )
+    .expect("schema config should be written");
+    fs::write(
+        shared.join("luna_pinyin.dict.yaml"),
+        "\
+---\nname: luna_pinyin\nversion: '1'\nsort: original\ncolumns: [code, text, weight]\n...\nzi\t滋\t10\nzi\t漬\t9\nzi\t孜\t8\nzi\t諮\t7\nzi\t緇\t6\nmo\t莫\t10\nmo\t摸\t9\nmo\t魔\t8\nbo\t波\t10\nbo\t博\t9\nbo\t播\t8\nbo\t撥\t7\nbo\t伯\t6\nyi\t洢\t10\nmobo\t麼波\t10\n",
+    )
+    .expect("dictionary should be written");
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path is valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path is valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+    unsafe { setup(&traits) };
+
+    let schema_id = CString::new("luna_pinyin").expect("schema id should be valid");
+    let ziyiju_session = create_session();
+    assert_ne!(ziyiju_session, 0);
+    assert_eq!(
+        unsafe { select_schema(ziyiju_session, schema_id.as_ptr()) },
+        TRUE
+    );
+    for byte in b"ziyiju" {
+        assert_eq!(process_key(ziyiju_session, *byte as c_int, 0), TRUE);
+    }
+    for _ in 0..3 {
+        assert_eq!(change_page(ziyiju_session, FALSE), TRUE);
+    }
+    let mut context = empty_context();
+    assert_eq!(unsafe { get_context(ziyiju_session, &mut context) }, TRUE);
+    assert_eq!(context.menu.page_no, 3);
+    assert_eq!(context.menu.num_candidates, 5);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    let page_texts = candidates
+        .iter()
+        .map(|candidate| unsafe { CStr::from_ptr(candidate.text) }
+            .to_string_lossy()
+            .into_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(page_texts, ["滋", "漬", "孜", "諮", "緇"]);
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+
+    assert_eq!(select_candidate_on_current_page(ziyiju_session, 3), TRUE);
+    let input = get_input(ziyiju_session);
+    assert!(!input.is_null());
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("yiju"));
+    assert_eq!(unsafe { get_context(ziyiju_session, &mut context) }, TRUE);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    let page_texts = candidates
+        .iter()
+        .map(|candidate| unsafe { CStr::from_ptr(candidate.text) }
+            .to_string_lossy()
+            .into_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(page_texts, ["一句", "依據", "一局", "一舉", "一具"]);
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+    assert_eq!(destroy_session(ziyiju_session), TRUE);
+
+    let moboyi_session = create_session();
+    assert_ne!(moboyi_session, 0);
+    assert_eq!(
+        unsafe { select_schema(moboyi_session, schema_id.as_ptr()) },
+        TRUE
+    );
+    for byte in b"moboyi" {
+        assert_eq!(process_key(moboyi_session, *byte as c_int, 0), TRUE);
+    }
+    assert_eq!(select_candidate_on_current_page(moboyi_session, 2), TRUE);
+    let input = get_input(moboyi_session);
+    assert!(!input.is_null());
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("boyi"));
+    for _ in 0..3 {
+        assert_eq!(change_page(moboyi_session, FALSE), TRUE);
+    }
+    assert_eq!(unsafe { get_context(moboyi_session, &mut context) }, TRUE);
+    assert_eq!(context.menu.page_no, 3);
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    let page_texts = candidates
+        .iter()
+        .map(|candidate| unsafe { CStr::from_ptr(candidate.text) }
+            .to_string_lossy()
+            .into_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(page_texts, ["波", "博", "播", "撥", "伯"]);
+    assert_eq!(unsafe { free_context(&mut context) }, TRUE);
+    assert_eq!(select_candidate_on_current_page(moboyi_session, 4), TRUE);
+    let input = get_input(moboyi_session);
+    assert!(!input.is_null());
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("yi"));
+    assert_eq!(select_candidate_on_current_page(moboyi_session, 0), TRUE);
+
+    let mut commit = empty_commit();
+    assert_eq!(unsafe { get_commit(moboyi_session, &mut commit) }, TRUE);
+    assert_eq!(unsafe { CStr::from_ptr(commit.text) }.to_str(), Ok("莫伯洢"));
+    assert_eq!(unsafe { free_commit(&mut commit) }, TRUE);
+
+    assert_eq!(destroy_session(moboyi_session), TRUE);
+    cleanup_all_sessions();
+    let reset_traits = empty_traits();
+    unsafe { setup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
 fn frontend_style_schema_dictionary_loads_import_tables() {
     let _guard = test_guard();
     let api = rime_get_api();

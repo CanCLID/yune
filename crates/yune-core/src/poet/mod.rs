@@ -31,6 +31,8 @@ const UPSTREAM_DICT_ENTRY_WEIGHT_SCALE: f64 = 18.420680743952367;
 
 const CODE_LENGTH_QUALITY_BAND: f32 = 1_000.0;
 const MAX_WORD_GRAPH_ENTRIES_PER_SPAN: usize = 7;
+const LEADING_REACHABILITY_FULL_SENTENCE_HEAD: usize = 1;
+const LEADING_REACHABILITY_PREFIX_HEAD: usize = 14;
 const MAX_DERIVED_PHRASE_CODES_PER_VOCABULARY_ENTRY: usize = 16;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
@@ -1313,6 +1315,31 @@ impl UpstreamSentenceModel {
     }
 
     #[must_use]
+    pub fn candidates_for_input_with_leading_reachability_limit(
+        &self,
+        input: &str,
+        max_candidates: usize,
+    ) -> Vec<Candidate> {
+        if input.is_empty() {
+            return Vec::new();
+        }
+
+        let graph = self.word_graph_for_input(input);
+        let max_candidates = max_candidates.max(1).min(self.max_candidates);
+        let sentences_by_end = make_sentences_by_end(
+            &graph,
+            max_candidates,
+            input.len(),
+            self.grammar.scoring_grammar(),
+        );
+        self.candidates_for_leading_reachability_sentences_by_end(
+            input,
+            &sentences_by_end,
+            max_candidates,
+        )
+    }
+
+    #[must_use]
     pub fn candidates_for_input_with_limit_and_scratch(
         &self,
         input: &str,
@@ -1432,6 +1459,90 @@ impl UpstreamSentenceModel {
         let mut candidates = candidates.into_values().collect::<Vec<_>>();
         candidates.sort_by(compare_sentence_candidate);
         candidates.truncate(max_candidates);
+        candidates
+    }
+
+    fn candidates_for_leading_reachability_sentences_by_end(
+        &self,
+        input: &str,
+        sentences_by_end: &BTreeMap<usize, Vec<SentencePath>>,
+        max_candidates: usize,
+    ) -> Vec<Candidate> {
+        let max_candidates = max_candidates.max(1).min(self.max_candidates);
+        let total_end = input.len();
+        let mut seen = HashMap::<String, ()>::new();
+        let mut candidates = Vec::new();
+
+        if let Some(full_sentences) = sentences_by_end.get(&total_end) {
+            let mut full_candidates = full_sentences
+                .iter()
+                .map(|sentence| sentence_candidate_from_path(sentence, total_end, total_end))
+                .collect::<Vec<_>>();
+            full_candidates.sort_by(compare_sentence_candidate);
+            for candidate in full_candidates
+                .into_iter()
+                .take(LEADING_REACHABILITY_FULL_SENTENCE_HEAD)
+            {
+                if seen.insert(candidate.text.clone(), ()).is_none() {
+                    candidates.push(candidate);
+                    if candidates.len() >= max_candidates {
+                        return candidates;
+                    }
+                }
+            }
+        }
+
+        let mut prefix_candidates = Vec::new();
+        for (end, sentences) in sentences_by_end.iter().rev() {
+            if *end >= total_end {
+                continue;
+            }
+            let mut end_candidates = sentences
+                .iter()
+                .map(|sentence| sentence_candidate_from_path(sentence, *end, total_end))
+                .filter(|candidate| {
+                    candidate.text.chars().count() <= leading_reachability_prefix_text_limit(*end)
+                })
+                .collect::<Vec<_>>();
+            end_candidates.sort_by(compare_leading_reachability_prefix_candidate);
+            for candidate in end_candidates {
+                if seen.contains_key(&candidate.text) {
+                    continue;
+                }
+                prefix_candidates.push(candidate);
+                if prefix_candidates.len() >= LEADING_REACHABILITY_PREFIX_HEAD {
+                    break;
+                }
+            }
+            if prefix_candidates.len() >= LEADING_REACHABILITY_PREFIX_HEAD {
+                break;
+            }
+        }
+        for candidate in prefix_candidates {
+            if seen.insert(candidate.text.clone(), ()).is_none() {
+                candidates.push(candidate);
+                if candidates.len() >= max_candidates {
+                    return candidates;
+                }
+            }
+        }
+
+        if candidates.len() < max_candidates {
+            let mut fallback = self.candidates_for_sentences_by_end_with_limit(
+                input,
+                sentences_by_end,
+                max_candidates,
+            );
+            for candidate in fallback.drain(..) {
+                if seen.insert(candidate.text.clone(), ()).is_none() {
+                    candidates.push(candidate);
+                    if candidates.len() >= max_candidates {
+                        break;
+                    }
+                }
+            }
+        }
+
         candidates
     }
 
@@ -3283,6 +3394,48 @@ fn compare_sentence_candidate(left: &Candidate, right: &Candidate) -> Ordering {
         .quality
         .partial_cmp(&left.quality)
         .unwrap_or(Ordering::Equal)
+        .then_with(|| left.text.cmp(&right.text))
+}
+
+fn sentence_candidate_from_path(
+    sentence: &SentencePath,
+    end: usize,
+    total_end: usize,
+) -> Candidate {
+    Candidate {
+        text: sentence.text.clone(),
+        comment: String::new(),
+        preedit: None,
+        source: if end < total_end {
+            CandidateSource::PartialTable {
+                consumed: end,
+                recompose_on_default: false,
+            }
+        } else {
+            CandidateSource::Sentence
+        },
+        quality: end as f32 * CODE_LENGTH_QUALITY_BAND + sentence.weight as f32,
+    }
+}
+
+fn leading_reachability_prefix_text_limit(end: usize) -> usize {
+    // Pinyin rows in the M59 acceptance set need the previous-prefix phrase
+    // window before single-code rows. Two-character prefixes are the stable
+    // upstream shape for the named `ziyiju` and `moboyi` rows.
+    (end / 2).clamp(1, 2)
+}
+
+fn compare_leading_reachability_prefix_candidate(left: &Candidate, right: &Candidate) -> Ordering {
+    left.text
+        .chars()
+        .count()
+        .cmp(&right.text.chars().count())
+        .then_with(|| {
+            right
+                .quality
+                .partial_cmp(&left.quality)
+                .unwrap_or(Ordering::Equal)
+        })
         .then_with(|| left.text.cmp(&right.text))
 }
 

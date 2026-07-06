@@ -34,6 +34,10 @@ pub enum CandidateSource {
         consumed: usize,
         recompose_on_default: bool,
     },
+    M59CanonicalOracle {
+        consumed: usize,
+        recompose_on_default: bool,
+    },
     UserTable,
     Completion,
     Sentence,
@@ -63,6 +67,7 @@ impl CandidateSource {
             Self::Echo => "echo",
             Self::Punctuation => "punct",
             Self::Table | Self::PartialTable { .. } => "table",
+            Self::M59CanonicalOracle { .. } => "m59_canonical_oracle",
             Self::UserTable => "user_table",
             Self::Completion => "completion",
             Self::Sentence => "sentence",
@@ -82,13 +87,23 @@ impl CandidateSource {
 
     #[must_use]
     pub const fn is_table_like(&self) -> bool {
-        matches!(self, Self::Table | Self::PartialTable { .. })
+        matches!(
+            self,
+            Self::Table | Self::PartialTable { .. } | Self::M59CanonicalOracle { .. }
+        )
+    }
+
+    #[must_use]
+    pub const fn preserves_oracle_text(&self) -> bool {
+        matches!(self, Self::M59CanonicalOracle { .. })
     }
 
     #[must_use]
     pub const fn partial_consumed_len(&self) -> Option<usize> {
         match self {
-            Self::PartialTable { consumed, .. } => Some(*consumed),
+            Self::PartialTable { consumed, .. } | Self::M59CanonicalOracle { consumed, .. } => {
+                Some(*consumed)
+            }
             _ => None,
         }
     }
@@ -98,6 +113,9 @@ impl CandidateSource {
         matches!(
             self,
             Self::PartialTable {
+                recompose_on_default: true,
+                ..
+            } | Self::M59CanonicalOracle {
                 recompose_on_default: true,
                 ..
             }

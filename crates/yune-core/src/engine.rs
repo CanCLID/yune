@@ -28,6 +28,7 @@ pub struct Engine {
     context: Context,
     status: Status,
     schema_profile: SchemaBehaviorProfile,
+    complete_candidate_list_before_forward_page: bool,
     options: HashMap<String, bool>,
     properties: HashMap<String, String>,
     translators: Vec<Arc<dyn Translator>>,
@@ -174,6 +175,7 @@ impl Default for Engine {
             context: Context::default(),
             status: Status::default(),
             schema_profile: SchemaBehaviorProfile::default(),
+            complete_candidate_list_before_forward_page: false,
             options: HashMap::new(),
             properties: HashMap::new(),
             translators: vec![Arc::new(EchoTranslator)],
@@ -310,6 +312,7 @@ impl Engine {
         self.status.schema_id = id.into();
         self.status.schema_name = name.into();
         self.schema_profile = SchemaBehaviorProfile::default();
+        self.complete_candidate_list_before_forward_page = false;
     }
 
     pub fn set_schema_behavior_profile(&mut self, profile: SchemaBehaviorProfile) {
@@ -320,6 +323,16 @@ impl Engine {
     #[must_use]
     pub fn schema_behavior_profile(&self) -> SchemaBehaviorProfile {
         self.schema_profile
+    }
+
+    pub fn set_complete_candidate_list_before_forward_page(&mut self, enabled: bool) {
+        self.complete_candidate_list_before_forward_page = enabled;
+        self.refresh_candidates();
+    }
+
+    #[must_use]
+    pub fn complete_candidate_list_before_forward_page(&self) -> bool {
+        self.complete_candidate_list_before_forward_page
     }
 
     pub fn set_userdb(&mut self, userdb: UserDb) {

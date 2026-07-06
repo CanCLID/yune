@@ -18,6 +18,8 @@ const OPTIONS_FIXTURE: &str = "luna-pinyin-options.json";
 const SENTENCE_FIXTURE: &str = "luna-pinyin-sentence.json";
 const SENTENCE_EXPANDED_FIXTURE: &str = "luna-pinyin-sentence-expanded.json";
 const LATTICE_FIXTURE: &str = "luna-pinyin-lattice.json";
+const M59_LUNA_SNAPSHOTS: &str =
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-1/upstream-luna-pinyin-m59-scenario-snapshots.json";
 
 #[test]
 fn upstream_luna_pinyin_fixture_is_locked() {
@@ -194,6 +196,138 @@ fn expanded_sentence_fixture_covers_phase3r_rows() {
 fn expanded_sentence_green_rows_match_upstream_before_graph_work() {
     let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
     assert_expanded_sentence_scenario_matches(&fixture, "sentence_completion_shijian");
+}
+
+#[test]
+fn m59_ziyiju_reaches_oracle_single_prefix_page_and_recomposes_after_selection() {
+    let snapshots = m59_luna_snapshots();
+    let mut engine = m59_full_luna_engine();
+
+    engine
+        .process_key_sequence("ziyiju")
+        .expect("key sequence should parse");
+    assert_engine_snapshot_matches(
+        &engine,
+        m59_snapshot(&snapshots, "m59_ziyiju_pages", "page_1"),
+        None,
+    );
+
+    for _ in 0..5 {
+        engine
+            .process_key_sequence("{Page_Down}")
+            .expect("page down should parse");
+    }
+    assert_eq!(
+        current_page_texts(&engine, 5),
+        selected_texts(m59_snapshot(&snapshots, "m59_ziyiju_pages", "page_6"))
+    );
+
+    let commits = engine
+        .process_key_sequence("4")
+        .expect("selecting the fourth visible page-six candidate should parse");
+    assert_eq!(
+        commits,
+        vec!["諮"],
+        "partial selection should commit the consumed prefix"
+    );
+    assert_eq!(engine.context().composition.input, "yiju");
+    assert_eq!(
+        current_page_texts(&engine, 5),
+        selected_texts(m59_snapshot(
+            &snapshots,
+            "m59_ziyiju_select_zi_consult",
+            "after_select_zi_consult",
+        ))
+    );
+}
+
+#[test]
+fn m59_moboyi_recomposes_mo_bo_yi_to_upstream_oracle_commit() {
+    let snapshots = m59_luna_snapshots();
+    let mut engine = m59_full_luna_engine();
+
+    engine
+        .process_key_sequence("moboyi")
+        .expect("key sequence should parse");
+    assert_engine_snapshot_matches(
+        &engine,
+        m59_snapshot(&snapshots, "m59_moboyi_select_mo_bo_yi", "moboyi_page_1"),
+        None,
+    );
+
+    let commits = engine
+        .process_key_sequence("3")
+        .expect("selecting the third candidate should parse");
+    assert_eq!(
+        commits,
+        vec!["莫"],
+        "selecting 莫 should commit the consumed prefix"
+    );
+    assert_eq!(engine.context().composition.input, "boyi");
+    assert_eq!(
+        current_page_texts(&engine, 5),
+        selected_texts(m59_snapshot(
+            &snapshots,
+            "m59_moboyi_select_mo_bo_yi",
+            "after_select_mo",
+        ))
+    );
+
+    for _ in 0..3 {
+        engine
+            .process_key_sequence("{Page_Down}")
+            .expect("page down should parse");
+    }
+    assert_eq!(engine.context().composition.input, "boyi");
+    assert_eq!(
+        current_page_texts(&engine, 5),
+        selected_texts(m59_snapshot(
+            &snapshots,
+            "m59_moboyi_select_mo_bo_yi",
+            "boyi_page_4_before_select",
+        ))
+    );
+
+    let commits = engine
+        .process_key_sequence("5")
+        .expect("selecting 伯 should parse");
+    assert_eq!(
+        commits,
+        vec!["伯"],
+        "selecting 伯 should commit the consumed prefix"
+    );
+    assert_eq!(engine.context().composition.input, "yi");
+    assert_eq!(
+        current_page_texts(&engine, 5),
+        selected_texts(m59_snapshot(
+            &snapshots,
+            "m59_moboyi_select_mo_bo_yi",
+            "after_select_bo",
+        ))
+    );
+
+    for _ in 0..31 {
+        engine
+            .process_key_sequence("{Page_Down}")
+            .expect("page down should parse");
+    }
+    assert_eq!(engine.context().composition.input, "yi");
+    assert_eq!(
+        current_page_texts(&engine, 5),
+        selected_texts(m59_snapshot(
+            &snapshots,
+            "m59_moboyi_select_mo_bo_yi",
+            "yi_page_32_before_select",
+        ))
+    );
+
+    let commits = engine
+        .process_key_sequence("1")
+        .expect("selecting 洢 should parse");
+    assert_eq!(commits, vec!["洢"]);
+    assert_eq!("莫伯".to_owned() + &commits[0], "莫伯洢");
+    assert!(engine.context().composition.input.is_empty());
+    assert!(engine.context().candidates.is_empty());
 }
 
 macro_rules! blocked_expanded_sentence_row {
@@ -898,6 +1032,28 @@ fn fixture(name: &str) -> Value {
     serde_json::from_str(&fixture).unwrap_or_else(|error| panic!("invalid JSON {path:?}: {error}"))
 }
 
+fn repo_fixture(relative_path: &str) -> Value {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join(relative_path);
+    let fixture = fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("failed to read {path:?}: {error}"));
+    serde_json::from_str(&fixture).unwrap_or_else(|error| panic!("invalid JSON {path:?}: {error}"))
+}
+
+fn repo_text(relative_path: &str) -> String {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join(relative_path);
+    fs::read_to_string(&path).unwrap_or_else(|error| panic!("failed to read {path:?}: {error}"))
+}
+
+fn m59_luna_snapshots() -> Value {
+    repo_fixture(M59_LUNA_SNAPSHOTS)
+}
+
 fn assert_upstream_oracle_header(fixture: &Value) {
     assert_upstream_oracle_header_for_schema(fixture, "luna_pinyin");
 }
@@ -1080,6 +1236,15 @@ fn snapshot<'a>(fixture: &'a Value, scenario: &str, label: &str) -> &'a Value {
         .unwrap_or_else(|| panic!("missing snapshot {scenario}/{label}"))
 }
 
+fn m59_snapshot<'a>(snapshots: &'a Value, scenario: &str, label: &str) -> &'a Value {
+    snapshots
+        .as_array()
+        .expect("M59 fixture snapshots should be an array")
+        .iter()
+        .find(|snapshot| snapshot["scenario"] == scenario && snapshot["label"] == label)
+        .unwrap_or_else(|| panic!("missing M59 snapshot {scenario}/{label}"))
+}
+
 fn commit_text(snapshot: &Value) -> String {
     snapshot["commit_text"]
         .as_str()
@@ -1135,6 +1300,31 @@ fn m17_luna_sentence_engine(dictionary: TableDictionary) -> Engine {
             .with_charset_filter(true)
             .with_upstream_sentence_model(100),
     );
+    engine
+}
+
+fn m59_full_luna_engine() -> Engine {
+    let dictionary_yaml = repo_text("apps/yune-web/public/schema/luna_pinyin.dict.yaml");
+    let essay_txt = repo_text("apps/yune-web/public/schema/essay.txt");
+    let dictionary = TableDictionary::parse_rime_dict_yaml_with_imports_packs_and_vocabulary(
+        &dictionary_yaml,
+        std::iter::empty::<&str>(),
+        |_| None,
+        |name| (name == "essay").then(|| essay_txt.clone()),
+    )
+    .expect("committed luna_pinyin schema assets should parse");
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.add_translator(
+        StaticTableTranslator::from_dictionary(dictionary)
+            .with_completion(true)
+            .with_charset_filter(true)
+            .with_sentence(true)
+            .with_upstream_sentence_model(100)
+            .with_leading_syllable_reachability(true)
+            .with_m59_upstream_luna_reachability(true),
+    );
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
     engine
 }
 

@@ -1,0 +1,2141 @@
+﻿{
+  "schema_id": "luna_pinyin",
+  "sequence": "yi{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}{Page_Down}",
+  "events": [
+    {
+      "index": 0,
+      "key": "y",
+      "keycode": 121,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "y",
+        "caret": 1,
+        "preedit": "y",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "有",
+            "comment": "you",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "也",
+            "comment": "ye",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "要",
+            "comment": "yao",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "與",
+            "comment": "yu",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "用",
+            "comment": "yong",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 1,
+      "key": "i",
+      "keycode": 105,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 0,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "一",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "以",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "已",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "億",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "易",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 2,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 1,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "亦",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "伊",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "意",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "依",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "義",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 3,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 2,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "衣",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "宜",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "儀",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "液",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "乙",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 4,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 3,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "益",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "醫",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "異",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "逸",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "藝",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 5,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 4,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "矣",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "翼",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "譯",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "怡",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "移",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 6,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 5,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "疑",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "壹",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "毅",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "憶",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "台",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 7,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 6,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "議",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "倚",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "姨",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "遺",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "咦",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 8,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 7,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "奕",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "泄",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "夷",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "溢",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "頤",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 9,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 8,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "椅",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "抑",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "役",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "邑",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "裔",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 10,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 9,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "蟻",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "懿",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "驛",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "誼",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "軼",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 11,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 10,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "弋",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "翊",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "疫",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "胰",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "漪",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 12,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 11,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "貽",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "弈",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "彝",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "屹",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "曳",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 13,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 12,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "沵",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "沂",
+            "comment": "yi;yin",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "苡",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "揖",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "詣",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 14,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 13,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "掖",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "辷",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "咿",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "羿",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "腋",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 15,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 14,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "弌",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "佚",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "呲",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "洩",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "熠",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 16,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 15,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "翌",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "刈",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "銥",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嗌",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "詒",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 17,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 16,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "圻",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "翳",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "笫",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "飴",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "薏",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 18,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 17,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "繹",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "噫",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "旖",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "睪",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "禕",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 19,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 18,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "乂",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "鎰",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "挹",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "囈",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "釔",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 20,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 19,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "圪",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嶧",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "縊",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "迤",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嶷",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 21,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 20,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "鐿",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "圮",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "疙",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "猗",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "臆",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 22,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 21,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "埸",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "燚",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "圯",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "懌",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "欹",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 23,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 22,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "阝",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "仡",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "佾",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "庡",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "訳",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 24,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 23,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "駅",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "槸",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "瘞",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "嬑",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "馹",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 25,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 24,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "鎄",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "浥",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "鉯",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "呭",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "痍",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 26,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 25,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "顗",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "栧",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "譩",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "悒",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "扆",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 27,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 26,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "黟",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "笖",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "畩",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "攺",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "乁",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 28,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 27,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "寲",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "讉",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "殪",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "瀷",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "匜",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 29,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 28,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "癔",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "肄",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "蜴",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "昳",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "墿",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 30,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 29,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "阣",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "荑",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "栺",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "衪",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "伿",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 31,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 30,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "劓",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "娭",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "虵",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "簃",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "艤",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    },
+    {
+      "index": 32,
+      "key": "Page_Down",
+      "keycode": 65366,
+      "mask": 0,
+      "handled": true,
+      "commits": [],
+      "context": {
+        "input": "yi",
+        "caret": 2,
+        "preedit": "yi",
+        "highlighted": 0,
+        "last_commit": null,
+        "page_size": 5,
+        "page_no": 31,
+        "is_last_page": false,
+        "select_keys": null,
+        "select_labels": [],
+        "candidates": [
+          {
+            "text": "洢",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "晹",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "壱",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "齮",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          },
+          {
+            "text": "銕",
+            "comment": "yi",
+            "source": "",
+            "quality": 0
+          }
+        ]
+      },
+      "status": {
+        "schema_id": "luna_pinyin",
+        "schema_name": "朙月拼音",
+        "is_disabled": false,
+        "is_composing": true,
+        "is_ascii_mode": false,
+        "is_full_shape": false,
+        "is_simplified": false,
+        "is_traditional": false,
+        "is_ascii_punct": false
+      }
+    }
+  ],
+  "commits": [],
+  "context": {
+    "input": "yi",
+    "caret": 2,
+    "preedit": "yi",
+    "highlighted": 0,
+    "last_commit": null,
+    "page_size": 5,
+    "page_no": 31,
+    "is_last_page": false,
+    "select_keys": null,
+    "select_labels": [],
+    "candidates": [
+      {
+        "text": "洢",
+        "comment": "yi",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "晹",
+        "comment": "yi",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "壱",
+        "comment": "yi",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "齮",
+        "comment": "yi",
+        "source": "",
+        "quality": 0
+      },
+      {
+        "text": "銕",
+        "comment": "yi",
+        "source": "",
+        "quality": 0
+      }
+    ]
+  },
+  "status": {
+    "schema_id": "luna_pinyin",
+    "schema_name": "朙月拼音",
+    "is_disabled": false,
+    "is_composing": true,
+    "is_ascii_mode": false,
+    "is_full_shape": false,
+    "is_simplified": false,
+    "is_traditional": false,
+    "is_ascii_punct": false
+  }
+}

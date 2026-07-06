@@ -175,24 +175,6 @@ pub(crate) fn schema_behavior_profile_from_config(schema_config: &Value) -> Sche
     }
 }
 
-pub(crate) fn schema_completes_candidates_before_forward_page(schema_config: &Value) -> bool {
-    find_config_value(
-        schema_config,
-        "yune/complete_candidate_list_before_forward_page",
-    )
-    .or_else(|| {
-        find_config_value(
-            schema_config,
-            "yune/paging/complete_candidate_list_before_forward_page",
-        )
-    })
-    .and_then(config_scalar_bool)
-    .unwrap_or_else(|| {
-        schema_behavior_profile_from_config(schema_config)
-            == SchemaBehaviorProfile::TypeduckJyutping
-    })
-}
-
 pub(crate) fn schema_component_prescription(component: &str) -> (&str, Option<&str>) {
     let Some((component_name, name_space)) = component.split_once('@') else {
         return (component, None);
@@ -355,25 +337,6 @@ fn install_schema_dictionary_translator_from_config(
             })
             .and_then(config_scalar_bool)
             .unwrap_or(is_typeduck_jyut6ping3_profile);
-    let leading_syllable_reachability = find_config_value(
-        schema_config,
-        &format!("{name_space}/leading_syllable_reachability"),
-    )
-    .or_else(|| {
-        find_config_value(
-            schema_config,
-            &format!("{name_space}/leading_single_prefix_reachability"),
-        )
-    })
-    .and_then(config_scalar_bool)
-    .unwrap_or_else(|| {
-        is_upstream_luna_pinyin_profile
-            || is_canonical_jyutping_reachability_profile(
-                schema_config,
-                user_dict_name.as_deref(),
-                component_name,
-            )
-    });
     let delimiters = find_config_value(schema_config, &format!("{name_space}/delimiter"))
         .or_else(|| find_config_value(schema_config, "speller/delimiter"))
         .and_then(config_scalar_string)
@@ -492,14 +455,7 @@ fn install_schema_dictionary_translator_from_config(
     .with_affix(prefix, suffix)
     .with_show_full_code(show_full_code)
     .with_prediction_never_first(prediction_never_first)
-    .with_prefix_fallback(prefix_fallback)
-    .with_leading_syllable_reachability(leading_syllable_reachability)
-    .with_m59_upstream_luna_reachability(is_upstream_luna_pinyin_profile)
-    .with_m59_canonical_jyutping_reachability(is_canonical_jyutping_reachability_profile(
-        schema_config,
-        user_dict_name.as_deref(),
-        component_name,
-    ));
+    .with_prefix_fallback(prefix_fallback);
     {
         let _trace = startup_trace::span("spelling_algebra_expand");
         translator = translator.with_spelling_algebra(&spelling_algebra);
@@ -892,26 +848,6 @@ fn is_typeduck_jyut6ping3_profile(schema_config: &Value, dictionary_name: Option
         return false;
     }
     schema_behavior_profile_from_config(schema_config) == SchemaBehaviorProfile::TypeduckJyutping
-}
-
-fn is_canonical_jyutping_reachability_profile(
-    schema_config: &Value,
-    dictionary_name: Option<&str>,
-    component_name: &str,
-) -> bool {
-    matches!(component_name, "table_translator" | "script_translator")
-        && dictionary_name == Some("jyut6ping3")
-        && schema_behavior_profile_from_config(schema_config)
-            != SchemaBehaviorProfile::TypeduckJyutping
-        && schema_m59_canonical_jyutping_reachability_enabled(schema_config)
-}
-
-fn schema_m59_canonical_jyutping_reachability_enabled(schema_config: &Value) -> bool {
-    find_config_value(schema_config, "yune/m59_canonical_jyutping_reachability")
-        .or_else(|| find_config_value(schema_config, "yune/reachability/m59_canonical_jyutping"))
-        .or_else(|| find_config_value(schema_config, "yune/canonical_jyutping_reachability"))
-        .and_then(config_scalar_bool)
-        .unwrap_or(false)
 }
 
 fn schema_yune_profile(schema_config: &Value) -> Option<String> {

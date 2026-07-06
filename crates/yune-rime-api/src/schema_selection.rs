@@ -11,11 +11,10 @@ use crate::{
     install_schema_punctuation_processor, install_schema_recognizer_processor,
     install_schema_segment_tags, install_schema_selector_bindings,
     install_schema_speller_processor, install_schema_translator_chain, load_runtime_config_root,
-    notify, schema_behavior_profile_from_config, schema_completes_candidates_before_forward_page,
-    schema_reload_signature, schema_string_list, selected_runtime_config_path,
-    selected_runtime_data_path, sessions, startup_trace, with_session, Bool, ConfigOpenKind,
-    NavigatorBindings, NavigatorSyllableJumpPosition, RimeSessionId, SelectorBindings,
-    SessionState, FALSE, TRUE,
+    notify, schema_behavior_profile_from_config, schema_reload_signature, schema_string_list,
+    selected_runtime_config_path, selected_runtime_data_path, sessions, startup_trace,
+    with_session, Bool, ConfigOpenKind, NavigatorBindings, NavigatorSyllableJumpPosition,
+    RimeSessionId, SelectorBindings, SessionState, FALSE, TRUE,
 };
 
 /// Copies the current session schema id into caller-provided storage.
@@ -132,13 +131,8 @@ pub(crate) fn apply_schema_to_session(session: &mut SessionState, schema_id: &st
     let menu_settings = context_menu_settings_from_config(&schema_config);
     let reload_signature = schema_reload_signature(&schema_config);
     let schema_profile = schema_behavior_profile_from_config(&schema_config);
-    let complete_before_forward_page =
-        schema_completes_candidates_before_forward_page(&schema_config);
     session.engine.set_schema(schema_id.to_owned(), schema_name);
     session.engine.set_schema_behavior_profile(schema_profile);
-    session
-        .engine
-        .set_complete_candidate_list_before_forward_page(complete_before_forward_page);
     session.menu_settings = menu_settings;
     session.schema_reload_signature = Some(reload_signature);
     session.clear_user_dict_name();

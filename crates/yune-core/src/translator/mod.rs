@@ -5,9 +5,6 @@ use std::mem;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-mod m59_canonical_jyutping;
-
-use self::m59_canonical_jyutping::{rows as m59_canonical_rows, M59CanonicalJyutpingSection};
 use crate::comment_format::CommentFormat;
 use crate::dictionary::{
     normalize_table_code, CompactTableStore, LookupCandidate, LookupCandidateEntry,
@@ -494,9 +491,6 @@ pub struct StaticTableTranslator {
     prediction_never_first: bool,
     prediction_candidate_limit: Option<usize>,
     prefix_fallback: bool,
-    leading_syllable_reachability: bool,
-    m59_upstream_luna_reachability: bool,
-    m59_canonical_jyutping_reachability: bool,
     sentence_word_penalty: f32,
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
@@ -557,9 +551,6 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
-            leading_syllable_reachability: false,
-            m59_upstream_luna_reachability: false,
-            m59_canonical_jyutping_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
@@ -621,9 +612,6 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
-            leading_syllable_reachability: false,
-            m59_upstream_luna_reachability: false,
-            m59_canonical_jyutping_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -675,9 +663,6 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
-            leading_syllable_reachability: false,
-            m59_upstream_luna_reachability: false,
-            m59_canonical_jyutping_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -742,9 +727,6 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
-            leading_syllable_reachability: false,
-            m59_upstream_luna_reachability: false,
-            m59_canonical_jyutping_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -882,33 +864,6 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_prefix_fallback(mut self, prefix_fallback: bool) -> Self {
         self.prefix_fallback = prefix_fallback;
-        self
-    }
-
-    #[must_use]
-    pub fn with_leading_syllable_reachability(
-        mut self,
-        leading_syllable_reachability: bool,
-    ) -> Self {
-        self.leading_syllable_reachability = leading_syllable_reachability;
-        self
-    }
-
-    #[must_use]
-    pub fn with_m59_upstream_luna_reachability(
-        mut self,
-        m59_upstream_luna_reachability: bool,
-    ) -> Self {
-        self.m59_upstream_luna_reachability = m59_upstream_luna_reachability;
-        self
-    }
-
-    #[must_use]
-    pub fn with_m59_canonical_jyutping_reachability(
-        mut self,
-        m59_canonical_jyutping_reachability: bool,
-    ) -> Self {
-        self.m59_canonical_jyutping_reachability = m59_canonical_jyutping_reachability;
         self
     }
 
@@ -1361,322 +1316,6 @@ impl StaticTableTranslator {
         result
     }
 
-    fn m59_luna_moboyi_reachability_candidates(
-        &self,
-        input: &str,
-        lookup_code: &str,
-        model: &UpstreamSentenceModel,
-        filter_by_charset: bool,
-    ) -> Option<Vec<Candidate>> {
-        if !self.m59_upstream_luna_reachability {
-            return None;
-        }
-        if input != "moboyi" || lookup_code != "moboyi" {
-            return None;
-        }
-        let leading_singles = self.leading_single_syllable_prefix_candidates(
-            input,
-            lookup_code,
-            filter_by_charset,
-            &[],
-        );
-        let first_single = leading_singles.first()?;
-        let remainder = model
-            .candidates_for_input_with_leading_reachability_limit("boyi", 32)
-            .into_iter()
-            .filter(|candidate| !filter_by_charset || !contains_extended_cjk(&candidate.text))
-            .find(|candidate| candidate.text == "博弈")?;
-        let mut candidates = Vec::new();
-        candidates.push(Candidate {
-            text: format!("{}{}", first_single.text, remainder.text),
-            comment: String::new(),
-            preedit: None,
-            source: CandidateSource::Sentence,
-            quality: first_single.quality + remainder.quality + 1.0,
-        });
-        if let Some(mut mobo) = self
-            .candidates_for_lookup_codes(&[LookupCodeSpec::exact("mobo")], filter_by_charset)
-            .into_iter()
-            .find(|candidate| candidate.text == "麼波")
-        {
-            mobo.source = CandidateSource::PartialTable {
-                consumed: "mobo".len(),
-                recompose_on_default: false,
-            };
-            candidates.push(mobo);
-        }
-        candidates.extend(leading_singles.into_iter().take(3));
-        Some(candidates)
-    }
-
-    fn m59_luna_named_reachability_candidates(
-        &self,
-        input: &str,
-        lookup_code: &str,
-        filter_by_charset: bool,
-    ) -> Option<Vec<Candidate>> {
-        if !self.m59_upstream_luna_reachability {
-            return None;
-        }
-        let mut candidates = match (input, lookup_code) {
-            ("ziyiju", "ziyiju") => {
-                let mut candidates = [
-                    "諮議局",
-                    "自已",
-                    "子怡",
-                    "紫衣",
-                    "恣意",
-                    "自縊",
-                    "字義",
-                    "自以",
-                    "字意",
-                    "諮議",
-                    "訾議",
-                    "緇衣",
-                    "呲呲",
-                    "自抑",
-                    "子衣",
-                ]
-                .into_iter()
-                .enumerate()
-                .map(|(index, text)| Candidate {
-                    text: text.to_owned(),
-                    comment: String::new(),
-                    preedit: None,
-                    source: if index == 0 {
-                        CandidateSource::Sentence
-                    } else {
-                        CandidateSource::PartialTable {
-                            consumed: "ziyi".len(),
-                            recompose_on_default: false,
-                        }
-                    },
-                    quality: 0.0,
-                })
-                .collect::<Vec<_>>();
-                let leading_singles = self.leading_single_syllable_prefix_candidates(
-                    input,
-                    lookup_code,
-                    filter_by_charset,
-                    &candidates,
-                );
-                candidates.extend(leading_singles);
-                candidates
-            }
-            ("moboyi", "moboyi") => {
-                let mut leading_singles = self.leading_single_syllable_prefix_candidates(
-                    input,
-                    lookup_code,
-                    filter_by_charset,
-                    &[],
-                );
-                let first_single = leading_singles.first()?.clone();
-                let remainder = self
-                    .upstream_sentence_model
-                    .as_ref()
-                    .and_then(|model| {
-                        model
-                            .candidates_for_input_with_leading_reachability_limit("boyi", 32)
-                            .into_iter()
-                            .filter(|candidate| {
-                                !filter_by_charset || !contains_extended_cjk(&candidate.text)
-                            })
-                            .find(|candidate| candidate.text == "博弈")
-                    })
-                    .unwrap_or_else(|| Candidate {
-                        text: "博弈".to_owned(),
-                        comment: String::new(),
-                        preedit: None,
-                        source: CandidateSource::Sentence,
-                        quality: 0.0,
-                    });
-                let mut candidates = vec![
-                    Candidate {
-                        text: format!("{}{}", first_single.text, remainder.text),
-                        comment: String::new(),
-                        preedit: None,
-                        source: CandidateSource::Sentence,
-                        quality: 0.0,
-                    },
-                    Candidate {
-                        text: "麼波".to_owned(),
-                        comment: String::new(),
-                        preedit: None,
-                        source: CandidateSource::PartialTable {
-                            consumed: "mobo".len(),
-                            recompose_on_default: false,
-                        },
-                        quality: 0.0,
-                    },
-                ];
-                candidates.extend(leading_singles.drain(..).take(3));
-                candidates
-            }
-            ("yiju", "yiju") => ["一句", "依據", "一局", "一舉", "一具"]
-                .into_iter()
-                .map(|text| Candidate {
-                    text: text.to_owned(),
-                    comment: String::new(),
-                    preedit: None,
-                    source: CandidateSource::Sentence,
-                    quality: 0.0,
-                })
-                .collect(),
-            ("boyi", "boyi") => {
-                let mut candidates = ["博弈", "博奕", "薄衣", "薄意", "駁議"]
-                    .into_iter()
-                    .map(|text| Candidate {
-                        text: text.to_owned(),
-                        comment: String::new(),
-                        preedit: None,
-                        source: CandidateSource::Sentence,
-                        quality: 0.0,
-                    })
-                    .collect::<Vec<_>>();
-                candidates.extend(
-                    [
-                        "博易", "鉑銥", "薄儀", "鉢衣", "伯夷", "伯彝", "伯益", "柏翳", "猼訑",
-                        "駮議",
-                    ]
-                    .into_iter()
-                    .map(|text| Candidate {
-                        text: text.to_owned(),
-                        comment: String::new(),
-                        preedit: None,
-                        source: CandidateSource::Sentence,
-                        quality: 0.0,
-                    }),
-                );
-                candidates.extend(["波", "博", "播", "撥", "伯"].into_iter().map(|text| {
-                    Candidate {
-                        text: text.to_owned(),
-                        comment: String::new(),
-                        preedit: None,
-                        source: CandidateSource::PartialTable {
-                            consumed: "bo".len(),
-                            recompose_on_default: false,
-                        },
-                        quality: 0.0,
-                    }
-                }));
-                candidates
-            }
-            _ => return None,
-        };
-        Self::assign_ordered_candidate_qualities(&mut candidates);
-        Some(candidates)
-    }
-
-    fn m59_canonical_jyutping_reachability_candidates(
-        &self,
-        input: &str,
-        lookup_code: &str,
-        filter_by_charset: bool,
-    ) -> Option<Vec<Candidate>> {
-        if !self.m59_canonical_jyutping_reachability {
-            return None;
-        }
-        let mut candidates = Vec::new();
-        match (input, lookup_code) {
-            ("bei", "bei") => self.extend_m59_canonical_jyutping_rows(
-                &mut candidates,
-                M59CanonicalJyutpingSection::Bei,
-                "bei".len(),
-                input.len(),
-            ),
-            ("beingo", "beingo") => {
-                self.extend_m59_canonical_jyutping_phrase_rows(
-                    &mut candidates,
-                    M59CanonicalJyutpingSection::BeingoPhrases,
-                );
-                self.extend_m59_canonical_jyutping_rows(
-                    &mut candidates,
-                    M59CanonicalJyutpingSection::Bei,
-                    "bei".len(),
-                    input.len(),
-                );
-            }
-            ("zijiguk", "zijiguk") => self.extend_m59_canonical_jyutping_rows(
-                &mut candidates,
-                M59CanonicalJyutpingSection::Zijiguk,
-                "zi".len(),
-                input.len(),
-            ),
-            _ => return None,
-        }
-        if filter_by_charset {
-            candidates.retain(|candidate| !contains_extended_cjk(&candidate.text));
-        }
-        Self::assign_ordered_candidate_qualities(&mut candidates);
-        Some(candidates)
-    }
-
-    fn extend_m59_canonical_jyutping_phrase_rows(
-        &self,
-        candidates: &mut Vec<Candidate>,
-        section: M59CanonicalJyutpingSection,
-    ) {
-        candidates.extend(m59_canonical_rows(section).map(|row| Candidate {
-            text: row.text.to_owned(),
-            comment: row.comment.to_owned(),
-            preedit: None,
-            source: CandidateSource::Sentence,
-            quality: 0.0,
-        }));
-    }
-
-    fn extend_m59_canonical_jyutping_rows(
-        &self,
-        candidates: &mut Vec<Candidate>,
-        section: M59CanonicalJyutpingSection,
-        leading_consumed: usize,
-        input_len: usize,
-    ) {
-        candidates.extend(m59_canonical_rows(section).map(|row| {
-            let source = if row.text.chars().count() == 1 {
-                CandidateSource::M59CanonicalOracle {
-                    consumed: leading_consumed,
-                    recompose_on_default: leading_consumed < input_len,
-                }
-            } else {
-                CandidateSource::Sentence
-            };
-            Candidate {
-                text: row.text.to_owned(),
-                comment: row.comment.to_owned(),
-                preedit: None,
-                source,
-                quality: 0.0,
-            }
-        }));
-    }
-
-    fn leading_syllable_reachability_applies(&self, input: &str, lookup_code: &str) -> bool {
-        if !self.leading_syllable_reachability {
-            return false;
-        }
-        if self.m59_upstream_luna_reachability {
-            return matches!(
-                (input, lookup_code),
-                ("ziyiju", "ziyiju")
-                    | ("moboyi", "moboyi")
-                    | ("yiju", "yiju")
-                    | ("boyi", "boyi")
-                    | ("yi", "yi")
-            );
-        }
-        if self.m59_canonical_jyutping_reachability {
-            return matches!(
-                lookup_code,
-                "bei"
-                    | "beingo"
-                    | "zijiguk"
-                    | "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung"
-            );
-        }
-        true
-    }
-
     fn exact_lookup_min_syllable_count(&self, lookup_code: &str) -> Option<usize> {
         self.storage
             .exact_candidates(lookup_code)
@@ -2063,45 +1702,7 @@ impl StaticTableTranslator {
             limit,
             include_full_count,
         } = request;
-        if self.m59_canonical_jyutping_reachability {
-            if let Some(mut candidates) = self.m59_canonical_jyutping_reachability_candidates(
-                input,
-                lookup_code,
-                filter_by_charset,
-            ) {
-                let full_count = candidates.len();
-                candidates.truncate(limit);
-                let result_full_count = if full_count > candidates.len() {
-                    candidates.len().saturating_add(1)
-                } else {
-                    candidates.len()
-                };
-                crate::m37_record_bounded_iterator(limit, candidates.len(), result_full_count);
-                return TranslationResult::bounded(
-                    candidates,
-                    result_full_count,
-                    include_full_count,
-                );
-            }
-        }
-        if let Some(mut candidates) =
-            self.m59_luna_named_reachability_candidates(input, lookup_code, filter_by_charset)
-        {
-            let full_count = candidates.len();
-            candidates.truncate(limit);
-            let result_full_count = if full_count > candidates.len() {
-                candidates.len().saturating_add(1)
-            } else {
-                candidates.len()
-            };
-            crate::m37_record_bounded_iterator(limit, candidates.len(), result_full_count);
-            return TranslationResult::bounded(candidates, result_full_count, include_full_count);
-        }
-        let leading_syllable_reachability =
-            self.leading_syllable_reachability_applies(input, lookup_code);
-        let ordered_mode = self.prediction_candidate_limit.is_some()
-            || self.prefix_fallback
-            || leading_syllable_reachability;
+        let ordered_mode = self.prediction_candidate_limit.is_some() || self.prefix_fallback;
         let record_short_key = self.uses_m44_short_key_metrics(lookup_code);
         let record_track_b = self.uses_m44_track_b_metrics();
         let short_key_filter_start =
@@ -2111,6 +1712,7 @@ impl StaticTableTranslator {
         let mut limited_predictions = Vec::new();
         let mut emission_order = 0;
         let mut full_count = 0;
+        let mut has_full_exact_candidate = false;
         let has_correction_lookup = lookup_specs
             .iter()
             .any(|spec| spec.correction_distance.is_some());
@@ -2136,6 +1738,7 @@ impl StaticTableTranslator {
             {
                 exact_candidates += 1;
                 full_count += 1;
+                has_full_exact_candidate = true;
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
                 let pending = PendingLookupCandidateRef {
@@ -2254,15 +1857,8 @@ impl StaticTableTranslator {
         if selected.is_empty() && self.enable_sentence {
             if let Some(model) = &self.upstream_sentence_model {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
-                let sentence_limit = if leading_syllable_reachability {
-                    100
-                } else {
-                    limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT)
-                };
-                let mut candidates = if leading_syllable_reachability {
-                    model
-                        .candidates_for_input_with_leading_reachability_limit(input, sentence_limit)
-                } else if let Some(scratch) = scratch {
+                let sentence_limit = limit.min(BOUNDED_SENTENCE_MODEL_PAGE_LIMIT);
+                let mut candidates = if let Some(scratch) = scratch {
                     model.candidates_for_input_with_limit_and_scratch(
                         input,
                         sentence_limit,
@@ -2274,34 +1870,11 @@ impl StaticTableTranslator {
                 .into_iter()
                 .filter(|candidate| !filter_by_charset || !contains_extended_cjk(&candidate.text))
                 .collect::<Vec<_>>();
-                if leading_syllable_reachability {
-                    if let Some(compat_candidates) = self.m59_luna_moboyi_reachability_candidates(
-                        input,
-                        lookup_code,
-                        model,
-                        filter_by_charset,
-                    ) {
-                        candidates = compat_candidates;
-                    }
-                }
                 if let Some(start) = model_start {
                     crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
                 }
                 if !candidates.is_empty() {
-                    if leading_syllable_reachability {
-                        let insert_at = leading_single_insert_index(&candidates);
-                        let leading_singles = self.leading_single_syllable_prefix_candidates(
-                            input,
-                            lookup_code,
-                            filter_by_charset,
-                            &candidates,
-                        );
-                        candidates.splice(insert_at..insert_at, leading_singles);
-                    }
-                    if self.prefix_fallback
-                        && !has_correction_lookup
-                        && (lookup_code.chars().count() > 3 || candidates.is_empty())
-                    {
+                    if self.prefix_fallback && !has_correction_lookup {
                         let mut prefix_candidates = self.prefix_fallback_candidates(
                             input,
                             lookup_code,
@@ -2312,14 +1885,12 @@ impl StaticTableTranslator {
                         prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
                         candidates.extend(prefix_candidates);
                     }
-                    let candidate_count_before_truncate = candidates.len();
                     candidates.truncate(limit);
-                    let result_full_count =
-                        if candidate_count_before_truncate > limit || candidates.len() >= limit {
-                            limit.saturating_add(1)
-                        } else {
-                            candidates.len()
-                        };
+                    let result_full_count = if candidates.len() >= limit {
+                        limit.saturating_add(1)
+                    } else {
+                        candidates.len()
+                    };
                     crate::m37_record_bounded_iterator(limit, candidates.len(), result_full_count);
                     return TranslationResult::bounded(
                         candidates,
@@ -2339,20 +1910,7 @@ impl StaticTableTranslator {
                     crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
                 }
                 if !candidates.is_empty() {
-                    if leading_syllable_reachability {
-                        let insert_at = leading_single_insert_index(&candidates);
-                        let leading_singles = self.leading_single_syllable_prefix_candidates(
-                            input,
-                            lookup_code,
-                            filter_by_charset,
-                            &candidates,
-                        );
-                        candidates.splice(insert_at..insert_at, leading_singles);
-                    }
-                    if self.prefix_fallback
-                        && !has_correction_lookup
-                        && (lookup_code.chars().count() > 3 || candidates.is_empty())
-                    {
+                    if self.prefix_fallback && !has_correction_lookup {
                         let mut prefix_candidates = self.prefix_fallback_candidates(
                             input,
                             lookup_code,
@@ -2363,11 +1921,8 @@ impl StaticTableTranslator {
                         prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
                         candidates.extend(prefix_candidates);
                     }
-                    let candidate_count_before_truncate = candidates.len();
                     candidates.truncate(limit);
-                    let result_full_count = if candidate_count_before_truncate > limit
-                        || candidates.len() >= abbreviation_limit
-                    {
+                    let result_full_count = if candidates.len() >= abbreviation_limit {
                         limit.saturating_add(1)
                     } else {
                         candidates.len()
@@ -2428,7 +1983,7 @@ impl StaticTableTranslator {
             };
             return TranslationResult::bounded(candidates, full_count, include_full_count);
         }
-        if selected.is_empty() && self.prefix_fallback {
+        if selected.is_empty() && self.prefix_fallback && !has_correction_lookup {
             let mut candidates = self.prefix_fallback_candidates(
                 input,
                 lookup_code,
@@ -2436,14 +1991,6 @@ impl StaticTableTranslator {
                 &[],
                 Some(limit),
             );
-            if candidates.is_empty() && lookup_code.chars().count() <= 3 {
-                if let Some((prefix_len, _)) = lookup_code.char_indices().nth(1) {
-                    candidates = self.candidates_for_lookup_codes(
-                        &[LookupCodeSpec::exact(&lookup_code[..prefix_len])],
-                        filter_by_charset,
-                    );
-                }
-            }
             let full_count = candidates.len();
             if !candidates.is_empty() {
                 candidates.truncate(limit);
@@ -2510,20 +2057,13 @@ impl StaticTableTranslator {
             candidate.source == CandidateSource::Table
                 && source_code_syllable_count(&candidate.comment).is_some_and(|count| count > 1)
         });
-        let has_lookup_prefix_fallback_source = self.prefix_fallback
-            && !candidates.is_empty()
-            && self.has_lookup_prefix_fallback_source(lookup_code);
+        let has_strict_lookup_prefix = false;
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
         let prefix_fallback_applies = self.prefix_fallback
             && !has_correction_lookup
-            && (lookup_code.chars().count() > 3
-                || candidates.is_empty()
-                || has_lookup_prefix_fallback_source)
-            && (candidates.is_empty()
-                || has_multi_syllable_full_exact_candidate
-                || has_lookup_prefix_fallback_source);
+            && (candidates.is_empty() || has_full_exact_candidate || has_strict_lookup_prefix);
         if prefix_fallback_applies {
             if candidates.len() < limit {
                 let mut prefix_candidates = self.prefix_fallback_candidates(
@@ -2535,7 +2075,7 @@ impl StaticTableTranslator {
                 );
                 full_count += prefix_candidates.len();
                 if has_multi_syllable_full_exact_candidate
-                    || has_lookup_prefix_fallback_source
+                    || has_strict_lookup_prefix
                     || prefix_candidates.len() >= limit.saturating_sub(candidates.len())
                 {
                     full_count = full_count.max(
@@ -2557,7 +2097,7 @@ impl StaticTableTranslator {
                         Some(limit),
                     )
                     .len();
-                if has_multi_syllable_full_exact_candidate || has_lookup_prefix_fallback_source {
+                if has_multi_syllable_full_exact_candidate || has_strict_lookup_prefix {
                     full_count = full_count.max(candidates.len().saturating_add(1));
                 }
             }
@@ -2579,7 +2119,7 @@ impl StaticTableTranslator {
         } else {
             full_count
         };
-        if has_lookup_prefix_fallback_source {
+        if has_strict_lookup_prefix {
             result_full_count = result_full_count.max(candidates.len().saturating_add(1));
         }
         TranslationResult::bounded(candidates, result_full_count, include_full_count)
@@ -2726,10 +2266,7 @@ impl StaticTableTranslator {
         request_limit: Option<usize>,
     ) -> Vec<Candidate> {
         let fallback_start = crate::m37_metrics_enabled().then(Instant::now);
-        let mut prefixes = self.valid_lookup_prefixes(lookup_code);
-        if self.prediction_candidate_limit.is_some() && lookup_code.chars().count() > 3 {
-            prefixes.retain(|prefix| prefix.input_prefix.chars().count() > 1);
-        }
+        let prefixes = self.valid_lookup_prefixes(lookup_code);
         if prefixes.is_empty() {
             if let Some(start) = fallback_start {
                 crate::m37_record_prefix_fallback(start.elapsed(), 0, 0);
@@ -2891,10 +2428,7 @@ impl StaticTableTranslator {
                         .exact_candidates(fetch_code.as_str())
                         .filter(|candidate| {
                             candidate.text().chars().count() == 1
-                                && leading_single_candidate_syllable_count(
-                                    candidate.raw_comment(),
-                                    candidate.text(),
-                                ) == Some(1)
+                                && source_code_syllable_count(candidate.raw_comment()) == Some(1)
                                 && self.is_dictionary_text_allowed(candidate.text())
                                 && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                         })
@@ -2931,14 +2465,6 @@ impl StaticTableTranslator {
                 }
             }
             if !candidates.is_empty() {
-                if self.leading_syllable_reachability_applies(input, lookup_code) {
-                    candidates.sort_by(|left, right| {
-                        right
-                            .quality
-                            .partial_cmp(&left.quality)
-                            .unwrap_or(Ordering::Equal)
-                    });
-                }
                 best_candidates = candidates;
             }
         }
@@ -3015,28 +2541,6 @@ impl StaticTableTranslator {
         prefixes
     }
 
-    fn has_lookup_prefix_fallback_source(&self, lookup_code: &str) -> bool {
-        let char_count = lookup_code.chars().count();
-        if char_count <= 1 {
-            return false;
-        }
-        if self.prediction_candidate_limit.is_some() {
-            return false;
-        }
-        if char_count <= 3 {
-            return lookup_code.char_indices().nth(1).is_some_and(|(end, _)| {
-                end < lookup_code.len() && self.storage.has_code(&lookup_code[..end])
-            });
-        }
-        lookup_code
-            .char_indices()
-            .filter(|(end, _)| *end > 0 && *end < lookup_code.len())
-            .any(|(end, _)| {
-                let prefix = &lookup_code[..end];
-                prefix.chars().count() > 1 && self.storage.has_code(prefix)
-            })
-    }
-
     fn assign_ordered_candidate_qualities(candidates: &mut [Candidate]) {
         let base = candidates.len() as f32 + 1.0;
         for (index, candidate) in candidates.iter_mut().enumerate() {
@@ -3079,32 +2583,15 @@ impl StaticTableTranslator {
         let Some(lookup_code) = self.lookup_code(input) else {
             return Vec::new();
         };
-        if self.m59_canonical_jyutping_reachability {
-            if let Some(candidates) = self.m59_canonical_jyutping_reachability_candidates(
-                input,
-                lookup_code,
-                filter_by_charset,
-            ) {
-                return candidates;
-            }
-        }
-        if let Some(candidates) =
-            self.m59_luna_named_reachability_candidates(input, lookup_code, filter_by_charset)
-        {
-            return candidates;
-        }
-        let leading_syllable_reachability =
-            self.leading_syllable_reachability_applies(input, lookup_code);
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         let mut candidates =
             self.candidates_for_lookup_codes(&expanded_lookup_codes, filter_by_charset);
         let has_correction_lookup = expanded_lookup_codes
             .iter()
             .any(|spec| spec.correction_distance.is_some());
-        let has_multi_syllable_full_exact_candidate = candidates.iter().any(|candidate| {
-            candidate.source == CandidateSource::Table
-                && source_code_syllable_count(&candidate.comment).is_some_and(|count| count > 1)
-        });
+        let has_full_exact_candidate = candidates
+            .iter()
+            .any(|candidate| candidate.source == CandidateSource::Table);
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
@@ -3114,24 +2601,13 @@ impl StaticTableTranslator {
         if candidates.is_empty() {
             if let Some(model) = &self.upstream_sentence_model {
                 let model_start = crate::m37_metrics_enabled().then(Instant::now);
-                candidates = if leading_syllable_reachability {
-                    model.candidates_for_input_with_leading_reachability_limit(input, usize::MAX)
-                } else {
-                    model.candidates_for_input(input)
-                }
-                .into_iter()
-                .filter(|candidate| !filter_by_charset || !contains_extended_cjk(&candidate.text))
-                .collect();
-                if leading_syllable_reachability {
-                    if let Some(compat_candidates) = self.m59_luna_moboyi_reachability_candidates(
-                        input,
-                        lookup_code,
-                        model,
-                        filter_by_charset,
-                    ) {
-                        candidates = compat_candidates;
-                    }
-                }
+                candidates = model
+                    .candidates_for_input(input)
+                    .into_iter()
+                    .filter(|candidate| {
+                        !filter_by_charset || !contains_extended_cjk(&candidate.text)
+                    })
+                    .collect();
                 if let Some(start) = model_start {
                     crate::m37_record_upstream_sentence_model(start.elapsed(), candidates.len());
                 }
@@ -3175,49 +2651,36 @@ impl StaticTableTranslator {
             }
         }
 
-        let has_lookup_prefix_fallback_source = self.prefix_fallback
-            && !candidates.is_empty()
-            && !used_sentence
-            && self.has_lookup_prefix_fallback_source(lookup_code);
-        if self.prefix_fallback
-            && (candidates.is_empty()
-                || has_lookup_prefix_fallback_source
-                || (!has_correction_lookup && lookup_code.chars().count() > 3))
-        {
+        if self.prefix_fallback && !has_correction_lookup {
+            let has_strict_lookup_prefix = !candidates.is_empty()
+                && !used_sentence
+                && !has_full_exact_candidate
+                && self
+                    .valid_lookup_prefixes(lookup_code)
+                    .iter()
+                    .any(|prefix| {
+                        prefix.consumed_lookup_len < lookup_code.len()
+                            && prefix.input_prefix.len() > 1
+                    });
             // Full exact rows may coexist with a valid leading prefix; prefix lookup plus
             // the existing candidate set keeps the fallback benign for normal full matches.
             let should_add_prefix_fallback = candidates.is_empty()
                 || used_sentence
-                || has_multi_syllable_full_exact_candidate
-                || has_lookup_prefix_fallback_source;
+                || has_full_exact_candidate
+                || has_strict_lookup_prefix;
             if should_add_prefix_fallback {
                 let insert_at = prefix_fallback_insert_index(&candidates, lookup_code);
-                let mut prefix_candidates = self.prefix_fallback_candidates(
+                let prefix_candidates = self.prefix_fallback_candidates(
                     input,
                     lookup_code,
                     filter_by_charset,
                     &candidates[..insert_at],
                     prefix_fallback_limit,
                 );
-                if prefix_candidates.is_empty() && lookup_code.chars().count() <= 3 {
-                    if let Some((prefix_len, _)) = lookup_code.char_indices().nth(1) {
-                        prefix_candidates = self.candidates_for_lookup_codes(
-                            &[LookupCodeSpec::exact(&lookup_code[..prefix_len])],
-                            filter_by_charset,
-                        );
-                    }
-                }
                 candidates.splice(insert_at..insert_at, prefix_candidates);
             }
         }
-        if (leading_syllable_reachability
-            || (self.prefix_fallback
-                && lookup_code.chars().count() > 3
-                && (has_multi_syllable_full_exact_candidate
-                    || used_sentence
-                    || candidates.is_empty())))
-            && prefix_fallback_limit.is_none()
-        {
+        if self.prefix_fallback && prefix_fallback_limit.is_none() {
             let insert_at = leading_single_insert_index(&candidates);
             let leading_singles = self.leading_single_syllable_prefix_candidates(
                 input,
@@ -3227,10 +2690,7 @@ impl StaticTableTranslator {
             );
             candidates.splice(insert_at..insert_at, leading_singles);
         }
-        if self.prefix_fallback
-            || leading_syllable_reachability
-            || self.prediction_candidate_limit.is_some()
-        {
+        if self.prefix_fallback || self.prediction_candidate_limit.is_some() {
             Self::assign_ordered_candidate_qualities(&mut candidates);
         }
 
@@ -3729,15 +3189,6 @@ fn source_code_syllable_count(raw_code: &str) -> Option<usize> {
     let code = typeduck_rich_comment_code(raw_code).unwrap_or(raw_code);
     let count = code.chars().filter(char::is_ascii_digit).count();
     (count > 0).then_some(count)
-}
-
-fn leading_single_candidate_syllable_count(raw_comment: &str, text: &str) -> Option<usize> {
-    source_code_syllable_count(raw_comment).or_else(|| {
-        (!raw_comment.contains('\u{000c}') && !raw_comment.contains('\r')).then(|| {
-            let count = text.chars().count();
-            (count > 0).then_some(count)
-        })?
-    })
 }
 
 fn raw_candidate_syllable_count(raw_comment: &str, text: &str) -> Option<usize> {

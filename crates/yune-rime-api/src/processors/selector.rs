@@ -183,7 +183,7 @@ fn selector_next_page_like_librime(session: &mut SessionState) {
 fn should_complete_jyutping_before_forward_page(session: &SessionState) -> bool {
     let context = session.engine.context();
     !session.engine.candidate_list_complete()
-        && session.engine.complete_candidate_list_before_forward_page()
+        && session.engine.status().schema_id.starts_with("jyut6ping3")
         && context.composition.input.chars().count() > 2
 }
 

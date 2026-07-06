@@ -1488,43 +1488,6 @@ residual, not a candidate-behavior blocker.
   if they contradict the planned reachability/admission fix, M58 stops for an
   explicit decision rather than substituting TypeDuck v1.1.2 candidate output.
 
-### M59 Canonical Jyutping Reachability Parity
-
-**Status: complete.** M59 restores the standing M55/Track B ratchet, commits
-canonical-first upstream captures and pre-fix diffs, fixes only the named
-canonical Jyutping and upstream Luna reachability/selection rows proven by those
-captures, preserves TypeDuck profile behavior as regression guards, and moves
-profile paging behavior off `jyut6ping3*` schema-id string gates.
-
-- [x] **M59-REACH-01**: Phase 0 restores the M55 standing ratchet to green twice
-  before closing M59 behavior work, with the regression attributed to the
-  bounded compact fallback refresh path and TypeDuck/profile Track B cap
-  widening.
-- [x] **M59-REACH-02**: Canonical upstream captures for pinned
-  `rime/rime-cantonese` plus upstream `rime/librime 1.17.0`, and upstream
-  `luna_pinyin` captures for `ziyiju`, `moboyi`, `boyi`, and `yi`, are committed
-  with provenance under
-  `docs/reports/evidence/m59-canonical-jyutping-reachability-parity/`.
-- [x] **M59-REACH-03**: The Phase 2 pre-fix diff is committed before fixes and
-  names the exact reachability/selection gaps for canonical `beingo`,
-  canonical `zijiguk`, upstream Luna `ziyiju`, and upstream Luna `moboyi`.
-- [x] **M59-REACH-04**: Canonical Jyutping M59 tests prove `beingo` first-page
-  order from the upstream capture, `匕` reachability/selection with remainder
-  `ngo`, and `zijiguk` leading `諮議局` plus standalone `諮` selection with
-  remainder `jiguk`, without enabling the TypeDuck profile marker.
-- [x] **M59-REACH-05**: Upstream Luna M59 tests prove `ziyiju` page 6 reaches and
-  selects standalone `諮`, then recomposes `yiju`, and `moboyi` follows the
-  upstream `莫` -> `伯` -> `洢` composition flow to `莫伯洢`.
-- [x] **M59-REACH-06**: TypeDuck/profile behavior remains guard-only: M58
-  `beingo`, `zi`, and long `zijiguk` profile reachability tests stay green, and
-  no TypeDuck v1.1.2 candidate output is promoted to canonical acceptance.
-- [x] **M59-REACH-07**: New `jyut6ping3*` schema-string paging/profile gates are
-  removed from core and `yune-rime-api`; profile behavior uses
-  `yune/profile: typeduck_jyutping` and typed engine/schema flags instead.
-- [x] **M59-REACH-08**: M59 explicitly does not ship a canonical product schema
-  id split, does not implement the future M60 all-schema reachability contract,
-  and records remaining breadth/generalization work as future scope.
-
 ## Out of Scope
 
 Explicitly excluded from the current milestone.
@@ -1711,14 +1674,6 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀, `zi` / 諮, and the post-closeout `zijiguk` / standalone `諮` composition gap are dispositioned in canonical and TypeDuck/profile lanes; yune-web reaches each target through page navigation without first-page promotion, and `zijiguk` selection commits `諮` while recomposing `jiguk`; the repeated M55 ratchet miss is tracked separately as a performance residual |
 | M58-JYUTPING-07 | M58 | Complete - schema predicates, `jyut6ping3_mobile`, Track B/M55 names, WEB-03/public-demo manifests, and userdb key blast radius audited before any id split |
 | M58-JYUTPING-08 | M58 | Complete - canonical captures succeeded and were not substituted with TypeDuck v1.1.2 candidate output |
-| M59-REACH-01 | M59 | Complete - standing ratchet restored twice before closeout |
-| M59-REACH-02 | M59 | Complete - canonical Jyutping and upstream Luna capture provenance committed |
-| M59-REACH-03 | M59 | Complete - pre-fix diff committed before behavior fixes |
-| M59-REACH-04 | M59 | Complete - canonical Jyutping `beingo` / `zijiguk` reachability and selection guarded |
-| M59-REACH-05 | M59 | Complete - upstream Luna `ziyiju` and `moboyi` selection flow guarded |
-| M59-REACH-06 | M59 | Complete - TypeDuck profile behavior remains regression guarded only |
-| M59-REACH-07 | M59 | Complete - paging/profile behavior moved off `jyut6ping3*` string gates |
-| M59-REACH-08 | M59 | Complete - M60/general schema guarantee and product id split remain out of scope |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -2023,11 +1978,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
-- M59 canonical Jyutping reachability parity requirements: 8 total, 8 complete, 0 active
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
-- Mapped to phases: 430
+- Mapped to phases: 422
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-06 - M59 closes canonical Jyutping and named upstream Luna reachability parity with committed oracle captures, a frozen pre-fix diff, focused canonical/Luna tests, TypeDuck profile regression guards, green standing ratchet evidence, and typed profile/paging config; M60 remains future schema-general work._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-06 - M58 corrective closeout: canonical `jyut6ping3` candidate behavior captured from upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; current `yune-web` reaches `beingo` / 畀 and `zi` / 諮 at TypeDuck/profile ranks through page navigation without first-page promotion; the post-closeout `zijiguk` long-composition corrective reaches standalone `諮`, commits `諮`, and recomposes `jiguk`; the standing M55/Track B ratchet miss is recorded as a performance residual; `jyut6ping3_typeduck` remains the preferred future id direction pending explicit sign-off._

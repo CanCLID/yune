@@ -70,8 +70,7 @@ pub use schema_api::*;
 pub(crate) use schema_install::{
     apply_schema_switch_resets_from_config, install_schema_filter_chain,
     install_schema_segment_tags, install_schema_translator_chain, load_schema_recognizer_patterns,
-    recognizer_patterns_match, schema_behavior_profile_from_config,
-    schema_completes_candidates_before_forward_page, schema_component_prescription,
+    recognizer_patterns_match, schema_behavior_profile_from_config, schema_component_prescription,
     schema_reload_signature, schema_string_list, switch_reset_value, update_session_segment_tags,
 };
 pub(crate) use schema_selection::apply_schema_to_session;
@@ -1747,9 +1746,10 @@ pub extern "C" fn RimeChangePage(session_id: RimeSessionId, backward: Bool) -> B
 
             let page_size = session_menu_page_size(session);
             let input = session.engine.context().composition.input.as_str();
+            let schema_id = session.engine.status().schema_id;
             if backward == FALSE
                 && !session.engine.candidate_list_complete()
-                && session.engine.complete_candidate_list_before_forward_page()
+                && schema_id.starts_with("jyut6ping3")
                 && input.chars().count() > 2
             {
                 session.engine.ensure_complete_candidate_list();

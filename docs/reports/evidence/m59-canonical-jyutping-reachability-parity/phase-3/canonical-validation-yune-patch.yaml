@@ -1,5 +1,0 @@
-# Validation-only patch applied to target/m59-canonical-yune-load/shared/jyut6ping3.schema.yaml
-# and target/m59-canonical-yune-load/user/build/jyut6ping3.schema.yaml before post-fix captures.
-# This avoids schema-id gates: ordinary unmarked jyut6ping3 schemas do not inherit M59 named-row behavior.
-yune:
-  m59_canonical_jyutping_reachability: true

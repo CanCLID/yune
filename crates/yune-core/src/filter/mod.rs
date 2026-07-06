@@ -723,9 +723,6 @@ impl CandidateFilter for SimplifierFilter {
         }
 
         for candidate in candidates {
-            if candidate.source.preserves_oracle_text() {
-                continue;
-            }
             if self.excluded_types.contains(candidate.source.as_str()) {
                 continue;
             }

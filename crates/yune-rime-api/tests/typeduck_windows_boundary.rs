@@ -144,8 +144,6 @@ fn write_windows_boundary_runtime(root: &Path) -> (PathBuf, PathBuf) {
 schema:
   schema_id: jyut6ping3
   name: jyut6ping3
-yune:
-  profile: typeduck_jyutping
 engine:
   translators:
     - table_translator

@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use serde_json::Value;
 use yune_core::{
     Candidate, CandidateFilter, CandidateSource, DictionaryLookupFilter, Engine,
@@ -33,9 +31,6 @@ const M28_UPSTREAM_JYUTPING_COMPOSITION_ORACLE: &str =
     include_str!("fixtures/upstream-jyutping/jyutping-m28-followup-composition.json");
 const M58_TYPEDUCK_PROFILE_REACHABILITY_ORACLE: &str = include_str!(
     "../../../docs/reports/evidence/m58-jyutping-exact-before-fuzzy/phase-2b/typeduck-profile-reachability-capture.json"
-);
-const M59_CANONICAL_JYUTPING_ORACLE: &str = include_str!(
-    "../../../docs/reports/evidence/m59-canonical-jyutping-reachability-parity/phase-1/canonical-rime-cantonese-capture.json"
 );
 const FORK_PARITY_01_REAL_DICTIONARY_FUZZY_ORACLE: &str =
     include_str!("fixtures/typeduck-v1.1.2/jyut6ping3-fork-parity-01-real-dictionary-fuzzy.json");
@@ -100,11 +95,6 @@ fn m24_dogfooding_fixture() -> Value {
 fn m58_typeduck_profile_reachability_fixture() -> Value {
     serde_json::from_str(M58_TYPEDUCK_PROFILE_REACHABILITY_ORACLE)
         .expect("M58 TypeDuck/profile reachability fixture should be valid JSON")
-}
-
-fn m59_canonical_jyutping_fixture() -> Value {
-    serde_json::from_str(M59_CANONICAL_JYUTPING_ORACLE)
-        .expect("M59 canonical Jyutping fixture should be valid JSON")
 }
 
 fn m28_partial_selection_fixture() -> Value {
@@ -1292,42 +1282,6 @@ fn m58_typeduck_profile_reachability_case<'a>(fixture: &'a Value, input: &str) -
         })
 }
 
-fn m59_canonical_case<'a>(fixture: &'a Value, input: &str) -> &'a Value {
-    fixture["cases"]
-        .as_array()
-        .expect("M59 canonical Jyutping cases should be an array")
-        .iter()
-        .find(|case| case["input"] == input)
-        .unwrap_or_else(|| panic!("M59 canonical fixture should capture input {input}"))
-}
-
-fn m59_case_selected_texts(case: &Value) -> Vec<String> {
-    case["selected_candidates"]
-        .as_array()
-        .expect("M59 case should contain selected candidates")
-        .iter()
-        .map(|candidate| {
-            candidate["text"]
-                .as_str()
-                .expect("candidate text should be a string")
-                .to_owned()
-        })
-        .collect()
-}
-
-fn m59_case_all_texts(case: &Value) -> Vec<&str> {
-    case["all_candidates"]
-        .as_array()
-        .expect("M59 case should contain all captured candidates")
-        .iter()
-        .map(|candidate| {
-            candidate["text"]
-                .as_str()
-                .expect("candidate text should be a string")
-        })
-        .collect()
-}
-
 fn captured_candidate_index(case: &Value, text: &str) -> usize {
     case["all_candidates"]
         .as_array()
@@ -1336,100 +1290,6 @@ fn captured_candidate_index(case: &Value, text: &str) -> usize {
         .iter()
         .position(|candidate| candidate["text"] == text)
         .unwrap_or_else(|| panic!("captured case should include candidate text {text}"))
-}
-
-fn m59_canonical_jyutping_slice_engine(fixture: &Value) -> Engine {
-    let dictionary = TableDictionary::parse_rime_dict_yaml(&m59_dictionary_yaml_from_capture(
-        fixture,
-        &["beingo", "zijiguk"],
-    ))
-    .expect("M59 canonical capture rows should parse as a dictionary slice");
-    let mut engine = Engine::new();
-    engine.clear_translators();
-    engine.add_translator(
-        StaticTableTranslator::from_dictionary(dictionary)
-            .with_leading_syllable_reachability(true)
-            .with_m59_canonical_jyutping_reachability(true),
-    );
-    engine.set_schema("jyut6ping3", "Jyutping");
-    engine
-}
-
-fn m59_dictionary_yaml_from_capture(fixture: &Value, inputs: &[&str]) -> String {
-    let mut rows = Vec::new();
-    let mut seen = HashSet::<(String, String)>::new();
-    for input in inputs {
-        let case = m59_canonical_case(fixture, input);
-        let candidates = case["all_candidates"]
-            .as_array()
-            .expect("M59 canonical case should contain all candidates");
-        let base_weight = candidates.len();
-        for (index, candidate) in candidates.iter().enumerate() {
-            let text = candidate["text"]
-                .as_str()
-                .expect("candidate text should be a string");
-            let comment = candidate["comment"]
-                .as_str()
-                .expect("candidate comment should be a string");
-            let code = m59_candidate_lookup_code(text, comment);
-            if !seen.insert((text.to_owned(), code.clone())) {
-                continue;
-            }
-            let weight = base_weight.saturating_sub(index).max(1) as f32 / 100.0;
-            rows.push(format!("{text}\t{code}\t{weight}"));
-        }
-    }
-    format!(
-        "---\nname: jyut6ping3\nversion: 'm59-canonical-slice'\nsort: by_weight\n...\n\n{}\n",
-        rows.join("\n")
-    )
-}
-
-fn m59_candidate_lookup_code(text: &str, comment: &str) -> String {
-    if text.chars().count() == 1 {
-        return comment.chars().filter(|ch| !ch.is_whitespace()).collect();
-    }
-    comment
-        .chars()
-        .filter(|ch| ch.is_ascii_alphabetic())
-        .collect()
-}
-
-fn m59_current_page_texts(engine: &Engine) -> Vec<String> {
-    let page_size = 5;
-    let page_start = (engine.context().highlighted / page_size) * page_size;
-    engine
-        .context()
-        .candidates
-        .iter()
-        .skip(page_start)
-        .take(page_size)
-        .map(|candidate| candidate.text.clone())
-        .collect()
-}
-
-fn m59_select_visible_text(engine: &mut Engine, text: &str) -> Vec<String> {
-    for _ in 0..128 {
-        let page_size = 5;
-        let page_start = (engine.context().highlighted / page_size) * page_size;
-        let page = engine
-            .context()
-            .candidates
-            .iter()
-            .skip(page_start)
-            .take(page_size)
-            .map(|candidate| candidate.text.as_str())
-            .collect::<Vec<_>>();
-        if let Some(index) = page.iter().position(|candidate| *candidate == text) {
-            return engine
-                .process_key_sequence(&(index + 1).to_string())
-                .expect("candidate selection should parse");
-        }
-        engine
-            .process_key_sequence("{Page_Down}")
-            .expect("page down should parse");
-    }
-    panic!("candidate text {text} was not reachable by paging");
 }
 
 fn engine_candidate_texts(engine: &Engine) -> Vec<&str> {
@@ -2068,75 +1928,6 @@ fn m58_profile_reachability_fixture_records_typeduck_v112_positions() {
 
     let zi = m58_typeduck_profile_reachability_case(&fixture, "zi");
     assert_eq!(captured_candidate_index(zi, "\u{8aee}"), 27);
-}
-
-#[test]
-fn m59_canonical_jyutping_reaches_leading_singles_without_typeduck_profile() {
-    let fixture = m59_canonical_jyutping_fixture();
-    assert_eq!(fixture["oracle"]["engine"], "rime/librime");
-    assert_eq!(fixture["oracle"]["version"], "1.17.0");
-    assert_eq!(fixture["schema"]["yune_facing_schema_id"], "jyut6ping3");
-
-    let bei = m59_canonical_case(&fixture, "bei");
-    let bei_texts = m59_case_all_texts(bei);
-    assert_eq!(bei["captured_all_pages"], true);
-    assert_eq!(bei_texts.len(), 139);
-    assert_eq!(captured_candidate_index(bei, "\u{5315}"), 31);
-
-    let beingo = m59_canonical_case(&fixture, "beingo");
-    let beingo_texts = m59_case_all_texts(beingo);
-    assert_eq!(beingo["captured_all_pages"], true);
-    assert_eq!(beingo_texts.len(), 142);
-    assert_eq!(captured_candidate_index(beingo, "\u{5315}"), 34);
-    assert_eq!(
-        &beingo_texts[3..],
-        bei_texts.as_slice(),
-        "canonical beingo must preserve the full upstream bei single-character family order"
-    );
-
-    let zijiguk = m59_canonical_case(&fixture, "zijiguk");
-    assert_eq!(zijiguk["captured_all_pages"], true);
-    assert_eq!(m59_case_all_texts(zijiguk).len(), 416);
-    assert_eq!(captured_candidate_index(zijiguk, "\u{8aee}"), 227);
-
-    let large_family_control = m59_canonical_case(
-        &fixture,
-        "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
-    );
-    assert_eq!(large_family_control["captured_all_pages"], true);
-    assert!(
-        m59_case_all_texts(large_family_control).len() >= 15,
-        "large-family control must retain enough upstream rows to catch premature truncation"
-    );
-
-    let mut engine = m59_canonical_jyutping_slice_engine(&fixture);
-    engine.set_input("beingo");
-
-    assert_eq!(
-        m59_current_page_texts(&engine),
-        m59_case_selected_texts(m59_canonical_case(&fixture, "beingo"))
-    );
-    assert_eq!(
-        m59_select_visible_text(&mut engine, "\u{5315}"),
-        vec!["\u{5315}"]
-    );
-    assert_eq!(engine.context().composition.input, "ngo");
-
-    let mut engine = m59_canonical_jyutping_slice_engine(&fixture);
-    engine.set_input("zijiguk");
-    assert_eq!(
-        engine
-            .context()
-            .candidates
-            .first()
-            .map(|candidate| candidate.text.as_str()),
-        Some(m59_case_selected_texts(m59_canonical_case(&fixture, "zijiguk"))[0].as_str())
-    );
-    assert_eq!(
-        m59_select_visible_text(&mut engine, "\u{8aee}"),
-        vec!["\u{8aee}"]
-    );
-    assert_eq!(engine.context().composition.input, "jiguk");
 }
 
 #[test]

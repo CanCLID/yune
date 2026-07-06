@@ -1745,6 +1745,15 @@ pub extern "C" fn RimeChangePage(session_id: RimeSessionId, backward: Bool) -> B
             }
 
             let page_size = session_menu_page_size(session);
+            let input = session.engine.context().composition.input.as_str();
+            let schema_id = session.engine.status().schema_id;
+            if backward == FALSE
+                && !session.engine.candidate_list_complete()
+                && schema_id.starts_with("jyut6ping3")
+                && input.chars().count() > 2
+            {
+                session.engine.ensure_complete_candidate_list();
+            }
             let current_index = session.engine.context().highlighted;
             let next_index = if backward != FALSE {
                 current_index.saturating_sub(page_size)

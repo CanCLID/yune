@@ -1668,6 +1668,35 @@ test.describe("yune-web Browser E2E", () => {
     expect(ziReachTexts).toContain("\u8aee");
     await takeEvidenceScreenshot(page, "m58-profile-reachability-zi");
 
+    await clearComposition(page);
+    const inputField = composeInput(page);
+    await inputField.focus();
+    await inputField.type("zijiguk", { delay: 120 });
+    await expect
+      .poll(
+        async () =>
+          candidateTexts(await readCandidatePanelSnapshot(page, false)).length,
+        { timeout: 10000 },
+      )
+      .toBeGreaterThan(0);
+    const zijigukFirst = await readCandidatePanelSnapshot(page, false);
+    const zijigukFirstTexts = candidateTexts(zijigukFirst);
+    const zijigukReach = await pageDownUntilCandidate(page, "\u8aee", 64);
+    const zijigukReachTexts = candidateTexts(zijigukReach.state);
+    expect(zijigukReachTexts).toContain("\u8aee");
+    const zijigukSelection = await selectVisibleCandidateByText(
+      page,
+      "\u8aee",
+    );
+    await expect(inputField).toHaveValue("\u8aee", { timeout: 5000 });
+    await expect(
+      page.locator(".candidate-panel .candidates tbody").first(),
+    ).toBeVisible({ timeout: 10000 });
+    const zijigukAfterSelection = await readCandidatePanelSnapshot(page, false);
+    expect(zijigukAfterSelection.inputValue).toBe("\u8aee");
+    expect(zijigukAfterSelection.candidates.length).toBeGreaterThan(0);
+    await takeEvidenceScreenshot(page, "m58-profile-reachability-zijiguk");
+
     await saveJsonEvidence("m58-profile-reachability.json", {
       source:
         "M58 TypeDuck/profile product lane: current yune-web jyut6ping3_mobile browser assets, preserving TypeDuck-profile candidate rank reachability without first-page promotion.",
@@ -1693,6 +1722,17 @@ test.describe("yune-web Browser E2E", () => {
           targetPageCandidateTexts: ziReachTexts,
           firstPageState: ziFirst,
           targetPageState: ziReach.state,
+        },
+        {
+          input: "zijiguk",
+          targetCandidate: "\u8aee",
+          firstPageCandidateTexts: zijigukFirstTexts,
+          pageTurnsToTarget: zijigukReach.pageTurns,
+          targetPageCandidateTexts: zijigukReachTexts,
+          selectedIndex: zijigukSelection.selectedIndex,
+          firstPageState: zijigukFirst,
+          targetPageState: zijigukReach.state,
+          afterSelectionState: zijigukAfterSelection,
         },
       ],
     });

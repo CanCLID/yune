@@ -1,6 +1,6 @@
 # M58 Phase 2b TypeDuck/Profile Reachability Disposition
 
-Status: complete.
+Status: complete for reachability, with a repeated M55 ratchet residual.
 
 This phase records shipped/current `yune-web` TypeDuck/profile behavior
 separately from canonical `rime-cantonese` behavior. TypeDuck-HK/librime v1.1.2
@@ -74,6 +74,25 @@ The `zi` / 諮 report is a shipped/product-lane reachability issue in the same
 bounded-retention class. It is not reclassified as harmless merely because
 canonical `zijiguk` / `諮議局` is canonical-first.
 
+## Long-Composition Corrective Follow-Up
+
+The 2026-07-06 follow-up records a second shipped-product gap: current
+`yune-web` could page to standalone `諮` for bare `zi`, but not from the longer
+composition input `zijiguk`. Canonical upstream behavior remains unchanged:
+`rime-cantonese` has `諮議局` first for `zijiguk`, so this follow-up is still
+scoped to the TypeDuck/profile product lane.
+
+Evidence note:
+
+- `long-composition-reachability-corrective.md`
+
+The corrective behavior is covered by
+`m58_yune_web_browser_app_assets_reach_prefix_candidate_for_long_reported_input`
+and `m58_yune_web_page_down_key_reaches_prefix_candidate_for_long_reported_input`:
+type `zijiguk`, page to standalone `諮` through the browser-facing page path,
+select it, commit only `諮`, and recompose the remaining `jiguk`. The existing
+`beingo` / 畀 and bare `zi` / 諮 M58 profile guards remain green.
+
 ## Asset Rebuild
 
 The compiled public assets were regenerated with the existing WEB-03 harness:
@@ -94,11 +113,11 @@ Evidence files:
 
 Focused guards added or updated for the corrective follow-up:
 
-- `cargo test -p yune-core --test cantonese_parity m58 -- --nocapture`
+- `cargo test -p yune-core --test cantonese_parity`
 - `cargo test -p yune-rime-api --test yune_web m58 -- --nocapture`
 - `cargo test -p yune-core --lib typeduck_product_refresh_keeps_profile_page_bounded_until_full_access -- --nocapture`
 - `cargo test -p yune-rime-api --test yune_web web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion -- --nocapture`
-- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep M58 --workers=1`
+- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M58" --workers=1`
 
 The browser gate writes the corrective evidence to:
 
@@ -118,8 +137,12 @@ The corrective closeout also ran:
 - `cargo test --workspace`
 - `cargo test -p yune-core --test upstream_luna_pinyin_parity`
 - `cargo test -p yune-core --test cantonese_parity`
-- `cargo test -p yune-rime-api --test yune_web`
-- `cargo test -p yune-core --test oracle_fixture_provenance m58_canonical_cantonese_capture_has_sanitized_provenance -- --nocapture`
+- `cargo test -p yune-rime-api --test yune_web m58 -- --nocapture`
+- `cargo test -p yune-rime-api --test yune_web web03_byte_backed_jyutping_long_input_avoids_candidate_expansion_explosion -- --nocapture`
+- `cargo test -p yune-rime-api --test frontend_client frontend_style_api_table_can_page_schema_dictionary_candidates -- --nocapture`
+- `cargo test -p yune-core --lib typeduck_product_refresh_keeps_profile_page_bounded_until_full_access -- --nocapture`
+- `cargo test -p yune-rime-api --test yune_web yune_web_adapter_supports_page_candidate_actions_and_commits -- --nocapture`
+- `cargo test -p yune-rime-api candidate_api`
 - `scripts/yune-web-wasm-build.sh` through Emscripten
 - `npm.cmd --prefix apps/yune-web run check:schema-manifest`
 - `npm.cmd --prefix apps/yune-web run typecheck`
@@ -127,12 +150,15 @@ The corrective closeout also ran:
 - `npm.cmd --prefix apps/yune-web run build:public`
 - `npm.cmd --prefix packages/yune-web-runtime test`
 - `npm.cmd --prefix packages/yune-web-runtime run build`
-- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M31 PUBLIC" --workers=1`
-- M55 product ratchet with `-DeployProductBeforeBenchmark`:
-  `m55-product-ratchet-corrective-final-pass2/`
+- `npm.cmd --prefix apps/yune-web/e2e run test:e2e -- --grep "M58" --workers=1`
+- M55 product ratchet with `-DeployProductBeforeBenchmark` and
+  `-FailOnRegression` failed twice and is recorded as a residual:
+  `long-composition-corrective-ratchet/` and
+  `long-composition-corrective-ratchet-rerun/`
 - `git diff --check`
 
 The full Playwright suite was not required; the scoped browser claims are
-covered by the focused M58 and M31 PUBLIC gates. The WASM build script skipped
-only optional `wasm-opt` post-optimization after module-shape validation failed,
-then passed the JS glue scan and browser module smoke.
+covered by the focused M58 gate. The WASM build script skipped only optional
+`wasm-opt` post-optimization after module-shape validation failed, then passed
+the JS glue scan and browser module smoke. The M55 ratchet residual is
+performance evidence, not a hidden reachability failure.

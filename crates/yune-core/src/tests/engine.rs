@@ -286,7 +286,7 @@ fn typeduck_product_refresh_keeps_profile_page_bounded_until_full_access() {
 
     let bounded_len = engine.context().candidates.len();
     assert_eq!(
-        bounded_len, 51,
+        bounded_len, 31,
         "product refresh should retain one TypeDuck/profile page-sized window plus raw echo"
     );
     assert!(!engine.snapshot().candidate_list_complete);

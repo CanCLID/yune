@@ -1440,13 +1440,18 @@ platform-stable for the known target payloads. Evidence:
 
 ### M58 Canonical Jyutping Oracle And TypeDuck Profile Disposition
 
-**Status: complete.** M58 rebases canonical Cantonese/Jyutping candidate
-behavior on upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`,
-keeps TypeDuck multilingual behavior as a separate profile/data lane, fixes the
+**Status: complete for candidate reachability, with a recorded M55 ratchet
+residual.** M58 rebases canonical Cantonese/Jyutping candidate behavior on
+upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`, keeps
+TypeDuck multilingual behavior as a separate profile/data lane, fixes the
 current `yune-web` TypeDuck/profile `beingo` / 畀 and `zi` / 諮 reachability
-reports by preserving short-input TypeDuck/profile-ranked paging, and records
-the schema-id
-blast-radius audit without implementing a rename.
+reports by preserving short-input TypeDuck/profile-ranked paging, adds a
+post-closeout corrective for `zijiguk` / standalone `諮` long-composition
+selection/recomposition, and records the schema-id blast-radius audit without
+implementing a rename. The standing M55/Track B performance ratchet was run
+twice after the long-composition follow-up and failed the recorded `ni`, `hao`,
+`zhongguo`, and Track B long-Jyutping latency rows; this is a named performance
+residual, not a candidate-behavior blocker.
 
 - [x] **M58-JYUTPING-01**: Canonical `jyut6ping3` candidate behavior is captured
   from upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`
@@ -1470,7 +1475,8 @@ blast-radius audit without implementing a rename.
   M14-M28 profile candidate guards remain regression guarded without widening
   canonical candidate behavior.
 - [x] **M58-JYUTPING-06**: The shipped-product `beingo` / 畀 and `zi` / 諮
-  reachability reports receive explicit dispositions in both the canonical and
+  reachability reports, plus the post-closeout `zijiguk` / standalone `諮`
+  long-composition gap, receive explicit dispositions in both the canonical and
   TypeDuck/profile lanes; M58 cannot close merely because a shipped-lane bug is
   TypeDuck-profile-only.
 - [x] **M58-JYUTPING-07**: Schema-install profile predicates and product identity
@@ -1665,7 +1671,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M58-JYUTPING-03 | M58 | Complete - Phase 0/1/2b evidence records schema repos/commits, oracle versions, Yune-facing ids, page sizes, option state, and regenerated public schema manifest hashes |
 | M58-JYUTPING-04 | M58 | Complete - canonical `zijiguk` and `beingo` captures did not require a canonical fix; the landed `beingo` / 畀 and `zi` / 諮 reachability fix is explicitly scoped to the current TypeDuck/profile yune-web product lane |
 | M58-JYUTPING-05 | M58 | Complete - TypeDuck multilingual/comment/profile behavior and grandfathered M14-M28 candidate guards remain profile-lane fixtures and are not promoted to canonical `rime-cantonese` expected output |
-| M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀 and `zi` / 諮 are dispositioned in canonical and TypeDuck/profile lanes; yune-web reaches each target at its TypeDuck/profile rank through page navigation without first-page promotion |
+| M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀, `zi` / 諮, and the post-closeout `zijiguk` / standalone `諮` composition gap are dispositioned in canonical and TypeDuck/profile lanes; yune-web reaches each target through page navigation without first-page promotion, and `zijiguk` selection commits `諮` while recomposing `jiguk`; the repeated M55 ratchet miss is tracked separately as a performance residual |
 | M58-JYUTPING-07 | M58 | Complete - schema predicates, `jyut6ping3_mobile`, Track B/M55 names, WEB-03/public-demo manifests, and userdb key blast radius audited before any id split |
 | M58-JYUTPING-08 | M58 | Complete - canonical captures succeeded and were not substituted with TypeDuck v1.1.2 candidate output |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
@@ -1978,4 +1984,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-06 - M58 corrective closeout: canonical `jyut6ping3` candidate behavior captured from upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; current `yune-web` reaches `beingo` / 畀 and `zi` / 諮 at TypeDuck/profile ranks through page navigation without first-page promotion; `jyut6ping3_typeduck` remains the preferred future id direction pending explicit sign-off._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-06 - M58 corrective closeout: canonical `jyut6ping3` candidate behavior captured from upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; current `yune-web` reaches `beingo` / 畀 and `zi` / 諮 at TypeDuck/profile ranks through page navigation without first-page promotion; the post-closeout `zijiguk` long-composition corrective reaches standalone `諮`, commits `諮`, and recomposes `jiguk`; the standing M55/Track B ratchet miss is recorded as a performance residual; `jyut6ping3_typeduck` remains the preferred future id direction pending explicit sign-off._

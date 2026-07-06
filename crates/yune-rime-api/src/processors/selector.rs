@@ -135,11 +135,15 @@ fn selector_next_candidate_like_librime(
     session: &mut SessionState,
     is_linear: bool,
 ) -> Option<bool> {
-    let context = session.engine.context();
+    let mut context = session.engine.context();
     if is_linear && context.composition.caret < context.composition.input.len() {
         return None;
     }
     let next_index = context.highlighted + 1;
+    if next_index >= context.candidates.len() && !session.engine.candidate_list_complete() {
+        session.engine.ensure_complete_candidate_list();
+        context = session.engine.context();
+    }
     if next_index >= context.candidates.len() {
         return Some(true);
     }
@@ -158,8 +162,15 @@ fn selector_previous_page_like_librime(session: &mut SessionState) {
 
 fn selector_next_page_like_librime(session: &mut SessionState) {
     let page_size = session_menu_page_size(session);
-    let context = session.engine.context();
+    if should_complete_jyutping_before_forward_page(session) {
+        session.engine.ensure_complete_candidate_list();
+    }
+    let mut context = session.engine.context();
     let index = context.highlighted + page_size;
+    if index >= context.candidates.len() && !session.engine.candidate_list_complete() {
+        session.engine.ensure_complete_candidate_list();
+        context = session.engine.context();
+    }
     let page_start = (index / page_size) * page_size;
     if context.candidates.len() <= page_start {
         return;
@@ -167,6 +178,13 @@ fn selector_next_page_like_librime(session: &mut SessionState) {
     let index = index.min(context.candidates.len() - 1);
     session.engine.highlight_candidate(index);
     session.paging = true;
+}
+
+fn should_complete_jyutping_before_forward_page(session: &SessionState) -> bool {
+    let context = session.engine.context();
+    !session.engine.candidate_list_complete()
+        && session.engine.status().schema_id.starts_with("jyut6ping3")
+        && context.composition.input.chars().count() > 2
 }
 
 fn selector_home_like_librime(session: &mut SessionState) -> Option<bool> {

@@ -47,6 +47,7 @@ const TYPEDUCK_V112_M28_PARTIAL_SELECTION: &str = include_str!(
 const M28_UPSTREAM_JYUTPING_COMPOSITION: &str = include_str!(
     "../../yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json"
 );
+const X11_PAGE_DOWN: i32 = 0xff56;
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -2992,6 +2993,171 @@ fn m58_yune_web_browser_app_assets_reach_profile_ranked_report_candidates() {
 
         unsafe { yune_web_cleanup(state) };
     }
+    runtime.remove();
+}
+
+#[test]
+fn m58_yune_web_browser_app_assets_reach_prefix_candidate_for_long_reported_input() {
+    let _guard = test_guard();
+    for schema_id in ["jyut6ping3_mobile"] {
+        let runtime = YuneWebRuntime::create_with_schema(
+            &format!("m58-browser-app-long-input-prefix-reachability-{schema_id}"),
+            schema_id,
+        );
+        runtime.write_browser_app_assets();
+
+        let state = unsafe {
+            yune_web_init(
+                runtime.shared_c.as_ptr(),
+                runtime.user_c.as_ptr(),
+                runtime.schema_id_c.as_ptr(),
+            )
+        };
+        assert!(!state.is_null());
+        let inspector = CString::new("yune_inspector").expect("option should be valid");
+        assert_eq!(
+            unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+            TRUE
+        );
+
+        let target = "\u{8aee}";
+        let mut page = process_input(state, "zijiguk");
+        let mut page_turns = 0usize;
+        let mut found_at = None;
+        let mut target_page_index = None;
+        let mut last_page_candidates = Vec::new();
+        loop {
+            let page_candidates = page["context"]["candidates"]
+                .as_array()
+                .expect("candidate page should be an array")
+                .iter()
+                .map(|candidate| {
+                    candidate["text"]
+                        .as_str()
+                        .expect("candidate text should be a string")
+                        .to_owned()
+                })
+                .collect::<Vec<_>>();
+            if let Some(index) = page_candidates
+                .iter()
+                .position(|candidate| candidate == target)
+            {
+                found_at = Some(page_turns);
+                target_page_index = Some(index);
+                last_page_candidates.clear();
+                last_page_candidates.extend(page_candidates.iter().cloned());
+                break;
+            }
+            last_page_candidates.clear();
+            last_page_candidates.extend(page_candidates.iter().cloned());
+            if page_turns >= 64 {
+                break;
+            }
+            let next_page = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+            if next_page["handled"] != Value::Bool(true) {
+                break;
+            }
+            page = next_page;
+            page_turns += 1;
+        }
+
+        if found_at.is_some() {
+            assert_schema_storage_byte_backed(schema_id, &page["context"]["debug"]["storage"]);
+        }
+        assert!(
+            found_at.is_some(),
+            "browser-app {schema_id} assets should let long reported input zijiguk page to standalone {target}; searched {page_turns} pages; last page was {last_page_candidates:?}"
+        );
+        let selected = response_json(unsafe {
+            yune_web_select_candidate(
+                state,
+                target_page_index.expect("target page index should be recorded"),
+            )
+        });
+        assert_eq!(
+            selected["commits"],
+            Value::Array(vec![Value::String(target.to_owned())])
+        );
+        assert_eq!(
+            selected["context"]["input"],
+            Value::String("jiguk".to_owned())
+        );
+        assert_eq!(selected["status"]["is_composing"], Value::Bool(true));
+
+        unsafe { yune_web_cleanup(state) };
+        runtime.remove();
+    }
+}
+
+#[test]
+fn m58_yune_web_page_down_key_reaches_prefix_candidate_for_long_reported_input() {
+    let _guard = test_guard();
+    let schema_id = "jyut6ping3_mobile";
+    let runtime = YuneWebRuntime::create_with_schema(
+        "m58-browser-app-long-input-prefix-reachability-page-down-key",
+        schema_id,
+    );
+    runtime.write_browser_app_assets();
+
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(!state.is_null());
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    let target = "\u{8aee}";
+    let mut page = process_input(state, "zijiguk");
+    let mut page_turns = 0usize;
+    let mut found_at = None;
+    let mut last_page_candidates = Vec::new();
+    loop {
+        let page_candidates = page["context"]["candidates"]
+            .as_array()
+            .expect("candidate page should be an array")
+            .iter()
+            .map(|candidate| {
+                candidate["text"]
+                    .as_str()
+                    .expect("candidate text should be a string")
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+        if page_candidates.iter().any(|candidate| candidate == target) {
+            found_at = Some(page_turns);
+            last_page_candidates.clear();
+            last_page_candidates.extend(page_candidates.iter().cloned());
+            break;
+        }
+        last_page_candidates.clear();
+        last_page_candidates.extend(page_candidates.iter().cloned());
+        if page_turns >= 64 {
+            break;
+        }
+        let next_page = response_json(unsafe { yune_web_process_key(state, X11_PAGE_DOWN, 0) });
+        if next_page["handled"] != Value::Bool(true) {
+            break;
+        }
+        page = next_page;
+        page_turns += 1;
+    }
+
+    if found_at.is_some() {
+        assert_schema_storage_byte_backed(schema_id, &page["context"]["debug"]["storage"]);
+    }
+    assert!(
+        found_at.is_some(),
+        "browser-app {schema_id} assets should let physical PageDown on long reported input zijiguk page to standalone {target}; searched {page_turns} pages; last page was {last_page_candidates:?}"
+    );
+
+    unsafe { yune_web_cleanup(state) };
     runtime.remove();
 }
 

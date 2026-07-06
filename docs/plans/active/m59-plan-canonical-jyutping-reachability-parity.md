@@ -98,7 +98,10 @@ and commit the evidence before Phase 3 treats them as win bars.
 
 `莫伯洢` is not a dictionary/essay phrase row; the point is arbitrary phrase
 composition from single-character rows. The individual characters are
-dictionary-backed (`伯\tbo`, `洢\tyi`, `莫\tmo`). For `ziyiju`,
+dictionary-backed — **verified present 2026-07-06**: `洢\tyi` at
+`luna_pinyin.dict.yaml:17026`, plus `莫\tmo` and `伯\tbo` (`bo` is 伯's dominant
+reading at 91.98%). So `莫伯洢` is genuinely composable by paging; the
+requirement is reachability, not a missing dictionary entry. For `ziyiju`,
 `translator/enable_sentence` on/off produced the same upstream candidate pages;
 the browser "Auto-composition" toggle maps to that setting, so the observed
 toggle no-op on this row is not itself a bug. Yune still must match the
@@ -119,6 +122,25 @@ upstream pages in both toggle states where captured.
   of exposing upstream's `莫` / `伯` / `洢` page-by-page selection flow. This is
   a canonical upstream Luna gap, not a TypeDuck profile issue and not an
   `auto_composition` toggle issue.
+- **Luna mechanism / sequencing / page-1 caveats (verified 2026-07-06 via
+  `yune-cli frontend` on the product schema).** `moboyi` returns exactly the
+  five rows above with `page_no:0, is_last_page:true` — 莫/伯/洢 are unreachable
+  at *any* page today; `ziyiju` returns `諮議局 子一句 字一句 自一句 子依據`, also
+  `is_last_page:true`. Three consequences the Phase 2 diff must resolve, none
+  yet reflected in the win bars: **(a)** Yune's `ziyiju` page 1 already
+  **differs** from the oracle's (`諮議局 自已 子怡 紫衣 恣意`), so parity is **not**
+  purely additive paging — it changes page 1, which must be reconciled with the
+  **no-promotion** rule (the current `子一句`/`字一句` sentence rows are Yune's,
+  not the oracle's). **(b)** The defect is the **completeness signal**
+  (`is_last_page:true` on a 5-row page) in the Luna **sentence/script_translator**
+  path — Luna does **not** use the `prefix_fallback` path the Jyutping fix
+  uncapped, so the Luna fix is a **different mechanism** living in the **same
+  subsystem as the Phase 0 perf regression**. Sequence accordingly: Phase 0
+  lands first, Phase 3 Luna work builds on the stabilized path; a change here
+  can re-open the `ni`/`hao` ratchet rows, so re-run the ratchet after it.
+  **(c)** That path is **slow today** — measured 26–66 s for these 6-char
+  inputs (first run includes deploy) — so the first-page-turn materialization
+  guard applies to Luna, not only to canonical `zijiguk`.
 - **`c4336cd9` delivered profile-lane reachability** via the right mechanism
   family: fixed caps deleted, bounded typing requests limit-driven (per-fetch
   3, pending 4×limit, output = limit), unbounded complete-list path uncapped

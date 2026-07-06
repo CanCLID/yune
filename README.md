@@ -108,8 +108,10 @@ Yune is an active engine project.
   against TypeDuck-HK/librime `v1.1.2` through the TypeDuck profile. Per the
   2026-07-05 D-31 amendment, canonical `jyut6ping3` candidate ordering,
   segmentation, fallback, and completion now use upstream `rime/librime
-  1.17.0` plus pinned `rime/rime-cantonese`; M58 owns the fresh canonical
-  capture. The M55 expanded
+  1.17.0` plus pinned `rime/rime-cantonese`; M58 completed the fresh canonical
+  capture at `f780410c`, including the user-specified `zijiguk` / `諮議局`
+  case, which returns `諮議局` first and did not produce a canonical fix. The
+  M55 expanded
   oracle sentence fixtures also surfaced known, recorded gaps: Yune's first
   candidate page currently differs from librime on some single-letter
   completion rankings and some long-sentence top candidates (13 named blocked
@@ -119,14 +121,17 @@ Yune is an active engine project.
   real-server IPC compatibility smoke through the named profile accessor,
   while interactive TSF typing and visible candidate UI remain Phase 2
   product/frontend work.
-- **Current work:** milestones M38-M55 are complete, with M55 closed under a
+- **Current work:** milestones M38-M58 are complete, with M55 closed under a
   2026-07-04 corrective re-baseline: the benchmark now reads context after
   every keypress (the interactive shape), three pre-corrective closeout
   mechanisms were identified as measurement artifacts and reverted, and the
   standing regression gate (startup, session, eight Track A key rows, Track A
   peak memory, win rows locked `<1.00x`, TypeDuck Track B absolutes) is green
-  twice on the honest metric. This is a lane-specific bounded-gap result, not
-  a blanket claim that any row set is faster than librime.
+  twice on the honest metric and re-run green at M58 closeout. M58 also fixed
+  current `yune-web` TypeDuck/profile reachability for `beingo` / `畀` and
+  `zi` / `諮` by short-input profile-ranked paging, without first-page promotion.
+  This is a lane-specific bounded-gap result, not a blanket claim
+  that any row set is faster than librime.
 - **Public demo:** `yune-web` is deployed at <https://yune-web.pages.dev>. It's
   a Yune engine demo, not a claim that browser-level performance is solved.
 - **AI posture:** the AI layer exists but is default-off, local-only in the web
@@ -143,20 +148,21 @@ Yune's compatibility is target-driven, not checklist-driven.
 - Default core oracle: upstream `rime/librime 1.17.0`
   (`33e78140250125871856cdc5b42ddc6a5fcd3cd4`).
 - Canonical Cantonese/Jyutping candidate oracle: upstream
-  `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; M58 owns the
-  Yune-facing id/provenance split for this lane.
+  `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; M58 records the
+  completed Yune-facing id/provenance split for this lane.
 - TypeDuck profile oracle: TypeDuck-HK/librime `v1.1.2`
   (`74cb52b78fb2411137a7643f6c8bc6517acfde69`) for profile/display/comment
   behavior, multilingual dictionary lookup payloads, fork-only ABI/profile
   controls, and historical fixture-backed profile candidate guards. The
   preferred future TypeDuck multilingual profile id is `jyut6ping3_typeduck`,
-  pending M58's schema/profile blast-radius audit and explicit user sign-off.
+  after M58's completed schema/profile blast-radius audit; no split landed, so
+  it remains pending explicit user sign-off.
 
 **Rules:**
 
 - Preserve upstream-observable behavior for named targets.
 - Isolate TypeDuck fork behavior behind the TypeDuck profile surface; do not
-  use TypeDuck v1.1.2 ordering to define canonical `jyut6ping3` candidates.
+  use fork v1.1.2 ordering to define canonical `jyut6ping3` candidates.
 - Add librime features only when a named target needs them.
 - Keep expected bytes non-circular: always capture them from the relevant oracle,
   never derive them from Yune itself.
@@ -199,7 +205,10 @@ lower is better):
   comparison (TypeDuck multilingual dictionary); M47 byte-backed the shipping
   keyboard profile to about `67 MB` working set / `22 MB` private.
 - Track B TypeDuck-profile rows and browser startup are separate evidence lanes,
-  not upstream-librime native comparisons.
+  not upstream-librime native comparisons. The latest Track B guard proof is
+  the M58 final-pass ratchet (`335.823 us` on the 50+ key product row, ceiling
+  `347.975 us`), and it remains TypeDuck/profile product-path evidence rather
+  than canonical `rime-cantonese` candidate-oracle evidence.
 
 Current reports:
 

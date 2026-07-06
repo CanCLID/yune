@@ -1,7 +1,7 @@
 # Current Yune Root-Cause Dashboard
 
-Date: 2026-07-05 (M57 macOS verification repair; standing gate remains the
-2026-07-04 corrective re-baseline)
+Date: 2026-07-06 (M58 corrective closeout at `f780410c`; standing gate remains
+the 2026-07-04 corrective re-baseline and was re-run green for M58)
 
 This report keeps only the current root-cause read. Older milestone narratives,
 WEB-01/WEB-02/WEB-03 closeout detail, and superseded measurements remain in
@@ -22,8 +22,22 @@ pair (`0xb3d4e98e` / `0x29d56c89`), which pushed the macOS bundle into a
 defective model shape. After M57, macOS Luna stays on compact
 `rsmarisa_byte_backed` storage, reports `332,604` compact codes and `513,353`
 expanded sentence entries, restores the 11-entry abbreviation vocabulary, and
-matches librime first pages for `cszysmsrsd` and `zybfshmsru`. Evidence:
+matches librime page-1 candidates for `cszysmsrsd` and `zybfshmsru`. Evidence:
 [`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
+
+M58 completed the upstream Jyutping oracle rebase and TypeDuck/profile
+reachability disposition at `f780410c`. Canonical `jyut6ping3` candidate
+behavior now uses upstream `rime/librime 1.17.0` plus pinned
+`rime/rime-cantonese`; the user-specified `zijiguk` / `諮議局` capture returns
+`諮議局` first, so no canonical candidate bug was reproduced and no canonical
+fix was derived. The shipped `yune-web` TypeDuck/profile lane had separate
+bounded reachability bugs: `beingo` / `畀` at TypeDuck/profile index 6 and
+`zi` / `諮` at index 27. M58 fixed that product lane by restoring
+`畀	bei2	200000`, retaining one TypeDuck/profile page for short
+`jyut6ping3_mobile` reported/profile inputs, and widening prefix fallback only
+on that scoped path, without first-page promotion. No schema id split, profile
+predicate change, userdb migration, or ABI widening landed; `jyut6ping3_typeduck`
+remains the preferred future TypeDuck profile id pending explicit sign-off.
 
 ## Technical Summary
 
@@ -32,10 +46,12 @@ matches librime first pages for `cszysmsrsd` and `zybfshmsru`. Evidence:
   all eight key rows, Track A peak memory, win rows locked `<1.00x`, and
   Track B product absolutes. Green twice consecutively (`gate-run-d/`,
   `gate-run-e/`) and re-run green at M56 closeout under
-  `m56-productization-hardening/final/ratchet-run/`. The M56 run passes with
-  limited short-key and 37-char headroom and is a guard proof, not a
-  performance rebaseline. M52's artifact and the pre-corrective M55 artifact are
-  batch-shaped history (the metric changed).
+  `m56-productization-hardening/final/ratchet-run/`, then re-run green at M58
+  closeout under
+  `m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/`.
+  The M56 and M58 runs pass with limited short-key and sentence-row headroom
+  and are guard proofs, not performance rebaselines. M52's artifact and the
+  pre-corrective M55 artifact are batch-shaped history (the metric changed).
 - **Current native latency disposition**: real M55 graph/DP-reduction work
   improved the long rows ~35% versus the pre-M55 record (37-char `1.913x`,
   59-char `1.528x`) and the short keys (`ni` `2.433x`, `hao` `1.574x`), while
@@ -60,25 +76,30 @@ matches librime first pages for `cszysmsrsd` and `zybfshmsru`. Evidence:
   verification passes. This does not alter the standing Windows corrective gate.
 - **Current browser fair memory owner**: the fair `luna_pinyin` browser gap is
   `64.0 MiB` Yune public demo versus `16.0 MiB` My RIME (carried 2026-06-28).
+- **Current TypeDuck/profile reachability disposition**: M58 fixed the
+  `beingo` / `畀` and `zi` / `諮` product-lane reachability bugs through
+  short-input profile-ranked paging, not by page-one promotion and not by
+  using fork v1.1.2 output as the canonical `jyut6ping3` candidate oracle.
 
 ## Current Gap Map
 
 | Area | Current root cause | Evidence | Current status |
 | --- | --- | --- | --- |
-| Native Track A standing guardrail | Corrective per-key ratchet green twice and M56 closeout ratchet green | `corrective-2026-07-04/gate-run-d/`, `gate-run-e/`, and `m56-productization-hardening/final/ratchet-run/` | standing gate |
+| Native Track A standing guardrail | Corrective per-key ratchet green twice, M56 closeout ratchet green, and M58 final-pass ratchet green | `corrective-2026-07-04/gate-run-d/`, `gate-run-e/`, `m56-productization-hardening/final/ratchet-run/`, and `m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/` | standing gate |
 | macOS Track A verification bundle | M57 accepts the macOS upstream Luna MARISA checksum pair and restores compact sentence-model construction | `m57-macos-track-a-sentence-model-parity/full-pass-1/` and `full-pass-2/` | repaired comparability defect |
 | Native sentence-lattice divergence | Yune's lattice/completion ranking differs from librime on the expanded oracle rows | 13 blocked fixture rows; `candidate_snapshots.csv` in the corrective runs | top correctness target |
 | Native long-row latency | Poet graph constant factors above the raw lookup | 37-char `1.913x`, 59-char `1.528x` (was `3.05x`/`2.25x` pre-M55) | improved; Tier M `1.50x` bar not met |
 | Native short keys | Exact-row scan + translator overhead | `n` `2.636x` (+34 us), `ni` `2.433x` (+25 us), `hao` `1.574x` (+9 us) | bounded absolute gaps |
 | Native Track A memory | Owned poet payload retained on heap by default; byte-backed opt-in works but costs long-row latency | default `185.7 MB`; opt-in `113.2 MB`; librime peer `13.5 MB` | scratch port is the named owner |
-| Track B product guard | TypeDuck profile/product absolutes all green and tightened; not canonical `rime-cantonese` candidate evidence | key row `315.356 us` vs `347.975 us` ceiling; startup/session `~35 ms` vs Phase 0-era `~98 ms` sources | regression guard pass, real improvement |
+| Track B product guard | Profile/product absolutes all green and tightened; not canonical `rime-cantonese` candidate evidence | M58 key row `335.823 us` vs `347.975 us` ceiling; startup/session `~35-36 ms` vs Phase 0-era `~98 ms` sources | regression guard pass, real improvement |
+| TypeDuck/profile reachability | Product path previously under-retained `beingo` / `畀` and `zi` / `諮`; M58 fixed short-input profile-ranked paging | `yune-web-reachability-disposition.json` and browser `m58-profile-reachability.json` | fixed without first-page promotion |
 | Browser `luna_pinyin` memory | Yune WASM/runtime floor still larger than My RIME | `64.0 MiB` vs `16.0 MiB` (carried) | blocker |
 | Browser `luna_pinyin` startup | Yune public-demo startup still slower | `1000 ms` vs `634 ms` (carried) | watch |
 
-M56 closeout ratchet read: all standing rows pass, but the process-key rows
-show measured guard-path cost rather than a zero-overhead result (`n` `2.785x`,
-`ni` `2.573x`, `hao` `1.677x`, 37-char `1.981x`, 59-char `1.525x`). Future
-hardening should treat the short-key rows and 37-char row as tight regression
+M58 closeout ratchet read: all standing rows pass, but the process-key rows
+show measured guard-path cost rather than a zero-overhead result (`n` `2.770x`,
+`ni` `2.494x`, `hao` `1.654x`, 37-char `2.022x`, 59-char `1.567x`). Future
+hardening should treat the short-key rows and sentence rows as tight regression
 guards.
 
 ![Current performance gaps by lane](./evidence/dashboard-visuals-2026-07-04/root-cause-gaps.svg)
@@ -186,23 +207,28 @@ Track B is the native TypeDuck profile product path and regression guard (no
 librime peer; sentence is off in the mobile profile, so it is independent of
 the poet default). Current evidence uses historical `jyut6ping3_mobile` asset
 names; it should be read as TypeDuck profile evidence and future schema-split
-work should present that lane as `jyut6ping3_typeduck` only after the M58
-blast-radius sign-off. It is not canonical `rime-cantonese` candidate-order
-oracle evidence. Corrective gate run D, all green with tightened ceilings:
+work should present that lane as `jyut6ping3_typeduck` only after explicit
+sign-off. M58 completed the blast-radius audit and did not implement the split.
+It is not canonical `rime-cantonese` candidate-order oracle evidence. M58
+final-pass ratchet, all green with tightened ceilings:
 
 | Row | Observed | Ceiling | Status |
 | --- | ---: | ---: | --- |
-| 50+ key-sequence latency | `315.356 us` | `347.975 us` | pass |
-| key-sequence median working set | `79,953,920 B` | `88,012,390 B` | pass |
-| key-sequence max peak working set | `510,672,896 B` | `562,033,050 B` | pass |
-| key-sequence median private bytes | `35,733,504 B` | `39,460,045 B` | pass |
-| session create/select/destroy | `35,364.100 us` | `39,289.800 us` | pass |
-| startup warm runtime-ready | `34,732.800 us` | `38,825.050 us` | pass |
+| 50+ key-sequence latency | `335.823 us` | `347.975 us` | pass |
+| key-sequence median working set | `79,511,552 B` | `88,012,390 B` | pass |
+| key-sequence max peak working set | `510,885,888 B` | `562,033,050 B` | pass |
+| key-sequence median private bytes | `35,426,304 B` | `39,460,045 B` | pass |
+| session create/select/destroy | `36,098.200 us` | `39,289.800 us` | pass |
+| startup warm runtime-ready | `35,459.000 us` | `38,825.050 us` | pass |
 
 The startup/session absolutes improved about `3x` versus their Phase 0-era
 sources (`~98 ms`) through the landed M55 work — a real product-lane win,
 ratcheted accordingly. No TypeDuck-vs-librime speed claim follows from this
 guard.
+
+The visualization below is carried from the 2026-07-04 standing-gate dashboard
+and remains directional; the M58 table above is the current Track B ratchet
+read.
 
 ![Native Track B memory, TypeDuck profile product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
 
@@ -227,10 +253,17 @@ browser-side blockers. Jyutping remains a launch guard lane, not a peer lane.
 - [`corrective-2026-07-04/gate-run-d/threshold-check.csv`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-d/threshold-check.csv)
   and [`gate-run-e/threshold-check.csv`](./evidence/m55-native-match-or-beat/corrective-2026-07-04/gate-run-e/threshold-check.csv)
 - [`m56-productization-hardening/final/ratchet-run/threshold-check.csv`](./evidence/m56-productization-hardening/final/ratchet-run/threshold-check.csv)
-  - latest green closeout proof against the standing M55 threshold artifact
+  - M56 green closeout proof against the standing M55 threshold artifact
 - [`m57-macos-track-a-sentence-model-parity/README.md`](./evidence/m57-macos-track-a-sentence-model-parity/README.md)
   - macOS compiled-table sentence-model repair, before/after counters, two full
     macOS native verification passes
+- [`m58-jyutping-exact-before-fuzzy/README.md`](./evidence/m58-jyutping-exact-before-fuzzy/README.md)
+  - upstream Jyutping oracle rebase, profile reachability disposition,
+    and M58 final-pass Track B/product ratchet
+- [`m58-jyutping-exact-before-fuzzy/phase-2b/yune-web-reachability-disposition.json`](./evidence/m58-jyutping-exact-before-fuzzy/phase-2b/yune-web-reachability-disposition.json)
+  - `beingo` / `畀` and `zi` / `諮` product-lane disposition
+- [`m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv`](./evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv)
+  - latest closeout proof against the standing M55 threshold artifact
 - [`thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv)
 - Pre-corrective closeout state: git history at `531dbcf2` (preserved, not
   scrubbed)

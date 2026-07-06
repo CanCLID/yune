@@ -1,7 +1,7 @@
 # Current Yune Performance Dashboard
 
-Date: 2026-07-05 (M57 macOS verification repair; standing gate remains the
-2026-07-04 corrective re-baseline)
+Date: 2026-07-06 (M58 corrective closeout at `f780410c`; standing gate remains
+the 2026-07-04 corrective re-baseline and was re-run green for M58)
 
 This dashboard shows the current benchmark state only. Older milestone closeout
 narrative and superseded benchmark rows remain in
@@ -26,6 +26,20 @@ keeps compact storage active, and restores the expected model shape
 abbreviation vocabulary). Evidence:
 [`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
 
+**M58 Jyutping/profile note:** M58 completed the upstream Jyutping oracle
+rebase at `f780410c`. Canonical `jyut6ping3` candidate behavior now uses
+upstream `rime/librime 1.17.0` plus pinned `rime/rime-cantonese`; the
+user-specified `zijiguk` / `諮議局` capture returns `諮議局` first, so no
+canonical candidate bug was reproduced and no canonical fix was derived. The
+shipped `yune-web` TypeDuck/profile lane had separate reachability bugs:
+`beingo` / `畀` at TypeDuck/profile index 6 and `zi` / `諮` at index 27. Those
+were fixed by restoring `畀	bei2	200000`, retaining one TypeDuck/profile page
+for short `jyut6ping3_mobile` reported/profile inputs, and widening prefix
+fallback only on that short-input path, without first-page promotion. No schema
+id split, profile predicate change, userdb migration, or ABI widening landed;
+`jyut6ping3_typeduck` remains the preferred future TypeDuck profile id pending
+explicit sign-off.
+
 ## Technical Summary
 
 - **Native Track A (`luna_pinyin`)**: M55 closes with real, honestly measured
@@ -41,10 +55,12 @@ abbreviation vocabulary). Evidence:
   is the standing native gate (all dimensions ceilinged, wins locked
   `<1.00x`, Track B absolutes included), green twice consecutively
   (`gate-run-d/`, `gate-run-e/`) and re-run green at M56 closeout under
-  [`m56-productization-hardening/final/ratchet-run/`](./evidence/m56-productization-hardening/final/ratchet-run/).
-  The M56 run is a guard proof, not a performance rebaseline: some short-key
-  and sentence-row ratios drift upward but remain inside the committed
-  ceilings.
+  [`m56-productization-hardening/final/ratchet-run/`](./evidence/m56-productization-hardening/final/ratchet-run/)
+  and again at M58 closeout under
+  [`m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/`](./evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/).
+  The M56 and M58 runs are guard proofs, not performance rebaselines: some
+  short-key and sentence-row ratios drift upward but remain inside the
+  committed ceilings.
   The M52 artifact and the pre-corrective M55 artifact are batch-shaped
   history.
 - **macOS verification repair**: M57 repaired the macOS Track A bundle so it is
@@ -81,12 +97,15 @@ Corrective evidence root (decision runs, gate runs, README):
 M57 macOS verification repair evidence:
 [`evidence/m57-macos-track-a-sentence-model-parity/`](./evidence/m57-macos-track-a-sentence-model-parity/).
 
+M58 Jyutping/profile corrective closeout evidence:
+[`evidence/m58-jyutping-exact-before-fuzzy/`](./evidence/m58-jyutping-exact-before-fuzzy/).
+
 Standing gate artifact:
 [`evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv`](./evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv).
 
 Consecutive green gate runs: `gate-run-d/` and `gate-run-e/` under the
 corrective root. Latest closeout proof:
-[`evidence/m56-productization-hardening/final/ratchet-run/threshold-check.csv`](./evidence/m56-productization-hardening/final/ratchet-run/threshold-check.csv).
+[`evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv`](./evidence/m58-jyutping-exact-before-fuzzy/phase-2b/m55-product-ratchet-corrective-final-pass2/threshold-check.csv).
 Browser rows are carried from
 [`evidence/current-performance-dashboard-2026-06-29/`](./evidence/current-performance-dashboard-2026-06-29/).
 
@@ -172,9 +191,10 @@ comparable.
 latency `~289 us` (mac) vs `315 us` (Win); session/startup `~29 ms` (mac) vs
 `~35 ms` (Win). Track B memory is not compared cross-platform (macOS resident
 plus deploy/compile transient is not the Windows working-set metric). This is
-TypeDuck profile/product guard evidence, not canonical `rime-cantonese`
-candidate-order oracle evidence. The preferred future TypeDuck multilingual id
-is `jyut6ping3_typeduck`, pending the M58 schema/profile blast-radius sign-off.
+profile/product guard evidence, not canonical `rime-cantonese` candidate-order
+oracle evidence. M58 completed the schema/profile blast-radius
+audit and did not implement a split; the preferred future TypeDuck multilingual
+id remains `jyut6ping3_typeduck` pending explicit sign-off.
 
 ## Native Track A Guardrails
 
@@ -196,12 +216,12 @@ closeout ratchet repeat green):
 | Track A peak working set | `185,749,504 B` | `195,028,378 B` | pass |
 | Track B product long-row latency | `315.356 us` | `347.975 us` | pass |
 
-M56 closeout ratchet read: all `23` rows pass, but the short-key rows still
-have limited headroom (`n` `2.785x` / `2.890x`, `ni` `2.573x` / `2.666x`,
-`hao` `1.677x` / `1.731x`, 37-char `1.981x` / `2.094x`, 59-char `1.525x` /
-`1.625x`, Track B long row `320.820 us` / `347.975 us`). This is attributed to the added M56
-guard surface on the real `process_key`/context-read path plus same-machine run
-noise; do not summarize it as "no measurable performance cost."
+Latest M58 closeout ratchet read: all `23` rows pass, but the short-key rows
+and sentence rows still have limited headroom (`n` `2.770x` / `2.890x`, `ni`
+`2.494x` / `2.666x`, `hao` `1.654x` / `1.731x`, 37-char `2.022x` / `2.094x`,
+59-char `1.567x` / `1.625x`, Track B long row `335.823 us` / `347.975 us`).
+This is guard proof, not a new performance headline; do not summarize it as
+"no measurable performance cost."
 
 Manual standing gate command shape:
 
@@ -239,18 +259,23 @@ Track B is the native TypeDuck/Jyutping profile product path and regression
 guard lane (no librime peer). Current evidence uses historical
 `jyut6ping3_mobile` asset names; it should be read as TypeDuck profile evidence
 and future schema-split work should present that lane as
-`jyut6ping3_typeduck` only after the M58 blast-radius sign-off.
+`jyut6ping3_typeduck` only after explicit sign-off. M58 completed the
+blast-radius audit and did not implement the split.
 It is mode-independent for the poet default (sentence is off in the mobile
-profile). Corrective gate run D:
+profile). Latest M58 final-pass ratchet:
 
 | Dimension | Observed | Ceiling | Status |
 | --- | ---: | ---: | --- |
-| 50+ key-sequence latency | `315.356 us` | `347.975 us` | pass (pre-M55 source baseline `341.139 us`) |
-| key-sequence median working set | `79,953,920 B` | `88,012,390 B` | pass |
-| key-sequence max peak working set | `510,672,896 B` | `562,033,050 B` | pass (deploy/compile transient) |
-| key-sequence median private bytes | `35,733,504 B` | `39,460,045 B` | pass |
-| session create/select/destroy | `35,364.100 us` | `39,289.800 us` | pass (~3x better than the Phase 0-era `99.8 ms` source baseline) |
-| startup warm runtime-ready | `34,732.800 us` | `38,825.050 us` | pass (~3x better than the Phase 0-era `97.4 ms` source baseline) |
+| 50+ key-sequence latency | `335.823 us` | `347.975 us` | pass (pre-M55 source baseline `341.139 us`) |
+| key-sequence median working set | `79,511,552 B` | `88,012,390 B` | pass |
+| key-sequence max peak working set | `510,885,888 B` | `562,033,050 B` | pass (deploy/compile transient) |
+| key-sequence median private bytes | `35,426,304 B` | `39,460,045 B` | pass |
+| session create/select/destroy | `36,098.200 us` | `39,289.800 us` | pass (~3x better than the Phase 0-era `99.8 ms` source baseline) |
+| startup warm runtime-ready | `35,459.000 us` | `38,825.050 us` | pass (~3x better than the Phase 0-era `97.4 ms` source baseline) |
+
+The visualizations below are carried from the 2026-07-04 standing-gate
+dashboard and remain directional; the M58 table above is the current Track B
+ratchet read.
 
 ![Native Track B memory, TypeDuck profile product path](./evidence/dashboard-visuals-2026-07-04/native-track-b-memory.svg)
 

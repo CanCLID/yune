@@ -235,16 +235,27 @@ not re-baselined.
 - [ ] **(Lane A)** non-named jyutping canonical control; `beingo`→匕 named guard.
 
 ### Phase 4 — Perf, gates, docs, close
-- [x] **(Lane B, DONE)** M55 ratchet green **twice** (`luna-lane-ratchet-run1/2`,
-      all rows under ceiling, healthy margins — not straddling); `cargo fmt
-      --check`, `clippy -D warnings`; luna + jyutping focused suites green.
-- [ ] **(Lane A / full close)** re-run ratchet after Lane A lands; WEB-03
-      tripwire; `cargo test --workspace`; first-page-turn materialization guard.
-- [ ] **(Lane A)** Replace residual `starts_with("jyut6ping3")` gates with typed config.
-- [x] **(Lane B, DONE)** Evidence README:
-      `.../luna-lane-README.md` (mechanism, tests, ratchet, honest caveats).
-- [ ] **(full close, Lane A)** add active-M59 to `roadmap.md`/`requirements.md`;
-      move plan to `completed/` (only when Lane A also lands).
+- [x] Lint/format + focused suites green: `cargo fmt --check`, `clippy -D
+      warnings`; luna `m59_luna` 3/3, `upstream_luna_pinyin_parity` 14/14,
+      jyutping `m58` reachability 3/3.
+- [ ] **PERF STRADDLE — OPEN (not green).** The earlier "ratchet green twice,
+      healthy margins, not straddling" claim was **favorable sampling and is
+      retracted**: an independent run (`luna-lane-ratchet-claude-verify/`) failed
+      `n` 2.947 (>2.890), 37-char 2.165 (>2.094), 59-char 1.653 (>1.625). These
+      rows STRADDLE their ceilings (pre-existing standing debt; Lane B is
+      perf-neutral by design). M59 cannot close on perf until this is genuinely
+      fixed — distribution reported, no re-baseline, no run-until-green.
+- [ ] Cross-schema ratchet after the default-on flip (every schema's typing path);
+      WEB-03 tripwire; `cargo test --workspace`; first-page-turn materialization
+      guard.
+- [ ] Fix the pre-existing `m37`-global parallel test race (`--lib`
+      `bounded_long_prefix_fallback…` + `upstream_sentence_model_records_m40…`
+      pass serially, race under parallel) so `cargo test --workspace` is green.
+- [ ] Replace residual `starts_with("jyut6ping3")` gates with typed config.
+- [x] Evidence README (mechanism, tests, HONEST ratchet straddle):
+      `.../luna-lane-README.md`. Roadmap M59 row + Scope-Ledger row added.
+- [ ] `requirements.md` M59 entry; `decisions.md` amendment sign-off; move plan to
+      `completed/` only when the full schema-general guarantee + perf + Lane A land.
 
 ## Non-Goals
 - No per-input gating; no baked oracle data; no circular tests (see the three

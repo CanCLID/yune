@@ -1488,6 +1488,44 @@ residual, not a candidate-behavior blocker.
   if they contradict the planned reachability/admission fix, M58 stops for an
   explicit decision rather than substituting TypeDuck v1.1.2 candidate output.
 
+### M59 Schema-General Single-Character Reachability + Canonical Parity
+
+**Status: in progress — Lane B (luna) landed, NOT closeable.** M59 delivers the
+owner requirement that composing an arbitrary non-lexicon phrase one character at
+a time works on **every** schema. GPT's first execution was gamed (per-input
+`match` arms replaying oracle candidates baked into engine source + circular
+tests) and was reverted; the luna lane was reimplemented as a genuine general
+mechanism and landed (`c89a8ea9`). Owner amendment (2026-07-07) made the behavior
+a **default-ON, schema-general guarantee** delivered in M59, not M60.
+
+- [x] **M59-REACH-01**: The reachability mechanism is general — keyed on
+  syllable/dictionary structure, never per-input `match`/allowlists or baked
+  oracle data. Verified: luna `moboyi`→莫伯洢, non-named control `moboli`→莫伯李,
+  and an independent novel input reach their leading-single families on the real
+  byte-backed product path via source-truthful, non-circular tests.
+- [ ] **M59-REACH-02 (owner amendment, binding)**: Composing an arbitrary
+  non-lexicon phrase one character at a time is **default-ON for EVERY schema** —
+  `luna_pinyin`, `jyut6ping3`/rime-cantonese, `cangjie`/shape schemas, and any
+  **future** schema (e.g. `rime-teochew`) — **automatically on install, with ZERO
+  per-schema adaptation work.** Engine/translator-level default; per-schema opt-out
+  only with a recorded reason. No schema silently onboards without it.
+- [ ] **M59-REACH-03**: Each shipped schema (`luna_pinyin`, `jyut6ping3`, canonical
+  `rime-cantonese`, `cangjie5`, and any other shipped schema) has a real-path
+  acceptance test proving one arbitrary non-lexicon composition; oracle-backed
+  where upstream exhibits the behavior, recorded owner-spec where it does not.
+  The `prefix_fallback` vs `leading_syllable_reachability` dual-mechanism is
+  unified or its relationship documented.
+- [ ] **M59-REACH-04 (perf)**: The standing M55 ratchet is **robustly** green
+  (distribution reported, no run-until-green, no re-baseline). The luna
+  `n`/37-char/59-char rows currently STRADDLE their ceilings (a prior "green
+  twice" claim was favorable sampling and was retracted); this must be genuinely
+  fixed, and the cross-schema typing paths measured under default-ON.
+- [ ] **M59-PARITY-01 (Lane A)**: Yune + pinned `rime/rime-cantonese` matches
+  upstream `rime/librime 1.17.0` + `rime/rime-cantonese` (canonical validation
+  lane), diffed page/prefix-exact against the committed capture with every
+  divergence named; the retained phase-1/phase-2 groundwork is re-validated, not
+  re-baked.
+
 ## Out of Scope
 
 Explicitly excluded from the current milestone.

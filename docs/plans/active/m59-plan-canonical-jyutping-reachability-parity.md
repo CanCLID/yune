@@ -327,6 +327,47 @@ encode the wrong model are re-derived from captures with named justification.
   not regress the oracle slice); `cantonese_parity` exactly the 3 pre-existing fails;
   `yune_web reach` 5/5; `yune-core --lib` 302/0 serial; fmt/clippy(core+api) clean.
   **Ratchet straddle NOT run/claimed — still open, belongs to #8's perf pass.**
+- fable review: **ACCEPTED, zero corrections** — first landing in the M59 arc to pass
+  clean. Independently reproduced (incl. a novel `shijie` exact-hit input); injection
+  capped on the typing path confirmed. Watch item carried forward: this + later fixes
+  add small capped per-keystroke work on the completion class, so **#8 and the straddle
+  must land before any closeout ratchet**, or a mixed regression gets mis-attributed.
+
+**Landed 2026-07-07 (`ba15e725`, pushed) — findings 4+5 (+铣 probe closed):**
+- **#4 done (schema-general).** `selector_next_page_like_librime` pre-completed only
+  under a `jyut6ping3`-schema-string gate, so luna native Page_Down paged the bounded
+  window while the core `change_page_by` (RimeChangePage / yune_web_flip_page, all m59
+  tests) completes-before-paging — two frontends, two orderings. Fix mirrors
+  `change_page_by`: complete-before-forward-page whenever incomplete, no schema branch
+  (deletes the gate helper + redundant `index>=len` re-completion). Behavior-preserving
+  on faithful inputs; biting only on non-faithful high-sentence inputs (verified at the
+  CLI: `eluosi{Page_Down}` now completes to the true sentence-first ordering, matching
+  the web path). **No dedicated synthetic regression test** — a biting one needs the
+  sentence-lattice bounded/complete divergence (disproportionate); covered by the
+  change_page equivalence + CLI evidence + gates. A real-asset cross-path native test
+  (native Page_Down vs RimeChangePage over `eluosi`) is a recommended follow-up.
+- **#5 done.** `recompose_on_default = consumed_input_len > 1` (leading-single path)
+  used the consumed CODE length, so 1-letter pinyin vowel syllables (e→俄, a→阿, o→哦)
+  were marked non-recomposing → DefaultConfirm on 俄 in `eluosi` committed `俄luosi` raw.
+  Fix: recompose when a PROPER prefix is consumed (`consumed_input_len < input.len()`,
+  abbreviation-guarded), independent of code length. **jyutping path (:2437) untouched**
+  (toned codes are ≥2 chars; touching it risks cantonese_parity). New yune-core unit
+  test `leading_single_with_single_letter_code_recomposes_when_remainder_remains` —
+  confirmed it FAILS on the pre-fix predicate (bites).
+- **铣 probe (fable hand-off) → reachable-but-deep, NO bug.** 铣 (U+94E3) is in the dict
+  under `xian`/`xi`, is Basic-CJK (charset filter keeps it), and materialises in the
+  full unbounded xian family at index 398/541 (before is_last_page). fable's "absent
+  after ~405" was a horizon artifact. The only residue is ranking depth (polyphones sit
+  after ~380 sentence rows) — an ordering/UX question, not a reachability defect.
+- **Filed (do NOT fix in-series):** digit-select / `direct_commit`-editor recompose
+  semantics. ExplicitSelection already recomposes unconditionally (no bug); the open
+  question is whether DefaultConfirm should consult `recompose_on_default` at all or
+  adopt ExplicitSelection's unconditional behavior (retiring the flag). Needs a librime
+  oracle capture for digit-select + a `direct_commit` schema on a 1-char-code single.
+- Gates: unit test 1/1 (bites); `upstream_luna_pinyin_parity` 14/14; `cantonese_parity`
+  exactly the 3 pre-existing fails; `yune_web m59` 4/4 + `reach` 5/5; `yune-core --lib`
+  302/0; `yune-rime-api --lib` 325/0; fmt/clippy(core+api) clean. **Ratchet straddle
+  still OPEN — not run/claimed.**
 
 **Secondary (in the series, below the cap):** returning-user unbounded lane (add a
 named benchmark row); complete-path injection lacks `!has_correction_lookup`;

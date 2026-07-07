@@ -76,6 +76,7 @@ speller:
 
 translator:
   dictionary: luna_pinyin
+  leading_syllable_reachability: true
   preedit_format:
     - xform/([nl])v/$1ü/
     - xform/([nl])ue/$1üe/

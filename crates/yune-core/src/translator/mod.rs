@@ -491,6 +491,12 @@ pub struct StaticTableTranslator {
     prediction_never_first: bool,
     prediction_candidate_limit: Option<usize>,
     prefix_fallback: bool,
+    // Complete-list leading-syllable single-character reachability (M59), a
+    // narrow capability distinct from the broad TypeDuck `prefix_fallback`:
+    // it exposes the leading syllable's single-char family on the page-turn/
+    // complete path (and only *signals* its existence on the bounded typing
+    // path, without materializing or reordering page 1).
+    leading_syllable_reachability: bool,
     sentence_word_penalty: f32,
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
@@ -551,6 +557,7 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
+            leading_syllable_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
@@ -612,6 +619,7 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
+            leading_syllable_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -663,6 +671,7 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
+            leading_syllable_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -727,6 +736,7 @@ impl StaticTableTranslator {
             prediction_never_first: false,
             prediction_candidate_limit: None,
             prefix_fallback: false,
+            leading_syllable_reachability: false,
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -864,6 +874,15 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_prefix_fallback(mut self, prefix_fallback: bool) -> Self {
         self.prefix_fallback = prefix_fallback;
+        self
+    }
+
+    #[must_use]
+    pub fn with_leading_syllable_reachability(
+        mut self,
+        leading_syllable_reachability: bool,
+    ) -> Self {
+        self.leading_syllable_reachability = leading_syllable_reachability;
         self
     }
 
@@ -1702,6 +1721,13 @@ impl StaticTableTranslator {
             limit,
             include_full_count,
         } = request;
+        // NOTE: `leading_syllable_reachability` deliberately does NOT widen
+        // `ordered_mode` here — that would disable luna's bounded early-stop
+        // (`can_stop_after_window`) and cost typing latency. Ordering for the
+        // leading-single injection is preserved locally: the bounded
+        // sentence-splice path re-assigns ordered qualities after its splice, and
+        // the complete/page-turn path gates on `leading_syllable_reachability`
+        // for its own quality assignment.
         let ordered_mode = self.prediction_candidate_limit.is_some() || self.prefix_fallback;
         let record_short_key = self.uses_m44_short_key_metrics(lookup_code);
         let record_track_b = self.uses_m44_track_b_metrics();
@@ -1884,6 +1910,26 @@ impl StaticTableTranslator {
                         );
                         prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
                         candidates.extend(prefix_candidates);
+                    } else if self.leading_syllable_reachability && !has_correction_lookup {
+                        // Keep phrase candidates in place; append only a bounded
+                        // slice of the leading-syllable family after them — enough
+                        // to fill the page and signal the rest is reachable by
+                        // paging. The fetch is capped (no full materialization on
+                        // the typing path); the full family comes on the page-turn.
+                        let insert_at = leading_single_insert_index(&candidates);
+                        let want = limit.saturating_sub(insert_at).saturating_add(1);
+                        let leading_singles = self.leading_single_syllable_prefix_candidates(
+                            input,
+                            lookup_code,
+                            filter_by_charset,
+                            &candidates[..insert_at],
+                            Some(want),
+                        );
+                        candidates.splice(insert_at..insert_at, leading_singles);
+                        // Preserve phrase-before-single order through the engine's
+                        // global quality sort (the bounded sentence return does not
+                        // otherwise assign ordered qualities).
+                        Self::assign_ordered_candidate_qualities(&mut candidates);
                     }
                     candidates.truncate(limit);
                     let result_full_count = if candidates.len() >= limit {
@@ -1920,6 +1966,26 @@ impl StaticTableTranslator {
                         );
                         prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
                         candidates.extend(prefix_candidates);
+                    } else if self.leading_syllable_reachability && !has_correction_lookup {
+                        // Keep phrase candidates in place; append only a bounded
+                        // slice of the leading-syllable family after them — enough
+                        // to fill the page and signal the rest is reachable by
+                        // paging. The fetch is capped (no full materialization on
+                        // the typing path); the full family comes on the page-turn.
+                        let insert_at = leading_single_insert_index(&candidates);
+                        let want = limit.saturating_sub(insert_at).saturating_add(1);
+                        let leading_singles = self.leading_single_syllable_prefix_candidates(
+                            input,
+                            lookup_code,
+                            filter_by_charset,
+                            &candidates[..insert_at],
+                            Some(want),
+                        );
+                        candidates.splice(insert_at..insert_at, leading_singles);
+                        // Preserve phrase-before-single order through the engine's
+                        // global quality sort (the bounded sentence return does not
+                        // otherwise assign ordered qualities).
+                        Self::assign_ordered_candidate_qualities(&mut candidates);
                     }
                     candidates.truncate(limit);
                     let result_full_count = if candidates.len() >= abbreviation_limit {
@@ -2405,6 +2471,9 @@ impl StaticTableTranslator {
         lookup_code: &str,
         filter_by_charset: bool,
         existing_candidates: &[Candidate],
+        // `Some(n)` caps materialization to `n` rows via lazy early-stop (bounded
+        // typing path). `None` materializes the full family (page-turn/complete).
+        fetch_limit: Option<usize>,
     ) -> Vec<Candidate> {
         let mut seen_texts = existing_candidates
             .iter()
@@ -2428,7 +2497,21 @@ impl StaticTableTranslator {
                         .exact_candidates(fetch_code.as_str())
                         .filter(|candidate| {
                             candidate.text().chars().count() == 1
-                                && source_code_syllable_count(candidate.raw_comment()) == Some(1)
+                                && {
+                                    // Toned codes (jyutping `bei2`) count syllables
+                                    // by tone digit. Untoned codes (luna `mo`) have
+                                    // none — accept those ONLY for the untoned
+                                    // leading-syllable-reachability lane, so this
+                                    // does not broaden toned prefix-fallback schemas
+                                    // (the fetch code is already a single leading
+                                    // syllable, so a single-char entry is one
+                                    // syllable by construction).
+                                    let syllables =
+                                        source_code_syllable_count(candidate.raw_comment());
+                                    syllables == Some(1)
+                                        || (self.leading_syllable_reachability
+                                            && syllables.is_none())
+                                }
                                 && self.is_dictionary_text_allowed(candidate.text())
                                 && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
                         })
@@ -2462,6 +2545,12 @@ impl StaticTableTranslator {
                         recompose_on_default: consumed_input_len > 1,
                     };
                     candidates.push(materialized);
+                    if fetch_limit.is_some_and(|cap| candidates.len() >= cap) {
+                        break;
+                    }
+                }
+                if fetch_limit.is_some_and(|cap| candidates.len() >= cap) {
+                    break;
                 }
             }
             if !candidates.is_empty() {
@@ -2680,17 +2769,23 @@ impl StaticTableTranslator {
                 candidates.splice(insert_at..insert_at, prefix_candidates);
             }
         }
-        if self.prefix_fallback && prefix_fallback_limit.is_none() {
+        if (self.prefix_fallback || self.leading_syllable_reachability)
+            && prefix_fallback_limit.is_none()
+        {
             let insert_at = leading_single_insert_index(&candidates);
             let leading_singles = self.leading_single_syllable_prefix_candidates(
                 input,
                 lookup_code,
                 filter_by_charset,
                 &candidates,
+                None,
             );
             candidates.splice(insert_at..insert_at, leading_singles);
         }
-        if self.prefix_fallback || self.prediction_candidate_limit.is_some() {
+        if self.prefix_fallback
+            || self.prediction_candidate_limit.is_some()
+            || self.leading_syllable_reachability
+        {
             Self::assign_ordered_candidate_qualities(&mut candidates);
         }
 

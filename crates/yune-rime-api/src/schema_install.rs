@@ -337,6 +337,15 @@ fn install_schema_dictionary_translator_from_config(
             })
             .and_then(config_scalar_bool)
             .unwrap_or(is_typeduck_jyut6ping3_profile);
+    // M59: narrow complete-list leading-syllable single reachability, distinct
+    // from the broad TypeDuck `prefix_fallback`. Enabled by schema config only
+    // (no input allowlist, no baked data).
+    let leading_syllable_reachability = find_config_value(
+        schema_config,
+        &format!("{name_space}/leading_syllable_reachability"),
+    )
+    .and_then(config_scalar_bool)
+    .unwrap_or(false);
     let delimiters = find_config_value(schema_config, &format!("{name_space}/delimiter"))
         .or_else(|| find_config_value(schema_config, "speller/delimiter"))
         .and_then(config_scalar_string)
@@ -455,7 +464,8 @@ fn install_schema_dictionary_translator_from_config(
     .with_affix(prefix, suffix)
     .with_show_full_code(show_full_code)
     .with_prediction_never_first(prediction_never_first)
-    .with_prefix_fallback(prefix_fallback);
+    .with_prefix_fallback(prefix_fallback)
+    .with_leading_syllable_reachability(leading_syllable_reachability);
     {
         let _trace = startup_trace::span("spelling_algebra_expand");
         translator = translator.with_spelling_algebra(&spelling_algebra);

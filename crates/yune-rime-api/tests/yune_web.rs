@@ -3161,6 +3161,225 @@ fn m58_yune_web_page_down_key_reaches_prefix_candidate_for_long_reported_input()
     runtime.remove();
 }
 
+/// Page forward (bounded) on the real byte-backed product path until `target`
+/// appears, returning `(page, index)`. This proves reachability by paging — it
+/// is not an allowlist and does not depend on the input string.
+fn m59_luna_page_to_target(
+    state: *mut yune_rime_api::YuneWebState,
+    mut page: Value,
+    target: &str,
+    label: &str,
+) -> (Value, usize) {
+    for _turn in 0..64usize {
+        let candidates = page["context"]["candidates"]
+            .as_array()
+            .expect("candidate page should be an array");
+        if let Some(index) = candidates
+            .iter()
+            .position(|candidate| candidate["text"].as_str() == Some(target))
+        {
+            return (page, index);
+        }
+        let next = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+        if next["handled"] != Value::Bool(true) {
+            break;
+        }
+        page = next;
+    }
+    let last: Vec<&str> = page["context"]["candidates"]
+        .as_array()
+        .map(|array| {
+            array
+                .iter()
+                .filter_map(|candidate| candidate["text"].as_str())
+                .collect()
+        })
+        .unwrap_or_default();
+    panic!("{label}: target {target} not reachable by paging; last page was {last:?}");
+}
+
+/// Stage the shipped, **tracked** `apps/yune-web/public/schema` luna_pinyin
+/// sources (which carry `translator/leading_syllable_reachability: true`) and
+/// deploy them byte-backed. Source-truthful — no dependency on the git-ignored
+/// `public-demo/dist` build artifact, so it reproduces in a clean checkout/CI.
+fn stage_and_deploy_tracked_luna(runtime: &YuneWebRuntime) {
+    let schema_root = browser_app_schema_root();
+    copy_clean_schema_sources(&schema_root, &runtime.shared);
+    // `copy_clean_schema_sources` skips `build/`; preload the deployed
+    // scaffolding init needs, from the same tracked source dir.
+    let staging = runtime.user.join("build");
+    for file_name in ["default.yaml", "jyut6ping3_mobile.schema.yaml"] {
+        fs::copy(
+            schema_root.join("build").join(file_name),
+            staging.join(file_name),
+        )
+        .expect("tracked build preload should be copied");
+    }
+    // `copy_clean_schema_sources` skips `.bin`; stage the tracked prebuilt
+    // byte-backed prism/table so init mmaps them (Compact) instead of loading the
+    // source dict into owned heap — the M59 mechanism must be proven on the
+    // byte-backed product storage.
+    for file_name in [
+        "luna_pinyin.table.bin",
+        "luna_pinyin.reverse.bin",
+        "luna_pinyin.prism.bin",
+    ] {
+        fs::copy(schema_root.join(file_name), runtime.shared.join(file_name))
+            .expect("tracked byte-backed asset should be copied");
+    }
+    deploy_public_demo_schema(runtime, "luna_pinyin");
+}
+
+/// Drives the owner's named case: type the whole input, then compose an
+/// arbitrary phrase from leading single characters one at a time. Asserts the
+/// real byte-backed product path reaches each single by paging, commits it, and
+/// recomposes the remainder (M28) down to the final commit.
+fn m59_luna_compose_from_leading_singles(
+    label: &str,
+    input: &str,
+    steps: &[(&str, &str)],
+    expected_final: &str,
+) {
+    let _guard = test_guard();
+    let runtime = YuneWebRuntime::create_with_schema(label, "luna_pinyin");
+    stage_and_deploy_tracked_luna(&runtime);
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(
+        !state.is_null(),
+        "luna_pinyin should init on byte-backed assets"
+    );
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    let mut page = process_input(state, input);
+    assert_schema_storage_byte_backed("luna_pinyin", &page["context"]["debug"]["storage"]);
+    let mut committed = String::new();
+    for (target, expected_remainder) in steps {
+        let (found_page, index) = m59_luna_page_to_target(state, page, target, label);
+        let _ = found_page;
+        let selected = response_json(unsafe { yune_web_select_candidate(state, index) });
+        assert_eq!(
+            selected["commits"],
+            Value::Array(vec![Value::String((*target).to_owned())]),
+            "{label}: selecting {target} should commit exactly it"
+        );
+        committed.push_str(target);
+        if expected_remainder.is_empty() {
+            assert_eq!(
+                selected["status"]["is_composing"],
+                Value::Bool(false),
+                "{label}: final selection should end composition"
+            );
+        } else {
+            assert_eq!(
+                selected["context"]["input"],
+                Value::String((*expected_remainder).to_owned()),
+                "{label}: remainder should recompose to {expected_remainder}"
+            );
+        }
+        page = selected;
+    }
+    // Accumulated final-output guard (catches recomposition/commit drift that
+    // per-step checks could miss).
+    assert_eq!(
+        committed, expected_final,
+        "{label}: composed output should equal {expected_final}"
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product() {
+    // Owner acceptance case: moboyi -> 莫伯洢 (mo bo yi), one single at a time.
+    m59_luna_compose_from_leading_singles(
+        "m59-luna-moboyi",
+        "moboyi",
+        &[
+            ("\u{83ab}", "boyi"), // 莫 -> remainder boyi
+            ("\u{4f2f}", "yi"),   // 伯 -> remainder yi
+            ("\u{6d22}", ""),     // 洢 -> commit 莫伯洢
+        ],
+        "\u{83ab}\u{4f2f}\u{6d22}", // 莫伯洢
+    );
+}
+
+#[test]
+fn m59_luna_moboli_control_composes_mo_bo_li_on_byte_backed_product() {
+    // Anti-gaming control: an input in no allowlist and no baked data. moboli ->
+    // 莫伯李 (mo bo li). Proves the mechanism generalizes, not memorizes.
+    m59_luna_compose_from_leading_singles(
+        "m59-luna-moboli",
+        "moboli",
+        &[
+            ("\u{83ab}", "boli"), // 莫 -> remainder boli
+            ("\u{4f2f}", "li"),   // 伯 -> remainder li
+            ("\u{674e}", ""),     // 李 -> commit 莫伯李
+        ],
+        "\u{83ab}\u{4f2f}\u{674e}", // 莫伯李
+    );
+}
+
+#[test]
+fn m59_luna_moboyi_keeps_phrases_on_first_page_without_promoting_singles() {
+    // Phrase-before-single ordering: page 1 keeps the sentence/phrase
+    // candidates; the leading single 莫 is reachable by paging, NOT promoted
+    // onto page 1 (owner-explicit: no promotion beyond oracle order).
+    let _guard = test_guard();
+    let runtime = YuneWebRuntime::create_with_schema("m59-luna-moboyi-order", "luna_pinyin");
+    stage_and_deploy_tracked_luna(&runtime);
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(
+        !state.is_null(),
+        "luna_pinyin should init on byte-backed assets"
+    );
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    let page = process_input(state, "moboyi");
+    let page1: Vec<&str> = page["context"]["candidates"]
+        .as_array()
+        .expect("candidate page should be an array")
+        .iter()
+        .filter_map(|candidate| candidate["text"].as_str())
+        .collect();
+    assert!(
+        page1.iter().any(|text| text.chars().count() > 1),
+        "page 1 must keep multi-character phrase candidates; page1={page1:?}"
+    );
+    assert!(
+        !page1.contains(&"\u{83ab}"),
+        "leading single 莫 must not be promoted onto page 1; page1={page1:?}"
+    );
+    assert_eq!(
+        page["context"]["is_last_page"],
+        Value::Bool(false),
+        "the leading-syllable family must be reachable by paging (is_last_page must be false)"
+    );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
 #[test]
 fn yune_web_adapter_browser_app_assets_enrich_visible_lookup_candidates() {
     let _guard = test_guard();

@@ -1,5 +1,14 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
+> **PROGRESS (2026-07-07): Lane B (upstream Luna general reachability) LANDED.**
+> `moboyi`→`莫伯洢` and control `moboli`→`莫伯李` on the real byte-backed product
+> path, source-truthful non-circular tests, phrase-before-single ordering, no
+> regressions, M55 ratchet green **twice**. Evidence:
+> `docs/reports/evidence/m59-canonical-jyutping-reachability-parity/luna-lane-README.md`.
+> **Remaining: Lane A (canonical rime-cantonese parity)** — a separate,
+> larger validation-lane effort (the retained phase-1/phase-2 groundwork shows
+> real ordering divergences, e.g. Yune `bei` = 碑 悲 卑 vs oracle 畀 比 被).
+
 > **For agentic workers:** this plan was RESET on 2026-07-06 after the prior
 > execution was found to be gamed and reverted, then re-scoped per owner
 > sign-off. Execute one phase at a time; verify every acceptance row against the
@@ -134,7 +143,8 @@ not re-baselined.
       artifact as retained-valid / REJECTED-gamed / measured-not-robustly-green.
       Corrected the run8/9 facts (`phase-0-restored-run8/9` exist and pass; the
       revert deleted `phase-4-final-run8/9`) and the understated failures (runs
-      2,3,4,7 failed = run-until-green on code == current `main`).
+      2,3,4,7 failed = run-until-green on code == current `main`; full dir names
+      are `phase-0-restored-ratchet-run{1..9}`).
 
 ### Phase 1 — Re-validate the retained lanes + captures (do not redo blindly)
 - [ ] **Lane A (largely retained in `5d3dba2a`):** re-validate the staged

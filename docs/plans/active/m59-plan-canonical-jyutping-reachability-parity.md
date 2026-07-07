@@ -11,8 +11,11 @@
 >    input allowlists). Mechanisms key on syllable/dictionary structure only.
 > 3. **No circular tests** — never build the engine dictionary *from* a capture
 >    and assert output *against* that capture. Load real schema data; assert the
->    real path against externally-captured bytes; every lane has a **control
->    input** that appears in no capture and no code path by name.
+>    real path against externally-captured bytes. Every lane has a **control
+>    input** that appears in **no implementation allowlist and no baked engine
+>    data**, but **is** in the external oracle capture (its expected bytes come
+>    from the oracle, like any other row) — it proves the mechanism generalizes
+>    rather than memorizes.
 
 ## Status
 
@@ -45,8 +48,11 @@
   **re-validate, don't redo** — and the missing piece is the *real* fix (Yune's
   rime-cantonese candidate order/reachability differs from the oracle and must be
   made to match by mechanism, not by baking).
-- Post-revert ratchet status is **unmeasured** (the surviving numbers included
-  the now-removed reachability overhead) — re-measure in Phase 4.
+- Post-revert ratchet is **measured but not robustly green**: current `main`
+  code == `5d3dba2a`, so the 9 retained `phase-0-restored` runs measure current
+  code — **5 pass, 4 fail** (runs 2/3/4/7; 37/59-char + Track B rows straddle
+  ceilings). The straddle is not reachability overhead (that came later). Phase 4
+  must make these robustly green on fresh runs.
 
 ## Owner requirement
 
@@ -66,10 +72,15 @@ Plus (2026-07-05): *yune + rime-cantonese must match librime + rime-cantonese
   production path**, and its paged output is diffed against the committed
   `librime 1.17.0 + rime-cantonese` capture. The rime-cantonese dictionary is
   **data loaded at runtime**, never embedded in engine source.
-- Acceptance = ordered-subsequence match of the oracle's candidate list for each
-  captured input, including full leading-syllable reachability (e.g. `bei`'s 139
-  singles; 匕 reachable; `zijiguk`→諮), **plus a control jyutping input** not in
-  the capture-as-fixture, proving generality.
+- Acceptance for **parity** = **page/prefix-exact candidate text AND order
+  through the captured range** — NOT a mere ordered-subsequence (that would let
+  Yune inject extra candidates before/between the oracle's, which violates
+  canonical ordering parity). Any Yune extra/missing/reordered candidate is a
+  **named, classified divergence** in the diff, never silently allowed.
+  Reachability is the subset guarantee inside that exact range (the full
+  leading-syllable family — `bei`'s 139 singles, 匕, `zijiguk`→諮 — reachable by
+  paging). **Plus a control jyutping input** (present in the oracle capture, in
+  no implementation allowlist) proving generality.
 
 ### Lane B — Upstream Luna reachability (Yune `luna_pinyin` ↔ librime + rime-luna-pinyin)
 - General single-char leading-syllable reachability on the product `luna_pinyin`
@@ -119,11 +130,11 @@ not re-baselined.
 ### Phase 0 — Baseline + evidence ledger
 - [x] Revert the gamed execution; restore honest `main` (`c70774ce`/`7d5ec9b8`, pushed).
 - [x] Confirm luna gap reproduces; jyutping reachability intact.
-- [ ] **Evidence ledger (High-2):** rewrite `m59-…/README.md` to classify every
-      surviving artifact as (a) valid pre-fix baseline, (b) REJECTED/gamed, or
-      (c) TODO closeout. Correct the false "run8/9 passed" claim (those dirs were
-      reverted) and the understated ratchet failures (runs 2,3,4,7 failed, not
-      just 7). Note post-revert ratchet is unmeasured.
+- [x] **Evidence ledger (High-2):** rewrote `m59-…/README.md` to classify every
+      artifact as retained-valid / REJECTED-gamed / measured-not-robustly-green.
+      Corrected the run8/9 facts (`phase-0-restored-run8/9` exist and pass; the
+      revert deleted `phase-4-final-run8/9`) and the understated failures (runs
+      2,3,4,7 failed = run-until-green on code == current `main`).
 
 ### Phase 1 — Re-validate the retained lanes + captures (do not redo blindly)
 - [ ] **Lane A (largely retained in `5d3dba2a`):** re-validate the staged

@@ -35,18 +35,21 @@ regression guard, not an acceptance oracle.
   replayed oracle candidates baked into `m59_canonical_jyutping.tsv` behind
   per-input `match` arms with circular tests.
 
-### NOISY / MISLEADING — Phase 0 ratchet runs (correcting the prior README)
+### MEASURED BUT NOT ROBUSTLY GREEN — Phase 0 ratchet runs
 - `phase-0-baseline-ratchet-run1/` — real: reproduced the red ratchet after
   `c4336cd9` (`ni`/`hao` etc.). Keep as baseline.
-- `phase-0-restored-ratchet-run1..9/` — the perf fix's ratchet attempts. The
-  prior README claimed "run8/run9 passed" and called only run7 a failed noisy
-  rerun. **Both corrections:** run8/9 were **deleted by the revert** (do not
-  cite), and **runs 2, 3, 4, and 7 all failed** (37/59-char and Track B rows
-  straddling ceilings), not just run7 — i.e. run-until-green. This is not
-  acceptable acceptance evidence.
-- **Post-revert ratchet is UNMEASURED.** The surviving numbers included the
-  now-reverted reachability overhead; current `main` must be re-benchmarked in
-  Phase 4 and must be *robustly* green under the standing ceilings.
+- `phase-0-restored-ratchet-run1..9/` — **all nine exist and are tracked.**
+  Current `main` code is **identical to `5d3dba2a`** (the revert removed only
+  `77a9540a`'s code), so these runs **do** measure current code. Result:
+  **5 pass (runs 1, 5, 6, 8, 9), 4 fail (runs 2, 3, 4, 7)** — the 37/59-char and
+  Track B rows straddle their ceilings. So current `main` is *measured but not
+  robustly green* (run-until-green), which is not acceptable acceptance
+  evidence; and the straddle is **not** reachability overhead (reachability was
+  added later, in the reverted `77a9540a`). Phase 4 must make these rows robustly
+  green on fresh runs under the standing ceilings.
+- What the revert **deleted** was `phase-4-final-ratchet-run8/9` (the gamed
+  Phase 4 closeout) — **not** the `phase-0-restored` runs. (This corrects this
+  README's own earlier draft, which conflated the two.)
 
 ## Capture commands (for reproduction; provenance to be re-pinned in Phase 1)
 Lane A: `scripts/capture-upstream-rime-cantonese.ps1 … -Inputs bei,beingo,zijiguk,<control> …`

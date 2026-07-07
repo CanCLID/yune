@@ -79,6 +79,14 @@ Plus (2026-07-05): *yune + rime-cantonese must match librime + rime-cantonese
 
 ### Owner amendment (2026-07-07) — schema-general BY DEFAULT, in M59
 
+> **THE GUARANTEE (no ambiguity):** composing an arbitrary non-lexicon phrase one
+> character at a time works on **EVERY** schema — `luna_pinyin`, `jyut6ping3`/
+> rime-cantonese, **cangjie/shape schemas**, and **any future schema (e.g.
+> `rime-teochew`)** — **automatically on install, with ZERO per-schema adaptation
+> work.** It is a default-ON engine-level guarantee, delivered **IN M59**. A schema
+> is never allowed to silently onboard without it. Per-schema opt-out is possible
+> only as an explicit, reasoned exception, never the norm.
+
 Verbatim owner statement:
 
 > I care about any schema letting me compose arbitrary non-lexicon phrases, not

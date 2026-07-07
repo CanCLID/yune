@@ -2171,6 +2171,45 @@ impl StaticTableTranslator {
         if ordered_mode {
             Self::assign_ordered_candidate_qualities(&mut candidates);
         }
+        // M59 finding #1 (corrective): leading-syllable reachability must make
+        // the leading-single family reachable on THIS (non-empty-`selected`)
+        // bounded arm. Completion/exact-hit inputs (e.g. `zhongguo`, `zhonggao`)
+        // skip the empty-`selected` sentence arm, so signalling alone leaves the
+        // boundary single (中 at the first tail slot) unreachable: the bounded
+        // page renders short (only the phrase completions), then when the
+        // page-turn materialises the full list the boundary single lands at the
+        // page-0 tail slot the highlight has already advanced past — silently
+        // skipped (the pre-M59 dead-end). Inject a bounded slice of the family
+        // AFTER the phrases so the bounded page is a prefix of the unbounded
+        // list (page-0 tail = the leading single, page-turn is contiguous), and
+        // under-advertise completeness so the remaining family pages in. The
+        // fetch is capped (no full materialisation on the typing path); the full
+        // family is materialised only on the unbounded/page-turn path (:2804).
+        if self.leading_syllable_reachability && !has_correction_lookup && !prefix_fallback_applies
+        {
+            let insert_at = leading_single_insert_index(&candidates);
+            let want = limit.saturating_sub(insert_at).saturating_add(1);
+            let leading_singles = self.leading_single_syllable_prefix_candidates(
+                input,
+                lookup_code,
+                filter_by_charset,
+                &candidates,
+                Some(want),
+            );
+            if !leading_singles.is_empty() {
+                let overflows_page = candidates.len().saturating_add(leading_singles.len()) > limit;
+                candidates.splice(insert_at..insert_at, leading_singles);
+                Self::assign_ordered_candidate_qualities(&mut candidates);
+                if candidates.len() > limit {
+                    candidates.truncate(limit);
+                }
+                if overflows_page {
+                    full_count = full_count.max(candidates.len().saturating_add(1));
+                } else {
+                    full_count = full_count.max(candidates.len());
+                }
+            }
+        }
         if let Some(start) = materialize_start {
             if record_short_key {
                 crate::m37_record_short_key_first_page_materialize(start.elapsed());
@@ -2479,16 +2518,20 @@ impl StaticTableTranslator {
             .iter()
             .map(|candidate| candidate.text.clone())
             .collect::<HashSet<_>>();
-        let mut best_candidates = Vec::new();
-        for end in lookup_code
+        // M59 finding #3: walk leading-syllable prefixes LONGEST-FIRST and stop at
+        // the first non-empty family. The old short->long walk kept only the last
+        // (longest) family but let `seen_texts` accumulate across the DISCARDED
+        // shorter-prefix families, so a character reachable under a shorter
+        // abbreviation prefix (e.g. 中 under `z`/`zh`) was marked seen and then
+        // suppressed from the kept `zhong` family — unreachable at any page.
+        // Longest-first + stop also drops the discarded fetch work.
+        let mut prefix_ends: Vec<usize> = lookup_code
             .char_indices()
             .map(|(index, _)| index)
-            .filter(|index| *index > 0)
-            .chain(std::iter::once(lookup_code.len()))
-        {
-            if end >= lookup_code.len() {
-                break;
-            }
+            .filter(|index| *index > 0 && *index < lookup_code.len())
+            .collect();
+        prefix_ends.sort_unstable_by(|left, right| right.cmp(left));
+        for end in prefix_ends {
             let prefix = &lookup_code[..end];
             let mut candidates = Vec::new();
             for fetch_code in self.leading_syllable_fetch_codes(prefix) {
@@ -2554,10 +2597,10 @@ impl StaticTableTranslator {
                 }
             }
             if !candidates.is_empty() {
-                best_candidates = candidates;
+                return candidates;
             }
         }
-        best_candidates
+        Vec::new()
     }
 
     fn leading_syllable_fetch_codes(&self, prefix: &str) -> Vec<String> {

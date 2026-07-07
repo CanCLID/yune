@@ -3331,10 +3331,22 @@ fn m59_luna_moboli_control_composes_mo_bo_li_on_byte_backed_product() {
 }
 
 #[test]
-fn m59_luna_moboyi_keeps_phrases_on_first_page_without_promoting_singles() {
-    // Phrase-before-single ordering: page 1 keeps the sentence/phrase
-    // candidates; the leading single 莫 is reachable by paging, NOT promoted
-    // onto page 1 (owner-explicit: no promotion beyond oracle order).
+fn m59_luna_moboyi_leading_singles_reachable_after_phrases() {
+    // Re-derived per M59 finding #2. The prior test
+    // (`…keeps_phrases_on_first_page_without_promoting_singles`) pinned
+    // oracle-DIVERGENT ordering: it asserted 莫 was ABSENT from page 1, but the
+    // committed capture puts moboyi page 1 = 莫博弈 麼波 莫 摸 魔 — 莫 is ON page 1
+    // at index 2 (the oracle INTERLEAVES phrases and singles). Expected values
+    // come from the oracle, never from Yune (conventions §7).
+    //
+    // This asserts the oracle-consistent, Yune-satisfiable property — phrase/word
+    // candidates precede the leading single 莫, and 莫 is reachable by paging —
+    // WITHOUT re-pinning the wrong "莫 not on page 1".
+    //
+    // RECORDED DIVERGENCE (not asserted as required behavior): Yune's sentence
+    // scorer emits different page-1 phrases (脈搏一…) than the oracle's (莫博弈…),
+    // so Yune's 莫 currently lands later than the oracle's index 2. Exact page-1
+    // order parity is deferred to the sentence-scoring work, not asserted here.
     let _guard = test_guard();
     let runtime = YuneWebRuntime::create_with_schema("m59-luna-moboyi-order", "luna_pinyin");
     stage_and_deploy_tracked_luna(&runtime);
@@ -3355,25 +3367,94 @@ fn m59_luna_moboyi_keeps_phrases_on_first_page_without_promoting_singles() {
         TRUE
     );
 
-    let page = process_input(state, "moboyi");
-    let page1: Vec<&str> = page["context"]["candidates"]
-        .as_array()
-        .expect("candidate page should be an array")
-        .iter()
-        .filter_map(|candidate| candidate["text"].as_str())
-        .collect();
+    // Page until 莫 appears; a multi-char phrase candidate must have appeared
+    // before it (phrases-before-singles, oracle-derived: 莫博弈 麼波 … 莫).
+    let mut page = process_input(state, "moboyi");
+    let mut saw_phrase_before_mo = false;
+    let mut reached_mo = false;
+    for _turn in 0..64usize {
+        let cands: Vec<&str> = page["context"]["candidates"]
+            .as_array()
+            .expect("candidate page should be an array")
+            .iter()
+            .filter_map(|candidate| candidate["text"].as_str())
+            .collect();
+        for text in &cands {
+            if *text == "\u{83ab}" {
+                reached_mo = true;
+                break;
+            }
+            if text.chars().count() > 1 {
+                saw_phrase_before_mo = true;
+            }
+        }
+        if reached_mo {
+            break;
+        }
+        let next = response_json(unsafe { yune_web_flip_page(state, FALSE) });
+        if next["handled"] != Value::Bool(true) {
+            break;
+        }
+        page = next;
+    }
     assert!(
-        page1.iter().any(|text| text.chars().count() > 1),
-        "page 1 must keep multi-character phrase candidates; page1={page1:?}"
+        reached_mo,
+        "leading single 莫 must be reachable by paging for moboyi"
     );
     assert!(
-        !page1.contains(&"\u{83ab}"),
-        "leading single 莫 must not be promoted onto page 1; page1={page1:?}"
+        saw_phrase_before_mo,
+        "phrase/word candidates must precede the leading single 莫 (oracle order: 莫博弈 麼波 … 莫)"
     );
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
+fn m59_luna_zhongguo_completion_class_reaches_leading_singles() {
+    // M59 finding #1 (corrective): completion/exact-hit inputs populate `selected`
+    // and skip the empty-`selected` sentence arm. Before the fix, `zhongguo`
+    // returned its completion rows as a COMPLETE page and the 中 (zhong) family was
+    // unreachable at any page — the pre-M59 dead-end for that whole input class.
+    // 中 is dictionary-backed (中 / zhong), so it must be reachable by paging and
+    // selectable, recomposing the remainder `guo`.
+    let _guard = test_guard();
+    let runtime = YuneWebRuntime::create_with_schema("m59-luna-zhongguo-reach", "luna_pinyin");
+    stage_and_deploy_tracked_luna(&runtime);
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(
+        !state.is_null(),
+        "luna_pinyin should init on byte-backed assets"
+    );
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    let page = process_input(state, "zhongguo");
     assert_eq!(
         page["context"]["is_last_page"],
         Value::Bool(false),
-        "the leading-syllable family must be reachable by paging (is_last_page must be false)"
+        "completion-class input zhongguo must page (not report a complete first page)"
+    );
+    let (_page, index) = m59_luna_page_to_target(state, page, "\u{4e2d}", "zhongguo->中");
+    let selected = response_json(unsafe { yune_web_select_candidate(state, index) });
+    assert_eq!(
+        selected["commits"],
+        Value::Array(vec![Value::String("\u{4e2d}".to_owned())]),
+        "selecting 中 should commit exactly it"
+    );
+    assert_eq!(
+        selected["context"]["input"],
+        Value::String("guo".to_owned()),
+        "selecting 中 should recompose the remainder to guo"
     );
 
     unsafe { yune_web_cleanup(state) };

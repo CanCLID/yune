@@ -257,6 +257,74 @@ not re-baselined.
 - [ ] `requirements.md` M59 entry; `decisions.md` amendment sign-off; move plan to
       `completed/` only when the full schema-general guarantee + perf + Lane A land.
 
+## Phase 5 — Lane B corrective series (fable verified review, 2026-07-07)
+
+Verdict from an 8-angle + 4-verifier review of `c89a8ea9`, all reproduced on the
+shipped product: **the mechanism is genuine (not gamed) but landed Lane B does NOT
+yet deliver the owner requirement even for luna.** Build the corrective series
+against this list, in the sequence below. Landed-Lane-B fixes are live on `main`
+and come first; flip preconditions gate the default-ON commit; existing tests that
+encode the wrong model are re-derived from captures with named justification.
+
+**Findings (verified, ranked):**
+1. **[milestone-breaking] Reachability hole.** Injection + more-exists signal exist
+   only in the empty-`selected` sentence/abbreviation arms (`translator/mod.rs:1913`,
+   `:1969`) and the unbounded complete path (`:2772`). Inputs with exact/completion
+   hits report `is_complete=true` from the bounded path and never expand (`zhonggao`
+   → 1 cand, `is_last_page:true`; `zhongguo` completions suppress even the sentence
+   arm). Fix: the more-exists signal + injection must cover **all** bounded arms
+   (or the bounded path always under-advertises completeness when the flag is on).
+2. **[§7 violation, self-verified] `m59_luna_moboyi_keeps_phrases_on_first_page…`
+   (`yune_web.rs:3369`) pins oracle-divergent ordering** — oracle `moboyi` page 1 is
+   `莫博弈 麼波 莫 摸 魔` (莫@2). Re-derive the test from the capture; the oracle
+   **interleaves** phrases+singles. **1+2 define the spec: ordering from the
+   capture, reachability from the mechanism.**
+3. **Polyphone suppression:** `seen_texts` built once (`:2478`) persists across
+   discarded shorter-prefix iterations; only the last non-empty family survives
+   (`:2556`) → `xi`/`xian` polyphones (洗 铣 銑 洒 鍌) unreachable for `xianzei`.
+   Fix: walk prefixes **longest-first, stop at first non-empty** (also kills waste).
+4. **Native Page_Down stale list:** `selector.rs:186` pre-page completion is
+   `starts_with("jyut6ping3")`-gated → luna via native Page_Down pages the stale
+   bounded list. Fix at altitude: one generic "complete-before-forward-page when
+   incomplete" rule; **delete the schema-string gate** (also serves schema-general).
+5. **`consumed==1` raw commit:** `recompose_on_default: consumed > 1` (`:2545`) →
+   space on 俄 in `eluosi` commits `俄luosi`. Fix the predicate for injected singles;
+   file the digit-select/DirectCommit gap as its own item.
+6. **[flip precondition, self-verified] Flag-keyed untoned relaxation (`:2511`)** —
+   default-ON admits digit-less/malformed rows into toned jyutping families, shifts
+   M58-pinned 畀@6/諮@27. Re-key on **code structure** / per-dictionary toned/untoned
+   classification at install.
+7. **`moboli` control has no oracle provenance** — capture it + `zhonggao`/`zhongguo`
+   -class rows (the acceptance inputs finding 1 needs) in the same run.
+8. **[perf] Per-keystroke syllabary scan (`:2574`):** fresh 424-entry Vec + a
+   `String` per entry, per prefix boundary, per keystroke (~15–25k allocs/keystroke
+   on 37/59-char rows); `fetch_limit` doesn't stop the prefix walk. Plausible
+   straddle contributor. Fix: memoize normalized-code→codes at construction;
+   longest-first; skip injection when the page is full. Lands with the perf work.
+9. **[flip precondition] `bounded_request_supported` (`:1568`) not extended:** flagged
+   schema + `prediction_never_first` (a combo the flip creates) → bounded rejected →
+   compact fallback passes `Some(limit)` failing the `:2772` gate → injection silently
+   skipped; source storage → full materialization per keypress.
+10. **[plausible, latent] Positional quality overwrite (`:2785`)** defeats
+    `sentence_over_completion`'s priority floor. Guard/scope to injected rows.
+
+**Secondary (in the series, below the cap):** returning-user unbounded lane (add a
+named benchmark row); complete-path injection lacks `!has_correction_lookup`;
+phantom-page off-by-one; dedup the ×2 21-line splice blocks into a helper; unify
+`request_limit`/`fetch_limit`; add yune-core unit tests for the new behavior;
+give the moboyi test literals fixture provenance.
+
+**Refuted — do not chase:** cangjie/bopomofo "no injection arm" as framed (their
+typing path DOES reach the `:2772` injection — the real question is cost/data-shape);
+user-visible ordering change from the quality overwrite today; `custom_phrase` pin-sink;
+broad non-flag blast radius (differential probes byte-identical).
+
+**Sequencing:** (a) **1+2 first** (define the spec); (b) 3/4/5 independent surgical
+fixes; (c) **6+9 are hard flip preconditions — keep holding the default-ON commit**;
+(d) 7's capture gates the new acceptance tests; (e) 8 with the perf pass (the
+straddle stays open — fresh-run distribution must go robustly green, no
+run-until-green, no re-baseline).
+
 ## Non-Goals
 - No per-input gating; no baked oracle data; no circular tests (see the three
   rules at top).

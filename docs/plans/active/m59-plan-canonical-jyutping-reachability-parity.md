@@ -308,6 +308,26 @@ encode the wrong model are re-derived from captures with named justification.
 10. **[plausible, latent] Positional quality overwrite (`:2785`)** defeats
     `sentence_over_completion`'s priority floor. Guard/scope to injected rows.
 
+**Landed 2026-07-07 (`942a89a4`, pushed) — findings 1+2 (+3 folded):**
+- **#1 root cause refined.** The prior corrective only *signalled* more on the
+  non-empty-`selected` bounded arm; it never injected the single. Verified via CLI
+  + engine probes: `zhongguo` bounded page 0 = `中國大陸 中國內地 中國銀行 中國重汽`
+  (4, no 中); the page-turn's `ensure_complete` materialises 118 with 中 at index 4,
+  but the highlight advances 0→5 and **skips index 4** — 中 reachable at NO page. No
+  filter drops it; the bounded page simply renders short and the boundary single lands
+  in the tail slot the highlight has passed. **Fix:** inject a capped family slice
+  AFTER the phrase completions so the bounded page is a **prefix** of the unbounded
+  list — page 0 = `… 中國重汽 中`, page 1 = `種 重 仲 衆 鍾` (contiguous). Mirrors the
+  upstream-sentence-model arm; fetch stays capped, full family still on the page-turn.
+- **#3 folded in** (required for the `zhongguo` acceptance): longest-first prefix walk,
+  stop at first non-empty — kills the cross-prefix `seen_texts` suppression.
+- **#2 done:** moboyi ordering test re-derived from the capture (oracle-consistent
+  property + recorded divergence; the wrong "莫 not on page 1" assertion removed).
+- Gates: `m59_luna_*` 4/4; `upstream_luna_pinyin_parity` 14/14 (page-0 injection does
+  not regress the oracle slice); `cantonese_parity` exactly the 3 pre-existing fails;
+  `yune_web reach` 5/5; `yune-core --lib` 302/0 serial; fmt/clippy(core+api) clean.
+  **Ratchet straddle NOT run/claimed — still open, belongs to #8's perf pass.**
+
 **Secondary (in the series, below the cap):** returning-user unbounded lane (add a
 named benchmark row); complete-path injection lacks `!has_correction_lookup`;
 phantom-page off-by-one; dedup the ×2 21-line splice blocks into a helper; unify

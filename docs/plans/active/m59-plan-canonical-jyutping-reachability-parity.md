@@ -72,6 +72,45 @@
 Plus (2026-07-05): *yune + rime-cantonese must match librime + rime-cantonese
 (canonical), prioritized alongside reachability.*
 
+### Owner amendment (2026-07-07) — schema-general BY DEFAULT, in M59
+
+Verbatim owner statement:
+
+> I care about any schema letting me compose arbitrary non-lexicon phrases, not
+> just luna_pinyin. rime-cantonese and any future schema such as rime-teochew
+> should support this by default. Cangjie should also be able to compose any
+> arbitrary non-lexicon phrase automatically. There should not be any per-schema
+> adaptation work to support this feature. When I install a new schema in the
+> future, this should be automatically supported.
+
+Binding consequences (this section is the owner sign-off; also record in
+`decisions.md` at closeout):
+
+1. **The landed Lane B design does not satisfy this and must be flipped.** The
+   per-schema opt-in `translator/leading_syllable_reachability: true` in
+   `luna_pinyin.schema.yaml` becomes **default-ON at the engine/translator
+   level** for every schema; a schema may opt **out** only with a recorded
+   reason. The luna-only YAML flag is removed. New schemas inherit the behavior
+   with zero per-schema work — that default IS the future-schema guarantee.
+2. **Cangjie/shape schemas are IN scope**, not an allowed onboarding failure.
+   The M60 draft's "fail onboarding with a named unsupported capability" escape
+   is rejected for this requirement; its capability-contract formalism may still
+   follow later, but the default-on guarantee lands in **M59**.
+3. **Per-schema acceptance rows:** every shipped schema — `luna_pinyin`, the
+   `jyut6ping3` product profile, the canonical rime-cantonese validation lane,
+   `cangjie5`, `double_pinyin`, `bopomofo` — proves one arbitrary non-lexicon
+   composition (type → page to a target unit → select → recompose → commit) on
+   the real path. Oracle-backed where the upstream oracle exhibits the behavior
+   (librime's script translator does this natively — the gap was always
+   Yune-side); an explicitly recorded owner-spec row where the oracle lacks it.
+   Existing parity fixtures whose lists change under the default-on flip are
+   re-derived with named justification — oracle-backed rows are never silently
+   weakened.
+4. **Two mechanisms must not remain for one requirement without a recorded
+   relationship:** jyutping reaches this via `prefix_fallback` (profile-gated),
+   luna via `leading_syllable_reachability`. Either unify or document why both
+   exist and which one future schemas inherit by default.
+
 ## Two acceptance lanes
 
 ### Lane A — Canonical Jyutping parity (Yune + rime-cantonese ↔ librime + rime-cantonese)
@@ -201,4 +240,7 @@ not re-baselined.
 - No re-baselining of M55 ceilings; no run-until-green.
 - No shipping the canonical rime-cantonese lane in the product / no schema-id
   rename — validation only, D-31 sign-off-gated.
-- M60 (schema-general reachability) is deliberately **after** M59; do not fold it in.
+- ~~M60 (schema-general reachability) is deliberately **after** M59; do not fold it in.~~
+  **Superseded by the 2026-07-07 owner amendment:** the schema-general
+  default-on guarantee is **in M59 scope** (see "Owner amendment (2026-07-07)").
+  Only the M60 draft's capability-contract *formalism* remains future work.

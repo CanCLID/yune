@@ -155,8 +155,10 @@ not re-baselined.
       SHA mismatch — verify). Defuse `is_typeduck_jyut6ping3_profile` so the
       canonical lane does not inherit TypeDuck shims (typed config, M23 pattern).
       **Add the missing control jyutping input** to the capture.
-- [ ] **Lane B:** trace the luna complete-list/page-turn injection point; record
-      storage/prism facts. Add the `moboli` control to the luna capture.
+- [x] **Lane B (DONE, landed `c89a8ea9`):** luna complete-list/page-turn injection
+      point traced + implemented; storage/prism facts recorded (luna is
+      Compact+prism → bounded syllabary); `moboli` control added as a real-path
+      test (not a capture).
 - [ ] Any newly captured rows committed with full provenance; Yune pre-fix output
       recorded alongside.
 
@@ -168,22 +170,29 @@ not re-baselined.
       not any model, not a baked table — is the Phase 3 spec.
 
 ### Phase 3 — Implement per the diff (general mechanism)
-- [ ] Luna leading-syllable injection (unbounded path, general, no allowlist, no
-      baked data); fix `is_last_page`; ordering matches the capture.
-- [ ] Any Lane-A canonical fixes the diff proves, scoped so Track A/luna typing
-      is untouched.
-- [ ] Compiled-path, non-circular tests incl. **both control inputs**
-      (`moboli`→莫伯李; a non-named jyutping control). Jyutping guards
-      (`zijiguk`→諮, `beingo`→畀, add `beingo`→匕) stay green.
+- [x] **(Lane B, DONE)** Luna leading-syllable injection (page-turn path, general,
+      no allowlist, no baked data); `is_last_page` fixed; phrase-before-single
+      ordering. Typed capability `translator/leading_syllable_reachability`
+      (distinct from broad `prefix_fallback`); bounded fetch capped; `ordered_mode`
+      not widened (luna early-stop preserved); untoned relaxation gated to the lane.
+- [ ] **(Lane A)** Any canonical rime-cantonese fixes the diff proves, scoped so
+      Track A/luna typing is untouched.
+- [x] **(Lane B, DONE)** Byte-backed non-circular tests (`yune_web.rs`
+      `m59_luna_*`): `moboyi`→莫伯洢 + control `moboli`→莫伯李 + phrase-before-single
+      ordering; jyutping `zijiguk`→諮 / `beingo`→畀 stay green.
+- [ ] **(Lane A)** non-named jyutping canonical control; `beingo`→匕 named guard.
 
 ### Phase 4 — Perf, gates, docs, close
-- [ ] M55 ratchet robustly green (distribution reported, ceilings held) — this
-      re-measures post-revert main too; WEB-03 tripwire; `cargo fmt --check`,
-      `clippy -D warnings`, `cargo test --workspace`; first-page-turn
-      materialization guard.
-- [ ] Replace residual `starts_with("jyut6ping3")` gates with typed config.
-- [ ] **Docs (Low):** add active-M59 to `roadmap.md`/`requirements.md`; evidence
-      README finalized; move plan to `completed/`.
+- [x] **(Lane B, DONE)** M55 ratchet green **twice** (`luna-lane-ratchet-run1/2`,
+      all rows under ceiling, healthy margins — not straddling); `cargo fmt
+      --check`, `clippy -D warnings`; luna + jyutping focused suites green.
+- [ ] **(Lane A / full close)** re-run ratchet after Lane A lands; WEB-03
+      tripwire; `cargo test --workspace`; first-page-turn materialization guard.
+- [ ] **(Lane A)** Replace residual `starts_with("jyut6ping3")` gates with typed config.
+- [x] **(Lane B, DONE)** Evidence README:
+      `.../luna-lane-README.md` (mechanism, tests, ratchet, honest caveats).
+- [ ] **(full close, Lane A)** add active-M59 to `roadmap.md`/`requirements.md`;
+      move plan to `completed/` (only when Lane A also lands).
 
 ## Non-Goals
 - No per-input gating; no baked oracle data; no circular tests (see the three

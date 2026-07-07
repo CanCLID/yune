@@ -1426,6 +1426,73 @@ AB3	ab	88
 }
 
 #[test]
+fn leading_single_with_single_letter_code_recomposes_when_remainder_remains() {
+    // M59 finding #5: a leading single whose dictionary code is a single letter —
+    // the pinyin vowel syllables e/a/o -> 俄/阿/哦 — consumes only 1 char. The old
+    // `consumed_input_len > 1` gate marked it non-recomposing, so DefaultConfirm
+    // (space) committed the remainder raw (`俄luo`) instead of recomposing it to
+    // `luo`. The family single must carry recompose_on_default=true whenever a
+    // remainder is left (consumed < input length), independent of code length.
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: leading_single_vowel_code
+version: "0.1"
+sort: by_weight
+...
+
+俄羅	eluo	100
+俄	e	95
+額	e	90
+羅	luo	80
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["e", "luo"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 5))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+
+    let result = translator.translate_with_context_and_request(
+        "eluo",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(8).with_debug_full_count(true),
+    );
+
+    let e_single = result
+        .candidates
+        .iter()
+        .find(|candidate| candidate.text == "俄")
+        .unwrap_or_else(|| {
+            panic!(
+                "leading single 俄 (code `e`) must be injected for `eluo`; got {:?}",
+                result
+                    .candidates
+                    .iter()
+                    .map(|candidate| candidate.text.as_str())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        matches!(
+            e_single.source,
+            CandidateSource::PartialTable {
+                consumed: 1,
+                recompose_on_default: true,
+            }
+        ),
+        "a 1-char-code leading single with a remainder must recompose on default \
+         (pre-fix `consumed_input_len > 1` wrongly set false for consumed==1); got {:?}",
+        e_single.source,
+    );
+}
+
+#[test]
 fn bounded_request_uses_prefix_fallback_without_full_fallback() {
     let _guard = super::m37_metrics_test_guard();
     let translator = StaticTableTranslator::new([("nei", "你")]).with_prefix_fallback(true);

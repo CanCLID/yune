@@ -2585,7 +2585,16 @@ impl StaticTableTranslator {
                     }
                     materialized.source = CandidateSource::PartialTable {
                         consumed: consumed_input_len,
-                        recompose_on_default: consumed_input_len > 1,
+                        // M59 finding #5: recompose whenever the selected single
+                        // consumes a PROPER prefix (a remainder is left), not only
+                        // when the code is >1 char. Single-letter vowel syllables
+                        // (e→俄, a→阿, o→哦) consume 1 char, so the old `> 1` gate
+                        // committed the tail raw (`俄luosi`) instead of recomposing
+                        // it to `luosi`. `< input.len()` keys on "is there a
+                        // remainder", independent of code length; the abbreviation
+                        // guard mirrors the toned prefix-fallback path (:2437).
+                        recompose_on_default: consumed_input_len < input.len()
+                            && !self.is_spelling_abbreviation_view(candidate_prefix, &candidate),
                     };
                     candidates.push(materialized);
                     if fetch_limit.is_some_and(|cap| candidates.len() >= cap) {

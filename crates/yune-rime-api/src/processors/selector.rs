@@ -162,15 +162,21 @@ fn selector_previous_page_like_librime(session: &mut SessionState) {
 
 fn selector_next_page_like_librime(session: &mut SessionState) {
     let page_size = session_menu_page_size(session);
-    if should_complete_jyutping_before_forward_page(session) {
+    // M59 finding #4: complete the list before paging forward whenever it is
+    // incomplete — schema-general, no schema-id branch. This mirrors the core
+    // `Engine::change_page_by` (yune-core engine.rs:804), the path RimeChangePage
+    // / yune_web_flip_page already use, so the native selector and the web/CLI
+    // frontends traverse the SAME final ordering instead of a bounded prefix.
+    // The prior `jyut6ping3`-gated pre-completion left luna's native Page_Down
+    // paging inside the bounded window, resting correctness on the fragile
+    // "bounded == faithful prefix" invariant. Completion runs only on a
+    // page-turn (a discrete action), never per-keystroke, so typing latency is
+    // untouched.
+    if !session.engine.candidate_list_complete() {
         session.engine.ensure_complete_candidate_list();
     }
-    let mut context = session.engine.context();
+    let context = session.engine.context();
     let index = context.highlighted + page_size;
-    if index >= context.candidates.len() && !session.engine.candidate_list_complete() {
-        session.engine.ensure_complete_candidate_list();
-        context = session.engine.context();
-    }
     let page_start = (index / page_size) * page_size;
     if context.candidates.len() <= page_start {
         return;
@@ -178,13 +184,6 @@ fn selector_next_page_like_librime(session: &mut SessionState) {
     let index = index.min(context.candidates.len() - 1);
     session.engine.highlight_candidate(index);
     session.paging = true;
-}
-
-fn should_complete_jyutping_before_forward_page(session: &SessionState) -> bool {
-    let context = session.engine.context();
-    !session.engine.candidate_list_complete()
-        && session.engine.status().schema_id.starts_with("jyut6ping3")
-        && context.composition.input.chars().count() > 2
 }
 
 fn selector_home_like_librime(session: &mut SessionState) -> Option<bool> {

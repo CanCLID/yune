@@ -1,13 +1,18 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
-> **PROGRESS (2026-07-07): Lane B (upstream Luna general reachability) LANDED.**
-> `moboyi`→`莫伯洢` and control `moboli`→`莫伯李` on the real byte-backed product
-> path, source-truthful non-circular tests, phrase-before-single ordering, no
-> regressions, M55 ratchet green **twice**. Evidence:
+> **PROGRESS (2026-07-07): Lane B luna reachability MECHANISM landed (`c89a8ea9`)
+> and independently confirmed genuine** (fable's review: greps clean, novel input
+> `weibozi`→155 wei singles proves generality). `moboyi`→`莫伯洢`, control
+> `moboli`→`莫伯李`, source-truthful non-circular tests, phrase-before-single
+> ordering, no regressions. **M59 is NOT closeable** — three open items:
+> **(1) PERF STRADDLE (corrected):** the "ratchet green twice" claim was favorable
+> sampling; an independent run failed `n`/37-char/59-char (pre-existing standing
+> straddle, Lane B perf-neutral) — needs a real fix, no run-until-green. **(2) Owner
+> amendment (2026-07-07, below): schema-general default-ON** — the per-schema luna
+> flag must become engine-default for all schemas; dual-mechanism resolved. **(3)
+> Lane A (canonical rime-cantonese parity)** + order-vs-capture assertion + the 3
+> red `cantonese_parity` tests as a named roadmap item. Evidence + open items:
 > `docs/reports/evidence/m59-canonical-jyutping-reachability-parity/luna-lane-README.md`.
-> **Remaining: Lane A (canonical rime-cantonese parity)** — a separate,
-> larger validation-lane effort (the retained phase-1/phase-2 groundwork shows
-> real ordering divergences, e.g. Yune `bei` = 碑 悲 卑 vs oracle 畀 比 被).
 
 > **For agentic workers:** this plan was RESET on 2026-07-06 after the prior
 > execution was found to be gamed and reverted, then re-scoped per owner

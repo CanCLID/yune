@@ -41,17 +41,33 @@ from the broad TypeDuck `prefix_fallback`), enabled in
 - `cargo test -p yune-core --test upstream_luna_pinyin_parity` — 14 passed (no regressions).
 - jyutping shared-path regression: `yune_web` m58 reachability — 3 passed.
 - `cargo fmt --check`; `cargo clippy -p yune-core -p yune-rime-api --all-targets -- -D warnings` — clean.
-- **M55 ratchet green TWICE** (`luna-lane-ratchet-run1/`, `run2/`), all rows under
-  the standing ceilings with healthy margins (not straddling): `ni` 2.600/2.582
-  (≤2.666), `hao` 1.671/1.707 (≤1.731), 37-char 2.000/1.977 (≤2.094), 59-char
-  1.572/1.531 (≤1.625), `zhongguo` win 0.269/0.266, Track B 331.8/325.1µs (≤348.0).
+- **M55 ratchet — CORRECTION (2026-07-07):** `run1`/`run2` passed, but an
+  independent verification run (`luna-lane-ratchet-claude-verify/`) **failed 3
+  rows**: `n` 2.947 (>2.890), 37-char 2.165 (>2.094), 59-char 1.653 (>1.625);
+  Track B stayed green (324.7 ≤ 348). **These short-key + long-composition luna
+  rows STRADDLE their ceilings** (`n` 2.816/2.823/2.947; 59-char 1.572/1.531/1.653):
+  run1/run2 sampled the passing side. My earlier "green twice, healthy margins /
+  not straddling" claim was **favorable sampling and is retracted.** Attribution:
+  this is a **pre-existing standing straddle** (post-revert `main` was 5-pass/4-fail
+  on these rows before Lane B — see the plan's Honest-baseline section; Lane B is
+  perf-neutral by design: `ordered_mode` not widened, luna early-stop preserved),
+  but distributions overlap so no clean Lane-B-vs-baseline attribution is possible.
+  **M59 does NOT get to claim the ratchet robustly green** — the straddle needs a
+  real perf fix (no re-baseline, no run-until-green), tracked below.
 
-## Honest caveats / out of scope here
+## Honest caveats / open items (not closed)
 
-- **Pre-existing, not caused by this change:** 3 `cantonese_parity` tests fail on
-  clean `main` too (`m58…zi_advice_rank`, `m21_prediction_limit`,
-  `m21_closeout_goldens`) — verified identical with/without this WIP. Jyutping
-  TypeDuck-parity debt, separate from M59.
+- **The luna ratchet straddle above is OPEN** — a genuine standing-debt perf issue
+  on the short-key (`n`) and 37/59-char luna rows; M59 cannot close on perf until
+  it is actually fixed and the distribution reported.
+- **Order not asserted vs oracle:** the injected leading-single family's ORDER is
+  not yet checked against the retained upstream paged captures
+  (`phase-1/upstream-luna-pinyin-m59-scenario-snapshots.json`). Open loop.
+- **3 `cantonese_parity` tests fail on clean `main` too** (`m58…zi_advice_rank`,
+  `m21_prediction_limit`, `m21_closeout_goldens`) — verified identical with/without
+  this change, so `cargo test --workspace` is RED on `main`. Pre-existing
+  c4336cd9-era jyutping TypeDuck-parity debt; must become a named roadmap item, not
+  live only in this README.
 - **Lane A (canonical rime-cantonese parity)** is NOT in this change — it remains
   the other M59 acceptance lane (Yune+rime-cantonese vs librime+rime-cantonese;
   the retained phase-1/phase-2 groundwork shows real ordering divergences to fix).

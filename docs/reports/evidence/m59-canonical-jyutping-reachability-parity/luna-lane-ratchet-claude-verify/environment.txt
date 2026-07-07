@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-07T14:43:59.8709105Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=902a39ad90ca08cb35878e21041929938509178a
+yune_git_status_short=?? docs/plans/active/m60-plan-schema-general-single-character-reachability.md | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/luna-lane-ratchet-claude-verify/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\luna-lane-ratchet-claude-verify
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

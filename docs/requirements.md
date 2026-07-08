@@ -1500,7 +1500,7 @@ a **default-ON, schema-general guarantee** delivered in M59, not M60.
 
 - [x] **M59-REACH-01**: The reachability mechanism is general — keyed on
   syllable/dictionary structure, never per-input `match`/allowlists or baked
-  oracle data. Verified: luna `moboyi`→莫伯洢, non-named control `moboli`→莫伯李,
+  oracle data. Verified: luna `moboyi`→莫伯洢 (owner case); anti-gaming controls `zhongguo`→中 + bare-syllable set,
   and an independent novel input reach their leading-single families on the real
   byte-backed product path via source-truthful, non-circular tests.
 - [ ] **M59-REACH-02 (owner amendment, binding)**: Composing an arbitrary

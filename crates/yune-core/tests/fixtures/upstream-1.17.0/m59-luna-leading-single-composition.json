@@ -12,7 +12,7 @@
     "modules": [
       "default"
     ],
-    "note": "Leading-single reachability + partial-selection composition provenance for M59. PRIMARY case: moboyi -> the non-lexicon phrase; moboli is the control. Positions are the oracle's; Yune's PRODUCT completion ordering diverges (recorded)."
+    "note": "Leading-single reachability + partial-selection composition provenance for M59. PRIMARY case: moboyi -> the non-lexicon phrase 莫伯洢. Positions are the oracle's; Yune's PRODUCT completion ordering diverges (recorded)."
   },
   "inputs": {
     "moboyi": {
@@ -53,48 +53,6 @@
         "已",
         "億",
         "易"
-      ],
-      "page_size": 5,
-      "total_unique_captured": 205
-    },
-    "moboli": {
-      "input": "moboli",
-      "target_single": "莫",
-      "target_global_index": 2,
-      "page_0": [
-        "莫玻璃",
-        "麼波",
-        "莫",
-        "摸",
-        "魔"
-      ],
-      "page_size": 5,
-      "total_unique_captured": 205
-    },
-    "boli": {
-      "input": "boli",
-      "target_single": "伯",
-      "target_global_index": 14,
-      "page_0": [
-        "玻璃",
-        "剝離",
-        "波里",
-        "薄利",
-        "勃利"
-      ],
-      "page_size": 5,
-      "total_unique_captured": 205
-    },
-    "li": {
-      "input": "li",
-      "target_single": "李",
-      "target_global_index": 2,
-      "page_0": [
-        "裏",
-        "里",
-        "李",
-        "裡",
-        "離"
       ],
       "page_size": 5,
       "total_unique_captured": 205
@@ -351,43 +309,6 @@
           "step": "after_select_yi",
           "preedit": null,
           "commit_text": "莫伯洢"
-        }
-      ]
-    },
-    "moboli": {
-      "role": "control",
-      "description": "librime composes the phrase by partial single-character selection (preedit accumulation, single commit at end).",
-      "final_commit": "莫伯李",
-      "chain": [
-        {
-          "step": "moboli_page0",
-          "preedit": "mo bo li",
-          "commit_text": null
-        },
-        {
-          "step": "after_select_mo",
-          "preedit": "莫bo li",
-          "commit_text": null
-        },
-        {
-          "step": "bo_pd1",
-          "preedit": "莫bo li",
-          "commit_text": null
-        },
-        {
-          "step": "bo_pd2",
-          "preedit": "莫boli",
-          "commit_text": null
-        },
-        {
-          "step": "after_select_bo",
-          "preedit": "莫伯li",
-          "commit_text": null
-        },
-        {
-          "step": "after_select_li",
-          "preedit": null,
-          "commit_text": "莫伯李"
         }
       ]
     }

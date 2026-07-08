@@ -3,7 +3,7 @@
 
 Reads the raw librime probe snapshots emitted by
 scripts/capture-m59-luna-composition.ps1 (paged candidate lists + the
-moboli -> mo/bo/li partial-selection composition chain) and writes the
+moboyi -> mo/bo/yi partial-selection composition chain) and writes the
 checked-in fixture consumed by
 crates/yune-core/tests/upstream_luna_leading_single_composition.rs.
 
@@ -19,20 +19,16 @@ TARGETS = {
     "moboyi": "莫",  # PRIMARY non-lexicon case: moboyi -> 莫伯洢
     "boyi": "伯",
     "yi": "洢",
-    "moboli": "莫",  # control: moboli -> 莫伯李
-    "boli": "伯",
-    "li": "李",
     "zhonggao": "中",
     "zhongguo": "中",
     "gao": "高",
     "guo": "國",
 }
 
-# Composition scenarios: (scenario name in the compose capture, final commit,
-# human label). Primary first.
+# Composition scenarios: (scenario name in the compose capture, human input,
+# role note).
 COMPOSITIONS = [
     ("moboyi_compose", "moboyi", "PRIMARY non-lexicon phrase"),
-    ("moboli_compose", "moboli", "control"),
 ]
 
 
@@ -97,7 +93,7 @@ def main() -> int:
             "via scripts/oracle-rime-probe.cs (DllImport rime.dll)",
             "modules": ["default"],
             "note": "Leading-single reachability + partial-selection composition provenance for M59. "
-            "PRIMARY case: moboyi -> the non-lexicon phrase; moboli is the control. Positions are the "
+            "PRIMARY case: moboyi -> the non-lexicon phrase 莫伯洢. Positions are the "
             "oracle's; Yune's PRODUCT completion ordering diverges (recorded).",
         },
         "inputs": inputs,

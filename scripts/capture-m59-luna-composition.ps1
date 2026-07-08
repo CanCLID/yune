@@ -1,10 +1,10 @@
 # Captures the librime 1.17.0 oracle provenance for M59 leading-single
 # reachability + partial-selection composition on luna_pinyin:
 #   - paged candidate lists for the PRIMARY non-lexicon case moboyi -> mo/bo/yi
-#     and the moboli control, plus zhonggao / zhongguo / gao / guo (the
+#     (remainders boyi / yi) plus zhonggao / zhongguo / gao / guo (the
 #     reachable-single positions the M59 acceptance rows cite), and
-#   - the moboyi -> 莫伯洢 and moboli -> 莫伯李 partial-selection composition chains
-#     (commit the phrase from selecting the leading singles one at a time).
+#   - the moboyi -> 莫伯洢 partial-selection composition chain (commit the phrase
+#     from selecting the leading singles 莫, 伯, 洢 one at a time).
 #
 # Runs the real rime.dll via scripts/oracle-rime-probe.cs. Requires the upstream
 # oracle root laid out by the capture-upstream-* pipeline (rime.dll, rime-shared,
@@ -78,8 +78,9 @@ function New-Compose([string]$name, [string]$sequence, [object[]]$steps) {
 
 $modules = [string[]]@("default")
 
-# PRIMARY case first: moboyi -> the non-lexicon phrase. Then the moboli control.
-$pagingInputs = @("moboyi", "boyi", "yi", "moboli", "boli", "li", "zhonggao", "zhongguo", "gao", "guo")
+# PRIMARY (and only) case: moboyi -> the non-lexicon phrase 莫伯洢. `boyi`/`yi` are
+# its recompose remainders; zhonggao/zhongguo/gao/guo are the class rows.
+$pagingInputs = @("moboyi", "boyi", "yi", "zhonggao", "zhongguo", "gao", "guo")
 $pagingScenarios = $pagingInputs | ForEach-Object { New-Paging $_ 40 }
 $pageSnaps = [RimeProbe]::CaptureScenarios($Shared, $User, $Build, "luna_pinyin", $modules, [RimeProbe+ProbeScenario[]]$pagingScenarios)
 
@@ -90,14 +91,7 @@ $moboyi = New-Compose "moboyi_compose" "moboyi" @(
     @{ pd = 3; digit = 53; label = "bo" },
     @{ pd = 31; digit = 49; label = "yi" }
 )
-# moboli control -> 莫伯李: 莫@2 (digit '3'); 伯@14 (page2 pos4, digit '5' after 2
-# Page_Down); 李@2 (page0, digit '3').
-$moboli = New-Compose "moboli_compose" "moboli" @(
-    @{ pd = 0; digit = 51; label = "mo" },
-    @{ pd = 2; digit = 53; label = "bo" },
-    @{ pd = 0; digit = 51; label = "li" }
-)
-$composeSnaps = [RimeProbe]::CaptureScenarios($Shared, $User, $Build, "luna_pinyin", $modules, [RimeProbe+ProbeScenario[]]@($moboyi, $moboli))
+$composeSnaps = [RimeProbe]::CaptureScenarios($Shared, $User, $Build, "luna_pinyin", $modules, [RimeProbe+ProbeScenario[]]@($moboyi))
 
 $Raw = Join-Path ([System.IO.Path]::GetTempPath()) "m59-luna-raw-$PID"
 New-Item -ItemType Directory -Force -Path $Raw | Out-Null

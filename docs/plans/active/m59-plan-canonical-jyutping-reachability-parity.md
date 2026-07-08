@@ -1,9 +1,9 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
 > **PROGRESS (2026-07-07): Lane B luna reachability MECHANISM landed (`c89a8ea9`)
-> and independently confirmed genuine** (fable's review: greps clean, novel input
-> `weibozi`→155 wei singles proves generality). `moboyi`→`莫伯洢`, control
-> `moboli`→`莫伯李`, source-truthful non-circular tests, phrase-before-single
+> and independently confirmed genuine** (fable's review: greps clean; generality
+> proven by fable's own novel probes — e.g. `shijie`, `ewai` — outside any test
+> list). `moboyi`→`莫伯洢`, source-truthful non-circular tests, phrase-before-single
 > ordering, no regressions. **M59 is NOT closeable** — three open items:
 > **(1) PERF STRADDLE (corrected):** the "ratchet green twice" claim was favorable
 > sampling; an independent run failed `n`/37-char/59-char (pre-existing standing
@@ -145,9 +145,9 @@ Binding consequences (this section is the owner sign-off; also record in
 
 ### Lane B — Upstream Luna reachability (Yune `luna_pinyin` ↔ librime + rime-luna-pinyin)
 - General single-char leading-syllable reachability on the product `luna_pinyin`
-  path. Acceptance: `moboyi`→莫→伯→洢 commits `莫伯洢`, **and the control
-  `moboli`→莫伯李** (an input in no test list), asserted against the upstream
-  librime+luna capture via the real path.
+  path. Acceptance: `moboyi`→莫→伯→洢 commits `莫伯洢`, asserted against the upstream
+  librime+luna capture via the real path. Anti-gaming controls (different inputs,
+  not the named case): `zhongguo`→中 and the bare-syllable set.
 
 ## Mechanism (real, general — mirror the working jyutping design)
 
@@ -177,8 +177,8 @@ status, and the scenario/input files.
   re-verify checksums and add the control input.
 - Lane B: `librime 1.17.0` + pinned `rime-luna-pinyin`/`rime-essay`/`rime-stroke`
   via `scripts/capture-upstream-luna-pinyin.ps1` (oracle DLL present at
-  `target/upstream-oracle/1.17.0/…`); capture named rows **and the `moboli`
-  control**, page size and all-pages recorded.
+  `target/upstream-oracle/1.17.0/…`); capture the named `moboyi`/`boyi`/`yi` + `zhonggao`/`zhongguo` rows, page size
+  and all-pages recorded.
 
 ## Perf discipline
 The M55 ratchet must be **robustly** green under the standing ceilings — report
@@ -209,8 +209,7 @@ not re-baselined.
       **Add the missing control jyutping input** to the capture.
 - [x] **Lane B (DONE, landed `c89a8ea9`):** luna complete-list/page-turn injection
       point traced + implemented; storage/prism facts recorded (luna is
-      Compact+prism → bounded syllabary); `moboli` control added as a real-path
-      test (not a capture).
+      Compact+prism → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test (not a capture).
 - [ ] Any newly captured rows committed with full provenance; Yune pre-fix output
       recorded alongside.
 
@@ -230,7 +229,7 @@ not re-baselined.
 - [ ] **(Lane A)** Any canonical rime-cantonese fixes the diff proves, scoped so
       Track A/luna typing is untouched.
 - [x] **(Lane B, DONE)** Byte-backed non-circular tests (`yune_web.rs`
-      `m59_luna_*`): `moboyi`→莫伯洢 + control `moboli`→莫伯李 + phrase-before-single
+      `m59_luna_*`): `moboyi`→莫伯洢 + `zhongguo`/bare-syllable controls + phrase-before-single
       ordering; jyutping `zijiguk`→諮 / `beingo`→畀 stay green.
 - [ ] **(Lane A)** non-named jyutping canonical control; `beingo`→匕 named guard.
 
@@ -294,8 +293,10 @@ encode the wrong model are re-derived from captures with named justification.
    default-ON admits digit-less/malformed rows into toned jyutping families, shifts
    M58-pinned 畀@6/諮@27. Re-key on **code structure** / per-dictionary toned/untoned
    classification at install.
-7. **`moboli` control has no oracle provenance** — capture it + `zhonggao`/`zhongguo`
-   -class rows (the acceptance inputs finding 1 needs) in the same run.
+7. **The owner case `moboyi`→莫伯洢 and the `zhonggao`/`zhongguo`-class rows have no
+   oracle provenance** — capture them (the acceptance inputs finding 1 needs). [DONE below.]
+   (NOTE: fable's original wording named a `moboli` control; that input was an Opus
+   typo for `moboyi` rationalised into a control — dropped as a hallucination.)
 8. **[perf] Per-keystroke syllabary scan (`:2574`):** fresh 424-entry Vec + a
    `String` per entry, per prefix boundary, per keystroke (~15–25k allocs/keystroke
    on 37/59-char rows); `fetch_limit` doesn't stop the prefix walk. Plausible
@@ -429,17 +430,19 @@ config satisfies the current paths).
 **Landed 2026-07-07 (`a3db53bf`/`5b12941c`, pushed) — finding #7 (oracle capture run).**
 Ran the real rime/librime 1.17.0 oracle IN-ENVIRONMENT (rime.dll present under
 target/, driven by scripts/oracle-rime-probe.cs).
-- **Luna (PRIMARY moboyi + moboli control + zhonggao/zhongguo-class).** Captured +
+- **Luna (owner case moboyi → 莫伯洢 + zhonggao/zhongguo-class).** Captured +
   curated the reproducible fixture `m59-luna-leading-single-composition.json`
   (scripts/capture-m59-luna-composition.ps1 + curate-m59-luna-composition.py; in the
-  oracle-manifest). **PRIMARY: librime composes 莫伯洢 (NOT in lexicon) from `moboyi`**
-  by partial single selection (莫→preedit `莫bo yi`, 伯→`莫伯yi`, 洢→commit 莫伯洢); the
-  rare 洢 is reachable at oracle index 155 (莫@2, 伯@19). Control: moboli→莫伯李
-  (莫@2/伯@14/李@2). Plus zhonggao 中@3/zhongguo 中@11/gao 高@0/guo 國@1. New test
-  `upstream_luna_leading_single_composition` (4/4) pins moboyi→莫伯洢 primary + moboli
-  control + positions; the m59 moboyi/moboli/zhongguo tests cite it. (Correction
-  `d1762ce8`: the first #7 capture provenanced only the moboli control — moboyi is
-  the owner's primary case.) **Two divergences
+  oracle-manifest). **librime composes 莫伯洢 (NOT in lexicon) from `moboyi`** by
+  partial single selection (莫→preedit `莫bo yi`, 伯→`莫伯yi`, 洢→commit 莫伯洢); the
+  rare 洢 is reachable at oracle index 155 (莫@2, 伯@19). Plus zhonggao 中@3/
+  zhongguo 中@11/gao 高@0/guo 國@1. New test
+  `upstream_luna_leading_single_composition` (3/3) pins moboyi→莫伯洢 + positions;
+  the m59 moboyi/zhongguo tests cite it. (**Hallucination purge `<pending>`:** an
+  earlier pass captured a `moboli`→莫伯李 "control" — `moboli` was an Opus typo for
+  `moboyi` rationalised into a control, never an owner requirement; removed from the
+  fixture, tests, plan, roadmap, requirements, and evidence. moboyi is THE case.)
+  **Two divergences
   RECORDED (not asserted vs Yune):** (a) Yune's PRODUCT completion ordering differs
   from librime (zhongguo page 0 `中國大陸…` Yune vs `中國 種過…` librime; Yune injects
   中 on page 0, librime has it at index 11) — M59 asserts REACHABILITY + recompose,

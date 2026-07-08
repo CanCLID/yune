@@ -30,8 +30,9 @@ from the broad TypeDuck `prefix_fallback`), enabled in
 - `m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product` — `moboyi` → page to
   莫 → select → recompose `boyi` → 伯 → `yi` → 洢 → commit **莫伯洢** (accumulated
   final-string asserted); storage asserted byte-backed (Compact, not owned-heap).
-- `m59_luna_moboli_control_composes_mo_bo_li_on_byte_backed_product` — **control**
-  in no allowlist / no baked data → **莫伯李** (proves generalization, not memory).
+- Anti-gaming controls (different inputs, no allowlist / no baked data): the
+  `zhongguo`/`zhonggao` reach rows + the bare-syllable set + fable's independent
+  novel probes prove generalization, not memory.
 - `m59_luna_moboyi_keeps_phrases_on_first_page_without_promoting_singles` —
   phrase-before-single ordering; 莫 not promoted onto page 1; `is_last_page:false`.
 

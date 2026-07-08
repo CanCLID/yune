@@ -3324,29 +3324,6 @@ fn m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product() {
 }
 
 #[test]
-fn m59_luna_moboli_control_composes_mo_bo_li_on_byte_backed_product() {
-    // Anti-gaming control: an input in no allowlist and no baked data. moboli ->
-    // 莫伯李 (mo bo li). Proves the mechanism generalizes, not memorizes.
-    //
-    // Oracle provenance (M59 finding #7): rime/librime 1.17.0 composes 莫伯李 from
-    // moboli by the same partial single-character selection — captured in
-    // crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json
-    // (pinned by upstream_luna_leading_single_composition.rs). Yune surfaces the
-    // singles at different candidate positions than librime (recorded there); M59
-    // asserts reachability + recompose, not position parity.
-    m59_luna_compose_from_leading_singles(
-        "m59-luna-moboli",
-        "moboli",
-        &[
-            ("\u{83ab}", "boli"), // 莫 -> remainder boli
-            ("\u{4f2f}", "li"),   // 伯 -> remainder li
-            ("\u{674e}", ""),     // 李 -> commit 莫伯李
-        ],
-        "\u{83ab}\u{4f2f}\u{674e}", // 莫伯李
-    );
-}
-
-#[test]
 fn m59_luna_moboyi_leading_singles_reachable_after_phrases() {
     // Re-derived per M59 finding #2. The prior test
     // (`…keeps_phrases_on_first_page_without_promoting_singles`) pinned

@@ -919,6 +919,38 @@ fn static_table_translator_sentence_over_completion_prioritizes_sentence() {
 }
 
 #[test]
+fn sentence_over_completion_floor_survives_leading_syllable_reachability_overwrite() {
+    // M59 finding #10: the complete path runs assign_ordered_candidate_qualities
+    // whenever leading_syllable_reachability (or prefix_fallback /
+    // prediction_candidate_limit) is on — it ranks by LIST POSITION, and the
+    // sentence_over_completion floored sentence is pushed at the TAIL, so the
+    // overwrite would demote it to last, defeating the floor. It must stay on top.
+    // Same fixture as the sibling test above, with the reachability flag added.
+    let mut engine = Engine::new();
+    engine.add_translator(
+        StaticTableTranslator::new([("ba", "\u{7238}"), ("baban", "\u{5df4}\u{73ed}")])
+            .with_completion(true)
+            .with_sentence_over_completion(true)
+            .with_leading_syllable_reachability(true),
+    );
+    engine
+        .process_key_sequence("baba")
+        .expect("key sequence should parse");
+
+    let candidates = &engine.context().candidates;
+    assert_eq!(
+        candidates.first().map(|candidate| candidate.text.as_str()),
+        Some("\u{7238}\u{7238}"),
+        "the sentence_over_completion floored sentence (爸爸) must stay on top despite \
+         the leading-syllable positional overwrite (finding #10); got {:?}",
+        candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn static_table_translator_sentence_uses_spelling_algebra_expanded_codes() {
     let dictionary = TableDictionary::parse_rime_dict_yaml(
         r#"

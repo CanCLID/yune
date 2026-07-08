@@ -2850,6 +2850,7 @@ impl StaticTableTranslator {
                 }
             }
         }
+        let mut sentence_over_completion_floored = false;
         if candidates.is_empty() && self.enable_sentence {
             if let Some(sentence) = self.sentence_candidate(input, filter_by_charset, None) {
                 candidates.push(sentence);
@@ -2868,6 +2869,7 @@ impl StaticTableTranslator {
                 self.sentence_candidate(input, filter_by_charset, priority_floor)
             {
                 candidates.push(sentence);
+                sentence_over_completion_floored = true;
             }
         }
 
@@ -2918,6 +2920,27 @@ impl StaticTableTranslator {
             || self.leading_syllable_reachability
         {
             Self::assign_ordered_candidate_qualities(&mut candidates);
+            // M59 finding #10: the positional overwrite above ranks by list index,
+            // which clobbers the `sentence_over_completion` priority floor — the
+            // floored sentence sits at the tail (pushed after the completions), so
+            // it would be demoted to last, defeating the whole point of the floor.
+            // Re-float it above the positional ranks. (Scoping the overwrite to the
+            // injected rows would instead risk reordering the live luna
+            // phrases/completions, so we preserve the all-rows ordering and just
+            // restore the one deliberately-floored row. Latent today: no shipped
+            // schema enables `sentence_over_completion`.)
+            if sentence_over_completion_floored {
+                let top = candidates
+                    .iter()
+                    .map(|candidate| candidate.quality)
+                    .fold(f32::MIN, f32::max);
+                if let Some(sentence) = candidates
+                    .iter_mut()
+                    .find(|candidate| candidate.source == CandidateSource::Sentence)
+                {
+                    sentence.quality = top + 1.0;
+                }
+            }
         }
 
         candidates

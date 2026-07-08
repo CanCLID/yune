@@ -393,6 +393,39 @@ FAILS without the guard** (`page0=[嗎 嘛 馬 媽 罵]`). Gates: `m59_luna` 5/5
 303/0; fmt/clippy clean. Ratchet straddle stays open. **Lesson: bare-syllable rows
 now permanently in the suite — this class was a blind spot for every prior gate.**
 
+**Landed 2026-07-07 (`20122e3e`, pushed) — findings 6+9 (flip preconditions, LATENT).**
+Both gate the default-ON flip; inert today (reachability on only for luna, whose
+config satisfies the current paths).
+- **#6 structural re-key.** The untoned-relaxation admitted digit-less single rows via
+  `leading_syllable_reachability && syllables.is_none()` — keyed on the FLAG. Under the
+  flip that flag turns on for the TONED jyutping dict → digit-less/malformed rows would
+  enter toned families and shift the M58 pins (畀@6, 諮@27). Re-keyed on CODE STRUCTURE:
+  a cached `untoned_dictionary()` (no tone digit in any syllable code = untoned luna
+  `mo`; toned jyutping `bei2` = false), computed once from the syllabary (all_codes
+  fallback). Outer gate still keys on the flag (decides IF injection runs); only
+  admission is structural. Inert: luna untoned → relaxation still fires; jyutping toned
+  → unchanged.
+- **#9 bounded route.** `bounded_request_supported` returned false for
+  `leading_syllable_reachability + prediction_never_first` (no limit, no prefix_fallback)
+  → compact `Some(limit)` fallback → injection gate false → leading single silently
+  dropped (source storage full-materialises per keypress). Fix: add
+  `|| self.leading_syllable_reachability` to the first clause. Inert: luna satisfies
+  `!prediction_never_first`; jyutping leaves the flag off.
+- **FLIP-TIME ITEM (record, do NOT fix in-series — no schema hits it today):** routing
+  the flag+`prediction_never_first` combo to bounded exposes that the bounded arm does
+  not HARD-enforce `prediction_never_first` without a prediction limit
+  (`enforce_prediction_never_first` runs only on the compact/full path;
+  `is_limited_prediction_view` needs a limit). jyutping is safe (carries
+  `prediction_candidate_limit=Some(1)`); a **cangjie**-style flip schema (never_first, no
+  limit) would be first to hit it → a completion could land first. Handle WITH the flip:
+  a cangjie completion-never-first acceptance row, OR extend bounded-arm enforcement.
+- Tests (yune-core --lib, all confirmed to BITE): `bounded_leading_single_reachable_
+  under_prediction_never_first_without_limit` (#9); `untoned_dictionary_classification_
+  is_structural_not_flag_keyed` (#6 classifier); `toned_classified_dictionary_rejects_
+  digitless_leading_single_under_flip` (#6 re-key). Gates: `yune-core --lib` 306/0;
+  `cantonese_parity` exactly the 3 pre-existing (both inert for jyutping); `m59` 5/5 +
+  `reach` 5/5; luna parity 14/14; fmt/clippy clean. Ratchet straddle stays OPEN.
+
 **Secondary (in the series, below the cap):** returning-user unbounded lane (add a
 named benchmark row); complete-path injection lacks `!has_correction_lookup`;
 phantom-page off-by-one; dedup the ×2 21-line splice blocks into a helper; unify

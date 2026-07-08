@@ -581,6 +581,16 @@ method) + `m59-flipoff-isolation/` (the feature-off comparison). Extends D-24
 corrective ratchet discipline. _Outcome: Good — median gate green 23/23, memory
 solved, feature-off record preserved._
 
+_Addendum 2026-07-08 (owner decision): the 59-char row becomes the **4th**
+adjusted row, same formula — pooled-worst of the 6 committed feature-on runs
+(1.665; the 5 `m59-flip-final` runs + fable's `claude-verify`) × 1.05 = **1.748**;
+feature-off record (ceiling 1.625 / source 1.548) preserved in its
+`m55-thresholds.csv` notes. It had escaped the first adjustment because its median
+(1.634) squeaked 0.25% under the old 1.625 ceiling, but its ~3.8% same-dll spread
+made single-run gating a coin-flip (fable's independent 22/23 at `06cd1800`
+straddled at 1.647). Only that row moved; the other 19 standing rows remain
+untouched._
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/completed/m00-analysis-founding.md`, `docs/roadmap.md`, and `docs/plans/completed/m05-m07-record-foundation-refactor.md` are the retained source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into the retained docs before `.planning/` was removed. External research was skipped at setup because scope was driven by existing docs and direct librime comparison.

@@ -231,6 +231,10 @@ amendment):
 1. **Three rows get an owner-signed injection-ON ceiling: `n`, `hao`, 37-char
    (`ceshiyixiachangjushuruxingnengzenyang`).** New ceiling = **pooled-worst of all
    committed injection-on runs × 1.05**. The other 20 standing rows are **untouched**.
+   *(Addendum 2026-07-08 — owner: the 59-char row is the **4th** adjusted row, same
+   formula → 1.748; escaped the first pass because its median squeaked 0.25% under
+   the old ceiling, but its ~3.8% spread made single-run gating a coin-flip. Only
+   that row moved.)*
    The injection-off numbers + per-row spreads are preserved in the evidence as the
    permanent feature-cost record. Rationale: these three are the thinnest rows
    (M58 flagged "limited headroom"); the flip's real cost + run-noise exceed the

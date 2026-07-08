@@ -426,6 +426,37 @@ config satisfies the current paths).
   `cantonese_parity` exactly the 3 pre-existing (both inert for jyutping); `m59` 5/5 +
   `reach` 5/5; luna parity 14/14; fmt/clippy clean. Ratchet straddle stays OPEN.
 
+**Landed 2026-07-07 (`a3db53bf`/`5b12941c`, pushed) — finding #7 (oracle capture run).**
+Ran the real rime/librime 1.17.0 oracle IN-ENVIRONMENT (rime.dll present under
+target/, driven by scripts/oracle-rime-probe.cs).
+- **Luna (moboli + zhonggao/zhongguo-class).** Captured + curated the reproducible
+  fixture `m59-luna-leading-single-composition.json` (scripts/capture-m59-luna-
+  composition.ps1 + curate-m59-luna-composition.py; in the oracle-manifest). librime
+  composes 莫伯李 from `moboli` by partial single selection (莫→preedit `莫bo li`,
+  伯→`莫伯li`, 李→commit 莫伯李); reachable positions 莫@2/伯@14/李@2/zhonggao 中@3/
+  zhongguo 中@11/gao 高@0/guo 國@1. New test `upstream_luna_leading_single_composition`
+  (3/3) pins these; the m59 moboli/zhongguo tests now cite it. **Two divergences
+  RECORDED (not asserted vs Yune):** (a) Yune's PRODUCT completion ordering differs
+  from librime (zhongguo page 0 `中國大陸…` Yune vs `中國 種過…` librime; Yune injects
+  中 on page 0, librime has it at index 11) — M59 asserts REACHABILITY + recompose,
+  not position parity; (b) librime accumulates selected singles in the preedit and
+  commits once, Yune commits incrementally (same text).
+- **Cangjie (fable's 3 flip questions), answered from the oracle + inspection:**
+  (1) **Composition semantics:** cangjie composes per-character via shape codes (each
+  code → char(s)+phrases; existing `cangjie5-basic.json`: `a`→日曰啊, `amd`→旴 + 是一樣的).
+  The M59 leading-single injection is **INERT for cangjie**: every complete shape code
+  has single-char exacts, so the increment-2 bare-syllable guard skips the injection.
+  Confirmed cangjie composes in Yune (`a`→日 曰…). (2) **Never-first enforcement:**
+  cangjie sets NO `prediction_never_first` (verified across its config chain) → the #9
+  bounded-arm enforcement gap does NOT bite cangjie; it stays a generic concern only
+  for a future never_first+no-limit flip schema. (3) **Untoned-admission:** cangjie
+  codes are letter-only → the #6 classifier correctly treats it untoned; but the
+  admission question is **moot for cangjie** because the injection is guarded off
+  (complete codes have single-char exacts → relaxation never fires). Net: **the flip is
+  effectively safe/inert for shape schemas** — the bare-syllable guard already handles
+  them. (Runtime cangjie flip-simulation belongs WITH the flip; the injection-inertness
+  is reasoned from the guard + confirmed cangjie composes natively in Yune today.)
+
 **Secondary (in the series, below the cap):** returning-user unbounded lane (add a
 named benchmark row); complete-path injection lacks `!has_correction_lookup`;
 phantom-page off-by-one; dedup the ×2 21-line splice blocks into a helper; unify

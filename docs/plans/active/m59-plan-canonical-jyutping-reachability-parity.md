@@ -56,15 +56,18 @@
 - **Luna reachability is a genuine GAP.** Product `luna_pinyin` `moboyi` →
   `脈搏一 漠北一 脈搏以 漠北以 脈波一`, `is_last_page:true`; leading-syllable singles
   unreachable at any page. Any luna input. This is the reachability target.
-- **Canonical rime-cantonese lane WAS stood up legitimately** in the retained
-  `5d3dba2a` and survives: Phase 1 has Yune loading staged pinned rime-cantonese
-  and producing *real* candidates (`bei` → 碑 悲 卑 陂 蓖, `is_last_page:false` —
-  a genuine ordering divergence from the oracle's 畀 比 被 鼻 避) with full
-  provenance; Phase 2 has a frozen real pre-fix diff. Only the Phase 3 **fix** was
-  gamed (baked `.tsv`, reverted). So Lane A's capture + diff groundwork exists —
-  **re-validate, don't redo** — and the missing piece is the *real* fix (Yune's
-  rime-cantonese candidate order/reachability differs from the oracle and must be
-  made to match by mechanism, not by baking).
+- **Canonical rime-cantonese lane was stood up in `5d3dba2a`**, but only the
+  **oracle capture survives in the tracked tree.** ~~Phase 1 has Yune loading
+  staged rime-cantonese... Phase 2 has a frozen pre-fix diff~~ — **CORRECTED
+  2026-07-08:** the `yune-canonical-*` output (`bei` → 碑 悲 卑 陂 蓖 vs oracle
+  畀 比 被 鼻 避) and the `phase-2/canonical-pre-fix-diff.json` are **absent from
+  the tracked tree** (lost in the revert). The Phase 3 **fix** was also gamed
+  (baked `.tsv`, reverted). So Lane A's groundwork = **oracle capture only**; the
+  Yune canonical runner + the classified diff must be **RE-CREATED, not re-run**,
+  and (2026-07-08) Yune currently **cannot even deploy** the staged rime-cantonese
+  (source-path deploy failure — see the re-validation increment note). The missing
+  piece is still the *real* fix, but it is gated behind first getting Yune to load
+  the canonical schema at all.
 - Post-revert ratchet is **measured but not robustly green**: current `main`
   code == `5d3dba2a`, so the 9 retained `phase-0-restored` runs measure current
   code — **5 pass, 4 fail** (runs 2/3/4/7; 37/59-char + Track B rows straddle
@@ -278,26 +281,47 @@ amendment):
       are `phase-0-restored-ratchet-run{1..9}`).
 
 ### Phase 1 — Re-validate the retained lanes + captures (do not redo blindly)
-- [ ] **Lane A (largely retained in `5d3dba2a`):** re-validate the staged
-      rime-cantonese lane actually loads/deploys and that
-      `yune-canonical-rime-cantonese-load-*.json` came from Yune's real path;
-      re-verify capture provenance/checksums. Confirm the shipped
-      `jyut6ping3.dict.yaml` is NOT the pinned canonical data (README records a
-      SHA mismatch — verify). Defuse `is_typeduck_jyut6ping3_profile` so the
-      canonical lane does not inherit TypeDuck shims (typed config, M23 pattern).
-      **Add the missing control jyutping input** to the capture.
+> **CORRECTION 2026-07-08 (re-validation increment):** the "retained groundwork"
+> claim is **oracle capture only**. `git ls-files` shows only
+> `phase-1/canonical-rime-cantonese-capture.json` survives; the
+> `yune-canonical-rime-cantonese-load-*.json` and the `phase-2/canonical-pre-fix-diff.json`
+> the m59-canonical README cited as "retained" are **absent from the tracked tree**
+> (lost in the revert or never committed). **The Yune canonical runner + the diff
+> must be RE-CREATED, not re-run.** Full increment findings:
+> `../m59-canonical-jyutping-reachability-parity/lane-a-revalidation-2026-07-08.md`.
+- [x] **Landmine (`is_typeduck_jyut6ping3_profile`) — DISARMED 2026-07-08.** The
+      typed-config predicate (`schema_install.rs:860-864`) needs a `yune/profile`
+      key the staged upstream schema lacks → `Standard` profile, no TypeDuck shims,
+      `leading_syllable_reachability` ON by flip default. Resolved lane-config table
+      recorded in the increment note. No opt-out marker needed.
+- [x] **Capture integrity — VERIFIED 2026-07-08.** `canonical-rime-cantonese-capture.json`
+      regenerates content-identical (0 structural diffs) with provenance re-pinned
+      (DLL SHA self-check); byte-diff is `ConvertTo-Json` indentation only
+      (content-reproducible, not byte-reproducible — noted).
+- [ ] **BLOCKED — Yune cannot deploy the staged rime-cantonese** (`deploy()` non-TRUE;
+      source-path failure, NOT staleness [owner-verified] and NOT `import_tables`).
+      Next: diagnose via a `tests/` harness surfacing the `Result`; check
+      `vocabulary: essay-cantonese` early. No Yune canonical output → no diff yet.
+      **Add the missing control jyutping input** to the capture once the runner works.
 - [x] **Lane B (DONE, landed `c89a8ea9`):** luna complete-list/page-turn injection
       point traced + implemented; storage/prism facts recorded (luna is
       Compact+prism → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test (not a capture).
 - [ ] Any newly captured rows committed with full provenance; Yune pre-fix output
       recorded alongside.
 
-### Phase 2 — Re-validate / extend the diff (retained pre-fix diff exists)
-- [ ] The frozen pre-fix diff (`phase-2/canonical-pre-fix-diff.json`) is retained
-      and real — re-validate it reproduces from the current honest baseline, then
-      extend it with the control inputs. Classified: reachability /
-      selection-recomposition / admission over-under / order-only. This diff —
-      not any model, not a baked table — is the Phase 3 spec.
+### Phase 2 — Re-freeze the diff FROM SCRATCH (the retained diff is gone)
+> **CORRECTION 2026-07-08:** `phase-2/canonical-pre-fix-diff.json` is **NOT in the
+> tracked tree** — it must be re-created, not re-validated. And the ground moved:
+> the canonical lane now inherits the M59 flip + all corrective mechanisms
+> (bounded injection, bare-syllable gate, boundary skip, range cap, precedence),
+> none of which existed when the old diff was frozen. Re-freeze from scratch once
+> the deploy blocker is cleared.
+- [ ] Re-freeze the classified diff from Yune's current-main (flip-on) canonical
+      output vs the oracle capture, per-direction (reachability / over-admission /
+      under-admission / order-only), order-exact through the captured range, every
+      divergence named. Watch `bei` (碑悲卑… vs oracle 畀比被鼻避… — expect it changed
+      under the flip). This re-frozen diff — not any model, not a baked table — is
+      the Phase 3 spec.
 
 ### Phase 3 — Implement per the diff (general mechanism)
 - [x] **(Lane B, DONE)** Luna leading-syllable injection (page-turn path, general,

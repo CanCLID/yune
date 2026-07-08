@@ -504,6 +504,11 @@ pub struct StaticTableTranslator {
     // cannot admit digit-less rows into a toned family (shifting M58 pins).
     // Lazily computed once from `storage`, then cached.
     untoned_dictionary_cache: OnceLock<bool>,
+    // M59 finding #8: memoized `normalized_original_code(code) -> [storage codes]`
+    // index for the leading-syllable fetch. Without it every prefix boundary of
+    // every keystroke rescanned the whole syllabary and allocated a String per
+    // entry (~15-25k allocs/keystroke on 37/59-char rows). Built once, then O(1).
+    leading_fetch_index_cache: OnceLock<HashMap<String, Vec<String>>>,
     sentence_word_penalty: f32,
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
@@ -566,6 +571,7 @@ impl StaticTableTranslator {
             prefix_fallback: false,
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
+            leading_fetch_index_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
@@ -629,6 +635,7 @@ impl StaticTableTranslator {
             prefix_fallback: false,
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
+            leading_fetch_index_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -682,6 +689,7 @@ impl StaticTableTranslator {
             prefix_fallback: false,
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
+            leading_fetch_index_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -748,6 +756,7 @@ impl StaticTableTranslator {
             prefix_fallback: false,
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
+            leading_fetch_index_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -2677,17 +2686,33 @@ impl StaticTableTranslator {
                 fetch_codes.push(spec.code);
             }
         }
-        for code in self.syllabary_or_storage_codes() {
-            if seen.contains(code.as_ref()) {
-                continue;
-            }
-            let normalized = normalized_original_code(code.as_ref());
-            if normalized == prefix && self.storage.has_code(code.as_ref()) {
-                seen.insert(code.to_string());
-                fetch_codes.push(code.into_owned());
+        // M59 finding #8: O(1) lookup into the memoized normalized-code index
+        // instead of an O(syllabary) rescan with a per-entry String allocation.
+        // The index is built once by iterating `syllabary_or_storage_codes` in the
+        // same order, so the emitted fetch codes (and their order) are identical to
+        // the former scan.
+        if let Some(codes) = self.leading_fetch_index().get(prefix) {
+            for code in codes {
+                if seen.insert(code.clone()) {
+                    fetch_codes.push(code.clone());
+                }
             }
         }
         fetch_codes
+    }
+
+    fn leading_fetch_index(&self) -> &HashMap<String, Vec<String>> {
+        self.leading_fetch_index_cache.get_or_init(|| {
+            let mut index: HashMap<String, Vec<String>> = HashMap::new();
+            for code in self.syllabary_or_storage_codes() {
+                let normalized = normalized_original_code(code.as_ref());
+                if normalized.is_empty() {
+                    continue;
+                }
+                index.entry(normalized).or_default().push(code.into_owned());
+            }
+            index
+        })
     }
 
     fn syllabary_or_storage_codes(&self) -> Vec<Cow<'_, str>> {

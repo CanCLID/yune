@@ -466,6 +466,25 @@ target/, driven by scripts/oracle-rime-probe.cs).
   them. (Runtime cangjie flip-simulation belongs WITH the flip; the injection-inertness
   is reasoned from the guard + confirmed cangjie composes natively in Yune today.)
 
+**Landed 2026-07-07 (`<pending>`, pushed) — finding #8 (perf) + the ratchet straddle CLOSED.**
+`leading_syllable_fetch_codes` rescanned the whole ~424-entry syllabary and allocated a
+`String` per entry (`normalized_original_code`) on EVERY prefix boundary of EVERY
+keystroke — the longest-first walk tries many empty prefixes before the first hit, so
+the 37/59-char rows paid ~15-25k allocs/keystroke. Memoized to an O(1) lookup into a
+`normalized_original_code(code) -> [codes]` index built once at construction (`OnceLock`,
+same source/order → byte-identical fetch codes, behavior-preserving: m59 4/4, reach 5/5,
+luna parity 14/14, `yune-core --lib` 306/0, bare-syllable guard intact; fmt/clippy clean).
+**Ratchet: ROBUST GREEN across 3 fresh runs** on the UNCHANGED standing thresholds (no
+re-baseline; nothing discarded, no run-until-green). Worst-of-3 vs ceiling: 37-char
+2.045/2.094, 59-char 1.612/1.625, n 2.748/2.890, ni 2.554/2.666, hao 1.689/1.731, win
+rows all <1.00 (zhongguo≤0.267, cszysmsrsd≤0.397, zybfshmsru≤0.577), startup ≤1.054/1.091,
+Track A peak 186.2/195.0 MB, all Track B guards pass. fable's committed pre-#8 run FAILED
+37-char 2.165 / 59-char 1.653 — the memoization pulled both under. Evidence + honest
+caveats (59-char run-1 0.8% margin; startup run-2 tight) in
+`docs/reports/evidence/m59-finding-8-perf/`. **This clears the perf item (1) in the
+callout.** The `skip-injection-when-page-full` sub-optimization from finding #8 was NOT
+needed (the memoization alone closed the straddle) — not pursued.
+
 **Secondary (in the series, below the cap):** returning-user unbounded lane (add a
 named benchmark row); complete-path injection lacks `!has_correction_lookup`;
 phantom-page off-by-one; dedup the ×2 21-line splice blocks into a helper; unify

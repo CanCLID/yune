@@ -3318,6 +3318,13 @@ fn m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product() {
 fn m59_luna_moboli_control_composes_mo_bo_li_on_byte_backed_product() {
     // Anti-gaming control: an input in no allowlist and no baked data. moboli ->
     // 莫伯李 (mo bo li). Proves the mechanism generalizes, not memorizes.
+    //
+    // Oracle provenance (M59 finding #7): rime/librime 1.17.0 composes 莫伯李 from
+    // moboli by the same partial single-character selection — captured in
+    // crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json
+    // (pinned by upstream_luna_leading_single_composition.rs). Yune surfaces the
+    // singles at different candidate positions than librime (recorded there); M59
+    // asserts reachability + recompose, not position parity.
     m59_luna_compose_from_leading_singles(
         "m59-luna-moboli",
         "moboli",
@@ -3418,6 +3425,13 @@ fn m59_luna_zhongguo_completion_class_reaches_leading_singles() {
     // unreachable at any page — the pre-M59 dead-end for that whole input class.
     // 中 is dictionary-backed (中 / zhong), so it must be reachable by paging and
     // selectable, recomposing the remainder `guo`.
+    //
+    // Oracle provenance (M59 finding #7): rime/librime 1.17.0 also reaches 中 for
+    // zhongguo (at global index 11) and zhonggao (index 3) and recomposes on
+    // partial selection — captured in the m59-luna-leading-single-composition
+    // fixture. Yune's product surfaces 中 earlier (page 0) than librime's index 11
+    // because its completion ordering diverges; M59 asserts REACHABILITY, not
+    // position parity (the divergence is recorded in the fixture + its test).
     let _guard = test_guard();
     let runtime = YuneWebRuntime::create_with_schema("m59-luna-zhongguo-reach", "luna_pinyin");
     stage_and_deploy_tracked_luna(&runtime);

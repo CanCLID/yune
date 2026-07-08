@@ -9,13 +9,19 @@
     "release_url": "https://github.com/rime/librime/releases/tag/1.17.0"
   },
   "profile_only": false,
-  "updated": "2026-07-04",
+  "updated": "2026-07-07",
   "files": [
     {
       "path": "luna-pinyin-sentence-expanded.json",
       "milestone": "M55 Phase 3R",
       "source_row_policy": "m55_phase3r_luna_sentence_expansion",
       "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json -SentenceExpandedOutput crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json"
+    },
+    {
+      "path": "m59-luna-leading-single-composition.json",
+      "milestone": "M59 finding #7",
+      "source_row_policy": "m59_leading_single_reachability_and_partial_selection_composition",
+      "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-m59-luna-composition.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json"
     }
   ]
 }

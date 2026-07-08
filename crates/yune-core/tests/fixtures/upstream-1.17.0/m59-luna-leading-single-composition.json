@@ -1,0 +1,163 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "canonical_repository": "https://github.com/rime/librime",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "schema": "luna_pinyin"
+  },
+  "capture": {
+    "method": "scripts/capture-m59-luna-composition.ps1 + scripts/curate-m59-luna-composition.py via scripts/oracle-rime-probe.cs (DllImport rime.dll)",
+    "modules": [
+      "default"
+    ],
+    "note": "Leading-single reachability + partial-selection composition provenance for M59. Positions are the oracle's; Yune's PRODUCT completion ordering diverges (recorded)."
+  },
+  "inputs": {
+    "moboli": {
+      "input": "moboli",
+      "target_single": "莫",
+      "target_global_index": 2,
+      "page_0": [
+        "莫玻璃",
+        "麼波",
+        "莫",
+        "摸",
+        "魔"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 155
+    },
+    "boli": {
+      "input": "boli",
+      "target_single": "伯",
+      "target_global_index": 14,
+      "page_0": [
+        "玻璃",
+        "剝離",
+        "波里",
+        "薄利",
+        "勃利"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 155
+    },
+    "li": {
+      "input": "li",
+      "target_single": "李",
+      "target_global_index": 2,
+      "page_0": [
+        "裏",
+        "里",
+        "李",
+        "裡",
+        "離"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 155
+    },
+    "zhonggao": {
+      "input": "zhonggao",
+      "target_single": "中",
+      "target_global_index": 3,
+      "page_0": [
+        "忠告",
+        "中高",
+        "終告",
+        "中",
+        "種"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 117
+    },
+    "zhongguo": {
+      "input": "zhongguo",
+      "target_single": "中",
+      "target_global_index": 11,
+      "page_0": [
+        "中國",
+        "種過",
+        "種果",
+        "忠果",
+        "中古"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 125
+    },
+    "gao": {
+      "input": "gao",
+      "target_single": "高",
+      "target_global_index": 0,
+      "page_0": [
+        "高",
+        "搞",
+        "告",
+        "稿",
+        "膏"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 155
+    },
+    "guo": {
+      "input": "guo",
+      "target_single": "國",
+      "target_global_index": 1,
+      "page_0": [
+        "過",
+        "國",
+        "果",
+        "郭",
+        "鍋"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 155
+    }
+  },
+  "moboli_composition": {
+    "description": "librime composes the moboli target by partial single-character selection (preedit accumulation, single commit at end).",
+    "final_commit": "莫伯李",
+    "chain": [
+      {
+        "step": "moboli_page0",
+        "preedit": "mo bo li",
+        "commit_text": null
+      },
+      {
+        "step": "after_select_mo",
+        "preedit": "莫bo li",
+        "commit_text": null
+      },
+      {
+        "step": "boli_page0",
+        "preedit": "莫bo li",
+        "commit_text": null
+      },
+      {
+        "step": "boli_p1",
+        "preedit": "莫bo li",
+        "commit_text": null
+      },
+      {
+        "step": "boli_p2",
+        "preedit": "莫boli",
+        "commit_text": null
+      },
+      {
+        "step": "after_select_bo",
+        "preedit": "莫伯li",
+        "commit_text": null
+      },
+      {
+        "step": "li_page0",
+        "preedit": "莫伯li",
+        "commit_text": null
+      },
+      {
+        "step": "after_select_li",
+        "preedit": null,
+        "commit_text": "莫伯李"
+      }
+    ]
+  }
+}

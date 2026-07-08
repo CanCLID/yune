@@ -2,8 +2,10 @@
 
 > **PROGRESS (2026-07-07): Lane B luna reachability MECHANISM landed (`c89a8ea9`)
 > and independently confirmed genuine** (fable's review: greps clean; generality
-> proven by fable's own novel probes — e.g. `shijie`, `ewai` — outside any test
-> list). `moboyi`→`莫伯洢`, source-truthful non-circular tests, phrase-before-single
+> proven by fable's own novel probes of Yune's mechanism, outside any test list —
+> `weibozi`→155 distinct wei-family singles (a reviewer count of Yune's output, §7
+> N/A; re-confirmed identical on a fresh HEAD run), plus `shijie`/`ewai`).
+> `moboyi`→`莫伯洢`, source-truthful non-circular tests, phrase-before-single
 > ordering, no regressions. **M59 is NOT closeable** — three open items:
 > **(1) PERF STRADDLE (corrected):** the "ratchet green twice" claim was favorable
 > sampling; an independent run failed `n`/37-char/59-char (pre-existing standing

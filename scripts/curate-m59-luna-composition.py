@@ -83,7 +83,7 @@ def main() -> int:
             "chain": chain,
         },
     }
-    with open(out_path, "w", encoding="utf-8") as handle:
+    with open(out_path, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(fixture, ensure_ascii=False, indent=2) + "\n")
     sys.stderr.write("wrote " + out_path + "\n")
     return 0

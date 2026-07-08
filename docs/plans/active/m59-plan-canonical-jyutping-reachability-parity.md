@@ -311,6 +311,15 @@ encode the wrong model are re-derived from captures with named justification.
    skipped; source storage → full materialization per keypress.
 10. **[plausible, latent] Positional quality overwrite (`:2785`)** defeats
     `sentence_over_completion`'s priority floor. Guard/scope to injected rows.
+    **DONE (`e2c6003e`).** Fixed by re-floating the floored sentence above the
+    positional ranks after the overwrite (gated on a `sentence_over_completion_
+    floored` flag), NOT by scoping the overwrite to injected rows — scoping would
+    relax the all-rows ordering and risk reordering the LIVE luna
+    phrases/completions, whereas re-float touches only the one deliberately-floored
+    row. New yune-core test `sentence_over_completion_floor_survives_leading_
+    syllable_reachability_overwrite` bites (`["巴班","爸爸",…]` completion-above-
+    sentence without the fix). Latent: no shipped schema enables the flag.
+    cantonese_parity exactly the 3 pre-existing; yune-core --lib 307/0.
 
 **Landed 2026-07-07 (`942a89a4`, pushed) — findings 1+2 (+3 folded):**
 - **#1 root cause refined.** The prior corrective only *signalled* more on the

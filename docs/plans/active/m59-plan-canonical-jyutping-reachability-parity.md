@@ -429,13 +429,17 @@ config satisfies the current paths).
 **Landed 2026-07-07 (`a3db53bf`/`5b12941c`, pushed) — finding #7 (oracle capture run).**
 Ran the real rime/librime 1.17.0 oracle IN-ENVIRONMENT (rime.dll present under
 target/, driven by scripts/oracle-rime-probe.cs).
-- **Luna (moboli + zhonggao/zhongguo-class).** Captured + curated the reproducible
-  fixture `m59-luna-leading-single-composition.json` (scripts/capture-m59-luna-
-  composition.ps1 + curate-m59-luna-composition.py; in the oracle-manifest). librime
-  composes 莫伯李 from `moboli` by partial single selection (莫→preedit `莫bo li`,
-  伯→`莫伯li`, 李→commit 莫伯李); reachable positions 莫@2/伯@14/李@2/zhonggao 中@3/
-  zhongguo 中@11/gao 高@0/guo 國@1. New test `upstream_luna_leading_single_composition`
-  (3/3) pins these; the m59 moboli/zhongguo tests now cite it. **Two divergences
+- **Luna (PRIMARY moboyi + moboli control + zhonggao/zhongguo-class).** Captured +
+  curated the reproducible fixture `m59-luna-leading-single-composition.json`
+  (scripts/capture-m59-luna-composition.ps1 + curate-m59-luna-composition.py; in the
+  oracle-manifest). **PRIMARY: librime composes 莫伯洢 (NOT in lexicon) from `moboyi`**
+  by partial single selection (莫→preedit `莫bo yi`, 伯→`莫伯yi`, 洢→commit 莫伯洢); the
+  rare 洢 is reachable at oracle index 155 (莫@2, 伯@19). Control: moboli→莫伯李
+  (莫@2/伯@14/李@2). Plus zhonggao 中@3/zhongguo 中@11/gao 高@0/guo 國@1. New test
+  `upstream_luna_leading_single_composition` (4/4) pins moboyi→莫伯洢 primary + moboli
+  control + positions; the m59 moboyi/moboli/zhongguo tests cite it. (Correction
+  `d1762ce8`: the first #7 capture provenanced only the moboli control — moboyi is
+  the owner's primary case.) **Two divergences
   RECORDED (not asserted vs Yune):** (a) Yune's PRODUCT completion ordering differs
   from librime (zhongguo page 0 `中國大陸…` Yune vs `中國 種過…` librime; Yune injects
   中 on page 0, librime has it at index 11) — M59 asserts REACHABILITY + recompose,

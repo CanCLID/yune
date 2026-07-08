@@ -369,6 +369,30 @@ encode the wrong model are re-derived from captures with named justification.
   302/0; `yune-rime-api --lib` 325/0; fmt/clippy(core+api) clean. **Ratchet straddle
   still OPEN — not run/claimed.**
 
+**STOP-THE-LINE fixed 2026-07-07 (`0e900d5b`, pushed) — increment-1 regression.**
+fable's increment-2 control probe (findings 4+5 ACCEPTED end-to-end) caught a
+blocking regression from `942a89a4`, live on main: **bare single-syllable inputs
+whose code has a valid shorter-syllable prefix lost their exact singles entirely.**
+`mai` → only the `ma` family (嗎 嘛 馬 媽 罵…), 買/賣/麥/邁 ABSENT at every page; `wai`→外,
+`xian`→先/現, `lian`→連 same. Mechanism: `leading_single_syllable_prefix_candidates`
+walks PROPER prefixes (excludes the full input), so for a complete syllable the walk
+can only fetch a DIFFERENT shorter-prefix family (`ma` for `mai`), which it splices
+above the exacts at `leading_single_insert_index` (index 0) and truncation then drops
+them. Broad/core class (mai/wai/xian/lian/nian/tian/bian/dian/mian… + every
+intermediate typing state), **invisible to every existing gate** (all M59 tests
+multi-syllable; parity short keys n/ni/hao have no valid-syllable prefix — the exact
+"masked today" insert-index hazard the removed-behavior angle flagged, now unmasked).
+Fix: skip the injection when the full `lookup_code` is itself served by single-char
+exacts (`storage.exact_candidates(lookup_code)` has a 1-char row) — the exact path
+owns those singles; leading-single reachability is for MULTI-syllable composition
+(`zhongguo`→中, `moboyi`→莫 still inject, verified). Flag-gated → jyutping untouched.
+New guard test `m59_luna_bare_syllable_keeps_full_exact_singles_on_page_zero`
+(mai→買/wai→外/lian→連/dian→點-novel; dictionary exacts, not Yune) — **confirmed it
+FAILS without the guard** (`page0=[嗎 嘛 馬 媽 罵]`). Gates: `m59_luna` 5/5; luna parity
+14/14; `cantonese_parity` exactly the 3 pre-existing; `reach` 5/5; `yune-core --lib`
+303/0; fmt/clippy clean. Ratchet straddle stays open. **Lesson: bare-syllable rows
+now permanently in the suite — this class was a blind spot for every prior gate.**
+
 **Secondary (in the series, below the cap):** returning-user unbounded lane (add a
 named benchmark row); complete-path injection lacks `!has_correction_lookup`;
 phantom-page off-by-one; dedup the ×2 21-line splice blocks into a helper; unify

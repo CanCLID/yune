@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::mem;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use crate::comment_format::CommentFormat;
@@ -497,6 +497,13 @@ pub struct StaticTableTranslator {
     // complete path (and only *signals* its existence on the bounded typing
     // path, without materializing or reordering page 1).
     leading_syllable_reachability: bool,
+    // M59 finding #6: cached structural classification of the dictionary as
+    // untoned (luna `mo`) vs toned (jyutping `bei2`). The untoned-relaxation in
+    // the leading-single filter is keyed on THIS (code structure), not on the
+    // `leading_syllable_reachability` flag, so the default-ON schema-general flip
+    // cannot admit digit-less rows into a toned family (shifting M58 pins).
+    // Lazily computed once from `storage`, then cached.
+    untoned_dictionary_cache: OnceLock<bool>,
     sentence_word_penalty: f32,
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
@@ -558,6 +565,7 @@ impl StaticTableTranslator {
             prediction_candidate_limit: None,
             prefix_fallback: false,
             leading_syllable_reachability: false,
+            untoned_dictionary_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
@@ -620,6 +628,7 @@ impl StaticTableTranslator {
             prediction_candidate_limit: None,
             prefix_fallback: false,
             leading_syllable_reachability: false,
+            untoned_dictionary_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -672,6 +681,7 @@ impl StaticTableTranslator {
             prediction_candidate_limit: None,
             prefix_fallback: false,
             leading_syllable_reachability: false,
+            untoned_dictionary_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -737,6 +747,7 @@ impl StaticTableTranslator {
             prediction_candidate_limit: None,
             prefix_fallback: false,
             leading_syllable_reachability: false,
+            untoned_dictionary_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -1566,13 +1577,34 @@ impl StaticTableTranslator {
     }
 
     fn bounded_request_supported(&self, lookup_specs: &[LookupCodeSpec]) -> bool {
+        // M59 finding #9 (flip precondition): `leading_syllable_reachability`
+        // carries its own bounded-arm injection (:2188), so a flip schema that
+        // combines it with `prediction_never_first` (and neither a prediction
+        // limit nor prefix_fallback) must still take the bounded path. Without
+        // this disjunct that combo falls to the compact `Some(limit)` fallback,
+        // whose injection gate (`prefix_fallback_limit.is_none()`) is false, and
+        // the leading single is silently dropped (source storage also
+        // full-materialises per keypress). Inert today: luna already satisfies
+        // `!prediction_never_first`, and jyutping leaves the flag off.
         (!self.prediction_never_first
             || self.prediction_candidate_limit.is_some()
-            || self.prefix_fallback)
+            || self.prefix_fallback
+            || self.leading_syllable_reachability)
             && !self.sentence_over_completion
             && lookup_specs
                 .iter()
                 .all(|spec| spec.required_syllable_count.is_none())
+    }
+
+    /// M59 finding #6: structural classification of the backing dictionary as
+    /// untoned (luna `mo`) vs toned (jyutping `bei2`), cached after first use.
+    /// The untoned-relaxation in the leading-single filter keys on this rather
+    /// than the reachability flag, so the default-ON schema-general flip cannot
+    /// admit digit-less rows into a toned family.
+    pub(crate) fn untoned_dictionary(&self) -> bool {
+        *self
+            .untoned_dictionary_cache
+            .get_or_init(|| dictionary_is_untoned(&self.storage))
     }
 
     fn uses_m44_short_key_metrics(&self, lookup_code: &str) -> bool {
@@ -2564,17 +2596,18 @@ impl StaticTableTranslator {
                                 && {
                                     // Toned codes (jyutping `bei2`) count syllables
                                     // by tone digit. Untoned codes (luna `mo`) have
-                                    // none — accept those ONLY for the untoned
-                                    // leading-syllable-reachability lane, so this
-                                    // does not broaden toned prefix-fallback schemas
-                                    // (the fetch code is already a single leading
-                                    // syllable, so a single-char entry is one
-                                    // syllable by construction).
+                                    // none — accept those ONLY when the DICTIONARY
+                                    // itself is untoned (M59 finding #6: keyed on
+                                    // code STRUCTURE, not the reachability flag, so
+                                    // the default-ON flip cannot admit digit-less
+                                    // rows into a toned family and shift the M58
+                                    // pins). The fetch code is already a single
+                                    // leading syllable, so a single-char entry is
+                                    // one syllable by construction.
                                     let syllables =
                                         source_code_syllable_count(candidate.raw_comment());
                                     syllables == Some(1)
-                                        || (self.leading_syllable_reachability
-                                            && syllables.is_none())
+                                        || (self.untoned_dictionary() && syllables.is_none())
                                 }
                                 && self.is_dictionary_text_allowed(candidate.text())
                                 && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
@@ -3351,6 +3384,33 @@ fn raw_sentence_piece_matches_input_code(raw_comment: &str, _text: &str, entry_c
     }
     let normalized = normalized_original_code(raw_comment);
     normalized == entry_code
+}
+
+/// M59 finding #6: a dictionary is "untoned" (luna-style) when its syllable
+/// codes carry no ASCII tone digit; toned dictionaries (jyutping `bei2`, `zi1`)
+/// put a digit in every syllable. One digit proves toned, so the scan
+/// early-exits on the first toned code. Prefers the deduped `syllabary_codes`
+/// (the exact set the candidate `raw_comment` draws from) and falls back to
+/// `all_codes` for the Heap constructors where the syllabary is absent. An empty
+/// code inventory classifies as toned/false, but such a dictionary yields no
+/// single-char families so the default is inert.
+fn dictionary_is_untoned(storage: &TableStorage) -> bool {
+    fn has_tone_digit(code: &str) -> bool {
+        code.bytes().any(|byte| byte.is_ascii_digit())
+    }
+    match storage.syllabary_codes() {
+        Some(codes) if !codes.is_empty() => !codes.iter().any(|code| has_tone_digit(code)),
+        _ => {
+            let mut saw_any = false;
+            for code in storage.all_codes() {
+                saw_any = true;
+                if has_tone_digit(&code) {
+                    return false;
+                }
+            }
+            saw_any
+        }
+    }
 }
 
 fn source_code_syllable_count(raw_code: &str) -> Option<usize> {

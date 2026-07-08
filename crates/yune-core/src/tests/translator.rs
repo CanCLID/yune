@@ -1493,6 +1493,178 @@ sort: by_weight
 }
 
 #[test]
+fn bounded_leading_single_reachable_under_prediction_never_first_without_limit() {
+    // M59 finding #9 (flip precondition): a schema combining
+    // leading_syllable_reachability with prediction_never_first, but WITHOUT a
+    // prediction limit and WITHOUT prefix_fallback (the combo the default-ON flip
+    // creates for e.g. cangjie), must still take the bounded path — which carries
+    // the leading-single injection (translator/mod.rs:2188). Pre-fix,
+    // bounded_request_supported returned false for that combo, so the caller fell
+    // to the compact Some(limit) fallback whose injection gate
+    // (prefix_fallback_limit.is_none()) is false, silently dropping the leading
+    // single. 俄 is the `俄 e 95` dict row, not Yune-derived.
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: reach_prediction_never_first
+version: "0.1"
+sort: by_weight
+...
+
+俄羅	eluo	100
+俄	e	95
+額	e	90
+羅	luo	80
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["e", "luo"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 5))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false)
+        // The precondition combo: prediction_never_first with NO limit / NO
+        // prefix_fallback — the first bounded_request_supported disjunct is
+        // (false || false || false) pre-fix.
+        .with_prediction_never_first(true);
+
+    let result = translator.translate_with_context_and_request(
+        "eluo",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(8).with_debug_full_count(true),
+    );
+    assert!(
+        result
+            .candidates
+            .iter()
+            .any(|candidate| candidate.text == "俄"),
+        "leading single 俄 must reach the bounded page under prediction_never_first \
+         (finding #9); pre-fix the compact Some(limit) fallback skipped the \
+         injection; got {:?}",
+        result
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn untoned_dictionary_classification_is_structural_not_flag_keyed() {
+    // M59 finding #6 (flip precondition): the untoned-relaxation in the
+    // leading-single filter admits digit-less single-char rows ONLY when the
+    // backing dictionary is structurally UNTONED (no tone digit in any syllable
+    // code), NOT whenever the reachability flag is on. This keeps the default-ON
+    // schema-general flip from admitting digit-less/malformed rows into a TONED
+    // jyutping family and shifting the M58-pinned positions (畀@6, 諮@27). Here we
+    // assert the structural classifier directly.
+    let untoned = StaticTableTranslator::from_compact_dictionary(
+        TableDictionary::parse_rime_dict_yaml(
+            "---\nname: untoned\nversion: \"0.1\"\nsort: by_weight\n...\n\n莫\tmo\t100\n伯\tbo\t90\n",
+        )
+        .expect("untoned dictionary should parse"),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(
+                &["mo".to_owned(), "bo".to_owned()],
+                &[],
+                1,
+                5,
+            ))
+            .expect("prism should parse"),
+        ),
+    );
+    assert!(
+        untoned.untoned_dictionary(),
+        "pure-alpha luna-style codes (mo/bo) must classify as untoned"
+    );
+
+    let toned = StaticTableTranslator::from_compact_dictionary(
+        TableDictionary::parse_rime_dict_yaml(
+            "---\nname: toned\nversion: \"0.1\"\nsort: by_weight\n...\n\n畀\tbei2\t100\n諮\tzi1\t90\n",
+        )
+        .expect("toned dictionary should parse"),
+        Some(
+            parse_rime_prism_bin_payload(build_prism_bin(
+                &["bei2".to_owned(), "zi1".to_owned()],
+                &[],
+                1,
+                5,
+            ))
+            .expect("prism should parse"),
+        ),
+    );
+    assert!(
+        !toned.untoned_dictionary(),
+        "tone-digit codes (bei2/zi1) must classify as toned so the relaxation stays off"
+    );
+}
+
+#[test]
+fn toned_classified_dictionary_rejects_digitless_leading_single_under_flip() {
+    // M59 finding #6 — the re-key BITES here. Same untoned leading family (`俄`
+    // code `e`) as the reachability tests, but the dictionary also carries one
+    // toned code (`好 hou2`), so it classifies as TONED. With the reachability flag
+    // forced on (simulating the default-ON flip on a toned schema), the digit-less
+    // single 俄 must NOT be admitted into the leading family: the relaxation keys
+    // on the structural classification, not the flag. Pre-fix (flag-keyed) the flag
+    // being on admitted 俄 and would have polluted the toned family / shifted pins.
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: toned_classified
+version: "0.1"
+sort: by_weight
+...
+
+俄羅	eluo	100
+俄	e	95
+額	e	90
+羅	luo	80
+好	hou2	70
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["e", "luo", "hou2"].map(str::to_owned);
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 5))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        // Simulate the flip: reachability on, but the dict is structurally toned.
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+    assert!(
+        !translator.untoned_dictionary(),
+        "the `hou2` tone-digit code must make this dictionary classify as toned"
+    );
+
+    let result = translator.translate_with_context_and_request(
+        "eluo",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::unbounded(),
+    );
+    assert!(
+        !result
+            .candidates
+            .iter()
+            .any(|candidate| candidate.text == "俄"),
+        "a toned-classified dictionary must NOT admit the digit-less leading single \
+         俄 under the flip (the untoned relaxation is structure-keyed, not \
+         flag-keyed; pre-fix the on-flag admitted it); got {:?}",
+        result
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn bounded_request_uses_prefix_fallback_without_full_fallback() {
     let _guard = super::m37_metrics_test_guard();
     let translator = StaticTableTranslator::new([("nei", "你")]).with_prefix_fallback(true);

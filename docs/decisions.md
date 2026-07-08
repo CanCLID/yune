@@ -540,6 +540,47 @@ prism bytes, so the four affected prisms and both manifests were regenerated.
 Locked by a trie-level regression test (verified to fail without the fix) and a
 committed-asset test asserting the six reported words (`d1c0171a`).
 
+**D-47 / M59-DEFAULT-ON-REACHABILITY — Leading-single reachability is an
+engine-level default for every schema, and its measured per-keystroke cost gets a
+3-row owner-signed injection-on ceiling.** Per the owner amendment (2026-07-07,
+recorded in `docs/plans/active/m59-plan-canonical-jyutping-reachability-parity.md`)
+composing an arbitrary non-lexicon phrase one character at a time
+(`moboyi`→莫伯洢) must work on **every** schema by default with no per-schema
+adaptation. The flip makes `leading_syllable_reachability` default **on** in
+`schema_install` (opt out only with an explicit `translator/leading_syllable_reachability: false`);
+luna drops its schema flag and inherits the default. It ships with the corrective
+mechanism series: the leading-single walk gets an O(1) boundary skip + a range cap
+(bounded to the longest syllabary code) so the long-input CPU cost stays under the
+gate; a **schema-level precedence fix** stops the injection from firing on jyutping
+keystrokes where `prefix_fallback` did not apply per-request (that was a +24 MB
+Track B regression and a latent perturbation of the byte-pinned jyutping order —
+the fix restores the M58 contract and makes the documented dual-mechanism
+precedence real in code); and a bare-syllable call-site gate keeps complete
+syllables (`hao`, `mai`) out of the composition machinery.
+
+The flip is the **first honest ratchet measurement with the injection actually on**
+— every prior run measured the feature off because the benchmark deployed a luna
+without the flag (the finding-#8 hole). A provenance guard now fails the benchmark
+if the deployed luna and the shipped web-product luna disagree on the reachability
+state. The injection-off M55 ceilings were built as `baseline × 1.05`, a noise
+band the feature's real per-keystroke cost partly eats on the three thinnest rows.
+**Owner decision (2026-07-08):** re-derive an injection-on ceiling for exactly
+`n`, `hao`, and the 37-char row = **pooled-worst of the committed injection-on runs
+× 1.05**; the other 20 standing rows are untouched; the injection-off numbers +
+per-row `spread_pct` are preserved in `m55-thresholds.csv` as the feature-cost
+record. Protocol upgrades landed with it: a `spread_pct` column on every gate row,
+and a written **median-of-committed-runs** gate-verdict rule (a row passes iff its
+median ≤ its ceiling — any-row-single-run gating gets flakier as rows are added).
+The owner-expanded Track A set (`zh, j, yi, che, chuang, b`; words `ceshi,
+zhongdengchangdu, dazisudu`) is baselined this round (recorded-not-enforced) and
+gates from the next change; `yi`/`che`/`chuang` are bare-syllable-guard sentinels
+whose expected feature cost is ≈ 0. Evidence: `docs/reports/evidence/m59-flip-final/`
+(gate-verdict, expanded baselines, README with the m37 decomposition written as
+method) + `m59-flipoff-isolation/` (the feature-off comparison). Extends D-24
+(oracle precedence), D-28 (profile-specific tuning isolation), and the M55
+corrective ratchet discipline. _Outcome: Good — median gate green 23/23, memory
+solved, feature-off record preserved._
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/completed/m00-analysis-founding.md`, `docs/roadmap.md`, and `docs/plans/completed/m05-m07-record-foundation-refactor.md` are the retained source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into the retained docs before `.planning/` was removed. External research was skipped at setup because scope was driven by existing docs and direct librime comparison.

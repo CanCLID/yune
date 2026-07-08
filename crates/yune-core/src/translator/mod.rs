@@ -509,6 +509,12 @@ pub struct StaticTableTranslator {
     // every keystroke rescanned the whole syllabary and allocated a String per
     // entry (~15-25k allocs/keystroke on 37/59-char rows). Built once, then O(1).
     leading_fetch_index_cache: OnceLock<HashMap<String, Vec<String>>>,
+    // M59 finding #8 (range cap): the longest normalized syllabary-code byte
+    // length. A leading syllable can never be longer than this, so the
+    // longest-first prefix walk only needs to consider boundaries up to it —
+    // bounding the per-keystroke walk to O(max_syllable_len) instead of
+    // O(input_len) and collapsing the long-input O(n^2) to O(n). Cached once.
+    max_leading_prefix_len_cache: OnceLock<usize>,
     sentence_word_penalty: f32,
     spelling_algebra_formulas: Vec<String>,
     preset_vocabulary: Vec<PresetVocabularyEntry>,
@@ -572,6 +578,7 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            max_leading_prefix_len_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary: Vec::new(),
@@ -636,6 +643,7 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            max_leading_prefix_len_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -690,6 +698,7 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            max_leading_prefix_len_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -757,6 +766,7 @@ impl StaticTableTranslator {
             leading_syllable_reachability: false,
             untoned_dictionary_cache: OnceLock::new(),
             leading_fetch_index_cache: OnceLock::new(),
+            max_leading_prefix_len_cache: OnceLock::new(),
             sentence_word_penalty: DEFAULT_SENTENCE_WORD_PENALTY,
             spelling_algebra_formulas: Vec::new(),
             preset_vocabulary,
@@ -1377,6 +1387,21 @@ impl StaticTableTranslator {
             .any(|candidate| !self.is_spelling_abbreviation_view(lookup_code, &candidate))
     }
 
+    /// True when the full input already resolves to a single-char exact — a
+    /// complete syllable the exact path serves directly (`hao`→好, `mai`→買/賣).
+    /// Such inputs need no leading-single composition (there is no multi-syllable
+    /// remainder), so the injection machinery would walk, allocate, and produce
+    /// nothing. This is the bare-syllable guard formerly buried inside the walk,
+    /// lifted to the call sites so bare syllables stop paying for it every
+    /// keystroke. It must NOT fire when the exact is a multi-char word (`zhonggao`,
+    /// `zhongguo`→中國) — those keep the injection so their leading single stays
+    /// reachable.
+    fn input_serves_single_char_exact(&self, lookup_code: &str) -> bool {
+        self.storage
+            .exact_candidates(lookup_code)
+            .any(|candidate| candidate.text().chars().count() == 1)
+    }
+
     fn is_dictionary_text_allowed(&self, text: &str) -> bool {
         self.dictionary_exclude.is_empty() || !self.dictionary_exclude.contains(text)
     }
@@ -1951,7 +1976,10 @@ impl StaticTableTranslator {
                         );
                         prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
                         candidates.extend(prefix_candidates);
-                    } else if self.leading_syllable_reachability && !has_correction_lookup {
+                    } else if self.leading_syllable_reachability
+                        && !has_correction_lookup
+                        && !self.input_serves_single_char_exact(lookup_code)
+                    {
                         // Keep phrase candidates in place; append only a bounded
                         // slice of the leading-syllable family after them — enough
                         // to fill the page and signal the rest is reachable by
@@ -1966,11 +1994,23 @@ impl StaticTableTranslator {
                             &candidates[..insert_at],
                             Some(want),
                         );
-                        candidates.splice(insert_at..insert_at, leading_singles);
-                        // Preserve phrase-before-single order through the engine's
-                        // global quality sort (the bounded sentence return does not
-                        // otherwise assign ordered qualities).
-                        Self::assign_ordered_candidate_qualities(&mut candidates);
+                        // M59: only re-rank when singles were actually injected. On a
+                        // bare-syllable input (`hao`, `mai`) the bare-syllable guard
+                        // returns an empty family, so pre-flip this branch never ran
+                        // and the phrases returned in their natural order. Post-flip
+                        // the branch runs, and an unconditional
+                        // `assign_ordered_candidate_qualities` was re-ranking the whole
+                        // page every keystroke for nothing — the dominant `hao` flip
+                        // cost (short_key_first_page_materialize +181k ns). Guarding on
+                        // non-empty restores the exact pre-flip behaviour for the empty
+                        // case while leaving the real-injection path untouched.
+                        if !leading_singles.is_empty() {
+                            candidates.splice(insert_at..insert_at, leading_singles);
+                            // Preserve phrase-before-single order through the engine's
+                            // global quality sort (the bounded sentence return does not
+                            // otherwise assign ordered qualities).
+                            Self::assign_ordered_candidate_qualities(&mut candidates);
+                        }
                     }
                     candidates.truncate(limit);
                     let result_full_count = if candidates.len() >= limit {
@@ -2007,7 +2047,10 @@ impl StaticTableTranslator {
                         );
                         prefix_candidates.truncate(limit.saturating_sub(candidates.len()));
                         candidates.extend(prefix_candidates);
-                    } else if self.leading_syllable_reachability && !has_correction_lookup {
+                    } else if self.leading_syllable_reachability
+                        && !has_correction_lookup
+                        && !self.input_serves_single_char_exact(lookup_code)
+                    {
                         // Keep phrase candidates in place; append only a bounded
                         // slice of the leading-syllable family after them — enough
                         // to fill the page and signal the rest is reachable by
@@ -2022,11 +2065,23 @@ impl StaticTableTranslator {
                             &candidates[..insert_at],
                             Some(want),
                         );
-                        candidates.splice(insert_at..insert_at, leading_singles);
-                        // Preserve phrase-before-single order through the engine's
-                        // global quality sort (the bounded sentence return does not
-                        // otherwise assign ordered qualities).
-                        Self::assign_ordered_candidate_qualities(&mut candidates);
+                        // M59: only re-rank when singles were actually injected. On a
+                        // bare-syllable input (`hao`, `mai`) the bare-syllable guard
+                        // returns an empty family, so pre-flip this branch never ran
+                        // and the phrases returned in their natural order. Post-flip
+                        // the branch runs, and an unconditional
+                        // `assign_ordered_candidate_qualities` was re-ranking the whole
+                        // page every keystroke for nothing — the dominant `hao` flip
+                        // cost (short_key_first_page_materialize +181k ns). Guarding on
+                        // non-empty restores the exact pre-flip behaviour for the empty
+                        // case while leaving the real-injection path untouched.
+                        if !leading_singles.is_empty() {
+                            candidates.splice(insert_at..insert_at, leading_singles);
+                            // Preserve phrase-before-single order through the engine's
+                            // global quality sort (the bounded sentence return does not
+                            // otherwise assign ordered qualities).
+                            Self::assign_ordered_candidate_qualities(&mut candidates);
+                        }
                     }
                     candidates.truncate(limit);
                     let result_full_count = if candidates.len() >= abbreviation_limit {
@@ -2226,7 +2281,23 @@ impl StaticTableTranslator {
         // under-advertise completeness so the remaining family pages in. The
         // fetch is capped (no full materialisation on the typing path); the full
         // family is materialised only on the unbounded/page-turn path (:2804).
-        if self.leading_syllable_reachability && !has_correction_lookup && !prefix_fallback_applies
+        //
+        // Precedence is SCHEMA-level (`!self.prefix_fallback`), not per-request
+        // (`!prefix_fallback_applies`). A schema that carries `prefix_fallback`
+        // (all jyutping/TypeDuck) owns reachability through that mechanism, and
+        // the M59 dual-mechanism resolution makes it authoritative: the
+        // leading-syllable injection must never run there. Keying on the
+        // per-request flag let this fire on jyutping keystrokes where
+        // `prefix_fallback` happened not to apply (candidates present, no
+        // full-exact/strict-prefix), materialising an extra leading-single family
+        // per keystroke — the default-ON flip's +24 MB Track B regression (and a
+        // latent perturbation of the byte-pinned jyutping order). Luna has no
+        // `prefix_fallback`, so `!self.prefix_fallback` is identical to the old
+        // `!prefix_fallback_applies` there — its reachability is unchanged.
+        if self.leading_syllable_reachability
+            && !has_correction_lookup
+            && !self.prefix_fallback
+            && !self.input_serves_single_char_exact(lookup_code)
         {
             let insert_at = leading_single_insert_index(&candidates);
             let want = limit.saturating_sub(insert_at).saturating_add(1);
@@ -2568,12 +2639,10 @@ impl StaticTableTranslator {
         // exact of its own; those inputs (`zhongguo`→中國 phrase, `moboyi`→no
         // exact) keep the injection. Flag-gated so jyutping/prefix_fallback is
         // untouched (its canonical parity is the oracle).
-        if self.leading_syllable_reachability
-            && self
-                .storage
-                .exact_candidates(lookup_code)
-                .any(|candidate| candidate.text().chars().count() == 1)
-        {
+        // Retained as the walk's own safety net (the unbounded/page-turn path at
+        // :2933 has no call-site pre-check); the bounded per-keystroke callers gate
+        // on the same predicate before ever calling in, so this is dead for them.
+        if self.leading_syllable_reachability && self.input_serves_single_char_exact(lookup_code) {
             return Vec::new();
         }
         let mut seen_texts = existing_candidates
@@ -2587,10 +2656,23 @@ impl StaticTableTranslator {
         // abbreviation prefix (e.g. 中 under `z`/`zh`) was marked seen and then
         // suppressed from the kept `zhong` family — unreachable at any page.
         // Longest-first + stop also drops the discarded fetch work.
+        // M59 finding #8 (range cap): a leading syllable is never longer than the
+        // longest syllabary code, so boundaries beyond that can't match — cap the
+        // walk to `max_leading_prefix_len`. On a 37/59-char input this bounds the
+        // per-keystroke walk to ~one syllable's worth of boundaries instead of the
+        // whole input (the O(n^2) long-input cost the boundary skip only partly
+        // cut). Safe: the boundary carrying the leading single always survives the
+        // cap. (A dictionary with no syllabary reports max 0 via all_codes; guard
+        // against that degenerate case by leaving the walk uncapped there.)
+        let max_prefix_len = self.max_leading_prefix_len();
         let mut prefix_ends: Vec<usize> = lookup_code
             .char_indices()
             .map(|(index, _)| index)
-            .filter(|index| *index > 0 && *index < lookup_code.len())
+            .filter(|index| {
+                *index > 0
+                    && *index < lookup_code.len()
+                    && (max_prefix_len == 0 || *index <= max_prefix_len)
+            })
             .collect();
         prefix_ends.sort_unstable_by(|left, right| right.cmp(left));
         for end in prefix_ends {
@@ -2730,6 +2812,20 @@ impl StaticTableTranslator {
                 index.entry(normalized).or_default().push(code.into_owned());
             }
             index
+        })
+    }
+
+    /// Longest normalized key in the leading-fetch index (the longest single
+    /// syllable's byte length). The leading-syllable prefix walk never needs to
+    /// consider a boundary longer than this — a longer prefix can never be a
+    /// single syllable. Cached once; drives the finding-#8 range cap.
+    fn max_leading_prefix_len(&self) -> usize {
+        *self.max_leading_prefix_len_cache.get_or_init(|| {
+            self.leading_fetch_index()
+                .keys()
+                .map(String::len)
+                .max()
+                .unwrap_or(0)
         })
     }
 

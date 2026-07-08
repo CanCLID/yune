@@ -45,6 +45,20 @@ function Assert-Path($Path, $Label) {
     }
 }
 
+# M59 provenance guard. Returns the schema-level `leading_syllable_reachability`
+# state of a schema file: 'absent(engine-default)' when the flag is not present
+# (the row relies on the engine default), or the literal value otherwise. The
+# finding-#8 measurement hole was exactly this drifting: the benchmark deployed a
+# luna without the flag while the shipped product carried it, so the ratchet
+# silently measured the feature OFF while the product shipped it ON.
+function Get-ReachabilityFlagState($SchemaPath) {
+    if (-not (Test-Path -LiteralPath $SchemaPath)) { return 'schema-missing' }
+    $match = Select-String -LiteralPath $SchemaPath `
+        -Pattern '^\s*leading_syllable_reachability\s*:\s*(\S+)' | Select-Object -First 1
+    if ($null -eq $match) { return 'absent(engine-default)' }
+    return $match.Matches[0].Groups[1].Value
+}
+
 function Clear-DirectoryUnder($Root, $Path) {
     $ResolvedRoot = [System.IO.Path]::GetFullPath($Root).TrimEnd('\')
     $ResolvedPath = [System.IO.Path]::GetFullPath($Path)
@@ -402,6 +416,19 @@ $TrackAYuneRun = Prepare-UpstreamRun "track-a-yune" $YuneDll
 $TrackALibrimeRun = Prepare-UpstreamRun "track-a-librime-1.17.0" $UpstreamDll
 if (-not $SkipTrackB) {
     $TrackBProductRun = Prepare-ProductRun "track-b-yune-product" $YuneDll
+}
+
+# M59 provenance guard: the benchmark's deployed luna and the shipped web-product
+# luna must agree on the reachability state, or the ratchet measures a different
+# feature than ships. Post-M59 both rely on the engine default (no schema flag);
+# this fails loudly the instant either side re-introduces a schema-level flag that
+# the other lacks. One assertion, no new inputs.
+$DeployedLuna = Join-Path $TrackAYuneRun "shared\luna_pinyin.schema.yaml"
+$ShippedLuna = Join-Path $RepoRoot "apps\yune-web\public\schema\luna_pinyin.schema.yaml"
+$DeployedFlag = Get-ReachabilityFlagState $DeployedLuna
+$ShippedFlag = Get-ReachabilityFlagState $ShippedLuna
+if ($DeployedFlag -ne $ShippedFlag) {
+    throw "M59 provenance mismatch: benchmark luna leading_syllable_reachability=[$DeployedFlag] but shipped web product=[$ShippedFlag]. The ratchet would measure a different feature state than ships (the finding-#8 hole). Reconcile apps/yune-web/public/schema with the deployed luna before trusting these numbers."
 }
 
 $TrackADeployPrepCommand = "cargo bench -p yune-rime-api --bench native_inprocess_benchmark -- --engine yune --track track-a-comparison --schema luna_pinyin --dll $(Join-Path $TrackAYuneRun 'rime.dll') --shared $(Join-Path $TrackAYuneRun 'shared') --user $(Join-Path $TrackAYuneRun 'user') --build $(Join-Path $TrackAYuneRun 'user\build') --deploy-before-benchmark --deploy-only"

@@ -126,6 +126,36 @@ Binding consequences (this section is the owner sign-off; also record in
    relationship:** jyutping reaches this via `prefix_fallback` (profile-gated),
    luna via `leading_syllable_reachability`. Either unify or document why both
    exist and which one future schemas inherit by default.
+   **RESOLVED 2026-07-07 (fable-recommended, owner-ratified via review): DOCUMENT,
+   do not unify.** (a) Precedence is already correct in code — the injection sites
+   are `if prefix_fallback { … } else if leading_syllable_reachability { … }`, so on
+   a schema with both (all jyutping under the flip) `prefix_fallback` is
+   authoritative and the new mechanism never runs. (b) The two answer to DIFFERENT
+   oracles: `prefix_fallback` implements the TypeDuck-fork product contract
+   (profile-gated, grandfathered per D-31); `leading_syllable_reachability`
+   implements upstream-librime-shaped reachability (the owner requirement,
+   oracle-captured). Unifying = one path serving two byte-pinned masters = pure
+   refactor risk, zero user gain, at milestone-close. (c) **Future-schema answer:**
+   new schemas inherit `leading_syllable_reachability` by default (that IS the
+   schema-general guarantee); `prefix_fallback` is NOT inherited — it is
+   TypeDuck-profile compatibility machinery. (d) Unification stays available as a
+   D-28 trigger-gated behavior-preserving refactor gated on the full jyutping pin
+   suite, if a future need arises. Recorded here + in `docs/ledgers/fork-parity-ledger.md`.
+
+**Standing convention (discovered during the flip, applies beyond it):** per-schema
+acceptance/capability rows must run through the **deploy path** (`schema_install` →
+yune_web), NOT the direct-construction `upstream_*` parity harnesses — those build
+translators with `from_dictionary` and never see `schema_install`, so any
+config-gated capability flag (like this flip) is invisible to them. Any future
+capability flag has the same blind spot.
+
+**Named correction to the shipped-schema set (amendment item 3):** `double_pinyin`
+and `bopomofo` are **NOT currently shipped** (`apps/yune-web/public/schema` has no
+such schema; they exist only as `upstream_*` parity fixtures). They are therefore
+NOT in the per-schema acceptance-row set for this flip. The default-ON guarantee
+covers them automatically the moment either is shipped (that is the whole point of
+the engine-level default) — recorded here rather than silently dropped from item 3's
+list.
 
 ## Two acceptance lanes
 
@@ -189,6 +219,48 @@ the full run distribution, not a cherry-picked pair. If the 37/59-char or Track 
 rows straddle a ceiling, that is a fail to fix, not a pair to select. Ceilings are
 not re-baselined.
 
+### Flip perf-gate protocol — PRE-DECLARED 2026-07-08 (owner-approved, before running)
+
+The default-ON flip turns the leading-single injection on for the benchmark's
+luna for the first time. That is a deliberate, owner-mandated feature with a
+measured per-keystroke cost; the injection-**off** M55 ceilings were built as
+`baseline × 1.05` — a *noise* band the feature's real cost now partly eats on the
+thinnest rows. Disposition (owner decision, this file records it beside the
+amendment):
+
+1. **Three rows get an owner-signed injection-ON ceiling: `n`, `hao`, 37-char
+   (`ceshiyixiachangjushuruxingnengzenyang`).** New ceiling = **pooled-worst of all
+   committed injection-on runs × 1.05**. The other 20 standing rows are **untouched**.
+   The injection-off numbers + per-row spreads are preserved in the evidence as the
+   permanent feature-cost record. Rationale: these three are the thinnest rows
+   (M58 flagged "limited headroom"); the flip's real cost + run-noise exceed the
+   old 5% noise band; `hao`'s cost is a *same-work* timing artifact (m37: identical
+   counts flip-off↔on), not a removable computation.
+
+2. **Expanded Track A input set (owner-specified), recorded-not-enforced this
+   round, gating from the next change onward** (ceiling = own pooled-worst × 1.05):
+   - short keys `zh, j, yi, che, chuang, b`; words `ceshi, zhongdengchangdu, dazisudu`.
+   - Diagnostic classes to note in the evidence: `yi`/`chuang` are bare-syllable-guard
+     rows (**expected feature cost ≈ 0 — any cost there is a regression signal**);
+     `b`/`zh`/`j` join `n` as non-syllable short-key rows; the three words fill the
+     mid-curve between short keys and the 37/59-char sentences.
+
+3. **One comprehensive round**: ~5 fresh runs, both engines, the full expanded input
+   set. Existing rows (with the 3 adjusted ceilings) **gate the flip**; new rows are
+   baselined only.
+
+4. **Protocol upgrade (a) — per-row noise column.** `m55-thresholds.csv` gains a
+   `spread_pct` column = `(max−min)/min × 100` over the committed injection-on runs,
+   so every row's noise is visible in the gate artifact itself.
+
+5. **Protocol upgrade (b) — written gate-verdict rule.** *A row passes iff the
+   **median** observation across all committed injection-on runs in the round is ≤
+   its ceiling.* Median absorbs single-run outliers; with N≥3 runs it tolerates
+   ⌊N/2⌋ noisy runs. This replaces any-row-single-run gating, which gets flakier as
+   rows are added. (Chosen over "single-failure → two re-runs, median decides"
+   because the comprehensive round already commits ≥5 runs, so the median is
+   available directly with no adaptive re-run branch.)
+
 ## Phases
 
 ### Phase 0 — Baseline + evidence ledger
@@ -240,13 +312,19 @@ not re-baselined.
 - [x] Lint/format + focused suites green: `cargo fmt --check`, `clippy -D
       warnings`; luna `m59_luna` 3/3, `upstream_luna_pinyin_parity` 14/14,
       jyutping `m58` reachability 3/3.
-- [ ] **PERF STRADDLE — OPEN (not green).** The earlier "ratchet green twice,
-      healthy margins, not straddling" claim was **favorable sampling and is
-      retracted**: an independent run (`luna-lane-ratchet-claude-verify/`) failed
-      `n` 2.947 (>2.890), 37-char 2.165 (>2.094), 59-char 1.653 (>1.625). These
-      rows STRADDLE their ceilings (pre-existing standing debt; Lane B is
-      perf-neutral by design). M59 cannot close on perf until this is genuinely
-      fixed — distribution reported, no re-baseline, no run-until-green.
+- [x] **PERF STRADDLE — RESOLVED 2026-07-08 via the flip perf-gate protocol
+      (owner-approved).** The default-ON flip is the first honest injection-ON
+      ratchet. CPU closed by the O(1) boundary skip + range cap; the +24 MB Track B
+      regression closed by the schema-level precedence fix (80 MB restored). The
+      three thinnest rows (`n`, `hao`, 37-char) carry an owner-signed injection-on
+      ceiling (pooled-worst × 1.05); feature-off numbers + spreads preserved. Median
+      gate **green 23/23** across 5 committed runs. Evidence: `m59-flip-final/`
+      (gate-verdict.csv, README with the m37 decomposition as method) +
+      `m59-flipoff-isolation/`. `hao`'s residual is a same-work timing artifact
+      (m37: identical counts flip-off/on), not a removable computation.
+- [ ] Cross-schema ratchet after the default-on flip (every schema's typing path);
+      WEB-03 tripwire; `cargo test --workspace`; first-page-turn materialization
+      guard.
 - [ ] Cross-schema ratchet after the default-on flip (every schema's typing path);
       WEB-03 tripwire; `cargo test --workspace`; first-page-turn materialization
       guard.

@@ -345,7 +345,11 @@ fn install_schema_dictionary_translator_from_config(
         &format!("{name_space}/leading_syllable_reachability"),
     )
     .and_then(config_scalar_bool)
-    .unwrap_or(false);
+    // M59 default-ON schema-general flip: composing an arbitrary non-lexicon phrase
+    // one character at a time is an engine-level default for EVERY schema (owner
+    // amendment 2026-07-07). A schema opts OUT only with an explicit
+    // `translator/leading_syllable_reachability: false` (recorded reason).
+    .unwrap_or(true);
     let delimiters = find_config_value(schema_config, &format!("{name_space}/delimiter"))
         .or_else(|| find_config_value(schema_config, "speller/delimiter"))
         .and_then(config_scalar_string)

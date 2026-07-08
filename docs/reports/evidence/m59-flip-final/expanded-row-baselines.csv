@@ -1,0 +1,10 @@
+input,class,runs,median_ratio,worst_ratio,spread_pct,future_ceiling(worst_x1.05),enforced
+zh,non-syllable short key (like n),5,0.972,0.991,3.0,1.041,no (baseline this round; gating from next change)
+j,non-syllable short key,5,3.967,4.059,4.7,4.262,no (baseline this round; gating from next change)
+yi,bare-syllable guard (feature cost ~0; regression sentinel),5,5.794,5.870,3.1,6.163,no (baseline this round; gating from next change)
+che,bare-syllable guard (single-char exact; feature cost ~0),5,1.075,1.082,1.3,1.136,no (baseline this round; gating from next change)
+chuang,bare-syllable guard (feature cost ~0; regression sentinel),5,1.263,1.269,2.1,1.332,no (baseline this round; gating from next change)
+b,non-syllable short key,5,3.417,3.457,2.5,3.630,no (baseline this round; gating from next change)
+ceshi,mid-curve word (2-syl),5,0.898,0.909,1.5,0.954,no (baseline this round; gating from next change)
+zhongdengchangdu,mid-curve word (4-syl),5,0.323,0.325,2.2,0.341,no (baseline this round; gating from next change)
+dazisudu,mid-curve word (4-syl),5,1.015,1.043,4.2,1.095,no (baseline this round; gating from next change)

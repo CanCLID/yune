@@ -199,3 +199,12 @@ Recorded so nobody re-derives a dead end.
 ## Completed arc — "TypeDuck Cantonese engine-parity" backlog
 
 FORK-PARITY-01..09 are implemented or explicitly decided. Future work should preserve these gates while advancing the upstream-first Track 2 work and any named TypeDuck profile ABI surface separately.
+
+## Dual-mechanism crib (M59 default-ON flip, 2026-07-07)
+
+Two reachability mechanisms coexist deliberately; **document, do not unify** (owner-ratified via fable review, M59 amendment item 4):
+
+- **`prefix_fallback`** — TypeDuck-fork product contract. Profile-gated, grandfathered per D-31; its jyutping/TypeDuck-profile candidate order is byte-pinned against the fork oracle. Answers to the **TypeDuck fork**. NOT inherited by new schemas.
+- **`leading_syllable_reachability`** — upstream-librime-shaped single-character reachability (the owner "compose any non-lexicon phrase" requirement, oracle-captured against `librime 1.17.0`). **Default-ON for every schema** (M59 flip). Answers to **upstream librime**.
+
+Precedence in code: the injection sites are `if prefix_fallback { … } else if leading_syllable_reachability { … }` — on a schema with both (all jyutping under the flip), `prefix_fallback` is authoritative and `leading_syllable_reachability` never runs, so the byte-pinned TypeDuck-profile order is untouched. Unification stays available as a D-28 trigger-gated behavior-preserving refactor gated on the full jyutping pin suite, never a milestone blocker.

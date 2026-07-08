@@ -484,7 +484,12 @@ Track A peak 186.2/195.0 MB, all Track B guards pass. fable's committed pre-#8 r
 caveats (59-char run-1 0.8% margin; startup run-2 tight) in
 `docs/reports/evidence/m59-finding-8-perf/`. **This clears the perf item (1) in the
 callout.** The `skip-injection-when-page-full` sub-optimization from finding #8 was NOT
-needed (the memoization alone closed the straddle) — not pursued.
+needed (the memoization alone closed the straddle) — not pursued. **fable ACCEPTED
+(`cd031358`): independent 4th fresh run 23/23 with `-FailOnRegression` (37-char 1.983,
+59-char 1.561); four complete green runs across two sessions retire the standing debt
+since `c4336cd9` on merit.** WATCH ITEM: `n` is the least-headroom row (2.859/2.890 =
+1.1% in fable's run) — re-measure it against the ceiling when the default-ON flip's own
+per-keystroke additions land, before any closeout ratchet claim.
 
 **Secondary (in the series, below the cap):** returning-user unbounded lane (add a
 named benchmark row); complete-path injection lacks `!has_correction_lookup`;

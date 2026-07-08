@@ -3462,6 +3462,68 @@ fn m59_luna_zhongguo_completion_class_reaches_leading_singles() {
 }
 
 #[test]
+fn m59_luna_bare_syllable_keeps_full_exact_singles_on_page_zero() {
+    // M59 increment-2 STOP-THE-LINE regression guard (bug bisected to 942a89a4).
+    // Bare single-syllable inputs whose code has a valid shorter-syllable prefix
+    // must keep their full-syllable EXACT singles. The increment-1 leading-single
+    // injection walked the shorter prefix (`ma` for `mai`), spliced that family
+    // ABOVE the exacts at the first natural single slot, then truncated the page —
+    // typing `mai` produced only the `ma` family (嗎 嘛 馬 媽 罵…) and 買 was ABSENT
+    // at every page. Expected singles are dictionary exacts (each is code == the
+    // typed syllable in luna_pinyin.dict.yaml), NOT Yune-derived. Invisible to
+    // every other M59 gate (all multi-syllable). `dian`→點 is a novel control
+    // outside the review's mai/wai/xian/lian probe set.
+    let _guard = test_guard();
+    let runtime = YuneWebRuntime::create_with_schema("m59-luna-bare-syllable", "luna_pinyin");
+    stage_and_deploy_tracked_luna(&runtime);
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(
+        !state.is_null(),
+        "luna_pinyin should init on byte-backed assets"
+    );
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    // (input, dictionary exact single with code == input). Each is a valid
+    // syllable whose code has a valid shorter-syllable prefix (ma / wa / li / di),
+    // the exact class the increment-1 injection broke.
+    for (input, exact_single) in [
+        ("mai", "\u{8cb7}"),  // 買
+        ("wai", "\u{5916}"),  // 外
+        ("lian", "\u{9023}"), // 連
+        ("dian", "\u{9ede}"), // 點 (novel control)
+    ] {
+        let page = process_input(state, input);
+        let page0: Vec<&str> = page["context"]["candidates"]
+            .as_array()
+            .expect("candidate page should be an array")
+            .iter()
+            .filter_map(|candidate| candidate["text"].as_str())
+            .collect();
+        assert!(
+            page0.contains(&exact_single),
+            "bare syllable {input:?} must keep its full-syllable exact single \
+             {exact_single:?} on page 0 (the increment-1 leading-single injection \
+             displaced it with the shorter-prefix family); page0={page0:?}"
+        );
+        // Escape clears the composition before the next bare syllable.
+        let _ = response_json(unsafe { yune_web_process_key(state, 0xff1b, 0) });
+    }
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+}
+
+#[test]
 fn yune_web_adapter_browser_app_assets_enrich_visible_lookup_candidates() {
     let _guard = test_guard();
     let runtime = YuneWebRuntime::create_with_schema(

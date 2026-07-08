@@ -2514,6 +2514,27 @@ impl StaticTableTranslator {
         // typing path). `None` materializes the full family (page-turn/complete).
         fetch_limit: Option<usize>,
     ) -> Vec<Candidate> {
+        // M59 increment-2 stop-the-line: when the FULL input is itself a complete
+        // syllable the exact path already serves with single-char candidates
+        // (`mai`→買/賣/麥/邁, `wai`→外, `xian`→先/現), skip the injection entirely.
+        // The prefix walk below EXCLUDES the full input, so for this class it can
+        // only ever inject a DIFFERENT, shorter-prefix family (`ma`, `wa`, `xi`);
+        // spliced above the exacts at `leading_single_insert_index` and then
+        // truncated to the page, that family DROPS the full-syllable exacts —
+        // typing `mai` could no longer produce 買 at any page (regression from the
+        // increment-1 injection). Leading-single reachability exists for
+        // MULTI-syllable composition, where the full input has no single-char
+        // exact of its own; those inputs (`zhongguo`→中國 phrase, `moboyi`→no
+        // exact) keep the injection. Flag-gated so jyutping/prefix_fallback is
+        // untouched (its canonical parity is the oracle).
+        if self.leading_syllable_reachability
+            && self
+                .storage
+                .exact_candidates(lookup_code)
+                .any(|candidate| candidate.text().chars().count() == 1)
+        {
+            return Vec::new();
+        }
         let mut seen_texts = existing_candidates
             .iter()
             .map(|candidate| candidate.text.clone())

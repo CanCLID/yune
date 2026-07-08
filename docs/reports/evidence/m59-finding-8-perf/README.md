@@ -51,6 +51,35 @@ per-keystroke allocation those rows paid.
 - **startup run-2 = 1.054 vs 1.091** — startup is flagged run-noisy in the
   thresholds; passes all three (0.735 / 1.054 / 0.907).
 
+## CORRECTION (2026-07-07) — the perf disposition above measured the WRONG config
+
+The three "straddle CLOSED" runs and fable's independent run all deployed the
+**source** product schema (`apps/yune-web/source/public/schema/luna_pinyin.schema.yaml`),
+which carries **no** `leading_syllable_reachability` flag. Under the pre-flip read
+(`schema_install` `…unwrap_or(false)`) that means the benchmark ran luna with the
+**injection OFF** — the memoized `leading_syllable_fetch_codes` path never
+executed in any of those runs. So:
+
+- The "37/59-char row paid ~15–25k allocs/keystroke" narrative is **not what the
+  benchmark measured** — those rows ran the no-injection path.
+- The gap between fable's failing pre-#8 run (37-char **2.165**) and the passing
+  post-#8 runs (**2.045/1.931/1.927**) was **run-to-run variance on injection-off
+  luna**, not the memoization. The straddle was **not** closed by #8; it was a
+  different (injection-off) workload that happened to land green.
+
+When the M59 **default-ON flip** aligned the source schema to the shipped public
+schema (injection ON), the benchmark measured the injection cost for the first
+time and it **failed** three ceilings (37-char 2.550/2.577, 59-char 1.995/2.028,
+zhongguo 0.423/0.421 — `m59-flip-ratchet/run-1..2`).
+
+**What stands:** the memoization is still a correct, behavior-preserving change
+(the deploy-path correctness suite is valid) and is the O(1) index the
+**finding #8 completion skip** then builds on — the walk now skips the per-prefix
+prism lookup on non-syllabary boundaries (`translator/mod.rs`
+`leading_single_syllable_prefix_candidates`), collapsing the O(n²) long-input
+cost. The real perf disposition for the injection lives with that skip + the
+`m59-flip-ratchet` runs, **not** this section's original claim.
+
 ## Reproduce
 ```
 cargo build --release -p yune-rime-api

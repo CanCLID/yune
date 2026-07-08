@@ -1420,8 +1420,10 @@ AB3	ab	88
     crate::m37_metrics_enable(false);
 
     assert_eq!(
-        full_metrics.prism_lookup_calls, 18,
-        "full prefix fallback should not duplicate strict-prefix scans when a full exact candidate already enables fallback"
+        full_metrics.prism_lookup_calls, 10,
+        "full prefix fallback should not duplicate strict-prefix scans when a full exact candidate already enables fallback; \
+         M59 finding #8 completion skip drops the leading-single walk's prism lookups on non-syllabary prefixes (was 18) \
+         while the surfaced candidates (AB1/AB2) are unchanged"
     );
 }
 

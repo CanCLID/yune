@@ -2595,6 +2595,24 @@ impl StaticTableTranslator {
         prefix_ends.sort_unstable_by(|left, right| right.cmp(left));
         for end in prefix_ends {
             let prefix = &lookup_code[..end];
+            // M59 finding #8 (completing the skip): this walk keeps only
+            // single-char candidates, whose codes are syllabary codes.
+            // `leading_syllable_fetch_codes` can surface such a code for `prefix`
+            // only when a syllabary code normalizes to `prefix` — and BOTH of its
+            // sources are so bounded: the prism alias lookup in
+            // `sentence_lookup_specs` is restricted to `syllabary_codes`, and the
+            // second loop reads the memoized index, whose keys are exactly the
+            // normalized syllabary codes. So an absent index entry means no
+            // single-char family lives at this boundary; skip the per-prefix,
+            // per-keystroke prism lookup. On an n-char input the longest-first
+            // walk probes ~n non-syllable prefixes before the leading syllable,
+            // once per keystroke — the O(n^2) prism lookups that regressed the
+            // long-input ratchet rows collapse here to O(n^2) O(1) map probes.
+            // (Guarded behavior-preserving by the reachability tests, which fail
+            // loudly if a reachable leading single is dropped.)
+            if self.leading_fetch_index().get(prefix).is_none() {
+                continue;
+            }
             let mut candidates = Vec::new();
             for fetch_code in self.leading_syllable_fetch_codes(prefix) {
                 for candidate in

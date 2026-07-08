@@ -16,7 +16,10 @@ import sys
 # The reachable leading single each input composes toward. These are the
 # targets the M59 acceptance rows cite; their POSITIONS come from the oracle.
 TARGETS = {
-    "moboli": "莫",
+    "moboyi": "莫",  # PRIMARY non-lexicon case: moboyi -> 莫伯洢
+    "boyi": "伯",
+    "yi": "洢",
+    "moboli": "莫",  # control: moboli -> 莫伯李
     "boli": "伯",
     "li": "李",
     "zhonggao": "中",
@@ -24,6 +27,13 @@ TARGETS = {
     "gao": "高",
     "guo": "國",
 }
+
+# Composition scenarios: (scenario name in the compose capture, final commit,
+# human label). Primary first.
+COMPOSITIONS = [
+    ("moboyi_compose", "moboyi", "PRIMARY non-lexicon phrase"),
+    ("moboli_compose", "moboli", "control"),
+]
 
 
 def main() -> int:
@@ -53,11 +63,25 @@ def main() -> int:
             "total_unique_captured": len(seen),
         }
 
-    chain = [
-        {"step": s.get("label"), "preedit": s.get("preedit"), "commit_text": s.get("commit_text")}
-        for s in compose
-    ]
-    final_commit = next((s["commit_text"] for s in reversed(chain) if s["commit_text"]), None)
+    compose_by_scenario = collections.OrderedDict()
+    for snap in compose:
+        compose_by_scenario.setdefault(snap["scenario"], []).append(snap)
+
+    compositions = {}
+    for scenario, human_input, note in COMPOSITIONS:
+        snaps = compose_by_scenario.get(scenario, [])
+        chain = [
+            {"step": s.get("label"), "preedit": s.get("preedit"), "commit_text": s.get("commit_text")}
+            for s in snaps
+        ]
+        final_commit = next((s["commit_text"] for s in reversed(chain) if s["commit_text"]), None)
+        compositions[human_input] = {
+            "role": note,
+            "description": "librime composes the phrase by partial single-character selection "
+            "(preedit accumulation, single commit at end).",
+            "final_commit": final_commit,
+            "chain": chain,
+        }
 
     fixture = {
         "oracle": {
@@ -73,15 +97,11 @@ def main() -> int:
             "via scripts/oracle-rime-probe.cs (DllImport rime.dll)",
             "modules": ["default"],
             "note": "Leading-single reachability + partial-selection composition provenance for M59. "
-            "Positions are the oracle's; Yune's PRODUCT completion ordering diverges (recorded).",
+            "PRIMARY case: moboyi -> the non-lexicon phrase; moboli is the control. Positions are the "
+            "oracle's; Yune's PRODUCT completion ordering diverges (recorded).",
         },
         "inputs": inputs,
-        "moboli_composition": {
-            "description": "librime composes the moboli target by partial single-character selection "
-            "(preedit accumulation, single commit at end).",
-            "final_commit": final_commit,
-            "chain": chain,
-        },
+        "compositions": compositions,
     }
     with open(out_path, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(fixture, ensure_ascii=False, indent=2) + "\n")

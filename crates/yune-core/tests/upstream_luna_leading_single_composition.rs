@@ -37,24 +37,47 @@ fn oracle_provenance_header_is_librime_1_17_0() {
     assert_eq!(fixture["oracle"]["schema"], "luna_pinyin");
 }
 
-#[test]
-fn oracle_composes_moboli_target_by_partial_single_selection() {
-    // librime composes 莫伯李 from `moboli` by selecting the leading single at each
-    // step: the selected char accumulates in the preedit and the remainder
-    // recomposes, committing the full phrase only after the last selection. This
-    // is the oracle provenance for the m59 `moboli` control.
-    let fixture = load_fixture();
-    assert_eq!(
-        fixture["moboli_composition"]["final_commit"], "\u{83ab}\u{4f2f}\u{674e}",
-        "librime must compose 莫伯李 from moboli by partial single-character selection"
-    );
-    let chain = fixture["moboli_composition"]["chain"]
+fn composition_preedits<'a>(fixture: &'a Value, phrase: &str) -> Vec<&'a str> {
+    fixture["compositions"][phrase]["chain"]
         .as_array()
-        .expect("composition chain should be an array");
-    let preedits: Vec<&str> = chain
+        .unwrap_or_else(|| panic!("composition chain for {phrase} should be an array"))
         .iter()
         .filter_map(|step| step["preedit"].as_str())
-        .collect();
+        .collect()
+}
+
+#[test]
+fn oracle_composes_moboyi_to_the_non_lexicon_phrase_by_partial_selection() {
+    // PRIMARY M59 case: librime composes 莫伯洢 (NOT in the lexicon) from `moboyi`
+    // by selecting the leading single at each step — the selected char accumulates
+    // in the preedit and the remainder recomposes, committing the full phrase only
+    // after the last selection. The rare 洢 (yi) sits deep (oracle index 155) but
+    // is reachable; this is the oracle provenance the m59 moboyi acceptance rides.
+    let fixture = load_fixture();
+    assert_eq!(
+        fixture["compositions"]["moboyi"]["final_commit"], "\u{83ab}\u{4f2f}\u{6d22}",
+        "librime must compose 莫伯洢 from moboyi by partial single-character selection"
+    );
+    let preedits = composition_preedits(&fixture, "moboyi");
+    assert!(
+        preedits.contains(&"\u{83ab}bo yi"),
+        "selecting 莫 must recompose the remainder to `bo yi`; chain={preedits:?}"
+    );
+    assert!(
+        preedits.contains(&"\u{83ab}\u{4f2f}yi"),
+        "selecting 伯 must recompose the remainder to `yi`; chain={preedits:?}"
+    );
+}
+
+#[test]
+fn oracle_composes_moboli_control_to_moboli_phrase_by_partial_selection() {
+    // Control (fable's #7 ask): librime likewise composes 莫伯李 from `moboli`.
+    let fixture = load_fixture();
+    assert_eq!(
+        fixture["compositions"]["moboli"]["final_commit"], "\u{83ab}\u{4f2f}\u{674e}",
+        "librime must compose 莫伯李 from moboli by partial single-character selection"
+    );
+    let preedits = composition_preedits(&fixture, "moboli");
     assert!(
         preedits.contains(&"\u{83ab}bo li"),
         "selecting 莫 must recompose the remainder to `bo li`; chain={preedits:?}"
@@ -73,9 +96,15 @@ fn oracle_reaches_each_leading_single_at_captured_position() {
     // from; both are reachable, which is what M59 requires.)
     let fixture = load_fixture();
     for (input, expected_index) in [
-        ("moboli", 2_u64),
+        // PRIMARY moboyi -> 莫伯洢 chain: 莫, 伯, and the rare 洢 (deep but reachable).
+        ("moboyi", 2_u64),
+        ("boyi", 19),
+        ("yi", 155),
+        // moboli control chain.
+        ("moboli", 2),
         ("boli", 14),
         ("li", 2),
+        // zhongguo/zhonggao class + guo/gao remainders.
         ("zhonggao", 3),
         ("zhongguo", 11),
         ("gao", 0),

@@ -3301,7 +3301,16 @@ fn m59_luna_compose_from_leading_singles(
 
 #[test]
 fn m59_luna_moboyi_composes_mo_bo_yi_on_byte_backed_product() {
-    // Owner acceptance case: moboyi -> 莫伯洢 (mo bo yi), one single at a time.
+    // Owner acceptance case (PRIMARY): moboyi -> 莫伯洢 (mo bo yi), one single at a
+    // time. 莫伯洢 is NOT in the lexicon; 洢 (yi) is a rare char.
+    //
+    // Oracle provenance (M59 finding #7): rime/librime 1.17.0 composes the same
+    // 莫伯洢 from moboyi by partial single selection (莫→`莫bo yi`, 伯→`莫伯yi`,
+    // 洢→commit 莫伯洢; 洢 reachable at oracle index 155) — captured in
+    // crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json
+    // (pinned by upstream_luna_leading_single_composition.rs). Yune surfaces the
+    // singles at different candidate positions than librime (recorded there); M59
+    // asserts reachability + recompose, not candidate-position parity.
     m59_luna_compose_from_leading_singles(
         "m59-luna-moboyi",
         "moboyi",

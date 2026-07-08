@@ -1,9 +1,10 @@
 # Captures the librime 1.17.0 oracle provenance for M59 leading-single
 # reachability + partial-selection composition on luna_pinyin:
-#   - paged candidate lists for moboli / boli / li / zhonggao / zhongguo / gao / guo
-#     (the reachable-single positions the M59 acceptance rows cite), and
-#   - the moboli -> mo/bo/li partial-selection composition chain (commits the
-#     three-character phrase from selecting the leading singles one at a time).
+#   - paged candidate lists for the PRIMARY non-lexicon case moboyi -> mo/bo/yi
+#     and the moboli control, plus zhonggao / zhongguo / gao / guo (the
+#     reachable-single positions the M59 acceptance rows cite), and
+#   - the moboyi -> 莫伯洢 and moboli -> 莫伯李 partial-selection composition chains
+#     (commit the phrase from selecting the leading singles one at a time).
 #
 # Runs the real rime.dll via scripts/oracle-rime-probe.cs. Requires the upstream
 # oracle root laid out by the capture-upstream-* pipeline (rime.dll, rime-shared,
@@ -31,6 +32,8 @@ $Probe = Join-Path $RepoRoot "scripts/oracle-rime-probe.cs"
 $env:PATH = (Join-Path $Extract "dist/lib") + ";" + (Join-Path $Extract "bin") + ";" + $env:PATH
 Add-Type -Path $Probe
 
+$PageDown = 65366
+
 function New-Action($type, $text, $kc, $label) {
     $a = [RimeProbe+ProbeAction]::new()
     $a.type = $type
@@ -39,7 +42,6 @@ function New-Action($type, $text, $kc, $label) {
     if ($label) { $a.label = $label }
     return $a
 }
-$PageDown = 65366
 
 function New-Paging([string]$name, [int]$pages) {
     $acts = New-Object System.Collections.Generic.List[object]
@@ -54,29 +56,48 @@ function New-Paging([string]$name, [int]$pages) {
     return $sc
 }
 
-$pagingInputs = @("moboli", "boli", "li", "zhonggao", "zhongguo", "gao", "guo")
-$pagingScenarios = $pagingInputs | ForEach-Object { New-Paging $_ 30 }
+# A composition scenario: type $input, then for each step turn $pd pages and
+# press the $digit selection key (49='1' selects page position 0, etc.). Digit
+# keys are 1-indexed within the page: global index N sits on page (N / page_size)
+# at position (N % page_size), selected by digit (position + 1).
+function New-Compose([string]$name, [string]$sequence, [object[]]$steps) {
+    $acts = New-Object System.Collections.Generic.List[object]
+    $acts.Add((New-Action "input" $sequence 0 $null))
+    $acts.Add((New-Action "snapshot" $null 0 ($sequence + "_page0")))
+    foreach ($step in $steps) {
+        for ($i = 1; $i -le [int]$step.pd; $i++) {
+            $acts.Add((New-Action "key" $null $PageDown ($step.label + "_pd$i")))
+        }
+        $acts.Add((New-Action "key" $null ([int]$step.digit) ("after_select_" + $step.label)))
+    }
+    $sc = [RimeProbe+ProbeScenario]::new()
+    $sc.name = $name
+    $sc.actions = [RimeProbe+ProbeAction[]]$acts.ToArray()
+    return $sc
+}
+
 $modules = [string[]]@("default")
+
+# PRIMARY case first: moboyi -> the non-lexicon phrase. Then the moboli control.
+$pagingInputs = @("moboyi", "boyi", "yi", "moboli", "boli", "li", "zhonggao", "zhongguo", "gao", "guo")
+$pagingScenarios = $pagingInputs | ForEach-Object { New-Paging $_ 40 }
 $pageSnaps = [RimeProbe]::CaptureScenarios($Shared, $User, $Build, "luna_pinyin", $modules, [RimeProbe+ProbeScenario[]]$pagingScenarios)
 
-# moboli composition: leading single at page-0 index 2 (select key '3');
-# then boli's target at global index 14 (page 2 position 4, key '5' after two
-# Page_Down); then li's target at page-0 index 2 (key '3') -> commits the phrase.
-$composeActs = @(
-    (New-Action "input" "moboli" 0 $null),
-    (New-Action "snapshot" $null 0 "moboli_page0"),
-    (New-Action "key" $null 51 "after_select_mo"),
-    (New-Action "snapshot" $null 0 "boli_page0"),
-    (New-Action "key" $null $PageDown "boli_p1"),
-    (New-Action "key" $null $PageDown "boli_p2"),
-    (New-Action "key" $null 53 "after_select_bo"),
-    (New-Action "snapshot" $null 0 "li_page0"),
-    (New-Action "key" $null 51 "after_select_li")
+# moboyi -> 莫伯洢: 莫@2 (page0, digit '3'); boyi 伯@19 (page3 pos4, digit '5' after
+# 3 Page_Down); yi 洢@155 (page31 pos0, digit '1' after 31 Page_Down).
+$moboyi = New-Compose "moboyi_compose" "moboyi" @(
+    @{ pd = 0; digit = 51; label = "mo" },
+    @{ pd = 3; digit = 53; label = "bo" },
+    @{ pd = 31; digit = 49; label = "yi" }
 )
-$composeSc = [RimeProbe+ProbeScenario]::new()
-$composeSc.name = "moboli_compose"
-$composeSc.actions = [RimeProbe+ProbeAction[]]$composeActs
-$composeSnaps = [RimeProbe]::CaptureScenarios($Shared, $User, $Build, "luna_pinyin", $modules, [RimeProbe+ProbeScenario[]]@($composeSc))
+# moboli control -> 莫伯李: 莫@2 (digit '3'); 伯@14 (page2 pos4, digit '5' after 2
+# Page_Down); 李@2 (page0, digit '3').
+$moboli = New-Compose "moboli_compose" "moboli" @(
+    @{ pd = 0; digit = 51; label = "mo" },
+    @{ pd = 2; digit = 53; label = "bo" },
+    @{ pd = 0; digit = 51; label = "li" }
+)
+$composeSnaps = [RimeProbe]::CaptureScenarios($Shared, $User, $Build, "luna_pinyin", $modules, [RimeProbe+ProbeScenario[]]@($moboyi, $moboli))
 
 $Raw = Join-Path ([System.IO.Path]::GetTempPath()) "m59-luna-raw-$PID"
 New-Item -ItemType Directory -Force -Path $Raw | Out-Null

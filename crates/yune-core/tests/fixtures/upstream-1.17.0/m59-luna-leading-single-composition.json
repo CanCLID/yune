@@ -12,9 +12,51 @@
     "modules": [
       "default"
     ],
-    "note": "Leading-single reachability + partial-selection composition provenance for M59. Positions are the oracle's; Yune's PRODUCT completion ordering diverges (recorded)."
+    "note": "Leading-single reachability + partial-selection composition provenance for M59. PRIMARY case: moboyi -> the non-lexicon phrase; moboli is the control. Positions are the oracle's; Yune's PRODUCT completion ordering diverges (recorded)."
   },
   "inputs": {
+    "moboyi": {
+      "input": "moboyi",
+      "target_single": "莫",
+      "target_global_index": 2,
+      "page_0": [
+        "莫博弈",
+        "麼波",
+        "莫",
+        "摸",
+        "魔"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 205
+    },
+    "boyi": {
+      "input": "boyi",
+      "target_single": "伯",
+      "target_global_index": 19,
+      "page_0": [
+        "博弈",
+        "博奕",
+        "薄衣",
+        "薄意",
+        "駁議"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 205
+    },
+    "yi": {
+      "input": "yi",
+      "target_single": "洢",
+      "target_global_index": 155,
+      "page_0": [
+        "一",
+        "以",
+        "已",
+        "億",
+        "易"
+      ],
+      "page_size": 5,
+      "total_unique_captured": 205
+    },
     "moboli": {
       "input": "moboli",
       "target_single": "莫",
@@ -27,7 +69,7 @@
         "魔"
       ],
       "page_size": 5,
-      "total_unique_captured": 155
+      "total_unique_captured": 205
     },
     "boli": {
       "input": "boli",
@@ -41,7 +83,7 @@
         "勃利"
       ],
       "page_size": 5,
-      "total_unique_captured": 155
+      "total_unique_captured": 205
     },
     "li": {
       "input": "li",
@@ -55,7 +97,7 @@
         "離"
       ],
       "page_size": 5,
-      "total_unique_captured": 155
+      "total_unique_captured": 205
     },
     "zhonggao": {
       "input": "zhonggao",
@@ -97,7 +139,7 @@
         "膏"
       ],
       "page_size": 5,
-      "total_unique_captured": 155
+      "total_unique_captured": 164
     },
     "guo": {
       "input": "guo",
@@ -111,53 +153,243 @@
         "鍋"
       ],
       "page_size": 5,
-      "total_unique_captured": 155
+      "total_unique_captured": 205
     }
   },
-  "moboli_composition": {
-    "description": "librime composes the moboli target by partial single-character selection (preedit accumulation, single commit at end).",
-    "final_commit": "莫伯李",
-    "chain": [
-      {
-        "step": "moboli_page0",
-        "preedit": "mo bo li",
-        "commit_text": null
-      },
-      {
-        "step": "after_select_mo",
-        "preedit": "莫bo li",
-        "commit_text": null
-      },
-      {
-        "step": "boli_page0",
-        "preedit": "莫bo li",
-        "commit_text": null
-      },
-      {
-        "step": "boli_p1",
-        "preedit": "莫bo li",
-        "commit_text": null
-      },
-      {
-        "step": "boli_p2",
-        "preedit": "莫boli",
-        "commit_text": null
-      },
-      {
-        "step": "after_select_bo",
-        "preedit": "莫伯li",
-        "commit_text": null
-      },
-      {
-        "step": "li_page0",
-        "preedit": "莫伯li",
-        "commit_text": null
-      },
-      {
-        "step": "after_select_li",
-        "preedit": null,
-        "commit_text": "莫伯李"
-      }
-    ]
+  "compositions": {
+    "moboyi": {
+      "role": "PRIMARY non-lexicon phrase",
+      "description": "librime composes the phrase by partial single-character selection (preedit accumulation, single commit at end).",
+      "final_commit": "莫伯洢",
+      "chain": [
+        {
+          "step": "moboyi_page0",
+          "preedit": "mo bo yi",
+          "commit_text": null
+        },
+        {
+          "step": "after_select_mo",
+          "preedit": "莫bo yi",
+          "commit_text": null
+        },
+        {
+          "step": "bo_pd1",
+          "preedit": "莫bo yi",
+          "commit_text": null
+        },
+        {
+          "step": "bo_pd2",
+          "preedit": "莫bo yi",
+          "commit_text": null
+        },
+        {
+          "step": "bo_pd3",
+          "preedit": "莫boyi",
+          "commit_text": null
+        },
+        {
+          "step": "after_select_bo",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd1",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd2",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd3",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd4",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd5",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd6",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd7",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd8",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd9",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd10",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd11",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd12",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd13",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd14",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd15",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd16",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd17",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd18",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd19",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd20",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd21",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd22",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd23",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd24",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd25",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd26",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd27",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd28",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd29",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd30",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "yi_pd31",
+          "preedit": "莫伯yi",
+          "commit_text": null
+        },
+        {
+          "step": "after_select_yi",
+          "preedit": null,
+          "commit_text": "莫伯洢"
+        }
+      ]
+    },
+    "moboli": {
+      "role": "control",
+      "description": "librime composes the phrase by partial single-character selection (preedit accumulation, single commit at end).",
+      "final_commit": "莫伯李",
+      "chain": [
+        {
+          "step": "moboli_page0",
+          "preedit": "mo bo li",
+          "commit_text": null
+        },
+        {
+          "step": "after_select_mo",
+          "preedit": "莫bo li",
+          "commit_text": null
+        },
+        {
+          "step": "bo_pd1",
+          "preedit": "莫bo li",
+          "commit_text": null
+        },
+        {
+          "step": "bo_pd2",
+          "preedit": "莫boli",
+          "commit_text": null
+        },
+        {
+          "step": "after_select_bo",
+          "preedit": "莫伯li",
+          "commit_text": null
+        },
+        {
+          "step": "after_select_li",
+          "preedit": null,
+          "commit_text": "莫伯李"
+        }
+      ]
+    }
   }
 }

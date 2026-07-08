@@ -7,9 +7,10 @@
 > N/A; re-confirmed identical on a fresh HEAD run), plus `shijie`/`ewai`).
 > `moboyi`→`莫伯洢`, source-truthful non-circular tests, phrase-before-single
 > ordering, no regressions. **M59 is NOT closeable** — three open items:
-> **(1) PERF STRADDLE (corrected):** the "ratchet green twice" claim was favorable
-> sampling; an independent run failed `n`/37-char/59-char (pre-existing standing
-> straddle, Lane B perf-neutral) — needs a real fix, no run-until-green. **(2) Owner
+> **(1) PERF STRADDLE — RESOLVED (`4f71c1bb`, finding #8):** the per-keystroke
+> syllabary-scan memoization closed it; 3/3 fresh runs green on the UNCHANGED m55
+> thresholds (37-char <=2.045/2.094, 59-char <=1.612/1.625, all win rows <1.00);
+> evidence/m59-finding-8-perf/. **(2) Owner
 > amendment (2026-07-07, below): schema-general default-ON** — the per-schema luna
 > flag must become engine-default for all schemas; dual-mechanism resolved. **(3)
 > Lane A (canonical rime-cantonese parity)** + order-vs-capture assertion + the 3
@@ -466,7 +467,7 @@ target/, driven by scripts/oracle-rime-probe.cs).
   them. (Runtime cangjie flip-simulation belongs WITH the flip; the injection-inertness
   is reasoned from the guard + confirmed cangjie composes natively in Yune today.)
 
-**Landed 2026-07-07 (`<pending>`, pushed) — finding #8 (perf) + the ratchet straddle CLOSED.**
+**Landed 2026-07-07 (`4f71c1bb`, pushed) — finding #8 (perf) + the ratchet straddle CLOSED.**
 `leading_syllable_fetch_codes` rescanned the whole ~424-entry syllabary and allocated a
 `String` per entry (`normalized_original_code`) on EVERY prefix boundary of EVERY
 keystroke — the longest-first walk tries many empty prefixes before the first hit, so

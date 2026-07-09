@@ -160,7 +160,18 @@ covers them automatically the moment either is shipped (that is the whole point 
 the engine-level default) — recorded here rather than silently dropped from item 3's
 list.
 
-## Two acceptance lanes
+## Acceptance lanes
+
+> **D-48 per-lane ranking-parity policy (owner FINAL 2026-07-08):** order-parity is
+> REQUIRED for **three** lanes — Lane A (canonical rime-cantonese), Lane B (upstream
+> luna_pinyin), and **cangjie5** (a new order-parity lane; see D-48 for onboarding
+> via a librime cangjie5 capture incl. the three owner composition rows). Every
+> `order-only` divergence is classified and returned as a **disposition table for
+> owner sign-off — no self-disposition** (fix, or named owner-signed exception
+> citing the owning feature). The **TypeDuck profile lane keeps reachability +
+> comment/profile parity ONLY** — no new ranking-parity requirements; grandfathered
+> fixture pins frozen. Full policy: `docs/decisions.md` D-48 +
+> `docs/contracts/engine-support-contract.md` "Per-Lane Ranking-Parity Policy".
 
 ### Lane A — Canonical Jyutping parity (Yune + rime-cantonese ↔ librime + rime-cantonese)
 - **Real lane, validation only** (not shipped; the schema-id split stays D-31

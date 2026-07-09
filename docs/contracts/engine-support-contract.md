@@ -24,6 +24,26 @@ Yune supports named targets, not full librime feature parity.
 - New behavior needs a named target and an oracle fixture before it can become
   required behavior.
 
+## Per-Lane Ranking-Parity Policy (D-48, owner FINAL 2026-07-08)
+
+What "parity" requires differs by lane:
+
+- **Order-parity REQUIRED (page/prefix-exact text AND order through the captured
+  range, options mirrored — NOT ordered-subsequence):** canonical
+  `rime-cantonese` (Lane A), upstream `luna_pinyin` (Lane B), and `cangjie5`.
+  Every `order-only` divergence is classified and returned as a **disposition
+  table for owner sign-off** — no self-disposition. Dispositions: **fix**, or a
+  **named owner-signed exception** citing the owning feature (e.g. an injected
+  single-char family beyond oracle depth). `cangjie5` order rows are onboarded by
+  first capturing librime `cangjie5`; rows librime cannot compose become
+  owner-provenance beyond-oracle first-candidate pins, scoping cangjie order
+  parity to the librime-comparable range.
+- **Reachability + comment/profile parity ONLY (no ranking-parity requirement):**
+  the TypeDuck profile lane (reaffirms product decision #1 and D-31). Grandfathered
+  fixture-backed candidate guards (e.g. `beingo` vs v1.1.2) are frozen regression
+  pins — not extended, not deleted; multilingual comments stay oracle-backed
+  against TypeDuck `v1.1.2`.
+
 ## Native Octagram Grammar Support
 
 M54 supports octagram-compatible `.gram` scoring only as a Yune-native

@@ -591,6 +591,38 @@ made single-run gating a coin-flip (fable's independent 22/23 at `06cd1800`
 straddled at 1.647). Only that row moved; the other 19 standing rows remain
 untouched._
 
+**D-48 / PER-LANE-RANKING-PARITY-POLICY — Ranking-order parity is required for
+three lanes; the TypeDuck profile lane keeps reachability + comment parity only.**
+Owner FINAL decision 2026-07-08, resolving what "parity" means per lane:
+
+1. **Order-parity REQUIRED lanes: canonical rime-cantonese (Lane A), upstream
+   `luna_pinyin` (Lane B), and `cangjie5`.** Form = **page/prefix-exact candidate
+   text AND order through the captured range** with options mirrored (NOT an
+   ordered-subsequence — Yune may not inject extra candidates before/between the
+   oracle's). Every `order-only` divergence is classified and returned as a
+   **disposition table for owner sign-off — no self-disposition.** Allowed
+   dispositions: **fix**, or a **named owner-signed exception** citing the owning
+   feature (e.g. an injected single-char family beyond oracle depth).
+2. **`cangjie5` onboarding:** first capture librime `cangjie5` over the same dict
+   for a named input set including the three owner composition rows
+   (`hwmvsqtt`→粵拼, `ebcnyripm`→測試, `takohaeosk`→莫伯洢; product bytes use the
+   HK-variant 粵). If librime composes them → oracle-backed order rows; if not →
+   record as **owner-provenance beyond-oracle rows** (first-candidate pins) and
+   scope cangjie order parity to the librime-comparable range. Wire them into the
+   standing test suite either way — this guards M59-REACH-02 / D-47 (the
+   schema-general composition guarantee) for cangjie.
+3. **TypeDuck profile lane: reachability + comment/profile parity ONLY — no new
+   ranking-parity requirements.** Reaffirms product decision #1 and D-31. The
+   grandfathered fixture-backed candidate guards (e.g. `beingo` page vs TypeDuck
+   v1.1.2) remain as regression pins — **do not extend, do not delete.**
+   Multilingual comment behavior stays oracle-backed against TypeDuck `v1.1.2`.
+
+Extends D-24 (oracle precedence), D-31 (upstream-wins-on-composition-conflict +
+fork-as-profile-oracle), and D-47 (the schema-general reachability guarantee, of
+which order parity is the stricter sibling for the three named lanes). _Outcome:
+Pending — Lane A classified diff + per-class disposition table is the next
+deliverable; cangjie onboarding and Lane B order-parity follow._
+
 ### Initialization notes (process decisions)
 
 **D-INIT-1 - Existing `docs/plans/completed/m00-analysis-founding.md`, `docs/roadmap.md`, and `docs/plans/completed/m05-m07-record-foundation-refactor.md` are the retained source context** for the now-retired GSD project. Historical `.planning/codebase/` notes were folded into the retained docs before `.planning/` was removed. External research was skipped at setup because scope was driven by existing docs and direct librime comparison.

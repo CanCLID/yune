@@ -52,32 +52,41 @@ ordering is not a trivial "phrase always first" rule.
 
 ## Yune real-path result — FINDING CJ-1 (owner review; not fixed inline)
 
-Yune's real production path (`yune-cli frontend --schema cangjie5`) over the **same**
-upstream rime-cangjie deploy:
+**Corrected 2026-07-09 after fable re-verification — the original "Yune lacks
+☯-sentence composition" framing was FALSIFIED.** The gap is a lane-specific
+segmentation SCORING divergence, not a missing capability.
 
-- **Full-code one-shot composition DIVERGES.** For every ☯-sentence row Yune fills the
-  sentence slot with the **raw code rendered as root glyphs**, not the composed phrase:
-  - `hwmvsqtt` → `竹田一女尸手廿廿`(☯) · 粵 · 粤 — **粵拼 absent** (is_last_page).
+Yune's real production path (`yune-cli frontend --schema cangjie5`):
+
+- **Upstream rime-cangjie lane picks a mis-scored segmentation.** For every full-code
+  row Yune's ☯ sentence is the **eight single-letter roots**, not the composed phrase:
+  - `hwmvsqtt` → `竹田一女尸手廿廿`(☯ = h|w|m|v|s|q|t|t) · 粵 · 粤 — **粵拼 absent** (is_last_page).
   - `ebcnyripm` → `水月金弓卜口戈心一`(☯) · 測 — **測試 absent**.
   - `takohaeosk` → `廿日大人竹日水人尸大`(☯) · 莫 — **莫伯洢 absent**.
   - `hdaetcu` → `竹木日水廿金山`(☯) · 香 — **香港 absent**.
-  - (`lyk` → 奜@0, **中文@1** — MATCHES; `中文` is a pre-encoded phrase entry, not a
-    runtime segmentation, so it survives.)
-- **Char-by-char composition WORKS.** All seven single constituent codes produce the
-  oracle's candidate-0 character at position 0 (`hwmvs`→粵, `qtt`→拼, `ebcn`→測,
-  `yripm`→試, `tak`→莫, `oha`→伯, `eosk`→洢). Verified via the real deploy path AND
-  asserted in the committed test.
+- **The PRODUCT cangjie5 lane composes correctly** (fable re-verified; re-confirmed here
+  via `yune-cli --shared-data-dir apps/yune-web/public/schema`): `hwmvsqtt`→**粵拼@0**
+  (n=3: 粵拼 · 粵 · 粤), `ebcnyripm`→**測試@0**. The product dict is Jackchows with
+  `max_phrase_length: 1`, so 粵拼/測試 **cannot be dict entries** — they are
+  **runtime-composed by segmentation**. Therefore Yune's engine CAN do runtime ☯-sentence
+  composition; the upstream lane simply scores the 8-single-root segmentation above
+  `hwmvs|qtt`→粵拼.
+- **Char-by-char composition works on both lanes.** All seven single constituent codes
+  produce the oracle's candidate-0 character at position 0 (`hwmvs`→粵, `qtt`→拼,
+  `ebcn`→測, `yripm`→試, `tak`→莫, `oha`→伯, `eosk`→洢). So **D-47 is not violated.**
 
-**Interpretation:** Yune has encoder/exact phrase entries (中文) but lacks runtime
-**sentence *segmentation*** of a concatenated full code into constituent characters —
-the already-named M17-blocked area
-(`upstream_cangjie_parity.rs::cangjie5_phrase_encoder_full_page_parity_is_blocked`).
-The capture now supplies the missing oracle evidence. **This does NOT violate D-47**
-(compose one character at a time) — char-by-char works; only the librime full-code
-one-shot *shortcut* is unsupported. **Owner decision:** prioritize the cangjie
-segmentation-compose fix (M17) so the full-code path reaches oracle parity, or accept
-char-by-char as cangjie's D-47 path and record the full-code shortcut as an
-owner-signed unsupported behavior.
+**Interpretation:** this is a **segmentation-scoring divergence specific to the upstream
+`rime/rime-cangjie` lane** (`sort: by_weight` + `essay` preset vocabulary), where the
+common root characters (竹 田 一 女 尸 手 廿 — each a high-frequency char) score the
+8-single-root path above the 2-character 粵拼. The product lane, with different weights,
+segments correctly. **Owner decision — diagnose+fix the upstream-lane segmentation
+scoring divergence.** Hypotheses to check first: (1) the weight model — upstream
+`by_weight`+essay hands root chars huge weights, so a segmentation summing eight of them
+out-scores 粵拼; (2) whether the sentence scorer on this lane sums **raw frequencies**
+rather than log-probs (the M48 luna raw-frequency class of bug —
+`memory/luna-pinyin-sentence-raw-frequency-scoring.md`). The ignored test
+`cangjie5_upstream_lane_segmentation_scoring_is_blocked` keeps this real upstream-lane
+gap named — no silent hole.
 
 ## Test wiring (non-circular, per D-48 + CLAUDE.md "no silent gaps")
 
@@ -92,28 +101,34 @@ ignored:
    are the oracle's, never Yune-derived (dict rows are byte-exact upstream rime-cangjie
    source; the oracle cases additionally carry essay phrases the slice cannot produce —
    positive proof the expected column is real librime, not round-tripped Yune).
-   **Scope (honest):** this is a composition-**reachability** guard (the constituent
-   char is produced, not dropped/replaced by a code glyph — the CJ-1 failure mode), not
+   **Scope (honest):** this is a composition-**reachability** guard (each constituent
+   char is produced for its shape code — the char-by-char path both lanes support), not
    a weight-ranking discriminator: for these seven codes the oracle order coincides with
    dictionary insertion order, so by_weight ranking is exercised by the M19
    `upstream_cangjie_parity` lane, not here.
-3. `cangjie5_full_code_sentence_composition_is_blocked` —
-   `#[ignore = "blocked: … finding CJ-1"]` with a `panic!()` body. Names the gap; no
-   silent hole.
+3. `cangjie5_upstream_lane_segmentation_scoring_is_blocked` —
+   `#[ignore = "blocked: … finding CJ-1"]` with a `panic!()` body. Names the real
+   upstream-lane segmentation-scoring gap; no silent hole.
 
 The lock test pins the oracle **dll/deployer sha256** (not just commit strings), so
 non-owner candidate rows cannot drift under a different librime build.
 
 ### Adversarial verification (2026-07-09)
 
-A three-lens adversarial pass (provenance / non-circularity / divergence-accuracy)
-was run before this report. Provenance and the decisive answer HELD at high
-confidence; the divergence characterization HELD at high confidence (a verifier
-independently proved the Yune runs were over genuine upstream rime-cangjie — the qtt
-encoder phrases are impossible under the product's `max_phrase_length: 1`). The
-non-circularity lens confirmed the expected values are oracle-derived and the dict is
-byte-exact upstream, but flagged the char-by-char test as a thin ranking guard (above)
-and a missing dll-sha lock — both addressed here (comment reframed, sha lock added).
+A three-lens adversarial pass (provenance / non-circularity / divergence-accuracy) ran
+before the first commit. Provenance and the decisive oracle answer HELD at high
+confidence; the non-circularity lens confirmed expected values are oracle-derived and
+the dict is byte-exact upstream, and flagged the char-by-char test as a thin ranking
+guard + a missing dll-sha lock — both fixed.
+
+**However, that pass confirmed the OBSERVATION (upstream lane emits the 8-root ☯
+segmentation, phrase absent) but accepted the wrong INTERPRETATION ("Yune lacks
+☯-sentence composition") because it never ran the PRODUCT lane.** fable's review did:
+the product cangjie5 composes `hwmvsqtt`→粵拼@0 despite `max_phrase_length: 1`, proving
+the capability exists and the gap is upstream-lane segmentation *scoring*. Re-confirmed
+here. The CJ-1 framing above is the corrected finding. Lesson: a divergence's
+*interpretation* needs a differential control (here, the other lane), not just the
+observation.
 
 ## Reproduce
 

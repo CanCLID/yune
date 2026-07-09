@@ -13,10 +13,13 @@
 //! UPSTREAM rime-cangjie rows (`source_slice`), never from Yune output.
 //!
 //! Yune divergence (finding CJ-1, filed for owner — see
-//! `docs/reports/evidence/m59-cangjie5-order-parity/`): Yune's full-code ☯-sentence
-//! renders the concatenated code as root glyphs instead of segmenting+composing, so
-//! the one-shot full-code composition is unsupported. Char-by-char composition (the
-//! D-47 guarantee) DOES work and is asserted live below.
+//! `docs/reports/evidence/m59-cangjie5-order-parity/`): on THIS upstream rime-cangjie
+//! lane Yune's sentence scorer picks a mis-scored segmentation — the eight single-letter
+//! roots `竹田一女尸手廿廿` (h|w|m|v|s|q|t|t) over the correct `hwmvs|qtt`→粵拼. Yune's
+//! engine CAN runtime-compose: the shipped PRODUCT cangjie5 (Jackchows,
+//! `max_phrase_length: 1`, so 粵拼 cannot be a dict entry) composes `hwmvsqtt`→粵拼@0.
+//! The gap is the upstream lane's `by_weight`+essay segmentation SCORING, not a missing
+//! capability. Char-by-char composition works on both lanes and is asserted live below.
 
 use std::{collections::BTreeMap, fs, path::Path};
 
@@ -82,12 +85,12 @@ fn upstream_cangjie5_composition_fixture_is_locked() {
 /// Real production translator path over UPSTREAM rime-cangjie rows: for every single
 /// composition constituent, Yune's top candidate is the oracle's candidate-0 character,
 /// so an arbitrary non-lexicon phrase is reachable one character at a time
-/// (D-47 / M59-REACH-02). This is a composition-REACHABILITY guard — it proves the
-/// constituent character is produced (not dropped or replaced by a code glyph), which
-/// is the CJ-1 failure mode. It is NOT a weight-ranking discriminator: for these seven
-/// codes the oracle order coincides with dictionary insertion order, so by_weight
-/// ranking is exercised by the M19 `upstream_cangjie_parity` lane, not here. Expected
-/// values are the oracle's candidate 0 — never Yune-derived.
+/// (D-47 / M59-REACH-02). This is a composition-REACHABILITY guard — it proves each
+/// constituent character is produced for its shape code (the char-by-char path both
+/// lanes support). It is NOT a weight-ranking discriminator: for these seven codes the
+/// oracle order coincides with dictionary insertion order, so by_weight ranking is
+/// exercised by the M19 `upstream_cangjie_parity` lane, not here. Expected values are
+/// the oracle's candidate 0 — never Yune-derived.
 #[test]
 fn yune_cangjie5_composes_each_constituent_char_at_top() {
     let fixture = fixture();
@@ -120,20 +123,22 @@ fn yune_cangjie5_composes_each_constituent_char_at_top() {
     }
 }
 
-/// The full-code one-shot ☯-sentence composition librime performs
-/// (`hwmvsqtt`→粵拼, `ebcnyripm`→測試, `takohaeosk`→莫伯洢, `hdaetcu`→香港, all at
-/// candidate 0 — locked by the fixture) is NOT reproduced by Yune's real path:
-/// Yune renders the concatenated code as root glyphs instead of segmenting and
-/// composing. This is the M17-blocked cangjie phrase/table-encoder/sentence
-/// interleave area. Char-by-char composition works
-/// (`yune_cangjie5_composes_each_constituent_char_at_top`). No silent gap — owner
-/// disposition tracked in the CJ-1 finding.
+/// The full-code composition librime performs (`hwmvsqtt`→粵拼, `ebcnyripm`→測試,
+/// `takohaeosk`→莫伯洢, `hdaetcu`→香港, all at candidate 0 — locked by the fixture) is
+/// NOT reproduced on THIS upstream rime-cangjie lane: Yune's sentence scorer picks a
+/// mis-scored segmentation (the eight single-letter roots `竹田一女尸手廿廿`,
+/// h|w|m|v|s|q|t|t) over the correct `hwmvs|qtt`→粵拼. This is a lane-specific
+/// SCORING divergence, not a missing capability — Yune's engine runtime-composes on the
+/// PRODUCT cangjie5 lane (Jackchows `max_phrase_length: 1`, so 粵拼 is not a dict entry
+/// yet composes `hwmvsqtt`→粵拼@0). Hypothesis (finding CJ-1): upstream `by_weight`+essay
+/// scores the common root chars far above 粵/拼, and/or the sentence scorer carries the
+/// M48 raw-frequency class of bug. No silent gap — disposition tracked in CJ-1.
 #[test]
-#[ignore = "blocked: Yune cangjie full-code ☯-sentence segmentation composition gap; oracle composes 粵拼/測試/莫伯洢/香港 @0 (fixture cangjie5-composition.json). Finding CJ-1 (docs/reports/evidence/m59-cangjie5-order-parity/). Char-by-char composition is supported and asserted separately."]
-fn cangjie5_full_code_sentence_composition_is_blocked() {
+#[ignore = "blocked: upstream rime-cangjie lane mis-scores segmentation (竹田一女尸手廿廿 over hwmvs|qtt→粵拼); oracle + PRODUCT lane compose 粵拼/測試/莫伯洢/香港 @0. Finding CJ-1 (docs/reports/evidence/m59-cangjie5-order-parity/) = diagnose+fix the upstream-lane segmentation scoring, not a missing capability."]
+fn cangjie5_upstream_lane_segmentation_scoring_is_blocked() {
     panic!(
-        "enable only after Yune composes the full concatenated cangjie code into the oracle's \
-         ☯-sentence phrase (owner decision on finding CJ-1)"
+        "enable only after the upstream rime-cangjie lane scores hwmvs|qtt→粵拼 above the \
+         eight-single-root segmentation (owner decision on finding CJ-1)"
     );
 }
 

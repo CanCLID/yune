@@ -12,11 +12,13 @@ across all candidates, `畀`@rank 28, concatenation locus verified in code).
   applying on the canonical dict build" is **wrong** — the weights ARE applied.
 - **Root cause (candidate merge/rank, not weight loading):** for a toneless syllable,
   Yune looks up each tone-variant (`bei1`, `bei2`, `bei3`, `bei6`) as a separate
-  lookup spec and **concatenates the specs in code order**. The one global weight sort
-  (`engine.rs:1491`) is a **no-op because `quality` is uniformly `0`** on the
-  full-list path, so the stable sort preserves the code-grouped emission order. The
-  entire low-frequency `bei1` group therefore precedes high-frequency `畀`(bei2)/
-  `被`(bei6). librime pools all tone-variants and ranks by global weight.
+  lookup spec and **concatenates the specs in code order**; downstream quality is
+  assigned **positionally** (`assign_ordered_candidate_qualities`, `mod.rs:2878-2883`),
+  which preserves that concatenation, so nothing re-ranks by weight and the entire
+  low-frequency `bei1` group precedes high-frequency `畀`(bei2)/`被`(bei6). (The CLI
+  `quality:0` is an ABI display placeholder, `rime_frontend.rs:404-411` — NOT the
+  engine's ordering key; see §Root cause item 4.) librime pools all tone-variants and
+  ranks by global weight.
 - **Step 4 (`nri`→0 / `ngohaig` 46-vs-2050): independent segmentation/fuzzy gap** —
   file separately; not part of the ranking fix.
 - **No fix.** The fix touches the shared candidate path; a blast-radius scoping note
@@ -54,13 +56,24 @@ compiled-table lens independently reproduced this and refuted the collapse hypot
    only `combine_duplicate_text_candidates` (dedup keeps the **first / lowest-code**
    position — why multi-tone `蓖` shows comment `bei1;bei3;bei6` at its `bei1` slot)
    and `enforce_prediction_never_first`. Neither ranks by weight.
-4. `engine.rs:1491-1496` DOES apply a global sort:
-   `candidates.sort_by(|l, r| r.quality.partial_cmp(&l.quality))` (descending, stable).
-   But on the full-list path the candidates carry `quality == 0`: weight lives in
-   `raw_quality` / the comment and is only projected into `quality` on the
-   ordered/bounded branches (`materialized_quality = raw_quality().exp() + …`,
-   `translator/mod.rs:1693`). With a uniform `0` key the **stable** sort is a no-op and
-   preserves the code-grouped emission order.
+4. **Quality mechanism — CORRECTED 2026-07-09 (owner/fable, verified).** The earlier
+   "`engine.rs:1491` is a no-op because `quality==0`" framing was imprecise. The full
+   chain:
+   - The CLI `quality:0` is an **ABI placeholder** — `RimeCandidate` carries no quality
+     field, so `copy_candidate` hardcodes `quality: 0` (`yune-cli/src/rime_frontend.rs:404-411`).
+     It is NOT the engine's internal ordering key; reading it told us nothing.
+   - Internally, `format_candidate_for_lookup` computes `quality = raw_quality.exp() +
+     initial_quality` (`mod.rs:1601-1605`), which **saturates to `+inf`** at essay-scale
+     weights (e.g. `820637.exp()`) → uniform, useless for ranking.
+   - `assign_ordered_candidate_qualities` (`mod.rs:2878-2883`) then **overwrites quality
+     positionally** (`(len+1) - index`), preserving the concatenation order. It fires on
+     the canonical Standard path because `leading_syllable_reachability` defaults ON.
+   - `engine.rs:1491` sorts by that positional quality → a **no-op re-order** (already
+     sorted).
+   Net: the visible order is fixed entirely by the spec-concatenation in
+   `candidates_for_lookup_codes`; nothing downstream re-ranks by weight. **The fix must
+   re-order the concatenation using per-spec `raw_quality` BEFORE the positional
+   stamping** (see the scoping increment's Option A conditions).
 
 Net = `[bei1 ↓wt][bei2 ↓wt][bei3][bei6 ↓wt]` — tone-grouped.
 
@@ -70,7 +83,8 @@ Warm CLI, staged rime-cantonese + `lane-a-runner/default.yaml`, page size 5:
 
 - **Page 0 = `碑 悲 卑 陂 蓖`** (all `bei1`) — matches `../lane-a-diff-2026-07-08/classified.json`.
 - Highest-weight `畀` (essay 820637) is buried **~28 positions** in (top of the `bei2`
-  group); `被`(bei6, 259308) ~99 in. Every candidate reports **`quality: 0`**.
+  group); `被`(bei6, 259308) ~99 in. The CLI reports `quality: 0` for every candidate —
+  but that is the ABI placeholder (item 4), not the engine's ordering key.
 - Oracle (`../phase-1/canonical-rime-cantonese-capture.json`): `畀 比 被 鼻 避` at ranks
   0-4 = global weight descending (820637 > 676300 > 259308 > 20467 > 6051), `bei2`/`bei6`
   interleaved, **no tone grouping**. Head is strictly monotone in essay weight; `碑`
@@ -86,16 +100,19 @@ tone-merge ranking — a separate named work item, NOT part of the ranking fix.
 
 ## Fix spec (NOT implemented — see scoping checkpoint below)
 
-Mechanism: make the full-list candidate path rank the pooled tone-variant set by weight
-so it matches the oracle. Two equivalent framings: materialize weight into `quality` on
-the full-list path so the existing `engine.rs:1491` sort ranks it, or pool + sort the
-specs before emission. **Edit (fable), load-bearing:** rank by the **per-reading weight
-= `essay_weight(text) × dict-percentage` for that specific `(text, code)` reading**, NOT
-a char-global / essay-max weight. Otherwise polyphones whose large corpus weight belongs
-to a *different* reading jump up incorrectly — e.g. `費 bei3 3%` (dominant reading
-`fai3`), `脾 bei2 0%` (`pei4`), `輩 bei3 0%` (`bui3`). Yune's per-spec entries already
-carry the correct per-reading weight (that is why the within-`bei1` order is right); the
-fix is to make the **cross-spec** ranking use it.
+Mechanism: pool the tone-variant specs and **re-order the concatenation inside
+`candidates_for_lookup_codes` by per-spec `raw_quality`, BEFORE the positional stamping**
+(`assign_ordered_candidate_qualities`). NOT "materialize weight into `quality`" — that
+field is overwritten positionally and the exp-intermediate saturates to `+inf` (item 4);
+the sort key must be `PendingLookupCandidate::raw_quality` through the existing tier
+comparator `lookup_candidate_order`. **Edit (fable), load-bearing:** rank by the
+**per-reading weight = `essay_weight(text) × dict-percentage` for that specific
+`(text, code)` reading**, NOT a char-global / essay-max weight. Otherwise polyphones whose
+large corpus weight belongs to a *different* reading jump up incorrectly — e.g. `費 bei3 3%`
+(dominant reading `fai3`), `脾 bei2 0%` (`pei4`), `輩 bei3 0%` (`bui3`). Yune's per-spec
+entries already carry the correct per-reading `raw_quality` (that is why the within-`bei1`
+order is right); the fix is to make the **cross-spec** ranking use it. Full conditions +
+disposition: `../lane-a-ranking-fix-scoping-2026-07-09/README.md`.
 
 ## Blast-radius scoping (owner/fable checkpoint — REQUIRED before any fix)
 

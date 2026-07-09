@@ -69,4 +69,28 @@ separate named work item.
 the reachability-OFF control run corrected it. Verification before disposition is
 exactly why D-48 forbids self-disposition — the control run changed the diagnosis.
 
+## Seed for the NEXT increment — ranking diagnosis (fable, 2026-07-08)
+
+**Hypothesis: the essay-vocabulary percentage-weight chain is not applying on the
+canonical dict build**, so candidate order collapses.
+- **Signature:** Yune's `bei` top-8 are ALL `bei1` (tone-grouped enumeration =
+  collapsed-weight signature). rime-cantonese chars-dict rows carry librime
+  percentage weights: `畀 bei2` = **no weight column = 100% of essay-cantonese
+  frequency**; `畀 bei3` = 3%; `碑 bei1` = no column. So order depends entirely on
+  `essay-cantonese.txt` × percentage — which Yune appears not to apply here.
+- **Machinery Yune already has** (wired for luna in M48): `apply_rime_preset_vocabulary_weights`
+  (`crates/yune-core/src/dictionary/source.rs:455-464`), the `vocabulary_loader`
+  callback, and the `"essay"` default (`source.rs:1294`).
+- **Diagnose in order:** (1) who supplies `vocabulary_loader` on the **deploy** path
+  and whether it resolves `essay-cantonese.txt`; (2) whether no-weight rows default
+  to essay×100% and %-rows to essay×pct, matching librime's semantics; (3) whether
+  `import_tables`-merged entries flow through the same weighting; (4) separately,
+  `nri`→0 / `ngohaig` 46-vs-2050 as a segmentation/fuzzy gap independent of weights.
+- **Constraints:** mechanism-level fix only (three hard rules — no per-input tweaks,
+  no oracle bytes in engine), validated against the full 13-input capture.
+  **Acceptance smoke = `bei` head becomes 畀比被鼻避.** Residual order-only rows then
+  go to the owner as the D-48 disposition table.
+- **Guard:** verify the M55 ratchet stays green after any dict-build change (compiled
+  product bytes may shift — M38 lesson: **deploy before benchmarking**).
+
 Raw per-input rows: `classified.json`.

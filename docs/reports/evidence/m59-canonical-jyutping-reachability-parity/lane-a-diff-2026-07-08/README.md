@@ -36,37 +36,37 @@ Per-direction classification per D-48 (order-exact through the captured range).
 Representative tops (Yune | oracle): `bei` 碑悲卑陂蓖 | 畀比被鼻避 · `n` 那挐南哪 | 我你呢諗女 ·
 `zijiguk` 知而焗咁… | 諮議局子怡… · `mgoi` 唔該… (matches idx0) then 唔該你喇 | 唔該唔呣嘸.
 
-## Root-cause hypotheses (to verify before disposition)
+## Root cause — VERIFIED, and my first hypothesis was WRONG
 
-1. **The M59 flip's leading-single injection is over-riding librime's natural
-   candidate generation on the canonical lane (DOMINANT).** Reachability is ON for
-   this lane (Standard profile, flip default — landmine disposition). The
-   over-admission is injected single chars + phrases (`畀我啊`, `唔該你喇`, `比亞迪汽車`);
-   the order divergence is the injection ranking the leading-single family first
-   (碑悲卑…, 那挐南…) where librime ranks by frequency (畀比被…, 我你呢…). This is the
-   `injected single-char family` D-48 flagged — but it **reorders the top**, not just
-   extends the tail. **Verification pending: a reachability-OFF canonical run of `bei`**
-   — if it collapses toward 畀比被鼻避, the injection is confirmed as the primary owner.
-2. **Segmentation / fuzzy-correction gaps (secondary, real).** `nri`→**0** (Yune emits
-   nothing; oracle fuzzes nri→nei→你, 1309) and `ngohaig` 46 vs 2050 point to Yune's
-   canonical fuzzy/segmentation diverging from librime independent of the injection.
-   Needs its own diagnosis.
+**Reachability-OFF canonical `bei` run (2026-07-08): IDENTICAL to reachability-ON —
+碑 悲 卑 陂 蓖 羆 萆 鵯 犤 庳 椑 詖.** Toggling the M59 flip's leading-single injection
+OFF did **not** change the order. **The injection is NOT the primary owner of the
+Lane A divergence** (it was my surfaced hypothesis; the verification refutes it).
 
-## Disposition question — OWNER SIGN-OFF (per D-48, no self-disposition)
+The real owner is **Yune's BASE canonical candidate ranking for rime-cantonese**:
+Yune ranks 碑 (bei1) and obscure chars (羆萆鵯犤) high where librime ranks the common
+畀 (bei2 "give") / 比 / 被 by dictionary weight. So Yune's weight/frequency/sort
+handling for the rime-cantonese dictionary diverges from librime's candidate
+generation — this is a **candidate-generation defect, not a feature tension.**
+Root-cause candidates to diagnose: dict weight loading (the multi-file
+`import_tables` merge + `essay-cantonese` vocabulary weighting), the by_weight sort,
+and tone-vs-frequency ordering.
 
-The core tension is **D-47 (reachability ON, schema-general) vs D-48 (order-exact
-parity for Lane A)**: on the canonical lane the injection that delivers reachability
-is what breaks order parity. Options to weigh (not chosen here):
-- (a) **Suppress the injection on prefix-having canonical inputs** — reachability
-  comes from librime's own natural candidate set (which already contains the single
-  chars); the injection only fires where librime dead-ends.
-- (b) **Inject AFTER the oracle range** — preserve librime's order/set through the
-  captured range, append the family beyond it (order-exact holds; over-admission
-  becomes a named beyond-oracle-depth exception).
-- (c) **Owner-signed exception** citing the reachability feature, scoping Lane A
-  order parity to a librime-comparable sub-range.
+Secondary, still real: `nri`→**0** (oracle 1309) and `ngohaig` 46 vs 2050 — a
+segmentation/fuzzy divergence, its own diagnosis.
 
-Plus: the `nri→0` / `ngohaig` segmentation-fuzzy gap is a **separate named work item**
-needing its own oracle-backed diagnosis (not the injection).
+## Disposition — this is a DIAGNOSIS increment, not (yet) an owner exception
+
+Because the divergence is a base candidate-generation defect (not the reachability
+feature), the D-47-vs-D-48 tension I first framed **does not apply as the primary
+lever**. The next step is **root-cause diagnosis** of Yune's rime-cantonese ranking
+vs librime (weights → sort → tone), then a fix by mechanism against the capture, per
+the three hard rules. Only genuinely-beyond-oracle rows (if any survive the ranking
+fix) become owner-signed-exception candidates. `nri`/`ngohaig` fuzzy gap is a
+separate named work item.
+
+**Lesson recorded:** I over-attributed to the injection and surfaced it as dominant;
+the reachability-OFF control run corrected it. Verification before disposition is
+exactly why D-48 forbids self-disposition — the control run changed the diagnosis.
 
 Raw per-input rows: `classified.json`.

@@ -179,6 +179,31 @@ list.
   paging). **Plus a control jyutping input** (present in the oracle capture, in
   no implementation allowlist) proving generality.
 
+### Named Lane A work items (surfaced 2026-07-08 during the runner deploy diagnosis, fable-verified)
+
+The Lane A deploy blocker was **not** a capability gap — the unmodified
+rime-cantonese schema deploys and reverse lookups work end-to-end (`va`→日,
+`xh`→一) once the `schema_list` is corrected (see the runner overlay). The
+diagnosis surfaced these named items; the runner unblock does not prejudge them:
+
+1. **Missing-schema tolerance divergence (owner decision).** Yune's
+   `workspace_update` fails the WHOLE workspace on one missing schema
+   (`deployment.rs:638-641`); librime skips-and-logs. This **intersects the D-47
+   schema-general guarantee** — a user installing a schema whose `default.yaml`
+   lists a schema that isn't present gets a total deploy failure, not a partial.
+   Needs an owner decision + librime behavior evidence before any change.
+2. **Aux-prism host-algebra fidelity wart (needs oracle fixture).**
+   `deployment.rs:1241-1247` vs `schema_install.rs:913-923` — reverse-lookup
+   (aux-prism) algebra handling differs from the host; reverse-lookup fidelity
+   should be pinned by an oracle fixture before it's trusted in the canonical lane.
+3. **`emoji_cantonese_suggestion` silent no-op.** The OpenCC loader + one-to-many
+   expansion for emoji suggestion is absent (silent no-op); `variants_hk` is
+   functional. Named so it isn't mistaken for a Lane A candidate divergence.
+
+**Diagnostic follow-up:** surface `workspace_dictionary_rebuild_reports()` through
+the CLI on deploy failure (the bool ABI currently swallows the cause) — a tooling
+change, not engine behavior.
+
 ### Lane B — Upstream Luna reachability (Yune `luna_pinyin` ↔ librime + rime-luna-pinyin)
 - General single-char leading-syllable reachability on the product `luna_pinyin`
   path. Acceptance: `moboyi`→莫→伯→洢 commits `莫伯洢`, asserted against the upstream

@@ -1,0 +1,232 @@
+[
+  {
+    "input": "be",
+    "y_count": 70,
+    "y_last": false,
+    "o_count": 4,
+    "first_div": 1,
+    "under": 0,
+    "over": 66,
+    "dirs": [
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "啤 𠹇 嚊 唄 啤把",
+    "o_top5": "啤 嚊 唄 𠹇",
+    "under_ex": "",
+    "over_ex": "啤把 啤啤熊 啤啤佢 啤灰 啤機 啤工"
+  },
+  {
+    "input": "bei",
+    "y_count": 205,
+    "y_last": false,
+    "o_count": 139,
+    "first_div": 0,
+    "under": 4,
+    "over": 70,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "碑 悲 卑 陂 蓖",
+    "o_top5": "畀 比 被 鼻 避",
+    "under_ex": "祕 啤 唄 𠹇",
+    "over_ex": "比亞迪汽車 備辦 被爆者 避避風頭 比比皆是 baby"
+  },
+  {
+    "input": "bein",
+    "y_count": 70,
+    "y_last": false,
+    "o_count": 5,
+    "first_div": 0,
+    "under": 5,
+    "over": 70,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "卑南族 避難 避難所 鼻腍 畀你",
+    "o_top5": "啤In 啤 嚊 唄 𠹇",
+    "under_ex": "啤In 啤 嚊 唄 𠹇",
+    "over_ex": "卑南族 避難 避難所 鼻腍 畀你 畀你吹脹"
+  },
+  {
+    "input": "being",
+    "y_count": 151,
+    "y_last": true,
+    "o_count": 140,
+    "first_div": 0,
+    "under": 5,
+    "over": 16,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "碑額 畀眼睇 畀銀紙 畀我 畀我啊",
+    "o_top5": "畀嗯 畀 比 被 鼻",
+    "under_ex": "畀嗯 祕 啤 唄 𠹇",
+    "over_ex": "碑額 畀眼睇 畀銀紙 畀我 畀我啊 畀我考起"
+  },
+  {
+    "input": "beingo",
+    "y_count": 148,
+    "y_last": true,
+    "o_count": 142,
+    "first_div": 0,
+    "under": 6,
+    "over": 12,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "畀我 畀我啊 畀我考起 畀我吔 畀我入",
+    "o_top5": "比我 被我 畀我 畀 比",
+    "under_ex": "比我 被我 祕 啤 唄 𠹇",
+    "over_ex": "畀我啊 畀我考起 畀我吔 畀我入 畀我入去 畀我咯"
+  },
+  {
+    "input": "beix",
+    "y_count": 65,
+    "y_last": false,
+    "o_count": 36,
+    "first_div": 0,
+    "under": 36,
+    "over": 65,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "畀差人拉 畀齊 畀齊錢 畀齊錢未 畀齊喇",
+    "o_top5": "畀 比 髀 俾 吡",
+    "under_ex": "畀 比 髀 俾 吡 夶",
+    "over_ex": "畀差人拉 畀齊 畀齊錢 畀齊錢未 畀齊喇 畀齊未"
+  },
+  {
+    "input": "beixngoxx",
+    "y_count": 100,
+    "y_last": false,
+    "o_count": 38,
+    "first_div": 0,
+    "under": 2,
+    "over": 64,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "畀我入去 畀我咯 畀我問起 畀我睇 畀我睇下",
+    "o_top5": "比我 畀我 畀 比 髀",
+    "under_ex": "比我 畀我",
+    "over_ex": "畀我入去 畀我咯 畀我問起 畀我睇 畀我睇下 畀我做咩"
+  },
+  {
+    "input": "ngohaig",
+    "y_count": 46,
+    "y_last": true,
+    "o_count": 2050,
+    "first_div": 0,
+    "under": 2005,
+    "over": 1,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "我係嘅咁 鵝 哦 娥 蛾",
+    "o_top5": "我係噉 我係 我下 卧下 我行",
+    "under_ex": "我係噉 我係 我下 卧下 我行 我間",
+    "over_ex": "我係嘅咁"
+  },
+  {
+    "input": "ngohaigo",
+    "y_count": 46,
+    "y_last": true,
+    "o_count": 113,
+    "first_div": 0,
+    "under": 68,
+    "over": 1,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "我係個咁 鵝 哦 娥 蛾",
+    "o_top5": "我繫個 我係 我下 卧下 我",
+    "under_ex": "我繫個 我係 我下 卧下 臥 嗯",
+    "over_ex": "我係個咁"
+  },
+  {
+    "input": "n",
+    "y_count": 455,
+    "y_last": false,
+    "o_count": 1309,
+    "first_div": 0,
+    "under": 1212,
+    "over": 358,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "那 挐 南 哪 𠸎",
+    "o_top5": "我 你 呢 諗 女",
+    "under_ex": "我 你 呢 諗 女 撚",
+    "over_ex": "𠸎家 𠸎耕 𪐀經 𪐀耕 挐掕 𠸎埋"
+  },
+  {
+    "input": "nri",
+    "y_count": 0,
+    "y_last": null,
+    "o_count": 1309,
+    "first_div": null,
+    "under": 1309,
+    "over": 0,
+    "dirs": [
+      "under-admission"
+    ],
+    "y_top5": "",
+    "o_top5": "我 你 呢 諗 女",
+    "under_ex": "我 你 呢 諗 女 撚",
+    "over_ex": ""
+  },
+  {
+    "input": "mgoi",
+    "y_count": 11,
+    "y_last": true,
+    "o_count": 4,
+    "first_div": 1,
+    "under": 0,
+    "over": 7,
+    "dirs": [
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "唔該 唔該你喇 唔該晒 唔該晒你 唔該先",
+    "o_top5": "唔該 唔 呣 嘸",
+    "under_ex": "",
+    "over_ex": "唔該你喇 唔該晒 唔該晒你 唔該先 唔該話聲 唔該借歪"
+  },
+  {
+    "input": "zijiguk",
+    "y_count": 387,
+    "y_last": true,
+    "o_count": 416,
+    "first_div": 0,
+    "under": 30,
+    "over": 1,
+    "dirs": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "y_top5": "知而焗咁 知 之 支 吱",
+    "o_top5": "諮議局 子怡 自已 旨意 之二",
+    "under_ex": "諮議局 子怡 自已 旨意 之二 之以",
+    "over_ex": "知而焗咁"
+  }
+]

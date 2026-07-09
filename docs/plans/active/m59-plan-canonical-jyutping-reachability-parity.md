@@ -210,6 +210,16 @@ diagnosis surfaced these named items; the runner unblock does not prejudge them:
 3. **`emoji_cantonese_suggestion` silent no-op.** The OpenCC loader + one-to-many
    expansion for emoji suggestion is absent (silent no-op); `variants_hk` is
    functional. Named so it isn't mistaken for a Lane A candidate divergence.
+4. **Key-binding preset/`__patch` chain inoperative on the canonical schema
+   (`=`/`-` and `,`/`.` paging).** On the canonical rime-cantonese schema, the
+   paging key bindings do not fire — `--sequence "bei==="` leaves `page_no` at 0
+   (`{Page_Down}` works, so it's the binding chain, not paging itself). The chain
+   is: schema `key_binder: import_preset: default` → `default.yaml` `__patch:
+   key_bindings:/paging_with_minus_equal` → `key_bindings.yaml`. Root-cause
+   candidates to **diagnose before fixing**: `apply_legacy_preset_config_plugins`,
+   `__patch` external-file resolution into the compiled schema config, and
+   `key_binder` matching. (fable-diagnosed 2026-07-08; use `{Page_Down}` for the
+   Lane A diff runner meanwhile.)
 
 **Diagnostic follow-up:** surface `workspace_dictionary_rebuild_reports()` through
 the CLI on deploy failure (the bool ABI currently swallows the cause) — a tooling

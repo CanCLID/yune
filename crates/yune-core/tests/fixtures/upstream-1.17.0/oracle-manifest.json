@@ -22,7 +22,8 @@
       "milestone": "M59 Increment 1",
       "capture_date": "2026-07-09",
       "source_row_policy": "m59_lane_b_complete_order_and_partial_selection_composition",
-      "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-m59-luna-composition.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json"
+      "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/capture-m59-luna-composition.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output target/m59-luna-leading-single-composition.json",
+      "import_policy": "Capture to a fresh ignored target path, byte/diff review the result, then import the reviewed bytes separately; the capture command never overwrites this tracked fixture."
     }
   ]
 }

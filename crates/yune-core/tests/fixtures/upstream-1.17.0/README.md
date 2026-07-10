@@ -78,6 +78,9 @@ powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -Or
 - The disposable deploy binds clean pinned schema repositories, upstream binary
   hashes, and complete shared/build tree hashes. Fixed staged mtimes make
   same-input recaptures byte-identical without excluding deployed bytes.
+- The manifest recapture command writes create-new output under ignored
+  `target/`; review its byte/diff result and import it separately. The capture
+  tool intentionally refuses to overwrite this tracked fixture.
 
 ### `luna-pinyin-selection.json`
 

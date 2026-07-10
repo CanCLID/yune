@@ -695,6 +695,7 @@ class LunaCuratorTests(unittest.TestCase):
                 )
             cases.append(
                 {
+                    "schema_id": "luna_pinyin",
                     "input": input_text,
                     "rime_get_input": input_text,
                     "processed": [1] * len(input_text),
@@ -702,6 +703,7 @@ class LunaCuratorTests(unittest.TestCase):
                     "page_no": 0,
                     "is_last_page": pages[0]["is_last_page"],
                     "captured_all_pages": True,
+                    "termination_reason": "last_page",
                     "selected_candidates": [dict(row) for row in pages[0]["candidates"]],
                     "pages": pages,
                     "all_candidates": all_candidates,
@@ -709,23 +711,75 @@ class LunaCuratorTests(unittest.TestCase):
             )
         return cases
 
+    def valid_composition(self):
+        expected_commit = luna_curator.COMPOSITIONS[0][3]
+        expected_preedits = {
+            "moboyi_page0": "mo bo yi",
+            "after_select_mo": expected_commit[0] + "bo yi",
+            "bo_pd1": expected_commit[0] + "bo yi",
+            "bo_pd2": expected_commit[0] + "bo yi",
+            "bo_pd3": expected_commit[0] + "boyi",
+            "after_select_bo": expected_commit[:2] + "yi",
+            **{
+                f"yi_pd{index}": expected_commit[:2] + "yi"
+                for index in range(1, 32)
+            },
+            "after_select_yi": None,
+        }
+        compose = []
+        for index, label in enumerate(luna_curator.COMPOSITION_LABELS):
+            final = label == "after_select_yi"
+            if label.startswith("bo_pd") or label.startswith("yi_pd"):
+                page_no = int(label.rsplit("pd", 1)[1])
+            else:
+                page_no = 0
+            page_size = 0 if final else 5
+            selected_candidates = [
+                {"index": local_index, "text": f"candidate-{label}-{local_index}"}
+                for local_index in range(page_size)
+            ]
+            selection_targets = {
+                "moboyi_page0": (2, expected_commit[0]),
+                "bo_pd3": (4, expected_commit[1]),
+                "yi_pd31": (0, expected_commit[2]),
+            }
+            if label in selection_targets:
+                target_index, target_text = selection_targets[label]
+                selected_candidates[target_index]["text"] = target_text
+            snapshot = {
+                "schema_id": "luna_pinyin",
+                "scenario": "moboyi_compose",
+                "label": label,
+                "rime_get_input": "" if final else "moboyi",
+                "is_composing": not final,
+                "is_ascii_mode": False,
+                "is_full_shape": False,
+                "is_simplified": False,
+                "is_ascii_punct": False,
+                "page_no": page_no,
+                "page_size": page_size,
+                "is_last_page": False,
+                "highlighted_candidate_index": 0,
+                "selected_candidates": selected_candidates,
+                "preedit": expected_preedits[label],
+                "commit_text": expected_commit if final else None,
+            }
+            if index > 0:
+                snapshot["processed"] = 1
+            compose.append(snapshot)
+        return compose
+
     def run_curator(self, root, pages, compose=None, metadata_mutator=None):
         pages_path = root / "pages.json"
         compose_path = root / "compose.json"
         metadata_path = root / "metadata.json"
         output_path = root / "output.json"
-        pages_path.write_text(json.dumps(pages, ensure_ascii=False), encoding="utf-8")
+        pages_path.write_bytes((json.dumps(pages, ensure_ascii=False) + "\n").encode("utf-8"))
         if compose is None:
-            expected_commit = luna_curator.COMPOSITIONS[0][3]
-            compose = [
-                {
-                    "scenario": "moboyi_compose",
-                    "label": "after_select_yi",
-                    "preedit": expected_commit,
-                    "commit_text": expected_commit,
-                }
-            ]
-        compose_path.write_text(json.dumps(compose, ensure_ascii=False), encoding="utf-8")
+            compose = self.valid_composition()
+        compose_path.write_bytes(
+            (json.dumps(compose, ensure_ascii=False) + "\n").encode("utf-8")
+        )
         parameters = {
             "oracle_root": "target/oracle",
             "output": "fixture.json",
@@ -735,6 +789,14 @@ class LunaCuratorTests(unittest.TestCase):
             "expected_prelude_commit": "d" * 40,
             "expected_essay_commit": "e" * 40,
             "expected_stroke_commit": "f" * 40,
+            "schema_id": "luna_pinyin",
+            "modules": ["default"],
+            "inputs": list(luna_curator.EXPECTED_INPUTS),
+            "page_policy": luna_curator.PAGE_POLICY,
+            "runtime_options": dict(luna_curator.RUNTIME_OPTIONS),
+            "runtime_options_source": luna_curator.RUNTIME_OPTIONS_SOURCE,
+            "additional_runtime_option_patches": [],
+            "serialization": dict(luna_curator.CANONICAL_JSON_SERIALIZATION),
         }
         invocation = " ".join(
             [
@@ -781,12 +843,63 @@ class LunaCuratorTests(unittest.TestCase):
                 "default_custom_sha256": "3" * 64,
                 "opencc_tree_sha256": "4" * 64,
             },
+            "tool_source": {
+                "repository": "yune",
+                "commit": "7" * 40,
+                "git_tree": "8" * 40,
+                "clean": True,
+                "dirty": False,
+                "status_short": [],
+            },
+            "tool_hashes": {
+                "capture_script_sha256": luna_curator._file_sha256(
+                    SCRIPTS / "capture-m59-luna-composition.ps1"
+                ),
+                "curator_sha256": luna_curator._file_sha256(
+                    SCRIPTS / "curate-m59-luna-composition.py"
+                ),
+                "probe_sha256": luna_curator._file_sha256(
+                    SCRIPTS / "oracle-rime-probe.cs"
+                ),
+            },
+            "schema_id": "luna_pinyin",
+            "modules": ["default"],
+            "inputs": list(luna_curator.EXPECTED_INPUTS),
+            "input_count": len(luna_curator.EXPECTED_INPUTS),
+            "page_sizes_observed": [5],
+            "captured_all_pages": True,
+            "page_policy": luna_curator.PAGE_POLICY,
+            "runtime_options": dict(luna_curator.RUNTIME_OPTIONS),
+            "runtime_options_source": luna_curator.RUNTIME_OPTIONS_SOURCE,
+            "additional_runtime_option_patches": [],
+            "serialization": dict(luna_curator.CANONICAL_JSON_SERIALIZATION),
+            "commands": {
+                "deploy": "rime_deployer.exe --build disposable/user disposable/shared "
+                "disposable/user/build",
+                "capture": invocation,
+                "curate": "python scripts/curate-m59-luna-composition.py "
+                "'disposable/raw/pages.json' 'disposable/raw/compose.json' "
+                "'disposable/raw/metadata.json' 'fixture.json'",
+            },
             "actual_invocation": invocation,
             "effective_parameters": parameters,
+            "curator_effective_parameters": {
+                "pages": "disposable/raw/pages.json",
+                "composition": "disposable/raw/compose.json",
+                "metadata": "disposable/raw/metadata.json",
+                "output": "fixture.json",
+            },
+            "output_provenance": {
+                "path": "fixture.json",
+                "existed_before_capture": False,
+                "write_policy": luna_curator.WRITE_POLICY,
+                "generated_by": "scripts/curate-m59-luna-composition.py",
+                "raw_paths": dict(luna_curator.RAW_PATHS),
+            },
         }
         if metadata_mutator is not None:
             metadata_mutator(metadata)
-        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+        metadata_path.write_bytes((json.dumps(metadata) + "\n").encode("utf-8"))
         with contextlib.redirect_stderr(io.StringIO()):
             luna_curator.main(
                 [str(pages_path), str(compose_path), str(metadata_path), str(output_path)]
@@ -795,8 +908,51 @@ class LunaCuratorTests(unittest.TestCase):
 
     def test_valid_complete_seven_case_capture_is_preserved(self):
         with tempfile.TemporaryDirectory() as temp:
-            output = self.run_curator(Path(temp), self.valid_inputs())
+            root = Path(temp)
+            pages = self.valid_inputs()
+            composition = self.valid_composition()
+            output = self.run_curator(root, pages, composition)
+            output_bytes = (root / "output.json").read_bytes()
         self.assertEqual(len(output["cases"]), 7)
+        self.assertEqual(output["cases"], pages)
+        self.assertEqual(output["composition_snapshots"], composition)
+        self.assertEqual(output["capture"]["inputs"], list(luna_curator.EXPECTED_INPUTS))
+        self.assertEqual(output["capture"]["input_count"], 7)
+        self.assertEqual(output["capture"]["page_sizes_observed"], [5])
+        self.assertTrue(output["capture"]["captured_all_pages"])
+        self.assertEqual(
+            output["capture"]["runtime_options"],
+            dict(luna_curator.RUNTIME_OPTIONS),
+        )
+        self.assertEqual(
+            output["capture"]["runtime_options_source"],
+            luna_curator.RUNTIME_OPTIONS_SOURCE,
+        )
+        self.assertEqual(output["capture"]["additional_runtime_option_patches"], [])
+        self.assertEqual(
+            output["capture"]["serialization"],
+            luna_curator.CANONICAL_JSON_SERIALIZATION,
+        )
+        self.assertTrue(output["capture"]["tool_source"]["clean"])
+        self.assertFalse(output["capture"]["tool_source"]["dirty"])
+        self.assertEqual(output["capture"]["tool_source"]["status_short"], [])
+        self.assertEqual(
+            set(output["capture"]["tool_hashes"]),
+            {"capture_script_sha256", "curator_sha256", "probe_sha256"},
+        )
+        self.assertEqual(
+            output["capture"]["commands"]["capture"],
+            output["capture"]["actual_invocation"],
+        )
+        self.assertEqual(
+            output["capture"]["curator_effective_parameters"]["output"],
+            "fixture.json",
+        )
+        self.assertFalse(output_bytes.startswith(b"\xef\xbb\xbf"))
+        self.assertNotIn(b"\r", output_bytes)
+        self.assertNotIn(b"\x00", output_bytes)
+        self.assertTrue(output_bytes.endswith(b"\n"))
+        self.assertFalse(output_bytes.endswith(b"\n\n"))
         self.assertEqual(
             output["compositions"]["moboyi"]["final_commit"],
             luna_curator.COMPOSITIONS[0][3],
@@ -805,7 +961,9 @@ class LunaCuratorTests(unittest.TestCase):
             output["capture"]["source_row_policy"],
             "m59_lane_b_complete_order_and_partial_selection_composition",
         )
-        self.assertEqual(output["capture"]["curator_version"], 5)
+        self.assertEqual(
+            output["capture"]["curator_version"], luna_curator.CURATOR_VERSION
+        )
         self.assertEqual(
             output["capture"]["order_hash_algorithm"],
             "sha256 of repeated u64be utf8-byte-length followed by utf8 candidate text",
@@ -846,9 +1004,33 @@ class LunaCuratorTests(unittest.TestCase):
                 (second_root / "output.json").read_bytes(),
             )
 
+    def test_raw_json_inputs_must_use_the_declared_canonical_bytes(self):
+        invalid_payloads = {
+            "bom": b"\xef\xbb\xbf{}\n",
+            "crlf": b"{}\r\n",
+            "missing_terminal_lf": b"{}",
+            "double_terminal_lf": b"{}\n\n",
+            "nul": b'{"value":"\\u0000"}\x00\n',
+            "invalid_utf8": b'"\xff"\n',
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            valid = root / "valid.json"
+            valid.write_bytes(b"{}\n")
+            self.assertEqual(luna_curator._load_canonical_json(valid, "valid"), {})
+            for label, payload in invalid_payloads.items():
+                with self.subTest(label=label):
+                    path = root / f"{label}.json"
+                    path.write_bytes(payload)
+                    with self.assertRaises(ValueError):
+                        luna_curator._load_canonical_json(path, label)
+
     def test_incomplete_or_malformed_capture_fails_closed(self):
         mutations = {
             "missing_case": lambda pages: pages.pop(),
+            "wrong_case_order": lambda pages: pages.__setitem__(
+                slice(0, 2), [pages[1], pages[0]]
+            ),
             "zero_page_size": lambda pages: pages[0].__setitem__("page_size", 0),
             "non_string_candidate": lambda pages: pages[0]["all_candidates"][0].__setitem__(
                 "text", 1
@@ -888,6 +1070,13 @@ class LunaCuratorTests(unittest.TestCase):
                 0
             ].__setitem__("text", "different"),
             "input_mismatch": lambda pages: pages[0].__setitem__("rime_get_input", "other"),
+            "wrong_schema": lambda pages: pages[0].__setitem__("schema_id", "other"),
+            "wrong_termination": lambda pages: pages[0].__setitem__(
+                "termination_reason", "page_did_not_advance"
+            ),
+            "contradictory_pagination_error": lambda pages: pages[0].__setitem__(
+                "pagination_error", "page_down_did_not_advance_at_page_0"
+            ),
             "bad_initial_page": lambda pages: pages[0].__setitem__("page_no", 1),
             "boolean_initial_page": lambda pages: pages[0].__setitem__("page_no", False),
             "bad_processed_key": lambda pages: pages[0]["processed"].__setitem__(0, False),
@@ -906,17 +1095,35 @@ class LunaCuratorTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.run_curator(Path(temp), pages)
 
-        with tempfile.TemporaryDirectory() as temp:
-            compose = [
-                {
-                    "scenario": "moboyi_compose",
-                    "label": "after_select_yi",
-                    "preedit": "莫伯洢",
-                    "commit_text": None,
-                }
-            ]
-            with self.assertRaises(ValueError):
-                self.run_curator(Path(temp), self.valid_inputs(), compose)
+        composition_mutations = {
+            "missing_step": lambda rows: rows.pop(10),
+            "reordered_steps": lambda rows: rows.__setitem__(
+                slice(2, 4), [rows[3], rows[2]]
+            ),
+            "duplicate_step": lambda rows: rows.insert(4, dict(rows[3])),
+            "unprocessed_step": lambda rows: rows[5].__setitem__("processed", 0),
+            "float_processed_step": lambda rows: rows[5].__setitem__("processed", 1.0),
+            "wrong_page_number": lambda rows: rows[3].__setitem__("page_no", 999),
+            "wrong_page_size": lambda rows: rows[3].__setitem__("page_size", 4),
+            "wrong_highlight": lambda rows: rows[3].__setitem__(
+                "highlighted_candidate_index", 1
+            ),
+            "wrong_selection_target": lambda rows: rows[4]["selected_candidates"][
+                4
+            ].__setitem__("text", "wrong"),
+            "wrong_intermediate_preedit": lambda rows: rows[5].__setitem__(
+                "preedit", "wrong"
+            ),
+            "missing_final_commit": lambda rows: rows[-1].__setitem__(
+                "commit_text", None
+            ),
+        }
+        for label, mutate in composition_mutations.items():
+            with self.subTest(composition=label), tempfile.TemporaryDirectory() as temp:
+                compose = self.valid_composition()
+                mutate(compose)
+                with self.assertRaises(ValueError):
+                    self.run_curator(Path(temp), self.valid_inputs(), compose)
 
     def test_metadata_identities_and_invocation_are_fail_closed(self):
         mutations = {
@@ -954,6 +1161,45 @@ class LunaCuratorTests(unittest.TestCase):
             "unstable_timestamp_policy": lambda metadata: metadata[
                 "queried_data"
             ].__setitem__("staged_timestamp_utc", "2026-07-09T22:00:00Z"),
+            "dirty_tool_source": lambda metadata: metadata["tool_source"].update(
+                {"clean": False, "dirty": True, "status_short": [" M scripts/tool.py"]}
+            ),
+            "wrong_tool_hash": lambda metadata: metadata["tool_hashes"].__setitem__(
+                "probe_sha256", "9" * 64
+            ),
+            "wrong_input_order": lambda metadata: metadata.__setitem__(
+                "inputs", list(reversed(luna_curator.EXPECTED_INPUTS))
+            ),
+            "wrong_page_size_summary": lambda metadata: metadata.__setitem__(
+                "page_sizes_observed", [6]
+            ),
+            "runtime_option_enabled": lambda metadata: metadata[
+                "runtime_options"
+            ].__setitem__("ascii_mode", True),
+            "wrong_runtime_option_source": lambda metadata: metadata.__setitem__(
+                "runtime_options_source", "invented"
+            ),
+            "runtime_option_patch": lambda metadata: metadata.__setitem__(
+                "additional_runtime_option_patches", ["ascii_mode"]
+            ),
+            "bom_serialization": lambda metadata: metadata["serialization"].__setitem__(
+                "bom", True
+            ),
+            "wrong_capture_command": lambda metadata: metadata["commands"].__setitem__(
+                "capture", "capture"
+            ),
+            "wrong_curator_output": lambda metadata: metadata[
+                "curator_effective_parameters"
+            ].__setitem__("output", "other.json"),
+            "wrong_output_provenance": lambda metadata: metadata[
+                "output_provenance"
+            ].__setitem__("path", "other.json"),
+            "preexisting_output_provenance": lambda metadata: metadata[
+                "output_provenance"
+            ].__setitem__("existed_before_capture", True),
+            "extra_metadata_field": lambda metadata: metadata.__setitem__(
+                "undeclared", True
+            ),
         }
         for label, mutate in mutations.items():
             with self.subTest(label=label), tempfile.TemporaryDirectory() as temp:
@@ -968,14 +1214,16 @@ class LunaCuratorTests(unittest.TestCase):
             stale_temp = root / ".output.json.stale.tmp"
             stale_output.write_text("stale", encoding="utf-8")
             stale_temp.write_text("stale", encoding="utf-8")
-            with self.assertRaises(ValueError):
+            output_snapshot = stale_output.read_bytes()
+            temp_snapshot = stale_temp.read_bytes()
+            with self.assertRaises(FileExistsError):
                 self.run_curator(
                     root,
                     self.valid_inputs(),
                     metadata_mutator=mutations["bad_hash"],
                 )
-            self.assertFalse(stale_output.exists())
-            self.assertFalse(stale_temp.exists())
+            self.assertEqual(stale_output.read_bytes(), output_snapshot)
+            self.assertEqual(stale_temp.read_bytes(), temp_snapshot)
 
 
 class CaptureContractTests(unittest.TestCase):
@@ -1007,9 +1255,13 @@ class CaptureContractTests(unittest.TestCase):
         )
 
     def test_lane_b_capture_roots_are_unique_and_marker_verified(self):
-        luna = (SCRIPTS / "capture-m59-luna-composition.ps1").read_text(
-            encoding="utf-8-sig"
+        luna_bytes = (SCRIPTS / "capture-m59-luna-composition.ps1").read_bytes()
+        self.assertTrue(
+            all(byte < 0x80 for byte in luna_bytes),
+            "Windows PowerShell capture scripts that claim pure-ASCII must not "
+            "embed encoding-sensitive literals or comments",
         )
+        luna = luna_bytes.decode("ascii")
         yune = (SCRIPTS / "capture-yune-candidate-order.ps1").read_text(
             encoding="utf-8-sig"
         )
@@ -1027,6 +1279,83 @@ class CaptureContractTests(unittest.TestCase):
         self.assertIn("AddMilliseconds(500)", luna)
         self.assertIn("LastWriteTimeUtc.Ticks -ne $StagedTimestampUtc.Ticks", luna)
         self.assertIn('shared_path = "disposable/shared"', luna)
+        self.assertIn(
+            '$pagingInputs = @("moboyi", "boyi", "yi", "zhonggao", "zhongguo", '
+            '"gao", "guo")',
+            luna,
+        )
+        self.assertIn("Lane-B capture did not preserve the declared seven-input order", luna)
+        self.assertIn("Get-RimeCaptureRuntimeOptionProvenance", luna)
+        self.assertIn(
+            '"RimeProbe.CaptureWithIdentity+CaptureScenariosWithIdentity/'
+            'CaptureRuntimeOptionPolicy"',
+            luna,
+        )
+        self.assertIn("runtime_options = $RuntimeOptions", luna)
+        self.assertIn("runtime_options_source = $RuntimeOptionsSource", luna)
+        self.assertIn("additional_runtime_option_patches", luna)
+        self.assertIn("status_short = @($ToolState.status_short)", luna)
+        self.assertIn("capture_script_sha256 = $CaptureScriptSha256", luna)
+        self.assertIn("curator_sha256 = $CuratorSha256", luna)
+        self.assertIn("probe_sha256 = $ProbeSha256", luna)
+        self.assertIn("Assert-GitStateUnchanged $RepoRoot", luna)
+        self.assertIn("Write-Utf8NoBom $PagesRaw", luna)
+        self.assertIn("Write-Utf8NoBom $ComposeRaw", luna)
+        self.assertIn("Write-Utf8NoBom $MetadataRaw", luna)
+        self.assertNotIn("Set-Content -LiteralPath $PagesRaw -Encoding UTF8", luna)
+        self.assertIn("Assert-CanonicalJsonFile $Output", luna)
+        self.assertIn("actual_invocation = $EffectiveInvocation", luna)
+        self.assertIn("effective_parameters = $EffectiveParameters", luna)
+        self.assertIn(
+            '$DefaultOutput = Join-Path $RepoRoot "target/m59-luna-leading-single-composition.json"',
+            luna,
+        )
+        self.assertIn("function Assert-LaneBOutputPreflight", luna)
+        self.assertIn("Output must not already exist", luna)
+        self.assertIn("Output must not be inside or equal to OracleRoot", luna)
+        self.assertIn("Output must not alias protected input", luna)
+        self.assertIn("Output must not be inside protected input", luna)
+        self.assertIn("GetFinalPathNameByHandle", luna)
+        self.assertIn("existing_fixture = $DefaultFixture", luna)
+        self.assertIn(
+            "$Output = Assert-LaneBOutputPreflight $Output $OracleRoot "
+            "$ProtectedCaptureInputs",
+            luna,
+        )
+        self.assertLess(
+            luna.index("$Output = Assert-LaneBOutputPreflight"),
+            luna.index("$ToolState = Git-State $RepoRoot"),
+        )
+        self.assertLess(
+            luna.index("$Output = Assert-LaneBOutputPreflight"),
+            luna.index("New-Item -ItemType Directory -Path $WorkRoot"),
+        )
+        self.assertIn("existed_before_capture = $false", luna)
+        manifest = json.loads(
+            (
+                SCRIPTS.parent
+                / "crates/yune-core/tests/fixtures/upstream-1.17.0/oracle-manifest.json"
+            ).read_text(encoding="utf-8")
+        )
+        lane_b_manifest = next(
+            row
+            for row in manifest["files"]
+            if row["path"] == "m59-luna-leading-single-composition.json"
+        )
+        self.assertIn(
+            "-Output target/m59-luna-leading-single-composition.json",
+            lane_b_manifest["capture_command"],
+        )
+        self.assertNotIn(
+            "-Output crates/yune-core/tests/fixtures/",
+            lane_b_manifest["capture_command"],
+        )
+        self.assertIn("never overwrites", lane_b_manifest["import_policy"])
+        curator = (SCRIPTS / "curate-m59-luna-composition.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("os.link(temp_path, output)", curator)
+        self.assertNotIn("os.replace(temp_path, output)", curator)
         self.assertIn('[guid]::NewGuid().ToString("N")', yune)
         self.assertIn("Capture work root already exists", yune)
         self.assertIn("invalid marker", yune)
@@ -1082,6 +1411,120 @@ class CaptureContractTests(unittest.TestCase):
             source,
         )
 
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_lane_b_output_preflight_rejects_existing_alias_and_containment(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            oracle = root / "oracle"
+            tools_dir = root / "tools"
+            oracle.mkdir()
+            tools_dir.mkdir()
+            oracle_sentinel = oracle / "source.txt"
+            tool_file = tools_dir / "capture.ps1"
+            fixture = root / "fixture.json"
+            existing_output = root / "existing.json"
+            oracle_sentinel.write_bytes(b"oracle-input")
+            tool_file.write_bytes(b"tool-input")
+            fixture.write_bytes(b"fixture-input")
+            existing_output.write_bytes(b"existing-output")
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_LANE_B_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @(
+    "Get-CanonicalLaneBPath",
+    "Test-LaneBPathWithinOrEqual",
+    "Assert-LaneBOutputPreflight"
+)) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+$protected = [ordered]@{
+    tool_directory = $env:YUNE_LANE_B_TOOLS_TEST
+    capture_script = $env:YUNE_LANE_B_TOOL_FILE_TEST
+    existing_fixture = $env:YUNE_LANE_B_FIXTURE_TEST
+}
+function Try-Preflight([string]$candidate) {
+    try {
+        $resolved = Assert-LaneBOutputPreflight `
+            $candidate `
+            $env:YUNE_LANE_B_ORACLE_TEST `
+            $protected
+        return [ordered]@{ accepted = $true; resolved = $resolved; error = $null }
+    }
+    catch {
+        return [ordered]@{ accepted = $false; resolved = $null; error = $_.Exception.Message }
+    }
+}
+[ordered]@{
+    existing = Try-Preflight $env:YUNE_LANE_B_EXISTING_OUTPUT_TEST
+    oracle_child = Try-Preflight $env:YUNE_LANE_B_ORACLE_CHILD_TEST
+    tool_child = Try-Preflight $env:YUNE_LANE_B_TOOL_CHILD_TEST
+    fixture_alias = Try-Preflight $env:YUNE_LANE_B_FIXTURE_TEST
+    safe = Try-Preflight $env:YUNE_LANE_B_SAFE_OUTPUT_TEST
+} | ConvertTo-Json -Depth 5 -Compress
+"""
+            safe_output = root / "fresh" / "lane-b.json"
+            oracle_child = oracle / "lane-b.json"
+            tool_child = tools_dir / "lane-b.json"
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_LANE_B_CAPTURE_SCRIPT_TEST": str(
+                        SCRIPTS / "capture-m59-luna-composition.ps1"
+                    ),
+                    "YUNE_LANE_B_ORACLE_TEST": str(oracle),
+                    "YUNE_LANE_B_TOOLS_TEST": str(tools_dir),
+                    "YUNE_LANE_B_TOOL_FILE_TEST": str(tool_file),
+                    "YUNE_LANE_B_FIXTURE_TEST": str(fixture),
+                    "YUNE_LANE_B_EXISTING_OUTPUT_TEST": str(existing_output),
+                    "YUNE_LANE_B_ORACLE_CHILD_TEST": str(oracle_child),
+                    "YUNE_LANE_B_TOOL_CHILD_TEST": str(tool_child),
+                    "YUNE_LANE_B_SAFE_OUTPUT_TEST": str(safe_output),
+                }
+            )
+            completed = subprocess.run(
+                [powershell, "-NoProfile", "-Command", command],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+                timeout=60,
+            )
+            if completed.returncode != 0:
+                self.fail(completed.stderr or completed.stdout)
+            result = json.loads(completed.stdout.strip().splitlines()[-1])
+            self.assertFalse(result["existing"]["accepted"])
+            self.assertIn("must not already exist", result["existing"]["error"])
+            self.assertFalse(result["oracle_child"]["accepted"])
+            self.assertIn("inside or equal to OracleRoot", result["oracle_child"]["error"])
+            self.assertFalse(result["tool_child"]["accepted"])
+            self.assertIn("inside protected input", result["tool_child"]["error"])
+            self.assertFalse(result["fixture_alias"]["accepted"])
+            self.assertIn("must not already exist", result["fixture_alias"]["error"])
+            self.assertTrue(result["safe"]["accepted"])
+            self.assertFalse(safe_output.exists())
+            self.assertFalse(oracle_child.exists())
+            self.assertFalse(tool_child.exists())
+            self.assertEqual(existing_output.read_bytes(), b"existing-output")
+            self.assertEqual(oracle_sentinel.read_bytes(), b"oracle-input")
+            self.assertEqual(tool_file.read_bytes(), b"tool-input")
+            self.assertEqual(fixture.read_bytes(), b"fixture-input")
+
     def test_capture_runtime_options_are_single_sourced_and_serialized(self):
         probe = (SCRIPTS / "oracle-rime-probe.cs").read_text(encoding="utf-8")
         capture = (SCRIPTS / "capture-yune-candidate-order.ps1").read_text(
@@ -1118,6 +1561,17 @@ class CaptureContractTests(unittest.TestCase):
         )
         for option_name in ("ascii_mode", "full_shape", "ascii_punct", "zh_hans"):
             self.assertNotIn(f'U8("{option_name}", ptrs)', capture_with_identity)
+        scenario_initialization = probe.split(
+            "public static List<Dictionary<string, object>> CaptureScenariosWithIdentity(",
+            1,
+        )[1].split("foreach (var action in scenario.actions", 1)[0]
+        self.assertIn("foreach (var option in CaptureRuntimeOptionPolicy)", scenario_initialization)
+        self.assertIn(
+            "RimeSetOption(session, U8(option.name, ptrs), option.enabled ? 1 : 0);",
+            scenario_initialization,
+        )
+        for option_name in ("ascii_mode", "full_shape", "ascii_punct", "zh_hans"):
+            self.assertNotIn(f'U8("{option_name}", ptrs)', scenario_initialization)
         self.assertIn(
             "foreach ($Option in [RimeProbe]::GetCaptureRuntimeOptions())", capture
         )
@@ -1169,6 +1623,7 @@ class CaptureContractTests(unittest.TestCase):
         contracts = (
             ("capture-upstream-rime-cantonese.ps1", "Write-NewUtf8NoBom"),
             ("capture-yune-candidate-order.ps1", "Write-Utf8NoBom"),
+            ("capture-m59-luna-composition.ps1", "Write-Utf8NoBom"),
         )
         generated = {}
         with tempfile.TemporaryDirectory() as temp:
@@ -1243,6 +1698,10 @@ $second = ConvertTo-CanonicalJsonText $payload
         self.assertEqual(
             generated["capture-upstream-rime-cantonese.ps1"],
             generated["capture-yune-candidate-order.ps1"],
+        )
+        self.assertEqual(
+            generated["capture-upstream-rime-cantonese.ps1"],
+            generated["capture-m59-luna-composition.ps1"],
         )
 
     def test_upstream_lane_a_raw_capture_contract_is_explicit_and_safe(self):
@@ -1899,47 +2358,71 @@ $provenance = Get-RimeCaptureRuntimeOptionProvenance
 [ordered]@{
     probe_policy = $probePolicy
     probe_source = [RimeProbe]::CaptureRuntimeOptionsSource
+    shared_probe_source = [RimeProbe]::SharedCaptureRuntimeOptionsSource
     serialized_options = $provenance.runtime_options
     serialized_order = @($provenance.runtime_options.Keys)
     serialized_source = $provenance.runtime_options_source
 } | ConvertTo-Json -Depth 5 -Compress
 """
-        environment = os.environ.copy()
-        environment.update(
-            {
-                "YUNE_PROBE_SOURCE_TEST": str(SCRIPTS / "oracle-rime-probe.cs"),
-                "YUNE_CAPTURE_SCRIPT_TEST": str(
-                    SCRIPTS / "capture-yune-candidate-order.ps1"
-                ),
-            }
-        )
-        completed = subprocess.run(
-            [powershell, "-NoProfile", "-Command", command],
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            env=environment,
-            timeout=60,
-        )
-        if completed.returncode != 0:
-            self.fail(completed.stderr or completed.stdout)
-        result = json.loads(completed.stdout.strip().splitlines()[-1])
-        expected_order = ["ascii_mode", "full_shape", "ascii_punct", "zh_hans"]
-        self.assertEqual(
-            [entry["name"] for entry in result["probe_policy"]], expected_order
-        )
-        self.assertTrue(
-            all(entry["enabled"] is False for entry in result["probe_policy"])
-        )
-        self.assertEqual(result["serialized_order"], expected_order)
-        self.assertEqual(list(result["serialized_options"]), expected_order)
-        self.assertTrue(
-            all(value is False for value in result["serialized_options"].values())
-        )
-        expected_source = "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy"
-        self.assertEqual(result["probe_source"], expected_source)
-        self.assertEqual(result["serialized_source"], expected_source)
+        for script_name in (
+            "capture-yune-candidate-order.ps1",
+            "capture-m59-luna-composition.ps1",
+        ):
+            with self.subTest(script=script_name):
+                environment = os.environ.copy()
+                environment.update(
+                    {
+                        "YUNE_PROBE_SOURCE_TEST": str(SCRIPTS / "oracle-rime-probe.cs"),
+                        "YUNE_CAPTURE_SCRIPT_TEST": str(SCRIPTS / script_name),
+                    }
+                )
+                completed = subprocess.run(
+                    [powershell, "-NoProfile", "-Command", command],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    env=environment,
+                    timeout=60,
+                )
+                if completed.returncode != 0:
+                    self.fail(completed.stderr or completed.stdout)
+                result = json.loads(completed.stdout.strip().splitlines()[-1])
+                expected_order = [
+                    "ascii_mode",
+                    "full_shape",
+                    "ascii_punct",
+                    "zh_hans",
+                ]
+                self.assertEqual(
+                    [entry["name"] for entry in result["probe_policy"]], expected_order
+                )
+                self.assertTrue(
+                    all(entry["enabled"] is False for entry in result["probe_policy"])
+                )
+                self.assertEqual(result["serialized_order"], expected_order)
+                self.assertEqual(list(result["serialized_options"]), expected_order)
+                self.assertTrue(
+                    all(
+                        value is False
+                        for value in result["serialized_options"].values()
+                    )
+                )
+                expected_probe_source = (
+                    "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy"
+                )
+                expected_shared_source = (
+                    "RimeProbe.CaptureWithIdentity+CaptureScenariosWithIdentity/"
+                    "CaptureRuntimeOptionPolicy"
+                )
+                self.assertEqual(result["probe_source"], expected_probe_source)
+                self.assertEqual(result["shared_probe_source"], expected_shared_source)
+                expected_source = (
+                    expected_shared_source
+                    if script_name == "capture-m59-luna-composition.ps1"
+                    else expected_probe_source
+                )
+                self.assertEqual(result["serialized_source"], expected_source)
 
     def test_yune_capture_path_preflight_precedes_workspace_mutation(self):
         source = (SCRIPTS / "capture-yune-candidate-order.ps1").read_text(

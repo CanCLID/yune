@@ -207,6 +207,12 @@ public static class RimeProbe {
     get { return "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy"; }
   }
 
+  public static string SharedCaptureRuntimeOptionsSource {
+    get {
+      return "RimeProbe.CaptureWithIdentity+CaptureScenariosWithIdentity/CaptureRuntimeOptionPolicy";
+    }
+  }
+
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
   public static extern void RimeSetup(ref RimeTraits traits);
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -778,10 +784,9 @@ public static class RimeProbe {
         if (RimeSelectSchema(session, schemaPtr) == 0) {
           throw new Exception("RimeSelectSchema failed: " + schema);
         }
-        RimeSetOption(session, U8("ascii_mode", ptrs), 0);
-        RimeSetOption(session, U8("full_shape", ptrs), 0);
-        RimeSetOption(session, U8("ascii_punct", ptrs), 0);
-        RimeSetOption(session, U8("zh_hans", ptrs), 0);
+        foreach (var option in CaptureRuntimeOptionPolicy) {
+          RimeSetOption(session, U8(option.name, ptrs), option.enabled ? 1 : 0);
+        }
 
         foreach (var action in scenario.actions ?? Array.Empty<ProbeAction>()) {
           var type = action.type ?? "";

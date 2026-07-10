@@ -1,12 +1,13 @@
 use std::collections::{BTreeMap, HashMap};
 
 use crate::{
-    build_prism_bin, parse_rime_prism_bin_payload, Candidate, CandidateFilter, CandidateRequest,
-    CandidateSource, Context, DartsDoubleArray, DictionaryLookupRecord, Engine, HistoryTranslator,
-    MemoryOwnerClass, PresetVocabularyEntry, PunctuationTranslator, ReverseLookupTranslator,
-    RimeCorrectionEntry, RimePrismBinPayload, RimePrismSpellingDescriptor, RimeToleranceRule,
-    StaticTableTranslator, Status, TableDictionary, TableDictionaryAdvancedData, TableEntry,
-    Translator,
+    build_prism_bin, build_table_bin, parse_rime_prism_bin_payload,
+    parse_rime_table_bin_advanced_data, parse_rime_table_bin_dictionary, Candidate,
+    CandidateFilter, CandidateRequest, CandidateSource, CompactTableStore, Context,
+    DartsDoubleArray, DictionaryLookupRecord, Engine, HistoryTranslator, MemoryOwnerClass,
+    PresetVocabularyEntry, PunctuationTranslator, ReverseLookupTranslator, RimeCorrectionEntry,
+    RimePrismBinPayload, RimePrismSpellingDescriptor, RimeToleranceRule, StaticTableTranslator,
+    Status, TableDictionary, TableDictionaryAdvancedData, TableEntry, Translator,
 };
 
 struct DropFirstWindowFilter;
@@ -376,6 +377,238 @@ ordinary-e	haie	66
     );
     assert_eq!(bounded.full_count, Some(eager.len()));
     assert!(!bounded.is_complete);
+}
+
+#[test]
+fn prediction_limit_ordering_respects_table_sort_policy() {
+    let translator_for = |sort: &str| {
+        StaticTableTranslator::parse_rime_dict_yaml(&format!(
+            r#"
+---
+name: prediction_sort_policy
+version: "0.1"
+sort: {sort}
+...
+
+first	na	1
+second	na	9
+"#
+        ))
+        .expect("dictionary should parse")
+        .with_completion(true)
+        .with_sentence(false)
+        .with_prediction_candidate_limit(1)
+        .with_prefix_fallback(true)
+    };
+    let texts = |result: crate::TranslationResult| {
+        result
+            .candidates
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>()
+    };
+
+    for (sort, expected) in [
+        ("original", vec!["first", "second"]),
+        ("by_weight", vec!["second", "first"]),
+    ] {
+        let translator = translator_for(sort);
+        assert_eq!(
+            translator
+                .translate("na")
+                .into_iter()
+                .map(|candidate| candidate.text)
+                .collect::<Vec<_>>(),
+            expected,
+            "complete prediction-limit path must honor sort: {sort}"
+        );
+        assert_eq!(
+            texts(translator.translate_with_context_and_request(
+                "na",
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(4).with_debug_full_count(true),
+            )),
+            expected,
+            "bounded prediction-limit path must honor sort: {sort}"
+        );
+    }
+}
+
+#[test]
+fn sort_original_k_way_merges_fetch_groups_and_prediction_without_reordering_a_group() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: original_fetch_groups
+version: "0.1"
+sort: original
+...
+
+group-a-head	g1	100
+group-a-blocked-high	g1	1000
+group-b-head	g2	900
+group-b-tail	g2	50
+prediction	hai6aa1	950
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["g1", "g2", "hai6aa1"].map(str::to_owned);
+    let formulas = vec!["derive/^g[12]$/hai/".to_owned()];
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_sentence(false)
+        .with_prediction_candidate_limit(1);
+    let expected = [
+        "group-b-head",
+        "prediction",
+        "group-a-head",
+        "group-a-blocked-high",
+        "group-b-tail",
+    ];
+
+    assert_eq!(
+        translator
+            .translate("hai")
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>(),
+        expected,
+        "complete lookup should merge group heads by weight while preserving each group's source order"
+    );
+    let bounded = translator.translate_with_context_and_request(
+        "hai",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(4).with_debug_full_count(true),
+    );
+    assert_eq!(
+        bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        &expected[..4],
+        "bounded collection must retain each fetch-group head before the constrained merge"
+    );
+    assert_eq!(bounded.full_count, Some(expected.len()));
+}
+
+#[test]
+fn sort_original_low_prediction_does_not_jump_between_full_span_groups() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        r#"
+---
+name: original_full_span_groups
+version: "0.1"
+sort: original
+...
+
+full-a	g1	100
+full-b	g2	90
+prediction	hai6aa1	1
+"#,
+    )
+    .expect("dictionary should parse");
+    let syllabary = ["g1", "g2", "hai6aa1"].map(str::to_owned);
+    let formulas = vec!["derive/^g[12]$/hai/".to_owned()];
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("test prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_sentence(false)
+        .with_prediction_candidate_limit(1);
+    let expected = ["full-a", "full-b", "prediction"];
+
+    assert_eq!(
+        translator
+            .translate("hai")
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>(),
+        expected,
+        "changing canonical groups at the same consumed span must not promote a low prediction"
+    );
+    let bounded = translator.translate_with_context_and_request(
+        "hai",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(4).with_debug_full_count(true),
+    );
+    assert_eq!(
+        bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        expected,
+        "bounded lookup must apply the same full-span prediction guard"
+    );
+}
+
+#[test]
+fn sort_original_prediction_requires_an_ordinary_candidate_to_lead() {
+    let translator_for = |sort: &str, rows: &str| {
+        let dictionary = TableDictionary::parse_rime_dict_yaml(&format!(
+            "---\nname: prediction_first_guard\nversion: '0.1'\nsort: {sort}\n...\n\n{rows}"
+        ))
+        .expect("dictionary should parse");
+        StaticTableTranslator::from_compact_dictionary(dictionary, None)
+            .with_completion(true)
+            .with_sentence(false)
+            .with_prediction_candidate_limit(1)
+    };
+    let texts = |translator: &StaticTableTranslator| {
+        translator
+            .translate("hai")
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>()
+    };
+    let bounded_texts = |translator: &StaticTableTranslator| {
+        translator
+            .translate_with_context_and_request(
+                "hai",
+                &Status::default(),
+                &HashMap::new(),
+                &Context::default(),
+                CandidateRequest::bounded(4).with_debug_full_count(true),
+            )
+            .candidates
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>()
+    };
+
+    let ordinary_then_prediction =
+        translator_for("original", "ordinary\thaia\t100\nprediction\thai6aa1\t50\n");
+    assert_eq!(texts(&ordinary_then_prediction), ["ordinary", "prediction"]);
+    assert_eq!(
+        bounded_texts(&ordinary_then_prediction),
+        ["ordinary", "prediction"]
+    );
+
+    let prediction_only = translator_for("original", "prediction\thai6aa1\t50\n");
+    assert!(texts(&prediction_only).is_empty());
+    assert!(bounded_texts(&prediction_only).is_empty());
+    let bounded_prediction_only = prediction_only.translate_with_context_and_request(
+        "hai",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(4).with_debug_full_count(true),
+    );
+    assert_eq!(bounded_prediction_only.full_count, Some(0));
+    assert!(bounded_prediction_only.is_complete);
+
+    let by_weight_prediction_only = translator_for("by_weight", "prediction\thai6aa1\t50\n");
+    assert_eq!(texts(&by_weight_prediction_only), ["prediction"]);
+    assert_eq!(bounded_texts(&by_weight_prediction_only), ["prediction"]);
 }
 
 #[test]
@@ -1733,6 +1966,31 @@ fn punctuation_translator_keeps_digit_separator_literal_for_punct_number() {
     assert_eq!(engine.context().candidates[0].comment, "〔全角〕");
 }
 
+const SORT_ORIGINAL_TEST_DICTIONARY: &str = r#"
+---
+name: original_order
+version: "0.1"
+sort: original
+...
+
+first	na	1
+second	na	9
+"#;
+
+fn sort_original_test_dictionary() -> TableDictionary {
+    TableDictionary::parse_rime_dict_yaml(SORT_ORIGINAL_TEST_DICTIONARY)
+        .expect("dictionary should parse")
+}
+
+fn assert_na_candidate_texts(translator: &StaticTableTranslator, expected: &[&str]) {
+    let texts = translator
+        .translate("na")
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+    assert_eq!(texts, expected);
+}
+
 #[test]
 fn sort_original_dictionary_preserves_source_order_over_weight() {
     // GPT review P1 (2026-07-09): `sort: original` is a RIME contract — the dict
@@ -1761,4 +2019,82 @@ second	na	9
         ["first", "second"],
         "sort: original must keep source row order even when weights ascend"
     );
+}
+
+#[test]
+fn sort_original_direct_compact_preserves_source_order_over_weight() {
+    let translator =
+        StaticTableTranslator::from_compact_dictionary(sort_original_test_dictionary(), None);
+    assert_na_candidate_texts(&translator, &["first", "second"]);
+}
+
+#[test]
+fn sort_original_owned_compact_store_preserves_source_order_over_weight() {
+    let store = CompactTableStore::from_dictionary(sort_original_test_dictionary());
+    assert_eq!(store.storage_label(), "owned_heap");
+    let translator = StaticTableTranslator::from_compact_table_store(store, None);
+    assert_na_candidate_texts(&translator, &["first", "second"]);
+}
+
+#[test]
+fn sort_original_materialized_compiled_reload_preserves_source_order_over_weight() {
+    let table_bytes = build_table_bin(&sort_original_test_dictionary(), 0x1234_5678);
+    let relative = i32::from_le_bytes(
+        table_bytes[44..48]
+            .try_into()
+            .expect("syllabary offset should fit"),
+    );
+    let syllabary_offset = usize::try_from(44isize + relative as isize)
+        .expect("syllabary offset should be nonnegative");
+    assert_eq!(syllabary_offset, 96);
+    assert_eq!(syllabary_offset % 4, 0);
+    assert_eq!(
+        &table_bytes[68..syllabary_offset],
+        b"YUNE-TABLE-META\0\x01\x00\x00\x00\x04\x00\x00\x00\x01\x00\x00\x00"
+    );
+    let reloaded =
+        parse_rime_table_bin_dictionary(table_bytes).expect("compiled table should parse");
+    assert!(!reloaded.sort_by_weight());
+    let translator = StaticTableTranslator::from_dictionary(reloaded);
+    assert_na_candidate_texts(&translator, &["first", "second"]);
+}
+
+#[test]
+fn sort_original_byte_backed_compiled_reload_preserves_source_order_over_weight() {
+    let table_bytes = build_table_bin(&sort_original_test_dictionary(), 0x1234_5678);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("compiled advanced data should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("compiled table store should parse");
+    assert_eq!(store.storage_label(), "byte_backed");
+    assert!(!store.sort_by_weight());
+    let translator = StaticTableTranslator::from_compact_table_store(store, None);
+    assert_na_candidate_texts(&translator, &["first", "second"]);
+}
+
+#[test]
+fn sort_by_weight_compiled_path_keeps_default_order_and_legacy_layout() {
+    let dictionary = TableDictionary::parse_rime_dict_yaml(
+        &SORT_ORIGINAL_TEST_DICTIONARY.replace("sort: original", "sort: by_weight"),
+    )
+    .expect("dictionary should parse");
+    let table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let relative = i32::from_le_bytes(
+        table_bytes[44..48]
+            .try_into()
+            .expect("syllabary offset should fit"),
+    );
+    assert_eq!(44isize + relative as isize, 68);
+    assert!(!table_bytes
+        .windows(b"YUNE-TABLE-META\0".len())
+        .any(|window| window == b"YUNE-TABLE-META\0"));
+
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("compiled advanced data should parse");
+    assert_eq!(advanced.sort_by_weight, None);
+    let reloaded =
+        parse_rime_table_bin_dictionary(table_bytes).expect("compiled table should parse");
+    assert!(reloaded.sort_by_weight());
+    let translator = StaticTableTranslator::from_dictionary(reloaded);
+    assert_na_candidate_texts(&translator, &["second", "first"]);
 }

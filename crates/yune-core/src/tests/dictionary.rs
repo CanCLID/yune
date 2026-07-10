@@ -649,6 +649,195 @@ fn table_and_reverse_writers_round_trip_through_existing_readers() {
     );
 }
 
+fn independent_sort_original_metadata() -> Vec<u8> {
+    let mut metadata = b"YUNE-TABLE-META\0".to_vec();
+    metadata.extend_from_slice(&1u32.to_le_bytes());
+    metadata.extend_from_slice(&4u32.to_le_bytes());
+    metadata.extend_from_slice(&[1, 0, 0, 0]);
+    metadata
+}
+
+fn replace_table_header_gap(table_bytes: &mut Vec<u8>, replacement: &[u8]) {
+    let old_relative = i32::from_le_bytes(
+        table_bytes[44..48]
+            .try_into()
+            .expect("syllabary pointer should be an i32"),
+    );
+    let old_syllabary_offset = usize::try_from(44isize + old_relative as isize)
+        .expect("syllabary pointer should be nonnegative");
+    let old_gap_len = old_syllabary_offset - 68;
+    table_bytes.splice(68..old_syllabary_offset, replacement.iter().copied());
+    let delta = isize::try_from(replacement.len()).expect("replacement should fit")
+        - isize::try_from(old_gap_len).expect("old gap should fit");
+    for field_offset in [44usize, 48] {
+        let old = i32::from_le_bytes(
+            table_bytes[field_offset..field_offset + 4]
+                .try_into()
+                .expect("offset field should contain i32"),
+        );
+        let updated = i32::try_from(old as isize + delta).expect("updated pointer should fit");
+        table_bytes[field_offset..field_offset + 4].copy_from_slice(&updated.to_le_bytes());
+    }
+}
+
+fn independently_assembled_sort_original_table() -> Vec<u8> {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("na", "first", 1.0),
+        TableEntry::new("na", "second", 9.0),
+    ]);
+    let mut table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    replace_table_header_gap(&mut table_bytes, &independent_sort_original_metadata());
+    table_bytes
+}
+
+fn assert_table_metadata_error(case: &str, table_bytes: &[u8], expected: RimeTableBinParseError) {
+    assert_eq!(
+        parse_rime_table_bin_dictionary(table_bytes).map(|_| ()),
+        Err(expected.clone()),
+        "dictionary parser should reject {case}"
+    );
+    assert_eq!(
+        parse_rime_table_bin_advanced_data(table_bytes).map(|_| ()),
+        Err(expected),
+        "advanced-data parser should reject {case}"
+    );
+}
+
+#[test]
+fn compiled_table_accepts_independently_assembled_sort_metadata_v1() {
+    let table_bytes = independently_assembled_sort_original_table();
+    assert_eq!(&table_bytes[68..96], independent_sort_original_metadata());
+    let dictionary =
+        parse_rime_table_bin_dictionary(&table_bytes).expect("independent metadata should parse");
+    assert!(!dictionary.sort_by_weight());
+}
+
+#[test]
+fn compiled_table_rejects_malformed_yune_sort_metadata() {
+    let cases = [
+        (
+            "marker",
+            {
+                let mut gap = independent_sort_original_metadata();
+                gap[b"YUNE-TABLE-META".len()] = b'!';
+                gap
+            },
+            RimeTableBinParseError::UnsupportedSection {
+                role: "malformed Yune table metadata marker".to_owned(),
+            },
+        ),
+        (
+            "version",
+            {
+                let mut gap = independent_sort_original_metadata();
+                gap[16..20].copy_from_slice(&2u32.to_le_bytes());
+                gap
+            },
+            RimeTableBinParseError::UnsupportedSection {
+                role: "Yune table metadata version 2".to_owned(),
+            },
+        ),
+        (
+            "payload length",
+            {
+                let mut gap = independent_sort_original_metadata();
+                gap[20..24].copy_from_slice(&3u32.to_le_bytes());
+                gap
+            },
+            RimeTableBinParseError::InvalidLength,
+        ),
+        (
+            "truncation",
+            independent_sort_original_metadata()[..18].to_vec(),
+            RimeTableBinParseError::TooShort,
+        ),
+        (
+            "reserved bytes",
+            {
+                let mut gap = independent_sort_original_metadata();
+                gap[25] = 1;
+                gap
+            },
+            RimeTableBinParseError::UnsupportedSection {
+                role: "nonzero Yune table metadata reserved bytes".to_owned(),
+            },
+        ),
+        (
+            "policy",
+            {
+                let mut gap = independent_sort_original_metadata();
+                gap[24] = 7;
+                gap
+            },
+            RimeTableBinParseError::UnsupportedSection {
+                role: "Yune table sort policy 7".to_owned(),
+            },
+        ),
+        (
+            "trailing bytes",
+            {
+                let mut gap = independent_sort_original_metadata();
+                gap.push(0);
+                gap
+            },
+            RimeTableBinParseError::InvalidLength,
+        ),
+    ];
+
+    for (case, gap, expected) in cases {
+        let mut table_bytes = independently_assembled_sort_original_table();
+        replace_table_header_gap(&mut table_bytes, &gap);
+        assert_table_metadata_error(case, &table_bytes, expected);
+    }
+}
+
+#[test]
+fn compiled_table_tolerates_unrelated_legacy_header_padding() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("na", "first", 1.0),
+        TableEntry::new("na", "second", 9.0),
+    ]);
+    let mut table_bytes = build_table_bin(&dictionary, 0x1234_5678);
+    let padding = b"EXT-PAD";
+    table_bytes.splice(68..68, padding.iter().copied());
+    for field_offset in [44usize, 48] {
+        let old = i32::from_le_bytes(
+            table_bytes[field_offset..field_offset + 4]
+                .try_into()
+                .expect("offset field should contain i32"),
+        );
+        table_bytes[field_offset..field_offset + 4]
+            .copy_from_slice(&(old + padding.len() as i32).to_le_bytes());
+    }
+
+    let reloaded =
+        parse_rime_table_bin_dictionary(table_bytes).expect("legacy padding should be tolerated");
+    assert!(reloaded.sort_by_weight());
+    assert_eq!(reloaded.entries(), dictionary.entries());
+}
+
+#[test]
+fn table_sort_policy_is_not_overridden_by_merged_dependency_metadata() {
+    assert!(
+        TableDictionary::default().sort_by_weight(),
+        "an empty/legacy dictionary must inherit RIME's by_weight default"
+    );
+    let table = TableDictionary::parse_rime_dict_yaml(
+        "---\nname: original\nversion: '0.1'\nsort: original\n...\n\nfirst\tna\t1\n",
+    )
+    .expect("table dictionary should parse");
+    let dependency = TableDictionary::with_advanced_data(
+        Vec::new(),
+        TableDictionaryAdvancedData {
+            sort_by_weight: Some(true),
+            ..TableDictionaryAdvancedData::default()
+        },
+    );
+
+    let merged = table.with_merged_advanced_data_from(&dependency);
+    assert!(!merged.sort_by_weight());
+}
+
 #[test]
 fn table_writer_preserves_typeduck_lookup_records_for_compiled_path() {
     let dictionary = TableDictionary::parse_typeduck_lookup_dict_yaml(

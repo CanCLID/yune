@@ -1,4 +1,10 @@
-use super::{RimeCorrectionEntry, RimeToleranceRule, TableDictionary, TableEncodingRule};
+use super::{
+    compiled_table::{
+        RIME_TABLE_HEADER_LEN, YUNE_TABLE_METADATA_MARKER, YUNE_TABLE_METADATA_PAYLOAD,
+        YUNE_TABLE_METADATA_VERSION,
+    },
+    RimeCorrectionEntry, RimeToleranceRule, TableDictionary, TableEncodingRule,
+};
 
 pub fn build_table_bin(dict: &TableDictionary, dict_file_checksum: u32) -> Vec<u8> {
     let mut entries_by_code: Vec<(&str, Vec<&super::TableEntry>)> = Vec::new();
@@ -13,11 +19,15 @@ pub fn build_table_bin(dict: &TableDictionary, dict_file_checksum: u32) -> Vec<u
         }
     }
 
-    let mut bytes = vec![0; 68];
+    let mut bytes = vec![0; RIME_TABLE_HEADER_LEN];
     put_c_string(&mut bytes, 0, b"Rime::Table/4.0");
     put_u32_le(&mut bytes, 32, dict_file_checksum);
     put_u32_le(&mut bytes, 36, entries_by_code.len() as u32);
     put_u32_le(&mut bytes, 40, dict.entries().len() as u32);
+
+    if !dict.sort_by_weight() {
+        append_table_metadata(&mut bytes);
+    }
 
     let syllabary_offset = bytes.len();
     bytes.resize(syllabary_offset + 4 + entries_by_code.len() * 4, 0);
@@ -51,6 +61,17 @@ pub fn build_table_bin(dict: &TableDictionary, dict_file_checksum: u32) -> Vec<u
 
     append_advanced_payload(&mut bytes, dict);
     bytes
+}
+
+fn append_table_metadata(bytes: &mut Vec<u8>) {
+    // `Rime::Table/4.0` readers follow the syllabary offset at header field 44,
+    // so this optional gap is invisible to librime and legacy Yune readers.
+    // Emit only the non-default policy so by-weight artifacts stay byte-identical.
+    bytes.extend_from_slice(YUNE_TABLE_METADATA_MARKER);
+    put_u32_le_extend(bytes, YUNE_TABLE_METADATA_VERSION);
+    put_u32_le_extend(bytes, YUNE_TABLE_METADATA_PAYLOAD.len() as u32);
+    bytes.extend_from_slice(&YUNE_TABLE_METADATA_PAYLOAD);
+    debug_assert_eq!(bytes.len() % 4, 0);
 }
 
 fn append_advanced_payload(bytes: &mut Vec<u8>, dict: &TableDictionary) {

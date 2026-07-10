@@ -1,5 +1,5 @@
 use super::*;
-use crate::remaining_gear_deferrals_snapshot;
+use crate::{remaining_gear_deferrals_snapshot, session_web_diagnostics_snapshot};
 
 #[test]
 fn dictionary_data_prefers_fresh_compiled_payloads_and_matches_source_order() {
@@ -23,6 +23,89 @@ fn dictionary_data_prefers_fresh_compiled_payloads_and_matches_source_order() {
     assert!(remaining_gear_deferrals_snapshot(fixture.last_session_id())
         .expect("session should exist")
         .is_empty());
+    fixture.cleanup();
+}
+
+#[test]
+fn dictionary_data_typeduck_profile_byte_backed_sort_original_preserves_order() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("dictionary-data-compiled-sort-original");
+    let fixture = DictionaryDataFixture::new(&root, false);
+    fs::write(
+        fixture
+            .staging
+            .join("compiled_original_profile.schema.yaml"),
+        "\
+yune:
+  profile: typeduck_jyutping
+schema:
+  schema_id: compiled_original_profile
+  name: Compiled original profile
+engine:
+  translators:
+    - table_translator
+    - echo_translator
+translator:
+  dictionary: jyut6ping3
+  enable_completion: false
+  enable_sentence: false
+",
+    )
+    .expect("profile schema should be written");
+
+    let source = "---\nname: jyut6ping3\nversion: '0.1'\nsort: original\n...\n\nsource-first\tna\t1\nsource-second\tna\t9\n";
+    fs::write(fixture.shared.join("jyut6ping3.dict.yaml"), source)
+        .expect("source dictionary should be written");
+    let compiled_dictionary = yune_core::TableDictionary::parse_rime_dict_yaml(
+        "---\nname: jyut6ping3\nversion: '0.1'\nsort: original\n...\n\ncompiled-first\tna\t1\ncompiled-second\tna\t9\n",
+    )
+    .expect("compiled dictionary fixture should parse");
+    let checksum = yune_core::rime_dict_source_checksum(0, [source.as_bytes()], None);
+    fs::write(
+        fixture.shared.join("jyut6ping3.table.bin"),
+        yune_core::build_table_bin(&compiled_dictionary, checksum),
+    )
+    .expect("compiled table should be written");
+    fs::write(
+        fixture.shared.join("jyut6ping3.prism.bin"),
+        compiled_prism_fixture(),
+    )
+    .expect("compiled prism should be written");
+    fs::write(
+        fixture.shared.join("jyut6ping3.reverse.bin"),
+        compiled_reverse_fixture(),
+    )
+    .expect("compiled reverse should be written");
+
+    fixture.setup_runtime();
+    let candidates = fixture.candidates_for_schema("compiled_original_profile", "na");
+    assert_eq!(
+        candidates[..2],
+        [
+            ("compiled-first".to_owned(), "na".to_owned()),
+            ("compiled-second".to_owned(), "na".to_owned()),
+        ],
+        "distinct compiled text proves the source dictionary was not used, while original order proves reverse/prism metadata merging did not overwrite the table policy"
+    );
+    let diagnostics = session_web_diagnostics_snapshot(fixture.last_session_id())
+        .expect("session diagnostics should exist");
+    let compact_storage = diagnostics
+        .storage
+        .iter()
+        .find(|row| row.owner == "compact_table.storage")
+        .expect("the explicit TypeDuck profile should activate compact table storage");
+    assert_eq!(compact_storage.selected_storage, "byte_backed");
+    assert_eq!(compact_storage.mapping_mode, "mmap");
+    assert_eq!(compact_storage.stored_entry_count, 2);
+    let deferrals =
+        remaining_gear_deferrals_snapshot(fixture.last_session_id()).expect("session should exist");
+    assert!(
+        !deferrals
+            .iter()
+            .any(|deferral| deferral.gear == "dictionary_source_fallback"),
+        "compiled sort-policy coverage must not pass through source fallback: {deferrals:?}"
+    );
     fixture.cleanup();
 }
 

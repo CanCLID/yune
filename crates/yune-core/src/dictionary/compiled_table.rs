@@ -24,6 +24,13 @@ const MAX_TOLERANCE_CANDIDATE_COUNT: usize = 64;
 const MAX_LOOKUP_TEXT_COUNT: usize = 1_000_000;
 const MAX_LOOKUP_RECORD_COUNT: usize = 1_000_000;
 const MAX_LOOKUP_FIELD_COUNT: usize = 64;
+pub(super) const RIME_TABLE_HEADER_LEN: usize = 68;
+pub(super) const YUNE_TABLE_METADATA_MARKER: &[u8] = b"YUNE-TABLE-META\0";
+const YUNE_TABLE_METADATA_PREFIX: &[u8] = b"YUNE-TABLE-META";
+pub(super) const YUNE_TABLE_METADATA_VERSION: u32 = 1;
+pub(super) const YUNE_TABLE_METADATA_PAYLOAD: [u8; 4] = [1, 0, 0, 0];
+const YUNE_TABLE_METADATA_PAYLOAD_LEN: usize = YUNE_TABLE_METADATA_PAYLOAD.len();
+const YUNE_TABLE_SORT_ORIGINAL: u8 = YUNE_TABLE_METADATA_PAYLOAD[0];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RimeTableBinParseError {
@@ -322,7 +329,7 @@ impl CompactTableStore {
 
     pub fn from_table_bin_byte_source(
         source: Arc<dyn CompactTableByteSource>,
-        advanced: TableDictionaryAdvancedData,
+        mut advanced: TableDictionaryAdvancedData,
     ) -> Result<Self, RimeTableBinParseError> {
         let bytes = source.bytes();
         ensure_len(bytes, 68)?;
@@ -334,6 +341,7 @@ impl CompactTableStore {
 
         let syllabary_offset =
             read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
+        advanced.sort_by_weight = read_table_sort_by_weight(bytes, syllabary_offset)?;
         let index_offset =
             read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
         let string_table_offset = read_offset_ptr(bytes, 60)?;
@@ -454,6 +462,13 @@ impl CompactTableStore {
     #[must_use]
     pub fn advanced_data(&self) -> TableDictionaryAdvancedData {
         self.advanced.clone()
+    }
+
+    /// RIME table ordering policy. Compiled tables without Yune's optional
+    /// header-gap metadata retain the upstream `by_weight` default.
+    #[must_use]
+    pub fn sort_by_weight(&self) -> bool {
+        self.advanced.sort_by_weight.unwrap_or(true)
     }
 
     #[must_use]
@@ -1747,15 +1762,18 @@ pub fn parse_rime_table_bin_advanced_data_with_options(
 ) -> Result<TableDictionaryAdvancedData, RimeTableBinParseError> {
     let bytes = bytes.as_ref();
     ensure_len(bytes, 68)?;
+    let syllabary_offset =
+        read_offset_ptr(bytes, 44)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
     let index_offset =
         read_offset_ptr(bytes, 48)?.ok_or(RimeTableBinParseError::MissingRequiredSection)?;
-    let advanced =
+    let mut advanced =
         read_yune_table_advanced_payload(bytes, total_index_end(bytes, index_offset)?, options)?;
     if !advanced.entries.is_empty() {
         return Err(RimeTableBinParseError::UnsupportedSection {
             role: "byte-backed advanced table entries".to_owned(),
         });
     }
+    advanced.data.sort_by_weight = read_table_sort_by_weight(bytes, syllabary_offset)?;
     Ok(advanced.data)
 }
 
@@ -2432,13 +2450,79 @@ pub fn parse_rime_table_bin_dictionary(
 
     let syllables = read_syllabary(bytes, syllabary_offset)?;
     let mut entries = read_head_index_entries(bytes, index_offset, &syllables)?;
-    let advanced = read_yune_table_advanced_payload(
+    let mut advanced = read_yune_table_advanced_payload(
         bytes,
         total_index_end(bytes, index_offset)?,
         RimeTableBinAdvancedDataOptions::default(),
     )?;
+    advanced.data.sort_by_weight = read_table_sort_by_weight(bytes, syllabary_offset)?;
     entries.extend(advanced.entries);
     Ok(TableDictionary::with_advanced_data(entries, advanced.data))
+}
+
+fn read_table_sort_by_weight(
+    bytes: &[u8],
+    syllabary_offset: usize,
+) -> Result<Option<bool>, RimeTableBinParseError> {
+    if syllabary_offset < RIME_TABLE_HEADER_LEN || syllabary_offset > bytes.len() {
+        return Err(RimeTableBinParseError::OutOfBounds);
+    }
+    let gap = &bytes[RIME_TABLE_HEADER_LEN..syllabary_offset];
+    if gap.is_empty() {
+        return Ok(None);
+    }
+    if !gap.starts_with(YUNE_TABLE_METADATA_MARKER) {
+        if gap.starts_with(YUNE_TABLE_METADATA_PREFIX) {
+            return Err(RimeTableBinParseError::UnsupportedSection {
+                role: "malformed Yune table metadata marker".to_owned(),
+            });
+        }
+        // External `Rime::Table/4.0` producers may use this offset-followed gap
+        // for their own padding. Its absence from Yune's namespace is legacy
+        // `by_weight`, not a reason to reject an otherwise valid table.
+        return Ok(None);
+    }
+
+    let mut cursor = YUNE_TABLE_METADATA_MARKER.len();
+    let version = read_u32_le(gap, cursor).map_err(map_metadata_error)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    if version != YUNE_TABLE_METADATA_VERSION {
+        return Err(RimeTableBinParseError::UnsupportedSection {
+            role: format!("Yune table metadata version {version}"),
+        });
+    }
+
+    let payload_len = usize::try_from(read_u32_le(gap, cursor).map_err(map_metadata_error)?)
+        .map_err(|_| RimeTableBinParseError::InvalidLength)?;
+    cursor = cursor
+        .checked_add(4)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    if payload_len != YUNE_TABLE_METADATA_PAYLOAD_LEN {
+        return Err(RimeTableBinParseError::InvalidLength);
+    }
+    let payload_end = cursor
+        .checked_add(payload_len)
+        .ok_or(RimeTableBinParseError::OutOfBounds)?;
+    if payload_end != gap.len() {
+        return Err(RimeTableBinParseError::InvalidLength);
+    }
+    let payload = gap
+        .get(cursor..payload_end)
+        .ok_or(RimeTableBinParseError::InvalidLength)?;
+    if payload[1..] != YUNE_TABLE_METADATA_PAYLOAD[1..] {
+        return Err(RimeTableBinParseError::UnsupportedSection {
+            role: "nonzero Yune table metadata reserved bytes".to_owned(),
+        });
+    }
+
+    match payload[0] {
+        YUNE_TABLE_SORT_ORIGINAL => Ok(Some(false)),
+        policy => Err(RimeTableBinParseError::UnsupportedSection {
+            role: format!("Yune table sort policy {policy}"),
+        }),
+    }
 }
 
 fn read_syllabary(bytes: &[u8], offset: usize) -> Result<Vec<String>, RimeTableBinParseError> {

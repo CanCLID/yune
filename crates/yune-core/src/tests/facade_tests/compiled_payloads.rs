@@ -137,6 +137,10 @@
     }
 
     fn compiled_table_fixture() -> Vec<u8> {
+        compiled_table_fixture_with_weights(2.0, 1.0)
+    }
+
+    fn compiled_table_fixture_with_weights(first_weight: f32, second_weight: f32) -> Vec<u8> {
         let mut bytes = vec![0; 68];
         put_c_string(&mut bytes, 0, b"Rime::Table/4.0");
         put_u32_le(&mut bytes, 32, 0x1111_1111);
@@ -156,9 +160,9 @@
         let ba_offset = append_c_string(&mut bytes, "八");
         let ba2_offset = append_c_string(&mut bytes, "爸");
         put_offset(&mut bytes, entries_offset, ba_offset);
-        put_f32_le(&mut bytes, entries_offset + 4, 2.0);
+        put_f32_le(&mut bytes, entries_offset + 4, first_weight);
         put_offset(&mut bytes, entries_offset + 8, ba2_offset);
-        put_f32_le(&mut bytes, entries_offset + 12, 1.0);
+        put_f32_le(&mut bytes, entries_offset + 12, second_weight);
         put_offset(&mut bytes, index_offset + 8, entries_offset);
         put_offset(&mut bytes, 44, syllabary_offset);
         put_offset(&mut bytes, 48, index_offset);
@@ -253,6 +257,26 @@
         assert_eq!(entries[0].text, "八");
         assert_eq!(entries[0].weight, 2.0);
         assert_eq!(entries[1].text, "爸");
+    }
+
+    #[test]
+    fn legacy_compiled_table_without_sort_metadata_defaults_to_by_weight() {
+        // This fixture is assembled independently from `build_table_bin` and
+        // has the legacy layout: the syllabary starts at byte 68 with no Yune
+        // metadata gap. Ascending payload weights make the default observable.
+        let dictionary = parse_rime_table_bin_dictionary(
+            compiled_table_fixture_with_weights(1.0, 9.0),
+        )
+        .expect("legacy compiled table should parse");
+        assert!(dictionary.sort_by_weight());
+
+        let translator = StaticTableTranslator::from_dictionary(dictionary);
+        let texts = translator
+            .translate("ba")
+            .into_iter()
+            .map(|candidate| candidate.text)
+            .collect::<Vec<_>>();
+        assert_eq!(texts, ["爸", "八"]);
     }
 
     #[test]

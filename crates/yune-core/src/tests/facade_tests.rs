@@ -7,7 +7,7 @@ use super::{
     RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildPlan,
     RimePrismBinMetadata, RimePrismBinParseError, RimePrismChecksumMetadata,
     RimeReverseBinMetadata, RimeReverseBinParseError, RimeTableBinMetadata, RimeTableBinParseError,
-    TableDictionary, TableEncoder,
+    StaticTableTranslator, TableDictionary, TableEncoder, Translator,
 };
 
 include!("facade_tests/key_sequences.rs");

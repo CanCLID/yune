@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::mem;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
@@ -113,6 +113,7 @@ impl LookupCodeSpec {
 
 #[derive(Clone)]
 struct PendingLookupCandidate {
+    fetch_group: usize,
     entry_code: String,
     lookup_code: String,
     candidate: Candidate,
@@ -130,9 +131,28 @@ impl PendingLookupCandidate {
         }
         quality
     }
+
+    fn prediction_comparison_weight(&self) -> f32 {
+        let mut weight = self.candidate.quality.max(f32::MIN_POSITIVE).ln();
+        if let Some(distance) = self.correction_distance {
+            weight += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
+        }
+        weight
+    }
+
+    fn prediction_precedes(&self, ordinary: &Self) -> bool {
+        let interpreted =
+            complete_syllable_prefix_count(&self.candidate.comment, &self.lookup_code);
+        let consumed = source_code_syllable_count(&ordinary.candidate.comment);
+        self.prediction_comparison_weight() > ordinary.prediction_comparison_weight()
+            || interpreted
+                .zip(consumed)
+                .is_some_and(|(interpreted, consumed)| consumed < interpreted)
+    }
 }
 
 struct PendingLookupCandidateRef<'a> {
+    fetch_group: usize,
     entry_code: Cow<'a, str>,
     lookup_code: &'a str,
     candidate: LookupCandidate<'a>,
@@ -752,6 +772,7 @@ impl StaticTableTranslator {
         store: CompactTableStore,
         prism_payload: Option<RimePrismRuntimePayload>,
     ) -> Self {
+        let sort_by_weight = store.sort_by_weight();
         let advanced = store.advanced_data();
         let preset_vocabulary = advanced.preset_vocabulary.clone();
         let abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry> = Vec::new();
@@ -765,7 +786,7 @@ impl StaticTableTranslator {
             source_entries: None,
             storage: TableStorage::Compact(Box::new(store)),
             prism_payload,
-            sort_by_weight: true,
+            sort_by_weight,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
             enable_completion: false,
@@ -1478,6 +1499,20 @@ impl StaticTableTranslator {
         left: &PendingLookupCandidate,
         right: &PendingLookupCandidate,
     ) -> Ordering {
+        let category_order = self
+            .lookup_candidate_category(left)
+            .cmp(&self.lookup_candidate_category(right));
+        if category_order != Ordering::Equal || !self.sort_by_weight {
+            return category_order;
+        }
+        self.lookup_candidate_weight_order(left, right)
+    }
+
+    fn lookup_candidate_weight_order(
+        &self,
+        left: &PendingLookupCandidate,
+        right: &PendingLookupCandidate,
+    ) -> Ordering {
         self.lookup_candidate_category(left)
             .cmp(&self.lookup_candidate_category(right))
             .then_with(|| {
@@ -1488,6 +1523,93 @@ impl StaticTableTranslator {
             })
             .then_with(|| left.entry_code.cmp(&right.entry_code))
             .then_with(|| left.candidate.text.cmp(&right.candidate.text))
+    }
+
+    fn order_lookup_candidates(&self, candidates: &mut Vec<PendingLookupCandidate>) {
+        if self.sort_by_weight {
+            candidates.sort_by(|left, right| self.lookup_candidate_order(left, right));
+            return;
+        }
+
+        // librime's table `sort: original` contract is per canonical code queue,
+        // not a freeze of the flattened prism-alias stream. Merge current queue
+        // heads by comparable raw weight while never letting a later row jump its
+        // own code's head. TypeDuck's ScriptTranslation additionally holds the
+        // selected prediction behind the first ordinary row and compares the
+        // entry weights. Partial-span candidates are produced by the later
+        // prefix-fallback path, not by this full-input lookup pool; canonical
+        // group changes therefore must not stand in for consumed-span changes.
+        let mut predictions = Vec::new();
+        let mut ordinary = Vec::new();
+        for candidate in std::mem::take(candidates) {
+            if candidate.limited_prediction {
+                predictions.push(candidate);
+            } else {
+                ordinary.push(candidate);
+            }
+        }
+        predictions.sort_by(|left, right| self.lookup_candidate_weight_order(left, right));
+
+        let mut groups: Vec<(u8, usize, VecDeque<PendingLookupCandidate>)> = Vec::new();
+        let mut group_indices: HashMap<(u8, usize), usize> = HashMap::new();
+        for candidate in ordinary {
+            let category = self.lookup_candidate_category(&candidate);
+            let key = candidate.fetch_group;
+            if let Some(index) = group_indices.get(&(category, key)).copied() {
+                groups[index].2.push_back(candidate);
+            } else {
+                group_indices.insert((category, key), groups.len());
+                groups.push((category, key, VecDeque::from([candidate])));
+            }
+        }
+        let mut ordered_ordinary = Vec::new();
+        for category in 0..=2 {
+            loop {
+                let mut best: Option<(usize, f32)> = None;
+                for (index, (group_category, _, group)) in groups.iter().enumerate() {
+                    if *group_category != category {
+                        continue;
+                    }
+                    let Some(head) = group.front() else {
+                        continue;
+                    };
+                    let quality = head.raw_quality();
+                    if best.map_or(true, |(_, best_quality)| quality > best_quality) {
+                        best = Some((index, quality));
+                    }
+                }
+                let Some((best_index, _)) = best else {
+                    break;
+                };
+                ordered_ordinary.push(
+                    groups[best_index]
+                        .2
+                        .pop_front()
+                        .expect("selected candidate group should be nonempty"),
+                );
+            }
+        }
+
+        let mut ordinary = ordered_ordinary.into_iter();
+        let Some(first) = ordinary.next() else {
+            return;
+        };
+        candidates.push(first);
+        let mut predictions = VecDeque::from(predictions);
+        for next_ordinary in ordinary {
+            while predictions
+                .front()
+                .is_some_and(|prediction| prediction.prediction_precedes(&next_ordinary))
+            {
+                candidates.push(
+                    predictions
+                        .pop_front()
+                        .expect("checked prediction queue should be nonempty"),
+                );
+            }
+            candidates.push(next_ordinary);
+        }
+        candidates.extend(predictions);
     }
 
     fn lookup_candidate_category(&self, candidate: &PendingLookupCandidate) -> u8 {
@@ -1689,6 +1811,38 @@ impl StaticTableTranslator {
         raw_quality
     }
 
+    fn lookup_candidate_ref_prediction_weight(
+        &self,
+        candidate: &PendingLookupCandidateRef<'_>,
+    ) -> f32 {
+        let mut weight = candidate
+            .candidate
+            .raw_quality()
+            .max(f32::MIN_POSITIVE)
+            .ln();
+        if let Some(distance) = candidate.correction_distance {
+            weight += TYPEDUCK_CORRECTION_CREDIBILITY * distance as f32;
+        }
+        weight
+    }
+
+    fn lookup_prediction_ref_precedes(
+        &self,
+        prediction: &PendingLookupCandidateRef<'_>,
+        ordinary: &PendingLookupCandidateRef<'_>,
+    ) -> bool {
+        let interpreted = complete_syllable_prefix_count(
+            prediction.candidate.raw_comment(),
+            prediction.lookup_code,
+        );
+        let consumed = source_code_syllable_count(ordinary.candidate.raw_comment());
+        self.lookup_candidate_ref_prediction_weight(prediction)
+            > self.lookup_candidate_ref_prediction_weight(ordinary)
+            || interpreted
+                .zip(consumed)
+                .is_some_and(|(interpreted, consumed)| consumed < interpreted)
+    }
+
     fn lookup_candidate_ref_category(&self, candidate: &PendingLookupCandidateRef<'_>) -> u8 {
         if candidate.spelling_abbreviation {
             1
@@ -1706,6 +1860,23 @@ impl StaticTableTranslator {
         left: &PendingLookupCandidateRef<'_>,
         right: &PendingLookupCandidateRef<'_>,
     ) -> Ordering {
+        let category_order = self
+            .lookup_candidate_ref_category(left)
+            .cmp(&self.lookup_candidate_ref_category(right));
+        if category_order != Ordering::Equal {
+            return category_order;
+        }
+        if !self.sort_by_weight {
+            return left.emission_order.cmp(&right.emission_order);
+        }
+        self.lookup_candidate_ref_weight_order(left, right)
+    }
+
+    fn lookup_candidate_ref_weight_order(
+        &self,
+        left: &PendingLookupCandidateRef<'_>,
+        right: &PendingLookupCandidateRef<'_>,
+    ) -> Ordering {
         self.lookup_candidate_ref_category(left)
             .cmp(&self.lookup_candidate_ref_category(right))
             .then_with(|| {
@@ -1716,6 +1887,86 @@ impl StaticTableTranslator {
             .then_with(|| left.entry_code.as_ref().cmp(right.entry_code.as_ref()))
             .then_with(|| left.candidate.text().cmp(right.candidate.text()))
             .then_with(|| left.emission_order.cmp(&right.emission_order))
+    }
+
+    fn order_lookup_candidate_refs(&self, candidates: &mut Vec<PendingLookupCandidateRef<'_>>) {
+        if self.sort_by_weight {
+            candidates.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
+            return;
+        }
+
+        // Borrowed bounded lookup mirrors the owned complete-path constrained
+        // merge above; collection retains only the first page window per group.
+        let mut predictions = Vec::new();
+        let mut ordinary = Vec::new();
+        for candidate in std::mem::take(candidates) {
+            if candidate.limited_prediction {
+                predictions.push(candidate);
+            } else {
+                ordinary.push(candidate);
+            }
+        }
+        predictions.sort_by(|left, right| self.lookup_candidate_ref_weight_order(left, right));
+
+        let mut groups: Vec<(u8, usize, VecDeque<PendingLookupCandidateRef<'_>>)> = Vec::new();
+        let mut group_indices: HashMap<(u8, usize), usize> = HashMap::new();
+        for candidate in ordinary {
+            let category = self.lookup_candidate_ref_category(&candidate);
+            let key = candidate.fetch_group;
+            if let Some(index) = group_indices.get(&(category, key)).copied() {
+                groups[index].2.push_back(candidate);
+            } else {
+                group_indices.insert((category, key), groups.len());
+                groups.push((category, key, VecDeque::from([candidate])));
+            }
+        }
+        let mut ordered_ordinary = Vec::new();
+        for category in 0..=2 {
+            loop {
+                let mut best: Option<(usize, f32)> = None;
+                for (index, (group_category, _, group)) in groups.iter().enumerate() {
+                    if *group_category != category {
+                        continue;
+                    }
+                    let Some(head) = group.front() else {
+                        continue;
+                    };
+                    let quality = self.lookup_candidate_ref_raw_quality(head);
+                    if best.map_or(true, |(_, best_quality)| quality > best_quality) {
+                        best = Some((index, quality));
+                    }
+                }
+                let Some((best_index, _)) = best else {
+                    break;
+                };
+                ordered_ordinary.push(
+                    groups[best_index]
+                        .2
+                        .pop_front()
+                        .expect("selected candidate group should be nonempty"),
+                );
+            }
+        }
+
+        let mut ordinary = ordered_ordinary.into_iter();
+        let Some(first) = ordinary.next() else {
+            return;
+        };
+        candidates.push(first);
+        let mut predictions = VecDeque::from(predictions);
+        for next_ordinary in ordinary {
+            while predictions.front().is_some_and(|prediction| {
+                self.lookup_prediction_ref_precedes(prediction, &next_ordinary)
+            }) {
+                candidates.push(
+                    predictions
+                        .pop_front()
+                        .expect("checked prediction queue should be nonempty"),
+                );
+            }
+            candidates.push(next_ordinary);
+        }
+        candidates.extend(predictions);
     }
 
     fn materialized_quality(
@@ -1801,6 +2052,45 @@ impl StaticTableTranslator {
         }
     }
 
+    fn push_bounded_pending_by_weight_order<'a>(
+        &self,
+        selected: &mut Vec<PendingLookupCandidateRef<'a>>,
+        candidate: PendingLookupCandidateRef<'a>,
+        limit: usize,
+    ) {
+        if selected.len() < limit {
+            selected.push(candidate);
+            return;
+        }
+        let Some((worst_index, worst)) = selected
+            .iter()
+            .enumerate()
+            .max_by(|(_, left), (_, right)| self.lookup_candidate_ref_weight_order(left, right))
+        else {
+            return;
+        };
+        if self.lookup_candidate_ref_weight_order(&candidate, worst) == Ordering::Less {
+            selected[worst_index] = candidate;
+        }
+    }
+
+    fn push_bounded_pending_by_original_group<'a>(
+        &self,
+        selected: &mut Vec<PendingLookupCandidateRef<'a>>,
+        retained_by_group: &mut HashMap<(u8, usize), usize>,
+        candidate: PendingLookupCandidateRef<'a>,
+        limit: usize,
+    ) {
+        let category = self.lookup_candidate_ref_category(&candidate);
+        let retained = retained_by_group
+            .entry((category, candidate.fetch_group))
+            .or_default();
+        if *retained < limit {
+            *retained += 1;
+            selected.push(candidate);
+        }
+    }
+
     fn bounded_candidates_for_lookup_codes(
         &self,
         request: BoundedLookupRequest<'_>,
@@ -1830,13 +2120,15 @@ impl StaticTableTranslator {
         let mut short_key_rows_scanned = 0usize;
         let mut selected = Vec::new();
         let mut limited_predictions = Vec::new();
+        let mut fetch_groups = HashMap::new();
+        let mut retained_original_groups = HashMap::new();
         let mut emission_order = 0;
         let mut full_count = 0;
         let mut has_full_exact_candidate = false;
         let has_correction_lookup = lookup_specs
             .iter()
             .any(|spec| spec.correction_distance.is_some());
-        let can_stop_after_window = !include_full_count && !ordered_mode;
+        let can_stop_after_window = !include_full_count && !ordered_mode && self.sort_by_weight;
         let mut early_stopped = false;
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
@@ -1861,7 +2153,13 @@ impl StaticTableTranslator {
                 has_full_exact_candidate = true;
                 let spelling_abbreviation =
                     self.is_spelling_abbreviation_view(spec_lookup_code, &candidate);
+                let fetch_group = if self.sort_by_weight {
+                    0
+                } else {
+                    intern_fetch_group(&mut fetch_groups, candidate.raw_comment())
+                };
                 let pending = PendingLookupCandidateRef {
+                    fetch_group,
                     entry_code: Cow::Borrowed(spec_lookup_code),
                     lookup_code: spec_lookup_code,
                     candidate,
@@ -1870,7 +2168,14 @@ impl StaticTableTranslator {
                     limited_prediction: false,
                     emission_order,
                 };
-                if ordered_mode {
+                if !self.sort_by_weight {
+                    self.push_bounded_pending_by_original_group(
+                        &mut selected,
+                        &mut retained_original_groups,
+                        pending,
+                        limit,
+                    );
+                } else if ordered_mode {
                     self.push_bounded_pending_by_lookup_order(&mut selected, pending, limit);
                 } else {
                     self.push_bounded_pending(&mut selected, pending, limit);
@@ -1916,7 +2221,13 @@ impl StaticTableTranslator {
                         prefix_candidates += 1;
                         let spelling_abbreviation =
                             self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
+                        let fetch_group = if self.sort_by_weight {
+                            0
+                        } else {
+                            intern_fetch_group(&mut fetch_groups, candidate.raw_comment())
+                        };
                         let pending = PendingLookupCandidateRef {
+                            fetch_group,
                             entry_code,
                             lookup_code: spec_lookup_code,
                             candidate,
@@ -1925,21 +2236,27 @@ impl StaticTableTranslator {
                             limited_prediction,
                             emission_order,
                         };
-                        if ordered_mode {
-                            if limited_prediction {
-                                self.push_bounded_pending_by_lookup_order(
-                                    &mut limited_predictions,
-                                    pending,
-                                    self.prediction_candidate_limit.unwrap_or(limit),
-                                );
-                            } else {
-                                self.push_bounded_pending_by_lookup_order(
-                                    &mut selected,
-                                    pending,
-                                    limit,
-                                );
-                                full_count += 1;
-                            }
+                        if limited_prediction && ordered_mode {
+                            self.push_bounded_pending_by_weight_order(
+                                &mut limited_predictions,
+                                pending,
+                                self.prediction_candidate_limit.unwrap_or(limit),
+                            );
+                        } else if !self.sort_by_weight {
+                            self.push_bounded_pending_by_original_group(
+                                &mut selected,
+                                &mut retained_original_groups,
+                                pending,
+                                limit,
+                            );
+                            full_count += 1;
+                        } else if ordered_mode {
+                            self.push_bounded_pending_by_lookup_order(
+                                &mut selected,
+                                pending,
+                                limit,
+                            );
+                            full_count += 1;
                         } else {
                             self.push_bounded_pending(&mut selected, pending, limit);
                             full_count += 1;
@@ -1970,9 +2287,13 @@ impl StaticTableTranslator {
             crate::m37_record_short_key_filter(start.elapsed());
             crate::m37_record_short_key_candidate_rows_scanned(short_key_rows_scanned);
         }
-        full_count += limited_predictions.len();
-        for candidate in limited_predictions {
-            self.push_bounded_pending_by_lookup_order(&mut selected, candidate, limit);
+        // On the new `sort: original` path, a held prediction cannot keep an
+        // otherwise empty translation alive (`ScriptTranslation::cand_count_`
+        // is still zero). Preserve the legacy by-weight path's complete/bounded
+        // parity; 3a does not redefine that established ordering contract.
+        if self.sort_by_weight || !selected.is_empty() {
+            full_count += limited_predictions.len();
+            selected.extend(limited_predictions);
         }
         if selected.is_empty() && self.enable_sentence {
             if let Some(model) = &self.upstream_sentence_model {
@@ -2199,9 +2520,10 @@ impl StaticTableTranslator {
                 );
             }
         }
-        if ordered_mode {
+        if !self.sort_by_weight || ordered_mode {
             let sort_start = (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
-            selected.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
+            self.order_lookup_candidate_refs(&mut selected);
+            selected.truncate(limit);
             if let Some(start) = sort_start {
                 crate::m37_record_short_key_sort_rank(start.elapsed());
             }
@@ -2377,6 +2699,7 @@ impl StaticTableTranslator {
     ) -> Vec<Candidate> {
         let mut pooled: Vec<PendingLookupCandidate> = Vec::new();
         let mut exact_scan_ranges: Vec<(usize, usize)> = Vec::new();
+        let mut fetch_groups = HashMap::new();
         let record_track_b = self.uses_m44_track_b_metrics();
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
@@ -2401,7 +2724,13 @@ impl StaticTableTranslator {
                             return None;
                         }
                         exact_candidates += 1;
+                        let fetch_group = if self.sort_by_weight {
+                            0
+                        } else {
+                            intern_fetch_group(&mut fetch_groups, candidate.raw_comment())
+                        };
                         Some(PendingLookupCandidate {
+                            fetch_group,
                             entry_code: lookup_code.to_owned(),
                             lookup_code: lookup_code.to_owned(),
                             candidate: candidate.to_candidate(),
@@ -2451,7 +2780,13 @@ impl StaticTableTranslator {
                     prefix_lookup_candidates += 1;
                     let spelling_abbreviation =
                         self.is_spelling_abbreviation_view(entry_code.as_ref(), &candidate);
+                    let fetch_group = if self.sort_by_weight {
+                        0
+                    } else {
+                        intern_fetch_group(&mut fetch_groups, candidate.raw_comment())
+                    };
                     completion_candidates.push(PendingLookupCandidate {
+                        fetch_group,
                         entry_code: entry_code.into_owned(),
                         lookup_code: lookup_code.to_owned(),
                         candidate: candidate.to_candidate(),
@@ -2478,15 +2813,15 @@ impl StaticTableTranslator {
                         }
                     }
                     limited_predictions
-                        .sort_by(|left, right| self.lookup_candidate_order(left, right));
+                        .sort_by(|left, right| self.lookup_candidate_weight_order(left, right));
                     limited_predictions.truncate(limit);
                     limited_predictions.extend(ordinary_completions);
                     completion_candidates = limited_predictions;
                 }
                 pending.extend(completion_candidates);
             }
-            if self.prediction_candidate_limit.is_some() {
-                pending.sort_by(|left, right| self.lookup_candidate_order(left, right));
+            if self.prediction_candidate_limit.is_some() && self.sort_by_weight {
+                self.order_lookup_candidates(&mut pending);
             }
             // Exact rows sit at the head of `pending` in construction order; after
             // the prediction-limit sort the block boundary blurs, so record the
@@ -2502,6 +2837,13 @@ impl StaticTableTranslator {
                 exact_scan_ranges.push((pooled.len(), scan_len));
             }
             pooled.append(&mut pending);
+        }
+        if !self.sort_by_weight {
+            // `sort: original` is stable within each canonical fetch code, while
+            // prism aliases and the selected prediction queue are comparable by
+            // their current head weight. A constrained k-way merge preserves both
+            // requirements without letting a later row jump its own group head.
+            self.order_lookup_candidates(&mut pooled);
         }
         // M59 Lane A: a toneless syllable resolves (in the compiled prism/table
         // storage) to a single spec whose exact_candidates span several tone-codes
@@ -2658,6 +3000,7 @@ impl StaticTableTranslator {
                     && !self.is_spelling_abbreviation_view(prefix, &candidate);
                 pending.push(PendingPrefixCandidate {
                     pending: PendingLookupCandidateRef {
+                        fetch_group: 0,
                         entry_code: Cow::Owned(fetch_code.to_owned()),
                         lookup_code: prefix,
                         candidate,
@@ -3703,6 +4046,26 @@ fn normalized_original_code(raw_code: &str) -> String {
         .filter(|ch| ch.is_ascii_alphabetic())
         .map(|ch| ch.to_ascii_lowercase())
         .collect()
+}
+
+fn canonical_fetch_group(raw_code: &str) -> Cow<'_, str> {
+    let code = typeduck_rich_comment_code(raw_code).unwrap_or(raw_code);
+    if code.chars().any(char::is_whitespace) {
+        Cow::Owned(normalize_table_code(code))
+    } else {
+        Cow::Borrowed(code)
+    }
+}
+
+fn intern_fetch_group(groups: &mut HashMap<String, usize>, raw_code: &str) -> usize {
+    let canonical = canonical_fetch_group(raw_code);
+    if let Some(index) = groups.get(canonical.as_ref()) {
+        *index
+    } else {
+        let index = groups.len();
+        groups.insert(canonical.into_owned(), index);
+        index
+    }
 }
 
 fn typeduck_rich_comment_code(raw_code: &str) -> Option<&str> {

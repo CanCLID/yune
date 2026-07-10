@@ -358,7 +358,7 @@ impl RimeToleranceRule {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TableDictionary {
     pub(crate) entries: Vec<TableEntry>,
     pub(crate) stems: HashMap<String, Vec<String>>,
@@ -385,6 +385,16 @@ pub struct TableDictionaryAdvancedData {
     pub lookup_records: HashMap<String, Vec<DictionaryLookupRecord>>,
     pub byte_backed_lookup_records: Option<ByteBackedDictionaryLookupRecords>,
     pub preset_vocabulary: Vec<PresetVocabularyEntry>,
+    /// Optional Yune extension carried by compiled table payloads. `None` is
+    /// the legacy/external-table case and resolves to RIME's `by_weight`
+    /// default when materialized as a [`TableDictionary`].
+    pub sort_by_weight: Option<bool>,
+}
+
+impl Default for TableDictionary {
+    fn default() -> Self {
+        Self::with_advanced_data(Vec::new(), TableDictionaryAdvancedData::default())
+    }
 }
 
 impl TableDictionary {
@@ -407,7 +417,7 @@ impl TableDictionary {
             tolerance_rules: advanced.tolerance_rules,
             lookup_records: advanced.lookup_records,
             byte_backed_lookup_records: advanced.byte_backed_lookup_records,
-            sort_by_weight: true,
+            sort_by_weight: advanced.sort_by_weight.unwrap_or(true),
             preset_vocabulary: advanced.preset_vocabulary,
         }
     }
@@ -600,6 +610,7 @@ impl TableDictionary {
             lookup_records: self.lookup_records.clone(),
             byte_backed_lookup_records: self.byte_backed_lookup_records.clone(),
             preset_vocabulary: self.preset_vocabulary.clone(),
+            sort_by_weight: Some(self.sort_by_weight),
         }
     }
 

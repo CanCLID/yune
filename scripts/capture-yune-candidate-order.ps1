@@ -84,6 +84,12 @@ function Write-Utf8NoBom([string]$Path, [string]$Text) {
     [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
 }
 
+function ConvertTo-CanonicalJsonText([object]$Value) {
+    $Json = $Value | ConvertTo-Json -Depth 100
+    $Json = $Json.Replace("`r`n", "`n").Replace("`r", "`n")
+    return $Json.TrimEnd([char]10) + "`n"
+}
+
 function Get-CanonicalWindowsPath([string]$Path) {
     if (-not ("YuneCaptureFinalPath" -as [type])) {
         Add-Type -TypeDefinition @'
@@ -586,7 +592,8 @@ try {
         inputs = @($Inputs)
         cases = @($Cases)
     }
-    Write-Utf8NoBom $Output (($Evidence | ConvertTo-Json -Depth 100) + "`n")
+    $EvidenceJson = ConvertTo-CanonicalJsonText $Evidence
+    Write-Utf8NoBom $Output $EvidenceJson
     Write-Output "captured complete Yune candidate order -> $Output"
 }
 finally {

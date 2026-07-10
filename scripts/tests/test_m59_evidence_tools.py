@@ -1131,6 +1131,120 @@ class CaptureContractTests(unittest.TestCase):
         self.assertIn("runtime_options = $RuntimeOptions", capture)
         self.assertIn("runtime_options_source = $RuntimeOptionsSource", capture)
 
+    def test_raw_capture_generators_canonicalize_only_final_json_text(self):
+        contracts = (
+            (
+                "capture-upstream-rime-cantonese.ps1",
+                "Write-NewUtf8NoBom $Output $EvidenceJson",
+                "function Write-NewUtf8NoBom",
+            ),
+            (
+                "capture-yune-candidate-order.ps1",
+                "Write-Utf8NoBom $Output $EvidenceJson",
+                "function Write-Utf8NoBom",
+            ),
+        )
+        for script_name, final_write, writer_definition in contracts:
+            with self.subTest(script=script_name):
+                source = (SCRIPTS / script_name).read_text(encoding="utf-8-sig")
+                self.assertIn("function ConvertTo-CanonicalJsonText", source)
+                self.assertIn(
+                    '$Json = $Json.Replace("`r`n", "`n").Replace("`r", "`n")',
+                    source,
+                )
+                self.assertIn('return $Json.TrimEnd([char]10) + "`n"', source)
+                self.assertIn("$EvidenceJson = ConvertTo-CanonicalJsonText $Evidence", source)
+                self.assertIn(final_write, source)
+                self.assertEqual(source.count("ConvertTo-CanonicalJsonText"), 2)
+                writer_body = source.split(writer_definition, 1)[1].split("\n}", 1)[0]
+                self.assertNotIn("Replace(\"`r`n\"", writer_body)
+                if script_name == "capture-yune-candidate-order.ps1":
+                    self.assertIn("Write-Utf8NoBom $Marker $MarkerText", source)
+                    self.assertIn("Write-Utf8NoBom $DefaultYaml $Narrowed", source)
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_raw_capture_json_writers_emit_deterministic_utf8_lf(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        contracts = (
+            ("capture-upstream-rime-cantonese.ps1", "Write-NewUtf8NoBom"),
+            ("capture-yune-candidate-order.ps1", "Write-Utf8NoBom"),
+        )
+        generated = {}
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for script_name, writer_name in contracts:
+                output_one = root / f"{script_name}.one.json"
+                output_two = root / f"{script_name}.two.json"
+                command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_JSON_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @("ConvertTo-CanonicalJsonText", $env:YUNE_JSON_WRITER_TEST)) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+$payload = [ordered]@{
+    schema_version = 1
+    message = "line one`r`nline two"
+    runtime_options = [ordered]@{
+        ascii_mode = $false
+        full_shape = $false
+    }
+    rows = @("first", "second")
+}
+$first = ConvertTo-CanonicalJsonText $payload
+$second = ConvertTo-CanonicalJsonText $payload
+& $env:YUNE_JSON_WRITER_TEST $env:YUNE_JSON_OUTPUT_ONE_TEST $first
+& $env:YUNE_JSON_WRITER_TEST $env:YUNE_JSON_OUTPUT_TWO_TEST $second
+"""
+                environment = os.environ.copy()
+                environment.update(
+                    {
+                        "YUNE_JSON_SCRIPT_TEST": str(SCRIPTS / script_name),
+                        "YUNE_JSON_WRITER_TEST": writer_name,
+                        "YUNE_JSON_OUTPUT_ONE_TEST": str(output_one),
+                        "YUNE_JSON_OUTPUT_TWO_TEST": str(output_two),
+                    }
+                )
+                completed = subprocess.run(
+                    [powershell, "-NoProfile", "-Command", command],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    env=environment,
+                    timeout=60,
+                )
+                if completed.returncode != 0:
+                    self.fail(completed.stderr or completed.stdout)
+                first_bytes = output_one.read_bytes()
+                second_bytes = output_two.read_bytes()
+                self.assertEqual(first_bytes, second_bytes)
+                self.assertFalse(first_bytes.startswith(b"\xef\xbb\xbf"))
+                self.assertNotIn(b"\r", first_bytes)
+                self.assertTrue(first_bytes.endswith(b"\n"))
+                self.assertFalse(first_bytes.endswith(b"\n\n"))
+                parsed = json.loads(first_bytes.decode("utf-8"))
+                self.assertEqual(parsed["message"], "line one\r\nline two")
+                self.assertEqual(parsed["rows"], ["first", "second"])
+                generated[script_name] = first_bytes
+        self.assertEqual(
+            generated["capture-upstream-rime-cantonese.ps1"],
+            generated["capture-yune-candidate-order.ps1"],
+        )
+
     def test_upstream_lane_a_raw_capture_contract_is_explicit_and_safe(self):
         source = (SCRIPTS / "capture-upstream-rime-cantonese.ps1").read_text(
             encoding="utf-8-sig"

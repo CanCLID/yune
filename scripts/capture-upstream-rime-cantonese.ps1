@@ -41,6 +41,12 @@ function Quote-CommandArg([string]$Value) {
     return "'" + $Value.Replace("'", "''") + "'"
 }
 
+function ConvertTo-CanonicalJsonText([object]$Value) {
+    $Json = $Value | ConvertTo-Json -Depth 100
+    $Json = $Json.Replace("`r`n", "`n").Replace("`r", "`n")
+    return $Json.TrimEnd([char]10) + "`n"
+}
+
 function Get-CanonicalCapturePath([string]$Path) {
     if (-not ("UpstreamCaptureFinalPath" -as [type])) {
         Add-Type -TypeDefinition @'
@@ -628,5 +634,6 @@ $Evidence = [ordered]@{
     cases = $Cases
 }
 
-Write-NewUtf8NoBom $Output (($Evidence | ConvertTo-Json -Depth 100) + "`n")
+$EvidenceJson = ConvertTo-CanonicalJsonText $Evidence
+Write-NewUtf8NoBom $Output $EvidenceJson
 Write-Host "Wrote canonical rime-cantonese capture evidence to $Output"

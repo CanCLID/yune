@@ -5,6 +5,9 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -1027,6 +1030,432 @@ class CaptureContractTests(unittest.TestCase):
         self.assertIn('[guid]::NewGuid().ToString("N")', yune)
         self.assertIn("Capture work root already exists", yune)
         self.assertIn("invalid marker", yune)
+
+    def test_yune_capture_invocation_and_schema_narrowing_provenance_are_truthful(self):
+        source = (SCRIPTS / "capture-yune-candidate-order.ps1").read_text(
+            encoding="utf-8-sig"
+        )
+        invocation_block = source.split("$Invocation = @(", 1)[1].split("\n)", 1)[0]
+        self.assertNotIn("-Inputs", invocation_block)
+        self.assertIn(
+            'if ($InputsWereProvided) { $Invocation += "-Inputs $(Quote-CommandArg '
+            '($Inputs -join \',\'))" }',
+            source,
+        )
+        self.assertIn(
+            'inputs_source = if ($InputsWereProvided) { "explicit" } else { "oracle_cases" }',
+            source,
+        )
+        self.assertIn("$StagedSchemaList = @(Get-TopLevelSchemaList", source)
+        self.assertIn("$SchemaListState = Resolve-SchemaListNarrowing", source)
+        self.assertLess(
+            source.index("$StagedSchemaList = @(Get-TopLevelSchemaList"),
+            source.index("$EffectiveParameters[\"schema_list_narrowed\"]"),
+        )
+        self.assertIn("if ($SchemaListIndexes.Count -ne 1)", source)
+        self.assertIn("if ($Entries.Count -eq 0)", source)
+        self.assertIn("if (-not $SeenEntries.Add($Matches.schema))", source)
+        for value in (
+            '"none"',
+            '"generated_narrow_schema_list_switch"',
+            '"default_yaml_overlay"',
+            '"source_default_yaml"',
+        ):
+            self.assertIn(value, source)
+        self.assertIn("schema_list_narrowed = $SchemaListNarrowed", source)
+        self.assertIn(
+            '$EffectiveParameters["schema_list_narrowed"] = $SchemaListNarrowed',
+            source,
+        )
+        self.assertGreaterEqual(
+            source.count(
+                "narrow_schema_list_switch_used = $NarrowSchemaListSwitchUsed"
+            ),
+            2,
+        )
+        self.assertIn(
+            "schema_list_narrowing_source = $SchemaListNarrowingSource", source
+        )
+        self.assertIn(
+            '$EffectiveParameters["schema_list_narrowing_source"] = '
+            "$SchemaListNarrowingSource",
+            source,
+        )
+
+    def test_yune_capture_path_preflight_precedes_workspace_mutation(self):
+        source = (SCRIPTS / "capture-yune-candidate-order.ps1").read_text(
+            encoding="utf-8-sig"
+        )
+        preflight = source.index("$PathPreflight = Assert-CapturePathPreflight")
+        mutation = source.index(
+            "New-Item -ItemType Directory -Force -Path $WorkRoot, $User, $Build, $Bin"
+        )
+        self.assertLess(preflight, mutation)
+        self.assertIn("GetFinalPathNameByHandle", source)
+        self.assertIn("Alternate data stream paths are not allowed", source)
+        self.assertIn("Output must not already exist", source)
+        self.assertIn("Output must not be inside SharedDataDir", source)
+        self.assertIn("WorkRoot must not be inside SharedDataDir", source)
+        self.assertIn("WorkRoot must not be inside or equal to Output", source)
+        for protected_name in (
+            "YuneDll",
+            "OracleCapture",
+            "DefaultYamlOverlay",
+            "ProbeSource",
+            "CaptureScript",
+        ):
+            self.assertIn(protected_name, source)
+        self.assertIn("$OutputUnderWorkRoot -and -not $KeepWorkRoot", source)
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_yune_capture_schema_list_provenance_helpers_runtime(self):
+        script_path = SCRIPTS / "capture-yune-candidate-order.ps1"
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            fixtures = {
+                "narrow": "schema_list:\n  - schema: jyut6ping3\nmenu:\n  page_size: 5\n",
+                "wide": (
+                    "schema_list:\n  - schema: jyut6ping3\n"
+                    "  - schema: luna_pinyin\nmenu:\n  page_size: 5\n"
+                ),
+                "malformed": "schema_list:\n  - {schema: jyut6ping3}\n",
+                "duplicate": (
+                    "schema_list:\n  - schema: jyut6ping3\n"
+                    "  - schema: jyut6ping3\n"
+                ),
+            }
+            fixture_paths = {}
+            for name, content in fixtures.items():
+                path = root / f"{name}.yaml"
+                path.write_text(content, encoding="utf-8", newline="\n")
+                fixture_paths[name] = str(path)
+
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @("Get-TopLevelSchemaList", "Resolve-SchemaListNarrowing")) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+$narrow = @(Get-TopLevelSchemaList $env:YUNE_NARROW_DEFAULT_TEST)
+$wide = @(Get-TopLevelSchemaList $env:YUNE_WIDE_DEFAULT_TEST)
+$source = Resolve-SchemaListNarrowing $narrow "jyut6ping3" $false $false
+$overlay = Resolve-SchemaListNarrowing $narrow "jyut6ping3" $false $true
+$generated = Resolve-SchemaListNarrowing $narrow "jyut6ping3" $true $false
+$wideSource = Resolve-SchemaListNarrowing $wide "jyut6ping3" $false $false
+$wideOverlay = Resolve-SchemaListNarrowing $wide "jyut6ping3" $false $true
+function Is-Rejected([string]$Path) {
+    try {
+        $null = @(Get-TopLevelSchemaList $Path)
+        return $false
+    }
+    catch {
+        return $true
+    }
+}
+[ordered]@{
+    source = $source
+    overlay = $overlay
+    generated = $generated
+    wide_source = $wideSource
+    wide_overlay = $wideOverlay
+    malformed_rejected = Is-Rejected $env:YUNE_MALFORMED_DEFAULT_TEST
+    duplicate_rejected = Is-Rejected $env:YUNE_DUPLICATE_DEFAULT_TEST
+} | ConvertTo-Json -Depth 5 -Compress
+"""
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_CAPTURE_SCRIPT_TEST": str(script_path),
+                    "YUNE_NARROW_DEFAULT_TEST": fixture_paths["narrow"],
+                    "YUNE_WIDE_DEFAULT_TEST": fixture_paths["wide"],
+                    "YUNE_MALFORMED_DEFAULT_TEST": fixture_paths["malformed"],
+                    "YUNE_DUPLICATE_DEFAULT_TEST": fixture_paths["duplicate"],
+                }
+            )
+            completed = subprocess.run(
+                [powershell, "-NoProfile", "-Command", command],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+                timeout=30,
+            )
+            if completed.returncode != 0:
+                self.fail(completed.stderr or completed.stdout)
+            result = json.loads(completed.stdout.strip().splitlines()[-1])
+
+        expected_narrowing = {
+            "source": "source_default_yaml",
+            "overlay": "default_yaml_overlay",
+            "generated": "generated_narrow_schema_list_switch",
+        }
+        for key, expected_source in expected_narrowing.items():
+            self.assertTrue(result[key]["schema_list_narrowed"])
+            self.assertEqual(
+                result[key]["schema_list_narrowing_source"], expected_source
+            )
+            self.assertEqual(
+                result[key]["narrow_schema_list_switch_used"], key == "generated"
+            )
+        for key in ("wide_source", "wide_overlay"):
+            self.assertFalse(result[key]["schema_list_narrowed"])
+            self.assertFalse(result[key]["narrow_schema_list_switch_used"])
+            self.assertEqual(result[key]["schema_list_narrowing_source"], "none")
+        self.assertTrue(result["malformed_rejected"])
+        self.assertTrue(result["duplicate_rejected"])
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_yune_capture_path_preflight_preserves_inputs_and_creates_nothing(self):
+        script_path = SCRIPTS / "capture-yune-candidate-order.ps1"
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            shared = root / "shared"
+            shared.mkdir()
+            protected = {
+                "yune_dll": root / "yune.dll",
+                "oracle_capture": root / "oracle.json",
+                "default_yaml_overlay": root / "overlay.yaml",
+                "probe_source": root / "probe.cs",
+                "capture_script": root / "capture.ps1",
+            }
+            for index, path in enumerate(protected.values(), start=1):
+                path.write_bytes(f"protected-sentinel-{index}".encode())
+            (shared / "default.yaml").write_bytes(b"shared-default-sentinel")
+            nested_source = shared / "nested" / "source.bin"
+            nested_source.parent.mkdir()
+            nested_source.write_bytes(b"shared-nested-sentinel")
+            existing_output = root / "existing-output.json"
+            existing_output.write_bytes(b"existing-output-sentinel")
+
+            junction = root / "shared-junction"
+            junction_result = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(junction), str(shared)],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if junction_result.returncode != 0 or not junction.exists():
+                self.skipTest("junction creation is required for canonical-path coverage")
+
+            common = {
+                **{key: str(value) for key, value in protected.items()},
+                "shared_data_dir": str(shared),
+                "keep_work_root": False,
+            }
+            cases = [
+                {
+                    **common,
+                    "name": "safe",
+                    "output": str(root / "results" / "safe.json"),
+                    "work_root": str(root / "work" / "safe"),
+                },
+                {
+                    **common,
+                    "name": "existing_output",
+                    "output": str(existing_output),
+                    "work_root": str(root / "work" / "existing-output"),
+                },
+                {
+                    **common,
+                    "name": "output_alias_yune_dll_default_stream",
+                    "output": str(protected["yune_dll"]) + "::$DATA",
+                    "work_root": str(root / "work" / "output-ads"),
+                },
+            ]
+            for protected_name, protected_path in protected.items():
+                cases.append(
+                    {
+                        **common,
+                        "name": f"output_alias_{protected_name}",
+                        "output": str(protected_path),
+                        "work_root": str(root / "work" / f"alias-{protected_name}"),
+                    }
+                )
+            cases.extend(
+                [
+                    {
+                        **common,
+                        "name": "output_under_shared",
+                        "output": str(shared / "new-output.json"),
+                        "work_root": str(root / "work" / "output-under-shared"),
+                    },
+                    {
+                        **common,
+                        "name": "output_under_shared_junction",
+                        "output": str(junction / "new-output.json"),
+                        "work_root": str(root / "work" / "output-under-junction"),
+                    },
+                    {
+                        **common,
+                        "name": "workroot_under_shared",
+                        "output": str(root / "results" / "workroot-under-shared.json"),
+                        "work_root": str(shared / "new-work"),
+                    },
+                    {
+                        **common,
+                        "name": "workroot_under_shared_junction",
+                        "output": str(root / "results" / "workroot-under-junction.json"),
+                        "work_root": str(junction / "new-work"),
+                    },
+                    {
+                        **common,
+                        "name": "output_under_disposable_workroot",
+                        "output": str(root / "disposable" / "blocked" / "result.json"),
+                        "work_root": str(root / "disposable" / "blocked"),
+                    },
+                    {
+                        **common,
+                        "name": "output_under_kept_workroot",
+                        "output": str(root / "disposable" / "kept" / "result.json"),
+                        "work_root": str(root / "disposable" / "kept"),
+                        "keep_work_root": True,
+                    },
+                    {
+                        **common,
+                        "name": "workroot_under_future_output",
+                        "output": str(root / "future-output" / "blocked"),
+                        "work_root": str(
+                            root / "future-output" / "blocked" / "nested-work"
+                        ),
+                    },
+                    {
+                        **common,
+                        "name": "workroot_under_future_output_kept",
+                        "output": str(root / "future-output" / "kept"),
+                        "work_root": str(
+                            root / "future-output" / "kept" / "nested-work"
+                        ),
+                        "keep_work_root": True,
+                    },
+                ]
+            )
+            cases_path = root / "preflight-cases.json"
+            cases_path.write_text(json.dumps(cases), encoding="utf-8")
+            protected_snapshots = {
+                path: path.read_bytes() for path in protected.values()
+            }
+            protected_snapshots[existing_output] = existing_output.read_bytes()
+
+            def shared_snapshot():
+                return {
+                    path.relative_to(shared).as_posix(): path.read_bytes()
+                    for path in sorted(shared.rglob("*"))
+                    if path.is_file()
+                }
+
+            shared_before = shared_snapshot()
+            initially_missing_outputs = {
+                Path(case["output"])
+                for case in cases
+                if not Path(case["output"]).exists()
+            }
+            initially_missing_workroots = {
+                Path(case["work_root"])
+                for case in cases
+                if not Path(case["work_root"]).exists()
+            }
+
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @(
+    "Get-CanonicalWindowsPath",
+    "Test-CanonicalPathWithinOrEqual",
+    "Assert-CapturePathPreflight"
+)) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+$caseDocument = Get-Content -LiteralPath $env:YUNE_PREFLIGHT_CASES_TEST -Raw -Encoding UTF8 | ConvertFrom-Json
+$results = @(
+    foreach ($case in $caseDocument) {
+        try {
+            $null = Assert-CapturePathPreflight `
+                ([string]$case.output) `
+                ([string]$case.work_root) `
+                ([string]$case.shared_data_dir) `
+                ([string]$case.yune_dll) `
+                ([string]$case.oracle_capture) `
+                ([string]$case.default_yaml_overlay) `
+                ([string]$case.probe_source) `
+                ([string]$case.capture_script) `
+                ([bool]$case.keep_work_root)
+            [pscustomobject]@{ name = $case.name; accepted = $true; error = $null }
+        }
+        catch {
+            [pscustomobject]@{ name = $case.name; accepted = $false; error = $_.Exception.Message }
+        }
+    }
+)
+$results | ConvertTo-Json -Depth 5 -Compress
+"""
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_CAPTURE_SCRIPT_TEST": str(script_path),
+                    "YUNE_PREFLIGHT_CASES_TEST": str(cases_path),
+                }
+            )
+            try:
+                completed = subprocess.run(
+                    [powershell, "-NoProfile", "-Command", command],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    env=environment,
+                    timeout=60,
+                )
+                if completed.returncode != 0:
+                    self.fail(completed.stderr or completed.stdout)
+                results = {
+                    row["name"]: row
+                    for row in json.loads(completed.stdout.strip().splitlines()[-1])
+                }
+                self.assertTrue(results["safe"]["accepted"])
+                self.assertTrue(results["output_under_kept_workroot"]["accepted"])
+                for case in cases:
+                    if case["name"] not in {"safe", "output_under_kept_workroot"}:
+                        self.assertFalse(results[case["name"]]["accepted"], case["name"])
+                for path, snapshot in protected_snapshots.items():
+                    self.assertEqual(path.read_bytes(), snapshot)
+                self.assertEqual(shared_snapshot(), shared_before)
+                for path in initially_missing_outputs | initially_missing_workroots:
+                    self.assertFalse(path.exists(), str(path))
+            finally:
+                if junction.exists():
+                    junction.rmdir()
 
 
 class NativeRatchetTests(unittest.TestCase):

@@ -84,6 +84,253 @@ function Write-Utf8NoBom([string]$Path, [string]$Text) {
     [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
 }
 
+function Get-CanonicalWindowsPath([string]$Path) {
+    if (-not ("YuneCaptureFinalPath" -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
+
+public static class YuneCaptureFinalPath {
+  const uint FileShareRead = 0x00000001;
+  const uint FileShareWrite = 0x00000002;
+  const uint FileShareDelete = 0x00000004;
+  const uint OpenExisting = 3;
+  const uint FileFlagBackupSemantics = 0x02000000;
+
+  [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+  static extern SafeFileHandle CreateFile(
+      string fileName,
+      uint desiredAccess,
+      uint shareMode,
+      IntPtr securityAttributes,
+      uint creationDisposition,
+      uint flagsAndAttributes,
+      IntPtr templateFile);
+
+  [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+  static extern uint GetFinalPathNameByHandle(
+      SafeFileHandle file,
+      StringBuilder path,
+      uint pathLength,
+      uint flags);
+
+  public static string Resolve(string path) {
+    using (SafeFileHandle handle = CreateFile(
+        path,
+        0,
+        FileShareRead | FileShareWrite | FileShareDelete,
+        IntPtr.Zero,
+        OpenExisting,
+        FileFlagBackupSemantics,
+        IntPtr.Zero)) {
+      if (handle.IsInvalid) {
+        throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot open path for canonicalization");
+      }
+      StringBuilder buffer = new StringBuilder(4096);
+      uint length = GetFinalPathNameByHandle(handle, buffer, (uint)buffer.Capacity, 0);
+      if (length == 0) {
+        throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot canonicalize path");
+      }
+      if (length >= buffer.Capacity) {
+        buffer = new StringBuilder((int)length + 1);
+        length = GetFinalPathNameByHandle(handle, buffer, (uint)buffer.Capacity, 0);
+        if (length == 0 || length >= buffer.Capacity) {
+          throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot canonicalize path");
+        }
+      }
+      string resolved = buffer.ToString();
+      if (resolved.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) {
+        return @"\\" + resolved.Substring(8);
+      }
+      if (resolved.StartsWith(@"\\?\", StringComparison.OrdinalIgnoreCase)) {
+        return resolved.Substring(4);
+      }
+      return resolved;
+    }
+  }
+}
+'@
+    }
+
+    $Full = [System.IO.Path]::GetFullPath($Path)
+    $Root = [System.IO.Path]::GetPathRoot($Full)
+    $RootRelative = $Full.Substring($Root.Length)
+    if ($RootRelative.Contains(":")) {
+        throw "Alternate data stream paths are not allowed: $Path"
+    }
+    if ($Full.Length -gt $Root.Length) {
+        $Full = $Full.TrimEnd("\", "/")
+    }
+    $Existing = $Full
+    $Suffix = New-Object System.Collections.Generic.List[string]
+    while (-not (Test-Path -LiteralPath $Existing)) {
+        $Leaf = [System.IO.Path]::GetFileName($Existing)
+        $Parent = [System.IO.Path]::GetDirectoryName($Existing)
+        if ([string]::IsNullOrWhiteSpace($Leaf) -or
+            [string]::IsNullOrWhiteSpace($Parent) -or
+            [string]::Equals($Parent, $Existing, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Cannot resolve an existing parent for path: $Path"
+        }
+        $Suffix.Insert(0, $Leaf)
+        $Existing = $Parent
+    }
+    $ExistingItem = Get-Item -LiteralPath $Existing -Force
+    if ($Suffix.Count -gt 0 -and -not $ExistingItem.PSIsContainer) {
+        throw "Nearest existing parent is not a directory: $Existing"
+    }
+    $Canonical = [YuneCaptureFinalPath]::Resolve($Existing)
+    foreach ($Leaf in $Suffix) {
+        $Canonical = Join-Path $Canonical $Leaf
+    }
+    $Canonical = [System.IO.Path]::GetFullPath($Canonical)
+    $CanonicalRoot = [System.IO.Path]::GetPathRoot($Canonical)
+    if ($Canonical.Length -gt $CanonicalRoot.Length) {
+        $Canonical = $Canonical.TrimEnd("\", "/")
+    }
+    return $Canonical
+}
+
+function Test-CanonicalPathWithinOrEqual([string]$Candidate, [string]$Root) {
+    if ([string]::Equals($Candidate, $Root, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $true
+    }
+    $RootPrefix = $Root.TrimEnd("\", "/") + [System.IO.Path]::DirectorySeparatorChar
+    return $Candidate.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+}
+
+function Assert-CapturePathPreflight(
+    [string]$Output,
+    [string]$WorkRoot,
+    [string]$SharedDataDir,
+    [string]$YuneDll,
+    [string]$OracleCapture,
+    [string]$DefaultYamlOverlay,
+    [string]$ProbeSource,
+    [string]$CaptureScript,
+    [bool]$KeepWorkRoot
+) {
+    if (Test-Path -LiteralPath $Output) {
+        throw "Output must not already exist: $Output"
+    }
+    if (Test-Path -LiteralPath $WorkRoot) {
+        throw "Capture work root already exists; refusing to reuse or delete it: $WorkRoot"
+    }
+
+    $CanonicalOutput = Get-CanonicalWindowsPath $Output
+    $CanonicalWorkRoot = Get-CanonicalWindowsPath $WorkRoot
+    $CanonicalSharedData = Get-CanonicalWindowsPath $SharedDataDir
+    $ProtectedPaths = [ordered]@{
+        YuneDll = $YuneDll
+        OracleCapture = $OracleCapture
+        ProbeSource = $ProbeSource
+        CaptureScript = $CaptureScript
+    }
+    if (-not [string]::IsNullOrWhiteSpace($DefaultYamlOverlay)) {
+        $ProtectedPaths["DefaultYamlOverlay"] = $DefaultYamlOverlay
+    }
+    foreach ($Entry in $ProtectedPaths.GetEnumerator()) {
+        $CanonicalProtected = Get-CanonicalWindowsPath ([string]$Entry.Value)
+        if ([string]::Equals(
+                $CanonicalOutput,
+                $CanonicalProtected,
+                [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Output must not alias protected input $($Entry.Key): $Output"
+        }
+    }
+    if (Test-CanonicalPathWithinOrEqual $CanonicalOutput $CanonicalSharedData) {
+        throw "Output must not be inside SharedDataDir: $Output"
+    }
+    if (Test-CanonicalPathWithinOrEqual $CanonicalWorkRoot $CanonicalSharedData) {
+        throw "WorkRoot must not be inside SharedDataDir: $WorkRoot"
+    }
+    if (Test-CanonicalPathWithinOrEqual $CanonicalWorkRoot $CanonicalOutput) {
+        throw "WorkRoot must not be inside or equal to Output."
+    }
+    $OutputUnderWorkRoot = Test-CanonicalPathWithinOrEqual $CanonicalOutput $CanonicalWorkRoot
+    if ($OutputUnderWorkRoot -and -not $KeepWorkRoot) {
+        throw "Output is inside the disposable work root; pass -KeepWorkRoot or choose an external output path."
+    }
+    return [pscustomobject]@{
+        output = $CanonicalOutput
+        work_root = $CanonicalWorkRoot
+        shared_data_dir = $CanonicalSharedData
+        output_under_work_root = $OutputUnderWorkRoot
+    }
+}
+
+function Get-TopLevelSchemaList([string]$Path) {
+    $Utf8 = [System.Text.UTF8Encoding]::new($false, $true)
+    $Lines = [System.IO.File]::ReadAllLines($Path, $Utf8)
+    $SchemaListIndexes = @(
+        for ($Index = 0; $Index -lt $Lines.Count; $Index++) {
+            if ($Lines[$Index] -match '^schema_list:\s*(?:#.*)?$') {
+                $Index
+            }
+        }
+    )
+    if ($SchemaListIndexes.Count -ne 1) {
+        throw "default.yaml must contain exactly one top-level schema_list block."
+    }
+    $Entries = New-Object System.Collections.Generic.List[string]
+    $SeenEntries = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    for ($Index = $SchemaListIndexes[0] + 1; $Index -lt $Lines.Count; $Index++) {
+        $Line = $Lines[$Index]
+        if ($Line -match '^\s*$' -or $Line -match '^\s*#') {
+            continue
+        }
+        if ($Line -match '^\S') {
+            break
+        }
+        if ($Line -notmatch '^[ \t]+-\s+schema:\s*(?<schema>[A-Za-z0-9_][A-Za-z0-9_.-]*)\s*(?:#.*)?$') {
+            throw "default.yaml schema_list must contain only plain schema identifiers."
+        }
+        if (-not $SeenEntries.Add($Matches.schema)) {
+            throw "default.yaml schema_list contains duplicate schema '$($Matches.schema)'."
+        }
+        $Entries.Add($Matches.schema)
+    }
+    if ($Entries.Count -eq 0) {
+        throw "default.yaml schema_list must contain at least one schema."
+    }
+    return @($Entries)
+}
+
+function Resolve-SchemaListNarrowing(
+    [string[]]$Entries,
+    [string]$ExpectedSchemaId,
+    [bool]$NarrowSwitchUsed,
+    [bool]$OverlayUsed
+) {
+    if ($NarrowSwitchUsed -and $OverlayUsed) {
+        throw "Schema-list narrowing cannot use both the generated switch and an overlay."
+    }
+    $Narrowed = $Entries.Count -eq 1 -and
+        [string]::Equals($Entries[0], $ExpectedSchemaId, [System.StringComparison]::Ordinal)
+    if ($NarrowSwitchUsed -and -not $Narrowed) {
+        throw "Generated schema-list narrowing did not produce exactly '$ExpectedSchemaId'."
+    }
+    $Source = if (-not $Narrowed) {
+        "none"
+    }
+    elseif ($NarrowSwitchUsed) {
+        "generated_narrow_schema_list_switch"
+    }
+    elseif ($OverlayUsed) {
+        "default_yaml_overlay"
+    }
+    else {
+        "source_default_yaml"
+    }
+    return [pscustomobject]@{
+        schema_list_narrowed = $Narrowed
+        narrow_schema_list_switch_used = $NarrowSwitchUsed
+        schema_list_narrowing_source = $Source
+    }
+}
+
 function Copy-Tree([string]$Source, [string]$Destination) {
     New-Item -ItemType Directory -Force -Path $Destination | Out-Null
     Get-ChildItem -LiteralPath $Source -Force | ForEach-Object {
@@ -168,17 +415,19 @@ if ([string]::IsNullOrWhiteSpace($WorkRoot)) {
     $WorkRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("yune-m59-candidate-capture-" + [guid]::NewGuid().ToString("N"))
 }
 $WorkRoot = [System.IO.Path]::GetFullPath($WorkRoot)
-if (Test-Path -LiteralPath $WorkRoot) {
-    throw "Capture work root already exists; refusing to reuse or delete it: $WorkRoot"
-}
-$OutputUnderWorkRoot = $Output.StartsWith(
-    $WorkRoot.TrimEnd("\", "/") + [System.IO.Path]::DirectorySeparatorChar,
-    [System.StringComparison]::OrdinalIgnoreCase
-)
-if ($OutputUnderWorkRoot -and -not $KeepWorkRoot.IsPresent) {
-    throw "Output is inside the disposable work root; pass -KeepWorkRoot or choose an external output path."
-}
+$PathPreflight = Assert-CapturePathPreflight `
+    $Output `
+    $WorkRoot `
+    $SharedDataDir `
+    $YuneDll `
+    $OracleCapture `
+    $DefaultYamlOverlay `
+    $ProbeSource `
+    $PSCommandPath `
+    $KeepWorkRoot.IsPresent
 
+$NarrowSchemaListSwitchUsed = $NarrowSchemaList.IsPresent
+$DefaultYamlOverlayUsed = -not [string]::IsNullOrWhiteSpace($DefaultYamlOverlay)
 $EffectiveParameters = [ordered]@{
     yune_dll = Evidence-Path $YuneDll
     shared_data_dir = Evidence-Path $SharedDataDir
@@ -188,7 +437,10 @@ $EffectiveParameters = [ordered]@{
     inputs = @($Inputs)
     inputs_source = if ($InputsWereProvided) { "explicit" } else { "oracle_cases" }
     default_yaml_overlay = Evidence-Path $DefaultYamlOverlay
-    narrow_schema_list = $NarrowSchemaList.IsPresent
+    narrow_schema_list = $NarrowSchemaListSwitchUsed
+    schema_list_narrowed = $null
+    narrow_schema_list_switch_used = $NarrowSchemaListSwitchUsed
+    schema_list_narrowing_source = $null
     work_root = if ($WorkRootWasProvided) { Evidence-Path $WorkRoot } else { "generated_disposable" }
     expected_yune_dll_sha256 = if ($ExpectedYuneDllSha256) { $ExpectedYuneDllSha256.ToLowerInvariant() } else { $null }
     allow_dirty = $AllowDirty.IsPresent
@@ -200,9 +452,9 @@ $Invocation = @(
     "-SharedDataDir $(Quote-CommandArg $EffectiveParameters.shared_data_dir)",
     "-SchemaId $(Quote-CommandArg $SchemaId)",
     "-OracleCapture $(Quote-CommandArg $EffectiveParameters.oracle_capture)",
-    "-Output $(Quote-CommandArg $EffectiveParameters.output)",
-    "-Inputs $(Quote-CommandArg ($Inputs -join ','))"
+    "-Output $(Quote-CommandArg $EffectiveParameters.output)"
 )
+if ($InputsWereProvided) { $Invocation += "-Inputs $(Quote-CommandArg ($Inputs -join ','))" }
 if ($DefaultYamlOverlay) { $Invocation += "-DefaultYamlOverlay $(Quote-CommandArg $EffectiveParameters.default_yaml_overlay)" }
 if ($NarrowSchemaList.IsPresent) { $Invocation += "-NarrowSchemaList" }
 if ($WorkRootWasProvided) { $Invocation += "-WorkRoot $(Quote-CommandArg $EffectiveParameters.work_root)" }
@@ -240,6 +492,20 @@ try {
         }
         Write-Utf8NoBom $DefaultYaml $Narrowed
     }
+    $StagedDefaultYaml = Join-Path $Shared "default.yaml"
+    if (-not (Test-Path -LiteralPath $StagedDefaultYaml)) {
+        throw "Staged shared data must contain default.yaml for schema-list provenance."
+    }
+    $StagedSchemaList = @(Get-TopLevelSchemaList $StagedDefaultYaml)
+    $SchemaListState = Resolve-SchemaListNarrowing `
+        $StagedSchemaList `
+        $SchemaId `
+        $NarrowSchemaListSwitchUsed `
+        $DefaultYamlOverlayUsed
+    $SchemaListNarrowed = [bool]$SchemaListState.schema_list_narrowed
+    $SchemaListNarrowingSource = [string]$SchemaListState.schema_list_narrowing_source
+    $EffectiveParameters["schema_list_narrowed"] = $SchemaListNarrowed
+    $EffectiveParameters["schema_list_narrowing_source"] = $SchemaListNarrowingSource
     Copy-Item -LiteralPath $YuneDll -Destination (Join-Path $Bin "rime.dll") -Force
 
     $env:PATH = $Bin + ";" + $OldPath
@@ -275,7 +541,9 @@ try {
             source_shared_tree_sha256 = Tree-Sha256 $SharedDataDir
             staged_shared_tree_sha256 = Tree-Sha256 $Shared
             default_yaml_overlay_sha256 = if ($DefaultYamlOverlay) { File-Sha256 $DefaultYamlOverlay } else { $null }
-            schema_list_narrowed = $NarrowSchemaList.IsPresent
+            schema_list_narrowed = $SchemaListNarrowed
+            narrow_schema_list_switch_used = $NarrowSchemaListSwitchUsed
+            schema_list_narrowing_source = $SchemaListNarrowingSource
             page_policy = "RimeProbe.Capture all pages; hard failure on non-advancing or incomplete pagination"
             actual_invocation = $ActualInvocation
             effective_parameters = $EffectiveParameters

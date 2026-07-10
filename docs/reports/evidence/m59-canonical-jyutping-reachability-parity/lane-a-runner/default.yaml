@@ -8,18 +8,16 @@
 #
 # WHY: the staged rime-cantonese default.yaml carries librime's stock six-schema
 # list (luna_pinyin, bopomofo, cangjie5, quick5, stroke, terra_pinyin), of which
-# bopomofo/quick5/terra_pinyin are absent from the rime-cantonese staging. Yune's
-# workspace_update fails the WHOLE workspace on one missing schema
-# (deployment.rs:638-641) where librime skips-and-logs, so the stock list makes the
-# deploy fail. The rime-cantonese default.custom.yaml patch (schema_list: jyut6ping3)
-# does select the right schema, but Yune reads custom patches from user_data_dir
-# only (deployment.rs:1502) — it is in the shared dir, so it never applies. This
-# overlay fixes both by listing only the schema that is actually staged.
+# bopomofo/quick5/terra_pinyin are absent from this staging. For a missing
+# top-level schema, pinned librime continues deploying valid siblings but returns
+# aggregate failure; Yune now matches that deployment result. The stock list
+# therefore describes an intentionally failing workspace even though jyut6ping3
+# itself is valid and deployable.
 #
-# The missing-schema-tolerance divergence (Yune fail-whole vs librime skip-and-log)
-# is a NAMED Lane A work item pending owner decision + librime evidence — it
-# intersects the D-47 schema-general guarantee. This overlay unblocks the Lane A
-# runner without prejudging that decision.
+# The canonical Lane A runner needs a successful, reproducible workspace deploy,
+# so this overlay lists only the schema actually staged for the run. It is runner
+# setup, not per-schema engine behavior adaptation and not a missing-schema
+# tolerance exception.
 
 config_version: '0.50'
 

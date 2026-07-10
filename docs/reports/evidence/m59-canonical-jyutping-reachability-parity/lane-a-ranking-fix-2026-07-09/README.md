@@ -168,3 +168,22 @@ disposition table (this directory, `re-diff/`) is the D-48 instrument of record.
   the M59 line, wants a WASM-level bisect (archived A/B artifacts make swaps cheap) and a
   browser gate added to flip-class changes. Both WASM builds archived in the session
   scratchpad; the shipped/committed browser assets are untouched by this commit.
+
+## Browser A/B evidence (durable record, per GPT request)
+
+Live-server A/B on the M58 Playwright pin (`zi` -> 諮 within 4 physical PageDowns),
+2026-07-09: **fix-bearing WASM FAILS; pre-fix WASM (identical tree, fix stashed) FAILS
+identically** — last page observed `["正常","佔","症","節目","織","折"]` (completion
+phrases). SHA-256 (first 16 hex) of the archived artifacts:
+- fix.wasm: `\117e0e29e1f55db`
+- prefix.wasm (tree b11e7ab5 + f0ca95d6-minus-crates): `\07bbe40107ca78f`
+
+Root cause (GPT-diagnosed, fable code-verified): `ba15e725` (M59 finding #4) made the
+physical-selector forward-page completion UNCONDITIONAL while `RimeChangePage`
+(lib.rs:1750-1756) retains a `jyut6ping3*` + `>2 chars` gate — so keyboard PageDown on
+2-char `zi` swaps the bounded 30-row window (諮@27) for the unbounded list, while the
+UI next-page button and the native M58 test (both via RimeChangePage) stay bounded and
+green. The surviving lib.rs:1752 `starts_with("jyut6ping3")` gate is the same schema-ID
+wart class finding #4 deleted from the selector. Repair contract + guards: GPT's named
+work item (one profile-aware forward-page predicate for both paths; no schema-ID
+inference; no fixture re-pin).

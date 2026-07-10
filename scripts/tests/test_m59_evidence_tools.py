@@ -292,16 +292,46 @@ class CandidateOrderTests(unittest.TestCase):
 
 class LunaCuratorTests(unittest.TestCase):
     def valid_inputs(self):
-        return [
-            {
-                "input": input_text,
-                "page_size": 5,
-                "captured_all_pages": True,
-                "selected_candidates": [{"text": target}],
-                "all_candidates": [{"text": target, "global_index": 0}],
-            }
-            for input_text, target in luna_curator.TARGETS.items()
-        ]
+        cases = []
+        for input_text, target in luna_curator.TARGETS.items():
+            texts = [target]
+            if input_text == "moboyi":
+                texts.extend(["a", "b", "c", "d", "tail"])
+            all_candidates = []
+            pages = []
+            for page_no, start in enumerate(range(0, len(texts), 5)):
+                page_candidates = []
+                for local_index, text in enumerate(texts[start : start + 5]):
+                    candidate = {
+                        "index": local_index,
+                        "text": text,
+                        "global_index": start + local_index,
+                    }
+                    page_candidates.append(candidate)
+                    all_candidates.append(dict(candidate))
+                pages.append(
+                    {
+                        "page_no": page_no,
+                        "page_size": 5,
+                        "is_last_page": start + 5 >= len(texts),
+                        "candidates": page_candidates,
+                    }
+                )
+            cases.append(
+                {
+                    "input": input_text,
+                    "rime_get_input": input_text,
+                    "processed": [1] * len(input_text),
+                    "page_size": 5,
+                    "page_no": 0,
+                    "is_last_page": pages[0]["is_last_page"],
+                    "captured_all_pages": True,
+                    "selected_candidates": [dict(row) for row in pages[0]["candidates"]],
+                    "pages": pages,
+                    "all_candidates": all_candidates,
+                }
+            )
+        return cases
 
     def run_curator(self, root, pages, compose=None, metadata_mutator=None):
         pages_path = root / "pages.json"
@@ -395,6 +425,39 @@ class LunaCuratorTests(unittest.TestCase):
             output["compositions"]["moboyi"]["final_commit"],
             luna_curator.COMPOSITIONS[0][3],
         )
+        self.assertEqual(
+            output["capture"]["source_row_policy"],
+            "m59_lane_b_complete_order_and_partial_selection_composition",
+        )
+        self.assertEqual(output["capture"]["curator_version"], 5)
+        self.assertEqual(
+            output["capture"]["order_hash_algorithm"],
+            "sha256 of repeated u64be utf8-byte-length followed by utf8 candidate text",
+        )
+        self.assertEqual(
+            output["capture"]["note"],
+            "Complete Lane B candidate text/order/position capture plus partial-selection "
+            "composition provenance for M59 D-48. PRIMARY case: moboyi -> the non-lexicon "
+            "phrase 莫伯洢. Current Yune order divergences remain open until the owning closure "
+            "increments land.",
+        )
+        self.assertRegex(output["inputs"]["moboyi"]["ordered_text_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_ordered_text_hash_has_literal_framed_order_vector(self):
+        rows = [{"text": text} for text in ["中", "a", "中", "ab"]]
+        self.assertEqual(
+            luna_curator._ordered_text_sha256(rows),
+            "71864f51172669108316ef6ecd3574f1bae97aa1c258a0210bd23bf7425617f2",
+        )
+        reversed_rows = list(reversed(rows))
+        self.assertEqual(
+            luna_curator._ordered_text_sha256(reversed_rows),
+            "ac0876c6fcc27043f4d43b27addcbab919021a87519d111e92769c4f50933d65",
+        )
+        self.assertNotEqual(
+            luna_curator._ordered_text_sha256([{"text": "ab"}, {"text": "c"}]),
+            luna_curator._ordered_text_sha256([{"text": "a"}, {"text": "bc"}]),
+        )
 
     def test_identical_curation_is_byte_identical(self):
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
@@ -416,6 +479,48 @@ class LunaCuratorTests(unittest.TestCase):
             ),
             "missing_target": lambda pages: pages[0]["all_candidates"][0].__setitem__(
                 "text", "not-target"
+            ),
+            "bad_global_index": lambda pages: pages[0]["all_candidates"][0].__setitem__(
+                "global_index", 1
+            ),
+            "boolean_global_index": lambda pages: pages[0]["all_candidates"][0].__setitem__(
+                "global_index", False
+            ),
+            "non_contiguous_page": lambda pages: pages[0]["pages"][0].__setitem__(
+                "page_no", 1
+            ),
+            "boolean_page_number": lambda pages: pages[0]["pages"][0].__setitem__(
+                "page_no", False
+            ),
+            "bad_local_index": lambda pages: pages[0]["pages"][0]["candidates"][0].__setitem__(
+                "index", 1
+            ),
+            "boolean_local_index": lambda pages: pages[0]["pages"][0]["candidates"][0].__setitem__(
+                "index", False
+            ),
+            "bad_last_page": lambda pages: pages[0]["pages"][0].__setitem__(
+                "is_last_page", True
+            ),
+            "short_non_final_page": lambda pages: pages[0]["pages"][0]["candidates"].pop(),
+            "oversized_final_page": lambda pages: pages[1]["pages"][0]["candidates"].extend(
+                [
+                    {"index": index, "text": str(index), "global_index": index}
+                    for index in range(1, 6)
+                ]
+            ),
+            "flat_page_disagreement": lambda pages: pages[0]["pages"][0]["candidates"][
+                0
+            ].__setitem__("text", "different"),
+            "input_mismatch": lambda pages: pages[0].__setitem__("rime_get_input", "other"),
+            "bad_initial_page": lambda pages: pages[0].__setitem__("page_no", 1),
+            "boolean_initial_page": lambda pages: pages[0].__setitem__("page_no", False),
+            "bad_processed_key": lambda pages: pages[0]["processed"].__setitem__(0, False),
+            "missing_top_last_page": lambda pages: pages[0].pop("is_last_page"),
+            "mismatched_top_last_page": lambda pages: pages[0].__setitem__(
+                "is_last_page", True
+            ),
+            "non_boolean_top_last_page": lambda pages: pages[1].__setitem__(
+                "is_last_page", 1
             ),
         }
         for label, mutate in mutations.items():

@@ -10,6 +10,7 @@ crates/yune-core/tests/upstream_luna_leading_single_composition.rs.
 Usage: curate-m59-luna-composition.py <pages.json> <compose.json> <metadata.json> <output.json>
 """
 import collections
+import hashlib
 import json
 import os
 import re
@@ -40,6 +41,11 @@ TIMESTAMP_NORMALIZATION_POLICY = (
     "readback before deployment"
 )
 STAGED_TIMESTAMP_UTC = "2000-01-01T00:00:00.500Z"
+CURATOR_VERSION = 5
+SOURCE_ROW_POLICY = "m59_lane_b_complete_order_and_partial_selection_composition"
+ORDER_HASH_ALGORITHM = (
+    "sha256 of repeated u64be utf8-byte-length followed by utf8 candidate text"
+)
 REQUIRED_EFFECTIVE_PARAMETERS = {
     "oracle_root",
     "output",
@@ -76,6 +82,19 @@ def _require_shape(value, pattern, label):
 
 def _quote_command_arg(value):
     return "'" + value.replace("'", "''") + "'"
+
+
+def _ordered_text_sha256(candidates):
+    digest = hashlib.sha256()
+    for candidate in candidates:
+        encoded = candidate["text"].encode("utf-8")
+        digest.update(len(encoded).to_bytes(8, "big"))
+        digest.update(encoded)
+    return digest.hexdigest()
+
+
+def _is_plain_int(value):
+    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def validate_metadata(metadata):
@@ -248,14 +267,25 @@ def _curate(argv=None) -> int:
     case_names = [case.get("input") for case in pages if isinstance(case, dict)]
     if len(case_names) != len(pages) or len(set(case_names)) != len(case_names):
         raise ValueError("oracle capture cases must be objects with unique input values")
-    if set(case_names) != set(TARGETS):
+    if case_names != list(TARGETS):
         raise ValueError(
-            f"oracle capture case set mismatch: expected={sorted(TARGETS)}, actual={sorted(case_names)}"
+            f"oracle capture case order mismatch: expected={list(TARGETS)}, actual={case_names}"
         )
 
     inputs = {}
     for case in pages:
         name = case["input"]
+        if case.get("rime_get_input") != name:
+            raise ValueError(f"oracle capture for {name} does not preserve rime_get_input")
+        if not _is_plain_int(case.get("page_no")) or case["page_no"] != 0:
+            raise ValueError(f"oracle capture for {name} must start at page_no 0")
+        processed = case.get("processed")
+        if (
+            not isinstance(processed, list)
+            or len(processed) != len(name)
+            or any(not _is_plain_int(value) or value != 1 for value in processed)
+        ):
+            raise ValueError(f"oracle capture for {name} has invalid processed-key results")
         if case.get("captured_all_pages") is not True:
             raise ValueError(f"oracle capture for {name} is incomplete")
         page_size = case.get("page_size")
@@ -268,6 +298,13 @@ def _curate(argv=None) -> int:
         for index, candidate in enumerate(candidates):
             if not isinstance(candidate, dict) or not isinstance(candidate.get("text"), str):
                 raise ValueError(f"oracle capture for {name} candidate {index} has no string text")
+            if (
+                not _is_plain_int(candidate.get("global_index"))
+                or candidate["global_index"] != index
+            ):
+                raise ValueError(
+                    f"oracle capture for {name} candidate {index} has a non-contiguous global_index"
+                )
             ordered.append(candidate["text"])
         target = TARGETS[name]
         if target not in ordered:
@@ -275,6 +312,72 @@ def _curate(argv=None) -> int:
         selected = case.get("selected_candidates")
         if not isinstance(selected, list):
             raise ValueError(f"oracle capture for {name} has no selected_candidates page")
+        case_pages = case.get("pages")
+        if not isinstance(case_pages, list) or not case_pages:
+            raise ValueError(f"oracle capture for {name} has no pages")
+        flattened = []
+        for page_index, page in enumerate(case_pages):
+            if (
+                not isinstance(page, dict)
+                or not _is_plain_int(page.get("page_no"))
+                or page["page_no"] != page_index
+            ):
+                raise ValueError(
+                    f"oracle capture for {name} page {page_index} is missing or non-contiguous"
+                )
+            if (
+                not _is_plain_int(page.get("page_size"))
+                or page["page_size"] != page_size
+            ):
+                raise ValueError(
+                    f"oracle capture for {name} page {page_index} changed page_size"
+                )
+            should_be_last = page_index == len(case_pages) - 1
+            if page.get("is_last_page") is not should_be_last:
+                raise ValueError(
+                    f"oracle capture for {name} page {page_index} has an invalid last-page marker"
+                )
+            page_candidates = page.get("candidates")
+            if not isinstance(page_candidates, list):
+                raise ValueError(
+                    f"oracle capture for {name} page {page_index} has no candidate array"
+                )
+            if (
+                (not should_be_last and len(page_candidates) != page_size)
+                or (should_be_last and not 1 <= len(page_candidates) <= page_size)
+            ):
+                raise ValueError(
+                    f"oracle capture for {name} page {page_index} has invalid candidate cardinality"
+                )
+            for local_index, candidate in enumerate(page_candidates):
+                if (
+                    not isinstance(candidate, dict)
+                    or not _is_plain_int(candidate.get("index"))
+                    or candidate["index"] != local_index
+                    or not _is_plain_int(candidate.get("global_index"))
+                    or candidate["global_index"] != len(flattened)
+                    or not isinstance(candidate.get("text"), str)
+                ):
+                    raise ValueError(
+                        f"oracle capture for {name} page {page_index} candidate {local_index} "
+                        "has invalid local/global position or text"
+                    )
+                flattened.append(candidate)
+        if flattened != candidates:
+            raise ValueError(
+                f"oracle capture for {name} pages do not flatten exactly to all_candidates"
+            )
+        if (
+            not isinstance(case.get("is_last_page"), bool)
+            or case["is_last_page"] is not case_pages[0]["is_last_page"]
+        ):
+            raise ValueError(
+                f"oracle capture for {name} top-level is_last_page disagrees with page 0"
+            )
+        if selected != case_pages[0]["candidates"]:
+            raise ValueError(
+                f"oracle capture for {name} selected_candidates does not equal page 0"
+            )
         page_0 = []
         for index, candidate in enumerate(selected):
             if not isinstance(candidate, dict) or not isinstance(candidate.get("text"), str):
@@ -291,6 +394,7 @@ def _curate(argv=None) -> int:
             "captured_all_pages": True,
             "total_candidates_captured": len(ordered),
             "total_unique_captured": len(set(ordered)),
+            "ordered_text_sha256": _ordered_text_sha256(candidates),
         }
 
     compose_by_scenario = collections.OrderedDict()
@@ -344,10 +448,14 @@ def _curate(argv=None) -> int:
             "actual_invocation": validated_metadata["invocation"],
             "effective_parameters": validated_metadata["parameters"],
             "page_policy": "RimeProbe.Capture all pages; incomplete pagination is fatal",
+            "source_row_policy": SOURCE_ROW_POLICY,
+            "curator_version": CURATOR_VERSION,
+            "order_hash_algorithm": ORDER_HASH_ALGORITHM,
             "queried_data": validated_metadata["queried_data"],
-            "note": "Leading-single reachability + partial-selection composition provenance for M59. "
-            "PRIMARY case: moboyi -> the non-lexicon phrase 莫伯洢. Positions are the "
-            "oracle's; Yune's PRODUCT completion ordering diverges (recorded).",
+            "note": "Complete Lane B candidate text/order/position capture plus partial-selection "
+            "composition provenance for M59 D-48. PRIMARY case: moboyi -> the non-lexicon "
+            "phrase 莫伯洢. Current Yune order divergences remain open until the owning closure "
+            "increments land.",
         },
         "inputs": inputs,
         "cases": pages,

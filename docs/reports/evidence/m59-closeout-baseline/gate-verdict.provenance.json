@@ -1,0 +1,101 @@
+{
+  "effective_argv": [
+    "--thresholds",
+    "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "--expected-runs",
+    "5",
+    "--run",
+    "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r1",
+    "--run",
+    "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r2",
+    "--run",
+    "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r3",
+    "--run",
+    "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r4",
+    "--run",
+    "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r5-retry1",
+    "--output",
+    "docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv"
+  ],
+  "effective_invocation": "python scripts/aggregate-native-ratchet.py --thresholds docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv --expected-runs 5 --run docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r1 --run docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r2 --run docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r3 --run docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r4 --run docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r5-retry1 --output docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv",
+  "gate_verdict": {
+    "path": "docs/reports/evidence/m59-closeout-baseline/gate-verdict.csv",
+    "sha256": "55ca3e1781fea2bc90ba1802d151e2843d6aea0b5bf5b2396670fa1c58ba6959"
+  },
+  "required_run_count": 5,
+  "runs": [
+    {
+      "path": "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r1",
+      "raw_files_sha256": {
+        "environment.txt": "837085814663fa1e11db6f8bf5e9bf8e9f43614b2f33d06993181e368e793cfb",
+        "external-provenance.txt": "2c1c755a3f3bc3587eddd25e8a127fde9e1d59b70e9c3ac218833958a4f5ba16",
+        "summary-comparison.csv": "d498fff0b9a38ec82e8663249dfd96d52b407c9331cd742a7abdb7f54ab8f15f",
+        "threshold-check.csv": "dd0cbab04cd32b709ff27ce1b464391c694380197c44466ad71abbb512a100d0"
+      },
+      "run": 1
+    },
+    {
+      "path": "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r2",
+      "raw_files_sha256": {
+        "environment.txt": "82eb5f61a3eaf9051baf8068dfbe4963ca0b752758b32e599b8e2cc3b7b94f71",
+        "external-provenance.txt": "2c1c755a3f3bc3587eddd25e8a127fde9e1d59b70e9c3ac218833958a4f5ba16",
+        "summary-comparison.csv": "fb170516652e5d20938b76653afbaca13e01b21b300d20e8946e0dc4ccd73177",
+        "threshold-check.csv": "f0df9dc56e1cc3ba8314aca3adfe6cbbf5d37be8ced0a590be9a82786bd6db28"
+      },
+      "run": 2
+    },
+    {
+      "path": "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r3",
+      "raw_files_sha256": {
+        "environment.txt": "e857885473f436ee9cf0fef289954ff4e1a3428e569c5845b4d18a01d2dc0a48",
+        "external-provenance.txt": "2c1c755a3f3bc3587eddd25e8a127fde9e1d59b70e9c3ac218833958a4f5ba16",
+        "summary-comparison.csv": "0c3d3ecc92da92b46d18fce0af424f1d442553caec7ed8437da603e0119956c9",
+        "threshold-check.csv": "ef7dfd80d70eeacb41fa792891de358df142b707c69459d821716cac76a24362"
+      },
+      "run": 3
+    },
+    {
+      "path": "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r4",
+      "raw_files_sha256": {
+        "environment.txt": "9b8beb253a4d8e6aa776b27c46c0a395c036fc02a6a8711d0f15d4cbb8eb8bfe",
+        "external-provenance.txt": "2c1c755a3f3bc3587eddd25e8a127fde9e1d59b70e9c3ac218833958a4f5ba16",
+        "summary-comparison.csv": "cf0b0d03c4854361d34384b27aef3c4e3d91e4b4efffd5d969404d352e5cd077",
+        "threshold-check.csv": "953f74b140d27ae807edc9512f0b87f0d031d05682cd44eadc07207d41f9a77d"
+      },
+      "run": 4
+    },
+    {
+      "path": "docs/reports/evidence/m59-closeout-baseline/m59-i0-fixed-45775182-r5-retry1",
+      "raw_files_sha256": {
+        "environment.txt": "3d77030dd4131cf2f00a1461171a8bd0f8d93bbb0da0822bf7925e3181d37758",
+        "external-provenance.txt": "58303d437e04a19df21db9fdaee7234ea91595b052c7588ff75dcac1b5dbed4e",
+        "summary-comparison.csv": "bed66523531c43af31c8de19a7117c85a9617f6821383953e052ef9ce6feb815",
+        "threshold-check.csv": "52a54c653bb587f0df2b860a327194728cac1270852d9378f8c74bf5b816376a"
+      },
+      "run": 5
+    }
+  ],
+  "schema_version": 1,
+  "thresholds": {
+    "path": "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "sha256": "e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba"
+  },
+  "tool": "aggregate-native-ratchet.py",
+  "tool_path": "scripts/aggregate-native-ratchet.py",
+  "tool_sha256": "7a1ef97789708ba090b8ca4cde5eb8404ee8402b9226a9d8a9875631167db586",
+  "tool_version": "6",
+  "validated_provenance": {
+    "deploy_product_before_benchmark": "True",
+    "iterations": "9",
+    "key_iterations": "80",
+    "measured_yune_dll_sha256": "d45d857d1cad18bb8a3a79f584e310a6f19926bcbd3ff0cb9ef03d99b529906f",
+    "product_schema_tree_sha256": "d6819c509098d84b40fb56899f116fb649a174d7c666f7b8bbbfd9250d3e5b74",
+    "session_iterations": "60",
+    "skip_track_b": "False",
+    "source_commit": "457751824b8944676dc44912b9ce31ff29d78403",
+    "track_a_inputs": "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",
+    "track_b_inputs": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+    "upstream_rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "yune_git_head": "457751824b8944676dc44912b9ce31ff29d78403"
+  }
+}

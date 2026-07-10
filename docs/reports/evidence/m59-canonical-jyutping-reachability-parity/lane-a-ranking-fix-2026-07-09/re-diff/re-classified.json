@@ -1,0 +1,530 @@
+[
+ {
+  "input": "be",
+  "y_count_captured": 20,
+  "y_capped": true,
+  "o_count": 4,
+  "compared_range": 4,
+  "first_div": null,
+  "order_exact_through_compared": true,
+  "y_top5": [
+   "啤",
+   "嚊",
+   "唄",
+   "𠹇",
+   "啤把"
+  ],
+  "o_top5": [
+   "啤",
+   "嚊",
+   "唄",
+   "𠹇"
+  ],
+  "n_over": 16,
+  "n_under": 0,
+  "over_ex": [
+   "啤把",
+   "啤啤熊",
+   "啤啤佢",
+   "啤灰",
+   "啤機",
+   "啤工"
+  ],
+  "under_ex": [],
+  "dirs": [
+   "over-admission"
+  ]
+ },
+ {
+  "input": "bei",
+  "y_count_captured": 160,
+  "y_capped": true,
+  "o_count": 139,
+  "compared_range": 139,
+  "first_div": 9,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "畀",
+   "比",
+   "被",
+   "鼻",
+   "避"
+  ],
+  "o_top5": [
+   "畀",
+   "比",
+   "被",
+   "鼻",
+   "避"
+  ],
+  "n_over": 25,
+  "n_under": 4,
+  "over_ex": [
+   "比亞迪汽車",
+   "備辦",
+   "被爆者",
+   "避避風頭",
+   "比比皆是",
+   "baby"
+  ],
+  "under_ex": [
+   "祕",
+   "啤",
+   "唄",
+   "𠹇"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "bein",
+  "y_count_captured": 20,
+  "y_capped": true,
+  "o_count": 5,
+  "compared_range": 5,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "卑南族",
+   "避難",
+   "避難所",
+   "鼻腍",
+   "畀你"
+  ],
+  "o_top5": [
+   "啤In",
+   "啤",
+   "嚊",
+   "唄",
+   "𠹇"
+  ],
+  "n_over": 20,
+  "n_under": 5,
+  "over_ex": [
+   "卑南族",
+   "避難",
+   "避難所",
+   "鼻腍",
+   "畀你",
+   "畀你吹脹"
+  ],
+  "under_ex": [
+   "啤In",
+   "啤",
+   "嚊",
+   "唄",
+   "𠹇"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "being",
+  "y_count_captured": 151,
+  "y_capped": false,
+  "o_count": 140,
+  "compared_range": 140,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "碑額",
+   "畀眼睇",
+   "畀銀紙",
+   "畀我",
+   "畀我啊"
+  ],
+  "o_top5": [
+   "畀嗯",
+   "畀",
+   "比",
+   "被",
+   "鼻"
+  ],
+  "n_over": 16,
+  "n_under": 5,
+  "over_ex": [
+   "碑額",
+   "畀眼睇",
+   "畀銀紙",
+   "畀我",
+   "畀我啊",
+   "畀我考起"
+  ],
+  "under_ex": [
+   "畀嗯",
+   "祕",
+   "啤",
+   "唄",
+   "𠹇"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "beingo",
+  "y_count_captured": 148,
+  "y_capped": false,
+  "o_count": 142,
+  "compared_range": 142,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "畀我",
+   "畀我啊",
+   "畀我考起",
+   "畀我吔",
+   "畀我入"
+  ],
+  "o_top5": [
+   "比我",
+   "被我",
+   "畀我",
+   "畀",
+   "比"
+  ],
+  "n_over": 12,
+  "n_under": 6,
+  "over_ex": [
+   "畀我啊",
+   "畀我考起",
+   "畀我吔",
+   "畀我入",
+   "畀我入去",
+   "畀我咯"
+  ],
+  "under_ex": [
+   "比我",
+   "被我",
+   "祕",
+   "啤",
+   "唄",
+   "𠹇"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "beix",
+  "y_count_captured": 55,
+  "y_capped": true,
+  "o_count": 36,
+  "compared_range": 36,
+  "first_div": null,
+  "order_exact_through_compared": true,
+  "y_top5": [
+   "畀",
+   "比",
+   "髀",
+   "俾",
+   "吡"
+  ],
+  "o_top5": [
+   "畀",
+   "比",
+   "髀",
+   "俾",
+   "吡"
+  ],
+  "n_over": 19,
+  "n_under": 0,
+  "over_ex": [
+   "比亞迪汽車",
+   "比比皆是",
+   "比捕",
+   "畀煲佢哋",
+   "畀差人拉",
+   "畀齊"
+  ],
+  "under_ex": [],
+  "dirs": [
+   "over-admission"
+  ]
+ },
+ {
+  "input": "beixngoxx",
+  "y_count_captured": 55,
+  "y_capped": true,
+  "o_count": 38,
+  "compared_range": 38,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "畀我",
+   "畀我啊",
+   "畀我考起",
+   "畀我吔",
+   "畀我入"
+  ],
+  "o_top5": [
+   "比我",
+   "畀我",
+   "畀",
+   "比",
+   "髀"
+  ],
+  "n_over": 38,
+  "n_under": 21,
+  "over_ex": [
+   "畀我啊",
+   "畀我考起",
+   "畀我吔",
+   "畀我入",
+   "畀我入去",
+   "畀我咯"
+  ],
+  "under_ex": [
+   "比我",
+   "畁",
+   "柀",
+   "疕",
+   "粃",
+   "聛"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "ngohaig",
+  "y_count_captured": 46,
+  "y_capped": false,
+  "o_count": 2050,
+  "compared_range": 46,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "我係嘅咁",
+   "鵝",
+   "哦",
+   "娥",
+   "蛾"
+  ],
+  "o_top5": [
+   "我係噉",
+   "我係",
+   "我下",
+   "卧下",
+   "我行"
+  ],
+  "n_over": 1,
+  "n_under": 43,
+  "over_ex": [
+   "我係嘅咁"
+  ],
+  "under_ex": [
+   "我係噉",
+   "我係",
+   "我下",
+   "卧下",
+   "我行",
+   "我間"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "ngohaigo",
+  "y_count_captured": 46,
+  "y_capped": false,
+  "o_count": 113,
+  "compared_range": 46,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "我係個咁",
+   "鵝",
+   "哦",
+   "娥",
+   "蛾"
+  ],
+  "o_top5": [
+   "我繫個",
+   "我係",
+   "我下",
+   "卧下",
+   "我"
+  ],
+  "n_over": 1,
+  "n_under": 5,
+  "over_ex": [
+   "我係個咁"
+  ],
+  "under_ex": [
+   "我繫個",
+   "我係",
+   "我下",
+   "卧下",
+   "臥"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "n",
+  "y_count_captured": 455,
+  "y_capped": true,
+  "o_count": 1309,
+  "compared_range": 455,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "那",
+   "挐",
+   "南",
+   "哪",
+   "𠸎"
+  ],
+  "o_top5": [
+   "我",
+   "你",
+   "呢",
+   "諗",
+   "女"
+  ],
+  "n_over": 358,
+  "n_under": 418,
+  "over_ex": [
+   "𠸎家",
+   "𠸎耕",
+   "𪐀經",
+   "𪐀耕",
+   "挐掕",
+   "𠸎埋"
+  ],
+  "under_ex": [
+   "我",
+   "你",
+   "呢",
+   "諗",
+   "女",
+   "撚"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ },
+ {
+  "input": "nri",
+  "y_count_captured": 0,
+  "y_capped": true,
+  "o_count": 1309,
+  "compared_range": 0,
+  "first_div": null,
+  "order_exact_through_compared": true,
+  "y_top5": [],
+  "o_top5": [
+   "我",
+   "你",
+   "呢",
+   "諗",
+   "女"
+  ],
+  "n_over": 0,
+  "n_under": 0,
+  "over_ex": [],
+  "under_ex": [],
+  "dirs": [
+   "match"
+  ]
+ },
+ {
+  "input": "mgoi",
+  "y_count_captured": 11,
+  "y_capped": false,
+  "o_count": 4,
+  "compared_range": 4,
+  "first_div": 1,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "唔該",
+   "唔該你喇",
+   "唔該晒",
+   "唔該晒你",
+   "唔該先"
+  ],
+  "o_top5": [
+   "唔該",
+   "唔",
+   "呣",
+   "嘸"
+  ],
+  "n_over": 7,
+  "n_under": 0,
+  "over_ex": [
+   "唔該你喇",
+   "唔該晒",
+   "唔該晒你",
+   "唔該先",
+   "唔該話聲",
+   "唔該借歪"
+  ],
+  "under_ex": [],
+  "dirs": [
+   "order",
+   "over-admission"
+  ]
+ },
+ {
+  "input": "zijiguk",
+  "y_count_captured": 387,
+  "y_capped": false,
+  "o_count": 416,
+  "compared_range": 387,
+  "first_div": 0,
+  "order_exact_through_compared": false,
+  "y_top5": [
+   "知而焗咁",
+   "知",
+   "之",
+   "支",
+   "吱"
+  ],
+  "o_top5": [
+   "諮議局",
+   "子怡",
+   "自已",
+   "旨意",
+   "之二"
+  ],
+  "n_over": 1,
+  "n_under": 30,
+  "over_ex": [
+   "知而焗咁"
+  ],
+  "under_ex": [
+   "諮議局",
+   "子怡",
+   "自已",
+   "旨意",
+   "之二",
+   "之以"
+  ],
+  "dirs": [
+   "order",
+   "over-admission",
+   "under-admission"
+  ]
+ }
+]

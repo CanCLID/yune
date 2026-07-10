@@ -112,3 +112,15 @@ tone-variant candidates rank by per-reading weight, matching the oracle. **Not**
 
 Fix increment proceeds under the conditions above; every row's "Gate" is a required
 pre-merge check.
+
+## CORRECTION (2026-07-09, fix increment): scoping model revised multi-spec → multi-code
+
+The fix design above frames the re-rank as a cross-SPEC tone-alias merge. Empirically the
+canonical path delivers ONE spec with multi-CODE exacts (see the fix README's model
+correction). Option A survives in hardened form: detector + mutation scoped to true-exact
+rows (entry_code == lookup_code, no abbreviation/correction/limited-prediction),
+stable-sorted by per-reading raw weight only, reinserted in-slot — completions and
+correction rows never move, ties keep storage order in both regimes. The §3 disposition
+predictions were re-validated empirically against the hardened fix (all pinned suites
+byte-identical; canonical heads = oracle):
+`../lane-a-ranking-fix-2026-07-09/README.md`.

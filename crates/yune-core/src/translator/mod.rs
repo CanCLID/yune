@@ -46,6 +46,7 @@ struct LookupCodeSpec {
     lookup_code: String,
     correction_distance: Option<usize>,
     required_syllable_count: Option<usize>,
+    tolerance: bool,
 }
 
 impl LookupCodeSpec {
@@ -56,6 +57,20 @@ impl LookupCodeSpec {
             code,
             correction_distance: None,
             required_syllable_count: None,
+            tolerance: false,
+        }
+    }
+
+    /// A tolerance-rule near-match: ranked with the exacts of its own code but
+    /// excluded from the tone-merge re-rank domain (the user did not type this code).
+    fn tolerance_exact(code: impl Into<String>) -> Self {
+        let code = code.into();
+        Self {
+            lookup_code: code.clone(),
+            code,
+            correction_distance: None,
+            required_syllable_count: None,
+            tolerance: true,
         }
     }
 
@@ -65,6 +80,7 @@ impl LookupCodeSpec {
             lookup_code: lookup_code.into(),
             correction_distance: None,
             required_syllable_count: None,
+            tolerance: false,
         }
     }
 
@@ -75,6 +91,7 @@ impl LookupCodeSpec {
             code,
             correction_distance: Some(distance),
             required_syllable_count: None,
+            tolerance: false,
         }
     }
 
@@ -89,6 +106,7 @@ impl LookupCodeSpec {
             code,
             correction_distance: Some(distance),
             required_syllable_count: Some(syllable_count),
+            tolerance: false,
         }
     }
 }
@@ -101,6 +119,7 @@ struct PendingLookupCandidate {
     correction_distance: Option<usize>,
     spelling_abbreviation: bool,
     limited_prediction: bool,
+    tolerance: bool,
 }
 
 impl PendingLookupCandidate {
@@ -1203,7 +1222,7 @@ impl StaticTableTranslator {
             if rule.near_code == lookup_code {
                 for candidate_code in &rule.candidate_codes {
                     if !specs.iter().any(|spec| &spec.code == candidate_code) {
-                        specs.push(LookupCodeSpec::exact(candidate_code));
+                        specs.push(LookupCodeSpec::tolerance_exact(candidate_code));
                     }
                 }
             }
@@ -2347,7 +2366,8 @@ impl StaticTableTranslator {
         lookup_specs: &[LookupCodeSpec],
         filter_by_charset: bool,
     ) -> Vec<Candidate> {
-        let mut candidates = Vec::new();
+        let mut pooled: Vec<PendingLookupCandidate> = Vec::new();
+        let mut exact_scan_ranges: Vec<(usize, usize)> = Vec::new();
         let record_track_b = self.uses_m44_track_b_metrics();
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
@@ -2380,9 +2400,11 @@ impl StaticTableTranslator {
                             spelling_abbreviation: self
                                 .is_spelling_abbreviation_view(lookup_code, &candidate),
                             limited_prediction: false,
+                            tolerance: lookup_spec.tolerance,
                         })
                     }),
             );
+            let exact_rows_in_pending = pending.len();
             let exact_elapsed = exact_start.elapsed();
             self.storage
                 .record_exact_lookup(exact_elapsed, exact_candidates);
@@ -2427,6 +2449,7 @@ impl StaticTableTranslator {
                         correction_distance: lookup_spec.correction_distance,
                         spelling_abbreviation,
                         limited_prediction,
+                        tolerance: lookup_spec.tolerance,
                     });
                 }
                 let prefix_elapsed = prefix_start.elapsed();
@@ -2456,19 +2479,90 @@ impl StaticTableTranslator {
             if self.prediction_candidate_limit.is_some() {
                 pending.sort_by(|left, right| self.lookup_candidate_order(left, right));
             }
-            let pending_count = pending.len();
-            candidates.extend(pending.into_iter().map(|pending| {
+            // Exact rows sit at the head of `pending` in construction order; after
+            // the prediction-limit sort the block boundary blurs, so record the
+            // whole spec range in that (page-turn-only) mode. The detector below
+            // walks ONLY these ranges — completion tails are never scanned, which
+            // keeps the per-keystroke cost of the typing path at the pre-fix level.
+            let scan_len = if self.prediction_candidate_limit.is_some() {
+                pending.len()
+            } else {
+                exact_rows_in_pending
+            };
+            if scan_len > 0 {
+                exact_scan_ranges.push((pooled.len(), scan_len));
+            }
+            pooled.append(&mut pending);
+        }
+        // M59 Lane A: a toneless syllable resolves (in the compiled prism/table
+        // storage) to a single spec whose exact_candidates span several tone-codes
+        // (`bei1`/`bei2`/`bei3`/`bei6`), concatenated in per-code storage order.
+        // librime ranks that set by global per-reading weight (`bei` -> 畀 比 被 鼻
+        // 避); the concatenation ranks it code-grouped. Both the detector and the
+        // mutation below are scoped to TRUE EXACT rows (entry_code == lookup_code, no
+        // abbreviation / correction / limited-prediction): if those rows are already
+        // weight-non-increasing — every `sort: by_weight` single-code set by
+        // construction, and any concatenation whose junctions do not increase, which
+        // is exactly the already-weight-sorted case — nothing is touched. When a
+        // strict `raw_quality` increase shows the exacts are not weight-sorted,
+        // stable-sort ONLY those rows by per-reading `raw_quality` (essay x dict-%;
+        // never the exp-saturated or positional `quality`) and reinsert them in the
+        // same slots: ties keep storage order in both regimes, and completions,
+        // corrections, and abbreviation rows never move, so downstream splice anchors
+        // see an unchanged block structure. `sort: original` dictionaries make no
+        // per-code weight-order promise, so the detector conditions the re-rank on
+        // the observed order itself rather than assuming a storage invariant.
+        fn is_true_exact(pending: &PendingLookupCandidate) -> bool {
+            pending.entry_code == pending.lookup_code
+                && !pending.spelling_abbreviation
+                && !pending.limited_prediction
+                && !pending.tolerance
+                && pending.correction_distance.is_none()
+        }
+        let mut needs_reorder = false;
+        let mut prev_exact_quality: Option<f32> = None;
+        'detector: for &(start, len) in &exact_scan_ranges {
+            for pending in &pooled[start..start + len] {
+                if !is_true_exact(pending) {
+                    continue;
+                }
+                let quality = pending.raw_quality();
+                if prev_exact_quality.is_some_and(|prev| quality > prev) {
+                    needs_reorder = true;
+                    break 'detector;
+                }
+                prev_exact_quality = Some(quality);
+            }
+        }
+        if needs_reorder {
+            let slots: Vec<usize> = pooled
+                .iter()
+                .enumerate()
+                .filter(|(_, pending)| is_true_exact(pending))
+                .map(|(index, _)| index)
+                .collect();
+            let mut exact_rows: Vec<PendingLookupCandidate> =
+                slots.iter().map(|&index| pooled[index].clone()).collect();
+            exact_rows.sort_by(|left, right| right.raw_quality().total_cmp(&left.raw_quality()));
+            for (slot, row) in slots.into_iter().zip(exact_rows) {
+                pooled[slot] = row;
+            }
+        }
+        let pending_count = pooled.len();
+        let candidates = pooled
+            .into_iter()
+            .map(|pending| {
                 self.candidate_for_lookup(
                     &pending.entry_code,
                     &pending.candidate,
                     &pending.lookup_code,
                     pending.correction_distance,
                 )
-            }));
-            if record_track_b {
-                for _ in 0..pending_count {
-                    crate::m37_record_track_b_candidate_materialized();
-                }
+            })
+            .collect::<Vec<_>>();
+        if record_track_b {
+            for _ in 0..pending_count {
+                crate::m37_record_track_b_candidate_materialized();
             }
         }
         candidates

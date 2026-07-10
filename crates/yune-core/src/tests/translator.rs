@@ -1354,6 +1354,7 @@ HAU	hau	100
 
 #[test]
 fn bounded_long_prefix_fallback_keeps_two_candidates_per_fetch_code() {
+    let _guard = super::m37_metrics_test_guard();
     let dictionary = TableDictionary::parse_rime_dict_yaml(
         r#"
 ---

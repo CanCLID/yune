@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-09T23:53:41.4602885Z
+repo_root=C:\Users\laubonghaudoi\Documents\GitHub\yune
+yune_git_head=b11e7ab5defee9c8f860583722e605c4aab0c082
+yune_git_status_short= M crates/yune-core/src/tests/translator.rs |  M crates/yune-core/src/translator/mod.rs |  M docs/reports/evidence/m59-canonical-jyutping-reachability-parity/lane-a-ranking-diagnosis-2026-07-09/README.md |  M docs/reports/evidence/m59-canonical-jyutping-reachability-parity/lane-a-ranking-fix-scoping-2026-07-09/README.md | ?? docs/reports/evidence/m59-canonical-jyutping-reachability-parity/lane-a-ranking-fix-2026-07-09/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\native-inprocess\ratchet-run-1
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv
+fail_on_regression=True
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

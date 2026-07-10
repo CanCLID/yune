@@ -145,3 +145,15 @@ fable's independent review agree: weights applied (collapse refuted); the effect
 ranking failure is `quality:0` defeating the `engine.rs:1491` sort on the full-list
 path; the oracle target is pure global weight but must use the **per-reading** weight;
 and the fix has real blast radius (this note).
+
+## CORRECTION (2026-07-09, fix increment): the tone-grouping is multi-CODE, not multi-spec
+
+An in-engine probe of the real canonical path showed `bei` reaches
+`candidates_for_lookup_codes` as **one spec** whose `exact_candidates` span all tone-codes
+(2178 rows, `bei1`..`bei6` in per-code storage order) — the compiled prism resolves the
+toneless syllable to a single code. The "per-tone lookup specs concatenated in spec order"
+model above is therefore wrong on the compiled canonical path (alias-spec expansion exists
+but does not occur there); the concatenation is per-CODE within one spec's exact set. The
+mechanism conclusion (code-grouped concatenation, no global weight re-rank, positional
+quality freeze) is unchanged. Fix + hardened mechanism:
+`../lane-a-ranking-fix-2026-07-09/README.md`.

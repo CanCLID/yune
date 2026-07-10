@@ -43,8 +43,9 @@ PROVENANCE_KEYS = (
     "skip_track_b",
 )
 TOOL_NAME = "aggregate-native-ratchet.py"
-TOOL_VERSION = "5"
+TOOL_VERSION = "6"
 REQUIRED_RUN_COUNT = 5
+REPO_ROOT = Path(__file__).resolve().parents[1]
 RUN_FILES = (
     "environment.txt",
     "external-provenance.txt",
@@ -107,6 +108,40 @@ def _file_sha256(path: Path) -> str:
 
 def _canonical_path_key(path: Path) -> str:
     return os.path.normcase(os.path.realpath(path))
+
+
+def _recorded_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        recorded = resolved.relative_to(REPO_ROOT).as_posix()
+        return recorded.lower() if os.name == "nt" else recorded
+    except ValueError:
+        return path.as_posix()
+
+
+def _recorded_effective_args(effective_args: Sequence[str]) -> list[str]:
+    path_options = {"--thresholds", "--run", "--output"}
+    recorded: list[str] = []
+    expecting_path = False
+    for argument in effective_args:
+        if expecting_path:
+            recorded.append(_recorded_path(Path(argument)))
+            expecting_path = False
+            continue
+        matched_inline = False
+        for option in path_options:
+            prefix = option + "="
+            if argument.startswith(prefix):
+                recorded.append(prefix + _recorded_path(Path(argument[len(prefix) :])))
+                matched_inline = True
+                break
+        if matched_inline:
+            continue
+        recorded.append(argument)
+        expecting_path = argument in path_options
+    if expecting_path:
+        raise EvidenceError("path option is missing its value in effective arguments")
+    return recorded
 
 
 def _protected_input_paths(
@@ -711,7 +746,7 @@ def _run_hashes(run: RunEvidence, number: int) -> dict[str, Any]:
         files[name] = _file_sha256(path) if path.is_file() else None
     return {
         "run": number,
-        "path": str(run.path.resolve()),
+        "path": _recorded_path(run.path),
         "raw_files_sha256": files,
     }
 
@@ -726,33 +761,35 @@ def _build_sidecar(
     effective_args: Sequence[str],
 ) -> dict[str, Any]:
     tool_path = Path(__file__).resolve()
+    recorded_tool_path = _recorded_path(tool_path)
+    recorded_args = _recorded_effective_args(effective_args)
     tool_hash = _file_sha256(tool_path)
     return {
         "schema_version": 1,
         "tool": TOOL_NAME,
         "tool_version": TOOL_VERSION,
-        "tool_path": str(tool_path),
+        "tool_path": recorded_tool_path,
         "tool_sha256": tool_hash,
-        "effective_argv": list(effective_args),
+        "effective_argv": recorded_args,
         "effective_invocation": subprocess.list2cmdline(
-            ["python", str(tool_path), *effective_args]
+            ["python", recorded_tool_path, *recorded_args]
         ),
         "required_run_count": REQUIRED_RUN_COUNT,
         "thresholds": {
-            "path": str(thresholds_path.resolve()),
+            "path": _recorded_path(thresholds_path),
             "sha256": _file_sha256(thresholds_path),
         },
         "validated_provenance": provenance,
         "runs": [_run_hashes(run, number) for number, run in enumerate(runs, start=1)],
         "gate_verdict": {
-            "path": str(gate_path.resolve()),
+            "path": _recorded_path(gate_path),
             "sha256": hashlib.sha256(gate_text.encode("utf-8")).hexdigest(),
         },
     }
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--thresholds", required=True, type=Path)
     parser.add_argument("--expected-runs", required=True, type=int)
     parser.add_argument("--run", action="append", required=True, type=Path)

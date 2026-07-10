@@ -2825,7 +2825,11 @@ class NativeRatchetTests(unittest.TestCase):
     }
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        test_parent = SCRIPTS.parent / "target"
+        test_parent.mkdir(parents=True, exist_ok=True)
+        self.temp = tempfile.TemporaryDirectory(
+            prefix="m59-native-ratchet-test-", dir=test_parent
+        )
         self.root = Path(self.temp.name)
         self.thresholds = self.root / "thresholds.csv"
         self.output = self.root / "gate-verdict.csv"
@@ -2985,9 +2989,37 @@ class NativeRatchetTests(unittest.TestCase):
         self.assertEqual(row["worst_observed"], "2")
         self.assertEqual(row["individual_failures"], "1")
         self.assertEqual(row["verdict"], "pass")
-        provenance = json.loads(self.sidecar.read_text(encoding="utf-8"))
+        raw_provenance = self.sidecar.read_text(encoding="utf-8")
+        provenance = json.loads(raw_provenance)
         self.assertEqual(provenance["required_run_count"], 5)
         self.assertEqual(provenance["tool_version"], native_ratchet.TOOL_VERSION)
+        self.assertEqual(
+            provenance["tool_path"], "scripts/aggregate-native-ratchet.py"
+        )
+        self.assertIn(
+            "python scripts/aggregate-native-ratchet.py",
+            provenance["effective_invocation"],
+        )
+        self.assertNotIn(
+            str(SCRIPTS.parent.resolve()).lower(), raw_provenance.lower()
+        )
+        self.assertEqual(
+            provenance["thresholds"]["path"],
+            native_ratchet._recorded_path(self.thresholds),
+        )
+        self.assertEqual(
+            provenance["runs"][0]["path"],
+            native_ratchet._recorded_path(runs[0]),
+        )
+        self.assertEqual(
+            provenance["gate_verdict"]["path"],
+            native_ratchet._recorded_path(self.output),
+        )
+        for option in ("--thresholds", "--run", "--output"):
+            option_index = provenance["effective_argv"].index(option)
+            self.assertFalse(
+                Path(provenance["effective_argv"][option_index + 1]).is_absolute()
+            )
         self.assertEqual(
             provenance["thresholds"]["sha256"],
             native_ratchet._file_sha256(self.thresholds),
@@ -3002,6 +3034,73 @@ class NativeRatchetTests(unittest.TestCase):
             "b" * 64,
         )
         self.assertIn("--thresholds", provenance["effective_invocation"])
+
+    def test_effective_argv_normalizes_absolute_in_repo_path_values(self):
+        threshold = (
+            SCRIPTS.parent
+            / "docs/reports/evidence/m55-native-match-or-beat/thresholds/"
+            "m55-thresholds.csv"
+        ).resolve()
+        run = (
+            SCRIPTS.parent
+            / "docs/reports/evidence/m59-closeout-baseline/"
+            "m59-i0-fixed-45775182-r1"
+        ).resolve()
+        output = (SCRIPTS.parent / "target/portable-gate-verdict.csv").resolve()
+        if os.name == "nt":
+            threshold = Path(str(threshold).swapcase())
+            run = Path(str(run).swapcase())
+            output = Path(str(output).swapcase())
+        recorded = native_ratchet._recorded_effective_args(
+            [
+                "--thresholds",
+                str(threshold),
+                "--expected-runs",
+                "5",
+                f"--run={run}",
+                "--output",
+                str(output),
+            ]
+        )
+        serialized = json.dumps(recorded).lower()
+        self.assertNotIn(str(SCRIPTS.parent.resolve()).lower(), serialized)
+        self.assertEqual(
+            recorded[recorded.index("--thresholds") + 1],
+            "docs/reports/evidence/m55-native-match-or-beat/thresholds/"
+            "m55-thresholds.csv",
+        )
+        self.assertIn(
+            "--run=docs/reports/evidence/m59-closeout-baseline/"
+            "m59-i0-fixed-45775182-r1",
+            recorded,
+        )
+        self.assertEqual(
+            recorded[recorded.index("--output") + 1],
+            "target/portable-gate-verdict.csv",
+        )
+
+    def test_abbreviated_path_options_are_rejected_before_output(self):
+        runs = [self.write_run(index, 1) for index in range(1, 6)]
+        command = [
+            sys.executable,
+            "-B",
+            str(SCRIPTS / "aggregate-native-ratchet.py"),
+            "--thresh",
+            str(self.thresholds),
+            "--expected-runs",
+            "5",
+        ]
+        for run in runs:
+            command.extend(["--r", str(run)])
+        command.extend(["--out", str(self.output)])
+        result = subprocess.run(command, check=False, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("the following arguments are required", result.stderr)
+        self.assertIn("--thresholds", result.stderr)
+        self.assertIn("--run", result.stderr)
+        self.assertIn("--output", result.stderr)
+        self.assertFalse(self.output.exists())
+        self.assertFalse(self.sidecar.exists())
 
     def test_median_failure_writes_gate_and_returns_nonzero(self):
         runs = [

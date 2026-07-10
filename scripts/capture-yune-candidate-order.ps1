@@ -76,12 +76,29 @@ function Tree-Sha256([string]$Root) {
     return Bytes-Sha256 ([System.Text.Encoding]::UTF8.GetBytes($Payload))
 }
 
-function Write-Utf8NoBom([string]$Path, [string]$Text) {
+function Write-Utf8NoBom([string]$Path, [string]$Text, [switch]$CreateNew) {
     $Parent = Split-Path -Parent $Path
     if (-not [string]::IsNullOrWhiteSpace($Parent)) {
         New-Item -ItemType Directory -Force -Path $Parent | Out-Null
     }
-    [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
+    if (-not $CreateNew.IsPresent) {
+        [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
+        return
+    }
+    $Bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($Text)
+    $Stream = [System.IO.File]::Open(
+        $Path,
+        [System.IO.FileMode]::CreateNew,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::None
+    )
+    try {
+        $Stream.Write($Bytes, 0, $Bytes.Length)
+        $Stream.Flush()
+    }
+    finally {
+        $Stream.Dispose()
+    }
 }
 
 function ConvertTo-CanonicalJsonText([object]$Value) {
@@ -363,6 +380,106 @@ function Get-RimeCaptureRuntimeOptionProvenance {
     }
 }
 
+function Git-State([string]$Path) {
+    $Commit = (& git -C $Path rev-parse HEAD).Trim().ToLowerInvariant()
+    if ($LASTEXITCODE -ne 0 -or $Commit -notmatch '^[0-9a-f]{40}$') {
+        throw "Unable to resolve the Yune source commit."
+    }
+    $Tree = (& git -C $Path rev-parse "HEAD^{tree}").Trim().ToLowerInvariant()
+    if ($LASTEXITCODE -ne 0 -or $Tree -notmatch '^[0-9a-f]{40}$') {
+        throw "Unable to resolve the Yune source tree."
+    }
+    $Status = @(& git -C $Path status --short)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to read the Yune worktree status."
+    }
+    return [pscustomobject]@{
+        commit = $Commit
+        tree = $Tree
+        clean = $Status.Count -eq 0
+        status_short = @($Status)
+    }
+}
+
+function Assert-GitStateUnchanged([string]$Path, [object]$Before) {
+    $After = Git-State $Path
+    if ($After.commit -ne $Before.commit -or
+        $After.tree -ne $Before.tree -or
+        $After.clean -ne $Before.clean -or
+        (@($After.status_short) -join "`n") -cne (@($Before.status_short) -join "`n")) {
+        throw "Yune source HEAD/status changed during candidate capture."
+    }
+}
+
+function Assert-FileSha256Unchanged(
+    [string]$Path,
+    [string]$Label,
+    [string]$ExpectedSha256
+) {
+    if ((File-Sha256 $Path) -ne $ExpectedSha256) {
+        throw "Candidate capture input changed before output: $Label"
+    }
+}
+
+function Assert-OracleSchemaMatch([object]$Oracle, [string]$ExpectedSchemaId) {
+    $Declared = New-Object System.Collections.Generic.List[string]
+    if ($null -ne $Oracle.schema_id -and -not [string]::IsNullOrWhiteSpace([string]$Oracle.schema_id)) {
+        $Declared.Add([string]$Oracle.schema_id)
+    }
+    if ($null -ne $Oracle.capture -and
+        $null -ne $Oracle.capture.schema_id -and
+        -not [string]::IsNullOrWhiteSpace([string]$Oracle.capture.schema_id)) {
+        $Declared.Add([string]$Oracle.capture.schema_id)
+    }
+    if ($null -ne $Oracle.schema -and
+        $null -ne $Oracle.schema.yune_facing_schema_id -and
+        -not [string]::IsNullOrWhiteSpace([string]$Oracle.schema.yune_facing_schema_id)) {
+        $Declared.Add([string]$Oracle.schema.yune_facing_schema_id)
+    }
+    $Cases = @($Oracle.cases)
+    if ($Cases.Count -eq 0) {
+        throw "Oracle capture must contain cases before schema validation."
+    }
+    foreach ($Case in $Cases) {
+        $CaseSchemaId = [string]$Case.schema_id
+        if ([string]::IsNullOrWhiteSpace($CaseSchemaId)) {
+            throw "Every oracle case must declare schema_id."
+        }
+        $Declared.Add($CaseSchemaId)
+    }
+    foreach ($DeclaredSchemaId in $Declared) {
+        if (-not [string]::Equals(
+                $DeclaredSchemaId,
+                $ExpectedSchemaId,
+                [System.StringComparison]::Ordinal)) {
+            throw "Oracle schema mismatch: expected '$ExpectedSchemaId', found '$DeclaredSchemaId'."
+        }
+    }
+}
+
+function Assert-CapturedCaseContract(
+    [object[]]$Cases,
+    [string[]]$ExpectedInputs,
+    [string]$ExpectedSchemaId
+) {
+    if ($Cases.Count -ne $ExpectedInputs.Count) {
+        throw "Yune capture returned $($Cases.Count) cases for $($ExpectedInputs.Count) inputs."
+    }
+    for ($CaseIndex = 0; $CaseIndex -lt $Cases.Count; $CaseIndex++) {
+        $Case = $Cases[$CaseIndex]
+        if ([string]$Case["input"] -cne $ExpectedInputs[$CaseIndex]) {
+            throw "Yune capture did not preserve the requested input order."
+        }
+        if ([string]$Case["schema_id"] -cne $ExpectedSchemaId) {
+            throw "Yune capture returned a case for the wrong schema."
+        }
+        if (-not $Case["captured_all_pages"]) {
+            $Reason = if ($Case.ContainsKey("pagination_error")) { $Case["pagination_error"] } else { "unknown" }
+            throw "Yune capture for '$($Case["input"])' is incomplete: $Reason"
+        }
+    }
+}
+
 function Copy-Tree([string]$Source, [string]$Destination) {
     New-Item -ItemType Directory -Force -Path $Destination | Out-Null
     Get-ChildItem -LiteralPath $Source -Force | ForEach-Object {
@@ -392,14 +509,9 @@ if ($DefaultYamlOverlay -and $NarrowSchemaList.IsPresent) {
     throw "Use either -DefaultYamlOverlay or -NarrowSchemaList, not both."
 }
 
-$RepoHead = (& git -C $RepoRoot rev-parse HEAD).Trim()
-if ($LASTEXITCODE -ne 0 -or $RepoHead.Length -ne 40) {
-    throw "Unable to resolve the Yune source commit."
-}
-$RepoStatus = @(& git -C $RepoRoot status --short)
-if ($LASTEXITCODE -ne 0) {
-    throw "Unable to read the Yune worktree status."
-}
+$RepoState = Git-State $RepoRoot
+$RepoHead = $RepoState.commit
+$RepoStatus = @($RepoState.status_short)
 if ($RepoStatus.Count -gt 0 -and -not $AllowDirty.IsPresent) {
     throw "Refusing a release evidence capture from a dirty worktree. Re-run with -AllowDirty only for a diagnostic capture."
 }
@@ -409,8 +521,14 @@ if (-not [string]::IsNullOrWhiteSpace($ExpectedYuneDllSha256) -and
     $YuneDllSha256 -ne $ExpectedYuneDllSha256.ToLowerInvariant()) {
     throw "Unexpected Yune DLL SHA-256. Expected $ExpectedYuneDllSha256, got $YuneDllSha256."
 }
+$ProbeSha256 = File-Sha256 $ProbeSource
+$CaptureScriptSha256 = File-Sha256 $PSCommandPath
+$OracleCaptureSha256 = File-Sha256 $OracleCapture
+$SourceSharedTreeSha256 = Tree-Sha256 $SharedDataDir
+$DefaultYamlOverlaySha256 = if ($DefaultYamlOverlay) { File-Sha256 $DefaultYamlOverlay } else { $null }
 
 $Oracle = Get-Content -LiteralPath $OracleCapture -Raw -Encoding UTF8 | ConvertFrom-Json
+Assert-OracleSchemaMatch $Oracle $SchemaId
 $InputsWereProvided = $PSBoundParameters.ContainsKey("Inputs") -and $null -ne $Inputs -and $Inputs.Count -gt 0
 $OracleInputs = Inputs-FromOracle $Oracle
 $OracleInputSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
@@ -549,37 +667,32 @@ try {
     $RuntimeOptionsSource = [string]$RuntimeOptionProvenance.runtime_options_source
     $EffectiveParameters["runtime_options"] = $RuntimeOptions
     $EffectiveParameters["runtime_options_source"] = $RuntimeOptionsSource
+    $StagedSharedTreeSha256 = Tree-Sha256 $Shared
     $Modules = [string[]]@("default")
     $DeployResult = [RimeProbe]::DeployWorkspace($Shared, $User, $Build, $Modules)
     if ($DeployResult -eq 0) {
         throw "Yune RimeDeployWorkspace returned false."
     }
     $Cases = [RimeProbe]::Capture($Shared, $User, $Build, $SchemaId, $Modules, [string[]]$Inputs)
-    if ($Cases.Count -ne $Inputs.Count) {
-        throw "Yune capture returned $($Cases.Count) cases for $($Inputs.Count) inputs."
-    }
-    foreach ($Case in $Cases) {
-        if (-not $Case["captured_all_pages"]) {
-            $Reason = if ($Case.ContainsKey("pagination_error")) { $Case["pagination_error"] } else { "unknown" }
-            throw "Yune capture for '$($Case["input"])' is incomplete: $Reason"
-        }
-    }
+    Assert-CapturedCaseContract $Cases $Inputs $SchemaId
 
     $Evidence = [ordered]@{
         capture = [ordered]@{
             engine = "yune"
             source_commit = $RepoHead
+            source_tree = $RepoState.tree
+            source_clean = [bool]$RepoState.clean
             source_dirty = ($RepoStatus.Count -gt 0)
             source_status_short = @($RepoStatus)
             schema_id = $SchemaId
             modules = @($Modules)
             yune_dll_sha256 = $YuneDllSha256
-            probe_sha256 = File-Sha256 $ProbeSource
-            capture_script_sha256 = File-Sha256 $PSCommandPath
-            oracle_capture_sha256 = File-Sha256 $OracleCapture
-            source_shared_tree_sha256 = Tree-Sha256 $SharedDataDir
-            staged_shared_tree_sha256 = Tree-Sha256 $Shared
-            default_yaml_overlay_sha256 = if ($DefaultYamlOverlay) { File-Sha256 $DefaultYamlOverlay } else { $null }
+            probe_sha256 = $ProbeSha256
+            capture_script_sha256 = $CaptureScriptSha256
+            oracle_capture_sha256 = $OracleCaptureSha256
+            source_shared_tree_sha256 = $SourceSharedTreeSha256
+            staged_shared_tree_sha256 = $StagedSharedTreeSha256
+            default_yaml_overlay_sha256 = $DefaultYamlOverlaySha256
             schema_list_narrowed = $SchemaListNarrowed
             narrow_schema_list_switch_used = $NarrowSchemaListSwitchUsed
             schema_list_narrowing_source = $SchemaListNarrowingSource
@@ -593,24 +706,59 @@ try {
         cases = @($Cases)
     }
     $EvidenceJson = ConvertTo-CanonicalJsonText $Evidence
-    Write-Utf8NoBom $Output $EvidenceJson
+    Assert-GitStateUnchanged $RepoRoot $RepoState
+    Assert-FileSha256Unchanged $YuneDll "Yune DLL" $YuneDllSha256
+    Assert-FileSha256Unchanged $ProbeSource "Rime probe" $ProbeSha256
+    Assert-FileSha256Unchanged $PSCommandPath "candidate capture script" $CaptureScriptSha256
+    Assert-FileSha256Unchanged $OracleCapture "oracle capture" $OracleCaptureSha256
+    if ((Tree-Sha256 $SharedDataDir) -ne $SourceSharedTreeSha256) {
+        throw "Candidate capture shared-data tree changed before output."
+    }
+    if ((Tree-Sha256 $Shared) -ne $StagedSharedTreeSha256) {
+        throw "Candidate capture staged shared-data tree changed before output."
+    }
+    if ($DefaultYamlOverlay) {
+        Assert-FileSha256Unchanged $DefaultYamlOverlay "default.yaml overlay" $DefaultYamlOverlaySha256
+    }
+    if (Test-Path -LiteralPath $Output) {
+        throw "Output appeared after preflight; refusing to overwrite it."
+    }
+    if (-not [string]::Equals(
+            (Get-CanonicalWindowsPath $Output),
+            $PathPreflight.output,
+            [System.StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals(
+            (Get-CanonicalWindowsPath $SharedDataDir),
+            $PathPreflight.shared_data_dir,
+            [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Output or shared-data canonical path changed during candidate capture."
+    }
+    Write-Utf8NoBom $Output $EvidenceJson -CreateNew
     Write-Output "captured complete Yune candidate order -> $Output"
 }
 finally {
     $env:PATH = $OldPath
     if (-not $KeepWorkRoot.IsPresent -and (Test-Path -LiteralPath $WorkRoot)) {
-        $ResolvedWorkRoot = [System.IO.Path]::GetFullPath($WorkRoot)
-        if (-not (Test-Path -LiteralPath $Marker)) {
+        $ResolvedWorkRoot = Get-CanonicalWindowsPath $WorkRoot
+        if (-not [string]::Equals(
+                $ResolvedWorkRoot,
+                $PathPreflight.work_root,
+                [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Refusing to remove a capture work root whose canonical path changed."
+        }
+        $CanonicalMarker = Get-CanonicalWindowsPath $Marker
+        if (-not (Test-CanonicalPathWithinOrEqual $CanonicalMarker $ResolvedWorkRoot) -or
+            -not (Test-Path -LiteralPath $CanonicalMarker)) {
             throw "Refusing to remove an unmarked capture work root: $ResolvedWorkRoot"
         }
-        if ([System.IO.File]::ReadAllText($Marker, [System.Text.Encoding]::UTF8) -ne $MarkerText) {
+        if ([System.IO.File]::ReadAllText($CanonicalMarker, [System.Text.Encoding]::UTF8) -ne $MarkerText) {
             throw "Refusing to remove a capture work root with an invalid marker: $ResolvedWorkRoot"
         }
         if ($ResolvedWorkRoot -eq $RepoRoot -or $ResolvedWorkRoot.Length -lt 8) {
             throw "Refusing to remove unsafe capture work root: $ResolvedWorkRoot"
         }
         try {
-            Remove-Item -LiteralPath $ResolvedWorkRoot -Recurse -Force -ErrorAction Stop
+            Remove-Item -LiteralPath $PathPreflight.work_root -Recurse -Force -ErrorAction Stop
         }
         catch {
             # Windows keeps rime.dll loaded until this PowerShell process exits.

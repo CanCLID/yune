@@ -1131,6 +1131,629 @@ class CaptureContractTests(unittest.TestCase):
         self.assertIn("runtime_options = $RuntimeOptions", capture)
         self.assertIn("runtime_options_source = $RuntimeOptionsSource", capture)
 
+    def test_upstream_lane_a_raw_capture_contract_is_explicit_and_safe(self):
+        source = (SCRIPTS / "capture-upstream-rime-cantonese.ps1").read_text(
+            encoding="utf-8-sig"
+        )
+        self.assertIn('[string]$EvidenceMilestone = "M58"', source)
+        self.assertIn("[switch]$AllowDirty", source)
+        defaults = source.split(
+            "if ($null -eq $Inputs -or $Inputs.Count -eq 0) {", 1
+        )[1].split("}", 1)[0]
+        expected_inputs = [
+            "be",
+            "bei",
+            "bein",
+            "being",
+            "beingo",
+            "beix",
+            "beixngoxx",
+            "ngohaig",
+            "ngohaigo",
+            "n",
+            "nri",
+            "mgoi",
+            "zijiguk",
+        ]
+        positions = [defaults.index(f'"{value}"') for value in expected_inputs]
+        self.assertEqual(positions, sorted(positions))
+        self.assertEqual(defaults.count('"'), 2 * len(expected_inputs))
+
+        helper_definition = source.index("function Assert-UpstreamOutputPreflight")
+        first_normalization = source.index("$InputsWereProvided =")
+        preflight_call = source.index(
+            "$CanonicalOutput = Assert-UpstreamOutputPreflight"
+        )
+        first_delete = source.index("Remove-Item -LiteralPath $Dir -Recurse -Force")
+        dirty_guard = source.index(
+            'if ($DirtySources.Count -gt 0 -and -not $AllowDirty.IsPresent)'
+        )
+        self.assertLess(helper_definition, preflight_call)
+        self.assertLess(source.index("function Write-NewUtf8NoBom"), first_normalization)
+        self.assertLess(preflight_call, first_delete)
+        self.assertLess(dirty_guard, first_delete)
+        self.assertIn("Output must not already exist", source)
+        self.assertIn(
+            "Recreated Shared/User roots must be strict descendants of OracleRoot",
+            source,
+        )
+        self.assertIn(
+            "Recreated Shared/User roots must resolve to their exact expected "
+            "OracleRoot leaf paths",
+            source,
+        )
+        self.assertIn(
+            "Recreated Shared/User roots must be distinct and non-nested", source
+        )
+        self.assertIn("Output must not be inside or equal to OracleRoot", source)
+        self.assertIn("Output must not be inside a recreated Shared/User root", source)
+        self.assertIn("GetFinalPathNameByHandle", source)
+        self.assertIn("[System.IO.FileMode]::CreateNew", source)
+
+        for contract_field in (
+            "librime_commit",
+            "source_commit",
+            "source_clean",
+            "source_dirty",
+            "source_status_short",
+            "inputs_source",
+            "page_sizes_observed",
+            "captured_all_pages",
+            "runtime_options",
+            "runtime_options_source",
+            "additional_runtime_option_patches",
+            "rime_dll_sha256",
+            "rime_deployer_sha256",
+            "schema_repo_commits",
+            "source_repositories_clean",
+            "capture_script_sha256",
+            "probe_sha256",
+            "actual_invocation",
+            "effective_parameters",
+            "output_provenance",
+        ):
+            self.assertIn(contract_field, source)
+        self.assertIn('$AdditionalRuntimeOptionPatches = @()', source)
+        self.assertIn(
+            'runtime_option_patches_scope = "legacy alias: no additional overrides '
+            'beyond runtime_options"',
+            source,
+        )
+        self.assertIn('return "external/$Role"', source)
+        self.assertIn(
+            'if ($PSBoundParameters.ContainsKey("EvidenceMilestone"))', source
+        )
+        self.assertIn("Write-NewUtf8NoBom $Output", source)
+        self.assertGreater(
+            source.index('Assert-GitStateUnchanged $RepoRoot "yune"'),
+            source.index("$Cases = [RimeProbe]::Capture"),
+        )
+        self.assertLess(
+            source.index('Assert-GitStateUnchanged $RepoRoot "yune"'),
+            source.index("$Evidence = [ordered]@{"),
+        )
+        for binary_guard in (
+            'Assert-FileSha256Unchanged $RimeDll "rime.dll" $ActualRimeDllSha256',
+            'Assert-FileSha256Unchanged $RimeDeployer "rime_deployer.exe" '
+            "$ActualRimeDeployerSha256",
+        ):
+            self.assertGreater(source.index(binary_guard), source.index("$Cases = [RimeProbe]::Capture"))
+            self.assertLess(source.index(binary_guard), source.index("$Evidence = [ordered]@{"))
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_upstream_binary_hash_revalidation_fails_on_replacement(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            binary = Path(temp) / "rime.dll"
+            binary.write_bytes(b"pinned-binary-before-capture")
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @("File-Sha256", "Assert-FileSha256Unchanged")) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+$before = File-Sha256 $env:YUNE_UPSTREAM_BINARY_TEST
+Assert-FileSha256Unchanged $env:YUNE_UPSTREAM_BINARY_TEST "rime.dll" $before
+[System.IO.File]::WriteAllBytes(
+    $env:YUNE_UPSTREAM_BINARY_TEST,
+    [System.Text.Encoding]::UTF8.GetBytes("replacement-during-capture")
+)
+$replacementRejected = $false
+try {
+    Assert-FileSha256Unchanged $env:YUNE_UPSTREAM_BINARY_TEST "rime.dll" $before
+}
+catch {
+    $replacementRejected = $_.Exception.Message -like "Binary changed during capture:*"
+}
+[ordered]@{
+    unchanged_accepted = $true
+    replacement_rejected = $replacementRejected
+} | ConvertTo-Json -Compress
+"""
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST": str(
+                        SCRIPTS / "capture-upstream-rime-cantonese.ps1"
+                    ),
+                    "YUNE_UPSTREAM_BINARY_TEST": str(binary),
+                }
+            )
+            completed = subprocess.run(
+                [powershell, "-NoProfile", "-Command", command],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+                timeout=60,
+            )
+            if completed.returncode != 0:
+                self.fail(completed.stderr or completed.stdout)
+            result = json.loads(completed.stdout.strip().splitlines()[-1])
+            self.assertTrue(result["unchanged_accepted"])
+            self.assertTrue(result["replacement_rejected"])
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_upstream_runtime_option_provenance_matches_probe_runtime(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        command = r"""
+$ErrorActionPreference = "Stop"
+Add-Type -Path $env:YUNE_PROBE_SOURCE_TEST
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+$functionAst = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+        $node.Name -eq "Get-RimeCaptureRuntimeOptionProvenance"
+}, $true)
+if ($null -eq $functionAst) { throw "missing runtime-option provenance helper" }
+Invoke-Expression $functionAst.Extent.Text
+$provenance = Get-RimeCaptureRuntimeOptionProvenance
+[ordered]@{
+    options = $provenance.runtime_options
+    order = @($provenance.runtime_options.Keys)
+    source = $provenance.runtime_options_source
+} | ConvertTo-Json -Depth 4 -Compress
+"""
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "YUNE_PROBE_SOURCE_TEST": str(SCRIPTS / "oracle-rime-probe.cs"),
+                "YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST": str(
+                    SCRIPTS / "capture-upstream-rime-cantonese.ps1"
+                ),
+            }
+        )
+        completed = subprocess.run(
+            [powershell, "-NoProfile", "-Command", command],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env=environment,
+            timeout=60,
+        )
+        if completed.returncode != 0:
+            self.fail(completed.stderr or completed.stdout)
+        result = json.loads(completed.stdout.strip().splitlines()[-1])
+        expected = ["ascii_mode", "full_shape", "ascii_punct", "zh_hans"]
+        self.assertEqual(result["order"], expected)
+        self.assertEqual(list(result["options"]), expected)
+        self.assertTrue(all(value is False for value in result["options"].values()))
+        self.assertEqual(
+            result["source"],
+            "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+        )
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_upstream_capture_script_reaches_defined_preflight_before_missing_inputs(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            oracle_root = root / "oracle"
+            output = root / "capture.json"
+            completed = subprocess.run(
+                [
+                    powershell,
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    str(SCRIPTS / "capture-upstream-rime-cantonese.ps1"),
+                    "-OracleRoot",
+                    str(oracle_root),
+                    "-Output",
+                    str(output),
+                    "-EvidenceMilestone",
+                    "M59",
+                    "-AllowDirty",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+            )
+            combined = completed.stdout + completed.stderr
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn(
+                "Missing required upstream rime-cantonese capture input", combined
+            )
+            self.assertNotIn("Assert-UpstreamOutputPreflight", combined)
+            self.assertFalse(output.exists())
+            self.assertFalse((oracle_root / "m58-rime-cantonese-shared").exists())
+            self.assertFalse((oracle_root / "m58-rime-cantonese-user").exists())
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_upstream_output_preflight_preserves_recreated_roots(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            oracle_root = root / "oracle"
+            shared = oracle_root / "m58-rime-cantonese-shared"
+            user = oracle_root / "m58-rime-cantonese-user"
+            shared.mkdir(parents=True)
+            user.mkdir()
+            (shared / "sentinel.bin").write_bytes(b"shared-sentinel")
+            (user / "sentinel.bin").write_bytes(b"user-sentinel")
+            existing_output = root / "existing.json"
+            existing_output.write_bytes(b"output-sentinel")
+            junction = root / "shared-junction"
+            junction_result = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(junction), str(shared)],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if junction_result.returncode != 0 or not junction.exists():
+                self.skipTest("junction creation is required for canonical-path coverage")
+
+            cases = [
+                {"name": "safe", "output": str(root / "safe" / "capture.json")},
+                {"name": "existing", "output": str(existing_output)},
+                {
+                    "name": "inside_oracle_root",
+                    "output": str(oracle_root / "capture.json"),
+                },
+                {"name": "inside_shared", "output": str(shared / "capture.json")},
+                {"name": "inside_user", "output": str(user / "capture.json")},
+                {
+                    "name": "inside_shared_junction",
+                    "output": str(junction / "capture.json"),
+                },
+            ]
+            cases_path = root / "cases.json"
+            cases_path.write_text(json.dumps(cases), encoding="utf-8")
+            snapshots = {
+                shared / "sentinel.bin": b"shared-sentinel",
+                user / "sentinel.bin": b"user-sentinel",
+                existing_output: b"output-sentinel",
+            }
+            initially_missing = {
+                Path(case["output"])
+                for case in cases
+                if not Path(case["output"]).exists()
+            }
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @(
+    "Get-CanonicalCapturePath",
+    "Test-CapturePathWithinOrEqual",
+            "Assert-UpstreamOutputPreflight"
+)) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+$caseDocument = Get-Content -LiteralPath $env:YUNE_UPSTREAM_PREFLIGHT_CASES_TEST -Raw -Encoding UTF8 | ConvertFrom-Json
+$results = @(
+    foreach ($case in $caseDocument) {
+        try {
+            $null = Assert-UpstreamOutputPreflight `
+                ([string]$case.output) `
+                $env:YUNE_UPSTREAM_ORACLE_ROOT_TEST `
+                $env:YUNE_UPSTREAM_SHARED_TEST `
+                $env:YUNE_UPSTREAM_USER_TEST
+            [pscustomobject]@{ name = $case.name; accepted = $true }
+        }
+        catch {
+            [pscustomobject]@{ name = $case.name; accepted = $false }
+        }
+    }
+)
+$results | ConvertTo-Json -Depth 4 -Compress
+"""
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST": str(
+                        SCRIPTS / "capture-upstream-rime-cantonese.ps1"
+                    ),
+                    "YUNE_UPSTREAM_PREFLIGHT_CASES_TEST": str(cases_path),
+                    "YUNE_UPSTREAM_ORACLE_ROOT_TEST": str(oracle_root),
+                    "YUNE_UPSTREAM_SHARED_TEST": str(shared),
+                    "YUNE_UPSTREAM_USER_TEST": str(user),
+                }
+            )
+            try:
+                completed = subprocess.run(
+                    [powershell, "-NoProfile", "-Command", command],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    env=environment,
+                    timeout=60,
+                )
+                if completed.returncode != 0:
+                    self.fail(completed.stderr or completed.stdout)
+                results = {
+                    row["name"]: row
+                    for row in json.loads(completed.stdout.strip().splitlines()[-1])
+                }
+                self.assertTrue(results["safe"]["accepted"])
+                for name in (
+                    "existing",
+                    "inside_oracle_root",
+                    "inside_shared",
+                    "inside_user",
+                    "inside_shared_junction",
+                ):
+                    self.assertFalse(results[name]["accepted"])
+                for path, snapshot in snapshots.items():
+                    self.assertEqual(path.read_bytes(), snapshot)
+                for path in initially_missing:
+                    self.assertFalse(path.exists(), str(path))
+            finally:
+                if junction.exists():
+                    junction.rmdir()
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_upstream_preflight_rejects_recreated_root_junction_escape(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            oracle_root = root / "oracle"
+            oracle_root.mkdir()
+            external_victim = root / "external-victim"
+            external_victim.mkdir()
+            victim_sentinel = external_victim / "do-not-delete.bin"
+            victim_sentinel.write_bytes(b"external-victim-sentinel")
+            user = oracle_root / "m58-rime-cantonese-user"
+            user.mkdir()
+            user_sentinel = user / "do-not-delete.bin"
+            user_sentinel.write_bytes(b"user-sentinel")
+            escaped_shared = oracle_root / "m58-rime-cantonese-shared"
+            junction_result = subprocess.run(
+                [
+                    "cmd",
+                    "/c",
+                    "mklink",
+                    "/J",
+                    str(escaped_shared),
+                    str(external_victim),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if junction_result.returncode != 0 or not escaped_shared.exists():
+                self.skipTest("junction creation is required for escape coverage")
+            output = root / "capture.json"
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @(
+    "Get-CanonicalCapturePath",
+    "Test-CapturePathWithinOrEqual",
+    "Assert-UpstreamOutputPreflight"
+)) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+try {
+    $null = Assert-UpstreamOutputPreflight `
+        $env:YUNE_UPSTREAM_OUTPUT_TEST `
+        $env:YUNE_UPSTREAM_ORACLE_ROOT_TEST `
+        $env:YUNE_UPSTREAM_SHARED_TEST `
+        $env:YUNE_UPSTREAM_USER_TEST
+    [ordered]@{ accepted = $true; error = $null } | ConvertTo-Json -Compress
+}
+catch {
+    [ordered]@{ accepted = $false; error = $_.Exception.Message } | ConvertTo-Json -Compress
+}
+"""
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST": str(
+                        SCRIPTS / "capture-upstream-rime-cantonese.ps1"
+                    ),
+                    "YUNE_UPSTREAM_OUTPUT_TEST": str(output),
+                    "YUNE_UPSTREAM_ORACLE_ROOT_TEST": str(oracle_root),
+                    "YUNE_UPSTREAM_SHARED_TEST": str(escaped_shared),
+                    "YUNE_UPSTREAM_USER_TEST": str(user),
+                }
+            )
+            try:
+                completed = subprocess.run(
+                    [powershell, "-NoProfile", "-Command", command],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    env=environment,
+                    timeout=60,
+                )
+                if completed.returncode != 0:
+                    self.fail(completed.stderr or completed.stdout)
+                result = json.loads(completed.stdout.strip().splitlines()[-1])
+                self.assertFalse(result["accepted"])
+                self.assertIn("exact expected OracleRoot leaf paths", result["error"])
+                self.assertEqual(
+                    victim_sentinel.read_bytes(), b"external-victim-sentinel"
+                )
+                self.assertEqual(user_sentinel.read_bytes(), b"user-sentinel")
+                self.assertFalse(output.exists())
+            finally:
+                if escaped_shared.exists():
+                    escaped_shared.rmdir()
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_upstream_preflight_rejects_internal_source_junction(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            oracle_root = root / "oracle"
+            protected_source = oracle_root / "schema-src" / "rime-cantonese"
+            protected_source.mkdir(parents=True)
+            source_sentinel = protected_source / "do-not-delete.yaml"
+            source_sentinel.write_bytes(b"protected-schema-source")
+            user = oracle_root / "m58-rime-cantonese-user"
+            user.mkdir()
+            user_sentinel = user / "do-not-delete.bin"
+            user_sentinel.write_bytes(b"user-sentinel")
+            redirected_shared = oracle_root / "m58-rime-cantonese-shared"
+            junction_result = subprocess.run(
+                [
+                    "cmd",
+                    "/c",
+                    "mklink",
+                    "/J",
+                    str(redirected_shared),
+                    str(protected_source),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if junction_result.returncode != 0 or not redirected_shared.exists():
+                self.skipTest("junction creation is required for internal-source coverage")
+            output = root / "capture.json"
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @(
+    "Get-CanonicalCapturePath",
+    "Test-CapturePathWithinOrEqual",
+    "Assert-UpstreamOutputPreflight"
+)) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+try {
+    $null = Assert-UpstreamOutputPreflight `
+        $env:YUNE_UPSTREAM_OUTPUT_TEST `
+        $env:YUNE_UPSTREAM_ORACLE_ROOT_TEST `
+        $env:YUNE_UPSTREAM_SHARED_TEST `
+        $env:YUNE_UPSTREAM_USER_TEST
+    [ordered]@{ accepted = $true; error = $null } | ConvertTo-Json -Compress
+}
+catch {
+    [ordered]@{ accepted = $false; error = $_.Exception.Message } | ConvertTo-Json -Compress
+}
+"""
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST": str(
+                        SCRIPTS / "capture-upstream-rime-cantonese.ps1"
+                    ),
+                    "YUNE_UPSTREAM_OUTPUT_TEST": str(output),
+                    "YUNE_UPSTREAM_ORACLE_ROOT_TEST": str(oracle_root),
+                    "YUNE_UPSTREAM_SHARED_TEST": str(redirected_shared),
+                    "YUNE_UPSTREAM_USER_TEST": str(user),
+                }
+            )
+            try:
+                completed = subprocess.run(
+                    [powershell, "-NoProfile", "-Command", command],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    env=environment,
+                    timeout=60,
+                )
+                if completed.returncode != 0:
+                    self.fail(completed.stderr or completed.stdout)
+                result = json.loads(completed.stdout.strip().splitlines()[-1])
+                self.assertFalse(result["accepted"])
+                self.assertIn("exact expected OracleRoot leaf paths", result["error"])
+                self.assertEqual(
+                    source_sentinel.read_bytes(), b"protected-schema-source"
+                )
+                self.assertEqual(user_sentinel.read_bytes(), b"user-sentinel")
+                self.assertFalse(output.exists())
+            finally:
+                if redirected_shared.exists():
+                    redirected_shared.rmdir()
+
     @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
     def test_capture_runtime_option_provenance_matches_probe_policy_runtime(self):
         powershell = shutil.which("powershell")

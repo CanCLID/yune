@@ -175,8 +175,8 @@ Live-server A/B on the M58 Playwright pin (`zi` -> 諮 within 4 physical PageDow
 2026-07-09: **fix-bearing WASM FAILS; pre-fix WASM (identical tree, fix stashed) FAILS
 identically** — last page observed `["正常","佔","症","節目","織","折"]` (completion
 phrases). SHA-256 (first 16 hex) of the archived artifacts:
-- fix.wasm: `\117e0e29e1f55db`
-- prefix.wasm (tree b11e7ab5 + f0ca95d6-minus-crates): `\07bbe40107ca78f`
+- fix.wasm: `117e0e29e1f55db6`
+- prefix.wasm (tree b11e7ab5 + f0ca95d6-minus-crates): `07bbe40107ca78f4`
 
 Root cause (GPT-diagnosed, fable code-verified): `ba15e725` (M59 finding #4) made the
 physical-selector forward-page completion UNCONDITIONAL while `RimeChangePage`

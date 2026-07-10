@@ -499,6 +499,108 @@ prediction	hai6aa1	950
 }
 
 #[test]
+fn sort_original_bounded_many_group_merge_is_exact_prefix_of_complete_order() {
+    const GROUP_COUNT: usize = 48;
+    let mut source =
+        String::from("---\nname: original_many_groups\nversion: '0.1'\nsort: original\n...\n\n");
+    let mut syllabary = Vec::new();
+    let mut formulas = Vec::new();
+    for group in 0..GROUP_COUNT {
+        let code = format!("group{group:02}");
+        syllabary.push(code.clone());
+        formulas.push(format!("derive/^{code}$/hai/"));
+        let head_weight = match group {
+            0 | 1 => 500,
+            2 => 900,
+            _ => 300 - group,
+        };
+        let tail_weight = match group {
+            0 => 5_000,
+            1 => 4_999,
+            2 => 50,
+            _ => 2_000 - group,
+        };
+        source.push_str(&format!(
+            "group-{group:02}-head\t{code}\t{head_weight}\n\
+             group-{group:02}-tail\t{code}\t{tail_weight}\n"
+        ));
+    }
+    source.push_str("prediction\thai6aa1\t800\ncompletion\thaiz\t10000\n");
+    syllabary.extend(["hai6aa1".to_owned(), "haiz".to_owned()]);
+
+    let dictionary =
+        TableDictionary::parse_rime_dict_yaml(&source).expect("many-group dictionary should parse");
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("many-group prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_completion(true)
+        .with_sentence(false)
+        .with_prediction_candidate_limit(1);
+    let complete = translator
+        .translate("hai")
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        &complete[..6],
+        [
+            "group-02-head",
+            "prediction",
+            "group-00-head",
+            "group-00-tail",
+            "group-01-head",
+            "group-01-tail",
+        ],
+        "equal heads must favor the first-seen group, whose later high row stays blocked until its head is emitted"
+    );
+    assert_eq!(
+        complete.last().map(String::as_str),
+        Some("completion"),
+        "completion-category rows must remain behind all exact-category groups regardless of weight"
+    );
+
+    for limit in [1, 2, 3, 4, 5, 8, 13, 21, 64, complete.len() + 3, usize::MAX] {
+        let bounded = translator.translate_with_context_and_request(
+            "hai",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(limit).with_debug_full_count(true),
+        );
+        let bounded_text = bounded
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>();
+        let expected_len = limit.min(complete.len());
+        assert_eq!(
+            bounded_text,
+            complete[..expected_len]
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            "bounded merge at limit {limit} must be the exact complete-order prefix"
+        );
+        assert_eq!(bounded.full_count, Some(complete.len()));
+        assert_eq!(bounded.is_complete, limit >= complete.len());
+    }
+
+    let without_debug_count = translator.translate_with_context_and_request(
+        "hai",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(2),
+    );
+    assert_eq!(without_debug_count.full_count, None);
+    assert!(
+        !without_debug_count.is_complete,
+        "hiding the debug count must not falsely mark a known-truncated prefix complete"
+    );
+}
+
+#[test]
 fn sort_original_low_prediction_does_not_jump_between_full_span_groups() {
     let dictionary = TableDictionary::parse_rime_dict_yaml(
         r#"

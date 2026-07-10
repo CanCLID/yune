@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet, VecDeque};
 use std::mem;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
@@ -160,6 +160,346 @@ struct PendingLookupCandidateRef<'a> {
     spelling_abbreviation: bool,
     limited_prediction: bool,
     emission_order: usize,
+}
+
+struct OriginalMergeGroup<T> {
+    category: u8,
+    candidates: VecDeque<T>,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct OriginalMergeHead {
+    category: u8,
+    group_index: usize,
+    raw_quality: f32,
+}
+
+impl PartialEq for OriginalMergeHead {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+
+impl Eq for OriginalMergeHead {}
+
+impl PartialOrd for OriginalMergeHead {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OriginalMergeHead {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // BinaryHeap pops the greatest item. Earlier categories are complete
+        // phases, while a source-earlier group wins equal-quality heads.
+        other
+            .category
+            .cmp(&self.category)
+            .then_with(|| self.raw_quality.total_cmp(&other.raw_quality))
+            .then_with(|| other.group_index.cmp(&self.group_index))
+    }
+}
+
+enum OriginalMergeFrontier {
+    Heap(BinaryHeap<OriginalMergeHead>),
+    Scan,
+}
+
+fn pop_original_merge_head<T>(
+    groups: &mut [OriginalMergeGroup<T>],
+    frontier: &mut OriginalMergeFrontier,
+    raw_quality: &mut impl FnMut(&T) -> f32,
+) -> Option<T> {
+    let head = match frontier {
+        OriginalMergeFrontier::Heap(heads) => heads.pop()?,
+        OriginalMergeFrontier::Scan => {
+            let mut best: Option<OriginalMergeHead> = None;
+            for (group_index, group) in groups.iter().enumerate() {
+                let Some(candidate) = group.candidates.front() else {
+                    continue;
+                };
+                let candidate_head = OriginalMergeHead {
+                    category: group.category,
+                    group_index,
+                    raw_quality: raw_quality(candidate),
+                };
+                if best.as_ref().map_or(true, |best| {
+                    candidate_head.category < best.category
+                        || (candidate_head.category == best.category
+                            && candidate_head.raw_quality > best.raw_quality)
+                }) {
+                    best = Some(candidate_head);
+                }
+            }
+            best?
+        }
+    };
+    let group = &mut groups[head.group_index];
+    let candidate = group
+        .candidates
+        .pop_front()
+        .expect("merge head should reference a nonempty candidate group");
+    if let OriginalMergeFrontier::Heap(heads) = frontier {
+        if let Some(next) = group.candidates.front() {
+            heads.push(OriginalMergeHead {
+                category: group.category,
+                group_index: head.group_index,
+                raw_quality: normalize_original_merge_quality(raw_quality(next)),
+            });
+        }
+    }
+    Some(candidate)
+}
+
+fn normalize_original_merge_quality(raw_quality: f32) -> f32 {
+    if raw_quality == 0.0 {
+        0.0
+    } else {
+        raw_quality
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn order_original_grouped_candidates<T>(
+    candidates: &mut Vec<T>,
+    output_limit: Option<usize>,
+    mut is_prediction: impl FnMut(&T) -> bool,
+    mut category: impl FnMut(&T) -> u8,
+    mut fetch_group: impl FnMut(&T) -> usize,
+    mut raw_quality: impl FnMut(&T) -> f32,
+    mut prediction_order: impl FnMut(&T, &T) -> Ordering,
+    mut prediction_precedes: impl FnMut(&T, &T) -> bool,
+) -> usize {
+    if output_limit == Some(0) {
+        candidates.clear();
+        return 0;
+    }
+
+    let mut predictions = Vec::new();
+    let mut ordinary = Vec::new();
+    for candidate in std::mem::take(candidates) {
+        if is_prediction(&candidate) {
+            predictions.push(candidate);
+        } else {
+            ordinary.push(candidate);
+        }
+    }
+    predictions.sort_by(&mut prediction_order);
+
+    let mut groups: Vec<OriginalMergeGroup<T>> = Vec::new();
+    let mut group_indices: HashMap<(u8, usize), usize> = HashMap::new();
+    for candidate in ordinary {
+        let candidate_category = category(&candidate);
+        let key = fetch_group(&candidate);
+        if let Some(index) = group_indices.get(&(candidate_category, key)).copied() {
+            groups[index].candidates.push_back(candidate);
+        } else {
+            group_indices.insert((candidate_category, key), groups.len());
+            groups.push(OriginalMergeGroup {
+                category: candidate_category,
+                candidates: VecDeque::from([candidate]),
+            });
+        }
+    }
+
+    // A finite/ordered f32 head key gives the heap a real total order. Preserve
+    // the former strict-`>` first-seen semantics for pathological NaN table
+    // weights by falling back to the old scan only for that malformed pool.
+    let has_nan_quality = groups.iter().any(|group| {
+        group
+            .candidates
+            .iter()
+            .any(|candidate| raw_quality(candidate).is_nan())
+    });
+    let mut frontier = if has_nan_quality {
+        OriginalMergeFrontier::Scan
+    } else {
+        let mut heads = BinaryHeap::with_capacity(groups.len());
+        for (group_index, group) in groups.iter().enumerate() {
+            let head = group
+                .candidates
+                .front()
+                .expect("new candidate group should be nonempty");
+            heads.push(OriginalMergeHead {
+                category: group.category,
+                group_index,
+                raw_quality: normalize_original_merge_quality(raw_quality(head)),
+            });
+        }
+        OriginalMergeFrontier::Heap(heads)
+    };
+
+    // ScriptTranslation does not let a limited prediction keep an otherwise
+    // empty translation alive, and it always emits one ordinary candidate
+    // before considering prediction interleaving.
+    let Some(first) = pop_original_merge_head(&mut groups, &mut frontier, &mut raw_quality) else {
+        return 0;
+    };
+    let mut ordinary_pops = 1;
+    let remaining_total = groups
+        .iter()
+        .map(|group| group.candidates.len())
+        .sum::<usize>()
+        .saturating_add(predictions.len())
+        .saturating_add(1);
+    let capacity = output_limit.map_or(remaining_total, |limit| limit.min(remaining_total));
+    let mut ordered = Vec::with_capacity(capacity);
+    ordered.push(first);
+    if output_limit.is_some_and(|limit| ordered.len() >= limit) {
+        *candidates = ordered;
+        return ordinary_pops;
+    }
+
+    let mut predictions = VecDeque::from(predictions);
+    while let Some(next_ordinary) =
+        pop_original_merge_head(&mut groups, &mut frontier, &mut raw_quality)
+    {
+        ordinary_pops += 1;
+        while predictions
+            .front()
+            .is_some_and(|prediction| prediction_precedes(prediction, &next_ordinary))
+        {
+            ordered.push(
+                predictions
+                    .pop_front()
+                    .expect("checked prediction queue should be nonempty"),
+            );
+            if output_limit.is_some_and(|limit| ordered.len() >= limit) {
+                *candidates = ordered;
+                return ordinary_pops;
+            }
+        }
+        ordered.push(next_ordinary);
+        if output_limit.is_some_and(|limit| ordered.len() >= limit) {
+            *candidates = ordered;
+            return ordinary_pops;
+        }
+    }
+    while let Some(prediction) = predictions.pop_front() {
+        ordered.push(prediction);
+        if output_limit.is_some_and(|limit| ordered.len() >= limit) {
+            break;
+        }
+    }
+    *candidates = ordered;
+    ordinary_pops
+}
+
+#[cfg(test)]
+mod original_merge_algorithm_tests {
+    use std::cmp::Ordering;
+
+    use super::{order_original_grouped_candidates, OriginalMergeHead};
+
+    #[derive(Debug)]
+    struct TestCandidate {
+        group: usize,
+        category: u8,
+        quality: f32,
+    }
+
+    #[test]
+    fn sort_original_merge_head_equality_matches_total_order() {
+        let nan = OriginalMergeHead {
+            category: 0,
+            group_index: 0,
+            raw_quality: f32::NAN,
+        };
+        assert_eq!(nan, nan);
+
+        let negative_zero = OriginalMergeHead {
+            raw_quality: -0.0,
+            ..nan
+        };
+        let positive_zero = OriginalMergeHead {
+            raw_quality: 0.0,
+            ..nan
+        };
+        assert_ne!(negative_zero, positive_zero);
+        assert_ne!(negative_zero.cmp(&positive_zero), Ordering::Equal);
+    }
+
+    #[test]
+    fn sort_original_bounded_heap_pops_only_requested_ordinary_prefix() {
+        let mut candidates = (0..128)
+            .map(|group| TestCandidate {
+                group,
+                category: if group == 126 {
+                    1
+                } else if group == 127 {
+                    2
+                } else {
+                    0
+                },
+                quality: if group >= 126 {
+                    1_000_000.0
+                } else {
+                    1_000.0 - group as f32
+                },
+            })
+            .collect::<Vec<_>>();
+
+        let ordinary_pops = order_original_grouped_candidates(
+            &mut candidates,
+            Some(5),
+            |_| false,
+            |candidate| candidate.category,
+            |candidate| candidate.group,
+            |candidate| candidate.quality,
+            |_, _| Ordering::Equal,
+            |_, _| false,
+        );
+
+        assert_eq!(ordinary_pops, 5);
+        assert_eq!(candidates.len(), 5);
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| candidate.group)
+                .collect::<Vec<_>>(),
+            [0, 1, 2, 3, 4]
+        );
+    }
+
+    #[test]
+    fn sort_original_nan_quality_uses_legacy_first_seen_scan_semantics() {
+        let mut candidates = vec![
+            TestCandidate {
+                group: 0,
+                category: 0,
+                quality: 1.0,
+            },
+            TestCandidate {
+                group: 1,
+                category: 0,
+                quality: f32::NAN,
+            },
+            TestCandidate {
+                group: 2,
+                category: 0,
+                quality: 2.0,
+            },
+        ];
+
+        order_original_grouped_candidates(
+            &mut candidates,
+            None,
+            |_| false,
+            |candidate| candidate.category,
+            |candidate| candidate.group,
+            |candidate| candidate.quality,
+            |_, _| Ordering::Equal,
+            |_, _| false,
+        );
+
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| candidate.group)
+                .collect::<Vec<_>>(),
+            [2, 0, 1]
+        );
+    }
 }
 
 struct BoundedLookupRequest<'a> {
@@ -1532,84 +1872,23 @@ impl StaticTableTranslator {
         }
 
         // librime's table `sort: original` contract is per canonical code queue,
-        // not a freeze of the flattened prism-alias stream. Merge current queue
-        // heads by comparable raw weight while never letting a later row jump its
-        // own code's head. TypeDuck's ScriptTranslation additionally holds the
-        // selected prediction behind the first ordinary row and compares the
-        // entry weights. Partial-span candidates are produced by the later
-        // prefix-fallback path, not by this full-input lookup pool; canonical
-        // group changes therefore must not stand in for consumed-span changes.
-        let mut predictions = Vec::new();
-        let mut ordinary = Vec::new();
-        for candidate in std::mem::take(candidates) {
-            if candidate.limited_prediction {
-                predictions.push(candidate);
-            } else {
-                ordinary.push(candidate);
-            }
-        }
-        predictions.sort_by(|left, right| self.lookup_candidate_weight_order(left, right));
-
-        let mut groups: Vec<(u8, usize, VecDeque<PendingLookupCandidate>)> = Vec::new();
-        let mut group_indices: HashMap<(u8, usize), usize> = HashMap::new();
-        for candidate in ordinary {
-            let category = self.lookup_candidate_category(&candidate);
-            let key = candidate.fetch_group;
-            if let Some(index) = group_indices.get(&(category, key)).copied() {
-                groups[index].2.push_back(candidate);
-            } else {
-                group_indices.insert((category, key), groups.len());
-                groups.push((category, key, VecDeque::from([candidate])));
-            }
-        }
-        let mut ordered_ordinary = Vec::new();
-        for category in 0..=2 {
-            loop {
-                let mut best: Option<(usize, f32)> = None;
-                for (index, (group_category, _, group)) in groups.iter().enumerate() {
-                    if *group_category != category {
-                        continue;
-                    }
-                    let Some(head) = group.front() else {
-                        continue;
-                    };
-                    let quality = head.raw_quality();
-                    if best.map_or(true, |(_, best_quality)| quality > best_quality) {
-                        best = Some((index, quality));
-                    }
-                }
-                let Some((best_index, _)) = best else {
-                    break;
-                };
-                ordered_ordinary.push(
-                    groups[best_index]
-                        .2
-                        .pop_front()
-                        .expect("selected candidate group should be nonempty"),
-                );
-            }
-        }
-
-        let mut ordinary = ordered_ordinary.into_iter();
-        let Some(first) = ordinary.next() else {
-            return;
-        };
-        candidates.push(first);
-        let mut predictions = VecDeque::from(predictions);
-        for next_ordinary in ordinary {
-            while predictions
-                .front()
-                .is_some_and(|prediction| prediction.prediction_precedes(&next_ordinary))
-            {
-                candidates.push(
-                    predictions
-                        .pop_front()
-                        .expect("checked prediction queue should be nonempty"),
-                );
-            }
-            candidates.push(next_ordinary);
-        }
-        candidates.extend(predictions);
+        // not a freeze of the flattened prism-alias stream. A heap merges the
+        // current group heads by raw weight while keeping every group's source
+        // order and source-earlier stability on equal heads. TypeDuck's selected
+        // prediction stays behind the first ordinary row and uses its existing
+        // entry-weight/span comparison. Partial-span candidates are produced by
+        // the later prefix-fallback path, so canonical group changes never stand
+        // in for consumed-span changes.
+        order_original_grouped_candidates(
+            candidates,
+            None,
+            |candidate| candidate.limited_prediction,
+            |candidate| self.lookup_candidate_category(candidate),
+            |candidate| candidate.fetch_group,
+            PendingLookupCandidate::raw_quality,
+            |left, right| self.lookup_candidate_weight_order(left, right),
+            PendingLookupCandidate::prediction_precedes,
+        );
     }
 
     fn lookup_candidate_category(&self, candidate: &PendingLookupCandidate) -> u8 {
@@ -1889,84 +2168,31 @@ impl StaticTableTranslator {
             .then_with(|| left.emission_order.cmp(&right.emission_order))
     }
 
-    fn order_lookup_candidate_refs(&self, candidates: &mut Vec<PendingLookupCandidateRef<'_>>) {
+    fn order_lookup_candidate_refs(
+        &self,
+        candidates: &mut Vec<PendingLookupCandidateRef<'_>>,
+        limit: usize,
+    ) {
         if self.sort_by_weight {
             candidates.sort_by(|left, right| self.lookup_candidate_ref_order(left, right));
+            candidates.truncate(limit);
             return;
         }
 
-        // Borrowed bounded lookup mirrors the owned complete-path constrained
-        // merge above; collection retains only the first page window per group.
-        let mut predictions = Vec::new();
-        let mut ordinary = Vec::new();
-        for candidate in std::mem::take(candidates) {
-            if candidate.limited_prediction {
-                predictions.push(candidate);
-            } else {
-                ordinary.push(candidate);
-            }
-        }
-        predictions.sort_by(|left, right| self.lookup_candidate_ref_weight_order(left, right));
-
-        let mut groups: Vec<(u8, usize, VecDeque<PendingLookupCandidateRef<'_>>)> = Vec::new();
-        let mut group_indices: HashMap<(u8, usize), usize> = HashMap::new();
-        for candidate in ordinary {
-            let category = self.lookup_candidate_ref_category(&candidate);
-            let key = candidate.fetch_group;
-            if let Some(index) = group_indices.get(&(category, key)).copied() {
-                groups[index].2.push_back(candidate);
-            } else {
-                group_indices.insert((category, key), groups.len());
-                groups.push((category, key, VecDeque::from([candidate])));
-            }
-        }
-        let mut ordered_ordinary = Vec::new();
-        for category in 0..=2 {
-            loop {
-                let mut best: Option<(usize, f32)> = None;
-                for (index, (group_category, _, group)) in groups.iter().enumerate() {
-                    if *group_category != category {
-                        continue;
-                    }
-                    let Some(head) = group.front() else {
-                        continue;
-                    };
-                    let quality = self.lookup_candidate_ref_raw_quality(head);
-                    if best.map_or(true, |(_, best_quality)| quality > best_quality) {
-                        best = Some((index, quality));
-                    }
-                }
-                let Some((best_index, _)) = best else {
-                    break;
-                };
-                ordered_ordinary.push(
-                    groups[best_index]
-                        .2
-                        .pop_front()
-                        .expect("selected candidate group should be nonempty"),
-                );
-            }
-        }
-
-        let mut ordinary = ordered_ordinary.into_iter();
-        let Some(first) = ordinary.next() else {
-            return;
-        };
-        candidates.push(first);
-        let mut predictions = VecDeque::from(predictions);
-        for next_ordinary in ordinary {
-            while predictions.front().is_some_and(|prediction| {
-                self.lookup_prediction_ref_precedes(prediction, &next_ordinary)
-            }) {
-                candidates.push(
-                    predictions
-                        .pop_front()
-                        .expect("checked prediction queue should be nonempty"),
-                );
-            }
-            candidates.push(next_ordinary);
-        }
-        candidates.extend(predictions);
+        // Bounded collection retains only the first requested window per group.
+        // Stop this shared constrained merge at the requested global prefix: the
+        // old implementation rescanned every group for every retained row, built
+        // the complete merged pool, and only then truncated it.
+        order_original_grouped_candidates(
+            candidates,
+            Some(limit),
+            |candidate| candidate.limited_prediction,
+            |candidate| self.lookup_candidate_ref_category(candidate),
+            |candidate| candidate.fetch_group,
+            |candidate| self.lookup_candidate_ref_raw_quality(candidate),
+            |left, right| self.lookup_candidate_ref_weight_order(left, right),
+            |prediction, ordinary| self.lookup_prediction_ref_precedes(prediction, ordinary),
+        );
     }
 
     fn materialized_quality(
@@ -2522,8 +2748,7 @@ impl StaticTableTranslator {
         }
         if !self.sort_by_weight || ordered_mode {
             let sort_start = (record_short_key && crate::m37_metrics_enabled()).then(Instant::now);
-            self.order_lookup_candidate_refs(&mut selected);
-            selected.truncate(limit);
+            self.order_lookup_candidate_refs(&mut selected, limit);
             if let Some(start) = sort_start {
                 crate::m37_record_short_key_sort_rank(start.elapsed());
             }

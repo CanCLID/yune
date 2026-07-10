@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "packet": "m59_increment_1_lane_b_final_pre_fix",
+  "capture_date": "2026-07-10",
+  "status": "pre_fix_red",
+  "acceptance_evidence": false,
+  "closes_d48": false,
+  "policy": "exact",
+  "exceptions": null,
+  "expected_comparator_exit_code": 1,
+  "all_accepted": false,
+  "passed": 0,
+  "failed": 7,
+  "packet_file_count": 6,
+  "manifest_self_hash": null,
+  "manifest_self_hash_note": "The manifest intentionally omits only its own recursive hash.",
+  "inputs": [
+    "moboyi",
+    "boyi",
+    "yi",
+    "zhonggao",
+    "zhongguo",
+    "gao",
+    "guo"
+  ],
+  "canonical_text": {
+    "encoding": "UTF-8",
+    "bom": false,
+    "line_ending": "LF",
+    "carriage_return_count": 0,
+    "nul_count": 0,
+    "terminal_lf_count": 1,
+    "applies_to_all_six_packet_files": true,
+    "git_attributes": {
+      "text": "auto",
+      "eol": "lf"
+    },
+    "git_filtered_blob_equals_no_filter_blob_for_all_files": true,
+    "git_lf_filter_disposition": "intended no-op"
+  },
+  "generation_and_import": {
+    "source_commit": "94c1c61d3d5b0e77d1c9684118b6e14507b7713f",
+    "source_clean": true,
+    "source_status_short": [],
+    "scratch_root": "target/m59-increment1-lane-b-final",
+    "scratch_root_is_git_ignored": true,
+    "replay_requires_scratch_root_absent": true,
+    "import_policy": "copy byte-identically without rewriting embedded provenance or canonical text bytes",
+    "imports": [
+      {
+        "scratch_path": "target/m59-increment1-lane-b-final/lane-b-oracle.json",
+        "packet_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-oracle.json",
+        "bytes": 714887,
+        "sha256": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273",
+        "byte_identical": true
+      },
+      {
+        "scratch_path": "target/m59-increment1-lane-b-final/lane-b-yune.json",
+        "packet_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-yune.json",
+        "bytes": 2781869,
+        "sha256": "2f0513fa28dcc363e7d8b8f53b17b26edf9d8106844065207c28a16239aff8b1",
+        "byte_identical": true
+      },
+      {
+        "scratch_path": "target/m59-increment1-lane-b-final/lane-b-exact-diff.json",
+        "packet_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-exact-diff.json",
+        "bytes": 14071,
+        "sha256": "38a3b5cbbc5ccc72da2041b1a7d5cead6363008fab4004f391b9f53f882baf98",
+        "byte_identical": true
+      },
+      {
+        "scratch_path": "target/m59-increment1-lane-b-final/lane-b-exact-diff.csv",
+        "packet_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-exact-diff.csv",
+        "bytes": 4765,
+        "sha256": "5023da9630ffa347cdefe0184992aaa01fda5116d6e69d5bce2cde2ffadce2bb",
+        "byte_identical": true
+      }
+    ],
+    "same_path_replay": {
+      "oracle_first_snapshot": "target/m59-increment1-lane-b-final/lane-b-oracle-first.json",
+      "oracle_canonical_path": "target/m59-increment1-lane-b-final/lane-b-oracle.json",
+      "oracle_sha256_both": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273",
+      "oracle_bytes_both": 714887,
+      "comparator_json_first_snapshot": "target/m59-increment1-lane-b-final/lane-b-exact-diff-first.json",
+      "comparator_json_canonical_path": "target/m59-increment1-lane-b-final/lane-b-exact-diff.json",
+      "comparator_json_sha256_both": "38a3b5cbbc5ccc72da2041b1a7d5cead6363008fab4004f391b9f53f882baf98",
+      "comparator_csv_first_snapshot": "target/m59-increment1-lane-b-final/lane-b-exact-diff-first.csv",
+      "comparator_csv_canonical_path": "target/m59-increment1-lane-b-final/lane-b-exact-diff.csv",
+      "comparator_csv_sha256_both": "5023da9630ffa347cdefe0184992aaa01fda5116d6e69d5bce2cde2ffadce2bb",
+      "comparison": "byte-identical outputs from the same canonical output paths"
+    }
+  },
+  "shared_runtime_policy": {
+    "ordered": [
+      {
+        "name": "ascii_mode",
+        "value": false
+      },
+      {
+        "name": "full_shape",
+        "value": false
+      },
+      {
+        "name": "ascii_punct",
+        "value": false
+      },
+      {
+        "name": "zh_hans",
+        "value": false
+      }
+    ],
+    "oracle_source": "RimeProbe.CaptureWithIdentity+CaptureScenariosWithIdentity/CaptureRuntimeOptionPolicy",
+    "yune_source": "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+    "oracle_additional_runtime_option_patches": [],
+    "all_bound_objects_match": true
+  },
+  "oracle": {
+    "capture_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-oracle.json",
+    "capture_bytes": 714887,
+    "capture_sha256": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273",
+    "engine": "rime/librime",
+    "version": "1.17.0",
+    "commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "schema_id": "luna_pinyin",
+    "schema_source_commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+    "source_repositories": [
+      {
+        "repository": "rime/rime-luna-pinyin",
+        "commit": "18a80335c37522311f7cff02886cd81cec3b460a",
+        "git_tree": "0d5efcb75aa40689bf3be210a4f056db6d77b49d",
+        "clean": true
+      },
+      {
+        "repository": "rime/rime-prelude",
+        "commit": "082425ea0684bca36474415d4a0e8db9b016487e",
+        "git_tree": "d7e128f09ce6b1f920729ef2f848ca1294c9cb31",
+        "clean": true
+      },
+      {
+        "repository": "rime/rime-essay",
+        "commit": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+        "git_tree": "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+        "clean": true
+      },
+      {
+        "repository": "rime/rime-stroke",
+        "commit": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c",
+        "git_tree": "d60c793d8d68154847923f21aa73ba90441dab32",
+        "clean": true
+      }
+    ],
+    "rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "rime_deployer_sha256": "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+    "tool_source": {
+      "repository": "yune",
+      "commit": "94c1c61d3d5b0e77d1c9684118b6e14507b7713f",
+      "git_tree": "04aee440bae32024c8e631cfff1529f56f0d6d94",
+      "clean": true,
+      "status_short": []
+    },
+    "tools": {
+      "capture_script_sha256": "c39dc35cfc419bfd8f6ca3c01969609453da6622236e8ee2a103baf32815365f",
+      "curator_version": 6,
+      "curator_sha256": "09ea46f7b895a9dc51a00466f6de3a1a53640eb8ce9070f83f511f4c7a6e6861",
+      "probe_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7"
+    },
+    "paging": {
+      "input_count": 7,
+      "page_sizes_observed": [
+        5
+      ],
+      "captured_all_pages": true,
+      "all_menu_present": true,
+      "all_termination_reason": "last_page"
+    },
+    "queried_data": {
+      "shared_tree_sha256": "2280114cfc83ada16f3898e6531ff573a7b33a39f1e679695e06eaf8778f3b37",
+      "build_tree_sha256": "702c223ffbd282981b9573f881b69f6d97451fe7506ac97cbcecc74c8a4bcc1a",
+      "default_custom_sha256": "20b8c83ef07e670c3f940214a1aa96e111c02ebf0b7e5a9614da18f8276d7d95",
+      "opencc_tree_sha256": "c5bb651dc96c8c546d1bf0c8ec60dbbae9645746378b8b3c1102450a5df143b1"
+    },
+    "output_provenance": {
+      "path": "target/m59-increment1-lane-b-final/lane-b-oracle.json",
+      "existed_before_capture": false,
+      "write_policy": "canonical_utf8_no_bom_lf_one_terminal_lf_create_new",
+      "generated_by": "scripts/curate-m59-luna-composition.py"
+    },
+    "actual_invocation": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-m59-luna-composition.ps1 -OracleRoot 'target/upstream-oracle/1.17.0' -Output 'target/m59-increment1-lane-b-final/lane-b-oracle.json' -ExpectedRimeDllSha256 '86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b' -ExpectedRimeDeployerSha256 '3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071' -ExpectedLunaPinyinCommit '18a80335c37522311f7cff02886cd81cec3b460a' -ExpectedPreludeCommit '082425ea0684bca36474415d4a0e8db9b016487e' -ExpectedEssayCommit '48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed' -ExpectedStrokeCommit '3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c'"
+  },
+  "tracked_fixture_import": {
+    "path": "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-luna-leading-single-composition.json",
+    "sha256": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273",
+    "byte_identical_to_packet_oracle": true,
+    "previous_fixture_sha256": "5cf3bf5b3b715fa3a7901801e9781e38ee04013ac96355b235a3d4455697b4d3",
+    "previous_curator_version": 5,
+    "current_curator_version": 6,
+    "behavior_equivalence": {
+      "inputs_summary_equal": true,
+      "all_seven_ordered_candidate_arrays_equal": true,
+      "all_seven_page_arrays_equal": true,
+      "all_seven_selected_candidate_arrays_equal": true,
+      "compositions_equal": true,
+      "composition_snapshots_equal": true,
+      "new_case_fields": [
+        "num_candidates",
+        "candidate_pointer_null",
+        "menu_present",
+        "termination_reason"
+      ],
+      "difference_scope": "hardened capture provenance and explicit menu/termination state only; captured behavior arrays unchanged"
+    }
+  },
+  "yune": {
+    "capture_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-yune.json",
+    "capture_bytes": 2781869,
+    "capture_sha256": "2f0513fa28dcc363e7d8b8f53b17b26edf9d8106844065207c28a16239aff8b1",
+    "source_commit": "94c1c61d3d5b0e77d1c9684118b6e14507b7713f",
+    "source_dirty": false,
+    "source_status_short": [],
+    "schema_id": "luna_pinyin",
+    "yune_dll_sha256": "2ac5d2550cd462d52d11aec995f609a605ccc6aa9837a8e55cec18a7ec63cfa5",
+    "capture_script_sha256": "f4d91a0d05b3a08e1649a3663e6418878884569878f9e770bbc9a30ba3020c60",
+    "probe_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+    "oracle_capture_sha256": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273",
+    "source_shared_tree_sha256": "c3418eb7d7a677078b0afcb9a958d427a9de0e0a8fc11a41a1707eeb29b865d9",
+    "staged_shared_tree_sha256": "3fa8e927548166b16a9513ae88132c52108eaa88878d14e9fc81075e116cb491",
+    "schema_list_narrowed": true,
+    "narrow_schema_list_switch_used": true,
+    "schema_list_narrowing_source": "generated_narrow_schema_list_switch",
+    "default_yaml_overlay": null,
+    "captured_all_pages": true,
+    "all_menu_present": true,
+    "all_termination_reason": "last_page",
+    "actual_invocation": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-yune-candidate-order.ps1 -YuneDll 'target/release/yune_rime_api.dll' -SharedDataDir 'target/upstream-oracle/1.17.0/rime-shared' -SchemaId 'luna_pinyin' -OracleCapture 'target/m59-increment1-lane-b-final/lane-b-oracle.json' -Output 'target/m59-increment1-lane-b-final/lane-b-yune.json' -NarrowSchemaList -ExpectedYuneDllSha256 '2ac5d2550cd462d52d11aec995f609a605ccc6aa9837a8e55cec18a7ec63cfa5'"
+  },
+  "comparison": {
+    "json_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-exact-diff.json",
+    "json_bytes": 14071,
+    "json_sha256": "38a3b5cbbc5ccc72da2041b1a7d5cead6363008fab4004f391b9f53f882baf98",
+    "csv_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-lane-b-executable-evidence/lane-b-exact-diff.csv",
+    "csv_bytes": 4765,
+    "csv_sha256": "5023da9630ffa347cdefe0184992aaa01fda5116d6e69d5bce2cde2ffadce2bb",
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "policy": "exact",
+    "exceptions": null,
+    "expected_exit_code": 1,
+    "all_accepted": false,
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle target/m59-increment1-lane-b-final/lane-b-oracle.json --actual target/m59-increment1-lane-b-final/lane-b-yune.json --policy exact --output-json target/m59-increment1-lane-b-final/lane-b-exact-diff.json --output-csv target/m59-increment1-lane-b-final/lane-b-exact-diff.csv"
+  },
+  "verdicts": [
+    {
+      "input": "moboyi",
+      "oracle_count": 225,
+      "actual_count": 323,
+      "first_mismatch_index": 0,
+      "missing_count": 1,
+      "extra_count": 99,
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "input": "boyi",
+      "oracle_count": 297,
+      "actual_count": 291,
+      "first_mismatch_index": 0,
+      "missing_count": 10,
+      "extra_count": 4,
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "input": "yi",
+      "oracle_count": 841,
+      "actual_count": 1852,
+      "first_mismatch_index": 841,
+      "missing_count": 0,
+      "extra_count": 1011,
+      "failure_classes": [
+        "over-admission",
+        "order"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "input": "zhonggao",
+      "oracle_count": 117,
+      "actual_count": 115,
+      "first_mismatch_index": 1,
+      "missing_count": 2,
+      "extra_count": 0,
+      "failure_classes": [
+        "under-admission",
+        "order"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "input": "zhongguo",
+      "oracle_count": 125,
+      "actual_count": 118,
+      "first_mismatch_index": 0,
+      "missing_count": 11,
+      "extra_count": 4,
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "input": "gao",
+      "oracle_count": 164,
+      "actual_count": 201,
+      "first_mismatch_index": 133,
+      "missing_count": 31,
+      "extra_count": 68,
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "input": "guo",
+      "oracle_count": 366,
+      "actual_count": 215,
+      "first_mismatch_index": 155,
+      "missing_count": 211,
+      "extra_count": 60,
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "verdict": "fail"
+    }
+  ],
+  "packet_files": [
+    {
+      "path": "lane-b-oracle.json",
+      "bytes": 714887,
+      "sha256": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273"
+    },
+    {
+      "path": "lane-b-yune.json",
+      "bytes": 2781869,
+      "sha256": "2f0513fa28dcc363e7d8b8f53b17b26edf9d8106844065207c28a16239aff8b1"
+    },
+    {
+      "path": "lane-b-exact-diff.json",
+      "bytes": 14071,
+      "sha256": "38a3b5cbbc5ccc72da2041b1a7d5cead6363008fab4004f391b9f53f882baf98"
+    },
+    {
+      "path": "lane-b-exact-diff.csv",
+      "bytes": 4765,
+      "sha256": "5023da9630ffa347cdefe0184992aaa01fda5116d6e69d5bce2cde2ffadce2bb"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8750,
+      "sha256": "ad5cbb787e2af93865ed96fe27a10dd5935dff17bda5294573da1c45c7d240f9"
+    }
+  ],
+  "binary_payloads_copied": false
+}

@@ -1,0 +1,564 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "moboyi",
+    "boyi",
+    "yi",
+    "zhonggao",
+    "zhongguo",
+    "gao",
+    "guo"
+  ],
+  "all_accepted": false,
+  "cases": [
+    {
+      "input": "moboyi",
+      "policy": "exact",
+      "oracle_count": 225,
+      "actual_count": 323,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 1,
+      "extra_count": 99,
+      "missing_examples": [
+        "麼波"
+      ],
+      "extra_examples": [
+        "摸北一",
+        "摸北醫",
+        "摸博一",
+        "摸博以",
+        "摸博弈",
+        "摸波一",
+        "摸波以",
+        "摸白蛇",
+        "摸白蟻",
+        "摸白衣",
+        "摸百億",
+        "末北一",
+        "末北醫",
+        "末博一",
+        "末博弈",
+        "末波一",
+        "末白蛇",
+        "末白蟻",
+        "末白衣",
+        "末百億"
+      ],
+      "oracle_rows_sha256": "e8707ec2f5ed327eb976f476aee5a3a1c9f79a613d7fca6440eea3536cdac2b4",
+      "actual_rows_sha256": "636baf5f28b4c8d82a83eddde8a429dc90086b9f155a7692a0fa89f561cb955d",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 0,
+          "oracle_end": 0,
+          "actual_start": 0,
+          "actual_end": 7
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1,
+          "oracle_end": 2,
+          "actual_start": 8,
+          "actual_end": 100
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "boyi",
+      "policy": "exact",
+      "oracle_count": 297,
+      "actual_count": 291,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 10,
+      "extra_count": 4,
+      "missing_examples": [
+        "伯益",
+        "博奕",
+        "博弈",
+        "博易",
+        "猼訑",
+        "薄衣",
+        "鉑銥",
+        "鉢衣",
+        "駁議",
+        "駮議"
+      ],
+      "extra_examples": [
+        "伯夷叔齊",
+        "伯夷叔齊",
+        "伯夷父",
+        "伯邑考"
+      ],
+      "oracle_rows_sha256": "6e568299350907049a8c4805a77d1332c9dd96a01a1c534c5c401dbff83b2144",
+      "actual_rows_sha256": "9b1ae1aad2e9e33fcf89e1e60ce39e501070e544f546878e3c8a61dc77d5b11d",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 0,
+          "oracle_end": 3,
+          "actual_start": 0,
+          "actual_end": 0
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 4,
+          "oracle_end": 7,
+          "actual_start": 1,
+          "actual_end": 1
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 8,
+          "oracle_end": 9,
+          "actual_start": 2,
+          "actual_end": 3
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 11,
+          "oracle_end": 12,
+          "actual_start": 5,
+          "actual_end": 5
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 13,
+          "oracle_end": 15,
+          "actual_start": 6,
+          "actual_end": 9
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "yi",
+      "policy": "exact",
+      "oracle_count": 841,
+      "actual_count": 1852,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 841,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 1011,
+      "missing_examples": [],
+      "extra_examples": [
+        "㐆",
+        "㐺",
+        "㑞",
+        "㒚",
+        "㕂",
+        "㕲",
+        "㖗",
+        "㖶",
+        "㙬",
+        "㜲",
+        "㝙",
+        "㞤",
+        "㡕",
+        "㡥",
+        "㢍",
+        "㣧",
+        "㥯",
+        "㥼",
+        "㦩",
+        "㧈"
+      ],
+      "oracle_rows_sha256": "db6ed11dc979c5c8d642e226e71b694858b5c0eb86488f02e7bfb8460843aa53",
+      "actual_rows_sha256": "8b53fd553ca1c4d1a4d1a7047bee70a804c7045c0fb128ae2c5aa89cc5fc5968",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 841,
+          "oracle_end": 841,
+          "actual_start": 841,
+          "actual_end": 1852
+        }
+      ],
+      "failure_classes": [
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "zhonggao",
+      "policy": "exact",
+      "oracle_count": 117,
+      "actual_count": 115,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 1,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 2,
+      "extra_count": 0,
+      "missing_examples": [
+        "中高",
+        "終告"
+      ],
+      "extra_examples": [],
+      "oracle_rows_sha256": "1571a4c4b1728f17873ce95e9dd1e3fdcb4f6870a6425ca13c51390defc5f7ba",
+      "actual_rows_sha256": "11b075785cdda8cba0b748716ffe4443f44acea22ab0c48aa863181dc8e94cb9",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 1,
+          "oracle_end": 3,
+          "actual_start": 1,
+          "actual_end": 1
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "zhongguo",
+      "policy": "exact",
+      "oracle_count": 125,
+      "actual_count": 118,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 11,
+      "extra_count": 4,
+      "missing_examples": [
+        "中古",
+        "中固",
+        "中國",
+        "中谷",
+        "忠告",
+        "忠果",
+        "種果",
+        "種穀",
+        "種過",
+        "終古",
+        "鐘鼓"
+      ],
+      "extra_examples": [
+        "中國內地",
+        "中國大陸",
+        "中國重汽",
+        "中國銀行"
+      ],
+      "oracle_rows_sha256": "ca2b56a7b00f4be3fa43ace42d4911c67fcee2710a3611259adb7249b6d01c95",
+      "actual_rows_sha256": "dbdd3b28135c2f545ce8f8697d46da8244ac3a2d0a4c05430029044290c3a797",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 11,
+          "actual_start": 0,
+          "actual_end": 4
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "gao",
+      "policy": "exact",
+      "oracle_count": 164,
+      "actual_count": 201,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 133,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 31,
+      "extra_count": 68,
+      "missing_examples": [
+        "㹢",
+        "介",
+        "伽",
+        "価",
+        "價",
+        "咖",
+        "嗰",
+        "嘎",
+        "嘠",
+        "噶",
+        "尕",
+        "尜",
+        "尬",
+        "戛",
+        "戞",
+        "旮",
+        "玍",
+        "軋",
+        "轧",
+        "釓"
+      ],
+      "extra_examples": [
+        "告假還鄉",
+        "告劄",
+        "告稟",
+        "告窆",
+        "告老還鄉",
+        "告訐",
+        "咎繇",
+        "咎陶",
+        "搞七捻三",
+        "搞什麼",
+        "攪三攪四",
+        "攪來攪去",
+        "杲杲",
+        "槁項黃馘",
+        "皋比",
+        "皋陶",
+        "皋隰",
+        "睪丸",
+        "睪丸未降症",
+        "糕乾"
+      ],
+      "oracle_rows_sha256": "9c7473e7dd7498b99faf6b3ef76f7fb058151fd1f1b66147a3982440986bed68",
+      "actual_rows_sha256": "9c9380901b5317eb81b10358d66dcc211346b2d9cde6848c306768b481b03b49",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 133,
+          "oracle_end": 164,
+          "actual_start": 133,
+          "actual_end": 201
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "guo",
+      "policy": "exact",
+      "oracle_count": 366,
+      "actual_count": 215,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 155,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 211,
+      "extra_count": 60,
+      "missing_examples": [
+        "㒴",
+        "㚉",
+        "㧽",
+        "㯏",
+        "㱠",
+        "㼋",
+        "㽽",
+        "㾶",
+        "䀇",
+        "䀜",
+        "䀦",
+        "䀰",
+        "䅽",
+        "䇢",
+        "䉉",
+        "䍛",
+        "䐨",
+        "䐻",
+        "䓢",
+        "䜼"
+      ],
+      "extra_examples": [
+        "㶁㶁",
+        "嘓啅",
+        "嘓啅嘓啅的",
+        "嘓都嘓都",
+        "國之楨榦",
+        "國家地理",
+        "國家行爲主義",
+        "國家賠償",
+        "國家賠償法",
+        "國家重點",
+        "國家音樂廳",
+        "國富調查",
+        "國帑",
+        "國有土地",
+        "國有財產",
+        "國有銀行",
+        "國朝",
+        "國樂",
+        "國民樂派音樂",
+        "國民銀行"
+      ],
+      "oracle_rows_sha256": "9f37538bcd7386044b84254c836c94b9fa239adf6fd8e8954bb95b9cbf870228",
+      "actual_rows_sha256": "025fc55a2662da307aa9d551bb9c60bcb4d1296be428c79a3dc31ef65e7b31ad",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 155,
+          "oracle_end": 366,
+          "actual_start": 155,
+          "actual_end": 215
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "target/m59-increment1-lane-b-final/lane-b-oracle.json",
+      "sha256": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273"
+    },
+    "actual": {
+      "path": "target/m59-increment1-lane-b-final/lane-b-yune.json",
+      "sha256": "2f0513fa28dcc363e7d8b8f53b17b26edf9d8106844065207c28a16239aff8b1"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "target/m59-increment1-lane-b-final/lane-b-oracle.json",
+      "--actual",
+      "target/m59-increment1-lane-b-final/lane-b-yune.json",
+      "--policy",
+      "exact",
+      "--output-json",
+      "target/m59-increment1-lane-b-final/lane-b-exact-diff.json",
+      "--output-csv",
+      "target/m59-increment1-lane-b-final/lane-b-exact-diff.csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle target/m59-increment1-lane-b-final/lane-b-oracle.json --actual target/m59-increment1-lane-b-final/lane-b-yune.json --policy exact --output-json target/m59-increment1-lane-b-final/lane-b-exact-diff.json --output-csv target/m59-increment1-lane-b-final/lane-b-exact-diff.csv"
+  }
+}

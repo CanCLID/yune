@@ -111,7 +111,88 @@ fn oracle_capture_binds_clean_deterministic_query_bytes() {
         capture["source_row_policy"],
         "m59_lane_b_complete_order_and_partial_selection_composition"
     );
-    assert_eq!(capture["curator_version"], 5);
+    assert_eq!(capture["curator_version"], 6);
+    assert_eq!(
+        capture["inputs"],
+        serde_json::json!(["moboyi", "boyi", "yi", "zhonggao", "zhongguo", "gao", "guo"])
+    );
+    assert_eq!(capture["input_count"], 7);
+    assert_eq!(capture["page_sizes_observed"], serde_json::json!([5]));
+    assert_eq!(capture["captured_all_pages"], true);
+    let expected_runtime_options = serde_json::json!({
+        "ascii_mode": false,
+        "full_shape": false,
+        "ascii_punct": false,
+        "zh_hans": false
+    });
+    assert_eq!(capture["runtime_options"], expected_runtime_options);
+    assert_eq!(
+        capture["runtime_options_source"],
+        "RimeProbe.CaptureWithIdentity+CaptureScenariosWithIdentity/CaptureRuntimeOptionPolicy"
+    );
+    assert_eq!(
+        capture["additional_runtime_option_patches"],
+        serde_json::json!([])
+    );
+    assert_eq!(
+        capture["effective_parameters"]["runtime_options"],
+        expected_runtime_options
+    );
+    assert_eq!(
+        capture["effective_parameters"]["runtime_options_source"],
+        capture["runtime_options_source"]
+    );
+    assert_eq!(
+        capture["effective_parameters"]["additional_runtime_option_patches"],
+        serde_json::json!([])
+    );
+    assert_eq!(capture["serialization"]["encoding"], "utf-8");
+    assert_eq!(capture["serialization"]["bom"], false);
+    assert_eq!(capture["serialization"]["line_endings"], "lf");
+    assert_eq!(capture["serialization"]["terminal_newline"], "exactly_one");
+    assert_eq!(
+        capture["output_provenance"]["path"],
+        "target/m59-increment1-lane-b-final/lane-b-oracle.json"
+    );
+    assert_eq!(
+        capture["output_provenance"]["existed_before_capture"],
+        false
+    );
+    assert_eq!(
+        capture["output_provenance"]["write_policy"],
+        "canonical_utf8_no_bom_lf_one_terminal_lf_create_new"
+    );
+    assert_eq!(
+        capture["output_provenance"]["generated_by"],
+        "scripts/curate-m59-luna-composition.py"
+    );
+    assert_eq!(capture["tool_source"]["repository"], "yune");
+    assert_eq!(
+        capture["tool_source"]["commit"],
+        "94c1c61d3d5b0e77d1c9684118b6e14507b7713f"
+    );
+    assert_eq!(
+        capture["tool_source"]["git_tree"],
+        "04aee440bae32024c8e631cfff1529f56f0d6d94"
+    );
+    assert_eq!(capture["tool_source"]["clean"], true);
+    assert_eq!(capture["tool_source"]["dirty"], false);
+    assert_eq!(
+        capture["tool_source"]["status_short"],
+        serde_json::json!([])
+    );
+    assert_eq!(
+        capture["tool_hashes"]["capture_script_sha256"],
+        "c39dc35cfc419bfd8f6ca3c01969609453da6622236e8ee2a103baf32815365f"
+    );
+    assert_eq!(
+        capture["tool_hashes"]["curator_sha256"],
+        "09ea46f7b895a9dc51a00466f6de3a1a53640eb8ce9070f83f511f4c7a6e6861"
+    );
+    assert_eq!(
+        capture["tool_hashes"]["probe_sha256"],
+        "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7"
+    );
     assert_eq!(
         capture["order_hash_algorithm"],
         "sha256 of repeated u64be utf8-byte-length followed by utf8 candidate text"
@@ -221,6 +302,10 @@ fn oracle_full_order_capture_is_complete_and_position_preserving() {
         assert_eq!(case["page_no"], 0);
         assert_eq!(case["captured_all_pages"], true);
         assert_eq!(case["page_size"], 5);
+        assert_eq!(case["num_candidates"], 5);
+        assert_eq!(case["candidate_pointer_null"], false);
+        assert_eq!(case["menu_present"], true);
+        assert_eq!(case["termination_reason"], "last_page");
 
         let candidates = case["all_candidates"]
             .as_array()

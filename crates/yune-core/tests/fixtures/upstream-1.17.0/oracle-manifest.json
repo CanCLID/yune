@@ -9,7 +9,7 @@
     "release_url": "https://github.com/rime/librime/releases/tag/1.17.0"
   },
   "profile_only": false,
-  "updated": "2026-07-09",
+  "updated": "2026-07-10",
   "files": [
     {
       "path": "luna-pinyin-sentence-expanded.json",
@@ -20,9 +20,11 @@
     {
       "path": "m59-luna-leading-single-composition.json",
       "milestone": "M59 Increment 1",
-      "capture_date": "2026-07-09",
+      "capture_date": "2026-07-10",
+      "capture_source_commit": "94c1c61d3d5b0e77d1c9684118b6e14507b7713f",
+      "sha256": "8ff369e1a78d0865055003433a258dcf4407136609d4ab8ab5a029c29b989273",
       "source_row_policy": "m59_lane_b_complete_order_and_partial_selection_composition",
-      "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/capture-m59-luna-composition.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output target/m59-luna-leading-single-composition.json",
+      "capture_command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-m59-luna-composition.ps1 -OracleRoot 'target/upstream-oracle/1.17.0' -Output 'target/m59-increment1-lane-b-final/lane-b-oracle.json' -ExpectedRimeDllSha256 '86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b' -ExpectedRimeDeployerSha256 '3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071' -ExpectedLunaPinyinCommit '18a80335c37522311f7cff02886cd81cec3b460a' -ExpectedPreludeCommit '082425ea0684bca36474415d4a0e8db9b016487e' -ExpectedEssayCommit '48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed' -ExpectedStrokeCommit '3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c'",
       "import_policy": "Capture to a fresh ignored target path, byte/diff review the result, then import the reviewed bytes separately; the capture command never overwrites this tracked fixture."
     }
   ]

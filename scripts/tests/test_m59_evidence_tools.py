@@ -1342,10 +1342,18 @@ class CaptureContractTests(unittest.TestCase):
             for row in manifest["files"]
             if row["path"] == "m59-luna-leading-single-composition.json"
         )
-        self.assertIn(
-            "-Output target/m59-luna-leading-single-composition.json",
-            lane_b_manifest["capture_command"],
+        lane_b_fixture = json.loads(
+            (
+                SCRIPTS.parent
+                / "crates/yune-core/tests/fixtures/upstream-1.17.0/"
+                "m59-luna-leading-single-composition.json"
+            ).read_text(encoding="utf-8")
         )
+        self.assertEqual(
+            lane_b_manifest["capture_command"],
+            lane_b_fixture["capture"]["actual_invocation"],
+        )
+        self.assertIn("-Output 'target/", lane_b_manifest["capture_command"])
         self.assertNotIn(
             "-Output crates/yune-core/tests/fixtures/",
             lane_b_manifest["capture_command"],

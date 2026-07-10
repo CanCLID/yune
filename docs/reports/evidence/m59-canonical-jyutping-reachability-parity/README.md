@@ -16,6 +16,14 @@ regression guard, not an acceptance oracle.
 > diagnostic. Its strict exact verdict is deliberately red (`0/13`, comparator
 > exit `1`, no exceptions); it is pre-fix evidence only and does not close D-48
 > or M59.
+>
+> [`increment-1-lane-b-executable-evidence/`](./increment-1-lane-b-executable-evidence/)
+> is the corresponding six-file Lane B executable diagnostic from clean commit
+> `94c1c61d...`. Its strict exact verdict is also deliberately red (`0/7`,
+> comparator exit `1`, no exceptions). The fresh oracle is byte-stable under a
+> same-path replay and has been imported into the owning upstream fixture with
+> unchanged behavior arrays plus hardened curator-v6 provenance. This packet is
+> likewise pre-fix evidence only and does not close D-48 or M59.
 
 ## Artifact classification
 
@@ -34,6 +42,20 @@ regression guard, not an acceptance oracle.
   for both raw captures, both diff views, packet README, generation/import and
   canonical-text provenance, commands, effective parameters, and all 13
   verdicts. It omits only its own recursive hash.
+- `increment-1-lane-b-executable-evidence/lane-b-oracle.json` — fresh pinned
+  upstream Luna oracle capture over the ordered seven-row Lane B set, with
+  clean schema/tool source, binary/tool, option, command, output,
+  canonical-text, same-path replay, and complete paging provenance.
+- `increment-1-lane-b-executable-evidence/lane-b-yune.json` — raw Yune capture
+  derived from that same fresh oracle, with explicit schema narrowing, clean
+  source, DLL/tool/tree/option provenance, and complete paging state.
+- `increment-1-lane-b-executable-evidence/lane-b-exact-diff.json` and
+  `lane-b-exact-diff.csv` — strict exact comparator outputs: 0 passed, 7 failed,
+  expected exit `1`, no exception file.
+- `increment-1-lane-b-executable-evidence/lane-b-manifest.json` — packet-local
+  six-file closure, fixture-import equivalence, replay hashes, commands,
+  effective identity, and all seven red verdicts; it omits only its own
+  recursive hash.
 
 ### VALID — retained from `5d3dba2a` (the real perf fix commit)
 - `phase-1/canonical-rime-cantonese-capture.json` — Lane A oracle capture with

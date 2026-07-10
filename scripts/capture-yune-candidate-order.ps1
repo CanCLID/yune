@@ -331,6 +331,32 @@ function Resolve-SchemaListNarrowing(
     }
 }
 
+function Get-RimeCaptureRuntimeOptionProvenance {
+    $RuntimeOptions = [ordered]@{}
+    $SeenNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($Option in [RimeProbe]::GetCaptureRuntimeOptions()) {
+        $Name = [string]$Option.name
+        if ($Name -notmatch '^[A-Za-z0-9_]+$' -or -not $SeenNames.Add($Name)) {
+            throw "RimeProbe capture runtime options must have unique logical names."
+        }
+        if ($Option.enabled -isnot [bool]) {
+            throw "RimeProbe capture runtime option '$Name' must be boolean."
+        }
+        $RuntimeOptions[$Name] = [bool]$Option.enabled
+    }
+    if ($RuntimeOptions.Count -eq 0) {
+        throw "RimeProbe capture runtime option policy must not be empty."
+    }
+    $Source = [string][RimeProbe]::CaptureRuntimeOptionsSource
+    if ([string]::IsNullOrWhiteSpace($Source)) {
+        throw "RimeProbe capture runtime option policy must name its source."
+    }
+    return [pscustomobject]@{
+        runtime_options = $RuntimeOptions
+        runtime_options_source = $Source
+    }
+}
+
 function Copy-Tree([string]$Source, [string]$Destination) {
     New-Item -ItemType Directory -Force -Path $Destination | Out-Null
     Get-ChildItem -LiteralPath $Source -Force | ForEach-Object {
@@ -441,6 +467,8 @@ $EffectiveParameters = [ordered]@{
     schema_list_narrowed = $null
     narrow_schema_list_switch_used = $NarrowSchemaListSwitchUsed
     schema_list_narrowing_source = $null
+    runtime_options = $null
+    runtime_options_source = $null
     work_root = if ($WorkRootWasProvided) { Evidence-Path $WorkRoot } else { "generated_disposable" }
     expected_yune_dll_sha256 = if ($ExpectedYuneDllSha256) { $ExpectedYuneDllSha256.ToLowerInvariant() } else { $null }
     allow_dirty = $AllowDirty.IsPresent
@@ -510,6 +538,11 @@ try {
 
     $env:PATH = $Bin + ";" + $OldPath
     Add-Type -Path $ProbeSource
+    $RuntimeOptionProvenance = Get-RimeCaptureRuntimeOptionProvenance
+    $RuntimeOptions = $RuntimeOptionProvenance.runtime_options
+    $RuntimeOptionsSource = [string]$RuntimeOptionProvenance.runtime_options_source
+    $EffectiveParameters["runtime_options"] = $RuntimeOptions
+    $EffectiveParameters["runtime_options_source"] = $RuntimeOptionsSource
     $Modules = [string[]]@("default")
     $DeployResult = [RimeProbe]::DeployWorkspace($Shared, $User, $Build, $Modules)
     if ($DeployResult -eq 0) {
@@ -544,6 +577,8 @@ try {
             schema_list_narrowed = $SchemaListNarrowed
             narrow_schema_list_switch_used = $NarrowSchemaListSwitchUsed
             schema_list_narrowing_source = $SchemaListNarrowingSource
+            runtime_options = $RuntimeOptions
+            runtime_options_source = $RuntimeOptionsSource
             page_policy = "RimeProbe.Capture all pages; hard failure on non-advancing or incomplete pagination"
             actual_invocation = $ActualInvocation
             effective_parameters = $EffectiveParameters

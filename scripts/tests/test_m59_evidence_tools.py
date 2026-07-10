@@ -1082,6 +1082,128 @@ class CaptureContractTests(unittest.TestCase):
             source,
         )
 
+    def test_capture_runtime_options_are_single_sourced_and_serialized(self):
+        probe = (SCRIPTS / "oracle-rime-probe.cs").read_text(encoding="utf-8")
+        capture = (SCRIPTS / "capture-yune-candidate-order.ps1").read_text(
+            encoding="utf-8-sig"
+        )
+        policy = probe.split(
+            "CaptureRuntimeOptionPolicy = new RuntimeOptionSetting[] {", 1
+        )[1].split("};", 1)[0]
+        expected_settings = (
+            'new RuntimeOptionSetting("ascii_mode", false)',
+            'new RuntimeOptionSetting("full_shape", false)',
+            'new RuntimeOptionSetting("ascii_punct", false)',
+            'new RuntimeOptionSetting("zh_hans", false)',
+        )
+        positions = [policy.index(setting) for setting in expected_settings]
+        self.assertEqual(positions, sorted(positions))
+        self.assertEqual(policy.count("new RuntimeOptionSetting("), 4)
+        self.assertIn(
+            "return (RuntimeOptionSetting[])CaptureRuntimeOptionPolicy.Clone();",
+            probe,
+        )
+        capture_with_identity = probe.split(
+            "public static List<Dictionary<string, object>> CaptureWithIdentity(", 1
+        )[1].split(
+            "public static List<Dictionary<string, object>> CaptureScenarios(", 1
+        )[0]
+        self.assertIn(
+            "foreach (var option in CaptureRuntimeOptionPolicy)",
+            capture_with_identity,
+        )
+        self.assertIn(
+            "RimeSetOption(session, U8(option.name, ptrs), option.enabled ? 1 : 0);",
+            capture_with_identity,
+        )
+        for option_name in ("ascii_mode", "full_shape", "ascii_punct", "zh_hans"):
+            self.assertNotIn(f'U8("{option_name}", ptrs)', capture_with_identity)
+        self.assertIn(
+            "foreach ($Option in [RimeProbe]::GetCaptureRuntimeOptions())", capture
+        )
+        self.assertIn(
+            '$EffectiveParameters["runtime_options"] = $RuntimeOptions', capture
+        )
+        self.assertIn(
+            '$EffectiveParameters["runtime_options_source"] = $RuntimeOptionsSource',
+            capture,
+        )
+        self.assertIn("runtime_options = $RuntimeOptions", capture)
+        self.assertIn("runtime_options_source = $RuntimeOptionsSource", capture)
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_capture_runtime_option_provenance_matches_probe_policy_runtime(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        command = r"""
+$ErrorActionPreference = "Stop"
+Add-Type -Path $env:YUNE_PROBE_SOURCE_TEST
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+$functionAst = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+        $node.Name -eq "Get-RimeCaptureRuntimeOptionProvenance"
+}, $true)
+if ($null -eq $functionAst) { throw "missing runtime-option provenance helper" }
+Invoke-Expression $functionAst.Extent.Text
+$probePolicy = @(
+    foreach ($option in [RimeProbe]::GetCaptureRuntimeOptions()) {
+        [ordered]@{ name = $option.name; enabled = $option.enabled }
+    }
+)
+$provenance = Get-RimeCaptureRuntimeOptionProvenance
+[ordered]@{
+    probe_policy = $probePolicy
+    probe_source = [RimeProbe]::CaptureRuntimeOptionsSource
+    serialized_options = $provenance.runtime_options
+    serialized_order = @($provenance.runtime_options.Keys)
+    serialized_source = $provenance.runtime_options_source
+} | ConvertTo-Json -Depth 5 -Compress
+"""
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "YUNE_PROBE_SOURCE_TEST": str(SCRIPTS / "oracle-rime-probe.cs"),
+                "YUNE_CAPTURE_SCRIPT_TEST": str(
+                    SCRIPTS / "capture-yune-candidate-order.ps1"
+                ),
+            }
+        )
+        completed = subprocess.run(
+            [powershell, "-NoProfile", "-Command", command],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env=environment,
+            timeout=60,
+        )
+        if completed.returncode != 0:
+            self.fail(completed.stderr or completed.stdout)
+        result = json.loads(completed.stdout.strip().splitlines()[-1])
+        expected_order = ["ascii_mode", "full_shape", "ascii_punct", "zh_hans"]
+        self.assertEqual(
+            [entry["name"] for entry in result["probe_policy"]], expected_order
+        )
+        self.assertTrue(
+            all(entry["enabled"] is False for entry in result["probe_policy"])
+        )
+        self.assertEqual(result["serialized_order"], expected_order)
+        self.assertEqual(list(result["serialized_options"]), expected_order)
+        self.assertTrue(
+            all(value is False for value in result["serialized_options"].values())
+        )
+        expected_source = "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy"
+        self.assertEqual(result["probe_source"], expected_source)
+        self.assertEqual(result["serialized_source"], expected_source)
+
     def test_yune_capture_path_preflight_precedes_workspace_mutation(self):
         source = (SCRIPTS / "capture-yune-candidate-order.ps1").read_text(
             encoding="utf-8-sig"

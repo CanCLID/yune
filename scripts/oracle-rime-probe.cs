@@ -182,6 +182,31 @@ public static class RimeProbe {
     public bool candidate_has_quality;
   }
 
+  public sealed class RuntimeOptionSetting {
+    public readonly string name;
+    public readonly bool enabled;
+
+    public RuntimeOptionSetting(string name, bool enabled) {
+      this.name = name;
+      this.enabled = enabled;
+    }
+  }
+
+  static readonly RuntimeOptionSetting[] CaptureRuntimeOptionPolicy = new RuntimeOptionSetting[] {
+    new RuntimeOptionSetting("ascii_mode", false),
+    new RuntimeOptionSetting("full_shape", false),
+    new RuntimeOptionSetting("ascii_punct", false),
+    new RuntimeOptionSetting("zh_hans", false),
+  };
+
+  public static RuntimeOptionSetting[] GetCaptureRuntimeOptions() {
+    return (RuntimeOptionSetting[])CaptureRuntimeOptionPolicy.Clone();
+  }
+
+  public static string CaptureRuntimeOptionsSource {
+    get { return "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy"; }
+  }
+
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
   public static extern void RimeSetup(ref RimeTraits traits);
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -529,10 +554,9 @@ public static class RimeProbe {
       if (RimeSelectSchema(session, schemaPtr) == 0) {
         throw new Exception("RimeSelectSchema failed: " + schema);
       }
-      RimeSetOption(session, U8("ascii_mode", ptrs), 0);
-      RimeSetOption(session, U8("full_shape", ptrs), 0);
-      RimeSetOption(session, U8("ascii_punct", ptrs), 0);
-      RimeSetOption(session, U8("zh_hans", ptrs), 0);
+      foreach (var option in CaptureRuntimeOptionPolicy) {
+        RimeSetOption(session, U8(option.name, ptrs), option.enabled ? 1 : 0);
+      }
 
       foreach (var input in inputs) {
         RimeClearComposition(session);

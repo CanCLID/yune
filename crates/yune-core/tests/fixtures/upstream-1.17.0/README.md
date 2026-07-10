@@ -43,8 +43,13 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
 2. Capture through the generalized wrapper, for example:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -OracleRoot target/upstream-oracle/1.17.0 -SchemaId double_pinyin -SchemaDataRepo rime/rime-double-pinyin -Output crates/yune-core/tests/fixtures/upstream-1.17.0/double-pinyin-basic.json
+$captureDate = Get-Date -Format yyyy-MM-dd
+$captureOutput = "target/upstream-schema-capture-$([guid]::NewGuid().ToString('N')).json"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -OracleRoot target/upstream-oracle/1.17.0 -SchemaId double_pinyin -SchemaDataRepo rime/rime-double-pinyin -Output $captureOutput -CaptureDate $captureDate
 ```
+
+The output must be a fresh path outside `OracleRoot`. Review that capture, then
+import it separately; the wrapper never overwrites a tracked fixture.
 
 3. Keep the fixture provenance non-circular: `oracle.engine`,
    `oracle.engine_tag`, `oracle.engine_commit`, `oracle.release_url`,
@@ -245,6 +250,43 @@ cargo test -p yune-core --test oracle_fixture_provenance
   `rime/rime-terra-pinyin`, and `rime/rime-stroke`
 - Inputs: `su3`, `cl3`, `j06`, `w/4`
 - Source-row policy: `m19_bopomofo_curated_zhuyin_algebra`
+
+### M59 transformed-algebra whole-input captures
+
+- `double-pinyin-m59-whole-input.json` captures `hknivs` as one uninterrupted
+  key sequence. The pinned upstream top candidate and commit preview are
+  `好逆鐘`, with preedit `hao ni zhong`.
+- `bopomofo-m59-whole-input.json` captures `cl3su3j06` as one uninterrupted
+  key sequence. The pinned upstream top candidate and commit preview are
+  `好你玩`, with preedit `ㄏㄠˇ ㄋㄧˇ ㄨㄢˊ`.
+- Both tops have exact-term count zero in the complete pinned source dictionary
+  and `essay.txt`; the fixtures record those scans under
+  `capture.whole_input_oracle_rows`. They are oracle composition results, not
+  strings inferred from the older component rows and not Yune-produced values.
+  The curated source rows include every Unicode-scalar constituent of each
+  oracle top, so the composition has external character-row provenance even
+  though the complete phrase is absent.
+- `m59-whole-input` mode sends every character directly through
+  `RimeProcessKey(keycode, 0)`. In Bopomofo, `3`, `0`, and `6` therefore remain
+  schema key events used by the tone/keymap algebra. The M59 scenario list is
+  deliberately limited to paging and Space commit; it does not call a numeric
+  tone key a candidate-selection action.
+- The hardened script requires an explicit capture date, the expected librime
+  DLL/deployer hashes, exact clean schema/dependency commits, and a new output
+  path outside the oracle cache. The complete effective command is embedded in
+  each fixture and names that fixture's repository-relative path.
+
+The script's `m19-component` mode retains the historical component scenario
+family for future diagnostic recaptures, but its Bopomofo numeric-`2` action is
+now truthfully named as a tone-key action. That label correction intentionally
+changes future M19 Bopomofo replay metadata. The historical component fixture
+bytes remain untouched: `double-pinyin-basic.json` is
+`2f17053131d73028f315229fe7f22df226fc4b67f3b224e19ce99ed2bf864d24`
+and `bopomofo-basic.json` is
+`3288e14306c3fc1cfe53e10f0bb743afa02e514d3bafe652f544e423f1047c70`.
+Their original generalized-capture script was pinned at
+`b23e07a8626243fb6e08477f48b0efbf22f0118c82799cbfe4eb01b6ecf0ca96`;
+the M59 whole-input fixtures pin the hardened script separately.
 
 ## Oracle Binary Evidence
 

@@ -258,6 +258,175 @@ fn upstream_bopomofo_fixture_has_non_circular_source_provenance() {
 }
 
 #[test]
+fn m59_transformed_algebra_whole_input_fixtures_are_oracle_captured() {
+    let root = fixture_root("upstream-1.17.0");
+    for (
+        fixture_name,
+        schema,
+        schema_data,
+        schema_commit,
+        input,
+        expected_top,
+        expected_preedit,
+        expected_tree,
+    ) in [
+        (
+            "double-pinyin-m59-whole-input.json",
+            "double_pinyin",
+            "rime/rime-double-pinyin",
+            "01a13287cbd27819be1c34fa1ddc1b3643d5001b",
+            "hknivs",
+            "好逆鐘",
+            "hao ni zhong",
+            "a1c64a175f1d4f79938fa6da560a633933be7c2d",
+        ),
+        (
+            "bopomofo-m59-whole-input.json",
+            "bopomofo",
+            "rime/rime-bopomofo",
+            "6085c9a38a4a728047862b33d67eee18aa86f3b9",
+            "cl3su3j06",
+            "好你玩",
+            "ㄏㄠˇ ㄋㄧˇ ㄨㄢˊ",
+            "7c372ce307b3db4f9cd6f4b4e7b2921c077ab5a1",
+        ),
+    ] {
+        let path = root.join(fixture_name);
+        assert!(path.is_file(), "M59 should check in {fixture_name}");
+        let fixture = read_json(&path);
+        assert_upstream_schema_fixture_header(&path, &fixture, schema, schema_data);
+        assert_eq!(fixture["oracle"]["capture_date"], "2026-07-10", "{path:?}");
+        assert_eq!(
+            fixture["oracle"]["rime_dll_sha256"],
+            "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+            "{path:?}"
+        );
+        assert_eq!(
+            fixture["oracle"]["rime_deployer_sha256"],
+            "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+            "{path:?}"
+        );
+        for field in ["capture_script_sha256", "probe_sha256"] {
+            assert!(
+                fixture["oracle"][field]
+                    .as_str()
+                    .is_some_and(|sha| sha.len() == 64),
+                "{path:?} must pin oracle.{field}"
+            );
+        }
+        let command = fixture["oracle"]["capture_command"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{path:?} must include capture_command"));
+        assert!(command.contains("-CaptureDate '2026-07-10'"), "{path:?}");
+        assert!(
+            command.contains("-CaptureMode 'm59-whole-input'"),
+            "{path:?}"
+        );
+        assert!(
+            command.contains(&format!(
+                "-Output 'crates/yune-core/tests/fixtures/upstream-1.17.0/{fixture_name}'"
+            )),
+            "{path:?} capture command must name its actual repository-relative output"
+        );
+        assert!(command.contains("-ExpectedRimeDllSha256"), "{path:?}");
+        assert!(command.contains("-ExpectedRimeDeployerSha256"), "{path:?}");
+        assert!(command.contains("-ExpectedSchemaDataCommit"), "{path:?}");
+        assert!(command.contains("-ExpectedDependencyCommit"), "{path:?}");
+
+        assert_eq!(
+            fixture["input_sequence"],
+            serde_json::json!([input]),
+            "{path:?}"
+        );
+        assert_eq!(
+            fixture["capture"]["capture_mode"], "m59-whole-input",
+            "{path:?}"
+        );
+        assert_eq!(
+            fixture["capture"]["source_row_policy"], "m59_transformed_algebra_whole_input_oracle",
+            "{path:?}"
+        );
+        assert_eq!(
+            fixture["capture"]["effective_scenarios"],
+            serde_json::json!(["paging_first_input", "commit_first_input_space"]),
+            "{path:?} M59 whole-input capture must not reinterpret numeric tone keys as selection"
+        );
+        assert!(
+            fixture["capture"]["key_event_semantics"]
+                .as_str()
+                .is_some_and(|semantics| {
+                    semantics.contains("RimeProcessKey") && semantics.contains("Bopomofo tone keys")
+                }),
+            "{path:?} must document raw key-event semantics"
+        );
+        assert_eq!(
+            fixture["capture"]["schema_data_commit"], schema_commit,
+            "{path:?}"
+        );
+        assert_eq!(
+            fixture["capture"]["source_repository_trees"][schema_data], expected_tree,
+            "{path:?}"
+        );
+        assert!(
+            fixture["capture"]["source_repositories_clean"]
+                .as_object()
+                .is_some_and(|states| {
+                    !states.is_empty() && states.values().all(|clean| clean == true)
+                }),
+            "{path:?} must prove every pinned schema repository was clean"
+        );
+
+        let case = &fixture["cases"][0];
+        assert_eq!(case["input"], input, "{path:?}");
+        assert_eq!(case["rime_get_input"], input, "{path:?}");
+        assert_eq!(case["preedit"], expected_preedit, "{path:?}");
+        assert_eq!(case["commit_text_preview"], expected_top, "{path:?}");
+        assert_eq!(case["all_candidates"][0]["text"], expected_top, "{path:?}");
+        assert_eq!(case["captured_all_pages"], true, "{path:?}");
+        assert_eq!(case["termination_reason"], "last_page", "{path:?}");
+
+        let row = &fixture["capture"]["whole_input_oracle_rows"][0];
+        assert_eq!(row["input"], input, "{path:?}");
+        assert_eq!(row["oracle_top"], expected_top, "{path:?}");
+        assert_eq!(row["source_dictionary_exact_term_count"], 0, "{path:?}");
+        assert_eq!(row["source_vocabulary_exact_term_count"], 0, "{path:?}");
+        assert_eq!(row["source_lexicon_absent"], true, "{path:?}");
+        assert_eq!(
+            fixture["capture"]["source_row_term_expansion"],
+            "oracle terms plus Unicode-scalar constituents",
+            "{path:?}"
+        );
+
+        let dictionary_rows = fixture["capture"]["source_dictionary_rows"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{path:?} must retain source dictionary rows"));
+        for constituent in expected_top.chars() {
+            let constituent = constituent.to_string();
+            assert!(
+                dictionary_rows.iter().any(|entry| {
+                    entry.as_str().and_then(|source| source.split('\t').next())
+                        == Some(constituent.as_str())
+                }),
+                "{path:?} must retain an external source row for {constituent}"
+            );
+        }
+
+        for field in ["source_dictionary_rows", "source_vocabulary_rows"] {
+            assert!(
+                fixture["capture"][field]
+                    .as_array()
+                    .is_some_and(|rows| rows.iter().all(|entry| {
+                        entry.as_str().and_then(|source| source.split('\t').next())
+                            != Some(expected_top)
+                    })),
+                "{path:?} must not smuggle the whole-input oracle top through {field}"
+            );
+        }
+        assert_no_local_absolute_paths(&path, &fixture);
+    }
+}
+
+#[test]
 fn upstream_schema_breadth_fixture_families_are_all_present() {
     let root = fixture_root("upstream-1.17.0");
     for (fixture_name, schema, schema_data, generalized_capture) in [

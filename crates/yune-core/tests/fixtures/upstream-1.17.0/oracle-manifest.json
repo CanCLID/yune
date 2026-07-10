@@ -18,6 +18,24 @@
       "capture_command": "powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps1 -OracleRoot target/upstream-oracle/1.17.0 -Output crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-basic.json -SentenceExpandedOutput crates/yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json"
     },
     {
+      "path": "double-pinyin-m59-whole-input.json",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "33f373436769d0be0a719bafb6d0c2367e4295c4ed8f26ecda528adf043bf62d",
+      "source_row_policy": "m59_transformed_algebra_whole_input_oracle",
+      "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'scripts/capture-upstream-schema.ps1' -OracleRoot 'target/upstream-oracle/1.17.0' -SchemaId 'double_pinyin' -SchemaDataRepo 'rime/rime-double-pinyin' -DependencyRepo 'rime/rime-prelude,rime/rime-essay,rime/rime-luna-pinyin,rime/rime-stroke' -InputSequence 'hknivs' -Output 'crates/yune-core/tests/fixtures/upstream-1.17.0/double-pinyin-m59-whole-input.json' -SourceRowPolicy 'm59_transformed_algebra_whole_input_oracle' -CaptureMode 'm59-whole-input' -CaptureDate '2026-07-10' -ExpectedRimeDllSha256 '86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b' -ExpectedRimeDeployerSha256 '3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071' -ExpectedSchemaDataCommit '01a13287cbd27819be1c34fa1ddc1b3643d5001b' -ExpectedDependencyCommit 'rime/rime-prelude=082425ea0684bca36474415d4a0e8db9b016487e,rime/rime-essay=48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed,rime/rime-luna-pinyin=18a80335c37522311f7cff02886cd81cec3b460a,rime/rime-stroke=3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c'",
+      "import_policy": "The first capture created this tracked fixture with create-new semantics. Future recaptures must use a fresh ignored output, compare bytes and behavior, then import reviewed bytes separately because the canonical path cannot be overwritten."
+    },
+    {
+      "path": "bopomofo-m59-whole-input.json",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "3f563a940f5d0437b809307d6162e6e1f8ad63e3faf430e1641480fcce667dff",
+      "source_row_policy": "m59_transformed_algebra_whole_input_oracle",
+      "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'scripts/capture-upstream-schema.ps1' -OracleRoot 'target/upstream-oracle/1.17.0' -SchemaId 'bopomofo' -SchemaDataRepo 'rime/rime-bopomofo' -DependencyRepo 'rime/rime-prelude,rime/rime-essay,rime/rime-terra-pinyin,rime/rime-stroke' -InputSequence 'cl3su3j06' -Output 'crates/yune-core/tests/fixtures/upstream-1.17.0/bopomofo-m59-whole-input.json' -SourceRowPolicy 'm59_transformed_algebra_whole_input_oracle' -CaptureMode 'm59-whole-input' -CaptureDate '2026-07-10' -ExpectedRimeDllSha256 '86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b' -ExpectedRimeDeployerSha256 '3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071' -ExpectedSchemaDataCommit '6085c9a38a4a728047862b33d67eee18aa86f3b9' -ExpectedDependencyCommit 'rime/rime-prelude=082425ea0684bca36474415d4a0e8db9b016487e,rime/rime-essay=48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed,rime/rime-terra-pinyin=8ddd679e4485e1d2f411e90f104244eddf580382,rime/rime-stroke=3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c'",
+      "import_policy": "The first capture created this tracked fixture with create-new semantics. Future recaptures must use a fresh ignored output, compare bytes and behavior, then import reviewed bytes separately because the canonical path cannot be overwritten."
+    },
+    {
       "path": "m59-luna-leading-single-composition.json",
       "milestone": "M59 Increment 1",
       "capture_date": "2026-07-10",

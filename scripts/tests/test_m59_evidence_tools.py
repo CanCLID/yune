@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -1253,6 +1254,165 @@ class CaptureContractTests(unittest.TestCase):
             source.index("if (seenPageNos.Contains(thisPageNo))"),
             source.index("if (thisPageNo != pageIndex)"),
         )
+
+    def test_generalized_schema_capture_is_pinned_create_new_and_date_explicit(self):
+        source = (SCRIPTS / "capture-upstream-schema.ps1").read_text(
+            encoding="utf-8-sig"
+        )
+        self.assertIn('[ValidatePattern(\'^\\d{4}-\\d{2}-\\d{2}$\')]', source)
+        self.assertIn("[string]$CaptureDate", source)
+        self.assertIn("[string]$ExpectedRimeDllSha256", source)
+        self.assertIn("[string]$ExpectedRimeDeployerSha256", source)
+        self.assertIn("[string]$ExpectedSchemaDataCommit", source)
+        self.assertIn("[string[]]$ExpectedDependencyCommit", source)
+        self.assertIn("[System.IO.FileMode]::CreateNew", source)
+        self.assertIn("Output must not already exist", source)
+        self.assertIn("Upstream repository must be clean for capture", source)
+        self.assertIn("Upstream repository commit mismatch", source)
+        self.assertIn("Assert-GitRepositoryStateUnchanged", source)
+        self.assertIn("rime.dll SHA-256 mismatch", source)
+        self.assertIn("rime_deployer.exe SHA-256 mismatch", source)
+        self.assertIn("capture_date: captureDate", source)
+        self.assertIn("capture_command: captureCommand", source)
+        self.assertIn("-CaptureDate $(Quote-CommandArg $CaptureDate)", source)
+        self.assertIn("-Output $(Quote-CommandArg $EvidenceOutput)", source)
+        self.assertIn("-ExpectedSchemaDataCommit", source)
+        self.assertNotIn("capture_date: '2026-06-21'", source)
+        self.assertLess(
+            source.index("if (Test-Path -LiteralPath $Output)"),
+            source.index("foreach ($Dir in @($Shared, $User))"),
+        )
+
+    def test_generalized_schema_capture_versions_whole_input_scenarios(self):
+        source = (SCRIPTS / "capture-upstream-schema.ps1").read_text(
+            encoding="utf-8-sig"
+        )
+        self.assertIn('[ValidateSet("m19-component", "m59-whole-input")]', source)
+        self.assertIn('$CaptureMode -eq "m19-component"', source)
+        self.assertIn('"tone_key_2_after_first_input"', source)
+        self.assertIn('"before_tone_key_2"', source)
+        self.assertIn('"after_tone_key_2"', source)
+        self.assertIn("digits remain real schema key events", source)
+        self.assertIn("effective_scenarios: effectiveScenarios", source)
+        self.assertIn("whole_input_oracle_rows", source)
+        self.assertIn("source_lexicon_absent", source)
+        self.assertIn("termsWithCharacters(terms)", source)
+        self.assertIn("oracle terms plus Unicode-scalar constituents", source)
+        self.assertIn('$DependencyArguments = Quote-CommandArg ($DependencyRepo -join ",")', source)
+        self.assertIn('$InputArguments = Quote-CommandArg ($InputSequence -join ",")', source)
+
+    def test_m59_whole_input_fixtures_match_manifest_and_preserve_components(self):
+        fixture_root = (
+            SCRIPTS.parent / "crates/yune-core/tests/fixtures/upstream-1.17.0"
+        )
+        manifest = json.loads(
+            (fixture_root / "oracle-manifest.json").read_text(encoding="utf-8")
+        )
+        manifest_by_path = {entry["path"]: entry for entry in manifest["files"]}
+        expected = {
+            "double-pinyin-m59-whole-input.json": (
+                "hknivs",
+                "好逆鐘",
+                "33f373436769d0be0a719bafb6d0c2367e4295c4ed8f26ecda528adf043bf62d",
+            ),
+            "bopomofo-m59-whole-input.json": (
+                "cl3su3j06",
+                "好你玩",
+                "3f563a940f5d0437b809307d6162e6e1f8ad63e3faf430e1641480fcce667dff",
+            ),
+        }
+        for fixture_name, (input_text, oracle_top, expected_sha) in expected.items():
+            with self.subTest(fixture=fixture_name):
+                path = fixture_root / fixture_name
+                payload = path.read_bytes()
+                self.assertEqual(hashlib.sha256(payload).hexdigest(), expected_sha)
+                fixture = json.loads(payload.decode("utf-8"))
+                manifest_row = manifest_by_path[fixture_name]
+                self.assertEqual(manifest_row["sha256"], expected_sha)
+                self.assertEqual(
+                    manifest_row["capture_command"],
+                    fixture["oracle"]["capture_command"],
+                )
+                self.assertIn(
+                    f"-Output 'crates/yune-core/tests/fixtures/upstream-1.17.0/{fixture_name}'",
+                    fixture["oracle"]["capture_command"],
+                )
+                self.assertEqual(fixture["cases"][0]["input"], input_text)
+                self.assertEqual(
+                    fixture["cases"][0]["all_candidates"][0]["text"], oracle_top
+                )
+                proof = fixture["capture"]["whole_input_oracle_rows"][0]
+                self.assertEqual(proof["oracle_top"], oracle_top)
+                self.assertEqual(proof["source_dictionary_exact_term_count"], 0)
+                self.assertEqual(proof["source_vocabulary_exact_term_count"], 0)
+                self.assertTrue(proof["source_lexicon_absent"])
+                dictionary_terms = {
+                    row.split("\t", 1)[0]
+                    for row in fixture["capture"]["source_dictionary_rows"]
+                }
+                self.assertTrue(
+                    set(oracle_top).issubset(dictionary_terms),
+                    "every oracle-top constituent must retain external source-row provenance",
+                )
+                self.assertEqual(
+                    fixture["capture"]["effective_scenarios"],
+                    ["paging_first_input", "commit_first_input_space"],
+                )
+
+        component_hashes = {
+            "double-pinyin-basic.json": (
+                "2f17053131d73028f315229fe7f22df226fc4b67f3b224e19ce99ed2bf864d24"
+            ),
+            "bopomofo-basic.json": (
+                "3288e14306c3fc1cfe53e10f0bb743afa02e514d3bafe652f544e423f1047c70"
+            ),
+        }
+        for fixture_name, expected_sha in component_hashes.items():
+            self.assertEqual(
+                hashlib.sha256((fixture_root / fixture_name).read_bytes()).hexdigest(),
+                expected_sha,
+                f"historical component fixture changed: {fixture_name}",
+            )
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_generalized_schema_capture_rejects_existing_output_before_mutation(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            oracle_root = root / "missing-oracle"
+            output = root / "capture.json"
+            sentinel = b"existing-output-must-survive"
+            output.write_bytes(sentinel)
+            completed = subprocess.run(
+                [
+                    powershell,
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    str(SCRIPTS / "capture-upstream-schema.ps1"),
+                    "-OracleRoot",
+                    str(oracle_root),
+                    "-SchemaId",
+                    "double_pinyin",
+                    "-Output",
+                    str(output),
+                    "-CaptureDate",
+                    "2026-07-10",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+            )
+            combined = completed.stdout + completed.stderr
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("Output must not already exist", combined)
+            self.assertNotIn("Missing required upstream oracle input", combined)
+            self.assertEqual(output.read_bytes(), sentinel)
+            self.assertFalse(oracle_root.exists())
 
     def test_lane_b_capture_roots_are_unique_and_marker_verified(self):
         luna_bytes = (SCRIPTS / "capture-m59-luna-composition.ps1").read_bytes()

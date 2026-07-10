@@ -1,0 +1,488 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "rime_deployer_sha256": "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+    "capture_script": "scripts/capture-upstream-schema.ps1",
+    "capture_script_sha256": "3275379dad406606555d0674ca73ba479ce177cadaf3bc486544c7e51494b8b5",
+    "probe_source": "scripts/oracle-rime-probe.cs",
+    "probe_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+    "capture_date": "2026-07-10",
+    "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'scripts/capture-upstream-schema.ps1' -OracleRoot 'target/upstream-oracle/1.17.0' -SchemaId 'bopomofo' -SchemaDataRepo 'rime/rime-bopomofo' -DependencyRepo 'rime/rime-prelude,rime/rime-essay,rime/rime-terra-pinyin,rime/rime-stroke' -InputSequence 'cl3su3j06' -Output 'crates/yune-core/tests/fixtures/upstream-1.17.0/bopomofo-m59-whole-input.json' -SourceRowPolicy 'm59_transformed_algebra_whole_input_oracle' -CaptureMode 'm59-whole-input' -CaptureDate '2026-07-10' -ExpectedRimeDllSha256 '86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b' -ExpectedRimeDeployerSha256 '3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071' -ExpectedSchemaDataCommit '6085c9a38a4a728047862b33d67eee18aa86f3b9' -ExpectedDependencyCommit 'rime/rime-prelude=082425ea0684bca36474415d4a0e8db9b016487e,rime/rime-essay=48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed,rime/rime-terra-pinyin=8ddd679e4485e1d2f411e90f104244eddf580382,rime/rime-stroke=3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c'"
+  },
+  "schema": "bopomofo",
+  "module_list": [
+    "default"
+  ],
+  "input_sequence": [
+    "cl3su3j06"
+  ],
+  "capture": {
+    "schema_data": "rime/rime-bopomofo",
+    "schema_data_commit": "6085c9a38a4a728047862b33d67eee18aa86f3b9",
+    "dependency_repositories": {
+      "rime/rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+      "rime/rime-terra-pinyin": "8ddd679e4485e1d2f411e90f104244eddf580382",
+      "rime/rime-stroke": "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    },
+    "source_repository_trees": {
+      "rime/rime-bopomofo": "7c372ce307b3db4f9cd6f4b4e7b2921c077ab5a1",
+      "rime/rime-prelude": "d7e128f09ce6b1f920729ef2f848ca1294c9cb31",
+      "rime/rime-essay": "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+      "rime/rime-terra-pinyin": "b545593eb5d33b37542036465fd6d1abb5823e91",
+      "rime/rime-stroke": "d60c793d8d68154847923f21aa73ba90441dab32"
+    },
+    "source_repositories_clean": {
+      "rime/rime-bopomofo": true,
+      "rime/rime-prelude": true,
+      "rime/rime-essay": true,
+      "rime/rime-terra-pinyin": true,
+      "rime/rime-stroke": true
+    },
+    "source_row_policy": "m59_transformed_algebra_whole_input_oracle",
+    "schema_file": "rime-bopomofo/bopomofo.schema.yaml",
+    "capture_mode": "m59-whole-input",
+    "effective_scenarios": [
+      "paging_first_input",
+      "commit_first_input_space"
+    ],
+    "key_event_semantics": "RimeProbe.Capture sends each input UTF-16 code unit to RimeProcessKey(keycode, 0); digits remain real schema key events (including Bopomofo tone keys), never pre-decoded syllable separators.",
+    "page_policy": "RimeProbe.Capture follows Page_Down until last_page; incomplete or non-advancing pagination is fatal.",
+    "commands": {
+      "deploy": "rime_deployer.exe --build disposable/user disposable/shared disposable/user/build",
+      "capture": "RimeProbe.Capture(schema=bopomofo, inputs=[\"cl3su3j06\"])"
+    },
+    "source_row_term_expansion": "oracle terms plus Unicode-scalar constituents",
+    "dictionary": "terra_pinyin.dict.yaml",
+    "vocabulary": "essay.txt",
+    "source_dictionary_file": "rime-terra-pinyin/terra_pinyin.dict.yaml",
+    "essay_vocabulary_file": "rime-essay/essay.txt",
+    "source_dictionary_rows": [
+      "你\tni3",
+      "好\thao3\t95%",
+      "好\thao4\t5%",
+      "玩\twan2",
+      "郝\thao3",
+      "𡥆\thao3",
+      "𡥆\thao4",
+      "𤫧\thao3"
+    ],
+    "source_vocabulary_rows": [
+      "你\t972978",
+      "好\t378951",
+      "玩\t67947",
+      "郝\t1783"
+    ],
+    "speller_algebra_rules": [
+      "xform/^m(\\d)$/mu$1/",
+      "xform/^r5$/er5/",
+      "xform/iu/iou/",
+      "xform/ui/uei/",
+      "xform/ong/ung/",
+      "xform/^yi?/i/",
+      "xform/^wu?/u/",
+      "xform/iu/v/",
+      "xform/^([jqx])u/$1v/",
+      "xform/([iuv])n/$1en/",
+      "xform/^zhi?/Z/",
+      "xform/^chi?/C/",
+      "xform/^shi?/S/",
+      "xform/^([zcsr])i/$1/",
+      "xform/ai/A/",
+      "xform/ei/I/",
+      "xform/ao/O/",
+      "xform/ou/U/",
+      "xform/ang/K/",
+      "xform/eng/G/",
+      "xform/an/M/",
+      "xform/en/N/",
+      "xform/er/R/",
+      "xform/eh/E/",
+      "xform/([iv])e/$1E/",
+      "derive/([bpmfdtnlgkhjqxZCSrzcs])([iuv])/$2$1/",
+      "derive/([iuv])([aoeEAIOUMNKGR])/$2$1/",
+      "derive/([bpmfdtnlgkhjqxZCSrzcs])([aoeEAIOUMNKGR])/$2$1/",
+      "derive/([bpmfdtnlgkhjqxZCSrzcs])([iuv])/$2$1/",
+      "abbrev/^([bpmfdtnlgkhjqxZCSrzcs]).+$/$1/",
+      "abbrev/^([A-Za-z]+)\\d$/$1/",
+      "abbrev/^([bpmfdtnlgkhjqxZCSrzcs]).+(\\d)$/$1$2/",
+      "xlit|bpmfdtnlgkhjqxZCSrzcsiuvaoeEAIOUMNKGR12345|1qaz2wsxedcrfv5tgbyhnujm8ik,9ol.0p;/- 6347|"
+    ],
+    "whole_input_oracle_rows": [
+      {
+        "input": "cl3su3j06",
+        "oracle_top": "好你玩",
+        "source_dictionary_exact_term_count": 0,
+        "source_vocabulary_exact_term_count": 0,
+        "source_lexicon_absent": true
+      }
+    ]
+  },
+  "cases": [
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "input": "cl3su3j06",
+      "rime_get_input": "cl3su3j06",
+      "processed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "preedit": "ㄏㄠˇ ㄋㄧˇ ㄨㄢˊ",
+      "commit_text_preview": "好你玩",
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "num_candidates": 5,
+      "is_last_page": true,
+      "candidate_pointer_null": false,
+      "menu_present": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "好你玩",
+          "comment": null,
+          "global_index": 0
+        },
+        {
+          "index": 1,
+          "text": "好",
+          "comment": null,
+          "global_index": 1
+        },
+        {
+          "index": 2,
+          "text": "郝",
+          "comment": null,
+          "global_index": 2
+        },
+        {
+          "index": 3,
+          "text": "𡥆",
+          "comment": null,
+          "global_index": 3
+        },
+        {
+          "index": 4,
+          "text": "𤫧",
+          "comment": null,
+          "global_index": 4
+        }
+      ],
+      "pages": [
+        {
+          "page_no": 0,
+          "page_size": 5,
+          "is_last_page": true,
+          "candidates": [
+            {
+              "index": 0,
+              "text": "好你玩",
+              "comment": null,
+              "global_index": 0
+            },
+            {
+              "index": 1,
+              "text": "好",
+              "comment": null,
+              "global_index": 1
+            },
+            {
+              "index": 2,
+              "text": "郝",
+              "comment": null,
+              "global_index": 2
+            },
+            {
+              "index": 3,
+              "text": "𡥆",
+              "comment": null,
+              "global_index": 3
+            },
+            {
+              "index": 4,
+              "text": "𤫧",
+              "comment": null,
+              "global_index": 4
+            }
+          ]
+        }
+      ],
+      "all_candidates": [
+        {
+          "index": 0,
+          "text": "好你玩",
+          "comment": null,
+          "global_index": 0
+        },
+        {
+          "index": 1,
+          "text": "好",
+          "comment": null,
+          "global_index": 1
+        },
+        {
+          "index": 2,
+          "text": "郝",
+          "comment": null,
+          "global_index": 2
+        },
+        {
+          "index": 3,
+          "text": "𡥆",
+          "comment": null,
+          "global_index": 3
+        },
+        {
+          "index": 4,
+          "text": "𤫧",
+          "comment": null,
+          "global_index": 4
+        }
+      ],
+      "captured_all_pages": true,
+      "termination_reason": "last_page"
+    }
+  ],
+  "snapshots": [
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "paging_first_input",
+      "label": "page_1",
+      "rime_get_input": "cl3su3j06",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 26,
+      "cursor_pos": 26,
+      "preedit": "ㄏㄠˇ ㄋㄧˇ ㄨㄢˊ",
+      "commit_text_preview": "好你玩",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "好你玩",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "好",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "郝",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "𡥆",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "𤫧",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "paging_first_input",
+      "label": "page_2",
+      "rime_get_input": "cl3su3j06",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 26,
+      "cursor_pos": 26,
+      "preedit": "ㄏㄠˇ ㄋㄧˇ ㄨㄢˊ",
+      "commit_text_preview": "好你玩",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "好你玩",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "好",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "郝",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "𡥆",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "𤫧",
+          "comment": null
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "paging_first_input",
+      "label": "page_1_again",
+      "rime_get_input": "cl3su3j06",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 26,
+      "cursor_pos": 26,
+      "preedit": "ㄏㄠˇ ㄋㄧˇ ㄨㄢˊ",
+      "commit_text_preview": "好你玩",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "好你玩",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "好",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "郝",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "𡥆",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "𤫧",
+          "comment": null
+        }
+      ],
+      "processed": 1
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "commit_first_input_space",
+      "label": "before_space",
+      "rime_get_input": "cl3su3j06",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 26,
+      "cursor_pos": 26,
+      "preedit": "ㄏㄠˇ ㄋㄧˇ ㄨㄢˊ",
+      "commit_text_preview": "好你玩",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 5,
+      "page_no": 0,
+      "is_last_page": true,
+      "selected_candidates": [
+        {
+          "index": 0,
+          "text": "好你玩",
+          "comment": null
+        },
+        {
+          "index": 1,
+          "text": "好",
+          "comment": null
+        },
+        {
+          "index": 2,
+          "text": "郝",
+          "comment": null
+        },
+        {
+          "index": 3,
+          "text": "𡥆",
+          "comment": null
+        },
+        {
+          "index": 4,
+          "text": "𤫧",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "schema_id": "bopomofo",
+      "schema_name": "注音",
+      "scenario": "commit_first_input_space",
+      "label": "after_space",
+      "rime_get_input": "cl3su3j06",
+      "is_composing": true,
+      "is_ascii_mode": false,
+      "is_full_shape": false,
+      "is_simplified": false,
+      "is_traditional": false,
+      "is_ascii_punct": false,
+      "composition_length": 9,
+      "cursor_pos": 9,
+      "preedit": "好你玩",
+      "commit_text_preview": "好你玩",
+      "commit_text": null,
+      "highlighted_candidate_index": 0,
+      "page_size": 0,
+      "page_no": 0,
+      "is_last_page": false,
+      "selected_candidates": [],
+      "processed": 1
+    }
+  ]
+}

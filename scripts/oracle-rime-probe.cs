@@ -187,6 +187,8 @@ public static class RimeProbe {
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
   public static extern void RimeInitialize(ref RimeTraits traits);
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
+  public static extern int RimeDeployWorkspace();
+  [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
   public static extern void RimeFinalize();
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
   public static extern UIntPtr RimeCreateSession();
@@ -218,8 +220,11 @@ public static class RimeProbe {
   public static extern int RimeGetStatus(UIntPtr session, ref RimeStatus status);
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
   public static extern int RimeFreeStatus(ref RimeStatus status);
-  [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
-  public static extern IntPtr RimeGetInput(UIntPtr session);
+  [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rime_get_api")]
+  static extern IntPtr RimeGetApi();
+
+  [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+  delegate IntPtr RimeGetInputApiFn(UIntPtr session);
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
   public static extern IntPtr RimeGetStateLabel(UIntPtr session, IntPtr optionName, int state);
   [DllImport("rime.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -398,11 +403,24 @@ public static class RimeProbe {
   }
 
   static string CurrentInput(UIntPtr session, RimeContext ctx) {
-    try {
-      return S(RimeGetInput(session));
-    } catch (EntryPointNotFoundException) {
-      return S(ctx.composition.preedit);
+    const int GetInputSlot = 69;
+    var api = RimeGetApi();
+    if (api == IntPtr.Zero) {
+      throw new Exception("rime_get_api returned null while resolving get_input");
     }
+    int firstSlotOffset = IntPtr.Size == 8 ? 8 : 4;
+    int getInputOffset = firstSlotOffset + GetInputSlot * IntPtr.Size;
+    int dataSize = Marshal.ReadInt32(api);
+    if (dataSize + sizeof(int) < getInputOffset + IntPtr.Size) {
+      throw new Exception("RimeApi is too small to contain get_input slot 69");
+    }
+    var function = Marshal.ReadIntPtr(api, getInputOffset);
+    if (function == IntPtr.Zero) {
+      throw new Exception("RimeApi get_input slot 69 is null");
+    }
+    var getInput = (RimeGetInputApiFn)Marshal.GetDelegateForFunctionPointer(
+        function, typeof(RimeGetInputApiFn));
+    return S(getInput(session));
   }
 
   static Dictionary<string, object> Snapshot(
@@ -450,6 +468,34 @@ public static class RimeProbe {
     return result;
   }
 
+  public static int DeployWorkspace(
+      string shared,
+      string user,
+      string build,
+      string[] modulesInput) {
+    return DeployWorkspaceWithIdentity(shared, user, build, modulesInput, UpstreamIdentity());
+  }
+
+  public static int DeployWorkspaceWithIdentity(
+      string shared,
+      string user,
+      string build,
+      string[] modulesInput,
+      ProbeIdentity identity) {
+    var ptrs = new List<IntPtr>();
+    var traits = Traits(shared, user, build, modulesInput, identity, ptrs);
+    try {
+      RimeSetup(ref traits);
+      RimeInitialize(ref traits);
+      return RimeDeployWorkspace();
+    } finally {
+      RimeFinalize();
+      foreach (var p in ptrs) {
+        Marshal.FreeHGlobal(p);
+      }
+    }
+  }
+
   public static List<Dictionary<string, object>> Capture(
       string shared,
       string user,
@@ -492,7 +538,13 @@ public static class RimeProbe {
         RimeClearComposition(session);
         var processed = new List<int>();
         foreach (var ch in input) {
-          processed.Add(RimeProcessKey(session, (int)ch, 0));
+          int handled = RimeProcessKey(session, (int)ch, 0);
+          if (handled == 0) {
+            throw new Exception(
+                "RimeProcessKey did not handle input key " + ((int)ch).ToString() +
+                " while capturing " + input);
+          }
+          processed.Add(handled);
         }
         var status = new RimeStatus { data_size = Marshal.SizeOf(typeof(RimeStatus)) - sizeof(int) };
         if (RimeGetStatus(session, ref status) == 0) {
@@ -531,6 +583,13 @@ public static class RimeProbe {
             throw new Exception("RimeGetContext failed for " + input);
           }
           int thisPageNo = ctx.menu.page_no;
+          if (thisPageNo != pageIndex) {
+            RimeFreeContext(ref ctx);
+            throw new Exception(
+                "non-contiguous page_no while capturing " + input +
+                ": expected " + pageIndex.ToString() +
+                ", got " + thisPageNo.ToString());
+          }
           if (seenPageNos.Contains(thisPageNo)) {
             paginationError = "page_down_did_not_advance_at_page_" + thisPageNo;
             RimeFreeContext(ref ctx);
@@ -546,6 +605,12 @@ public static class RimeProbe {
             preedit = S(ctx.composition.preedit);
             commitPreview = S(ctx.commit_text_preview);
             rimeInput = CurrentInput(session, ctx);
+            if (!string.Equals(rimeInput, input, StringComparison.Ordinal)) {
+              RimeFreeContext(ref ctx);
+              throw new Exception(
+                  "RimeGetInput mismatch while capturing " + input +
+                  ": got " + (rimeInput ?? "<null>"));
+            }
             highlighted = ctx.menu.highlighted_candidate_index;
             firstPageSize = ctx.menu.page_size;
             firstPageIsLast = ctx.menu.is_last_page != 0;
@@ -566,8 +631,9 @@ public static class RimeProbe {
           }
           int pageDownHandled = RimeProcessKey(session, PageDownKeycode, 0);
           if (pageDownHandled == 0) {
-            paginationError = "page_down_not_handled_at_page_" + thisPageNo;
-            break;
+            throw new Exception(
+                "Page_Down was not handled while capturing " + input +
+                " at page " + thisPageNo.ToString());
           }
         }
 

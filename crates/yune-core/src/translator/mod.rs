@@ -485,6 +485,9 @@ pub struct StaticTableTranslator {
     source_entries: Option<Vec<(String, Candidate)>>,
     storage: TableStorage,
     prism_payload: Option<RimePrismRuntimePayload>,
+    /// RIME `sort:` policy of the backing dictionary; false (`sort: original`)
+    /// disables the M59 tone-merge re-rank — source row order is the contract.
+    sort_by_weight: bool,
     spelling_abbreviation_entries: HashSet<(String, String, String)>,
     normal_codes: NormalCodeIndex,
     enable_completion: bool,
@@ -569,6 +572,7 @@ impl StaticTableTranslator {
             source_entries: Some(entries),
             storage: TableStorage::Heap(entries_by_code),
             prism_payload: None,
+            sort_by_weight: true,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
             enable_completion: false,
@@ -610,6 +614,7 @@ impl StaticTableTranslator {
 
     #[must_use]
     pub fn from_dictionary(dictionary: TableDictionary) -> Self {
+        let sort_by_weight = dictionary.sort_by_weight();
         let preset_vocabulary = dictionary.preset_vocabulary_entries().to_vec();
         let abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry> = Vec::new();
         let corrections = dictionary.corrections().to_vec();
@@ -634,6 +639,7 @@ impl StaticTableTranslator {
             source_entries: Some(entries),
             storage: TableStorage::Heap(entries_by_code),
             prism_payload: None,
+            sort_by_weight,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
             enable_completion: false,
@@ -678,6 +684,7 @@ impl StaticTableTranslator {
         dictionary: TableDictionary,
         prism_payload: Option<RimePrismBinPayload>,
     ) -> Self {
+        let sort_by_weight = dictionary.sort_by_weight();
         let preset_vocabulary = dictionary.preset_vocabulary_entries().to_vec();
         let abbreviation_preset_vocabulary: Vec<PresetVocabularyEntry> = Vec::new();
         let corrections = dictionary.corrections().to_vec();
@@ -689,6 +696,7 @@ impl StaticTableTranslator {
                 dictionary,
             ))),
             prism_payload: prism_payload.map(RimePrismRuntimePayload::from),
+            sort_by_weight,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
             enable_completion: false,
@@ -757,6 +765,7 @@ impl StaticTableTranslator {
             source_entries: None,
             storage: TableStorage::Compact(Box::new(store)),
             prism_payload,
+            sort_by_weight: true,
             spelling_abbreviation_entries: HashSet::new(),
             normal_codes,
             enable_completion: false,
@@ -2521,6 +2530,11 @@ impl StaticTableTranslator {
         }
         let mut needs_reorder = false;
         let mut prev_exact_quality: Option<f32> = None;
+        // `sort: original` dictionaries contract to source row order (librime honors
+        // it regardless of weights) — the tone-merge re-rank must never fire there.
+        if !self.sort_by_weight {
+            exact_scan_ranges.clear();
+        }
         'detector: for &(start, len) in &exact_scan_ranges {
             for pending in &pooled[start..start + len] {
                 if !is_true_exact(pending) {

@@ -369,6 +369,10 @@ pub struct TableDictionary {
     pub(crate) lookup_records: HashMap<String, Vec<DictionaryLookupRecord>>,
     pub(crate) byte_backed_lookup_records: Option<ByteBackedDictionaryLookupRecords>,
     pub(crate) preset_vocabulary: Vec<PresetVocabularyEntry>,
+    /// RIME `sort:` policy — false for `sort: original`, whose source row order is
+    /// the ranking contract. Byte-backed reloads without a parsed header keep the
+    /// default (true).
+    pub(crate) sort_by_weight: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -403,6 +407,7 @@ impl TableDictionary {
             tolerance_rules: advanced.tolerance_rules,
             lookup_records: advanced.lookup_records,
             byte_backed_lookup_records: advanced.byte_backed_lookup_records,
+            sort_by_weight: true,
             preset_vocabulary: advanced.preset_vocabulary,
         }
     }
@@ -575,6 +580,7 @@ impl TableDictionary {
             lookup_records,
             byte_backed_lookup_records: None,
             preset_vocabulary: Vec::new(),
+            sort_by_weight: metadata.sort_by_weight,
         })
     }
 
@@ -610,6 +616,12 @@ impl TableDictionary {
     #[must_use]
     pub fn dict_settings(&self) -> &BTreeMap<String, String> {
         &self.dict_settings
+    }
+
+    /// RIME `sort:` policy: false when the source declared `sort: original`.
+    #[must_use]
+    pub fn sort_by_weight(&self) -> bool {
+        self.sort_by_weight
     }
 
     #[must_use]
@@ -787,6 +799,7 @@ fn finalize_rime_table_entries(
         lookup_records,
         byte_backed_lookup_records: None,
         preset_vocabulary: Vec::new(),
+        sort_by_weight: metadata.sort_by_weight,
     }
 }
 

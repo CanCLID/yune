@@ -344,11 +344,14 @@ amendment):
       regenerates content-identical (0 structural diffs) with provenance re-pinned
       (DLL SHA self-check); byte-diff is `ConvertTo-Json` indentation only
       (content-reproducible, not byte-reproducible — noted).
-- [ ] **BLOCKED — Yune cannot deploy the staged rime-cantonese** (`deploy()` non-TRUE;
-      source-path failure, NOT staleness [owner-verified] and NOT `import_tables`).
-      Next: diagnose via a `tests/` harness surfacing the `Result`; check
-      `vocabulary: essay-cantonese` early. No Yune canonical output → no diff yet.
-      **Add the missing control jyutping input** to the capture once the runner works.
+- [x] **RESOLVED 2026-07-08/09 (was: BLOCKED on staged rime-cantonese deploy).**
+      Root cause was a `schema_list` mismatch, not a capability gap (runner overlay
+      `lane-a-runner/default.yaml`, landed `3560a51c`). The canonical lane then
+      produced the frozen 13-input diff (`lane-a-diff-2026-07-08/`), the ranking
+      diagnosis + fix (`lane-a-ranking-fix-2026-07-09/`, landed `f0ca95d6`), and the
+      re-frozen post-fix diff + owner-signed D-48 disposition table
+      (`lane-a-ranking-fix-2026-07-09/re-diff/`). Residual classes are the named
+      work items in the disposition table.
 - [x] **Lane B (DONE, landed `c89a8ea9`):** luna complete-list/page-turn injection
       point traced + implemented; storage/prism facts recorded (luna is
       Compact+prism → bounded syllabary); `moboyi`→莫伯洢 acceptance added as a real-path test (not a capture).

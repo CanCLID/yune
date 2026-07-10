@@ -66,10 +66,19 @@ Known fire-sites beyond the canonical target (named, accepted):
   path): alias exact rows are in-domain and may permute **among the exact rows only** —
   completions no longer move (this was wider in the unscoped version). Unpinned area;
   luna parity + m59 suites green.
-- **`sort: original` single-code sets** are protected only by today's file order; if a
-  future dict edit introduces a per-code weight increase, the detector will fire and
-  weight-sort those exacts. This is recorded as intended-lean behavior (weight order is
-  the oracle-correct order), not silent.
+- ~~**`sort: original` single-code sets** ... "weight order is the oracle-correct
+  order"~~ — **CORRECTED (GPT review P1, 2026-07-09): that framing was wrong.** For
+  `sort: original`, librime's contract IS source row order regardless of weights, so a
+  detector fire there diverges FROM the oracle. Fixed by plumbing the dictionary's
+  `sort:` policy into the translator (`TableDictionary::sort_by_weight` →
+  `StaticTableTranslator.sort_by_weight`) and disabling the re-rank when false, with a
+  biting regression test (`sort_original_dictionary_preserves_source_order_over_weight` —
+  written first, failed `["second","first"]`, passes post-fix). RESIDUE (named):
+  byte-backed `.table.bin` reloads carry no sort-policy flag (the advanced payload does
+  not serialize dict_settings), so they default to fire-allowed — correct for the
+  canonical by_weight lane, unchanged-from-today for the product's `sort: original`
+  compiled tables (whose data scans weight-descending, detector silent). Carrying the
+  flag through the compiled format is a named follow-up (format extension, versioned).
 - **Tolerance-rule rows are EXCLUDED from the domain** (adversarial-review finding): a
   tolerance near-match spec creates rows with `entry_code == lookup_code` for a code the
   user did not type; without exclusion, a junction increase would interleave them above

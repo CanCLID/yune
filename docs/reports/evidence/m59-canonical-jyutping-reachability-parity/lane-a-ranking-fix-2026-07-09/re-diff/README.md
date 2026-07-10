@@ -65,3 +65,10 @@ at the mechanism, and pin oracle-backed rows drawn from the enumeration.
 are provably inert on this lane — the staged canonical dict declares no tolerance rules
 (grep: 0) and all weights are finite — and the `bei`/`be`/`beix` heads were re-verified
 byte-identical on the final rebuilt binary after the refinements landed.
+
+**ERRATA (2026-07-09, GPT review P2):** the first committed `re-classified.json` labeled
+`nri` as `match` — a classifier edge-case bug (a zero-length Yune list produced an empty
+comparison window, so 0-vs-1309 scored as trivially exact; the prose class-4 row above was
+always correct). The classifier now treats an empty Yune list as full-oracle
+under-admission and compares uncapped-short lists against the complete oracle list;
+`re-classified.json` is regenerated (`nri`: under=1309; `ngohaig`: under=2005).

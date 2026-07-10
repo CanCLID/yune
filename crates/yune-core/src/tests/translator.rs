@@ -1732,3 +1732,33 @@ fn punctuation_translator_keeps_digit_separator_literal_for_punct_number() {
     assert_eq!(engine.context().candidates[0].text, "．");
     assert_eq!(engine.context().candidates[0].comment, "〔全角〕");
 }
+
+#[test]
+fn sort_original_dictionary_preserves_source_order_over_weight() {
+    // GPT review P1 (2026-07-09): `sort: original` is a RIME contract — the dict
+    // author's row order IS the ranking, and librime preserves it regardless of
+    // weights. The tone-merge detector must not re-rank these exacts.
+    let translator = StaticTableTranslator::parse_rime_dict_yaml(
+        r#"
+---
+name: original_order
+version: "0.1"
+sort: original
+...
+
+first	na	1
+second	na	9
+"#,
+    )
+    .expect("dictionary should parse");
+    let candidates = translator.translate("na");
+    let texts: Vec<&str> = candidates
+        .iter()
+        .map(|candidate| candidate.text.as_str())
+        .collect();
+    assert_eq!(
+        texts,
+        ["first", "second"],
+        "sort: original must keep source row order even when weights ascend"
+    );
+}

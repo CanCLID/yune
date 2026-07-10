@@ -1,10 +1,16 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
-> **CURRENT CLOSEOUT STATUS (2026-07-09): full Path A is locked; M59 is NOT
+> **CURRENT CLOSEOUT STATUS (2026-07-10): full Path A is locked; M59 is NOT
 > closeable.** The genuine Lane B **reachability mechanism** landed at `c89a8ea9`
 > and remains source-truthful and non-circular, but Lane B D-48 exact-order parity
-> is still open. Workspace deployment fidelity completed at `2ee0805f`; no other
-> open behavior or final-gate row is implied complete by this status update.
+> is still open. Workspace deployment fidelity completed at `2ee0805f`.
+> Increment 2's explicit TypeDuck activation and profile-driven unified forward
+> navigation landed at `e37ee011`; `cantonese_parity` is 41/41,
+> `typeduck_windows_boundary` is 4/4, physical/API controls are equivalent, and
+> source-current WASM reaches `zi -> 諮` in four PageDown operations. The green
+> evidence and informational algebra/CJ-1/OpenCC/risk checkpoint are under
+> `increment-2-profile-paging/`. Compiled sort and transformed-algebra 3a/3b are
+> next; no other open behavior or final-gate row is implied complete here.
 >
 > Nothing remaining moves to M60 or another milestone. After 4a lands, **no
 > subsequent engine-behavior increment** (including 4b) starts until Fable's
@@ -57,6 +63,13 @@
   increment likewise pauses for its Fable resolution. Other reviews remain
   nonblocking. A red `n`/`ni`/`hao` 4b ratchet is an owner stop before landing,
   not permission to re-baseline, revert, or weaken exact-order acceptance.
+- **Increment 2 complete (`e37ee011`, pushed 2026-07-10):** explicit
+  TypeDuck-profile activation repaired the direct Cantonese and synthetic
+  Windows harnesses without golden edits; one `Engine` policy now governs
+  forward completion for Standard, long TypeDuck, and short bounded TypeDuck
+  inputs across Engine/native/API/browser controls. M59-NAV-01 is green; the
+  informational checkpoint preserves the still-uncaptured `hknivs` and
+  `cl3su3j06` whole-input oracle rows rather than inventing outputs.
 
 ## Honest baseline (`7d5ec9b8`, verified 2026-07-06)
 

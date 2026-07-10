@@ -1,0 +1,12 @@
+artifact,local_scratch_path,bytes,sha256,disposition
+emscripten-js,target/wasm32-unknown-emscripten/release/yune-web.js,72183,f9f0e8302f29e26254393b453a401575c66874a069db7d311d53b83ac14577b6,hash-only
+emscripten-wasm,target/wasm32-unknown-emscripten/release/yune-web.wasm,2828036,04c8c3ede691fdaaf4f2744b8ccccf825a2fad76216bb69e9e52a8907121797e,hash-only
+prepared-public-js,apps/yune-web/public/yune-web.js,72183,f9f0e8302f29e26254393b453a401575c66874a069db7d311d53b83ac14577b6,ignored-generated-hash-only
+prepared-public-wasm,apps/yune-web/public/yune-web.wasm,2828036,04c8c3ede691fdaaf4f2744b8ccccf825a2fad76216bb69e9e52a8907121797e,ignored-generated-hash-only
+playwright-capture,target/m59-increment2-browser-final/playwright-evidence/worker-0-M58-yune-web-TypeDuck-profile-reaches-oracle-ranked-reported-candidates-smoke/m58-profile-reachability.json,10020,a644b683399848fb479a7e2fec6427038bbdb994fae35f385ac5aafaaf9e4d55,imported-byte-identically-as-m58-profile-reachability.json
+playwright-beingo-screenshot,target/m59-increment2-browser-final/playwright-evidence/worker-0-M58-yune-web-TypeDuck-profile-reaches-oracle-ranked-reported-candidates-smoke/screenshot-m58-profile-reachability-beingo.png,62779,03689c704bdff9df0fff509981e9977841dc86f37153a565d483b5342e2a2ddf,hash-only
+playwright-zi-screenshot,target/m59-increment2-browser-final/playwright-evidence/worker-0-M58-yune-web-TypeDuck-profile-reaches-oracle-ranked-reported-candidates-smoke/screenshot-m58-profile-reachability-zi.png,63187,a39f841ab16bd31032962172be10d1e0c440e6ce6530f76e61d2a351aa789ae4,hash-only
+playwright-zijiguk-screenshot,target/m59-increment2-browser-final/playwright-evidence/worker-0-M58-yune-web-TypeDuck-profile-reaches-oracle-ranked-reported-candidates-smoke/screenshot-m58-profile-reachability-zijiguk.png,57569,55856e4ae752de9633f9a36d2d0db7fff0bf79c1eb222350008702300e5eba10,hash-only
+playwright-test-log,target/m59-increment2-browser-final/playwright-evidence/worker-0-M58-yune-web-TypeDuck-profile-reaches-oracle-ranked-reported-candidates-smoke/browser-run.log,130,e2a8d7ebfc784dce7d41b68fa6617936ba88f0c8ec4e4ae8f66386937352c544,hash-only
+vite-stdout,target/m59-increment2-browser-final/server.stdout.log,602,bf49e3fff0ccbe2cc62883e34b1a2f6ee3f0159158c6decd6022d0b11f0c74a6,hash-only
+vite-stderr,target/m59-increment2-browser-final/server.stderr.log,78,01068e56862436a6f1e44bfe01547d6184f2380b50b72b23f8dbd4c885d86af9,hash-only

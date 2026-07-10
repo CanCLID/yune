@@ -1,0 +1,409 @@
+{
+  "source": "M58 TypeDuck/profile product lane: current yune-web jyut6ping3_mobile browser assets, preserving TypeDuck-profile candidate rank reachability without first-page promotion.",
+  "cases": [
+    {
+      "input": "beingo",
+      "expectedFirstCandidate": "俾我",
+      "targetCandidate": "畀",
+      "typeduckProfileIndex": 6,
+      "firstPageCandidateTexts": [
+        "俾我",
+        "比",
+        "被",
+        "備",
+        "俾",
+        "避"
+      ],
+      "pageTurnsToTarget": 1,
+      "targetPageCandidateTexts": [
+        "畀",
+        "鼻",
+        "悲",
+        "秘",
+        "臂",
+        "彼"
+      ],
+      "firstPageState": {
+        "aiEnabled": false,
+        "inputValue": "",
+        "candidates": [
+          {
+            "index": 0,
+            "text": "俾我",
+            "note": "give me",
+            "source": null,
+            "rowText": "1.bei2 ngo5俾我give meⓘ"
+          },
+          {
+            "index": 1,
+            "text": "比",
+            "note": "compare",
+            "source": null,
+            "rowText": "2.bei2比compareⓘ"
+          },
+          {
+            "index": 2,
+            "text": "被",
+            "note": "by",
+            "source": null,
+            "rowText": "3.bei6被byⓘ"
+          },
+          {
+            "index": 3,
+            "text": "備",
+            "note": "prepare",
+            "source": null,
+            "rowText": "4.bei6備prepareⓘ"
+          },
+          {
+            "index": 4,
+            "text": "俾",
+            "note": "give",
+            "source": null,
+            "rowText": "5.bei2俾giveⓘ"
+          },
+          {
+            "index": 5,
+            "text": "避",
+            "note": "avoid",
+            "source": null,
+            "rowText": "6.bei6避avoidⓘ"
+          }
+        ]
+      },
+      "targetPageState": {
+        "aiEnabled": false,
+        "inputValue": "",
+        "candidates": [
+          {
+            "index": 0,
+            "text": "畀",
+            "note": "give",
+            "source": null,
+            "rowText": "1.bei2畀giveⓘ"
+          },
+          {
+            "index": 1,
+            "text": "鼻",
+            "note": "nose",
+            "source": null,
+            "rowText": "2.bei6鼻noseⓘ"
+          },
+          {
+            "index": 2,
+            "text": "悲",
+            "note": "sadness",
+            "source": null,
+            "rowText": "3.bei1悲sadnessⓘ"
+          },
+          {
+            "index": 3,
+            "text": "秘",
+            "note": null,
+            "source": null,
+            "rowText": "4.bei3秘ⓘ"
+          },
+          {
+            "index": 4,
+            "text": "臂",
+            "note": "arm",
+            "source": null,
+            "rowText": "5.bei3臂armⓘ"
+          },
+          {
+            "index": 5,
+            "text": "彼",
+            "note": "that",
+            "source": null,
+            "rowText": "6.bei2彼thatⓘ"
+          }
+        ]
+      }
+    },
+    {
+      "input": "zi",
+      "expectedFirstCandidate": "自",
+      "targetCandidate": "諮",
+      "typeduckProfileIndex": 27,
+      "firstPageCandidateTexts": [
+        "自",
+        "之",
+        "只",
+        "至",
+        "指",
+        "資"
+      ],
+      "pageTurnsToTarget": 4,
+      "targetPageCandidateTexts": [
+        "姊",
+        "脂",
+        "稚",
+        "諮",
+        "旨",
+        "就"
+      ],
+      "firstPageState": {
+        "aiEnabled": false,
+        "inputValue": "",
+        "candidates": [
+          {
+            "index": 0,
+            "text": "自",
+            "note": "since",
+            "source": null,
+            "rowText": "1.zi6自sinceⓘ"
+          },
+          {
+            "index": 1,
+            "text": "之",
+            "note": "of",
+            "source": null,
+            "rowText": "2.zi1之ofⓘ"
+          },
+          {
+            "index": 2,
+            "text": "只",
+            "note": "only; just",
+            "source": null,
+            "rowText": "3.zi2只only; justⓘ"
+          },
+          {
+            "index": 3,
+            "text": "至",
+            "note": "most; to; until",
+            "source": null,
+            "rowText": "4.zi3至most; to; untilⓘ"
+          },
+          {
+            "index": 4,
+            "text": "指",
+            "note": "indicate; finger",
+            "source": null,
+            "rowText": "5.zi2指indicate; fingerⓘ"
+          },
+          {
+            "index": 5,
+            "text": "資",
+            "note": "property; subsidise",
+            "source": null,
+            "rowText": "6.zi1資property; subsidiseⓘ"
+          }
+        ]
+      },
+      "targetPageState": {
+        "aiEnabled": false,
+        "inputValue": "",
+        "candidates": [
+          {
+            "index": 0,
+            "text": "姊",
+            "note": "sister",
+            "source": null,
+            "rowText": "1.zi2姊sisterⓘ"
+          },
+          {
+            "index": 1,
+            "text": "脂",
+            "note": "fat",
+            "source": null,
+            "rowText": "2.zi1脂fatⓘ"
+          },
+          {
+            "index": 2,
+            "text": "稚",
+            "note": "childish",
+            "source": null,
+            "rowText": "3.zi6稚childishⓘ"
+          },
+          {
+            "index": 3,
+            "text": "諮",
+            "note": "consult",
+            "source": null,
+            "rowText": "4.zi1諮consultⓘ"
+          },
+          {
+            "index": 4,
+            "text": "旨",
+            "note": "purpose",
+            "source": null,
+            "rowText": "5.zi2旨purposeⓘ"
+          },
+          {
+            "index": 5,
+            "text": "就",
+            "note": "then",
+            "source": null,
+            "rowText": "6.zau6就thenⓘ"
+          }
+        ]
+      }
+    },
+    {
+      "input": "zijiguk",
+      "targetCandidate": "諮",
+      "firstPageCandidateTexts": [
+        "旨意局",
+        "旨意",
+        "致意",
+        "指意",
+        "置疑",
+        "恣意"
+      ],
+      "pageTurnsToTarget": 5,
+      "targetPageCandidateTexts": [
+        "姿",
+        "姊",
+        "脂",
+        "稚",
+        "諮",
+        "旨"
+      ],
+      "selectedIndex": 4,
+      "firstPageState": {
+        "aiEnabled": false,
+        "inputValue": "",
+        "candidates": [
+          {
+            "index": 0,
+            "text": "旨意局",
+            "note": "intention(詞組)",
+            "source": null,
+            "rowText": "1.zi2 ji3 guk6旨意局intention(詞組)ⓘ"
+          },
+          {
+            "index": 1,
+            "text": "旨意",
+            "note": "intention",
+            "source": null,
+            "rowText": "2.zi2 ji3旨意intentionⓘ"
+          },
+          {
+            "index": 2,
+            "text": "致意",
+            "note": "give one's regards",
+            "source": null,
+            "rowText": "3.zi3 ji3致意give one's regardsⓘ"
+          },
+          {
+            "index": 3,
+            "text": "指意",
+            "note": "hope for",
+            "source": null,
+            "rowText": "4.zi2 ji3指意hope forⓘ"
+          },
+          {
+            "index": 4,
+            "text": "置疑",
+            "note": "doubt",
+            "source": null,
+            "rowText": "5.zi3 ji4置疑doubtⓘ"
+          },
+          {
+            "index": 5,
+            "text": "恣意",
+            "note": "recklessly",
+            "source": null,
+            "rowText": "6.zi3 ji3恣意recklesslyⓘ"
+          }
+        ]
+      },
+      "targetPageState": {
+        "aiEnabled": false,
+        "inputValue": "",
+        "candidates": [
+          {
+            "index": 0,
+            "text": "姿",
+            "note": "appearance",
+            "source": null,
+            "rowText": "1.zi1姿appearanceⓘ"
+          },
+          {
+            "index": 1,
+            "text": "姊",
+            "note": "sister",
+            "source": null,
+            "rowText": "2.zi2姊sisterⓘ"
+          },
+          {
+            "index": 2,
+            "text": "脂",
+            "note": "fat",
+            "source": null,
+            "rowText": "3.zi1脂fatⓘ"
+          },
+          {
+            "index": 3,
+            "text": "稚",
+            "note": "childish",
+            "source": null,
+            "rowText": "4.zi6稚childishⓘ"
+          },
+          {
+            "index": 4,
+            "text": "諮",
+            "note": "consult",
+            "source": null,
+            "rowText": "5.zi1諮consultⓘ"
+          },
+          {
+            "index": 5,
+            "text": "旨",
+            "note": "purpose",
+            "source": null,
+            "rowText": "6.zi2旨purposeⓘ"
+          }
+        ]
+      },
+      "afterSelectionState": {
+        "aiEnabled": false,
+        "inputValue": "諮",
+        "candidates": [
+          {
+            "index": 0,
+            "text": "醫局",
+            "note": null,
+            "source": null,
+            "rowText": "1.ji1 guk2醫局"
+          },
+          {
+            "index": 1,
+            "text": "已故",
+            "note": "have passed away",
+            "source": null,
+            "rowText": "2.ji5 gu3已故have passed awayⓘ"
+          },
+          {
+            "index": 2,
+            "text": "耳鼓",
+            "note": "eardrum",
+            "source": null,
+            "rowText": "3.ji5 gu2耳鼓eardrumⓘ"
+          },
+          {
+            "index": 3,
+            "text": "以",
+            "note": "by",
+            "source": null,
+            "rowText": "4.ji5以byⓘ"
+          },
+          {
+            "index": 4,
+            "text": "而",
+            "note": "and",
+            "source": null,
+            "rowText": "5.ji4而andⓘ"
+          },
+          {
+            "index": 5,
+            "text": "意",
+            "note": "opinion",
+            "source": null,
+            "rowText": "6.ji3意opinionⓘ"
+          }
+        ]
+      }
+    }
+  ]
+}

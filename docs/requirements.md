@@ -1562,7 +1562,7 @@ owner-signed equal-weight ties and beyond-oracle-depth rows. No new exception is
 created. Promotion tables, input-specific branches or allowlists, baked/replayed
 oracle candidates, and circular oracle-derived fixtures are prohibited.
 
-- [ ] **M59-NAV-01 (unified forward navigation)**: A single `Engine` policy,
+- [x] **M59-NAV-01 (unified forward navigation)**: A single `Engine` policy,
   derived from `SchemaBehaviorProfile` rather than schema id, governs Engine
   paging, next-candidate navigation, physical PageDown, `RimeChangePage`, and
   browser/API paging. Standard schemas complete before forward navigation;
@@ -1571,7 +1571,8 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   equivalent. Acceptance includes `cantonese_parity` 41/41 without golden edits,
   `typeduck_windows_boundary` 4/4, fresh source-current WASM reaching `zi -> 諮`
   within four PageDown operations, and stable `beingo`, `zijiguk`, Luna,
-  physical-page, and API-page behavior.
+  physical-page, and API-page behavior. Completed at `e37ee011` without golden
+  edits. Evidence: `reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/`.
 - [ ] **M59-EVIDENCE-01 (reproducibility and provenance)**: Deterministic,
   checked-in capture/classification/comparison tooling covers Lane A, Lane B,
   and expanded Cangjie. Preserved raw oracle and Yune outputs record inputs,
@@ -1788,7 +1789,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M59-PARITY-01 | M59 | In progress - Lane A exact parity across the committed 13-input canonical capture remains required; only the already signed equal-weight/beyond-depth classes are excepted |
 | M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks |
 | M59-PARITY-03 | M59 | In progress - Cangjie exact-order onboarding and CJ-1 acceptance at 3 passed / 0 ignored remain required with no new exceptions or promotion/input/oracle hacks |
-| M59-NAV-01 | M59 | In progress - one profile-driven forward-navigation policy plus Cantonese 41/41, TypeDuck-Windows 4/4, WASM, `beingo`, `zijiguk`, Luna, and physical/API acceptance remain required for M59 closeout |
+| M59-NAV-01 | M59 | Complete - `e37ee011` centralizes profile-driven forward navigation in Engine, explicitly activates the TypeDuck product marker in both direct harnesses, passes Cantonese 41/41 and TypeDuck-Windows 4/4, keeps physical/API and Luna controls stable, and proves source-current browser WASM reaches `zi -> 諮` in four PageDown operations |
 | M59-EVIDENCE-01 | M59 | In progress - deterministic capture/comparison tooling and reproducible raw provenance remain required for M59 closeout |
 | M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
 | M59-GATES-01 | M59 | In progress - exact native release, source-current WASM, runtime/app, manifest, Playwright, browser, and packaging gates remain required for M59 closeout |
@@ -2096,11 +2097,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
-- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 2 complete, 9 in progress
+- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 3 complete, 8 in progress
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
 - Mapped to phases: 433
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-09 - M59 full Path A remains locked and not closeable. The Lane B reachability mechanism is landed but its D-48 exact-order lane remains open; the parity contract is the exact 13-input Lane A capture plus Lane B and Cangjie, with only the already signed equal-weight and beyond-oracle-depth classes excepted and no new promotion/input/oracle hacks. Workspace deployment fidelity completed at `2ee0805f`; 9 M59 requirements remain in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-10 - M59 full Path A remains locked and not closeable. The Lane B reachability mechanism is landed but its D-48 exact-order lane remains open; the parity contract is the exact 13-input Lane A capture plus Lane B and Cangjie, with only the already signed equal-weight and beyond-oracle-depth classes excepted and no new promotion/input/oracle hacks. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; 8 M59 requirements remain in progress._

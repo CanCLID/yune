@@ -11,6 +11,14 @@ Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-10):**
+> [`increment-2-profile-paging/`](./increment-2-profile-paging/) is the green
+> M59-NAV-01 acceptance packet for implementation commit `e37ee011`. It records
+> the mechanism-honest Cantonese 38/41 -> 41/41 and Windows 2/4 -> 4/4 repair,
+> unified Engine/native/API/browser forward-navigation policy, source-current
+> Emscripten artifacts, real-browser `zi -> 諮` in four PageDown operations, and
+> the informational algebra/CJ-1/OpenCC/risk checkpoint. The packet contains no
+> generated binary payloads and does not close a D-48 ordering lane or M59.
+>
 > [`increment-1-executable-evidence/`](./increment-1-executable-evidence/) is
 > the current six-file, source-clean, canonical-LF, hash-bound Lane A executable
 > diagnostic. Its strict exact verdict is deliberately red (`0/13`, comparator

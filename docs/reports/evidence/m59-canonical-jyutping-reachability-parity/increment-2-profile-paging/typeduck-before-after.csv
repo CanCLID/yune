@@ -1,0 +1,6 @@
+lane,test_or_surface,input,before_commit,before_observed,expected_contract,after_commit,after_observed,verdict
+cantonese,m58_current_yune_web_profile_reaches_zi_advice_at_typeduck_rank,zi,a455da7c,就,自,e37ee011,自,pass
+cantonese,m21_prediction_limit_preserves_m14_short_completion_boundary,ne,a455da7c,我,呢,e37ee011,呢,pass
+cantonese,m21_closeout_rows_match_typeduck_v112_real_dictionary_goldens,nei,a455da7c,呢|我|你|外|能,你|呢|尼|妮|彌,e37ee011,你|呢|尼|妮|彌,pass
+windows-source,yune_abi_jyut6ping3_ngohaig_comments_match_v112,ngohaig,a455da7c,我係個|我|俄,我係個|我係|我喺|我,e37ee011,我係個|我係|我喺|我,pass
+windows-compiled,yune_abi_compiled_lookup_jyut6ping3_ngohaig_comments_match_v112,ngohaig,a455da7c,我係個|我|俄,我係個|我係|我喺|我,e37ee011,我係個|我係|我喺|我,pass

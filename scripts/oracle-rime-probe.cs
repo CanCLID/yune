@@ -556,6 +556,8 @@ public static class RimeProbe {
         // must never silently duplicate a page: if Page_Down is not handled or
         // the page does not advance (a repeated page_no), stop and record a hard
         // pagination_error instead of producing a plausible-but-wrong blob.
+        // A zeroed initial menu is a complete no-menu result with no page rows;
+        // an empty page with a positive page size is incomplete unless terminal.
         // Existing page-0 fields (selected_candidates, page_size, is_last_page)
         // are preserved; all_candidates/pages/global_index are new.
         const int PageDownKeycode = 0xff56;
@@ -569,13 +571,19 @@ public static class RimeProbe {
         string rimeInput = null;
         int highlighted = 0;
         int firstPageSize = 0;
+        int firstPageNo = 0;
+        int firstPageNumCandidates = 0;
         bool firstPageIsLast = true;
+        bool firstPageCandidatePointerNull = true;
+        bool menuPresent = true;
         bool capturedAllPages = false;
         string paginationError = null;
+        string terminationReason = null;
         int globalIndex = 0;
         for (int pageIndex = 0; ; pageIndex++) {
           if (pageIndex >= MaxPages) {
             paginationError = "max_pages_reached_" + MaxPages;
+            terminationReason = "max_pages";
             break;
           }
           var ctx = new RimeContext { data_size = Marshal.SizeOf(typeof(RimeContext)) - sizeof(int) };
@@ -583,17 +591,18 @@ public static class RimeProbe {
             throw new Exception("RimeGetContext failed for " + input);
           }
           int thisPageNo = ctx.menu.page_no;
+          if (seenPageNos.Contains(thisPageNo)) {
+            paginationError = "page_down_did_not_advance_at_page_" + thisPageNo;
+            terminationReason = "page_did_not_advance";
+            RimeFreeContext(ref ctx);
+            break;
+          }
           if (thisPageNo != pageIndex) {
             RimeFreeContext(ref ctx);
             throw new Exception(
                 "non-contiguous page_no while capturing " + input +
                 ": expected " + pageIndex.ToString() +
                 ", got " + thisPageNo.ToString());
-          }
-          if (seenPageNos.Contains(thisPageNo)) {
-            paginationError = "page_down_did_not_advance_at_page_" + thisPageNo;
-            RimeFreeContext(ref ctx);
-            break;
           }
           seenPageNos.Add(thisPageNo);
           var pageCandidates = ReadCandidates(ctx, identity);
@@ -613,7 +622,23 @@ public static class RimeProbe {
             }
             highlighted = ctx.menu.highlighted_candidate_index;
             firstPageSize = ctx.menu.page_size;
+            firstPageNo = ctx.menu.page_no;
+            firstPageNumCandidates = ctx.menu.num_candidates;
             firstPageIsLast = ctx.menu.is_last_page != 0;
+            firstPageCandidatePointerNull = ctx.menu.candidates == IntPtr.Zero;
+          }
+          bool noMenu = pageIndex == 0 &&
+              ctx.menu.page_no == 0 &&
+              ctx.menu.page_size == 0 &&
+              ctx.menu.num_candidates == 0 &&
+              ctx.menu.is_last_page == 0 &&
+              ctx.menu.candidates == IntPtr.Zero;
+          if (noMenu) {
+            menuPresent = false;
+            capturedAllPages = true;
+            terminationReason = "no_menu";
+            RimeFreeContext(ref ctx);
+            break;
           }
           var pageRec = new Dictionary<string, object>();
           pageRec["page_no"] = thisPageNo;
@@ -626,7 +651,13 @@ public static class RimeProbe {
           bool empty = ctx.menu.num_candidates == 0;
           RimeFreeContext(ref ctx);
           if (lastPage || empty) {
-            capturedAllPages = lastPage;
+            if (lastPage) {
+              capturedAllPages = true;
+              terminationReason = "last_page";
+            } else {
+              paginationError = "empty_nonterminal_page_at_page_" + thisPageNo;
+              terminationReason = "empty_nonterminal_page";
+            }
             break;
           }
           int pageDownHandled = RimeProcessKey(session, PageDownKeycode, 0);
@@ -649,12 +680,16 @@ public static class RimeProbe {
         result["commit_text_preview"] = commitPreview;
         result["highlighted_candidate_index"] = highlighted;
         result["page_size"] = firstPageSize;
-        result["page_no"] = 0;
+        result["page_no"] = firstPageNo;
+        result["num_candidates"] = firstPageNumCandidates;
         result["is_last_page"] = firstPageIsLast;
+        result["candidate_pointer_null"] = firstPageCandidatePointerNull;
+        result["menu_present"] = menuPresent;
         result["selected_candidates"] = firstPageCandidates;
         result["pages"] = pages;
         result["all_candidates"] = allCandidates;
         result["captured_all_pages"] = capturedAllPages;
+        result["termination_reason"] = terminationReason;
         if (paginationError != null) {
           result["pagination_error"] = paginationError;
         }

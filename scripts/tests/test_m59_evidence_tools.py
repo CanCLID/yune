@@ -44,6 +44,55 @@ def capture(rows_by_input, *, complete=True):
     }
 
 
+def no_menu_capture(input_text="x"):
+    return {
+        "cases": [
+            {
+                "input": input_text,
+                "page_size": 0,
+                "page_no": 0,
+                "num_candidates": 0,
+                "is_last_page": False,
+                "candidate_pointer_null": True,
+                "menu_present": False,
+                "termination_reason": "no_menu",
+                "captured_all_pages": True,
+                "selected_candidates": [],
+                "pages": [],
+                "all_candidates": [],
+            }
+        ]
+    }
+
+
+def empty_nonterminal_capture(input_text="x"):
+    return {
+        "cases": [
+            {
+                "input": input_text,
+                "page_size": 5,
+                "page_no": 0,
+                "num_candidates": 0,
+                "is_last_page": False,
+                "menu_present": True,
+                "termination_reason": "empty_nonterminal_page",
+                "pagination_error": "empty_nonterminal_page_at_page_0",
+                "captured_all_pages": False,
+                "selected_candidates": [],
+                "pages": [
+                    {
+                        "page_no": 0,
+                        "page_size": 5,
+                        "is_last_page": False,
+                        "candidates": [],
+                    }
+                ],
+                "all_candidates": [],
+            }
+        ]
+    }
+
+
 class CandidateOrderTests(unittest.TestCase):
     def compare(self, oracle_rows, actual_rows, **kwargs):
         return candidate_order.compare_documents(
@@ -80,6 +129,126 @@ class CandidateOrderTests(unittest.TestCase):
         self.assertEqual(row["missing_count"], 3)
         self.assertEqual(row["raw_first_mismatch_index"], 0)
         self.assertEqual(row["verdict"], "fail")
+
+    def test_explicit_no_menu_is_complete_shape_but_under_admission(self):
+        result = candidate_order.compare_documents(
+            capture({"x": ["a", "b"]}), no_menu_capture(), policy="exact"
+        )
+        row = result["cases"][0]
+        self.assertEqual(row["missing_count"], 2)
+        self.assertIn("under-admission", row["failure_classes"])
+        self.assertIn("menu-presence", row["failure_classes"])
+        self.assertNotIn("actual-incomplete", row["failure_classes"])
+        self.assertFalse(row["menu_present"]["actual"])
+        self.assertEqual(row["termination_reason"]["actual"], "no_menu")
+
+        empty_match = candidate_order.compare_documents(
+            no_menu_capture(), no_menu_capture(), policy="exact"
+        )
+        self.assertTrue(empty_match["all_accepted"])
+
+    def test_empty_nonterminal_page_remains_incomplete(self):
+        result = candidate_order.compare_documents(
+            capture({"x": ["a"]}), empty_nonterminal_capture(), policy="exact"
+        )
+        row = result["cases"][0]
+        self.assertIn("actual-incomplete", row["failure_classes"])
+        self.assertIn("under-admission", row["failure_classes"])
+        self.assertEqual(
+            row["termination_reason"]["actual"], "empty_nonterminal_page"
+        )
+
+    def test_invalid_no_menu_shapes_are_structural_failures(self):
+        mutations = {
+            "positive_page_size": lambda case: case.__setitem__("page_size", 5),
+            "float_page_size": lambda case: case.__setitem__("page_size", 0.0),
+            "incomplete": lambda case: case.__setitem__("captured_all_pages", False),
+            "wrong_reason": lambda case: case.__setitem__(
+                "termination_reason", "last_page"
+            ),
+            "candidate": lambda case: case["all_candidates"].append({"text": "x"}),
+            "page": lambda case: case["pages"].append({}),
+            "selected": lambda case: case["selected_candidates"].append({"text": "x"}),
+            "nonzero_count": lambda case: case.__setitem__("num_candidates", 1),
+            "missing_page_no": lambda case: case.pop("page_no"),
+            "true_last_page": lambda case: case.__setitem__("is_last_page", True),
+            "missing_candidate_pointer_marker": lambda case: case.pop(
+                "candidate_pointer_null"
+            ),
+            "false_candidate_pointer_marker": lambda case: case.__setitem__(
+                "candidate_pointer_null", False
+            ),
+            "pagination_error": lambda case: case.__setitem__(
+                "pagination_error", "page_down_not_handled"
+            ),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(label=label):
+                malformed = no_menu_capture()
+                mutate(malformed["cases"][0])
+                with self.assertRaises(candidate_order.EvidenceError):
+                    candidate_order.compare_documents(
+                        capture({"x": ["a"]}), malformed, policy="exact"
+                    )
+
+    def test_termination_reason_state_machine_rejects_false_green_shapes(self):
+        invalid_mutations = {
+            "unknown_reason": lambda case: case.__setitem__(
+                "termination_reason", "looks_done"
+            ),
+            "last_page_incomplete": lambda case: (
+                case.__setitem__("termination_reason", "last_page"),
+                case.__setitem__("captured_all_pages", False),
+            ),
+            "last_page_with_error": lambda case: (
+                case.__setitem__("termination_reason", "last_page"),
+                case.__setitem__("pagination_error", "contradiction"),
+            ),
+            "max_pages_complete": lambda case: (
+                case.__setitem__("termination_reason", "max_pages"),
+                case.__setitem__("pagination_error", "max_pages_reached_2000"),
+            ),
+            "max_pages_without_error": lambda case: (
+                case.__setitem__("termination_reason", "max_pages"),
+                case.__setitem__("captured_all_pages", False),
+            ),
+            "incomplete_reason_without_error": lambda case: (
+                case.__setitem__("termination_reason", "page_did_not_advance"),
+                case.__setitem__("captured_all_pages", False),
+            ),
+            "complete_legacy_with_error": lambda case: case.__setitem__(
+                "pagination_error", "contradiction"
+            ),
+        }
+        for label, mutate in invalid_mutations.items():
+            with self.subTest(label=label):
+                malformed = capture({"x": ["a"]})
+                mutate(malformed["cases"][0])
+                with self.assertRaises(candidate_order.EvidenceError):
+                    candidate_order.compare_documents(
+                        malformed, capture({"x": ["a"]}), policy="exact"
+                    )
+
+        valid_last_page = capture({"x": ["a"]})
+        valid_last_page["cases"][0]["termination_reason"] = "last_page"
+        self.assertTrue(
+            candidate_order.compare_documents(
+                valid_last_page, valid_last_page, policy="exact"
+            )["all_accepted"]
+        )
+
+        valid_incomplete = capture({"x": ["a"]}, complete=False)
+        valid_incomplete["cases"][0].update(
+            {
+                "termination_reason": "page_did_not_advance",
+                "pagination_error": "page_down_did_not_advance_at_page_0",
+            }
+        )
+        result = candidate_order.compare_documents(
+            valid_incomplete, valid_incomplete, policy="exact"
+        )
+        self.assertFalse(result["all_accepted"])
+        self.assertIn("actual-incomplete", result["cases"][0]["failure_classes"])
 
     def test_oracle_prefix_requires_input_specific_owner_signed_tail(self):
         unsigned = self.compare(["a", "b"], ["a", "b", "tail"], policy="oracle-prefix")
@@ -259,14 +428,42 @@ class CandidateOrderTests(unittest.TestCase):
             self.assertEqual(candidate_order.main(args), 1)
             self.assertTrue(output_json.is_file())
             result = json.loads(output_json.read_text(encoding="utf-8"))
-            self.assertEqual(result["provenance"]["oracle"]["sha256"], candidate_order._file_sha256(oracle))
-            self.assertEqual(result["provenance"]["actual"]["sha256"], candidate_order._file_sha256(actual))
+            provenance = result["provenance"]
             self.assertEqual(
-                result["provenance"]["exceptions"]["sha256"],
+                provenance["oracle"]["sha256"], candidate_order._file_sha256(oracle)
+            )
+            self.assertEqual(
+                provenance["actual"]["sha256"], candidate_order._file_sha256(actual)
+            )
+            self.assertEqual(
+                provenance["exceptions"]["sha256"],
                 candidate_order._file_sha256(exceptions),
             )
             self.assertEqual(result["tool_version"], candidate_order.TOOL_VERSION)
-            self.assertIn("--oracle", result["provenance"]["effective_invocation"])
+            self.assertEqual(provenance["oracle"]["path"], "external/oracle")
+            self.assertEqual(provenance["actual"]["path"], "external/actual")
+            self.assertEqual(provenance["exceptions"]["path"], "external/exceptions")
+            self.assertEqual(provenance["tool_path"], "scripts/compare-candidate-order.py")
+            self.assertIn("external/output-json", provenance["effective_argv"])
+            self.assertIn("external/output-csv", provenance["effective_argv"])
+            serialized_provenance = json.dumps(provenance)
+            self.assertNotIn(str(root), serialized_provenance)
+            self.assertNotIn("Users", serialized_provenance)
+            self.assertNotIn(":\\", serialized_provenance)
+            self.assertNotIn("\\", provenance["effective_invocation"])
+            with output_csv.open(encoding="utf-8", newline="") as handle:
+                csv_row = next(csv.DictReader(handle))
+            self.assertEqual(
+                csv_row["effective_invocation"], provenance["effective_invocation"]
+            )
+            self.assertNotIn("Users", csv_row["effective_invocation"])
+
+            self.assertEqual(
+                candidate_order._logical_path(
+                    SCRIPTS / "compare-candidate-order.py", "tool"
+                ),
+                "scripts/compare-candidate-order.py",
+            )
 
             actual.write_text(json.dumps(capture({"y": ["a"]})), encoding="utf-8")
             stale_json_temp = root / f".{output_json.name}.stale.tmp"
@@ -288,6 +485,182 @@ class CandidateOrderTests(unittest.TestCase):
             self.assertTrue(output_json.is_dir())
             self.assertFalse(output_csv.exists())
             self.assertIn("paired-output invalidation failed", stderr.getvalue())
+
+    def test_cli_preflight_rejects_all_input_output_aliases_without_mutation(self):
+        input_roles = ("oracle", "actual", "exceptions")
+        output_roles = ("output_json", "output_csv")
+        for output_role in output_roles:
+            for input_role in input_roles:
+                for canonical_equivalent in (False, True):
+                    label = (
+                        f"{output_role}_{input_role}_"
+                        f"{'canonical' if canonical_equivalent else 'direct'}"
+                    )
+                    with self.subTest(label=label), tempfile.TemporaryDirectory() as temp:
+                        root = Path(temp)
+                        alias_parent = root / "alias"
+                        alias_parent.mkdir()
+                        oracle = root / "oracle.json"
+                        actual = root / "actual.json"
+                        exceptions = root / "exceptions.json"
+                        documents = {
+                            oracle: json.dumps(capture({"x": ["a"]})),
+                            actual: json.dumps(capture({"x": ["a"]})),
+                            exceptions: json.dumps(
+                                {
+                                    "schema_version": 1,
+                                    "decision_id": "D-48",
+                                    "owner_signed": True,
+                                    "owner_decision_date": "2026-07-09",
+                                }
+                            ),
+                        }
+                        for path, content in documents.items():
+                            path.write_text(content, encoding="utf-8")
+                        input_paths = {
+                            "oracle": oracle,
+                            "actual": actual,
+                            "exceptions": exceptions,
+                        }
+                        outputs = {
+                            "output_json": root / "result.json",
+                            "output_csv": root / "result.csv",
+                        }
+                        target = input_paths[input_role]
+                        outputs[output_role] = (
+                            alias_parent / ".." / target.name
+                            if canonical_equivalent
+                            else target
+                        )
+                        other_output_role = (
+                            "output_csv"
+                            if output_role == "output_json"
+                            else "output_json"
+                        )
+                        other_output = outputs[other_output_role]
+                        other_output.write_bytes(b"preflight must preserve this output")
+                        input_snapshots = {
+                            path: path.read_bytes() for path in input_paths.values()
+                        }
+                        args = [
+                            "--oracle",
+                            str(oracle),
+                            "--actual",
+                            str(actual),
+                            "--policy",
+                            "exact",
+                            "--exceptions",
+                            str(exceptions),
+                            "--output-json",
+                            str(outputs["output_json"]),
+                            "--output-csv",
+                            str(outputs["output_csv"]),
+                        ]
+                        with contextlib.redirect_stderr(io.StringIO()):
+                            self.assertEqual(candidate_order.main(args), 2)
+                        for path, snapshot in input_snapshots.items():
+                            self.assertEqual(path.read_bytes(), snapshot)
+                        self.assertEqual(
+                            other_output.read_bytes(),
+                            b"preflight must preserve this output",
+                        )
+
+    def test_cli_preflight_rejects_output_aliases_before_other_structural_errors(self):
+        for canonical_equivalent in (False, True):
+            for invalid_actual in (False, True):
+                with self.subTest(
+                    canonical_equivalent=canonical_equivalent,
+                    invalid_actual=invalid_actual,
+                ), tempfile.TemporaryDirectory() as temp:
+                    root = Path(temp)
+                    alias_parent = root / "alias"
+                    alias_parent.mkdir()
+                    oracle = root / "oracle.json"
+                    actual = root / "actual.json"
+                    collision_output = root / "collision.json"
+                    oracle.write_text(
+                        json.dumps(capture({"x": ["a"]})), encoding="utf-8"
+                    )
+                    actual.write_text(
+                        "not valid JSON"
+                        if invalid_actual
+                        else json.dumps(capture({"x": ["a"]})),
+                        encoding="utf-8",
+                    )
+                    collision_output.write_bytes(b"preflight sentinel")
+                    output_csv = (
+                        alias_parent / ".." / collision_output.name
+                        if canonical_equivalent
+                        else collision_output
+                    )
+                    snapshots = {
+                        oracle: oracle.read_bytes(),
+                        actual: actual.read_bytes(),
+                        collision_output: collision_output.read_bytes(),
+                    }
+                    args = [
+                        "--oracle",
+                        str(oracle),
+                        "--actual",
+                        str(actual),
+                        "--policy",
+                        "exact",
+                        "--output-json",
+                        str(collision_output),
+                        "--output-csv",
+                        str(output_csv),
+                    ]
+                    stderr = io.StringIO()
+                    with contextlib.redirect_stderr(stderr):
+                        self.assertEqual(candidate_order.main(args), 2)
+                    self.assertIn("canonically different", stderr.getvalue())
+                    for path, snapshot in snapshots.items():
+                        self.assertEqual(path.read_bytes(), snapshot)
+
+    def test_cli_preflight_input_alias_wins_before_invalid_json_and_preserves_all(self):
+        for canonical_equivalent in (False, True):
+            with self.subTest(
+                canonical_equivalent=canonical_equivalent
+            ), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                alias_parent = root / "alias"
+                alias_parent.mkdir()
+                oracle = root / "oracle.json"
+                actual = root / "actual.json"
+                output_csv = root / "result.csv"
+                oracle.write_text(
+                    json.dumps(capture({"x": ["a"]})), encoding="utf-8"
+                )
+                actual.write_text("not valid JSON", encoding="utf-8")
+                output_csv.write_bytes(b"preflight must not clean sibling output")
+                output_json = (
+                    alias_parent / ".." / oracle.name
+                    if canonical_equivalent
+                    else oracle
+                )
+                snapshots = {
+                    oracle: oracle.read_bytes(),
+                    actual: actual.read_bytes(),
+                    output_csv: output_csv.read_bytes(),
+                }
+                args = [
+                    "--oracle",
+                    str(oracle),
+                    "--actual",
+                    str(actual),
+                    "--policy",
+                    "exact",
+                    "--output-json",
+                    str(output_json),
+                    "--output-csv",
+                    str(output_csv),
+                ]
+                stderr = io.StringIO()
+                with contextlib.redirect_stderr(stderr):
+                    self.assertEqual(candidate_order.main(args), 2)
+                self.assertIn("must not alias --oracle", stderr.getvalue())
+                for path, snapshot in snapshots.items():
+                    self.assertEqual(path.read_bytes(), snapshot)
 
 
 class LunaCuratorTests(unittest.TestCase):
@@ -612,6 +985,23 @@ class CaptureContractTests(unittest.TestCase):
         self.assertIn("RimeGetInput mismatch while capturing", source)
         self.assertIn("if (thisPageNo != pageIndex)", source)
         self.assertIn("Page_Down was not handled while capturing", source)
+        self.assertIn("bool noMenu = pageIndex == 0 &&", source)
+        self.assertIn("ctx.menu.page_size == 0", source)
+        self.assertIn("ctx.menu.num_candidates == 0", source)
+        self.assertIn("ctx.menu.page_no == 0", source)
+        self.assertIn("ctx.menu.is_last_page == 0", source)
+        self.assertIn("ctx.menu.candidates == IntPtr.Zero", source)
+        self.assertIn(
+            'result["candidate_pointer_null"] = firstPageCandidatePointerNull;', source
+        )
+        self.assertIn('terminationReason = "no_menu";', source)
+        self.assertIn('paginationError = "empty_nonterminal_page_at_page_"', source)
+        self.assertIn('terminationReason = "empty_nonterminal_page";', source)
+        self.assertLess(source.index("if (noMenu)"), source.index("pages.Add(pageRec)"))
+        self.assertLess(
+            source.index("if (seenPageNos.Contains(thisPageNo))"),
+            source.index("if (thisPageNo != pageIndex)"),
+        )
 
     def test_lane_b_capture_roots_are_unique_and_marker_verified(self):
         luna = (SCRIPTS / "capture-m59-luna-composition.ps1").read_text(

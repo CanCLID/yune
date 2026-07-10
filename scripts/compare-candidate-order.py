@@ -26,8 +26,16 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 
-TOOL_VERSION = "4"
+TOOL_VERSION = "5"
 TOOL_NAME = "compare-candidate-order.py"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+PATH_ARGUMENT_ROLES = {
+    "--oracle": "oracle",
+    "--actual": "actual",
+    "--exceptions": "exceptions",
+    "--output-json": "output-json",
+    "--output-csv": "output-csv",
+}
 
 
 class EvidenceError(ValueError):
@@ -40,6 +48,8 @@ class CandidateCase:
     rows: tuple[str, ...]
     captured_all_pages: bool
     page_size: int
+    menu_present: bool
+    termination_reason: str | None
 
 
 def _load_json(path: Path) -> Any:
@@ -63,6 +73,68 @@ def _file_sha256(path: Path) -> str:
 
 def _canonical_path_key(path: Path) -> str:
     return os.path.normcase(os.path.realpath(path))
+
+
+def _preflight_disjoint_paths(
+    oracle: Path,
+    actual: Path,
+    exceptions: Path | None,
+    output_json: Path,
+    output_csv: Path,
+) -> None:
+    """Reject output aliases before any input read or output cleanup can occur."""
+
+    inputs = [("--oracle", oracle), ("--actual", actual)]
+    if exceptions is not None:
+        inputs.append(("--exceptions", exceptions))
+    outputs = [("--output-json", output_json), ("--output-csv", output_csv)]
+    output_keys = {
+        role: _canonical_path_key(path) for role, path in outputs
+    }
+    if output_keys["--output-json"] == output_keys["--output-csv"]:
+        raise EvidenceError(
+            "--output-json and --output-csv must be canonically different paths"
+        )
+    for output_role, output_path in outputs:
+        output_key = output_keys[output_role]
+        for input_role, input_path in inputs:
+            if output_key == _canonical_path_key(input_path):
+                raise EvidenceError(
+                    f"{output_role} must not alias {input_role}: {output_path}"
+                )
+
+
+def _logical_path(path: Path, role: str) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return f"external/{role}"
+
+
+def _logical_argv(values: Sequence[str]) -> list[str]:
+    result: list[str] = []
+    index = 0
+    while index < len(values):
+        value = values[index]
+        role = PATH_ARGUMENT_ROLES.get(value)
+        if role is not None:
+            if index + 1 >= len(values):
+                raise EvidenceError(f"{value} has no path argument")
+            result.extend((value, _logical_path(Path(values[index + 1]), role)))
+            index += 2
+            continue
+        matched = False
+        for flag, inline_role in PATH_ARGUMENT_ROLES.items():
+            prefix = flag + "="
+            if value.startswith(prefix):
+                result.append(prefix + _logical_path(Path(value[len(prefix) :]), inline_role))
+                matched = True
+                break
+        if not matched:
+            result.append(value)
+        index += 1
+    return result
 
 
 def _cases_array(document: Any, label: str) -> list[Any]:
@@ -102,8 +174,88 @@ def parse_cases(document: Any, label: str) -> dict[str, CandidateCase]:
         if not isinstance(complete, bool):
             raise EvidenceError(f"{case_label}.captured_all_pages must be boolean")
         page_size = raw_case.get("page_size")
-        if not isinstance(page_size, int) or isinstance(page_size, bool) or page_size <= 0:
-            raise EvidenceError(f"{case_label}.page_size must be a positive integer")
+        menu_present_value = raw_case.get("menu_present", True)
+        if not isinstance(menu_present_value, bool):
+            raise EvidenceError(f"{case_label}.menu_present must be boolean when present")
+        menu_present = menu_present_value
+        termination_reason = raw_case.get("termination_reason")
+        if termination_reason is not None and (
+            not isinstance(termination_reason, str) or not termination_reason
+        ):
+            raise EvidenceError(
+                f"{case_label}.termination_reason must be a non-empty string when present"
+            )
+        pagination_error_present = "pagination_error" in raw_case
+        pagination_error = raw_case.get("pagination_error")
+        if pagination_error_present and (
+            not isinstance(pagination_error, str) or not pagination_error
+        ):
+            raise EvidenceError(
+                f"{case_label}.pagination_error must be a non-empty string when present"
+            )
+        if complete and pagination_error_present:
+            raise EvidenceError(
+                f"{case_label} cannot be complete and carry pagination_error"
+            )
+        if menu_present:
+            if (
+                not isinstance(page_size, int)
+                or isinstance(page_size, bool)
+                or page_size <= 0
+            ):
+                raise EvidenceError(
+                    f"{case_label}.page_size must be a positive integer when a menu is present"
+                )
+            if termination_reason == "no_menu":
+                raise EvidenceError(
+                    f"{case_label} cannot use termination_reason=no_menu with menu_present=true"
+                )
+            if termination_reason == "last_page":
+                if not complete or pagination_error_present:
+                    raise EvidenceError(
+                        f"{case_label} last_page must be complete without pagination_error"
+                    )
+            elif termination_reason in {
+                "max_pages",
+                "page_did_not_advance",
+                "empty_nonterminal_page",
+            }:
+                if complete or not pagination_error_present:
+                    raise EvidenceError(
+                        f"{case_label} {termination_reason} must be incomplete with pagination_error"
+                    )
+            elif termination_reason is not None:
+                raise EvidenceError(
+                    f"{case_label}.termination_reason is not recognized: {termination_reason!r}"
+                )
+        else:
+            no_menu_num_candidates = raw_case.get("num_candidates")
+            no_menu_page_no = raw_case.get("page_no")
+            required_no_menu = {
+                "page_size": isinstance(page_size, int)
+                and not isinstance(page_size, bool)
+                and page_size == 0,
+                "captured_all_pages": complete is True,
+                "termination_reason": termination_reason == "no_menu",
+                "all_candidates": candidates == [],
+                "pages": raw_case.get("pages") == [],
+                "selected_candidates": raw_case.get("selected_candidates") == [],
+                "num_candidates": isinstance(no_menu_num_candidates, int)
+                and not isinstance(no_menu_num_candidates, bool)
+                and no_menu_num_candidates == 0,
+                "page_no": isinstance(no_menu_page_no, int)
+                and not isinstance(no_menu_page_no, bool)
+                and no_menu_page_no == 0,
+                "is_last_page": raw_case.get("is_last_page") is False,
+                "candidate_pointer_null": raw_case.get("candidate_pointer_null")
+                is True,
+                "pagination_error": not pagination_error_present,
+            }
+            invalid = [name for name, valid in required_no_menu.items() if not valid]
+            if invalid:
+                raise EvidenceError(
+                    f"{case_label} has invalid explicit no-menu fields: {invalid}"
+                )
         rows_list: list[str] = []
         for candidate_index, candidate in enumerate(candidates):
             candidate_label = f"{case_label}.all_candidates[{candidate_index}]"
@@ -115,7 +267,14 @@ def parse_cases(document: Any, label: str) -> dict[str, CandidateCase]:
                     )
             rows_list.append(_candidate_text(candidate, candidate_label))
         rows = tuple(rows_list)
-        parsed[input_text] = CandidateCase(input_text, rows, complete, page_size)
+        parsed[input_text] = CandidateCase(
+            input_text,
+            rows,
+            complete,
+            page_size,
+            menu_present,
+            termination_reason,
+        )
     if not parsed:
         raise EvidenceError(f"{label} contains no cases")
     return parsed
@@ -433,6 +592,8 @@ def compare_documents(
             failure_classes.append("actual-incomplete")
         if oracle_case.page_size != actual_case.page_size:
             failure_classes.append("page-size")
+        if oracle_case.menu_present != actual_case.menu_present:
+            failure_classes.append("menu-presence")
         if missing_count:
             failure_classes.append("under-admission")
         if extra_count and policy == "exact":
@@ -481,6 +642,14 @@ def compare_documents(
                     "oracle": oracle_case.page_size,
                     "actual": actual_case.page_size,
                 },
+                "menu_present": {
+                    "oracle": oracle_case.menu_present,
+                    "actual": actual_case.menu_present,
+                },
+                "termination_reason": {
+                    "oracle": oracle_case.termination_reason,
+                    "actual": actual_case.termination_reason,
+                },
                 "raw_first_mismatch_index": raw_first_mismatch,
                 "order_matches_after_signed_exceptions": order_matches,
                 "missing_count": missing_count,
@@ -527,6 +696,10 @@ def _csv_text(result: dict[str, Any]) -> str:
         "actual_count",
         "oracle_captured_all_pages",
         "actual_captured_all_pages",
+        "oracle_menu_present",
+        "actual_menu_present",
+        "oracle_termination_reason",
+        "actual_termination_reason",
         "raw_first_mismatch_index",
         "missing_count",
         "extra_count",
@@ -552,6 +725,10 @@ def _csv_text(result: dict[str, Any]) -> str:
                     else ""
                 ),
                 "effective_invocation": provenance["effective_invocation"],
+                "oracle_menu_present": case["menu_present"]["oracle"],
+                "actual_menu_present": case["menu_present"]["actual"],
+                "oracle_termination_reason": case["termination_reason"]["oracle"] or "",
+                "actual_termination_reason": case["termination_reason"]["actual"] or "",
             }
         )
         row["failure_classes"] = ";".join(case["failure_classes"])
@@ -622,8 +799,10 @@ def _invalidate_outputs(
 
 
 def write_outputs(json_path: Path, csv_path: Path, result: dict[str, Any]) -> None:
-    if json_path.resolve() == csv_path.resolve():
-        raise EvidenceError("--output-json and --output-csv must be different paths")
+    if _canonical_path_key(json_path) == _canonical_path_key(csv_path):
+        raise EvidenceError(
+            "--output-json and --output-csv must be canonically different paths"
+        )
     json_text = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     csv_text = _csv_text(result)
     temp_json: Path | None = None
@@ -668,6 +847,17 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     effective_args = list(sys.argv[1:] if argv is None else argv)
     args = _parser().parse_args(effective_args)
+    try:
+        _preflight_disjoint_paths(
+            args.oracle,
+            args.actual,
+            args.exceptions,
+            args.output_json,
+            args.output_csv,
+        )
+    except EvidenceError as error:
+        print(f"candidate-order evidence error: {error}", file=sys.stderr)
+        return 2
     outputs = (args.output_json, args.output_csv)
     try:
         oracle = _load_json(args.oracle)
@@ -682,30 +872,32 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         tool_path = Path(__file__).resolve()
         tool_sha256 = _file_sha256(tool_path)
+        logical_args = _logical_argv(effective_args)
+        logical_tool_path = _logical_path(tool_path, "tool")
         result["tool_sha256"] = tool_sha256
         result["provenance"] = {
             "oracle": {
-                "path": str(args.oracle.resolve()),
+                "path": _logical_path(args.oracle, "oracle"),
                 "sha256": _file_sha256(args.oracle),
             },
             "actual": {
-                "path": str(args.actual.resolve()),
+                "path": _logical_path(args.actual, "actual"),
                 "sha256": _file_sha256(args.actual),
             },
             "exceptions": (
                 {
-                    "path": str(args.exceptions.resolve()),
+                    "path": _logical_path(args.exceptions, "exceptions"),
                     "sha256": _file_sha256(args.exceptions),
                 }
                 if args.exceptions is not None
                 else None
             ),
-            "tool_path": str(tool_path),
+            "tool_path": logical_tool_path,
             "tool_version": TOOL_VERSION,
             "tool_sha256": tool_sha256,
-            "effective_argv": effective_args,
+            "effective_argv": logical_args,
             "effective_invocation": subprocess.list2cmdline(
-                ["python", str(tool_path), *effective_args]
+                ["python", logical_tool_path, *logical_args]
             ),
         }
         write_outputs(args.output_json, args.output_csv, result)

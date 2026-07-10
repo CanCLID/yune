@@ -7,6 +7,37 @@ fn platform_path(base: &str, child: &str) -> String {
         .into_owned()
 }
 
+fn run_workspace_update_fixture(
+    name: &str,
+    default_yaml: &str,
+    schema_files: &[(&str, &str)],
+) -> (PathBuf, crate::Bool) {
+    let root = unique_temp_dir(name);
+    let shared = root.join("shared");
+    let user = root.join("user");
+    fs::create_dir_all(&shared).expect("shared dir should be created");
+    fs::write(shared.join("default.yaml"), default_yaml).expect("default config should be written");
+    for (file_name, yaml) in schema_files {
+        fs::write(shared.join(file_name), yaml).expect("schema fixture should be written");
+    }
+
+    let shared_c = CString::new(shared.to_string_lossy().as_ref()).expect("path should be valid");
+    let user_c = CString::new(user.to_string_lossy().as_ref()).expect("path should be valid");
+    let workspace_task = CString::new("workspace_update").expect("task should be valid");
+    let mut traits = empty_traits();
+    traits.shared_data_dir = shared_c.as_ptr();
+    traits.user_data_dir = user_c.as_ptr();
+
+    // SAFETY: traits points to a valid RimeTraits object with valid strings.
+    unsafe { RimeDeployerInitialize(&traits) };
+    let outcome = RimeRunTask(workspace_task.as_ptr());
+
+    let reset_traits = empty_traits();
+    // SAFETY: reset traits points to valid storage.
+    unsafe { RimeSetup(&reset_traits) };
+    (root, outcome)
+}
+
 #[test]
 fn setup_and_initialize_expose_runtime_metadata_paths() {
     let _guard = test_guard();
@@ -2490,6 +2521,124 @@ schema:\n  schema_id: missing\n  name: Missing\nengine:\n  translators:\n    - t
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.
     unsafe { RimeSetup(&reset_traits) };
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn workspace_update_fails_for_missing_top_level_and_deploys_valid_sibling() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let (root, outcome) = run_workspace_update_fixture(
+        "workspace-missing-top-level",
+        "config_version: '1.0'\nschema_list:\n  - schema: absent\n  - schema: valid\n",
+        &[(
+            "valid.schema.yaml",
+            "schema:\n  schema_id: valid\n  name: Valid\n",
+        )],
+    );
+    let build = root.join("user").join("build");
+
+    assert_eq!(outcome, FALSE);
+    assert!(build.join("valid.schema.yaml").is_file());
+    assert!(!build.join("absent.schema.yaml").exists());
+
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn workspace_update_fails_for_malformed_top_level_and_deploys_valid_sibling() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let (root, outcome) = run_workspace_update_fixture(
+        "workspace-malformed-top-level",
+        "config_version: '1.0'\nschema_list:\n  - schema: malformed\n  - schema: valid\n",
+        &[
+            ("malformed.schema.yaml", "schema: [\n"),
+            (
+                "valid.schema.yaml",
+                "schema:\n  schema_id: valid\n  name: Valid\n",
+            ),
+        ],
+    );
+    let build = root.join("user").join("build");
+
+    assert_eq!(outcome, FALSE);
+    assert!(build.join("valid.schema.yaml").is_file());
+    assert!(!build.join("malformed.schema.yaml").exists());
+
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn workspace_update_skips_absent_dependency() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let (root, outcome) = run_workspace_update_fixture(
+        "workspace-absent-dependency",
+        "config_version: '1.0'\nschema_list:\n  - schema: parent\n  - schema: sibling\n",
+        &[
+            (
+                "parent.schema.yaml",
+                "schema:\n  schema_id: parent\n  name: Parent\n  dependencies:\n    - absent_dependency\n",
+            ),
+            (
+                "sibling.schema.yaml",
+                "schema:\n  schema_id: sibling\n  name: Sibling\n",
+            ),
+        ],
+    );
+    let build = root.join("user").join("build");
+
+    assert_eq!(outcome, TRUE);
+    assert!(build.join("parent.schema.yaml").is_file());
+    assert!(build.join("sibling.schema.yaml").is_file());
+    assert!(!build.join("absent_dependency.schema.yaml").exists());
+
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+
+    let (root, outcome) = run_workspace_update_fixture(
+        "workspace-absent-dependency-not-built",
+        "config_version: '1.0'\nschema_list:\n  - schema: parent\n  - schema: absent_dependency\n",
+        &[(
+            "parent.schema.yaml",
+            "schema:\n  schema_id: parent\n  name: Parent\n  dependencies:\n    - absent_dependency\n",
+        )],
+    );
+    let build = root.join("user").join("build");
+
+    assert_eq!(outcome, FALSE);
+    assert!(build.join("parent.schema.yaml").is_file());
+    assert!(!build.join("absent_dependency.schema.yaml").exists());
+
+    fs::remove_dir_all(root).expect("temp dirs should be removed");
+}
+
+#[test]
+fn workspace_update_fails_for_malformed_dependency_and_deploys_valid_sibling() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let (root, outcome) = run_workspace_update_fixture(
+        "workspace-malformed-dependency",
+        "config_version: '1.0'\nschema_list:\n  - schema: parent\n  - schema: sibling\n",
+        &[
+            (
+                "parent.schema.yaml",
+                "schema:\n  schema_id: parent\n  name: Parent\n  dependencies:\n    - malformed_dependency\n",
+            ),
+            ("malformed_dependency.schema.yaml", "schema: [\n"),
+            (
+                "sibling.schema.yaml",
+                "schema:\n  schema_id: sibling\n  name: Sibling\n",
+            ),
+        ],
+    );
+    let build = root.join("user").join("build");
+
+    assert_eq!(outcome, FALSE);
+    assert!(build.join("parent.schema.yaml").is_file());
+    assert!(build.join("sibling.schema.yaml").is_file());
+    assert!(!build.join("malformed_dependency.schema.yaml").exists());
+
     fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
 

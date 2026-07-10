@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs,
-    io::Read,
+    io::{Read, Write},
     os::raw::{c_char, c_int},
     path::{Path, PathBuf},
     process,
@@ -676,14 +676,23 @@ fn workspace_update_schema(
     as_dependency: bool,
     built: &mut HashSet<String>,
 ) -> bool {
-    if !built.insert(schema_id.to_owned()) {
+    if built.contains(schema_id) {
         return true;
     }
 
     let schema_file = format!("{schema_id}.schema.yaml");
-    if !deploy_schema_file(&schema_file) {
-        return as_dependency;
+    match deploy_schema_file_outcome(&schema_file) {
+        SchemaDeployOutcome::Deployed => {}
+        SchemaDeployOutcome::Missing if as_dependency => {
+            warn_missing_schema_dependency(schema_id);
+            memory_probe_mark(format!(
+                "m59:deploy:missing_optional_dependency:{schema_id}"
+            ));
+            return true;
+        }
+        SchemaDeployOutcome::Missing | SchemaDeployOutcome::Failed => return false,
     }
+    built.insert(schema_id.to_owned());
 
     let schema_config =
         load_runtime_config_root(&format!("{schema_id}.schema"), ConfigOpenKind::Deployed);
@@ -1631,9 +1640,23 @@ fn compare_version_part(left: &str, right: &str) -> std::cmp::Ordering {
     }
 }
 
-pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SchemaDeployOutcome {
+    Deployed,
+    Missing,
+    Failed,
+}
+
+fn warn_missing_schema_dependency(schema_id: &str) {
+    let _ = writeln!(
+        std::io::stderr().lock(),
+        "warning:missing_schema_dependency:{schema_id}"
+    );
+}
+
+fn deploy_schema_file_outcome(schema_file: &str) -> SchemaDeployOutcome {
     let Some(schema_file) = validate_data_resource_id(schema_file) else {
-        return false;
+        return SchemaDeployOutcome::Failed;
     };
 
     let shared_data_dir = {
@@ -1643,8 +1666,13 @@ pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
         PathBuf::from(paths.shared_data_dir.to_string_lossy().into_owned())
     };
     let source = shared_data_dir.join(&schema_file);
-    if !source.is_file() {
-        return false;
+    match fs::metadata(&source) {
+        Ok(metadata) if metadata.is_file() => {}
+        Ok(_) => return SchemaDeployOutcome::Failed,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return SchemaDeployOutcome::Missing;
+        }
+        Err(_) => return SchemaDeployOutcome::Failed,
     }
 
     let schema_config = match fs::read_to_string(source)
@@ -1652,16 +1680,24 @@ pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
         .and_then(|yaml| serde_yaml::from_str::<Value>(&yaml).ok())
     {
         Some(schema_config) => schema_config,
-        None => return false,
+        None => return SchemaDeployOutcome::Failed,
     };
     let Some(schema_id) = find_config_value(&schema_config, "schema/schema_id")
         .and_then(Value::as_str)
         .and_then(validate_data_resource_id)
     else {
-        return false;
+        return SchemaDeployOutcome::Failed;
     };
 
-    deploy_config_file(&format!("{schema_id}.schema.yaml"), "schema/version")
+    if deploy_config_file(&format!("{schema_id}.schema.yaml"), "schema/version") {
+        SchemaDeployOutcome::Deployed
+    } else {
+        SchemaDeployOutcome::Failed
+    }
+}
+
+pub(crate) fn deploy_schema_file(schema_file: &str) -> bool {
+    deploy_schema_file_outcome(schema_file) == SchemaDeployOutcome::Deployed
 }
 
 pub(crate) fn prebuild_all_schemas() -> bool {

@@ -1,0 +1,723 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "hwmvsqtt",
+    "ebcnyripm",
+    "takohaeosk",
+    "hwmvs",
+    "qtt",
+    "ebcn",
+    "yripm",
+    "tak",
+    "oha",
+    "eosk",
+    "hdaetcu",
+    "lyk"
+  ],
+  "all_accepted": false,
+  "cases": [
+    {
+      "input": "hwmvsqtt",
+      "policy": "exact",
+      "oracle_count": 7,
+      "actual_count": 3,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 5,
+      "extra_count": 1,
+      "missing_examples": [
+        "丿",
+        "甶",
+        "竹",
+        "竹田",
+        "粵拼"
+      ],
+      "extra_examples": [
+        "竹田一女尸手廿廿"
+      ],
+      "oracle_rows_sha256": "f8486a62c0ec29e7a0fc62f64e63fcd3eb2ef0b8bb21cc1ea7675ee646465fe7",
+      "actual_rows_sha256": "cf2de7641ce346c163f3fa97a4c9d0dac4daac77b0f925ea493f5a329000dd5b",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 1,
+          "actual_start": 0,
+          "actual_end": 1
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 3,
+          "oracle_end": 7,
+          "actual_start": 3,
+          "actual_end": 3
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "ebcnyripm",
+      "policy": "exact",
+      "oracle_count": 5,
+      "actual_count": 2,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 4,
+      "extra_count": 1,
+      "missing_examples": [
+        "水",
+        "水月",
+        "消金",
+        "測試"
+      ],
+      "extra_examples": [
+        "水月金弓卜口戈心一"
+      ],
+      "oracle_rows_sha256": "115730904066a31fca1b9d9b07c39d6bc2c6f62fc3ee7296a3357b8ad6941911",
+      "actual_rows_sha256": "c43790907d263452e40be144cf4c8cf157c72cab0f9f49e27c494e8b0fbface3",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 1,
+          "actual_start": 0,
+          "actual_end": 1
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 2,
+          "oracle_end": 5,
+          "actual_start": 2,
+          "actual_end": 2
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "takohaeosk",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 2,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 3,
+      "extra_count": 1,
+      "missing_examples": [
+        "廿",
+        "昔",
+        "莫伯洢"
+      ],
+      "extra_examples": [
+        "廿日大人竹日水人尸大"
+      ],
+      "oracle_rows_sha256": "039c9860ac506011609ba42d608f8ca62a5f9ed8880b62037c5ec285bbb849b9",
+      "actual_rows_sha256": "ed7d35eaeb2a0bb50f06ba3347c14e793861f2f1effa1e56c6412590588c8634",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 1,
+          "actual_start": 0,
+          "actual_end": 1
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 2,
+          "oracle_end": 4,
+          "actual_start": 2,
+          "actual_end": 2
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "hwmvs",
+      "policy": "exact",
+      "oracle_count": 2,
+      "actual_count": 2,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "7ab4084623f1488187bcd3ad458bfd57164cedd7682f993f6da8004b7aa257ed",
+      "actual_rows_sha256": "7ab4084623f1488187bcd3ad458bfd57164cedd7682f993f6da8004b7aa257ed",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "qtt",
+      "policy": "exact",
+      "oracle_count": 27,
+      "actual_count": 27,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 1,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "82c3ee4aded8fc291103c5efe201b876432c3c52cf423464651e4ee353557e7b",
+      "actual_rows_sha256": "44f1b1ea0b839bfefa239a83cada65b5336e279add0e8d2bf1654d1660b02ce9",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 1,
+          "oracle_end": 1,
+          "actual_start": 1,
+          "actual_end": 5
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 2,
+          "oracle_end": 3,
+          "actual_start": 6,
+          "actual_end": 8
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 4,
+          "oracle_end": 9,
+          "actual_start": 9,
+          "actual_end": 9
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 10,
+          "oracle_end": 10,
+          "actual_start": 10,
+          "actual_end": 18
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 11,
+          "oracle_end": 12,
+          "actual_start": 19,
+          "actual_end": 24
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 13,
+          "oracle_end": 20,
+          "actual_start": 25,
+          "actual_end": 25
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 22,
+          "oracle_end": 27,
+          "actual_start": 27,
+          "actual_end": 27
+        }
+      ],
+      "failure_classes": [
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "ebcn",
+      "policy": "exact",
+      "oracle_count": 1,
+      "actual_count": 1,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "d8ba7d840ee3a5dd2ec4fe85afb8dfb605e312c0f9a80c22ed941abc4508f90f",
+      "actual_rows_sha256": "d8ba7d840ee3a5dd2ec4fe85afb8dfb605e312c0f9a80c22ed941abc4508f90f",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "yripm",
+      "policy": "exact",
+      "oracle_count": 1,
+      "actual_count": 1,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "18981507797ec3d76db86933fb4511dface108bfa738394c29c991e1961c2245",
+      "actual_rows_sha256": "18981507797ec3d76db86933fb4511dface108bfa738394c29c991e1961c2245",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "tak",
+      "policy": "exact",
+      "oracle_count": 30,
+      "actual_count": 17,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 1,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 13,
+      "extra_count": 0,
+      "missing_examples": [
+        "他可",
+        "他快",
+        "他看",
+        "他肯",
+        "他靠",
+        "塔克",
+        "塔卡",
+        "她可",
+        "她看",
+        "它可",
+        "踏勘",
+        "踏看",
+        "踏空"
+      ],
+      "extra_examples": [],
+      "oracle_rows_sha256": "bfd794645267e91a9802552a9a800541ae2a6c17fd49ebdd1dd4879f0a8e3108",
+      "actual_rows_sha256": "7f64922a3e8120e97e05ec51510e17a96aea45b16bbbfe6355c7a223e442800f",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 1,
+          "oracle_end": 14,
+          "actual_start": 1,
+          "actual_end": 8
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 15,
+          "oracle_end": 19,
+          "actual_start": 9,
+          "actual_end": 9
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 21,
+          "oracle_end": 22,
+          "actual_start": 11,
+          "actual_end": 12
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 24,
+          "oracle_end": 25,
+          "actual_start": 14,
+          "actual_end": 14
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 27,
+          "oracle_end": 30,
+          "actual_start": 16,
+          "actual_end": 17
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "oha",
+      "policy": "exact",
+      "oracle_count": 11,
+      "actual_count": 11,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 1,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "cdc3ec7e8388bbc30ecd931ccffb69c2f47cb7fe3b8f2cc5cd7057f9098ffa57",
+      "actual_rows_sha256": "80e76b3f5304f9ba19487442aee30201b2b32c0ea8ae1700f21dbcf969c453da",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 1,
+          "oracle_end": 1,
+          "actual_start": 1,
+          "actual_end": 7
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 3,
+          "oracle_end": 9,
+          "actual_start": 9,
+          "actual_end": 9
+        }
+      ],
+      "failure_classes": [
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "eosk",
+      "policy": "exact",
+      "oracle_count": 1,
+      "actual_count": 1,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "b1d269ca7a223968dcd9e20c272fcfd61bc0726386e31235fa586940ce6db179",
+      "actual_rows_sha256": "b1d269ca7a223968dcd9e20c272fcfd61bc0726386e31235fa586940ce6db179",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "hdaetcu",
+      "policy": "exact",
+      "oracle_count": 6,
+      "actual_count": 2,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 5,
+      "extra_count": 1,
+      "missing_examples": [
+        "丿",
+        "禾",
+        "竹",
+        "竹木",
+        "香港"
+      ],
+      "extra_examples": [
+        "竹木日水廿金山"
+      ],
+      "oracle_rows_sha256": "ca3d40c1062454da1dd11f445e5d1dbbb8f983b0a01caf68a0145d09e98ee8e2",
+      "actual_rows_sha256": "e03f603084ac6c9b4ce8e4813fdc75b15fe15df2273d25609598a692134967b7",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 1,
+          "actual_start": 0,
+          "actual_end": 1
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 2,
+          "oracle_end": 6,
+          "actual_start": 2,
+          "actual_end": 2
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "lyk",
+      "policy": "exact",
+      "oracle_count": 19,
+      "actual_count": 19,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 2,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "c3bbe5f5e82745ca1257325b1b44054ce42798dcf8ec3b5c4934a3027b5270ba",
+      "actual_rows_sha256": "d3183e3bab09ebe925ff6eb96c75e681711da6abe1aa89af1fcd793125692dc1",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 2,
+          "oracle_end": 4,
+          "actual_start": 2,
+          "actual_end": 3
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 5,
+          "oracle_end": 6,
+          "actual_start": 4,
+          "actual_end": 4
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 8,
+          "oracle_end": 8,
+          "actual_start": 6,
+          "actual_end": 14
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 9,
+          "oracle_end": 11,
+          "actual_start": 15,
+          "actual_end": 15
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 15,
+          "oracle_end": 19,
+          "actual_start": 19,
+          "actual_end": 19
+        }
+      ],
+      "failure_classes": [
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "target/m59-increment1-cangjie-final/cangjie-oracle.json",
+      "sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf"
+    },
+    "actual": {
+      "path": "target/m59-increment1-cangjie-final/cangjie-yune.json",
+      "sha256": "82fe38e0ef24bea76b3e65400cb9605fb2579ad9ea7d8caf5ca8c5bfbe216971"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "target/m59-increment1-cangjie-final/cangjie-oracle.json",
+      "--actual",
+      "target/m59-increment1-cangjie-final/cangjie-yune.json",
+      "--policy",
+      "exact",
+      "--output-json",
+      "target/m59-increment1-cangjie-final/cangjie-diff.json",
+      "--output-csv",
+      "target/m59-increment1-cangjie-final/cangjie-diff.csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle target/m59-increment1-cangjie-final/cangjie-oracle.json --actual target/m59-increment1-cangjie-final/cangjie-yune.json --policy exact --output-json target/m59-increment1-cangjie-final/cangjie-diff.json --output-csv target/m59-increment1-cangjie-final/cangjie-diff.csv"
+  }
+}

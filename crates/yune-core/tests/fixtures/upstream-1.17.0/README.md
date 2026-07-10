@@ -14,7 +14,8 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
 - Captured for: M12 upstream oracle refresh; M17 upstream `luna_pinyin`
   sentence/lattice closeout; M18 deployment/processor depth; M19 breadth schemas;
   M55 Phase 3R sentence fixture expansion; M59 complete Luna Lane B
-  text/order/position and partial-selection composition
+  text/order/position and partial-selection composition; M59 Cangjie
+  candidate-zero target derivation and exact-order diagnostics
 
 ## Capture Rules
 
@@ -81,6 +82,24 @@ powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -Or
 - The manifest recapture command writes create-new output under ignored
   `target/`; review its byte/diff result and import it separately. The capture
   tool intentionally refuses to overwrite this tracked fixture.
+
+### `cangjie5-composition.json`
+
+- Schema: upstream `cangjie5` over pinned `rime/rime-cangjie`.
+- Inputs: `hwmvsqtt`, `ebcnyripm`, `takohaeosk`, `hwmvs`, `qtt`, `ebcn`,
+  `yripm`, `tak`, `oha`, `eosk`, `hdaetcu`, and `lyk`.
+- Source-row policy:
+  `d48_cangjie5_exact_code_cohorts_for_char_by_char_composition`.
+- The raw capture records complete all-page order plus clean binary, tool,
+  schema/dependency commit and Git-tree identities. The curator derives owner
+  targets from captured candidate zero, verifies their ASCII U+ declarations,
+  links the atomic candidates, and embeds the complete pinned source cohorts.
+- The tracked fixture is byte-identical to the reviewed curated oracle in
+  `docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/`.
+  The packet preserves the untouched raw oracle, Yune capture, strict exact
+  diff, same-path replay, and the still-red CJ-1 disposition.
+- The manifest recapture command writes raw and curated create-new outputs under
+  ignored `target/`; review them first and import the curated bytes separately.
 
 ### `luna-pinyin-selection.json`
 

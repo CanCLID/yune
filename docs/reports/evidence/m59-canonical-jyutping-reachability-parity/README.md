@@ -24,6 +24,13 @@ regression guard, not an acceptance oracle.
 > same-path replay and has been imported into the owning upstream fixture with
 > unchanged behavior arrays plus hardened curator-v6 provenance. This packet is
 > likewise pre-fix evidence only and does not close D-48 or M59.
+>
+> [`../m59-cangjie5-order-parity/increment-1-executable-evidence/`](../m59-cangjie5-order-parity/increment-1-executable-evidence/)
+> is the corresponding seven-file Cangjie executable diagnostic from clean
+> commit `c7c04ff7...`. It preserves both raw and curated oracle files and has a
+> strict exact verdict of 4 passed / 8 failed (exit `1`, no exceptions). The
+> curated oracle replaces the old mojibaked fixture metadata byte-for-byte while
+> leaving all candidate/page arrays unchanged. CJ-1 remains open.
 
 ## Artifact classification
 

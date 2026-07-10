@@ -7,6 +7,15 @@ for the three owner composition rows + controls, answering the decisive question
 non-circular real-path test. No engine changes; the Yune divergence is filed as a
 finding, not fixed inline.
 
+> **Current Increment 1 update (2026-07-10):**
+> [`increment-1-executable-evidence/`](./increment-1-executable-evidence/)
+> is the source-clean, seven-file executable pre-fix packet. It preserves the
+> untouched raw oracle, validated curated oracle, Yune capture, exact JSON/CSV
+> diff, and deterministic manifest. The strict exact result is deliberately red:
+> 4 passed / 8 failed, comparator exit `1`, no exceptions. The packet corrects
+> the old fixture's mojibaked hand-embedded owner targets without changing any
+> captured candidate or page arrays. CJ-1 remains open.
+
 ## Deliverables
 
 - `scripts/capture-upstream-cangjie5.ps1` — pinned-provenance, all-pages oracle
@@ -132,7 +141,7 @@ observation.
 
 ## Reproduce
 
-```
-pwsh -File scripts/capture-upstream-cangjie5.ps1        # deploy rime-cangjie, capture, curate
+```powershell
+# The packet README carries the exact create-new capture and comparator commands.
 cargo test -p yune-core --test upstream_cangjie5_composition_parity
 ```

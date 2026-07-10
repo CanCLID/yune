@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "packet": "m59_increment_1_cangjie_final_pre_fix",
+  "capture_date": "2026-07-10",
+  "status": "pre_fix_red",
+  "acceptance_evidence": false,
+  "closes_d48": false,
+  "policy": "exact",
+  "exceptions": null,
+  "expected_comparator_exit_code": 1,
+  "all_accepted": false,
+  "passed": 4,
+  "failed": 8,
+  "packet_file_count": 7,
+  "binary_payloads_copied": false,
+  "manifest_self_hash": null,
+  "manifest_self_hash_note": "The manifest intentionally omits only its own recursive hash.",
+  "inputs": [
+    "hwmvsqtt",
+    "ebcnyripm",
+    "takohaeosk",
+    "hwmvs",
+    "qtt",
+    "ebcn",
+    "yripm",
+    "tak",
+    "oha",
+    "eosk",
+    "hdaetcu",
+    "lyk"
+  ],
+  "canonical_text": {
+    "encoding": "UTF-8",
+    "bom": false,
+    "line_ending": "LF",
+    "carriage_return_count": 0,
+    "nul_count": 0,
+    "terminal_lf_count": 1,
+    "applies_to_all_seven_packet_files": true,
+    "git_attributes": {
+      "text": "auto",
+      "eol": "lf"
+    },
+    "git_filtered_blob_equals_no_filter_blob_for_all_files": true,
+    "git_lf_filter_disposition": "intended no-op"
+  },
+  "generation_and_import": {
+    "source_commit": "c7c04ff73b76ea3e8e1c5e6bf9b432483ee6650f",
+    "source_tree": "382f7d31617a5a6aeb2cd9e1ec7472b7bf3e3bc1",
+    "source_clean": true,
+    "source_status_short": [],
+    "scratch_root": "target/m59-increment1-cangjie-final",
+    "scratch_root_is_git_ignored": true,
+    "replay_requires_scratch_and_work_roots_absent": true,
+    "import_policy": "copy the five canonical outputs byte-identically without rewriting embedded provenance or canonical text bytes",
+    "excluded_diagnostic": {
+      "path": "target/m59-increment1-cangjie-final/cangjie-yune-timeout-preserved.json",
+      "git_ignored": true,
+      "imported": false,
+      "reason": "diagnostic timeout preservation is outside the canonical successful generation chain"
+    },
+    "imports": [
+      {
+        "scratch_path": "target/m59-increment1-cangjie-final/cangjie-oracle-raw.json",
+        "packet_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-oracle-raw.json",
+        "bytes": 162125,
+        "sha256": "91dca789769cbbed160132bf23a54d891bf164f3f2617d5fcf5a2ac5d4443be1",
+        "byte_identical": true
+      },
+      {
+        "scratch_path": "target/m59-increment1-cangjie-final/cangjie-oracle.json",
+        "packet_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-oracle.json",
+        "bytes": 66584,
+        "sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+        "byte_identical": true
+      },
+      {
+        "scratch_path": "target/m59-increment1-cangjie-final/cangjie-yune.json",
+        "packet_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-yune.json",
+        "bytes": 119312,
+        "sha256": "82fe38e0ef24bea76b3e65400cb9605fb2579ad9ea7d8caf5ca8c5bfbe216971",
+        "byte_identical": true
+      },
+      {
+        "scratch_path": "target/m59-increment1-cangjie-final/cangjie-diff.json",
+        "packet_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-diff.json",
+        "bytes": 19310,
+        "sha256": "c25d427e3d229d0801b38142551b5c22707365b1d2b50be5c47acac41f15fe89",
+        "byte_identical": true
+      },
+      {
+        "scratch_path": "target/m59-increment1-cangjie-final/cangjie-diff.csv",
+        "packet_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-diff.csv",
+        "bytes": 7590,
+        "sha256": "281350505562b093c5d72b7bc86c116660ec570d277b5ddc3db7c4edf2879349",
+        "byte_identical": true
+      }
+    ],
+    "same_path_replay": {
+      "oracle_raw_path": "target/m59-increment1-cangjie-final/cangjie-oracle-raw.json",
+      "oracle_raw_sha256_both": "91dca789769cbbed160132bf23a54d891bf164f3f2617d5fcf5a2ac5d4443be1",
+      "oracle_curated_path": "target/m59-increment1-cangjie-final/cangjie-oracle.json",
+      "oracle_curated_sha256_both": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+      "yune_path": "target/m59-increment1-cangjie-final/cangjie-yune.json",
+      "yune_sha256_both": "82fe38e0ef24bea76b3e65400cb9605fb2579ad9ea7d8caf5ca8c5bfbe216971",
+      "comparator_json_first_snapshot": "target/m59-increment1-cangjie-final/cangjie-diff-first.json",
+      "comparator_json_canonical_path": "target/m59-increment1-cangjie-final/cangjie-diff.json",
+      "comparator_json_sha256_both": "c25d427e3d229d0801b38142551b5c22707365b1d2b50be5c47acac41f15fe89",
+      "comparator_csv_first_snapshot": "target/m59-increment1-cangjie-final/cangjie-diff-first.csv",
+      "comparator_csv_canonical_path": "target/m59-increment1-cangjie-final/cangjie-diff.csv",
+      "comparator_csv_sha256_both": "281350505562b093c5d72b7bc86c116660ec570d277b5ddc3db7c4edf2879349",
+      "comparator_exit_code_both": 1,
+      "comparison": "byte-identical repeated captures at the same logical output paths"
+    }
+  },
+  "shared_runtime_policy": {
+    "ordered": [
+      {
+        "name": "ascii_mode",
+        "value": false
+      },
+      {
+        "name": "full_shape",
+        "value": false
+      },
+      {
+        "name": "ascii_punct",
+        "value": false
+      },
+      {
+        "name": "zh_hans",
+        "value": false
+      }
+    ],
+    "source": "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+    "additional_runtime_option_patches": [],
+    "oracle_and_yune_match": true
+  },
+  "oracle": {
+    "raw_capture_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-oracle-raw.json",
+    "raw_capture_bytes": 162125,
+    "raw_capture_sha256": "91dca789769cbbed160132bf23a54d891bf164f3f2617d5fcf5a2ac5d4443be1",
+    "curated_capture_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-oracle.json",
+    "curated_capture_bytes": 66584,
+    "curated_capture_sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+    "status": "cangjie5_capture_curated_complete",
+    "canonical": true,
+    "engine": "rime/librime",
+    "version": "1.17.0",
+    "commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "schema_id": "cangjie5",
+    "schema_source_repository": "rime/rime-cangjie",
+    "schema_source_commit": "52d90a1b1312e74042b38c1cbc8142defbc53171",
+    "schema_source_tree": "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+    "rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "rime_deployer_sha256": "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+    "tool_source": {
+      "repository": "yune",
+      "commit": "c7c04ff73b76ea3e8e1c5e6bf9b432483ee6650f",
+      "tree": "382f7d31617a5a6aeb2cd9e1ec7472b7bf3e3bc1",
+      "clean": true,
+      "status_short": []
+    },
+    "tools": {
+      "capture_script_path": "scripts/capture-upstream-cangjie5.ps1",
+      "capture_script_sha256": "bd70748a7f95434dba3739d3c13c9d8f468d053aef8b350b89248ce3aa22012c",
+      "curator_path": "scripts/curate-upstream-cangjie5.py",
+      "curator_version": 2,
+      "curator_sha256": "2e69df2649f514b090897ffbb1624c547caed7e81bd05b4d6b0702f584b1e3d1",
+      "probe_path": "scripts/oracle-rime-probe.cs",
+      "probe_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7"
+    },
+    "queried_data": {
+      "source_shared_tree_sha256": "0d614d5ebe43e22f04cf172d4ce85f1a771b5fee8512378b71461ae658c5d5e3",
+      "staged_shared_tree_sha256": "bb6731efa39c4ed0a2d8c08a6e4359a239bb6e849daac196e351a04f2d52b8c3",
+      "deployed_build_tree_sha256": "509ba22d6999b8818535ace10a1c05379c2d65d73e997db716e19f7587077556"
+    },
+    "paging": {
+      "input_count": 12,
+      "page_sizes_observed": [
+        5
+      ],
+      "captured_all_pages": true,
+      "all_menu_present": true,
+      "all_termination_reason": "last_page"
+    },
+    "target_policy": {
+      "owner_targets_derived_from_candidate_zero": true,
+      "owner_codepoints_verified": true,
+      "atomic_candidate_zero_reconstruction_verified": true,
+      "control_targets_linked_to_captured_positions": true
+    },
+    "commands": {
+      "capture": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-upstream-cangjie5.ps1 -OracleRoot 'target/upstream-oracle/1.17.0' -RawOutput 'target/m59-increment1-cangjie-final/cangjie-oracle-raw.json' -Output 'target/m59-increment1-cangjie-final/cangjie-oracle.json' -WorkRoot 'target/upstream-oracle/1.17.0/m59-cangjie-final-work' -KeepWorkRoot -ExpectedRimeDllSha256 '86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b' -ExpectedRimeDeployerSha256 '3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071' -ExpectedCangjieCommit '52d90a1b1312e74042b38c1cbc8142defbc53171' -ExpectedPreludeCommit '082425ea0684bca36474415d4a0e8db9b016487e' -ExpectedLunaPinyinCommit '18a80335c37522311f7cff02886cd81cec3b460a' -ExpectedEssayCommit '48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed' -ExpectedStrokeCommit '3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c' -ExpectedCantoneseCommit 'c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0' -ExpectedLoengfanCommit '987ac95b02f957e8764a2f45222a4006c188ed50'",
+      "curate": "python -B scripts/curate-upstream-cangjie5.py --raw-input 'target/m59-increment1-cangjie-final/cangjie-oracle-raw.json' --output 'target/m59-increment1-cangjie-final/cangjie-oracle.json' --oracle-root 'target/upstream-oracle/1.17.0' --cangjie-dir 'target/upstream-oracle/1.17.0/schema-src/rime-cangjie' --essay 'target/upstream-oracle/1.17.0/schema-src/rime-essay/essay.txt'"
+    },
+    "output_provenance": {
+      "raw_existed_before_capture": false,
+      "curated_existed_before_capture": false,
+      "write_policy": "canonical_utf8_no_bom_lf_one_terminal_lf_create_new",
+      "curated_raw_input_sha256": "91dca789769cbbed160132bf23a54d891bf164f3f2617d5fcf5a2ac5d4443be1"
+    }
+  },
+  "tracked_fixture_import": {
+    "path": "crates/yune-core/tests/fixtures/upstream-1.17.0/cangjie5-composition.json",
+    "sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+    "byte_identical_to_packet_curated_oracle": true,
+    "previous_fixture_sha256": "b694f9720a96d7473e1e5d0621785562ae12fab247dc86bd0f22a435924b3e52",
+    "behavior_equivalence": {
+      "all_twelve_ordered_candidate_arrays_equal": true,
+      "all_twelve_page_arrays_equal": true,
+      "all_twelve_selected_candidate_arrays_equal": true,
+      "all_twelve_commit_previews_equal": true,
+      "captured_all_pages_equal": true,
+      "new_case_fields": [
+        "num_candidates",
+        "candidate_pointer_null",
+        "menu_present",
+        "termination_reason"
+      ],
+      "corrected_fields": [
+        "composition_rows.target",
+        "composition_rows.provenance",
+        "rime_get_input"
+      ],
+      "difference_scope": "hardened provenance and corrected oracle-derived target/input metadata; captured candidate and page behavior is unchanged"
+    }
+  },
+  "yune": {
+    "capture_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-yune.json",
+    "capture_bytes": 119312,
+    "capture_sha256": "82fe38e0ef24bea76b3e65400cb9605fb2579ad9ea7d8caf5ca8c5bfbe216971",
+    "source_commit": "c7c04ff73b76ea3e8e1c5e6bf9b432483ee6650f",
+    "source_tree": "382f7d31617a5a6aeb2cd9e1ec7472b7bf3e3bc1",
+    "source_clean": true,
+    "source_dirty": false,
+    "source_status_short": [],
+    "schema_id": "cangjie5",
+    "yune_dll_sha256": "2ac5d2550cd462d52d11aec995f609a605ccc6aa9837a8e55cec18a7ec63cfa5",
+    "capture_script_path": "scripts/capture-yune-candidate-order.ps1",
+    "capture_script_sha256": "c2614bc7f068d89903d7b0af3856f286f07194e35f505806251aa2ba887aa45c",
+    "probe_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+    "oracle_capture_sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+    "source_shared_tree_sha256": "bb6731efa39c4ed0a2d8c08a6e4359a239bb6e849daac196e351a04f2d52b8c3",
+    "staged_shared_tree_sha256": "b88935676beb1c5430de142117f3dcbb7ce20d3a2e79089f54bd7851442e2b3b",
+    "schema_list_narrowed": true,
+    "narrow_schema_list_switch_used": true,
+    "schema_list_narrowing_source": "generated_narrow_schema_list_switch",
+    "default_yaml_overlay": null,
+    "captured_all_pages": true,
+    "all_menu_present": true,
+    "all_termination_reason": "last_page",
+    "actual_invocation": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-yune-candidate-order.ps1 -YuneDll 'target/release/yune_rime_api.dll' -SharedDataDir 'target/upstream-oracle/1.17.0/m59-cangjie-final-work/shared' -SchemaId 'cangjie5' -OracleCapture 'target/m59-increment1-cangjie-final/cangjie-oracle.json' -Output 'target/m59-increment1-cangjie-final/cangjie-yune.json' -NarrowSchemaList -WorkRoot 'target/m59-increment1-cangjie-yune-work' -ExpectedYuneDllSha256 '2ac5d2550cd462d52d11aec995f609a605ccc6aa9837a8e55cec18a7ec63cfa5' -KeepWorkRoot"
+  },
+  "comparison": {
+    "json_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-diff.json",
+    "json_bytes": 19310,
+    "json_sha256": "c25d427e3d229d0801b38142551b5c22707365b1d2b50be5c47acac41f15fe89",
+    "csv_path": "docs/reports/evidence/m59-cangjie5-order-parity/increment-1-executable-evidence/cangjie-diff.csv",
+    "csv_bytes": 7590,
+    "csv_sha256": "281350505562b093c5d72b7bc86c116660ec570d277b5ddc3db7c4edf2879349",
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "policy": "exact",
+    "exceptions": null,
+    "expected_exit_code": 1,
+    "all_accepted": false,
+    "passed": 4,
+    "failed": 8,
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle target/m59-increment1-cangjie-final/cangjie-oracle.json --actual target/m59-increment1-cangjie-final/cangjie-yune.json --policy exact --output-json target/m59-increment1-cangjie-final/cangjie-diff.json --output-csv target/m59-increment1-cangjie-final/cangjie-diff.csv",
+    "failure_classes": [
+      "under-admission",
+      "over-admission",
+      "order"
+    ],
+    "accepted_inputs": [
+      "hwmvs",
+      "ebcn",
+      "yripm",
+      "eosk"
+    ],
+    "failed_inputs": [
+      "hwmvsqtt",
+      "ebcnyripm",
+      "takohaeosk",
+      "qtt",
+      "tak",
+      "oha",
+      "hdaetcu",
+      "lyk"
+    ],
+    "all_oracle_and_yune_captures_complete": true,
+    "no_exceptions_applied": true
+  },
+  "cj1_disposition": {
+    "finding": "upstream rime-cangjie segmentation/scoring and exact-order divergence",
+    "status": "open_pre_fix",
+    "ignored_test_retained": "cangjie5_upstream_lane_segmentation_scoring_is_blocked",
+    "no_engine_behavior_changed": true,
+    "no_exception_created": true
+  },
+  "file_inventory": [
+    {
+      "path": "README.md",
+      "bytes": 11110,
+      "sha256": "83dc9d3f6104eaac302a78b2dfb7a398a16dca1e5f73da8399ed10df50a33193",
+      "role": "packet narrative and replay contract"
+    },
+    {
+      "path": "cangjie-oracle-raw.json",
+      "bytes": 162125,
+      "sha256": "91dca789769cbbed160132bf23a54d891bf164f3f2617d5fcf5a2ac5d4443be1",
+      "role": "untouched raw upstream oracle capture"
+    },
+    {
+      "path": "cangjie-oracle.json",
+      "bytes": 66584,
+      "sha256": "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf",
+      "role": "validated curated upstream oracle and source slice"
+    },
+    {
+      "path": "cangjie-yune.json",
+      "bytes": 119312,
+      "sha256": "82fe38e0ef24bea76b3e65400cb9605fb2579ad9ea7d8caf5ca8c5bfbe216971",
+      "role": "complete Yune capture over the same ordered inputs"
+    },
+    {
+      "path": "cangjie-diff.json",
+      "bytes": 19310,
+      "sha256": "c25d427e3d229d0801b38142551b5c22707365b1d2b50be5c47acac41f15fe89",
+      "role": "strict exact machine-readable comparison"
+    },
+    {
+      "path": "cangjie-diff.csv",
+      "bytes": 7590,
+      "sha256": "281350505562b093c5d72b7bc86c116660ec570d277b5ddc3db7c4edf2879349",
+      "role": "strict exact review table"
+    }
+  ]
+}

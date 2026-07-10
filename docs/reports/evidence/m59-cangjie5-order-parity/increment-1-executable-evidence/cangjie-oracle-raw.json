@@ -1,0 +1,2536 @@
+{
+    "milestone":  "M59",
+    "task":  "D-48 item 2: cangjie5 order-parity onboarding",
+    "status":  "raw_cangjie5_capture_complete",
+    "canonical":  true,
+    "capture":  {
+                    "engine":  "rime/librime",
+                    "version":  "1.17.0",
+                    "librime_commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                    "source_commit":  "c7c04ff73b76ea3e8e1c5e6bf9b432483ee6650f",
+                    "source_tree":  "382f7d31617a5a6aeb2cd9e1ec7472b7bf3e3bc1",
+                    "source_clean":  true,
+                    "source_status_short":  [
+
+                                            ],
+                    "schema_id":  "cangjie5",
+                    "modules":  [
+                                    "default"
+                                ],
+                    "inputs":  [
+                                   "hwmvsqtt",
+                                   "ebcnyripm",
+                                   "takohaeosk",
+                                   "hwmvs",
+                                   "qtt",
+                                   "ebcn",
+                                   "yripm",
+                                   "tak",
+                                   "oha",
+                                   "eosk",
+                                   "hdaetcu",
+                                   "lyk"
+                               ],
+                    "input_count":  12,
+                    "inputs_source":  "fixed_m59_cangjie_order_lane",
+                    "page_sizes_observed":  [
+                                                5
+                                            ],
+                    "captured_all_pages":  true,
+                    "page_policy":  "RimeProbe.Capture all pages; incomplete or non-advancing pagination is fatal",
+                    "runtime_options":  {
+                                            "ascii_mode":  false,
+                                            "full_shape":  false,
+                                            "ascii_punct":  false,
+                                            "zh_hans":  false
+                                        },
+                    "runtime_options_source":  "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+                    "additional_runtime_option_patches":  [
+
+                                                          ],
+                    "rime_dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                    "rime_deployer_sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+                    "source_repositories":  {
+                                                "rime/rime-cangjie":  {
+                                                                          "commit":  "52d90a1b1312e74042b38c1cbc8142defbc53171",
+                                                                          "tree":  "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+                                                                          "clean":  true,
+                                                                          "status_short":  [
+
+                                                                                           ]
+                                                                      },
+                                                "rime/rime-prelude":  {
+                                                                          "commit":  "082425ea0684bca36474415d4a0e8db9b016487e",
+                                                                          "tree":  "d7e128f09ce6b1f920729ef2f848ca1294c9cb31",
+                                                                          "clean":  true,
+                                                                          "status_short":  [
+
+                                                                                           ]
+                                                                      },
+                                                "rime/rime-luna-pinyin":  {
+                                                                              "commit":  "18a80335c37522311f7cff02886cd81cec3b460a",
+                                                                              "tree":  "0d5efcb75aa40689bf3be210a4f056db6d77b49d",
+                                                                              "clean":  true,
+                                                                              "status_short":  [
+
+                                                                                               ]
+                                                                          },
+                                                "rime/rime-essay":  {
+                                                                        "commit":  "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                                                                        "tree":  "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+                                                                        "clean":  true,
+                                                                        "status_short":  [
+
+                                                                                         ]
+                                                                    },
+                                                "rime/rime-stroke":  {
+                                                                         "commit":  "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c",
+                                                                         "tree":  "d60c793d8d68154847923f21aa73ba90441dab32",
+                                                                         "clean":  true,
+                                                                         "status_short":  [
+
+                                                                                          ]
+                                                                     },
+                                                "rime/rime-cantonese":  {
+                                                                            "commit":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                                                                            "tree":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                                                                            "clean":  true,
+                                                                            "status_short":  [
+
+                                                                                             ]
+                                                                        },
+                                                "CanCLID/rime-loengfan":  {
+                                                                              "commit":  "987ac95b02f957e8764a2f45222a4006c188ed50",
+                                                                              "tree":  "0858d1087046b8d1c3d36c36000ece5630b09cb3",
+                                                                              "clean":  true,
+                                                                              "status_short":  [
+
+                                                                                               ]
+                                                                          }
+                                            },
+                    "tool_hashes":  {
+                                        "capture_script_sha256":  "bd70748a7f95434dba3739d3c13c9d8f468d053aef8b350b89248ce3aa22012c",
+                                        "probe_sha256":  "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+                                        "curator_sha256":  "2e69df2649f514b090897ffbb1624c547caed7e81bd05b4d6b0702f584b1e3d1"
+                                    },
+                    "source_shared_tree_sha256":  "0d614d5ebe43e22f04cf172d4ce85f1a771b5fee8512378b71461ae658c5d5e3",
+                    "staged_shared_tree_sha256":  "bb6731efa39c4ed0a2d8c08a6e4359a239bb6e849daac196e351a04f2d52b8c3",
+                    "deployed_build_tree_sha256":  "509ba22d6999b8818535ace10a1c05379c2d65d73e997db716e19f7587077556",
+                    "commands":  {
+                                     "deploy":  "rime_deployer.exe --build disposable/user disposable/shared disposable/user/build",
+                                     "capture":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-upstream-cangjie5.ps1 -OracleRoot \u0027target/upstream-oracle/1.17.0\u0027 -RawOutput \u0027target/m59-increment1-cangjie-final/cangjie-oracle-raw.json\u0027 -Output \u0027target/m59-increment1-cangjie-final/cangjie-oracle.json\u0027 -WorkRoot \u0027target/upstream-oracle/1.17.0/m59-cangjie-final-work\u0027 -KeepWorkRoot -ExpectedRimeDllSha256 \u002786b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b\u0027 -ExpectedRimeDeployerSha256 \u00273abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071\u0027 -ExpectedCangjieCommit \u002752d90a1b1312e74042b38c1cbc8142defbc53171\u0027 -ExpectedPreludeCommit \u0027082425ea0684bca36474415d4a0e8db9b016487e\u0027 -ExpectedLunaPinyinCommit \u002718a80335c37522311f7cff02886cd81cec3b460a\u0027 -ExpectedEssayCommit \u002748c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed\u0027 -ExpectedStrokeCommit \u00273a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c\u0027 -ExpectedCantoneseCommit \u0027c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0\u0027 -ExpectedLoengfanCommit \u0027987ac95b02f957e8764a2f45222a4006c188ed50\u0027",
+                                     "curate":  "python -B scripts/curate-upstream-cangjie5.py --raw-input \u0027target/m59-increment1-cangjie-final/cangjie-oracle-raw.json\u0027 --output \u0027target/m59-increment1-cangjie-final/cangjie-oracle.json\u0027 --oracle-root \u0027target/upstream-oracle/1.17.0\u0027 --cangjie-dir \u0027target/upstream-oracle/1.17.0/schema-src/rime-cangjie\u0027 --essay \u0027target/upstream-oracle/1.17.0/schema-src/rime-essay/essay.txt\u0027"
+                                 },
+                    "effective_parameters":  {
+                                                 "oracle_root":  "target/upstream-oracle/1.17.0",
+                                                 "cangjie_dir":  "target/upstream-oracle/1.17.0/schema-src/rime-cangjie",
+                                                 "essay":  "target/upstream-oracle/1.17.0/schema-src/rime-essay/essay.txt",
+                                                 "raw_output":  "target/m59-increment1-cangjie-final/cangjie-oracle-raw.json",
+                                                 "output":  "target/m59-increment1-cangjie-final/cangjie-oracle.json",
+                                                 "work_root":  "target/upstream-oracle/1.17.0/m59-cangjie-final-work",
+                                                 "work_root_source":  "explicit",
+                                                 "keep_work_root":  true,
+                                                 "inputs":  [
+                                                                "hwmvsqtt",
+                                                                "ebcnyripm",
+                                                                "takohaeosk",
+                                                                "hwmvs",
+                                                                "qtt",
+                                                                "ebcn",
+                                                                "yripm",
+                                                                "tak",
+                                                                "oha",
+                                                                "eosk",
+                                                                "hdaetcu",
+                                                                "lyk"
+                                                            ],
+                                                 "schema_id":  "cangjie5",
+                                                 "modules":  [
+                                                                 "default"
+                                                             ],
+                                                 "expected_rime_dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                                                 "expected_rime_deployer_sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+                                                 "expected_repository_commits":  {
+                                                                                     "rime/rime-cangjie":  "52d90a1b1312e74042b38c1cbc8142defbc53171",
+                                                                                     "rime/rime-prelude":  "082425ea0684bca36474415d4a0e8db9b016487e",
+                                                                                     "rime/rime-luna-pinyin":  "18a80335c37522311f7cff02886cd81cec3b460a",
+                                                                                     "rime/rime-essay":  "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                                                                                     "rime/rime-stroke":  "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c",
+                                                                                     "rime/rime-cantonese":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                                                                                     "CanCLID/rime-loengfan":  "987ac95b02f957e8764a2f45222a4006c188ed50"
+                                                                                 },
+                                                 "expected_repository_trees":  {
+                                                                                   "rime/rime-cangjie":  "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+                                                                                   "rime/rime-prelude":  "d7e128f09ce6b1f920729ef2f848ca1294c9cb31",
+                                                                                   "rime/rime-luna-pinyin":  "0d5efcb75aa40689bf3be210a4f056db6d77b49d",
+                                                                                   "rime/rime-essay":  "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+                                                                                   "rime/rime-stroke":  "d60c793d8d68154847923f21aa73ba90441dab32",
+                                                                                   "rime/rime-cantonese":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                                                                                   "CanCLID/rime-loengfan":  "0858d1087046b8d1c3d36c36000ece5630b09cb3"
+                                                                               },
+                                                 "runtime_options":  {
+                                                                         "ascii_mode":  false,
+                                                                         "full_shape":  false,
+                                                                         "ascii_punct":  false,
+                                                                         "zh_hans":  false
+                                                                     },
+                                                 "runtime_options_source":  "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+                                                 "additional_runtime_option_patches":  [
+
+                                                                                       ],
+                                                 "page_policy":  "RimeProbe.Capture all pages; incomplete or non-advancing pagination is fatal",
+                                                 "serialization":  {
+                                                                       "encoding":  "utf-8",
+                                                                       "bom":  false,
+                                                                       "line_endings":  "lf",
+                                                                       "terminal_newline":  "exactly_one"
+                                                                   },
+                                                 "path_serialization_policy":  "repo-relative forward-slash paths; external paths replaced with external/\u003crole\u003e"
+                                             },
+                    "output_provenance":  {
+                                              "raw":  {
+                                                          "path":  "target/m59-increment1-cangjie-final/cangjie-oracle-raw.json",
+                                                          "existed_before_capture":  false,
+                                                          "write_policy":  "canonical_utf8_no_bom_lf_one_terminal_lf_create_new",
+                                                          "generated_by":  "scripts/capture-upstream-cangjie5.ps1"
+                                                      },
+                                              "curated":  {
+                                                              "path":  "target/m59-increment1-cangjie-final/cangjie-oracle.json",
+                                                              "existed_before_capture":  false,
+                                                              "write_policy":  "canonical_utf8_no_bom_lf_one_terminal_lf_create_new",
+                                                              "generated_by":  "scripts/curate-upstream-cangjie5.py"
+                                                          }
+                                          }
+                },
+    "oracle":  {
+                   "engine":  "rime/librime",
+                   "version":  "1.17.0",
+                   "commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                   "dll":  "target/upstream-oracle/1.17.0/extract/dist/lib/rime.dll",
+                   "dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                   "deployer":  "target/upstream-oracle/1.17.0/extract/dist/bin/rime_deployer.exe",
+                   "deployer_sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071"
+               },
+    "schema":  {
+                   "yune_facing_schema_id":  "cangjie5",
+                   "source_repo":  "rime/rime-cangjie",
+                   "source_commit":  "52d90a1b1312e74042b38c1cbc8142defbc53171",
+                   "source_tree":  "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+                   "dependency_commits":  {
+                                              "rime/rime-cangjie":  "52d90a1b1312e74042b38c1cbc8142defbc53171",
+                                              "rime/rime-prelude":  "082425ea0684bca36474415d4a0e8db9b016487e",
+                                              "rime/rime-luna-pinyin":  "18a80335c37522311f7cff02886cd81cec3b460a",
+                                              "rime/rime-essay":  "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                                              "rime/rime-stroke":  "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c",
+                                              "rime/rime-cantonese":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                                              "CanCLID/rime-loengfan":  "987ac95b02f957e8764a2f45222a4006c188ed50"
+                                          },
+                   "dependency_trees":  {
+                                            "rime/rime-cangjie":  "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+                                            "rime/rime-prelude":  "d7e128f09ce6b1f920729ef2f848ca1294c9cb31",
+                                            "rime/rime-luna-pinyin":  "0d5efcb75aa40689bf3be210a4f056db6d77b49d",
+                                            "rime/rime-essay":  "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+                                            "rime/rime-stroke":  "d60c793d8d68154847923f21aa73ba90441dab32",
+                                            "rime/rime-cantonese":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                                            "CanCLID/rime-loengfan":  "0858d1087046b8d1c3d36c36000ece5630b09cb3"
+                                        },
+                   "note":  "Upstream rime-cangjie validation lane; this is not the shipped product Cangjie dictionary."
+               },
+    "options":  {
+                    "runtime_options":  {
+                                            "ascii_mode":  false,
+                                            "full_shape":  false,
+                                            "ascii_punct":  false,
+                                            "zh_hans":  false
+                                        },
+                    "runtime_options_source":  "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+                    "additional_runtime_option_patches":  [
+
+                                                          ],
+                    "custom_yaml":  "default.custom.yaml only selects cangjie5",
+                    "page_sizes_observed":  [
+                                                5
+                                            ]
+                },
+    "owner_target_specs":  [
+                               {
+                                   "input":  "hwmvsqtt",
+                                   "target_codepoints":  "U+7CB5 U+62FC",
+                                   "atomic_codes":  [
+                                                        "hwmvs",
+                                                        "qtt"
+                                                    ],
+                                   "declaration_source":  "owner-signed D-47/D-48 Cangjie composition row"
+                               },
+                               {
+                                   "input":  "ebcnyripm",
+                                   "target_codepoints":  "U+6E2C U+8A66",
+                                   "atomic_codes":  [
+                                                        "ebcn",
+                                                        "yripm"
+                                                    ],
+                                   "declaration_source":  "owner-signed D-47/D-48 Cangjie composition row"
+                               },
+                               {
+                                   "input":  "takohaeosk",
+                                   "target_codepoints":  "U+83AB U+4F2F U+6D22",
+                                   "atomic_codes":  [
+                                                        "tak",
+                                                        "oha",
+                                                        "eosk"
+                                                    ],
+                                   "declaration_source":  "owner-signed D-47/D-48 Cangjie composition row"
+                               }
+                           ],
+    "control_target_specs":  [
+                                 {
+                                     "input":  "hdaetcu",
+                                     "target_codepoints":  "U+9999 U+6E2F",
+                                     "candidate_index":  0
+                                 },
+                                 {
+                                     "input":  "lyk",
+                                     "target_codepoints":  "U+4E2D U+6587",
+                                     "candidate_index":  1
+                                 }
+                             ],
+    "inputs":  [
+                   "hwmvsqtt",
+                   "ebcnyripm",
+                   "takohaeosk",
+                   "hwmvs",
+                   "qtt",
+                   "ebcn",
+                   "yripm",
+                   "tak",
+                   "oha",
+                   "eosk",
+                   "hdaetcu",
+                   "lyk"
+               ],
+    "cases":  [
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "hwmvsqtt",
+                      "rime_get_input":  "hwmvsqtt",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "hwmvs qtt",
+                      "commit_text_preview":  "粵拼",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "粵拼",
+                                                      "comment":  " ☯ ",
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "粵",
+                                                      "comment":  null,
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "粤",
+                                                      "comment":  null,
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "竹田",
+                                                      "comment":  null,
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "甶",
+                                                      "comment":  null,
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "粵拼",
+                                                               "comment":  " ☯ ",
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "粵",
+                                                               "comment":  null,
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "粤",
+                                                               "comment":  null,
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "竹田",
+                                                               "comment":  null,
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "甶",
+                                                               "comment":  null,
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "竹",
+                                                               "comment":  null,
+                                                               "global_index":  5
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "丿",
+                                                               "comment":  null,
+                                                               "global_index":  6
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "粵拼",
+                                                 "comment":  " ☯ ",
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "粵",
+                                                 "comment":  null,
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "粤",
+                                                 "comment":  null,
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "竹田",
+                                                 "comment":  null,
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "甶",
+                                                 "comment":  null,
+                                                 "global_index":  4
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "竹",
+                                                 "comment":  null,
+                                                 "global_index":  5
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "丿",
+                                                 "comment":  null,
+                                                 "global_index":  6
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "ebcnyripm",
+                      "rime_get_input":  "ebcnyripm",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "ebcn yripm",
+                      "commit_text_preview":  "測試",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "測試",
+                                                      "comment":  " ☯ ",
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "測",
+                                                      "comment":  null,
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "消金",
+                                                      "comment":  null,
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "水月",
+                                                      "comment":  null,
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "水",
+                                                      "comment":  null,
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "測試",
+                                                               "comment":  " ☯ ",
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "測",
+                                                               "comment":  null,
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "消金",
+                                                               "comment":  null,
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "水月",
+                                                               "comment":  null,
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "水",
+                                                               "comment":  null,
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "測試",
+                                                 "comment":  " ☯ ",
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "測",
+                                                 "comment":  null,
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "消金",
+                                                 "comment":  null,
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "水月",
+                                                 "comment":  null,
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "水",
+                                                 "comment":  null,
+                                                 "global_index":  4
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "takohaeosk",
+                      "rime_get_input":  "takohaeosk",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "tak oha eosk",
+                      "commit_text_preview":  "莫伯洢",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  4,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "莫伯洢",
+                                                      "comment":  " ☯ ",
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "莫",
+                                                      "comment":  null,
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "昔",
+                                                      "comment":  null,
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "廿",
+                                                      "comment":  null,
+                                                      "global_index":  3
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "莫伯洢",
+                                                               "comment":  " ☯ ",
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "莫",
+                                                               "comment":  null,
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "昔",
+                                                               "comment":  null,
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "廿",
+                                                               "comment":  null,
+                                                               "global_index":  3
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "莫伯洢",
+                                                 "comment":  " ☯ ",
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "莫",
+                                                 "comment":  null,
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "昔",
+                                                 "comment":  null,
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "廿",
+                                                 "comment":  null,
+                                                 "global_index":  3
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "hwmvs",
+                      "rime_get_input":  "hwmvs",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "hwmvs（竹田一女尸）",
+                      "commit_text_preview":  "粵",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  2,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "粵",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "粤",
+                                                      "comment":  null,
+                                                      "global_index":  1
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "粵",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "粤",
+                                                               "comment":  null,
+                                                               "global_index":  1
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "粵",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "粤",
+                                                 "comment":  null,
+                                                 "global_index":  1
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "qtt",
+                      "rime_get_input":  "qtt",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "qtt（手廿廿）",
+                      "commit_text_preview":  "拼",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "拼",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "掽",
+                                                      "comment":  "～金",
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "搆",
+                                                      "comment":  "～月",
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "拉美",
+                                                      "comment":  "～土大",
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "拉斯",
+                                                      "comment":  "～金中",
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "拼",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "掽",
+                                                               "comment":  "～金",
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "搆",
+                                                               "comment":  "～月",
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "拉美",
+                                                               "comment":  "～土大",
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "拉斯",
+                                                               "comment":  "～金中",
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "手拉葫蘆",
+                                                               "comment":  "～月廿",
+                                                               "global_index":  5
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "拉蒙",
+                                                               "comment":  "～月人",
+                                                               "global_index":  6
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "拉普蘭",
+                                                               "comment":  "～日田",
+                                                               "global_index":  7
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "青燈黃卷",
+                                                               "comment":  "～金山",
+                                                               "global_index":  8
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "拉莫斯",
+                                                               "comment":  "～大中",
+                                                               "global_index":  9
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  2,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "拉着",
+                                                               "comment":  "～手山",
+                                                               "global_index":  10
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "拉薩",
+                                                               "comment":  "～弓一",
+                                                               "global_index":  11
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "拉着我",
+                                                               "comment":  "～山戈",
+                                                               "global_index":  12
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "拉開差距",
+                                                               "comment":  "～一尸",
+                                                               "global_index":  13
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "拉薩市",
+                                                               "comment":  "～一月",
+                                                               "global_index":  14
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  3,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "拉菲",
+                                                               "comment":  "～中卜",
+                                                               "global_index":  15
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "拼花",
+                                                               "comment":  "～人心",
+                                                               "global_index":  16
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "拉薩爾",
+                                                               "comment":  "～一月",
+                                                               "global_index":  17
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "拉茶",
+                                                               "comment":  "～人木",
+                                                               "global_index":  18
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "拉薩人",
+                                                               "comment":  "～一人",
+                                                               "global_index":  19
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  4,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "耕農",
+                                                               "comment":  "～田女",
+                                                               "global_index":  20
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "耕莘",
+                                                               "comment":  "～卜十",
+                                                               "global_index":  21
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "拉蓋爾",
+                                                               "comment":  "～廿月",
+                                                               "global_index":  22
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "拼着",
+                                                               "comment":  "～手山",
+                                                               "global_index":  23
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "拉着他",
+                                                               "comment":  "～山木",
+                                                               "global_index":  24
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  5,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "打開蓋子",
+                                                               "comment":  "～廿木",
+                                                               "global_index":  25
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "拉着她",
+                                                               "comment":  "～山木",
+                                                               "global_index":  26
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "拼",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "掽",
+                                                 "comment":  "～金",
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "搆",
+                                                 "comment":  "～月",
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "拉美",
+                                                 "comment":  "～土大",
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "拉斯",
+                                                 "comment":  "～金中",
+                                                 "global_index":  4
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "手拉葫蘆",
+                                                 "comment":  "～月廿",
+                                                 "global_index":  5
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "拉蒙",
+                                                 "comment":  "～月人",
+                                                 "global_index":  6
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "拉普蘭",
+                                                 "comment":  "～日田",
+                                                 "global_index":  7
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "青燈黃卷",
+                                                 "comment":  "～金山",
+                                                 "global_index":  8
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "拉莫斯",
+                                                 "comment":  "～大中",
+                                                 "global_index":  9
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "拉着",
+                                                 "comment":  "～手山",
+                                                 "global_index":  10
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "拉薩",
+                                                 "comment":  "～弓一",
+                                                 "global_index":  11
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "拉着我",
+                                                 "comment":  "～山戈",
+                                                 "global_index":  12
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "拉開差距",
+                                                 "comment":  "～一尸",
+                                                 "global_index":  13
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "拉薩市",
+                                                 "comment":  "～一月",
+                                                 "global_index":  14
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "拉菲",
+                                                 "comment":  "～中卜",
+                                                 "global_index":  15
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "拼花",
+                                                 "comment":  "～人心",
+                                                 "global_index":  16
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "拉薩爾",
+                                                 "comment":  "～一月",
+                                                 "global_index":  17
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "拉茶",
+                                                 "comment":  "～人木",
+                                                 "global_index":  18
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "拉薩人",
+                                                 "comment":  "～一人",
+                                                 "global_index":  19
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "耕農",
+                                                 "comment":  "～田女",
+                                                 "global_index":  20
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "耕莘",
+                                                 "comment":  "～卜十",
+                                                 "global_index":  21
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "拉蓋爾",
+                                                 "comment":  "～廿月",
+                                                 "global_index":  22
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "拼着",
+                                                 "comment":  "～手山",
+                                                 "global_index":  23
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "拉着他",
+                                                 "comment":  "～山木",
+                                                 "global_index":  24
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "打開蓋子",
+                                                 "comment":  "～廿木",
+                                                 "global_index":  25
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "拉着她",
+                                                 "comment":  "～山木",
+                                                 "global_index":  26
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "ebcn",
+                      "rime_get_input":  "ebcn",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "ebcn（水月金弓）",
+                      "commit_text_preview":  "測",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  1,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "測",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "測",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "測",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "yripm",
+                      "rime_get_input":  "yripm",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "yripm（卜口戈心一）",
+                      "commit_text_preview":  "試",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  1,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "試",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "試",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "試",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "tak",
+                      "rime_get_input":  "tak",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "tak（廿日大）",
+                      "commit_text_preview":  "莫",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "莫",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "踏空",
+                                                      "comment":  "口日十金一",
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "塔克",
+                                                      "comment":  "土口十口山",
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "踏勘",
+                                                      "comment":  "口日廿女尸",
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "踏看",
+                                                      "comment":  "口日竹手山",
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "莫",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "踏空",
+                                                               "comment":  "口日十金一",
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "塔克",
+                                                               "comment":  "土口十口山",
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "踏勘",
+                                                               "comment":  "口日廿女尸",
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "踏看",
+                                                               "comment":  "口日竹手山",
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "他看",
+                                                               "comment":  "人木竹手山",
+                                                               "global_index":  5
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "他可",
+                                                               "comment":  "人木一弓口",
+                                                               "global_index":  6
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "她看",
+                                                               "comment":  "女木竹手山",
+                                                               "global_index":  7
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "它可",
+                                                               "comment":  "十心一弓口",
+                                                               "global_index":  8
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "她可",
+                                                               "comment":  null,
+                                                               "global_index":  9
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  2,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "塔卡",
+                                                               "comment":  null,
+                                                               "global_index":  10
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "他快",
+                                                               "comment":  null,
+                                                               "global_index":  11
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "他靠",
+                                                               "comment":  null,
+                                                               "global_index":  12
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "他肯",
+                                                               "comment":  null,
+                                                               "global_index":  13
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "墓",
+                                                               "comment":  "～土",
+                                                               "global_index":  14
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  3,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "幕",
+                                                               "comment":  "～月",
+                                                               "global_index":  15
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "暮",
+                                                               "comment":  "～日",
+                                                               "global_index":  16
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "著有",
+                                                               "comment":  "～月",
+                                                               "global_index":  17
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "驀",
+                                                               "comment":  "～火",
+                                                               "global_index":  18
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "觀音大士",
+                                                               "comment":  "～土",
+                                                               "global_index":  19
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  4,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "蟇",
+                                                               "comment":  "～戈",
+                                                               "global_index":  20
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "繤",
+                                                               "comment":  "～火",
+                                                               "global_index":  21
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "蓦",
+                                                               "comment":  "～一",
+                                                               "global_index":  22
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "慕",
+                                                               "comment":  "～心",
+                                                               "global_index":  23
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "募",
+                                                               "comment":  "～尸",
+                                                               "global_index":  24
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  5,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "摹",
+                                                               "comment":  "～手",
+                                                               "global_index":  25
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "謩",
+                                                               "comment":  "～口",
+                                                               "global_index":  26
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "普希金",
+                                                               "comment":  "～月金",
+                                                               "global_index":  27
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "曹爽",
+                                                               "comment":  "～大大",
+                                                               "global_index":  28
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "前怕狼後怕虎",
+                                                               "comment":  "～日弓",
+                                                               "global_index":  29
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "莫",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "踏空",
+                                                 "comment":  "口日十金一",
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "塔克",
+                                                 "comment":  "土口十口山",
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "踏勘",
+                                                 "comment":  "口日廿女尸",
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "踏看",
+                                                 "comment":  "口日竹手山",
+                                                 "global_index":  4
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "他看",
+                                                 "comment":  "人木竹手山",
+                                                 "global_index":  5
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "他可",
+                                                 "comment":  "人木一弓口",
+                                                 "global_index":  6
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "她看",
+                                                 "comment":  "女木竹手山",
+                                                 "global_index":  7
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "它可",
+                                                 "comment":  "十心一弓口",
+                                                 "global_index":  8
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "她可",
+                                                 "comment":  null,
+                                                 "global_index":  9
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "塔卡",
+                                                 "comment":  null,
+                                                 "global_index":  10
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "他快",
+                                                 "comment":  null,
+                                                 "global_index":  11
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "他靠",
+                                                 "comment":  null,
+                                                 "global_index":  12
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "他肯",
+                                                 "comment":  null,
+                                                 "global_index":  13
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "墓",
+                                                 "comment":  "～土",
+                                                 "global_index":  14
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "幕",
+                                                 "comment":  "～月",
+                                                 "global_index":  15
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "暮",
+                                                 "comment":  "～日",
+                                                 "global_index":  16
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "著有",
+                                                 "comment":  "～月",
+                                                 "global_index":  17
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "驀",
+                                                 "comment":  "～火",
+                                                 "global_index":  18
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "觀音大士",
+                                                 "comment":  "～土",
+                                                 "global_index":  19
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "蟇",
+                                                 "comment":  "～戈",
+                                                 "global_index":  20
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "繤",
+                                                 "comment":  "～火",
+                                                 "global_index":  21
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "蓦",
+                                                 "comment":  "～一",
+                                                 "global_index":  22
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "慕",
+                                                 "comment":  "～心",
+                                                 "global_index":  23
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "募",
+                                                 "comment":  "～尸",
+                                                 "global_index":  24
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "摹",
+                                                 "comment":  "～手",
+                                                 "global_index":  25
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "謩",
+                                                 "comment":  "～口",
+                                                 "global_index":  26
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "普希金",
+                                                 "comment":  "～月金",
+                                                 "global_index":  27
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "曹爽",
+                                                 "comment":  "～大大",
+                                                 "global_index":  28
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "前怕狼後怕虎",
+                                                 "comment":  "～日弓",
+                                                 "global_index":  29
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "oha",
+                      "rime_get_input":  "oha",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "oha（人竹日）",
+                      "commit_text_preview":  "伯",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "伯",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "人的",
+                                                      "comment":  "～戈",
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "入的",
+                                                      "comment":  "～戈",
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "修明",
+                                                      "comment":  "～月",
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "偟",
+                                                      "comment":  "～土",
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "伯",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "人的",
+                                                               "comment":  "～戈",
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "入的",
+                                                               "comment":  "～戈",
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "修明",
+                                                               "comment":  "～月",
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "偟",
+                                                               "comment":  "～土",
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "鳰",
+                                                               "comment":  "～火",
+                                                               "global_index":  5
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "信步閒遊",
+                                                               "comment":  "～月木",
+                                                               "global_index":  6
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "全場最高",
+                                                               "comment":  "～水月",
+                                                               "global_index":  7
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "修眉",
+                                                               "comment":  "～竹山",
+                                                               "global_index":  8
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "份量",
+                                                               "comment":  "～一土",
+                                                               "global_index":  9
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  2,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "人物關係",
+                                                               "comment":  "～廿火",
+                                                               "global_index":  10
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "伯",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "人的",
+                                                 "comment":  "～戈",
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "入的",
+                                                 "comment":  "～戈",
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "修明",
+                                                 "comment":  "～月",
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "偟",
+                                                 "comment":  "～土",
+                                                 "global_index":  4
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "鳰",
+                                                 "comment":  "～火",
+                                                 "global_index":  5
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "信步閒遊",
+                                                 "comment":  "～月木",
+                                                 "global_index":  6
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "全場最高",
+                                                 "comment":  "～水月",
+                                                 "global_index":  7
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "修眉",
+                                                 "comment":  "～竹山",
+                                                 "global_index":  8
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "份量",
+                                                 "comment":  "～一土",
+                                                 "global_index":  9
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "人物關係",
+                                                 "comment":  "～廿火",
+                                                 "global_index":  10
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "eosk",
+                      "rime_get_input":  "eosk",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "eosk（水人尸大）",
+                      "commit_text_preview":  "洢",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  1,
+                      "is_last_page":  true,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "洢",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "洢",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "洢",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "hdaetcu",
+                      "rime_get_input":  "hdaetcu",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "hda etcu",
+                      "commit_text_preview":  "香港",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "香港",
+                                                      "comment":  " ☯ ",
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "香",
+                                                      "comment":  null,
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "禾",
+                                                      "comment":  null,
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "竹木",
+                                                      "comment":  null,
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "竹",
+                                                      "comment":  null,
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "香港",
+                                                               "comment":  " ☯ ",
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "香",
+                                                               "comment":  null,
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "禾",
+                                                               "comment":  null,
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "竹木",
+                                                               "comment":  null,
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "竹",
+                                                               "comment":  null,
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "丿",
+                                                               "comment":  null,
+                                                               "global_index":  5
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "香港",
+                                                 "comment":  " ☯ ",
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "香",
+                                                 "comment":  null,
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "禾",
+                                                 "comment":  null,
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "竹木",
+                                                 "comment":  null,
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "竹",
+                                                 "comment":  null,
+                                                 "global_index":  4
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "丿",
+                                                 "comment":  null,
+                                                 "global_index":  5
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  },
+                  {
+                      "schema_id":  "cangjie5",
+                      "schema_name":  "倉頡五代",
+                      "input":  "lyk",
+                      "rime_get_input":  "lyk",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "lyk（中卜大）",
+                      "commit_text_preview":  "奜",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "奜",
+                                                      "comment":  null,
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "中文",
+                                                      "comment":  null,
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "中文版",
+                                                      "comment":  "～水",
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "中產",
+                                                      "comment":  "～一",
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "中文網",
+                                                      "comment":  "～月",
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "奜",
+                                                               "comment":  null,
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "中文",
+                                                               "comment":  null,
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "中文版",
+                                                               "comment":  "～水",
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "中產",
+                                                               "comment":  "～一",
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "中文網",
+                                                               "comment":  "～月",
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "中文系",
+                                                               "comment":  "～火",
+                                                               "global_index":  5
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "非有",
+                                                               "comment":  "～月",
+                                                               "global_index":  6
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "中文字",
+                                                               "comment":  "～木",
+                                                               "global_index":  7
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "中文化",
+                                                               "comment":  "～心",
+                                                               "global_index":  8
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "中文臺",
+                                                               "comment":  "～土",
+                                                               "global_index":  9
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  2,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "中文書",
+                                                               "comment":  "～日",
+                                                               "global_index":  10
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "辈",
+                                                               "comment":  "～手",
+                                                               "global_index":  11
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "裢",
+                                                               "comment":  "～手",
+                                                               "global_index":  12
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "中文名",
+                                                               "comment":  "～口",
+                                                               "global_index":  13
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "中文裏",
+                                                               "comment":  "～女",
+                                                               "global_index":  14
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  3,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "非在",
+                                                               "comment":  "～中土",
+                                                               "global_index":  15
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "非獨立",
+                                                               "comment":  "～戈廿",
+                                                               "global_index":  16
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "非獨",
+                                                               "comment":  "～竹戈",
+                                                               "global_index":  17
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "由於疫情",
+                                                               "comment":  "～水月",
+                                                               "global_index":  18
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "奜",
+                                                 "comment":  null,
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "中文",
+                                                 "comment":  null,
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "中文版",
+                                                 "comment":  "～水",
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "中產",
+                                                 "comment":  "～一",
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "中文網",
+                                                 "comment":  "～月",
+                                                 "global_index":  4
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "中文系",
+                                                 "comment":  "～火",
+                                                 "global_index":  5
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "非有",
+                                                 "comment":  "～月",
+                                                 "global_index":  6
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "中文字",
+                                                 "comment":  "～木",
+                                                 "global_index":  7
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "中文化",
+                                                 "comment":  "～心",
+                                                 "global_index":  8
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "中文臺",
+                                                 "comment":  "～土",
+                                                 "global_index":  9
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "中文書",
+                                                 "comment":  "～日",
+                                                 "global_index":  10
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "辈",
+                                                 "comment":  "～手",
+                                                 "global_index":  11
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "裢",
+                                                 "comment":  "～手",
+                                                 "global_index":  12
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "中文名",
+                                                 "comment":  "～口",
+                                                 "global_index":  13
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "中文裏",
+                                                 "comment":  "～女",
+                                                 "global_index":  14
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "非在",
+                                                 "comment":  "～中土",
+                                                 "global_index":  15
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "非獨立",
+                                                 "comment":  "～戈廿",
+                                                 "global_index":  16
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "非獨",
+                                                 "comment":  "～竹戈",
+                                                 "global_index":  17
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "由於疫情",
+                                                 "comment":  "～水月",
+                                                 "global_index":  18
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  }
+              ]
+}

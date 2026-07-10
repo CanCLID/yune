@@ -24,15 +24,19 @@
 use std::{collections::BTreeMap, fs, path::Path};
 
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use yune_core::{StaticTableTranslator, TableDictionary, Translator};
 
 const FIXTURE: &str = "tests/fixtures/upstream-1.17.0/cangjie5-composition.json";
+const FIXTURE_SHA256: &str = "24408c3b2b83db516ae1382d2ba743b41ead50c7c026aee2837a01137c7ecbcf";
 
 /// Locks the oracle capture: pinned provenance + the decisive answer that librime
 /// composes each owner phrase at candidate 0. No Yune involved — a pure oracle lock.
 #[test]
 fn upstream_cangjie5_composition_fixture_is_locked() {
     let fixture = fixture();
+    assert_eq!(fixture["status"], "cangjie5_capture_curated_complete");
+    assert_eq!(fixture["canonical"], true);
     assert_eq!(fixture["oracle"]["engine"], "rime/librime");
     assert_eq!(fixture["oracle"]["version"], "1.17.0");
     assert_eq!(
@@ -44,6 +48,10 @@ fn upstream_cangjie5_composition_fixture_is_locked() {
         fixture["schema"]["source_commit"],
         "52d90a1b1312e74042b38c1cbc8142defbc53171"
     );
+    assert_eq!(
+        fixture["schema"]["source_tree"],
+        "db11cf6ffd382ada3087e9765c0ba2e636a8b68d"
+    );
     // Pin the oracle binary itself so non-owner candidate rows cannot drift under a
     // different librime build.
     assert_eq!(
@@ -54,10 +62,77 @@ fn upstream_cangjie5_composition_fixture_is_locked() {
         fixture["oracle"]["deployer_sha256"],
         "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071"
     );
+    assert_eq!(
+        fixture["capture"]["source_commit"],
+        "c7c04ff73b76ea3e8e1c5e6bf9b432483ee6650f"
+    );
+    assert_eq!(
+        fixture["capture"]["source_tree"],
+        "382f7d31617a5a6aeb2cd9e1ec7472b7bf3e3bc1"
+    );
+    assert_eq!(fixture["capture"]["source_clean"], true);
+    assert_eq!(
+        fixture["capture"]["source_status_short"]
+            .as_array()
+            .map(Vec::len),
+        Some(0)
+    );
+    assert_eq!(fixture["curation"]["version"], 2);
+    assert_eq!(
+        fixture["curation"]["raw_input_sha256"],
+        "91dca789769cbbed160132bf23a54d891bf164f3f2617d5fcf5a2ac5d4443be1"
+    );
+    assert_eq!(
+        fixture["capture"]["tool_hashes"]["capture_script_sha256"],
+        "bd70748a7f95434dba3739d3c13c9d8f468d053aef8b350b89248ce3aa22012c"
+    );
+    assert_eq!(
+        fixture["capture"]["tool_hashes"]["curator_sha256"],
+        "2e69df2649f514b090897ffbb1624c547caed7e81bd05b4d6b0702f584b1e3d1"
+    );
+    assert_eq!(
+        fixture["capture"]["tool_hashes"]["probe_sha256"],
+        "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7"
+    );
+    assert_eq!(
+        fixture["capture"]["runtime_options"],
+        serde_json::json!({
+            "ascii_mode": false,
+            "full_shape": false,
+            "ascii_punct": false,
+            "zh_hans": false,
+        })
+    );
+    assert_eq!(
+        fixture["capture"]["additional_runtime_option_patches"],
+        serde_json::json!([])
+    );
+    assert_eq!(
+        fixture["source_slice"]["schema_data_tree"],
+        "db11cf6ffd382ada3087e9765c0ba2e636a8b68d"
+    );
+
+    let cases = fixture["cases"]
+        .as_array()
+        .expect("Cangjie oracle cases should be an array");
+    assert_eq!(
+        cases.len(),
+        12,
+        "the full Cangjie lane should have 12 cases"
+    );
+    for case in cases {
+        assert_eq!(case["captured_all_pages"], true);
+        assert_eq!(case["menu_present"], true);
+        assert_eq!(case["termination_reason"], "last_page");
+        assert_eq!(case["rime_get_input"], case["input"]);
+    }
 
     // The owner composition rows are oracle-backed: librime composes each phrase at
     // candidate 0 (the highlighted / commit-preview slot).
-    for (input, target) in OWNER_COMPOSITION_ROWS {
+    for ((input, target), target_codepoints) in OWNER_COMPOSITION_ROWS
+        .into_iter()
+        .zip(OWNER_TARGET_CODEPOINTS)
+    {
         let case = case_for(&fixture, input);
         assert_eq!(
             case["commit_text_preview"].as_str(),
@@ -73,6 +148,21 @@ fn upstream_cangjie5_composition_fixture_is_locked() {
             case["highlighted_candidate_index"].as_i64(),
             Some(0),
             "the composed phrase should be highlighted for {input}"
+        );
+        let provenance_row = fixture["composition_rows"]
+            .as_array()
+            .expect("composition_rows provenance should be an array")
+            .iter()
+            .find(|row| row["input"].as_str() == Some(input))
+            .unwrap_or_else(|| panic!("composition_rows should contain {input}"));
+        assert_eq!(provenance_row["target"], target);
+        assert_eq!(provenance_row["target_codepoints"], target_codepoints);
+        assert!(
+            provenance_row["provenance"]
+                .as_str()
+                .is_some_and(|value| value.contains("derived from cases[")
+                    && value.contains("owner U+ declaration")),
+            "{input} should bind its owner target to captured candidate zero"
         );
     }
 
@@ -147,11 +237,18 @@ const OWNER_COMPOSITION_ROWS: [(&str, &str); 3] = [
     ("ebcnyripm", "測試"),
     ("takohaeosk", "莫伯洢"),
 ];
+const OWNER_TARGET_CODEPOINTS: [&str; 3] =
+    ["U+7CB5 U+62FC", "U+6E2C U+8A66", "U+83AB U+4F2F U+6D22"];
 
 fn fixture() -> Value {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(FIXTURE);
-    let text = fs::read_to_string(&path).unwrap_or_else(|error| panic!("read {path:?}: {error}"));
-    serde_json::from_str(&text).unwrap_or_else(|error| panic!("invalid JSON {path:?}: {error}"))
+    let bytes = fs::read(&path).unwrap_or_else(|error| panic!("read {path:?}: {error}"));
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&bytes)),
+        FIXTURE_SHA256,
+        "reviewed Cangjie oracle fixture bytes should stay pinned"
+    );
+    serde_json::from_slice(&bytes).unwrap_or_else(|error| panic!("invalid JSON {path:?}: {error}"))
 }
 
 fn case_for<'a>(fixture: &'a Value, input: &str) -> &'a Value {

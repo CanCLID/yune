@@ -1,4 +1,6 @@
 import copy
+import csv
+import hashlib
 import importlib.util
 import json
 import os
@@ -21,6 +23,28 @@ FIXTURE = (
     / "upstream-1.17.0"
     / "cangjie5-composition.json"
 )
+PACKET = (
+    ROOT
+    / "docs"
+    / "reports"
+    / "evidence"
+    / "m59-cangjie5-order-parity"
+    / "increment-1-executable-evidence"
+)
+PACKET_INPUTS = [
+    "hwmvsqtt",
+    "ebcnyripm",
+    "takohaeosk",
+    "hwmvs",
+    "qtt",
+    "ebcn",
+    "yripm",
+    "tak",
+    "oha",
+    "eosk",
+    "hdaetcu",
+    "lyk",
+]
 
 
 def load_module(name: str, path: Path):
@@ -786,6 +810,165 @@ $incompleteCases = @(
         self.assertFalse(result["reordered_cases"])
         self.assertFalse(result["wrong_schema_cases"])
         self.assertFalse(result["incomplete_cases"])
+
+
+class CangjieExecutableEvidencePacketTests(unittest.TestCase):
+    def test_packet_manifest_binds_all_nonself_files_and_fixture_import(self):
+        manifest_path = PACKET / "cangjie-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["packet_file_count"], 7)
+        self.assertFalse(manifest["acceptance_evidence"])
+        self.assertFalse(manifest["closes_d48"])
+        self.assertFalse(manifest["binary_payloads_copied"])
+        self.assertEqual(manifest["inputs"], PACKET_INPUTS)
+
+        packet_files = sorted(path.name for path in PACKET.iterdir() if path.is_file())
+        self.assertEqual(
+            packet_files,
+            sorted(
+                [
+                    "README.md",
+                    "cangjie-diff.csv",
+                    "cangjie-diff.json",
+                    "cangjie-manifest.json",
+                    "cangjie-oracle-raw.json",
+                    "cangjie-oracle.json",
+                    "cangjie-yune.json",
+                ]
+            ),
+        )
+        inventory = manifest["file_inventory"]
+        self.assertEqual(len(inventory), 6)
+        self.assertEqual(
+            {row["path"] for row in inventory},
+            set(packet_files) - {"cangjie-manifest.json"},
+        )
+        for row in inventory:
+            path = PACKET / row["path"]
+            raw = path.read_bytes()
+            self.assertEqual(len(raw), row["bytes"], row["path"])
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
+
+        for path in PACKET.iterdir():
+            if not path.is_file():
+                continue
+            raw = path.read_bytes()
+            self.assertFalse(raw.startswith(b"\xef\xbb\xbf"), path.name)
+            self.assertNotIn(b"\r", raw, path.name)
+            self.assertNotIn(b"\x00", raw, path.name)
+            self.assertTrue(raw.endswith(b"\n"), path.name)
+            self.assertFalse(raw.endswith(b"\n\n"), path.name)
+            raw.decode("utf-8")
+
+            relative = path.relative_to(ROOT).as_posix()
+            filtered = subprocess.run(
+                ["git", "hash-object", f"--path={relative}", relative],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            ).stdout.strip()
+            unfiltered = subprocess.run(
+                ["git", "hash-object", "--no-filters", relative],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            ).stdout.strip()
+            self.assertEqual(filtered, unfiltered, relative)
+
+        curated = (PACKET / "cangjie-oracle.json").read_bytes()
+        self.assertEqual(curated, FIXTURE.read_bytes())
+        self.assertEqual(
+            hashlib.sha256(curated).hexdigest(),
+            manifest["tracked_fixture_import"]["sha256"],
+        )
+
+    def test_exact_diff_preserves_cj1_red_without_exceptions(self):
+        manifest = json.loads(
+            (PACKET / "cangjie-manifest.json").read_text(encoding="utf-8")
+        )
+        diff = json.loads((PACKET / "cangjie-diff.json").read_text(encoding="utf-8"))
+        oracle = (PACKET / "cangjie-oracle.json").read_bytes()
+        yune = (PACKET / "cangjie-yune.json").read_bytes()
+        self.assertEqual(diff["policy"], "exact")
+        self.assertFalse(diff["all_accepted"])
+        self.assertIsNone(diff["provenance"]["exceptions"])
+        self.assertEqual(diff["inputs"], PACKET_INPUTS)
+        self.assertEqual(
+            diff["provenance"]["oracle"]["sha256"],
+            hashlib.sha256(oracle).hexdigest(),
+        )
+        self.assertEqual(
+            diff["provenance"]["actual"]["sha256"],
+            hashlib.sha256(yune).hexdigest(),
+        )
+        verdicts = {case["input"]: case["verdict"] for case in diff["cases"]}
+        self.assertEqual(sum(value == "pass" for value in verdicts.values()), 4)
+        self.assertEqual(sum(value == "fail" for value in verdicts.values()), 8)
+        self.assertEqual(
+            [name for name in PACKET_INPUTS if verdicts[name] == "pass"],
+            manifest["comparison"]["accepted_inputs"],
+        )
+        self.assertEqual(
+            [name for name in PACKET_INPUTS if verdicts[name] == "fail"],
+            manifest["comparison"]["failed_inputs"],
+        )
+        for name in ("hwmvsqtt", "ebcnyripm", "takohaeosk", "hdaetcu", "lyk"):
+            self.assertEqual(verdicts[name], "fail", name)
+        for case in diff["cases"]:
+            self.assertTrue(case["oracle_captured_all_pages"], case["input"])
+            self.assertTrue(case["actual_captured_all_pages"], case["input"])
+            self.assertEqual(case["accepted_exceptions"], [], case["input"])
+
+        with (PACKET / "cangjie-diff.csv").open(
+            encoding="utf-8", newline=""
+        ) as handle:
+            csv_rows = list(csv.DictReader(handle))
+        self.assertEqual([row["input"] for row in csv_rows], PACKET_INPUTS)
+        self.assertEqual(
+            [row["verdict"] for row in csv_rows],
+            [verdicts[name] for name in PACKET_INPUTS],
+        )
+        self.assertTrue(all(row["accepted_exceptions"] == "" for row in csv_rows))
+        self.assertEqual(manifest["comparison"]["expected_exit_code"], 1)
+        self.assertTrue(manifest["comparison"]["no_exceptions_applied"])
+        self.assertEqual(
+            manifest["cj1_disposition"]["ignored_test_retained"],
+            "cangjie5_upstream_lane_segmentation_scoring_is_blocked",
+        )
+
+    def test_oracle_manifest_binds_fresh_capture_and_target_only_import(self):
+        fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        oracle_manifest = json.loads(
+            (
+                FIXTURE.parent / "oracle-manifest.json"
+            ).read_text(encoding="utf-8")
+        )
+        row = next(
+            entry
+            for entry in oracle_manifest["files"]
+            if entry["path"] == "cangjie5-composition.json"
+        )
+        self.assertEqual(row["sha256"], hashlib.sha256(FIXTURE.read_bytes()).hexdigest())
+        self.assertEqual(row["capture_source_commit"], fixture["capture"]["source_commit"])
+        self.assertEqual(row["capture_command"], fixture["capture"]["commands"]["capture"])
+        self.assertEqual(
+            row["source_row_policy"], fixture["source_slice"]["policy"]
+        )
+        self.assertIn("-RawOutput 'target/", row["capture_command"])
+        self.assertIn("-Output 'target/", row["capture_command"])
+        self.assertNotIn(
+            "-Output 'crates/yune-core/tests/fixtures/", row["capture_command"]
+        )
+        self.assertIn("never overwrites", row["import_policy"])
+        self.assertEqual(fixture["curation"]["version"], 2)
+        self.assertEqual(
+            fixture["curation"]["raw_input_sha256"],
+            "91dca789769cbbed160132bf23a54d891bf164f3f2617d5fcf5a2ac5d4443be1",
+        )
 
 
 if __name__ == "__main__":

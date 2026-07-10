@@ -1,0 +1,8 @@
+﻿source_commit=457751824b8944676dc44912b9ce31ff29d78403
+tracked_diff_empty=True
+tracked_status=
+main_status=
+logical_completed_runs=5
+premeasurement_setup_failures=1
+failed_attempt_directory=m59-i0-fixed-45775182-r5
+failed_attempt_transient_retained=true

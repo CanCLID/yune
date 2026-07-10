@@ -1,0 +1,4 @@
+﻿generated_commands_txt_erratum=commands.txt in each run is not the effective replay command
+omitted_arguments=explicit fixed YuneDll and external UpstreamOracleRoot
+authoritative_replay_record=actual-invocation.txt in each run
+effective_build_cache_record=BUILD-ISOLATION-DISCLOSURE.txt

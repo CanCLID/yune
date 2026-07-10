@@ -1,0 +1,13 @@
+﻿record_kind=orchestrator-effective-invocation
+logical_run=1
+attempt=initial
+cwd=C:\y59b
+environment_CARGO_TARGET_DIR=C:\Users\laubonghaudoi\Documents\GitHub\yune\target
+outer_error_action_preference=Stop
+command=powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\y59b\scripts\benchmark-native-rime-inprocess.ps1' -OutputRoot 'C:\y59b\docs\reports\evidence\m59-closeout-baseline-fixed\m59-i0-fixed-45775182-r1' -UpstreamOracleRoot 'C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0' -YuneDll 'C:\y59b\docs\reports\evidence\m59-closeout-baseline-fixed\fixed-bin\yune_rime_api.dll' -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs 'n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu' -TrackBInputs 'neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung' -DeployProductBeforeBenchmark -TrackAThresholds 'C:\y59b\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv'
+outer_console_log=C:\y59b\docs\reports\evidence\m59-closeout-baseline-fixed\console-r1.log
+generated_commands_txt_status=incomplete; it omits explicit YuneDll and UpstreamOracleRoot overrides
+measured_yune_dll_retained_path=C:\y59b\docs\reports\evidence\m59-closeout-baseline-fixed\fixed-bin\yune_rime_api.dll
+measured_yune_dll_sha256=d45d857d1cad18bb8a3a79f584e310a6f19926bcbd3ff0cb9ef03d99b529906f
+successful_transient_dll_copy_retained=false
+identity_basis=exact invocation path plus retained immutable DLL and per-run post-run hash verification

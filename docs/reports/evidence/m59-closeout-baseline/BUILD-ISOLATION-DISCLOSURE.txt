@@ -1,0 +1,9 @@
+﻿source_and_output_isolation=detached C:\y59b worktree at 457751824b8944676dc44912b9ce31ff29d78403
+build_cache_isolation=not isolated; CARGO_TARGET_DIR was shared with primary checkout at C:\Users\laubonghaudoi\Documents\GitHub\yune\target
+cargo_concurrency=none
+measured_engine_isolation=immutable retained DLL at C:\y59b\docs\reports\evidence\m59-closeout-baseline-fixed\fixed-bin\yune_rime_api.dll
+measured_engine_sha256=d45d857d1cad18bb8a3a79f584e310a6f19926bcbd3ff0cb9ef03d99b529906f
+effect_of_shared_build_cache=script rebuilds touched the shared target, but every benchmark copied and measured the separate immutable DLL path
+primary_checkout_tracked_status=clean
+detached_worktree_tracked_status=clean
+generated_untracked_state=the two baseline evidence directories only

@@ -1,0 +1,7 @@
+﻿disposition=excluded-premeasurement-setup-failure
+stage=track-a-yune-deploy-prep
+exit_code=101
+measurement_rows=0
+preservation=commands, environment, console, and transient deploy workspace retained
+replacement_attempt=m59-i0-fixed-45775182-r5-retry1
+source_or_threshold_changes_before_retry=none

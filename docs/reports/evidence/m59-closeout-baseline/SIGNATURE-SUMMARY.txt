@@ -1,0 +1,9 @@
+﻿signature_basis=five completed same-binary logical runs: r1,r2,r3,r4,r5-retry1
+standing_gate=23/23 pass by median; existing ceilings unchanged
+new_ceiling_formula=maximum retained three-decimal ratio across five runs x 1.05, formatted F3
+failed_attempt=initial r5 failed before measurement and is excluded; qualified error record, evidence, and transient manifest retained
+rejected_prior_round=separate m59-closeout-baseline bundle rejected because measured DLL changed between runs
+standing_long_rows=the unchanged 37-character and 59-character rows were measured in every completed run and passed the five-run median gate
+owner_signature_date=2026-07-09
+owner_action=signed the nine values in expanded-ceiling-derivation.csv
+owner_signed_ceilings=zh=1.047,j=4.372,yi=6.098,che=1.160,chuang=1.357,b=3.775,ceshi=0.966,zhongdengchangdu=0.342,dazisudu=1.098

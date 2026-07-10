@@ -1,0 +1,9 @@
+﻿capture_status=qualified orchestrator transcript reconstruction
+observed_error=powershell.exe : track-a-yune-deploy-prep failed with exit code 101
+observed_stage=track-a-yune-deploy-prep
+child_console_log_bytes=0
+child_error_detail=not captured because outer ErrorActionPreference Stop promoted native stderr before the wrapper tail step
+measurement_rows=0
+failed_transient_manifest_files=182
+failed_transient_workspace_retained=C:\y59b\target\native-inprocess\m59-i0-fixed-45775182-r5
+owner_note=this is an uncaptured premeasurement setup failure, not a measured run

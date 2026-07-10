@@ -1,0 +1,5 @@
+﻿disposition=rejected-for-signature-baseline
+reason=the benchmark script rebuilt the explicit YuneDll path on every run, producing five distinct DLL byte hashes
+standing_result=23/23 aggregate pass
+preservation=all five raw runs, consoles, derivations, and manifests retained
+replacement_round=m59-closeout-baseline-fixed using one immutable copied DLL

@@ -1,7 +1,7 @@
 input,class,runs,median_ratio,worst_ratio,spread_pct,future_ceiling(worst_x1.05),enforced
 zh,non-syllable short key (like n),5,0.972,0.991,3.0,1.041,no (baseline this round; gating from next change)
 j,non-syllable short key,5,3.967,4.059,4.7,4.262,no (baseline this round; gating from next change)
-yi,bare-syllable guard (feature cost ~0; regression sentinel),5,5.794,5.870,3.1,6.163,no (baseline this round; gating from next change)
+yi,bare-syllable guard (feature cost ~0; regression sentinel),5,5.794,5.870,3.1,6.164,no (historical arithmetic erratum: 5.870 x 1.05 = 6.1635 formats to F3 as 6.164; superseded by the owner-signed 2026-07-09 fresh baseline yi=6.098)
 che,bare-syllable guard (single-char exact; feature cost ~0),5,1.075,1.082,1.3,1.136,no (baseline this round; gating from next change)
 chuang,bare-syllable guard (feature cost ~0; regression sentinel),5,1.263,1.269,2.1,1.332,no (baseline this round; gating from next change)
 b,non-syllable short key,5,3.417,3.457,2.5,3.630,no (baseline this round; gating from next change)

@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-10T03:28:03.9968594Z
+repo_root=C:\y59b
+yune_git_head=457751824b8944676dc44912b9ce31ff29d78403
+yune_git_status_short=?? docs/reports/evidence/m59-closeout-baseline-fixed/ | ?? docs/reports/evidence/m59-closeout-baseline/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\y59b\target\native-inprocess\m59-i0-fixed-45775182-r3
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=C:\y59b\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=False
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

@@ -1,4 +1,6 @@
 use super::*;
+use crate::RimeSessionId;
+use yune_core::SchemaBehaviorProfile;
 
 #[test]
 fn select_candidate_apis_commit_current_candidates() {
@@ -125,6 +127,90 @@ fn highlight_candidate_apis_move_selection_without_commit() {
     assert_eq!(unsafe { RimeFreeCommit(&mut commit) }, TRUE);
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
+}
+
+#[test]
+fn physical_and_api_page_down_share_short_typeduck_bounded_state() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let api_session_id = RimeCreateSession();
+    let physical_session_id = RimeCreateSession();
+    let api_bounded_len = install_typeduck_short_paging_fixture(api_session_id);
+    let physical_bounded_len = install_typeduck_short_paging_fixture(physical_session_id);
+    assert_eq!(api_bounded_len, physical_bounded_len);
+
+    assert_eq!(RimeChangePage(api_session_id, FALSE), TRUE);
+    let page_down = CString::new("Page_Down").expect("key name should be valid");
+    let page_down_keycode = unsafe { RimeGetKeycodeByName(page_down.as_ptr()) };
+    assert_eq!(page_down_keycode, 0xff56);
+    assert_eq!(
+        RimeProcessKey(physical_session_id, page_down_keycode, 0),
+        TRUE
+    );
+
+    let (api_state, physical_state) = {
+        let registry = crate::sessions()
+            .lock()
+            .expect("session registry should not be poisoned");
+        let snapshot = |session_id| {
+            let session = registry
+                .sessions
+                .get(&session_id)
+                .expect("session should exist");
+            (
+                session.engine.context().highlighted,
+                session.engine.context().candidates.len(),
+                session.engine.candidate_list_complete(),
+                session.paging,
+            )
+        };
+        (snapshot(api_session_id), snapshot(physical_session_id))
+    };
+    assert_eq!(api_state, physical_state);
+    assert_eq!(api_state.0, 5);
+    assert_eq!(api_state.1, api_bounded_len);
+    assert!(!api_state.2, "short TypeDuck input should stay bounded");
+    assert!(api_state.3, "both controls should enter paging state");
+
+    assert_eq!(RimeDestroySession(api_session_id), TRUE);
+    assert_eq!(RimeDestroySession(physical_session_id), TRUE);
+}
+
+fn install_typeduck_short_paging_fixture(session_id: RimeSessionId) -> usize {
+    let mut dictionary = String::from("---\nname: paging\nversion: '1'\nsort: by_weight\n...\n\n");
+    for index in 0..80 {
+        let first = char::from(b'a' + (index / 26) as u8);
+        let second = char::from(b'a' + (index % 26) as u8);
+        dictionary.push_str(&format!(
+            "candidate-{index:02}\tni{first}{second}\t{}\n",
+            100.0 - index as f32
+        ));
+    }
+
+    let mut registry = crate::sessions()
+        .lock()
+        .expect("session registry should not be poisoned");
+    let session = registry
+        .sessions
+        .get_mut(&session_id)
+        .expect("session should exist");
+    session
+        .engine
+        .set_schema("arbitrary_marked_schema", "Marked Profile");
+    session
+        .engine
+        .set_schema_behavior_profile(SchemaBehaviorProfile::TypeduckJyutping);
+    session.engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false)
+            .with_prediction_candidate_limit(1)
+            .with_prefix_fallback(true),
+    );
+    session.engine.set_input("ni");
+    assert!(!session.engine.candidate_list_complete());
+    session.engine.context().candidates.len()
 }
 
 #[test]

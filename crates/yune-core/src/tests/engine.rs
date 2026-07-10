@@ -329,6 +329,79 @@ fn canonical_jyutping_id_does_not_enable_typeduck_refresh_without_profile_marker
 }
 
 #[test]
+fn forward_navigation_completes_standard_and_long_typeduck_candidate_lists() {
+    let mut standard =
+        bounded_forward_navigation_engine("luna_pinyin", SchemaBehaviorProfile::Standard, "n");
+    let standard_bounded_len = standard.context().candidates.len();
+    assert!(!standard.candidate_list_complete());
+    assert!(standard.change_page_by(5, false));
+    assert!(standard.candidate_list_complete());
+    assert!(standard.context().candidates.len() > standard_bounded_len);
+
+    let mut typeduck = bounded_forward_navigation_engine(
+        "arbitrary_marked_schema",
+        SchemaBehaviorProfile::TypeduckJyutping,
+        "ngo",
+    );
+    let typeduck_bounded_len = typeduck.context().candidates.len();
+    assert!(!typeduck.candidate_list_complete());
+    assert!(typeduck.next_candidate());
+    assert!(typeduck.candidate_list_complete());
+    assert!(typeduck.context().candidates.len() > typeduck_bounded_len);
+
+    let mut physical = bounded_forward_navigation_engine(
+        "another_marked_schema",
+        SchemaBehaviorProfile::TypeduckJyutping,
+        "ngo",
+    );
+    let physical_bounded_len = physical.context().candidates.len();
+    let commits = physical
+        .process_key_sequence("{Page_Down}")
+        .expect("PageDown should parse");
+    assert!(commits.is_empty());
+    assert!(physical.candidate_list_complete());
+    assert!(physical.context().candidates.len() > physical_bounded_len);
+}
+
+#[test]
+fn short_typeduck_forward_navigation_stays_bounded_for_arbitrary_schema() {
+    let mut next_candidate = bounded_forward_navigation_engine(
+        "arbitrary_marked_schema",
+        SchemaBehaviorProfile::TypeduckJyutping,
+        "ni",
+    );
+    let next_bounded_len = next_candidate.context().candidates.len();
+    assert!(!next_candidate.candidate_list_complete());
+    assert!(next_candidate.next_candidate());
+    assert_eq!(next_candidate.context().candidates.len(), next_bounded_len);
+    assert!(!next_candidate.candidate_list_complete());
+
+    let mut paged = bounded_forward_navigation_engine(
+        "not_a_jyutping_schema_id",
+        SchemaBehaviorProfile::TypeduckJyutping,
+        "ni",
+    );
+    let page_bounded_len = paged.context().candidates.len();
+    assert!(paged.change_page_by(5, false));
+    while paged.change_page_by(5, false) {}
+    assert_eq!(paged.context().highlighted, page_bounded_len - 1);
+    assert_eq!(paged.context().candidates.len(), page_bounded_len);
+    assert!(!paged.candidate_list_complete());
+
+    let mut physical = bounded_forward_navigation_engine(
+        "physical_marked_schema",
+        SchemaBehaviorProfile::TypeduckJyutping,
+        "ni",
+    );
+    let physical_bounded_len = physical.context().candidates.len();
+    physical
+        .process_key_sequence("{Page_Down}")
+        .expect("PageDown should parse");
+    assert_eq!(physical.context().candidates.len(), physical_bounded_len);
+    assert!(!physical.candidate_list_complete());
+}
+
+#[test]
 fn bounded_refresh_completes_before_candidate_deletion() {
     let dictionary = bounded_refresh_dictionary();
     let mut engine = Engine::new();
@@ -368,6 +441,31 @@ fn bounded_refresh_dictionary() -> String {
 }
 
 fn bounded_refresh_dictionary_with_rows(row_count: usize) -> String {
+    bounded_refresh_dictionary_with_prefix_and_rows("n", row_count)
+}
+
+fn bounded_forward_navigation_engine(
+    schema_id: &str,
+    profile: SchemaBehaviorProfile,
+    input: &str,
+) -> Engine {
+    let dictionary = bounded_refresh_dictionary_with_prefix_and_rows(input, 80);
+    let mut engine = Engine::new();
+    engine.set_schema(schema_id, "Forward Navigation Test");
+    engine.set_schema_behavior_profile(profile);
+    engine.add_translator(
+        StaticTableTranslator::parse_rime_dict_yaml(&dictionary)
+            .expect("dictionary should parse")
+            .with_completion(true)
+            .with_sentence(false)
+            .with_prediction_candidate_limit(1)
+            .with_prefix_fallback(true),
+    );
+    engine.set_input(input);
+    engine
+}
+
+fn bounded_refresh_dictionary_with_prefix_and_rows(prefix: &str, row_count: usize) -> String {
     let mut dictionary = String::from(
         r#"
 ---
@@ -382,7 +480,7 @@ sort: by_weight
         let first = char::from(b'a' + (index / 26) as u8);
         let second = char::from(b'a' + (index % 26) as u8);
         dictionary.push_str(&format!(
-            "candidate-{index:02}\tn{first}{second}\t{}\n",
+            "candidate-{index:02}\t{prefix}{first}{second}\t{}\n",
             100.0 - index as f32
         ));
     }

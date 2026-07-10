@@ -1,8 +1,8 @@
 use serde_json::Value;
 use yune_core::{
     Candidate, CandidateFilter, CandidateSource, DictionaryLookupFilter, Engine,
-    ReverseLookupTranslator, RimeCorrectionEntry, SchemaListTranslator, SimplifierFilter,
-    StaticTableTranslator, Status, TableDictionary, Translator, UserDb,
+    ReverseLookupTranslator, RimeCorrectionEntry, SchemaBehaviorProfile, SchemaListTranslator,
+    SimplifierFilter, StaticTableTranslator, Status, TableDictionary, Translator, UserDb,
     TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
@@ -1466,6 +1466,7 @@ fn typeduck_jyut6ping3_mobile_engine_with_options(
     }
     let mut engine = Engine::new();
     engine.set_schema("jyut6ping3_mobile", "Jyutping");
+    engine.set_schema_behavior_profile(SchemaBehaviorProfile::TypeduckJyutping);
     engine.add_translator(translator);
     engine.add_filter(DictionaryLookupFilter::new(lookup_dictionary));
     engine
@@ -1505,6 +1506,7 @@ fn yune_web_jyut6ping3_mobile_engine() -> Engine {
         .with_prefix_fallback(true);
     let mut engine = Engine::new();
     engine.set_schema("jyut6ping3_mobile", "Jyutping");
+    engine.set_schema_behavior_profile(SchemaBehaviorProfile::TypeduckJyutping);
     engine.add_translator(translator);
     engine.add_filter(DictionaryLookupFilter::new(lookup_dictionary));
     engine

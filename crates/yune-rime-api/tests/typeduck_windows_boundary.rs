@@ -141,6 +141,8 @@ fn write_windows_boundary_runtime(root: &Path) -> (PathBuf, PathBuf) {
     fs::write(
         staging.join("jyut6ping3.schema.yaml"),
         "\
+yune:
+  profile: typeduck_jyutping
 schema:
   schema_id: jyut6ping3
   name: jyut6ping3

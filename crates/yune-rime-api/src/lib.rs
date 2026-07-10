@@ -1740,27 +1740,8 @@ pub extern "C" fn RimeHighlightCandidateOnCurrentPage(
 pub extern "C" fn RimeChangePage(session_id: RimeSessionId, backward: Bool) -> Bool {
     crate::ffi_guard::guard(FALSE, || {
         with_session(session_id, |session| {
-            if session.engine.context().candidates.is_empty() {
-                return false;
-            }
-
             let page_size = session_menu_page_size(session);
-            let input = session.engine.context().composition.input.as_str();
-            let schema_id = session.engine.status().schema_id;
-            if backward == FALSE
-                && !session.engine.candidate_list_complete()
-                && schema_id.starts_with("jyut6ping3")
-                && input.chars().count() > 2
-            {
-                session.engine.ensure_complete_candidate_list();
-            }
-            let current_index = session.engine.context().highlighted;
-            let next_index = if backward != FALSE {
-                current_index.saturating_sub(page_size)
-            } else {
-                current_index + page_size
-            };
-            let changed = highlight_candidate_clamped_like_librime(session, next_index);
+            let changed = session.engine.change_page_by(page_size, backward != FALSE);
             if changed {
                 session.paging = true;
             }

@@ -801,8 +801,8 @@ impl Engine {
         }
 
         let page_size = page_size.max(1);
-        if !backward && !self.candidate_list_complete {
-            self.ensure_complete_candidates();
+        if !backward {
+            self.prepare_for_forward_navigation();
         }
         let current_index = self.context.highlighted;
         let next_index = if backward {
@@ -831,10 +831,8 @@ impl Engine {
         if !self.has_selectable_candidates() {
             return false;
         }
+        self.prepare_for_forward_navigation();
         let next_index = self.context.highlighted + 1;
-        if next_index >= self.context.candidates.len() && !self.candidate_list_complete {
-            self.ensure_complete_candidates();
-        }
         if next_index >= self.context.candidates.len() {
             return true;
         }
@@ -1317,6 +1315,21 @@ impl Engine {
         self.refresh_candidates_with_request(CandidateRequest::unbounded());
         if !self.context.candidates.is_empty() {
             self.context.highlighted = highlighted.min(self.context.candidates.len() - 1);
+        }
+    }
+
+    fn prepare_for_forward_navigation(&mut self) {
+        if self.candidate_list_complete {
+            return;
+        }
+        let should_complete = match self.schema_profile {
+            SchemaBehaviorProfile::Standard => true,
+            SchemaBehaviorProfile::TypeduckJyutping => {
+                self.context.composition.input.chars().count() > 2
+            }
+        };
+        if should_complete {
+            self.ensure_complete_candidates();
         }
     }
 

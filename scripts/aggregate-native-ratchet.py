@@ -43,7 +43,7 @@ PROVENANCE_KEYS = (
     "skip_track_b",
 )
 TOOL_NAME = "aggregate-native-ratchet.py"
-TOOL_VERSION = "4"
+TOOL_VERSION = "5"
 REQUIRED_RUN_COUNT = 5
 RUN_FILES = (
     "environment.txt",
@@ -107,6 +107,62 @@ def _file_sha256(path: Path) -> str:
 
 def _canonical_path_key(path: Path) -> str:
     return os.path.normcase(os.path.realpath(path))
+
+
+def _protected_input_paths(
+    thresholds_path: Path, run_paths: Sequence[Path]
+) -> list[tuple[str, Path]]:
+    protected = [("thresholds", thresholds_path)]
+    for run_number, run_path in enumerate(run_paths, start=1):
+        protected.append((f"run {run_number} directory", run_path))
+        protected.extend(
+            (f"run {run_number} {name}", run_path / name) for name in RUN_FILES
+        )
+    return protected
+
+
+def _validate_output_destinations(
+    gate_path: Path,
+    sidecar_path: Path,
+    thresholds_path: Path,
+    run_paths: Sequence[Path],
+) -> None:
+    destinations = (
+        ("gate verdict output", gate_path),
+        ("provenance sidecar output", sidecar_path),
+    )
+    destination_keys = {
+        label: _canonical_path_key(path) for label, path in destinations
+    }
+    if len(set(destination_keys.values())) != len(destination_keys):
+        raise EvidenceError(
+            "gate verdict and provenance sidecar paths must differ"
+        )
+
+    protected_by_key: dict[str, tuple[str, Path]] = {}
+    for label, path in _protected_input_paths(thresholds_path, run_paths):
+        protected_by_key.setdefault(_canonical_path_key(path), (label, path))
+    for destination_label, destination_path in destinations:
+        destination_key = destination_keys[destination_label]
+        protected = protected_by_key.get(destination_key)
+        if protected is None:
+            for run_number, run_path in enumerate(run_paths, start=1):
+                run_key = _canonical_path_key(run_path)
+                try:
+                    inside_run = os.path.commonpath((destination_key, run_key)) == run_key
+                except ValueError:
+                    inside_run = False
+                if inside_run:
+                    raise EvidenceError(
+                        f"{destination_label} {destination_path} must not be inside "
+                        f"protected run {run_number} directory {run_path}"
+                    )
+            continue
+        protected_label, protected_path = protected
+        raise EvidenceError(
+            f"{destination_label} {destination_path} collides with protected "
+            f"{protected_label} {protected_path}"
+        )
 
 
 def _decimal(value: str, label: str, *, positive: bool = True) -> Decimal:
@@ -261,6 +317,50 @@ def read_environment(run_path: Path) -> dict[str, str]:
     return environment
 
 
+def _recorded_input_set(value: str, label: str) -> set[str]:
+    inputs = [item.strip() for item in value.split(",")]
+    if any(not item for item in inputs):
+        raise EvidenceError(f"{label} contains an empty input")
+    if len(inputs) != len(set(inputs)):
+        raise EvidenceError(f"{label} contains duplicate inputs")
+    return set(inputs)
+
+
+def _validate_recorded_input_sets(
+    run_path: Path,
+    environment: dict[str, str],
+    thresholds: Sequence[Threshold],
+) -> None:
+    expected_track_a = {
+        threshold.key.input
+        for threshold in thresholds
+        if threshold.key.kind == "latency_ratio"
+        and threshold.key.workload == "key_sequence_process_with_context"
+        and threshold.key.input
+    }
+    expected_track_b = {
+        threshold.key.input
+        for threshold in thresholds
+        if threshold.key.workload.startswith("track-b-product/")
+        and threshold.key.input
+    }
+    expected_by_key = {
+        "track_a_inputs": expected_track_a,
+        "track_b_inputs": expected_track_b,
+    }
+    for key, expected in expected_by_key.items():
+        recorded = _recorded_input_set(
+            environment[key], f"{run_path} recorded {key}"
+        )
+        if recorded == expected:
+            continue
+        raise EvidenceError(
+            f"{run_path} recorded {key} differs from the observed threshold set; "
+            f"missing={sorted(expected - recorded)}, "
+            f"extra={sorted(recorded - expected)}"
+        )
+
+
 @_normalize_parser_failures
 def _read_threshold_check(
     path: Path, threshold_map: dict[MetricKey, Threshold]
@@ -412,7 +512,9 @@ def read_run(path: Path, thresholds: Sequence[Threshold]) -> RunEvidence:
                 raise EvidenceError(f"{path} threshold-check is missing non-ratio row {key}")
             observations[key] = checked[key]
 
-    return RunEvidence(path, read_environment(path), observations)
+    environment = read_environment(path)
+    _validate_recorded_input_sets(path, environment, thresholds)
+    return RunEvidence(path, environment, observations)
 
 
 def _validate_provenance(runs: Sequence[RunEvidence]) -> dict[str, str]:
@@ -569,8 +671,11 @@ def _write_output_pair(
     sidecar_path: Path,
     gate_text: str,
     sidecar: dict[str, Any],
+    *,
+    thresholds_path: Path,
+    run_paths: Sequence[Path],
 ) -> None:
-    if gate_path.resolve() == sidecar_path.resolve():
+    if _canonical_path_key(gate_path) == _canonical_path_key(sidecar_path):
         raise EvidenceError("gate verdict and provenance sidecar paths must differ")
     sidecar_text = json.dumps(sidecar, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     outputs = (gate_path, sidecar_path)
@@ -579,11 +684,14 @@ def _write_output_pair(
     try:
         gate_temp = _write_temp(gate_path, gate_text)
         sidecar_temp = _write_temp(sidecar_path, sidecar_text)
+        _validate_output_destinations(
+            gate_path, sidecar_path, thresholds_path, run_paths
+        )
         _remove_final_outputs(outputs)
-        os.replace(gate_temp, gate_path)
-        gate_temp = None
         os.replace(sidecar_temp, sidecar_path)
         sidecar_temp = None
+        os.replace(gate_temp, gate_path)
+        gate_temp = None
     except Exception as error:
         cleanup_error: EvidenceError | None = None
         try:
@@ -656,6 +764,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     effective_args = list(sys.argv[1:] if argv is None else argv)
     args = _parser().parse_args(effective_args)
     sidecar = _sidecar_path(args.output)
+    try:
+        _validate_output_destinations(
+            args.output, sidecar, args.thresholds, args.run
+        )
+    except (EvidenceError, OSError, UnicodeError) as error:
+        print(f"native-ratchet evidence error: {error}", file=sys.stderr)
+        return 2
     outputs = (args.output, sidecar)
     try:
         if args.expected_runs != REQUIRED_RUN_COUNT:
@@ -681,7 +796,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             gate_text=gate_text,
             effective_args=effective_args,
         )
-        _write_output_pair(args.output, sidecar, gate_text, provenance_sidecar)
+        _write_output_pair(
+            args.output,
+            sidecar,
+            gate_text,
+            provenance_sidecar,
+            thresholds_path=args.thresholds,
+            run_paths=args.run,
+        )
     except (EvidenceError, OSError, csv.Error, UnicodeError) as error:
         cleanup_error: EvidenceError | None = None
         try:

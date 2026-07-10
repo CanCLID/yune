@@ -2844,7 +2844,15 @@ class NativeRatchetTests(unittest.TestCase):
                 "metric": "yune_librime_median_ratio",
                 "ceiling": "1.5",
                 "unit": "x",
-            }
+            },
+            {
+                "kind": "latency_absolute_us",
+                "workload": "track-b-product/key_sequence_process_with_context",
+                "input": "trackb",
+                "metric": "median_us",
+                "ceiling": "100",
+                "unit": "us",
+            },
         ]
         if include_absolute:
             rows.append(
@@ -2925,16 +2933,38 @@ class NativeRatchetTests(unittest.TestCase):
                         "status": "pass" if checked <= 1.5 else "fail",
                     }
                 )
+            writer.writerow(
+                {
+                    "kind": "latency_absolute_us",
+                    "workload": "track-b-product/key_sequence_process_with_context",
+                    "input": "trackb",
+                    "metric": "median_us",
+                    "observed": "50",
+                    "ceiling": "100",
+                    "unit": "us",
+                    "status": "pass",
+                }
+            )
         return run
 
-    def run_tool(self, runs, expected=5, *, return_stderr=False):
+    def run_tool(
+        self,
+        runs,
+        expected=5,
+        *,
+        thresholds=None,
+        output=None,
+        return_stderr=False,
+    ):
+        thresholds = self.thresholds if thresholds is None else thresholds
+        output = self.output if output is None else output
         argv = [
             "--thresholds",
-            str(self.thresholds),
+            str(thresholds),
             "--expected-runs",
             str(expected),
             "--output",
-            str(self.output),
+            str(output),
         ]
         for run in runs:
             argv.extend(["--run", str(run)])
@@ -3017,12 +3047,191 @@ class NativeRatchetTests(unittest.TestCase):
         self.assertFalse(self.sidecar.exists())
         self.assertIn("paired-output invalidation failed", stderr)
 
+    def test_output_collisions_fail_before_mutation_for_every_input_path(self):
+        runs = [self.write_run(index, 1) for index in range(1, 6)]
+        existing_inputs = [self.thresholds]
+        absent_input_slots = []
+        for run in runs:
+            for name in native_ratchet.RUN_FILES:
+                path = run / name
+                if path.exists():
+                    existing_inputs.append(path)
+                else:
+                    absent_input_slots.append(path)
+        snapshots = {path: path.read_bytes() for path in existing_inputs}
+
+        cases = [
+            ("thresholds", self.thresholds),
+            (
+                "thresholds-relative-alias",
+                Path(os.path.relpath(self.thresholds, Path.cwd())),
+            ),
+            ("run-directory", runs[0]),
+            ("inside-run-directory", runs[0] / "new-gate-verdict.csv"),
+        ]
+        cases.extend(
+            (f"run-input-{name}", runs[0] / name)
+            for name in native_ratchet.RUN_FILES
+        )
+        if os.name == "nt":
+            cases.append(
+                ("thresholds-case-alias", Path(str(self.thresholds).swapcase()))
+            )
+
+        for label, output in cases:
+            with self.subTest(label=label):
+                sidecar = native_ratchet._sidecar_path(output)
+                sidecar_before = (
+                    sidecar.read_bytes() if sidecar.is_file() else None
+                )
+                result, stderr = self.run_tool(
+                    runs, output=output, return_stderr=True
+                )
+                self.assertEqual(result, 2)
+                self.assertTrue(
+                    "collides with protected" in stderr
+                    or "must not be inside protected run" in stderr,
+                    stderr,
+                )
+                for path, snapshot in snapshots.items():
+                    self.assertEqual(path.read_bytes(), snapshot, str(path))
+                for path in absent_input_slots:
+                    self.assertFalse(path.exists(), str(path))
+                if sidecar_before is None:
+                    self.assertFalse(sidecar.exists(), str(sidecar))
+                else:
+                    self.assertEqual(sidecar.read_bytes(), sidecar_before)
+
+    def test_sidecar_collision_with_thresholds_fails_before_mutation(self):
+        runs = [self.write_run(index, 1) for index in range(1, 6)]
+        sidecar_thresholds = self.sidecar
+        sidecar_thresholds.write_bytes(self.thresholds.read_bytes())
+        threshold_snapshot = sidecar_thresholds.read_bytes()
+
+        result, stderr = self.run_tool(
+            runs,
+            thresholds=sidecar_thresholds,
+            output=self.output,
+            return_stderr=True,
+        )
+
+        self.assertEqual(result, 2)
+        self.assertIn("provenance sidecar output", stderr)
+        self.assertIn("collides with protected thresholds", stderr)
+        self.assertEqual(sidecar_thresholds.read_bytes(), threshold_snapshot)
+        self.assertFalse(self.output.exists())
+
+    def test_hard_exit_cannot_publish_gate_without_provenance_sidecar(self):
+        runs = [self.write_run(index, 1) for index in range(1, 6)]
+        code = f"""
+import os
+import runpy
+from pathlib import Path
+
+namespace = runpy.run_path({str(SCRIPTS / 'aggregate-native-ratchet.py')!r})
+real_replace = os.replace
+replace_count = 0
+
+def replace_then_crash(source, destination):
+    global replace_count
+    real_replace(source, destination)
+    replace_count += 1
+    if replace_count == 1:
+        os._exit(77)
+
+namespace['os'].replace = replace_then_crash
+namespace['_write_output_pair'](
+    Path({str(self.output)!r}),
+    Path({str(self.sidecar)!r}),
+    'verdict\\n',
+    {{'schema_version': 1}},
+    thresholds_path=Path({str(self.thresholds)!r}),
+    run_paths=[Path(value) for value in {[str(run) for run in runs]!r}],
+)
+"""
+        result = subprocess.run(
+            [sys.executable, "-B", "-c", code],
+            cwd=SCRIPTS.parent,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 77)
+        self.assertFalse(
+            self.output.exists(),
+            "gate verdict is the commit marker and must publish last",
+        )
+        self.assertTrue(self.sidecar.is_file())
+        self.assertEqual(
+            json.loads(self.sidecar.read_text(encoding="utf-8")),
+            {"schema_version": 1},
+        )
+
+    def test_output_destinations_are_revalidated_at_publication_boundary(self):
+        runs = [self.write_run(index, 1) for index in range(1, 6)]
+        events = []
+        original_validate = native_ratchet._validate_output_destinations
+        original_remove = native_ratchet._remove_final_outputs
+
+        def validate(*args, **kwargs):
+            events.append("validate")
+            return original_validate(*args, **kwargs)
+
+        def remove(*args, **kwargs):
+            events.append("remove")
+            return original_remove(*args, **kwargs)
+
+        native_ratchet._validate_output_destinations = validate
+        native_ratchet._remove_final_outputs = remove
+        try:
+            native_ratchet._write_output_pair(
+                self.output,
+                self.sidecar,
+                "verdict\n",
+                {"schema_version": 1},
+                thresholds_path=self.thresholds,
+                run_paths=runs,
+            )
+        finally:
+            native_ratchet._validate_output_destinations = original_validate
+            native_ratchet._remove_final_outputs = original_remove
+
+        self.assertEqual(events, ["validate", "remove"])
+        self.assertTrue(self.sidecar.is_file())
+        self.assertTrue(self.output.is_file())
+
+    def test_recorded_input_sets_are_bound_to_observed_threshold_rows(self):
+        bad_cases = [
+            ("track-a-mismatch", {"track_a_inputs": "other"}),
+            ("track-a-duplicate", {"track_a_inputs": "x,x"}),
+            ("track-a-empty", {"track_a_inputs": "x,"}),
+            ("track-b-mismatch", {"track_b_inputs": "other"}),
+            ("track-b-duplicate", {"track_b_inputs": "trackb,trackb"}),
+        ]
+        for case_number, (label, override) in enumerate(bad_cases, start=1):
+            with self.subTest(label=label):
+                runs = [
+                    self.write_run(
+                        case_number * 10 + index,
+                        1,
+                        provenance_override=override,
+                    )
+                    for index in range(1, 6)
+                ]
+                result, stderr = self.run_tool(runs, return_stderr=True)
+                self.assertEqual(result, 2)
+                self.assertIn("recorded track_", stderr)
+                self.assertFalse(self.output.exists())
+                self.assertFalse(self.sidecar.exists())
+
     def test_provenance_mismatch_is_structural_failure(self):
         runs = [self.write_run(index, 1) for index in range(1, 5)]
         runs.append(
-            self.write_run(5, 1, provenance_override={"source_commit": "e" * 40})
+            self.write_run(5, 1, provenance_override={"iterations": "999"})
         )
-        self.assertEqual(self.run_tool(runs), 2)
+        result, stderr = self.run_tool(runs, return_stderr=True)
+        self.assertEqual(result, 2)
+        self.assertIn("run 5 provenance mismatch for iterations", stderr)
+        self.assertFalse(self.output.exists())
+        self.assertFalse(self.sidecar.exists())
 
     def test_summary_and_threshold_check_disagreement_is_structural(self):
         runs = [self.write_run(index, 1) for index in range(1, 5)]

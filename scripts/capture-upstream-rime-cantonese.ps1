@@ -3,8 +3,13 @@ param(
     [string[]]$Inputs,
     [string]$Output,
     [string]$EvidenceMilestone = "M58",
+    [ValidateSet("lane-a", "m59-whole-input")]
+    [string]$CaptureMode = "lane-a",
+    [string]$CaptureDate,
+    [string]$SourceRowPolicy,
     [string]$ReportedCaseInput = "zijiguk",
     [string]$ReportedCaseTargetCodepoints = "U+8AEE U+8B70 U+5C40",
+    [string]$ReportedCaseProvenance = "User-specified exact ASCII keystrokes; use only as capture input, never as expected output derived from Yune.",
     [string]$ExpectedRimeDllSha256 = "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
     [string]$ExpectedRimeDeployerSha256 = "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
     [switch]$AllowMissingReportedCase,
@@ -12,6 +17,17 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+Set-StrictMode -Version 2.0
+
+$PinnedRepositoryCommits = [ordered]@{
+    "rime/rime-cantonese" = "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0"
+    "rime/rime-prelude" = "082425ea0684bca36474415d4a0e8db9b016487e"
+    "rime/rime-luna-pinyin" = "18a80335c37522311f7cff02886cd81cec3b460a"
+    "rime/rime-essay" = "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed"
+    "rime/rime-stroke" = "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c"
+    "rime/rime-cangjie" = "52d90a1b1312e74042b38c1cbc8142defbc53171"
+    "CanCLID/rime-loengfan" = "987ac95b02f957e8764a2f45222a4006c188ed50"
+}
 
 function Write-NewUtf8NoBom([string]$Path, [string]$Text) {
     $Dir = Split-Path -Parent $Path
@@ -167,7 +183,9 @@ function Assert-UpstreamOutputPreflight(
     [string]$Output,
     [string]$OracleRoot,
     [string]$Shared,
-    [string]$User
+    [string]$User,
+    [string]$ExpectedSharedLeaf = "m58-rime-cantonese-shared",
+    [string]$ExpectedUserLeaf = "m58-rime-cantonese-user"
 ) {
     if (Test-Path -LiteralPath $Output) {
         throw "Output must not already exist: $Output"
@@ -177,10 +195,10 @@ function Assert-UpstreamOutputPreflight(
     $CanonicalShared = Get-CanonicalCapturePath $Shared
     $CanonicalUser = Get-CanonicalCapturePath $User
     $ExpectedCanonicalShared = [System.IO.Path]::GetFullPath(
-        (Join-Path $CanonicalOracleRoot "m58-rime-cantonese-shared")
+        (Join-Path $CanonicalOracleRoot $ExpectedSharedLeaf)
     ).TrimEnd("\", "/")
     $ExpectedCanonicalUser = [System.IO.Path]::GetFullPath(
-        (Join-Path $CanonicalOracleRoot "m58-rime-cantonese-user")
+        (Join-Path $CanonicalOracleRoot $ExpectedUserLeaf)
     ).TrimEnd("\", "/")
     if (-not [string]::Equals(
             $CanonicalShared,
@@ -246,15 +264,35 @@ function Git-Head([string]$Path) {
 
 function Git-State([string]$Path) {
     $Head = Git-Head $Path
-    $Status = @(& git -C $Path status --short)
+    $Tree = (& git -C $Path rev-parse 'HEAD^{tree}').Trim()
+    if ($LASTEXITCODE -ne 0 -or $Tree -notmatch '^[0-9a-fA-F]{40}$') {
+        throw "Unable to resolve Git tree for $Path"
+    }
+    $Status = @(& git -C $Path status --porcelain=v1 -uall)
     if ($LASTEXITCODE -ne 0) {
         throw "Unable to read Git status for $Path"
     }
     return [pscustomobject]@{
         commit = $Head
+        tree = $Tree.ToLowerInvariant()
         clean = $Status.Count -eq 0
         status_short = @($Status)
     }
+}
+
+function Assert-PinnedGitRepository(
+    [string]$Path,
+    [string]$Label,
+    [string]$ExpectedCommit
+) {
+    $State = Git-State $Path
+    if ($State.commit -ne $ExpectedCommit) {
+        throw "Upstream repository commit mismatch for ${Label}: expected $ExpectedCommit, observed $($State.commit)"
+    }
+    if (-not $State.clean -or $State.status_short.Count -ne 0) {
+        throw "Upstream repository must be clean for capture: $Label"
+    }
+    return $State
 }
 
 function Assert-GitStateUnchanged([string]$Path, [string]$Label, [object]$Before) {
@@ -262,6 +300,7 @@ function Assert-GitStateUnchanged([string]$Path, [string]$Label, [object]$Before
     $BeforeStatus = @($Before.status_short) -join "`n"
     $AfterStatus = @($After.status_short) -join "`n"
     if ($After.commit -ne $Before.commit -or
+        $After.tree -ne $Before.tree -or
         $After.clean -ne $Before.clean -or
         $AfterStatus -cne $BeforeStatus) {
         throw "Git source state changed during capture: $Label"
@@ -270,6 +309,154 @@ function Assert-GitStateUnchanged([string]$Path, [string]$Label, [object]$Before
 
 function File-Sha256([string]$Path) {
     (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+function Assert-Sha256([string]$Value, [string]$Label) {
+    if ($Value -notmatch '^[0-9a-fA-F]{64}$') {
+        throw "$Label must be a 64-character hexadecimal SHA-256."
+    }
+}
+
+function Get-UnicodeScalarStrings([string]$Value) {
+    $Scalars = New-Object System.Collections.Generic.List[string]
+    for ($Index = 0; $Index -lt $Value.Length; $Index++) {
+        $Current = $Value[$Index]
+        if ([char]::IsHighSurrogate($Current)) {
+            if ($Index + 1 -ge $Value.Length -or -not [char]::IsLowSurrogate($Value[$Index + 1])) {
+                throw "Malformed UTF-16 oracle term: unmatched high surrogate."
+            }
+            $CodePoint = [char]::ConvertToUtf32($Current, $Value[$Index + 1])
+            $Scalars.Add([char]::ConvertFromUtf32($CodePoint))
+            $Index++
+        }
+        elseif ([char]::IsLowSurrogate($Current)) {
+            throw "Malformed UTF-16 oracle term: unmatched low surrogate."
+        }
+        else {
+            $Scalars.Add([string]$Current)
+        }
+    }
+    return @($Scalars)
+}
+
+function Get-SourceLexiconEvidence(
+    [string]$RimeCantoneseRoot,
+    [object[]]$CapturedCases
+) {
+    $DictionaryFiles = @(
+        Get-ChildItem -LiteralPath $RimeCantoneseRoot -File -Filter "*.dict.yaml" |
+            Sort-Object Name
+    )
+    $VocabularyFiles = @(
+        Get-ChildItem -LiteralPath $RimeCantoneseRoot -File -Filter "essay-cantonese.txt" |
+            Sort-Object Name
+    )
+    if ($DictionaryFiles.Count -ne 6) {
+        throw "Expected exactly six canonical Jyutping dictionary source files, observed $($DictionaryFiles.Count)."
+    }
+    if ($VocabularyFiles.Count -ne 1) {
+        throw "Expected exactly one essay-cantonese vocabulary source, observed $($VocabularyFiles.Count)."
+    }
+
+    $Terms = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    $OracleRows = New-Object System.Collections.Generic.List[object]
+    foreach ($Case in @($CapturedCases)) {
+        $Candidates = @($Case["selected_candidates"])
+        if ($Candidates.Count -eq 0) {
+            throw "Whole-input capture for '$($Case["input"])' has no selected candidates."
+        }
+        $OracleTop = [string]$Candidates[0]["text"]
+        if ([string]::IsNullOrWhiteSpace($OracleTop)) {
+            throw "Whole-input capture for '$($Case["input"])' has an empty oracle top candidate."
+        }
+        [void]$Terms.Add($OracleTop)
+        foreach ($Scalar in Get-UnicodeScalarStrings $OracleTop) {
+            [void]$Terms.Add($Scalar)
+        }
+        $OracleRows.Add([ordered]@{
+            input = [string]$Case["input"]
+            oracle_top = $OracleTop
+        })
+    }
+
+    $DictionaryRows = New-Object System.Collections.Generic.List[object]
+    $VocabularyRows = New-Object System.Collections.Generic.List[object]
+    $SourceFiles = New-Object System.Collections.Generic.List[object]
+    foreach ($Descriptor in @(
+        @($DictionaryFiles | ForEach-Object { [pscustomobject]@{ file = $_; kind = "dictionary" } }) +
+        @($VocabularyFiles | ForEach-Object { [pscustomobject]@{ file = $_; kind = "vocabulary" } })
+    )) {
+        $File = $Descriptor.file
+        $RelativePath = "rime-cantonese/" + $File.Name
+        $SourceFiles.Add([ordered]@{
+            path = $RelativePath
+            kind = $Descriptor.kind
+            sha256 = File-Sha256 $File.FullName
+        })
+        $LineNumber = 0
+        foreach ($Line in [System.IO.File]::ReadLines($File.FullName, [System.Text.Encoding]::UTF8)) {
+            $LineNumber++
+            if ([string]::IsNullOrWhiteSpace($Line) -or $Line.StartsWith("#")) {
+                continue
+            }
+            $Tab = $Line.IndexOf("`t", [System.StringComparison]::Ordinal)
+            if ($Tab -lt 1) {
+                continue
+            }
+            $Term = $Line.Substring(0, $Tab)
+            if (-not $Terms.Contains($Term)) {
+                continue
+            }
+            $Row = [ordered]@{
+                file = $RelativePath
+                line = $LineNumber
+                term = $Term
+                row = $Line
+            }
+            if ($Descriptor.kind -eq "dictionary") {
+                $DictionaryRows.Add($Row)
+            }
+            else {
+                $VocabularyRows.Add($Row)
+            }
+        }
+    }
+
+    $WholeInputRows = New-Object System.Collections.Generic.List[object]
+    foreach ($OracleRow in $OracleRows) {
+        $OracleTop = [string]$OracleRow.oracle_top
+        $DictionaryExactRows = @($DictionaryRows | Where-Object { $_.term -ceq $OracleTop })
+        $VocabularyExactRows = @($VocabularyRows | Where-Object { $_.term -ceq $OracleTop })
+        $Constituents = @(Get-UnicodeScalarStrings $OracleTop | Select-Object -Unique)
+        $MissingConstituents = @(
+            foreach ($Constituent in $Constituents) {
+                $Found = @($DictionaryRows | Where-Object { $_.term -ceq $Constituent }).Count -gt 0 -or
+                    @($VocabularyRows | Where-Object { $_.term -ceq $Constituent }).Count -gt 0
+                if (-not $Found) { $Constituent }
+            }
+        )
+        if ($MissingConstituents.Count -gt 0) {
+            throw "Source provenance is missing oracle-top constituents for '$($OracleRow.input)': $($MissingConstituents -join ', ')"
+        }
+        if ($DictionaryExactRows.Count -ne 0 -or $VocabularyExactRows.Count -ne 0) {
+            throw "Oracle top '$OracleTop' for '$($OracleRow.input)' is present as an exact source lexicon term."
+        }
+        $WholeInputRows.Add([ordered]@{
+            input = $OracleRow.input
+            oracle_top = $OracleTop
+            constituents = $Constituents
+            source_dictionary_exact_term_count = $DictionaryExactRows.Count
+            source_vocabulary_exact_term_count = $VocabularyExactRows.Count
+            source_lexicon_absent = $true
+        })
+    }
+
+    return [pscustomobject]@{
+        source_files = @($SourceFiles | ForEach-Object { $_ })
+        dictionary_rows = @($DictionaryRows | ForEach-Object { $_ })
+        vocabulary_rows = @($VocabularyRows | ForEach-Object { $_ })
+        whole_input_rows = @($WholeInputRows | ForEach-Object { $_ })
+    }
 }
 
 function Assert-FileSha256Unchanged(
@@ -352,6 +539,35 @@ if ($Inputs.Count -eq 1 -and $Inputs[0].Contains(",")) {
 if ($EvidenceMilestone -notmatch '^M[0-9]+$') {
     throw "EvidenceMilestone must be an M-number such as M58 or M59."
 }
+if ($CaptureMode -eq "m59-whole-input") {
+    if (-not $InputsWereProvided) {
+        throw "m59-whole-input capture requires an explicit Inputs argument."
+    }
+    if ([string]::IsNullOrWhiteSpace($CaptureDate)) {
+        throw "m59-whole-input capture requires an explicit CaptureDate."
+    }
+    if ([string]::IsNullOrWhiteSpace($SourceRowPolicy)) {
+        $SourceRowPolicy = "m59_canonical_jyutping_whole_input_oracle"
+    }
+}
+elseif ([string]::IsNullOrWhiteSpace($SourceRowPolicy)) {
+    $SourceRowPolicy = "lane_a_canonical_rime_cantonese_full_order"
+}
+if (-not [string]::IsNullOrWhiteSpace($CaptureDate)) {
+    $ParsedCaptureDate = [datetime]::MinValue
+    if (-not [datetime]::TryParseExact(
+            $CaptureDate,
+            "yyyy-MM-dd",
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::None,
+            [ref]$ParsedCaptureDate)) {
+        throw "CaptureDate must be a real calendar date in yyyy-MM-dd form."
+    }
+}
+$ExpectedRimeDllSha256 = $ExpectedRimeDllSha256.ToLowerInvariant()
+$ExpectedRimeDeployerSha256 = $ExpectedRimeDeployerSha256.ToLowerInvariant()
+Assert-Sha256 $ExpectedRimeDllSha256 "ExpectedRimeDllSha256"
+Assert-Sha256 $ExpectedRimeDeployerSha256 "ExpectedRimeDeployerSha256"
 $InputSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
 foreach ($InputValue in @($Inputs)) {
     if ([string]::IsNullOrWhiteSpace($InputValue) -or -not $InputSet.Add($InputValue)) {
@@ -365,8 +581,11 @@ if ([string]::IsNullOrWhiteSpace($Output)) {
 $OracleRoot = [System.IO.Path]::GetFullPath($OracleRoot)
 $Output = [System.IO.Path]::GetFullPath($Output)
 $Extract = Join-Path $OracleRoot "extract"
-$Shared = Join-Path $OracleRoot "m58-rime-cantonese-shared"
-$User = Join-Path $OracleRoot "m58-rime-cantonese-user"
+$CaptureRootPrefix = if ($CaptureMode -eq "m59-whole-input") { "m59-rime-cantonese" } else { "m58-rime-cantonese" }
+$SharedLeaf = "$CaptureRootPrefix-shared"
+$UserLeaf = "$CaptureRootPrefix-user"
+$Shared = Join-Path $OracleRoot $SharedLeaf
+$User = Join-Path $OracleRoot $UserLeaf
 $Build = Join-Path $User "build"
 $SchemaRoot = Join-Path $OracleRoot "schema-src"
 $ProbeSource = Join-Path $RepoRoot "scripts\oracle-rime-probe.cs"
@@ -383,7 +602,7 @@ $RequiredRepos = [ordered]@{
     "CanCLID/rime-loengfan" = "rime-loengfan"
 }
 
-$CanonicalOutput = Assert-UpstreamOutputPreflight $Output $OracleRoot $Shared $User
+$CanonicalOutput = Assert-UpstreamOutputPreflight $Output $OracleRoot $Shared $User $SharedLeaf $UserLeaf
 
 $RequiredPaths = @(
     $RimeDll,
@@ -403,19 +622,20 @@ foreach ($Path in $RequiredPaths) {
 $ToolState = Git-State $RepoRoot
 $RepoStates = [ordered]@{}
 foreach ($Repo in $RequiredRepos.Keys) {
-    $RepoStates[$Repo] = Git-State (Join-Path $SchemaRoot $RequiredRepos[$Repo])
+    if (-not $PinnedRepositoryCommits.Contains($Repo)) {
+        throw "No pinned commit is declared for required upstream repository: $Repo"
+    }
+    $RepoStates[$Repo] = Assert-PinnedGitRepository `
+        (Join-Path $SchemaRoot $RequiredRepos[$Repo]) `
+        $Repo `
+        $PinnedRepositoryCommits[$Repo]
 }
 $DirtySources = New-Object System.Collections.Generic.List[string]
 if (-not $ToolState.clean) {
     $DirtySources.Add("yune")
 }
-foreach ($Repo in $RepoStates.Keys) {
-    if (-not $RepoStates[$Repo].clean) {
-        $DirtySources.Add($Repo)
-    }
-}
 if ($DirtySources.Count -gt 0 -and -not $AllowDirty.IsPresent) {
-    throw "Refusing canonical oracle capture from dirty source trees: $($DirtySources -join ', '). Use -AllowDirty only for diagnostic evidence."
+    throw "Refusing oracle capture from a dirty Yune tool tree: $($DirtySources -join ', '). Use -AllowDirty only when the exact capture/probe hashes are preserved."
 }
 
 $ActualRimeDllSha256 = File-Sha256 $RimeDll
@@ -445,8 +665,12 @@ $EffectiveParameters = [ordered]@{
     inputs_source = if ($InputsWereProvided) { "explicit" } else { "default_13" }
     output = Convert-ToEvidencePath $Output "output"
     evidence_milestone = $EvidenceMilestone
+    capture_mode = $CaptureMode
+    capture_date = $CaptureDate
+    source_row_policy = $SourceRowPolicy
     reported_case_input = $ReportedCaseInput
     reported_case_target_codepoints = $ReportedCaseTargetCodepoints
+    reported_case_provenance = $ReportedCaseProvenance
     expected_rime_dll_sha256 = if ($ExpectedRimeDllSha256) { $ExpectedRimeDllSha256.ToLowerInvariant() } else { $null }
     expected_rime_deployer_sha256 = if ($ExpectedRimeDeployerSha256) { $ExpectedRimeDeployerSha256.ToLowerInvariant() } else { $null }
     allow_missing_reported_case = $AllowMissingReportedCase.IsPresent
@@ -457,6 +681,7 @@ $EffectiveParameters = [ordered]@{
     runtime_options = $RuntimeOptions
     runtime_options_source = $RuntimeOptionsSource
     additional_runtime_option_patches = $AdditionalRuntimeOptionPatches
+    expected_repository_commits = $PinnedRepositoryCommits
     path_serialization_policy = "repo-relative forward-slash paths; external paths replaced with external/<role>"
 }
 $Invocation = @(
@@ -466,8 +691,12 @@ if ($PSBoundParameters.ContainsKey("OracleRoot")) { $Invocation += "-OracleRoot 
 if ($InputsWereProvided) { $Invocation += "-Inputs $(Quote-CommandArg ($Inputs -join ','))" }
 if ($PSBoundParameters.ContainsKey("Output")) { $Invocation += "-Output $(Quote-CommandArg $EffectiveParameters.output)" }
 if ($PSBoundParameters.ContainsKey("EvidenceMilestone")) { $Invocation += "-EvidenceMilestone $(Quote-CommandArg $EvidenceMilestone)" }
+if ($PSBoundParameters.ContainsKey("CaptureMode")) { $Invocation += "-CaptureMode $(Quote-CommandArg $CaptureMode)" }
+if ($PSBoundParameters.ContainsKey("CaptureDate")) { $Invocation += "-CaptureDate $(Quote-CommandArg $CaptureDate)" }
+if ($PSBoundParameters.ContainsKey("SourceRowPolicy")) { $Invocation += "-SourceRowPolicy $(Quote-CommandArg $SourceRowPolicy)" }
 if ($PSBoundParameters.ContainsKey("ReportedCaseInput")) { $Invocation += "-ReportedCaseInput $(Quote-CommandArg $ReportedCaseInput)" }
 if ($PSBoundParameters.ContainsKey("ReportedCaseTargetCodepoints")) { $Invocation += "-ReportedCaseTargetCodepoints $(Quote-CommandArg $ReportedCaseTargetCodepoints)" }
+if ($PSBoundParameters.ContainsKey("ReportedCaseProvenance")) { $Invocation += "-ReportedCaseProvenance $(Quote-CommandArg $ReportedCaseProvenance)" }
 if ($PSBoundParameters.ContainsKey("ExpectedRimeDllSha256")) { $Invocation += "-ExpectedRimeDllSha256 $(Quote-CommandArg $EffectiveParameters.expected_rime_dll_sha256)" }
 if ($PSBoundParameters.ContainsKey("ExpectedRimeDeployerSha256")) { $Invocation += "-ExpectedRimeDeployerSha256 $(Quote-CommandArg $EffectiveParameters.expected_rime_deployer_sha256)" }
 if ($AllowMissingReportedCase.IsPresent) { $Invocation += "-AllowMissingReportedCase" }
@@ -527,18 +756,29 @@ foreach ($Case in $Cases) {
     }
 }
 
+$SourceLexiconEvidence = $null
+if ($CaptureMode -eq "m59-whole-input") {
+    $SourceLexiconEvidence = Get-SourceLexiconEvidence `
+        (Join-Path $SchemaRoot $RequiredRepos["rime/rime-cantonese"]) `
+        @($Cases)
+}
+
 Assert-GitStateUnchanged $RepoRoot "yune" $ToolState
 foreach ($Repo in $RequiredRepos.Keys) {
     Assert-GitStateUnchanged (Join-Path $SchemaRoot $RequiredRepos[$Repo]) $Repo $RepoStates[$Repo]
 }
+Assert-FileSha256Unchanged $PSCommandPath "capture script" $CaptureScriptSha256
+Assert-FileSha256Unchanged $ProbeSource "oracle probe source" $ProbeSha256
 Assert-FileSha256Unchanged $RimeDll "rime.dll" $ActualRimeDllSha256
 Assert-FileSha256Unchanged $RimeDeployer "rime_deployer.exe" $ActualRimeDeployerSha256
 
 $RepoCommits = [ordered]@{}
+$RepoTrees = [ordered]@{}
 $RepoClean = [ordered]@{}
 $RepoStatusShort = [ordered]@{}
 foreach ($Repo in $RequiredRepos.Keys) {
     $RepoCommits[$Repo] = $RepoStates[$Repo].commit
+    $RepoTrees[$Repo] = $RepoStates[$Repo].tree
     $RepoClean[$Repo] = [bool]$RepoStates[$Repo].clean
     $RepoStatusShort[$Repo] = @($RepoStates[$Repo].status_short)
 }
@@ -556,13 +796,23 @@ $Evidence = [ordered]@{
     status = if ($AllowMissingReportedCase) {
         "provisional_blocked_missing_reported_case_ascii"
     }
-    elseif ($DirtySources.Count -gt 0) {
+    elseif ($DirtySources.Count -gt 0 -and $CaptureMode -ne "m59-whole-input") {
         "diagnostic_dirty_source_capture"
+    }
+    elseif ($DirtySources.Count -gt 0) {
+        "canonical_external_oracle_capture_tool_tree_dirty"
     }
     else {
         "canonical_capture_complete"
     }
-    canonical = (-not $AllowMissingReportedCase.IsPresent) -and $DirtySources.Count -eq 0
+    canonical = (-not $AllowMissingReportedCase.IsPresent) -and
+        ($DirtySources.Count -eq 0 -or $CaptureMode -eq "m59-whole-input")
+    canonicality_scope = if ($CaptureMode -eq "m59-whole-input") {
+        "Pinned external oracle binaries and exact clean upstream schema repositories; Yune tool-tree state is recorded separately and exact capture/probe bytes are hash-pinned."
+    }
+    else {
+        "Pinned external oracle binaries, upstream schema repositories, and clean Yune tool tree."
+    }
     capture = [ordered]@{
         engine = "rime/librime"
         version = "1.17.0"
@@ -573,6 +823,9 @@ $Evidence = [ordered]@{
         source_status_short = @($ToolState.status_short)
         source_repo = "yune"
         schema_id = "jyut6ping3"
+        capture_mode = $CaptureMode
+        capture_date = $CaptureDate
+        source_row_policy = $SourceRowPolicy
         modules = @($Modules)
         inputs = @($Inputs)
         input_count = $Inputs.Count
@@ -587,6 +840,7 @@ $Evidence = [ordered]@{
         rime_dll_sha256 = $ActualRimeDllSha256
         rime_deployer_sha256 = $ActualRimeDeployerSha256
         schema_repo_commits = $RepoCommits
+        schema_repo_trees = $RepoTrees
         source_repositories_clean = $RepoClean
         source_repositories_status_short = $RepoStatusShort
         capture_script_sha256 = $CaptureScriptSha256
@@ -597,8 +851,16 @@ $Evidence = [ordered]@{
     }
     oracle = [ordered]@{
         engine = "rime/librime"
+        engine_tag = "1.17.0"
         version = "1.17.0"
         commit = "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+        release_url = "https://github.com/rime/librime/releases/tag/1.17.0"
+        capture_date = $CaptureDate
+        capture_script = "scripts/capture-upstream-rime-cantonese.ps1"
+        capture_script_sha256 = $CaptureScriptSha256
+        probe_source = "scripts/oracle-rime-probe.cs"
+        probe_sha256 = $ProbeSha256
+        capture_command = $ActualInvocation
         dll = Convert-ToEvidencePath $RimeDll "rime-dll"
         dll_sha256 = $ActualRimeDllSha256
         deployer = Convert-ToEvidencePath $RimeDeployer "rime-deployer"
@@ -608,7 +870,9 @@ $Evidence = [ordered]@{
         yune_facing_schema_id = "jyut6ping3"
         source_repo = "rime/rime-cantonese"
         source_commit = $RepoCommits["rime/rime-cantonese"]
+        source_tree = $RepoTrees["rime/rime-cantonese"]
         dependency_commits = $RepoCommits
+        dependency_trees = $RepoTrees
     }
     options = [ordered]@{
         runtime_option_patches = @()
@@ -628,10 +892,23 @@ $Evidence = [ordered]@{
     reported_case = [ordered]@{
         target_codepoints = $ReportedCaseTargetCodepoints
         input = $ReportedCaseInput
-        provenance = "User-specified M58 unblock decision: untoned Jyutping for zi1 ji5 guk6; use only as capture input, not as expected output derived from Yune."
+        provenance = $ReportedCaseProvenance
         complete = -not $AllowMissingReportedCase
     }
     cases = $Cases
+}
+
+if ($null -ne $SourceLexiconEvidence) {
+    $Evidence["source_lexicon"] = [ordered]@{
+        source_repository = "rime/rime-cantonese"
+        source_commit = $RepoCommits["rime/rime-cantonese"]
+        source_tree = $RepoTrees["rime/rime-cantonese"]
+        source_files = @($SourceLexiconEvidence.source_files)
+        source_dictionary_rows = @($SourceLexiconEvidence.dictionary_rows)
+        source_vocabulary_rows = @($SourceLexiconEvidence.vocabulary_rows)
+        source_row_term_expansion = "whole oracle terms plus Unicode-scalar constituents"
+        whole_input_oracle_rows = @($SourceLexiconEvidence.whole_input_rows)
+    }
 }
 
 $EvidenceJson = ConvertTo-CanonicalJsonText $Evidence

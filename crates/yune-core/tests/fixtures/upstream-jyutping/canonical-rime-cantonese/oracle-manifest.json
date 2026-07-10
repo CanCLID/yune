@@ -1,0 +1,34 @@
+{
+  "fixture_family": "canonical-rime-cantonese-whole-input",
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "canonical_repository": "https://github.com/rime/librime",
+    "schema_repository": "https://github.com/rime/rime-cantonese",
+    "schema_commit": "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+    "schema_tree": "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+    "capture_date": "2026-07-10"
+  },
+  "profile_only": false,
+  "hybrid_oracle": false,
+  "scope": "canonical_jyutping_whole_input_order_and_source_lexicon_absence",
+  "fixtures": [
+    {
+      "path": "jyutping-m59-being-whole-input.json",
+      "sha256": "8a8f399e44cb09e651f6580c4a4be24fdf9db2c52ada50d567324798dcdc81ac",
+      "input": "being",
+      "preedit": "bei ng",
+      "oracle_top": "畀嗯",
+      "source_lexicon_absent": true,
+      "source_dictionary_file_count": 6,
+      "source_vocabulary_file_count": 1
+    }
+  ],
+  "tools": {
+    "capture_script": "scripts/capture-upstream-rime-cantonese.ps1",
+    "capture_script_sha256": "24287cf96733333d9a4bb314e535321feca48819c5f2953c88254d808728e6f9",
+    "probe_source": "scripts/oracle-rime-probe.cs",
+    "probe_sha256": "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7"
+  }
+}

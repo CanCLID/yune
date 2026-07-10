@@ -1,0 +1,2285 @@
+{
+    "milestone":  "M59",
+    "status":  "canonical_external_oracle_capture_tool_tree_dirty",
+    "canonical":  true,
+    "canonicality_scope":  "Pinned external oracle binaries and exact clean upstream schema repositories; Yune tool-tree state is recorded separately and exact capture/probe bytes are hash-pinned.",
+    "capture":  {
+                    "engine":  "rime/librime",
+                    "version":  "1.17.0",
+                    "librime_commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                    "source_commit":  "7afa2cbfb41341d54a3644821f24e73461d64e5b",
+                    "source_clean":  false,
+                    "source_dirty":  true,
+                    "source_status_short":  [
+                                                " M crates/yune-core/src/dictionary/prism_writer.rs",
+                                                " M crates/yune-core/src/spelling_algebra.rs",
+                                                " M crates/yune-core/src/tests/dictionary.rs",
+                                                " M crates/yune-core/src/tests/translator.rs",
+                                                " M crates/yune-core/src/translator/mod.rs",
+                                                " M scripts/capture-upstream-rime-cantonese.ps1",
+                                                " M scripts/tests/test_m59_evidence_tools.py",
+                                                "?? crates/yune-core/tests/canonical_jyutping_oracle_provenance.rs",
+                                                "?? crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/README.md",
+                                                "?? crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/oracle-manifest.json",
+                                                "?? scripts/__pycache__/aggregate-native-ratchet.cpython-313.pyc",
+                                                "?? scripts/__pycache__/compare-candidate-order.cpython-313.pyc",
+                                                "?? scripts/__pycache__/curate-m59-luna-composition.cpython-313.pyc",
+                                                "?? scripts/tests/__pycache__/test_m59_evidence_tools.cpython-313.pyc"
+                                            ],
+                    "source_repo":  "yune",
+                    "schema_id":  "jyut6ping3",
+                    "capture_mode":  "m59-whole-input",
+                    "capture_date":  "2026-07-10",
+                    "source_row_policy":  "m59_canonical_jyutping_whole_input_oracle",
+                    "modules":  [
+                                    "default"
+                                ],
+                    "inputs":  [
+                                   "being"
+                               ],
+                    "input_count":  1,
+                    "inputs_source":  "explicit",
+                    "page_sizes_observed":  [
+                                                5
+                                            ],
+                    "captured_all_pages":  true,
+                    "page_policy":  "RimeProbe.Capture all pages; hard failure on non-advancing or incomplete pagination",
+                    "runtime_options":  {
+                                            "ascii_mode":  false,
+                                            "full_shape":  false,
+                                            "ascii_punct":  false,
+                                            "zh_hans":  false
+                                        },
+                    "runtime_options_source":  "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+                    "additional_runtime_option_patches":  [
+
+                                                          ],
+                    "path_serialization_policy":  "repo-relative forward-slash paths; external paths replaced with external/\u003crole\u003e",
+                    "rime_dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                    "rime_deployer_sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+                    "schema_repo_commits":  {
+                                                "rime/rime-cantonese":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                                                "rime/rime-prelude":  "082425ea0684bca36474415d4a0e8db9b016487e",
+                                                "rime/rime-luna-pinyin":  "18a80335c37522311f7cff02886cd81cec3b460a",
+                                                "rime/rime-essay":  "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                                                "rime/rime-stroke":  "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c",
+                                                "rime/rime-cangjie":  "52d90a1b1312e74042b38c1cbc8142defbc53171",
+                                                "CanCLID/rime-loengfan":  "987ac95b02f957e8764a2f45222a4006c188ed50"
+                                            },
+                    "schema_repo_trees":  {
+                                              "rime/rime-cantonese":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                                              "rime/rime-prelude":  "d7e128f09ce6b1f920729ef2f848ca1294c9cb31",
+                                              "rime/rime-luna-pinyin":  "0d5efcb75aa40689bf3be210a4f056db6d77b49d",
+                                              "rime/rime-essay":  "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+                                              "rime/rime-stroke":  "d60c793d8d68154847923f21aa73ba90441dab32",
+                                              "rime/rime-cangjie":  "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+                                              "CanCLID/rime-loengfan":  "0858d1087046b8d1c3d36c36000ece5630b09cb3"
+                                          },
+                    "source_repositories_clean":  {
+                                                      "rime/rime-cantonese":  true,
+                                                      "rime/rime-prelude":  true,
+                                                      "rime/rime-luna-pinyin":  true,
+                                                      "rime/rime-essay":  true,
+                                                      "rime/rime-stroke":  true,
+                                                      "rime/rime-cangjie":  true,
+                                                      "CanCLID/rime-loengfan":  true
+                                                  },
+                    "source_repositories_status_short":  {
+                                                             "rime/rime-cantonese":  [
+
+                                                                                     ],
+                                                             "rime/rime-prelude":  [
+
+                                                                                   ],
+                                                             "rime/rime-luna-pinyin":  [
+
+                                                                                       ],
+                                                             "rime/rime-essay":  [
+
+                                                                                 ],
+                                                             "rime/rime-stroke":  [
+
+                                                                                  ],
+                                                             "rime/rime-cangjie":  [
+
+                                                                                   ],
+                                                             "CanCLID/rime-loengfan":  [
+
+                                                                                       ]
+                                                         },
+                    "capture_script_sha256":  "24287cf96733333d9a4bb314e535321feca48819c5f2953c88254d808728e6f9",
+                    "probe_sha256":  "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+                    "actual_invocation":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-upstream-rime-cantonese.ps1 -OracleRoot \u0027target/upstream-oracle/1.17.0\u0027 -Inputs \u0027being\u0027 -Output \u0027crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/jyutping-m59-being-whole-input.json\u0027 -EvidenceMilestone \u0027M59\u0027 -CaptureMode \u0027m59-whole-input\u0027 -CaptureDate \u00272026-07-10\u0027 -SourceRowPolicy \u0027m59_canonical_jyutping_whole_input_oracle\u0027 -ReportedCaseInput \u0027being\u0027 -ReportedCaseTargetCodepoints \u0027U+7540 U+55EF\u0027 -ReportedCaseProvenance \u0027Pinned upstream librime 1.17.0 plus rime-cantonese whole-input capture; oracle output is authoritative and is not derived from Yune.\u0027 -ExpectedRimeDllSha256 \u002786b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b\u0027 -ExpectedRimeDeployerSha256 \u00273abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071\u0027 -AllowDirty",
+                    "effective_parameters":  {
+                                                 "oracle_root":  "target/upstream-oracle/1.17.0",
+                                                 "inputs":  [
+                                                                "being"
+                                                            ],
+                                                 "inputs_source":  "explicit",
+                                                 "output":  "crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/jyutping-m59-being-whole-input.json",
+                                                 "evidence_milestone":  "M59",
+                                                 "capture_mode":  "m59-whole-input",
+                                                 "capture_date":  "2026-07-10",
+                                                 "source_row_policy":  "m59_canonical_jyutping_whole_input_oracle",
+                                                 "reported_case_input":  "being",
+                                                 "reported_case_target_codepoints":  "U+7540 U+55EF",
+                                                 "reported_case_provenance":  "Pinned upstream librime 1.17.0 plus rime-cantonese whole-input capture; oracle output is authoritative and is not derived from Yune.",
+                                                 "expected_rime_dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                                                 "expected_rime_deployer_sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071",
+                                                 "allow_missing_reported_case":  false,
+                                                 "allow_dirty":  true,
+                                                 "shared_root":  "target/upstream-oracle/1.17.0/m59-rime-cantonese-shared",
+                                                 "user_root":  "target/upstream-oracle/1.17.0/m59-rime-cantonese-user",
+                                                 "build_root":  "target/upstream-oracle/1.17.0/m59-rime-cantonese-user/build",
+                                                 "runtime_options":  {
+                                                                         "ascii_mode":  false,
+                                                                         "full_shape":  false,
+                                                                         "ascii_punct":  false,
+                                                                         "zh_hans":  false
+                                                                     },
+                                                 "runtime_options_source":  "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+                                                 "additional_runtime_option_patches":  [
+
+                                                                                       ],
+                                                 "expected_repository_commits":  {
+                                                                                     "rime/rime-cantonese":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                                                                                     "rime/rime-prelude":  "082425ea0684bca36474415d4a0e8db9b016487e",
+                                                                                     "rime/rime-luna-pinyin":  "18a80335c37522311f7cff02886cd81cec3b460a",
+                                                                                     "rime/rime-essay":  "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                                                                                     "rime/rime-stroke":  "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c",
+                                                                                     "rime/rime-cangjie":  "52d90a1b1312e74042b38c1cbc8142defbc53171",
+                                                                                     "CanCLID/rime-loengfan":  "987ac95b02f957e8764a2f45222a4006c188ed50"
+                                                                                 },
+                                                 "path_serialization_policy":  "repo-relative forward-slash paths; external paths replaced with external/\u003crole\u003e"
+                                             },
+                    "output_provenance":  {
+                                              "path":  "crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/jyutping-m59-being-whole-input.json",
+                                              "existed_before_capture":  false,
+                                              "write_policy":  "utf8_no_bom_create_new",
+                                              "generated_by":  "scripts/capture-upstream-rime-cantonese.ps1"
+                                          }
+                },
+    "oracle":  {
+                   "engine":  "rime/librime",
+                   "engine_tag":  "1.17.0",
+                   "version":  "1.17.0",
+                   "commit":  "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+                   "release_url":  "https://github.com/rime/librime/releases/tag/1.17.0",
+                   "capture_date":  "2026-07-10",
+                   "capture_script":  "scripts/capture-upstream-rime-cantonese.ps1",
+                   "capture_script_sha256":  "24287cf96733333d9a4bb314e535321feca48819c5f2953c88254d808728e6f9",
+                   "probe_source":  "scripts/oracle-rime-probe.cs",
+                   "probe_sha256":  "94f7deb7c3632a6c3c918536295b03d88aa8a80bbbbc9d8a26e896fb70bf07e7",
+                   "capture_command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-upstream-rime-cantonese.ps1 -OracleRoot \u0027target/upstream-oracle/1.17.0\u0027 -Inputs \u0027being\u0027 -Output \u0027crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/jyutping-m59-being-whole-input.json\u0027 -EvidenceMilestone \u0027M59\u0027 -CaptureMode \u0027m59-whole-input\u0027 -CaptureDate \u00272026-07-10\u0027 -SourceRowPolicy \u0027m59_canonical_jyutping_whole_input_oracle\u0027 -ReportedCaseInput \u0027being\u0027 -ReportedCaseTargetCodepoints \u0027U+7540 U+55EF\u0027 -ReportedCaseProvenance \u0027Pinned upstream librime 1.17.0 plus rime-cantonese whole-input capture; oracle output is authoritative and is not derived from Yune.\u0027 -ExpectedRimeDllSha256 \u002786b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b\u0027 -ExpectedRimeDeployerSha256 \u00273abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071\u0027 -AllowDirty",
+                   "dll":  "target/upstream-oracle/1.17.0/extract/dist/lib/rime.dll",
+                   "dll_sha256":  "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+                   "deployer":  "target/upstream-oracle/1.17.0/extract/dist/bin/rime_deployer.exe",
+                   "deployer_sha256":  "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071"
+               },
+    "schema":  {
+                   "yune_facing_schema_id":  "jyut6ping3",
+                   "source_repo":  "rime/rime-cantonese",
+                   "source_commit":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                   "source_tree":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                   "dependency_commits":  {
+                                              "rime/rime-cantonese":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                                              "rime/rime-prelude":  "082425ea0684bca36474415d4a0e8db9b016487e",
+                                              "rime/rime-luna-pinyin":  "18a80335c37522311f7cff02886cd81cec3b460a",
+                                              "rime/rime-essay":  "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                                              "rime/rime-stroke":  "3a4b0f4013e2b4c14b1e80c92b1d4723eb65f39c",
+                                              "rime/rime-cangjie":  "52d90a1b1312e74042b38c1cbc8142defbc53171",
+                                              "CanCLID/rime-loengfan":  "987ac95b02f957e8764a2f45222a4006c188ed50"
+                                          },
+                   "dependency_trees":  {
+                                            "rime/rime-cantonese":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                                            "rime/rime-prelude":  "d7e128f09ce6b1f920729ef2f848ca1294c9cb31",
+                                            "rime/rime-luna-pinyin":  "0d5efcb75aa40689bf3be210a4f056db6d77b49d",
+                                            "rime/rime-essay":  "4769c4ef6c5f93f450c5f36c2c9ac5e6845d37bc",
+                                            "rime/rime-stroke":  "d60c793d8d68154847923f21aa73ba90441dab32",
+                                            "rime/rime-cangjie":  "db11cf6ffd382ada3087e9765c0ba2e636a8b68d",
+                                            "CanCLID/rime-loengfan":  "0858d1087046b8d1c3d36c36000ece5630b09cb3"
+                                        }
+               },
+    "options":  {
+                    "runtime_option_patches":  [
+
+                                               ],
+                    "runtime_option_patches_scope":  "legacy alias: no additional overrides beyond runtime_options",
+                    "runtime_options":  {
+                                            "ascii_mode":  false,
+                                            "full_shape":  false,
+                                            "ascii_punct":  false,
+                                            "zh_hans":  false
+                                        },
+                    "runtime_options_source":  "RimeProbe.CaptureWithIdentity/CaptureRuntimeOptionPolicy",
+                    "additional_runtime_option_patches":  [
+
+                                                          ],
+                    "custom_yaml":  "default.custom.yaml only selects jyut6ping3",
+                    "schema_defaults":  "ascii_mode reset 0; character-style switch default comes from rime-cantonese jyut6ping3.schema.yaml",
+                    "page_sizes_observed":  [
+                                                5
+                                            ]
+                },
+    "commands":  {
+                     "deploy":  "rime_deployer.exe --build target/upstream-oracle/1.17.0/m59-rime-cantonese-user target/upstream-oracle/1.17.0/m59-rime-cantonese-shared target/upstream-oracle/1.17.0/m59-rime-cantonese-user/build",
+                     "capture":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/capture-upstream-rime-cantonese.ps1 -OracleRoot \u0027target/upstream-oracle/1.17.0\u0027 -Inputs \u0027being\u0027 -Output \u0027crates/yune-core/tests/fixtures/upstream-jyutping/canonical-rime-cantonese/jyutping-m59-being-whole-input.json\u0027 -EvidenceMilestone \u0027M59\u0027 -CaptureMode \u0027m59-whole-input\u0027 -CaptureDate \u00272026-07-10\u0027 -SourceRowPolicy \u0027m59_canonical_jyutping_whole_input_oracle\u0027 -ReportedCaseInput \u0027being\u0027 -ReportedCaseTargetCodepoints \u0027U+7540 U+55EF\u0027 -ReportedCaseProvenance \u0027Pinned upstream librime 1.17.0 plus rime-cantonese whole-input capture; oracle output is authoritative and is not derived from Yune.\u0027 -ExpectedRimeDllSha256 \u002786b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b\u0027 -ExpectedRimeDeployerSha256 \u00273abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071\u0027 -AllowDirty"
+                 },
+    "inputs":  [
+                   "being"
+               ],
+    "reported_case":  {
+                          "target_codepoints":  "U+7540 U+55EF",
+                          "input":  "being",
+                          "provenance":  "Pinned upstream librime 1.17.0 plus rime-cantonese whole-input capture; oracle output is authoritative and is not derived from Yune.",
+                          "complete":  true
+                      },
+    "cases":  [
+                  {
+                      "schema_id":  "jyut6ping3",
+                      "schema_name":  "粵語拼音",
+                      "input":  "being",
+                      "rime_get_input":  "being",
+                      "processed":  [
+                                        1,
+                                        1,
+                                        1,
+                                        1,
+                                        1
+                                    ],
+                      "is_composing":  true,
+                      "is_ascii_mode":  false,
+                      "preedit":  "bei ng",
+                      "commit_text_preview":  "畀嗯",
+                      "highlighted_candidate_index":  0,
+                      "page_size":  5,
+                      "page_no":  0,
+                      "num_candidates":  5,
+                      "is_last_page":  false,
+                      "candidate_pointer_null":  false,
+                      "menu_present":  true,
+                      "selected_candidates":  [
+                                                  {
+                                                      "index":  0,
+                                                      "text":  "畀嗯",
+                                                      "comment":  "bei2 ng6",
+                                                      "global_index":  0
+                                                  },
+                                                  {
+                                                      "index":  1,
+                                                      "text":  "畀",
+                                                      "comment":  "bei2",
+                                                      "global_index":  1
+                                                  },
+                                                  {
+                                                      "index":  2,
+                                                      "text":  "比",
+                                                      "comment":  "bei2",
+                                                      "global_index":  2
+                                                  },
+                                                  {
+                                                      "index":  3,
+                                                      "text":  "被",
+                                                      "comment":  "bei6",
+                                                      "global_index":  3
+                                                  },
+                                                  {
+                                                      "index":  4,
+                                                      "text":  "鼻",
+                                                      "comment":  "bei6",
+                                                      "global_index":  4
+                                                  }
+                                              ],
+                      "pages":  [
+                                    {
+                                        "page_no":  0,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "畀嗯",
+                                                               "comment":  "bei2 ng6",
+                                                               "global_index":  0
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "畀",
+                                                               "comment":  "bei2",
+                                                               "global_index":  1
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "比",
+                                                               "comment":  "bei2",
+                                                               "global_index":  2
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "被",
+                                                               "comment":  "bei6",
+                                                               "global_index":  3
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "鼻",
+                                                               "comment":  "bei6",
+                                                               "global_index":  4
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  1,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "避",
+                                                               "comment":  "bei6",
+                                                               "global_index":  5
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "髀",
+                                                               "comment":  "bei2",
+                                                               "global_index":  6
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "碑",
+                                                               "comment":  "bei1",
+                                                               "global_index":  7
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "臂",
+                                                               "comment":  "bei3",
+                                                               "global_index":  8
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "秘",
+                                                               "comment":  "bei3",
+                                                               "global_index":  9
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  2,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "祕",
+                                                               "comment":  "bei3",
+                                                               "global_index":  10
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "俾",
+                                                               "comment":  "bei2",
+                                                               "global_index":  11
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "悲",
+                                                               "comment":  "bei1",
+                                                               "global_index":  12
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "備",
+                                                               "comment":  "bei6",
+                                                               "global_index":  13
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "卑",
+                                                               "comment":  "bei1",
+                                                               "global_index":  14
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  3,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "痺",
+                                                               "comment":  "bei3",
+                                                               "global_index":  15
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "痹",
+                                                               "comment":  "bei3",
+                                                               "global_index":  16
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "陂",
+                                                               "comment":  "bei1",
+                                                               "global_index":  17
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "吡",
+                                                               "comment":  "bei2",
+                                                               "global_index":  18
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "泌",
+                                                               "comment":  "bei3",
+                                                               "global_index":  19
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  4,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "賁",
+                                                               "comment":  "bei3",
+                                                               "global_index":  20
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "鉍",
+                                                               "comment":  "bei3",
+                                                               "global_index":  21
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "轡",
+                                                               "comment":  "bei3",
+                                                               "global_index":  22
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "蓖",
+                                                               "comment":  "bei1",
+                                                               "global_index":  23
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "毖",
+                                                               "comment":  "bei3",
+                                                               "global_index":  24
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  5,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "羆",
+                                                               "comment":  "bei1",
+                                                               "global_index":  25
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "芘",
+                                                               "comment":  "bei3",
+                                                               "global_index":  26
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "夶",
+                                                               "comment":  "bei2",
+                                                               "global_index":  27
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "鞴",
+                                                               "comment":  "bei6",
+                                                               "global_index":  28
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "媲",
+                                                               "comment":  "bei2",
+                                                               "global_index":  29
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  6,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "妣",
+                                                               "comment":  "bei2",
+                                                               "global_index":  30
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "萆",
+                                                               "comment":  "bei1",
+                                                               "global_index":  31
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "匕",
+                                                               "comment":  "bei3",
+                                                               "global_index":  32
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "鵯",
+                                                               "comment":  "bei1",
+                                                               "global_index":  33
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "琲",
+                                                               "comment":  "bei3",
+                                                               "global_index":  34
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  7,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "贔",
+                                                               "comment":  "bei6",
+                                                               "global_index":  35
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "毘",
+                                                               "comment":  "bei2",
+                                                               "global_index":  36
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "鞞",
+                                                               "comment":  "bei2",
+                                                               "global_index":  37
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "箅",
+                                                               "comment":  "bei3",
+                                                               "global_index":  38
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "秕",
+                                                               "comment":  "bei2",
+                                                               "global_index":  39
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  8,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "舭",
+                                                               "comment":  "bei2",
+                                                               "global_index":  40
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "簰",
+                                                               "comment":  "bei6",
+                                                               "global_index":  41
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "犤",
+                                                               "comment":  "bei1",
+                                                               "global_index":  42
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "怶",
+                                                               "comment":  "bei3",
+                                                               "global_index":  43
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "嬶",
+                                                               "comment":  "bei6",
+                                                               "global_index":  44
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  9,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "閟",
+                                                               "comment":  "bei3",
+                                                               "global_index":  45
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "庳",
+                                                               "comment":  "bei1",
+                                                               "global_index":  46
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "椑",
+                                                               "comment":  "bei1",
+                                                               "global_index":  47
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "俻",
+                                                               "comment":  "bei6",
+                                                               "global_index":  48
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "崥",
+                                                               "comment":  "bei2",
+                                                               "global_index":  49
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  10,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "沘",
+                                                               "comment":  "bei2",
+                                                               "global_index":  50
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "肶",
+                                                               "comment":  "bei2",
+                                                               "global_index":  51
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "鞁",
+                                                               "comment":  "bei6",
+                                                               "global_index":  52
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "肹",
+                                                               "comment":  "bei3",
+                                                               "global_index":  53
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "佊",
+                                                               "comment":  "bei2",
+                                                               "global_index":  54
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  11,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "疪",
+                                                               "comment":  "bei3",
+                                                               "global_index":  55
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "骳",
+                                                               "comment":  "bei6",
+                                                               "global_index":  56
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "畁",
+                                                               "comment":  "bei2",
+                                                               "global_index":  57
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "偹",
+                                                               "comment":  "bei6",
+                                                               "global_index":  58
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "柀",
+                                                               "comment":  "bei2",
+                                                               "global_index":  59
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  12,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "疕",
+                                                               "comment":  "bei2",
+                                                               "global_index":  60
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "詖",
+                                                               "comment":  "bei1",
+                                                               "global_index":  61
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "柲",
+                                                               "comment":  "bei3",
+                                                               "global_index":  62
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "粃",
+                                                               "comment":  "bei2",
+                                                               "global_index":  63
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "絥",
+                                                               "comment":  "bei6",
+                                                               "global_index":  64
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  13,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "糒",
+                                                               "comment":  "bei6",
+                                                               "global_index":  65
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "髲",
+                                                               "comment":  "bei6",
+                                                               "global_index":  66
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "枈",
+                                                               "comment":  "bei3",
+                                                               "global_index":  67
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "僃",
+                                                               "comment":  "bei6",
+                                                               "global_index":  68
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "犕",
+                                                               "comment":  "bei6",
+                                                               "global_index":  69
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  14,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "渒",
+                                                               "comment":  "bei1",
+                                                               "global_index":  70
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "粊",
+                                                               "comment":  "bei3",
+                                                               "global_index":  71
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "襣",
+                                                               "comment":  "bei6",
+                                                               "global_index":  72
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "聛",
+                                                               "comment":  "bei2",
+                                                               "global_index":  73
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "朼",
+                                                               "comment":  "bei2",
+                                                               "global_index":  74
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  15,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "箆",
+                                                               "comment":  "bei6",
+                                                               "global_index":  75
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "貱",
+                                                               "comment":  "bei3",
+                                                               "global_index":  76
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "彼",
+                                                               "comment":  "bei2",
+                                                               "global_index":  77
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "屄",
+                                                               "comment":  "bei1",
+                                                               "global_index":  78
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "鄪",
+                                                               "comment":  "bei3",
+                                                               "global_index":  79
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  16,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "奰",
+                                                               "comment":  "bei6",
+                                                               "global_index":  80
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "毴",
+                                                               "comment":  "bei1",
+                                                               "global_index":  81
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "錃",
+                                                               "comment":  "bei1",
+                                                               "global_index":  82
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "飶",
+                                                               "comment":  "bei3",
+                                                               "global_index":  83
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "藣",
+                                                               "comment":  "bei1",
+                                                               "global_index":  84
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  17,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "貏",
+                                                               "comment":  "bei2",
+                                                               "global_index":  85
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "費",
+                                                               "comment":  "bei3",
+                                                               "global_index":  86
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "跛",
+                                                               "comment":  "bei3",
+                                                               "global_index":  87
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "庇",
+                                                               "comment":  "bei3",
+                                                               "global_index":  88
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "憊",
+                                                               "comment":  "bei6",
+                                                               "global_index":  89
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  18,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "潷",
+                                                               "comment":  "bei3",
+                                                               "global_index":  90
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "篦",
+                                                               "comment":  "bei1",
+                                                               "global_index":  91
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "箄",
+                                                               "comment":  "bei6",
+                                                               "global_index":  92
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "埤",
+                                                               "comment":  "bei1",
+                                                               "global_index":  93
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "毗",
+                                                               "comment":  "bei2",
+                                                               "global_index":  94
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  19,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "辟",
+                                                               "comment":  "bei6",
+                                                               "global_index":  95
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "珌",
+                                                               "comment":  "bei3",
+                                                               "global_index":  96
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "裨",
+                                                               "comment":  "bei1",
+                                                               "global_index":  97
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "邲",
+                                                               "comment":  "bei3",
+                                                               "global_index":  98
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "鎞",
+                                                               "comment":  "bei6",
+                                                               "global_index":  99
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  20,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "鞸",
+                                                               "comment":  "bei2",
+                                                               "global_index":  100
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "嚊",
+                                                               "comment":  "bei6",
+                                                               "global_index":  101
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "薜",
+                                                               "comment":  "bei6",
+                                                               "global_index":  102
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "㘩",
+                                                               "comment":  "bei6",
+                                                               "global_index":  103
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "㢰",
+                                                               "comment":  "bei6",
+                                                               "global_index":  104
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  21,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "㣁",
+                                                               "comment":  "bei6",
+                                                               "global_index":  105
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "㸢",
+                                                               "comment":  "bei6",
+                                                               "global_index":  106
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "䑄",
+                                                               "comment":  "bei6",
+                                                               "global_index":  107
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "䕗",
+                                                               "comment":  "bei6",
+                                                               "global_index":  108
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "䘡",
+                                                               "comment":  "bei6",
+                                                               "global_index":  109
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  22,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "䩀",
+                                                               "comment":  "bei6",
+                                                               "global_index":  110
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "䫁",
+                                                               "comment":  "bei6",
+                                                               "global_index":  111
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "𡀠",
+                                                               "comment":  "bei6",
+                                                               "global_index":  112
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "㽡",
+                                                               "comment":  "bei1",
+                                                               "global_index":  113
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "䍘",
+                                                               "comment":  "bei1",
+                                                               "global_index":  114
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  23,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "䙓",
+                                                               "comment":  "bei1",
+                                                               "global_index":  115
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "䥯",
+                                                               "comment":  "bei1",
+                                                               "global_index":  116
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "䥸",
+                                                               "comment":  "bei1",
+                                                               "global_index":  117
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "萞",
+                                                               "comment":  "bei1",
+                                                               "global_index":  118
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "𦱔",
+                                                               "comment":  "bei1",
+                                                               "global_index":  119
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  24,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "㿫",
+                                                               "comment":  "bei3",
+                                                               "global_index":  120
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "䀣",
+                                                               "comment":  "bei3",
+                                                               "global_index":  121
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "䉾",
+                                                               "comment":  "bei3",
+                                                               "global_index":  122
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "䊌",
+                                                               "comment":  "bei3",
+                                                               "global_index":  123
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "䎵",
+                                                               "comment":  "bei3",
+                                                               "global_index":  124
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  25,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "䪐",
+                                                               "comment":  "bei3",
+                                                               "global_index":  125
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "輩",
+                                                               "comment":  "bei3",
+                                                               "global_index":  126
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "𠳓",
+                                                               "comment":  "bei3",
+                                                               "global_index":  127
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "㑭",
+                                                               "comment":  "bei2",
+                                                               "global_index":  128
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "㗗",
+                                                               "comment":  "bei2",
+                                                               "global_index":  129
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  26,
+                                        "page_size":  5,
+                                        "is_last_page":  false,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "㠲",
+                                                               "comment":  "bei2",
+                                                               "global_index":  130
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "䀝",
+                                                               "comment":  "bei2",
+                                                               "global_index":  131
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "䃾",
+                                                               "comment":  "bei2",
+                                                               "global_index":  132
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "䏢",
+                                                               "comment":  "bei2",
+                                                               "global_index":  133
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "䣥",
+                                                               "comment":  "bei2",
+                                                               "global_index":  134
+                                                           }
+                                                       ]
+                                    },
+                                    {
+                                        "page_no":  27,
+                                        "page_size":  5,
+                                        "is_last_page":  true,
+                                        "candidates":  [
+                                                           {
+                                                               "index":  0,
+                                                               "text":  "䯗",
+                                                               "comment":  "bei2",
+                                                               "global_index":  135
+                                                           },
+                                                           {
+                                                               "index":  1,
+                                                               "text":  "脾",
+                                                               "comment":  "bei2",
+                                                               "global_index":  136
+                                                           },
+                                                           {
+                                                               "index":  2,
+                                                               "text":  "啤",
+                                                               "comment":  "be1",
+                                                               "global_index":  137
+                                                           },
+                                                           {
+                                                               "index":  3,
+                                                               "text":  "唄",
+                                                               "comment":  "be6",
+                                                               "global_index":  138
+                                                           },
+                                                           {
+                                                               "index":  4,
+                                                               "text":  "𠹇",
+                                                               "comment":  "be1",
+                                                               "global_index":  139
+                                                           }
+                                                       ]
+                                    }
+                                ],
+                      "all_candidates":  [
+                                             {
+                                                 "index":  0,
+                                                 "text":  "畀嗯",
+                                                 "comment":  "bei2 ng6",
+                                                 "global_index":  0
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "畀",
+                                                 "comment":  "bei2",
+                                                 "global_index":  1
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "比",
+                                                 "comment":  "bei2",
+                                                 "global_index":  2
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "被",
+                                                 "comment":  "bei6",
+                                                 "global_index":  3
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "鼻",
+                                                 "comment":  "bei6",
+                                                 "global_index":  4
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "避",
+                                                 "comment":  "bei6",
+                                                 "global_index":  5
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "髀",
+                                                 "comment":  "bei2",
+                                                 "global_index":  6
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "碑",
+                                                 "comment":  "bei1",
+                                                 "global_index":  7
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "臂",
+                                                 "comment":  "bei3",
+                                                 "global_index":  8
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "秘",
+                                                 "comment":  "bei3",
+                                                 "global_index":  9
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "祕",
+                                                 "comment":  "bei3",
+                                                 "global_index":  10
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "俾",
+                                                 "comment":  "bei2",
+                                                 "global_index":  11
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "悲",
+                                                 "comment":  "bei1",
+                                                 "global_index":  12
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "備",
+                                                 "comment":  "bei6",
+                                                 "global_index":  13
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "卑",
+                                                 "comment":  "bei1",
+                                                 "global_index":  14
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "痺",
+                                                 "comment":  "bei3",
+                                                 "global_index":  15
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "痹",
+                                                 "comment":  "bei3",
+                                                 "global_index":  16
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "陂",
+                                                 "comment":  "bei1",
+                                                 "global_index":  17
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "吡",
+                                                 "comment":  "bei2",
+                                                 "global_index":  18
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "泌",
+                                                 "comment":  "bei3",
+                                                 "global_index":  19
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "賁",
+                                                 "comment":  "bei3",
+                                                 "global_index":  20
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "鉍",
+                                                 "comment":  "bei3",
+                                                 "global_index":  21
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "轡",
+                                                 "comment":  "bei3",
+                                                 "global_index":  22
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "蓖",
+                                                 "comment":  "bei1",
+                                                 "global_index":  23
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "毖",
+                                                 "comment":  "bei3",
+                                                 "global_index":  24
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "羆",
+                                                 "comment":  "bei1",
+                                                 "global_index":  25
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "芘",
+                                                 "comment":  "bei3",
+                                                 "global_index":  26
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "夶",
+                                                 "comment":  "bei2",
+                                                 "global_index":  27
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "鞴",
+                                                 "comment":  "bei6",
+                                                 "global_index":  28
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "媲",
+                                                 "comment":  "bei2",
+                                                 "global_index":  29
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "妣",
+                                                 "comment":  "bei2",
+                                                 "global_index":  30
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "萆",
+                                                 "comment":  "bei1",
+                                                 "global_index":  31
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "匕",
+                                                 "comment":  "bei3",
+                                                 "global_index":  32
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "鵯",
+                                                 "comment":  "bei1",
+                                                 "global_index":  33
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "琲",
+                                                 "comment":  "bei3",
+                                                 "global_index":  34
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "贔",
+                                                 "comment":  "bei6",
+                                                 "global_index":  35
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "毘",
+                                                 "comment":  "bei2",
+                                                 "global_index":  36
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "鞞",
+                                                 "comment":  "bei2",
+                                                 "global_index":  37
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "箅",
+                                                 "comment":  "bei3",
+                                                 "global_index":  38
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "秕",
+                                                 "comment":  "bei2",
+                                                 "global_index":  39
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "舭",
+                                                 "comment":  "bei2",
+                                                 "global_index":  40
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "簰",
+                                                 "comment":  "bei6",
+                                                 "global_index":  41
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "犤",
+                                                 "comment":  "bei1",
+                                                 "global_index":  42
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "怶",
+                                                 "comment":  "bei3",
+                                                 "global_index":  43
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "嬶",
+                                                 "comment":  "bei6",
+                                                 "global_index":  44
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "閟",
+                                                 "comment":  "bei3",
+                                                 "global_index":  45
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "庳",
+                                                 "comment":  "bei1",
+                                                 "global_index":  46
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "椑",
+                                                 "comment":  "bei1",
+                                                 "global_index":  47
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "俻",
+                                                 "comment":  "bei6",
+                                                 "global_index":  48
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "崥",
+                                                 "comment":  "bei2",
+                                                 "global_index":  49
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "沘",
+                                                 "comment":  "bei2",
+                                                 "global_index":  50
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "肶",
+                                                 "comment":  "bei2",
+                                                 "global_index":  51
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "鞁",
+                                                 "comment":  "bei6",
+                                                 "global_index":  52
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "肹",
+                                                 "comment":  "bei3",
+                                                 "global_index":  53
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "佊",
+                                                 "comment":  "bei2",
+                                                 "global_index":  54
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "疪",
+                                                 "comment":  "bei3",
+                                                 "global_index":  55
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "骳",
+                                                 "comment":  "bei6",
+                                                 "global_index":  56
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "畁",
+                                                 "comment":  "bei2",
+                                                 "global_index":  57
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "偹",
+                                                 "comment":  "bei6",
+                                                 "global_index":  58
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "柀",
+                                                 "comment":  "bei2",
+                                                 "global_index":  59
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "疕",
+                                                 "comment":  "bei2",
+                                                 "global_index":  60
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "詖",
+                                                 "comment":  "bei1",
+                                                 "global_index":  61
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "柲",
+                                                 "comment":  "bei3",
+                                                 "global_index":  62
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "粃",
+                                                 "comment":  "bei2",
+                                                 "global_index":  63
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "絥",
+                                                 "comment":  "bei6",
+                                                 "global_index":  64
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "糒",
+                                                 "comment":  "bei6",
+                                                 "global_index":  65
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "髲",
+                                                 "comment":  "bei6",
+                                                 "global_index":  66
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "枈",
+                                                 "comment":  "bei3",
+                                                 "global_index":  67
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "僃",
+                                                 "comment":  "bei6",
+                                                 "global_index":  68
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "犕",
+                                                 "comment":  "bei6",
+                                                 "global_index":  69
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "渒",
+                                                 "comment":  "bei1",
+                                                 "global_index":  70
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "粊",
+                                                 "comment":  "bei3",
+                                                 "global_index":  71
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "襣",
+                                                 "comment":  "bei6",
+                                                 "global_index":  72
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "聛",
+                                                 "comment":  "bei2",
+                                                 "global_index":  73
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "朼",
+                                                 "comment":  "bei2",
+                                                 "global_index":  74
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "箆",
+                                                 "comment":  "bei6",
+                                                 "global_index":  75
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "貱",
+                                                 "comment":  "bei3",
+                                                 "global_index":  76
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "彼",
+                                                 "comment":  "bei2",
+                                                 "global_index":  77
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "屄",
+                                                 "comment":  "bei1",
+                                                 "global_index":  78
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "鄪",
+                                                 "comment":  "bei3",
+                                                 "global_index":  79
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "奰",
+                                                 "comment":  "bei6",
+                                                 "global_index":  80
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "毴",
+                                                 "comment":  "bei1",
+                                                 "global_index":  81
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "錃",
+                                                 "comment":  "bei1",
+                                                 "global_index":  82
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "飶",
+                                                 "comment":  "bei3",
+                                                 "global_index":  83
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "藣",
+                                                 "comment":  "bei1",
+                                                 "global_index":  84
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "貏",
+                                                 "comment":  "bei2",
+                                                 "global_index":  85
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "費",
+                                                 "comment":  "bei3",
+                                                 "global_index":  86
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "跛",
+                                                 "comment":  "bei3",
+                                                 "global_index":  87
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "庇",
+                                                 "comment":  "bei3",
+                                                 "global_index":  88
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "憊",
+                                                 "comment":  "bei6",
+                                                 "global_index":  89
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "潷",
+                                                 "comment":  "bei3",
+                                                 "global_index":  90
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "篦",
+                                                 "comment":  "bei1",
+                                                 "global_index":  91
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "箄",
+                                                 "comment":  "bei6",
+                                                 "global_index":  92
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "埤",
+                                                 "comment":  "bei1",
+                                                 "global_index":  93
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "毗",
+                                                 "comment":  "bei2",
+                                                 "global_index":  94
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "辟",
+                                                 "comment":  "bei6",
+                                                 "global_index":  95
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "珌",
+                                                 "comment":  "bei3",
+                                                 "global_index":  96
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "裨",
+                                                 "comment":  "bei1",
+                                                 "global_index":  97
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "邲",
+                                                 "comment":  "bei3",
+                                                 "global_index":  98
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "鎞",
+                                                 "comment":  "bei6",
+                                                 "global_index":  99
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "鞸",
+                                                 "comment":  "bei2",
+                                                 "global_index":  100
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "嚊",
+                                                 "comment":  "bei6",
+                                                 "global_index":  101
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "薜",
+                                                 "comment":  "bei6",
+                                                 "global_index":  102
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "㘩",
+                                                 "comment":  "bei6",
+                                                 "global_index":  103
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "㢰",
+                                                 "comment":  "bei6",
+                                                 "global_index":  104
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "㣁",
+                                                 "comment":  "bei6",
+                                                 "global_index":  105
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "㸢",
+                                                 "comment":  "bei6",
+                                                 "global_index":  106
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "䑄",
+                                                 "comment":  "bei6",
+                                                 "global_index":  107
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "䕗",
+                                                 "comment":  "bei6",
+                                                 "global_index":  108
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "䘡",
+                                                 "comment":  "bei6",
+                                                 "global_index":  109
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "䩀",
+                                                 "comment":  "bei6",
+                                                 "global_index":  110
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "䫁",
+                                                 "comment":  "bei6",
+                                                 "global_index":  111
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "𡀠",
+                                                 "comment":  "bei6",
+                                                 "global_index":  112
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "㽡",
+                                                 "comment":  "bei1",
+                                                 "global_index":  113
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "䍘",
+                                                 "comment":  "bei1",
+                                                 "global_index":  114
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "䙓",
+                                                 "comment":  "bei1",
+                                                 "global_index":  115
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "䥯",
+                                                 "comment":  "bei1",
+                                                 "global_index":  116
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "䥸",
+                                                 "comment":  "bei1",
+                                                 "global_index":  117
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "萞",
+                                                 "comment":  "bei1",
+                                                 "global_index":  118
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "𦱔",
+                                                 "comment":  "bei1",
+                                                 "global_index":  119
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "㿫",
+                                                 "comment":  "bei3",
+                                                 "global_index":  120
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "䀣",
+                                                 "comment":  "bei3",
+                                                 "global_index":  121
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "䉾",
+                                                 "comment":  "bei3",
+                                                 "global_index":  122
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "䊌",
+                                                 "comment":  "bei3",
+                                                 "global_index":  123
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "䎵",
+                                                 "comment":  "bei3",
+                                                 "global_index":  124
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "䪐",
+                                                 "comment":  "bei3",
+                                                 "global_index":  125
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "輩",
+                                                 "comment":  "bei3",
+                                                 "global_index":  126
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "𠳓",
+                                                 "comment":  "bei3",
+                                                 "global_index":  127
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "㑭",
+                                                 "comment":  "bei2",
+                                                 "global_index":  128
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "㗗",
+                                                 "comment":  "bei2",
+                                                 "global_index":  129
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "㠲",
+                                                 "comment":  "bei2",
+                                                 "global_index":  130
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "䀝",
+                                                 "comment":  "bei2",
+                                                 "global_index":  131
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "䃾",
+                                                 "comment":  "bei2",
+                                                 "global_index":  132
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "䏢",
+                                                 "comment":  "bei2",
+                                                 "global_index":  133
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "䣥",
+                                                 "comment":  "bei2",
+                                                 "global_index":  134
+                                             },
+                                             {
+                                                 "index":  0,
+                                                 "text":  "䯗",
+                                                 "comment":  "bei2",
+                                                 "global_index":  135
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "text":  "脾",
+                                                 "comment":  "bei2",
+                                                 "global_index":  136
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "text":  "啤",
+                                                 "comment":  "be1",
+                                                 "global_index":  137
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "text":  "唄",
+                                                 "comment":  "be6",
+                                                 "global_index":  138
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "text":  "𠹇",
+                                                 "comment":  "be1",
+                                                 "global_index":  139
+                                             }
+                                         ],
+                      "captured_all_pages":  true,
+                      "termination_reason":  "last_page"
+                  }
+              ],
+    "source_lexicon":  {
+                           "source_repository":  "rime/rime-cantonese",
+                           "source_commit":  "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+                           "source_tree":  "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+                           "source_files":  [
+                                                {
+                                                    "path":  "rime-cantonese/jyut6ping3.chars.dict.yaml",
+                                                    "kind":  "dictionary",
+                                                    "sha256":  "6b608e5baf0e8d8609bd43850d3c922e0c224c7e05c882b708af551522eeee38"
+                                                },
+                                                {
+                                                    "path":  "rime-cantonese/jyut6ping3.dict.yaml",
+                                                    "kind":  "dictionary",
+                                                    "sha256":  "4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa"
+                                                },
+                                                {
+                                                    "path":  "rime-cantonese/jyut6ping3.lettered.dict.yaml",
+                                                    "kind":  "dictionary",
+                                                    "sha256":  "9f02d0bffadc5b25d52417095bbc045daa97997c95abd725b3a8d4489077004a"
+                                                },
+                                                {
+                                                    "path":  "rime-cantonese/jyut6ping3.maps.dict.yaml",
+                                                    "kind":  "dictionary",
+                                                    "sha256":  "c4fb7606917a2ba0bc94b2451c35c799b5ff1f90c2f89dfed70c98ef1ec53d7f"
+                                                },
+                                                {
+                                                    "path":  "rime-cantonese/jyut6ping3.phrase.dict.yaml",
+                                                    "kind":  "dictionary",
+                                                    "sha256":  "a36980c91075b64f207b8e3d868525be0da7f27b254976b48fe0e72383097102"
+                                                },
+                                                {
+                                                    "path":  "rime-cantonese/jyut6ping3.words.dict.yaml",
+                                                    "kind":  "dictionary",
+                                                    "sha256":  "ec782a237e5f80cf40f896fb56652484825491f2aaf585c9c7769e39d070f3f8"
+                                                },
+                                                {
+                                                    "path":  "rime-cantonese/essay-cantonese.txt",
+                                                    "kind":  "vocabulary",
+                                                    "sha256":  "a73fe3ea1004531d4872165cbcc753cea172d865277ad9996a4fe6415582f9cb"
+                                                }
+                                            ],
+                           "source_dictionary_rows":  [
+                                                          {
+                                                              "file":  "rime-cantonese/jyut6ping3.chars.dict.yaml",
+                                                              "line":  925,
+                                                              "term":  "畀",
+                                                              "row":  "畀\tbei2"
+                                                          },
+                                                          {
+                                                              "file":  "rime-cantonese/jyut6ping3.chars.dict.yaml",
+                                                              "line":  956,
+                                                              "term":  "畀",
+                                                              "row":  "畀\tbei3\t3%"
+                                                          },
+                                                          {
+                                                              "file":  "rime-cantonese/jyut6ping3.chars.dict.yaml",
+                                                              "line":  22705,
+                                                              "term":  "嗯",
+                                                              "row":  "嗯\tng2\t3%"
+                                                          },
+                                                          {
+                                                              "file":  "rime-cantonese/jyut6ping3.chars.dict.yaml",
+                                                              "line":  22717,
+                                                              "term":  "嗯",
+                                                              "row":  "嗯\tng4\t3%"
+                                                          },
+                                                          {
+                                                              "file":  "rime-cantonese/jyut6ping3.chars.dict.yaml",
+                                                              "line":  22747,
+                                                              "term":  "嗯",
+                                                              "row":  "嗯\tng5\t3%"
+                                                          },
+                                                          {
+                                                              "file":  "rime-cantonese/jyut6ping3.chars.dict.yaml",
+                                                              "line":  22757,
+                                                              "term":  "嗯",
+                                                              "row":  "嗯\tng6"
+                                                          }
+                                                      ],
+                           "source_vocabulary_rows":  [
+                                                          {
+                                                              "file":  "rime-cantonese/essay-cantonese.txt",
+                                                              "line":  48938,
+                                                              "term":  "嗯",
+                                                              "row":  "嗯\t143002"
+                                                          },
+                                                          {
+                                                              "file":  "rime-cantonese/essay-cantonese.txt",
+                                                              "line":  149894,
+                                                              "term":  "畀",
+                                                              "row":  "畀\t820637"
+                                                          }
+                                                      ],
+                           "source_row_term_expansion":  "whole oracle terms plus Unicode-scalar constituents",
+                           "whole_input_oracle_rows":  [
+                                                           {
+                                                               "input":  "being",
+                                                               "oracle_top":  "畀嗯",
+                                                               "constituents":  [
+                                                                                    "畀",
+                                                                                    "嗯"
+                                                                                ],
+                                                               "source_dictionary_exact_term_count":  0,
+                                                               "source_vocabulary_exact_term_count":  0,
+                                                               "source_lexicon_absent":  true
+                                                           }
+                                                       ]
+                       }
+}

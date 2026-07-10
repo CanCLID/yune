@@ -1974,6 +1974,10 @@ $second = ConvertTo-CanonicalJsonText $payload
             source.index("$Evidence = [ordered]@{"),
         )
         for binary_guard in (
+            'Assert-FileSha256Unchanged $PSCommandPath "capture script" '
+            "$CaptureScriptSha256",
+            'Assert-FileSha256Unchanged $ProbeSource "oracle probe source" '
+            "$ProbeSha256",
             'Assert-FileSha256Unchanged $RimeDll "rime.dll" $ActualRimeDllSha256',
             'Assert-FileSha256Unchanged $RimeDeployer "rime_deployer.exe" '
             "$ActualRimeDeployerSha256",
@@ -2048,6 +2052,79 @@ catch {
             result = json.loads(completed.stdout.strip().splitlines()[-1])
             self.assertTrue(result["unchanged_accepted"])
             self.assertTrue(result["replacement_rejected"])
+
+    @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
+    def test_upstream_dirty_capture_tool_hash_revalidation_rejects_in_place_change(self):
+        powershell = shutil.which("powershell")
+        self.assertIsNotNone(powershell)
+        with tempfile.TemporaryDirectory() as temp:
+            tool = Path(temp) / "capture-tool.ps1"
+            tool.write_text("# already-dirty capture tool before capture\n", encoding="utf-8")
+            command = r"""
+$ErrorActionPreference = "Stop"
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $env:YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST,
+    [ref]$tokens,
+    [ref]$errors
+)
+if ($errors.Count -ne 0) { throw "capture script parse failed" }
+foreach ($name in @("File-Sha256", "Assert-FileSha256Unchanged")) {
+    $functionAst = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq $name
+    }, $true)
+    if ($null -eq $functionAst) { throw "missing helper $name" }
+    Invoke-Expression $functionAst.Extent.Text
+}
+$statusBefore = " M scripts/capture-upstream-rime-cantonese.ps1"
+$before = File-Sha256 $env:YUNE_UPSTREAM_DIRTY_TOOL_TEST
+[System.IO.File]::WriteAllText(
+    $env:YUNE_UPSTREAM_DIRTY_TOOL_TEST,
+    "# changed while still dirty`n",
+    [System.Text.UTF8Encoding]::new($false)
+)
+$statusAfter = " M scripts/capture-upstream-rime-cantonese.ps1"
+$mutationRejected = $false
+try {
+    Assert-FileSha256Unchanged `
+        $env:YUNE_UPSTREAM_DIRTY_TOOL_TEST `
+        "capture script" `
+        $before
+}
+catch {
+    $mutationRejected = $_.Exception.Message -like "Binary changed during capture:*"
+}
+[ordered]@{
+    git_status_unchanged = $statusBefore -ceq $statusAfter
+    mutation_rejected = $mutationRejected
+} | ConvertTo-Json -Compress
+"""
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "YUNE_UPSTREAM_CAPTURE_SCRIPT_TEST": str(
+                        SCRIPTS / "capture-upstream-rime-cantonese.ps1"
+                    ),
+                    "YUNE_UPSTREAM_DIRTY_TOOL_TEST": str(tool),
+                }
+            )
+            completed = subprocess.run(
+                [powershell, "-NoProfile", "-Command", command],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+                timeout=60,
+            )
+            if completed.returncode != 0:
+                self.fail(completed.stderr or completed.stdout)
+            result = json.loads(completed.stdout.strip().splitlines()[-1])
+            self.assertTrue(result["git_status_unchanged"])
+            self.assertTrue(result["mutation_rejected"])
 
     @unittest.skipUnless(shutil.which("powershell"), "Windows PowerShell is required")
     def test_upstream_runtime_option_provenance_matches_probe_runtime(self):

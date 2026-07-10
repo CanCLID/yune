@@ -1,0 +1,2099 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "be",
+    "bei",
+    "bein",
+    "being",
+    "beingo",
+    "beix",
+    "beixngoxx",
+    "ngohaig",
+    "ngohaigo",
+    "n",
+    "nri",
+    "mgoi",
+    "zijiguk"
+  ],
+  "all_accepted": false,
+  "cases": [
+    {
+      "input": "be",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 779,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 4,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 775,
+      "missing_examples": [],
+      "extra_examples": [
+        "Band仔",
+        "Benz",
+        "Ben士",
+        "Ben屎",
+        "baby",
+        "baby-fat",
+        "backup",
+        "ban",
+        "banner",
+        "bell開",
+        "bel開",
+        "bet-bet",
+        "㑭",
+        "㗗",
+        "㘩",
+        "㠲",
+        "㢰",
+        "㣁",
+        "㸢",
+        "㽡"
+      ],
+      "oracle_rows_sha256": "19ce08b1c635177202963ccc31918c1d1ebdd2904482a7c530a081d47fe760db",
+      "actual_rows_sha256": "522d39462463ef86086afe489e8cae53c3e2b295669d2b81fe09db76ad842fb2",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 4,
+          "oracle_end": 4,
+          "actual_start": 4,
+          "actual_end": 779
+        }
+      ],
+      "failure_classes": [
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "bei",
+      "policy": "exact",
+      "oracle_count": 139,
+      "actual_count": 638,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 9,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 4,
+      "extra_count": 503,
+      "missing_examples": [
+        "唄",
+        "啤",
+        "祕",
+        "𠹇"
+      ],
+      "extra_examples": [
+        "baby",
+        "baby-fat",
+        "備件",
+        "備份",
+        "備取",
+        "備受",
+        "備忘錄",
+        "備戰",
+        "備抵",
+        "備有",
+        "備查",
+        "備案",
+        "備注",
+        "備用",
+        "備用二級頭呼吸器",
+        "備用品",
+        "備用環",
+        "備而不用",
+        "備荒",
+        "備註"
+      ],
+      "oracle_rows_sha256": "4beccc3afd54288eb814f77f4c02805ede1181ccb20c71fdd9ce29061ef7012a",
+      "actual_rows_sha256": "3c507bd842ff9660e5749f4c68d8f3cab6354bb5d7a60476a91ba79433e0d12e",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 9,
+          "oracle_end": 10,
+          "actual_start": 9,
+          "actual_end": 9
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 59,
+          "oracle_end": 59,
+          "actual_start": 58,
+          "actual_end": 59
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 60,
+          "oracle_end": 61,
+          "actual_start": 60,
+          "actual_end": 61
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 62,
+          "oracle_end": 63,
+          "actual_start": 62,
+          "actual_end": 62
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 76,
+          "oracle_end": 76,
+          "actual_start": 75,
+          "actual_end": 76
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 77,
+          "oracle_end": 78,
+          "actual_start": 77,
+          "actual_end": 77
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 102,
+          "oracle_end": 102,
+          "actual_start": 101,
+          "actual_end": 125
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 112,
+          "oracle_end": 139,
+          "actual_start": 135,
+          "actual_end": 638
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "bein",
+      "policy": "exact",
+      "oracle_count": 5,
+      "actual_count": 169,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 4,
+      "extra_count": 168,
+      "missing_examples": [
+        "唄",
+        "啤",
+        "啤In",
+        "𠹇"
+      ],
+      "extra_examples": [
+        "㑭",
+        "㗗",
+        "㘩",
+        "㠲",
+        "㢰",
+        "㣁",
+        "㸢",
+        "㽡",
+        "㿫",
+        "䀝",
+        "䀣",
+        "䃾",
+        "䉾",
+        "䊌",
+        "䍘",
+        "䎵",
+        "䏢",
+        "䑄",
+        "䕗",
+        "䘡"
+      ],
+      "oracle_rows_sha256": "6ded41b8d2ce446a6e08a15c78c0f33b69cef3fea3d5053839419f09a7c2310a",
+      "actual_rows_sha256": "de918d5b23e3197b2f4f224393da1cd77de34df48e4ff7e1198292f261d7aee7",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 2,
+          "actual_start": 0,
+          "actual_end": 157
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 3,
+          "oracle_end": 5,
+          "actual_start": 158,
+          "actual_end": 169
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "being",
+      "policy": "exact",
+      "oracle_count": 140,
+      "actual_count": 151,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 5,
+      "extra_count": 16,
+      "missing_examples": [
+        "唄",
+        "啤",
+        "畀嗯",
+        "祕",
+        "𠹇"
+      ],
+      "extra_examples": [
+        "彼岸",
+        "彼岸花",
+        "畀我",
+        "畀我做咩",
+        "畀我入",
+        "畀我入去",
+        "畀我吔",
+        "畀我咯",
+        "畀我啊",
+        "畀我問起",
+        "畀我睇",
+        "畀我睇下",
+        "畀我考起",
+        "畀眼睇",
+        "畀銀紙",
+        "碑額"
+      ],
+      "oracle_rows_sha256": "67a605d2f97846450bb92601482ac75b3f4bb08502ae72b76f290b4da899e377",
+      "actual_rows_sha256": "c262fd583139a143e076782e0b31544af3b905485f0f390cde180226b99d8ec6",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 1,
+          "actual_start": 0,
+          "actual_end": 44
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 3,
+          "oracle_end": 6,
+          "actual_start": 46,
+          "actual_end": 46
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 7,
+          "oracle_end": 8,
+          "actual_start": 47,
+          "actual_end": 80
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 10,
+          "oracle_end": 16,
+          "actual_start": 82,
+          "actual_end": 82
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 17,
+          "oracle_end": 19,
+          "actual_start": 83,
+          "actual_end": 83
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 23,
+          "oracle_end": 24,
+          "actual_start": 87,
+          "actual_end": 87
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 25,
+          "oracle_end": 26,
+          "actual_start": 88,
+          "actual_end": 88
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 27,
+          "oracle_end": 28,
+          "actual_start": 89,
+          "actual_end": 119
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 29,
+          "oracle_end": 35,
+          "actual_start": 120,
+          "actual_end": 120
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 36,
+          "oracle_end": 41,
+          "actual_start": 121,
+          "actual_end": 121
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 42,
+          "oracle_end": 44,
+          "actual_start": 122,
+          "actual_end": 122
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 45,
+          "oracle_end": 48,
+          "actual_start": 123,
+          "actual_end": 123
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 49,
+          "oracle_end": 52,
+          "actual_start": 124,
+          "actual_end": 124
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 53,
+          "oracle_end": 56,
+          "actual_start": 125,
+          "actual_end": 125
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 57,
+          "oracle_end": 58,
+          "actual_start": 126,
+          "actual_end": 126
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 59,
+          "oracle_end": 64,
+          "actual_start": 127,
+          "actual_end": 127
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 67,
+          "oracle_end": 68,
+          "actual_start": 130,
+          "actual_end": 130
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 70,
+          "oracle_end": 72,
+          "actual_start": 132,
+          "actual_end": 132
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 73,
+          "oracle_end": 75,
+          "actual_start": 133,
+          "actual_end": 133
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 76,
+          "oracle_end": 80,
+          "actual_start": 134,
+          "actual_end": 134
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 81,
+          "oracle_end": 89,
+          "actual_start": 135,
+          "actual_end": 135
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 90,
+          "oracle_end": 92,
+          "actual_start": 136,
+          "actual_end": 136
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 93,
+          "oracle_end": 95,
+          "actual_start": 137,
+          "actual_end": 137
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 96,
+          "oracle_end": 99,
+          "actual_start": 138,
+          "actual_end": 138
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 100,
+          "oracle_end": 101,
+          "actual_start": 139,
+          "actual_end": 139
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 113,
+          "oracle_end": 140,
+          "actual_start": 151,
+          "actual_end": 151
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "beingo",
+      "policy": "exact",
+      "oracle_count": 142,
+      "actual_count": 148,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 6,
+      "extra_count": 12,
+      "missing_examples": [
+        "唄",
+        "啤",
+        "比我",
+        "祕",
+        "被我",
+        "𠹇"
+      ],
+      "extra_examples": [
+        "彼岸",
+        "彼岸花",
+        "畀我做咩",
+        "畀我入",
+        "畀我入去",
+        "畀我吔",
+        "畀我咯",
+        "畀我啊",
+        "畀我問起",
+        "畀我睇",
+        "畀我睇下",
+        "畀我考起"
+      ],
+      "oracle_rows_sha256": "b1e6f1bd9f0f180ddd9e2de4d028e77978a6be54f64b5ee2b71521f345ba4577",
+      "actual_rows_sha256": "fb770f5705fc67cbc88d0c4614bddd730107fc5acab8fd08fa1130d68b4c44d8",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 0,
+          "oracle_end": 2,
+          "actual_start": 0,
+          "actual_end": 0
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 3,
+          "oracle_end": 3,
+          "actual_start": 1,
+          "actual_end": 41
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 5,
+          "oracle_end": 8,
+          "actual_start": 43,
+          "actual_end": 43
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 9,
+          "oracle_end": 10,
+          "actual_start": 44,
+          "actual_end": 77
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 12,
+          "oracle_end": 18,
+          "actual_start": 79,
+          "actual_end": 79
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 19,
+          "oracle_end": 21,
+          "actual_start": 80,
+          "actual_end": 80
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 25,
+          "oracle_end": 26,
+          "actual_start": 84,
+          "actual_end": 84
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 27,
+          "oracle_end": 28,
+          "actual_start": 85,
+          "actual_end": 85
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 29,
+          "oracle_end": 30,
+          "actual_start": 86,
+          "actual_end": 116
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 31,
+          "oracle_end": 37,
+          "actual_start": 117,
+          "actual_end": 117
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 38,
+          "oracle_end": 43,
+          "actual_start": 118,
+          "actual_end": 118
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 44,
+          "oracle_end": 46,
+          "actual_start": 119,
+          "actual_end": 119
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 47,
+          "oracle_end": 50,
+          "actual_start": 120,
+          "actual_end": 120
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 51,
+          "oracle_end": 54,
+          "actual_start": 121,
+          "actual_end": 121
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 55,
+          "oracle_end": 58,
+          "actual_start": 122,
+          "actual_end": 122
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 59,
+          "oracle_end": 60,
+          "actual_start": 123,
+          "actual_end": 123
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 61,
+          "oracle_end": 66,
+          "actual_start": 124,
+          "actual_end": 124
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 69,
+          "oracle_end": 70,
+          "actual_start": 127,
+          "actual_end": 127
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 72,
+          "oracle_end": 74,
+          "actual_start": 129,
+          "actual_end": 129
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 75,
+          "oracle_end": 77,
+          "actual_start": 130,
+          "actual_end": 130
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 78,
+          "oracle_end": 82,
+          "actual_start": 131,
+          "actual_end": 131
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 83,
+          "oracle_end": 91,
+          "actual_start": 132,
+          "actual_end": 132
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 92,
+          "oracle_end": 94,
+          "actual_start": 133,
+          "actual_end": 133
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 95,
+          "oracle_end": 97,
+          "actual_start": 134,
+          "actual_end": 134
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 98,
+          "oracle_end": 101,
+          "actual_start": 135,
+          "actual_end": 135
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 102,
+          "oracle_end": 103,
+          "actual_start": 136,
+          "actual_end": 136
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 115,
+          "oracle_end": 142,
+          "actual_start": 148,
+          "actual_end": 148
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "beix",
+      "policy": "exact",
+      "oracle_count": 36,
+      "actual_count": 294,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 36,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 258,
+      "missing_examples": [],
+      "extra_examples": [
+        "吡叻",
+        "吡啶",
+        "吡拉西坦",
+        "媲美",
+        "彼唱此和",
+        "彼岸",
+        "彼岸花",
+        "彼得前書",
+        "彼得後書",
+        "彼此",
+        "彼此彼此",
+        "比上不足比下有餘",
+        "比亞迪汽車",
+        "比例",
+        "比例中項",
+        "比例字體",
+        "比例尺",
+        "比例關係",
+        "比價",
+        "比分"
+      ],
+      "oracle_rows_sha256": "cea5c3a1cb49fe73e0089a7aa7937bbbb8357a5b7a3a21d305f50976185386bc",
+      "actual_rows_sha256": "9f4ae1ea30f7dd3ac36053b178e8872fdee61a750a5ec9e4d75e85a2b9ff51be",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 36,
+          "oracle_end": 36,
+          "actual_start": 36,
+          "actual_end": 294
+        }
+      ],
+      "failure_classes": [
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "beixngoxx",
+      "policy": "exact",
+      "oracle_count": 38,
+      "actual_count": 146,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 1,
+      "extra_count": 109,
+      "missing_examples": [
+        "比我"
+      ],
+      "extra_examples": [
+        "㘩",
+        "㢰",
+        "㣁",
+        "㸢",
+        "㽡",
+        "㿫",
+        "䀣",
+        "䉾",
+        "䊌",
+        "䍘",
+        "䎵",
+        "䑄",
+        "䕗",
+        "䘡",
+        "䙓",
+        "䥯",
+        "䥸",
+        "䩀",
+        "䪐",
+        "䫁"
+      ],
+      "oracle_rows_sha256": "a031e922a5a0a059dbe216562e82e583bf79e22a3284c428c2d4a622a99d9f01",
+      "actual_rows_sha256": "e96f4d5a7c6a6d45f6eda19e8a11d407da3f888c7e9d541262849bc31d514682",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 0,
+          "oracle_end": 1,
+          "actual_start": 0,
+          "actual_end": 0
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 2,
+          "oracle_end": 2,
+          "actual_start": 1,
+          "actual_end": 39
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 38,
+          "oracle_end": 38,
+          "actual_start": 75,
+          "actual_end": 146
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "ngohaig",
+      "policy": "exact",
+      "oracle_count": 2050,
+      "actual_count": 46,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 2005,
+      "extra_count": 1,
+      "missing_examples": [
+        "lin",
+        "niu",
+        "now攪",
+        "on9",
+        "㐅",
+        "㐏",
+        "㐐",
+        "㐚",
+        "㐡",
+        "㐳",
+        "㐹",
+        "㐻",
+        "㑎",
+        "㑚",
+        "㑫",
+        "㑲",
+        "㒖",
+        "㒟",
+        "㓓",
+        "㓵"
+      ],
+      "extra_examples": [
+        "我係嘅咁"
+      ],
+      "oracle_rows_sha256": "1d33916d8c5f1cd6631a16ce28befd2ed4ab3584b607dc625dc2f801454f4ed1",
+      "actual_rows_sha256": "21f1df08743f7ed19273f1fe1c104312cec01c5d7b2f6be2e3d5ae568f5b0aaf",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 43,
+          "actual_start": 0,
+          "actual_end": 2
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 44,
+          "oracle_end": 48,
+          "actual_start": 3,
+          "actual_end": 3
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 50,
+          "oracle_end": 53,
+          "actual_start": 5,
+          "actual_end": 5
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 54,
+          "oracle_end": 56,
+          "actual_start": 6,
+          "actual_end": 6
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 61,
+          "oracle_end": 62,
+          "actual_start": 11,
+          "actual_end": 11
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 64,
+          "oracle_end": 65,
+          "actual_start": 13,
+          "actual_end": 13
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 67,
+          "oracle_end": 68,
+          "actual_start": 15,
+          "actual_end": 15
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 70,
+          "oracle_end": 73,
+          "actual_start": 17,
+          "actual_end": 17
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 75,
+          "oracle_end": 86,
+          "actual_start": 19,
+          "actual_end": 19
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 87,
+          "oracle_end": 89,
+          "actual_start": 20,
+          "actual_end": 20
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 103,
+          "oracle_end": 104,
+          "actual_start": 34,
+          "actual_end": 38
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 109,
+          "oracle_end": 2050,
+          "actual_start": 43,
+          "actual_end": 46
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "ngohaigo",
+      "policy": "exact",
+      "oracle_count": 113,
+      "actual_count": 46,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 68,
+      "extra_count": 1,
+      "missing_examples": [
+        "㐅",
+        "㐏",
+        "㐚",
+        "㕶",
+        "㬳",
+        "㹳",
+        "㻍",
+        "䎸",
+        "䓊",
+        "䦜",
+        "䫓",
+        "䮏",
+        "丒",
+        "五",
+        "仵",
+        "伍",
+        "俉",
+        "午",
+        "卧下",
+        "吳"
+      ],
+      "extra_examples": [
+        "我係個咁"
+      ],
+      "oracle_rows_sha256": "82512131beadd2f2da1d734fd1d34040c3b1994ff91f023f4d625d5eba3f6401",
+      "actual_rows_sha256": "4b98681c9b2c032c7761a4fa2904611e084ff382140926c345a4425cb174f032",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 5,
+          "actual_start": 0,
+          "actual_end": 2
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 6,
+          "oracle_end": 7,
+          "actual_start": 3,
+          "actual_end": 3
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 9,
+          "oracle_end": 12,
+          "actual_start": 5,
+          "actual_end": 5
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 24,
+          "oracle_end": 25,
+          "actual_start": 17,
+          "actual_end": 17
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 27,
+          "oracle_end": 28,
+          "actual_start": 19,
+          "actual_end": 19
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 29,
+          "oracle_end": 30,
+          "actual_start": 20,
+          "actual_end": 20
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 44,
+          "oracle_end": 45,
+          "actual_start": 34,
+          "actual_end": 38
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 50,
+          "oracle_end": 113,
+          "actual_start": 43,
+          "actual_end": 46
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "n",
+      "policy": "exact",
+      "oracle_count": 1309,
+      "actual_count": 5767,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 3,
+      "extra_count": 4461,
+      "missing_examples": [
+        "僞",
+        "臥",
+        "鉤"
+      ],
+      "extra_examples": [
+        "55",
+        "56k",
+        "5p仔",
+        "NICAM",
+        "er都冇得er",
+        "lin好大",
+        "lin的",
+        "lin頭",
+        "lin頭硬",
+        "navy",
+        "ngang-ngang聲",
+        "ngek-ngek",
+        "ngok-ngok脆",
+        "notebook",
+        "now攪",
+        "on9",
+        "on99",
+        "on9仔",
+        "onlun9",
+        "䟴䟴下"
+      ],
+      "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "actual_rows_sha256": "7c62b0f3962e5d1ff5570814103dfba9b1680106d2bf966a463eff4a77dff091",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 14,
+          "actual_start": 0,
+          "actual_end": 101
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 15,
+          "oracle_end": 94,
+          "actual_start": 102,
+          "actual_end": 102
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 95,
+          "oracle_end": 129,
+          "actual_start": 103,
+          "actual_end": 103
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 130,
+          "oracle_end": 210,
+          "actual_start": 104,
+          "actual_end": 104
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 211,
+          "oracle_end": 291,
+          "actual_start": 105,
+          "actual_end": 105
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 292,
+          "oracle_end": 314,
+          "actual_start": 106,
+          "actual_end": 106
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 315,
+          "oracle_end": 401,
+          "actual_start": 107,
+          "actual_end": 107
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 402,
+          "oracle_end": 499,
+          "actual_start": 108,
+          "actual_end": 108
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 500,
+          "oracle_end": 627,
+          "actual_start": 109,
+          "actual_end": 109
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 628,
+          "oracle_end": 653,
+          "actual_start": 110,
+          "actual_end": 110
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 654,
+          "oracle_end": 688,
+          "actual_start": 111,
+          "actual_end": 111
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 689,
+          "oracle_end": 878,
+          "actual_start": 112,
+          "actual_end": 112
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 883,
+          "oracle_end": 960,
+          "actual_start": 117,
+          "actual_end": 181
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 973,
+          "oracle_end": 977,
+          "actual_start": 194,
+          "actual_end": 522
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 978,
+          "oracle_end": 984,
+          "actual_start": 523,
+          "actual_end": 993
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 987,
+          "oracle_end": 990,
+          "actual_start": 996,
+          "actual_end": 1743
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1002,
+          "oracle_end": 1006,
+          "actual_start": 1755,
+          "actual_end": 3019
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1019,
+          "oracle_end": 1020,
+          "actual_start": 3032,
+          "actual_end": 3085
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1022,
+          "oracle_end": 1024,
+          "actual_start": 3087,
+          "actual_end": 3104
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1025,
+          "oracle_end": 1030,
+          "actual_start": 3105,
+          "actual_end": 3129
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 1031,
+          "oracle_end": 1031,
+          "actual_start": 3130,
+          "actual_end": 3550
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1033,
+          "oracle_end": 1040,
+          "actual_start": 3552,
+          "actual_end": 3626
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1050,
+          "oracle_end": 1061,
+          "actual_start": 3636,
+          "actual_end": 4387
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 1079,
+          "oracle_end": 1079,
+          "actual_start": 4405,
+          "actual_end": 4466
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1083,
+          "oracle_end": 1136,
+          "actual_start": 4470,
+          "actual_end": 4525
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1138,
+          "oracle_end": 1153,
+          "actual_start": 4527,
+          "actual_end": 4646
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1159,
+          "oracle_end": 1174,
+          "actual_start": 4652,
+          "actual_end": 4775
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 1177,
+          "oracle_end": 1177,
+          "actual_start": 4778,
+          "actual_end": 5031
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1191,
+          "oracle_end": 1208,
+          "actual_start": 5045,
+          "actual_end": 5079
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1212,
+          "oracle_end": 1219,
+          "actual_start": 5083,
+          "actual_end": 5090
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1220,
+          "oracle_end": 1229,
+          "actual_start": 5091,
+          "actual_end": 5250
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1239,
+          "oracle_end": 1257,
+          "actual_start": 5260,
+          "actual_end": 5487
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1259,
+          "oracle_end": 1288,
+          "actual_start": 5489,
+          "actual_end": 5630
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 1290,
+          "oracle_end": 1309,
+          "actual_start": 5632,
+          "actual_end": 5767
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "nri",
+      "policy": "exact",
+      "oracle_count": 1309,
+      "actual_count": 0,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 0
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": false
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "no_menu"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 1309,
+      "extra_count": 0,
+      "missing_examples": [
+        "lin",
+        "niu",
+        "㐅",
+        "㐏",
+        "㐐",
+        "㐚",
+        "㐡",
+        "㐳",
+        "㐹",
+        "㐻",
+        "㑎",
+        "㑚",
+        "㑫",
+        "㑲",
+        "㒖",
+        "㒟",
+        "㓓",
+        "㓵",
+        "㔮",
+        "㕌"
+      ],
+      "extra_examples": [],
+      "oracle_rows_sha256": "9c163b6b5eadd2bc66465bbc724fab1258cf285165197a69b7c30bf089207cfc",
+      "actual_rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 0,
+          "oracle_end": 1309,
+          "actual_start": 0,
+          "actual_end": 0
+        }
+      ],
+      "failure_classes": [
+        "page-size",
+        "menu-presence",
+        "under-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "mgoi",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 11,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 1,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 7,
+      "missing_examples": [],
+      "extra_examples": [
+        "唔該你喇",
+        "唔該借借",
+        "唔該借歪",
+        "唔該先",
+        "唔該晒",
+        "唔該晒你",
+        "唔該話聲"
+      ],
+      "oracle_rows_sha256": "2e7b6a5419bb136ac0df6d9596be5514433e7754a171833aab4d714ff5303f47",
+      "actual_rows_sha256": "d335781754a7b7e916b439971346fb6930e8a7e2ef37eaace497e197bb4db852",
+      "diff_opcodes": [
+        {
+          "tag": "insert",
+          "oracle_start": 1,
+          "oracle_end": 1,
+          "actual_start": 1,
+          "actual_end": 9
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 2,
+          "oracle_end": 3,
+          "actual_start": 10,
+          "actual_end": 10
+        }
+      ],
+      "failure_classes": [
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "zijiguk",
+      "policy": "exact",
+      "oracle_count": 416,
+      "actual_count": 387,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 0,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 30,
+      "extra_count": 1,
+      "missing_examples": [
+        "之二",
+        "之以",
+        "之意",
+        "之義",
+        "姊兒",
+        "子兒",
+        "子怡",
+        "字兒",
+        "字意",
+        "字義",
+        "志意",
+        "恣意",
+        "指意",
+        "指擬",
+        "旨意",
+        "旨義",
+        "知易",
+        "紙衣",
+        "紫衣",
+        "緇衣"
+      ],
+      "extra_examples": [
+        "知而焗咁"
+      ],
+      "oracle_rows_sha256": "2592ace8dd32a1d559b882041a80c09d2b21508eb868502acf43811034c815a4",
+      "actual_rows_sha256": "1cc7240a411278ae8d6ce77aa30991fa01aa0a9f7277146eba141a3f798c32f3",
+      "diff_opcodes": [
+        {
+          "tag": "replace",
+          "oracle_start": 0,
+          "oracle_end": 30,
+          "actual_start": 0,
+          "actual_end": 1
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 31,
+          "oracle_end": 34,
+          "actual_start": 2,
+          "actual_end": 2
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 36,
+          "oracle_end": 43,
+          "actual_start": 4,
+          "actual_end": 4
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 44,
+          "oracle_end": 46,
+          "actual_start": 5,
+          "actual_end": 5
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 47,
+          "oracle_end": 52,
+          "actual_start": 6,
+          "actual_end": 6
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 54,
+          "oracle_end": 57,
+          "actual_start": 8,
+          "actual_end": 8
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 59,
+          "oracle_end": 67,
+          "actual_start": 10,
+          "actual_end": 10
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 69,
+          "oracle_end": 70,
+          "actual_start": 12,
+          "actual_end": 12
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 72,
+          "oracle_end": 73,
+          "actual_start": 14,
+          "actual_end": 14
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 75,
+          "oracle_end": 77,
+          "actual_start": 16,
+          "actual_end": 16
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 78,
+          "oracle_end": 82,
+          "actual_start": 17,
+          "actual_end": 17
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 84,
+          "oracle_end": 85,
+          "actual_start": 19,
+          "actual_end": 19
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 86,
+          "oracle_end": 88,
+          "actual_start": 20,
+          "actual_end": 20
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 89,
+          "oracle_end": 92,
+          "actual_start": 21,
+          "actual_end": 21
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 94,
+          "oracle_end": 95,
+          "actual_start": 23,
+          "actual_end": 23
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 97,
+          "oracle_end": 101,
+          "actual_start": 25,
+          "actual_end": 25
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 103,
+          "oracle_end": 104,
+          "actual_start": 27,
+          "actual_end": 27
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 106,
+          "oracle_end": 107,
+          "actual_start": 29,
+          "actual_end": 29
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 108,
+          "oracle_end": 117,
+          "actual_start": 30,
+          "actual_end": 30
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 119,
+          "oracle_end": 122,
+          "actual_start": 32,
+          "actual_end": 32
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 123,
+          "oracle_end": 126,
+          "actual_start": 33,
+          "actual_end": 33
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 127,
+          "oracle_end": 128,
+          "actual_start": 34,
+          "actual_end": 34
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 129,
+          "oracle_end": 140,
+          "actual_start": 35,
+          "actual_end": 35
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 141,
+          "oracle_end": 142,
+          "actual_start": 36,
+          "actual_end": 36
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 143,
+          "oracle_end": 145,
+          "actual_start": 37,
+          "actual_end": 37
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 147,
+          "oracle_end": 148,
+          "actual_start": 39,
+          "actual_end": 39
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 149,
+          "oracle_end": 150,
+          "actual_start": 40,
+          "actual_end": 40
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 152,
+          "oracle_end": 154,
+          "actual_start": 42,
+          "actual_end": 42
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 155,
+          "oracle_end": 156,
+          "actual_start": 43,
+          "actual_end": 43
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 161,
+          "oracle_end": 163,
+          "actual_start": 48,
+          "actual_end": 48
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 166,
+          "oracle_end": 168,
+          "actual_start": 51,
+          "actual_end": 51
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 170,
+          "oracle_end": 172,
+          "actual_start": 53,
+          "actual_end": 53
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 174,
+          "oracle_end": 178,
+          "actual_start": 55,
+          "actual_end": 55
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 179,
+          "oracle_end": 184,
+          "actual_start": 56,
+          "actual_end": 56
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 185,
+          "oracle_end": 188,
+          "actual_start": 57,
+          "actual_end": 57
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 190,
+          "oracle_end": 192,
+          "actual_start": 59,
+          "actual_end": 59
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 193,
+          "oracle_end": 197,
+          "actual_start": 60,
+          "actual_end": 60
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 203,
+          "oracle_end": 205,
+          "actual_start": 66,
+          "actual_end": 66
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 210,
+          "oracle_end": 212,
+          "actual_start": 71,
+          "actual_end": 71
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 213,
+          "oracle_end": 213,
+          "actual_start": 72,
+          "actual_end": 186
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 217,
+          "oracle_end": 220,
+          "actual_start": 190,
+          "actual_end": 190
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 224,
+          "oracle_end": 224,
+          "actual_start": 194,
+          "actual_end": 262
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 226,
+          "oracle_end": 231,
+          "actual_start": 264,
+          "actual_end": 264
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 232,
+          "oracle_end": 241,
+          "actual_start": 265,
+          "actual_end": 265
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 242,
+          "oracle_end": 247,
+          "actual_start": 266,
+          "actual_end": 266
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 249,
+          "oracle_end": 253,
+          "actual_start": 268,
+          "actual_end": 268
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 254,
+          "oracle_end": 267,
+          "actual_start": 269,
+          "actual_end": 269
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 268,
+          "oracle_end": 269,
+          "actual_start": 270,
+          "actual_end": 270
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 270,
+          "oracle_end": 273,
+          "actual_start": 271,
+          "actual_end": 271
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 274,
+          "oracle_end": 276,
+          "actual_start": 272,
+          "actual_end": 272
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 277,
+          "oracle_end": 282,
+          "actual_start": 273,
+          "actual_end": 273
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 283,
+          "oracle_end": 286,
+          "actual_start": 274,
+          "actual_end": 274
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 287,
+          "oracle_end": 288,
+          "actual_start": 275,
+          "actual_end": 275
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 289,
+          "oracle_end": 321,
+          "actual_start": 276,
+          "actual_end": 276
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 349,
+          "oracle_end": 416,
+          "actual_start": 304,
+          "actual_end": 387
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "over-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "target/m59-increment1-lane-a-final/lane-a-oracle.json",
+      "sha256": "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca"
+    },
+    "actual": {
+      "path": "target/m59-increment1-lane-a-final/lane-a-yune.json",
+      "sha256": "5de0c573623e3117c11348f06e2d6e4055eea07f8440d963972fe6ad3ca5b12f"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "target/m59-increment1-lane-a-final/lane-a-oracle.json",
+      "--actual",
+      "target/m59-increment1-lane-a-final/lane-a-yune.json",
+      "--policy",
+      "exact",
+      "--output-json",
+      "target/m59-increment1-lane-a-final/lane-a-exact-diff.json",
+      "--output-csv",
+      "target/m59-increment1-lane-a-final/lane-a-exact-diff.csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle target/m59-increment1-lane-a-final/lane-a-oracle.json --actual target/m59-increment1-lane-a-final/lane-a-yune.json --policy exact --output-json target/m59-increment1-lane-a-final/lane-a-exact-diff.json --output-csv target/m59-increment1-lane-a-final/lane-a-exact-diff.csv"
+  }
+}

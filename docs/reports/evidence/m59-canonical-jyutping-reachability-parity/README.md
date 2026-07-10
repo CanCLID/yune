@@ -10,7 +10,30 @@ pinned `rime/rime-cantonese` vs `librime 1.17.0` + `rime-cantonese`; **Lane B** 
 Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
+> **Current update (2026-07-10):**
+> [`increment-1-executable-evidence/`](./increment-1-executable-evidence/) is
+> the current six-file, source-clean, canonical-LF, hash-bound Lane A executable
+> diagnostic. Its strict exact verdict is deliberately red (`0/13`, comparator
+> exit `1`, no exceptions); it is pre-fix evidence only and does not close D-48
+> or M59.
+
 ## Artifact classification
+
+### VALID — current Increment 1 executable diagnostics (not acceptance)
+
+- `increment-1-executable-evidence/lane-a-oracle.json` — fresh pinned upstream
+  oracle raw capture with source/schema cleanliness, binary/tool, option,
+  command, output, canonical-text, and paging provenance.
+- `increment-1-executable-evidence/lane-a-yune.json` — raw Yune capture with
+  clean source, DLL/tool, tree, schema-narrowing, option, command,
+  canonical-text, and complete paging provenance.
+- `increment-1-executable-evidence/lane-a-exact-diff.json` and
+  `lane-a-exact-diff.csv` — strict exact comparator outputs: 0 passed, 13
+  failed, expected exit `1`, no exception file.
+- `increment-1-executable-evidence/lane-a-manifest.json` — packet-local closure
+  for both raw captures, both diff views, packet README, generation/import and
+  canonical-text provenance, commands, effective parameters, and all 13
+  verdicts. It omits only its own recursive hash.
 
 ### VALID — retained from `5d3dba2a` (the real perf fix commit)
 - `phase-1/canonical-rime-cantonese-capture.json` — Lane A oracle capture with
@@ -39,14 +62,16 @@ regression guard, not an acceptance oracle.
 - `phase-0-baseline-ratchet-run1/` — real: reproduced the red ratchet after
   `c4336cd9` (`ni`/`hao` etc.). Keep as baseline.
 - `phase-0-restored-ratchet-run1..9/` — **all nine exist and are tracked.**
-  Current `main` code is **identical to `5d3dba2a`** (the revert removed only
-  `77a9540a`'s code), so these runs **do** measure current code. Result:
+  At the 2026-07-06 revert baseline, `main` was **identical to `5d3dba2a`**
+  (the revert removed only `77a9540a`'s code), so these runs measured that
+  historical baseline. Result:
   **5 pass (runs 1, 5, 6, 8, 9), 4 fail (runs 2, 3, 4, 7)** — the 37/59-char and
-  Track B rows straddle their ceilings. So current `main` is *measured but not
-  robustly green* (run-until-green), which is not acceptable acceptance
-  evidence; and the straddle is **not** reachability overhead (reachability was
-  added later, in the reverted `77a9540a`). Phase 4 must make these rows robustly
-  green on fresh runs under the standing ceilings.
+  Track B rows straddled their ceilings. So that 2026-07-06 baseline was
+  *measured but not robustly green* (run-until-green), which is not valid
+  acceptance evidence; and the straddle is **not** reachability overhead
+  (reachability was added later, in the reverted `77a9540a`). The then-planned
+  Phase 4 required these rows to become robustly green on fresh runs under the
+  then-standing ceilings.
 - What the revert **deleted** was `phase-4-final-ratchet-run8/9` (the gamed
   Phase 4 closeout) — **not** the `phase-0-restored` runs. (This corrects this
   README's own earlier draft, which conflated the two.)

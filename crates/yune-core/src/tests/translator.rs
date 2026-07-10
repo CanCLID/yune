@@ -1520,6 +1520,64 @@ GUO	guo	80
 }
 
 #[test]
+fn bounded_one_scalar_leading_reachability_scans_only_the_requested_window() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::new(
+        (0..32).map(|index| TableEntry::new("n", format!("ROW{index:02}"), 100.0 - index as f32)),
+    );
+    let translator = StaticTableTranslator::from_dictionary(dictionary)
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let result = translator.translate_with_context_and_request(
+        "n",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(5),
+    );
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(
+        result
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["ROW00", "ROW01", "ROW02", "ROW03", "ROW04"]
+    );
+    assert_eq!(metrics.lookup_views_visited, 5);
+    assert_eq!(metrics.exact_lookup_candidates, 5);
+}
+
+#[test]
+fn bounded_multi_scalar_bare_exact_still_blocks_shorter_leading_family() {
+    let translator = StaticTableTranslator::new([("hao", "好"), ("ha", "哈")])
+        .with_leading_syllable_reachability(true)
+        .with_sentence(false);
+
+    let result = translator.translate_with_context_and_request(
+        "hao",
+        &Status::default(),
+        &HashMap::new(),
+        &Context::default(),
+        CandidateRequest::bounded(5),
+    );
+
+    assert_eq!(
+        result
+            .candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["好"]
+    );
+}
+
+#[test]
 fn short_luna_key_refresh_falls_back_when_filter_surplus_underfills_first_page() {
     let _guard = super::m37_metrics_test_guard();
     let mut engine = Engine::new();

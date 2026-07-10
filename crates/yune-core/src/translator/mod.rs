@@ -1471,7 +1471,10 @@ impl StaticTableTranslator {
 
     fn expanded_lookup_specs(&self, lookup_code: &str) -> Vec<LookupCodeSpec> {
         let mut specs = vec![LookupCodeSpec::exact(lookup_code)];
-        let has_exact_lookup = self.storage.has_code(lookup_code);
+        let default_off_dynamic_anchor_exists = self.dynamic_correction_lookup
+            && !self.enable_correction
+            && lookup_code.starts_with('m')
+            && self.storage.has_code(lookup_code);
         if let (Some(prism), Some(syllabary_codes)) =
             (self.prism_payload.as_ref(), self.storage.syllabary_codes())
         {
@@ -1501,8 +1504,8 @@ impl StaticTableTranslator {
             }
         }
         let allow_dynamic_near_lookup = self.dynamic_correction_lookup
-            && (self.enable_correction || (has_exact_lookup && lookup_code.starts_with('m')));
-        let dynamic_syllable_count = (!self.enable_correction && has_exact_lookup)
+            && (self.enable_correction || default_off_dynamic_anchor_exists);
+        let dynamic_syllable_count = default_off_dynamic_anchor_exists
             .then(|| self.exact_lookup_min_syllable_count(lookup_code))
             .flatten();
         if self.enable_correction || allow_dynamic_near_lookup {
@@ -1540,7 +1543,7 @@ impl StaticTableTranslator {
                         continue;
                     }
                     if !self.enable_correction
-                        && has_exact_lookup
+                        && default_off_dynamic_anchor_exists
                         && !lookup_code.starts_with(&canonical_code)
                     {
                         continue;
@@ -2359,7 +2362,8 @@ impl StaticTableTranslator {
         for lookup_spec in lookup_specs {
             let fetch_code = lookup_spec.code.as_str();
             let spec_lookup_code = lookup_spec.lookup_code.as_str();
-            let lookup_has_exact_candidates = self.storage.has_code(fetch_code);
+            let lookup_has_exact_candidates =
+                self.prediction_candidate_limit.is_some() && self.storage.has_code(fetch_code);
             let exact_start = LookupTimer::start();
             let mut exact_candidates = 0;
             for candidate in self
@@ -2553,6 +2557,7 @@ impl StaticTableTranslator {
                         candidates.extend(prefix_candidates);
                     } else if self.leading_syllable_reachability
                         && !has_correction_lookup
+                        && has_proper_leading_prefix(lookup_code)
                         && !self.input_serves_single_char_exact(lookup_code)
                     {
                         // Keep phrase candidates in place; append only a bounded
@@ -2624,6 +2629,7 @@ impl StaticTableTranslator {
                         candidates.extend(prefix_candidates);
                     } else if self.leading_syllable_reachability
                         && !has_correction_lookup
+                        && has_proper_leading_prefix(lookup_code)
                         && !self.input_serves_single_char_exact(lookup_code)
                     {
                         // Keep phrase candidates in place; append only a bounded
@@ -2790,11 +2796,15 @@ impl StaticTableTranslator {
                 crate::m37_record_track_b_candidate_materialized();
             }
         }
-        let has_multi_syllable_full_exact_candidate = candidates.iter().any(|candidate| {
-            candidate.source == CandidateSource::Table
-                && source_code_syllable_count(&candidate.comment).is_some_and(|count| count > 1)
-        });
         let has_strict_lookup_prefix = false;
+        let has_multi_syllable_full_exact_candidate =
+            (self.prefix_fallback && !has_correction_lookup).then(|| {
+                candidates.iter().any(|candidate| {
+                    candidate.source == CandidateSource::Table
+                        && source_code_syllable_count(&candidate.comment)
+                            .is_some_and(|count| count > 1)
+                })
+            });
         if self.combine_candidates {
             candidates = combine_duplicate_text_candidates(candidates);
         }
@@ -2802,6 +2812,8 @@ impl StaticTableTranslator {
             && !has_correction_lookup
             && (candidates.is_empty() || has_full_exact_candidate || has_strict_lookup_prefix);
         if prefix_fallback_applies {
+            let has_multi_syllable_full_exact_candidate =
+                has_multi_syllable_full_exact_candidate.unwrap_or(false);
             if candidates.len() < limit {
                 let mut prefix_candidates = self.prefix_fallback_candidates(
                     input,
@@ -2872,6 +2884,7 @@ impl StaticTableTranslator {
         if self.leading_syllable_reachability
             && !has_correction_lookup
             && !self.prefix_fallback
+            && has_proper_leading_prefix(lookup_code)
             && !self.input_serves_single_char_exact(lookup_code)
         {
             let insert_at = leading_single_insert_index(&candidates);
@@ -3302,6 +3315,9 @@ impl StaticTableTranslator {
         // typing path). `None` materializes the full family (page-turn/complete).
         fetch_limit: Option<usize>,
     ) -> Vec<Candidate> {
+        if !has_proper_leading_prefix(lookup_code) {
+            return Vec::new();
+        }
         // M59 increment-2 stop-the-line: when the FULL input is itself a complete
         // syllable the exact path already serves with single-char candidates
         // (`mai`→買/賣/麥/邁, `wai`→外, `xian`→先/現), skip the injection entirely.
@@ -4186,6 +4202,75 @@ fn leading_single_insert_index(candidates: &[Candidate]) -> usize {
             candidate.source == CandidateSource::Table && candidate.text.chars().count() == 1
         })
         .unwrap_or(candidates.len())
+}
+
+/// Whether `lookup_code` has a UTF-8 boundary strictly between its start and
+/// end. A one-scalar lookup has no proper leading prefix even when that scalar
+/// occupies multiple bytes.
+fn has_proper_leading_prefix(lookup_code: &str) -> bool {
+    lookup_code.char_indices().nth(1).is_some()
+}
+
+#[cfg(test)]
+mod lookup_guard_tests {
+    use super::{has_proper_leading_prefix, StaticTableTranslator};
+
+    #[test]
+    fn proper_leading_prefix_uses_unicode_scalar_boundaries() {
+        assert!(!has_proper_leading_prefix(""));
+        assert!(!has_proper_leading_prefix("n"));
+        assert!(!has_proper_leading_prefix("你"));
+
+        assert!(has_proper_leading_prefix("ni"));
+        assert!(has_proper_leading_prefix("你a"));
+        assert!(has_proper_leading_prefix("e\u{301}"));
+    }
+
+    #[test]
+    fn dynamic_correction_keeps_the_default_off_m_prefix_truth_table() {
+        let m_prefix = StaticTableTranslator::new([("mgoi", "甲"), ("mgo", "乙")])
+            .with_dynamic_correction_lookup(true);
+        let m_specs = m_prefix.expanded_lookup_specs("mgoi");
+        assert_eq!(
+            m_specs
+                .iter()
+                .map(|spec| (spec.code.as_str(), spec.correction_distance))
+                .collect::<Vec<_>>(),
+            [("mgoi", None), ("mgo", Some(2))]
+        );
+
+        let missing_m_anchor =
+            StaticTableTranslator::new([("mgo", "乙")]).with_dynamic_correction_lookup(true);
+        assert_eq!(
+            missing_m_anchor
+                .expanded_lookup_specs("mgoi")
+                .iter()
+                .map(|spec| (spec.code.as_str(), spec.correction_distance))
+                .collect::<Vec<_>>(),
+            [("mgoi", None)]
+        );
+
+        let non_m = StaticTableTranslator::new([("ngoi", "甲"), ("ngo", "乙")])
+            .with_dynamic_correction_lookup(true);
+        assert_eq!(
+            non_m
+                .expanded_lookup_specs("ngoi")
+                .iter()
+                .map(|spec| (spec.code.as_str(), spec.correction_distance))
+                .collect::<Vec<_>>(),
+            [("ngoi", None)]
+        );
+
+        let enabled = non_m.with_correction(true);
+        assert_eq!(
+            enabled
+                .expanded_lookup_specs("ngoi")
+                .iter()
+                .map(|spec| (spec.code.as_str(), spec.correction_distance))
+                .collect::<Vec<_>>(),
+            [("ngoi", None), ("ngo", Some(2))]
+        );
+    }
 }
 
 fn complete_syllable_prefix_count(raw_code: &str, lookup_code: &str) -> Option<usize> {

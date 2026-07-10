@@ -12,6 +12,7 @@ rsmarisa = "0.4.2"
 
 [dev-dependencies]
 serde_json = "1"
+sha2 = "0.10"
 
 [lints]
 workspace = true

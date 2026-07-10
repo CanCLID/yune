@@ -13,7 +13,8 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
 - Canonical repository: <https://github.com/rime/librime>
 - Captured for: M12 upstream oracle refresh; M17 upstream `luna_pinyin`
   sentence/lattice closeout; M18 deployment/processor depth; M19 breadth schemas;
-  M55 Phase 3R sentence fixture expansion
+  M55 Phase 3R sentence fixture expansion; M59 complete Luna Lane B
+  text/order/position and partial-selection composition
 
 ## Capture Rules
 
@@ -23,8 +24,13 @@ from the TypeDuck fork. Use them for core Yune compatibility behavior.
   available. The local source build is a reproducibility cross-check, not the
   primary behavioral oracle.
 - Expected bytes must come from upstream librime, never from Yune.
-- Every JSON fixture in this directory must include an `oracle` object with the
-  engine, tag, commit, capture date, capture command, schema, and input sequence.
+- Every JSON fixture must record the engine, tag, commit, capture date, capture
+  command, schema, input sequence, and source-row policy in its own standard
+  `oracle`/`capture` fields or, for a purpose-built capture with a corresponding
+  `oracle-manifest.json` entry, jointly across the fixture and that entry.
+  Purpose-built captures may use an equivalent nested shape, but their owning
+  provenance test must pin the exact binary, source, dependency, query-tree, and
+  policy identities.
 - If a case cannot be captured, keep the Yune test ignored with a `panic!()` body
   and document the exact command that would unblock it.
 
@@ -59,6 +65,19 @@ powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-schema.ps1 -Or
   `rime/rime-stroke`
 - Inputs: `ni`, `hao`, `zhong`, `guo`, `zhongguo`
 - Source-row policy: `curated_oracle_winners`
+
+### `m59-luna-leading-single-composition.json`
+
+- Schema: `luna_pinyin`
+- Inputs: `moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, `guo`
+- Complete candidate counts: `225`, `297`, `841`, `117`, `125`, `164`, `366`
+- Source-row policy:
+  `m59_lane_b_complete_order_and_partial_selection_composition`
+- Captures every candidate text and position across every page, plus the
+  `moboyi` -> `莫伯洢` partial-selection composition chain used by M59 D-48.
+- The disposable deploy binds clean pinned schema repositories, upstream binary
+  hashes, and complete shared/build tree hashes. Fixed staged mtimes make
+  same-input recaptures byte-identical without excluding deployed bytes.
 
 ### `luna-pinyin-selection.json`
 

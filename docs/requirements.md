@@ -1490,9 +1490,10 @@ residual, not a candidate-behavior blocker.
 
 ### M59 Schema-General Single-Character Reachability + Canonical Parity
 
-**Status: in progress — Lane B (luna) landed, NOT closeable.** M59 delivers the
-owner requirement that composing an arbitrary non-lexicon phrase one character at
-a time works on **every** schema. GPT's first execution was gamed (per-input
+**Status: in progress — Lane B reachability mechanism landed; Lane B exact-order
+parity remains open; NOT closeable.** M59 delivers the owner requirement that
+composing an arbitrary non-lexicon phrase one character at a time works on
+**every** schema. GPT's first execution was gamed (per-input
 `match` arms replaying oracle candidates baked into engine source + circular
 tests) and was reverted; the luna lane was reimplemented as a genuine general
 mechanism and landed (`c89a8ea9`). Owner amendment (2026-07-07) made the behavior
@@ -1509,22 +1510,90 @@ a **default-ON, schema-general guarantee** delivered in M59, not M60.
   **future** schema (e.g. `rime-teochew`) — **automatically on install, with ZERO
   per-schema adaptation work.** Engine/translator-level default; per-schema opt-out
   only with a recorded reason. No schema silently onboards without it.
-- [ ] **M59-REACH-03**: Each shipped schema (`luna_pinyin`, `jyut6ping3`, canonical
-  `rime-cantonese`, `cangjie5`, and any other shipped schema) has a real-path
-  acceptance test proving one arbitrary non-lexicon composition; oracle-backed
-  where upstream exhibits the behavior, recorded owner-spec where it does not.
-  The `prefix_fallback` vs `leading_syllable_reachability` dual-mechanism is
-  unified or its relationship documented.
-- [ ] **M59-REACH-04 (perf)**: The standing M55 ratchet is **robustly** green
-  (distribution reported, no run-until-green, no re-baseline). The luna
-  `n`/37-char/59-char rows currently STRADDLE their ceilings (a prior "green
-  twice" claim was favorable sampling and was retracted); this must be genuinely
-  fixed, and the cross-schema typing paths measured under default-ON.
+- [ ] **M59-REACH-03**: The canonical shipped-schema manifest at
+  `apps/yune-web/public/schema-asset-manifest.json` is reconciled one-to-one with
+  a checked-in acceptance-coverage table: every schema-bearing asset is named,
+  every installable/selectable schema has a real-path arbitrary non-lexicon
+  composition test, and dependency-only validation assets receive an explicit
+  non-top-level disposition rather than disappearing from coverage. The pinned
+  canonical `rime-cantonese` validation lane is recorded separately and is not
+  mislabeled as shipped. A newly manifested schema automatically adds an open
+  acceptance row. Oracle-backed output is used where upstream exhibits the
+  behavior and recorded owner-spec output where it does not. The
+  `prefix_fallback` vs `leading_syllable_reachability` relationship is documented.
+  Separately from manifest-derived product coverage, the transformed-algebra 3b
+  fixture matrix runs real deploy-path **default-on and explicit-false** rows for
+  product Jyutping, canonical Cantonese, Cangjie, Luna, Luna Octagram, Double
+  Pinyin, and Bopomofo. Double Pinyin and Bopomofo remain mandatory in this
+  fixture matrix even though they are not currently shipped product schemas.
+- [ ] **M59-REACH-04 (performance)**: The checked-in multi-run aggregator
+  evaluates the full 17-input Track A set, including the 37-character,
+  59-character, and nine owner-signed 2026-07-09 rows, together with the
+  existing Track B product row and every standing startup/session/memory guard.
+  It writes `gate-verdict.csv` using the rule "aggregate median observation <=
+  signed ceiling" and exits nonzero when any row fails. Every observation and
+  failed run is preserved; there is no adaptive cherry-picking, quiet
+  re-baseline, threshold relaxation, or run-until-green. Final acceptance is
+  five fresh complete rounds from the final behavior commit with every aggregate
+  row green.
 - [ ] **M59-PARITY-01 (Lane A)**: Yune + pinned `rime/rime-cantonese` matches
-  upstream `rime/librime 1.17.0` + `rime/rime-cantonese` (canonical validation
-  lane), diffed page/prefix-exact against the committed capture with every
-  divergence named; the retained phase-1/phase-2 groundwork is re-validated, not
-  re-baked.
+  upstream `rime/librime 1.17.0` + `rime/rime-cantonese` page/prefix-exact for
+  candidate text and order across the committed 13-input canonical capture:
+  `be`, `bei`, `bein`, `being`, `beingo`, `beix`, `beixngoxx`, `ngohaig`,
+  `ngohaigo`, `n`, `nri`, `mgoi`, and `zijiguk`. Every divergence is named; the
+  retained phase-1/phase-2 groundwork is re-validated, not re-baked.
+- [ ] **M59-PARITY-02 (Lane B exact order)**: Yune `luna_pinyin` matches pinned
+  upstream librime for complete captured candidate text, order, and position
+  ranges for `moboyi`, `boyi`, `yi`, `zhonggao`, `zhongguo`, `gao`, and `guo`.
+  Comparison is page/prefix-exact through the captured range under mirrored
+  options, per D-48; no ordered-subsequence allowance or unsigned exception is
+  accepted.
+- [ ] **M59-PARITY-03 (Cangjie exact order)**: The marked `cangjie5`
+  oracle-validation lane has a pinned upstream capture and matches candidate
+  text and order page/prefix-exact through the librime-comparable range,
+  including the CJ-1 owner/control fixture. The three D-48 composition rows are
+  standing tests; any row beyond librime composition depth uses recorded
+  owner-provenance first-candidate pins rather than invented oracle output.
+  Final acceptance is 3 passed / 0 ignored, with product and unmarked Cangjie
+  behavior unchanged.
+
+For **M59-PARITY-01..03**, the only permitted divergence classes are the already
+owner-signed equal-weight ties and beyond-oracle-depth rows. No new exception is
+created. Promotion tables, input-specific branches or allowlists, baked/replayed
+oracle candidates, and circular oracle-derived fixtures are prohibited.
+
+- [ ] **M59-NAV-01 (unified forward navigation)**: A single `Engine` policy,
+  derived from `SchemaBehaviorProfile` rather than schema id, governs Engine
+  paging, next-candidate navigation, physical PageDown, `RimeChangePage`, and
+  browser/API paging. Standard schemas complete before forward navigation;
+  TypeDuck inputs longer than two characters complete, while TypeDuck inputs of
+  at most two characters retain bounded output. Physical/API paging remain
+  equivalent. Acceptance includes `cantonese_parity` 41/41 without golden edits,
+  `typeduck_windows_boundary` 4/4, fresh source-current WASM reaching `zi -> 諮`
+  within four PageDown operations, and stable `beingo`, `zijiguk`, Luna,
+  physical-page, and API-page behavior.
+- [ ] **M59-EVIDENCE-01 (reproducibility and provenance)**: Deterministic,
+  checked-in capture/classification/comparison tooling covers Lane A, Lane B,
+  and expanded Cangjie. Preserved raw oracle and Yune outputs record inputs,
+  page settings/options, source repositories and commits, oracle and Yune binary
+  hashes, Yune commit, exact commands, and classifier version. Re-running the
+  tools over the frozen raw inputs reproduces the comparator and gate artifacts;
+  expected oracle output is never derived from Yune.
+- [x] **M59-DEPLOY-01 (workspace fidelity)**: Workspace deployment matches the
+  pinned librime `WorkspaceUpdate` behavior: a missing top-level schema allows
+  valid siblings to deploy but produces aggregate failure; a malformed present
+  schema fails; an absent dependency is diagnosed and skipped; and a malformed
+  present dependency fails. Missing dependencies are not recorded as
+  successfully built, and broad missing-top-level tolerance is not introduced.
+  Landed with real-path regression coverage in `2ee0805f`.
+- [ ] **M59-GATES-01 (final release gates)**: The final source commit passes
+  `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+  `cargo test --workspace`, and `cargo build --release -p yune-rime-api`; builds
+  source-current Emscripten WASM with `YUNE_WEB_WASM_REQUIRE_EMSCRIPTEN=1`;
+  passes runtime tests/build, app typecheck/build, schema-manifest validation,
+  focused M58 paging Playwright, the full local browser suite, and public
+  packaging build. Mandatory gates are not silently skipped, and M59 does not
+  close while any is red.
 
 ## Out of Scope
 
@@ -1712,6 +1781,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M58-JYUTPING-06 | M58 | Complete - `beingo` / 畀, `zi` / 諮, and the post-closeout `zijiguk` / standalone `諮` composition gap are dispositioned in canonical and TypeDuck/profile lanes; yune-web reaches each target through page navigation without first-page promotion, and `zijiguk` selection commits `諮` while recomposing `jiguk`; the repeated M55 ratchet miss is tracked separately as a performance residual |
 | M58-JYUTPING-07 | M58 | Complete - schema predicates, `jyut6ping3_mobile`, Track B/M55 names, WEB-03/public-demo manifests, and userdb key blast radius audited before any id split |
 | M58-JYUTPING-08 | M58 | Complete - canonical captures succeeded and were not substituted with TypeDuck v1.1.2 candidate output |
+| M59-REACH-01 | M59 | Complete - the retained leading-single mechanism is structure-driven and covered by source-truthful anti-gaming controls; M59 remains in progress |
+| M59-REACH-02 | M59 | In progress - default-on schema-general composition with zero per-schema adaptation remains required for M59 closeout |
+| M59-REACH-03 | M59 | In progress - canonical manifest-to-acceptance reconciliation, the seven-schema 3b default-on/explicit-false deploy matrix, real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
+| M59-REACH-04 | M59 | In progress - the expanded multi-run Track A/Track B aggregate gate and five-round final acceptance remain required for M59 closeout |
+| M59-PARITY-01 | M59 | In progress - Lane A exact parity across the committed 13-input canonical capture remains required; only the already signed equal-weight/beyond-depth classes are excepted |
+| M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks |
+| M59-PARITY-03 | M59 | In progress - Cangjie exact-order onboarding and CJ-1 acceptance at 3 passed / 0 ignored remain required with no new exceptions or promotion/input/oracle hacks |
+| M59-NAV-01 | M59 | In progress - one profile-driven forward-navigation policy plus Cantonese 41/41, TypeDuck-Windows 4/4, WASM, `beingo`, `zijiguk`, Luna, and physical/API acceptance remain required for M59 closeout |
+| M59-EVIDENCE-01 | M59 | In progress - deterministic capture/comparison tooling and reproducible raw provenance remain required for M59 closeout |
+| M59-DEPLOY-01 | M59 | Complete - `2ee0805f` matches pinned librime missing/malformed top-level schema and dependency semantics with real-path regression coverage |
+| M59-GATES-01 | M59 | In progress - exact native release, source-current WASM, runtime/app, manifest, Playwright, browser, and packaging gates remain required for M59 closeout |
 | WEB04-OCTAGRAM-01 | WEB-04 | Complete - pinned lotem development `.gram` is fetched locally into a gitignored path by URL/commit/checksum; model bytes are not committed |
 | WEB04-OCTAGRAM-02 | WEB-04 | Complete - dedicated `luna_pinyin_octagram` profile enables inline grammar while plain `luna_pinyin` stays default-off/null-grammar |
 | WEB04-OCTAGRAM-03 | WEB-04 | Complete - worker uses `extraSharedAssets`, validates bytes/checksum, and exposes delivered/fallback/checksum/schema-select high-water memory diagnostics |
@@ -2016,10 +2096,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
+- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 2 complete, 9 in progress
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
-- Mapped to phases: 422
+- Mapped to phases: 433
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-06 - M58 corrective closeout: canonical `jyut6ping3` candidate behavior captured from upstream `rime/librime 1.17.0` with pinned `rime/rime-cantonese`; TypeDuck multilingual/profile behavior remains profile-scoped with grandfathered M14-M28 candidate guards; current `yune-web` reaches `beingo` / 畀 and `zi` / 諮 at TypeDuck/profile ranks through page navigation without first-page promotion; the post-closeout `zijiguk` long-composition corrective reaches standalone `諮`, commits `諮`, and recomposes `jiguk`; the standing M55/Track B ratchet miss is recorded as a performance residual; `jyut6ping3_typeduck` remains the preferred future id direction pending explicit sign-off._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-09 - M59 full Path A remains locked and not closeable. The Lane B reachability mechanism is landed but its D-48 exact-order lane remains open; the parity contract is the exact 13-input Lane A capture plus Lane B and Cangjie, with only the already signed equal-weight and beyond-oracle-depth classes excepted and no new promotion/input/oracle hacks. Workspace deployment fidelity completed at `2ee0805f`; 9 M59 requirements remain in progress._

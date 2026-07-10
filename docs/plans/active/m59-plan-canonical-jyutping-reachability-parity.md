@@ -1,21 +1,22 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
-> **PROGRESS (2026-07-07): Lane B luna reachability MECHANISM landed (`c89a8ea9`)
-> and independently confirmed genuine** (fable's review: greps clean; generality
-> proven by fable's own novel probes of Yune's mechanism, outside any test list —
-> `weibozi`→155 distinct wei-family singles (a reviewer count of Yune's output, §7
-> N/A; re-confirmed identical on a fresh HEAD run), plus `shijie`/`ewai`).
-> `moboyi`→`莫伯洢`, source-truthful non-circular tests, phrase-before-single
-> ordering, no regressions. **M59 is NOT closeable** — three open items:
-> **(1) PERF STRADDLE — RESOLVED (`4f71c1bb`, finding #8):** the per-keystroke
-> syllabary-scan memoization closed it; 3/3 fresh runs green on the UNCHANGED m55
-> thresholds (37-char <=2.045/2.094, 59-char <=1.612/1.625, all win rows <1.00);
-> evidence/m59-finding-8-perf/. **(2) Owner
-> amendment (2026-07-07, below): schema-general default-ON** — the per-schema luna
-> flag must become engine-default for all schemas; dual-mechanism resolved. **(3)
-> Lane A (canonical rime-cantonese parity)** + order-vs-capture assertion + the 3
-> red `cantonese_parity` tests as a named roadmap item. Evidence + open items:
-> `docs/reports/evidence/m59-canonical-jyutping-reachability-parity/luna-lane-README.md`.
+> **CURRENT CLOSEOUT STATUS (2026-07-09): full Path A is locked; M59 is NOT
+> closeable.** The genuine Lane B **reachability mechanism** landed at `c89a8ea9`
+> and remains source-truthful and non-circular, but Lane B D-48 exact-order parity
+> is still open. Workspace deployment fidelity completed at `2ee0805f`; no other
+> open behavior or final-gate row is implied complete by this status update.
+>
+> Nothing remaining moves to M60 or another milestone. After 4a lands, **no
+> subsequent engine-behavior increment** (including 4b) starts until Fable's
+> review returns and all findings are fixed forward and reverified. Non-overlapping
+> evidence/docs work may continue during that wait; reviews for all other
+> increments remain nonblocking. Symmetrically, after 4b lands, no later
+> engine-behavior increment starts until its Fable review is resolved. Before 4b
+> can land, the signed short-key ratchet must cover `n`, `ni`, and `hao`. Any red
+> short-key row is an owner-decision stop between retaining the signed ceilings
+> with a lazy/page-bounded exact-order strategy and signing freshly derived
+> ceilings; it is never a quiet re-baseline, silent revert, or weakened parity
+> target.
 
 > **For agentic workers:** this plan was RESET on 2026-07-06 after the prior
 > execution was found to be gamed and reverted, then re-scoped per owner
@@ -45,6 +46,17 @@
   typed-config foundation) — audited, no input hardcodes.
 - **Scope confirmed by owner 2026-07-06: canonical parity + reachability** (both
   lanes below are acceptance, not just reachability).
+- **Full Path A locked by owner 2026-07-09:** D-47/D-48 closure, the TypeDuck and
+  unified-navigation repair, compiled-sort/algebra coverage, classes 1/2/4,
+  Cangjie CJ-1, Lane B exact order, final performance, and native/WASM/browser
+  gates all remain in M59. Lane B's landed item is its reachability mechanism,
+  not completion of its exact-order lane.
+- **Blocking review/performance protocol:** after 4a lands, every subsequent
+  engine-behavior increment pauses for Fable resolution; only non-overlapping
+  evidence/docs work may continue. After 4b lands, every later engine-behavior
+  increment likewise pauses for its Fable resolution. Other reviews remain
+  nonblocking. A red `n`/`ni`/`hao` 4b ratchet is an owner stop before landing,
+  not permission to re-baseline, revert, or weaken exact-order acceptance.
 
 ## Honest baseline (`7d5ec9b8`, verified 2026-07-06)
 
@@ -155,10 +167,13 @@ capability flag has the same blind spot.
 **Named correction to the shipped-schema set (amendment item 3):** `double_pinyin`
 and `bopomofo` are **NOT currently shipped** (`apps/yune-web/public/schema` has no
 such schema; they exist only as `upstream_*` parity fixtures). They are therefore
-NOT in the per-schema acceptance-row set for this flip. The default-ON guarantee
-covers them automatically the moment either is shipped (that is the whole point of
-the engine-level default) — recorded here rather than silently dropped from item 3's
-list.
+excluded only from the **manifest-derived shipped-product acceptance set**. They
+remain mandatory in M59's transformed-algebra 3b fixture deploy matrix, which runs
+both default-on and explicit-false real deploy-path rows for product Jyutping,
+canonical Cantonese, Cangjie, Luna, Luna Octagram, Double Pinyin, and Bopomofo.
+The engine-level default also covers either schema automatically if it becomes a
+shipped product schema later; fixture-matrix coverage is not a substitute for that
+future manifest-derived product row.
 
 ## Acceptance lanes
 
@@ -195,14 +210,19 @@ list.
 The Lane A deploy blocker was **not** a capability gap — the unmodified
 rime-cantonese schema deploys and reverse lookups work end-to-end (`va`→日,
 `xh`→一) once the `schema_list` is corrected (see the runner overlay). The
-diagnosis surfaced these named items; the runner unblock does not prejudge them:
+diagnosis surfaced these named items; item 1 is now resolved while the remaining
+items retain their stated acceptance status:
 
-1. **Missing-schema tolerance divergence (owner decision).** Yune's
-   `workspace_update` fails the WHOLE workspace on one missing schema
-   (`deployment.rs:638-641`); librime skips-and-logs. This **intersects the D-47
-   schema-general guarantee** — a user installing a schema whose `default.yaml`
-   lists a schema that isn't present gets a total deploy failure, not a partial.
-   Needs an owner decision + librime behavior evidence before any change.
+1. **RESOLVED — pinned `WorkspaceUpdate` semantics (`2ee0805f`, 2026-07-09).**
+   Inspection of pinned librime corrected the earlier loose "skip and succeed"
+   framing: a missing top-level schema does not prevent valid siblings from
+   deploying but contributes aggregate failure; a malformed present top-level
+   schema fails; an absent dependency is diagnosed and skipped; and a malformed
+   present dependency fails. Yune now distinguishes missing from malformed
+   dependencies, does not poison the built set with an absent dependency, keeps
+   the canonical runner's narrowed `default.yaml`, and does not introduce broad
+   missing-top-level tolerance. Real-path regression coverage for all four cases
+   landed with the implementation.
 2. **Aux-prism host-algebra fidelity wart (needs oracle fixture).**
    `deployment.rs:1241-1247` vs `schema_install.rs:913-923` — reverse-lookup
    (aux-prism) algebra handling differs from the host; reverse-lookup fidelity

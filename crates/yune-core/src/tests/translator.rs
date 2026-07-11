@@ -1306,14 +1306,16 @@ fn upstream_script_translation_keeps_sentence_ahead_of_predictive_completion_str
 
 #[test]
 fn upstream_script_phrase_dedup_preserves_outer_comment_formatting() {
-    let translator = StaticTableTranslator::from_dictionary(TableDictionary::new([
-        TableEntry::new("ab", "AB", 100.0),
-        TableEntry::new("c", "C", 100.0),
-    ]))
-    .with_prefix_fallback(true)
-    .with_comment_format(&["xform/^ab$/META/".to_owned()])
-    .with_sentence(true)
-    .with_upstream_sentence_model(10);
+    let build = || {
+        StaticTableTranslator::from_dictionary(TableDictionary::new([
+            TableEntry::new("ab", "AB", 100.0),
+            TableEntry::new("c", "C", 100.0),
+        ]))
+        .with_prefix_fallback(true)
+        .with_sentence(true)
+        .with_upstream_sentence_model(10)
+    };
+    let translator = build().with_comment_format(&["xform/^ab$/META/".to_owned()]);
 
     let candidates = translator.translate("abc");
     let phrase = candidates
@@ -1328,6 +1330,22 @@ fn upstream_script_phrase_dedup_preserves_outer_comment_formatting() {
         .expect("the authoritative Poet phrase row should remain visible");
 
     assert_eq!(phrase.comment, "META");
+
+    let unformatted = build().translate("abc");
+    let phrase = unformatted
+        .iter()
+        .find(|candidate| {
+            candidate.text == "AB"
+                && matches!(
+                    candidate.source,
+                    CandidateSource::PartialTable { consumed: 2, .. }
+                )
+        })
+        .expect("the unformatted Poet phrase row should remain visible");
+    assert_eq!(
+        phrase.comment, "",
+        "an ordinary outer lookup code is not ScriptTranslation display metadata"
+    );
 }
 
 #[test]

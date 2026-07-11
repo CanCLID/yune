@@ -3652,6 +3652,8 @@ impl StaticTableTranslator {
                         candidates,
                         usize::MAX,
                         self.initial_quality,
+                        !self.comment_format.is_empty(),
+                        !self.preedit_format.is_empty(),
                     );
                     let merged_window_overflow = candidates.len() > limit;
                     candidates.truncate(limit);
@@ -5658,6 +5660,8 @@ impl StaticTableTranslator {
                 candidates,
                 usize::MAX,
                 self.initial_quality,
+                !self.comment_format.is_empty(),
+                !self.preedit_format.is_empty(),
             );
         }
 
@@ -6185,6 +6189,8 @@ fn merge_upstream_script_translation_candidates(
     outer_candidates: Vec<Candidate>,
     limit: usize,
     initial_quality: f32,
+    preserve_formatted_comment: bool,
+    preserve_formatted_preedit: bool,
 ) -> Vec<Candidate> {
     let mut sentences = Vec::new();
     let mut phrase_stream = Vec::new();
@@ -6213,8 +6219,12 @@ fn merge_upstream_script_translation_candidates(
         };
         // Keep the model row's oracle span/order, but retain schema formatting
         // already applied by the ordinary translator path.
-        candidate.comment.clone_from(&outer.comment);
-        candidate.preedit.clone_from(&outer.preedit);
+        if preserve_formatted_comment {
+            candidate.comment.clone_from(&outer.comment);
+        }
+        if preserve_formatted_preedit {
+            candidate.preedit.clone_from(&outer.preedit);
+        }
     }
     phrase_stream.extend(outer_candidates);
     phrase_stream.sort_by(|left, right| {

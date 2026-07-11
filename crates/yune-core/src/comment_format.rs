@@ -21,6 +21,10 @@ impl CommentFormat {
         self.apply_with_modified(value).0
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.formulas.is_empty()
+    }
+
     pub(crate) fn apply_with_modified(&self, value: &str) -> (String, bool) {
         let mut formatted = value.to_owned();
         for formula in &self.formulas {

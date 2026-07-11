@@ -24,8 +24,11 @@ regression guard, not an acceptance oracle.
 > predeclared 4c OpenCC effects or the already owner-signed equal-weight class.
 > The classifier now labels that result `classification_status: complete` while
 > preserving `raw_comparator_all_accepted: false`. The blocking review stop is
-> resolved, but explicit owner re-disposition under D-48 is still required
-> before 4b; no D-48 lane is closed, and this packet is not final
+> resolved. On 2026-07-11 the owner renewed the narrowly scoped D-48 class-3
+> exception for the complete captured equal-weight residual (`6,086`
+> inversions, zero cross-weight inversions, no beyond-oracle-depth use), with
+> mandatory cross-weight/provenance/common-input-page-1 revisit triggers. 4b is
+> permitted to start; no D-48 lane is closed, and this packet is not final
 > M59-REACH-04 evidence.
 >
 > [`increment-3b-transformed-algebra/`](./increment-3b-transformed-algebra/) is

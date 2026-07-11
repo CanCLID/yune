@@ -275,6 +275,7 @@ engine:
     - script_translator
 translator:
   dictionary: luna_pinyin
+  max_homophones: 8
 grammar:
   language: m54_test
 ",
@@ -654,6 +655,7 @@ engine:
     - script_translator
 translator:
   dictionary: luna_pinyin
+  max_homophones: 8
 {grammar}",
         ),
     )

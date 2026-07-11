@@ -208,6 +208,159 @@ fn prediction_never_first_keeps_learned_prefix_prediction_behind_table_top() {
 }
 
 #[test]
+fn exact_user_phrase_suppresses_poet_sentence_but_preserves_phrase_stream() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "AB"), ("cd", "CD")])
+            .with_sentence(true)
+            .with_upstream_sentence_model(10),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    assert!(
+        engine
+            .context()
+            .candidates
+            .iter()
+            .all(|candidate| candidate.source != CandidateSource::Sentence),
+        "the exact user phrase is merged after Poet and must remove the composed sentence"
+    );
+    assert!(engine.context().candidates.iter().any(|candidate| {
+        candidate.text == "USER" && candidate.source == CandidateSource::UserTable
+    }));
+    assert_eq!(
+        engine.context().candidates[0].text,
+        "USER",
+        "a reliable exact user phrase precedes the equal-length system phrase"
+    );
+    assert!(engine.context().candidates.iter().any(|candidate| {
+        candidate.text == "AB"
+            && candidate.source
+                == CandidateSource::PartialTable {
+                    consumed: 2,
+                    recompose_on_default: false,
+                }
+    }));
+}
+
+#[test]
+fn exact_user_phrase_backfills_plural_poet_window_and_keeps_list_complete() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abc", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::new([("a", "A"), ("a", "X"), ("a", "Y"), ("b", "B"), ("c", "C")])
+            .with_sentence(true)
+            .with_upstream_sentence_model(10)
+            .with_upstream_script_translation_limits(3, 3),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abc");
+
+    assert_eq!(engine.context().candidates[0].text, "USER");
+    assert!(engine
+        .context()
+        .candidates
+        .iter()
+        .all(|candidate| candidate.source != CandidateSource::Sentence));
+    for phrase in ["A", "X", "Y"] {
+        assert!(
+            engine
+                .context()
+                .candidates
+                .iter()
+                .any(|candidate| candidate.text == phrase),
+            "{phrase} must backfill the window after exact-user sentence suppression"
+        );
+    }
+    assert!(
+        engine.snapshot().candidate_list_complete,
+        "a non-empty userdb disables bounded refresh, so suppression must not underfill a hidden window"
+    );
+}
+
+#[test]
+fn poet_sentence_precedes_learned_longer_code_prediction_without_global_never_first() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcdef", "LEARNED", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "AB"), ("cd", "CD")])
+            .with_sentence(true)
+            .with_upstream_sentence_model(10),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    assert_eq!(engine.context().candidates[0].text, "ABCD");
+    assert_eq!(
+        engine.context().candidates[0].source,
+        CandidateSource::Sentence
+    );
+    assert_eq!(engine.context().candidates[1].text, "LEARNED");
+    assert_eq!(
+        engine.context().candidates[1].source,
+        CandidateSource::UserTable
+    );
+}
+
+#[test]
+fn learned_prediction_leads_system_completion_when_no_sentence_or_strict_exact_exists() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("axyz", "LEARNED", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.set_schema("luna_pinyin", "Luna Pinyin");
+    engine.add_translator(
+        StaticTableTranslator::new([("abcdef", "SYSTEM")])
+            .with_completion(true)
+            .with_sentence(true)
+            .with_upstream_sentence_model(10),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("a");
+
+    assert_eq!(engine.context().candidates[0].text, "LEARNED");
+    assert_eq!(
+        engine.context().candidates[0].source,
+        CandidateSource::UserTable
+    );
+    assert_eq!(engine.context().candidates[1].text, "SYSTEM");
+    assert_eq!(
+        engine.context().candidates[1].source,
+        CandidateSource::Completion
+    );
+}
+
+#[test]
+fn exact_user_phrase_does_not_suppress_non_script_translation_sentence() {
+    let mut userdb = UserDb::default();
+    userdb.learn_entry("abcd", "USER", 3, 3.0, 3);
+
+    let mut engine = Engine::new();
+    engine.add_translator(
+        StaticTableTranslator::new([("ab", "AB"), ("cd", "CD")]).with_sentence(true),
+    );
+    engine.set_userdb(userdb);
+    engine.set_input("abcd");
+
+    assert!(engine
+        .context()
+        .candidates
+        .iter()
+        .any(|candidate| candidate.source == CandidateSource::Sentence));
+}
+
+#[test]
 fn bounded_refresh_expands_to_full_list_when_paging_past_window() {
     let dictionary = bounded_refresh_dictionary();
     let mut engine = Engine::new();

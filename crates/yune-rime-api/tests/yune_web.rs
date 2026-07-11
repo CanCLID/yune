@@ -50,6 +50,9 @@ const TYPEDUCK_V112_M28_PARTIAL_SELECTION: &str = include_str!(
 const M28_UPSTREAM_JYUTPING_COMPOSITION: &str = include_str!(
     "../../yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json"
 );
+const UPSTREAM_LUNA_SENTENCE_EXPANDED: &str = include_str!(
+    "../../yune-core/tests/fixtures/upstream-1.17.0/luna-pinyin-sentence-expanded.json"
+);
 const X11_PAGE_DOWN: i32 = 0xff56;
 
 #[path = "yune_web/m59_reachability.rs"]
@@ -3242,6 +3245,168 @@ fn stage_and_deploy_tracked_luna(runtime: &YuneWebRuntime) {
             .expect("tracked byte-backed asset should be copied");
     }
     deploy_public_demo_schema(runtime, "luna_pinyin");
+}
+
+#[test]
+fn m59_luna_long_sentence_page_order_matches_pinned_oracle_on_byte_backed_product() {
+    let _guard = test_guard();
+    let oracle: Value = serde_json::from_str(UPSTREAM_LUNA_SENTENCE_EXPANDED)
+        .expect("pinned upstream Luna sentence fixture should parse");
+    assert_eq!(
+        oracle["oracle"]["engine_commit"],
+        Value::String("33e78140250125871856cdc5b42ddc6a5fcd3cd4".to_owned()),
+        "long-sentence product parity must stay pinned to librime 1.17.0"
+    );
+
+    let runtime = YuneWebRuntime::create_with_schema("m59-luna-long-page-order", "luna_pinyin");
+    stage_and_deploy_tracked_luna(&runtime);
+    let state = unsafe {
+        yune_web_init(
+            runtime.shared_c.as_ptr(),
+            runtime.user_c.as_ptr(),
+            runtime.schema_id_c.as_ptr(),
+        )
+    };
+    assert!(
+        !state.is_null(),
+        "luna_pinyin should init on byte-backed assets"
+    );
+    let inspector = CString::new("yune_inspector").expect("option should be valid");
+    assert_eq!(
+        unsafe { yune_web_set_option(state, inspector.as_ptr(), TRUE) },
+        TRUE
+    );
+
+    let mut mismatches = Vec::new();
+    for (scenario, input, selected_prefix, expected_remainder) in [
+        (
+            "sentence_benchmark_37",
+            "ceshiyixiachangjushuruxingnengzenyang",
+            "\u{6e2c}\u{8a66}\u{4e00}\u{4e0b}",
+            "changjushuruxingnengzenyang",
+        ),
+        (
+            "sentence_benchmark_59",
+            "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+            "\u{9019}\u{500b}",
+            "yinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        ),
+    ] {
+        let expected = oracle["snapshots"]
+            .as_array()
+            .expect("oracle snapshots should be an array")
+            .iter()
+            .find(|snapshot| snapshot["scenario"].as_str() == Some(scenario))
+            .unwrap_or_else(|| panic!("missing pinned oracle snapshot for {scenario}"));
+        assert_eq!(
+            expected["page_no"],
+            Value::Number(0.into()),
+            "pinned oracle snapshot must describe page zero"
+        );
+        assert_eq!(
+            expected["highlighted_candidate_index"],
+            Value::Number(0.into()),
+            "pinned oracle snapshot must highlight candidate zero"
+        );
+        assert_eq!(
+            expected["is_composing"],
+            Value::Bool(true),
+            "pinned oracle snapshot must be composing"
+        );
+
+        let page = process_input(state, input);
+        assert_eq!(
+            page["context"]["input"],
+            Value::String(input.to_owned()),
+            "{scenario}: product response should retain the raw typed input"
+        );
+        assert_eq!(
+            page["context"]["page_no"],
+            Value::Number(0.into()),
+            "{scenario}: product response should remain on page zero"
+        );
+        assert_eq!(
+            page["context"]["highlighted"],
+            Value::Number(0.into()),
+            "{scenario}: product response should highlight candidate zero"
+        );
+        assert_eq!(
+            page["status"]["is_composing"],
+            Value::Bool(true),
+            "{scenario}: product response should remain composing"
+        );
+        assert_eq!(
+            page["context"]["page_size"], expected["page_size"],
+            "{scenario}: deployed product page size should match the pinned oracle"
+        );
+        assert_schema_storage_byte_backed("luna_pinyin", &page["context"]["debug"]["storage"]);
+
+        // Both the pinned desktop oracle and this real deployed harness expose
+        // page_size=5. Compare exactly that first page. The web ABI projects an
+        // absent C comment as "", so normalize the fixture's JSON null to the
+        // same representation.
+        let expected_first_five = expected["selected_candidates"]
+            .as_array()
+            .expect("oracle selected candidates should be an array")
+            .iter()
+            .take(5)
+            .map(|candidate| {
+                json!({
+                    "text": candidate["text"],
+                    "comment": candidate["comment"].as_str().unwrap_or_default(),
+                })
+            })
+            .collect::<Vec<_>>();
+        let actual_first_five = page["context"]["candidates"]
+            .as_array()
+            .expect("product candidate page should be an array")
+            .iter()
+            .take(5)
+            .map(|candidate| {
+                json!({
+                    "text": candidate["text"],
+                    "comment": candidate["comment"],
+                })
+            })
+            .collect::<Vec<_>>();
+        if actual_first_five != expected_first_five {
+            mismatches.push(format!(
+                "{scenario}: actual={actual_first_five:?}, expected={expected_first_five:?}"
+            ));
+        }
+
+        let selected = response_json(unsafe { yune_web_select_candidate(state, 1) });
+        let expected_commits = Value::Array(vec![Value::String(selected_prefix.to_owned())]);
+        let expected_input = Value::String(expected_remainder.to_owned());
+        if selected["commits"] != expected_commits
+            || selected["context"]["input"] != expected_input
+            || selected["status"]["is_composing"] != Value::Bool(true)
+        {
+            mismatches.push(format!(
+                "{scenario}: selecting index 1 produced commits={:?}, input={:?}, composing={:?}; expected commits={expected_commits:?}, input={expected_input:?}, composing=true",
+                selected["commits"],
+                selected["context"]["input"],
+                selected["status"]["is_composing"],
+            ));
+        }
+
+        // Clear the recomposed remainder before driving the next independent
+        // oracle scenario through the same serialized deployed runtime.
+        let cleared = response_json(unsafe { yune_web_process_key(state, 0xff1b, 0) });
+        assert_eq!(
+            cleared["status"]["is_composing"],
+            Value::Bool(false),
+            "{scenario}: Escape should clear the recomposed remainder"
+        );
+    }
+
+    unsafe { yune_web_cleanup(state) };
+    runtime.remove();
+    assert!(
+        mismatches.is_empty(),
+        "deployed product page/order/recomposition must match the pinned librime oracle:\n{}",
+        mismatches.join("\n")
+    );
 }
 
 /// Drives the owner's named case: type the whole input, then compose an

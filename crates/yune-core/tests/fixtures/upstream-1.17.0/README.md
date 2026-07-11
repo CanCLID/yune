@@ -182,7 +182,10 @@ powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-m17-poet.ps1 -
   scenario set in that script contains the Phase 3R rows and tested-code
   metadata.
 - Carries source dictionary rows for each listed syllable plus the full input
-  code, and `essay.txt` rows for the in-scope source/candidate terms.
+  code, `essay.txt` rows for the in-scope source/candidate terms, and a separate
+  11-row sentence-support slice captured from pinned `rime/rime-essay`
+  `48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed`. The mechanics test consumes only
+  these checked-in fixture bytes; it does not consult a deployed product asset.
 - Capture command:
 
 ```powershell

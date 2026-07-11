@@ -161,6 +161,14 @@ pub trait Translator: Send + Sync {
         false
     }
 
+    /// Whether this translator owns upstream ScriptTranslation sentence/user
+    /// phrase ordering. Engine-level userdb merge uses this only to reproduce
+    /// that translator's exact/predictive precedence without changing the
+    /// global table/TypeDuck userdb heuristic.
+    fn uses_upstream_script_translation(&self) -> bool {
+        false
+    }
+
     fn translate_with_context_and_request_with_scratch(
         &self,
         input: &str,

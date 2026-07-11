@@ -238,30 +238,98 @@ fn dictionary_data_ignores_compiled_poet_artifact_until_explicitly_enabled() {
     let _env_guard = EnvVarGuard::unset("YUNE_POET_BYTE_BACKED");
     RimeCleanupAllSessions();
 
-    let root = unique_temp_dir("dictionary-data-poet-default-off");
+    let root = unique_temp_dir("dictionary-data-poet-mode-cache-key");
     let fixture = DictionaryDataFixture::new(&root, false);
     fixture.write_luna_pinyin_compiled_artifact_fixture();
     fixture.setup_runtime();
     fixture.candidates_for_schema("luna_pinyin", "ba");
-    assert!(
-        !memory_owner_profile_has_poet_bin_storage(),
+    assert_eq!(
+        session_poet_entries_identity(fixture.last_session_id()),
+        Some(("Vec<ModelEntry>".to_owned(), 2)),
         "present luna_pinyin.poet.bin must stay ignored unless YUNE_POET_BYTE_BACKED=1"
     );
-    fixture.cleanup();
     RimeCleanupAllSessions();
 
     std::env::set_var("YUNE_POET_BYTE_BACKED", "1");
-    let root = unique_temp_dir("dictionary-data-poet-opt-in");
+    fixture.candidates_for_schema("luna_pinyin", "ba");
+    assert!(
+        session_poet_entries_identity(fixture.last_session_id())
+            .is_some_and(|(storage, item_count)| storage.starts_with("poet_bin:") && item_count == 2),
+        "the same schema and artifact must not reuse the cached owned model after YUNE_POET_BYTE_BACKED changes to 1"
+    );
+    RimeCleanupAllSessions();
+
+    std::env::remove_var("YUNE_POET_BYTE_BACKED");
+    fixture.candidates_for_schema("luna_pinyin", "ba");
+    assert_eq!(
+        session_poet_entries_identity(fixture.last_session_id()),
+        Some(("Vec<ModelEntry>".to_owned(), 2)),
+        "changing the opt-in back to disabled must not reuse the cached byte-backed model"
+    );
+    RimeCleanupAllSessions();
+    fixture.cleanup();
+}
+
+#[test]
+fn dictionary_data_invalidates_cached_poet_when_same_path_artifact_is_replaced() {
+    let _guard = test_guard();
+    let _env_guard = EnvVarGuard::unset("YUNE_POET_BYTE_BACKED");
+    std::env::set_var("YUNE_POET_BYTE_BACKED", "1");
+    RimeCleanupAllSessions();
+
+    let root = unique_temp_dir("dictionary-data-poet-artifact-cache-key");
     let fixture = DictionaryDataFixture::new(&root, false);
     fixture.write_luna_pinyin_compiled_artifact_fixture();
     fixture.setup_runtime();
     fixture.candidates_for_schema("luna_pinyin", "ba");
     assert!(
-        memory_owner_profile_has_poet_bin_storage(),
-        "YUNE_POET_BYTE_BACKED=1 should consume the validated luna_pinyin.poet.bin artifact"
+        session_poet_entries_identity(fixture.last_session_id()).is_some_and(
+            |(storage, item_count)| storage.starts_with("poet_bin:") && item_count == 2
+        ),
+        "the initial YUNE-POET/3 artifact should be installed"
     );
-    fixture.cleanup();
     RimeCleanupAllSessions();
+
+    let poet_path = fixture.shared.join("luna_pinyin.poet.bin");
+    let mut legacy_poet = fs::read(&poet_path).expect("poet artifact should be readable");
+    assert_eq!(&legacy_poet[..12], b"YUNE-POET/3\0");
+    legacy_poet[..12].copy_from_slice(b"YUNE-POET/2\0");
+    fs::write(&poet_path, legacy_poet).expect("same-path legacy poet should be written");
+
+    fixture.candidates_for_schema("luna_pinyin", "ba");
+    assert_eq!(
+        session_poet_entries_identity(fixture.last_session_id()),
+        None,
+        "a same-path YUNE-POET/3 to YUNE-POET/2 replacement must be re-read and rejected instead of reusing the cached v3 translator"
+    );
+    RimeCleanupAllSessions();
+
+    let source = fs::read_to_string(fixture.shared.join("luna_pinyin.dict.yaml"))
+        .expect("luna_pinyin source dictionary should be readable");
+    let checksum = yune_core::rime_dict_source_checksum(0, [source.as_bytes()], None);
+    fs::write(
+        &poet_path,
+        yune_core::build_poet_bin(
+            [
+                yune_core::TableEntry::new("ba", "八", 2.0),
+                yune_core::TableEntry::new("ba", "爸", 1.0),
+                yune_core::TableEntry::new("bao", "包", 0.5),
+            ],
+            &[],
+            &[],
+            checksum,
+        ),
+    )
+    .expect("replacement YUNE-POET/3 artifact should be written");
+
+    fixture.candidates_for_schema("luna_pinyin", "ba");
+    assert!(
+        session_poet_entries_identity(fixture.last_session_id())
+            .is_some_and(|(storage, item_count)| storage.starts_with("poet_bin:") && item_count == 3),
+        "a new valid same-path poet artifact must replace both the invalid selection and the original two-entry cached translator"
+    );
+    RimeCleanupAllSessions();
+    fixture.cleanup();
 }
 
 #[test]
@@ -964,11 +1032,18 @@ schema:\n  schema_id: {schema_id}\n  name: {schema_id}\nengine:\n  translators:\
         }
         let mut context = empty_context();
         assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
-        let candidates = unsafe {
-            std::slice::from_raw_parts(
-                context.menu.candidates,
-                context.menu.num_candidates as usize,
-            )
+        let candidates = if context.menu.num_candidates == 0 {
+            &[][..]
+        } else {
+            assert!(!context.menu.candidates.is_null());
+            // SAFETY: a non-empty menu owns `num_candidates` contiguous rows
+            // until `RimeFreeContext` releases the context below.
+            unsafe {
+                std::slice::from_raw_parts(
+                    context.menu.candidates,
+                    context.menu.num_candidates as usize,
+                )
+            }
         };
         let result = candidates
             .iter()
@@ -1023,23 +1098,14 @@ impl Drop for EnvVarGuard {
     }
 }
 
-fn memory_owner_profile_has_poet_bin_storage() -> bool {
-    let json = crate::yune_m43_memory_owner_profile_json();
-    assert!(!json.is_null());
-    let text = unsafe { CStr::from_ptr(json) }
-        .to_string_lossy()
-        .into_owned();
-    unsafe { crate::yune_m37_metrics_free_string(json) };
-    let rows: Vec<serde_json::Value> =
-        serde_json::from_str(&text).expect("memory owner profile should parse");
-    rows.iter().any(|row| {
-        row["owner"]
-            .as_str()
-            .is_some_and(|owner| owner.starts_with("poet."))
-            && row["storage"]
-                .as_str()
-                .is_some_and(|storage| storage.starts_with("poet_bin:"))
-    })
+fn session_poet_entries_identity(
+    session_id: super::super::RimeSessionId,
+) -> Option<(String, usize)> {
+    session_web_diagnostics_snapshot(session_id)?
+        .memory_owner_rows
+        .into_iter()
+        .find(|row| row.owner == "poet.entries_by_code")
+        .map(|row| (row.storage, row.item_count))
 }
 
 fn compiled_table_fixture(checksum: u32) -> Vec<u8> {

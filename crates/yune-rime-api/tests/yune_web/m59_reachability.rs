@@ -558,6 +558,30 @@ fn run_explicit_false(case: &ReachabilityCase) {
             current = selected;
         }
         assert_eq!(committed, case.expected_final);
+    } else if case.schema_id == "luna_pinyin" {
+        // The corrected ScriptTranslation phrase iterator independently emits
+        // the first-syllable rows even when M59's supplemental injection is
+        // disabled. Lock the explicit-false output to the pinned librime page
+        // instead of treating the oracle-owned `莫` row as injected behavior.
+        let all_candidates = all_candidate_texts(state, page);
+        let oracle: Value = serde_json::from_str(LUNA_COMPOSITION)
+            .expect("pinned Luna composition fixture should parse");
+        let expected_page = oracle["inputs"][case.input]["page_0"]
+            .as_array()
+            .expect("pinned Luna input should have a page-0 list")
+            .iter()
+            .map(|value| {
+                value
+                    .as_str()
+                    .expect("pinned Luna page text should be a string")
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            &all_candidates[..expected_page.len()],
+            expected_page,
+            "Luna explicit-false must retain the independently oracle-owned phrase stream"
+        );
     } else {
         let standalone_target = case
             .steps

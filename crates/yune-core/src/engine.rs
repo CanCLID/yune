@@ -1510,12 +1510,17 @@ impl Engine {
         crate::m37_record_candidates_sorted(candidates.len());
         crate::m37_record_candidate_sort(sort_start.elapsed());
         let userdb_start = Instant::now();
+        let has_upstream_script_translation = self
+            .translators
+            .iter()
+            .any(|translator| translator.uses_upstream_script_translation());
         merge_userdb_candidates(
             &input,
             &mut candidates,
             self.userdb
                 .lookup(&UserDbLookupRequest::new(input.as_str()).with_predictive(true)),
             self.prediction_never_first,
+            has_upstream_script_translation,
         );
         crate::m37_record_userdb_merge(userdb_start.elapsed());
         let filter_start = Instant::now();
@@ -1563,12 +1568,42 @@ fn merge_userdb_candidates(
     candidates: &mut Vec<Candidate>,
     userdb_results: Vec<UserDbLookupResult>,
     prediction_never_first: bool,
+    has_upstream_script_translation: bool,
 ) {
     let input_code_len = comparable_userdb_code_len(input);
     for result in userdb_results {
         let user_code_len = result.comparable_code_len();
+        let exact_user_phrase = comparable_userdb_codes_equal(&result.code, input);
         let user_candidate = result.candidate();
-        let mut insertion_index = if user_code_len > input_code_len {
+        if exact_user_phrase && has_upstream_script_translation {
+            // Upstream ScriptTranslation merges the user dictionary after Poet.
+            // A reliable exact user phrase suppresses the composed sentence, but
+            // does not erase the independent system phrase/completion stream.
+            candidates.retain(|candidate| candidate.source != CandidateSource::Sentence);
+        }
+        let mut insertion_index = if has_upstream_script_translation && exact_user_phrase {
+            // With equal consumed length, pinned ScriptTranslation prefers a
+            // reliable non-correction user phrase over the system phrase.
+            0
+        } else if has_upstream_script_translation && user_code_len > input_code_len {
+            // Sentences are drained before either user or system phrases. Once
+            // a sentence has been emitted, a learned longer-code prediction may
+            // lead the phrase stream; without a sentence, one strict system row
+            // must remain ahead of that prediction.
+            let after_sentences = candidates
+                .iter()
+                .position(|candidate| candidate.source != CandidateSource::Sentence)
+                .unwrap_or(candidates.len());
+            if after_sentences > 0 || candidates.is_empty() {
+                after_sentences
+            } else {
+                usize::from(
+                    candidates
+                        .first()
+                        .is_some_and(|candidate| candidate.source == CandidateSource::Table),
+                )
+            }
+        } else if user_code_len > input_code_len {
             let mut index = candidates
                 .iter()
                 .position(|candidate| candidate.source != CandidateSource::UserTable)
@@ -1616,6 +1651,14 @@ fn comparable_userdb_code_len(code: &str) -> usize {
     code.chars()
         .filter(|ch| !ch.is_ascii_digit() && !ch.is_whitespace())
         .count()
+}
+
+fn comparable_userdb_codes_equal(left: &str, right: &str) -> bool {
+    left.chars()
+        .filter(|ch| !ch.is_ascii_digit() && !ch.is_whitespace())
+        .eq(right
+            .chars()
+            .filter(|ch| !ch.is_ascii_digit() && !ch.is_whitespace()))
 }
 
 fn merge_classic_and_staged_ai(

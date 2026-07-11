@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::mem;
 use std::ops::Range;
 use std::sync::Arc;
@@ -29,8 +29,12 @@ use storage::{ByteBackedPoetStore, VocabularyCharsRange};
 pub const UPSTREAM_NO_GRAMMAR_PENALTY: f64 = -13.815510557964274;
 const UPSTREAM_DICT_ENTRY_WEIGHT_SCALE: f64 = 18.420680743952367;
 
-const CODE_LENGTH_QUALITY_BAND: f32 = 1_000.0;
-const MAX_WORD_GRAPH_ENTRIES_PER_SPAN: usize = 7;
+const DEFAULT_SENTENCE_CUTOFF_THRESHOLD: f64 = 0.1;
+const SINGULAR_GRAMMAR_BEAM_WIDTH: usize = 7;
+// Retain enough direct phrase rows to fill the shipped first-page window. The
+// configured `max_homophones` separately controls how many of these rows enter
+// Poet; this value is not librime's BeamSearch kMaxLineCandidates.
+const MIN_WORD_GRAPH_PHRASE_ROWS_PER_SPAN: usize = 7;
 const MAX_DERIVED_PHRASE_CODES_PER_VOCABULARY_ENTRY: usize = 16;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
@@ -174,6 +178,37 @@ fn upstream_dictionary_weight(raw_weight: f64) -> f64 {
     weight - UPSTREAM_DICT_ENTRY_WEIGHT_SCALE
 }
 
+fn build_script_encoder_character_codes(
+    entries: impl IntoIterator<Item = (char, String, f32)>,
+) -> HashMap<char, Vec<String>> {
+    // EntryCollector::TranslateWord excludes pronunciations below five percent
+    // of the word's total weight before ScriptEncoder expands preset phrases.
+    // Keeping this filter in the shared owned/compiled input builder prevents
+    // false phrase codes (for example 足/ju at 0%) without duplicating essay
+    // entries into the main table.
+    let mut weighted_codes = HashMap::<char, BTreeMap<String, f32>>::new();
+    for (ch, code, weight) in entries {
+        weighted_codes
+            .entry(ch)
+            .or_default()
+            .entry(code)
+            .or_insert(weight);
+    }
+
+    weighted_codes
+        .into_iter()
+        .map(|(ch, codes)| {
+            let total_weight = codes.values().copied().sum::<f32>();
+            let minimum_weight = total_weight * 0.05;
+            let codes = codes
+                .into_iter()
+                .filter_map(|(code, weight)| (weight >= minimum_weight).then_some(code))
+                .collect();
+            (ch, codes)
+        })
+        .collect()
+}
+
 fn build_model_vocabulary_index(
     vocabulary: &[PresetVocabularyEntry],
     character_codes: &HashMap<char, Vec<String>>,
@@ -244,9 +279,17 @@ pub fn make_sentences(
         return Vec::new();
     }
 
-    make_sentences_by_end(graph, max_sentences, total_length, None)
-        .remove(&total_length)
-        .unwrap_or_default()
+    make_sentences_by_end(
+        graph,
+        max_sentences,
+        usize::MAX,
+        DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
+        total_length,
+        None,
+        true,
+    )
+    .remove(&total_length)
+    .unwrap_or_default()
 }
 
 #[must_use]
@@ -260,37 +303,55 @@ pub fn make_sentences_with_grammar(
         return Vec::new();
     }
 
-    make_sentences_by_end(graph, max_sentences, total_length, Some(grammar))
-        .remove(&total_length)
-        .unwrap_or_default()
+    make_sentences_by_end(
+        graph,
+        max_sentences,
+        usize::MAX,
+        DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
+        total_length,
+        Some(grammar),
+        true,
+    )
+    .remove(&total_length)
+    .unwrap_or_default()
 }
 
 fn make_sentences_by_end(
     graph: &WordGraph,
     max_sentences: usize,
+    max_homophones: usize,
+    sentence_cutoff_threshold: f64,
     total_length: usize,
     grammar: Option<&dyn Grammar>,
+    skip_direct_full_word: bool,
 ) -> BTreeMap<usize, Vec<SentencePath>> {
     if max_sentences == 0 {
         return BTreeMap::new();
     }
 
-    collect_sentence_states(graph, max_sentences, total_length, grammar)
-        .into_iter()
-        .filter(|(end, _)| *end > 0)
-        .map(|(end, states)| {
-            (
-                end,
-                sentence_paths_from_states(states, max_sentences, grammar.is_some()),
-            )
-        })
-        .collect()
+    collect_sentence_states(
+        graph,
+        max_sentences,
+        max_homophones,
+        total_length,
+        grammar,
+        skip_direct_full_word,
+    )
+    .into_iter()
+    .filter(|(end, _)| *end > 0)
+    .map(|(end, states)| {
+        (
+            end,
+            sentence_paths_from_states(states, max_sentences, sentence_cutoff_threshold),
+        )
+    })
+    .collect()
 }
 
 fn sentence_paths_vec_by_end_from_states(
     states_by_end: &[Vec<PathState>],
     max_sentences: usize,
-    dedupe_text: bool,
+    sentence_cutoff_threshold: f64,
 ) -> Vec<Vec<SentencePath>> {
     states_by_end
         .iter()
@@ -298,7 +359,7 @@ fn sentence_paths_vec_by_end_from_states(
             if states.is_empty() {
                 Vec::new()
             } else {
-                sentence_paths_from_states(states.clone(), max_sentences, dedupe_text)
+                sentence_paths_from_states(states.clone(), max_sentences, sentence_cutoff_threshold)
             }
         })
         .collect()
@@ -329,25 +390,37 @@ fn make_abbreviation_sentences_by_end(
 fn collect_sentence_states(
     graph: &WordGraph,
     max_sentences: usize,
+    max_homophones: usize,
     total_length: usize,
     grammar: Option<&dyn Grammar>,
+    skip_direct_full_word: bool,
 ) -> BTreeMap<usize, Vec<PathState>> {
-    collect_sentence_state_vec(graph, max_sentences, total_length, grammar)
-        .into_iter()
-        .enumerate()
-        .filter(|(_, states)| !states.is_empty())
-        .collect()
+    collect_sentence_state_vec(
+        graph,
+        max_sentences,
+        max_homophones,
+        total_length,
+        grammar,
+        skip_direct_full_word,
+    )
+    .into_iter()
+    .enumerate()
+    .filter(|(_, states)| !states.is_empty())
+    .collect()
 }
 
 fn collect_sentence_state_vec(
     graph: &WordGraph,
     max_sentences: usize,
+    max_homophones: usize,
     total_length: usize,
     grammar: Option<&dyn Grammar>,
+    skip_direct_full_word: bool,
 ) -> Vec<Vec<PathState>> {
     let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
     let mut dp_states_created = 0usize;
     let mut dp_beam_evictions = 0usize;
+    let search = SentenceSearchMode::for_options(max_sentences, grammar.is_some());
     let mut states_by_end = vec![Vec::<PathState>::new(); total_length.saturating_add(1)];
     if let Some(start_states) = states_by_end.first_mut() {
         start_states.push(PathState::default());
@@ -364,8 +437,11 @@ fn collect_sentence_state_vec(
             if *end > total_length {
                 continue;
             }
+            if skip_direct_full_word && *start == 0 && *end == total_length {
+                continue;
+            }
             for source in &source_states {
-                for entry in entries {
+                for entry in entries.iter().take(max_homophones) {
                     let candidate_weight = if let Some(grammar) = grammar {
                         source.weight
                             + entry.weight
@@ -377,18 +453,11 @@ fn collect_sentence_state_vec(
                     } else {
                         source.weight + null_grammar_score(entry.weight)
                     };
-                    if beam_rejects_by_weight(
-                        Some(&states_by_end[*end]),
-                        max_sentences * 3,
-                        candidate_weight,
-                    ) {
-                        continue;
-                    }
                     let next = source.extended(&entry.text, candidate_weight, end - start, grammar);
                     if record_metrics {
                         dp_states_created += 1;
                     }
-                    let evicted = insert_state(&mut states_by_end[*end], next, max_sentences * 3);
+                    let evicted = insert_sentence_state(&mut states_by_end[*end], next, search);
                     if record_metrics && evicted {
                         dp_beam_evictions += 1;
                     }
@@ -404,18 +473,31 @@ fn collect_sentence_state_vec(
     states_by_end
 }
 
-fn beam_rejects_by_weight(
-    states: Option<&Vec<PathState>>,
-    beam_width: usize,
-    candidate_weight: f64,
-) -> bool {
-    let Some(states) = states else {
-        return false;
-    };
-    states.len() >= beam_width
-        && states
-            .last()
-            .is_some_and(|worst| candidate_weight < worst.weight)
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SentenceSearchMode {
+    SingularNull,
+    SingularGrammar,
+    Plural { beam_width: usize },
+}
+
+impl SentenceSearchMode {
+    fn for_options(max_sentences: usize, has_grammar: bool) -> Self {
+        match (max_sentences, has_grammar) {
+            (1, false) => Self::SingularNull,
+            (1, true) => Self::SingularGrammar,
+            _ => Self::Plural {
+                beam_width: max_sentences.saturating_mul(3),
+            },
+        }
+    }
+
+    const fn beam_width(self) -> usize {
+        match self {
+            Self::SingularNull => 1,
+            Self::SingularGrammar => SINGULAR_GRAMMAR_BEAM_WIDTH,
+            Self::Plural { beam_width } => beam_width,
+        }
+    }
 }
 
 fn collect_abbreviation_sentence_states(
@@ -463,20 +545,17 @@ fn collect_abbreviation_sentence_states(
 fn sentence_paths_from_states(
     mut states: Vec<PathState>,
     max_sentences: usize,
-    dedupe_text: bool,
+    sentence_cutoff_threshold: f64,
 ) -> Vec<SentencePath> {
-    states.sort_by(compare_path_state);
-    if !dedupe_text {
-        return states
-            .into_iter()
-            .take(max_sentences)
-            .map(|state| SentencePath {
-                text: state.text,
-                weight: state.weight,
-                word_lengths: state.word_lengths.into_vec(),
-            })
-            .collect();
-    }
+    // All search modes retain traversal order for equal weights. `sort_by` is
+    // stable, so this final ranking does not add Yune-specific lexical or
+    // partition tie-breakers to pinned Poet's CompareWeight contract.
+    states.sort_by(|left, right| {
+        right
+            .weight
+            .partial_cmp(&left.weight)
+            .unwrap_or(Ordering::Equal)
+    });
     let mut paths = Vec::new();
     for state in states {
         if paths
@@ -485,11 +564,32 @@ fn sentence_paths_from_states(
         {
             continue;
         }
-        paths.push(SentencePath {
+        let path = SentencePath {
             text: state.text,
             weight: state.weight,
             word_lengths: state.word_lengths.into_vec(),
-        });
+        };
+        if max_sentences > 1 {
+            if let Some(previous) = paths.last() {
+                let denominator = previous.weight.abs();
+                let relative_gap = if denominator == 0.0 {
+                    if path.weight == previous.weight {
+                        0.0
+                    } else {
+                        f64::INFINITY
+                    }
+                } else {
+                    (path.weight - previous.weight).abs() / denominator
+                };
+                let accepted_after_first = paths.len().saturating_sub(1) as i32;
+                let accelerated_threshold = sentence_cutoff_threshold
+                    * (1.0 - 1.0 / max_sentences as f64).powi(accepted_after_first);
+                if relative_gap > accelerated_threshold {
+                    break;
+                }
+            }
+        }
+        paths.push(path);
         if paths.len() == max_sentences {
             break;
         }
@@ -668,22 +768,39 @@ fn push_recent_word(recent_words: &mut Vec<String>, word: &str) {
     recent_words.push(word.to_owned());
 }
 
-fn insert_state(states: &mut Vec<PathState>, candidate: PathState, beam_width: usize) -> bool {
-    if let Some(existing_index) = states
-        .iter()
-        .position(|existing| has_same_future_grammar_state(existing, &candidate))
-    {
-        if compare_path_state(&candidate, &states[existing_index]) == Ordering::Less {
-            states.remove(existing_index);
-        } else {
+fn insert_sentence_state(
+    states: &mut Vec<PathState>,
+    candidate: PathState,
+    search: SentenceSearchMode,
+) -> bool {
+    let duplicate_index = match search {
+        SentenceSearchMode::SingularNull => states.first().map(|_| 0),
+        SentenceSearchMode::SingularGrammar => {
+            let candidate_last_word = candidate.recent_words.last();
+            states
+                .iter()
+                .position(|existing| existing.recent_words.last() == candidate_last_word)
+        }
+        SentenceSearchMode::Plural { .. } => states
+            .iter()
+            .position(|existing| existing.text == candidate.text),
+    };
+    if let Some(existing_index) = duplicate_index {
+        // DynamicProgramming, singular grammar's last-word map, and plural
+        // text-hash dedup all replace only on a strictly higher weight. Equal
+        // weights retain the first line encountered in graph traversal.
+        if candidate.weight <= states[existing_index].weight {
             return false;
         }
+        states.remove(existing_index);
     }
+
     let index = states
-        .binary_search_by(|existing| compare_path_state(existing, &candidate))
-        .unwrap_or_else(|index| index);
+        .iter()
+        .position(|existing| candidate.weight > existing.weight)
+        .unwrap_or(states.len());
     states.insert(index, candidate);
-    if states.len() > beam_width {
+    if states.len() > search.beam_width() {
         states.pop();
         return true;
     }
@@ -712,16 +829,6 @@ fn insert_abbreviation_state(states: &mut Vec<PathState>, candidate: PathState, 
 
 fn has_same_future_grammar_state(left: &PathState, right: &PathState) -> bool {
     left.text == right.text && left.recent_words == right.recent_words
-}
-
-fn compare_path_state(left: &PathState, right: &PathState) -> Ordering {
-    right
-        .weight
-        .partial_cmp(&left.weight)
-        .unwrap_or(Ordering::Equal)
-        .then_with(|| left.word_lengths.len().cmp(&right.word_lengths.len()))
-        .then_with(|| right.word_lengths.cmp(&left.word_lengths))
-        .then_with(|| left.text.cmp(&right.text))
 }
 
 fn compare_abbreviation_path_state(left: &PathState, right: &PathState) -> Ordering {
@@ -859,12 +966,34 @@ fn partition_spread(lengths: &[usize]) -> usize {
     max - min
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct UpstreamSentenceModel {
     storage: PoetModelStorage,
     lookup_index: SentenceLookupIndex,
     max_candidates: usize,
+    // ScriptTranslator configuration. These are intentionally independent of
+    // the visible candidate window: upstream defaults to one sentence and one
+    // homophone per graph span, then drains an unbounded phrase iterator.
+    max_sentences: usize,
+    max_homophones: usize,
+    sentence_cutoff_threshold: f64,
+    excluded_texts: HashSet<String>,
     grammar: GrammarProvider,
+}
+
+impl Default for UpstreamSentenceModel {
+    fn default() -> Self {
+        Self {
+            storage: PoetModelStorage::default(),
+            lookup_index: SentenceLookupIndex::default(),
+            max_candidates: 1,
+            max_sentences: 1,
+            max_homophones: 1,
+            sentence_cutoff_threshold: DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
+            excluded_texts: HashSet::new(),
+            grammar: GrammarProvider::default(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -873,6 +1002,7 @@ pub struct UpstreamSentenceScratch {
     max_candidates: usize,
     states_by_end: Vec<Vec<PathState>>,
     sentence_paths_by_end: Vec<Vec<SentencePath>>,
+    phrase_candidates: Vec<Candidate>,
     prefix_states_by_start: Vec<Option<SentencePrefixState>>,
     exact_spans_by_start: Vec<Vec<CachedSentenceCodeSpan>>,
 }
@@ -883,6 +1013,7 @@ impl UpstreamSentenceScratch {
         self.max_candidates = 0;
         self.states_by_end.clear();
         self.sentence_paths_by_end.clear();
+        self.phrase_candidates.clear();
         self.prefix_states_by_start.clear();
         self.exact_spans_by_start.clear();
     }
@@ -1086,12 +1217,11 @@ impl OwnedPoetModelStorage {
 
     fn normal_phrase_character_codes(
         &self,
-        grammar: &GrammarProvider,
+        _grammar: &GrammarProvider,
     ) -> &HashMap<char, Vec<String>> {
-        match grammar {
-            GrammarProvider::Octagram(_) => &self.abbreviation_character_codes,
-            GrammarProvider::Null(_) => &self.character_codes,
-        }
+        // ScriptEncoder's five-percent pronunciation filter is independent of
+        // whether Poet later scores the graph with null or octagram grammar.
+        &self.character_codes
     }
 
     fn memory_owner_rows(&self, lookup_index: &SentenceLookupIndex) -> Vec<MemoryOwnerRow> {
@@ -1206,6 +1336,10 @@ impl UpstreamSentenceModel {
             storage,
             lookup_index: SentenceLookupIndex::default(),
             max_candidates: max_candidates.max(1),
+            max_sentences: 1,
+            max_homophones: 1,
+            sentence_cutoff_threshold: DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
+            excluded_texts: HashSet::new(),
             grammar: GrammarProvider::default(),
         })
     }
@@ -1217,7 +1351,7 @@ impl UpstreamSentenceModel {
         max_candidates: usize,
     ) -> Self {
         let mut owned_entries = Vec::new();
-        let mut character_codes: HashMap<char, Vec<String>> = HashMap::new();
+        let mut script_encoder_codes = Vec::new();
         let mut abbreviation_character_codes: HashMap<char, Vec<String>> = HashMap::new();
         for entry in entries {
             if entry.code.is_empty() {
@@ -1226,10 +1360,7 @@ impl UpstreamSentenceModel {
             let mut chars = entry.text.chars();
             if let Some(ch) = chars.next() {
                 if chars.next().is_none() {
-                    character_codes
-                        .entry(ch)
-                        .or_default()
-                        .push(entry.code.clone());
+                    script_encoder_codes.push((ch, entry.code.clone(), entry.weight));
                     if entry.weight > 0.0 {
                         abbreviation_character_codes
                             .entry(ch)
@@ -1240,10 +1371,7 @@ impl UpstreamSentenceModel {
             }
             owned_entries.push(entry);
         }
-        for codes in character_codes.values_mut() {
-            codes.sort();
-            codes.dedup();
-        }
+        let character_codes = build_script_encoder_character_codes(script_encoder_codes);
         for codes in abbreviation_character_codes.values_mut() {
             codes.sort();
             codes.dedup();
@@ -1274,6 +1402,10 @@ impl UpstreamSentenceModel {
             storage,
             lookup_index,
             max_candidates: max_candidates.max(1),
+            max_sentences: 1,
+            max_homophones: 1,
+            sentence_cutoff_threshold: DEFAULT_SENTENCE_CUTOFF_THRESHOLD,
+            excluded_texts: HashSet::new(),
             grammar: GrammarProvider::default(),
         }
     }
@@ -1281,6 +1413,32 @@ impl UpstreamSentenceModel {
     #[must_use]
     pub fn with_grammar(mut self, grammar: impl Into<GrammarProvider>) -> Self {
         self.grammar = grammar.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_script_translation_limits(
+        mut self,
+        max_sentences: usize,
+        max_homophones: usize,
+    ) -> Self {
+        self.max_sentences = max_sentences.clamp(1, 100);
+        self.max_homophones = max_homophones;
+        self
+    }
+
+    #[must_use]
+    pub fn with_sentence_cutoff_threshold(mut self, sentence_cutoff_threshold: f64) -> Self {
+        self.sentence_cutoff_threshold = sentence_cutoff_threshold;
+        self
+    }
+
+    #[must_use]
+    pub fn with_excluded_texts(
+        mut self,
+        texts: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
+        self.excluded_texts = texts.into_iter().map(Into::into).collect();
         self
     }
 
@@ -1380,108 +1538,112 @@ impl UpstreamSentenceModel {
         max_candidates: usize,
     ) -> Vec<Candidate> {
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
+        // ScriptTranslation exposes only full-input Poet winners. Intermediate
+        // DP states remain internal; visible partial rows come from the
+        // independent dictionary/ScriptEncoder phrase stream below.
         let sentences_by_end = make_sentences_by_end(
             graph,
-            max_candidates,
+            self.max_sentences,
+            self.max_homophones,
+            self.sentence_cutoff_threshold,
             input.len(),
             self.grammar.scoring_grammar(),
+            true,
         );
-        self.candidates_for_sentences_by_end_with_limit(input, &sentences_by_end, max_candidates)
+        let phrases = Self::phrase_candidates_for_graph(
+            input,
+            graph,
+            max_candidates.saturating_add(self.max_sentences),
+        );
+        self.merge_script_translation_candidates(
+            sentences_by_end
+                .get(&input.len())
+                .map(Vec::as_slice)
+                .unwrap_or_default(),
+            &phrases,
+            max_candidates,
+        )
     }
 
-    fn candidates_for_sentences_by_end_with_limit(
-        &self,
-        input: &str,
-        sentences_by_end: &BTreeMap<usize, Vec<SentencePath>>,
-        max_candidates: usize,
-    ) -> Vec<Candidate> {
-        let mut candidates = HashMap::new();
-        for end in input
-            .char_indices()
-            .map(|(index, _)| index)
-            .filter(|index| *index > 0)
-            .chain(std::iter::once(input.len()))
-        {
-            let Some(sentences) = sentences_by_end.get(&end) else {
-                continue;
-            };
-            for sentence in sentences {
-                let candidate = Candidate {
-                    text: sentence.text.clone(),
+    fn phrase_candidates_for_graph(input: &str, graph: &WordGraph, limit: usize) -> Vec<Candidate> {
+        let mut candidates = Vec::new();
+        let mut seen = HashMap::new();
+        let Some(phrases) = graph.get(&0) else {
+            return candidates;
+        };
+        for (end, entries) in phrases.iter().rev() {
+            for entry in entries {
+                // ScriptTranslation's phrase iterator is text-distinct. Apply
+                // the bound to visible rows, not raw dictionary records: an
+                // early run of duplicate rows must not hide a later unique
+                // phrase and leave the page short after the final merge.
+                if seen.insert(entry.text.clone(), ()).is_some() {
+                    continue;
+                }
+                candidates.push(Candidate {
+                    text: entry.text.clone(),
                     comment: String::new(),
                     preedit: None,
-                    source: if end < input.len() {
+                    source: if *end == input.len() {
+                        CandidateSource::Table
+                    } else {
                         CandidateSource::PartialTable {
-                            consumed: end,
+                            consumed: *end,
                             recompose_on_default: false,
                         }
-                    } else {
-                        CandidateSource::Sentence
                     },
-                    quality: end as f32 * CODE_LENGTH_QUALITY_BAND + sentence.weight as f32,
-                };
-                match candidates.get(&candidate.text) {
-                    Some(existing)
-                        if compare_sentence_candidate(&candidate, existing) != Ordering::Less => {}
-                    _ => {
-                        candidates.insert(candidate.text.clone(), candidate);
-                    }
+                    quality: 0.0,
+                });
+                if candidates.len() >= limit {
+                    return candidates;
                 }
             }
         }
-        let mut candidates = candidates.into_values().collect::<Vec<_>>();
-        candidates.sort_by(compare_sentence_candidate);
-        candidates.truncate(max_candidates);
         candidates
     }
 
-    fn candidates_for_sentence_path_vec_with_limit(
+    fn merge_script_translation_candidates(
         &self,
-        input: &str,
-        sentence_paths_by_end: &[Vec<SentencePath>],
+        sentences: &[SentencePath],
+        phrases: &[Candidate],
         max_candidates: usize,
     ) -> Vec<Candidate> {
         let max_candidates = max_candidates.max(1).min(self.max_candidates);
-        let mut candidates = HashMap::new();
-        for end in input
-            .char_indices()
-            .map(|(index, _)| index)
-            .filter(|index| *index > 0)
-            .chain(std::iter::once(input.len()))
-        {
-            let Some(sentences) = sentence_paths_by_end.get(end) else {
-                continue;
-            };
-            if sentences.is_empty() {
-                continue;
-            }
-            for sentence in sentences {
-                let candidate = Candidate {
+        let has_reliable_full_phrase = phrases
+            .first()
+            .is_some_and(|candidate| candidate.source == CandidateSource::Table);
+        let mut candidates = Vec::new();
+        let mut seen = HashMap::new();
+        if !has_reliable_full_phrase {
+            // A reliable exact whole-input phrase suppresses Poet entirely.
+            // Otherwise configured sentence winners precede every phrase row.
+            for sentence in sentences.iter().take(self.max_sentences) {
+                if seen.insert(sentence.text.clone(), ()).is_some() {
+                    continue;
+                }
+                candidates.push(Candidate {
                     text: sentence.text.clone(),
                     comment: String::new(),
                     preedit: None,
-                    source: if end < input.len() {
-                        CandidateSource::PartialTable {
-                            consumed: end,
-                            recompose_on_default: false,
-                        }
-                    } else {
-                        CandidateSource::Sentence
-                    },
-                    quality: end as f32 * CODE_LENGTH_QUALITY_BAND + sentence.weight as f32,
-                };
-                match candidates.get(&candidate.text) {
-                    Some(existing)
-                        if compare_sentence_candidate(&candidate, existing) != Ordering::Less => {}
-                    _ => {
-                        candidates.insert(candidate.text.clone(), candidate);
-                    }
-                }
+                    source: CandidateSource::Sentence,
+                    quality: 0.0,
+                });
             }
         }
-        let mut candidates = candidates.into_values().collect::<Vec<_>>();
-        candidates.sort_by(compare_sentence_candidate);
+        for phrase in phrases {
+            if seen.insert(phrase.text.clone(), ()).is_some() {
+                continue;
+            }
+            candidates.push(phrase.clone());
+            if candidates.len() >= max_candidates {
+                break;
+            }
+        }
         candidates.truncate(max_candidates);
+        let candidate_count = candidates.len();
+        for (index, candidate) in candidates.iter_mut().enumerate() {
+            candidate.quality = (candidate_count - index) as f32;
+        }
         candidates
     }
 
@@ -1506,9 +1668,14 @@ impl UpstreamSentenceModel {
             (0, 0)
         };
         let merge_start = record_candidate_extraction.then(Instant::now);
-        let candidates = self.candidates_for_sentence_path_vec_with_limit(
-            input,
-            &scratch.sentence_paths_by_end,
+        let sentences = scratch
+            .sentence_paths_by_end
+            .get(input.len())
+            .map(Vec::as_slice)
+            .unwrap_or_default();
+        let candidates = self.merge_script_translation_candidates(
+            sentences,
+            &scratch.phrase_candidates,
             max_candidates,
         );
         if let Some(merge_start) = merge_start {
@@ -1532,9 +1699,16 @@ impl UpstreamSentenceModel {
         let graph = self.word_graph_for_input(input);
         scratch.states_by_end = collect_sentence_state_vec(
             &graph,
-            max_candidates,
+            self.max_sentences,
+            self.max_homophones,
             input.len(),
             self.grammar.scoring_grammar(),
+            false,
+        );
+        scratch.phrase_candidates = Self::phrase_candidates_for_graph(
+            input,
+            &graph,
+            max_candidates.saturating_add(self.max_sentences),
         );
         if let PoetModelStorage::Owned(storage) = &self.storage {
             let (prefix_states, exact_spans) =
@@ -1545,8 +1719,8 @@ impl UpstreamSentenceModel {
         let path_start = crate::m37_metrics_enabled().then(Instant::now);
         scratch.sentence_paths_by_end = sentence_paths_vec_by_end_from_states(
             &scratch.states_by_end,
-            max_candidates,
-            self.grammar.scoring_grammar().is_some(),
+            self.max_sentences,
+            self.sentence_cutoff_threshold,
         );
         let path_duration = path_start.map_or(Duration::ZERO, |start| start.elapsed());
         scratch.input = input.to_owned();
@@ -1673,6 +1847,7 @@ impl UpstreamSentenceModel {
         }
 
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
+        let entry_limit = self.word_graph_entry_limit();
         let mut graph = WordGraph::new();
         let boundaries = input
             .char_indices()
@@ -1724,30 +1899,33 @@ impl UpstreamSentenceModel {
                     *derivations += 1;
                 }
                 lookup_metrics.exact_range_index_hits += 1;
-                let bounded_entries = span.entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                table_entries_considered += span.entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                let mut inserted_edge = false;
-                for entry_index in bounded_entries {
-                    let text = self.storage.entry_text(entry_index);
+                let (bounded_entries, scanned) = collect_distinct_word_graph_entries(
+                    span.entries.clone().map(|entry_index| {
+                        (
+                            self.storage.entry_text(entry_index),
+                            upstream_dictionary_weight(f64::from(
+                                self.storage.entry_weight(entry_index),
+                            )),
+                        )
+                    }),
+                    entry_limit,
+                );
+                table_entries_considered += scanned;
+                let inserted_edge = !bounded_entries.is_empty();
+                for entry in bounded_entries {
                     if record_volume_metrics {
-                        lookup_metrics.graph_entry_text_bytes += text.len();
+                        lookup_metrics.graph_entry_text_bytes += entry.text.len();
                     }
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
-                        .push(WordGraphEntry::new(
-                            text.to_owned(),
-                            upstream_dictionary_weight(f64::from(
-                                self.storage.entry_weight(entry_index),
-                            )),
-                        ));
+                        .push(entry);
                     graph_edges += 1;
                     if record_volume_metrics {
                         lookup_metrics.graph_entries_inserted += 1;
                     }
-                    inserted_edge = true;
                 }
                 if inserted_edge {
                     reachable[span.end_index] = true;
@@ -1833,8 +2011,8 @@ impl UpstreamSentenceModel {
         }
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
-                entries.sort_by(compare_word_graph_entry);
-                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                entries.retain(|entry| !self.excluded_texts.contains(&entry.text));
+                sort_dedup_truncate_word_graph_entries(entries, entry_limit);
             }
         }
         crate::m37_record_upstream_sentence_model_scan(
@@ -1852,12 +2030,17 @@ impl UpstreamSentenceModel {
         graph
     }
 
+    fn word_graph_entry_limit(&self) -> usize {
+        MIN_WORD_GRAPH_PHRASE_ROWS_PER_SPAN.max(self.max_homophones)
+    }
+
     fn word_graph_for_input_byte_backed(
         &self,
         storage: &ByteBackedPoetStore,
         input: &str,
     ) -> WordGraph {
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
+        let entry_limit = self.word_graph_entry_limit();
         let mut graph = WordGraph::new();
         let boundaries = input
             .char_indices()
@@ -1906,30 +2089,33 @@ impl UpstreamSentenceModel {
                     }
                     *derivations += 1;
                 }
-                let bounded_entries = span.entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                table_entries_considered += span.entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                let mut inserted_edge = false;
-                for entry_index in bounded_entries {
-                    let text = storage.entry_text(entry_index);
+                let (bounded_entries, scanned) = collect_distinct_word_graph_entries(
+                    span.entries.clone().map(|entry_index| {
+                        (
+                            storage.entry_text(entry_index),
+                            upstream_dictionary_weight(f64::from(
+                                storage.entry_weight(entry_index),
+                            )),
+                        )
+                    }),
+                    entry_limit,
+                );
+                table_entries_considered += scanned;
+                let inserted_edge = !bounded_entries.is_empty();
+                for entry in bounded_entries {
                     if record_volume_metrics {
-                        lookup_metrics.graph_entry_text_bytes += text.len();
+                        lookup_metrics.graph_entry_text_bytes += entry.text.len();
                     }
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
-                        .push(WordGraphEntry::new(
-                            text.to_owned(),
-                            upstream_dictionary_weight(f64::from(
-                                storage.entry_weight(entry_index),
-                            )),
-                        ));
+                        .push(entry);
                     graph_edges += 1;
                     if record_volume_metrics {
                         lookup_metrics.graph_entries_inserted += 1;
                     }
-                    inserted_edge = true;
                 }
                 if inserted_edge {
                     reachable[span.end_index] = true;
@@ -1993,8 +2179,8 @@ impl UpstreamSentenceModel {
         }
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
-                entries.sort_by(compare_word_graph_entry);
-                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                entries.retain(|entry| !self.excluded_texts.contains(&entry.text));
+                sort_dedup_truncate_word_graph_entries(entries, entry_limit);
             }
         }
         crate::m37_record_upstream_sentence_model_scan(
@@ -2018,6 +2204,7 @@ impl UpstreamSentenceModel {
         input: &str,
     ) -> WordGraph {
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
+        let entry_limit = self.word_graph_entry_limit();
         let mut graph = WordGraph::new();
         let boundaries = input
             .char_indices()
@@ -2067,28 +2254,31 @@ impl UpstreamSentenceModel {
                 }
                 lookup_metrics.exact_range_index_hits += 1;
                 let entries = &storage.entries_by_code[span.entries.clone()];
-                let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                let mut inserted_edge = false;
+                let (bounded_entries, scanned) = collect_distinct_word_graph_entries(
+                    entries.iter().map(|entry| {
+                        (
+                            entry.text(&storage.entry_texts),
+                            upstream_dictionary_weight(f64::from(entry.weight)),
+                        )
+                    }),
+                    entry_limit,
+                );
+                table_entries_considered += scanned;
+                let inserted_edge = !bounded_entries.is_empty();
                 for entry in bounded_entries {
-                    let text = entry.text(&storage.entry_texts);
                     if record_volume_metrics {
-                        lookup_metrics.graph_entry_text_bytes += text.len();
+                        lookup_metrics.graph_entry_text_bytes += entry.text.len();
                     }
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
-                        .push(WordGraphEntry::new(
-                            text.to_owned(),
-                            upstream_dictionary_weight(f64::from(entry.weight)),
-                        ));
+                        .push(entry);
                     graph_edges += 1;
                     if record_volume_metrics {
                         lookup_metrics.graph_entries_inserted += 1;
                     }
-                    inserted_edge = true;
                 }
                 if inserted_edge {
                     reachable[span.end_index] = true;
@@ -2142,8 +2332,8 @@ impl UpstreamSentenceModel {
         }
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
-                entries.sort_by(compare_word_graph_entry);
-                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                entries.retain(|entry| !self.excluded_texts.contains(&entry.text));
+                sort_dedup_truncate_word_graph_entries(entries, entry_limit);
             }
         }
         crate::m37_record_upstream_sentence_model_scan(
@@ -2218,6 +2408,7 @@ impl UpstreamSentenceModel {
         scratch: &mut UpstreamSentenceScratch,
     ) -> Option<Vec<Candidate>> {
         let previous_len = scratch.input.len();
+        let entry_limit = self.word_graph_entry_limit();
         if previous_len >= input.len() || !input.starts_with(&scratch.input) {
             scratch.clear();
             return None;
@@ -2344,28 +2535,39 @@ impl UpstreamSentenceModel {
                 lookup_metrics.phrase_index_entry_ranges_emitted += 1;
                 if span.end > previous_len {
                     let entries = &storage.entries_by_code[span.entries.clone()];
-                    let bounded_entries = entries.iter().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                    table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                    let mut inserted_edge = false;
-                    for entry in bounded_entries {
+                    let mut seen_entries = HashMap::new();
+                    let mut bounded_entries = Vec::new();
+                    let mut scanned = 0usize;
+                    for entry in entries {
+                        scanned += 1;
                         let text = entry.text(&storage.entry_texts);
+                        if seen_entries.insert(text, ()).is_some() {
+                            continue;
+                        }
+                        bounded_entries.push(BorrowedWordGraphEntry {
+                            text,
+                            weight: upstream_dictionary_weight(f64::from(entry.weight)),
+                        });
+                        if bounded_entries.len() >= entry_limit {
+                            break;
+                        }
+                    }
+                    table_entries_considered += scanned;
+                    let inserted_edge = !bounded_entries.is_empty();
+                    for entry in bounded_entries {
                         if record_volume_metrics {
-                            lookup_metrics.graph_entry_text_bytes += text.len();
+                            lookup_metrics.graph_entry_text_bytes += entry.text.len();
                         }
                         graph
                             .entry(start)
                             .or_default()
                             .entry(span.end)
                             .or_default()
-                            .push(BorrowedWordGraphEntry {
-                                text,
-                                weight: upstream_dictionary_weight(f64::from(entry.weight)),
-                            });
+                            .push(entry);
                         graph_edges += 1;
                         if record_volume_metrics {
                             lookup_metrics.graph_entries_inserted += 1;
                         }
-                        inserted_edge = true;
                     }
                     if inserted_edge {
                         reachable[span.end_index] = true;
@@ -2433,15 +2635,15 @@ impl UpstreamSentenceModel {
         next_exact_spans[boundaries.len() - 1] = Vec::new();
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
-                entries.sort_by(compare_borrowed_word_graph_entry);
-                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                entries.retain(|entry| !self.excluded_texts.contains(entry.text));
+                sort_dedup_truncate_borrowed_word_graph_entries(entries, entry_limit);
             }
         }
 
         let record_metrics = cfg!(debug_assertions) && crate::m37_metrics_enabled();
         let mut dp_states_created = 0usize;
         let mut dp_beam_evictions = 0usize;
-        let beam_width = max_candidates * 3;
+        let search = SentenceSearchMode::for_options(self.max_sentences, false);
         for (start, edges) in &graph {
             if *start > input.len() {
                 continue;
@@ -2464,16 +2666,13 @@ impl UpstreamSentenceModel {
                 }
                 let destination = &mut destination_slice[0];
                 for source in source_states {
-                    for entry in entries {
+                    for entry in entries.iter().take(self.max_homophones) {
                         let candidate_weight = source.weight + null_grammar_score(entry.weight);
-                        if beam_rejects_by_weight(Some(destination), beam_width, candidate_weight) {
-                            continue;
-                        }
                         let next = source.extended(entry.text, candidate_weight, end - start, None);
                         if record_metrics {
                             dp_states_created += 1;
                         }
-                        let evicted = insert_state(destination, next, beam_width);
+                        let evicted = insert_sentence_state(destination, next, search);
                         if record_metrics && evicted {
                             dp_beam_evictions += 1;
                         }
@@ -2501,6 +2700,53 @@ impl UpstreamSentenceModel {
             crate::m37_record_upstream_sentence_model_lookup_index(lookup_metrics);
         }
 
+        for candidate in &mut scratch.phrase_candidates {
+            // Yesterday's whole-input phrase becomes a partial prefix after one
+            // more key. Retain it for ordering/recomposition while adding only
+            // the newly reachable start-zero edges from the incremental graph.
+            if candidate.source == CandidateSource::Table {
+                candidate.source = CandidateSource::PartialTable {
+                    consumed: previous_len,
+                    recompose_on_default: false,
+                };
+            }
+        }
+        let mut phrase_candidates = Vec::new();
+        if let Some(phrases) = graph.get(&0) {
+            for (end, entries) in phrases.iter().rev() {
+                for entry in entries {
+                    phrase_candidates.push(Candidate {
+                        text: entry.text.to_owned(),
+                        comment: String::new(),
+                        preedit: None,
+                        source: if *end == input.len() {
+                            CandidateSource::Table
+                        } else {
+                            CandidateSource::PartialTable {
+                                consumed: *end,
+                                recompose_on_default: false,
+                            }
+                        },
+                        // Ordering is carried by the graph traversal itself:
+                        // newly reached ends are longer than every retained old
+                        // row, and each edge remains in its f64 weight order.
+                        // The final merge assigns visible positional quality.
+                        quality: 0.0,
+                    });
+                }
+            }
+        }
+        phrase_candidates.append(&mut scratch.phrase_candidates);
+        let mut seen_phrases = HashMap::new();
+        phrase_candidates
+            .retain(|candidate| seen_phrases.insert(candidate.text.clone(), ()).is_none());
+        phrase_candidates.truncate(
+            max_candidates
+                .saturating_add(self.max_sentences)
+                .saturating_add(1),
+        );
+        scratch.phrase_candidates = phrase_candidates;
+
         scratch.input = input.to_owned();
         scratch.prefix_states_by_start = next_prefix_states;
         scratch.exact_spans_by_start = next_exact_spans;
@@ -2509,8 +2755,11 @@ impl UpstreamSentenceModel {
             .resize_with(scratch.states_by_end.len(), Vec::new);
         let path_start = crate::m37_metrics_enabled().then(Instant::now);
         if let Some(states) = scratch.states_by_end.get(input.len()) {
-            scratch.sentence_paths_by_end[input.len()] =
-                sentence_paths_from_states(states.clone(), max_candidates, false);
+            scratch.sentence_paths_by_end[input.len()] = sentence_paths_from_states(
+                states.clone(),
+                self.max_sentences,
+                self.sentence_cutoff_threshold,
+            );
         }
         let path_duration = path_start.map_or(Duration::ZERO, |start| start.elapsed());
         Some(self.candidates_for_cached_sentence_paths_with_limit(
@@ -2523,6 +2772,7 @@ impl UpstreamSentenceModel {
 
     fn word_graph_for_code_spans(&self, input: &str, spans: &[SentenceCodeSpan]) -> WordGraph {
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
+        let entry_limit = self.word_graph_entry_limit();
         let mut graph = WordGraph::new();
         let boundaries = input
             .char_indices()
@@ -2587,21 +2837,25 @@ impl UpstreamSentenceModel {
                     continue;
                 };
                 lookup_metrics.exact_range_index_hits += 1;
-                let bounded_entries = entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                let mut inserted_edge = false;
-                for entry_index in bounded_entries {
+                let (bounded_entries, scanned) = collect_distinct_word_graph_entries(
+                    entries.clone().map(|entry_index| {
+                        (
+                            self.storage.entry_text(entry_index),
+                            f64::from(self.storage.entry_weight(entry_index)),
+                        )
+                    }),
+                    entry_limit,
+                );
+                table_entries_considered += scanned;
+                let inserted_edge = !bounded_entries.is_empty();
+                for entry in bounded_entries {
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
-                        .push(WordGraphEntry::new(
-                            self.storage.entry_text(entry_index).to_owned(),
-                            f64::from(self.storage.entry_weight(entry_index)),
-                        ));
+                        .push(entry);
                     graph_edges += 1;
-                    inserted_edge = true;
                 }
                 if inserted_edge {
                     reachable[span.end_index] = true;
@@ -2639,8 +2893,8 @@ impl UpstreamSentenceModel {
         }
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
-                entries.sort_by(compare_word_graph_entry);
-                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                entries.retain(|entry| !self.excluded_texts.contains(&entry.text));
+                sort_dedup_truncate_word_graph_entries(entries, entry_limit);
             }
         }
         crate::m37_record_upstream_sentence_model_scan(
@@ -2976,10 +3230,9 @@ impl UpstreamSentenceModel {
     }
 
     fn normal_phrase_character_codes(&self, ch: char) -> Vec<&str> {
-        match self.grammar {
-            GrammarProvider::Octagram(_) => self.storage.character_codes(true, ch),
-            GrammarProvider::Null(_) => self.storage.character_codes(false, ch),
-        }
+        // The compiled normal-code section carries ScriptEncoder's 5% filter;
+        // the abbreviation section is reserved for abbreviation traversal.
+        self.storage.character_codes(false, ch)
     }
 
     fn normal_phrase_character_codes_cached(
@@ -3278,12 +3531,41 @@ fn estimate_string_usize_pairs_bytes(values: &[(String, usize)]) -> usize {
     )
 }
 
-fn compare_sentence_candidate(left: &Candidate, right: &Candidate) -> Ordering {
-    right
-        .quality
-        .partial_cmp(&left.quality)
-        .unwrap_or(Ordering::Equal)
-        .then_with(|| left.text.cmp(&right.text))
+fn collect_distinct_word_graph_entries<'a>(
+    entries: impl IntoIterator<Item = (&'a str, f64)>,
+    limit: usize,
+) -> (Vec<WordGraphEntry>, usize) {
+    let mut seen = HashMap::new();
+    let mut collected = Vec::new();
+    let mut scanned = 0usize;
+    for (text, weight) in entries {
+        scanned += 1;
+        if seen.insert(text, ()).is_some() {
+            continue;
+        }
+        collected.push(WordGraphEntry::new(text, weight));
+        if collected.len() >= limit {
+            break;
+        }
+    }
+    (collected, scanned)
+}
+
+fn sort_dedup_truncate_word_graph_entries(entries: &mut Vec<WordGraphEntry>, limit: usize) {
+    entries.sort_by(compare_word_graph_entry);
+    let mut seen = HashMap::new();
+    entries.retain(|entry| seen.insert(entry.text.clone(), ()).is_none());
+    entries.truncate(limit);
+}
+
+fn sort_dedup_truncate_borrowed_word_graph_entries(
+    entries: &mut Vec<BorrowedWordGraphEntry<'_>>,
+    limit: usize,
+) {
+    entries.sort_by(compare_borrowed_word_graph_entry);
+    let mut seen = HashMap::new();
+    entries.retain(|entry| seen.insert(entry.text, ()).is_none());
+    entries.truncate(limit);
 }
 
 fn compare_word_graph_entry(left: &WordGraphEntry, right: &WordGraphEntry) -> Ordering {
@@ -3291,7 +3573,6 @@ fn compare_word_graph_entry(left: &WordGraphEntry, right: &WordGraphEntry) -> Or
         .weight
         .partial_cmp(&left.weight)
         .unwrap_or(Ordering::Equal)
-        .then_with(|| left.text.cmp(&right.text))
 }
 
 fn compare_borrowed_word_graph_entry(
@@ -3302,7 +3583,6 @@ fn compare_borrowed_word_graph_entry(
         .weight
         .partial_cmp(&left.weight)
         .unwrap_or(Ordering::Equal)
-        .then_with(|| left.text.cmp(right.text))
 }
 
 fn compare_model_entry_by_code(left: &OwnedModelEntry, right: &OwnedModelEntry) -> Ordering {
@@ -3316,7 +3596,6 @@ fn compare_model_entry(left: &OwnedModelEntry, right: &OwnedModelEntry) -> Order
         .weight
         .partial_cmp(&left.weight)
         .unwrap_or(Ordering::Equal)
-        .then_with(|| left.text.cmp(&right.text))
 }
 
 fn derive_matching_phrase_codes_from_owned_after(

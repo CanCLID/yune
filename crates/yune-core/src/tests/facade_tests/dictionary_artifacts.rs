@@ -283,9 +283,19 @@
             rime_dict_rebuild_plan(RimeDictRebuildInput {
                 table_dict_file_checksum: None,
                 prebuilt_table_available: false,
-                ..input
+                ..input.clone()
             }),
             Err(RimeDictRebuildError::MissingSourceAndCompiled)
+        );
+
+        assert_eq!(
+            rime_dict_rebuild_plan(RimeDictRebuildInput {
+                poet_required: true,
+                poet_dict_file_checksum: None,
+                ..input
+            }),
+            Err(RimeDictRebuildError::MissingSourceAndCompiled),
+            "a source-less install must reject a legacy/unsupported Poet artifact and ship a current prebuilt"
         );
     }
 

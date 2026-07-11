@@ -153,8 +153,8 @@ fn zhongguo_phrase_mechanics_matches_upstream_sentence_fixture() {
         }
         assert_eq!(
             engine.context().candidates[0].source,
-            CandidateSource::Sentence,
-            "top candidate should come from the M17 upstream sentence path for {input}"
+            CandidateSource::Table,
+            "a reliable whole-input phrase should suppress sentence generation for {input}"
         );
     }
 }
@@ -196,59 +196,50 @@ fn expanded_sentence_green_rows_match_upstream_before_graph_work() {
     assert_expanded_sentence_scenario_matches(&fixture, "sentence_completion_shijian");
 }
 
-macro_rules! blocked_expanded_sentence_row {
+macro_rules! expanded_sentence_row {
     ($name:ident, $scenario:literal) => {
         #[test]
-        #[ignore = "blocked: Phase 3R-0 captured upstream row exposes pre-existing sentence-lattice mismatch"]
         fn $name() {
-            panic!(
-                "blocked: {scenario} is oracle-captured in luna-pinyin-sentence-expanded.json but current Yune does not match it before Phase 3R graph work",
-                scenario = $scenario
-            );
+            let fixture = fixture(SENTENCE_EXPANDED_FIXTURE);
+            assert_expanded_sentence_scenario_matches(&fixture, $scenario);
         }
     };
 }
 
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_zhongguoren,
+expanded_sentence_row!(
+    upstream_sentence_phrase_zhongguoren,
     "sentence_phrase_zhongguoren"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_beijingshi,
+expanded_sentence_row!(
+    upstream_sentence_phrase_beijingshi,
     "sentence_phrase_beijingshi"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_rengongzhineng,
+expanded_sentence_row!(
+    upstream_sentence_phrase_rengongzhineng,
     "sentence_phrase_rengongzhineng"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_bianchengyuyan,
+expanded_sentence_row!(
+    upstream_sentence_phrase_bianchengyuyan,
     "sentence_phrase_bianchengyuyan"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_phrase_ceshiyixia,
+expanded_sentence_row!(
+    upstream_sentence_phrase_ceshiyixia,
     "sentence_phrase_ceshiyixia"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_mixed_woxiangqubeijing,
+expanded_sentence_row!(
+    upstream_sentence_mixed_woxiangqubeijing,
     "sentence_mixed_woxiangqubeijing"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_mixed_jintiantianqihenhao,
+expanded_sentence_row!(
+    upstream_sentence_mixed_jintiantianqihenhao,
     "sentence_mixed_jintiantianqihenhao"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_completion_beijing,
+expanded_sentence_row!(
+    upstream_sentence_completion_beijing,
     "sentence_completion_beijing"
 );
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_benchmark_37,
-    "sentence_benchmark_37"
-);
-blocked_expanded_sentence_row!(
-    blocked_phase3r_sentence_benchmark_59,
-    "sentence_benchmark_59"
-);
+expanded_sentence_row!(upstream_sentence_benchmark_37, "sentence_benchmark_37");
+expanded_sentence_row!(upstream_sentence_benchmark_59, "sentence_benchmark_59");
 
 #[test]
 #[ignore = "evidence capture: writes M55 Phase 3R access-volume CSV when YUNE_M55_PHASE3R_VOLUME_CSV is set"]
@@ -966,6 +957,33 @@ fn assert_expanded_sentence_scenario_matches(fixture: &Value, scenario_name: &st
             actual.text
         );
     }
+    let sentence_count = engine
+        .context()
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.source == CandidateSource::Sentence)
+        .count();
+    let expects_composed_sentence = matches!(
+        scenario_name,
+        "sentence_mixed_woxiangqubeijing"
+            | "sentence_mixed_jintiantianqihenhao"
+            | "sentence_benchmark_37"
+            | "sentence_benchmark_59"
+    );
+    assert_eq!(
+        sentence_count,
+        usize::from(expects_composed_sentence),
+        "the pinned ScriptTranslator stream must expose at most its one configured sentence for {input}"
+    );
+    assert_eq!(
+        engine.context().candidates[0].source,
+        if expects_composed_sentence {
+            CandidateSource::Sentence
+        } else {
+            CandidateSource::Table
+        },
+        "a reliable full phrase suppresses Poet; otherwise Poet precedes the phrase stream for {input}"
+    );
 }
 
 fn phase3r_capture_metrics(
@@ -1116,13 +1134,7 @@ fn m17_luna_dictionary_from_rows(fixture: &Value) -> TableDictionary {
         ),
         std::iter::empty::<&str>(),
         |_| None,
-        |name| {
-            (name == "essay").then(|| {
-                essay_txt_from_fixture_rows(
-                    &fixture["capture"]["essay_vocabulary_rows_for_candidates"],
-                )
-            })
-        },
+        |name| (name == "essay").then(|| expanded_sentence_essay_rows(fixture)),
     )
     .expect("M17 upstream sentence source rows should parse")
 }
@@ -1189,6 +1201,19 @@ fn essay_txt_from_fixture_rows(rows: &Value) -> String {
         .expect("vocabulary rows should be an array")
         .iter()
         .map(|row| row.as_str().expect("vocabulary row should be a string"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn expanded_sentence_essay_rows(fixture: &Value) -> String {
+    let mut row_sets = vec![&fixture["capture"]["essay_vocabulary_rows_for_candidates"]];
+    let support_rows = &fixture["capture"]["essay_vocabulary_rows_for_sentence_support"];
+    if support_rows.is_array() {
+        row_sets.push(support_rows);
+    }
+    row_sets
+        .into_iter()
+        .map(essay_txt_from_fixture_rows)
         .collect::<Vec<_>>()
         .join("\n")
 }

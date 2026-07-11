@@ -1,6 +1,7 @@
 use std::{fs, path::Path};
 
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 
 fn fixture_root(name: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1543,6 +1544,64 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
                 assert_snapshot(path, fixture, "sentence_lattice_zhongguo", "page_2");
             }
             if fixture["capture"]["source_row_policy"] == "m55_phase3r_luna_sentence_expansion" {
+                let support_rows = fixture["capture"]["essay_vocabulary_rows_for_sentence_support"]
+                    .as_array()
+                    .expect("M55 expanded sentence support rows should be an array");
+                let expected_support_rows = [
+                    "其實\t245931",
+                    "句子\t15751",
+                    "引擎\t9316",
+                    "性能\t29108",
+                    "應該\t98472",
+                    "才能\t89512",
+                    "支持\t71344",
+                    "能用\t6869",
+                    "超長\t937",
+                    "輸入\t16895",
+                    "長句\t513",
+                ];
+                assert_eq!(
+                    support_rows,
+                    &expected_support_rows.map(Value::from),
+                    "{path:?} must preserve the exact pinned rime-essay source rows"
+                );
+                assert_eq!(
+                    fixture["capture"]["source_row_counts"]["essay_sentence_support"],
+                    serde_json::json!(support_rows.len()),
+                    "{path:?} sentence-support row count must match fixture bytes"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_repository"],
+                    "rime/rime-essay",
+                    "{path:?}"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_commit"],
+                    fixture["capture"]["dependency_repositories"]["rime/rime-essay"],
+                    "{path:?} sentence-support rows must name the pinned dependency commit"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_commit"],
+                    "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+                    "{path:?}"
+                );
+                assert_eq!(
+                    fixture["capture"]["sentence_support_row_capture"]["source_file"], "essay.txt",
+                    "{path:?}"
+                );
+                let serialized_support_rows = support_rows
+                    .iter()
+                    .map(|row| row.as_str().expect("support row should be a string"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    + "\n";
+                assert_eq!(
+                    format!("{:x}", Sha256::digest(serialized_support_rows.as_bytes())),
+                    fixture["capture"]["sentence_support_row_capture"]["rows_sha256"]
+                        .as_str()
+                        .expect("M55 expanded support rows should pin a SHA-256"),
+                    "{path:?} sentence-support checksum must match fixture bytes"
+                );
                 assert_snapshot(path, fixture, "sentence_completion_shijian", "page_1");
                 assert_snapshot(path, fixture, "sentence_completion_beijing", "page_1");
                 assert_snapshot(path, fixture, "sentence_benchmark_37", "page_1");

@@ -1,5 +1,27 @@
 use super::*;
 
+struct EnvVarGuard {
+    key: &'static str,
+    previous: Option<std::ffi::OsString>,
+}
+
+impl EnvVarGuard {
+    fn set(key: &'static str, value: &str) -> Self {
+        let previous = std::env::var_os(key);
+        std::env::set_var(key, value);
+        Self { key, previous }
+    }
+}
+
+impl Drop for EnvVarGuard {
+    fn drop(&mut self) {
+        match &self.previous {
+            Some(value) => std::env::set_var(self.key, value),
+            None => std::env::remove_var(self.key),
+        }
+    }
+}
+
 fn platform_path(base: &str, child: &str) -> String {
     std::path::Path::new(base)
         .join(child)
@@ -2017,6 +2039,7 @@ schema:
 #[test]
 fn workspace_update_rebuilds_source_dictionary_artifacts_and_reuses_fresh_outputs() {
     let _guard = test_guard();
+    let _poet_guard = EnvVarGuard::set("YUNE_POET_BYTE_BACKED", "1");
     RimeCleanupAllSessions();
     let root = unique_temp_dir("workspace-dictionary-rebuild");
     let shared = root.join("shared");
@@ -2102,6 +2125,43 @@ schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators
         yune_core::RimeDictArtifactStatus::ReusedFresh
     );
 
+    let poet_path = user.join("build").join("luna.poet.bin");
+    let current_poet = fs::read(&poet_path).expect("poet should be readable");
+    fs::create_dir_all(shared.join("build")).expect("prebuilt dir should be created");
+    let prebuilt_poet_path = shared.join("build").join("luna.poet.bin");
+    fs::write(&prebuilt_poet_path, &current_poet).expect("prebuilt poet should be written");
+    let mut legacy_poet = fs::read(&poet_path).expect("poet should be readable");
+    legacy_poet[..12].copy_from_slice(b"YUNE-POET/2\0");
+    fs::write(&poet_path, legacy_poet).expect("legacy poet should be written");
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let repaired_from_prebuilt = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        repaired_from_prebuilt[0].report.table,
+        yune_core::RimeDictArtifactStatus::ReusedFresh,
+        "a checksum-compatible prebuilt v3 Poet may repair an otherwise fresh staged set"
+    );
+    assert_eq!(
+        fs::read(&poet_path).expect("repaired poet should read"),
+        current_poet,
+        "deployment must copy the validated prebuilt Poet instead of merely borrowing its checksum"
+    );
+
+    fs::remove_file(&prebuilt_poet_path).expect("prebuilt poet should be removable");
+    let mut legacy_poet = fs::read(&poet_path).expect("poet should be readable");
+    legacy_poet[..12].copy_from_slice(b"YUNE-POET/2\0");
+    fs::write(&poet_path, legacy_poet).expect("legacy poet should be written");
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let rebuilt_after_legacy_poet = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        rebuilt_after_legacy_poet[0].report.table,
+        yune_core::RimeDictArtifactStatus::Rebuilt,
+        "a checksum-fresh v2 Poet artifact must invalidate and rebuild the table artifact set"
+    );
+    assert_eq!(
+        &fs::read(&poet_path).expect("rebuilt poet should read")[..12],
+        b"YUNE-POET/3\0"
+    );
+
     fs::write(user.join("build").join("luna.table.bin"), [0xff, 0x00])
         .expect("corrupt table should be written");
     fs::write(user.join("build").join("luna.prism.bin"), [0xff, 0x00])
@@ -2134,6 +2194,13 @@ schema:\n  schema_id: luna\n  name: Luna\n  version: '1'\nengine:\n  translators
         fs::read(user.join("build").join("luna.reverse.bin")).expect("rebuilt reverse should read")
     )
     .is_ok());
+    let rebuilt_poet =
+        fs::read(user.join("build").join("luna.poet.bin")).expect("rebuilt poet should read");
+    assert_eq!(
+        &rebuilt_poet[..12],
+        b"YUNE-POET/3\0",
+        "workspace deployment must reject and replace checksum-fresh v2 Poet artifacts"
+    );
 
     let reset_traits = empty_traits();
     // SAFETY: reset traits points to valid storage.

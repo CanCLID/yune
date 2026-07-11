@@ -1,0 +1,16 @@
+﻿{
+    "snapshot_tree":  "d5121383ad51d12c0c84b0f0504e0ee4919edf9f",
+    "snapshot_commit":  "89847158444b2ae6d1e77c48b853b103c5e267ec",
+    "parent_commit":  "d55b203ebd9552f5af6b0f34a525cf9e3852bd70",
+    "run_a_worktree":  "C:\\y59r-3b-final4-a",
+    "run_b_worktree":  "C:\\y59r-3b-final4-b",
+    "run_a_evidence":  "C:\\y59r-3b-final4-evidence-a",
+    "run_b_evidence":  "C:\\y59r-3b-final4-evidence-b",
+    "artifact_count":  18,
+    "deterministic_count":  18,
+    "changed_count":  12,
+    "imported_match_count":  18,
+    "tracked_before_total_bytes":  80378546,
+    "rebuilt_total_bytes":  109065750,
+    "delta_total_bytes":  28687204
+}

@@ -115,9 +115,15 @@ sort: original
     fs::remove_dir_all(root).expect("temp dirs should be removed");
 }
 
-// Owner: processors/speller.rs; librime oracle: Speller::AutoSelectPreviousMatch non-auto ConfirmCurrentSelection + FindEarlierMatch.
+// Owner: processors/speller.rs + D-47 default-on reachability interaction.
+// Pinned librime 1.17.0 only backs up the previous segment when `auto_select_`
+// is true, and AutoSelectPreviousMatch returns immediately when it is false;
+// this schema leaves it false. D-47 additionally makes
+// `ab`/`abc` successful current conversions via the leading `a` family, so the
+// speller must retain the whole input instead of taking the previous-match
+// failure path. Source: rime/librime@33e7814, src/rime/gear/speller.cc.
 #[test]
-fn schema_speller_previous_match_non_auto_confirm_matches_librime() {
+fn schema_speller_non_auto_keeps_default_on_reachability_conversion() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
     let root = unique_temp_dir("schema-speller-previous-match-non-auto");
@@ -195,23 +201,35 @@ sort: original
     let input = RimeGetInput(session_id);
     assert!(!input.is_null());
     // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
-    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("b"));
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("ab"));
 
     let mut context = empty_context();
     // SAFETY: context points to writable storage initialized with positive data_size.
     assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
-    assert_eq!(context.composition.length, 1);
+    assert_eq!(context.composition.length, 2);
     assert_eq!(context.composition.sel_start, 0);
-    assert_eq!(context.composition.sel_end, 1);
+    assert_eq!(context.composition.sel_end, 2);
     assert_eq!(context.menu.num_candidates, 2);
     assert_eq!(context.menu.highlighted_candidate_index, 0);
     // SAFETY: context composition and candidate pointers are populated by `RimeGetContext`.
     assert_eq!(
         unsafe { CStr::from_ptr(context.composition.preedit) }.to_str(),
-        Ok("b")
+        Ok("ab")
     );
-    let candidate = unsafe { *context.menu.candidates };
-    assert_eq!(unsafe { CStr::from_ptr(candidate.text) }.to_str(), Ok("乙"));
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[0].text) }.to_str(),
+        Ok("甲")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[1].text) }.to_str(),
+        Ok("ab")
+    );
     // SAFETY: nested pointers were allocated by `RimeGetContext` above.
     assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
 
@@ -219,7 +237,36 @@ sort: original
     let input = RimeGetInput(session_id);
     assert!(!input.is_null());
     // SAFETY: `RimeGetInput` returned a non-null session-owned C string.
-    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("c"));
+    assert_eq!(unsafe { CStr::from_ptr(input) }.to_str(), Ok("abc"));
+
+    let mut context = empty_context();
+    // SAFETY: context points to writable storage initialized with positive data_size.
+    assert_eq!(unsafe { RimeGetContext(session_id, &mut context) }, TRUE);
+    assert_eq!(context.composition.length, 3);
+    assert_eq!(context.composition.sel_start, 0);
+    assert_eq!(context.composition.sel_end, 3);
+    assert_eq!(context.menu.num_candidates, 2);
+    // SAFETY: context composition and candidate pointers are populated by `RimeGetContext`.
+    assert_eq!(
+        unsafe { CStr::from_ptr(context.composition.preedit) }.to_str(),
+        Ok("abc")
+    );
+    let candidates = unsafe {
+        std::slice::from_raw_parts(
+            context.menu.candidates,
+            context.menu.num_candidates as usize,
+        )
+    };
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[0].text) }.to_str(),
+        Ok("甲")
+    );
+    assert_eq!(
+        unsafe { CStr::from_ptr(candidates[1].text) }.to_str(),
+        Ok("abc")
+    );
+    // SAFETY: nested pointers were allocated by `RimeGetContext` above.
+    assert_eq!(unsafe { RimeFreeContext(&mut context) }, TRUE);
 
     assert_eq!(RimeDestroySession(session_id), TRUE);
     let reset_traits = empty_traits();

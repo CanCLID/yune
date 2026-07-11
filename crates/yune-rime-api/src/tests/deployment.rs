@@ -2256,6 +2256,23 @@ schema:\n  schema_id: jyut_mobile\n  name: Jyut Mobile\nengine:\n  translators:\
     // SAFETY: traits points to a valid RimeTraits object with valid strings.
     unsafe { RimeDeployerInitialize(&traits) };
     assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let first_reports = workspace_dictionary_rebuild_reports();
+    assert_eq!(first_reports.len(), 1);
+    assert_eq!(first_reports[0].dictionary_id, "jyut");
+    assert_eq!(RimeRunTask(workspace_task.as_ptr()), TRUE);
+    let second_reports = workspace_dictionary_rebuild_reports();
+    assert_eq!(
+        second_reports.len(),
+        1,
+        "targeted workspace tasks must replace, not append to, the previous task's reports"
+    );
+    assert_eq!(second_reports[0].dictionary_id, "jyut");
+    let invalid_task = CString::new("workspace_update:../invalid").expect("task should be valid");
+    assert_eq!(RimeRunTask(invalid_task.as_ptr()), FALSE);
+    assert!(
+        workspace_dictionary_rebuild_reports().is_empty(),
+        "even an invalid targeted task must clear stale reports from its predecessor"
+    );
 
     let build = user.join("build");
     assert!(build.join("jyut.table.bin").is_file());

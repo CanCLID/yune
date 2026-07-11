@@ -36,6 +36,69 @@
       "import_policy": "The first capture created this tracked fixture with create-new semantics. Future recaptures must use a fresh ignored output, compare bytes and behavior, then import reviewed bytes separately because the canonical path cannot be overwritten."
     },
     {
+      "path": "m59-correction-spelling.json",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "3c0bac5072f122d64398c0e51dc02e1d4edd17ee685f99cdee76a5ef83dc77da",
+      "source_row_policy": "m59_deployed_correction_spelling_complete_order_oracle",
+      "source_capture_sha256": "f5e1cf58cca162c03eadf71473b80376e440c044958ead3ca25e27e36565eee9",
+      "source_evidence_manifest_sha256": "4cb688f0624a7c19dd7a35b506aec0f30419f62a4eee0f93911d8caf7c6dcf48",
+      "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/run-capture.ps1'",
+      "decoder_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/probe/decode-prism.py",
+      "decoder_sha256": "3cc69624efe65d6ab518768d8556fb2d331ea2b2405d6e4120c051757300bdb7",
+      "repo_text_subset_manifest": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/repo-text-subset-manifest.json",
+      "repo_text_subset_manifest_sha256": "18957375d362a391769658e2e10cbee9b54a16a10cd27740907d9b6e86a5d251",
+      "import_policy": "The raw all-pages capture and independently decoded prism observation were reviewed in the disposable C:/y59-correction-oracle root. This curated text-only fixture binds their hashes, complete candidate order, false translator switches, equal-weight source rows, and correction credibility bits; no generated binary is imported."
+    },
+    {
+      "path": "m59-algebra-properties.json",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "597ab7939c2b2f7f790749106546812fc5dee24d20327e7212fe4d9583510ba0",
+      "source_row_policy": "m59_minimal_librime_prism_algebra_property_oracle",
+      "capture_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/replay-m59-algebra-oracle.ps1 -OracleBinaryRoot target/upstream-oracle/1.17.0/extract/dist -Workspace target/upstream-oracle/1.17.0/m59-algebra-properties-replay-fresh",
+      "decoder_path": "scripts/decode-m59-algebra-prisms.py",
+      "decoder_sha256": "3cc69624efe65d6ab518768d8556fb2d331ea2b2405d6e4120c051757300bdb7",
+      "verify_command": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --verify",
+      "import_policy": "The four minimal upstream-generated prism bytes are intentionally checked in beside this JSON as executable external-byte oracle fixtures. The replay binds nine repository source representations, restores six declared capture-only terminal LFs, pins librime timestamp seconds, and verifies all four artifact hashes without rewriting observations. Product-table binaries remain excluded, and no binary payload is copied into docs evidence."
+    },
+    {
+      "path": "m59_alg_collision.prism.bin",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "b335c754e54ae5b30f713bc4a0cc29e853f51639eeed4541f8f57a9598992b88",
+      "source_row_policy": "m59_minimal_librime_prism_algebra_property_oracle",
+      "observation_fixture": "m59-algebra-properties.json",
+      "verify_command": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --verify"
+    },
+    {
+      "path": "m59_alg_preserve.prism.bin",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "66f07687794f39e22c2233832dbec2865f5712de914037c90055a767c5f01a86",
+      "source_row_policy": "m59_minimal_librime_prism_algebra_property_oracle",
+      "observation_fixture": "m59-algebra-properties.json",
+      "verify_command": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --verify"
+    },
+    {
+      "path": "m59_alg_cumulative.prism.bin",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "7b1fa33c638b1a9a15071b3221927d0559d3f79cbe300fca4e52c0a2cc56906d",
+      "source_row_policy": "m59_minimal_librime_prism_algebra_property_oracle",
+      "observation_fixture": "m59-algebra-properties.json",
+      "verify_command": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --verify"
+    },
+    {
+      "path": "m59_alg_erase.prism.bin",
+      "milestone": "M59 Increment 3b",
+      "capture_date": "2026-07-10",
+      "sha256": "d0941d5b6950e278bcdbbc2b3c7677697696bd4f9e8e8dc43f4dc87db261ae9d",
+      "source_row_policy": "m59_minimal_librime_prism_algebra_property_oracle",
+      "observation_fixture": "m59-algebra-properties.json",
+      "verify_command": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --verify"
+    },
+    {
       "path": "m59-luna-leading-single-composition.json",
       "milestone": "M59 Increment 1",
       "capture_date": "2026-07-10",

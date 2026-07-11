@@ -485,6 +485,124 @@ fn uniquifier_filter_removes_later_duplicate_candidate_texts() {
 }
 
 #[test]
+fn uniquifier_promotes_only_longer_recomposing_partial_source_metadata() {
+    let mut candidates = vec![
+        Candidate {
+            text: "same".to_owned(),
+            comment: "first-comment".to_owned(),
+            preedit: Some("first-preedit".to_owned()),
+            source: CandidateSource::PartialTable {
+                consumed: 1,
+                recompose_on_default: false,
+            },
+            quality: 7.0,
+        },
+        Candidate {
+            text: "same".to_owned(),
+            comment: "later-comment".to_owned(),
+            preedit: Some("later-preedit".to_owned()),
+            source: CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: true,
+            },
+            quality: 99.0,
+        },
+        Candidate {
+            text: "shorter".to_owned(),
+            comment: String::new(),
+            preedit: None,
+            source: CandidateSource::PartialTable {
+                consumed: 3,
+                recompose_on_default: true,
+            },
+            quality: 3.0,
+        },
+        Candidate {
+            text: "shorter".to_owned(),
+            comment: String::new(),
+            preedit: None,
+            source: CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: true,
+            },
+            quality: 2.0,
+        },
+        Candidate {
+            text: "abbreviation-only".to_owned(),
+            comment: String::new(),
+            preedit: None,
+            source: CandidateSource::PartialTable {
+                consumed: 1,
+                recompose_on_default: false,
+            },
+            quality: 1.0,
+        },
+        Candidate {
+            text: "abbreviation-only".to_owned(),
+            comment: String::new(),
+            preedit: None,
+            source: CandidateSource::PartialTable {
+                consumed: 2,
+                recompose_on_default: false,
+            },
+            quality: 2.0,
+        },
+        Candidate {
+            text: "non-partial".to_owned(),
+            comment: String::new(),
+            preedit: None,
+            source: CandidateSource::Table,
+            quality: 4.0,
+        },
+        Candidate {
+            text: "non-partial".to_owned(),
+            comment: String::new(),
+            preedit: None,
+            source: CandidateSource::PartialTable {
+                consumed: 5,
+                recompose_on_default: true,
+            },
+            quality: 5.0,
+        },
+    ];
+
+    UniquifierFilter.apply(&mut candidates);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.text.as_str())
+            .collect::<Vec<_>>(),
+        ["same", "shorter", "abbreviation-only", "non-partial"]
+    );
+    assert_eq!(candidates[0].comment, "first-comment");
+    assert_eq!(candidates[0].preedit.as_deref(), Some("first-preedit"));
+    assert_eq!(candidates[0].quality, 7.0);
+    assert_eq!(
+        candidates[0].source,
+        CandidateSource::PartialTable {
+            consumed: 2,
+            recompose_on_default: true,
+        }
+    );
+    assert_eq!(
+        candidates[1].source,
+        CandidateSource::PartialTable {
+            consumed: 3,
+            recompose_on_default: true,
+        }
+    );
+    assert_eq!(
+        candidates[2].source,
+        CandidateSource::PartialTable {
+            consumed: 1,
+            recompose_on_default: false,
+        }
+    );
+    assert_eq!(candidates[3].source, CandidateSource::Table);
+}
+
+#[test]
 fn single_char_filter_moves_table_single_characters_before_phrases() {
     let mut engine = Engine::new();
     engine.add_translator(StaticTableTranslator::new([

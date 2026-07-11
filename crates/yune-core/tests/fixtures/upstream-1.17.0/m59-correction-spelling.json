@@ -1,0 +1,72 @@
+{
+  "capture_kind": "M59 deployed correction-spelling oracle",
+  "oracle": {
+    "repository": "rime/librime",
+    "release": "1.17.0",
+    "commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+  },
+  "source_capture": {
+    "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/output/capture.json",
+    "origin_path": "C:/y59-correction-oracle/output/capture.json",
+    "sha256": "f5e1cf58cca162c03eadf71473b80376e440c044958ead3ca25e27e36565eee9",
+    "evidence_manifest_sha256": "4cb688f0624a7c19dd7a35b506aec0f30419f62a4eee0f93911d8caf7c6dcf48",
+    "repo_text_subset_manifest": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/repo-text-subset-manifest.json",
+    "decoder_path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/correction-oracle-text/probe/decode-prism.py",
+    "decoder_sha256": "3cc69624efe65d6ab518768d8556fb2d331ea2b2405d6e4120c051757300bdb7",
+    "captured_all_pages": true,
+    "termination_reason": "last_page"
+  },
+  "schema": {
+    "schema_id": "correction_oracle",
+    "input": "cu",
+    "page_size": 5,
+    "enable_completion": false,
+    "enable_sentence": false,
+    "enable_correction": false,
+    "algebra": [
+      "derive/^cuo$/cu/correction"
+    ]
+  },
+  "dictionary_rows": [
+    {
+      "text": "粗",
+      "code": "cu",
+      "weight": 0
+    },
+    {
+      "text": "錯",
+      "code": "cuo",
+      "weight": 0
+    }
+  ],
+  "candidates": [
+    {
+      "global_index": 0,
+      "text": "粗",
+      "comment": "cu"
+    },
+    {
+      "global_index": 1,
+      "text": "錯",
+      "comment": "cuo"
+    }
+  ],
+  "prism_observation": {
+    "artifact_sha256": "d563af9c88e983728107cc15e472f1f1fac41571463416c2668a08d7bfc18c8e",
+    "surface": "cu",
+    "descriptors": [
+      {
+        "syllable_id": 0,
+        "spelling_type": 0,
+        "is_correction": false,
+        "credibility_f32_bits": "0x00000000"
+      },
+      {
+        "syllable_id": 1,
+        "spelling_type": 0,
+        "is_correction": true,
+        "credibility_f32_bits": "0xC0935D8E"
+      }
+    ]
+  }
+}

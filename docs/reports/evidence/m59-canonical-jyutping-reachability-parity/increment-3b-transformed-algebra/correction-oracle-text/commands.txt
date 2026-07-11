@@ -1,0 +1,9 @@
+$env:PATH = 'C:\y59-correction-oracle\binaries;' + $env:PATH
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\y59-correction-oracle\run-capture.ps1
+& 'C:\y59-correction-oracle\binaries\rime_deployer.exe' --build 'C:\y59-correction-oracle\source\user' 'C:\y59-correction-oracle\source\shared' 'C:\y59-correction-oracle\source\user\build'
+Add-Type -Path 'C:\y59-correction-oracle\probe\oracle-rime-probe.cs'
+[RimeProbe]::Capture('C:\y59-correction-oracle\source\shared', 'C:\y59-correction-oracle\source\user', 'C:\y59-correction-oracle\source\user\build', 'correction_oracle', [string[]]@('default'), [string[]]@('cu'))
+python C:\y59-correction-oracle\probe\decode-prism.py --fixture C:\y59-correction-oracle\prism-observation.json --write
+python C:\y59-correction-oracle\probe\decode-prism.py --fixture C:\y59-correction-oracle\prism-observation.json --verify
+python C:\y59-correction-oracle\probe\decode-prism.py --fixture C:\y59-correction-oracle\prism-observation.json --verify --self-test
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\y59-correction-oracle\finalize-evidence.ps1

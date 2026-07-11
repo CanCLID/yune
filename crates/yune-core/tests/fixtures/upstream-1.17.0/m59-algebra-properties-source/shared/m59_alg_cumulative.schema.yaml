@@ -1,0 +1,27 @@
+schema:
+  schema_id: m59_alg_cumulative
+  name: M59 algebra cumulative credibility oracle
+  version: "1.0"
+
+engine:
+  processors:
+    - speller
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - abc_segmentor
+    - fallback_segmentor
+  translators:
+    - script_translator
+
+speller:
+  alphabet: abcdefghijklmnopqrstuvwxyz
+  algebra:
+    - fuzz/^bei$/fi/
+    - derive/^fi$/ci/correction
+    - derive/^ci$/di/correction
+
+translator:
+  dictionary: m59_alg_cumulative
+  enable_user_dict: false

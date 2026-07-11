@@ -1,0 +1,7 @@
+config_version: "m59-algebra-properties-v1"
+
+schema_list:
+  - schema: m59_alg_collision
+  - schema: m59_alg_preserve
+  - schema: m59_alg_erase
+  - schema: m59_alg_cumulative

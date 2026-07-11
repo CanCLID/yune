@@ -38,6 +38,9 @@ const WEB03_COMPILED_SCHEMA_ASSETS: &[&str] = &[
     "luna_pinyin.table.bin",
     "luna_pinyin.reverse.bin",
     "luna_pinyin.prism.bin",
+    "stroke.table.bin",
+    "stroke.reverse.bin",
+    "stroke.prism.bin",
 ];
 const TYPEDUCK_V112_COMMENTS: &str =
     include_str!("../../yune-core/tests/fixtures/typeduck-v1.1.2/jyut6ping3-mobile-comments.json");
@@ -48,6 +51,9 @@ const M28_UPSTREAM_JYUTPING_COMPOSITION: &str = include_str!(
     "../../yune-core/tests/fixtures/upstream-jyutping/jyutping-m28-followup-composition.json"
 );
 const X11_PAGE_DOWN: i32 = 0xff56;
+
+#[path = "yune_web/m59_reachability.rs"]
+mod m59_reachability;
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1647,16 +1653,23 @@ fn web03_regenerates_public_schema_compiled_assets_from_clean_rebuild() {
     traits.user_data_dir = user_c.as_ptr();
     unsafe { RimeDeployerInitialize(&traits) };
 
+    let mut reports = Vec::new();
     for task in [
         "workspace_update:jyut6ping3_mobile",
         "workspace_update:cangjie5",
         "workspace_update:luna_pinyin",
+        "workspace_update:stroke",
     ] {
         let task = CString::new(task).expect("task name should be valid");
         assert_eq!(RimeRunTask(task.as_ptr()), TRUE);
+        let task_reports = workspace_dictionary_rebuild_reports();
+        assert!(
+            !task_reports.is_empty(),
+            "each clean public-schema task should emit dictionary rebuild reports"
+        );
+        reports.extend(task_reports);
     }
 
-    let reports = workspace_dictionary_rebuild_reports();
     assert!(
         !reports.is_empty(),
         "clean public-schema rebuild should emit dictionary rebuild reports"
@@ -1684,6 +1697,7 @@ fn web03_regenerates_public_schema_compiled_assets_from_clean_rebuild() {
         "luna_pinyin_yune_reverse",
         "cangjie5",
         "luna_pinyin",
+        "stroke",
     ] {
         assert_dictionary_rebuilt_from_source(&reports, dictionary_id);
     }

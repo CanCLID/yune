@@ -1,0 +1,72 @@
+{
+    "schema_id":  "correction_oracle",
+    "schema_name":  "M59 correction spelling oracle",
+    "input":  "cu",
+    "rime_get_input":  "cu",
+    "processed":  [
+                      1,
+                      1
+                  ],
+    "is_composing":  true,
+    "is_ascii_mode":  false,
+    "preedit":  "cu",
+    "commit_text_preview":  "粗",
+    "highlighted_candidate_index":  0,
+    "page_size":  5,
+    "page_no":  0,
+    "num_candidates":  2,
+    "is_last_page":  true,
+    "candidate_pointer_null":  false,
+    "menu_present":  true,
+    "selected_candidates":  [
+                                {
+                                    "index":  0,
+                                    "text":  "粗",
+                                    "comment":  "cu",
+                                    "global_index":  0
+                                },
+                                {
+                                    "index":  1,
+                                    "text":  "錯",
+                                    "comment":  "cuo",
+                                    "global_index":  1
+                                }
+                            ],
+    "pages":  [
+                  {
+                      "page_no":  0,
+                      "page_size":  5,
+                      "is_last_page":  true,
+                      "candidates":  [
+                                         {
+                                             "index":  0,
+                                             "text":  "粗",
+                                             "comment":  "cu",
+                                             "global_index":  0
+                                         },
+                                         {
+                                             "index":  1,
+                                             "text":  "錯",
+                                             "comment":  "cuo",
+                                             "global_index":  1
+                                         }
+                                     ]
+                  }
+              ],
+    "all_candidates":  [
+                           {
+                               "index":  0,
+                               "text":  "粗",
+                               "comment":  "cu",
+                               "global_index":  0
+                           },
+                           {
+                               "index":  1,
+                               "text":  "錯",
+                               "comment":  "cuo",
+                               "global_index":  1
+                           }
+                       ],
+    "captured_all_pages":  true,
+    "termination_reason":  "last_page"
+}

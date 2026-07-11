@@ -1,0 +1,473 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "capture_date": "2026-07-10",
+    "binary_assets": [
+      "rime-33e7814-Windows-msvc-x64.7z",
+      "rime-deps-33e7814-Windows-msvc-x64.7z"
+    ],
+    "rime_dll": {
+      "bytes": 3739136,
+      "sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b"
+    },
+    "rime_deployer": {
+      "bytes": 459776,
+      "sha256": "3abb72b5bb56fcafcfe925d533ae5f832c68d5a0bc9952fd0eea0682fb1ab071"
+    }
+  },
+  "capture": {
+    "workspace": "target/upstream-oracle/1.17.0/m59-algebra-properties",
+    "deployment_command": "rime_deployer.exe --build target/upstream-oracle/1.17.0/m59-algebra-properties/user target/upstream-oracle/1.17.0/m59-algebra-properties/shared target/upstream-oracle/1.17.0/m59-algebra-properties/user/build",
+    "probe_command_shape": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --verify",
+    "probe_policy": "The checked-in upstream-generated Prism/4.0 bytes are decoded by an independent Python-standard-library reader. It validates relative pointers, Darts exact matches, packed descriptors, f32 credibility bits, tips, and librime's null-map identity semantics without importing or invoking Yune's parser.",
+    "checked_in_source_root": "crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties-source",
+    "checked_in_source_policy": "Each row separately binds the repository text representation and the exact upstream bytes materialized in a fresh disposable workspace. Six repository text files omit one capture-only final blank LF; the replay appends it only when the resulting byte count and SHA-256 match the captured source. librime build timestamp seconds are pinned because they are embedded in the deployed schema checksum stored in Prism/4.0 metadata.",
+    "replay_script": {
+      "path": "scripts/replay-m59-algebra-oracle.ps1",
+      "bytes": 12343,
+      "sha256": "c0b6e97c8169b1ba4afb90a8dc6683077b73c44681f6828d1118e5a96d5a8026",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/replay-m59-algebra-oracle.ps1 -OracleBinaryRoot target/upstream-oracle/1.17.0/extract/dist -Workspace target/upstream-oracle/1.17.0/m59-algebra-properties-replay-fresh",
+      "workspace_policy": "Workspace must not exist. The script materializes only hash-bound source bytes, deploys with the pinned binaries, requires all four generated prism hashes to match, and invokes the independent decoder in --verify mode only.",
+      "timestamp_policy": "The replay places each source mtime at the midpoint of its recorded librime timestamp second to avoid filesystem boundary rounding, while exact generated prism hashes prove the resulting deployed timestamps."
+    },
+    "independent_decoder": {
+      "path": "scripts/decode-m59-algebra-prisms.py",
+      "sha256": "3cc69624efe65d6ab518768d8556fb2d331ea2b2405d6e4120c051757300bdb7",
+      "runtime": "Python 3 standard library only",
+      "write_command": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --write",
+      "verify_command": "python scripts/decode-m59-algebra-prisms.py --fixture crates/yune-core/tests/fixtures/upstream-1.17.0/m59-algebra-properties.json --verify"
+    },
+    "pinned_source_contracts": [
+      {
+        "path": "src/rime/algo/spelling.h; src/rime/algo/spelling.cc",
+        "behavior": "SpellingProperties credibility is double; Compose accumulates it and Update applies spelling-type precedence before correction provenance."
+      },
+      {
+        "path": "src/rime/algo/calculus.cc",
+        "behavior": "Fuzzy/abbreviation penalty is -0.6931471805599453 and correction penalty is -4.605170185988091."
+      },
+      {
+        "path": "src/rime/dict/dict_compiler.cc",
+        "behavior": "BuildPrism applies Script only when Projection::Load succeeds; any invalid sibling leaves the script empty and Prism::Build receives null for identity algebra."
+      },
+      {
+        "path": "src/rime/dict/prism.cc",
+        "behavior": "A null spelling map yields implicit spelling_id-to-syllable_id descriptors with default properties."
+      },
+      {
+        "path": "src/rime/algo/syllabifier.cc; src/rime/gear/script_translator.cc",
+        "behavior": "Prism correction descriptors remain exact spelling aliases with credibility applied; correction provenance does not turn them into default prefix reachability."
+      }
+    ],
+    "source_files": [
+      {
+        "path": "shared/default.yaml",
+        "checkout_bytes": 174,
+        "checkout_sha256": "e9b080a57a900a2177d393ff0cc7f603d318fc43229274a1e43e61ff1815ccff",
+        "materialization": "identity",
+        "bytes": 174,
+        "sha256": "e9b080a57a900a2177d393ff0cc7f603d318fc43229274a1e43e61ff1815ccff",
+        "librime_timestamp_epoch_seconds": 1783703132
+      },
+      {
+        "path": "shared/m59_alg_collision.dict.yaml",
+        "checkout_bytes": 74,
+        "checkout_sha256": "81653a8b8013bf4c7bba58a278a4af94abd5f8cdce75532bbfbd6b4a60b5436d",
+        "materialization": "append_terminal_lf",
+        "bytes": 75,
+        "sha256": "ea57a03f50b0858a8ad9087bbb1fac4c67b98073d03280620c91f988bef8a8e4",
+        "librime_timestamp_epoch_seconds": 1783700253
+      },
+      {
+        "path": "shared/m59_alg_collision.schema.yaml",
+        "checkout_bytes": 511,
+        "checkout_sha256": "7c4535fc9b9e1aa6b8cb70abd365ebd9575e96a59eee417f5f694f4046aebec5",
+        "materialization": "append_terminal_lf",
+        "bytes": 512,
+        "sha256": "6b84398e30bf06eb6c2e3c287b7e93ea2275d6a1864416e2464c0de0363f5dca",
+        "librime_timestamp_epoch_seconds": 1783700253
+      },
+      {
+        "path": "shared/m59_alg_preserve.dict.yaml",
+        "checkout_bytes": 91,
+        "checkout_sha256": "a35682b74029be6c4643bb07bceac8bff4ce2687ed63abe77190bf40a6418d2d",
+        "materialization": "append_terminal_lf",
+        "bytes": 92,
+        "sha256": "61c71b8643b1368e05fdd703db921788cbb55de5863dd1974a50b0cf5e26fd97",
+        "librime_timestamp_epoch_seconds": 1783700253
+      },
+      {
+        "path": "shared/m59_alg_preserve.schema.yaml",
+        "checkout_bytes": 522,
+        "checkout_sha256": "51535f9a0eb8215857967e862f1bb45685988acd5d8080f7354936f487b988a0",
+        "materialization": "append_terminal_lf",
+        "bytes": 523,
+        "sha256": "838d6a95556b7e87c0327c051100212168c1882c2e29c47fe9048f21b97bf4cd",
+        "librime_timestamp_epoch_seconds": 1783700253
+      },
+      {
+        "path": "shared/m59_alg_erase.dict.yaml",
+        "checkout_bytes": 70,
+        "checkout_sha256": "e4c430ab77e5ad28c80ae8abc596bcf209f5674954f4934f61cf0529138075e0",
+        "materialization": "append_terminal_lf",
+        "bytes": 71,
+        "sha256": "3c7ca32f214406206a54b3b2a6e0de5562559f4e6b27d0409bf0886f6d3eedfc",
+        "librime_timestamp_epoch_seconds": 1783700253
+      },
+      {
+        "path": "shared/m59_alg_erase.schema.yaml",
+        "checkout_bytes": 422,
+        "checkout_sha256": "c4f3e38d7be44277ec4931b230faf9fbcd8fa308a07a983e5c7a6b552c0cb6fa",
+        "materialization": "append_terminal_lf",
+        "bytes": 423,
+        "sha256": "77e359d15f21d6534c9996ba8076bee8e9c47fa7633b21981acae3fa4c7863df",
+        "librime_timestamp_epoch_seconds": 1783700253
+      },
+      {
+        "path": "shared/m59_alg_cumulative.dict.yaml",
+        "checkout_bytes": 75,
+        "checkout_sha256": "e7aa184ef98de57116c2414a04434cdf726eee3cea210c4fc926e5e25170cc18",
+        "materialization": "identity",
+        "bytes": 75,
+        "sha256": "e7aa184ef98de57116c2414a04434cdf726eee3cea210c4fc926e5e25170cc18",
+        "librime_timestamp_epoch_seconds": 1783703132
+      },
+      {
+        "path": "shared/m59_alg_cumulative.schema.yaml",
+        "checkout_bytes": 511,
+        "checkout_sha256": "3cb6b8c3dc50edad6e29187bda9aa59de64737b6af765bda4e7104aa36fba6c8",
+        "materialization": "identity",
+        "bytes": 511,
+        "sha256": "3cb6b8c3dc50edad6e29187bda9aa59de64737b6af765bda4e7104aa36fba6c8",
+        "librime_timestamp_epoch_seconds": 1783703132
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "same_surface_same_syllable_collision",
+      "schema_id": "m59_alg_collision",
+      "syllabary": [
+        "hao"
+      ],
+      "formulas": [
+        "fuzz/^hao$/hx/",
+        "abbrev/^hao$/hx/",
+        "derive/^hao$/hx/",
+        "derive/^hao$/hx/correction"
+      ],
+      "source_rows": [
+        "A\thao\t100"
+      ],
+      "artifact": {
+        "path": "m59_alg_collision.prism.bin",
+        "bytes": 1392,
+        "sha256": "b335c754e54ae5b30f713bc4a0cc29e853f51639eeed4541f8f57a9598992b88",
+        "dict_file_checksum": 3568535884,
+        "schema_file_checksum": 1484399155,
+        "num_syllables": 1,
+        "num_spellings": 2,
+        "double_array_size": 256,
+        "spelling_map_offset_raw": 1284,
+        "spelling_map_offset_is_null": false
+      },
+      "surfaces": {
+        "hao": {
+          "present": true,
+          "spelling_index": 0,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        },
+        "hx": {
+          "present": true,
+          "spelling_index": 1,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        }
+      },
+      "disposition": "All four paths collide on the same surface and underlying syllable. librime Script::Merge/SpellingProperties::Update emits one best normal descriptor, not four parallel descriptors."
+    },
+    {
+      "id": "ordinary_xform_preserves_properties",
+      "schema_id": "m59_alg_preserve",
+      "syllabary": [
+        "bei",
+        "cei",
+        "dei"
+      ],
+      "formulas": [
+        "abbrev/^bei$/bx/",
+        "derive/^cei$/cx/fuzz",
+        "derive/^dei$/dx/correction",
+        "xform/x$/z/"
+      ],
+      "source_rows": [
+        "B\tbei\t100",
+        "C\tcei\t90",
+        "D\tdei\t80"
+      ],
+      "artifact": {
+        "path": "m59_alg_preserve.prism.bin",
+        "bytes": 1488,
+        "sha256": "66f07687794f39e22c2233832dbec2865f5712de914037c90055a767c5f01a86",
+        "dict_file_checksum": 2338237741,
+        "schema_file_checksum": 2955353423,
+        "num_syllables": 3,
+        "num_spellings": 6,
+        "double_array_size": 256,
+        "spelling_map_offset_raw": 1284,
+        "spelling_map_offset_is_null": false
+      },
+      "surfaces": {
+        "bei": {
+          "present": true,
+          "spelling_index": 0,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        },
+        "bz": {
+          "present": true,
+          "spelling_index": 1,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 2,
+              "is_correction": false,
+              "credibility": -0.6931471824645996,
+              "credibility_f32_bits": "0xBF317218",
+              "tips": ""
+            }
+          ]
+        },
+        "cei": {
+          "present": true,
+          "spelling_index": 2,
+          "descriptors": [
+            {
+              "syllable_id": 1,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        },
+        "cz": {
+          "present": true,
+          "spelling_index": 3,
+          "descriptors": [
+            {
+              "syllable_id": 1,
+              "spelling_type": 1,
+              "is_correction": false,
+              "credibility": -0.6931471824645996,
+              "credibility_f32_bits": "0xBF317218",
+              "tips": ""
+            }
+          ]
+        },
+        "dei": {
+          "present": true,
+          "spelling_index": 4,
+          "descriptors": [
+            {
+              "syllable_id": 2,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        },
+        "dz": {
+          "present": true,
+          "spelling_index": 5,
+          "descriptors": [
+            {
+              "syllable_id": 2,
+              "spelling_type": 0,
+              "is_correction": true,
+              "credibility": -4.605170249938965,
+              "credibility_f32_bits": "0xC0935D8E",
+              "tips": ""
+            }
+          ]
+        },
+        "bx": {
+          "present": false,
+          "descriptors": []
+        },
+        "cx": {
+          "present": false,
+          "descriptors": []
+        },
+        "dx": {
+          "present": false,
+          "descriptors": []
+        }
+      },
+      "disposition": "The final ordinary xform changes only the surface spelling. It preserves abbreviation/fuzzy type, correction state, and accumulated credibility."
+    },
+    {
+      "id": "cumulative_credibility_uses_double_until_emission",
+      "schema_id": "m59_alg_cumulative",
+      "syllabary": [
+        "bei"
+      ],
+      "formulas": [
+        "fuzz/^bei$/fi/",
+        "derive/^fi$/ci/correction",
+        "derive/^ci$/di/correction"
+      ],
+      "source_rows": [
+        "F\tbei\t100"
+      ],
+      "artifact": {
+        "path": "m59_alg_cumulative.prism.bin",
+        "bytes": 1440,
+        "sha256": "7b1fa33c638b1a9a15071b3221927d0559d3f79cbe300fca4e52c0a2cc56906d",
+        "dict_file_checksum": 2672162344,
+        "schema_file_checksum": 2044888811,
+        "num_syllables": 1,
+        "num_spellings": 4,
+        "double_array_size": 256,
+        "spelling_map_offset_raw": 1284,
+        "spelling_map_offset_is_null": false
+      },
+      "surfaces": {
+        "bei": {
+          "present": true,
+          "spelling_index": 0,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        },
+        "fi": {
+          "present": true,
+          "spelling_index": 3,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 1,
+              "is_correction": false,
+              "credibility": -0.6931471824645996,
+              "credibility_f32_bits": "0xBF317218",
+              "tips": ""
+            }
+          ]
+        },
+        "ci": {
+          "present": true,
+          "spelling_index": 1,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 1,
+              "is_correction": true,
+              "credibility": -5.2983174324035645,
+              "credibility_f32_bits": "0xC0A98BD1",
+              "tips": ""
+            }
+          ]
+        },
+        "di": {
+          "present": true,
+          "spelling_index": 2,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 1,
+              "is_correction": true,
+              "credibility": -9.903487205505371,
+              "credibility_f32_bits": "0xC11E74AF",
+              "tips": ""
+            }
+          ]
+        }
+      },
+      "disposition": "Pinned librime composes credibility in double precision and casts only when writing the float descriptor. The di path accumulates one fuzzy and two correction penalties and differs by one emitted f32 ULP from stepwise f32 accumulation."
+    },
+    {
+      "id": "partial_match_erase_is_inert",
+      "schema_id": "m59_alg_erase",
+      "syllabary": [
+        "hao"
+      ],
+      "formulas": [
+        "erase/a/"
+      ],
+      "source_rows": [
+        "E\thao\t100"
+      ],
+      "artifact": {
+        "path": "m59_alg_erase.prism.bin",
+        "bytes": 1340,
+        "sha256": "d0941d5b6950e278bcdbbc2b3c7677697696bd4f9e8e8dc43f4dc87db261ae9d",
+        "dict_file_checksum": 459116466,
+        "schema_file_checksum": 1398618062,
+        "num_syllables": 1,
+        "num_spellings": 1,
+        "double_array_size": 256,
+        "spelling_map_offset_raw": 0,
+        "spelling_map_offset_is_null": true
+      },
+      "surfaces": {
+        "hao": {
+          "present": true,
+          "spelling_index": 0,
+          "descriptors": [
+            {
+              "syllable_id": 0,
+              "spelling_type": 0,
+              "is_correction": false,
+              "credibility": 0.0,
+              "credibility_f32_bits": "0x00000000",
+              "tips": ""
+            }
+          ]
+        },
+        "ho": {
+          "present": false,
+          "descriptors": []
+        }
+      },
+      "disposition": "librime Erasion uses whole-string regex_match. The partial /a/ match neither drops hao nor creates ho. Because the projection makes no change, librime writes an identity prism without an explicit spelling-map section; SpellingAccessor supplies identity/default properties implicitly."
+    }
+  ]
+}

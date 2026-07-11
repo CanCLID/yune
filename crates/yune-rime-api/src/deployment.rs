@@ -14,7 +14,7 @@ use yune_core::{
     byte_backed_lookup_records_from_table_bin_bytes, execute_rebuild_plan, memory_probe_mark,
     parse_poet_bin_dictionary_checksum, parse_rime_prism_bin_metadata,
     parse_rime_prism_bin_payload, parse_rime_reverse_bin_metadata, parse_rime_table_bin_metadata,
-    rime_checksum_bytes, rime_dict_rebuild_plan, rime_dict_source_checksum, RimeDictArtifactStatus,
+    rime_checksum_bytes, rime_dict_rebuild_plan, RimeDictArtifactStatus,
     RimeDictRebuildExecutionReport, RimeDictRebuildInput, RimeDictRebuildSources,
     RimePrismChecksumMetadata, TableDictionary,
 };
@@ -185,6 +185,7 @@ pub extern "C" fn RimeRunTask(task_name: *const c_char) -> Bool {
             return bool_from(workspace_update());
         }
         if let Some(schema_id) = task_name.strip_prefix("workspace_update:") {
+            clear_workspace_dictionary_rebuild_reports();
             let Some(schema_id) = validate_data_resource_id(schema_id) else {
                 return FALSE;
             };
@@ -882,26 +883,31 @@ fn workspace_update_dictionary_artifact(
     let source_path = shared_data_dir.join(format!("{dictionary_id}.dict.yaml"));
     let source_yaml = fs::read_to_string(&source_path).ok();
     let source_available = source_yaml.is_some();
-    let pack_checksums = request
-        .packs
-        .iter()
-        .filter_map(|pack| validate_data_resource_id(pack))
-        .filter_map(|pack| fs::read(shared_data_dir.join(format!("{pack}.dict.yaml"))).ok())
-        .scan(
-            source_yaml
-                .as_ref()
-                .map(|yaml| rime_dict_source_checksum(0, [yaml.as_bytes()], None))
-                .unwrap_or(0),
-            |checksum, bytes| {
-                *checksum = rime_dict_source_checksum(*checksum, [bytes.as_slice()], None);
-                Some(*checksum)
-            },
-        )
-        .collect::<Vec<_>>();
-    let source_checksum = source_yaml
-        .as_ref()
-        .map(|yaml| rime_dict_source_checksum(0, [yaml.as_bytes()], None))
-        .unwrap_or(0);
+    let source_checksum = match source_yaml.as_deref() {
+        Some(yaml) => crate::schema_install::dictionary_source_checksum_with_dependencies(
+            0,
+            yaml,
+            |resource_id| load_workspace_dictionary_yaml(&shared_data_dir, resource_id),
+            |resource_id| load_workspace_vocabulary_txt(&shared_data_dir, resource_id),
+        )?,
+        None => 0,
+    };
+    let mut pack_checksums = Vec::new();
+    let mut cumulative_checksum = source_checksum;
+    if source_available {
+        for pack in &request.packs {
+            let pack = validate_data_resource_id(pack)?;
+            let pack_yaml = load_workspace_dictionary_yaml(&shared_data_dir, &pack)?;
+            cumulative_checksum =
+                crate::schema_install::dictionary_source_checksum_with_dependencies(
+                    cumulative_checksum,
+                    &pack_yaml,
+                    |resource_id| load_workspace_dictionary_yaml(&shared_data_dir, resource_id),
+                    |resource_id| load_workspace_vocabulary_txt(&shared_data_dir, resource_id),
+                )?;
+            pack_checksums.push(cumulative_checksum);
+        }
+    }
 
     let table_path = staging_dir.join(format!("{dictionary_id}.table.bin"));
     let poet_path = staging_dir.join(format!("{dictionary_id}.poet.bin"));

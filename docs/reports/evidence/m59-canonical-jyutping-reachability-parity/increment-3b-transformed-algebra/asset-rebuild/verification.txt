@@ -1,0 +1,12 @@
+clean-rebuild-run-a=PASS (1 passed, 0 failed, 140.43s)
+clean-rebuild-run-b=PASS (1 passed, 0 failed, 142.55s)
+artifact-count=18
+deterministic-byte-identity=18/18
+changed-versus-parent=12
+imported-match=18/18
+tracked-before-total-bytes=80378546
+rebuilt-total-bytes=109065750
+delta-total-bytes=28687204
+schema-manifest-check=PASS (59 assets)
+public-packaging-build=PASS
+binary-payloads-in-evidence=0

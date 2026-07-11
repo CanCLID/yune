@@ -17,9 +17,9 @@ use crate::{
     parse_rime_table_bin_metadata, Candidate, CandidateSource, CompactTableByteSource,
     CompactTableStore, DartsDoubleArray, DictionaryLookupRecord, MemoryOwnerClass,
     RimeCorrectionEntry, RimeDictArtifactStatus, RimeDictRebuildExecutionReport,
-    RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismSpellingDescriptor,
-    RimeTableBinAdvancedDataOptions, RimeTableBinParseError, RimeToleranceRule, TableDictionary,
-    TableDictionaryAdvancedData, TableEncoder, TableEntry,
+    RimeDictRebuildPlan, RimeDictRebuildSources, RimePrismBinParseError,
+    RimePrismSpellingDescriptor, RimeTableBinAdvancedDataOptions, RimeTableBinParseError,
+    RimeToleranceRule, TableDictionary, TableDictionaryAdvancedData, TableEncoder, TableEntry,
 };
 
 #[derive(Debug)]
@@ -431,6 +431,23 @@ fn compact_table_lookup_resolves_marisa_backed_upstream_table_entries() {
 }
 
 #[test]
+fn marisa_syllabary_count_must_match_the_fixed_table_header_before_allocation() {
+    let mut mismatch = build_marisa_table_fixture();
+    mismatch[36..40].copy_from_slice(&7_u32.to_le_bytes());
+    assert!(matches!(
+        parse_compact_table_bin_lookup(&mismatch),
+        Err(RimeTableBinParseError::InvalidCount)
+    ));
+
+    let mut oversized = build_marisa_table_fixture();
+    oversized[36..40].copy_from_slice(&u32::MAX.to_le_bytes());
+    assert!(matches!(
+        parse_compact_table_bin_lookup(&oversized),
+        Err(RimeTableBinParseError::InvalidCount)
+    ));
+}
+
+#[test]
 fn compact_table_real_luna_compiled_fixture_enumerates_stored_entries() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../apps/yune-web/public/schema/luna_pinyin.table.bin");
@@ -539,6 +556,96 @@ fn prism_runtime_payload_reads_lookup_storage_from_byte_source() {
 }
 
 #[test]
+fn generated_identity_prism_uses_upstream_null_map_and_syllable_id_darts_values() {
+    // Deliberately unsorted: a null spelling map requires Darts leaf values to
+    // be canonical syllable ids, not BTree spelling-map iteration indices.
+    let syllabary = vec!["z".to_owned(), "a".to_owned(), "m".to_owned()];
+    let bytes = build_prism_bin(&syllabary, &[], 0x1111_1111, 0x2222_2222);
+    assert_eq!(
+        i32::from_le_bytes(bytes[56..60].try_into().expect("map pointer bytes")),
+        0,
+        "a pure identity prism must use librime's null spelling-map pointer"
+    );
+
+    let owned = parse_rime_prism_bin_payload(&bytes).expect("identity prism should parse owned");
+    for canonical in &syllabary {
+        let lookup = owned.lookup_canonical_codes(canonical, &syllabary);
+        assert_eq!(lookup.len(), 1);
+        assert_eq!(lookup[0].code, canonical);
+        assert!(!lookup[0].abbreviation && !lookup[0].correction);
+        assert_eq!(lookup[0].credibility.to_bits(), 0.0f32.to_bits());
+    }
+
+    let source: Arc<dyn CompactTableByteSource> = Arc::new(TestPrismByteSource {
+        bytes: Arc::<[u8]>::from(bytes.clone()),
+        mapping_mode: "mmap",
+    });
+    let runtime =
+        parse_rime_prism_runtime_payload(source).expect("identity prism should parse byte-backed");
+    assert!(runtime.has_byte_backed_identity_spelling_map());
+    let map_owner = runtime
+        .memory_owner_rows()
+        .into_iter()
+        .find(|row| row.owner == "prism.spelling_map")
+        .expect("spelling-map owner row should exist");
+    assert_eq!((map_owner.estimated_bytes, map_owner.item_count), (0, 0));
+
+    let mut oversized_counts = bytes.clone();
+    oversized_counts[40..44].copy_from_slice(&(i32::MAX as u32).to_le_bytes());
+    oversized_counts[44..48].copy_from_slice(&(i32::MAX as u32).to_le_bytes());
+    assert_eq!(
+        parse_rime_prism_bin_payload(&oversized_counts),
+        Err(RimePrismBinParseError::InvalidCount),
+        "null-map header counts must be bounded by the file-backed Darts unit count before allocating"
+    );
+    let oversized_source: Arc<dyn CompactTableByteSource> = Arc::new(TestPrismByteSource {
+        bytes: Arc::<[u8]>::from(oversized_counts),
+        mapping_mode: "mmap",
+    });
+    assert!(matches!(
+        parse_rime_prism_runtime_payload(oversized_source),
+        Err(RimePrismBinParseError::InvalidCount)
+    ));
+
+    let unicode_syllabary = vec!["\u{4f60}".to_owned()];
+    let unicode_source: Arc<dyn CompactTableByteSource> = Arc::new(TestPrismByteSource {
+        bytes: Arc::<[u8]>::from(build_prism_bin(&unicode_syllabary, &[], 1, 2)),
+        mapping_mode: "mmap",
+    });
+    let unicode = parse_rime_prism_runtime_payload(unicode_source)
+        .expect("non-ASCII identity prism should parse");
+    let prefixes =
+        unicode.common_prefix_canonical_codes("\u{4f60}\u{597d}", &unicode_syllabary, usize::MAX);
+    assert_eq!(prefixes.len(), 1);
+    assert_eq!(
+        (prefixes[0].0, prefixes[0].1.code),
+        ("\u{4f60}".len(), "\u{4f60}")
+    );
+    assert!("\u{4f60}\u{597d}".is_char_boundary(prefixes[0].0));
+
+    // A malformed external Darts payload may mark a leaf in the middle of a
+    // UTF-8 scalar. The runtime must discard that byte length before callers
+    // slice the Rust input string.
+    let malformed_darts = DartsDoubleArray::build_bytes(&[(vec![0xe4], 0)])
+        .expect("single-byte malformed key should build as opaque Darts bytes");
+    let mut malformed_bytes = build_prism_bin(&unicode_syllabary, &[], 1, 2);
+    malformed_bytes[48..52].copy_from_slice(&(malformed_darts.units().len() as u32).to_le_bytes());
+    malformed_bytes.truncate(320);
+    for unit in malformed_darts.units() {
+        malformed_bytes.extend_from_slice(&unit.to_le_bytes());
+    }
+    let malformed_source: Arc<dyn CompactTableByteSource> = Arc::new(TestPrismByteSource {
+        bytes: Arc::<[u8]>::from(malformed_bytes),
+        mapping_mode: "mmap",
+    });
+    let malformed = parse_rime_prism_runtime_payload(malformed_source)
+        .expect("opaque malformed Darts bytes remain structurally parseable");
+    assert!(malformed
+        .common_prefix_canonical_codes("\u{4f60}\u{597d}", &unicode_syllabary, usize::MAX)
+        .is_empty());
+}
+
+#[test]
 fn generated_prism_bin_round_trips_spelling_map_and_double_array() {
     let syllabary = vec![
         "a".to_owned(),
@@ -605,6 +712,201 @@ fn generated_prism_bin_round_trips_spelling_map_and_double_array() {
             credibility: -std::f32::consts::LN_10 * 2.0,
             tips: String::new(),
         }]
+    );
+}
+
+#[test]
+fn generated_prism_rejects_a_mixed_valid_and_invalid_algebra_as_one_unit() {
+    let syllabary = vec!["hao".to_owned()];
+    let algebra = vec![
+        "derive/^hao$/hx/".to_owned(),
+        "this-is-not-a-valid-algebra-formula".to_owned(),
+    ];
+    let payload = parse_rime_prism_bin_payload(build_prism_bin(
+        &syllabary,
+        &algebra,
+        0x1111_1111,
+        0x2222_2222,
+    ))
+    .expect("identity prism should parse");
+    let double_array = payload
+        .double_array
+        .as_ref()
+        .expect("identity prism should retain its Darts index");
+
+    assert_eq!(double_array.exact_match("hao"), Some(0));
+    assert_eq!(
+        double_array.exact_match("hx"),
+        None,
+        "pinned Projection::Load clears the valid sibling when any definition is invalid"
+    );
+}
+
+#[test]
+fn generated_prism_normalizes_rime_capture_suffix_replacements() {
+    // RIME replacement `$1K` means capture 1 followed by literal `K`. Rust's
+    // regex replacement grammar needs `${1}K`; without normalization it treats
+    // `1K` as the capture name and silently drops the deployed `hK` spelling.
+    let syllabary = vec!["hao".to_owned()];
+    let bytes = build_prism_bin(
+        &syllabary,
+        &["xform/(.)ao$/$1K/".to_owned()],
+        0x1111_1111,
+        0x2222_2222,
+    );
+    let payload = parse_rime_prism_bin_payload(&bytes).expect("generated prism should parse");
+    let spelling_index = payload
+        .double_array
+        .as_ref()
+        .and_then(|array| array.exact_match("hK"))
+        .expect("capture-plus-suffix spelling hK must be present")
+        as usize;
+
+    assert_eq!(
+        payload.spelling_map[spelling_index],
+        vec![RimePrismSpellingDescriptor {
+            syllable_id: 0,
+            spelling_type: 0,
+            is_correction: false,
+            credibility: 0.0,
+            tips: String::new(),
+        }]
+    );
+    assert_eq!(
+        payload.lookup_canonical_codes("hK", &syllabary)[0].code,
+        "hao"
+    );
+}
+
+#[test]
+fn generated_prism_composes_provenance_through_jyutping_shaped_tone_transforms() {
+    let syllabary = vec!["bei2".to_owned()];
+    let algebra = [
+        "abbrev/^bei2$/a2/".to_owned(),
+        "fuzz/^bei2$/f2/".to_owned(),
+        "derive/^f2$/c2/correction".to_owned(),
+        "xform/2/x/".to_owned(),
+    ];
+    let payload = parse_rime_prism_bin_payload(build_prism_bin(
+        &syllabary,
+        &algebra,
+        0x1111_1111,
+        0x2222_2222,
+    ))
+    .expect("composed-provenance prism should parse");
+    let descriptor = |spelling: &str| {
+        let index = payload
+            .double_array
+            .as_ref()
+            .and_then(|array| array.exact_match(spelling))
+            .unwrap_or_else(|| panic!("deployed spelling {spelling} must be present"))
+            as usize;
+        payload.spelling_map[index].clone()
+    };
+
+    assert_eq!(
+        descriptor("beix"),
+        vec![RimePrismSpellingDescriptor {
+            syllable_id: 0,
+            spelling_type: 0,
+            is_correction: false,
+            credibility: 0.0,
+            tips: String::new(),
+        }],
+        "ordinary tone xform must preserve normal provenance"
+    );
+    assert_eq!(
+        descriptor("ax"),
+        vec![RimePrismSpellingDescriptor {
+            syllable_id: 0,
+            spelling_type: 2,
+            is_correction: false,
+            credibility: -std::f32::consts::LN_2,
+            tips: String::new(),
+        }],
+        "ordinary tone xform must preserve inherited abbreviation metadata"
+    );
+    assert_eq!(
+        descriptor("fx"),
+        vec![RimePrismSpellingDescriptor {
+            syllable_id: 0,
+            spelling_type: 1,
+            is_correction: false,
+            credibility: -std::f32::consts::LN_2,
+            tips: String::new(),
+        }],
+        "ordinary tone xform must preserve inherited fuzzy metadata"
+    );
+    assert_eq!(
+        descriptor("cx"),
+        vec![RimePrismSpellingDescriptor {
+            syllable_id: 0,
+            spelling_type: 1,
+            is_correction: true,
+            credibility: -std::f32::consts::LN_2 - std::f32::consts::LN_10 * 2.0,
+            tips: String::new(),
+        }],
+        "correction must compose its flag and penalty onto inherited fuzzy provenance"
+    );
+}
+
+#[test]
+fn generated_prism_merges_same_surface_same_syllable_by_pinned_librime_update() {
+    let syllabary = vec!["hao".to_owned()];
+    let algebra = [
+        "fuzz/^hao$/hx/".to_owned(),
+        "abbrev/^hao$/hx/".to_owned(),
+        "derive/^hao$/hx/".to_owned(),
+        "derive/^hao$/hx/correction".to_owned(),
+    ];
+    let payload = parse_rime_prism_bin_payload(build_prism_bin(
+        &syllabary,
+        &algebra,
+        0x1111_1111,
+        0x2222_2222,
+    ))
+    .expect("collision prism should parse");
+    let spelling_index = payload
+        .double_array
+        .as_ref()
+        .and_then(|array| array.exact_match("hx"))
+        .expect("colliding surface hx must be present") as usize;
+
+    assert_eq!(
+        payload.spelling_map[spelling_index],
+        vec![RimePrismSpellingDescriptor {
+            syllable_id: 0,
+            spelling_type: 0,
+            is_correction: false,
+            credibility: 0.0,
+            tips: String::new(),
+        }],
+        "pinned librime Script::Merge collapses the four paths and Update keeps the normal, non-correction, highest-credibility descriptor"
+    );
+}
+
+#[test]
+fn generated_prism_erase_requires_a_whole_spelling_match() {
+    let syllabary = vec!["hao".to_owned(), "ao".to_owned()];
+    let payload = parse_rime_prism_bin_payload(build_prism_bin(
+        &syllabary,
+        &["erase/ao/".to_owned()],
+        0x1111_1111,
+        0x2222_2222,
+    ))
+    .expect("erase prism should parse");
+    let double_array = payload
+        .double_array
+        .as_ref()
+        .expect("partial-match survivor should keep the prism nonempty");
+
+    assert!(
+        double_array.exact_match("hao").is_some(),
+        "pinned librime Erasion uses regex_match, so a partial `ao` match must not erase `hao`"
+    );
+    assert!(
+        double_array.exact_match("ao").is_none(),
+        "a whole-spelling erase match must still remove the spelling"
     );
 }
 

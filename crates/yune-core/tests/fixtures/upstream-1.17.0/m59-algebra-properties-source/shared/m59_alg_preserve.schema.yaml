@@ -1,0 +1,28 @@
+schema:
+  schema_id: m59_alg_preserve
+  name: M59 algebra property preservation oracle
+  version: "1.0"
+
+engine:
+  processors:
+    - speller
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - abc_segmentor
+    - fallback_segmentor
+  translators:
+    - script_translator
+
+speller:
+  alphabet: abcdefghijklmnopqrstuvwxyz
+  algebra:
+    - abbrev/^bei$/bx/
+    - derive/^cei$/cx/fuzz
+    - derive/^dei$/dx/correction
+    - xform/x$/z/
+
+translator:
+  dictionary: m59_alg_preserve
+  enable_user_dict: false

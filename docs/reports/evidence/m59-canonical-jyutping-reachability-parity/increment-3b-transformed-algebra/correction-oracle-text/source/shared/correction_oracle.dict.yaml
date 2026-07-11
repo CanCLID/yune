@@ -1,0 +1,9 @@
+---
+name: correction_oracle
+version: "1.0"
+sort: by_weight
+columns: [text, code, weight]
+...
+
+粗	cu	0
+錯	cuo	0

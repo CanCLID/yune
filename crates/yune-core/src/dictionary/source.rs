@@ -5,6 +5,12 @@ use std::mem;
 use std::ops::Range;
 use std::sync::Arc;
 
+/// Pinned librime 1.17.0 `EntryCollector::TranslateWord` drops character
+/// readings below five percent of that character's total dictionary weight.
+///
+/// Source: <https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/dict/entry_collector.cc#L223-L244>
+pub(crate) const LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE: f32 = 0.05;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableEntry {
     pub code: String,
@@ -1039,7 +1045,8 @@ impl<'a> RimeTablePhraseEncoder<'a> {
         let Some(words) = self.words.get(word) else {
             return Vec::new();
         };
-        let min_weight = self.total_weight.get(word).copied().unwrap_or_default() * 0.05;
+        let min_weight = self.total_weight.get(word).copied().unwrap_or_default()
+            * LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE;
         let mut codes = words
             .iter()
             .filter(|(_, weight)| *weight >= min_weight)

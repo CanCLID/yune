@@ -2700,7 +2700,11 @@ impl StaticTableTranslator {
             .map(|model| model.ranked_script_phrase_candidates_for_code_spans(input, &spans))
             .unwrap_or_default();
         candidates.retain(|ranked| {
-            self.is_dictionary_text_allowed(&ranked.candidate.text)
+            self.upstream_script_partial_candidate_allowed(
+                &ranked.candidate,
+                &syllables,
+                &leading_syllables,
+            ) && self.is_dictionary_text_allowed(&ranked.candidate.text)
                 && (!filter_by_charset || !contains_extended_cjk(&ranked.candidate.text))
         });
         let mut candidate_indices = candidates
@@ -2709,6 +2713,13 @@ impl StaticTableTranslator {
             .map(|(index, ranked)| (ranked.candidate.text.clone(), index))
             .collect::<HashMap<_, _>>();
         for mut direct in direct {
+            if !self.upstream_script_partial_candidate_allowed(
+                &direct.candidate,
+                &syllables,
+                &leading_syllables,
+            ) {
+                continue;
+            }
             if let Some(index) = candidate_indices.get(&direct.candidate.text).copied() {
                 let quality = candidates[index]
                     .candidate
@@ -2787,6 +2798,32 @@ impl StaticTableTranslator {
             truncated,
             owns_reachability: true,
         })
+    }
+
+    fn upstream_script_partial_candidate_allowed(
+        &self,
+        candidate: &Candidate,
+        syllables: &[SurfaceSyllable],
+        leading_syllables: &[SurfaceSyllable],
+    ) -> bool {
+        // The script policy owns sentence/phrase ordering, but it must not
+        // silently re-enable M59's independently configurable leading-single
+        // reachability. Preserve full-input rows, sentences, and multi-character
+        // partial phrases. A separately enabled broad prefix_fallback continues
+        // to own its historical reachability surface.
+        if self.leading_syllable_reachability || self.prefix_fallback {
+            return true;
+        }
+        let CandidateSource::PartialTable { consumed, .. } = candidate.source else {
+            return true;
+        };
+        let consumes_one_leading_syllable = syllables
+            .first()
+            .is_some_and(|syllable| syllable.end == consumed)
+            || leading_syllables
+                .iter()
+                .any(|syllable| syllable.end == consumed);
+        !consumes_one_leading_syllable || candidate.text.chars().count() != 1
     }
 
     fn abbreviation_sentence_candidates(

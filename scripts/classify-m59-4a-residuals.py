@@ -28,7 +28,7 @@ from typing import Any, Iterable, Sequence
 
 
 TOOL_NAME = "classify-m59-4a-residuals.py"
-TOOL_VERSION = "1"
+TOOL_VERSION = "2"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLASS1_INPUTS = ("being", "beingo", "beixngoxx", "mgoi", "zijiguk")
 EXACT_INPUTS = frozenset(("beixngoxx", "mgoi"))
@@ -921,7 +921,7 @@ def classify_documents(
         "raw_comparator": strict_summary,
         "raw_comparator_all_accepted": False,
         "classification_complete": complete,
-        "verdict": "pass" if complete else "fail",
+        "classification_status": "complete" if complete else "incomplete",
         "cases": case_results,
         "summary": {
             "raw_strict_passes": sum(

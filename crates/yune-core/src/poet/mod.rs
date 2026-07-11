@@ -5,6 +5,7 @@ use std::ops::Range;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use crate::dictionary::LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE;
 use crate::{
     Candidate, CandidateSource, MemoryOwnerClass, MemoryOwnerRow, PresetVocabularyEntry,
     TableDictionary, TableEntry,
@@ -35,7 +36,6 @@ const MAX_DERIVED_ABBREVIATION_CODES_PER_VOCABULARY_ENTRY: usize = 16;
 const MAX_DERIVED_SCRIPT_CODES_PER_VOCABULARY_ENTRY: usize = 32;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
-const SCRIPT_ENCODER_MIN_READING_SHARE: f32 = 0.05;
 
 #[derive(Clone, Copy)]
 struct ByteBackedVocabularyChars<'a> {
@@ -208,7 +208,7 @@ fn script_encoder_character_codes(
             let mut seen = HashSet::new();
             readings.retain(|(code, _)| seen.insert(code.clone()));
             let total_weight = readings.iter().map(|(_, weight)| *weight).sum::<f32>();
-            let minimum_weight = total_weight * SCRIPT_ENCODER_MIN_READING_SHARE;
+            let minimum_weight = total_weight * LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE;
             let mut codes = readings
                 .into_iter()
                 .filter_map(|(code, weight)| (weight >= minimum_weight).then_some(code))

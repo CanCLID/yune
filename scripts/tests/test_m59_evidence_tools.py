@@ -3764,7 +3764,7 @@ class ResidualClassifierTests(unittest.TestCase):
             self.weights(),
         )
         self.assertTrue(result["classification_complete"])
-        self.assertEqual(result["verdict"], "pass")
+        self.assertEqual(result["classification_status"], "complete")
         self.assertFalse(result["raw_comparator_all_accepted"])
         self.assertFalse(result["scope"]["full_d48_acceptance_claimed"])
         self.assertEqual(result["summary"]["raw_strict_passes"], 2)
@@ -3787,7 +3787,7 @@ class ResidualClassifierTests(unittest.TestCase):
             self.weights({("乙", "jyut3"): 9.0}),
         )
         self.assertFalse(result["classification_complete"])
-        self.assertEqual(result["verdict"], "fail")
+        self.assertEqual(result["classification_status"], "incomplete")
         being = next(row for row in result["cases"] if row["input"] == "being")
         self.assertEqual(being["cross_weight_inversion_count"], 1)
         self.assertEqual(being["classification_reasons"], ["cross-weight-inversion"])

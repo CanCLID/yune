@@ -382,6 +382,11 @@ fn upstream_sentence_model_reads_candidates_from_byte_backed_poet_artifact() {
 
 #[test]
 fn script_phrase_derivation_uses_librime_five_percent_reading_threshold() {
+    // Pinned upstream contract: EntryCollector::TranslateWord uses
+    // `kMinimalWeight = 0.05`, and ScriptEncoder::DfsEncode consumes that
+    // filtered reading family.
+    // https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/dict/entry_collector.cc#L223-L244
+    // https://github.com/rime/librime/blob/33e78140250125871856cdc5b42ddc6a5fcd3cd4/src/rime/algo/encoder.cc#L292-L333
     for (minor_weight, admitted) in [(4.0, false), (5.0, true)] {
         let entries = vec![
             TableEntry::new("a-main", "A", 100.0 - minor_weight),

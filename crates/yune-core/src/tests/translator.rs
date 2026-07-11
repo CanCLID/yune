@@ -3559,6 +3559,7 @@ fn upstream_script_policy_merges_phrase_sentence_and_partial_families_across_sto
             .with_spelling_algebra(&formulas)
             .with_sentence(true)
             .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_leading_syllable_reachability(true)
             .with_preset_vocabulary(vocabulary.clone())
             .with_upstream_sentence_model(100);
 
@@ -3585,6 +3586,7 @@ fn upstream_script_policy_merges_phrase_sentence_and_partial_families_across_sto
     .with_spelling_algebra(&formulas)
     .with_sentence(true)
     .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_leading_syllable_reachability(true)
     .with_preset_vocabulary(vocabulary.clone())
     .with_upstream_sentence_poet_source(poet_source, 0x5904_0001)
     .with_upstream_sentence_model(100);
@@ -3662,6 +3664,108 @@ fn upstream_script_policy_merges_phrase_sentence_and_partial_families_across_sto
         !legacy_texts.contains(&"AN".to_owned()),
         "the legacy/TypeDuck policy must not activate the new upstream script-family merge"
     );
+}
+
+#[test]
+fn upstream_script_policy_honors_leading_single_opt_out_across_storage_paths() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("bei2", "B", 100.0),
+        TableEntry::new("ngo5", "N", 100.0),
+        TableEntry::new("aa1", "X", 100.0),
+        TableEntry::new("bei2ngo5", "Q", 80.0),
+        TableEntry::new("bei2ngo5aa1", "QX", 70.0),
+    ]);
+    let formulas = ["derive/\\d//".to_owned()];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_1001, 0x5904_1002);
+
+    let owned = |leading_syllable_reachability, prefix_fallback| {
+        let prism = parse_rime_prism_bin_payload(prism_bytes.clone())
+            .expect("owned opt-out prism should parse");
+        StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_prefix_fallback(prefix_fallback)
+            .with_leading_syllable_reachability(leading_syllable_reachability)
+            .with_upstream_sentence_model(100)
+    };
+    let byte_backed = |leading_syllable_reachability, prefix_fallback| {
+        let table_bytes = build_table_bin(&dictionary, 0x5904_1001);
+        let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+            .expect("byte-backed opt-out table metadata should parse");
+        let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+            .expect("byte-backed opt-out table should parse");
+        let prism_source: Arc<dyn CompactTableByteSource> = Arc::new(AlgebraPrismByteSource(
+            Arc::<[u8]>::from(prism_bytes.clone()),
+        ));
+        let prism = parse_rime_prism_runtime_payload(prism_source)
+            .expect("byte-backed opt-out prism should parse");
+        StaticTableTranslator::from_compact_table_store_with_prism_runtime(store, Some(prism))
+            .with_spelling_algebra(&formulas)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_prefix_fallback(prefix_fallback)
+            .with_leading_syllable_reachability(leading_syllable_reachability)
+            .with_upstream_sentence_model(100)
+    };
+
+    for (storage, disabled, enabled, prefix_owned) in [
+        (
+            "owned",
+            owned(false, false),
+            owned(true, false),
+            owned(false, true),
+        ),
+        (
+            "byte",
+            byte_backed(false, false),
+            byte_backed(true, false),
+            byte_backed(false, true),
+        ),
+    ] {
+        let disabled = disabled.translate("beingoaa");
+        assert!(
+            disabled.iter().any(|candidate| candidate.text == "QX"),
+            "{storage}: explicit false must retain full-input phrase output"
+        );
+        assert!(
+            disabled.iter().all(|candidate| {
+                candidate.text != "B"
+                    || !matches!(candidate.source, CandidateSource::PartialTable { .. })
+            }),
+            "{storage}: explicit false must suppress the injected leading single"
+        );
+        assert!(
+            disabled.iter().any(|candidate| {
+                candidate.text == "Q"
+                    && matches!(
+                        candidate.source,
+                        CandidateSource::PartialTable { consumed: 6, .. }
+                    )
+            }),
+            "{storage}: explicit false must retain a one-scalar phrase that consumes multiple syllables"
+        );
+
+        assert!(
+            enabled.translate("beingoaa").iter().any(|candidate| {
+                candidate.text == "B"
+                    && matches!(candidate.source, CandidateSource::PartialTable { .. })
+            }),
+            "{storage}: default-on reachability must retain the leading single"
+        );
+        assert!(
+            prefix_owned.translate("beingoaa").iter().any(|candidate| {
+                candidate.text == "B"
+                    && matches!(candidate.source, CandidateSource::PartialTable { .. })
+            }),
+            "{storage}: independent prefix_fallback must retain its leading family"
+        );
+    }
 }
 
 #[test]

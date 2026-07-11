@@ -41,7 +41,7 @@ pub use rebuild_executor::{
     execute_rebuild_plan, RimeDictRebuildExecuteError, RimeDictRebuildSources,
 };
 pub use reverse_writer::build_reverse_bin;
-pub(crate) use source::normalize_table_code;
+pub(crate) use source::{normalize_table_code, LIBRIME_ENTRY_COLLECTOR_MIN_READING_SHARE};
 pub use source::{
     parse_rime_preset_vocabulary_entries, ByteBackedDictionaryLookupRecords,
     DictionaryLookupByteSource, DictionaryLookupByteStoreError, DictionaryLookupRecord,

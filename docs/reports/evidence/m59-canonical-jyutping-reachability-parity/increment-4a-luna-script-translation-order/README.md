@@ -50,14 +50,14 @@ page-order increment and no predictive rule was added.
 
 ## Source and binary identity
 
-- Measured Yune engine commit:
-  `1f0fb0e5b90d50b0b16aef8195acab423c277fe5`
-- Later integration-test-only commit: `fa7f3961`
+- Measured and independently reviewed Yune engine commit:
+  `89875ee2f812d070b43d12e6700407dccbb78435`
 - Pinned librime commit:
   `33e78140250125871856cdc5b42ddc6a5fcd3cd4`
-- Yune dylib SHA-256, identical before/after every accepted round:
-  `48e8848989af86c2941d6a89e5c5ba87bbdd0a2738fda693b4c2fd3b3b346977`
-- librime dylib SHA-256, identical before/after every accepted round:
+- Yune dylib SHA-256, identical at the pre-packet build and after every
+  accepted round:
+  `57bcf505e86136ae7badeb1333ff654f48c09f97120bfa85b7a0133396accaf0`
+- librime dylib SHA-256, single-valued across all five accepted rounds:
   `af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3`
 - Complete candidate-snapshot SHA-256, identical in all five accepted rounds:
   `1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88`
@@ -71,18 +71,21 @@ The fixture and provenance checks live under
 
 ## Accepted macOS protocol
 
-Host: MacBook Air Mac17,3 (MDH74LL/A), Apple M5 (4 performance + 6 efficiency
-cores), 16 GB RAM, macOS 26.5.1 (25F80), APFS. It remained on AC power at 100%,
-with Low Power Mode disabled and no recorded thermal/performance warning.
+Host: MacBook Air Mac17,3, Apple M5, 16 GB RAM, macOS 26.5.1 (25F80), APFS.
+It remained on AC power at 100%, with Low Power Mode disabled and no recorded
+thermal/performance warning.
 Rust/Cargo were 1.96.1; Command Line Tools were 26.6. Full Xcode was not the
 selected developer directory.
 
-Measurement ran from `2026-07-11T14:22:10Z` through
-`2026-07-11T14:43:30Z`, after release prebuild and about 60 seconds idle. No
-compilation, indexing, export, or backup job was intentionally concurrent.
-Codex, WindowServer, Chrome, and Telegram remained visible; the end snapshot
-showed modest Chrome/Codex activity, so short-row timing spread remains a host
-noise caveat.
+Measurement ran from `2026-07-11T16:41:56Z` through
+`2026-07-11T16:57:33Z`, after release prebuild and a 40-second stabilization
+interval. No separate compilation, indexing, export, or backup job was
+concurrent with the timed samples. The prescribed script rebuilt its harness
+between lanes; those builds completed before each timed process began. Codex,
+ChatGPT, Claude, WindowServer, Chrome, Telegram, Slack, Docker, and Granola UI
+processes remained visible. The host is therefore not claimed to be perfectly
+idle, and the short-row and pooled-maximum spreads retain an explicit noise
+caveat.
 
 Exact protocol: 9 iterations, 60 session iterations, 80 key iterations,
 product deployment enabled, the same 17 Track A inputs and Track B product
@@ -90,15 +93,17 @@ input in every round.
 
 External accepted run paths (generated output is intentionally not tracked):
 
-1. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/run-1`
-2. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/run-2`
-3. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/run-3`
-4. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/run-4`
-5. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/run-5`
+1. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/run-1`
+2. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/run-2`
+3. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/run-3`
+4. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/run-4`
+5. `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/run-5`
 
 Each path preserves environment, commands, comparison and raw summaries,
 candidate snapshots, M37 counters, memory-owner profiles, product status,
-macOS verdict, and pre/post binary hashes.
+macOS verdict, and binary identity hashes. Run 1 additionally preserves the
+outer-wrapper post-step failure described below; all measurements had already
+completed and were not retried or replaced.
 
 ## Track A — complete 17-row diagnostic
 
@@ -111,26 +116,26 @@ difference: within 10% `close`, over 10% through 25% `notable`, over 25%
 
 | Input | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 | Mac median | Worst | Spread | Windows median | Windows ceiling | Mac vs Windows | Class |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| `n` | 3.766 | 4.334 | 3.945 | 3.742 | 4.278 | 3.945 | 4.334 | 15.8% | 2.820 | 3.006 | +39.9% | material |
-| `ni` | 2.835 | 2.838 | 2.589 | 2.457 | 3.016 | 2.835 | 3.016 | 22.8% | 2.599 | 2.666 | +9.1% | close |
-| `hao` | 1.681 | 1.730 | 1.909 | 1.690 | 2.022 | 1.730 | 2.022 | 20.3% | 1.720 | 1.844 | +0.6% | close |
-| `zhongguo` | 1.045 | 0.940 | 1.011 | 1.003 | 1.038 | 1.011 | 1.045 | 11.2% | 0.293 | 0.323 | +245.1% | material |
-| 37-char `ceshiyixiachangjushuruxingnengzenyang` | 2.410 | 2.428 | 2.380 | 2.438 | 2.416 | 2.416 | 2.438 | 2.4% | 2.132 | 2.339 | +13.3% | notable |
-| 59-char `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | 1.677 | 1.788 | 1.767 | 1.809 | 1.808 | 1.788 | 1.809 | 7.9% | 1.681 | 1.748 | +6.4% | close |
-| `cszysmsrsd` | 0.565 | 0.589 | 0.592 | 0.606 | 0.596 | 0.592 | 0.606 | 7.3% | 0.396 | 0.474 | +49.5% | material |
-| `zybfshmsru` | 0.821 | 0.846 | 0.837 | 0.844 | 0.879 | 0.844 | 0.879 | 7.1% | 0.569 | 0.695 | +48.3% | material |
-| `zh` (newly signed) | 3.181 | 3.094 | 3.039 | 3.120 | 3.095 | 3.095 | 3.181 | 4.7% | 0.986 | 1.047 | +213.9% | material |
-| `j` (newly signed) | 7.282 | 6.908 | 6.795 | 7.053 | 8.533 | 7.053 | 8.533 | 25.6% | 4.000 | 4.372 | +76.3% | material |
-| `yi` (newly signed) | 4.115 | 3.922 | 3.820 | 4.140 | 3.861 | 3.922 | 4.140 | 8.4% | 5.777 | 6.098 | -32.1% | material |
-| `che` (newly signed) | 2.573 | 2.443 | 2.418 | 2.537 | 2.452 | 2.452 | 2.573 | 6.4% | 1.081 | 1.160 | +126.8% | material |
-| `chuang` (newly signed) | 2.358 | 2.082 | 2.108 | 2.267 | 2.185 | 2.185 | 2.358 | 13.3% | 1.266 | 1.357 | +72.6% | material |
-| `b` (newly signed) | 5.977 | 5.503 | 5.404 | 5.637 | 6.003 | 5.637 | 6.003 | 11.1% | 3.439 | 3.775 | +63.9% | material |
-| `ceshi` (newly signed) | 1.404 | 1.305 | 1.715 | 1.353 | 1.719 | 1.404 | 1.719 | 31.7% | 0.895 | 0.966 | +56.9% | material |
-| `zhongdengchangdu` (newly signed) | 0.586 | 0.626 | 0.621 | 0.629 | 0.611 | 0.621 | 0.629 | 7.3% | 0.322 | 0.342 | +92.9% | material |
-| `dazisudu` (newly signed) | 3.147 | 3.231 | 3.261 | 3.162 | 3.229 | 3.229 | 3.261 | 3.6% | 1.034 | 1.098 | +212.3% | material |
+| `n` | 3.996 | 3.832 | 3.618 | 2.864 | 3.909 | 3.832 | 3.996 | 39.5% | 2.820 | 3.006 | +35.9% | material |
+| `ni` | 2.703 | 2.532 | 2.707 | 2.259 | 2.471 | 2.532 | 2.707 | 19.8% | 2.599 | 2.666 | -2.6% | close |
+| `hao` | 1.681 | 1.748 | 1.685 | 1.306 | 1.775 | 1.685 | 1.775 | 35.9% | 1.720 | 1.844 | -2.0% | close |
+| `zhongguo` | 0.946 | 1.016 | 0.966 | 0.770 | 0.988 | 0.966 | 1.016 | 31.9% | 0.293 | 0.323 | +229.7% | material |
+| 37-char `ceshiyixiachangjushuruxingnengzenyang` | 2.428 | 2.706 | 2.388 | 2.028 | 2.463 | 2.428 | 2.706 | 33.4% | 2.132 | 2.339 | +13.9% | notable |
+| 59-char `zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong` | 1.809 | 2.052 | 1.774 | 1.434 | 1.831 | 1.809 | 2.052 | 43.1% | 1.681 | 1.748 | +7.6% | close |
+| `cszysmsrsd` | 0.600 | 0.649 | 0.590 | 0.480 | 0.586 | 0.590 | 0.649 | 35.2% | 0.396 | 0.474 | +49.0% | material |
+| `zybfshmsru` | 0.846 | 0.900 | 0.831 | 0.788 | 0.826 | 0.831 | 0.900 | 14.2% | 0.569 | 0.695 | +46.0% | material |
+| `zh` (newly signed) | 3.026 | 2.997 | 2.989 | 2.696 | 2.991 | 2.991 | 3.026 | 12.2% | 0.986 | 1.047 | +203.3% | material |
+| `j` (newly signed) | 7.274 | 7.422 | 7.259 | 6.195 | 6.657 | 7.259 | 7.422 | 19.8% | 4.000 | 4.372 | +81.5% | material |
+| `yi` (newly signed) | 3.878 | 3.946 | 3.864 | 3.857 | 3.795 | 3.864 | 3.946 | 4.0% | 5.777 | 6.098 | -33.1% | material |
+| `che` (newly signed) | 2.558 | 2.465 | 2.519 | 2.304 | 2.362 | 2.465 | 2.558 | 11.0% | 1.081 | 1.160 | +128.0% | material |
+| `chuang` (newly signed) | 2.236 | 2.262 | 2.319 | 1.933 | 2.060 | 2.236 | 2.319 | 20.0% | 1.266 | 1.357 | +76.6% | material |
+| `b` (newly signed) | 5.884 | 5.600 | 5.445 | 3.768 | 5.274 | 5.445 | 5.884 | 56.2% | 3.439 | 3.775 | +58.3% | material |
+| `ceshi` (newly signed) | 1.336 | 1.377 | 1.355 | 1.037 | 1.212 | 1.336 | 1.377 | 32.8% | 0.895 | 0.966 | +49.3% | material |
+| `zhongdengchangdu` (newly signed) | 0.633 | 0.707 | 0.617 | 0.509 | 0.620 | 0.620 | 0.707 | 38.9% | 0.322 | 0.342 | +92.5% | material |
+| `dazisudu` (newly signed) | 3.167 | 3.261 | 3.174 | 2.931 | 3.085 | 3.167 | 3.261 | 11.3% | 1.034 | 1.098 | +206.3% | material |
 
-Thirteen rows are material, one notable, and three close. Fifteen macOS
-medians are above the Windows ceiling; only `hao` and `yi` are at or below it.
+Thirteen rows are material, one notable, and three close. Fourteen macOS
+medians are above the Windows ceiling; `ni`, `hao`, and `yi` are at or below it.
 That is a platform diagnostic, not a failed Windows gate or authority to
 re-baseline.
 
@@ -145,9 +150,10 @@ All five 59-character pages match librime exactly:
 `這個引擎其實應該支持超長句子輸入才能用, 這個, 這歌, 這格, 這`
 
 The false `遮蓋` candidate is absent. The 37-character timing difference is
-notable (+13.3%) with only 2.4% spread; the 59-character difference is close
-(+6.4%) with 7.9% spread. Candidate exactness is deterministic and therefore
-not explained by thermal or binary variation.
+notable (+13.9%) with 33.4% spread; the 59-character difference is close
+(+7.6%) with 43.1% spread. Those timing spreads are consistent with ordinary
+host/runtime noise, while candidate exactness is deterministic and is not
+explained by thermal or binary variation.
 
 ## Track B product input
 
@@ -156,17 +162,20 @@ not interchangeable with Windows counters.
 
 | Run | Median µs | p95 µs | Max µs | Median working set | Peak working set |
 |---|---:|---:|---:|---:|---:|
-| 1 | 286.232 | 304.314 | 313.249 | 328.0 MiB | 440.2 MiB |
-| 2 | 260.118 | 287.585 | 333.896 | 329.0 MiB | 440.0 MiB |
-| 3 | 261.323 | 264.772 | 267.070 | 328.1 MiB | 433.9 MiB |
-| 4 | 260.727 | 264.760 | 286.240 | 331.3 MiB | 444.0 MiB |
-| 5 | 280.585 | 285.719 | 291.132 | 387.6 MiB | 443.2 MiB |
+| 1 | 260.006 | 460.676 | 704.124 | 335.9 MiB | 446.2 MiB |
+| 2 | 261.372 | 282.441 | 283.036 | 336.8 MiB | 446.6 MiB |
+| 3 | 258.631 | 261.548 | 262.589 | 398.8 MiB | 454.1 MiB |
+| 4 | 258.167 | 266.324 | 315.360 | 334.9 MiB | 445.2 MiB |
+| 5 | 260.473 | 262.284 | 264.590 | 333.7 MiB | 444.1 MiB |
 
-Median of run medians: 261.323 µs. Worst run median: 286.232 µs. Pooled worst
-sample: 333.896 µs. Median spread: 10.0%.
+Median of run medians: 260.006 µs. Worst run median: 261.372 µs. Pooled worst
+sample: 704.124 µs. Median spread: 1.2%. Run 1's p95 and maximum are isolated
+tail outliers consistent with the recorded foreground-workload caveat; they are
+preserved rather than discarded.
 
-The first page is identical in every accepted run and byte-equivalent to both
-M57 passes:
+The first page is identical in every accepted run. Its normalized
+candidate/comment subset is byte-equivalent to M57 `full-pass-1`, the pass used
+by this aggregation:
 
 `你個人經其實應該支援超場句子輸入先可以用, 你個, 你, 呢, 尼`
 
@@ -192,7 +201,8 @@ behavior discrepancy or an M59 threshold change.
 
 The repair changes the 37/59 pages from M57's multiple full-span alternatives
 to the pinned librime page shape. Track B's normalized candidate/comment subset
-remains byte-identical to M57; its compiled table files are not byte-identical.
+remains byte-identical to M57 `full-pass-1`; its compiled table files are not
+byte-identical.
 
 ## Preserved failures and limitations
 
@@ -211,6 +221,14 @@ measurement sample:
 5. moving the build to `.noindex` changed the CMake install prefix and triggered relinking;
 6. logical-versus-physical CMake paths triggered a rebuild, stopped at 39%.
 
+The final-binary packet also preserves two non-measurement orchestration
+failures. After run 1 had fully completed, an outer zsh wrapper rejected an
+assignment to its reserved `status` variable; the round was retained and its
+post-run hash recorded without rerunning. The first aggregation attempt then
+stopped before output because it expected a different librime hash filename;
+identical-content aliases were added and aggregation was retried without
+changing any measurement.
+
 Portable report validation, packaging, and structural verification passed.
 Automated interactive HTML verification was skipped because the packaged
 runtime had no Chromium headless shell and the in-app browser blocks automated
@@ -219,9 +237,9 @@ this macOS engine diagnostic.
 
 ## Interpretation and remaining M59 scope
 
-- **Real macOS engine-path discrepancy:** the candidate-page defect was real in
-  Yune and has been repaired against the pinned oracle. It was not caused by
-  macOS, thermal state, or a variable binary.
+- **Real engine-path discrepancy, observed on macOS:** the candidate-page defect
+  was cross-platform Yune behavior and has been repaired against the pinned
+  oracle. It was not caused by macOS, thermal state, or a variable binary.
 - **Platform-specific performance:** the broad Mac-versus-Windows ratio shifts
   are plausibly dominated by CPU/OS/compiler/allocator and librime platform
   differences. This packet cannot attribute them to one component.
@@ -236,15 +254,22 @@ this macOS engine diagnostic.
 ## External report and validation
 
 - Portable HTML:
-  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/report.html`
+  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/report.html`
 - Full 17-row CSV:
-  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/track-a-17-row-comparison.csv`
+  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/track-a-17-row-comparison.csv`
 - Validation receipt:
-  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/report-validation.json`
+  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/report-validation.json`
 - Source notes:
-  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-domain-fix/report-source-notes.md`
+  `/Users/laufei/yune-m59-luna-page-order-parity-verification-20260711/post-review-fix/report-source-notes.md`
 
 The independent validation recomputed all 17 rows from the five raw run files
 and signed Windows CSV, confirmed both binary hashes and the complete candidate
 snapshot hash, checked Track B aggregates, and reconciled the portable artifact.
-It passed 43 checks with no discrepancy.
+It passed 92 checks with no discrepancy. SHA-256 identities are:
+
+- report HTML:
+  `6574cb32ff4ce92241a05bfc0e4e28d8f6b7e426e64353de6f967053757b88ab`;
+- artifact JSON:
+  `32e5178254b0418a1940f9f56187bb403b4d510984fd05aeafc88ee2a449c712`;
+- validation receipt:
+  `fceeace8395764a26b5b061b9bbbc127365b2df74f3bb3107c56c075136327fe`.

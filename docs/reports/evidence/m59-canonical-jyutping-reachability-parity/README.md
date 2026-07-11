@@ -12,9 +12,9 @@ regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-11):**
 > [`increment-4a-luna-script-translation-order/`](./increment-4a-luna-script-translation-order/)
-> records the Luna long-input `ScriptTranslation` repair through test-only
-> commit `fa7f3961` and the five-round macOS diagnostic measured at engine
-> commit `1f0fb0e5`. Both 37- and 59-character first pages now match pinned
+> records the Luna long-input `ScriptTranslation` repair, independent review,
+> and fresh final-binary five-round macOS diagnostic at engine commit
+> `89875ee2`. Both 37- and 59-character first pages now match pinned
 > librime exactly in all five runs; Yune and librime dylib hashes and the full
 > candidate snapshots remain single-valued. The repair separates librime's
 > one-best sentence from its phrase stream and honors the natural-log weight

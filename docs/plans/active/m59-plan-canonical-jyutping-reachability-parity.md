@@ -14,18 +14,17 @@
 > `2cb7e411`: its schema-general transformed-algebra implementation, oracle
 > packet, deterministic asset rebuild, two independent reviews, and five-round
 > owner-signed Windows ratchet are green (`32/32` aggregate rows). M59-REACH-02
-> is complete. Increment 4a is now implemented through test-only commit
-> `fa7f3961` (five-round measured engine commit `1f0fb0e5`): the expanded Luna
+> is complete. Increment 4a is now implemented and independently reviewed
+> through `89875ee2` (also the fresh five-round measured engine commit): the expanded Luna
 > 37/59 first pages match pinned librime exactly, compiled natural-log weights
 > preserve the inclusive 5% pronunciation boundary, and no ceiling or exception
-> changed. Its blocking review is the current stop; no 4b behavior work starts
-> until that review resolves. No complete D-48 ordering lane, REACH-03/04, or
-> final-gate row is implied complete here.
+> changed. Its blocking review resolved with no remaining findings; no 4b
+> behavior work was started by this repair task. No complete D-48 ordering lane,
+> REACH-03/04, or final-gate row is implied complete here.
 >
-> Nothing remaining moves to M60 or another milestone. After 4a lands, **no
-> subsequent engine-behavior increment** (including 4b) starts until Fable's
-> review returns and all findings are fixed forward and reverified. Non-overlapping
-> evidence/docs work may continue during that wait; reviews for all other
+> Nothing remaining moves to M60 or another milestone. The 4a review hold is
+> satisfied at `89875ee2`: both independent passes returned with no remaining
+> findings after fixes and re-verification. Reviews for all other
 > increments remain nonblocking. Symmetrically, after 4b lands, no later
 > engine-behavior increment starts until its Fable review is resolved. Before 4b
 > can land, the signed short-key ratchet must cover `n`, `ni`, and `hao`. Any red
@@ -95,15 +94,17 @@
   fixed-DLL rounds pass all 32 rows individually and in aggregate. Rejected
   pre-repair packets are preserved alongside the accepted evidence.
   Evidence: `increment-3b-transformed-algebra/performance-ratchet/`.
-- **Increment 4a implementation/evidence complete (blocking review current):**
+- **Increment 4a implementation/evidence/review complete:**
   `71a80704` separates upstream Luna's one-best sentence from its independent
   phrase stream; `e5c57eb6` preserves ScriptTranslation display metadata;
   `0ecd2e06` records the compiled natural-log weight domain; `1f0fb0e5`
   preserves librime's inclusive 5% source-weight boundary despite stored `f32`
   rounding; and `fa7f3961` aligns the deployed explicit-false integration
-  matrix without changing engine behavior. A purpose-built table compiled by
+  matrix without changing engine behavior; and `89875ee2` closes the independent
+  review findings around compiled-zero sentinels and producer-local exact-user
+  merging without adding generic predictive-userdb behavior. A purpose-built table compiled by
   pinned librime is non-circular and forbids the false `遮蓋` phrase. Five fresh
-  macOS rounds at measured commit `1f0fb0e5` use one Yune dylib, one librime
+  macOS rounds at final reviewed commit `89875ee2` use one Yune dylib, one librime
   dylib, and one complete-candidate hash; both 37/59 first pages match exactly.
   The retained pre-domain-fix packet stays red evidence. This sub-slice creates
   no threshold/exception and does not close M59-PARITY-02: `boyi`, `yi`,
@@ -761,9 +762,8 @@ run-until-green, no re-baseline).
 
 ## Increment 4a — Luna ScriptTranslation page/order repair (2026-07-11)
 
-**Local implementation/evidence complete; blocking review current. No 4b
-behavior work has started.** This is a sub-slice of the existing M59/D-48 plan,
-not a milestone.
+**Local implementation/evidence/review complete. No 4b behavior work has
+started.** This is a sub-slice of the existing M59/D-48 plan, not a milestone.
 
 - `71a80704` separates the upstream Luna one-best sentence stream from the
   independent table phrase stream and makes page limits explicit.
@@ -771,10 +771,13 @@ not a milestone.
 - `0ecd2e06` records `EntryWeightDomain::{Raw,NaturalLog}` and stops treating
   compiled librime logarithms as source weights or logging them twice.
 - `1f0fb0e5` reconstructs the inclusive ScriptEncoder 5% pronunciation rule
-  through the representable `f32` rounding interval. This is the measured engine
-  commit.
+  through the representable `f32` rounding interval.
 - `fa7f3961` changes the deployed integration-test matrix only; it does not
-  change the measured library behavior.
+  change library behavior.
+- `89875ee2` is the final reviewed implementation and measured commit. It
+  distinguishes compiled zero sentinels from positive sub-one weights and
+  bounds exact-user ordering to its one active default-quality Script owner,
+  with producer-aware mixed-stream tests and no new predictive-userdb claim.
 
 The non-circular `m59-librime-log-weight` fixture is compiled by pinned librime
 `33e78140250125871856cdc5b42ddc6a5fcd3cd4`; decoded `.table.bin` SHA-256 is
@@ -789,8 +792,8 @@ no generic ScriptTranslation predictive-userdb rule or claim. Producer-local
 tests prove the bounded exact rule cannot suppress or drag another translator's
 stream, including intermediate-quality and equal-quality tie cases.
 
-Five fresh macOS rounds at `1f0fb0e5` retain one Yune dylib SHA-256
-`48e8848989af86c2941d6a89e5c5ba87bbdd0a2738fda693b4c2fd3b3b346977`,
+Five fresh final-binary macOS rounds at `89875ee2` retain one Yune dylib SHA-256
+`57bcf505e86136ae7badeb1333ff654f48c09f97120bfa85b7a0133396accaf0`,
 one librime dylib SHA-256
 `af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3`,
 and one complete candidate-snapshot SHA-256

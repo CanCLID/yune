@@ -1501,9 +1501,9 @@ mechanism and landed (`c89a8ea9`). Owner amendment (2026-07-07) made the behavio
 a **default-ON, schema-general guarantee** delivered in M59, not M60.
 Increment 3b (`2cb7e411`) completes that default-on transformed-algebra
 guarantee and M59-REACH-02; manifest-derived REACH-03, final-commit REACH-04,
-and every complete D-48 ordering lane remain open. Increment 4a is measured at
-engine commit `1f0fb0e5` with test-only head `fa7f3961`; it changes no signed
-ceiling or exception.
+and every complete D-48 ordering lane remain open. Increment 4a is implemented,
+independently reviewed, and freshly measured at final engine commit `89875ee2`;
+it changes no signed ceiling or exception.
 
 - [x] **M59-REACH-01**: The reachability mechanism is general — keyed on
   syllable/dictionary structure, never per-input `match`/allowlists or baked
@@ -2125,4 +2125,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 3b completed the schema-general transformed-algebra guarantee at `2cb7e411`. Increment 4a repairs the expanded Luna 37/59 page-zero sentence/phrase slice at measured engine commit `1f0fb0e5`, with a non-circular compiled-weight fixture and no threshold/exception change; the broader Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; 7 M59 requirements remain in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 3b completed the schema-general transformed-algebra guarantee at `2cb7e411`. Increment 4a repairs the expanded Luna 37/59 page-zero sentence/phrase slice at final reviewed and measured engine commit `89875ee2`, with a non-circular compiled-weight fixture and no threshold/exception change; the broader Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; 7 M59 requirements remain in progress._

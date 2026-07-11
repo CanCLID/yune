@@ -15,7 +15,8 @@ use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
     byte_backed_lookup_records_from_table_bin_byte_source, memory_probe_mark,
-    parse_poet_bin_summary, parse_rime_prism_runtime_payload, parse_rime_reverse_bin_dictionary,
+    parse_poet_bin_summary, parse_rime_prism_runtime_payload,
+    parse_rime_prism_runtime_payload_with_validation_source, parse_rime_reverse_bin_dictionary,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
     CharsetFilter, CompactTableByteSource, CompactTableStore, DictionaryLookupFilter,
@@ -1547,6 +1548,33 @@ struct MappedCompiledDataBytes {
     mapping_mode: &'static str,
 }
 
+struct LoadedCompiledPrismBytes {
+    runtime_source: Arc<dyn CompactTableByteSource>,
+    validation_source: Option<Box<dyn CompactTableByteSource>>,
+}
+
+impl LoadedCompiledPrismBytes {
+    fn runtime_source(&self) -> &Arc<dyn CompactTableByteSource> {
+        &self.runtime_source
+    }
+
+    fn parse_runtime_payload(
+        self,
+    ) -> Result<RimePrismRuntimePayload, yune_core::RimePrismBinParseError> {
+        let Self {
+            runtime_source,
+            validation_source,
+        } = self;
+        match validation_source {
+            Some(validation_source) => parse_rime_prism_runtime_payload_with_validation_source(
+                runtime_source,
+                validation_source.as_ref(),
+            ),
+            None => parse_rime_prism_runtime_payload(runtime_source),
+        }
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 struct MappedMarisaStringTable {
     trie: rsmarisa::Trie,
@@ -1958,13 +1986,13 @@ fn load_schema_compiled_dictionary(
         let _trace = startup_trace::span("compiled_prism_load");
         prism_path
             .as_deref()
-            .map(|path| load_compiled_data_byte_source(path, "prism"))
+            .map(load_compiled_prism_byte_sources)
             .transpose()?
     };
     if let Some(prism_source) = prism_source.as_ref() {
         memory_probe_mark(format!(
             "m47:compiled_dictionary:{dictionary_name}:after_prism_byte_source_open:prism_bytes={}",
-            prism_source.bytes().len()
+            prism_source.runtime_source().bytes().len()
         ));
     }
     let reverse_bytes = {
@@ -2038,8 +2066,7 @@ fn load_schema_compiled_dictionary(
     let prism_payload = {
         let _trace = startup_trace::span("compiled_prism_parse");
         prism_source
-            .as_ref()
-            .map(|source| parse_rime_prism_runtime_payload(Arc::clone(source)))
+            .map(LoadedCompiledPrismBytes::parse_runtime_payload)
             .transpose()
             .map_err(|error| match error {
                 yune_core::RimePrismBinParseError::UnsupportedSection { role } => {
@@ -2289,6 +2316,39 @@ fn load_compiled_data_byte_source(
     }))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn load_compiled_prism_byte_sources(
+    path: &Path,
+) -> Result<LoadedCompiledPrismBytes, CompiledRejectReason> {
+    let file = fs::File::open(path)
+        .map_err(|error| CompiledRejectReason::Invalid(format!("prism open failed: {error}")))?;
+    let runtime_mmap = {
+        // SAFETY: deployed prism artifacts are immutable while selected. Both mappings are
+        // created from this same file handle; only this first mapping is retained by runtime.
+        unsafe { memmap2::MmapOptions::new().map(&file) }
+    }
+    .map_err(|error| CompiledRejectReason::Invalid(format!("prism mmap failed: {error}")))?;
+    let validation_mmap = {
+        // SAFETY: the same immutability guarantee applies. This second mapping is used only
+        // for eager structural validation and drops as soon as prism parsing returns.
+        unsafe { memmap2::MmapOptions::new().map(&file) }
+    }
+    .map_err(|error| {
+        CompiledRejectReason::Invalid(format!("prism validation mmap failed: {error}"))
+    })?;
+
+    Ok(LoadedCompiledPrismBytes {
+        runtime_source: Arc::new(MappedCompiledDataBytes {
+            mmap: runtime_mmap,
+            mapping_mode: "mmap",
+        }),
+        validation_source: Some(Box::new(MappedCompiledDataBytes {
+            mmap: validation_mmap,
+            mapping_mode: "mmap_validation",
+        })),
+    })
+}
+
 #[cfg(target_arch = "wasm32")]
 fn load_compiled_table_byte_source(
     path: &Path,
@@ -2310,6 +2370,16 @@ fn load_compiled_data_byte_source(
     Ok(Arc::new(OwnedCompiledTableBytes {
         bytes: Arc::<[u8]>::from(bytes),
     }))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn load_compiled_prism_byte_sources(
+    path: &Path,
+) -> Result<LoadedCompiledPrismBytes, CompiledRejectReason> {
+    Ok(LoadedCompiledPrismBytes {
+        runtime_source: load_compiled_data_byte_source(path, "prism")?,
+        validation_source: None,
+    })
 }
 
 fn load_schema_source_dictionary_yaml(dictionary_name: &str) -> Option<String> {

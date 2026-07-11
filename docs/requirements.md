@@ -1498,18 +1498,27 @@ composing an arbitrary non-lexicon phrase one character at a time works on
 tests) and was reverted; the luna lane was reimplemented as a genuine general
 mechanism and landed (`c89a8ea9`). Owner amendment (2026-07-07) made the behavior
 a **default-ON, schema-general guarantee** delivered in M59, not M60.
+Increment 3b (`2cb7e411`) completes that default-on transformed-algebra
+guarantee and M59-REACH-02; manifest-derived REACH-03, final-commit REACH-04,
+and every D-48 ordering lane remain open.
 
 - [x] **M59-REACH-01**: The reachability mechanism is general — keyed on
   syllable/dictionary structure, never per-input `match`/allowlists or baked
   oracle data. Verified: luna `moboyi`→莫伯洢 (owner case); anti-gaming controls `zhongguo`→中 + bare-syllable set,
   and an independent novel input reach their leading-single families on the real
   byte-backed product path via source-truthful, non-circular tests.
-- [ ] **M59-REACH-02 (owner amendment, binding)**: Composing an arbitrary
+- [x] **M59-REACH-02 (owner amendment, binding)**: Composing an arbitrary
   non-lexicon phrase one character at a time is **default-ON for EVERY schema** —
   `luna_pinyin`, `jyut6ping3`/rime-cantonese, `cangjie`/shape schemas, and any
   **future** schema (e.g. `rime-teochew`) — **automatically on install, with ZERO
   per-schema adaptation work.** Engine/translator-level default; per-schema opt-out
   only with a recorded reason. No schema silently onboards without it.
+  Completed by Increment 3b (`2cb7e411`): the translator-level default and
+  deployed-algebra surface mapping require no schema-id gate or per-schema true
+  flag; the real deploy matrix is default-on and explicit-false for product
+  Jyutping, canonical Cantonese, Cangjie, Luna, Luna Octagram, Double Pinyin,
+  and Bopomofo, with Stroke as an identity/null-map control. The fixed-DLL
+  five-round acceptance passes all 32 aggregate rows.
 - [ ] **M59-REACH-03**: The canonical shipped-schema manifest at
   `apps/yune-web/public/schema-asset-manifest.json` is reconciled one-to-one with
   a checked-in acceptance-coverage table: every schema-bearing asset is named,
@@ -1783,8 +1792,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | M58-JYUTPING-07 | M58 | Complete - schema predicates, `jyut6ping3_mobile`, Track B/M55 names, WEB-03/public-demo manifests, and userdb key blast radius audited before any id split |
 | M58-JYUTPING-08 | M58 | Complete - canonical captures succeeded and were not substituted with TypeDuck v1.1.2 candidate output |
 | M59-REACH-01 | M59 | Complete - the retained leading-single mechanism is structure-driven and covered by source-truthful anti-gaming controls; M59 remains in progress |
-| M59-REACH-02 | M59 | In progress - default-on schema-general composition with zero per-schema adaptation remains required for M59 closeout |
-| M59-REACH-03 | M59 | In progress - canonical manifest-to-acceptance reconciliation, the seven-schema 3b default-on/explicit-false deploy matrix, real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
+| M59-REACH-02 | M59 | Complete - Increment 3b (`2cb7e411`) makes deployed-algebra reachability default-on and schema-general without schema-id/per-input gates; seven required default-on/explicit-false deploy rows plus Stroke control and the 32-row five-run aggregate gate are green |
+| M59-REACH-03 | M59 | In progress - the seven-schema 3b default-on/explicit-false deploy matrix is complete; canonical manifest-to-acceptance one-to-one reconciliation, remaining manifest-derived real-path coverage, and the documented dual-mechanism relationship remain required for M59 closeout |
 | M59-REACH-04 | M59 | In progress - the expanded multi-run Track A/Track B aggregate gate and five-round final acceptance remain required for M59 closeout |
 | M59-PARITY-01 | M59 | In progress - Lane A exact parity across the committed 13-input canonical capture remains required; only the already signed equal-weight/beyond-depth classes are excepted |
 | M59-PARITY-02 | M59 | In progress - Lane B complete captured text, order, and position parity remains required with no new exceptions or promotion/input/oracle hacks |
@@ -2097,11 +2106,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - M56 engine productization hardening requirements: 6 total, 6 complete, 0 active
 - M57 macOS Track A sentence-model parity requirements: 6 total, 6 complete, 0 active
 - M58 canonical Jyutping oracle and TypeDuck multilingual split requirements: 8 total, 8 complete, 0 active
-- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 3 complete, 8 in progress
+- M59 schema-general reachability, exact-order parity, navigation, deployment, evidence, and closeout requirements: 11 total, 4 complete, 7 in progress
 - WEB-05 harness control surface requirements: 3 total, 3 complete, 0 active
 - Mapped to phases: 433
 - Unmapped: 0
 
 ---
 
-_Requirements defined: 2026-04-28_ _Last updated: 2026-07-10 - M59 full Path A remains locked and not closeable. The Lane B reachability mechanism is landed but its D-48 exact-order lane remains open; the parity contract is the exact 13-input Lane A capture plus Lane B and Cangjie, with only the already signed equal-weight and beyond-oracle-depth classes excepted and no new promotion/input/oracle hacks. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; 8 M59 requirements remain in progress._
+_Requirements defined: 2026-04-28_ _Last updated: 2026-07-11 - M59 full Path A remains locked and not closeable. Increment 3b completed the schema-general transformed-algebra guarantee at `2cb7e411`; the Lane A, Lane B, and Cangjie D-48 exact-order lanes remain open, with only the already signed equal-weight and beyond-oracle-depth classes excepted and no new promotion/input/oracle hacks. Workspace deployment fidelity completed at `2ee0805f`; unified TypeDuck/profile navigation completed at `e37ee011`; 7 M59 requirements remain in progress._

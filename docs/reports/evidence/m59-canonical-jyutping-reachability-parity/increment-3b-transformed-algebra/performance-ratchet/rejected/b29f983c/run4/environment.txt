@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-11T06:07:13.3941692Z
+repo_root=C:\y59r-3b-b29f-final
+yune_git_head=b29f983cf437d4f623d487e1a52e93d36224b060
+yune_git_status_short=?? docs/reports/evidence/m59-increment3b-b29f-ratchet/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\y59r-3b-b29f-final\target\native-inprocess\run4
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=C:\y59r-3b-b29f-final\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=False
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

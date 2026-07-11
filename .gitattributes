@@ -27,3 +27,9 @@
 *.so binary
 *.wasm binary
 *.webp binary
+
+# Native ratchet candidate snapshots preserve raw multiline TypeDuck panel
+# comments, including embedded CR/control bytes. Treat only these audit copies
+# as byte payloads and suppress the false blank-at-EOL diff warning.
+docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/performance-ratchet/candidate-snapshots.csv -text whitespace=-blank-at-eol
+docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-3b-transformed-algebra/performance-ratchet/**/candidate_snapshots.csv -text whitespace=-blank-at-eol

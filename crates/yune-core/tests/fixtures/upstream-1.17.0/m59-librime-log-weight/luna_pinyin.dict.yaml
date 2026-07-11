@@ -1,0 +1,17 @@
+---
+name: luna_pinyin
+version: "1"
+sort: by_weight
+use_preset_vocabulary: true
+...
+這	zhe	98.59%
+這	zhei	1.41%
+遮	zhe
+個	ge
+歌	ge
+格	ge
+蓋	gai	99.91%
+蓋	ge	0.09%
+蓋	he	0.09%
+引	yin
+擎	qing

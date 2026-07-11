@@ -1811,6 +1811,14 @@ impl StaticTableTranslator {
             && self.prism_payload.is_some()
             && self.single_letter_sentence_guard_enabled
             && !abbreviation_vocabulary.is_empty();
+        // Upstream librime's Marisa-backed `.table.bin` stores natural-log
+        // weights. Source dictionaries, Yune-authored compact tables, and
+        // poet-v3 artifacts retain raw weights. Keep that distinction local to
+        // the owned model reconstructed from the pinned upstream table.
+        let natural_log_table_weights = matches!(
+            &self.storage,
+            TableStorage::Compact(store) if store.is_marisa_backed()
+        );
         let model = if let Some((source, dictionary_checksum)) =
             self.upstream_sentence_poet_source.take()
         {
@@ -1828,11 +1836,24 @@ impl StaticTableTranslator {
             )
         } else {
             let full_pinyin_vocabulary = self.preset_vocabulary.as_slice();
-            if build_abbreviation_model {
+            if build_abbreviation_model && natural_log_table_weights {
+                UpstreamSentenceModel::from_natural_log_table_entries_with_abbreviation_vocabulary(
+                    self.storage.table_entry_iter(),
+                    full_pinyin_vocabulary,
+                    abbreviation_vocabulary,
+                    max_candidates,
+                )
+            } else if build_abbreviation_model {
                 UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
                     self.storage.table_entry_iter(),
                     full_pinyin_vocabulary,
                     abbreviation_vocabulary,
+                    max_candidates,
+                )
+            } else if natural_log_table_weights {
+                UpstreamSentenceModel::from_natural_log_table_entries(
+                    self.storage.table_entry_iter(),
+                    full_pinyin_vocabulary,
                     max_candidates,
                 )
             } else {

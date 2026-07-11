@@ -221,6 +221,88 @@ fn upstream_luna_pinyin_fixtures_have_non_circular_source_provenance() {
 }
 
 #[test]
+fn m59_librime_log_weight_table_fixture_has_non_circular_provenance() {
+    let root = fixture_root("upstream-1.17.0").join("m59-librime-log-weight");
+    let path = root.join("oracle.json");
+    let fixture = read_json(&path);
+    assert_eq!(fixture["oracle"]["engine"], "rime/librime", "{path:?}");
+    assert_eq!(fixture["oracle"]["engine_tag"], "1.17.0", "{path:?}");
+    assert_eq!(
+        fixture["oracle"]["engine_commit"], "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["oracle"]["librime_dylib_sha256"],
+        "af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["source_row_policy"], "m59_librime_compiled_log_weight_script_encoder",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["dependency_repositories"]["rime/rime-luna-pinyin"],
+        "18a80335c37522311f7cff02886cd81cec3b460a",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["capture"]["dependency_repositories"]["rime/rime-essay"],
+        "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed",
+        "{path:?}"
+    );
+    for name in [
+        "default.yaml",
+        "luna_pinyin.schema.yaml",
+        "luna_pinyin.dict.yaml",
+        "essay.txt",
+    ] {
+        let bytes = fs::read(root.join(name))
+            .unwrap_or_else(|error| panic!("failed to read captured source {name}: {error}"));
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&bytes)),
+            fixture["capture"]["source_files"][name]
+                .as_str()
+                .unwrap_or_else(|| panic!("{path:?} must pin {name}")),
+            "{path:?} source hash must match {name}"
+        );
+    }
+    let table_hex = fs::read_to_string(root.join("luna_pinyin.table.bin.hex"))
+        .expect("captured table hex should be readable");
+    let table_bytes = decode_hex_fixture(&table_hex);
+    assert_eq!(
+        table_bytes.len() as u64,
+        fixture["capture"]["compiled_table"]["decoded_bytes"]
+            .as_u64()
+            .expect("decoded byte count should be numeric"),
+        "{path:?}"
+    );
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&table_bytes)),
+        fixture["capture"]["compiled_table"]["decoded_sha256"]
+            .as_str()
+            .expect("decoded table SHA-256 should be pinned"),
+        "{path:?}"
+    );
+    let dictionary = fs::read_to_string(root.join("luna_pinyin.dict.yaml"))
+        .expect("captured dictionary rows should be readable");
+    for row in ["蓋\tgai\t99.91%", "蓋\tge\t0.09%", "蓋\the\t0.09%"] {
+        assert!(
+            dictionary.lines().any(|line| line == row),
+            "{path:?}: {row}"
+        );
+    }
+    assert_eq!(
+        fixture["snapshot"]["selected_candidates"][0]["text"], "這個引擎",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["snapshot"]["forbidden_false_phrase"], "遮蓋",
+        "{path:?}"
+    );
+    assert_no_local_absolute_paths(&path, &fixture);
+}
+
+#[test]
 fn upstream_double_pinyin_fixture_has_non_circular_source_provenance() {
     let root = fixture_root("upstream-1.17.0");
     let path = root.join("double-pinyin-basic.json");
@@ -1698,6 +1780,21 @@ fn assert_policy_specific_provenance(path: &Path, fixture: &Value) {
         }
         policy => panic!("{path:?} has unknown source row policy {policy}"),
     }
+}
+
+fn decode_hex_fixture(input: &str) -> Vec<u8> {
+    let digits = input
+        .bytes()
+        .filter(|byte| !byte.is_ascii_whitespace())
+        .collect::<Vec<_>>();
+    assert_eq!(digits.len() % 2, 0, "fixture hex must contain full bytes");
+    digits
+        .chunks_exact(2)
+        .map(|pair| {
+            let text = std::str::from_utf8(pair).expect("fixture hex should be ASCII");
+            u8::from_str_radix(text, 16).expect("fixture should use hexadecimal bytes")
+        })
+        .collect()
 }
 
 fn assert_non_empty_array(path: &Path, fixture: &Value, fields: &[&str]) {

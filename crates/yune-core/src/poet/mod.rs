@@ -178,8 +178,32 @@ fn upstream_dictionary_weight(raw_weight: f64) -> f64 {
     weight - UPSTREAM_DICT_ENTRY_WEIGHT_SCALE
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+enum EntryWeightDomain {
+    #[default]
+    Raw,
+    NaturalLog,
+}
+
+impl EntryWeightDomain {
+    fn dictionary_weight(self, weight: f32) -> f64 {
+        match self {
+            Self::Raw => upstream_dictionary_weight(f64::from(weight)),
+            Self::NaturalLog => f64::from(weight) - UPSTREAM_DICT_ENTRY_WEIGHT_SCALE,
+        }
+    }
+
+    fn raw_weight(self, weight: f32) -> f64 {
+        match self {
+            Self::Raw => f64::from(weight),
+            Self::NaturalLog => f64::from(weight).exp(),
+        }
+    }
+}
+
 fn build_script_encoder_character_codes(
     entries: impl IntoIterator<Item = (char, String, f32)>,
+    weight_domain: EntryWeightDomain,
 ) -> HashMap<char, Vec<String>> {
     // EntryCollector::TranslateWord excludes pronunciations below five percent
     // of the word's total weight before ScriptEncoder expands preset phrases.
@@ -198,12 +222,50 @@ fn build_script_encoder_character_codes(
     weighted_codes
         .into_iter()
         .map(|(ch, codes)| {
-            let total_weight = codes.values().copied().sum::<f32>();
-            let minimum_weight = total_weight * 0.05;
-            let codes = codes
-                .into_iter()
-                .filter_map(|(code, weight)| (weight >= minimum_weight).then_some(code))
-                .collect();
+            let codes = match weight_domain {
+                EntryWeightDomain::Raw => {
+                    let total_weight = codes.values().copied().sum::<f32>();
+                    let minimum_weight = total_weight * 0.05;
+                    codes
+                        .into_iter()
+                        .filter_map(|(code, weight)| (weight >= minimum_weight).then_some(code))
+                        .collect()
+                }
+                EntryWeightDomain::NaturalLog => {
+                    // librime stores `ln(raw_weight)` in `.table.bin`, but
+                    // EntryCollector applies ScriptEncoder's five-percent
+                    // threshold before that transform. Compare in log space so
+                    // the owned compiled-table path neither sums logarithms nor
+                    // risks overflow while reconstructing the raw weights.
+                    let max_weight = codes
+                        .values()
+                        .copied()
+                        .filter(|weight| !weight.is_nan())
+                        .fold(f32::NEG_INFINITY, f32::max);
+                    let total_log_weight = if max_weight == f32::NEG_INFINITY {
+                        f64::NEG_INFINITY
+                    } else if max_weight == f32::INFINITY {
+                        f64::INFINITY
+                    } else {
+                        f64::from(max_weight)
+                            + codes
+                                .values()
+                                .copied()
+                                .filter(|weight| !weight.is_nan())
+                                .map(|weight| (f64::from(weight) - f64::from(max_weight)).exp())
+                                .sum::<f64>()
+                                .ln()
+                    };
+                    let minimum_log_weight = total_log_weight + 0.05_f64.ln();
+                    codes
+                        .into_iter()
+                        .filter_map(|(code, weight)| {
+                            (!weight.is_nan() && f64::from(weight) >= minimum_log_weight)
+                                .then_some(code)
+                        })
+                        .collect()
+                }
+            };
             (ch, codes)
         })
         .collect()
@@ -1050,6 +1112,7 @@ struct OwnedPoetModelStorage {
     entries_by_code: Vec<ModelEntry>,
     entry_texts: ModelStringPool,
     entry_codes: ModelStringPool,
+    entry_weight_domain: EntryWeightDomain,
     vocabulary: Vec<ModelVocabularyEntry>,
     vocabulary_first_codes: Vec<(String, usize)>,
     abbreviation_vocabulary: Vec<ModelVocabularyEntry>,
@@ -1191,6 +1254,14 @@ impl PoetModelStorage {
 }
 
 impl OwnedPoetModelStorage {
+    fn dictionary_weight(&self, weight: f32) -> f64 {
+        self.entry_weight_domain.dictionary_weight(weight)
+    }
+
+    fn raw_weight(&self, weight: f32) -> f64 {
+        self.entry_weight_domain.raw_weight(weight)
+    }
+
     fn vocabulary(&self, abbreviation: bool) -> &[ModelVocabularyEntry] {
         if abbreviation {
             &self.abbreviation_vocabulary
@@ -1291,6 +1362,7 @@ impl UpstreamSentenceModel {
             vocabulary,
             vocabulary,
             max_candidates,
+            EntryWeightDomain::Raw,
         )
     }
 
@@ -1320,6 +1392,37 @@ impl UpstreamSentenceModel {
             vocabulary,
             abbreviation_vocabulary,
             max_candidates,
+            EntryWeightDomain::Raw,
+        )
+    }
+
+    #[must_use]
+    pub(crate) fn from_natural_log_table_entries(
+        entries: impl IntoIterator<Item = TableEntry>,
+        vocabulary: &[PresetVocabularyEntry],
+        max_candidates: usize,
+    ) -> Self {
+        Self::from_natural_log_table_entries_with_abbreviation_vocabulary(
+            entries,
+            vocabulary,
+            vocabulary,
+            max_candidates,
+        )
+    }
+
+    #[must_use]
+    pub(crate) fn from_natural_log_table_entries_with_abbreviation_vocabulary(
+        entries: impl IntoIterator<Item = TableEntry>,
+        vocabulary: &[PresetVocabularyEntry],
+        abbreviation_vocabulary: &[PresetVocabularyEntry],
+        max_candidates: usize,
+    ) -> Self {
+        Self::from_model_entries(
+            entries.into_iter().map(ModelEntry::from_owned_table_entry),
+            vocabulary,
+            abbreviation_vocabulary,
+            max_candidates,
+            EntryWeightDomain::NaturalLog,
         )
     }
 
@@ -1349,6 +1452,7 @@ impl UpstreamSentenceModel {
         vocabulary: &[PresetVocabularyEntry],
         abbreviation_vocabulary: &[PresetVocabularyEntry],
         max_candidates: usize,
+        entry_weight_domain: EntryWeightDomain,
     ) -> Self {
         let mut owned_entries = Vec::new();
         let mut script_encoder_codes = Vec::new();
@@ -1371,7 +1475,8 @@ impl UpstreamSentenceModel {
             }
             owned_entries.push(entry);
         }
-        let character_codes = build_script_encoder_character_codes(script_encoder_codes);
+        let character_codes =
+            build_script_encoder_character_codes(script_encoder_codes, entry_weight_domain);
         for codes in abbreviation_character_codes.values_mut() {
             codes.sort();
             codes.dedup();
@@ -1386,6 +1491,7 @@ impl UpstreamSentenceModel {
             entries_by_code,
             entry_texts,
             entry_codes,
+            entry_weight_domain,
             vocabulary,
             vocabulary_first_codes,
             abbreviation_vocabulary,
@@ -1903,9 +2009,13 @@ impl UpstreamSentenceModel {
                     span.entries.clone().map(|entry_index| {
                         (
                             self.storage.entry_text(entry_index),
-                            upstream_dictionary_weight(f64::from(
-                                self.storage.entry_weight(entry_index),
-                            )),
+                            match &self.storage {
+                                PoetModelStorage::Owned(storage) => storage
+                                    .dictionary_weight(self.storage.entry_weight(entry_index)),
+                                _ => upstream_dictionary_weight(f64::from(
+                                    self.storage.entry_weight(entry_index),
+                                )),
+                            },
                         )
                     }),
                     entry_limit,
@@ -2258,7 +2368,7 @@ impl UpstreamSentenceModel {
                     entries.iter().map(|entry| {
                         (
                             entry.text(&storage.entry_texts),
-                            upstream_dictionary_weight(f64::from(entry.weight)),
+                            storage.dictionary_weight(entry.weight),
                         )
                     }),
                     entry_limit,
@@ -2546,7 +2656,7 @@ impl UpstreamSentenceModel {
                         }
                         bounded_entries.push(BorrowedWordGraphEntry {
                             text,
-                            weight: upstream_dictionary_weight(f64::from(entry.weight)),
+                            weight: storage.dictionary_weight(entry.weight),
                         });
                         if bounded_entries.len() >= entry_limit {
                             break;
@@ -2841,7 +2951,12 @@ impl UpstreamSentenceModel {
                     entries.clone().map(|entry_index| {
                         (
                             self.storage.entry_text(entry_index),
-                            f64::from(self.storage.entry_weight(entry_index)),
+                            match &self.storage {
+                                PoetModelStorage::Owned(storage) => {
+                                    storage.raw_weight(self.storage.entry_weight(entry_index))
+                                }
+                                _ => f64::from(self.storage.entry_weight(entry_index)),
+                            },
                         )
                     }),
                     entry_limit,

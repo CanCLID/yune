@@ -350,6 +350,83 @@ fn script_encoder_uses_exact_five_percent_boundary_and_ignores_duplicate_codes()
 }
 
 #[test]
+fn natural_log_table_weights_apply_script_encoder_filter_in_the_raw_domain() {
+    // Pinned Luna source facts behind the M59 59-character residual:
+    // essay.txt gives 蓋 weight 5104 and luna_pinyin.dict.yaml assigns
+    // gai=99.91%, ge/he=0.09%. librime applies ScriptEncoder's 5% filter to
+    // those raw weights, then stores their natural logarithms in table.bin.
+    let raw_entries = vec![
+        TableEntry::new("zhe", "這", 179_212.95),
+        TableEntry::new("zhe", "遮", 1_437.0),
+        TableEntry::new("ge", "個", 100_000.0),
+        TableEntry::new("ge", "歌", 100_000.0),
+        TableEntry::new("ge", "格", 100_000.0),
+        TableEntry::new("gai", "蓋", 5_099.406_3),
+        TableEntry::new("ge", "蓋", 4.5936),
+        TableEntry::new("he", "蓋", 4.5936),
+    ];
+    let natural_log_entries = raw_entries
+        .iter()
+        .map(|entry| TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+        .collect::<Vec<_>>();
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("這個", 559_659.0),
+        PresetVocabularyEntry::new("遮蓋", 937.0),
+        PresetVocabularyEntry::new("這歌", 905.0),
+        PresetVocabularyEntry::new("這格", 323.0),
+    ];
+    let raw = UpstreamSentenceModel::from_table_entries(raw_entries, &vocabulary, 10);
+    let natural_log =
+        UpstreamSentenceModel::from_natural_log_table_entries(natural_log_entries, &vocabulary, 10);
+
+    let raw_texts = raw
+        .candidates_for_input("zhege")
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+    let natural_log_texts = natural_log
+        .candidates_for_input("zhege")
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+
+    assert_eq!(natural_log_texts, raw_texts);
+    assert_eq!(&natural_log_texts[..4], ["這個", "這歌", "這格", "這"]);
+    assert!(
+        !natural_log_texts.iter().any(|text| text == "遮蓋"),
+        "蓋/ge at 0.09% must not create the false zhege phrase"
+    );
+}
+
+#[test]
+fn natural_log_table_weights_are_not_logged_twice_for_sentence_ranking() {
+    // Correct raw-product ranking prefers A+BC (1_000_000 * 2) over
+    // X+Y (100 * 100). Applying ln() to table.bin's already-logged weights
+    // reverses those paths, so this locks the entry-weight domain separately
+    // from the ScriptEncoder pronunciation filter above.
+    let raw_entries = vec![
+        TableEntry::new("a", "A", 1_000_000.0),
+        TableEntry::new("bc", "BC", 2.0),
+        TableEntry::new("ab", "X", 100.0),
+        TableEntry::new("c", "Y", 100.0),
+    ];
+    let natural_log_entries = raw_entries
+        .iter()
+        .map(|entry| TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+        .collect::<Vec<_>>();
+    let raw = UpstreamSentenceModel::from_table_entries(raw_entries, &[], 10);
+    let natural_log =
+        UpstreamSentenceModel::from_natural_log_table_entries(natural_log_entries, &[], 10);
+
+    let raw_candidates = raw.candidates_for_input("abc");
+    let natural_log_candidates = natural_log.candidates_for_input("abc");
+
+    assert_eq!(raw_candidates[0].text, "ABC");
+    assert_eq!(raw_candidates[0].source, CandidateSource::Sentence);
+    assert_eq!(natural_log_candidates, raw_candidates);
+}
+
+#[test]
 fn upstream_script_translation_limits_sentence_homophones_independently_from_phrase_rows() {
     let entries = [
         TableEntry::new("a", "A", 100.0),

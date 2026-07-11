@@ -201,6 +201,20 @@ powershell -ExecutionPolicy Bypass -File scripts/capture-upstream-luna-pinyin.ps
 - Used by M18 tests to prove Yune parses upstream prism Darts sections and to
   lock non-circular metadata/lookup evidence.
 
+### `m59-librime-log-weight/`
+
+- Source-row policy: `m59_librime_compiled_log_weight_script_encoder`.
+- Purpose-built Luna subset compiled and executed by pinned librime
+  `33e78140250125871856cdc5b42ddc6a5fcd3cd4` on 2026-07-11.
+- Retains the exact 4,540-byte upstream Marisa `.table.bin` as lowercase hex,
+  its source rows and hashes, and the oracle page for `zhegeyinqing`.
+- The fixture distinguishes librime's natural-log compiled table weights from
+  source-linear weights. In particular, 蓋/`ge` at `0.09%` must be removed by
+  ScriptEncoder's 5% rule and must not synthesize `遮蓋`.
+- The owning test decodes the captured table bytes, runs Yune's real compact
+  table and default-owned sentence-model path, and compares the whole first
+  page with the librime capture.
+
 ### `m18-punctuation-processor.json`
 
 - Schema: curated inline `m18_punct`.

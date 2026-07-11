@@ -2,9 +2,10 @@ use std::{fs, path::Path, sync::Arc};
 
 use serde_json::Value;
 use yune_core::{
-    build_poet_bin, CandidateSource, Engine, OwnedPoetBytes, PoetByteSource, PunctuationDefinition,
-    PunctuationProcessor, PunctuationTranslator, ReverseLookupTranslator, SimplifierFilter,
-    StaticTableTranslator, TableDictionary, Translator, UpstreamSentenceModel,
+    build_poet_bin, CandidateSource, CompactTableStore, Engine, OwnedPoetBytes, PoetByteSource,
+    PresetVocabularyEntry, PunctuationDefinition, PunctuationProcessor, PunctuationTranslator,
+    ReverseLookupTranslator, SimplifierFilter, StaticTableTranslator, TableDictionary,
+    TableDictionaryAdvancedData, Translator, UpstreamSentenceModel,
 };
 
 const FIXTURE_ROOT: &str = "tests/fixtures/upstream-1.17.0";
@@ -18,6 +19,7 @@ const OPTIONS_FIXTURE: &str = "luna-pinyin-options.json";
 const SENTENCE_FIXTURE: &str = "luna-pinyin-sentence.json";
 const SENTENCE_EXPANDED_FIXTURE: &str = "luna-pinyin-sentence-expanded.json";
 const LATTICE_FIXTURE: &str = "luna-pinyin-lattice.json";
+const LOG_WEIGHT_FIXTURE_ROOT: &str = "tests/fixtures/upstream-1.17.0/m59-librime-log-weight";
 
 #[test]
 fn upstream_luna_pinyin_fixture_is_locked() {
@@ -79,6 +81,83 @@ fn upstream_luna_pinyin_fixture_is_locked() {
     assert_eq!(
         zhongguo["selected_candidates"][0]["text"],
         "\u{4e2d}\u{570b}"
+    );
+}
+
+#[test]
+fn default_owned_model_matches_librime_page_from_compiled_log_weight_bytes() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(LOG_WEIGHT_FIXTURE_ROOT);
+    let oracle: Value = serde_json::from_str(
+        &fs::read_to_string(root.join("oracle.json"))
+            .expect("log-weight oracle fixture should be readable"),
+    )
+    .expect("log-weight oracle fixture should parse");
+    assert_upstream_oracle_header(&oracle);
+    let table_bytes = decode_lower_hex(
+        &fs::read_to_string(root.join("luna_pinyin.table.bin.hex"))
+            .expect("captured librime table hex should be readable"),
+    );
+    let store = CompactTableStore::from_table_bin_bytes(
+        table_bytes,
+        TableDictionaryAdvancedData::default(),
+    )
+    .expect("captured librime Marisa table should parse");
+    assert!(
+        store.is_marisa_backed(),
+        "the regression must exercise librime's compiled natural-log weight domain"
+    );
+    let vocabulary = fs::read_to_string(root.join("essay.txt"))
+        .expect("captured essay rows should be readable")
+        .lines()
+        .filter_map(|line| {
+            let (text, weight) = line.split_once('\t')?;
+            Some(PresetVocabularyEntry::new(
+                text,
+                weight
+                    .parse::<f32>()
+                    .expect("captured essay weight should parse"),
+            ))
+        })
+        .collect::<Vec<_>>();
+    let translator = StaticTableTranslator::from_compact_table_store(store, None)
+        .with_completion(true)
+        .with_charset_filter(true)
+        .with_sentence(true)
+        .with_preset_vocabulary(vocabulary)
+        .with_upstream_sentence_model(100)
+        .with_upstream_script_translation_limits(1, 1);
+    let mut engine = Engine::new();
+    engine.clear_translators();
+    engine.add_translator(translator);
+    let input = oracle["snapshot"]["input"]
+        .as_str()
+        .expect("oracle input should be a string");
+    engine
+        .process_key_sequence(input)
+        .expect("oracle key sequence should parse");
+
+    let expected = oracle["snapshot"]["selected_candidates"]
+        .as_array()
+        .expect("oracle selected candidates should be an array")
+        .iter()
+        .map(|candidate| {
+            candidate["text"]
+                .as_str()
+                .expect("oracle candidate text should be a string")
+                .to_owned()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(current_page_texts(&engine, expected.len()), expected);
+    let forbidden = oracle["snapshot"]["forbidden_false_phrase"]
+        .as_str()
+        .expect("oracle should name the false phrase");
+    assert!(
+        engine
+            .context()
+            .candidates
+            .iter()
+            .all(|candidate| candidate.text != forbidden),
+        "the 0.09% 蓋/ge reading must not synthesize {forbidden}"
     );
 }
 
@@ -1368,6 +1447,25 @@ fn assert_highlighted_commit_preview_matches(engine: &Engine, expected_snapshot:
         Some(actual.as_str()),
         expected_snapshot["commit_text_preview"].as_str()
     );
+}
+
+fn decode_lower_hex(input: &str) -> Vec<u8> {
+    let digits = input
+        .bytes()
+        .filter(|byte| !byte.is_ascii_whitespace())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        digits.len() % 2,
+        0,
+        "captured hexadecimal bytes must have complete octets"
+    );
+    digits
+        .chunks_exact(2)
+        .map(|pair| {
+            let text = std::str::from_utf8(pair).expect("hexadecimal pair should be ASCII");
+            u8::from_str_radix(text, 16).expect("captured table must use lowercase hexadecimal")
+        })
+        .collect()
 }
 
 fn current_page_texts(engine: &Engine, page_size: usize) -> Vec<String> {

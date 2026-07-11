@@ -1,0 +1,62 @@
+{
+  "oracle": {
+    "engine": "rime/librime",
+    "engine_tag": "1.17.0",
+    "engine_commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "canonical_repository": "https://github.com/rime/librime",
+    "release_url": "https://github.com/rime/librime/releases/tag/1.17.0",
+    "librime_dylib_sha256": "af019c3dccde16d875b9543a1cbc950517e309e11fb4d0bf379b7d576aae13d3",
+    "rime_deployer_sha256": "3e2b25feda7f3c5d0ed4a1fe3385605b199fa08f5331f8709bb4a3c117409c83",
+    "capture_date": "2026-07-11",
+    "capture_command": "rime_deployer --build <user> <shared> <user>/build; native_inprocess_benchmark --engine librime-1.17.0 --track log-weight-fixture --schema luna_pinyin --inputs zhegeyinqing --iterations 1 --session-iterations 1 --key-iterations 1"
+  },
+  "schema": "luna_pinyin",
+  "module_list": ["default"],
+  "capture": {
+    "source_row_policy": "m59_librime_compiled_log_weight_script_encoder",
+    "schema_data": "purpose-built Luna subset from pinned upstream rows",
+    "dependency_repositories": {
+      "rime/rime-luna-pinyin": "18a80335c37522311f7cff02886cd81cec3b460a",
+      "rime/rime-essay": "48c7538f0b760fcc8c9d6bf08711f82cfbd2e9ed"
+    },
+    "source_files": {
+      "default.yaml": "d1d670f0638236a8f12669a3628e4179be8cb08a1c27b9118e9b4b1a0c147f2c",
+      "luna_pinyin.schema.yaml": "65d7787e6bffa4fcc7d8c661f9c18f8acbae509292160f65f397d39c3e03f185",
+      "luna_pinyin.dict.yaml": "2cfabe62a8c1e1227405696d381f9d672dd7d9aaceb84737029ab6901ce7e7b9",
+      "essay.txt": "ec6a4fa413e9845fca47be64408ff38108f1069fe7b39cf40ec33b8233b8e1c9"
+    },
+    "compiled_table": {
+      "file": "luna_pinyin.table.bin.hex",
+      "encoding": "lowercase hexadecimal of exact binary bytes",
+      "decoded_bytes": 4540,
+      "decoded_sha256": "8286e67cc60aa78c6e47bf871de130ee570bf6fe7dd99c8cc6b445cad73ea5fb"
+    },
+    "weight_fact": {
+      "text": "蓋",
+      "total_weight": 5104,
+      "readings": [
+        { "code": "gai", "percentage": "99.91%" },
+        { "code": "ge", "percentage": "0.09%" },
+        { "code": "he", "percentage": "0.09%" }
+      ],
+      "oracle_rule": "EntryCollector::TranslateWord removes readings below 5% before table weights are natural-log encoded"
+    }
+  },
+  "snapshot": {
+    "schema_id": "luna_pinyin",
+    "input": "zhegeyinqing",
+    "page_size": 5,
+    "page_no": 0,
+    "is_last_page": false,
+    "highlighted_candidate_index": 0,
+    "preedit": "zhe ge yin qing",
+    "selected_candidates": [
+      { "text": "這個引擎", "comment": "" },
+      { "text": "這個", "comment": "" },
+      { "text": "這歌", "comment": "" },
+      { "text": "這格", "comment": "" },
+      { "text": "這", "comment": "" }
+    ],
+    "forbidden_false_phrase": "遮蓋"
+  }
+}

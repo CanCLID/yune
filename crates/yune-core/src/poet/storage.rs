@@ -9,8 +9,8 @@ use crate::{PresetVocabularyEntry, TableEntry};
 
 use super::{
     build_model_vocabulary_index, build_script_encoder_character_codes,
-    compare_model_entry_by_code, pack_owned_model_entries, ModelEntry, ModelStringPool,
-    ModelStringRange, ModelVocabularyEntry, OwnedModelEntry,
+    compare_model_entry_by_code, pack_owned_model_entries, EntryWeightDomain, ModelEntry,
+    ModelStringPool, ModelStringRange, ModelVocabularyEntry, OwnedModelEntry,
 };
 
 // Version 3 changes the compiled ScriptEncoder character-code map: readings
@@ -976,7 +976,8 @@ fn compile_poet_inputs(
         }
         owned_entries.push(owned);
     }
-    let character_codes = build_script_encoder_character_codes(script_encoder_codes);
+    let character_codes =
+        build_script_encoder_character_codes(script_encoder_codes, EntryWeightDomain::Raw);
     for codes in abbreviation_character_codes.values_mut() {
         codes.sort();
         codes.dedup();

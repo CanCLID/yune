@@ -12,7 +12,10 @@ use crate::dictionary::{
     RimePrismBinPayload, RimePrismRuntimePayload, TableLookup,
 };
 use crate::filter::contains_extended_cjk;
-use crate::poet::{GrammarProvider, PoetByteSource, SentenceCodeSpan, UpstreamSentenceModel};
+use crate::poet::{
+    upstream_script_raw_candidate_quality, GrammarProvider, PoetByteSource,
+    RankedScriptPhraseCandidate, SentenceCodeSpan, UpstreamSentenceModel,
+};
 use crate::spelling_algebra::{DeployedSpellingType, ExpandedSpellingEntry, SpellingAlgebra};
 use crate::{
     Candidate, CandidateRequest, CandidateSource, Context, M37SentenceCandidateMetrics,
@@ -44,6 +47,19 @@ const PREFIX_FALLBACK_CACHE_MAX_ENTRY_BYTES: usize = 512 * 1024;
 /// and the M28 follow-up upstream-Jyutping composition fixture; install only for the
 /// jyut6ping3 TypeDuck profile.
 pub const TYPEDUCK_SENTENCE_WORD_PENALTY: f32 = 24.0;
+
+/// Selects how a dictionary translator participates in script-translation
+/// sentence ordering. The legacy mode preserves the historical fallback-only
+/// behavior. `UpstreamScript` makes the deployed surface graph authoritative
+/// for a Standard, toned/transformed `script_translator` with
+/// `enable_sentence: true`. Untoned identity dictionaries retain the legacy
+/// fast path until M59 4e owns their complete merge/order semantics.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SentencePolicy {
+    #[default]
+    LegacyFallback,
+    UpstreamScript,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 struct LookupCodeSpec {
@@ -131,6 +147,63 @@ impl LookupCodeSpec {
             spelling_credibility: 0.0,
         }
     }
+}
+
+#[derive(Clone, Debug)]
+struct SurfaceCodeChoice {
+    code: String,
+    credibility: f32,
+}
+
+#[derive(Clone, Debug)]
+struct SurfaceSyllable {
+    start: usize,
+    end: usize,
+    choices: Vec<SurfaceCodeChoice>,
+    path_credibility: f32,
+}
+
+#[derive(Clone, Debug)]
+struct SurfaceSegmentationPath {
+    credibility: f32,
+    syllables: Vec<SurfaceSyllable>,
+}
+
+impl SurfaceSegmentationPath {
+    fn extended(&self, syllable: SurfaceSyllable) -> Self {
+        let mut syllables = self.syllables.clone();
+        let credibility = self.credibility + syllable.path_credibility;
+        syllables.push(syllable);
+        Self {
+            credibility,
+            syllables,
+        }
+    }
+
+    fn precedes(&self, other: &Self) -> bool {
+        self.credibility
+            .partial_cmp(&other.credibility)
+            .unwrap_or(Ordering::Equal)
+            .then_with(|| other.syllables.len().cmp(&self.syllables.len()))
+            .then_with(|| {
+                self.syllables
+                    .iter()
+                    .map(|syllable| syllable.end - syllable.start)
+                    .cmp(
+                        other
+                            .syllables
+                            .iter()
+                            .map(|syllable| syllable.end - syllable.start),
+                    )
+            })
+            == Ordering::Greater
+    }
+}
+
+#[derive(Clone, Debug)]
+struct ConcatenatedSurfaceCode {
+    code: String,
+    credibility: f32,
 }
 
 #[derive(Clone)]
@@ -1244,6 +1317,7 @@ pub struct StaticTableTranslator {
     dynamic_correction_lookup: bool,
     enable_charset_filter: bool,
     enable_sentence: bool,
+    sentence_policy: SentencePolicy,
     sentence_over_completion: bool,
     tags: Vec<String>,
     delimiters: String,
@@ -1346,6 +1420,7 @@ impl StaticTableTranslator {
             dynamic_correction_lookup: false,
             enable_charset_filter: false,
             enable_sentence: false,
+            sentence_policy: SentencePolicy::LegacyFallback,
             sentence_over_completion: false,
             tags: vec!["abc".to_owned()],
             delimiters: " ".to_owned(),
@@ -1420,6 +1495,7 @@ impl StaticTableTranslator {
             dynamic_correction_lookup: false,
             enable_charset_filter: false,
             enable_sentence: false,
+            sentence_policy: SentencePolicy::LegacyFallback,
             sentence_over_completion: false,
             tags: vec!["abc".to_owned()],
             delimiters: " ".to_owned(),
@@ -1485,6 +1561,7 @@ impl StaticTableTranslator {
             dynamic_correction_lookup: false,
             enable_charset_filter: false,
             enable_sentence: false,
+            sentence_policy: SentencePolicy::LegacyFallback,
             sentence_over_completion: false,
             tags: vec!["abc".to_owned()],
             delimiters: " ".to_owned(),
@@ -1563,6 +1640,7 @@ impl StaticTableTranslator {
             dynamic_correction_lookup: false,
             enable_charset_filter: false,
             enable_sentence: false,
+            sentence_policy: SentencePolicy::LegacyFallback,
             sentence_over_completion: false,
             tags: vec!["abc".to_owned()],
             delimiters: " ".to_owned(),
@@ -1624,6 +1702,12 @@ impl StaticTableTranslator {
     #[must_use]
     pub fn with_sentence(mut self, enable_sentence: bool) -> Self {
         self.enable_sentence = enable_sentence;
+        self
+    }
+
+    #[must_use]
+    pub fn with_sentence_policy(mut self, policy: SentencePolicy) -> Self {
+        self.sentence_policy = policy;
         self
     }
 
@@ -2312,6 +2396,397 @@ impl StaticTableTranslator {
             ));
         }
         specs
+    }
+
+    fn upstream_script_surface_segmentation(
+        &self,
+        input: &str,
+    ) -> Option<(Vec<SurfaceSyllable>, Vec<SurfaceSyllable>)> {
+        if self.sentence_policy != SentencePolicy::UpstreamScript || input.is_empty() {
+            return None;
+        }
+        // A direct table code is already served by the ordinary exact path. In
+        // particular, do not make identity-spelling schemas rescan every UTF-8
+        // substring merely because their script policy is enabled.
+        if self.storage.has_code(input) || self.untoned_dictionary() {
+            return None;
+        }
+        let (Some(prism), Some(syllabary_codes)) =
+            (self.prism_payload.as_ref(), self.storage.syllabary_codes())
+        else {
+            return None;
+        };
+        let boundaries = input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+            .collect::<Vec<_>>();
+        let mut paths = vec![None::<SurfaceSegmentationPath>; boundaries.len()];
+        let mut edges_by_start = vec![Vec::<SurfaceSyllable>::new(); boundaries.len()];
+        paths[0] = Some(SurfaceSegmentationPath {
+            credibility: 0.0,
+            syllables: Vec::new(),
+        });
+
+        for start_index in 0..boundaries.len().saturating_sub(1) {
+            let Some(path) = paths[start_index].clone() else {
+                continue;
+            };
+            let start = boundaries[start_index];
+            for end_index in start_index + 1..boundaries.len() {
+                let end = boundaries[end_index];
+                if end - start > MAX_SENTENCE_ALIAS_LOOKUP_BYTES {
+                    break;
+                }
+                let spelling = &input[start..end];
+                let prism_start = crate::m37_metrics_enabled().then(Instant::now);
+                let lookups = prism.lookup_canonical_codes_with_limit(
+                    spelling,
+                    syllabary_codes,
+                    MAX_SENTENCE_ALIAS_LOOKUP_CODES,
+                );
+                if let Some(start) = prism_start {
+                    crate::m37_record_prism_lookup(start.elapsed(), lookups.len());
+                }
+                let mut choices = HashMap::<String, f32>::new();
+                for lookup in lookups {
+                    if lookup.abbreviation
+                        || lookup.correction
+                        || !self.lookup_code_has_syllable_count(lookup.code, 1)
+                    {
+                        continue;
+                    }
+                    choices
+                        .entry(lookup.code.to_owned())
+                        .and_modify(|credibility| {
+                            *credibility = credibility.max(lookup.credibility);
+                        })
+                        .or_insert(lookup.credibility);
+                }
+                if choices.is_empty() {
+                    continue;
+                }
+                let mut choices = choices
+                    .into_iter()
+                    .map(|(code, credibility)| SurfaceCodeChoice { code, credibility })
+                    .collect::<Vec<_>>();
+                choices.sort_by(|left, right| left.code.cmp(&right.code));
+                let path_credibility = choices
+                    .iter()
+                    .map(|choice| choice.credibility)
+                    .max_by(|left, right| left.total_cmp(right))
+                    .unwrap_or_default();
+                let syllable = SurfaceSyllable {
+                    start,
+                    end,
+                    choices,
+                    path_credibility,
+                };
+                edges_by_start[start_index].push(syllable.clone());
+                let next = path.extended(syllable);
+                if paths[end_index]
+                    .as_ref()
+                    .map_or(true, |existing| next.precedes(existing))
+                {
+                    paths[end_index] = Some(next);
+                }
+            }
+        }
+
+        let path = paths.pop().flatten()?;
+        let selected_first_is_raw_spelling = path.syllables.first().is_some_and(|syllable| {
+            let spelling = &input[syllable.start..syllable.end];
+            syllable
+                .choices
+                .iter()
+                .any(|choice| normalized_original_code(&choice.code) == spelling)
+        });
+        let leading = if selected_first_is_raw_spelling {
+            edges_by_start.into_iter().next().unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        Some((path.syllables, leading))
+    }
+
+    fn upstream_script_model_spans(syllables: &[SurfaceSyllable]) -> Vec<SentenceCodeSpan> {
+        syllables
+            .iter()
+            .flat_map(|syllable| {
+                syllable.choices.iter().map(|choice| {
+                    SentenceCodeSpan::new(syllable.start, syllable.end, choice.code.clone())
+                })
+            })
+            .collect()
+    }
+
+    fn upstream_script_ranked_family(
+        &self,
+        input: &str,
+        end: usize,
+        codes: &[ConcatenatedSurfaceCode],
+        filter_by_charset: bool,
+    ) -> Vec<RankedScriptPhraseCandidate> {
+        let surface = &input[..end];
+        let specs = codes
+            .iter()
+            .filter(|candidate| self.storage.has_code(&candidate.code))
+            .map(|candidate| {
+                LookupCodeSpec::alias(
+                    candidate.code.clone(),
+                    surface.to_owned(),
+                    false,
+                    candidate.credibility,
+                )
+            })
+            .collect::<Vec<_>>();
+        let mut merge_rank_by_text = HashMap::<String, (f32, String)>::new();
+        for spec in &specs {
+            for candidate in self
+                .storage
+                .exact_candidates(&spec.code)
+                .filter(|candidate| {
+                    self.is_dictionary_text_allowed(candidate.text())
+                        && (!filter_by_charset || !contains_extended_cjk(candidate.text()))
+                })
+            {
+                let quality = upstream_script_raw_candidate_quality(
+                    end,
+                    candidate.raw_quality(),
+                    spec.spelling_credibility,
+                );
+                merge_rank_by_text
+                    .entry(candidate.text().to_owned())
+                    .and_modify(|existing| {
+                        if quality > existing.0 || (quality == existing.0 && spec.code < existing.1)
+                        {
+                            *existing = (quality, spec.code.clone());
+                        }
+                    })
+                    .or_insert_with(|| (quality, spec.code.clone()));
+            }
+        }
+        let mut family = self
+            .candidates_for_lookup_codes_with_completion(&specs, filter_by_charset, false)
+            .candidates;
+        family.retain(|candidate| candidate.source == CandidateSource::Table);
+        let mut family = family
+            .into_iter()
+            .filter_map(|mut candidate| {
+                let (quality, code_order) = merge_rank_by_text.get(&candidate.text)?.clone();
+                candidate.quality = quality;
+                if end < input.len() {
+                    candidate.source = CandidateSource::PartialTable {
+                        consumed: end,
+                        recompose_on_default: false,
+                    };
+                }
+                Some(RankedScriptPhraseCandidate {
+                    candidate,
+                    code_order,
+                })
+            })
+            .collect::<Vec<_>>();
+        family.sort_by(|left, right| {
+            right
+                .candidate
+                .quality
+                .partial_cmp(&left.candidate.quality)
+                .unwrap_or(Ordering::Equal)
+                .then_with(|| left.code_order.cmp(&right.code_order))
+        });
+        family
+    }
+
+    fn upstream_script_direct_families(
+        &self,
+        input: &str,
+        syllables: &[SurfaceSyllable],
+        leading_syllables: &[SurfaceSyllable],
+        filter_by_charset: bool,
+    ) -> Option<(Vec<RankedScriptPhraseCandidate>, bool)> {
+        let mut concatenated = vec![ConcatenatedSurfaceCode {
+            code: String::new(),
+            credibility: 0.0,
+        }];
+        let mut families = Vec::<(usize, Vec<RankedScriptPhraseCandidate>)>::new();
+
+        for syllable in syllables {
+            let mut next_by_code = HashMap::<String, f32>::new();
+            for prefix in &concatenated {
+                for choice in &syllable.choices {
+                    let mut code = String::with_capacity(prefix.code.len() + choice.code.len());
+                    code.push_str(&prefix.code);
+                    code.push_str(&choice.code);
+                    if self.storage.prefix_candidates(&code).next().is_none() {
+                        continue;
+                    }
+                    let credibility = prefix.credibility + choice.credibility;
+                    next_by_code
+                        .entry(code)
+                        .and_modify(|existing| *existing = existing.max(credibility))
+                        .or_insert(credibility);
+                }
+            }
+            if next_by_code.len() > MAX_ABBREVIATION_SENTENCE_TOTAL_SPANS {
+                return None;
+            }
+            concatenated = next_by_code
+                .into_iter()
+                .map(|(code, credibility)| ConcatenatedSurfaceCode { code, credibility })
+                .collect();
+            concatenated.sort_by(|left, right| left.code.cmp(&right.code));
+
+            let family = self.upstream_script_ranked_family(
+                input,
+                syllable.end,
+                &concatenated,
+                filter_by_charset,
+            );
+            families.push((syllable.end, family));
+        }
+
+        let selected_first_end = syllables.first().map(|syllable| syllable.end);
+        for leading in leading_syllables {
+            if selected_first_end == Some(leading.end) {
+                continue;
+            }
+            let codes = leading
+                .choices
+                .iter()
+                .map(|choice| ConcatenatedSurfaceCode {
+                    code: choice.code.clone(),
+                    credibility: choice.credibility,
+                })
+                .collect::<Vec<_>>();
+            let family =
+                self.upstream_script_ranked_family(input, leading.end, &codes, filter_by_charset);
+            families.push((leading.end, family));
+        }
+
+        let has_full_exact = families
+            .iter()
+            .any(|(end, family)| *end == input.len() && !family.is_empty());
+        families.sort_by_key(|(end, _)| std::cmp::Reverse(*end));
+        let mut seen = HashSet::new();
+        let mut candidates = Vec::new();
+        for (_, family) in families {
+            for ranked in family {
+                if seen.insert(ranked.candidate.text.clone()) {
+                    candidates.push(ranked);
+                }
+            }
+        }
+        Some((candidates, has_full_exact))
+    }
+
+    fn upstream_script_translation(
+        &self,
+        input: &str,
+        filter_by_charset: bool,
+        limit: Option<usize>,
+    ) -> Option<PrefixFallbackBatch> {
+        let (syllables, leading_syllables) = self.upstream_script_surface_segmentation(input)?;
+        let (direct, _) = self.upstream_script_direct_families(
+            input,
+            &syllables,
+            &leading_syllables,
+            filter_by_charset,
+        )?;
+        let spans = Self::upstream_script_model_spans(&syllables);
+        let mut candidates = self
+            .upstream_sentence_model
+            .as_ref()
+            .map(|model| model.ranked_script_phrase_candidates_for_code_spans(input, &spans))
+            .unwrap_or_default();
+        candidates.retain(|ranked| {
+            self.is_dictionary_text_allowed(&ranked.candidate.text)
+                && (!filter_by_charset || !contains_extended_cjk(&ranked.candidate.text))
+        });
+        let mut candidate_indices = candidates
+            .iter()
+            .enumerate()
+            .map(|(index, ranked)| (ranked.candidate.text.clone(), index))
+            .collect::<HashMap<_, _>>();
+        for mut direct in direct {
+            if let Some(index) = candidate_indices.get(&direct.candidate.text).copied() {
+                let quality = candidates[index]
+                    .candidate
+                    .quality
+                    .max(direct.candidate.quality);
+                direct.candidate.quality = quality;
+                if candidates[index].code_order < direct.code_order {
+                    direct.code_order = candidates[index].code_order.clone();
+                }
+                candidates[index] = direct;
+            } else {
+                candidate_indices.insert(direct.candidate.text.clone(), candidates.len());
+                candidates.push(direct);
+            }
+        }
+        candidates.sort_by(|left, right| {
+            right
+                .candidate
+                .quality
+                .partial_cmp(&left.candidate.quality)
+                .unwrap_or(Ordering::Equal)
+                .then_with(|| left.code_order.cmp(&right.code_order))
+        });
+        let has_full_phrase = candidates.iter().any(|ranked| {
+            !matches!(
+                ranked.candidate.source,
+                CandidateSource::PartialTable { .. }
+            )
+        });
+        if !has_full_phrase {
+            let model_limit = limit.map(|limit| limit.saturating_add(1)).unwrap_or(100);
+            let sentence = self.upstream_sentence_model.as_ref().and_then(|model| {
+                model
+                    .candidates_for_surface_code_spans_with_limit_excluding(
+                        input,
+                        &spans,
+                        model_limit,
+                        &self.dictionary_exclude,
+                    )
+                    .into_iter()
+                    .find(|candidate| {
+                        candidate.source == CandidateSource::Sentence
+                            && self.is_dictionary_text_allowed(&candidate.text)
+                            && (!filter_by_charset || !contains_extended_cjk(&candidate.text))
+                    })
+            });
+            if let Some(sentence) = sentence {
+                candidates.insert(
+                    0,
+                    RankedScriptPhraseCandidate {
+                        candidate: sentence,
+                        code_order: String::new(),
+                    },
+                );
+            }
+        }
+        let mut candidates = candidates
+            .into_iter()
+            .map(|ranked| ranked.candidate)
+            .collect::<Vec<_>>();
+        let mut seen = HashSet::new();
+        candidates.retain(|candidate| seen.insert(candidate.text.clone()));
+        if candidates.is_empty() {
+            return None;
+        }
+        self.assign_ordered_candidate_qualities(&mut candidates);
+        let mut truncated = false;
+        if let Some(limit) = limit {
+            if candidates.len() > limit {
+                candidates.truncate(limit);
+                truncated = true;
+            }
+        }
+        Some(PrefixFallbackBatch {
+            candidates,
+            truncated,
+            owns_reachability: true,
+        })
     }
 
     fn abbreviation_sentence_candidates(
@@ -3055,6 +3530,16 @@ impl StaticTableTranslator {
             limit,
             include_full_count,
         } = request;
+        if let Some(batch) = self.upstream_script_translation(input, filter_by_charset, Some(limit))
+        {
+            let full_count = if batch.truncated {
+                batch.candidates.len().saturating_add(1)
+            } else {
+                batch.candidates.len()
+            };
+            crate::m37_record_bounded_iterator(limit, batch.candidates.len(), full_count);
+            return TranslationResult::bounded(batch.candidates, full_count, include_full_count);
+        }
         // NOTE: `leading_syllable_reachability` deliberately does NOT widen
         // `ordered_mode` here — that would disable luna's bounded early-stop
         // (`can_stop_after_window`) and cost typing latency. Ordering for the
@@ -3792,6 +4277,15 @@ impl StaticTableTranslator {
         lookup_specs: &[LookupCodeSpec],
         filter_by_charset: bool,
     ) -> LookupCandidateBatch {
+        self.candidates_for_lookup_codes_with_completion(lookup_specs, filter_by_charset, true)
+    }
+
+    fn candidates_for_lookup_codes_with_completion(
+        &self,
+        lookup_specs: &[LookupCodeSpec],
+        filter_by_charset: bool,
+        include_completion: bool,
+    ) -> LookupCandidateBatch {
         let mut pooled: Vec<PendingLookupCandidate> = Vec::new();
         let mut exact_scan_ranges: Vec<(usize, usize)> = Vec::new();
         let mut fetch_groups = HashMap::new();
@@ -3848,6 +4342,7 @@ impl StaticTableTranslator {
                 crate::m37_record_track_b_exact_lookup(exact_elapsed);
             }
             if lookup_spec.correction_distance.is_none()
+                && include_completion
                 && self.enable_completion
                 && !lookup_code.is_empty()
                 && fetch_code == lookup_code
@@ -5555,6 +6050,11 @@ impl StaticTableTranslator {
                 owns_reachability: false,
             };
         };
+        if let Some(batch) =
+            self.upstream_script_translation(input, filter_by_charset, prefix_fallback_limit)
+        {
+            return batch;
+        }
         let expanded_lookup_codes = self.expanded_lookup_specs(lookup_code);
         let LookupCandidateBatch {
             mut candidates,

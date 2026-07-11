@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
@@ -371,11 +372,150 @@ fn upstream_sentence_model_reads_candidates_from_byte_backed_poet_artifact() {
     );
     assert!(
         owners.iter().all(|row| row.owner != "poet.lookup_index"),
-        "byte-backed YUNE-POET/2 must use compiled index storage, not a retained heap lookup index: {owners:?}"
+        "byte-backed YUNE-POET/3 must use compiled index storage, not a retained heap lookup index: {owners:?}"
     );
     assert_eq!(
         owner("poet.prefix_index").class,
         MemoryOwnerClass::MmapFileBacked
+    );
+}
+
+#[test]
+fn script_phrase_derivation_uses_librime_five_percent_reading_threshold() {
+    for (minor_weight, admitted) in [(4.0, false), (5.0, true)] {
+        let entries = vec![
+            TableEntry::new("a-main", "A", 100.0 - minor_weight),
+            TableEntry::new("a-minor", "A", minor_weight),
+            TableEntry::new("b", "B", 100.0),
+        ];
+        let vocabulary = [PresetVocabularyEntry::new("AB", 1_000_000.0)];
+        let checksum = 0x5904_0000 + minor_weight as u32;
+        let heap_model =
+            UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 10);
+        let byte_model = UpstreamSentenceModel::from_poet_bin_source(
+            Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+                entries,
+                &vocabulary,
+                &vocabulary,
+                checksum,
+            ))) as Arc<dyn PoetByteSource>,
+            checksum,
+            10,
+        )
+        .expect("filtered byte-backed poet artifact should load");
+        let spans = [
+            SentenceCodeSpan::new(0, 1, "a-minor"),
+            SentenceCodeSpan::new(1, 2, "b"),
+        ];
+
+        for (storage, model) in [("heap", &heap_model), ("byte", &byte_model)] {
+            let direct = model.script_phrase_candidates_for_code_spans("ab", &spans);
+            assert_eq!(
+                direct.iter().any(|candidate| {
+                    candidate.text == "AB" && candidate.source == CandidateSource::Table
+                }),
+                admitted,
+                "{storage}: {minor_weight}% reading admission must match librime ScriptEncoder",
+            );
+            assert!(
+                model
+                    .candidates_for_code_spans_with_limit("ab", &spans, 5)
+                    .iter()
+                    .any(|candidate| candidate.text == "AB"),
+                "{storage}: abbreviation vocabulary keeps every positive reading for 4b",
+            );
+        }
+    }
+}
+
+#[test]
+fn script_phrase_vocabulary_preserves_blank_source_rows_and_suppresses_preset_duplicates() {
+    let entries = vec![
+        TableEntry::new("a", "A", 100.0),
+        TableEntry::new("b", "B", 100.0),
+        TableEntry::new("c", "C", 100.0),
+        TableEntry::new("d", "D", 100.0),
+        TableEntry::new("unrelated", "AB", 50.0),
+        TableEntry::new("", "CD", 7.0),
+    ];
+    let vocabulary = [
+        PresetVocabularyEntry::new("AB", 1_000_000.0),
+        PresetVocabularyEntry::new("CD", 1_000_000.0),
+    ];
+    let checksum = 0x5904_0003;
+    let heap = UpstreamSentenceModel::from_table_entries(entries.clone(), &vocabulary, 10);
+    let byte = UpstreamSentenceModel::from_poet_bin_source(
+        Arc::new(TestMmapPoetBytes::new(build_poet_bin(
+            entries,
+            &vocabulary,
+            &vocabulary,
+            checksum,
+        ))) as Arc<dyn PoetByteSource>,
+        checksum,
+        10,
+    )
+    .expect("source-precedence poet artifact should load");
+
+    for (storage, model) in [("heap", heap), ("byte", byte)] {
+        let explicit_duplicate = model.script_phrase_candidates_for_code_spans(
+            "ab",
+            &[
+                SentenceCodeSpan::new(0, 1, "a"),
+                SentenceCodeSpan::new(1, 2, "b"),
+            ],
+        );
+        assert!(
+            !explicit_duplicate.iter().any(|candidate| {
+                candidate.text == "AB" && candidate.source == CandidateSource::Table
+            }),
+            "{storage}: any explicit source row suppresses preset ScriptEncoder injection"
+        );
+
+        let blank_source = model.script_phrase_candidates_for_code_spans(
+            "cd",
+            &[
+                SentenceCodeSpan::new(0, 1, "c"),
+                SentenceCodeSpan::new(1, 2, "d"),
+            ],
+        );
+        assert!(
+            blank_source.iter().any(|candidate| {
+                candidate.text == "CD" && candidate.source == CandidateSource::Table
+            }),
+            "{storage}: a blank-code source phrase is encoded before preset suppression"
+        );
+    }
+}
+
+#[test]
+fn script_sentence_exclusions_backfill_after_high_ranked_excluded_rows() {
+    let mut entries = (0..7)
+        .map(|index| TableEntry::new("a", format!("EX{index}"), 100.0 - index as f32))
+        .collect::<Vec<_>>();
+    entries.push(TableEntry::new("a", "OK", 1.0));
+    entries.push(TableEntry::new("b", "B", 100.0));
+    let model = UpstreamSentenceModel::from_table_entries(entries, &[], 10);
+    let excluded = (0..7)
+        .map(|index| format!("EX{index}"))
+        .collect::<HashSet<_>>();
+    let candidates = model.candidates_for_surface_code_spans_with_limit_excluding(
+        "ab",
+        &[
+            SentenceCodeSpan::new(0, 1, "a"),
+            SentenceCodeSpan::new(1, 2, "b"),
+        ],
+        10,
+        &excluded,
+    );
+
+    assert!(candidates.iter().any(|candidate| {
+        candidate.source == CandidateSource::Sentence && candidate.text == "OKB"
+    }));
+    assert!(
+        candidates
+            .iter()
+            .all(|candidate| !candidate.text.starts_with("EX")),
+        "excluded high-ranked rows must be removed before the seven-row sentence cap"
     );
 }
 

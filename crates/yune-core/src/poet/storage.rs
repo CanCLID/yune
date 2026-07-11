@@ -9,10 +9,11 @@ use crate::{PresetVocabularyEntry, TableEntry};
 
 use super::{
     build_model_vocabulary_index, compare_model_entry_by_code, pack_owned_model_entries,
-    ModelEntry, ModelStringPool, ModelStringRange, ModelVocabularyEntry, OwnedModelEntry,
+    script_encoder_character_codes, script_encoder_phrase_vocabulary, ModelEntry, ModelStringPool,
+    ModelStringRange, ModelVocabularyEntry, OwnedModelEntry,
 };
 
-const MAGIC: &[u8; 12] = b"YUNE-POET/2\0";
+const MAGIC: &[u8; 12] = b"YUNE-POET/3\0";
 const HEADER_LEN: usize = 24;
 const SECTION_DIR_ENTRY_LEN: usize = 20;
 
@@ -619,7 +620,7 @@ impl ByteBackedPoetStore {
                 self.entries_payload_bytes(),
                 self.entry_count(),
                 format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
-                "sentence model entries served from YUNE-POET/2 bytes",
+                "sentence model entries served from YUNE-POET/3 bytes",
             ),
             crate::MemoryOwnerRow::new(
                 "poet.prefix_index",
@@ -628,7 +629,7 @@ impl ByteBackedPoetStore {
                     .saturating_add(section_len(&self.sections.prefix_index)),
                 self.sections.prefix_index.count as usize,
                 format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
-                "compiled prefix and exact-row ranges served from YUNE-POET/2 bytes",
+                "compiled prefix and exact-row ranges served from YUNE-POET/3 bytes",
             ),
             crate::MemoryOwnerRow::new(
                 "poet.vocabulary",
@@ -636,7 +637,7 @@ impl ByteBackedPoetStore {
                 self.vocabulary_payload_bytes(false),
                 self.vocabulary_count(),
                 format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
-                "normal preset vocabulary served from YUNE-POET/2 bytes",
+                "normal preset vocabulary served from YUNE-POET/3 bytes",
             ),
             crate::MemoryOwnerRow::new(
                 "poet.abbreviation_vocabulary",
@@ -644,7 +645,7 @@ impl ByteBackedPoetStore {
                 self.vocabulary_payload_bytes(true),
                 self.abbreviation_vocabulary_count(),
                 format!("poet_bin:{}:{}", self.storage_label(), self.mapping_mode()),
-                "abbreviation preset vocabulary served from YUNE-POET/2 bytes",
+                "abbreviation preset vocabulary served from YUNE-POET/3 bytes",
             ),
         ]
     }
@@ -945,25 +946,29 @@ fn compile_poet_inputs(
     vocabulary: &[PresetVocabularyEntry],
     abbreviation_vocabulary: &[PresetVocabularyEntry],
 ) -> CompiledPoetInputs {
-    let mut owned_entries = Vec::new();
-    let mut character_codes: HashMap<char, Vec<String>> = HashMap::new();
-    let mut abbreviation_character_codes: HashMap<char, Vec<String>> = HashMap::new();
-    for entry in entries {
-        if entry.code.is_empty() {
-            continue;
-        }
-        let owned = OwnedModelEntry {
+    let entries = entries
+        .into_iter()
+        .map(|entry| OwnedModelEntry {
             text: entry.text,
             code: entry.code,
             weight: entry.weight,
-        };
+        })
+        .collect::<Vec<_>>();
+    let script_vocabulary = script_encoder_phrase_vocabulary(&entries, vocabulary);
+    let mut owned_entries = Vec::new();
+    let mut character_readings: HashMap<char, Vec<(String, f32)>> = HashMap::new();
+    let mut abbreviation_character_codes: HashMap<char, Vec<String>> = HashMap::new();
+    for owned in entries {
+        if owned.code.is_empty() {
+            continue;
+        }
         let mut chars = owned.text.chars();
         if let Some(ch) = chars.next() {
             if chars.next().is_none() {
-                character_codes
+                character_readings
                     .entry(ch)
                     .or_default()
-                    .push(owned.code.clone());
+                    .push((owned.code.clone(), owned.weight));
                 if owned.weight > 0.0 {
                     abbreviation_character_codes
                         .entry(ch)
@@ -974,10 +979,7 @@ fn compile_poet_inputs(
         }
         owned_entries.push(owned);
     }
-    for codes in character_codes.values_mut() {
-        codes.sort();
-        codes.dedup();
-    }
+    let character_codes = script_encoder_character_codes(character_readings);
     for codes in abbreviation_character_codes.values_mut() {
         codes.sort();
         codes.dedup();
@@ -987,7 +989,7 @@ fn compile_poet_inputs(
     let entry_row_ranges = build_entry_row_ranges(&entries_by_code, entry_codes.ranges.len());
     let entry_code_prefix_index = build_prefix_index(&entry_codes, &entry_row_ranges);
     let (vocabulary, vocabulary_first_codes) =
-        build_model_vocabulary_index(vocabulary, &character_codes);
+        build_model_vocabulary_index(&script_vocabulary, &character_codes);
     let (abbreviation_vocabulary, abbreviation_vocabulary_first_codes) =
         build_model_vocabulary_index(abbreviation_vocabulary, &abbreviation_character_codes);
     CompiledPoetInputs {
@@ -1708,10 +1710,10 @@ mod tests {
         let bytes = sample_poet_bin();
         let summary = parse_poet_bin_summary(&bytes, 0xAABBCCDD).expect("poet bin should parse");
 
-        assert_eq!(&bytes[..12], b"YUNE-POET/2\0");
+        assert_eq!(&bytes[..12], b"YUNE-POET/3\0");
         assert_eq!(summary.dictionary_checksum, 0xAABBCCDD);
         assert_eq!(summary.entries, 3);
-        assert_eq!(summary.vocabulary_entries, 1);
+        assert_eq!(summary.vocabulary_entries, 0);
         assert_eq!(summary.abbreviation_vocabulary_entries, 1);
         assert!(summary.sections.iter().any(|section| section.id == 19));
         assert!(summary.sections.iter().any(|section| section.id == 20));
@@ -1730,6 +1732,17 @@ mod tests {
     fn poet_bin_rejects_legacy_v1_artifact() {
         let mut bytes = sample_poet_bin();
         bytes[..12].copy_from_slice(b"YUNE-POET/1\0");
+
+        assert_eq!(
+            parse_poet_bin_summary(&bytes, 0xAABBCCDD),
+            Err(PoetBinParseError::UnsupportedVersion),
+        );
+    }
+
+    #[test]
+    fn poet_bin_rejects_legacy_v2_artifact_without_script_encoder_filtering() {
+        let mut bytes = sample_poet_bin();
+        bytes[..12].copy_from_slice(b"YUNE-POET/2\0");
 
         assert_eq!(
             parse_poet_bin_summary(&bytes, 0xAABBCCDD),

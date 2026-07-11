@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::mem;
 use std::ops::Range;
 use std::sync::Arc;
@@ -31,9 +31,11 @@ const UPSTREAM_DICT_ENTRY_WEIGHT_SCALE: f64 = 18.420680743952367;
 
 const CODE_LENGTH_QUALITY_BAND: f32 = 1_000.0;
 const MAX_WORD_GRAPH_ENTRIES_PER_SPAN: usize = 7;
-const MAX_DERIVED_PHRASE_CODES_PER_VOCABULARY_ENTRY: usize = 16;
+const MAX_DERIVED_ABBREVIATION_CODES_PER_VOCABULARY_ENTRY: usize = 16;
+const MAX_DERIVED_SCRIPT_CODES_PER_VOCABULARY_ENTRY: usize = 32;
 type CharacterCodeCache = HashMap<char, Arc<[String]>>;
 const ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS: f64 = 500_000.0;
+const SCRIPT_ENCODER_MIN_READING_SHARE: f32 = 0.05;
 
 #[derive(Clone, Copy)]
 struct ByteBackedVocabularyChars<'a> {
@@ -113,6 +115,7 @@ impl GrammarProvider {
 pub struct WordGraphEntry {
     pub text: String,
     pub weight: f64,
+    code_order: String,
 }
 
 impl WordGraphEntry {
@@ -121,7 +124,13 @@ impl WordGraphEntry {
         Self {
             text: text.into(),
             weight,
+            code_order: String::new(),
         }
+    }
+
+    fn with_code_order(mut self, code_order: impl Into<String>) -> Self {
+        self.code_order = code_order.into();
+        self
     }
 }
 
@@ -140,6 +149,12 @@ pub struct SentenceCodeSpan {
     pub start: usize,
     pub end: usize,
     pub code: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct RankedScriptPhraseCandidate {
+    pub candidate: Candidate,
+    pub code_order: String,
 }
 
 impl SentenceCodeSpan {
@@ -172,6 +187,57 @@ fn upstream_dictionary_weight(raw_weight: f64) -> f64 {
         f64::EPSILON.ln()
     };
     weight - UPSTREAM_DICT_ENTRY_WEIGHT_SCALE
+}
+
+pub(crate) fn upstream_script_raw_candidate_quality(
+    consumed: usize,
+    raw_weight: f32,
+    spelling_credibility: f32,
+) -> f32 {
+    consumed as f32 * CODE_LENGTH_QUALITY_BAND
+        + null_grammar_score(upstream_dictionary_weight(f64::from(raw_weight))) as f32
+        + spelling_credibility
+}
+
+fn script_encoder_character_codes(
+    mut readings: HashMap<char, Vec<(String, f32)>>,
+) -> HashMap<char, Vec<String>> {
+    readings
+        .drain()
+        .filter_map(|(ch, mut readings)| {
+            let mut seen = HashSet::new();
+            readings.retain(|(code, _)| seen.insert(code.clone()));
+            let total_weight = readings.iter().map(|(_, weight)| *weight).sum::<f32>();
+            let minimum_weight = total_weight * SCRIPT_ENCODER_MIN_READING_SHARE;
+            let mut codes = readings
+                .into_iter()
+                .filter_map(|(code, weight)| (weight >= minimum_weight).then_some(code))
+                .collect::<Vec<_>>();
+            codes.sort();
+            (!codes.is_empty()).then_some((ch, codes))
+        })
+        .collect()
+}
+
+fn script_encoder_phrase_vocabulary(
+    entries: &[OwnedModelEntry],
+    preset_vocabulary: &[PresetVocabularyEntry],
+) -> Vec<PresetVocabularyEntry> {
+    let source_texts = entries
+        .iter()
+        .map(|entry| entry.text.as_str())
+        .collect::<HashSet<_>>();
+    entries
+        .iter()
+        .filter(|entry| entry.code.is_empty() && (2..=32).contains(&entry.text.chars().count()))
+        .map(|entry| PresetVocabularyEntry::new(entry.text.clone(), entry.weight))
+        .chain(
+            preset_vocabulary
+                .iter()
+                .filter(|entry| !source_texts.contains(entry.text.as_str()))
+                .cloned(),
+        )
+        .collect()
 }
 
 fn build_model_vocabulary_index(
@@ -1216,8 +1282,10 @@ impl UpstreamSentenceModel {
         abbreviation_vocabulary: &[PresetVocabularyEntry],
         max_candidates: usize,
     ) -> Self {
+        let entries = entries.into_iter().collect::<Vec<_>>();
+        let script_vocabulary = script_encoder_phrase_vocabulary(&entries, vocabulary);
         let mut owned_entries = Vec::new();
-        let mut character_codes: HashMap<char, Vec<String>> = HashMap::new();
+        let mut character_readings: HashMap<char, Vec<(String, f32)>> = HashMap::new();
         let mut abbreviation_character_codes: HashMap<char, Vec<String>> = HashMap::new();
         for entry in entries {
             if entry.code.is_empty() {
@@ -1226,10 +1294,10 @@ impl UpstreamSentenceModel {
             let mut chars = entry.text.chars();
             if let Some(ch) = chars.next() {
                 if chars.next().is_none() {
-                    character_codes
+                    character_readings
                         .entry(ch)
                         .or_default()
-                        .push(entry.code.clone());
+                        .push((entry.code.clone(), entry.weight));
                     if entry.weight > 0.0 {
                         abbreviation_character_codes
                             .entry(ch)
@@ -1240,10 +1308,7 @@ impl UpstreamSentenceModel {
             }
             owned_entries.push(entry);
         }
-        for codes in character_codes.values_mut() {
-            codes.sort();
-            codes.dedup();
-        }
+        let character_codes = script_encoder_character_codes(character_readings);
         for codes in abbreviation_character_codes.values_mut() {
             codes.sort();
             codes.dedup();
@@ -1251,7 +1316,7 @@ impl UpstreamSentenceModel {
         owned_entries.sort_by(compare_model_entry_by_code);
         let (entries_by_code, entry_texts, entry_codes) = pack_owned_model_entries(owned_entries);
         let (vocabulary, vocabulary_first_codes) =
-            build_model_vocabulary_index(vocabulary, &character_codes);
+            build_model_vocabulary_index(&script_vocabulary, &character_codes);
         let (abbreviation_vocabulary, abbreviation_vocabulary_first_codes) =
             build_model_vocabulary_index(abbreviation_vocabulary, &abbreviation_character_codes);
         let storage = PoetModelStorage::Owned(Box::new(OwnedPoetModelStorage {
@@ -1364,8 +1429,118 @@ impl UpstreamSentenceModel {
             return Vec::new();
         }
 
-        let graph = self.word_graph_for_code_spans(input, spans);
+        let graph = self.word_graph_for_code_spans(input, spans, true, true, None);
         self.candidates_for_abbreviation_graph_with_limit(input, &graph, max_candidates)
+    }
+
+    /// Evaluates deployed surface-spelling spans with the ordinary script-
+    /// translator sentence semantics. Unlike the abbreviation entry point
+    /// above, this uses the normal preset vocabulary, normal dictionary
+    /// weights, and the standard sentence candidate ordering.
+    #[must_use]
+    pub fn candidates_for_surface_code_spans_with_limit(
+        &self,
+        input: &str,
+        spans: &[SentenceCodeSpan],
+        max_candidates: usize,
+    ) -> Vec<Candidate> {
+        if input.is_empty() || spans.is_empty() {
+            return Vec::new();
+        }
+
+        let graph = self.word_graph_for_code_spans(input, spans, false, true, None);
+        self.candidates_for_graph_with_limit(input, &graph, max_candidates)
+    }
+
+    pub(crate) fn candidates_for_surface_code_spans_with_limit_excluding(
+        &self,
+        input: &str,
+        spans: &[SentenceCodeSpan],
+        max_candidates: usize,
+        excluded_texts: &HashSet<String>,
+    ) -> Vec<Candidate> {
+        if input.is_empty() || spans.is_empty() {
+            return Vec::new();
+        }
+
+        let graph = self.word_graph_for_code_spans(input, spans, false, true, Some(excluded_texts));
+        self.candidates_for_graph_with_limit(input, &graph, max_candidates)
+    }
+
+    /// Returns the complete direct script-translation families for the
+    /// selected deployed spelling graph. These are graph edges beginning at
+    /// zero (full phrases and every recognized proper prefix), not synthesized
+    /// multi-edge sentences. The sentence beam therefore remains bounded while
+    /// paging can still expose the complete direct family.
+    #[must_use]
+    pub fn script_phrase_candidates_for_code_spans(
+        &self,
+        input: &str,
+        spans: &[SentenceCodeSpan],
+    ) -> Vec<Candidate> {
+        self.ranked_script_phrase_candidates_for_code_spans(input, spans)
+            .into_iter()
+            .map(|ranked| ranked.candidate)
+            .collect()
+    }
+
+    pub(crate) fn ranked_script_phrase_candidates_for_code_spans(
+        &self,
+        input: &str,
+        spans: &[SentenceCodeSpan],
+    ) -> Vec<RankedScriptPhraseCandidate> {
+        if input.is_empty() || spans.is_empty() {
+            return Vec::new();
+        }
+        let graph = self.word_graph_for_code_spans(input, spans, false, false, None);
+        let Some(edges) = graph.get(&0) else {
+            return Vec::new();
+        };
+        let mut candidates = Vec::<RankedScriptPhraseCandidate>::new();
+        let mut candidate_indices = HashMap::<String, usize>::new();
+        for (end, entries) in edges {
+            for entry in entries {
+                let candidate = Candidate {
+                    text: entry.text.clone(),
+                    comment: String::new(),
+                    preedit: None,
+                    source: if *end < input.len() {
+                        CandidateSource::PartialTable {
+                            consumed: *end,
+                            recompose_on_default: false,
+                        }
+                    } else {
+                        CandidateSource::Table
+                    },
+                    quality: *end as f32 * CODE_LENGTH_QUALITY_BAND
+                        + null_grammar_score(entry.weight) as f32,
+                };
+                let ranked = RankedScriptPhraseCandidate {
+                    candidate,
+                    code_order: entry.code_order.clone(),
+                };
+                if let Some(index) = candidate_indices.get(&ranked.candidate.text).copied() {
+                    if ranked.candidate.quality > candidates[index].candidate.quality
+                        || (ranked.candidate.quality == candidates[index].candidate.quality
+                            && ranked.code_order < candidates[index].code_order)
+                    {
+                        candidates[index] = ranked;
+                    }
+                } else {
+                    candidate_indices.insert(ranked.candidate.text.clone(), candidates.len());
+                    candidates.push(ranked);
+                }
+            }
+        }
+        candidates.sort_by(|left, right| {
+            right
+                .candidate
+                .quality
+                .partial_cmp(&left.candidate.quality)
+                .unwrap_or(Ordering::Equal)
+                .then_with(|| left.code_order.cmp(&right.code_order))
+        });
+        candidates
     }
 
     #[must_use]
@@ -2521,7 +2696,14 @@ impl UpstreamSentenceModel {
         ))
     }
 
-    fn word_graph_for_code_spans(&self, input: &str, spans: &[SentenceCodeSpan]) -> WordGraph {
+    fn word_graph_for_code_spans(
+        &self,
+        input: &str,
+        spans: &[SentenceCodeSpan],
+        abbreviation: bool,
+        bounded_for_sentence_scoring: bool,
+        excluded_texts: Option<&HashSet<String>>,
+    ) -> WordGraph {
         let rebuild_start = crate::m37_metrics_enabled().then(Instant::now);
         let mut graph = WordGraph::new();
         let boundaries = input
@@ -2587,19 +2769,38 @@ impl UpstreamSentenceModel {
                     continue;
                 };
                 lookup_metrics.exact_range_index_hits += 1;
-                let bounded_entries = entries.clone().take(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
-                table_entries_considered += entries.len().min(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                let entry_limit = if bounded_for_sentence_scoring {
+                    MAX_WORD_GRAPH_ENTRIES_PER_SPAN
+                } else {
+                    usize::MAX
+                };
+                let bounded_entries = entries.clone().filter(|entry_index| {
+                    excluded_texts.map_or(true, |excluded| {
+                        !excluded.contains(self.storage.entry_text(*entry_index))
+                    })
+                });
                 let mut inserted_edge = false;
-                for entry_index in bounded_entries {
+                for entry_index in bounded_entries.take(entry_limit) {
+                    table_entries_considered += 1;
+                    let weight = if abbreviation {
+                        f64::from(self.storage.entry_weight(entry_index))
+                    } else {
+                        upstream_dictionary_weight(f64::from(
+                            self.storage.entry_weight(entry_index),
+                        ))
+                    };
                     graph
                         .entry(start)
                         .or_default()
                         .entry(span.end)
                         .or_default()
-                        .push(WordGraphEntry::new(
-                            self.storage.entry_text(entry_index).to_owned(),
-                            f64::from(self.storage.entry_weight(entry_index)),
-                        ));
+                        .push(
+                            WordGraphEntry::new(
+                                self.storage.entry_text(entry_index).to_owned(),
+                                weight,
+                            )
+                            .with_code_order(span.code),
+                        );
                     graph_edges += 1;
                     inserted_edge = true;
                 }
@@ -2608,29 +2809,45 @@ impl UpstreamSentenceModel {
                 }
                 let vocabulary_entries = self
                     .storage
-                    .vocabulary_indices_for_first_code(true, span.code);
+                    .vocabulary_indices_for_first_code(abbreviation, span.code);
                 for index in vocabulary_entries {
+                    if excluded_texts.is_some_and(|excluded| {
+                        excluded.contains(self.storage.vocabulary_text(abbreviation, index))
+                    }) {
+                        continue;
+                    }
                     self.storage
-                        .vocabulary_chars_into(true, index, &mut vocabulary_chars);
+                        .vocabulary_chars_into(abbreviation, index, &mut vocabulary_chars);
                     vocabulary_entries_considered += 1;
-                    for (_phrase_code, phrase_end, phrase_end_index) in self
+                    for (phrase_code, phrase_end, phrase_end_index) in self
                         .derive_matching_phrase_codes_from_spans(
                             &vocabulary_chars,
                             &spans_by_start,
                             *span,
+                            abbreviation,
                         )
                     {
+                        let raw_weight =
+                            f64::from(self.storage.vocabulary_weight(abbreviation, index));
+                        let weight = if abbreviation {
+                            raw_weight
+                                + ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS
+                                    * (phrase_end - start).pow(2) as f64
+                        } else {
+                            upstream_dictionary_weight(raw_weight)
+                        };
                         graph
                             .entry(start)
                             .or_default()
                             .entry(phrase_end)
                             .or_default()
-                            .push(WordGraphEntry::new(
-                                self.storage.vocabulary_text(true, index).to_owned(),
-                                f64::from(self.storage.vocabulary_weight(true, index))
-                                    + ABBREVIATION_VOCABULARY_RAW_SPAN_BONUS
-                                        * (phrase_end - start).pow(2) as f64,
-                            ));
+                            .push(
+                                WordGraphEntry::new(
+                                    self.storage.vocabulary_text(abbreviation, index).to_owned(),
+                                    weight,
+                                )
+                                .with_code_order(phrase_code),
+                            );
                         graph_edges += 1;
                         reachable[phrase_end_index] = true;
                     }
@@ -2639,8 +2856,23 @@ impl UpstreamSentenceModel {
         }
         for edges in graph.values_mut() {
             for entries in edges.values_mut() {
-                entries.sort_by(compare_word_graph_entry);
-                entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                if abbreviation {
+                    entries.sort_by(compare_word_graph_entry);
+                } else {
+                    // librime's Vocabulary::SortHomophones is a stable weight-only
+                    // sort. Preserve canonical-code emission order for equal
+                    // script weights instead of introducing a text tie-break.
+                    entries.sort_by(|left, right| {
+                        right
+                            .weight
+                            .partial_cmp(&left.weight)
+                            .unwrap_or(Ordering::Equal)
+                            .then_with(|| left.code_order.cmp(&right.code_order))
+                    });
+                }
+                if bounded_for_sentence_scoring {
+                    entries.truncate(MAX_WORD_GRAPH_ENTRIES_PER_SPAN);
+                }
             }
         }
         crate::m37_record_upstream_sentence_model_scan(
@@ -3005,6 +3237,7 @@ impl UpstreamSentenceModel {
         chars: &[char],
         spans_by_start: &[Vec<InputCodeSpan<'_>>],
         first_span: InputCodeSpan<'_>,
+        abbreviation: bool,
     ) -> Vec<(String, usize, usize)> {
         let mut codes = Vec::new();
         self.derive_matching_phrase_span_codes_from(
@@ -3016,6 +3249,7 @@ impl UpstreamSentenceModel {
                 end: first_span.end,
                 code: first_span.code.to_owned(),
             },
+            abbreviation,
             &mut codes,
         );
         codes.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));
@@ -3028,16 +3262,24 @@ impl UpstreamSentenceModel {
         chars: &[char],
         spans_by_start: &[Vec<InputCodeSpan<'_>>],
         state: PhraseSpanCodeState,
+        abbreviation: bool,
         codes: &mut Vec<(String, usize, usize)>,
     ) {
-        if codes.len() >= MAX_DERIVED_PHRASE_CODES_PER_VOCABULARY_ENTRY {
+        let limit = if abbreviation {
+            MAX_DERIVED_ABBREVIATION_CODES_PER_VOCABULARY_ENTRY
+        } else {
+            MAX_DERIVED_SCRIPT_CODES_PER_VOCABULARY_ENTRY
+        };
+        if codes.len() >= limit {
             return;
         }
         if state.index == chars.len() {
             codes.push((state.code, state.end, state.start_index));
             return;
         }
-        let next_codes = self.storage.character_codes(true, chars[state.index]);
+        let next_codes = self
+            .storage
+            .character_codes(abbreviation, chars[state.index]);
         let Some(spans) = spans_by_start.get(state.start_index) else {
             return;
         };
@@ -3054,6 +3296,7 @@ impl UpstreamSentenceModel {
                     end: span.end,
                     code: format!("{}{}", state.code, span.code),
                 },
+                abbreviation,
                 codes,
             );
         }

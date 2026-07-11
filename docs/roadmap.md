@@ -18,8 +18,8 @@ a default-off debug profile. M55 closes under the 2026-07-04 **corrective
 re-baseline**: real graph-work wins landed (long rows improved ~35%, startup and
 session measured faster than librime), three pre-corrective closeout mechanisms
 were identified as measurement artifacts and reverted, the benchmark now reads
-context after every keypress, `YUNE-POET/2` byte-backed poet storage is an
-explicit opt-in (the latency ceilings bind), and the corrective
+context after every keypress, the then-current `YUNE-POET/2` byte-backed poet
+storage was an explicit opt-in (the latency ceilings bind), and the corrective
 `reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv` is the
 standing native Track A regression gate (green twice, with a fresh M56 closeout
 proof that passes with tight headroom). M56 adds productization
@@ -28,7 +28,10 @@ rebuilds on real paths, cold/warm conformance covers `luna_pinyin` and TypeDuck
 `jyut6ping3`, user-data lifecycle gaps are dispositioned, and all discovered C
 ABI exports are guarded by an abuse-suite-ratcheted panic boundary without ABI
 widening. The corrected M56 closeout keeps optional poet storage out of the
-default product schema payload. Independent macOS native verification then
+default product schema payload. M59's in-progress sentence/phrase ordering
+work extends the current artifact to `YUNE-POET/3`; stale `/2` artifacts are
+rejected and rebuilt rather than interpreted under the expanded layout.
+Independent macOS native verification then
 exposed a Yune-side Track A sentence-model construction anomaly in the long and
 abbreviation rows; M57 repaired that platform/comparability defect by accepting
 the macOS upstream Luna MARISA checksum pair through the target-scoped compact
@@ -103,7 +106,7 @@ pending explicit sign-off.
 
 | Lane | Current state | Next decision or gate |
 | --- | --- | --- |
-| Engine performance | M55 is closed under the 2026-07-04 corrective re-baseline. Real wins: 37-char Luna `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `3.14x -> 2.433x`, `hao` `2.15x -> 1.574x`, startup `0.895x` and session `0.864x` (faster than librime, run-noisy), win rows locked `<1.00x`, Track B guard rows all green with startup/session ~3x better than their Phase 0 sources. Removed as measurement artifacts: the `luna_pinyin` key deferral, the `n`/`h` benchmark-input aliases, and the uninvalidated config cache; the benchmark now reads context per keypress. Byte-backed `YUNE-POET/2` poet storage is an explicit opt-in (`113.2 MB`, latency-blocked) while the shipping default stays owned (`185.7 MB`) - the latency ceilings bind. M57 repaired the macOS Track A verification anomaly in the 37-char, 59-char, `cszysmsrsd`, and `zybfshmsru` rows by restoring compact compiled-table sentence-model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary). | The corrective `m55-thresholds.csv` remains the standing native Track A gate (green twice: `corrective-2026-07-04/gate-run-d`, `gate-run-e`; latest M56 closeout ratchet also green). M57's two macOS passes are comparability evidence for the repaired macOS bundle, not a replacement performance gate. Future engine performance work: port the incremental sentence scratch to byte-backed storage (reclaims the memory win), then poet graph constants / short keys - each with fresh owner evidence and no ABI widening. |
+| Engine performance | M55 is closed under the 2026-07-04 corrective re-baseline. Real wins: 37-char Luna `3.05x -> 1.913x`, 59-char `2.25x -> 1.528x`, `ni` `3.14x -> 2.433x`, `hao` `2.15x -> 1.574x`, startup `0.895x` and session `0.864x` (faster than librime, run-noisy), win rows locked `<1.00x`, Track B guard rows all green with startup/session ~3x better than their Phase 0 sources. Removed as measurement artifacts: the `luna_pinyin` key deferral, the `n`/`h` benchmark-input aliases, and the uninvalidated config cache; the benchmark now reads context per keypress. M55's byte-backed `YUNE-POET/2` result remains historical (`113.2 MB`, latency-blocked) while the shipping default stays owned (`185.7 MB`); M59's current `YUNE-POET/3` format adds sentence/phrase indexes and rejects `/2` so it can be rebuilt under the expanded layout. M57 repaired the macOS Track A verification anomaly in the 37-char, 59-char, `cszysmsrsd`, and `zybfshmsru` rows by restoring compact compiled-table sentence-model construction (`332,604` codes, `513,353` expanded entries, 11-row abbreviation vocabulary). | The signed M59 expanded ceilings are now the standing native ratchet while M59 is active; `/3` performance and memory claims require fresh M59 evidence rather than inheritance from `/2`. M57's two macOS passes remain comparability evidence for the repaired macOS bundle, not a replacement performance gate. Future engine performance work: port the incremental sentence scratch to byte-backed storage (reclaims the memory win), then poet graph constants / short keys - each with fresh owner evidence and no ABI widening. |
 | TypeDuck/Jyutping product memory | M47's portable scope is complete. The comments-intact `jyut6ping3_mobile` keyboard profile reached about `67 MB` working set / `22 MB` private on Windows proxy evidence, with table, prism, and rich lookup/comment payloads byte-backed from compiled storage. | Apple `phys_footprint` proof remains unnumbered far-future platform validation. Optional RED-09/10/11-style polish needs a fresh owner-ranked plan. |
 | Web harness startup and memory | WEB-03 fixed the launch compiled-asset contract and the stale Jyutping source-fallback owner. WEB-04 adds a default-off `luna_pinyin_octagram` debug profile that fetches a pinned lotem `.gram` locally, delivers it only for the octagram profile, exposes delivered/fallback/checksum/schema-select high-water memory diagnostics, proves all four named ranking rows versus plain Luna in Playwright, and proves browser fail-closed behavior. Current dashboard fair `luna_pinyin` browser comparison is `64.0 MiB` peak versus My RIME `16.0 MiB`; old Jyutping `893.1 MiB` remains only as a synthetic no-launch-assets negative control. | Future browser memory work should target the fair `luna_pinyin` runtime high-water floor or another freshly measured owner, not another payload-only or stale-asset branch. Broader contextual suggestions or non-debug octagram product UX needs a new scoped plan. |
 | AI-native engine layer | M11/M13 proved a default-off local AI layer can sit on top of the deterministic engine. | Keep AI outside the classic deterministic performance path unless a named engine experiment explicitly enables it. |
@@ -182,7 +185,9 @@ M55 built the machinery to close this gap but the gap itself is **not closed
 in the shipping default**. Phase 1 attributed the old `105.6 MB` unclassified
 floor, Phase 2/2R proved the poet payload owner and redesigned the artifact as
 `YUNE-POET/2` (parity-preserving, `~113.2 MB` peak), and Phase 3R landed real
-graph-volume reductions. Under the corrective per-key gate, however,
+graph-volume reductions. M59's current `YUNE-POET/3` format supersedes `/2`
+for compatibility and rebuild purposes, without inheriting `/2`'s measured
+memory result. Under the corrective per-key gate, however,
 byte-backed access without the incremental sentence scratch costs
 `4.6x`/`3.2x` on the long rows, so per the plan's own decided call (latency
 ceilings bind) the default stays on the owned path at `185.7 MB`.

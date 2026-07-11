@@ -7,14 +7,15 @@ use std::{
 
 use crate::translator::{sentence_path_score_replaces, SentencePathScore};
 use crate::{
-    build_prism_bin, build_table_bin, parse_rime_prism_bin_payload,
+    build_poet_bin, build_prism_bin, build_table_bin, parse_rime_prism_bin_payload,
     parse_rime_prism_runtime_payload, parse_rime_table_bin_advanced_data,
     parse_rime_table_bin_dictionary, Candidate, CandidateFilter, CandidateRequest, CandidateSource,
     CompactTableByteSource, CompactTableStore, Context, DartsDoubleArray, DictionaryLookupRecord,
-    Engine, HistoryTranslator, MemoryOwnerClass, PresetVocabularyEntry, PunctuationTranslator,
-    ReverseLookupTranslator, RimeCorrectionEntry, RimePrismBinPayload, RimePrismSpellingDescriptor,
-    RimeToleranceRule, StaticTableTranslator, Status, TableDictionary, TableDictionaryAdvancedData,
-    TableEntry, Translator, UniquifierFilter,
+    Engine, HistoryTranslator, MemoryOwnerClass, OwnedPoetBytes, PoetByteSource,
+    PresetVocabularyEntry, PunctuationTranslator, ReverseLookupTranslator, RimeCorrectionEntry,
+    RimePrismBinPayload, RimePrismSpellingDescriptor, RimeToleranceRule, SentencePolicy,
+    StaticTableTranslator, Status, TableDictionary, TableDictionaryAdvancedData, TableEntry,
+    Translator, UniquifierFilter,
 };
 
 struct DropFirstWindowFilter;
@@ -3519,6 +3520,260 @@ fn compact_abbreviation_prefix_fallback_preserves_non_recomposing_descriptor() {
             recompose_on_default: false,
         },
         "the prism abbreviation bit must suppress default recomposition"
+    );
+}
+
+#[test]
+fn upstream_script_policy_merges_phrase_sentence_and_partial_families_across_storage_paths() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("bei1", "A", 100.0),
+        TableEntry::new("bei2", "B", 90.0),
+        TableEntry::new("ngo5", "N", 100.0),
+        TableEntry::new("ng5", "M", 80.0),
+        TableEntry::new("be1", "E", 1.0),
+        // A prefix row with the same text as the synthesized A + M sentence
+        // proves that sentence insertion cannot borrow a partial donor's source.
+        TableEntry::new("bei3", "AM", 70.0),
+        TableEntry::new("bei2ngo5", "BN", 80.0),
+    ]);
+    let vocabulary = vec![
+        PresetVocabularyEntry::new("AN", 200.0),
+        PresetVocabularyEntry::new("BN", 1_000.0),
+    ];
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "xform/1/v/".to_owned(),
+        "xform/2/x/".to_owned(),
+        "xform/5/xx/".to_owned(),
+    ];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism_bytes = build_prism_bin(&syllabary, &formulas, 0x5904_0001, 0x5904_0002);
+    let owned_prism =
+        parse_rime_prism_bin_payload(prism_bytes.clone()).expect("owned 4a prism should parse");
+    let owned =
+        StaticTableTranslator::from_compact_dictionary(dictionary.clone(), Some(owned_prism))
+            .with_spelling_algebra(&formulas)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_preset_vocabulary(vocabulary.clone())
+            .with_upstream_sentence_model(100);
+
+    let table_bytes = build_table_bin(&dictionary, 0x5904_0001);
+    let advanced = parse_rime_table_bin_advanced_data(&table_bytes)
+        .expect("byte-backed 4a table metadata should parse");
+    let store = CompactTableStore::from_table_bin_bytes(table_bytes, advanced)
+        .expect("byte-backed 4a table should parse");
+    let prism_source: Arc<dyn CompactTableByteSource> = Arc::new(AlgebraPrismByteSource(
+        Arc::<[u8]>::from(prism_bytes.clone()),
+    ));
+    let runtime_prism =
+        parse_rime_prism_runtime_payload(prism_source).expect("byte-backed 4a prism should parse");
+    let poet_source: Arc<dyn PoetByteSource> = Arc::new(OwnedPoetBytes::new(build_poet_bin(
+        dictionary.entries().iter().cloned(),
+        &vocabulary,
+        &vocabulary,
+        0x5904_0001,
+    )));
+    let byte_backed = StaticTableTranslator::from_compact_table_store_with_prism_runtime(
+        store,
+        Some(runtime_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_preset_vocabulary(vocabulary.clone())
+    .with_upstream_sentence_poet_source(poet_source, 0x5904_0001)
+    .with_upstream_sentence_model(100);
+
+    for (storage, translator) in [("owned", owned), ("byte", byte_backed)] {
+        let texts = |input: &str| {
+            translator
+                .translate(input)
+                .into_iter()
+                .map(|candidate| candidate.text)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            texts("beingo"),
+            ["AN", "BN", "A", "B", "AM", "E"],
+            "{storage}: dynamic and explicit phrases must share upstream weight order"
+        );
+        let sentence = translator.translate("being");
+        assert_eq!(
+            sentence[0].text, "AM",
+            "{storage}: one model sentence leads"
+        );
+        assert_eq!(
+            sentence
+                .iter()
+                .filter(|candidate| candidate.source == CandidateSource::Sentence)
+                .count(),
+            1,
+            "{storage}: no reliable full phrase admits exactly one sentence"
+        );
+        let toned = texts("beixngoxx");
+        assert_eq!(toned[..2], ["BN", "B"]);
+        assert!(
+            !toned.iter().any(|text| text == "E"),
+            "{storage}: an explicit tone spelling must not admit the shorter raw prefix"
+        );
+
+        let full = translator.translate("beingo");
+        let bounded = translator.translate_with_context_and_request(
+            "beingo",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            CandidateRequest::bounded(3).with_debug_full_count(true),
+        );
+        assert_eq!(
+            bounded.candidates,
+            full[..bounded.candidates.len()],
+            "{storage}: bounded 4a output must be an exact prefix of eager order"
+        );
+        assert!(!bounded.is_complete);
+        assert!(
+            bounded
+                .full_count
+                .is_some_and(|count| count > bounded.candidates.len()),
+            "{storage}: truncation must preserve a conservative paging witness"
+        );
+    }
+
+    let legacy_prism =
+        parse_rime_prism_bin_payload(prism_bytes).expect("legacy control prism should parse");
+    let legacy = StaticTableTranslator::from_compact_dictionary(dictionary, Some(legacy_prism))
+        .with_spelling_algebra(&formulas)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::LegacyFallback)
+        .with_preset_vocabulary(vocabulary)
+        .with_upstream_sentence_model(100);
+    let legacy_texts = legacy
+        .translate("beingo")
+        .into_iter()
+        .map(|candidate| candidate.text)
+        .collect::<Vec<_>>();
+    assert!(legacy_texts.contains(&"BN".to_owned()));
+    assert!(
+        !legacy_texts.contains(&"AN".to_owned()),
+        "the legacy/TypeDuck policy must not activate the new upstream script-family merge"
+    );
+}
+
+#[test]
+fn upstream_script_policy_keeps_identity_inputs_on_the_legacy_fast_path() {
+    let _guard = super::m37_metrics_test_guard();
+    let dictionary = TableDictionary::new(
+        ('a'..='z')
+            .map(|ch| TableEntry::new(ch.to_string(), ch.to_ascii_uppercase().to_string(), 100.0)),
+    );
+    let syllabary = ('a'..='z').map(|ch| ch.to_string()).collect::<Vec<_>>();
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &[], 1, 2))
+        .expect("identity 4a prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_upstream_sentence_model(10);
+
+    for input in [
+        "ab",
+        "ceshiyixiachangjushuruxingnengzenyang",
+        "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+    ] {
+        crate::m37_metrics_enable(true);
+        crate::m37_metrics_reset();
+        let identity_sentence = translator.translate(input);
+        let metrics = crate::m37_metrics_snapshot();
+        crate::m37_metrics_enable(false);
+        assert_eq!(identity_sentence[0].source, CandidateSource::Sentence);
+        assert_eq!(
+            metrics.prism_lookup_calls, 1,
+            "identity input {input:?} keeps only the ordinary full-input prism lookup; 4a must not build a substring prism DAG"
+        );
+    }
+}
+
+#[test]
+fn upstream_script_policy_preserves_dictionary_exclusions_for_model_rows_and_sentences() {
+    let dictionary = TableDictionary::new([
+        TableEntry::new("bei1", "A", 100.0),
+        TableEntry::new("bei2", "B", 90.0),
+        TableEntry::new("ngo5", "N", 100.0),
+        TableEntry::new("ng5", "M", 80.0),
+        TableEntry::new("bei3", "AM", 70.0),
+        TableEntry::new("bei2ngo5", "BN", 80.0),
+    ]);
+    let formulas = [
+        "derive/\\d//".to_owned(),
+        "xform/1/v/".to_owned(),
+        "xform/2/x/".to_owned(),
+        "xform/5/xx/".to_owned(),
+    ];
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, &formulas, 1, 2))
+        .expect("dictionary-exclude 4a prism should parse");
+    let translator = StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+        .with_spelling_algebra(&formulas)
+        .with_sentence(true)
+        .with_sentence_policy(SentencePolicy::UpstreamScript)
+        .with_preset_vocabulary([
+            PresetVocabularyEntry::new("AN", 200.0),
+            PresetVocabularyEntry::new("BN", 1_000.0),
+        ])
+        .with_dictionary_exclude(["BN", "A"])
+        .with_upstream_sentence_model(100);
+
+    assert!(
+        translator
+            .translate("beingo")
+            .iter()
+            .all(|candidate| candidate.text != "BN"),
+        "model-derived phrases must honor exact dictionary exclusions"
+    );
+    assert!(
+        translator
+            .translate("being")
+            .iter()
+            .all(
+                |candidate| candidate.source != CandidateSource::Sentence || candidate.text != "AM"
+            ),
+        "synthesized sentences must not reintroduce an exactly excluded component"
+    );
+
+    let containing_dictionary = TableDictionary::new([
+        TableEntry::new("bei1", "XA", 100.0),
+        TableEntry::new("ng5", "M", 80.0),
+    ]);
+    let containing_syllabary = containing_dictionary
+        .entries()
+        .iter()
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let containing_prism =
+        parse_rime_prism_bin_payload(build_prism_bin(&containing_syllabary, &formulas, 1, 2))
+            .expect("containing-text 4a prism should parse");
+    let containing = StaticTableTranslator::from_compact_dictionary(
+        containing_dictionary,
+        Some(containing_prism),
+    )
+    .with_spelling_algebra(&formulas)
+    .with_sentence(true)
+    .with_sentence_policy(SentencePolicy::UpstreamScript)
+    .with_dictionary_exclude(["A"])
+    .with_upstream_sentence_model(100);
+    assert!(
+        containing.translate("being").iter().any(|candidate| {
+            candidate.source == CandidateSource::Sentence && candidate.text == "XAM"
+        }),
+        "dictionary_exclude is exact text filtering, not substring censorship"
     );
 }
 

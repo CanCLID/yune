@@ -196,12 +196,14 @@ lower is better):
   the pre-M55 `3.05x`/`2.25x` by real graph-work reductions.
 - **Memory:** the shipping default keeps the Luna poet payload on the heap
   (Track A peak `185.7 MB` vs librime peer `13.5 MB`) because the latency
-  ceilings bind. The `YUNE-POET/2` byte-backed opt-in
-  (`YUNE_POET_BYTE_BACKED=1`) measures `113.2 MB` with identical candidates
-  but currently costs `4.6x`/`3.2x` on the sentence rows; porting the
-  incremental sentence scratch to byte-backed storage is the named path to
-  having both. The browser `luna_pinyin` gap (`64 MiB` vs My RIME `16 MiB`)
-  is a separate lane. The Jyutping product path is **not** a like-for-like
+  ceilings bind. M55's historical `YUNE-POET/2` byte-backed opt-in
+  (`YUNE_POET_BYTE_BACKED=1`) measured `113.2 MB` with identical candidates
+  but cost `4.6x`/`3.2x` on the sentence rows. M59's sentence/phrase index
+  extends the current artifact to `YUNE-POET/3`; `/2` is deliberately rejected
+  and rebuilt, so the M55 numbers remain historical rather than being silently
+  attributed to `/3`. Porting the incremental sentence scratch to byte-backed
+  storage remains the named path to having both. The browser `luna_pinyin` gap
+  (`64 MiB` vs My RIME `16 MiB`) is a separate lane. The Jyutping product path is **not** a like-for-like
   comparison (TypeDuck multilingual dictionary); M47 byte-backed the shipping
   keyboard profile to about `67 MB` working set / `22 MB` private.
 - Track B TypeDuck-profile rows and browser startup are separate evidence lanes,

@@ -14,8 +14,8 @@ use std::fmt;
 use regex::Regex;
 use serde_yaml::{Mapping, Value};
 use yune_core::{
-    byte_backed_lookup_records_from_table_bin_byte_source, memory_probe_mark,
-    parse_poet_bin_summary, parse_rime_prism_runtime_payload,
+    build_prism_bin, byte_backed_lookup_records_from_table_bin_byte_source, memory_probe_mark,
+    parse_poet_bin_summary, parse_rime_prism_bin_payload, parse_rime_prism_runtime_payload,
     parse_rime_prism_runtime_payload_with_validation_source, parse_rime_reverse_bin_dictionary,
     parse_rime_table_bin_advanced_data_with_options, parse_rime_table_bin_dictionary,
     parse_rime_table_bin_metadata, rime_dict_source_checksum, rime_table_bin_dict_file_checksum,
@@ -23,9 +23,9 @@ use yune_core::{
     EchoTranslator, HistoryTranslator, OctagramGrammar, OctagramGrammarConfig,
     OctagramGrammarParseError, PoetByteSource, ReverseLookupFilter, ReverseLookupTranslator,
     RimePrismRuntimePayload, RimeTableBinAdvancedDataOptions, SchemaBehaviorProfile,
-    SchemaListTranslator, SimplifierFilter, SingleCharFilter, StaticTableTranslator,
-    SwitchTranslator, TableDictionary, TableDictionaryAdvancedData, TaggedFilter, Translator,
-    UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
+    SchemaListTranslator, SentencePolicy, SimplifierFilter, SingleCharFilter,
+    StaticTableTranslator, SwitchTranslator, TableDictionary, TableDictionaryAdvancedData,
+    TaggedFilter, Translator, UniquifierFilter, TYPEDUCK_SENTENCE_WORD_PENALTY,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -176,6 +176,21 @@ pub(crate) fn schema_behavior_profile_from_config(schema_config: &Value) -> Sche
     }
 }
 
+fn sentence_policy_from_schema(
+    schema_config: &Value,
+    component_name: &str,
+    enable_sentence: bool,
+) -> SentencePolicy {
+    if matches!(component_name, "script_translator" | "r10n_translator")
+        && enable_sentence
+        && schema_behavior_profile_from_config(schema_config) == SchemaBehaviorProfile::Standard
+    {
+        SentencePolicy::UpstreamScript
+    } else {
+        SentencePolicy::LegacyFallback
+    }
+}
+
 pub(crate) fn schema_component_prescription(component: &str) -> (&str, Option<&str>) {
     let Some((component_name, name_space)) = component.split_once('@') else {
         return (component, None);
@@ -220,8 +235,8 @@ fn install_schema_dictionary_translator_from_config(
         .and_then(|name| validate_data_resource_id(&name));
     let is_typeduck_jyut6ping3_profile =
         is_typeduck_jyut6ping3_profile(schema_config, user_dict_name.as_deref());
-    let is_upstream_luna_pinyin_profile =
-        is_upstream_luna_pinyin_profile(schema_config, user_dict_name.as_deref(), component_name);
+    let is_luna_pinyin_dictionary_translator =
+        component_name == "script_translator" && user_dict_name.as_deref() == Some("luna_pinyin");
     let cache_key =
         schema_dictionary_translator_cache_key(schema_config, component_name, name_space);
     let enable_charset_filter = find_config_value(
@@ -234,6 +249,8 @@ fn install_schema_dictionary_translator_from_config(
         find_config_value(schema_config, &format!("{name_space}/enable_sentence"))
             .and_then(config_scalar_bool)
             .unwrap_or(true);
+    let sentence_policy =
+        sentence_policy_from_schema(schema_config, component_name, enable_sentence);
     let sentence_over_completion = find_config_value(
         schema_config,
         &format!("{name_space}/sentence_over_completion"),
@@ -430,7 +447,9 @@ fn install_schema_dictionary_translator_from_config(
                     prism_payload,
                 )
             }
-            (_, _, Some(dictionary)) => StaticTableTranslator::from_dictionary(dictionary),
+            (_, _, Some(dictionary)) => {
+                source_dictionary_translator(dictionary, &spelling_algebra, sentence_policy)
+            }
             (_, _, None) => {
                 record_dictionary_load_failure(
                     session,
@@ -448,6 +467,7 @@ fn install_schema_dictionary_translator_from_config(
     .with_dynamic_correction_lookup(is_typeduck_jyut6ping3_profile)
     .with_charset_filter(enable_charset_filter)
     .with_sentence(enable_sentence)
+    .with_sentence_policy(sentence_policy)
     .with_sentence_over_completion(sentence_over_completion)
     .with_delimiters(delimiters)
     .with_tags(tags)
@@ -471,13 +491,20 @@ fn install_schema_dictionary_translator_from_config(
     if let Some(limit) = prediction_candidate_limit {
         translator = translator.with_prediction_candidate_limit(limit);
     }
-    if is_upstream_luna_pinyin_profile {
-        let (sentence_vocabulary, abbreviation_vocabulary) = load_luna_pinyin_preset_vocabularies();
+    if sentence_policy == SentencePolicy::UpstreamScript {
+        let sentence_vocabulary = user_dict_name
+            .as_deref()
+            .map(load_dictionary_preset_vocabulary)
+            .unwrap_or_default();
         if !sentence_vocabulary.is_empty() {
             translator = translator.with_preset_vocabulary(sentence_vocabulary);
         }
-        if !abbreviation_vocabulary.is_empty() {
-            translator = translator.with_abbreviation_preset_vocabulary(abbreviation_vocabulary);
+        if is_luna_pinyin_dictionary_translator {
+            let abbreviation_vocabulary = load_m42_luna_pinyin_abbreviation_vocabulary();
+            if !abbreviation_vocabulary.is_empty() {
+                translator =
+                    translator.with_abbreviation_preset_vocabulary(abbreviation_vocabulary);
+            }
         }
         if let Some((source, checksum)) = poet_source {
             translator = translator.with_upstream_sentence_poet_source(source, checksum);
@@ -507,6 +534,42 @@ fn install_schema_dictionary_translator_from_config(
             .insert(cache_key, Arc::clone(&translator));
     }
     session.engine.add_shared_translator(translator);
+}
+
+fn source_script_translator(
+    dictionary: TableDictionary,
+    spelling_algebra: &[String],
+) -> StaticTableTranslator {
+    // Source fallback has no deployed prism artifact, but script translation
+    // still needs the same surface graph as compiled storage. Build a bounded,
+    // in-memory prism from the exact syllabary order consumed by the compact
+    // source store; generated bytes are internal and cannot be malformed.
+    let mut seen = HashSet::new();
+    let syllabary = dictionary
+        .entries()
+        .iter()
+        .filter(|entry| !entry.code.is_empty() && seen.insert(entry.code.clone()))
+        .map(|entry| entry.code.clone())
+        .collect::<Vec<_>>();
+    let prism = parse_rime_prism_bin_payload(build_prism_bin(&syllabary, spelling_algebra, 0, 0))
+        .expect("Yune-generated source-fallback prism should parse");
+    StaticTableTranslator::from_compact_dictionary(dictionary, Some(prism))
+}
+
+fn source_dictionary_translator(
+    dictionary: TableDictionary,
+    spelling_algebra: &[String],
+    sentence_policy: SentencePolicy,
+) -> StaticTableTranslator {
+    let toned = dictionary
+        .entries()
+        .iter()
+        .any(|entry| entry.code.bytes().any(|byte| byte.is_ascii_digit()));
+    if sentence_policy == SentencePolicy::UpstreamScript && toned {
+        source_script_translator(dictionary, spelling_algebra)
+    } else {
+        StaticTableTranslator::from_dictionary(dictionary)
+    }
 }
 
 fn cached_dictionary_translator(cache_key: &str) -> Option<SharedTranslator> {
@@ -557,6 +620,15 @@ fn schema_dictionary_translator_cache_key(
         "reverse",
         &format!("{dictionary_name}.reverse.bin"),
     );
+    append_runtime_file_metadata_signature(
+        &mut parts,
+        "poet",
+        &format!("{dictionary_name}.poet.bin"),
+    );
+    parts.push(format!(
+        "poet_byte_backed={}",
+        u8::from(compiled_poet_consumption_enabled())
+    ));
     if let Some(language) = schema_octagram_language(schema_config) {
         if let Some(language) = validate_data_resource_id(&language) {
             append_runtime_file_metadata_signature(
@@ -907,30 +979,6 @@ fn schema_yune_profile(schema_config: &Value) -> Option<String> {
     find_config_value(schema_config, "yune/profile")
         .or_else(|| find_config_value(schema_config, "yune_profile"))
         .and_then(config_scalar_string)
-}
-
-fn is_upstream_luna_pinyin_profile(
-    schema_config: &Value,
-    dictionary_name: Option<&str>,
-    component_name: &str,
-) -> bool {
-    if component_name != "script_translator" || dictionary_name != Some("luna_pinyin") {
-        return false;
-    }
-    find_config_value(schema_config, "schema/schema_id")
-        .and_then(config_scalar_string)
-        .is_some_and(|schema_id| {
-            schema_id == "luna_pinyin"
-                || is_web04_luna_pinyin_octagram_profile(schema_config, &schema_id)
-        })
-}
-
-fn is_web04_luna_pinyin_octagram_profile(schema_config: &Value, schema_id: &str) -> bool {
-    // Presence-only on purpose: an invalid `grammar/language` must still enter
-    // the Luna quality path so `load_schema_octagram_grammar` records a visible
-    // grammar deferral instead of the profile silently skipping the block.
-    // Resource-id validation stays in the loader, before any filesystem access.
-    schema_id == "luna_pinyin_octagram" && schema_octagram_language(schema_config).is_some()
 }
 
 fn spelling_algebra_for_dictionary(schema_config: &Value, name_space: &str) -> Vec<String> {
@@ -2400,6 +2448,20 @@ fn load_schema_preset_vocabulary(vocabulary_name: &str) -> Vec<yune_core::Preset
     yune_core::parse_rime_preset_vocabulary_entries(&source)
 }
 
+fn load_dictionary_preset_vocabulary(
+    dictionary_name: &str,
+) -> Vec<yune_core::PresetVocabularyEntry> {
+    let Some(source) = load_schema_source_dictionary_yaml(dictionary_name) else {
+        return Vec::new();
+    };
+    let Some(vocabulary_name) = source_dictionary_header_dependencies(&source)
+        .and_then(|dependencies| dependencies.preset_vocabulary)
+    else {
+        return Vec::new();
+    };
+    load_schema_preset_vocabulary(&vocabulary_name)
+}
+
 pub(crate) fn load_luna_pinyin_preset_vocabularies() -> (
     Vec<yune_core::PresetVocabularyEntry>,
     Vec<yune_core::PresetVocabularyEntry>,
@@ -2920,6 +2982,74 @@ fn recognizer_pattern_matches(pattern: &MatcherPattern, input: &str) -> bool {
 
 fn config_scalar_f32(value: &Value) -> Option<f32> {
     config_scalar_double(value).map(|number| number as f32)
+}
+
+#[cfg(test)]
+mod sentence_policy_tests {
+    use super::{sentence_policy_from_schema, source_script_translator, SentencePolicy};
+    use serde_yaml::Value;
+    use yune_core::{
+        CandidateSource, PresetVocabularyEntry, TableDictionary, TableEntry, Translator,
+    };
+
+    fn schema(schema_id: &str, profile: Option<&str>) -> Value {
+        let profile = profile
+            .map(|profile| format!("yune:\n  profile: {profile}\n"))
+            .unwrap_or_default();
+        serde_yaml::from_str(&format!(
+            "{profile}schema:\n  schema_id: {schema_id}\n  name: Policy fixture\n"
+        ))
+        .expect("sentence policy fixture should parse")
+    }
+
+    #[test]
+    fn upstream_script_policy_depends_on_component_config_and_profile_not_schema_id() {
+        for schema_id in ["jyut6ping3", "arbitrary_renamed_schema"] {
+            assert_eq!(
+                sentence_policy_from_schema(&schema(schema_id, None), "script_translator", true),
+                SentencePolicy::UpstreamScript,
+            );
+        }
+        assert_eq!(
+            sentence_policy_from_schema(&schema("plain", None), "r10n_translator", true),
+            SentencePolicy::UpstreamScript,
+        );
+        assert_eq!(
+            sentence_policy_from_schema(
+                &schema("arbitrary_renamed_schema", Some("typeduck_jyutping")),
+                "script_translator",
+                true,
+            ),
+            SentencePolicy::LegacyFallback,
+        );
+        assert_eq!(
+            sentence_policy_from_schema(&schema("plain", None), "table_translator", true),
+            SentencePolicy::LegacyFallback,
+        );
+        assert_eq!(
+            sentence_policy_from_schema(&schema("plain", None), "script_translator", false),
+            SentencePolicy::LegacyFallback,
+        );
+    }
+
+    #[test]
+    fn source_fallback_builds_the_script_surface_graph() {
+        let dictionary = TableDictionary::new([
+            TableEntry::new("bei1", "A", 100.0),
+            TableEntry::new("ng5", "M", 80.0),
+        ]);
+        let formulas = ["derive/\\d//".to_owned()];
+        let translator = source_script_translator(dictionary, &formulas)
+            .with_spelling_algebra(&formulas)
+            .with_sentence(true)
+            .with_sentence_policy(SentencePolicy::UpstreamScript)
+            .with_preset_vocabulary([PresetVocabularyEntry::new("AM", 1_000.0)])
+            .with_upstream_sentence_model(10);
+
+        let candidates = translator.translate("being");
+        assert_eq!(candidates[0].text, "AM");
+        assert_eq!(candidates[0].source, CandidateSource::Table);
+    }
 }
 
 #[cfg(test)]

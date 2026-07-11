@@ -443,7 +443,7 @@ fn web04_luna_pinyin_octagram_invalid_grammar_language_fails_visibly() {
 }
 
 #[test]
-fn schema_octagram_loading_does_not_sweep_random_luna_pinyin_family_schema() {
+fn schema_octagram_loading_follows_explicit_config_for_a_renamed_standard_schema() {
     let _guard = test_guard();
     let (temp, shared, staging, user) = write_luna_octagram_test_runtime(
         "resource-id-random-luna-family",
@@ -464,7 +464,7 @@ fn schema_octagram_loading_does_not_sweep_random_luna_pinyin_family_schema() {
     install_schema_translator_chain(&mut session, "luna_pinyin_experimental");
     session.engine.process_sequence("jtyh");
 
-    assert_ne!(
+    assert_eq!(
         session
             .engine
             .context()

@@ -5,6 +5,7 @@ use crate::dictionary::compiled::{
 use crate::dictionary::double_array::{DartsDoubleArray, DartsMatch};
 use crate::{MemoryOwnerClass, MemoryOwnerRow};
 use std::mem;
+use std::ops::ControlFlow;
 use std::sync::Arc;
 
 const MAX_CORRECTION_COUNT: usize = 4096;
@@ -120,6 +121,54 @@ impl RimePrismBinPayload {
             return Vec::new();
         };
         self.lookup_canonical_codes_for_index(spelling_index as usize, syllabary_codes, limit)
+    }
+
+    fn visit_canonical_codes<'a, B, F>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        visitor: &mut F,
+    ) -> ControlFlow<B>
+    where
+        F: FnMut(PrismLookupCode<'a>) -> ControlFlow<B>,
+    {
+        let Some(spelling_index) = self
+            .double_array
+            .as_ref()
+            .and_then(|double_array| double_array.exact_match(spelling))
+        else {
+            return ControlFlow::Continue(());
+        };
+        self.visit_canonical_codes_for_index(spelling_index as usize, syllabary_codes, visitor)
+    }
+
+    fn visit_canonical_codes_for_index<'a, B, F>(
+        &self,
+        spelling_index: usize,
+        syllabary_codes: &'a [String],
+        visitor: &mut F,
+    ) -> ControlFlow<B>
+    where
+        F: FnMut(PrismLookupCode<'a>) -> ControlFlow<B>,
+    {
+        for descriptor in self.spelling_map.get(spelling_index).into_iter().flatten() {
+            let Some(syllable_index) = usize::try_from(descriptor.syllable_id).ok() else {
+                continue;
+            };
+            let Some(code) = syllabary_codes.get(syllable_index) else {
+                continue;
+            };
+            match visitor(PrismLookupCode {
+                code,
+                abbreviation: descriptor.spelling_type == 2,
+                correction: descriptor.is_correction,
+                credibility: descriptor.credibility,
+            }) {
+                ControlFlow::Continue(()) => {}
+                ControlFlow::Break(value) => return ControlFlow::Break(value),
+            }
+        }
+        ControlFlow::Continue(())
     }
 
     fn lookup_canonical_codes_for_index<'a>(
@@ -340,6 +389,25 @@ impl RimePrismRuntimePayload {
         }
     }
 
+    /// Visits canonical codes for an exact deployed spelling in descriptor
+    /// source order. Unlike the vector-returning lookup helpers, this path does
+    /// not materialize every descriptor and permits the caller to stop early.
+    pub(crate) fn visit_canonical_codes<'a, B>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        mut visitor: impl FnMut(PrismLookupCode<'a>) -> ControlFlow<B>,
+    ) -> ControlFlow<B> {
+        match &self.storage {
+            RimePrismRuntimeStorage::Owned(payload) => {
+                payload.visit_canonical_codes(spelling, syllabary_codes, &mut visitor)
+            }
+            RimePrismRuntimeStorage::ByteBacked(payload) => {
+                payload.visit_canonical_codes(spelling, syllabary_codes, &mut visitor)
+            }
+        }
+    }
+
     /// Returns deployed spelling matches for every prism key that is a prefix
     /// of `spelling`. The Darts traversal is linear in the input length and
     /// avoids probing every UTF-8 boundary or materializing a global surface
@@ -449,6 +517,86 @@ impl ByteBackedRimePrismPayload {
             return Vec::new();
         };
         self.lookup_canonical_codes_for_index(spelling_index, syllabary_codes, limit)
+    }
+
+    fn visit_canonical_codes<'a, B, F>(
+        &self,
+        spelling: &str,
+        syllabary_codes: &'a [String],
+        visitor: &mut F,
+    ) -> ControlFlow<B>
+    where
+        F: FnMut(PrismLookupCode<'a>) -> ControlFlow<B>,
+    {
+        let Some(spelling_index) = self
+            .double_array
+            .as_ref()
+            .and_then(|double_array| double_array.exact_match(self.source.bytes(), spelling))
+        else {
+            return ControlFlow::Continue(());
+        };
+        let Ok(spelling_index) = usize::try_from(spelling_index) else {
+            return ControlFlow::Continue(());
+        };
+        self.visit_canonical_codes_for_index(spelling_index, syllabary_codes, visitor)
+    }
+
+    fn visit_canonical_codes_for_index<'a, B, F>(
+        &self,
+        spelling_index: usize,
+        syllabary_codes: &'a [String],
+        visitor: &mut F,
+    ) -> ControlFlow<B>
+    where
+        F: FnMut(PrismLookupCode<'a>) -> ControlFlow<B>,
+    {
+        if let ByteBackedPrismSpellingMap::Identity {
+            spelling_count,
+            num_syllables,
+        } = self.spelling_map
+        {
+            if spelling_index >= spelling_count
+                || spelling_index >= num_syllables
+                || spelling_index >= syllabary_codes.len()
+            {
+                return ControlFlow::Continue(());
+            }
+            return visitor(PrismLookupCode {
+                code: &syllabary_codes[spelling_index],
+                abbreviation: false,
+                correction: false,
+                credibility: 0.0,
+            });
+        }
+        let Some((descriptor_offset, descriptor_count)) = self
+            .spelling_map
+            .descriptor_header(self.source.bytes(), spelling_index)
+        else {
+            return ControlFlow::Continue(());
+        };
+        for index in 0..descriptor_count {
+            let Some(descriptor) =
+                read_runtime_spelling_descriptor(self.source.bytes(), descriptor_offset, index)
+            else {
+                return ControlFlow::Continue(());
+            };
+            let Some(syllable_index) = usize::try_from(descriptor.syllable_id).ok() else {
+                continue;
+            };
+            let Some(code) = syllabary_codes.get(syllable_index) else {
+                continue;
+            };
+            match visitor(PrismLookupCode {
+                code,
+                abbreviation: descriptor.spelling_type == 2,
+                correction: descriptor.is_correction,
+                credibility: descriptor.credibility,
+            }) {
+                ControlFlow::Continue(()) => {}
+                ControlFlow::Break(value) => return ControlFlow::Break(value),
+            }
+        }
+        ControlFlow::Continue(())
     }
 
     fn lookup_canonical_codes_for_index<'a>(
@@ -1392,6 +1540,126 @@ fn map_metadata_error(error: super::RimeCompiledMetadataError) -> RimePrismBinPa
         }
         super::RimeCompiledMetadataError::MissingRequiredSection => {
             RimePrismBinParseError::MissingRequiredSection
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::dictionary::build_prism_bin;
+
+    #[derive(Debug)]
+    struct TestPrismByteSource {
+        bytes: Arc<[u8]>,
+    }
+
+    impl CompactTableByteSource for TestPrismByteSource {
+        fn bytes(&self) -> &[u8] {
+            &self.bytes
+        }
+
+        fn storage_label(&self) -> &'static str {
+            "byte_backed"
+        }
+
+        fn mapping_mode(&self) -> &'static str {
+            "test"
+        }
+    }
+
+    fn runtime_payloads(
+        syllabary_codes: &[String],
+        algebra_formulas: &[String],
+    ) -> [(&'static str, RimePrismRuntimePayload); 2] {
+        let bytes = build_prism_bin(syllabary_codes, algebra_formulas, 1, 2);
+        let owned = parse_rime_prism_bin_payload(&bytes)
+            .map(RimePrismRuntimePayload::from)
+            .expect("generated owned prism should parse");
+        let byte_backed = parse_rime_prism_runtime_payload(Arc::new(TestPrismByteSource {
+            bytes: Arc::from(bytes),
+        }))
+        .expect("generated byte-backed prism should parse");
+        [("owned", owned), ("byte-backed", byte_backed)]
+    }
+
+    #[test]
+    fn canonical_code_visitor_preserves_source_order_and_stops_early() {
+        let syllabary_codes = ["ai", "an", "ao"].map(str::to_owned);
+        let algebra_formulas =
+            ["derive/^ai$/a/", "derive/^an$/a/abbrev", "derive/^ao$/a/"].map(str::to_owned);
+
+        for (storage, runtime) in runtime_payloads(&syllabary_codes, &algebra_formulas) {
+            let existing = runtime
+                .lookup_canonical_codes("a", &syllabary_codes)
+                .into_iter()
+                .map(|lookup| {
+                    (
+                        lookup.code.to_owned(),
+                        lookup.abbreviation,
+                        lookup.correction,
+                        lookup.credibility.to_bits(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                existing
+                    .iter()
+                    .map(|(code, abbreviation, _, _)| (code.as_str(), *abbreviation))
+                    .collect::<Vec<_>>(),
+                [("ai", false), ("an", true), ("ao", false)],
+                "existing lookup order should remain unchanged for {storage} storage"
+            );
+
+            let mut visited = Vec::new();
+            let outcome = runtime.visit_canonical_codes("a", &syllabary_codes, |lookup| {
+                visited.push((
+                    lookup.code.to_owned(),
+                    lookup.abbreviation,
+                    lookup.correction,
+                    lookup.credibility.to_bits(),
+                ));
+                if visited.len() == 2 {
+                    ControlFlow::Break("enough")
+                } else {
+                    ControlFlow::Continue(())
+                }
+            });
+
+            assert_eq!(outcome, ControlFlow::Break("enough"), "{storage}");
+            assert_eq!(
+                visited,
+                existing[..2],
+                "visitor should expose source order without reading the trailing descriptor for {storage} storage"
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_code_visitor_supports_identity_maps_and_missing_spellings() {
+        let syllabary_codes = ["z", "a"].map(str::to_owned);
+
+        for (storage, runtime) in runtime_payloads(&syllabary_codes, &[]) {
+            let mut visited = Vec::new();
+            let outcome: ControlFlow<()> =
+                runtime.visit_canonical_codes("a", &syllabary_codes, |lookup| {
+                    visited.push((lookup.code.to_owned(), lookup.abbreviation));
+                    ControlFlow::Continue(())
+                });
+            assert_eq!(outcome, ControlFlow::Continue(()), "{storage}");
+            assert_eq!(visited, [("a".to_owned(), false)], "{storage}");
+
+            let mut invoked = false;
+            let missing: ControlFlow<()> =
+                runtime.visit_canonical_codes("missing", &syllabary_codes, |_| {
+                    invoked = true;
+                    ControlFlow::Break(())
+                });
+            assert_eq!(missing, ControlFlow::Continue(()), "{storage}");
+            assert!(
+                !invoked,
+                "missing spelling should not invoke {storage} visitor"
+            );
         }
     }
 }

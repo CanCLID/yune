@@ -3303,8 +3303,11 @@ fn explicit_false_spelling_algebra_keeps_surface_index_unallocated_until_enabled
 
     let enabled = disabled.with_leading_syllable_reachability(true);
     let enabled_seed = owner(&enabled, "translator.leading_fetch_seed");
-    assert!(enabled_seed.estimated_bytes > 0);
-    assert!(enabled_seed.item_count > 0);
+    assert_eq!(
+        (enabled_seed.estimated_bytes, enabled_seed.item_count),
+        (0, 0),
+        "a checksum-current compact prism must remain the authoritative transformed-surface index"
+    );
     let enabled_cold_index = owner(&enabled, "translator.leading_fetch_index");
     assert_eq!(
         (
@@ -3312,12 +3315,18 @@ fn explicit_false_spelling_algebra_keeps_surface_index_unallocated_until_enabled
             enabled_cold_index.item_count
         ),
         (0, 0),
-        "late enabling reconstructs only the seed; the expanded index remains cold"
+        "late enabling must not reconstruct a redundant syllabary seed or expanded index"
     );
     assert_surface_leading_single(&enabled, "hknivs", "\u{597d}", "hao", 2);
     let after_enabled_lookup = owner(&enabled, "translator.leading_fetch_index");
-    assert!(after_enabled_lookup.estimated_bytes > 0);
-    assert!(after_enabled_lookup.item_count > 0);
+    assert_eq!(
+        (
+            after_enabled_lookup.estimated_bytes,
+            after_enabled_lookup.item_count
+        ),
+        (0, 0),
+        "the direct prism lookup must stay heap-index-free after transformed reachability"
+    );
 }
 
 #[test]
@@ -3629,9 +3638,10 @@ fn replacing_initialized_algebra_with_empty_or_invalid_formulas_resets_surface_c
     };
 
     assert_surface_leading_single(&translator, "xy", "\u{9577}", "long", 1);
-    assert!(
-        owner_stats(&translator, "translator.leading_fetch_index").0 > 0,
-        "control lookup must initialize the transformed index and max-prefix cache"
+    assert_eq!(
+        owner_stats(&translator, "translator.leading_fetch_index"),
+        (0, 0),
+        "a current compact prism must resolve the transformed surface without a redundant heap index"
     );
 
     let reset = translator.with_spelling_algebra(&[]);
@@ -4518,6 +4528,59 @@ fn oversized_prefix_count_and_key_bytes_bypass_the_cache() {
         );
         assert_eq!(prefix_fallback_cache_owner_snapshot(&translator), (0, 0));
     }
+}
+
+#[test]
+fn bounded_prefix_fallback_reaches_valid_rows_after_more_than_64_filtered_aliases() {
+    let _guard = super::m37_metrics_test_guard();
+    let formulas = vec!["abbrev/^([a-z]).+$/$1/".to_owned()];
+    let filtered = (0..80).map(|index| {
+        TableEntry::new(
+            format!("a{index:03}"),
+            format!("\u{3400}FILTERED{index:03}"),
+            400.0 - index as f32,
+        )
+    });
+    let visible = (0..20).map(|index| {
+        TableEntry::new(
+            format!("az{index:03}"),
+            format!("VISIBLE{index:03}"),
+            200.0 - index as f32,
+        )
+    });
+    let translator = compact_prefix_fallback_test_translator(filtered.chain(visible), &formulas);
+    let request = |limit: CandidateRequest| {
+        translator.translate_with_context_and_request(
+            "ax",
+            &Status::default(),
+            &HashMap::new(),
+            &Context::default(),
+            limit.with_filter_extended_cjk(true),
+        )
+    };
+
+    let complete = request(CandidateRequest::unbounded());
+    crate::m37_metrics_enable(true);
+    crate::m37_metrics_reset();
+    let bounded = request(CandidateRequest::bounded(10));
+    let metrics = crate::m37_metrics_snapshot();
+    crate::m37_metrics_enable(false);
+
+    assert_eq!(complete.candidates.len(), 20);
+    assert_eq!(
+        candidate_shape_without_quality(bounded.candidates.clone()),
+        candidate_shape_without_quality(complete.candidates[..10].iter().cloned())
+    );
+    assert!(!bounded.is_complete);
+    assert!(
+        metrics.lookup_views_visited <= 128,
+        "the 100-row first pass plus ten locator replays must stay bounded; eager descriptor revalidation would exceed this budget: {metrics:?}"
+    );
+    assert!(
+        metrics.prefix_fallback_views_visited <= 40,
+        "the bounded collector must stop on its candidate window, not materialize every alias: {metrics:?}"
+    );
+    assert_eq!(prefix_fallback_cache_owner_snapshot(&translator), (0, 0));
 }
 
 #[test]

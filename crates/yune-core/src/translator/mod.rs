@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet, VecDeque};
 use std::mem;
+use std::ops::ControlFlow;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -547,6 +548,17 @@ struct BoundedPrefixFallbackCacheRequest<'input, 'request> {
     prefixes: &'request [LookupPrefixSpec<'input>],
     limit: usize,
     fallback_start: Option<Instant>,
+}
+
+struct BoundedPrefixFallbackStreamingRequest<'input, 'request> {
+    input: &'input str,
+    lookup_code: &'input str,
+    filter_by_charset: bool,
+    existing_candidates: &'request [Candidate],
+    admitted_span_candidates: &'request [Candidate],
+    limit: usize,
+    pending_cap: usize,
+    per_fetch_cap: usize,
 }
 
 struct LookupPrefixSpec<'a> {
@@ -1909,8 +1921,8 @@ impl StaticTableTranslator {
 
     fn requires_surface_fetch_index_seed(&self) -> bool {
         self.spelling_algebra_active
-            && (self.leading_syllable_reachability
-                || (self.prefix_fallback && !self.direct_prism_surface_mapping_current))
+            && !self.direct_prism_surface_mapping_current
+            && (self.leading_syllable_reachability || self.prefix_fallback)
     }
 
     fn deployed_algebra_leading_fetch_index(
@@ -3978,13 +3990,6 @@ impl StaticTableTranslator {
         request_limit: Option<usize>,
     ) -> PrefixFallbackProbe {
         let fallback_start = crate::m37_metrics_enabled().then(Instant::now);
-        let prefixes = self.valid_lookup_prefixes(lookup_code);
-        if prefixes.is_empty() {
-            if let Some(start) = fallback_start {
-                crate::m37_record_prefix_fallback(start.elapsed(), 0, 0);
-            }
-            return PrefixFallbackProbe::NoPrefix;
-        }
         let seen_texts = existing_candidates
             .iter()
             .map(|candidate| candidate.text.as_str())
@@ -4010,18 +4015,20 @@ impl StaticTableTranslator {
                 }
             })
             .unwrap_or(usize::MAX);
+        let mut saw_prefix = false;
         let mut views_visited = 0usize;
         let mut truncated = false;
-        for prefix_spec in &prefixes {
+        let mut found_unique = false;
+        let _: ControlFlow<()> = self.visit_valid_lookup_prefixes(lookup_code, |prefix_spec| {
+            saw_prefix = true;
             let exact_start = LookupTimer::start();
             let mut exact_candidates = 0usize;
             let mut emitted_for_fetch_code = 0usize;
-            let mut found_unique = false;
             for candidate in self
                 .storage
                 .exact_candidates(&prefix_spec.fetch_code)
                 .filter(|candidate| {
-                    self.prefix_fallback_view_is_allowed(prefix_spec, candidate, filter_by_charset)
+                    self.prefix_fallback_view_is_allowed(&prefix_spec, candidate, filter_by_charset)
                 })
             {
                 views_visited += 1;
@@ -4038,20 +4045,24 @@ impl StaticTableTranslator {
             }
             self.storage
                 .record_exact_lookup(exact_start.elapsed(), exact_candidates);
-            if found_unique {
-                if let Some(start) = fallback_start {
-                    crate::m37_record_prefix_fallback(start.elapsed(), views_visited, 1);
-                }
-                return PrefixFallbackProbe::Found;
+            if found_unique || truncated {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
             }
-            if truncated {
-                break;
+        });
+        if found_unique {
+            if let Some(start) = fallback_start {
+                crate::m37_record_prefix_fallback(start.elapsed(), views_visited, 1);
             }
+            return PrefixFallbackProbe::Found;
         }
         if let Some(start) = fallback_start {
             crate::m37_record_prefix_fallback(start.elapsed(), views_visited, 0);
         }
-        if truncated {
+        if !saw_prefix {
+            PrefixFallbackProbe::NoPrefix
+        } else if truncated {
             PrefixFallbackProbe::Truncated
         } else {
             PrefixFallbackProbe::Exhausted
@@ -4123,6 +4134,162 @@ impl StaticTableTranslator {
                 truncated,
             }),
             views_visited,
+        )
+    }
+
+    fn bounded_prefix_fallback_candidates_streaming(
+        &self,
+        request: BoundedPrefixFallbackStreamingRequest<'_, '_>,
+    ) -> (PrefixFallbackBatch, usize, bool) {
+        let BoundedPrefixFallbackStreamingRequest {
+            input,
+            lookup_code,
+            filter_by_charset,
+            existing_candidates,
+            admitted_span_candidates,
+            limit,
+            pending_cap,
+            per_fetch_cap,
+        } = request;
+        struct PendingPrefixCandidate {
+            fetch_code: String,
+            candidate_index: usize,
+            consumed_lookup_len: usize,
+            consumed_input_len: usize,
+            recompose_on_default: bool,
+            raw_quality: f32,
+            emission_order: usize,
+        }
+
+        let mut seen_texts = existing_candidates
+            .iter()
+            .map(|candidate| candidate.text.clone())
+            .collect::<HashSet<_>>();
+        let full_span_texts = admitted_span_candidates
+            .iter()
+            .filter(|candidate| candidate.source == CandidateSource::Table)
+            .map(|candidate| candidate.text.as_str())
+            .collect::<HashSet<_>>();
+        let input_base = input.len().saturating_sub(lookup_code.len());
+        let mut pending = Vec::<PendingPrefixCandidate>::new();
+        let mut emission_order = 0usize;
+        let mut views_visited = 0usize;
+        let mut truncated = false;
+        let mut saw_prefix = false;
+        let _: ControlFlow<()> = self.visit_valid_lookup_prefixes(lookup_code, |prefix_spec| {
+            saw_prefix = true;
+            let exact_start = LookupTimer::start();
+            let mut exact_candidates = 0usize;
+            let mut emitted_for_fetch_code = 0usize;
+            let mut global_truncated = false;
+            for (candidate_index, candidate) in self
+                .storage
+                .exact_candidates(&prefix_spec.fetch_code)
+                .enumerate()
+            {
+                if !self.prefix_fallback_view_is_allowed(
+                    &prefix_spec,
+                    &candidate,
+                    filter_by_charset,
+                ) {
+                    continue;
+                }
+                views_visited += 1;
+                exact_candidates += 1;
+                emitted_for_fetch_code += 1;
+                let consumed_input_len = if full_span_texts.contains(candidate.text()) {
+                    input.len()
+                } else {
+                    input_base.saturating_add(prefix_spec.consumed_lookup_len)
+                };
+                let spelling_abbreviation =
+                    self.is_spelling_abbreviation_view(prefix_spec.input_prefix, &candidate);
+                let recompose_on_default = consumed_input_len > 1
+                    && !prefix_spec
+                        .surface_fetch
+                        .as_ref()
+                        .is_some_and(|fetch| fetch.abbreviation)
+                    && !spelling_abbreviation;
+                let raw_quality = candidate.raw_quality();
+                pending.push(PendingPrefixCandidate {
+                    fetch_code: prefix_spec.fetch_code.clone(),
+                    candidate_index,
+                    consumed_lookup_len: prefix_spec.consumed_lookup_len,
+                    consumed_input_len,
+                    recompose_on_default,
+                    raw_quality,
+                    emission_order,
+                });
+                emission_order += 1;
+                if pending.len() >= pending_cap {
+                    truncated = true;
+                    global_truncated = true;
+                    break;
+                }
+                if emitted_for_fetch_code >= per_fetch_cap {
+                    truncated = true;
+                    break;
+                }
+            }
+            self.storage
+                .record_exact_lookup(exact_start.elapsed(), exact_candidates);
+            if global_truncated {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        });
+
+        pending.sort_by(|left, right| {
+            right
+                .consumed_input_len
+                .cmp(&left.consumed_input_len)
+                .then_with(|| {
+                    right
+                        .raw_quality
+                        .partial_cmp(&left.raw_quality)
+                        .unwrap_or(Ordering::Equal)
+                })
+                .then_with(|| left.emission_order.cmp(&right.emission_order))
+        });
+        let pending_len = pending.len();
+        let mut candidates = Vec::new();
+        for (index, pending) in pending.into_iter().enumerate() {
+            let Some(candidate_view) = self
+                .storage
+                .exact_candidates(&pending.fetch_code)
+                .nth(pending.candidate_index)
+            else {
+                continue;
+            };
+            let mut candidate = self.candidate_for_lookup_view(
+                &pending.fetch_code,
+                &candidate_view,
+                &lookup_code[..pending.consumed_lookup_len],
+                None,
+                0.0,
+            );
+            if !seen_texts.insert(candidate.text.clone()) {
+                continue;
+            }
+            candidate.source = CandidateSource::PartialTable {
+                consumed: pending.consumed_input_len,
+                recompose_on_default: pending.recompose_on_default,
+            };
+            candidates.push(candidate);
+            if candidates.len() >= limit {
+                truncated |= index + 1 < pending_len;
+                break;
+            }
+        }
+        (
+            PrefixFallbackBatch {
+                candidates,
+                truncated,
+                owns_reachability: saw_prefix,
+            },
+            views_visited,
+            saw_prefix,
         )
     }
 
@@ -4312,6 +4479,43 @@ impl StaticTableTranslator {
         Some(batch)
     }
 
+    fn direct_prism_prefix_family_exceeds_cache_limit(
+        &self,
+        lookup_code: &str,
+        limit: usize,
+    ) -> bool {
+        if !self.direct_prism_surface_mapping_current {
+            return false;
+        }
+        let (Some(prism), Some(syllabary_codes)) =
+            (self.prism_payload.as_ref(), self.storage.syllabary_codes())
+        else {
+            return false;
+        };
+        let mut boundaries = lookup_code
+            .char_indices()
+            .map(|(index, _)| index)
+            .filter(|index| *index > 0)
+            .collect::<Vec<_>>();
+        boundaries.reverse();
+        let mut descriptor_count = 0usize;
+        for end in boundaries {
+            let outcome: ControlFlow<()> =
+                prism.visit_canonical_codes(&lookup_code[..end], syllabary_codes, |_| {
+                    descriptor_count = descriptor_count.saturating_add(1);
+                    if descriptor_count > limit {
+                        ControlFlow::Break(())
+                    } else {
+                        ControlFlow::Continue(())
+                    }
+                });
+            if matches!(outcome, ControlFlow::Break(())) {
+                return true;
+            }
+        }
+        false
+    }
+
     fn prefix_fallback_candidates(
         &self,
         input: &str,
@@ -4322,6 +4526,102 @@ impl StaticTableTranslator {
         request_limit: Option<usize>,
     ) -> PrefixFallbackBatch {
         let fallback_start = crate::m37_metrics_enabled().then(Instant::now);
+        let bounded_limit = if self.bounds_compact_fallback_expansion() {
+            request_limit.filter(|limit| *limit > 0)
+        } else {
+            None
+        };
+        if let Some(limit) = bounded_limit {
+            let pending_cap = limit
+                .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
+                .max(limit);
+            let mut cache_prefixes = Vec::new();
+            let cache_probe_complete = if self.direct_prism_prefix_family_exceeds_cache_limit(
+                lookup_code,
+                PREFIX_FALLBACK_CACHE_MAX_PREFIXES,
+            ) {
+                false
+            } else {
+                matches!(
+                    self.visit_valid_lookup_prefixes(lookup_code, |prefix| {
+                        cache_prefixes.push(prefix);
+                        if cache_prefixes.len() > PREFIX_FALLBACK_CACHE_MAX_PREFIXES {
+                            ControlFlow::Break(())
+                        } else {
+                            ControlFlow::Continue(())
+                        }
+                    }),
+                    ControlFlow::Continue(())
+                )
+            };
+            if cache_probe_complete && cache_prefixes.is_empty() {
+                if let Some(start) = fallback_start {
+                    crate::m37_record_prefix_fallback(start.elapsed(), 0, 0);
+                }
+                return PrefixFallbackBatch {
+                    candidates: Vec::new(),
+                    truncated: false,
+                    owns_reachability: false,
+                };
+            }
+            let cache_admitted = cache_probe_complete
+                && pending_cap <= PREFIX_FALLBACK_CACHE_MAX_ROWS
+                && prefix_fallback_cache_key_bytes(&cache_prefixes)
+                    <= PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES;
+            if cache_admitted {
+                if let Some(batch) = self.bounded_prefix_fallback_candidates_cached(
+                    BoundedPrefixFallbackCacheRequest {
+                        input,
+                        lookup_code,
+                        filter_by_charset,
+                        existing_candidates,
+                        admitted_span_candidates,
+                        prefixes: &cache_prefixes,
+                        limit,
+                        fallback_start,
+                    },
+                ) {
+                    return batch;
+                }
+            }
+            let per_fetch_cap =
+                if input.chars().count() <= PREFIX_FALLBACK_BOUNDED_REACHABILITY_MAX_INPUT_CHARS {
+                    PREFIX_FALLBACK_BOUNDED_REACHABILITY_CANDIDATES_PER_FETCH_CODE
+                } else {
+                    PREFIX_FALLBACK_BOUNDED_CANDIDATES_PER_FETCH_CODE
+                };
+            let (batch, views_visited, saw_prefix) = self
+                .bounded_prefix_fallback_candidates_streaming(
+                    BoundedPrefixFallbackStreamingRequest {
+                        input,
+                        lookup_code,
+                        filter_by_charset,
+                        existing_candidates,
+                        admitted_span_candidates,
+                        limit,
+                        pending_cap,
+                        per_fetch_cap,
+                    },
+                );
+            if !saw_prefix {
+                if let Some(start) = fallback_start {
+                    crate::m37_record_prefix_fallback(start.elapsed(), views_visited, 0);
+                }
+                return PrefixFallbackBatch {
+                    candidates: Vec::new(),
+                    truncated: false,
+                    owns_reachability: false,
+                };
+            }
+            if let Some(start) = fallback_start {
+                crate::m37_record_prefix_fallback(
+                    start.elapsed(),
+                    views_visited,
+                    batch.candidates.len(),
+                );
+            }
+            return batch;
+        }
         let prefixes = self.valid_lookup_prefixes(lookup_code);
         if prefixes.is_empty() {
             if let Some(start) = fallback_start {
@@ -4332,36 +4632,6 @@ impl StaticTableTranslator {
                 truncated: false,
                 owns_reachability: false,
             };
-        };
-        let bounded_limit = if self.bounds_compact_fallback_expansion() {
-            request_limit.filter(|limit| *limit > 0)
-        } else {
-            None
-        };
-        if let Some(limit) = bounded_limit {
-            let pending_cap = limit
-                .saturating_mul(PREFIX_FALLBACK_BOUNDED_PENDING_MULTIPLIER)
-                .max(limit);
-            let cache_admitted = pending_cap <= PREFIX_FALLBACK_CACHE_MAX_ROWS
-                && prefixes.len() <= PREFIX_FALLBACK_CACHE_MAX_PREFIXES
-                && prefix_fallback_cache_key_bytes(&prefixes)
-                    <= PREFIX_FALLBACK_CACHE_MAX_KEY_BYTES;
-            if cache_admitted {
-                if let Some(batch) = self.bounded_prefix_fallback_candidates_cached(
-                    BoundedPrefixFallbackCacheRequest {
-                        input,
-                        lookup_code,
-                        filter_by_charset,
-                        existing_candidates,
-                        admitted_span_candidates,
-                        prefixes: &prefixes,
-                        limit,
-                        fallback_start,
-                    },
-                ) {
-                    return batch;
-                }
-            }
         }
         let mut seen_texts = existing_candidates
             .iter()
@@ -4907,17 +5177,19 @@ impl StaticTableTranslator {
         })
     }
 
-    fn valid_lookup_prefixes<'a>(&self, lookup_code: &'a str) -> Vec<LookupPrefixSpec<'a>> {
+    fn visit_valid_lookup_prefixes<'a, B>(
+        &self,
+        lookup_code: &'a str,
+        mut visitor: impl FnMut(LookupPrefixSpec<'a>) -> ControlFlow<B>,
+    ) -> ControlFlow<B> {
         let mut boundaries = lookup_code
             .char_indices()
             .map(|(index, _)| index)
             .filter(|index| *index > 0)
             .collect::<Vec<_>>();
         boundaries.reverse();
-        let mut prefixes = Vec::new();
         for end in boundaries {
             let prefix = &lookup_code[..end];
-            let mut boundary_prefixes = Vec::new();
             let mut has_valid_normal = false;
             let mut has_valid_correction = false;
             let mut direct_normal_groups = HashSet::new();
@@ -4936,56 +5208,120 @@ impl StaticTableTranslator {
                 }
                 if has_direct_normal {
                     has_valid_normal = true;
-                    boundary_prefixes.push(LookupPrefixSpec {
+                    visitor(LookupPrefixSpec {
                         input_prefix: prefix,
                         fetch_code: prefix.to_owned(),
                         consumed_lookup_len: end,
                         surface_fetch: None,
-                    });
+                    })?;
                 }
             }
 
-            let mapped_fetches = if self.direct_prism_surface_mapping_current {
-                self.direct_no_algebra_fetch_codes(prefix)
-            } else if !self.spelling_algebra_active || self.leading_fetch_index_seed.is_some() {
-                self.leading_surface_fetch_codes(prefix)
-            } else {
-                Vec::new()
-            };
+            {
+                let mut seen_mapped_fetches = HashSet::new();
+                let mut visit_fetch = |fetch: LeadingFetchCode| {
+                    if direct_normal_groups.contains(&fetch.canonical_code) {
+                        return ControlFlow::Continue(());
+                    }
+                    if self.direct_prism_surface_mapping_current {
+                        // A checksum-current compact prism binds every descriptor
+                        // to the table syllabary. Prove at least one normal (or
+                        // correction-only) group for this boundary before claiming
+                        // ownership, then let the consumer's exact scan filter any
+                        // malformed sibling descriptor. This avoids re-running the
+                        // same binary search for thousands of aliases.
+                        let boundary_class_proven = if fetch.injectable {
+                            has_valid_normal
+                        } else {
+                            has_valid_correction
+                        };
+                        if !boundary_class_proven && !self.storage.has_code(&fetch.fetch_code) {
+                            return ControlFlow::Continue(());
+                        }
+                    } else if !self.storage.has_code(&fetch.fetch_code)
+                        || !self
+                            .storage
+                            .exact_candidates(&fetch.fetch_code)
+                            .any(|candidate| leading_candidate_matches_fetch(&candidate, &fetch))
+                    {
+                        return ControlFlow::Continue(());
+                    }
+                    if !fetch.injectable {
+                        has_valid_correction = true;
+                        return ControlFlow::Continue(());
+                    }
+                    has_valid_normal = true;
+                    if seen_mapped_fetches.insert(fetch.clone()) {
+                        visitor(LookupPrefixSpec {
+                            input_prefix: prefix,
+                            fetch_code: fetch.fetch_code.clone(),
+                            consumed_lookup_len: end,
+                            surface_fetch: Some(fetch),
+                        })?;
+                    }
+                    ControlFlow::Continue(())
+                };
 
-            let mut seen_mapped_fetches = HashSet::new();
-            for fetch in mapped_fetches {
-                if direct_normal_groups.contains(&fetch.canonical_code) {
-                    continue;
-                }
-                if !self.storage.has_code(&fetch.fetch_code)
-                    || !self
-                        .storage
-                        .exact_candidates(&fetch.fetch_code)
-                        .any(|candidate| leading_candidate_matches_fetch(&candidate, &fetch))
-                {
-                    continue;
-                }
-                if !fetch.injectable {
-                    has_valid_correction = true;
-                    continue;
-                }
-                has_valid_normal = true;
-                if seen_mapped_fetches.insert(fetch.clone()) {
-                    boundary_prefixes.push(LookupPrefixSpec {
-                        input_prefix: prefix,
-                        fetch_code: fetch.fetch_code.clone(),
-                        consumed_lookup_len: end,
-                        surface_fetch: Some(fetch),
-                    });
+                if self.direct_prism_surface_mapping_current {
+                    if let (Some(prism), Some(syllabary_codes)) =
+                        (self.prism_payload.as_ref(), self.storage.syllabary_codes())
+                    {
+                        let direct_identity = prism.has_byte_backed_identity_spelling_map();
+                        prism.visit_canonical_codes(prefix, syllabary_codes, |lookup| {
+                            visit_fetch(LeadingFetchCode {
+                                fetch_code: lookup.code.to_owned(),
+                                canonical_code: lookup.code.to_owned(),
+                                bare_exact: true,
+                                injectable: !lookup.correction,
+                                abbreviation: lookup.abbreviation,
+                                direct_identity,
+                            })
+                        })?;
+                        if !self.spelling_algebra_active {
+                            for (_, lookup) in prism
+                                .trailing_ascii_digit_prefix_canonical_codes(
+                                    prefix,
+                                    syllabary_codes,
+                                    usize::MAX,
+                                )
+                                .into_iter()
+                                .filter(|(consumed, _)| *consumed == prefix.len())
+                            {
+                                visit_fetch(LeadingFetchCode {
+                                    fetch_code: lookup.code.to_owned(),
+                                    canonical_code: lookup.code.to_owned(),
+                                    bare_exact: false,
+                                    injectable: !lookup.correction,
+                                    abbreviation: lookup.abbreviation,
+                                    direct_identity,
+                                })?;
+                            }
+                        }
+                    } else {
+                        for fetch in self.direct_storage_identity_fetch_codes(prefix) {
+                            visit_fetch(fetch)?;
+                        }
+                    }
+                } else if !self.spelling_algebra_active || self.leading_fetch_index_seed.is_some() {
+                    for fetch in self.leading_surface_fetch_codes(prefix) {
+                        visit_fetch(fetch)?;
+                    }
                 }
             }
 
             if has_valid_correction && !has_valid_normal {
                 break;
             }
-            prefixes.extend(boundary_prefixes);
         }
+        ControlFlow::Continue(())
+    }
+
+    fn valid_lookup_prefixes<'a>(&self, lookup_code: &'a str) -> Vec<LookupPrefixSpec<'a>> {
+        let mut prefixes = Vec::new();
+        let _: ControlFlow<()> = self.visit_valid_lookup_prefixes(lookup_code, |prefix| {
+            prefixes.push(prefix);
+            ControlFlow::Continue(())
+        });
         prefixes
     }
 

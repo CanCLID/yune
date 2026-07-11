@@ -663,9 +663,18 @@ track_a_original_build="$run_work_root/track-a-yune-original-build"
 track_a_generated_poet="$run_work_root/track-a-yune-luna_pinyin.poet.bin"
 clear_dir_under "$run_work_root" "$track_a_original_build"
 copy_dir_contents "$track_a_yune_run/user/build" "$track_a_original_build"
-run_cargo_bench "track-a-yune-deploy-prep" "yune" "track-a-comparison" "luna_pinyin" \
-  "$track_a_yune_dylib" "$track_a_yune_run/shared" "$track_a_yune_run/user" "$track_a_yune_run/user/build" \
-  "deploy-prep" "$(dirname "$track_a_yune_dylib")" 1 1
+if [[ "${YUNE_POET_BYTE_BACKED:-}" == "1" ]]; then
+  die "The signed Track A gate requires default-owned poet measurement; unset YUNE_POET_BYTE_BACKED before running it."
+fi
+(
+  export YUNE_POET_BYTE_BACKED=1
+  run_cargo_bench "track-a-yune-deploy-prep" "yune" "track-a-comparison" "luna_pinyin" \
+    "$track_a_yune_dylib" "$track_a_yune_run/shared" "$track_a_yune_run/user" "$track_a_yune_run/user/build" \
+    "deploy-prep" "$(dirname "$track_a_yune_dylib")" 1 1
+)
+if [[ "${YUNE_POET_BYTE_BACKED:-}" == "1" ]]; then
+  die "Failed to restore YUNE_POET_BYTE_BACKED after Track A deploy prep."
+fi
 require_path "$track_a_yune_run/user/build/luna_pinyin.poet.bin" "Track A Yune poet artifact"
 cp "$track_a_yune_run/user/build/luna_pinyin.poet.bin" "$track_a_generated_poet"
 clear_dir_under "$run_work_root" "$track_a_yune_run/user/build"
@@ -673,6 +682,8 @@ copy_dir_contents "$track_a_original_build" "$track_a_yune_run/user/build"
 cp "$track_a_generated_poet" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
 {
   echo "track_a_deploy_prep=separate_process"
+  echo "poet_generation_environment=YUNE_POET_BYTE_BACKED=1 (deploy-prep invocation only)"
+  echo "benchmark_poet_environment=default-owned"
   echo "restored_oracle_build_artifacts=true"
   echo "poet_artifact=$track_a_yune_run/user/build/luna_pinyin.poet.bin"
   stat -f "poet_bytes=%z" "$track_a_yune_run/user/build/luna_pinyin.poet.bin"
@@ -694,5 +705,35 @@ if [[ "$skip_track_b" == "0" ]]; then
 fi
 
 combine_outputs
+python3 - "$output_root/memory-owner-profile.csv" <<'PY'
+import csv
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+if not path.is_file():
+    raise SystemExit(f"missing Track A memory-owner evidence: {path}")
+with path.open(encoding="utf-8-sig", newline="") as handle:
+    reader = csv.DictReader(handle)
+    required = {"engine", "track", "schema_id", "mapping_mode"}
+    missing = sorted(required.difference(reader.fieldnames or ()))
+    if missing:
+        raise SystemExit(f"memory-owner evidence is missing columns {missing}: {path}")
+    rows = [
+        row
+        for row in reader
+        if row["engine"] == "yune"
+        and row["track"] == "track-a-comparison"
+        and row["schema_id"] == "luna_pinyin"
+    ]
+if not rows:
+    raise SystemExit(f"memory-owner evidence has no Yune Track A luna_pinyin rows: {path}")
+byte_backed = [row for row in rows if row["mapping_mode"].startswith("poet_bin:")]
+if byte_backed:
+    raise SystemExit(
+        "signed Track A requires default-owned poet measurement, "
+        f"but {len(byte_backed)} memory-owner rows report poet_bin storage"
+    )
+PY
 write_readme
 log "done: $output_root"

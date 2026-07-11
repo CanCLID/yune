@@ -203,6 +203,43 @@ function Invoke-DeployPrep(
     Invoke-Logged "$OutputName-deploy-prep" $BenchArgs $LogPath (($RunRoot, $ExtraPath) -join ";")
 }
 
+function Invoke-TrackAPoetDeployPrep(
+    $RunRoot,
+    $ExtraPath
+) {
+    # The signed Track A gate measures the default owned sentence model. Its
+    # clean deploy nevertheless needs a poet artifact so the wrapper can restore
+    # the upstream table/prism/reverse bytes and add only Yune's deterministic
+    # poet sidecar. Poet *generation* is guarded by the same opt-in as poet
+    # consumption, so scope the opt-in to the separate deploy-prep invocation and
+    # restore the benchmark environment before any timing process starts.
+    $PreviousPoetByteBacked = [Environment]::GetEnvironmentVariable(
+        "YUNE_POET_BYTE_BACKED",
+        "Process"
+    )
+    if ($PreviousPoetByteBacked -eq "1") {
+        throw "The signed Track A gate requires default-owned poet measurement; unset YUNE_POET_BYTE_BACKED before running it."
+    }
+    try {
+        [Environment]::SetEnvironmentVariable("YUNE_POET_BYTE_BACKED", "1", "Process")
+        Invoke-DeployPrep "yune" "track-a-comparison" "luna_pinyin" $RunRoot $ExtraPath "track-a-yune"
+    }
+    finally {
+        [Environment]::SetEnvironmentVariable(
+            "YUNE_POET_BYTE_BACKED",
+            $PreviousPoetByteBacked,
+            "Process"
+        )
+    }
+    $RestoredPoetByteBacked = [Environment]::GetEnvironmentVariable(
+        "YUNE_POET_BYTE_BACKED",
+        "Process"
+    )
+    if ($RestoredPoetByteBacked -ne $PreviousPoetByteBacked) {
+        throw "Failed to restore YUNE_POET_BYTE_BACKED after Track A deploy prep."
+    }
+}
+
 function Write-TrackAComparison($Rows, $DestinationPath) {
     $YuneRows = @{}
     $LibrimeRows = @{}
@@ -431,11 +468,9 @@ if ($DeployedFlag -ne $ShippedFlag) {
     throw "M59 provenance mismatch: benchmark luna leading_syllable_reachability=[$DeployedFlag] but shipped web product=[$ShippedFlag]. The ratchet would measure a different feature state than ships (the finding-#8 hole). Reconcile apps/yune-web/public/schema with the deployed luna before trusting these numbers."
 }
 
-$TrackADeployPrepCommand = "cargo bench -p yune-rime-api --bench native_inprocess_benchmark -- --engine yune --track track-a-comparison --schema luna_pinyin --dll $(Join-Path $TrackAYuneRun 'rime.dll') --shared $(Join-Path $TrackAYuneRun 'shared') --user $(Join-Path $TrackAYuneRun 'user') --build $(Join-Path $TrackAYuneRun 'user\build') --deploy-before-benchmark --deploy-only"
 $BenchmarkCommand = "powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot $OutputRoot -Iterations $Iterations -SessionIterations $SessionIterations -KeyIterations $KeyIterations -TrackAInputs $TrackAInputs -TrackBInputs $TrackBInputs$(if ($DeployProductBeforeBenchmark) { ' -DeployProductBeforeBenchmark' } else { '' })$(if ($SkipTrackB) { ' -SkipTrackB' } else { '' })$(if (-not [string]::IsNullOrWhiteSpace($TrackAThresholds)) { " -TrackAThresholds $TrackAThresholds" } else { '' })$(if ($FailOnRegression) { ' -FailOnRegression' } else { '' })"
 $Commands = @(
     "cargo build --release -p yune-rime-api",
-    $TrackADeployPrepCommand,
     $BenchmarkCommand
 )
 $Commands | Set-Content -LiteralPath (Join-Path $OutputRoot "commands.txt") -Encoding UTF8
@@ -467,7 +502,7 @@ $TrackAOriginalBuild = Join-Path $WorkRoot "track-a-yune-original-build"
 $TrackAGeneratedPoet = Join-Path $WorkRoot "track-a-yune-luna_pinyin.poet.bin"
 Clear-DirectoryUnder $WorkRoot $TrackAOriginalBuild
 Copy-DirectoryContents $TrackAYuneBuild $TrackAOriginalBuild
-Invoke-DeployPrep "yune" "track-a-comparison" "luna_pinyin" $TrackAYuneRun $UpstreamDistLib "track-a-yune"
+Invoke-TrackAPoetDeployPrep $TrackAYuneRun $UpstreamDistLib
 Assert-Path (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") "Track A Yune poet artifact after deploy prep"
 Copy-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin") -Destination $TrackAGeneratedPoet -Force
 Clear-DirectoryUnder $WorkRoot $TrackAYuneBuild
@@ -477,6 +512,8 @@ $TrackATable = Get-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.ta
 $TrackAPoet = Get-Item -LiteralPath (Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin")
 @(
     "track_a_deploy_prep=separate_process",
+    "poet_generation_environment=YUNE_POET_BYTE_BACKED=1 (deploy-prep invocation only)",
+    "benchmark_poet_environment=$(if ([Environment]::GetEnvironmentVariable('YUNE_POET_BYTE_BACKED', 'Process') -eq '1') { 'invalid-byte-backed' } else { 'default-owned' })",
     "restored_oracle_build_artifacts=true",
     "poet_artifact=$(Join-Path $TrackAYuneBuild "luna_pinyin.poet.bin")",
     "poet_bytes=$($TrackAPoet.Length)",
@@ -529,6 +566,21 @@ $CombinedStartupSessionTrace | Export-Csv -LiteralPath (Join-Path $OutputRoot "s
 $CombinedCandidateSnapshots | Export-Csv -LiteralPath (Join-Path $OutputRoot "candidate_snapshots.csv") -NoTypeInformation -Encoding UTF8
 $CombinedRawLookupMicrobench | Export-Csv -LiteralPath (Join-Path $OutputRoot "raw_lookup_microbench.csv") -NoTypeInformation -Encoding UTF8
 $CombinedMemoryOwnerProfile | Export-Csv -LiteralPath (Join-Path $OutputRoot "memory-owner-profile.csv") -NoTypeInformation -Encoding UTF8
+
+$TrackAOwnerRows = @($CombinedMemoryOwnerProfile | Where-Object {
+    $_.engine -eq "yune" -and
+    $_.track -eq "track-a-comparison" -and
+    $_.schema_id -eq "luna_pinyin"
+})
+if ($TrackAOwnerRows.Count -eq 0) {
+    throw "The signed Track A gate produced no Yune luna_pinyin memory-owner rows."
+}
+$ByteBackedPoetOwners = @($TrackAOwnerRows | Where-Object {
+    $_.mapping_mode -like "poet_bin:*"
+})
+if ($ByteBackedPoetOwners.Count -gt 0) {
+    throw "The signed Track A gate requires default-owned poet measurement, but memory-owner evidence reports $($ByteBackedPoetOwners.Count) poet_bin owner rows."
+}
 
 $TrackAComparison = Write-TrackAComparison $CombinedSummary (Join-Path $OutputRoot "summary-comparison.csv")
 Invoke-TrackAThresholdCheck $TrackAComparison $CombinedSummary $CombinedMemoryOwnerProfile $TrackAThresholds (Join-Path $OutputRoot "threshold-check.csv") -Fail:$($FailOnRegression.IsPresent)

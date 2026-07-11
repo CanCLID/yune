@@ -1,6 +1,6 @@
 # M59 Canonical Parity + General Reachability Plan (reimplementation)
 
-> **CURRENT CLOSEOUT STATUS (2026-07-10): full Path A is locked; M59 is NOT
+> **CURRENT CLOSEOUT STATUS (2026-07-11): full Path A is locked; M59 is NOT
 > closeable.** The genuine Lane B **reachability mechanism** landed at `c89a8ea9`
 > and remains source-truthful and non-circular, but Lane B D-48 exact-order parity
 > is still open. Workspace deployment fidelity completed at `2ee0805f`.
@@ -10,12 +10,12 @@
 > source-current WASM reaches `zi -> 諮` in four PageDown operations. The green
 > evidence and informational algebra/CJ-1/OpenCC/risk checkpoint are under
 > `increment-2-profile-paging/`. Increment 3a's compiled-sort and oracle-capture
-> series is complete through `d55b203e`. Increment 3b's schema-general
-> transformed-algebra implementation, oracle packet, deterministic asset
-> rebuild, and focused release gates are published as a review candidate; its
-> five-round owner-signed Windows ratchet remains pending an uncontaminated
-> measurement window. Increment 3b is therefore not yet accepted, and no D-48
-> ordering lane or other final-gate row is implied complete here.
+> series is complete through `d55b203e`. Increment 3b is accepted at
+> `2cb7e411`: its schema-general transformed-algebra implementation, oracle
+> packet, deterministic asset rebuild, two independent reviews, and five-round
+> owner-signed Windows ratchet are green (`32/32` aggregate rows). M59-REACH-02
+> is complete. Increment 4a is next; no D-48 ordering lane, REACH-03/04, or
+> final-gate row is implied complete here.
 >
 > Nothing remaining moves to M60 or another milestone. After 4a lands, **no
 > subsequent engine-behavior increment** (including 4b) starts until Fable's
@@ -77,6 +77,19 @@
   that historical boundary rather than inventing outputs. Increment 3b has now
   imported fresh pinned-librime whole-input captures for both rows and uses
   those fixtures as the authoritative expected text/provenance.
+- **Increment 3b complete (`2cb7e411`, pushed 2026-07-11):** deployed-algebra
+  surface-to-canonical reachability is default-on and schema-general across the
+  seven required deploy rows plus Stroke control, with explicit-false coverage,
+  no schema-id/input/oracle gates, and pinned whole-input oracle provenance.
+  The landing repair keeps large alias families ordered and lazy, preserves
+  complete unbounded/PageDown traversal beyond the cache threshold, and reduces
+  full product deploy peak through byte-identical compact prism construction.
+  Native schema loading validates the full prism through a temporary second
+  mapping of the same open file, then retains a cold runtime mapping; malformed
+  artifacts still fail closed and no compiled format changes. The five final
+  fixed-DLL rounds pass all 32 rows individually and in aggregate. Rejected
+  pre-repair packets are preserved alongside the accepted evidence.
+  Evidence: `increment-3b-transformed-algebra/performance-ratchet/`.
 - **Increment 4b checklist residual from 3b:** close the pre-existing
   fuzzy-versus-abbreviation collision on the heap/source
   `ExpandedSpellingCode` path with full pinned spelling-type precedence and
@@ -447,20 +460,22 @@ amendment):
       (gate-verdict.csv, README with the m37 decomposition as method) +
       `m59-flipoff-isolation/`. `hao`'s residual is a same-work timing artifact
       (m37: identical counts flip-off/on), not a removable computation.
-- [ ] Cross-schema ratchet after the default-on flip (every schema's typing path);
-      WEB-03 tripwire; `cargo test --workspace`; first-page-turn materialization
-      guard.
-- [ ] Cross-schema ratchet after the default-on flip (every schema's typing path);
-      WEB-03 tripwire; `cargo test --workspace`; first-page-turn materialization
-      guard.
-- [ ] Fix the pre-existing `m37`-global parallel test race (`--lib`
+- [x] Cross-schema ratchet after the default-on flip (every required deploy
+      row); WEB-03 tripwire; literal `cargo test --workspace`; and
+      first-page-turn materialization guard. The 3b series through `2cb7e411`
+      carries the deploy matrix, focused final-head loader gates, and signed
+      five-round packet.
+- [x] Fix the pre-existing `m37`-global parallel test race (`--lib`
       `bounded_long_prefix_fallback…` + `upstream_sentence_model_records_m40…`
       pass serially, race under parallel) so `cargo test --workspace` is green.
-- [ ] Replace residual `starts_with("jyut6ping3")` gates with typed config.
+- [x] Replace residual `starts_with("jyut6ping3")` gates with typed config; no
+      such source gate remains.
 - [x] Evidence README (mechanism, tests, HONEST ratchet straddle):
       `.../luna-lane-README.md`. Roadmap M59 row + Scope-Ledger row added.
-- [ ] `requirements.md` M59 entry; `decisions.md` amendment sign-off; move plan to
-      `completed/` only when the full schema-general guarantee + perf + Lane A land.
+- [x] `requirements.md` M59 entry and `decisions.md` D-47/D-48 owner amendment
+      sign-off.
+- [ ] Move this plan to `completed/` only when all remaining M59 parity,
+      evidence, and closeout gates land.
 
 ## Phase 5 — Lane B corrective series (fable verified review, 2026-07-07)
 

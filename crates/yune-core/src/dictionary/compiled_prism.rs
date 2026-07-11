@@ -11,6 +11,7 @@ use std::sync::Arc;
 const MAX_CORRECTION_COUNT: usize = 4096;
 const MAX_TOLERANCE_RULE_COUNT: usize = 4096;
 const MAX_TOLERANCE_CANDIDATE_COUNT: usize = 64;
+const RIME_PRISM_HEADER_LEN: usize = 320;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RimePrismBinPayload {
@@ -289,13 +290,21 @@ struct ByteBackedRimePrismPayload {
     tolerance_rules: Vec<RimeToleranceRule>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
+struct ByteBackedRimePrismLayout {
+    double_array: Option<ByteBackedPrismDoubleArray>,
+    spelling_map: ByteBackedPrismSpellingMap,
+    corrections: Vec<RimeCorrectionEntry>,
+    tolerance_rules: Vec<RimeToleranceRule>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct ByteBackedPrismDoubleArray {
     offset: usize,
     unit_count: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ByteBackedPrismSpellingMap {
     Explicit {
         offset: usize,
@@ -1036,8 +1045,42 @@ pub fn parse_rime_prism_bin_payload(
 pub fn parse_rime_prism_runtime_payload(
     source: Arc<dyn CompactTableByteSource>,
 ) -> Result<RimePrismRuntimePayload, RimePrismBinParseError> {
-    let bytes = source.bytes();
-    ensure_len(bytes, 320)?;
+    let layout = read_byte_backed_prism_layout(source.bytes())?;
+    Ok(byte_backed_runtime_payload(source, layout))
+}
+
+/// Parses and validates a prism through a temporary byte source while retaining
+/// a distinct source for runtime lookups.
+///
+/// Both sources must describe the same complete file length and 320-byte Rime
+/// header. The returned payload stores file-relative layout only and retains
+/// `runtime_source`; `validation_source` can therefore be dropped immediately
+/// after this call. The ordinary [`parse_rime_prism_runtime_payload`] entry
+/// point remains the single-source path for owned bytes and WASM.
+#[doc(hidden)]
+pub fn parse_rime_prism_runtime_payload_with_validation_source(
+    runtime_source: Arc<dyn CompactTableByteSource>,
+    validation_source: &dyn CompactTableByteSource,
+) -> Result<RimePrismRuntimePayload, RimePrismBinParseError> {
+    let runtime_bytes = runtime_source.bytes();
+    let validation_bytes = validation_source.bytes();
+    ensure_len(runtime_bytes, RIME_PRISM_HEADER_LEN)?;
+    ensure_len(validation_bytes, RIME_PRISM_HEADER_LEN)?;
+    if runtime_bytes.len() != validation_bytes.len() {
+        return Err(RimePrismBinParseError::InvalidLength);
+    }
+    if runtime_bytes[..RIME_PRISM_HEADER_LEN] != validation_bytes[..RIME_PRISM_HEADER_LEN] {
+        return Err(RimePrismBinParseError::InvalidFormat);
+    }
+
+    let layout = read_byte_backed_prism_layout(validation_bytes)?;
+    Ok(byte_backed_runtime_payload(runtime_source, layout))
+}
+
+fn read_byte_backed_prism_layout(
+    bytes: &[u8],
+) -> Result<ByteBackedRimePrismLayout, RimePrismBinParseError> {
+    ensure_len(bytes, RIME_PRISM_HEADER_LEN)?;
     let version = parse_rime_format_version_for_payload(bytes, b"Rime::Prism/")
         .map_err(map_metadata_error)?;
     if version < 4.0 - f64::EPSILON {
@@ -1065,15 +1108,27 @@ pub fn parse_rime_prism_runtime_payload(
         .transpose()?
         .unwrap_or_default();
 
-    Ok(RimePrismRuntimePayload {
-        storage: RimePrismRuntimeStorage::ByteBacked(ByteBackedRimePrismPayload {
-            source: Arc::clone(&source),
-            double_array,
-            spelling_map,
-            corrections,
-            tolerance_rules,
-        }),
+    Ok(ByteBackedRimePrismLayout {
+        double_array,
+        spelling_map,
+        corrections,
+        tolerance_rules,
     })
+}
+
+fn byte_backed_runtime_payload(
+    source: Arc<dyn CompactTableByteSource>,
+    layout: ByteBackedRimePrismLayout,
+) -> RimePrismRuntimePayload {
+    RimePrismRuntimePayload {
+        storage: RimePrismRuntimeStorage::ByteBacked(ByteBackedRimePrismPayload {
+            source,
+            double_array: layout.double_array,
+            spelling_map: layout.spelling_map,
+            corrections: layout.corrections,
+            tolerance_rules: layout.tolerance_rules,
+        }),
+    }
 }
 
 fn read_double_array(
@@ -1568,6 +1623,74 @@ mod tests {
         }
     }
 
+    fn test_source(bytes: impl Into<Arc<[u8]>>) -> Arc<dyn CompactTableByteSource> {
+        Arc::new(TestPrismByteSource {
+            bytes: bytes.into(),
+        })
+    }
+
+    fn explicit_prism_fixture() -> (Vec<String>, Vec<u8>) {
+        let syllabary_codes = ["ai", "an", "ao"].map(str::to_owned).to_vec();
+        let algebra_formulas = [
+            "derive/^ai$/a/".to_owned(),
+            "derive/^an$/a/abbrev".to_owned(),
+            "derive/^ao$/a/".to_owned(),
+        ];
+        let mut bytes = build_prism_bin(&syllabary_codes, &algebra_formulas, 1, 2);
+        let descriptor_offset = descriptor_offset_for_spelling(&bytes, "a");
+        let tip_offset = bytes.len();
+        bytes.extend_from_slice(b"tip\0");
+        put_relative_offset(&mut bytes, descriptor_offset + 12, tip_offset);
+        (syllabary_codes, bytes)
+    }
+
+    fn descriptor_offset_for_spelling(bytes: &[u8], spelling: &str) -> usize {
+        let payload = parse_rime_prism_bin_payload(bytes).expect("fixture prism should parse");
+        let spelling_index = payload
+            .double_array
+            .as_ref()
+            .and_then(|double_array| double_array.exact_match(spelling))
+            .expect("fixture spelling should be indexed") as usize;
+        let map_offset = read_offset_ptr(bytes, 56)
+            .expect("fixture map pointer should parse")
+            .expect("fixture should use an explicit spelling map");
+        let item_offset = map_offset + 4 + spelling_index * ByteBackedPrismSpellingMap::ITEM_SIZE;
+        read_offset_ptr(bytes, item_offset + 4)
+            .expect("fixture descriptor pointer should parse")
+            .expect("fixture descriptor pointer should be present")
+    }
+
+    fn put_relative_offset(bytes: &mut [u8], field_offset: usize, target: usize) {
+        let relative = i32::try_from(target as isize - field_offset as isize)
+            .expect("fixture offset should fit i32");
+        bytes[field_offset..field_offset + 4].copy_from_slice(&relative.to_le_bytes());
+    }
+
+    fn byte_backed_payload(runtime: &RimePrismRuntimePayload) -> &ByteBackedRimePrismPayload {
+        match &runtime.storage {
+            RimePrismRuntimeStorage::ByteBacked(payload) => payload,
+            RimePrismRuntimeStorage::Owned(_) => panic!("fixture should use byte-backed storage"),
+        }
+    }
+
+    fn lookup_snapshot(
+        runtime: &RimePrismRuntimePayload,
+        syllabary_codes: &[String],
+    ) -> Vec<(String, bool, bool, u32)> {
+        runtime
+            .lookup_canonical_codes("a", syllabary_codes)
+            .into_iter()
+            .map(|lookup| {
+                (
+                    lookup.code.to_owned(),
+                    lookup.abbreviation,
+                    lookup.correction,
+                    lookup.credibility.to_bits(),
+                )
+            })
+            .collect()
+    }
+
     fn runtime_payloads(
         syllabary_codes: &[String],
         algebra_formulas: &[String],
@@ -1581,6 +1704,110 @@ mod tests {
         }))
         .expect("generated byte-backed prism should parse");
         [("owned", owned), ("byte-backed", byte_backed)]
+    }
+
+    #[test]
+    fn dual_source_parse_matches_single_source_layout_order_and_diagnostics() {
+        let (syllabary_codes, bytes) = explicit_prism_fixture();
+        let single = parse_rime_prism_runtime_payload(test_source(bytes.clone()))
+            .expect("single-source runtime prism should parse");
+        let validation_source = TestPrismByteSource {
+            bytes: Arc::from(bytes.clone()),
+        };
+        let dual = parse_rime_prism_runtime_payload_with_validation_source(
+            test_source(bytes),
+            &validation_source,
+        )
+        .expect("dual-source runtime prism should parse");
+
+        let single_payload = byte_backed_payload(&single);
+        let dual_payload = byte_backed_payload(&dual);
+        assert_eq!(dual_payload.double_array, single_payload.double_array);
+        assert_eq!(dual_payload.spelling_map, single_payload.spelling_map);
+        assert_eq!(dual_payload.corrections, single_payload.corrections);
+        assert_eq!(dual_payload.tolerance_rules, single_payload.tolerance_rules);
+        assert_eq!(
+            lookup_snapshot(&dual, &syllabary_codes),
+            lookup_snapshot(&single, &syllabary_codes)
+        );
+        assert_eq!(dual.memory_owner_rows(), single.memory_owner_rows());
+        let tips = dual
+            .memory_owner_rows()
+            .into_iter()
+            .find(|row| row.owner == "prism.tips_payload")
+            .expect("tip diagnostics should be present");
+        assert_eq!((tips.estimated_bytes, tips.item_count), (3, 1));
+    }
+
+    #[test]
+    fn dual_source_parse_rejects_length_header_and_malformed_tip_mismatches() {
+        let (_, bytes) = explicit_prism_fixture();
+
+        let mut shorter = bytes.clone();
+        shorter.pop();
+        let shorter_source = TestPrismByteSource {
+            bytes: Arc::from(shorter),
+        };
+        assert!(matches!(
+            parse_rime_prism_runtime_payload_with_validation_source(
+                test_source(bytes.clone()),
+                &shorter_source,
+            ),
+            Err(RimePrismBinParseError::InvalidLength)
+        ));
+
+        let mut changed_header = bytes.clone();
+        changed_header[32] ^= 1;
+        let changed_header_source = TestPrismByteSource {
+            bytes: Arc::from(changed_header),
+        };
+        assert!(matches!(
+            parse_rime_prism_runtime_payload_with_validation_source(
+                test_source(bytes.clone()),
+                &changed_header_source,
+            ),
+            Err(RimePrismBinParseError::InvalidFormat)
+        ));
+
+        let mut malformed_tip = bytes.clone();
+        let tip_pointer = descriptor_offset_for_spelling(&malformed_tip, "a") + 12;
+        malformed_tip[tip_pointer..tip_pointer + 4].copy_from_slice(&i32::MAX.to_le_bytes());
+        let malformed_tip_source = TestPrismByteSource {
+            bytes: Arc::from(malformed_tip.clone()),
+        };
+        assert!(matches!(
+            parse_rime_prism_runtime_payload_with_validation_source(
+                test_source(bytes),
+                &malformed_tip_source,
+            ),
+            Err(RimePrismBinParseError::OutOfBounds)
+        ));
+        assert!(matches!(
+            parse_rime_prism_runtime_payload(test_source(malformed_tip)),
+            Err(RimePrismBinParseError::OutOfBounds)
+        ));
+    }
+
+    #[test]
+    fn dual_source_runtime_uses_retained_source_after_validation_drops() {
+        let (syllabary_codes, validation_bytes) = explicit_prism_fixture();
+        let mut runtime_bytes = validation_bytes.clone();
+        let first_descriptor = descriptor_offset_for_spelling(&runtime_bytes, "a");
+        runtime_bytes[first_descriptor..first_descriptor + 4].copy_from_slice(&1i32.to_le_bytes());
+        let validation_source = TestPrismByteSource {
+            bytes: Arc::from(validation_bytes),
+        };
+        let runtime = parse_rime_prism_runtime_payload_with_validation_source(
+            test_source(runtime_bytes),
+            &validation_source,
+        )
+        .expect("matching file layout should parse through validation source");
+        drop(validation_source);
+
+        let resolved = lookup_snapshot(&runtime, &syllabary_codes);
+        assert_eq!(resolved[0].0, "an");
+        assert_eq!(resolved[1].0, "an");
+        assert_eq!(resolved[2].0, "ao");
     }
 
     #[test]

@@ -387,6 +387,40 @@ fn dictionary_data_rejects_corrupt_compiled_artifacts_without_source_fallback() 
 }
 
 #[test]
+fn dictionary_data_dual_mapped_prism_rejects_malformed_tip_pointer() {
+    let _guard = test_guard();
+    RimeCleanupAllSessions();
+    let root = unique_temp_dir("dictionary-data-malformed-prism-tip");
+    let fixture = DictionaryDataFixture::new(&root, true);
+    fixture.setup_runtime();
+    fs::write(
+        fixture.shared.join("luna.prism.bin"),
+        compiled_prism_with_malformed_tip_pointer_fixture(),
+    )
+    .expect("malformed prism should be written");
+
+    let candidates = fixture.candidates_for_schema("luna", "ba");
+
+    assert_eq!(candidates, [("ba".to_owned(), "echo".to_owned())]);
+    let deferrals =
+        remaining_gear_deferrals_snapshot(fixture.last_session_id()).expect("session should exist");
+    assert!(
+        deferrals.iter().any(|deferral| {
+            deferral.gear == "dictionary_load"
+                && deferral.current_yune_behavior.contains("OutOfBounds")
+        }),
+        "the temporary validation mapping must preserve eager tip-pointer rejection: {deferrals:?}"
+    );
+    assert!(
+        !deferrals
+            .iter()
+            .any(|deferral| deferral.gear == "dictionary_source_fallback"),
+        "a malformed present prism must fail closed instead of source-falling back: {deferrals:?}"
+    );
+    fixture.cleanup();
+}
+
+#[test]
 fn dictionary_data_records_no_usable_path_without_empty_success() {
     let _guard = test_guard();
     RimeCleanupAllSessions();
@@ -1182,6 +1216,28 @@ fn compiled_advanced_table_fixture(checksum: u32) -> Vec<u8> {
 
 fn compiled_prism_fixture() -> Vec<u8> {
     compiled_prism_with_correction_tolerance_fixture(&[], &[])
+}
+
+fn compiled_prism_with_malformed_tip_pointer_fixture() -> Vec<u8> {
+    let syllabary = ["ba".to_owned()];
+    let algebra = ["derive/^ba$/b/".to_owned()];
+    let mut bytes = yune_core::build_prism_bin(&syllabary, &algebra, 1, 2);
+    let spelling_map_offset = relative_offset_target(&bytes, 56);
+    let first_item_offset = spelling_map_offset + 4;
+    let first_descriptor_offset = relative_offset_target(&bytes, first_item_offset + 4);
+    put_i32_le(&mut bytes, first_descriptor_offset + 12, i32::MAX);
+    bytes
+}
+
+fn relative_offset_target(bytes: &[u8], field_offset: usize) -> usize {
+    let relative = i32::from_le_bytes(
+        bytes[field_offset..field_offset + 4]
+            .try_into()
+            .expect("fixture pointer should contain four bytes"),
+    );
+    field_offset
+        .checked_add_signed(relative as isize)
+        .expect("fixture pointer should resolve")
 }
 
 fn compiled_prism_with_correction_tolerance_fixture(

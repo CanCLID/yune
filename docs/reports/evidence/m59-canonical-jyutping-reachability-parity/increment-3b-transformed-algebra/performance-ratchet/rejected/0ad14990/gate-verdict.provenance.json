@@ -1,0 +1,101 @@
+{
+  "effective_argv": [
+    "--thresholds",
+    "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "--expected-runs",
+    "5",
+    "--run",
+    "docs/reports/evidence/m59-increment3b-0ad-ratchet/run1",
+    "--run",
+    "docs/reports/evidence/m59-increment3b-0ad-ratchet/run2",
+    "--run",
+    "docs/reports/evidence/m59-increment3b-0ad-ratchet/run3",
+    "--run",
+    "docs/reports/evidence/m59-increment3b-0ad-ratchet/run4",
+    "--run",
+    "docs/reports/evidence/m59-increment3b-0ad-ratchet/run5",
+    "--output",
+    "docs/reports/evidence/m59-increment3b-0ad-ratchet/gate-verdict.csv"
+  ],
+  "effective_invocation": "python scripts/aggregate-native-ratchet.py --thresholds docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv --expected-runs 5 --run docs/reports/evidence/m59-increment3b-0ad-ratchet/run1 --run docs/reports/evidence/m59-increment3b-0ad-ratchet/run2 --run docs/reports/evidence/m59-increment3b-0ad-ratchet/run3 --run docs/reports/evidence/m59-increment3b-0ad-ratchet/run4 --run docs/reports/evidence/m59-increment3b-0ad-ratchet/run5 --output docs/reports/evidence/m59-increment3b-0ad-ratchet/gate-verdict.csv",
+  "gate_verdict": {
+    "path": "docs/reports/evidence/m59-increment3b-0ad-ratchet/gate-verdict.csv",
+    "sha256": "3781105981fc02aab2adcc09f5f83f2e5c551f2c58967e946e1ffba480fd7076"
+  },
+  "required_run_count": 5,
+  "runs": [
+    {
+      "path": "docs/reports/evidence/m59-increment3b-0ad-ratchet/run1",
+      "raw_files_sha256": {
+        "environment.txt": "2300ae8b537fedc239d86a2055349a5a44c55fe2ca9d4fbda4925bb767c90db1",
+        "external-provenance.txt": "512f95d3f8e08c8559a10263a121222276e4333e52092b5e2bad292052ce8c93",
+        "summary-comparison.csv": "8ce37c58ddb5d60b841c0d951903e0b19a428d3e2ab60ca58d367adf8542cbca",
+        "threshold-check.csv": "3b2c79676fa5db72d619856b75551328423f91a75bc418346789cb3424cd2c7d"
+      },
+      "run": 1
+    },
+    {
+      "path": "docs/reports/evidence/m59-increment3b-0ad-ratchet/run2",
+      "raw_files_sha256": {
+        "environment.txt": "d44e90e85e00cd7676aa02e7ef6c3b49ecead19f8e8e84fb449213308a70cfa4",
+        "external-provenance.txt": "512f95d3f8e08c8559a10263a121222276e4333e52092b5e2bad292052ce8c93",
+        "summary-comparison.csv": "e2aab4ee3eacc35c1229aa03f4891030e662bca86a2cac1678af1e6e9d00bc6d",
+        "threshold-check.csv": "06d5c1b0ad442cc8508f36cc5af7ca8dfee2ebcb4262824604728749221e101e"
+      },
+      "run": 2
+    },
+    {
+      "path": "docs/reports/evidence/m59-increment3b-0ad-ratchet/run3",
+      "raw_files_sha256": {
+        "environment.txt": "c0f42a18844829e17ee02ce3347eab9fc648f89b2d990b84672000eb6ed7f75e",
+        "external-provenance.txt": "512f95d3f8e08c8559a10263a121222276e4333e52092b5e2bad292052ce8c93",
+        "summary-comparison.csv": "62ab84e5286fa1a18029c61480efef0475149d31f7c2a175a897f572bcebd087",
+        "threshold-check.csv": "686eb0d999ddfb70802c4dd2f275682b501bfafb39fafa46013fbcae7fb3b24b"
+      },
+      "run": 3
+    },
+    {
+      "path": "docs/reports/evidence/m59-increment3b-0ad-ratchet/run4",
+      "raw_files_sha256": {
+        "environment.txt": "ffb40bc68be6e079707e3429601212ecf48bd9db72e48f38660e41383867ce9e",
+        "external-provenance.txt": "512f95d3f8e08c8559a10263a121222276e4333e52092b5e2bad292052ce8c93",
+        "summary-comparison.csv": "f601f6f3e7b7e954114d2c6f156462568b421683f537b8bfe93a1009a4023453",
+        "threshold-check.csv": "69f45e04714c14a667cc08e57dad172c5ea7483b77d051750cc176b32793133a"
+      },
+      "run": 4
+    },
+    {
+      "path": "docs/reports/evidence/m59-increment3b-0ad-ratchet/run5",
+      "raw_files_sha256": {
+        "environment.txt": "1ae473300963dd6ee8aeea700356597e615ae1a0ee0e63671c65a323d0c516bd",
+        "external-provenance.txt": "512f95d3f8e08c8559a10263a121222276e4333e52092b5e2bad292052ce8c93",
+        "summary-comparison.csv": "69642fdae6c333dd8856464f8c7115c79e559586fb4e40e1b2ef2a4b54d4bc5e",
+        "threshold-check.csv": "4918c21bb8e2704af42f847c4c76e733e4cdcab3a442b7f06ab1912ce0e1814f"
+      },
+      "run": 5
+    }
+  ],
+  "schema_version": 1,
+  "thresholds": {
+    "path": "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "sha256": "e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba"
+  },
+  "tool": "aggregate-native-ratchet.py",
+  "tool_path": "scripts/aggregate-native-ratchet.py",
+  "tool_sha256": "7a1ef97789708ba090b8ca4cde5eb8404ee8402b9226a9d8a9875631167db586",
+  "tool_version": "6",
+  "validated_provenance": {
+    "deploy_product_before_benchmark": "True",
+    "iterations": "9",
+    "key_iterations": "80",
+    "measured_yune_dll_sha256": "0aef84b67120a916d28a802df29d4cd94229b636b7c72ebb3f7edafba7f4d7cb",
+    "product_schema_tree_sha256": "1a61c7f3c759423d11755a7eaecdbedeb23d43bfa37f612ca822ca32b705063e",
+    "session_iterations": "60",
+    "skip_track_b": "False",
+    "source_commit": "0ad14990eda40deff99875ef019787116e3d5792",
+    "track_a_inputs": "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",
+    "track_b_inputs": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+    "upstream_rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "yune_git_head": "0ad14990eda40deff99875ef019787116e3d5792"
+  }
+}

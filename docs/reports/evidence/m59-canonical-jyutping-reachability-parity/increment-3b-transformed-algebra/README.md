@@ -1,10 +1,10 @@
 # M59 Increment 3b - schema-general transformed-algebra reachability
 
-This packet records the implementation and verification candidate for M59
-Increment 3b. The behavior, provenance, deterministic rebuild, and release
-checks below are green. The five-round signed performance ratchet is still
-pending an uncontaminated Windows measurement window, so this packet is not
-yet a landing or M59-closeout claim.
+This packet records the accepted implementation and verification evidence for
+M59 Increment 3b. The schema-general behavior, provenance, deterministic
+rebuild, release checks, and owner-signed five-round Windows ratchet are green.
+The implementation is frozen at `2cb7e411`; this closes M59-REACH-02, but it
+does not close M59 or any D-48 ordering lane.
 
 ## Mechanism
 
@@ -25,6 +25,22 @@ provenance, cumulative algebra, identity/null-map semantics, and large Darts
 offsets. Bounded cache entries have explicit row, prefix, key-byte, and
 entry-byte caps; requests beyond those caps bypass the cache without evicting a
 valid entry.
+
+The landing repair visits large prism alias families in descriptor order and
+stops only at the bounded request window. It never treats the 64-prefix cache
+eligibility threshold as a behavior cap: filtered aliases beyond 64 remain
+reachable, while unbounded/PageDown translation remains complete. Prism
+serialization now uses compact deterministic trie nodes and flat descriptor
+storage; a fresh full product rebuild remained byte-identical.
+
+The final native repair keeps the compiled-prism corruption contract intact
+without retaining validation pages in the runtime working set. Native schema
+installation maps the same open immutable prism file twice, performs the full
+range/tip/NUL/UTF-8 validation through a temporary view, retains only numeric or
+owned layout plus a cold runtime view, and then drops the validation view.
+Malformed present artifacts still fail closed with no source fallback. The
+ordinary owned-byte/WASM parser remains single-source, and no ABI, schema, or
+compiled format changed.
 
 ## Oracle and deployment acceptance
 
@@ -59,7 +75,8 @@ and replay commands without copying product binaries into the evidence tree.
 |---|---|
 | `cargo fmt --check` | passed |
 | `cargo clippy --workspace --all-targets -- -D warnings` | passed |
-| `cargo test -p yune-core --lib -- --test-threads=1` | 392 passed / 0 failed |
+| `cargo test -p yune-core --lib` | 405 passed / 0 failed |
+| `cargo test -p yune-rime-api --lib tests::dictionary_data` | 18 passed / 0 failed |
 | `cargo test -p yune-core --test upstream_algebra_properties -- --test-threads=1` | 8 passed / 0 failed |
 | schema-general default-on/explicit-false deploy matrix | 1 passed / 0 failed; all eight rows in both modes |
 | correction source/compiled exact-order regression | passed |
@@ -78,6 +95,28 @@ code quality, bounded/eager equivalence, cache behavior, compiled storage,
 ordering, and test coverage. Findings were fixed forward and the owning gates
 were rerun.
 
+## Signed performance acceptance
+
+[`performance-ratchet/`](./performance-ratchet/) preserves the five complete,
+non-cherry-picked 17-input Track A plus Track B rounds from `2cb7e411`, the fixed
+DLL hash, per-run provenance, and executable aggregate verdict. All 32 aggregate
+rows pass, with all 32 rows green in every individual run. The Track B latency
+median is `334.516 us` against `347.975 us`; key working-set median is
+`70,316,032` against `88,012,390` bytes; deploy-peak median is `271,618,048`
+against `562,033,050` bytes; and session working-set median is `50,483,200`
+against `66,872,115` bytes. The 37-character row is `1.993x <= 2.339x`; the
+59-character row is `1.606x <= 1.748x`.
+
+All five candidate snapshot files are byte-identical (SHA-256
+`a38515eab47d661c30ffb1136e41472d2844578125fdf1f150df77d817b1f9f0`),
+including the five-row Track B product page.
+
+The packet also preserves two rejected predecessors instead of hiding their
+measurements: `b29f983c` missed the session-working-set ceiling after two
+disk-full setup failures, and `0ad14990` produced five valid rounds whose
+session-working-set median was `67,006,464 > 66,872,115` bytes. Neither rejected
+packet was re-baselined or selected into the accepted five-run aggregate.
+
 ## Deterministic product rebuild
 
 [`asset-rebuild/`](./asset-rebuild/) records two independent clean rebuilds of
@@ -87,14 +126,15 @@ the clean rebuild. Manifest-to-tree validation and the public package build are
 green. The packet reports the full size increase and contains no binary
 payloads.
 
-## Remaining gate and scope boundary
+After the compact-builder repair, a new full product deployment regenerated
+`jyut6ping3_mobile.prism.bin` at `32,140,173` bytes with SHA-256
+`26d30c52ea35c6d72e63f0e8261f2ca4a6b6e43a82e1572b0a3c803ec29fe6b2`,
+exactly matching the tracked pre-repair Increment 3b artifact.
 
-Before Increment 3b can land, five uncontaminated expanded Track A/Track B runs
-must pass the owner-signed aggregate-median ceilings and produce
-`gate-verdict.csv`. Measurements taken while an unrelated CPU-heavy export is
-active are invalid and are preserved separately rather than selected.
+## Remaining M59 scope boundary
 
-This increment does not close M59 or D-48. The heap/source
+Increment 3b is accepted; Increment 4a is next. This increment does not close
+M59 or D-48. The heap/source
 fuzzy-versus-abbreviation collision remains explicitly owned by Increment 4b,
 alongside the exact abbreviation and segmentation family. REACH-03's automatic
 manifest-derived one-to-one acceptance row also remains open; this packet's

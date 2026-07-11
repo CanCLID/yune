@@ -237,7 +237,8 @@ fn m59_librime_log_weight_table_fixture_has_non_circular_provenance() {
         "{path:?}"
     );
     assert_eq!(
-        fixture["capture"]["source_row_policy"], "m59_librime_compiled_log_weight_script_encoder",
+        fixture["capture"]["source_row_policy"],
+        "m59_librime_compiled_log_weight_and_script_encoder_boundary",
         "{path:?}"
     );
     assert_eq!(
@@ -283,9 +284,21 @@ fn m59_librime_log_weight_table_fixture_has_non_circular_provenance() {
             .expect("decoded table SHA-256 should be pinned"),
         "{path:?}"
     );
+    assert_eq!(
+        fixture["capture"]["external_capture"]["candidate_snapshots_sha256"],
+        "98a9eebcc0b286a9cf6b5691dfd2d5080fedea1c0f170de9e00fa7b5a7e65f7c",
+        "{path:?}"
+    );
     let dictionary = fs::read_to_string(root.join("luna_pinyin.dict.yaml"))
         .expect("captured dictionary rows should be readable");
-    for row in ["蓋\tgai\t99.91%", "蓋\tge\t0.09%", "蓋\the\t0.09%"] {
+    for row in [
+        "蓋\tgai\t99.91%",
+        "蓋\tge\t0.09%",
+        "蓋\the\t0.09%",
+        "足\tzu\t94%",
+        "足\tju\t5%",
+        "足\tzhu\t1%",
+    ] {
         assert!(
             dictionary.lines().any(|line| line == row),
             "{path:?}: {row}"
@@ -297,6 +310,22 @@ fn m59_librime_log_weight_table_fixture_has_non_circular_provenance() {
     );
     assert_eq!(
         fixture["snapshot"]["forbidden_false_phrase"], "遮蓋",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][0]["input"], "changju",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][0]["selected_candidates"][0]["text"], "長足",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][1]["input"], "changzhu",
+        "{path:?}"
+    );
+    assert_eq!(
+        fixture["boundary_snapshots"][1]["forbidden_below_boundary_phrase"], "長足",
         "{path:?}"
     );
     assert_no_local_absolute_paths(&path, &fixture);

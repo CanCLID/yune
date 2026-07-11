@@ -159,6 +159,55 @@ fn default_owned_model_matches_librime_page_from_compiled_log_weight_bytes() {
             .all(|candidate| candidate.text != forbidden),
         "the 0.09% 蓋/ge reading must not synthesize {forbidden}"
     );
+
+    for boundary in oracle["boundary_snapshots"]
+        .as_array()
+        .expect("oracle boundary snapshots should be an array")
+    {
+        engine.clear_composition();
+        let input = boundary["input"]
+            .as_str()
+            .expect("boundary input should be a string");
+        engine
+            .process_key_sequence(input)
+            .expect("boundary key sequence should parse");
+        let expected = boundary["selected_candidates"]
+            .as_array()
+            .expect("boundary candidates should be an array")
+            .iter()
+            .map(|candidate| {
+                candidate["text"]
+                    .as_str()
+                    .expect("boundary candidate text should be a string")
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            current_page_texts(&engine, 1),
+            expected[..1],
+            "compiled external boundary result must match pinned librime's top candidate for {input}"
+        );
+        if let Some(required) = boundary["required_boundary_phrase"].as_str() {
+            assert!(
+                engine
+                    .context()
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.text == required),
+                "the exact-5% reading must retain {required} for {input}"
+            );
+        }
+        if let Some(forbidden) = boundary["forbidden_below_boundary_phrase"].as_str() {
+            assert!(
+                engine
+                    .context()
+                    .candidates
+                    .iter()
+                    .all(|candidate| candidate.text != forbidden),
+                "the below-5% reading must exclude {forbidden} for {input}"
+            );
+        }
+    }
 }
 
 #[test]

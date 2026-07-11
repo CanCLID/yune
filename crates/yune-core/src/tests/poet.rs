@@ -1129,7 +1129,7 @@ fn upstream_sentence_model_prefers_long_abbreviation_phrase_over_short_phrase_pa
 
 #[test]
 fn upstream_sentence_model_ignores_zero_weight_character_codes_for_phrase_derivation() {
-    let entries = [
+    let entries = vec![
         crate::TableEntry::new("a", "A", 100.0),
         crate::TableEntry::new("b", "B", 100.0),
         crate::TableEntry::new("x", "X", 0.0),
@@ -1138,19 +1138,98 @@ fn upstream_sentence_model_ignores_zero_weight_character_codes_for_phrase_deriva
         crate::PresetVocabularyEntry::new("AX", 1_000_000.0),
         crate::PresetVocabularyEntry::new("AB", 1.0),
     ];
-    let model = UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10);
+    let compiled_entries = entries
+        .iter()
+        .map(|entry| {
+            let compiled_weight = if entry.weight > 0.0 {
+                entry.weight.ln()
+            } else {
+                f64::EPSILON.ln() as f32
+            };
+            crate::TableEntry::new(&entry.code, &entry.text, compiled_weight)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        compiled_entries[2].weight.to_bits(),
+        0xc210_2cb3,
+        "the control must use librime DictCompiler's narrowed ln(DBL_EPSILON) sentinel"
+    );
+    let models = [
+        (
+            "raw",
+            UpstreamSentenceModel::from_table_entries(entries, &vocabulary, 10),
+        ),
+        (
+            "compiled-natural-log",
+            UpstreamSentenceModel::from_natural_log_table_entries(
+                compiled_entries,
+                &vocabulary,
+                10,
+            ),
+        ),
+    ];
 
-    let candidates = model.candidates_for_code_spans_with_limit(
-        "ab",
-        &[
+    for (storage, model) in models {
+        let candidates = model.candidates_for_code_spans_with_limit(
+            "ab",
+            &[
+                SentenceCodeSpan::new(0, 1, "a"),
+                SentenceCodeSpan::new(1, 2, "b"),
+                SentenceCodeSpan::new(1, 2, "x"),
+            ],
+            5,
+        );
+
+        assert_eq!(candidates[0].text, "AB", "{storage}");
+        assert!(
+            candidates.iter().all(|candidate| candidate.text != "AX"),
+            "{storage}: zero-weight X must not enter abbreviation phrase derivation"
+        );
+    }
+}
+
+#[test]
+fn natural_log_abbreviation_codes_preserve_one_and_sub_one_raw_weights() {
+    for (case, low_positive_weight) in [("ln-one", 1.0_f32), ("negative-log", 0.5_f32)] {
+        let raw_entries = vec![
+            crate::TableEntry::new("a", "A", 100.0),
+            crate::TableEntry::new("b", "B", 100.0),
+            crate::TableEntry::new("x", "X", low_positive_weight),
+        ];
+        let natural_log_entries = raw_entries
+            .iter()
+            .map(|entry| crate::TableEntry::new(&entry.code, &entry.text, entry.weight.ln()))
+            .collect::<Vec<_>>();
+        let abbreviation_vocabulary = [
+            crate::PresetVocabularyEntry::new("AX", 1_000_000.0),
+            crate::PresetVocabularyEntry::new("AB", 1.0),
+        ];
+        let raw = UpstreamSentenceModel::from_table_entries_with_abbreviation_vocabulary(
+            raw_entries,
+            &[],
+            &abbreviation_vocabulary,
+            10,
+        );
+        let natural_log =
+            UpstreamSentenceModel::from_natural_log_table_entries_with_abbreviation_vocabulary(
+                natural_log_entries,
+                &[],
+                &abbreviation_vocabulary,
+                10,
+            );
+        let spans = [
             SentenceCodeSpan::new(0, 1, "a"),
             SentenceCodeSpan::new(1, 2, "b"),
             SentenceCodeSpan::new(1, 2, "x"),
-        ],
-        5,
-    );
+        ];
 
-    assert_eq!(candidates[0].text, "AB");
+        let raw_candidates = raw.candidates_for_code_spans_with_limit("ab", &spans, 5);
+        let natural_log_candidates =
+            natural_log.candidates_for_code_spans_with_limit("ab", &spans, 5);
+
+        assert_eq!(raw_candidates[0].text, "AX", "{case}");
+        assert_eq!(natural_log_candidates, raw_candidates, "{case}");
+    }
 }
 
 #[test]

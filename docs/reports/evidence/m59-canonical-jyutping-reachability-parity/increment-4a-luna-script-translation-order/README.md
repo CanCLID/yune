@@ -5,7 +5,7 @@ repair branch; M59 remains open. This packet closes only the expanded Luna
 long-input first-page defect. It does not close the seven-row Lane B complete-list
 requirement, M59-REACH-03/04, M59-EVIDENCE-01, M59-GATES-01, or M59 itself.
 
-No signed ceiling, exception class, milestone, public ABI, or schema-specific
+No signed ceiling, exception class, milestone, public C ABI, or schema-specific
 promotion table changed.
 
 At authoring, these commits are local and unpushed on
@@ -26,9 +26,10 @@ then exposed one deterministic 59-character residual: `遮蓋` appeared in Yune'
 first page but not librime's. The follow-up root cause was a second missing
 librime semantic:
 
-- librime's ScriptEncoder applies its inclusive 5% pronunciation filter to
-  source-domain double weights;
-- the compiler then stores `ln(raw_weight)` as `f32` in `.table.bin`;
+- librime's ScriptEncoder phrase expansion applies its inclusive 5%
+  pronunciation filter to source-domain double weights;
+- independently, the compiler retains the collected word entries and stores
+  `ln(raw_weight)` as `f32` in `.table.bin`;
 - Yune reconstructed its default-owned sentence model from that compiled table
   but treated the stored logarithms as raw weights, summed them for the 5% test,
   and logged them again for graph scoring.
@@ -39,6 +40,13 @@ admission rule, and handles the exact inclusive boundary through the stored
 `f32` rounding interval. A purpose-built, non-circular table compiled by pinned
 librime locks the distinction: the accepted page is `這個引擎, 這個, 這歌, 這格,
 這`, and the false `遮蓋` candidate is forbidden.
+
+The review follow-up also keeps the existing exact-user merge from leaking
+across translators. That rule is deliberately bounded to exactly one active,
+default-quality Luna ScriptTranslation owner; inactive/tag-mismatched,
+multiple-owner, and non-default-quality configurations retain the legacy merge.
+Generic ScriptTranslation predictive-userdb parity is not claimed by this
+page-order increment and no predictive rule was added.
 
 ## Source and binary identity
 
@@ -54,7 +62,7 @@ librime locks the distinction: the accepted page is `這個引擎, 這個, 這�
 - Complete candidate-snapshot SHA-256, identical in all five accepted rounds:
   `1e79ecf566e3ed3f17907ddfed588b869fd5200094a8e5085b57a02f4bb32a88`
 - Purpose-built decoded librime `.table.bin` SHA-256:
-  `8286e67cc60aa78c6e47bf871de130ee570bf6fe7dd99c8cc6b445cad73ea5fb`
+  `34784ffd5af9bdc79926a00057cbf8c201a64473a2334acd748685e2d1fd6405`
 - Yune and librime source trees were clean for measurement. The only Yune
   worktree extra was an ignored symlink to external evidence.
 
@@ -183,7 +191,8 @@ behavior discrepancy or an M59 threshold change.
   counts, candidate/comment behavior, and owner class remain unchanged.
 
 The repair changes the 37/59 pages from M57's multiple full-span alternatives
-to the pinned librime page shape. Track B remains byte-identical to M57.
+to the pinned librime page shape. Track B's normalized candidate/comment subset
+remains byte-identical to M57; its compiled table files are not byte-identical.
 
 ## Preserved failures and limitations
 

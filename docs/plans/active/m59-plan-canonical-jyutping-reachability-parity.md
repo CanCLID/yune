@@ -778,9 +778,16 @@ not a milestone.
 
 The non-circular `m59-librime-log-weight` fixture is compiled by pinned librime
 `33e78140250125871856cdc5b42ddc6a5fcd3cd4`; decoded `.table.bin` SHA-256 is
-`8286e67cc60aa78c6e47bf871de130ee570bf6fe7dd99c8cc6b445cad73ea5fb`.
+`34784ffd5af9bdc79926a00057cbf8c201a64473a2334acd748685e2d1fd6405`.
 It proves the exact first page `這個引擎, 這個, 這歌, 這格, 這` and forbids
 the false `遮蓋` phrase without deriving expected output from Yune.
+
+Review bounds the exact-user follow-up to exactly one active, default-quality
+Luna ScriptTranslation owner. Tag-mismatched, multiple-owner, and
+non-default-quality configurations keep the legacy merge; this increment adds
+no generic ScriptTranslation predictive-userdb rule or claim. Producer-local
+tests prove the bounded exact rule cannot suppress or drag another translator's
+stream, including intermediate-quality and equal-quality tie cases.
 
 Five fresh macOS rounds at `1f0fb0e5` retain one Yune dylib SHA-256
 `48e8848989af86c2941d6a89e5c5ba87bbdd0a2738fda693b4c2fd3b3b346977`,

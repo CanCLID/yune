@@ -185,6 +185,12 @@ enum EntryWeightDomain {
     NaturalLog,
 }
 
+// `DictCompiler` serializes every non-positive source weight as
+// `ln(DBL_EPSILON)`, narrowed to `float`. The compiled bytes cannot distinguish
+// that sentinel from a positive source value that rounds to the same float, so
+// preserve librime's ordinary zero-weight exclusion at the exact stored value.
+const LIBRIME_NON_POSITIVE_COMPILED_LOG_WEIGHT_BITS: u32 = 0xc210_2cb3;
+
 impl EntryWeightDomain {
     fn dictionary_weight(self, weight: f32) -> f64 {
         match self {
@@ -197,6 +203,19 @@ impl EntryWeightDomain {
         match self {
             Self::Raw => f64::from(weight),
             Self::NaturalLog => f64::from(weight).exp(),
+        }
+    }
+
+    fn has_positive_raw_weight(self, weight: f32) -> bool {
+        match self {
+            Self::Raw => weight > 0.0,
+            // `ln(1) == 0`, negative logs for sub-one positive weights, and
+            // positive infinity are valid. NaN, negative infinity, and
+            // DictCompiler's finite non-positive sentinel are not.
+            Self::NaturalLog => {
+                weight > f32::NEG_INFINITY
+                    && weight.to_bits() != LIBRIME_NON_POSITIVE_COMPILED_LOG_WEIGHT_BITS
+            }
         }
     }
 }
@@ -286,11 +305,12 @@ fn build_script_encoder_character_codes(
                         .collect()
                 }
                 EntryWeightDomain::NaturalLog => {
-                    // librime stores `ln(raw_weight)` in `.table.bin`, but
-                    // EntryCollector applies ScriptEncoder's five-percent
-                    // threshold before that transform. The compiled table then
-                    // narrows each logarithm to `f32`, so its exact source value
-                    // is only known to lie inside that float's rounding bin.
+                    // librime stores every collected word entry as
+                    // `ln(raw_weight)` in `.table.bin`, while ScriptEncoder's
+                    // separate phrase expansion applies its five-percent rule
+                    // to the raw collector weights. The compiled table narrows
+                    // each logarithm to `f32`, so its exact source value is only
+                    // known to lie inside that float's rounding bin.
                     // Retain a reading when any source value represented by the
                     // compiled bytes could have met the 5% boundary. This is the
                     // narrowest comparison that preserves librime's inclusive
@@ -1524,7 +1544,7 @@ impl UpstreamSentenceModel {
             if let Some(ch) = chars.next() {
                 if chars.next().is_none() {
                     script_encoder_codes.push((ch, entry.code.clone(), entry.weight));
-                    if entry.weight > 0.0 {
+                    if entry_weight_domain.has_positive_raw_weight(entry.weight) {
                         abbreviation_character_codes
                             .entry(ch)
                             .or_default()

@@ -6739,8 +6739,10 @@ impl Translator for StaticTableTranslator {
         self.upstream_sentence_model.is_some()
     }
 
-    fn uses_upstream_script_translation(&self) -> bool {
+    fn active_upstream_script_translation(&self, context: &Context) -> bool {
         self.upstream_sentence_model.is_some()
+            && self.initial_quality == 0.0
+            && self.accepts_segment_tags(&context.segment_tags)
     }
 
     fn translate(&self, input: &str) -> Vec<Candidate> {

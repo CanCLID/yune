@@ -266,7 +266,7 @@ raw and compiled domains explicit, consumes compiled logs directly for graph
 scoring, and reconstructs pronunciation shares without summing logs as raw
 weights or logging them again. ScriptEncoder's 5% pronunciation cutoff is
 inclusive and remains inclusive across stored-`f32` rounding. The repair is
-guarded by a table compiled by pinned librime, changes no public ABI or signed
+guarded by a table compiled by pinned librime, changes no public C ABI or signed
 threshold, and does not generalize the one-sentence observation to every Luna
 input.
 

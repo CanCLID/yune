@@ -1599,7 +1599,7 @@ oracle candidates, and circular oracle-derived fixtures are prohibited.
   non-circular table compiled by pinned librime that proves natural-log
   `.table.bin` weight interpretation and the inclusive 5% ScriptEncoder
   boundary; its decoded fixture SHA-256 is
-  `8286e67cc60aa78c6e47bf871de130ee570bf6fe7dd99c8cc6b445cad73ea5fb`.
+  `34784ffd5af9bdc79926a00057cbf8c201a64473a2334acd748685e2d1fd6405`.
   The broader multi-lane tooling/provenance requirement remains open.
 - [x] **M59-DEPLOY-01 (workspace fidelity)**: Workspace deployment matches the
   pinned librime `WorkspaceUpdate` behavior: a missing top-level schema allows

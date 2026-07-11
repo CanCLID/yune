@@ -620,8 +620,14 @@ Owner FINAL decision 2026-07-08, resolving what "parity" means per lane:
 Extends D-24 (oracle precedence), D-31 (upstream-wins-on-composition-conflict +
 fork-as-profile-oracle), and D-47 (the schema-general reachability guarantee, of
 which order parity is the stricter sibling for the three named lanes). _Outcome:
-Pending — Lane A classified diff + per-class disposition table is the next
-deliverable; cangjie onboarding and Lane B order-parity follow._
+Pending — the Lane A diff/disposition exists and Increment 4a's sentence/phrase
+mechanism is implemented at `ca52ec42`, but its mandatory Fable review is the
+current stop and must be followed by explicit owner re-disposition of the grown
+equal-weight class before 4b. The strict five-row comparator remains red with no new exception;
+the remaining surface is classified as the predeclared 4c OpenCC rows plus the
+already owner-signed equal-weight class. Remaining closure is 4b
+abbreviation/segmentation, 4c OpenCC variants, 4d Cangjie CJ-1, and 4e Lane B
+exact order._
 
 ### Initialization notes (process decisions)
 

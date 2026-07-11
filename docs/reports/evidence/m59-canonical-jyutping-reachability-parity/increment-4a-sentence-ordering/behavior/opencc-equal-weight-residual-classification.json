@@ -1,0 +1,692 @@
+{
+  "scope": {
+    "milestone": "M59",
+    "increment": "4a",
+    "decision": "D-48",
+    "classification_only": true,
+    "full_d48_acceptance_claimed": false,
+    "inputs": [
+      "being",
+      "beingo",
+      "beixngoxx",
+      "mgoi",
+      "zijiguk"
+    ],
+    "weight_policy": {
+      "dictionary_sort": "by_weight",
+      "blank_weight": "exact-term vocabulary weight, otherwise zero",
+      "percentage_weight": "exact-term vocabulary weight multiplied by percentage",
+      "multiple_matching_rows": "maximum effective weight",
+      "tie_comparison": "zero relative tolerance; 1e-9 absolute tolerance"
+    },
+    "normalization_policy": "only the input-specific ordered OpenCC rows declared by this tool; no generic text deletion"
+  },
+  "raw_comparator": {
+    "all_accepted": false,
+    "policy": "exact",
+    "exception_policy_present": false
+  },
+  "raw_comparator_all_accepted": false,
+  "classification_complete": true,
+  "verdict": "pass",
+  "cases": [
+    {
+      "input": "being",
+      "raw_oracle_count": 140,
+      "raw_actual_count": 139,
+      "raw_first_mismatch_index": 10,
+      "raw_missing": [
+        "祕"
+      ],
+      "raw_extra": [],
+      "raw_strict_verdict": "fail",
+      "normalization": {
+        "class": "4c-opencc-one-to-many-missing-output",
+        "mapping_key": "祕",
+        "mapping_code": "bei3",
+        "ordered_outputs": [
+          "秘",
+          "祕"
+        ],
+        "normalized_text": "祕",
+        "oracle_index": 10,
+        "actual_index": null,
+        "inventory_line": 36,
+        "locations": "秘@jyut6ping3.chars.dict.yaml:961;祕@jyut6ping3.chars.dict.yaml:960"
+      },
+      "normalized_oracle_count": 139,
+      "normalized_actual_count": 139,
+      "normalized_oracle_rows_sha256": "51e591fa3faf25a18b3944a214fc5f1ef48b37c88903332bfb6c2bbb7c4f9287",
+      "normalized_actual_rows_sha256": "55189315deaaa2452f64b2a89bdd94e9ea47aa635f33722c2c41884f6863ee14",
+      "inversion_count": 315,
+      "equal_weight_inversion_count": 315,
+      "cross_weight_inversion_count": 0,
+      "cross_weight_examples": [],
+      "equal_weight_inversion_pairs_sha256": "6c47507cf65cfbcbac81523c23c242cb6aef80e17e77ca28557bb75b5d26c6ac",
+      "equal_weight_buckets": [
+        {
+          "weight": 339.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "疕",
+            "詖"
+          ]
+        },
+        {
+          "weight": 327.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "柲",
+            "粃"
+          ]
+        },
+        {
+          "weight": 266.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "屄",
+            "彼"
+          ]
+        },
+        {
+          "weight": 0.0,
+          "pair_count": 312,
+          "participating_text_count": 34,
+          "participating_texts": [
+            "㑭",
+            "㗗",
+            "㘩",
+            "㠲",
+            "㢰",
+            "㣁",
+            "㸢",
+            "㽡",
+            "㿫",
+            "䀝",
+            "䀣",
+            "䃾",
+            "䉾",
+            "䊌",
+            "䍘",
+            "䎵",
+            "䏢",
+            "䑄",
+            "䕗",
+            "䘡",
+            "䙓",
+            "䣥",
+            "䥯",
+            "䥸",
+            "䩀",
+            "䪐",
+            "䫁",
+            "䯗",
+            "脾",
+            "萞",
+            "輩",
+            "𠳓",
+            "𡀠",
+            "𦱔"
+          ]
+        }
+      ],
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "beingo",
+      "raw_oracle_count": 142,
+      "raw_actual_count": 141,
+      "raw_first_mismatch_index": 12,
+      "raw_missing": [
+        "祕"
+      ],
+      "raw_extra": [],
+      "raw_strict_verdict": "fail",
+      "normalization": {
+        "class": "4c-opencc-one-to-many-missing-output",
+        "mapping_key": "祕",
+        "mapping_code": "bei3",
+        "ordered_outputs": [
+          "秘",
+          "祕"
+        ],
+        "normalized_text": "祕",
+        "oracle_index": 12,
+        "actual_index": null,
+        "inventory_line": 36,
+        "locations": "秘@jyut6ping3.chars.dict.yaml:961;祕@jyut6ping3.chars.dict.yaml:960"
+      },
+      "normalized_oracle_count": 141,
+      "normalized_actual_count": 141,
+      "normalized_oracle_rows_sha256": "f89d3c9efe8b8a582248d53b9a534ceb1bd854a72ad864c89349ec9653b800b6",
+      "normalized_actual_rows_sha256": "2fb505b52a1611fb09e1e4edf10be1d5832c64e23ea018d4c0320c31fbafb629",
+      "inversion_count": 315,
+      "equal_weight_inversion_count": 315,
+      "cross_weight_inversion_count": 0,
+      "cross_weight_examples": [],
+      "equal_weight_inversion_pairs_sha256": "6c47507cf65cfbcbac81523c23c242cb6aef80e17e77ca28557bb75b5d26c6ac",
+      "equal_weight_buckets": [
+        {
+          "weight": 339.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "疕",
+            "詖"
+          ]
+        },
+        {
+          "weight": 327.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "柲",
+            "粃"
+          ]
+        },
+        {
+          "weight": 266.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "屄",
+            "彼"
+          ]
+        },
+        {
+          "weight": 0.0,
+          "pair_count": 312,
+          "participating_text_count": 34,
+          "participating_texts": [
+            "㑭",
+            "㗗",
+            "㘩",
+            "㠲",
+            "㢰",
+            "㣁",
+            "㸢",
+            "㽡",
+            "㿫",
+            "䀝",
+            "䀣",
+            "䃾",
+            "䉾",
+            "䊌",
+            "䍘",
+            "䎵",
+            "䏢",
+            "䑄",
+            "䕗",
+            "䘡",
+            "䙓",
+            "䣥",
+            "䥯",
+            "䥸",
+            "䩀",
+            "䪐",
+            "䫁",
+            "䯗",
+            "脾",
+            "萞",
+            "輩",
+            "𠳓",
+            "𡀠",
+            "𦱔"
+          ]
+        }
+      ],
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "beixngoxx",
+      "raw_oracle_count": 38,
+      "raw_actual_count": 38,
+      "raw_first_mismatch_index": null,
+      "raw_missing": [],
+      "raw_extra": [],
+      "raw_strict_verdict": "pass",
+      "normalization": null,
+      "normalized_oracle_count": 38,
+      "normalized_actual_count": 38,
+      "normalized_oracle_rows_sha256": "a00f2bcc3aed87c70db48efbab27550d22dffbd552c591b01edb742454b77f7f",
+      "normalized_actual_rows_sha256": "a00f2bcc3aed87c70db48efbab27550d22dffbd552c591b01edb742454b77f7f",
+      "inversion_count": 0,
+      "equal_weight_inversion_count": 0,
+      "cross_weight_inversion_count": 0,
+      "cross_weight_examples": [],
+      "equal_weight_inversion_pairs_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "equal_weight_buckets": [],
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "mgoi",
+      "raw_oracle_count": 4,
+      "raw_actual_count": 4,
+      "raw_first_mismatch_index": null,
+      "raw_missing": [],
+      "raw_extra": [],
+      "raw_strict_verdict": "pass",
+      "normalization": null,
+      "normalized_oracle_count": 4,
+      "normalized_actual_count": 4,
+      "normalized_oracle_rows_sha256": "003983eddb1a16e1beefb832e3f3473b348303c9332716f9a2783b82540a961e",
+      "normalized_actual_rows_sha256": "003983eddb1a16e1beefb832e3f3473b348303c9332716f9a2783b82540a961e",
+      "inversion_count": 0,
+      "equal_weight_inversion_count": 0,
+      "cross_weight_inversion_count": 0,
+      "cross_weight_examples": [],
+      "equal_weight_inversion_pairs_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "equal_weight_buckets": [],
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    },
+    {
+      "input": "zijiguk",
+      "raw_oracle_count": 416,
+      "raw_actual_count": 416,
+      "raw_first_mismatch_index": 32,
+      "raw_missing": [],
+      "raw_extra": [],
+      "raw_strict_verdict": "fail",
+      "normalization": {
+        "class": "4c-opencc-one-to-many-derived-weight-placement",
+        "mapping_key": "只",
+        "mapping_code": "zi2",
+        "ordered_outputs": [
+          "只",
+          "衹"
+        ],
+        "normalized_text": "衹",
+        "oracle_index": 32,
+        "actual_index": 357,
+        "inventory_line": 4,
+        "locations": "只@jyut6ping3.chars.dict.yaml:32496;衹@jyut6ping3.chars.dict.yaml:32556"
+      },
+      "normalized_oracle_count": 415,
+      "normalized_actual_count": 415,
+      "normalized_oracle_rows_sha256": "7d363db432d1c9e00e45eb590c7c1868b3276128779d8aeaae953d366f6de6b5",
+      "normalized_actual_rows_sha256": "6c5b3eb96720f85c4a289c97a6fba0f46678d43ba4732a227f838ab0173fcf49",
+      "inversion_count": 5456,
+      "equal_weight_inversion_count": 5456,
+      "cross_weight_inversion_count": 0,
+      "cross_weight_examples": [],
+      "equal_weight_inversion_pairs_sha256": "09991a3d224d504599c00acb35bae833a2265dc75c885d743d515c47b3da6880",
+      "equal_weight_buckets": [
+        {
+          "weight": 453.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "庤",
+            "阯"
+          ]
+        },
+        {
+          "weight": 419.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "訨",
+            "輜"
+          ]
+        },
+        {
+          "weight": 288.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "懥",
+            "訿"
+          ]
+        },
+        {
+          "weight": 269.0,
+          "pair_count": 5,
+          "participating_text_count": 4,
+          "participating_texts": [
+            "懫",
+            "稺",
+            "筫",
+            "葘"
+          ]
+        },
+        {
+          "weight": 255.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "砋",
+            "秲"
+          ]
+        },
+        {
+          "weight": 251.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "孠",
+            "藢"
+          ]
+        },
+        {
+          "weight": 228.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "覟",
+            "頾"
+          ]
+        },
+        {
+          "weight": 88.0,
+          "pair_count": 15,
+          "participating_text_count": 8,
+          "participating_texts": [
+            "滓",
+            "痣",
+            "籽",
+            "脂",
+            "諮",
+            "資",
+            "趾",
+            "躓"
+          ]
+        },
+        {
+          "weight": 21.85,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "澬",
+            "畤"
+          ]
+        },
+        {
+          "weight": 19.0,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "茝",
+            "趑"
+          ]
+        },
+        {
+          "weight": 15.25,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "疐",
+            "踶"
+          ]
+        },
+        {
+          "weight": 13.3,
+          "pair_count": 1,
+          "participating_text_count": 2,
+          "participating_texts": [
+            "洷",
+            "祉"
+          ]
+        },
+        {
+          "weight": 0.0,
+          "pair_count": 5426,
+          "participating_text_count": 121,
+          "participating_texts": [
+            "㕄",
+            "㚄",
+            "㜽",
+            "㞢",
+            "㞨",
+            "㠿",
+            "㡳",
+            "㡶",
+            "㣥",
+            "㧗",
+            "㧘",
+            "㨁",
+            "㨖",
+            "㩼",
+            "㫑",
+            "㫖",
+            "㭒",
+            "㮹",
+            "㯄",
+            "㰣",
+            "㰷",
+            "㱴",
+            "㲍",
+            "㲛",
+            "㴛",
+            "㴯",
+            "㸟",
+            "㸻",
+            "㺭",
+            "㽧",
+            "㽻",
+            "㾅",
+            "㾳",
+            "㿳",
+            "䄊",
+            "䄺",
+            "䅆",
+            "䅔",
+            "䅩",
+            "䆈",
+            "䇃",
+            "䇛",
+            "䉜",
+            "䊷",
+            "䎣",
+            "䎩",
+            "䏯",
+            "䐉",
+            "䓋",
+            "䓌",
+            "䓜",
+            "䓡",
+            "䓩",
+            "䔂",
+            "䕌",
+            "䖪",
+            "䘣",
+            "䘭",
+            "䚦",
+            "䚳",
+            "䛗",
+            "䝰",
+            "䝷",
+            "䞃",
+            "䞇",
+            "䟡",
+            "䠖",
+            "䠦",
+            "䡹",
+            "䣎",
+            "䣽",
+            "䤠",
+            "䥍",
+            "䦙",
+            "䦯",
+            "䦻",
+            "䧴",
+            "䰵",
+            "䲀",
+            "䳅",
+            "䵹",
+            "俧",
+            "兹",
+            "嵵",
+            "徔",
+            "抵",
+            "梽",
+            "橴",
+            "次",
+            "織",
+            "飤",
+            "鴲",
+            "齊",
+            "𠂔",
+            "𠊷",
+            "𠯽",
+            "𠱾",
+            "𠻸",
+            "𡍶",
+            "𡝳",
+            "𡟹",
+            "𡥄",
+            "𡵆",
+            "𢆶",
+            "𢙺",
+            "𢜔",
+            "𣏌",
+            "𣔰",
+            "𣲵",
+            "𣷸",
+            "𤥴",
+            "𤦧",
+            "𥜥",
+            "𥺃",
+            "𦔒",
+            "𦤹",
+            "𦬊",
+            "𧘲",
+            "𩥝",
+            "𩨨",
+            "𪗋"
+          ]
+        }
+      ],
+      "classification_reasons": [],
+      "classification_verdict": "pass"
+    }
+  ],
+  "summary": {
+    "raw_strict_passes": 2,
+    "raw_strict_failures": 3,
+    "classified_cases": 5,
+    "total_inversions_after_opencc_normalization": 6086,
+    "cross_weight_inversions": 0,
+    "beyond_oracle_depth_disposition_used": false
+  },
+  "tool": "classify-m59-4a-residuals.py",
+  "tool_version": "1",
+  "tool_sha256": "7e90c482903f4b775e4f693626a2ece9adf13dbc71ae6153d6903987b68e3fc9",
+  "provenance": {
+    "oracle": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-oracle.json",
+      "sha256": "9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b"
+    },
+    "actual": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-yune-after-default-owned.json",
+      "sha256": "2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e"
+    },
+    "strict_comparator": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-exact-after-default-owned.json",
+      "sha256": "cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d",
+      "raw_red_preserved": true,
+      "exceptions": null
+    },
+    "opencc_inventory": {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv",
+      "sha256": "01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1"
+    },
+    "source_repository": {
+      "path": "external/source-repository",
+      "commit": "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+      "tree": "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+      "clean": true
+    },
+    "dictionary_manifest": {
+      "path": "external/dictionary-manifest",
+      "sha256": "4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa",
+      "import_tables": [
+        "jyut6ping3.chars",
+        "jyut6ping3.words",
+        "jyut6ping3.phrase",
+        "jyut6ping3.lettered",
+        "jyut6ping3.maps"
+      ]
+    },
+    "vocabulary": {
+      "path": "external/vocabulary",
+      "sha256": "a73fe3ea1004531d4872165cbcc753cea172d865277ad9996a4fe6415582f9cb"
+    },
+    "opencc_source": {
+      "path": "crates/yune-core/src/opencc/data/HKVariantsFull.txt",
+      "sha256": "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2"
+    },
+    "source_tables": [
+      {
+        "path": "external/source-table/jyut6ping3.chars.dict.yaml",
+        "sha256": "6b608e5baf0e8d8609bd43850d3c922e0c224c7e05c882b708af551522eeee38",
+        "row_count": 34357
+      },
+      {
+        "path": "external/source-table/jyut6ping3.words.dict.yaml",
+        "sha256": "ec782a237e5f80cf40f896fb56652484825491f2aaf585c9c7769e39d070f3f8",
+        "row_count": 103077
+      },
+      {
+        "path": "external/source-table/jyut6ping3.phrase.dict.yaml",
+        "sha256": "a36980c91075b64f207b8e3d868525be0da7f27b254976b48fe0e72383097102",
+        "row_count": 330701
+      },
+      {
+        "path": "external/source-table/jyut6ping3.lettered.dict.yaml",
+        "sha256": "9f02d0bffadc5b25d52417095bbc045daa97997c95abd725b3a8d4489077004a",
+        "row_count": 1293
+      },
+      {
+        "path": "external/source-table/jyut6ping3.maps.dict.yaml",
+        "sha256": "c4fb7606917a2ba0bc94b2451c35c799b5ff1f90c2f89dfed70c98ef1ec53d7f",
+        "row_count": 4439
+      }
+    ],
+    "effective_argv": [
+      "--oracle",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-oracle.json",
+      "--expected-oracle-sha256",
+      "9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b",
+      "--actual",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-yune-after-default-owned.json",
+      "--expected-actual-sha256",
+      "2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e",
+      "--strict-comparator",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-exact-after-default-owned.json",
+      "--expected-strict-comparator-sha256",
+      "cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d",
+      "--opencc-inventory",
+      "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv",
+      "--expected-opencc-inventory-sha256",
+      "01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1",
+      "--source-repository",
+      "external/source-repository",
+      "--expected-dictionary-commit",
+      "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+      "--expected-dictionary-tree",
+      "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+      "--dictionary-manifest",
+      "external/dictionary-manifest",
+      "--expected-dictionary-manifest-sha256",
+      "4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa",
+      "--vocabulary",
+      "external/vocabulary",
+      "--expected-vocabulary-sha256",
+      "a73fe3ea1004531d4872165cbcc753cea172d865277ad9996a4fe6415582f9cb",
+      "--opencc-source",
+      "crates/yune-core/src/opencc/data/HKVariantsFull.txt",
+      "--expected-opencc-source-sha256",
+      "145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2",
+      "--output",
+      "external/output"
+    ],
+    "effective_invocation": "python scripts/classify-m59-4a-residuals.py --oracle docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-oracle.json --expected-oracle-sha256 9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b --actual docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-yune-after-default-owned.json --expected-actual-sha256 2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e --strict-comparator docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/behavior/lane-a-class1-exact-after-default-owned.json --expected-strict-comparator-sha256 cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d --opencc-inventory docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-2-profile-paging/opencc-same-code-inventory.csv --expected-opencc-inventory-sha256 01522f437038a3591d3a3b92cbdace2cced1b1e9076e566ca40662c736afcaf1 --source-repository external/source-repository --expected-dictionary-commit c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0 --expected-dictionary-tree eb193fb80675ffa60df3c32bf24afa7d7f68617a --dictionary-manifest external/dictionary-manifest --expected-dictionary-manifest-sha256 4301001fb7bb52d5d1a9c032c519ac18ba50677e926e01006e34a48788385efa --vocabulary external/vocabulary --expected-vocabulary-sha256 a73fe3ea1004531d4872165cbcc753cea172d865277ad9996a4fe6415582f9cb --opencc-source crates/yune-core/src/opencc/data/HKVariantsFull.txt --expected-opencc-source-sha256 145b561c68a697d5f2197da0c091caf4a0e9457f0a4c56cdf2ae7ad4b8ff8cc2 --output external/output"
+  }
+}

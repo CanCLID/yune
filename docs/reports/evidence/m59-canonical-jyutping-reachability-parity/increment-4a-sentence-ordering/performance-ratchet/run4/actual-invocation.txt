@@ -1,0 +1,8 @@
+logical_run=4
+attempt=1
+capture_status=complete
+command=powershell -ExecutionPolicy Bypass -File scripts\benchmark-native-rime-inprocess.ps1 -OutputRoot C:\y59-4a\docs\reports\evidence\m59-increment4a-performance-local\run4 -YuneDll C:\m59-4a-fixed\yune_rime_api.dll -UpstreamOracleRoot C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0 -Iterations 9 -SessionIterations 60 -KeyIterations 80 -TrackAInputs n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu -TrackBInputs neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung -DeployProductBeforeBenchmark -TrackAThresholds C:\y59-4a\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fixed_dll_sha256_after=7ed2dc4468524d6e9c21fd5559f4fe6f49f19eb7d90dc6f5d044f200246391e8
+upstream_dll_sha256_after=86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b
+product_schema_tree_sha256_after=1e0c9ccfa2a208af0359a29a6e6b6153dd2d632a977e875858d86c3ce2cdd046
+thresholds_sha256=e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba

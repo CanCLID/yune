@@ -32,6 +32,7 @@ def load_script(name: str):
 candidate_order = load_script("compare-candidate-order.py")
 native_ratchet = load_script("aggregate-native-ratchet.py")
 luna_curator = load_script("curate-m59-luna-composition.py")
+residual_classifier = load_script("classify-m59-4a-residuals.py")
 
 
 def capture(rows_by_input, *, complete=True):
@@ -3622,6 +3623,410 @@ namespace['_write_output_pair'](
         self.assertIn("missing 'input' field", stderr)
         self.assertFalse(self.output.exists())
         self.assertFalse(self.sidecar.exists())
+
+
+class ResidualClassifierTests(unittest.TestCase):
+    @staticmethod
+    def row(text, comment):
+        return residual_classifier.Candidate(text=text, comment=comment)
+
+    def case(self, input_text, rows):
+        return residual_classifier.CandidateCase(
+            input=input_text,
+            rows=tuple(rows),
+            page_size=5,
+            captured_all_pages=True,
+            menu_present=True,
+            termination_reason="last_page",
+        )
+
+    def owned_documents(self):
+        row = self.row
+        oracle = {
+            "being": self.case(
+                "being",
+                [
+                    row("頭", "tau4"),
+                    row("秘", "bei3"),
+                    row("祕", "bei3"),
+                    row("甲", "gaap3"),
+                    row("乙", "jyut3"),
+                ],
+            ),
+            "beingo": self.case(
+                "beingo",
+                [
+                    row("首", "sau2"),
+                    row("秘", "bei3"),
+                    row("祕", "bei3"),
+                    row("丙", "bing2"),
+                    row("丁", "ding1"),
+                ],
+            ),
+            "beixngoxx": self.case("beixngoxx", [row("準", "zeon2")]),
+            "mgoi": self.case("mgoi", [row("該", "goi1")]),
+            "zijiguk": self.case(
+                "zijiguk",
+                [
+                    row("先", "sin1"),
+                    row("只", "zi2"),
+                    row("衹", "zi2"),
+                    row("戊", "mou6"),
+                    row("己", "gei2"),
+                ],
+            ),
+        }
+        actual = {
+            "being": self.case(
+                "being",
+                [
+                    row("頭", "tau4"),
+                    row("秘", "bei3"),
+                    row("乙", "jyut3"),
+                    row("甲", "gaap3"),
+                ],
+            ),
+            "beingo": self.case(
+                "beingo",
+                [
+                    row("首", "sau2"),
+                    row("秘", "bei3"),
+                    row("丁", "ding1"),
+                    row("丙", "bing2"),
+                ],
+            ),
+            "beixngoxx": self.case("beixngoxx", [row("準", "zeon2")]),
+            "mgoi": self.case("mgoi", [row("該", "goi1")]),
+            "zijiguk": self.case(
+                "zijiguk",
+                [
+                    row("先", "sin1"),
+                    row("只", "zi2"),
+                    row("己", "gei2"),
+                    row("戊", "mou6"),
+                    row("衹", "zi2"),
+                ],
+            ),
+        }
+        return oracle, actual
+
+    def weights(self, overrides=None):
+        values = {
+            ("甲", "gaap3"): 10.0,
+            ("乙", "jyut3"): 10.0,
+            ("丙", "bing2"): 20.0,
+            ("丁", "ding1"): 20.0,
+            ("戊", "mou6"): 30.0,
+            ("己", "gei2"): 30.0,
+        }
+        values.update(overrides or {})
+        rows = {
+            key: (
+                residual_classifier.SourceWeightRow(
+                    text=key[0],
+                    code=key[1],
+                    weight=weight,
+                    table="test",
+                    line=index,
+                    raw_weight=str(weight),
+                ),
+            )
+            for index, (key, weight) in enumerate(values.items(), 1)
+        }
+        return residual_classifier.SourceWeights(rows=rows, table_provenance=())
+
+    @staticmethod
+    def mappings():
+        return {
+            ("祕", "bei3"): residual_classifier.OpenCcMapping(
+                key="祕",
+                outputs=("秘", "祕"),
+                code="bei3",
+                line=36,
+                locations="秘@chars:2;祕@chars:1",
+            ),
+            ("只", "zi2"): residual_classifier.OpenCcMapping(
+                key="只",
+                outputs=("只", "衹"),
+                code="zi2",
+                line=4,
+                locations="只@chars:3;衹@chars:4",
+            ),
+        }
+
+    def test_declared_opencc_and_equal_weight_residuals_classify_without_accepting_d48(self):
+        oracle, actual = self.owned_documents()
+        result = residual_classifier.classify_documents(
+            oracle,
+            actual,
+            {"all_accepted": False, "policy": "exact"},
+            self.mappings(),
+            self.weights(),
+        )
+        self.assertTrue(result["classification_complete"])
+        self.assertEqual(result["verdict"], "pass")
+        self.assertFalse(result["raw_comparator_all_accepted"])
+        self.assertFalse(result["scope"]["full_d48_acceptance_claimed"])
+        self.assertEqual(result["summary"]["raw_strict_passes"], 2)
+        self.assertEqual(result["summary"]["raw_strict_failures"], 3)
+        self.assertEqual(
+            result["summary"]["total_inversions_after_opencc_normalization"], 3
+        )
+        self.assertEqual(result["summary"]["cross_weight_inversions"], 0)
+        self.assertFalse(
+            result["summary"]["beyond_oracle_depth_disposition_used"]
+        )
+
+    def test_cross_weight_residual_emits_semantic_failure(self):
+        oracle, actual = self.owned_documents()
+        result = residual_classifier.classify_documents(
+            oracle,
+            actual,
+            {"all_accepted": False, "policy": "exact"},
+            self.mappings(),
+            self.weights({("乙", "jyut3"): 9.0}),
+        )
+        self.assertFalse(result["classification_complete"])
+        self.assertEqual(result["verdict"], "fail")
+        being = next(row for row in result["cases"] if row["input"] == "being")
+        self.assertEqual(being["cross_weight_inversion_count"], 1)
+        self.assertEqual(being["classification_reasons"], ["cross-weight-inversion"])
+
+    def test_unexpected_exact_case_difference_is_unowned_not_normalized(self):
+        oracle, actual = self.owned_documents()
+        actual["mgoi"] = self.case("mgoi", [self.row("別", "bit6")])
+        result = residual_classifier.classify_documents(
+            oracle,
+            actual,
+            {"all_accepted": False, "policy": "exact"},
+            self.mappings(),
+            self.weights(),
+        )
+        mgoi = next(row for row in result["cases"] if row["input"] == "mgoi")
+        self.assertEqual(mgoi["classification_verdict"], "fail")
+        self.assertIn("must remain strict exact", mgoi["classification_reasons"][0])
+
+    @staticmethod
+    def capture_document(duplicates=False):
+        cases = []
+        for input_text in residual_classifier.CLASS1_INPUTS:
+            candidates = [{"text": input_text, "comment": "x1"}]
+            if duplicates and input_text == "being":
+                candidates.append({"text": input_text, "comment": "x2"})
+            cases.append(
+                {
+                    "input": input_text,
+                    "page_size": 5,
+                    "menu_present": True,
+                    "termination_reason": "last_page",
+                    "captured_all_pages": True,
+                    "all_candidates": candidates,
+                }
+            )
+        return {"cases": cases}
+
+    def test_duplicate_candidate_text_fails_closed_as_weight_ambiguous(self):
+        with self.assertRaisesRegex(
+            residual_classifier.EvidenceError, "occurrence weights would be ambiguous"
+        ):
+            residual_classifier.parse_capture(
+                self.capture_document(duplicates=True), "oracle"
+            )
+
+    def test_null_capture_comment_is_normalized_to_empty_string(self):
+        document = self.capture_document()
+        document["cases"][0]["all_candidates"][0]["comment"] = None
+        parsed = residual_classifier.parse_capture(document, "oracle")
+        self.assertEqual(parsed["being"].rows[0].comment, "")
+
+    def test_source_table_accepts_encoder_phrase_without_explicit_code(self):
+        with tempfile.TemporaryDirectory() as temp:
+            table = Path(temp) / "phrase.dict.yaml"
+            table.write_text(
+                "---\nname: phrase\nsort: by_weight\n...\n\n詞\n有碼\tcode\n",
+                encoding="utf-8",
+            )
+            rows = residual_classifier._parse_table_rows(
+                table, "phrase", {"詞": 9.0, "有碼": 8.0}
+            )
+            self.assertEqual(
+                [(row.text, row.code, row.weight) for row in rows],
+                [("詞", "", 9.0), ("有碼", "code", 8.0)],
+            )
+
+    def test_dictionary_manifest_requires_by_weight_policy(self):
+        imports = "\n".join(
+            f"  - {name}" for name in residual_classifier.EXPECTED_IMPORT_TABLES
+        )
+        manifest = (
+            "---\nname: jyut6ping3\nsort: original\n"
+            "vocabulary: essay-cantonese\nimport_tables:\n"
+            f"{imports}\n...\n"
+        )
+        with self.assertRaisesRegex(
+            residual_classifier.EvidenceError, "sort policy must be by_weight"
+        ):
+            residual_classifier.parse_dictionary_manifest(manifest)
+
+    def test_strict_comparator_must_stay_red_and_exception_free(self):
+        document = self.capture_document()
+        oracle = residual_classifier.parse_capture(document, "oracle")
+        actual = residual_classifier.parse_capture(document, "actual")
+        cases = []
+        for input_text in residual_classifier.CLASS1_INPUTS:
+            cases.append(
+                {
+                    "input": input_text,
+                    "oracle_count": 1,
+                    "actual_count": 1,
+                    "raw_first_mismatch_index": None,
+                    "missing_count": 0,
+                    "extra_count": 0,
+                    "accepted_exceptions": [],
+                    "verdict": "pass",
+                }
+            )
+        comparator = {
+            "tool": "compare-candidate-order.py",
+            "policy": "exact",
+            "inputs": list(residual_classifier.CLASS1_INPUTS),
+            "all_accepted": False,
+            "provenance": {
+                "oracle": {"sha256": "a" * 64},
+                "actual": {"sha256": "b" * 64},
+                "exceptions": {"sha256": "c" * 64},
+            },
+            "cases": cases,
+        }
+        with self.assertRaisesRegex(
+            residual_classifier.EvidenceError, "must not apply an exception policy"
+        ):
+            residual_classifier.validate_strict_comparator(
+                comparator, oracle, actual, "a" * 64, "b" * 64
+            )
+        comparator["provenance"]["exceptions"] = None
+        with self.assertRaisesRegex(
+            residual_classifier.EvidenceError,
+            "all_accepted disagrees with recomputed case verdicts",
+        ):
+            residual_classifier.validate_strict_comparator(
+                comparator, oracle, actual, "a" * 64, "b" * 64
+            )
+
+    def test_atomic_json_is_deterministic_utf8_and_single_lf(self):
+        result = {"verdict": "pass", "text": "祕衹"}
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            first_path = Path(first) / "result.json"
+            second_path = Path(second) / "result.json"
+            residual_classifier.write_json_atomic(first_path, result)
+            residual_classifier.write_json_atomic(second_path, result)
+            first_bytes = first_path.read_bytes()
+            self.assertEqual(first_bytes, second_path.read_bytes())
+            self.assertFalse(first_bytes.startswith(b"\xef\xbb\xbf"))
+            self.assertNotIn(b"\r", first_bytes)
+            self.assertNotIn(b"\x00", first_bytes)
+            self.assertTrue(first_bytes.endswith(b"\n"))
+            self.assertFalse(first_bytes.endswith(b"\n\n"))
+
+    def test_atomic_json_replaces_existing_output(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "result.json"
+            output.write_text("stale", encoding="utf-8")
+            residual_classifier.write_json_atomic(output, {"verdict": "pass"})
+            self.assertEqual(
+                json.loads(output.read_text(encoding="utf-8")),
+                {"verdict": "pass"},
+            )
+
+    def required_cli_args(self, root, output):
+        paths = {}
+        for name in (
+            "oracle",
+            "actual",
+            "strict",
+            "inventory",
+            "manifest",
+            "vocabulary",
+            "opencc",
+        ):
+            path = root / f"{name}.txt"
+            path.write_text("{}", encoding="utf-8")
+            paths[name] = path
+        source = root / "source"
+        source.mkdir()
+        return [
+            "--oracle",
+            str(paths["oracle"]),
+            "--expected-oracle-sha256",
+            "0" * 64,
+            "--actual",
+            str(paths["actual"]),
+            "--expected-actual-sha256",
+            "0" * 64,
+            "--strict-comparator",
+            str(paths["strict"]),
+            "--expected-strict-comparator-sha256",
+            "0" * 64,
+            "--opencc-inventory",
+            str(paths["inventory"]),
+            "--expected-opencc-inventory-sha256",
+            "0" * 64,
+            "--source-repository",
+            str(source),
+            "--expected-dictionary-commit",
+            "1" * 40,
+            "--expected-dictionary-tree",
+            "2" * 40,
+            "--dictionary-manifest",
+            str(paths["manifest"]),
+            "--expected-dictionary-manifest-sha256",
+            "0" * 64,
+            "--vocabulary",
+            str(paths["vocabulary"]),
+            "--expected-vocabulary-sha256",
+            "0" * 64,
+            "--opencc-source",
+            str(paths["opencc"]),
+            "--expected-opencc-source-sha256",
+            "0" * 64,
+            "--output",
+            str(output),
+        ]
+
+    def test_cli_hash_mismatch_invalidates_stale_output(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            output = root / "result.json"
+            output.write_text("stale", encoding="utf-8")
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                result = residual_classifier.main(self.required_cli_args(root, output))
+            self.assertEqual(result, 2)
+            self.assertIn("SHA-256 mismatch", stderr.getvalue())
+            self.assertFalse(output.exists())
+
+    def test_cli_output_alias_is_rejected_without_mutating_input(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            args = self.required_cli_args(root, root / "result.json")
+            oracle = Path(args[args.index("--oracle") + 1])
+            original = oracle.read_bytes()
+            args[args.index("--output") + 1] = str(oracle)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                result = residual_classifier.main(args)
+            self.assertEqual(result, 2)
+            self.assertIn("must not alias --oracle", stderr.getvalue())
+            self.assertEqual(oracle.read_bytes(), original)
+
+    def test_output_must_not_alias_classifier_tool(self):
+        with self.assertRaisesRegex(
+            residual_classifier.EvidenceError, "must not alias --tool"
+        ):
+            residual_classifier._preflight_paths(
+                [("--tool", Path(residual_classifier.__file__))],
+                Path(residual_classifier.__file__),
+            )
 
 
 if __name__ == "__main__":

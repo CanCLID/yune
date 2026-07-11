@@ -14,12 +14,22 @@
 > `2cb7e411`: its schema-general transformed-algebra implementation, oracle
 > packet, deterministic asset rebuild, two independent reviews, and five-round
 > owner-signed Windows ratchet are green (`32/32` aggregate rows). M59-REACH-02
-> is complete. Increment 4a is next; no D-48 ordering lane, REACH-03/04, or
-> final-gate row is implied complete here.
+> is complete. Increment 4a's sentence/phrase mechanism is implemented at
+> `ca52ec42`, with its review packet under `increment-4a-sentence-ordering/`.
+> The fixed-DLL five-run increment ratchet is green (`32/32`) and explicitly
+> covers the 37- and 59-character rows. The raw five-row Lane A comparator stays
+> visibly red (`2/5` exact, no new exception): deterministic classification
+> attributes the remaining surface to the predeclared 4c OpenCC rows plus the
+> owner-signed equal-weight class, whose expanded surface is now a mandatory
+> Fable review item. Because the prior class-3 disposition says to revisit if
+> the diff grows, Fable's review must be followed by an explicit owner
+> re-disposition under D-48 before 4b may start. That stop is active now.
+> No D-48 lane, REACH-03/04, or final-gate row is implied complete here.
 >
 > Nothing remaining moves to M60 or another milestone. After 4a lands, **no
 > subsequent engine-behavior increment** (including 4b) starts until Fable's
-> review returns and all findings are fixed forward and reverified. Non-overlapping
+> review returns, all findings are fixed forward and reverified, and the owner
+> explicitly re-disposes the expanded equal-weight class. Non-overlapping
 > evidence/docs work may continue during that wait; reviews for all other
 > increments remain nonblocking. Symmetrically, after 4b lands, no later
 > engine-behavior increment starts until its Fable review is resolved. Before 4b
@@ -63,8 +73,9 @@
   gates all remain in M59. Lane B's landed item is its reachability mechanism,
   not completion of its exact-order lane.
 - **Blocking review/performance protocol:** after 4a lands, every subsequent
-  engine-behavior increment pauses for Fable resolution; only non-overlapping
-  evidence/docs work may continue. After 4b lands, every later engine-behavior
+  engine-behavior increment pauses for Fable resolution **and explicit owner
+  re-disposition of the expanded equal-weight class under D-48**; only
+  non-overlapping evidence/docs work may continue. After 4b lands, every later engine-behavior
   increment likewise pauses for its Fable resolution. Other reviews remain
   nonblocking. A red `n`/`ni`/`hao` 4b ratchet is an owner stop before landing,
   not permission to re-baseline, revert, or weaken exact-order acceptance.
@@ -90,6 +101,17 @@
   fixed-DLL rounds pass all 32 rows individually and in aggregate. Rejected
   pre-repair packets are preserved alongside the accepted evidence.
   Evidence: `increment-3b-transformed-algebra/performance-ratchet/`.
+- **Increment 4a implemented (`ca52ec42`, review stop active):** a
+  configuration/profile-derived Standard script sentence policy now makes the
+  upstream sentence model authoritative without schema-id or input gates, while
+  TypeDuck keeps its legacy profile behavior. `beixngoxx` and `mgoi` are strict
+  exact; `being`, `beingo`, and `zijiguk` retain only classified OpenCC plus
+  equal-weight residue. The strict comparator remains red and creates no new
+  exception. Five fixed-DLL rounds pass all 32 aggregate rows, including the
+  37- and 59-character cases. This is an increment guard, not final
+  M59-REACH-04 acceptance. Fable must review the landed implementation and the
+  expanded equal-weight surface, and the owner must then explicitly re-dispose
+  that grown class-3 surface, before any 4b engine work starts.
 - **Increment 4b checklist residual from 3b:** close the pre-existing
   fuzzy-versus-abbreviation collision on the heap/source
   `ExpandedSpellingCode` path with full pinned spelling-type precedence and

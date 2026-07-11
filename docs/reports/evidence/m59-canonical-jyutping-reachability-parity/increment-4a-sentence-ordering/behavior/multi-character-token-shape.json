@@ -1,0 +1,58 @@
+{
+    "tool_version":  1,
+    "source_capture":  "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-1-executable-evidence/lane-a-oracle.json",
+    "source_sha256":  "56e7aafabcfac7eb7d3b209d5929eff88c65aeaa1b98fee0464e6b1fcda8c1ca",
+    "algorithm":  "StringInfo.ParseCombiningCharacters(text).Count versus whitespace comment tokens; blank-comment beixngoxx uses the declared beix tail structure",
+    "ordinary_cases":  [
+                           {
+                               "input":  "being",
+                               "row_count":  140,
+                               "mismatch_count":  0,
+                               "mismatches":  [
+
+                                              ],
+                               "pass":  true
+                           },
+                           {
+                               "input":  "beingo",
+                               "row_count":  142,
+                               "mismatch_count":  0,
+                               "mismatches":  [
+
+                                              ],
+                               "pass":  true
+                           },
+                           {
+                               "input":  "mgoi",
+                               "row_count":  4,
+                               "mismatch_count":  0,
+                               "mismatches":  [
+
+                                              ],
+                               "pass":  true
+                           },
+                           {
+                               "input":  "zijiguk",
+                               "row_count":  416,
+                               "mismatch_count":  0,
+                               "mismatches":  [
+
+                                              ],
+                               "pass":  true
+                           }
+                       ],
+    "beixngoxx":  {
+                      "row_count":  38,
+                      "head_grapheme_counts":  [
+                                                   2,
+                                                   2
+                                               ],
+                      "tail_row_count":  36,
+                      "beix_row_count":  36,
+                      "tail_text_order_matches_beix":  true,
+                      "every_tail_text_has_one_grapheme":  true,
+                      "pass":  true
+                  },
+    "conclusion":  "The five M59 4a acceptance rows do not require multi-character one-syllable ScriptEncoder tokens. Full stem/token recursion is not claimed.",
+    "overall_pass":  true
+}

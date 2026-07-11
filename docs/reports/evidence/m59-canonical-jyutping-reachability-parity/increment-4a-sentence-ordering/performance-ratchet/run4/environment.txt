@@ -1,0 +1,16 @@
+﻿date_utc=2026-07-11T15:49:05.0227405Z
+repo_root=C:\y59-4a
+yune_git_head=ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456
+yune_git_status_short=?? docs/reports/evidence/m59-increment4a-performance-local/
+upstream_oracle_root=C:\Users\laubonghaudoi\Documents\GitHub\yune\target\upstream-oracle\1.17.0
+transient_work_root=C:\y59-4a\target\native-inprocess\run4
+managed_runtime=false
+deploy_product_before_benchmark=True
+skip_track_b=False
+track_a_thresholds=C:\y59-4a\docs\reports\evidence\m55-native-match-or-beat\thresholds\m55-thresholds.csv
+fail_on_regression=False
+track_a_inputs=n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu
+track_b_inputs=neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung
+iterations=9
+session_iterations=60
+key_iterations=80

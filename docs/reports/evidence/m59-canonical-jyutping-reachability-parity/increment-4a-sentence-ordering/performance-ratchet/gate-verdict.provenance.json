@@ -1,0 +1,101 @@
+{
+  "effective_argv": [
+    "--thresholds",
+    "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "--expected-runs",
+    "5",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run1",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run2",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run3",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run4",
+    "--run",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run5",
+    "--output",
+    "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/gate-verdict.csv"
+  ],
+  "effective_invocation": "python scripts/aggregate-native-ratchet.py --thresholds docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv --expected-runs 5 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run1 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run2 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run3 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run4 --run docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run5 --output docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/gate-verdict.csv",
+  "gate_verdict": {
+    "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/gate-verdict.csv",
+    "sha256": "9e12514ec416dc84217e508fbd69e47c46a69e12e3aa2cd2126c6cbc3873d33e"
+  },
+  "required_run_count": 5,
+  "runs": [
+    {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run1",
+      "raw_files_sha256": {
+        "environment.txt": "38328fe99f21c8379e8e6d8bdbcab452c6b3b1d2720e2514530cbb3a2a9b96a9",
+        "external-provenance.txt": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+        "summary-comparison.csv": "63df900d19f45af86ba1ccfbd8eae5946d85105cb399c8f76abfb6062ed2fa7e",
+        "threshold-check.csv": "2752f30e1f12ffa2c84353db30f761ff5be78b4960bcbeff536396281395feef"
+      },
+      "run": 1
+    },
+    {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run2",
+      "raw_files_sha256": {
+        "environment.txt": "dd5f6d6a9ac5e9e6fcee84933e2cbc8926ea5aa79b19e04dbeb60981b7fc3029",
+        "external-provenance.txt": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+        "summary-comparison.csv": "5f75c696bb0eb00c32e9cda85647970044a2ec1f764f8f099257e4053aeab329",
+        "threshold-check.csv": "4f9d80a3d4ca50425313e218529861582460fe76e2e4d9cf67ae6c27020df109"
+      },
+      "run": 2
+    },
+    {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run3",
+      "raw_files_sha256": {
+        "environment.txt": "8f49d39b703b3e2a2a5e65bd9bd191f9dd7c5d67b38e4b16dda2fa76a92aaa55",
+        "external-provenance.txt": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+        "summary-comparison.csv": "b4317f3840e192abac8f4f9092d9bd5fec28cc0ef6f53541863a5d6c13b67fd7",
+        "threshold-check.csv": "2a64a268be84ae49899d81dfe2c2f4e8b6097da6f99c85fd7a0f2b240545e470"
+      },
+      "run": 3
+    },
+    {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run4",
+      "raw_files_sha256": {
+        "environment.txt": "85e4f77ea8f33164dcb98f75a355010b7aabfa8f59acfd1377f17913df7ce362",
+        "external-provenance.txt": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+        "summary-comparison.csv": "84857d95d4304c017898147417be8b855c47a9669de27e1b643e56a79fb020e9",
+        "threshold-check.csv": "ca35ee16935b146566de0e94e07d2ca42ea02ee67911d9d563618a3c2d30f93b"
+      },
+      "run": 4
+    },
+    {
+      "path": "docs/reports/evidence/m59-canonical-jyutping-reachability-parity/increment-4a-sentence-ordering/performance-ratchet/run5",
+      "raw_files_sha256": {
+        "environment.txt": "22205d1a7f3b1242cde74256b63eefd82df18f9a56382feff46e526880e2bf54",
+        "external-provenance.txt": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+        "summary-comparison.csv": "127db9393efddf3fc0750bc2a5144cbbf8498395d8064fb0e212a868764514cc",
+        "threshold-check.csv": "06f43f3d85e95fc60d989681434c999ea0474b3188e1bcf0f81bedf5fb48ceeb"
+      },
+      "run": 5
+    }
+  ],
+  "schema_version": 1,
+  "thresholds": {
+    "path": "docs/reports/evidence/m55-native-match-or-beat/thresholds/m55-thresholds.csv",
+    "sha256": "e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba"
+  },
+  "tool": "aggregate-native-ratchet.py",
+  "tool_path": "scripts/aggregate-native-ratchet.py",
+  "tool_sha256": "7a1ef97789708ba090b8ca4cde5eb8404ee8402b9226a9d8a9875631167db586",
+  "tool_version": "6",
+  "validated_provenance": {
+    "deploy_product_before_benchmark": "True",
+    "iterations": "9",
+    "key_iterations": "80",
+    "measured_yune_dll_sha256": "7ed2dc4468524d6e9c21fd5559f4fe6f49f19eb7d90dc6f5d044f200246391e8",
+    "product_schema_tree_sha256": "1e0c9ccfa2a208af0359a29a6e6b6153dd2d632a977e875858d86c3ce2cdd046",
+    "session_iterations": "60",
+    "skip_track_b": "False",
+    "source_commit": "ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456",
+    "track_a_inputs": "n,ni,hao,zhongguo,ceshiyixiachangjushuruxingnengzenyang,zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong,cszysmsrsd,zybfshmsru,zh,j,yi,che,chuang,b,ceshi,zhongdengchangdu,dazisudu",
+    "track_b_inputs": "neigojangingkeisatjinggoiziwunciucoenggeoizisyujapsinhojijung",
+    "upstream_rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "yune_git_head": "ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456"
+  }
+}

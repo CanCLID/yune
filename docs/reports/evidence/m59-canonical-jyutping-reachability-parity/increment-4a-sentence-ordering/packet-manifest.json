@@ -1,0 +1,568 @@
+{
+  "schema_version": 1,
+  "packet": "m59-increment-4a-sentence-ordering",
+  "status": "pending-fable-review-and-owner-redisposition",
+  "acceptance": {
+    "strict_exact_all_accepted": false,
+    "strict_exact_passes": 2,
+    "strict_exact_failures": 3,
+    "classification_complete": true,
+    "classification_verdict": "pass",
+    "new_exception_created": false,
+    "closes_lane_a": false,
+    "closes_d48": false,
+    "closes_m59_reach_04": false,
+    "closes_m59": false,
+    "next_engine_increment_permitted": false,
+    "owner_redisposition_required": true,
+    "owner_redisposition_complete": false
+  },
+  "implementation": {
+    "base_commit": "212a4a39c1db236f2b260db2eee51595e7bffa94",
+    "commit": "ca52ec427111e2ec36b2a80dfe7b25b6f2d3c456",
+    "tree": "18a2c5ce50fa9c91d561a3f4ba53814bda30fbe2",
+    "capture_source_clean": true
+  },
+  "release_dll": {
+    "included": false,
+    "bytes": 3891200,
+    "sha256": "7ed2dc4468524d6e9c21fd5559f4fe6f49f19eb7d90dc6f5d044f200246391e8"
+  },
+  "oracle": {
+    "capture_sha256": "9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b",
+    "upstream_rime_dll_sha256": "86b4c7357d4c6d293ce5589b234d8859ca2ac30923a03bedfa3926eeaf97fb0b",
+    "rime_cantonese_commit": "c99b16e44d2df77a5cb8fb0867dd2bab7a112cb0",
+    "rime_cantonese_tree": "eb193fb80675ffa60df3c32bf24afa7d7f68617a",
+    "inputs": [
+      "being",
+      "beingo",
+      "beixngoxx",
+      "mgoi",
+      "zijiguk"
+    ]
+  },
+  "behavior": {
+    "before_exact_passes": 0,
+    "after_exact_passes": 2,
+    "after_exact_failures": 3,
+    "after_yune_capture_sha256": "2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e",
+    "strict_comparator_sha256": "cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d",
+    "residual_classifier_tool_sha256": "7e90c482903f4b775e4f693626a2ece9adf13dbc71ae6153d6903987b68e3fc9",
+    "residual_classification_sha256": "beef6d636f4bcc0eb915f6f745e4e38416fea5df93fdfdbfcc2fa7a1e9ca5925",
+    "normalized_inversions": 6086,
+    "cross_weight_inversions": 0,
+    "beyond_oracle_depth_disposition_used": false,
+    "default_owned_vs_replay_exact_passes": 5,
+    "replay_storage_attestation": false,
+    "replay_boundary": "corroborating equality only; executable tests separately prove optional native mmap selection and 4a compiled-byte semantics"
+  },
+  "performance": {
+    "thresholds_sha256": "e74e77b4dd5b253e0c2b5f4b12cc1e0279784d3c3fbf02006b5f8f18fccacdba",
+    "product_schema_tree_sha256": "1e0c9ccfa2a208af0359a29a6e6b6153dd2d632a977e875858d86c3ce2cdd046",
+    "accepted_runs": 5,
+    "aggregate_rows": 32,
+    "aggregate_passes": 32,
+    "individual_failures": 0,
+    "iterations": {
+      "startup": 9,
+      "session": 60,
+      "key": 80
+    },
+    "track_a_input_count": 17,
+    "track_b_input_count": 1,
+    "candidate_snapshot_sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+    "long_rows": [
+      {
+        "characters": 37,
+        "input": "ceshiyixiachangjushuruxingnengzenyang",
+        "observations": [
+          0.23,
+          0.223,
+          0.229,
+          0.227,
+          0.233
+        ],
+        "median": 0.229,
+        "ceiling": 2.339,
+        "verdict": "pass"
+      },
+      {
+        "characters": 59,
+        "input": "zhegeyinqingqishiyinggaizhichichaochangjuzishurucainengyong",
+        "observations": [
+          0.131,
+          0.126,
+          0.126,
+          0.125,
+          0.128
+        ],
+        "median": 0.126,
+        "ceiling": 1.748,
+        "verdict": "pass"
+      }
+    ],
+    "preserved_excluded_attempts": [
+      "run2-attempt0-execution-policy",
+      "run2-attempt1-space-delimited-input"
+    ],
+    "tracked_text_canonicalization": "UTF-8/LF; only CRLF record endings normalized; embedded control bytes preserved"
+  },
+  "verification": {
+    "residual_classifier_tests": "13 passed",
+    "m59_evidence_tool_tests": "74 passed",
+    "core_lib": "412 passed",
+    "api_lib": "345 passed, 1 ignored",
+    "cantonese_parity": "41 passed",
+    "typeduck_windows_boundary": "4 passed",
+    "full_yune_web": "attempted; timed out after 15 minutes under cache pressure; not claimed green"
+  },
+  "binary_payloads_included": false,
+  "file_count_excluding_manifest": 74,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 9092,
+      "sha256": "3b873d52fb110dc2723e910f478095ca3ca37a719d8389ac5700dcf142b664c8",
+      "role": "packet narrative and acceptance boundary"
+    },
+    {
+      "path": "behavior/default-owned-vs-replay-exact.csv",
+      "bytes": 2974,
+      "sha256": "db169950f7aa096f21b60a16ade49379c366c904c6cb2b6df1e7c873baa797a0",
+      "role": "default-owned versus replay exact comparator output"
+    },
+    {
+      "path": "behavior/default-owned-vs-replay-exact.json",
+      "bytes": 6544,
+      "sha256": "79cfc2f2d3e646ba6b0a901e3e9048d319d285d05ccdad8b5d8467f9d235ba7f",
+      "role": "default-owned versus replay exact comparator output"
+    },
+    {
+      "path": "behavior/lane-a-class1-exact-after-default-owned.csv",
+      "bytes": 3027,
+      "sha256": "e8fd42cc4dd4c8fbe8b22f48ba3204025e71843e3492c24b24cbd428e44ac2a3",
+      "role": "post-4a strict exact comparator output kept red"
+    },
+    {
+      "path": "behavior/lane-a-class1-exact-after-default-owned.json",
+      "bytes": 13858,
+      "sha256": "cb7a1ed96cb3fc9980ab59c8257be07db3c5c9b5868f7840fd9c5c7bef92b65d",
+      "role": "post-4a strict exact comparator output kept red"
+    },
+    {
+      "path": "behavior/lane-a-class1-exact-before.csv",
+      "bytes": 3120,
+      "sha256": "8d1f3f5cee53a9fdb28a12c4719e705742f3d464f5b0b4878f33f65c8f16c0e4",
+      "role": "pre-4a strict exact comparator output"
+    },
+    {
+      "path": "behavior/lane-a-class1-exact-before.json",
+      "bytes": 26225,
+      "sha256": "03d65ddcb4a670262b91f9c8557d2b293d1781c39ff83390f1ed4c7493bcc734",
+      "role": "pre-4a strict exact comparator output"
+    },
+    {
+      "path": "behavior/lane-a-class1-oracle.json",
+      "bytes": 685322,
+      "sha256": "9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b",
+      "role": "external pinned oracle capture"
+    },
+    {
+      "path": "behavior/lane-a-class1-yune-after-default-owned.json",
+      "bytes": 671470,
+      "sha256": "2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e",
+      "role": "post-4a default-owned Yune production-path capture"
+    },
+    {
+      "path": "behavior/lane-a-class1-yune-after-replay.json",
+      "bytes": 671482,
+      "sha256": "af8446162a458b495f86a693f10efdd4a8c43604acfec12a03a6beb27066b11e",
+      "role": "post-4a corroborating replay capture without storage attestation"
+    },
+    {
+      "path": "behavior/lane-a-class1-yune-before.json",
+      "bytes": 1818865,
+      "sha256": "bab5fccb012fa35324cabb865a08fcbc6339c4ae505f9c201830cee22182c9e2",
+      "role": "pre-4a Yune production-path capture"
+    },
+    {
+      "path": "behavior/multi-character-token-shape.json",
+      "bytes": 2622,
+      "sha256": "d1cec53220e4a2d08e949e7b420a30845edf3ca844344c7cd51aac0db9e85b23",
+      "role": "deterministic script-token shape inventory"
+    },
+    {
+      "path": "behavior/opencc-equal-weight-residual-classification.json",
+      "bytes": 21871,
+      "sha256": "beef6d636f4bcc0eb915f6f745e4e38416fea5df93fdfdbfcc2fa7a1e9ca5925",
+      "role": "fail-closed OpenCC and equal-weight residual classification"
+    },
+    {
+      "path": "performance-ratchet/README.md",
+      "bytes": 2898,
+      "sha256": "d8ee2949f82b55ae959b441166372a717768cc5ed1ecdb33ebfc5a655923197e",
+      "role": "ratchet replay and attempt-disposition narrative"
+    },
+    {
+      "path": "performance-ratchet/candidate-snapshots.csv",
+      "bytes": 22477,
+      "sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+      "role": "byte-identical accepted-run candidate snapshot audit copy"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt0-execution-policy/README.txt",
+      "bytes": 455,
+      "sha256": "2754bc3dcb30800334b9f24c0f475e9b142e281cc09ec87f421ed39700b14e64",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/actual-invocation.txt",
+      "bytes": 642,
+      "sha256": "c0a8691b30600604b7673ddfc5ef840fcb4d3c45d5083bb791060ddccef30c90",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/attempt-disposition.txt",
+      "bytes": 651,
+      "sha256": "fa4f0d2df8a52ab2c0560c66585bd2da0729fb1cc71b2fabaec0286295a02515",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/candidate_snapshots.csv",
+      "bytes": 5739,
+      "sha256": "90929770a649370e871e7b1443880d4e2e57f8507a6a180922d43eaf5563512b",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/commands.txt",
+      "bytes": 680,
+      "sha256": "860dd9fe3305391bbca9e68bd8c3a06f8a050900518599bf0ccb0ad72f0d2a73",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/environment.txt",
+      "bytes": 898,
+      "sha256": "d9552351f08815332ea1771a6ea8a54df8d4e1d6a34fe0eae3bc5916d78db375",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/external-provenance.txt",
+      "bytes": 327,
+      "sha256": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/m37_metrics.csv",
+      "bytes": 245982,
+      "sha256": "14180cef482f984c0eb33c797cc381c176e5c88ade45a12c88fcf9853f6f951b",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/memory-owner-profile.csv",
+      "bytes": 31245,
+      "sha256": "d96e7140790e0d9061130524b3ca4b26be78f8c851244f5d69338c9683039c1f",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/summary-comparison.csv",
+      "bytes": 932,
+      "sha256": "d60c57148f226289cbd9c7ec5cc92c56d694123027f594d8156b226fa427bc48",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/failed-attempts/run2-attempt1-space-delimited-input/threshold-check.csv",
+      "bytes": 10992,
+      "sha256": "f1e7b2326a6360fb3a8119818f89e25a69b63a2006d1bfb6282aac1c61300ca5",
+      "role": "preserved excluded attempt evidence"
+    },
+    {
+      "path": "performance-ratchet/gate-verdict.csv",
+      "bytes": 5498,
+      "sha256": "9e12514ec416dc84217e508fbd69e47c46a69e12e3aa2cd2126c6cbc3873d33e",
+      "role": "five-run aggregate gate verdict"
+    },
+    {
+      "path": "performance-ratchet/gate-verdict.provenance.json",
+      "bytes": 6633,
+      "sha256": "f07dc1063c3ac3a4d646e863d89ebc9f4d47cae33c91b31378080427b9d1ff47",
+      "role": "aggregate provenance sidecar"
+    },
+    {
+      "path": "performance-ratchet/run1/actual-invocation.txt",
+      "bytes": 1192,
+      "sha256": "f0b3bad8c2ba277f7d1807ebb0f7077f21f061dba55f5ebce83bca40af17c294",
+      "role": "accepted raw run evidence: actual-invocation.txt"
+    },
+    {
+      "path": "performance-ratchet/run1/candidate_snapshots.csv",
+      "bytes": 22477,
+      "sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+      "role": "accepted raw run evidence: candidate_snapshots.csv"
+    },
+    {
+      "path": "performance-ratchet/run1/commands.txt",
+      "bytes": 680,
+      "sha256": "0b5d47a69092f78633b7b3b5e093b3fba3f4a1b7e961b42ac94c9ab42b89cadd",
+      "role": "accepted raw run evidence: commands.txt"
+    },
+    {
+      "path": "performance-ratchet/run1/environment.txt",
+      "bytes": 898,
+      "sha256": "38328fe99f21c8379e8e6d8bdbcab452c6b3b1d2720e2514530cbb3a2a9b96a9",
+      "role": "accepted raw run evidence: environment.txt"
+    },
+    {
+      "path": "performance-ratchet/run1/external-provenance.txt",
+      "bytes": 327,
+      "sha256": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+      "role": "accepted raw run evidence: external-provenance.txt"
+    },
+    {
+      "path": "performance-ratchet/run1/m37_metrics.csv",
+      "bytes": 1099828,
+      "sha256": "3e482effdcee9bd310823853dd0cc55560a3bf9fd147974280db8ba80ab33a71",
+      "role": "accepted raw run evidence: m37_metrics.csv"
+    },
+    {
+      "path": "performance-ratchet/run1/memory-owner-profile.csv",
+      "bytes": 31240,
+      "sha256": "691f68a2733d9fe098eb034ec060b52f38539490f3340fa28133be1f3578c489",
+      "role": "accepted raw run evidence: memory-owner-profile.csv"
+    },
+    {
+      "path": "performance-ratchet/run1/summary-comparison.csv",
+      "bytes": 3376,
+      "sha256": "63df900d19f45af86ba1ccfbd8eae5946d85105cb399c8f76abfb6062ed2fa7e",
+      "role": "accepted raw run evidence: summary-comparison.csv"
+    },
+    {
+      "path": "performance-ratchet/run1/threshold-check.csv",
+      "bytes": 11026,
+      "sha256": "2752f30e1f12ffa2c84353db30f761ff5be78b4960bcbeff536396281395feef",
+      "role": "accepted raw run evidence: threshold-check.csv"
+    },
+    {
+      "path": "performance-ratchet/run2/actual-invocation.txt",
+      "bytes": 1192,
+      "sha256": "ce602793b0b24d0c25eca156ddd568f3555ef6e4d56471244e92767609d24cca",
+      "role": "accepted raw run evidence: actual-invocation.txt"
+    },
+    {
+      "path": "performance-ratchet/run2/candidate_snapshots.csv",
+      "bytes": 22477,
+      "sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+      "role": "accepted raw run evidence: candidate_snapshots.csv"
+    },
+    {
+      "path": "performance-ratchet/run2/commands.txt",
+      "bytes": 680,
+      "sha256": "262568f52218066811a1d8f653dc39e07a47774f02cd74c7864d6d2c56b4afc8",
+      "role": "accepted raw run evidence: commands.txt"
+    },
+    {
+      "path": "performance-ratchet/run2/environment.txt",
+      "bytes": 898,
+      "sha256": "dd5f6d6a9ac5e9e6fcee84933e2cbc8926ea5aa79b19e04dbeb60981b7fc3029",
+      "role": "accepted raw run evidence: environment.txt"
+    },
+    {
+      "path": "performance-ratchet/run2/external-provenance.txt",
+      "bytes": 327,
+      "sha256": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+      "role": "accepted raw run evidence: external-provenance.txt"
+    },
+    {
+      "path": "performance-ratchet/run2/m37_metrics.csv",
+      "bytes": 1099374,
+      "sha256": "bd175c574771dd02a843fbb99e529383f9f1966f06e38368e7376811bc57aa44",
+      "role": "accepted raw run evidence: m37_metrics.csv"
+    },
+    {
+      "path": "performance-ratchet/run2/memory-owner-profile.csv",
+      "bytes": 31240,
+      "sha256": "cd99d53927b67974fbaa447ab3c11ecd87ae4b5e926d6c5a64297674b08a369b",
+      "role": "accepted raw run evidence: memory-owner-profile.csv"
+    },
+    {
+      "path": "performance-ratchet/run2/summary-comparison.csv",
+      "bytes": 3379,
+      "sha256": "5f75c696bb0eb00c32e9cda85647970044a2ec1f764f8f099257e4053aeab329",
+      "role": "accepted raw run evidence: summary-comparison.csv"
+    },
+    {
+      "path": "performance-ratchet/run2/threshold-check.csv",
+      "bytes": 11026,
+      "sha256": "4f9d80a3d4ca50425313e218529861582460fe76e2e4d9cf67ae6c27020df109",
+      "role": "accepted raw run evidence: threshold-check.csv"
+    },
+    {
+      "path": "performance-ratchet/run3/actual-invocation.txt",
+      "bytes": 1192,
+      "sha256": "dc378e9999efd07dfb97cf689666eb208c1c77ce1b4a6eedd19166ef88de5a15",
+      "role": "accepted raw run evidence: actual-invocation.txt"
+    },
+    {
+      "path": "performance-ratchet/run3/candidate_snapshots.csv",
+      "bytes": 22477,
+      "sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+      "role": "accepted raw run evidence: candidate_snapshots.csv"
+    },
+    {
+      "path": "performance-ratchet/run3/commands.txt",
+      "bytes": 680,
+      "sha256": "c0ab20955c3c89fb5d719dfaec7c4c91297347fdef9e17499a850e918c6bee3f",
+      "role": "accepted raw run evidence: commands.txt"
+    },
+    {
+      "path": "performance-ratchet/run3/environment.txt",
+      "bytes": 898,
+      "sha256": "8f49d39b703b3e2a2a5e65bd9bd191f9dd7c5d67b38e4b16dda2fa76a92aaa55",
+      "role": "accepted raw run evidence: environment.txt"
+    },
+    {
+      "path": "performance-ratchet/run3/external-provenance.txt",
+      "bytes": 327,
+      "sha256": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+      "role": "accepted raw run evidence: external-provenance.txt"
+    },
+    {
+      "path": "performance-ratchet/run3/m37_metrics.csv",
+      "bytes": 1099810,
+      "sha256": "3b335486c8e252d1f26cba5d2bb8540a34ea8eb7f2862abbf013349f04c1273e",
+      "role": "accepted raw run evidence: m37_metrics.csv"
+    },
+    {
+      "path": "performance-ratchet/run3/memory-owner-profile.csv",
+      "bytes": 31240,
+      "sha256": "5b26f87c0b7284287ceb6e44613a7b1df0a4beae081b75e20443886619402eb6",
+      "role": "accepted raw run evidence: memory-owner-profile.csv"
+    },
+    {
+      "path": "performance-ratchet/run3/summary-comparison.csv",
+      "bytes": 3378,
+      "sha256": "b4317f3840e192abac8f4f9092d9bd5fec28cc0ef6f53541863a5d6c13b67fd7",
+      "role": "accepted raw run evidence: summary-comparison.csv"
+    },
+    {
+      "path": "performance-ratchet/run3/threshold-check.csv",
+      "bytes": 11026,
+      "sha256": "2a64a268be84ae49899d81dfe2c2f4e8b6097da6f99c85fd7a0f2b240545e470",
+      "role": "accepted raw run evidence: threshold-check.csv"
+    },
+    {
+      "path": "performance-ratchet/run4/actual-invocation.txt",
+      "bytes": 1192,
+      "sha256": "c9f7ac40fde43e978d3c2cb01e48ef6f0682c1c6c8ade75c03bf3567fb224d6f",
+      "role": "accepted raw run evidence: actual-invocation.txt"
+    },
+    {
+      "path": "performance-ratchet/run4/candidate_snapshots.csv",
+      "bytes": 22477,
+      "sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+      "role": "accepted raw run evidence: candidate_snapshots.csv"
+    },
+    {
+      "path": "performance-ratchet/run4/commands.txt",
+      "bytes": 680,
+      "sha256": "d4e59105ec47a28c303f4babf828bac0efe6c5703e71adb8a9c7946967120ba5",
+      "role": "accepted raw run evidence: commands.txt"
+    },
+    {
+      "path": "performance-ratchet/run4/environment.txt",
+      "bytes": 898,
+      "sha256": "85e4f77ea8f33164dcb98f75a355010b7aabfa8f59acfd1377f17913df7ce362",
+      "role": "accepted raw run evidence: environment.txt"
+    },
+    {
+      "path": "performance-ratchet/run4/external-provenance.txt",
+      "bytes": 327,
+      "sha256": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+      "role": "accepted raw run evidence: external-provenance.txt"
+    },
+    {
+      "path": "performance-ratchet/run4/m37_metrics.csv",
+      "bytes": 1099700,
+      "sha256": "13560cbf925ca15389378d325f6553b09ab2020a0df777e2424eba887250fa99",
+      "role": "accepted raw run evidence: m37_metrics.csv"
+    },
+    {
+      "path": "performance-ratchet/run4/memory-owner-profile.csv",
+      "bytes": 31240,
+      "sha256": "00cc3675ed6dfd81e59626a9e6fa6ac0b1d8a3a7686fa000ece99641af4f7ce8",
+      "role": "accepted raw run evidence: memory-owner-profile.csv"
+    },
+    {
+      "path": "performance-ratchet/run4/summary-comparison.csv",
+      "bytes": 3377,
+      "sha256": "84857d95d4304c017898147417be8b855c47a9669de27e1b643e56a79fb020e9",
+      "role": "accepted raw run evidence: summary-comparison.csv"
+    },
+    {
+      "path": "performance-ratchet/run4/threshold-check.csv",
+      "bytes": 11026,
+      "sha256": "ca35ee16935b146566de0e94e07d2ca42ea02ee67911d9d563618a3c2d30f93b",
+      "role": "accepted raw run evidence: threshold-check.csv"
+    },
+    {
+      "path": "performance-ratchet/run5/actual-invocation.txt",
+      "bytes": 1192,
+      "sha256": "edb8d32b92a5368e1f8dae573cc64b7e531636f57b76fdacd09020b6caec4984",
+      "role": "accepted raw run evidence: actual-invocation.txt"
+    },
+    {
+      "path": "performance-ratchet/run5/candidate_snapshots.csv",
+      "bytes": 22477,
+      "sha256": "306758a6b5489275b83fda80fcf9772d8250a1992c265c5f6bdd9f0395415385",
+      "role": "accepted raw run evidence: candidate_snapshots.csv"
+    },
+    {
+      "path": "performance-ratchet/run5/commands.txt",
+      "bytes": 680,
+      "sha256": "c5096411fc6c56b36f31f6facd486f852c46cfaf076d64ce1fd798acd1c5737e",
+      "role": "accepted raw run evidence: commands.txt"
+    },
+    {
+      "path": "performance-ratchet/run5/environment.txt",
+      "bytes": 898,
+      "sha256": "22205d1a7f3b1242cde74256b63eefd82df18f9a56382feff46e526880e2bf54",
+      "role": "accepted raw run evidence: environment.txt"
+    },
+    {
+      "path": "performance-ratchet/run5/external-provenance.txt",
+      "bytes": 327,
+      "sha256": "5fa6763c6e4f4cf4994e5e174e0e4178c13c377ebd1b21dc3a90ef996691bd41",
+      "role": "accepted raw run evidence: external-provenance.txt"
+    },
+    {
+      "path": "performance-ratchet/run5/m37_metrics.csv",
+      "bytes": 1099859,
+      "sha256": "f3fec2ce6be419101be08bb2fe946095a3987afafee6df0f7b0d00bfdc3fb6e8",
+      "role": "accepted raw run evidence: m37_metrics.csv"
+    },
+    {
+      "path": "performance-ratchet/run5/memory-owner-profile.csv",
+      "bytes": 31240,
+      "sha256": "26aed2385358bc57f59d3f2ceff5ba941ab53b3d1586bf295792bc08ff1bbe93",
+      "role": "accepted raw run evidence: memory-owner-profile.csv"
+    },
+    {
+      "path": "performance-ratchet/run5/summary-comparison.csv",
+      "bytes": 3376,
+      "sha256": "127db9393efddf3fc0750bc2a5144cbbf8498395d8064fb0e212a868764514cc",
+      "role": "accepted raw run evidence: summary-comparison.csv"
+    },
+    {
+      "path": "performance-ratchet/run5/threshold-check.csv",
+      "bytes": 11026,
+      "sha256": "06f43f3d85e95fc60d989681434c999ea0474b3188e1bcf0f81bedf5fb48ceeb",
+      "role": "accepted raw run evidence: threshold-check.csv"
+    },
+    {
+      "path": "verification.md",
+      "bytes": 1744,
+      "sha256": "2d4f8ca72ebfe90be6333e093f8cc2c93bf6666d193ce1294afb9fdee258426a",
+      "role": "focused verification record and disclosed skipped gate"
+    }
+  ],
+  "manifest_self_hash": null
+}

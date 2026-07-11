@@ -11,6 +11,19 @@ Yune `luna_pinyin` vs `librime 1.17.0` + upstream luna. TypeDuck profile is a
 regression guard, not an acceptance oracle.
 
 > **Current update (2026-07-11):**
+> [`increment-4a-sentence-ordering/`](./increment-4a-sentence-ordering/) is the
+> review packet for implementation commit `ca52ec42`. The Standard
+> script-sentence mechanism is locally verified without schema-id/input/oracle
+> gates, and its fixed-DLL five-run increment ratchet passes all 32 aggregate
+> rows, explicitly including the 37- and 59-character inputs. The raw five-row
+> comparator remains deliberately red (`2/5` exact, no new exception): a
+> separate fail-closed classifier assigns every remaining inversion to the
+> predeclared 4c OpenCC effects or the already owner-signed equal-weight class.
+> The expanded equal-weight surface triggers its recorded Fable revisit clause.
+> The mandatory post-4a Fable stop is active and must be followed by explicit
+> owner re-disposition under D-48 before 4b; no D-48 lane is closed, and this
+> packet is not final M59-REACH-04 evidence.
+>
 > [`increment-3b-transformed-algebra/`](./increment-3b-transformed-algebra/) is
 > the accepted 3b packet for implementation commit `2cb7e411`. Its
 > schema-general mechanism, seven
@@ -18,7 +31,8 @@ regression guard, not an acceptance oracle.
 > deterministic product rebuild, focused release gates, and owner-signed
 > five-round Windows ratchet are green (`32/32` aggregate rows). M59-REACH-02 is
 > complete. The packet does not close M59, M59-REACH-03/04, or a D-48 ordering
-> lane; Increment 4a is next.
+> lane; that statement is the frozen 3b boundary superseded by the 4a update
+> above.
 >
 > [`increment-2-profile-paging/`](./increment-2-profile-paging/) is the green
 > M59-NAV-01 acceptance packet for implementation commit `e37ee011`. It records

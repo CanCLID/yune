@@ -1,0 +1,539 @@
+{
+  "tool": "compare-candidate-order.py",
+  "tool_version": "5",
+  "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+  "policy": "exact",
+  "inputs": [
+    "being",
+    "beingo",
+    "beixngoxx",
+    "mgoi",
+    "zijiguk"
+  ],
+  "all_accepted": false,
+  "cases": [
+    {
+      "input": "being",
+      "policy": "exact",
+      "oracle_count": 140,
+      "actual_count": 139,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 10,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 1,
+      "extra_count": 0,
+      "missing_examples": [
+        "祕"
+      ],
+      "extra_examples": [],
+      "oracle_rows_sha256": "67a605d2f97846450bb92601482ac75b3f4bb08502ae72b76f290b4da899e377",
+      "actual_rows_sha256": "f67737c39f15325c3c2620562f82bbf6fcac8b764313f1805c998e1ad01b5a9f",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 10,
+          "oracle_end": 11,
+          "actual_start": 10,
+          "actual_end": 10
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 60,
+          "oracle_end": 60,
+          "actual_start": 59,
+          "actual_end": 60
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 61,
+          "oracle_end": 62,
+          "actual_start": 61,
+          "actual_end": 62
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 63,
+          "oracle_end": 64,
+          "actual_start": 63,
+          "actual_end": 63
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 77,
+          "oracle_end": 77,
+          "actual_start": 76,
+          "actual_end": 77
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 78,
+          "oracle_end": 79,
+          "actual_start": 78,
+          "actual_end": 78
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 103,
+          "oracle_end": 103,
+          "actual_start": 102,
+          "actual_end": 126
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 113,
+          "oracle_end": 137,
+          "actual_start": 136,
+          "actual_end": 136
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "beingo",
+      "policy": "exact",
+      "oracle_count": 142,
+      "actual_count": 141,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 12,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 1,
+      "extra_count": 0,
+      "missing_examples": [
+        "祕"
+      ],
+      "extra_examples": [],
+      "oracle_rows_sha256": "b1e6f1bd9f0f180ddd9e2de4d028e77978a6be54f64b5ee2b71521f345ba4577",
+      "actual_rows_sha256": "5ddce16daa0b67c76b65de27de86c3fbab209f55078e316bec714ce5f16d11dd",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 12,
+          "oracle_end": 13,
+          "actual_start": 12,
+          "actual_end": 12
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 62,
+          "oracle_end": 62,
+          "actual_start": 61,
+          "actual_end": 62
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 63,
+          "oracle_end": 64,
+          "actual_start": 63,
+          "actual_end": 64
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 65,
+          "oracle_end": 66,
+          "actual_start": 65,
+          "actual_end": 65
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 79,
+          "oracle_end": 79,
+          "actual_start": 78,
+          "actual_end": 79
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 80,
+          "oracle_end": 81,
+          "actual_start": 80,
+          "actual_end": 80
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 105,
+          "oracle_end": 105,
+          "actual_start": 104,
+          "actual_end": 128
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 115,
+          "oracle_end": 139,
+          "actual_start": 138,
+          "actual_end": 138
+        }
+      ],
+      "failure_classes": [
+        "under-admission",
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    },
+    {
+      "input": "beixngoxx",
+      "policy": "exact",
+      "oracle_count": 38,
+      "actual_count": 38,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "a031e922a5a0a059dbe216562e82e583bf79e22a3284c428c2d4a622a99d9f01",
+      "actual_rows_sha256": "a031e922a5a0a059dbe216562e82e583bf79e22a3284c428c2d4a622a99d9f01",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "mgoi",
+      "policy": "exact",
+      "oracle_count": 4,
+      "actual_count": 4,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": null,
+      "order_matches_after_signed_exceptions": true,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "2e7b6a5419bb136ac0df6d9596be5514433e7754a171833aab4d714ff5303f47",
+      "actual_rows_sha256": "2e7b6a5419bb136ac0df6d9596be5514433e7754a171833aab4d714ff5303f47",
+      "diff_opcodes": [],
+      "failure_classes": [],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "pass"
+    },
+    {
+      "input": "zijiguk",
+      "policy": "exact",
+      "oracle_count": 416,
+      "actual_count": 416,
+      "oracle_captured_all_pages": true,
+      "actual_captured_all_pages": true,
+      "page_size": {
+        "oracle": 5,
+        "actual": 5
+      },
+      "menu_present": {
+        "oracle": true,
+        "actual": true
+      },
+      "termination_reason": {
+        "oracle": "last_page",
+        "actual": "last_page"
+      },
+      "raw_first_mismatch_index": 32,
+      "order_matches_after_signed_exceptions": false,
+      "missing_count": 0,
+      "extra_count": 0,
+      "missing_examples": [],
+      "extra_examples": [],
+      "oracle_rows_sha256": "2592ace8dd32a1d559b882041a80c09d2b21508eb868502acf43811034c815a4",
+      "actual_rows_sha256": "98831cd63d5c9c5a8cd0c89f9ae3ae7aad4d3c82ec33375ab17e88f256e9dbcb",
+      "diff_opcodes": [
+        {
+          "tag": "delete",
+          "oracle_start": 32,
+          "oracle_end": 33,
+          "actual_start": 32,
+          "actual_end": 32
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 113,
+          "oracle_end": 113,
+          "actual_start": 112,
+          "actual_end": 113
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 114,
+          "oracle_end": 115,
+          "actual_start": 114,
+          "actual_end": 114
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 125,
+          "oracle_end": 125,
+          "actual_start": 124,
+          "actual_end": 125
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 126,
+          "oracle_end": 127,
+          "actual_start": 126,
+          "actual_end": 126
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 174,
+          "oracle_end": 174,
+          "actual_start": 173,
+          "actual_end": 174
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 175,
+          "oracle_end": 176,
+          "actual_start": 175,
+          "actual_end": 175
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 181,
+          "oracle_end": 182,
+          "actual_start": 180,
+          "actual_end": 181
+        },
+        {
+          "tag": "replace",
+          "oracle_start": 184,
+          "oracle_end": 185,
+          "actual_start": 183,
+          "actual_end": 184
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 190,
+          "oracle_end": 190,
+          "actual_start": 189,
+          "actual_end": 190
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 191,
+          "oracle_end": 192,
+          "actual_start": 191,
+          "actual_end": 191
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 193,
+          "oracle_end": 193,
+          "actual_start": 192,
+          "actual_end": 193
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 194,
+          "oracle_end": 195,
+          "actual_start": 194,
+          "actual_end": 194
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 204,
+          "oracle_end": 204,
+          "actual_start": 203,
+          "actual_end": 204
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 205,
+          "oracle_end": 206,
+          "actual_start": 205,
+          "actual_end": 205
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 221,
+          "oracle_end": 221,
+          "actual_start": 220,
+          "actual_end": 223
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 226,
+          "oracle_end": 229,
+          "actual_start": 228,
+          "actual_end": 228
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 254,
+          "oracle_end": 254,
+          "actual_start": 253,
+          "actual_end": 254
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 255,
+          "oracle_end": 256,
+          "actual_start": 255,
+          "actual_end": 255
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 261,
+          "oracle_end": 261,
+          "actual_start": 260,
+          "actual_end": 261
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 262,
+          "oracle_end": 263,
+          "actual_start": 262,
+          "actual_end": 262
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 275,
+          "oracle_end": 275,
+          "actual_start": 274,
+          "actual_end": 275
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 276,
+          "oracle_end": 277,
+          "actual_start": 276,
+          "actual_end": 276
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 282,
+          "oracle_end": 282,
+          "actual_start": 281,
+          "actual_end": 282
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 283,
+          "oracle_end": 284,
+          "actual_start": 283,
+          "actual_end": 283
+        },
+        {
+          "tag": "delete",
+          "oracle_start": 295,
+          "oracle_end": 376,
+          "actual_start": 294,
+          "actual_end": 294
+        },
+        {
+          "tag": "insert",
+          "oracle_start": 416,
+          "oracle_end": 416,
+          "actual_start": 334,
+          "actual_end": 416
+        }
+      ],
+      "failure_classes": [
+        "order"
+      ],
+      "accepted_exceptions": [],
+      "used_replacements": [],
+      "used_tail": null,
+      "verdict": "fail"
+    }
+  ],
+  "provenance": {
+    "oracle": {
+      "path": "external/oracle",
+      "sha256": "9cf5f91dfa81c050a3d55e54f423aa4648c64cc6f0f8447549004e3c810d755b"
+    },
+    "actual": {
+      "path": "external/actual",
+      "sha256": "2a367341eb4ba2f4a947a11fa84a3d0f13f4ffdeae7f4225f8bd88b3b9a0b34e"
+    },
+    "exceptions": null,
+    "tool_path": "scripts/compare-candidate-order.py",
+    "tool_version": "5",
+    "tool_sha256": "d20eccc78822dd612eefd39966586a5c87cd5bbe8be4386634a20c52c139f612",
+    "effective_argv": [
+      "--oracle",
+      "external/oracle",
+      "--actual",
+      "external/actual",
+      "--policy",
+      "exact",
+      "--input",
+      "being",
+      "--input",
+      "beingo",
+      "--input",
+      "beixngoxx",
+      "--input",
+      "mgoi",
+      "--input",
+      "zijiguk",
+      "--output-json",
+      "external/output-json",
+      "--output-csv",
+      "external/output-csv"
+    ],
+    "effective_invocation": "python scripts/compare-candidate-order.py --oracle external/oracle --actual external/actual --policy exact --input being --input beingo --input beixngoxx --input mgoi --input zijiguk --output-json external/output-json --output-csv external/output-csv"
+  }
+}

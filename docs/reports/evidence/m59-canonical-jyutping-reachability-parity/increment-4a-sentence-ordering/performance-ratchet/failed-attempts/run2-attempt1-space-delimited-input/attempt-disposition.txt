@@ -1,0 +1,7 @@
+logical_run=2
+attempt=1
+capture_status=complete_but_invalid
+disposition=excluded_from_aggregate
+reason=PowerShell bound the 17 Track A values as one space-delimited string. The generated threshold-check.csv therefore reports 17 missing signed latency rows, and summary-comparison.csv contains the combined string as one input.
+preservation=The entire generated attempt is retained untouched apart from this disposition sidecar. No measurement from it is reused.
+next_attempt=Logical run 2 attempt 2 uses the same fixed DLL, source commit, upstream oracle, product tree, iteration counts, and inputs encoded in the comma-delimited form proven by run1.

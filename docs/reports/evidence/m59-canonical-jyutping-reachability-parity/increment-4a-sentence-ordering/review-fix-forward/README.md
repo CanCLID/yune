@@ -21,9 +21,22 @@ cargo test -p yune-rime-api --test yune_web m59_reachability::m59_schema_general
 
 The run failed after `439.35 s` at `m59_reachability.rs:568`. The first local
 failure was the Bopomofo control, where explicit false still exposed `好` in
-`["好你玩", "好", "郝", "𡥆", "𤫧"]`. Opus independently observed the same
-mechanism on canonical Jyutping `being -> 畀`. The broader local failure proved
-that the defect was schema-general rather than a canonical-schema special case.
+`["好你玩", "好", "郝", "𡥆", "𤫧"]`.
+
+Opus's final corrected review reported the same Bopomofo failure and supplied
+this reviewer-run parent/target bisection:
+
+- direct parent `212a4a39`: exact matrix passed `1/1` in `537 s`;
+- mechanism/review target `ca52ec42` / `2b4a169a`: exact matrix failed on the
+  Bopomofo explicit-false control above.
+
+The earlier interim attribution to canonical Jyutping `being -> 畀` was
+explicitly retracted after the complete failure output arrived; it is not used
+as evidence here. The parent run was not independently repeated for this
+resolution packet. Static history confirms that `212a4a39` is the direct parent,
+the matrix test already existed there, and `UpstreamScript` first appears in
+`ca52ec42`. Our independent behavioral checks reproduced red at `2b4a169a` and
+green after the fix at `2257fbbe`.
 
 ## Fix
 
